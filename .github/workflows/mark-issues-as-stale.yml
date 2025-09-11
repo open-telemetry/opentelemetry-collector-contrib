@@ -3,12 +3,17 @@ on:
   schedule:
     - cron: "27 3 * * 1-5" # Run at an arbitrary time on weekdays.
 
+permissions:
+  contents: read
+
 jobs:
   mark-issues-as-stale:
-    runs-on: ubuntu-latest
+    permissions:
+      issues: write # required for marking issues as stale
+    runs-on: ubuntu-24.04
     if: ${{ github.repository_owner == 'open-telemetry' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
 
       - name: Run mark-issues-as-stale.sh
         run: ./.github/workflows/scripts/mark-issues-as-stale.sh

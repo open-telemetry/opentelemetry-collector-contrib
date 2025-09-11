@@ -4,7 +4,7 @@
 package awsecscontainermetrics
 
 import (
-	"fmt"
+	"errors"
 	"os"
 	"testing"
 
@@ -28,7 +28,7 @@ func (f testRestClient) GetResponse(path string) ([]byte, error) {
 	}
 
 	if f.fail {
-		return []byte{}, fmt.Errorf("failed")
+		return []byte{}, errors.New("failed")
 	}
 	if f.invalidJSON {
 		return []byte("wrong-json-body"), nil

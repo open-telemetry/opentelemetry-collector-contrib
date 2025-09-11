@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 
-	eventhub "github.com/Azure/azure-event-hubs-go/v3"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -23,22 +22,22 @@ import (
 )
 
 type dataConsumer interface {
-	consume(ctx context.Context, event *eventhub.Event) error
+	consume(ctx context.Context, event *azureEvent) error
 	setNextLogsConsumer(nextLogsConsumer consumer.Logs)
 	setNextMetricsConsumer(nextLogsConsumer consumer.Metrics)
 	setNextTracesConsumer(nextTracesConsumer consumer.Traces)
 }
 
 type eventLogsUnmarshaler interface {
-	UnmarshalLogs(event *eventhub.Event) (plog.Logs, error)
+	UnmarshalLogs(event *azureEvent) (plog.Logs, error)
 }
 
 type eventMetricsUnmarshaler interface {
-	UnmarshalMetrics(event *eventhub.Event) (pmetric.Metrics, error)
+	UnmarshalMetrics(event *azureEvent) (pmetric.Metrics, error)
 }
 
 type eventTracesUnmarshaler interface {
-	UnmarshalTraces(event *eventhub.Event) (ptrace.Traces, error)
+	UnmarshalTraces(event *azureEvent) (ptrace.Traces, error)
 }
 
 type eventhubReceiver struct {
@@ -74,7 +73,7 @@ func (receiver *eventhubReceiver) setNextTracesConsumer(nextTracesConsumer consu
 	receiver.nextTracesConsumer = nextTracesConsumer
 }
 
-func (receiver *eventhubReceiver) consume(ctx context.Context, event *eventhub.Event) error {
+func (receiver *eventhubReceiver) consume(ctx context.Context, event *azureEvent) error {
 	switch receiver.signal {
 	case pipeline.SignalLogs:
 		return receiver.consumeLogs(ctx, event)
@@ -87,8 +86,7 @@ func (receiver *eventhubReceiver) consume(ctx context.Context, event *eventhub.E
 	}
 }
 
-func (receiver *eventhubReceiver) consumeLogs(ctx context.Context, event *eventhub.Event) error {
-
+func (receiver *eventhubReceiver) consumeLogs(ctx context.Context, event *azureEvent) error {
 	if receiver.nextLogsConsumer == nil {
 		return nil
 	}
@@ -111,8 +109,7 @@ func (receiver *eventhubReceiver) consumeLogs(ctx context.Context, event *eventh
 	return err
 }
 
-func (receiver *eventhubReceiver) consumeMetrics(ctx context.Context, event *eventhub.Event) error {
-
+func (receiver *eventhubReceiver) consumeMetrics(ctx context.Context, event *azureEvent) error {
 	if receiver.nextMetricsConsumer == nil {
 		return nil
 	}
@@ -136,8 +133,7 @@ func (receiver *eventhubReceiver) consumeMetrics(ctx context.Context, event *eve
 	return err
 }
 
-func (receiver *eventhubReceiver) consumeTraces(ctx context.Context, event *eventhub.Event) error {
-
+func (receiver *eventhubReceiver) consumeTraces(ctx context.Context, event *azureEvent) error {
 	if receiver.nextTracesConsumer == nil {
 		return nil
 	}
@@ -169,7 +165,6 @@ func newReceiver(
 	eventHandler *eventhubHandler,
 	settings receiver.Settings,
 ) (component.Component, error) {
-
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             settings.ID,
 		Transport:              "event",

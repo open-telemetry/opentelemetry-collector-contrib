@@ -4,7 +4,6 @@
 package azureblobreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver"
 
 import (
-	"context"
 	"testing"
 
 	eventhub "github.com/Azure/azure-event-hubs-go/v3"
@@ -30,7 +29,7 @@ func TestNewBlobEventHandler(t *testing.T) {
 	assert.Equal(t, blobClient, blobEventHandler.blobClient)
 }
 
-func TestNewMessageHangdler(t *testing.T) {
+func TestNewMessageHandler(t *testing.T) {
 	blobClient := newMockBlobClient()
 	blobEventHandler := getBlobEventHandler(t, blobClient)
 
@@ -40,17 +39,16 @@ func TestNewMessageHangdler(t *testing.T) {
 	blobEventHandler.setTracesDataConsumer(tracesDataConsumer)
 
 	logEvent := getEvent(logEventData)
-	err := blobEventHandler.newMessageHandler(context.Background(), logEvent)
+	err := blobEventHandler.newMessageHandler(t.Context(), logEvent)
 	require.NoError(t, err)
 
 	traceEvent := getEvent(traceEventData)
-	err = blobEventHandler.newMessageHandler(context.Background(), traceEvent)
+	err = blobEventHandler.newMessageHandler(t.Context(), traceEvent)
 	require.NoError(t, err)
 
 	logsDataConsumer.AssertNumberOfCalls(t, "consumeLogsJSON", 1)
 	tracesDataConsumer.AssertNumberOfCalls(t, "consumeTracesJSON", 1)
 	blobClient.AssertNumberOfCalls(t, "readBlob", 2)
-
 }
 
 func getEvent(eventData []byte) *eventhub.Event {

@@ -1,2 +1,2 @@
-Receiver: otlp
-Exporter: otlp
+Receiver: otlp, stef
+Exporter: otlp, stef

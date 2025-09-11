@@ -12,14 +12,16 @@ import (
 	"cloud.google.com/go/pubsub/apiv1/pubsubpb"
 	"cloud.google.com/go/pubsub/pstest"
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap/zaptest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver/internal/metadata"
 )
 
 func TestCancelStream(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 	srv := pstest.NewServer()
 	defer srv.Close()
@@ -41,10 +43,13 @@ func TestCancelStream(t *testing.T) {
 	})
 	assert.NoError(t, err)
 
+	settings := receivertest.NewNopSettings(metadata.Type)
+	telemetryBuilder, _ := metadata.NewTelemetryBuilder(settings.TelemetrySettings)
+
 	client, err := pubsub.NewSubscriberClient(ctx, copts...)
 	assert.NoError(t, err)
 
-	handler, err := NewHandler(ctx, zaptest.NewLogger(t), client, "client-id", "projects/my-project/subscriptions/otlp",
+	handler, err := NewHandler(ctx, settings, telemetryBuilder, client, "client-id", "projects/my-project/subscriptions/otlp",
 		func(context.Context, *pubsubpb.ReceivedMessage) error {
 			return nil
 		})

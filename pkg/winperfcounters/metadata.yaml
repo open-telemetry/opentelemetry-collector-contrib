@@ -1,3 +1,5 @@
 status:
+  disable_codecov_badge: true
+  class: "pkg"
   codeowners:
-    active: [dashpole, Mrod1598, BinaryFissionGames, alxbl, pjanotti]
+    active: [dashpole, Mrod1598, alxbl, pjanotti]

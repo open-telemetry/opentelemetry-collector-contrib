@@ -53,7 +53,7 @@ func buildEventFromSpan(
 	}
 
 	attrs["sca:schema"] = "tracing"
-	attrs["sca:schemVer"] = 1
+	attrs["sca:schemaVer"] = 1
 	attrs["sca:type"] = "span"
 
 	attrs["name"] = span.Name()
@@ -88,8 +88,10 @@ func buildEventFromSpan(
 	}
 }
 
-const resourceName = "resource_name"
-const resourceType = "resource_type"
+const (
+	resourceName = "resource_name"
+	resourceType = "resource_type"
+)
 
 type ResourceType string
 
@@ -98,7 +100,7 @@ const (
 	Process = ResourceType("process")
 )
 
-func updateResource(attrs map[string]any, resource map[string]any) {
+func updateResource(attrs, resource map[string]any) {
 	// first detect, whether there is key service.name
 	// if it's there, we are done
 	name, found := resource["service.name"]
@@ -134,7 +136,7 @@ type spanBundle struct {
 }
 
 func buildEventsFromTraces(ld ptrace.Traces, serverHost string, settings TracesSettings) []*add_events.EventBundle {
-	var spans = make([]spanBundle, 0)
+	spans := make([]spanBundle, 0)
 
 	// convert spans into events
 	resourceSpans := ld.ResourceSpans()
@@ -159,6 +161,6 @@ func buildEventsFromTraces(ld ptrace.Traces, serverHost string, settings TracesS
 	return events
 }
 
-func (e *DatasetExporter) consumeTraces(_ context.Context, ld ptrace.Traces) error {
+func (e *datasetExporter) consumeTraces(_ context.Context, ld ptrace.Traces) error {
 	return sendBatch(buildEventsFromTraces(ld, e.serverHost, e.exporterCfg.tracesSettings), e.client)
 }

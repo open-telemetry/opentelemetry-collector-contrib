@@ -6,7 +6,6 @@ package testbed // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"path"
@@ -52,16 +51,18 @@ type PerformanceResults struct {
 
 // PerformanceTestResult reports the results of a single performance test.
 type PerformanceTestResult struct {
-	testName          string
-	result            string
-	duration          time.Duration
-	cpuPercentageAvg  float64
-	cpuPercentageMax  float64
-	ramMibAvg         uint32
-	ramMibMax         uint32
-	sentSpanCount     uint64
-	receivedSpanCount uint64
-	errorCause        string
+	testName           string
+	result             string
+	duration           time.Duration
+	cpuPercentageAvg   float64
+	cpuPercentageMax   float64
+	cpuPercentageLimit float64
+	ramMibAvg          uint32
+	ramMibMax          uint32
+	ramMibLimit        uint32
+	sentSpanCount      uint64
+	receivedSpanCount  uint64
+	errorCause         string
 }
 
 func (r *PerformanceResults) Init(resultsDir string) {
@@ -70,7 +71,7 @@ func (r *PerformanceResults) Init(resultsDir string) {
 	r.benchmarkResults = []*benchmarkResult{}
 
 	// Create resultsSummary file
-	if err := os.MkdirAll(resultsDir, os.FileMode(0755)); err != nil {
+	if err := os.MkdirAll(resultsDir, os.FileMode(0o755)); err != nil {
 		log.Fatal(err)
 	}
 	var err error
@@ -80,17 +81,19 @@ func (r *PerformanceResults) Init(resultsDir string) {
 	}
 
 	// Write the header
-	_, _ = io.WriteString(r.resultsFile,
-		"# Test PerformanceResults\n"+
-			fmt.Sprintf("Started: %s\n\n", time.Now().Format(time.RFC1123Z))+
-			"Test                                    |Result|Duration|CPU Avg%|CPU Max%|RAM Avg MiB|RAM Max MiB|Sent Items|Received Items|\n"+
-			"----------------------------------------|------|-------:|-------:|-------:|----------:|----------:|---------:|-------------:|\n")
+	_, _ = fmt.Fprintf(r.resultsFile, `# Test PerformanceResults
+Started: %s
+
+Test                                    |Result|Duration|CPU Avg%%|CPU Max%%|CPU Limit|RAM Avg MiB|RAM Max MiB|RAM Limit MiB|Sent Items|Received Items|
+----------------------------------------|------|-------:|-------:|-------:|--------:|----------:|----------:|------------:|---------:|-------------:|
+`, time.Now().Format(time.RFC1123Z))
 }
 
 // Save the total results and close the file.
 func (r *PerformanceResults) Save() {
-	_, _ = io.WriteString(r.resultsFile,
-		fmt.Sprintf("\nTotal duration: %.0fs\n", r.totalDuration.Seconds()))
+	_, _ = fmt.Fprintf(r.resultsFile,
+		"\nTotal duration: %.0fs\n",
+		r.totalDuration.Seconds())
 	r.resultsFile.Close()
 	r.saveBenchmarks()
 }
@@ -102,19 +105,20 @@ func (r *PerformanceResults) Add(_ string, result any) {
 		return
 	}
 
-	_, _ = io.WriteString(r.resultsFile,
-		fmt.Sprintf("%-40s|%-6s|%7.0fs|%8.1f|%8.1f|%11d|%11d|%10d|%14d|%s\n",
-			testResult.testName,
-			testResult.result,
-			testResult.duration.Seconds(),
-			testResult.cpuPercentageAvg,
-			testResult.cpuPercentageMax,
-			testResult.ramMibAvg,
-			testResult.ramMibMax,
-			testResult.sentSpanCount,
-			testResult.receivedSpanCount,
-			testResult.errorCause,
-		),
+	_, _ = fmt.Fprintf(r.resultsFile,
+		"%-40s|%-6s|%7.0fs|%8.1f|%8.1f|%8.1f|%11d|%11d|%11d|%10d|%14d|%s\n",
+		testResult.testName,
+		testResult.result,
+		testResult.duration.Seconds(),
+		testResult.cpuPercentageAvg,
+		testResult.cpuPercentageMax,
+		testResult.cpuPercentageLimit,
+		testResult.ramMibAvg,
+		testResult.ramMibMax,
+		testResult.ramMibLimit,
+		testResult.sentSpanCount,
+		testResult.receivedSpanCount,
+		testResult.errorCause,
 	)
 	r.totalDuration += testResult.duration
 
@@ -123,30 +127,48 @@ func (r *PerformanceResults) Add(_ string, result any) {
 	memoryChartName := fmt.Sprintf("%s - RAM (MiB)", testResult.testName)
 	droppedSpansChartName := fmt.Sprintf("%s - Dropped Span Count", testResult.testName)
 
-	r.benchmarkResults = append(r.benchmarkResults, &benchmarkResult{
-		Name:  "cpu_percentage_avg",
-		Value: testResult.cpuPercentageAvg,
-		Unit:  "%",
-		Extra: cpuChartName,
-	})
-	r.benchmarkResults = append(r.benchmarkResults, &benchmarkResult{
-		Name:  "cpu_percentage_max",
-		Value: testResult.cpuPercentageMax,
-		Unit:  "%",
-		Extra: cpuChartName,
-	})
-	r.benchmarkResults = append(r.benchmarkResults, &benchmarkResult{
-		Name:  "ram_mib_avg",
-		Value: float64(testResult.ramMibAvg),
-		Unit:  "MiB",
-		Extra: memoryChartName,
-	})
-	r.benchmarkResults = append(r.benchmarkResults, &benchmarkResult{
-		Name:  "ram_mib_max",
-		Value: float64(testResult.ramMibMax),
-		Unit:  "MiB",
-		Extra: memoryChartName,
-	})
+	r.benchmarkResults = append(r.benchmarkResults,
+		&benchmarkResult{
+			Name:  "cpu_percentage_avg",
+			Value: testResult.cpuPercentageAvg,
+			Unit:  "%",
+			Extra: cpuChartName,
+		},
+		&benchmarkResult{
+			Name:  "cpu_percentage_max",
+			Value: testResult.cpuPercentageMax,
+			Unit:  "%",
+			Extra: cpuChartName,
+		})
+	if testResult.cpuPercentageLimit > 0 {
+		r.benchmarkResults = append(r.benchmarkResults, &benchmarkResult{
+			Name:  "cpu_percentage_limit",
+			Value: testResult.cpuPercentageLimit,
+			Unit:  "%",
+			Extra: cpuChartName,
+		})
+	}
+	r.benchmarkResults = append(r.benchmarkResults,
+		&benchmarkResult{
+			Name:  "ram_mib_avg",
+			Value: float64(testResult.ramMibAvg),
+			Unit:  "MiB",
+			Extra: memoryChartName,
+		},
+		&benchmarkResult{
+			Name:  "ram_mib_max",
+			Value: float64(testResult.ramMibMax),
+			Unit:  "MiB",
+			Extra: memoryChartName,
+		})
+	if testResult.ramMibLimit > 0 {
+		r.benchmarkResults = append(r.benchmarkResults, &benchmarkResult{
+			Name:  "ram_mib_limit",
+			Value: float64(testResult.ramMibLimit),
+			Unit:  "MiB",
+			Extra: memoryChartName,
+		})
+	}
 	r.benchmarkResults = append(r.benchmarkResults, &benchmarkResult{
 		Name:  "dropped_span_count",
 		Value: float64(testResult.sentSpanCount - testResult.receivedSpanCount),
@@ -160,7 +182,7 @@ func (r *PerformanceResults) Add(_ string, result any) {
 func (r *PerformanceResults) saveBenchmarks() {
 	path := path.Join(r.resultsDir, "benchmarks.json")
 	j, _ := json.MarshalIndent(r.benchmarkResults, "", "  ")
-	_ = os.WriteFile(path, j, 0600)
+	_ = os.WriteFile(path, j, 0o600)
 }
 
 // CorrectnessResults implements the TestResultsSummary interface with fields suitable for reporting data translation
@@ -202,7 +224,7 @@ func (r *CorrectnessResults) Init(resultsDir string) {
 	r.perTestResults = []*CorrectnessTestResult{}
 
 	// Create resultsSummary file
-	if err := os.MkdirAll(resultsDir, os.FileMode(0755)); err != nil {
+	if err := os.MkdirAll(resultsDir, os.FileMode(0o755)); err != nil {
 		log.Fatal(err)
 	}
 	var err error
@@ -212,11 +234,12 @@ func (r *CorrectnessResults) Init(resultsDir string) {
 	}
 
 	// Write the header
-	_, _ = io.WriteString(r.resultsFile,
-		"# Test Results\n"+
-			fmt.Sprintf("Started: %s\n\n", time.Now().Format(time.RFC1123Z))+
-			"Test                                    |Result|Duration|Sent Items|Received Items|Failure Count|Failures\n"+
-			"----------------------------------------|------|-------:|---------:|-------------:|------------:|--------\n")
+	_, _ = fmt.Fprintf(r.resultsFile, `# Test Results
+Started: %s
+
+Test                                    |Result|Duration|Sent Items|Received Items|Failure Count|Failures
+----------------------------------------|------|-------:|---------:|-------------:|------------:|--------
+`, time.Now().Format(time.RFC1123Z))
 }
 
 func (r *CorrectnessResults) Add(_ string, result any) {
@@ -230,16 +253,14 @@ func (r *CorrectnessResults) Add(_ string, result any) {
 		failuresStr = fmt.Sprintf("%s%s,%#v!=%#v,count=%d; ", failuresStr, af.fieldPath, af.expectedValue,
 			af.actualValue, af.sumCount)
 	}
-	_, _ = io.WriteString(r.resultsFile,
-		fmt.Sprintf("%-40s|%-6s|%7.0fs|%10d|%14d|%13d|%s\n",
-			testResult.testName,
-			testResult.result,
-			testResult.duration.Seconds(),
-			testResult.sentSpanCount,
-			testResult.receivedSpanCount,
-			testResult.traceAssertionFailureCount,
-			failuresStr,
-		),
+	_, _ = fmt.Fprintf(r.resultsFile, "%-40s|%-6s|%7.0fs|%10d|%14d|%13d|%s\n",
+		testResult.testName,
+		testResult.result,
+		testResult.duration.Seconds(),
+		testResult.sentSpanCount,
+		testResult.receivedSpanCount,
+		testResult.traceAssertionFailureCount,
+		failuresStr,
 	)
 	r.perTestResults = append(r.perTestResults, testResult)
 	r.totalAssertionFailures += testResult.traceAssertionFailureCount
@@ -247,10 +268,8 @@ func (r *CorrectnessResults) Add(_ string, result any) {
 }
 
 func (r *CorrectnessResults) Save() {
-	_, _ = io.WriteString(r.resultsFile,
-		fmt.Sprintf("\nTotal assertion failures: %d\n", r.totalAssertionFailures))
-	_, _ = io.WriteString(r.resultsFile,
-		fmt.Sprintf("\nTotal duration: %.0fs\n", r.totalDuration.Seconds()))
+	_, _ = fmt.Fprintf(r.resultsFile, "\nTotal assertion failures: %d\n", r.totalAssertionFailures)
+	_, _ = fmt.Fprintf(r.resultsFile, "\nTotal duration: %.0fs\n", r.totalDuration.Seconds())
 	r.resultsFile.Close()
 }
 

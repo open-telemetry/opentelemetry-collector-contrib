@@ -42,7 +42,8 @@ type encodeModel struct {
 func (m *encodeModel) encodeLog(resource pcommon.Resource,
 	scope pcommon.InstrumentationScope,
 	schemaURL string,
-	record plog.LogRecord) ([]byte, error) {
+	record plog.LogRecord,
+) ([]byte, error) {
 	if m.sso {
 		return m.encodeLogSSO(resource, scope, schemaURL, record)
 	}

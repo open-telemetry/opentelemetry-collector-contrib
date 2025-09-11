@@ -20,13 +20,13 @@ func TestUnmarshal(t *testing.T) {
 		TestsFile:     filepath.Join(".", "testdata", "config.yaml"),
 		Tests: []operatortest.ConfigUnmarshalTest{
 			{
-				Name:      "default",
-				ExpectErr: false,
-				Expect:    NewConfig(),
+				Name:               "default",
+				ExpectUnmarshalErr: false,
+				Expect:             NewConfig(),
 			},
 			{
-				Name:      "tcp",
-				ExpectErr: false,
+				Name:               "tcp",
+				ExpectUnmarshalErr: false,
 				Expect: func() *Config {
 					cfg := NewConfig()
 					cfg.Protocol = "rfc3164"
@@ -51,12 +51,13 @@ func TestUnmarshal(t *testing.T) {
 				}(),
 			},
 			{
-				Name:      "udp",
-				ExpectErr: false,
+				Name:               "udp",
+				ExpectUnmarshalErr: false,
 				Expect: func() *Config {
 					cfg := NewConfig()
 					cfg.Protocol = "rfc5424"
 					cfg.Location = "foo"
+					cfg.OnError = "send_quiet"
 					cfg.UDP = &udp.NewConfig().BaseConfig
 					cfg.UDP.ListenAddress = "10.0.0.1:9000"
 					cfg.UDP.AddAttributes = true

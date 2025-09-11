@@ -5,6 +5,7 @@ package ottl // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 	"testing"
@@ -61,7 +62,7 @@ func threePointOne[K any]() (ExprFunc[K], error) {
 	}, nil
 }
 
-func testTime[K any](time string, format string) (ExprFunc[K], error) {
+func testTime[K any](time, format string) (ExprFunc[K], error) {
 	loc, err := timeutils.GetLocation(nil, &format)
 	if err != nil {
 		return nil, err
@@ -79,7 +80,7 @@ func testDuration[K any](duration string) (ExprFunc[K], error) {
 			return dur, err
 		}, nil
 	}
-	return nil, fmt.Errorf("duration cannot be empty")
+	return nil, errors.New("duration cannot be empty")
 }
 
 type sumArguments struct {
@@ -106,32 +107,32 @@ func Test_evaluateMathExpression(t *testing.T) {
 		{
 			name:     "simple subtraction",
 			input:    "1000 - 600",
-			expected: 400,
+			expected: int64(400),
 		},
 		{
 			name:     "simple division",
 			input:    "1 / 1",
-			expected: 1,
+			expected: int64(1),
 		},
 		{
 			name:     "subtraction and addition",
 			input:    "1000 - 600 + 1",
-			expected: 401,
+			expected: int64(401),
 		},
 		{
 			name:     "order of operations",
 			input:    "10 - 6 * 2 + 2",
-			expected: 0,
+			expected: int64(0),
 		},
 		{
 			name:     "parentheses",
 			input:    "30 - 6 * (2 + 2)",
-			expected: 6,
+			expected: int64(6),
 		},
 		{
 			name:     "complex",
 			input:    "(4 * 2) + 1 + 1 - 3 / 3 + ( 2 + 1 - (6 / 3))",
-			expected: 10,
+			expected: int64(10),
 		},
 		{
 			name:     "floats",
@@ -146,7 +147,7 @@ func Test_evaluateMathExpression(t *testing.T) {
 		{
 			name:     "int paths",
 			input:    "one + two",
-			expected: 3,
+			expected: int64(3),
 		},
 		{
 			name:     "float paths",
@@ -156,7 +157,7 @@ func Test_evaluateMathExpression(t *testing.T) {
 		{
 			name:     "int functions",
 			input:    "One() + Two()",
-			expected: 3,
+			expected: int64(3),
 		},
 		{
 			name:     "functions",
@@ -166,32 +167,32 @@ func Test_evaluateMathExpression(t *testing.T) {
 		{
 			name:     "functions",
 			input:    "Sum([1, 2, 3, 4]) / (1 * 10)",
-			expected: 1,
+			expected: int64(1),
 		},
 		{
 			name:     "int division",
 			input:    "10 / 3",
-			expected: 3,
+			expected: int64(3),
 		},
 		{
 			name:     "multiply large ints",
 			input:    "9223372036854775807 * 9223372036854775807",
-			expected: 1,
+			expected: int64(1),
 		},
 		{
 			name:     "division by large ints",
 			input:    "9223372036854775807 / 9223372036854775807",
-			expected: 1,
+			expected: int64(1),
 		},
 		{
 			name:     "add large ints",
 			input:    "9223372036854775807 + 9223372036854775807",
-			expected: -2,
+			expected: int64(-2),
 		},
 		{
 			name:     "subtraction by large ints",
 			input:    "9223372036854775807 - 9223372036854775807",
-			expected: 0,
+			expected: int64(0),
 		},
 		{
 			name:     "multiply large floats",
@@ -201,7 +202,7 @@ func Test_evaluateMathExpression(t *testing.T) {
 		{
 			name:     "division by large floats",
 			input:    "1.79769313486231570814527423731704356798070e+308 / 1.79769313486231570814527423731704356798070e+308",
-			expected: 1,
+			expected: float64(1),
 		},
 		{
 			name:     "add large numbers",
@@ -211,7 +212,7 @@ func Test_evaluateMathExpression(t *testing.T) {
 		{
 			name:     "subtraction by large numbers",
 			input:    "1.79769313486231570814527423731704356798070e+308 - 1.79769313486231570814527423731704356798070e+308",
-			expected: 0,
+			expected: float64(0),
 		},
 		{
 			name:     "x is float, y is int",
@@ -249,10 +250,10 @@ func Test_evaluateMathExpression(t *testing.T) {
 			getter, err := p.evaluateMathExpression(parsed.MathExpression)
 			assert.NoError(t, err)
 
-			result, err := getter.Get(context.Background(), nil)
+			result, err := getter.Get(t.Context(), nil)
 			assert.NoError(t, err)
 
-			assert.EqualValues(t, tt.expected, result)
+			assert.Equal(t, tt.expected, result)
 		})
 	}
 }
@@ -571,12 +572,11 @@ func Test_evaluateMathExpression_error(t *testing.T) {
 					assert.Error(t, err)
 					assert.ErrorContains(t, err, tt.errorMsg)
 				} else {
-					result, err := getter.Get(context.Background(), nil)
+					result, err := getter.Get(t.Context(), nil)
 					assert.Nil(t, result)
 					assert.Error(t, err)
 					assert.ErrorContains(t, err, tt.errorMsg)
 				}
-
 			} else {
 				parsed, err := mathParser.ParseString("", tt.input)
 				assert.NoError(t, err)
@@ -584,11 +584,10 @@ func Test_evaluateMathExpression_error(t *testing.T) {
 				getter, err := p.evaluateMathExpression(parsed.MathExpression)
 				assert.NoError(t, err)
 
-				result, err := getter.Get(context.Background(), nil)
+				result, err := getter.Get(t.Context(), nil)
 				assert.Nil(t, result)
 				assert.Error(t, err)
 			}
-
 		})
 	}
 }
@@ -623,7 +622,7 @@ func Test_evaluateMathExpressionTimeDuration(t *testing.T) {
 	tenHoursetc, err := time.ParseDuration("10h47m48s11ns")
 	require.NoError(t, err)
 
-	var tests = []struct {
+	tests := []struct {
 		name     string
 		mathExpr *mathExpression
 		expected any
@@ -1151,7 +1150,7 @@ func Test_evaluateMathExpressionTimeDuration(t *testing.T) {
 		getter, err := p.evaluateMathExpression(tt.mathExpr)
 		assert.NoError(t, err)
 
-		result, err := getter.Get(context.Background(), nil)
+		result, err := getter.Get(t.Context(), nil)
 		assert.NoError(t, err)
 		assert.Equal(t, tt.expected, result)
 	}

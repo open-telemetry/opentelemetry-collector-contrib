@@ -42,9 +42,7 @@ rpc_duration_seconds_sum 5000
 rpc_duration_seconds_count 1000
 `
 
-var (
-	totalScrapes = 10
-)
+var totalScrapes = 10
 
 // TestStaleNaNs validates that staleness marker gets generated when the timeseries is no longer present
 func TestStaleNaNs(t *testing.T) {
@@ -92,10 +90,11 @@ func verifyStaleNaNsSuccessfulScrape(t *testing.T, td *testData, resourceMetric 
 	wantAttributes := td.attributes // should want attribute be part of complete target or each scrape?
 	metrics1 := resourceMetric.ScopeMetrics().At(0).Metrics()
 	ts1 := getTS(metrics1)
-	e1 := []testExpectation{
-		assertMetricPresent("go_threads",
-			compareMetricType(pmetric.MetricTypeGauge),
-			compareMetricUnit(""),
+	e1 := []metricExpectation{
+		{
+			"go_threads",
+			pmetric.MetricTypeGauge,
+			"",
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -103,10 +102,13 @@ func verifyStaleNaNsSuccessfulScrape(t *testing.T, td *testData, resourceMetric 
 						compareDoubleValue(19),
 					},
 				},
-			}),
-		assertMetricPresent("http_requests_total",
-			compareMetricType(pmetric.MetricTypeSum),
-			compareMetricUnit(""),
+			},
+			nil,
+		},
+		{
+			"http_requests_total",
+			pmetric.MetricTypeSum,
+			"",
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -124,10 +126,13 @@ func verifyStaleNaNsSuccessfulScrape(t *testing.T, td *testData, resourceMetric 
 						compareAttributes(map[string]string{"method": "post", "code": "400"}),
 					},
 				},
-			}),
-		assertMetricPresent("http_request_duration_seconds",
-			compareMetricType(pmetric.MetricTypeHistogram),
-			compareMetricUnit(""),
+			},
+			nil,
+		},
+		{
+			"http_request_duration_seconds",
+			pmetric.MetricTypeHistogram,
+			"",
 			[]dataPointExpectation{
 				{
 					histogramPointComparator: []histogramPointComparator{
@@ -136,10 +141,13 @@ func verifyStaleNaNsSuccessfulScrape(t *testing.T, td *testData, resourceMetric 
 						compareHistogram(2500, 5000, []float64{0.05, 0.5, 1}, []uint64{1000, 500, 500, 500}),
 					},
 				},
-			}),
-		assertMetricPresent("rpc_duration_seconds",
-			compareMetricType(pmetric.MetricTypeSummary),
-			compareMetricUnit(""),
+			},
+			nil,
+		},
+		{
+			"rpc_duration_seconds",
+			pmetric.MetricTypeSummary,
+			"",
 			[]dataPointExpectation{
 				{
 					summaryPointComparator: []summaryPointComparator{
@@ -148,7 +156,9 @@ func verifyStaleNaNsSuccessfulScrape(t *testing.T, td *testData, resourceMetric 
 						compareSummary(1000, 5000, [][]float64{{0.01, 1}, {0.9, 5}, {0.99, 8}}),
 					},
 				},
-			}),
+			},
+			nil,
+		},
 	}
 	doCompare(t, fmt.Sprintf("validScrape-scrape-%d", iteration), wantAttributes, resourceMetric, e1)
 }
@@ -162,10 +172,11 @@ func verifyStaleNaNsFailedScrape(t *testing.T, td *testData, resourceMetric pmet
 
 	metrics1 := resourceMetric.ScopeMetrics().At(0).Metrics()
 	ts1 := getTS(metrics1)
-	e1 := []testExpectation{
-		assertMetricPresent("go_threads",
-			compareMetricType(pmetric.MetricTypeGauge),
-			compareMetricUnit(""),
+	e1 := []metricExpectation{
+		{
+			"go_threads",
+			pmetric.MetricTypeGauge,
+			"",
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -173,10 +184,13 @@ func verifyStaleNaNsFailedScrape(t *testing.T, td *testData, resourceMetric pmet
 						assertNumberPointFlagNoRecordedValue(),
 					},
 				},
-			}),
-		assertMetricPresent("http_requests_total",
-			compareMetricType(pmetric.MetricTypeSum),
-			compareMetricUnit(""),
+			},
+			nil,
+		},
+		{
+			"http_requests_total",
+			pmetric.MetricTypeSum,
+			"",
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -192,10 +206,13 @@ func verifyStaleNaNsFailedScrape(t *testing.T, td *testData, resourceMetric pmet
 						assertNumberPointFlagNoRecordedValue(),
 					},
 				},
-			}),
-		assertMetricPresent("http_request_duration_seconds",
-			compareMetricType(pmetric.MetricTypeHistogram),
-			compareMetricUnit(""),
+			},
+			nil,
+		},
+		{
+			"http_request_duration_seconds",
+			pmetric.MetricTypeHistogram,
+			"",
 			[]dataPointExpectation{
 				{
 					histogramPointComparator: []histogramPointComparator{
@@ -204,10 +221,13 @@ func verifyStaleNaNsFailedScrape(t *testing.T, td *testData, resourceMetric pmet
 						assertHistogramPointFlagNoRecordedValue(),
 					},
 				},
-			}),
-		assertMetricPresent("rpc_duration_seconds",
-			compareMetricType(pmetric.MetricTypeSummary),
-			compareMetricUnit(""),
+			},
+			nil,
+		},
+		{
+			"rpc_duration_seconds",
+			pmetric.MetricTypeSummary,
+			"",
 			[]dataPointExpectation{
 				{
 					summaryPointComparator: []summaryPointComparator{
@@ -216,7 +236,9 @@ func verifyStaleNaNsFailedScrape(t *testing.T, td *testData, resourceMetric pmet
 						assertSummaryPointFlagNoRecordedValue(),
 					},
 				},
-			}),
+			},
+			nil,
+		},
 	}
 	doCompare(t, fmt.Sprintf("failedScrape-scrape-%d", iteration), wantAttributes, resourceMetric, e1)
 }
@@ -266,10 +288,11 @@ func verifyNormalNaNs(t *testing.T, td *testData, resourceMetrics []pmetric.Reso
 
 	metrics1 := m1.ScopeMetrics().At(0).Metrics()
 	ts1 := getTS(metrics1)
-	e1 := []testExpectation{
-		assertMetricPresent("go_threads",
-			compareMetricType(pmetric.MetricTypeGauge),
-			compareMetricUnit(""),
+	e1 := []metricExpectation{
+		{
+			"go_threads",
+			pmetric.MetricTypeGauge,
+			"",
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -277,10 +300,13 @@ func verifyNormalNaNs(t *testing.T, td *testData, resourceMetrics []pmetric.Reso
 						assertNormalNan(),
 					},
 				},
-			}),
-		assertMetricPresent("redis_connected_clients",
-			compareMetricType(pmetric.MetricTypeGauge),
-			compareMetricUnit(""),
+			},
+			nil,
+		},
+		{
+			"redis_connected_clients",
+			pmetric.MetricTypeGauge,
+			"",
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -289,20 +315,28 @@ func verifyNormalNaNs(t *testing.T, td *testData, resourceMetrics []pmetric.Reso
 						assertNormalNan(),
 					},
 				},
-			}),
-		assertMetricPresent("rpc_duration_seconds",
-			compareMetricType(pmetric.MetricTypeSummary),
-			compareMetricUnit(""),
+			},
+			nil,
+		},
+		{
+			"rpc_duration_seconds",
+			pmetric.MetricTypeSummary,
+			"",
 			[]dataPointExpectation{
 				{
 					summaryPointComparator: []summaryPointComparator{
 						compareSummaryStartTimestamp(ts1),
 						compareSummaryTimestamp(ts1),
-						compareSummary(1000, 5000, [][]float64{{0.01, math.Float64frombits(value.NormalNaN)},
-							{0.9, math.Float64frombits(value.NormalNaN)}, {0.99, math.Float64frombits(value.NormalNaN)}}),
+						compareSummary(1000, 5000, [][]float64{
+							{0.01, math.Float64frombits(value.NormalNaN)},
+							{0.9, math.Float64frombits(value.NormalNaN)},
+							{0.99, math.Float64frombits(value.NormalNaN)},
+						}),
 					},
 				},
-			}),
+			},
+			nil,
+		},
 	}
 	doCompare(t, "scrape-NormalNaN-1", wantAttributes, m1, e1)
 }
@@ -353,10 +387,11 @@ func verifyInfValues(t *testing.T, td *testData, resourceMetrics []pmetric.Resou
 
 	metrics1 := m1.ScopeMetrics().At(0).Metrics()
 	ts1 := getTS(metrics1)
-	e1 := []testExpectation{
-		assertMetricPresent("go_threads",
-			compareMetricType(pmetric.MetricTypeGauge),
-			compareMetricUnit(""),
+	e1 := []metricExpectation{
+		{
+			"go_threads",
+			pmetric.MetricTypeGauge,
+			"",
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -364,10 +399,13 @@ func verifyInfValues(t *testing.T, td *testData, resourceMetrics []pmetric.Resou
 						compareDoubleValue(math.Inf(1)),
 					},
 				},
-			}),
-		assertMetricPresent("redis_connected_clients",
-			compareMetricType(pmetric.MetricTypeGauge),
-			compareMetricUnit(""),
+			},
+			nil,
+		},
+		{
+			"redis_connected_clients",
+			pmetric.MetricTypeGauge,
+			"",
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -376,10 +414,13 @@ func verifyInfValues(t *testing.T, td *testData, resourceMetrics []pmetric.Resou
 						compareDoubleValue(math.Inf(-1)),
 					},
 				},
-			}),
-		assertMetricPresent("http_requests_total",
-			compareMetricType(pmetric.MetricTypeSum),
-			compareMetricUnit(""),
+			},
+			nil,
+		},
+		{
+			"http_requests_total",
+			pmetric.MetricTypeSum,
+			"",
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -389,10 +430,13 @@ func verifyInfValues(t *testing.T, td *testData, resourceMetrics []pmetric.Resou
 						compareAttributes(map[string]string{"method": "post", "code": "200"}),
 					},
 				},
-			}),
-		assertMetricPresent("rpc_duration_seconds",
-			compareMetricType(pmetric.MetricTypeSummary),
-			compareMetricUnit(""),
+			},
+			nil,
+		},
+		{
+			"rpc_duration_seconds",
+			pmetric.MetricTypeSummary,
+			"",
 			[]dataPointExpectation{
 				{
 					summaryPointComparator: []summaryPointComparator{
@@ -401,7 +445,9 @@ func verifyInfValues(t *testing.T, td *testData, resourceMetrics []pmetric.Resou
 						compareSummary(1000, 5000, [][]float64{{0.01, math.Inf(1)}, {0.9, math.Inf(1)}, {0.99, math.Inf(1)}}),
 					},
 				},
-			}),
+			},
+			nil,
+		},
 	}
 	doCompare(t, "scrape-InfValues-1", wantAttributes, m1, e1)
 }

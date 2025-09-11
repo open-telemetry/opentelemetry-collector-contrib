@@ -3,9 +3,7 @@ receivers:
   otlp:
     protocols:
       http:
-        endpoint: "localhost:4318"
-      grpc:
-        endpoint: "localhost:4317"
+        endpoint: ${env:OTLP_HTTP_SERVER}
 
 connectors:
   datadog/connector:
@@ -14,10 +12,9 @@ connectors:
 
 exporters:
   debug:
-    verbosity: detailed
   datadog:
     api:
-      key: "key"
+      key: "aaa"
     tls:
       insecure_skip_verify: true
     host_metadata:

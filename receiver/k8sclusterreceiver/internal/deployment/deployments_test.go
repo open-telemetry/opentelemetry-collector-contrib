@@ -27,7 +27,7 @@ func TestDeploymentMetrics(t *testing.T) {
 	dep := testutils.NewDeployment("1")
 
 	ts := pcommon.Timestamp(time.Now().UnixNano())
-	mb := metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings())
+	mb := metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type))
 	RecordMetrics(mb, dep, ts)
 	m := mb.Emit()
 
@@ -56,7 +56,7 @@ func TestDeploymentMetrics(t *testing.T) {
 func TestGoldenFile(t *testing.T) {
 	dep := testutils.NewDeployment("1")
 	ts := pcommon.Timestamp(time.Now().UnixNano())
-	mb := metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings())
+	mb := metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type))
 	RecordMetrics(mb, dep, ts)
 	m := mb.Emit()
 	expectedFile := filepath.Join("testdata", "expected.yaml")

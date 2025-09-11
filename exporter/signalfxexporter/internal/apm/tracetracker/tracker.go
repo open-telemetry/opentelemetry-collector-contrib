@@ -11,7 +11,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.26.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.26.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/apm/correlations"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/apm/log"
@@ -69,8 +69,6 @@ type ActiveServiceTracker struct {
 func (a *ActiveServiceTracker) LoadHostIDDimCorrelations() {
 	// asynchronously fetch all services and environments for each hostIDDim at startup
 	for dimName, dimValue := range a.hostIDDims {
-		dimName := dimName
-		dimValue := dimValue
 		a.correlationClient.Get(dimName, dimValue, func(correlations map[string][]string) {
 			if services, ok := correlations["sf_services"]; ok {
 				for _, service := range services {
@@ -142,7 +140,7 @@ func (a *ActiveServiceTracker) processEnvironment(res pcommon.Resource, now time
 	// Then, try "environment" attribute (SignalFx schema).
 	// Otherwise, use the same fallback value as set on the backend.
 	var environment string
-	if env, ok := attrs.Get(conventions.AttributeDeploymentEnvironment); ok {
+	if env, ok := attrs.Get(string(conventions.DeploymentEnvironmentKey)); ok {
 		environment = env.Str()
 	} else if env, ok = attrs.Get("environment"); ok {
 		environment = env.Str()
@@ -166,9 +164,9 @@ func (a *ActiveServiceTracker) processEnvironment(res pcommon.Resource, now time
 					if err == nil {
 						a.hostEnvironmentCache.UpdateOrCreate(&CacheKey{value: environment}, now)
 					}
-					// nolint:errorlint
-					if max, ok := err.(*correlations.ErrMaxEntries); ok && max.MaxEntries > 0 {
-						a.hostEnvironmentCache.SetMaxSize(max.MaxEntries, now)
+					//nolint:errorlint
+					if maxEntry, ok := err.(*correlations.ErrMaxEntries); ok && maxEntry.MaxEntries > 0 {
+						a.hostEnvironmentCache.SetMaxSize(maxEntry.MaxEntries, now)
 					}
 				})
 			}
@@ -179,8 +177,6 @@ func (a *ActiveServiceTracker) processEnvironment(res pcommon.Resource, now time
 	// container / pod level stuff
 	// this cache is necessary to identify environments associated with a kubernetes pod or container id
 	for sourceAttr, dimName := range a.dimsToSyncSource {
-		sourceAttr := sourceAttr
-		dimName := dimName
 		if val, ok := attrs.Get(sourceAttr); ok {
 			// Note that the value is not set on the cache key.  We only send the first environment received for a
 			// given pod/container, and we never delete the values set on the container/pod dimension.
@@ -203,7 +199,7 @@ func (a *ActiveServiceTracker) processEnvironment(res pcommon.Resource, now time
 
 func (a *ActiveServiceTracker) processService(res pcommon.Resource, now time.Time) {
 	// Can't do anything if the spans don't have a local service name
-	serviceNameAttr, ok := res.Attributes().Get(conventions.AttributeServiceName)
+	serviceNameAttr, ok := res.Attributes().Get(string(conventions.ServiceNameKey))
 	service := serviceNameAttr.Str()
 	if !ok || service == "" {
 		return
@@ -225,9 +221,9 @@ func (a *ActiveServiceTracker) processService(res pcommon.Resource, now time.Tim
 					if err == nil {
 						a.hostServiceCache.UpdateOrCreate(&CacheKey{value: service}, now)
 					}
-					// nolint:errorlint
-					if max, ok := err.(*correlations.ErrMaxEntries); ok && max.MaxEntries > 0 {
-						a.hostServiceCache.SetMaxSize(max.MaxEntries, now)
+					//nolint:errorlint
+					if maxEntry, ok := err.(*correlations.ErrMaxEntries); ok && maxEntry.MaxEntries > 0 {
+						a.hostServiceCache.SetMaxSize(maxEntry.MaxEntries, now)
 					}
 				})
 			}
@@ -239,8 +235,6 @@ func (a *ActiveServiceTracker) processService(res pcommon.Resource, now time.Tim
 	// container / pod level stuff (this should not directly affect the active service count)
 	// this cache is necessary to identify services associated with a kubernetes pod or container id
 	for sourceAttr, dimName := range a.dimsToSyncSource {
-		sourceAttr := sourceAttr
-		dimName := dimName
 		if val, ok := res.Attributes().Get(sourceAttr); ok {
 			// Note that the value is not set on the cache key.  We only send the first service received for a
 			// given pod/container, and we never delete the values set on the container/pod dimension.

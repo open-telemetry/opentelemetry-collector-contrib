@@ -4,7 +4,6 @@
 package webhookeventreceiver
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -16,7 +15,7 @@ import (
 
 func TestFactoryCreate(t *testing.T) {
 	factory := NewFactory()
-	require.EqualValues(t, metadata.Type, factory.Type())
+	require.Equal(t, metadata.Type, factory.Type())
 }
 
 func TestDefaultConfig(t *testing.T) {
@@ -39,8 +38,8 @@ func TestCreateLogs(t *testing.T) {
 				require.NoError(t, cfg.Validate(), "error validating default config")
 
 				_, err := createLogsReceiver(
-					context.Background(),
-					receivertest.NewNopSettings(),
+					t.Context(),
+					receivertest.NewNopSettings(metadata.Type),
 					cfg,
 					consumertest.NewNop(),
 				)

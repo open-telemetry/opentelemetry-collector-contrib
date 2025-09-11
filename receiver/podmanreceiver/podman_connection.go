@@ -29,7 +29,7 @@ import (
 // most of this file has been adopted from https://github.com/containers/podman/blob/main/pkg/bindings/connection.go
 // and then simplified to remove things we do not need.
 
-func newPodmanConnection(logger *zap.Logger, endpoint string, sshKey string, sshPassphrase string) (*http.Client, error) {
+func newPodmanConnection(logger *zap.Logger, endpoint, sshKey, sshPassphrase string) (*http.Client, error) {
 	_url, err := url.Parse(endpoint)
 	if err != nil {
 		return nil, err
@@ -39,7 +39,7 @@ func newPodmanConnection(logger *zap.Logger, endpoint string, sshKey string, ssh
 	case "unix":
 		if !strings.HasPrefix(endpoint, "unix:///") {
 			// autofix unix://path_element vs unix:///path_element
-			_url.Path = "/" + strings.Join([]string{_url.Host, _url.Path}, "/")
+			_url.Path = "/" + _url.Host + "/" + _url.Path
 			_url.Host = ""
 		}
 		return unixConnection(_url), nil
@@ -84,7 +84,7 @@ func unixConnection(_url *url.URL) *http.Client {
 func sshConnection(logger *zap.Logger, _url *url.URL, secure bool, key, passphrase string) (*http.Client, error) {
 	var signers []ssh.Signer // order Signers are appended to this list determines which key is presented to server
 
-	if len(key) > 0 {
+	if key != "" {
 		s, err := publicKey(key, []byte(passphrase))
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse identity %q: %w", key, err)
@@ -108,7 +108,7 @@ func sshConnection(logger *zap.Logger, _url *url.URL, secure bool, key, passphra
 
 	var authMethods []ssh.AuthMethod
 	if len(signers) > 0 {
-		var dedup = make(map[string]ssh.Signer)
+		dedup := make(map[string]ssh.Signer)
 		// Dedup signers based on fingerprint, ssh-agent keys override CONTAINER_SSHKEY
 		for _, s := range signers {
 			fp := ssh.FingerprintSHA256(s.PublicKey())
@@ -153,7 +153,6 @@ func sshConnection(logger *zap.Logger, _url *url.URL, secure bool, key, passphra
 			HostKeyCallback: callback,
 			HostKeyAlgorithms: []string{
 				ssh.KeyAlgoRSA,
-				ssh.KeyAlgoDSA,
 				ssh.KeyAlgoECDSA256,
 				ssh.KeyAlgoECDSA384,
 				ssh.KeyAlgoECDSA521,

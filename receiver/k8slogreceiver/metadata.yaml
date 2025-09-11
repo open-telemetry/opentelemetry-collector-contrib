@@ -1,0 +1,8 @@
+type: k8slog
+
+status:
+  class: receiver
+  stability:
+    development: [logs]
+  codeowners:
+    active: [h0cheung, TylerHelmuth]

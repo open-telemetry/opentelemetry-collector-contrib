@@ -96,7 +96,7 @@ func (h *heartbeater) shutdown() {
 	close(h.hbDoneChan)
 }
 
-func (h *heartbeater) sendHeartbeat(config *Config, buildInfo component.BuildInfo, pushLogFn func(ctx context.Context, ld plog.Logs) error) error {
+func (*heartbeater) sendHeartbeat(config *Config, buildInfo component.BuildInfo, pushLogFn func(ctx context.Context, ld plog.Logs) error) error {
 	return pushLogFn(context.Background(), generateHeartbeatLog(config.HecToOtelAttrs, buildInfo))
 }
 
@@ -107,7 +107,6 @@ func observe(heartbeatsSent, heartbeatsFailed metric.Int64Counter, attrs attribu
 	} else {
 		heartbeatsFailed.Add(context.Background(), 1, metric.WithAttributeSet(attrs))
 	}
-
 }
 
 func generateHeartbeatLog(hecToOtelAttrs splunk.HecToOtelAttrs, buildInfo component.BuildInfo) plog.Logs {

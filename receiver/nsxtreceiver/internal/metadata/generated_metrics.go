@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
-// AttributeClass specifies the a value class attribute.
+// AttributeClass specifies the value class attribute.
 type AttributeClass int
 
 const (
@@ -38,7 +38,7 @@ var MapAttributeClass = map[string]AttributeClass{
 	"services": AttributeClassServices,
 }
 
-// AttributeDirection specifies the a value direction attribute.
+// AttributeDirection specifies the value direction attribute.
 type AttributeDirection int
 
 const (
@@ -64,7 +64,7 @@ var MapAttributeDirection = map[string]AttributeDirection{
 	"transmitted": AttributeDirectionTransmitted,
 }
 
-// AttributeDiskState specifies the a value disk_state attribute.
+// AttributeDiskState specifies the value disk_state attribute.
 type AttributeDiskState int
 
 const (
@@ -90,7 +90,7 @@ var MapAttributeDiskState = map[string]AttributeDiskState{
 	"available": AttributeDiskStateAvailable,
 }
 
-// AttributePacketType specifies the a value packet.type attribute.
+// AttributePacketType specifies the value packet.type attribute.
 type AttributePacketType int
 
 const (
@@ -118,6 +118,44 @@ var MapAttributePacketType = map[string]AttributePacketType{
 	"dropped": AttributePacketTypeDropped,
 	"errored": AttributePacketTypeErrored,
 	"success": AttributePacketTypeSuccess,
+}
+
+var MetricsInfo = metricsInfo{
+	NsxtNodeCPUUtilization: metricInfo{
+		Name: "nsxt.node.cpu.utilization",
+	},
+	NsxtNodeFilesystemUsage: metricInfo{
+		Name: "nsxt.node.filesystem.usage",
+	},
+	NsxtNodeFilesystemUtilization: metricInfo{
+		Name: "nsxt.node.filesystem.utilization",
+	},
+	NsxtNodeMemoryCacheUsage: metricInfo{
+		Name: "nsxt.node.memory.cache.usage",
+	},
+	NsxtNodeMemoryUsage: metricInfo{
+		Name: "nsxt.node.memory.usage",
+	},
+	NsxtNodeNetworkIo: metricInfo{
+		Name: "nsxt.node.network.io",
+	},
+	NsxtNodeNetworkPacketCount: metricInfo{
+		Name: "nsxt.node.network.packet.count",
+	},
+}
+
+type metricsInfo struct {
+	NsxtNodeCPUUtilization        metricInfo
+	NsxtNodeFilesystemUsage       metricInfo
+	NsxtNodeFilesystemUtilization metricInfo
+	NsxtNodeMemoryCacheUsage      metricInfo
+	NsxtNodeMemoryUsage           metricInfo
+	NsxtNodeNetworkIo             metricInfo
+	NsxtNodeNetworkPacketCount    metricInfo
+}
+
+type metricInfo struct {
+	Name string
 }
 
 type metricNsxtNodeCPUUtilization struct {
@@ -518,7 +556,6 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 		mb.startTime = startTime
 	})
 }
-
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		config:                              mbc,
@@ -625,7 +662,7 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver")
+	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricNsxtNodeCPUUtilization.emit(ils.Metrics())

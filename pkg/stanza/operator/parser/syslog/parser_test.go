@@ -1,10 +1,9 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package syslog
+package syslog_test
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -13,17 +12,19 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/syslog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/syslog/syslogtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
-func basicConfig() *Config {
-	cfg := NewConfigWithID("test_operator_id")
+func basicConfig() *syslog.Config {
+	cfg := syslog.NewConfigWithID("test_operator_id")
 	cfg.OutputIDs = []string{"fake"}
 	return cfg
 }
 
 func TestParser(t *testing.T) {
-	cases, err := CreateCases(basicConfig)
+	cases, err := syslogtest.CreateCases(basicConfig)
 	require.NoError(t, err)
 
 	for _, tc := range cases {
@@ -39,7 +40,7 @@ func TestParser(t *testing.T) {
 			newEntry := tc.Input
 			ots := newEntry.ObservedTimestamp
 
-			err = op.Process(context.Background(), newEntry)
+			err = op.Process(t.Context(), newEntry)
 			require.NoError(t, err)
 
 			select {
@@ -55,7 +56,7 @@ func TestParser(t *testing.T) {
 
 func TestSyslogParseRFC5424_SDNameTooLong(t *testing.T) {
 	cfg := basicConfig()
-	cfg.Protocol = RFC5424
+	cfg.Protocol = syslog.RFC5424
 
 	body := `<86>1 2015-08-05T21:58:59.693Z 192.168.2.132 SecureAuth0 23108 ID52020 [verylongsdnamethatisgreaterthan32bytes@12345 UserHostAddress="192.168.2.132"] my message`
 
@@ -69,7 +70,7 @@ func TestSyslogParseRFC5424_SDNameTooLong(t *testing.T) {
 
 	newEntry := entry.New()
 	newEntry.Body = body
-	err = op.Process(context.Background(), newEntry)
+	err = op.Process(t.Context(), newEntry)
 	require.ErrorContains(t, err, "expecting a structured data element id (from 1 to max 32 US-ASCII characters")
 
 	select {
@@ -82,7 +83,7 @@ func TestSyslogParseRFC5424_SDNameTooLong(t *testing.T) {
 
 func TestSyslogParseRFC5424_Octet_Counting_MessageTooLong(t *testing.T) {
 	cfg := basicConfig()
-	cfg.Protocol = RFC5424
+	cfg.Protocol = syslog.RFC5424
 	cfg.EnableOctetCounting = true
 	cfg.MaxOctets = 214
 
@@ -98,7 +99,7 @@ func TestSyslogParseRFC5424_Octet_Counting_MessageTooLong(t *testing.T) {
 
 	newEntry := entry.New()
 	newEntry.Body = body
-	err = op.Process(context.Background(), newEntry)
+	err = op.Process(t.Context(), newEntry)
 	require.ErrorContains(t, err, "message too long to parse. was size 215, max length 214")
 
 	select {

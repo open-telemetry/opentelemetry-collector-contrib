@@ -1,0 +1,13 @@
+type: datadog
+
+status:
+  class: extension
+  stability:
+    alpha: [extension]
+  distributions: [contrib]
+  codeowners:
+    active: [jackgopack4, dineshg13, mx-psi, songy23]
+
+tests:
+  goleak:
+    skip: true

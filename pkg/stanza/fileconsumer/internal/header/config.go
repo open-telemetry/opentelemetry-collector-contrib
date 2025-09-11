@@ -39,7 +39,6 @@ func NewConfig(set component.TelemetrySettings, matchRegex string, metadataOpera
 		Operators:     metadataOperators,
 		DefaultOutput: newPipelineOutput(set),
 	}.Build(set)
-
 	if err != nil {
 		return nil, fmt.Errorf("failed to build pipelines: %w", err)
 	}
@@ -60,7 +59,7 @@ func NewConfig(set component.TelemetrySettings, matchRegex string, metadataOpera
 
 		// Filter processor also may fail to propagate some entries
 		if op.Type() == "filter" {
-			return nil, fmt.Errorf("operator of type filter is not allowed in `metadata_operators`")
+			return nil, errors.New("operator of type filter is not allowed in `metadata_operators`")
 		}
 	}
 

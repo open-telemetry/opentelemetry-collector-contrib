@@ -6,7 +6,7 @@ package translator // import "github.com/open-telemetry/opentelemetry-collector-
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.12.0"
+	conventionsv112 "go.opentelemetry.io/otel/semconv/v1.12.0"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
@@ -25,15 +25,15 @@ func makeSQL(span ptrace.Span, attributes map[string]pcommon.Value) (map[string]
 
 	for key, value := range attributes {
 		switch key {
-		case conventions.AttributeDBConnectionString:
+		case string(conventionsv112.DBConnectionStringKey):
 			dbConnectionString = value.Str()
-		case conventions.AttributeDBSystem:
+		case string(conventionsv112.DBSystemKey):
 			dbSystem = value.Str()
-		case conventions.AttributeDBName:
+		case string(conventionsv112.DBNameKey):
 			dbInstance = value.Str()
-		case conventions.AttributeDBStatement:
+		case string(conventionsv112.DBStatementKey):
 			dbStatement = value.Str()
-		case conventions.AttributeDBUser:
+		case string(conventionsv112.DBUserKey):
 			dbUser = value.Str()
 		default:
 			filtered[key] = value
@@ -68,27 +68,17 @@ func makeSQL(span ptrace.Span, attributes map[string]pcommon.Value) (map[string]
 
 func isSQL(system string) bool {
 	switch system {
-	case "db2":
-		fallthrough
-	case "derby":
-		fallthrough
-	case "hive":
-		fallthrough
-	case "mariadb":
-		fallthrough
-	case "mssql":
-		fallthrough
-	case "mysql":
-		fallthrough
-	case "oracle":
-		fallthrough
-	case "postgresql":
-		fallthrough
-	case "sqlite":
-		fallthrough
-	case "teradata":
-		fallthrough
-	case "other_sql":
+	case "db2",
+		"derby",
+		"hive",
+		"mariadb",
+		"mssql",
+		"mysql",
+		"oracle",
+		"postgresql",
+		"sqlite",
+		"teradata",
+		"other_sql":
 		return true
 	default:
 	}

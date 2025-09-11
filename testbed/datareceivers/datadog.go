@@ -34,7 +34,6 @@ func (dd *datadogDataReceiver) Start(tc consumer.Traces, _ consumer.Metrics, _ c
 	set := receiver.Settings{}
 	var err error
 	dd.receiver, err = factory.CreateTraces(context.Background(), set, cfg, tc)
-
 	if err != nil {
 		return err
 	}
@@ -46,7 +45,7 @@ func (dd *datadogDataReceiver) Stop() error {
 	return dd.receiver.Shutdown(context.Background())
 }
 
-func (dd *datadogDataReceiver) GenConfigYAMLStr() string {
+func (*datadogDataReceiver) GenConfigYAMLStr() string {
 	// Note that this generates an exporter config for agent.
 	return `
   datadog:
@@ -54,6 +53,6 @@ func (dd *datadogDataReceiver) GenConfigYAMLStr() string {
     `
 }
 
-func (dd *datadogDataReceiver) ProtocolName() string {
+func (*datadogDataReceiver) ProtocolName() string {
 	return "datadog"
 }

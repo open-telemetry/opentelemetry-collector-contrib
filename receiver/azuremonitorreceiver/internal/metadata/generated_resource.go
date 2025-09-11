@@ -21,6 +21,13 @@ func NewResourceBuilder(rac ResourceAttributesConfig) *ResourceBuilder {
 	}
 }
 
+// SetAzuremonitorSubscription sets provided value as "azuremonitor.subscription" attribute.
+func (rb *ResourceBuilder) SetAzuremonitorSubscription(val string) {
+	if rb.config.AzuremonitorSubscription.Enabled {
+		rb.res.Attributes().PutStr("azuremonitor.subscription", val)
+	}
+}
+
 // SetAzuremonitorSubscriptionID sets provided value as "azuremonitor.subscription_id" attribute.
 func (rb *ResourceBuilder) SetAzuremonitorSubscriptionID(val string) {
 	if rb.config.AzuremonitorSubscriptionID.Enabled {

@@ -6,7 +6,6 @@ package hostmetricsreceiver // import "github.com/open-telemetry/opentelemetry-c
 import (
 	"context"
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/shirou/gopsutil/v4/host"
@@ -14,8 +13,10 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/gopsutilenv"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper"
@@ -27,6 +28,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/pagingscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processesscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/systemscraper"
 )
 
 const (
@@ -35,18 +37,30 @@ const (
 
 // This file implements Factory for HostMetrics receiver.
 var (
-	scraperFactories = map[string]internal.ScraperFactory{
-		cpuscraper.TypeStr:        &cpuscraper.Factory{},
-		diskscraper.TypeStr:       &diskscraper.Factory{},
-		loadscraper.TypeStr:       &loadscraper.Factory{},
-		filesystemscraper.TypeStr: &filesystemscraper.Factory{},
-		memoryscraper.TypeStr:     &memoryscraper.Factory{},
-		networkscraper.TypeStr:    &networkscraper.Factory{},
-		pagingscraper.TypeStr:     &pagingscraper.Factory{},
-		processesscraper.TypeStr:  &processesscraper.Factory{},
-		processscraper.TypeStr:    &processscraper.Factory{},
-	}
+	scraperFactories = mustMakeFactories(
+		cpuscraper.NewFactory(),
+		diskscraper.NewFactory(),
+		filesystemscraper.NewFactory(),
+		loadscraper.NewFactory(),
+		memoryscraper.NewFactory(),
+		networkscraper.NewFactory(),
+		pagingscraper.NewFactory(),
+		processesscraper.NewFactory(),
+		processscraper.NewFactory(),
+		systemscraper.NewFactory(),
+	)
 )
+
+func mustMakeFactories(factories ...scraper.Factory) map[component.Type]scraper.Factory {
+	fMap := map[component.Type]scraper.Factory{}
+	for _, f := range factories {
+		if _, ok := fMap[f.Type()]; ok {
+			panic(fmt.Errorf("duplicate scraper factory %q", f.Type()))
+		}
+		fMap[f.Type()] = f
+	}
+	return fMap
+}
 
 // NewFactory creates a new factory for host metrics receiver.
 func NewFactory() receiver.Factory {
@@ -55,14 +69,6 @@ func NewFactory() receiver.Factory {
 		createDefaultConfig,
 		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
 		receiver.WithLogs(createLogsReceiver, metadata.LogsStability))
-}
-
-func getScraperFactory(key string) (internal.ScraperFactory, bool) {
-	if factory, ok := scraperFactories[key]; ok {
-		return factory, true
-	}
-
-	return nil, false
 }
 
 // createDefaultConfig creates the default configuration for receiver.
@@ -82,7 +88,7 @@ func createMetricsReceiver(
 ) (receiver.Metrics, error) {
 	oCfg := cfg.(*Config)
 
-	addScraperOptions, err := createAddScraperOptions(ctx, set, oCfg, scraperFactories)
+	addScraperOptions, err := createAddScraperOptions(ctx, oCfg, scraperFactories)
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +96,7 @@ func createMetricsReceiver(
 	host.EnableBootTimeCache(true)
 	process.EnableBootTimeCache(true)
 
-	return scraperhelper.NewScraperControllerReceiver(
+	return scraperhelper.NewMetricsController(
 		&oCfg.ControllerConfig,
 		set,
 		consumer,
@@ -109,50 +115,31 @@ func createLogsReceiver(
 }
 
 func createAddScraperOptions(
-	ctx context.Context,
-	set receiver.Settings,
-	config *Config,
-	factories map[string]internal.ScraperFactory,
-) ([]scraperhelper.ScraperControllerOption, error) {
-	scraperControllerOptions := make([]scraperhelper.ScraperControllerOption, 0, len(config.Scrapers))
+	_ context.Context,
+	cfg *Config,
+	factories map[component.Type]scraper.Factory,
+) ([]scraperhelper.ControllerOption, error) {
+	scraperControllerOptions := make([]scraperhelper.ControllerOption, 0, len(cfg.Scrapers))
 
-	for key, cfg := range config.Scrapers {
-		hostMetricsScraper, ok, err := createHostMetricsScraper(ctx, set, key, cfg, factories)
+	envMap := gopsutilenv.SetGoPsutilEnvVars(cfg.RootPath)
+
+	for key, cfg := range cfg.Scrapers {
+		factory, err := getFactory(key, factories)
 		if err != nil {
-			return nil, fmt.Errorf("failed to create scraper for key %q: %w", key, err)
+			return nil, err
 		}
-
-		if ok {
-			scraperControllerOptions = append(scraperControllerOptions, scraperhelper.AddScraper(hostMetricsScraper))
-			continue
-		}
-
-		return nil, fmt.Errorf("host metrics scraper factory not found for key: %q", key)
+		factory = internal.NewEnvVarFactory(factory, envMap)
+		scraperControllerOptions = append(scraperControllerOptions, scraperhelper.AddFactoryWithConfig(factory, cfg))
 	}
 
 	return scraperControllerOptions, nil
 }
 
-func createHostMetricsScraper(ctx context.Context, set receiver.Settings, key string, cfg internal.Config, factories map[string]internal.ScraperFactory) (scraper scraperhelper.Scraper, ok bool, err error) {
-	factory := factories[key]
-	if factory == nil {
-		ok = false
-		return
+func getFactory(key component.Type, factories map[component.Type]scraper.Factory) (s scraper.Factory, err error) {
+	factory, ok := factories[key]
+	if !ok {
+		return nil, fmt.Errorf("host metrics scraper factory not found for key: %q", key)
 	}
 
-	ok = true
-	scraper, err = factory.CreateMetricsScraper(ctx, set, cfg)
-	return
-}
-
-type environment interface {
-	Lookup(k string) (string, bool)
-}
-
-type osEnv struct{}
-
-var _ environment = (*osEnv)(nil)
-
-func (e *osEnv) Lookup(k string) (string, bool) {
-	return os.LookupEnv(k)
+	return factory, nil
 }

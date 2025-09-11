@@ -54,8 +54,8 @@ func (c *Client) Dial(endpoint string) (err error) {
 }
 
 func (c *Client) SFTPClient() (*SFTPClient, error) {
-	if c.Client == nil || c.Client.Conn == nil {
-		return nil, fmt.Errorf("SSH client not initialized")
+	if c.Client == nil || c.Conn == nil {
+		return nil, errors.New("SSH client not initialized")
 	}
 	client, err := sftp.NewClient(c.Client)
 	if err != nil {
@@ -73,18 +73,18 @@ type SFTPClient struct {
 }
 
 // ToClient creates an SSHClient.
-func (scs *SSHClientSettings) ToClient(_ component.Host, _ component.TelemetrySettings) (*Client, error) {
+func (scs *SSHClientSettings) ToClient(component.Host, component.TelemetrySettings) (*Client, error) {
 	var (
 		auth ssh.AuthMethod
 		hkc  ssh.HostKeyCallback
 	)
-	if len(scs.KeyFile) > 0 {
+	if scs.KeyFile != "" {
 		key, err := os.ReadFile(scs.KeyFile)
 		if err != nil {
 			return nil, fmt.Errorf("unable to read private key: %w", err)
 		}
 
-		if len(scs.Password) > 0 {
+		if scs.Password != "" {
 			sgn, err := ssh.ParsePrivateKeyWithPassphrase(key, []byte(scs.Password))
 			if err != nil {
 				return nil, fmt.Errorf("unable to parse private key with passphrase: %w", err)
@@ -103,8 +103,8 @@ func (scs *SSHClientSettings) ToClient(_ component.Host, _ component.TelemetrySe
 
 	switch {
 	case scs.IgnoreHostKey:
-		// nolint G106
-		hkc = ssh.InsecureIgnoreHostKey() //#nosec G106
+		//nolint:gosec // #nosec G106
+		hkc = ssh.InsecureIgnoreHostKey()
 	case scs.KnownHosts != "":
 		fn, err := knownhosts.New(scs.KnownHosts)
 		if err != nil {
@@ -135,7 +135,7 @@ func defaultKnownHostsPath() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	path := fmt.Sprintf("%s/.ssh/known_hosts", home)
+	path := home + "/.ssh/known_hosts"
 	if _, err := os.Stat(path); err != nil {
 		return "", errMissingKnownHosts
 	}

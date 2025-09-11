@@ -17,6 +17,10 @@ type Transformer struct {
 	Keys  []string
 }
 
+func (t *Transformer) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
+	return t.ProcessBatchWithTransform(ctx, entries, t.Transform)
+}
+
 // Process will process an entry with AssignKeys transformation.
 func (t *Transformer) Process(ctx context.Context, entry *entry.Entry) error {
 	return t.ProcessWith(ctx, entry, t.Transform)
@@ -47,7 +51,7 @@ func (t *Transformer) Transform(entry *entry.Entry) error {
 	return nil
 }
 
-func (t *Transformer) AssignKeys(keys []string, values []any) map[string]any {
+func (*Transformer) AssignKeys(keys []string, values []any) map[string]any {
 	outputMap := make(map[string]any, len(keys))
 	for i, key := range keys {
 		outputMap[key] = values[i]

@@ -13,7 +13,6 @@ import (
 // configuration will be provided to the API client.
 // See `consul.go#NewDetector` for more information.
 type Config struct {
-
 	// Address is the address of the Consul server
 	Address string `mapstructure:"address"`
 

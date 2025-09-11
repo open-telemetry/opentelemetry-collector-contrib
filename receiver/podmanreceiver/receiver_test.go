@@ -16,8 +16,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver/internal/metadata"
 )
 
 func TestNewReceiver(t *testing.T) {
@@ -28,28 +30,28 @@ func TestNewReceiver(t *testing.T) {
 			InitialDelay:       time.Second,
 		},
 	}
-	mr := newMetricsReceiver(receivertest.NewNopSettings(), config, nil)
+	mr := newMetricsReceiver(receivertest.NewNopSettings(metadata.Type), config, nil)
 	assert.NotNil(t, mr)
 }
 
 func TestErrorsInStart(t *testing.T) {
-	recv := newMetricsReceiver(receivertest.NewNopSettings(), &Config{}, nil)
+	recv := newMetricsReceiver(receivertest.NewNopSettings(metadata.Type), &Config{}, nil)
 	assert.NotNil(t, recv)
-	err := recv.start(context.Background(), componenttest.NewNopHost())
+	err := recv.start(t.Context(), componenttest.NewNopHost())
 	require.Error(t, err)
 	assert.Equal(t, `unable to create connection. "" is not a supported schema`, err.Error())
 }
 
 func TestScraperLoop(t *testing.T) {
-	cfg := createDefaultConfig()
+	cfg := createDefaultConfig().(*Config)
 	cfg.CollectionInterval = 100 * time.Millisecond
 
-	client := make(mockClient)
+	client := make(mockPodmanClient)
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
-	r := newMetricsReceiver(receivertest.NewNopSettings(), cfg, client.factory)
+	r := newMetricsReceiver(receivertest.NewNopSettings(metadata.Type), cfg, client.factory)
 	assert.NotNil(t, r)
 
 	go func() {
@@ -72,13 +74,13 @@ func TestScraperLoop(t *testing.T) {
 	assertStatsEqualToMetrics(t, genContainerStats(), md)
 }
 
-type mockClient chan containerStatsReport
+type mockPodmanClient chan containerStatsReport
 
-func (c mockClient) factory(_ *zap.Logger, _ *Config) (PodmanClient, error) {
+func (c mockPodmanClient) factory(_ *zap.Logger, _ *Config) (PodmanClient, error) {
 	return c, nil
 }
 
-func (c mockClient) stats(context.Context, url.Values) ([]containerStats, error) {
+func (c mockPodmanClient) stats(context.Context, url.Values) ([]containerStats, error) {
 	report := <-c
 	if report.Error.Message != "" {
 		return nil, errors.New(report.Error.Message)
@@ -86,14 +88,14 @@ func (c mockClient) stats(context.Context, url.Values) ([]containerStats, error)
 	return report.Stats, nil
 }
 
-func (c mockClient) ping(context.Context) error {
+func (mockPodmanClient) ping(context.Context) error {
 	return nil
 }
 
-func (c mockClient) list(context.Context, url.Values) ([]container, error) {
+func (mockPodmanClient) list(context.Context, url.Values) ([]container, error) {
 	return []container{{ID: "c1", Image: "localimage"}}, nil
 }
 
-func (c mockClient) events(context.Context, url.Values) (<-chan event, <-chan error) {
+func (mockPodmanClient) events(context.Context, url.Values) (<-chan event, <-chan error) {
 	return nil, nil
 }

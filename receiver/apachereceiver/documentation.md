@@ -12,6 +12,20 @@ metrics:
     enabled: false
 ```
 
+### apache.connections.async
+
+The number of connections in different asynchronous states reported by Apache's server-status.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {connections} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| connection_state | The asynchronous connection state reported by Apache's server-status. | Str: ``writing``, ``keepalive``, ``closing`` | false |
+
 ### apache.cpu.load
 
 Current load of the CPU.
@@ -30,10 +44,10 @@ Jiffs used by processes of given category.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| level | Level of processes. | Str: ``self``, ``children`` |
-| mode | Mode of processes. | Str: ``system``, ``user`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| level | Level of processes. | Str: ``self``, ``children`` | false |
+| mode | Mode of processes. | Str: ``system``, ``user`` | false |
 
 ### apache.current_connections
 
@@ -87,7 +101,7 @@ The number of requests serviced by the HTTP server per second.
 
 The number of workers in each state.
 
-The apache scoreboard is an encoded representation of the state of all the server's workers. This metric decodes the scoreboard and presents a count of workers in each state. Additional details can be found [here](https://metacpan.org/pod/Apache::Scoreboard#DESCRIPTION).
+The [apache scoreboard](https://metacpan.org/pod/Apache::Scoreboard#DESCRIPTION) is an encoded representation of the state of all the server's workers. This metric decodes the scoreboard and presents a count of workers in each state.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -95,9 +109,9 @@ The apache scoreboard is an encoded representation of the state of all the serve
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| state | The state of a connection. | Str: ``open``, ``waiting``, ``starting``, ``reading``, ``sending``, ``keepalive``, ``dnslookup``, ``closing``, ``logging``, ``finishing``, ``idle_cleanup``, ``unknown`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| state | The state of a connection. | Str: ``open``, ``waiting``, ``starting``, ``reading``, ``sending``, ``keepalive``, ``dnslookup``, ``closing``, ``logging``, ``finishing``, ``idle_cleanup``, ``unknown`` | false |
 
 ### apache.traffic
 
@@ -125,9 +139,9 @@ The number of workers currently attached to the HTTP server.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| state | The state of workers. | Str: ``busy``, ``idle`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| state | The state of workers. | Str: ``busy``, ``idle`` | false |
 
 ## Resource Attributes
 

@@ -142,13 +142,15 @@ func TestGroupByResourceLogs(t *testing.T) {
 		},
 		{
 			name: "single",
-			input: []resourceLogs{newResourceLogs(1,
-				newScopeLogs(11, 101, 102, 103),
-			),
+			input: []resourceLogs{
+				newResourceLogs(1,
+					newScopeLogs(11, 101, 102, 103),
+				),
 			},
-			expected: []resourceLogs{newResourceLogs(1,
-				newScopeLogs(11, 101, 102, 103),
-			),
+			expected: []resourceLogs{
+				newResourceLogs(1,
+					newScopeLogs(11, 101, 102, 103),
+				),
 			},
 		},
 		{

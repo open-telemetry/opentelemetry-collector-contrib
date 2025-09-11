@@ -16,10 +16,12 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -30,7 +32,7 @@ func TestValidate(t *testing.T) {
 	maxConnPerHost := 250
 	ty, err := component.NewType("ty")
 	assert.NoError(t, err)
-	auth := configauth.Authentication{AuthenticatorID: component.NewID(ty)}
+	someAuth := configoptional.Some(configauth.Config{AuthenticatorID: component.NewID(ty)})
 
 	tests := []struct {
 		name string
@@ -39,145 +41,177 @@ func TestValidate(t *testing.T) {
 	}{
 		{
 			name: "no api::key",
-			cfg:  &Config{},
-			err:  ErrUnsetAPIKey.Error(),
+			cfg: &Config{
+				HostMetadata: HostMetadataConfig{Enabled: true, ReporterPeriod: 10 * time.Minute},
+			},
+			err: ErrUnsetAPIKey.Error(),
+		},
+		{
+			name: "invalid format api::key",
+			cfg: &Config{
+				API: APIConfig{Key: "'aaaaaaa"},
+			},
+			err: ErrAPIKeyFormat.Error(),
 		},
 		{
 			name: "invalid hostname",
 			cfg: &Config{
-				API:        APIConfig{Key: "notnull"},
-				TagsConfig: TagsConfig{Hostname: "invalid_host"},
+				API:          APIConfig{Key: "aaaaaaa"},
+				TagsConfig:   TagsConfig{Hostname: "invalid_host"},
+				HostMetadata: HostMetadataConfig{Enabled: true, ReporterPeriod: 10 * time.Minute},
 			},
 			err: "hostname field is invalid: invalid_host is not RFC1123 compliant",
 		},
 		{
 			name: "no metadata",
 			cfg: &Config{
-				API:          APIConfig{Key: "notnull"},
+				API:          APIConfig{Key: "aaaaaaa"},
 				OnlyMetadata: true,
-				HostMetadata: HostMetadataConfig{Enabled: false},
+				HostMetadata: HostMetadataConfig{Enabled: true, ReporterPeriod: 10 * time.Minute},
 			},
 			err: ErrNoMetadata.Error(),
 		},
 		{
 			name: "span name remapping valid",
 			cfg: &Config{
-				API:    APIConfig{Key: "notnull"},
-				Traces: TracesExporterConfig{TracesConfig: TracesConfig{SpanNameRemappings: map[string]string{"old.opentelemetryspan.name": "updated.name"}}},
+				API:          APIConfig{Key: "aaaaaaa"},
+				Traces:       TracesExporterConfig{TracesConfig: TracesConfig{SpanNameRemappings: map[string]string{"old.opentelemetryspan.name": "updated.name"}}},
+				HostMetadata: HostMetadataConfig{Enabled: true, ReporterPeriod: 10 * time.Minute},
 			},
 		},
 		{
 			name: "span name remapping empty val",
 			cfg: &Config{
-				API:    APIConfig{Key: "notnull"},
-				Traces: TracesExporterConfig{TracesConfig: TracesConfig{SpanNameRemappings: map[string]string{"oldname": ""}}},
+				API:          APIConfig{Key: "aaaaaaa"},
+				Traces:       TracesExporterConfig{TracesConfig: TracesConfig{SpanNameRemappings: map[string]string{"oldname": ""}}},
+				HostMetadata: HostMetadataConfig{Enabled: true, ReporterPeriod: 10 * time.Minute},
 			},
 			err: "'' is not valid value for span name remapping",
 		},
 		{
 			name: "span name remapping empty key",
 			cfg: &Config{
-				API:    APIConfig{Key: "notnull"},
-				Traces: TracesExporterConfig{TracesConfig: TracesConfig{SpanNameRemappings: map[string]string{"": "newname"}}},
+				API:          APIConfig{Key: "aaaaaaa"},
+				Traces:       TracesExporterConfig{TracesConfig: TracesConfig{SpanNameRemappings: map[string]string{"": "newname"}}},
+				HostMetadata: HostMetadataConfig{Enabled: true, ReporterPeriod: 10 * time.Minute},
 			},
 			err: "'' is not valid key for span name remapping",
 		},
 		{
 			name: "ignore resources valid",
 			cfg: &Config{
-				API:    APIConfig{Key: "notnull"},
-				Traces: TracesExporterConfig{TracesConfig: TracesConfig{IgnoreResources: []string{"[123]"}}},
+				API:          APIConfig{Key: "aaaaaaa"},
+				Traces:       TracesExporterConfig{TracesConfig: TracesConfig{IgnoreResources: []string{"[123]"}}},
+				HostMetadata: HostMetadataConfig{Enabled: true, ReporterPeriod: 10 * time.Minute},
 			},
 		},
 		{
 			name: "ignore resources missing bracket",
 			cfg: &Config{
-				API:    APIConfig{Key: "notnull"},
-				Traces: TracesExporterConfig{TracesConfig: TracesConfig{IgnoreResources: []string{"[123"}}},
+				API:          APIConfig{Key: "aaaaaaa"},
+				Traces:       TracesExporterConfig{TracesConfig: TracesConfig{IgnoreResources: []string{"[123"}}},
+				HostMetadata: HostMetadataConfig{Enabled: true, ReporterPeriod: 10 * time.Minute},
 			},
 			err: "'[123' is not valid resource filter regular expression",
 		},
 		{
 			name: "invalid histogram settings",
 			cfg: &Config{
-				API: APIConfig{Key: "notnull"},
+				API: APIConfig{Key: "aaaaaaa"},
 				Metrics: MetricsConfig{
+					ExporterConfig: MetricsExporterConfig{
+						InstrumentationScopeMetadataAsTags: true,
+					},
 					HistConfig: HistogramConfig{
 						Mode:             HistogramModeNoBuckets,
 						SendAggregations: false,
 					},
 				},
+				HostMetadata: HostMetadataConfig{Enabled: true, ReporterPeriod: 10 * time.Minute},
 			},
 			err: "'nobuckets' mode and `send_aggregation_metrics` set to false will send no histogram metrics",
 		},
 		{
 			name: "TLS settings are valid",
 			cfg: &Config{
-				API: APIConfig{Key: "notnull"},
+				API: APIConfig{Key: "aaaaaaa"},
 				ClientConfig: confighttp.ClientConfig{
-					TLSSetting: configtls.ClientConfig{
+					TLS: configtls.ClientConfig{
 						InsecureSkipVerify: true,
 					},
 				},
+				HostMetadata: HostMetadataConfig{Enabled: true, ReporterPeriod: 10 * time.Minute},
 			},
 		},
 		{
 			name: "With trace_buffer",
 			cfg: &Config{
-				API:    APIConfig{Key: "notnull"},
-				Traces: TracesExporterConfig{TraceBuffer: 10},
+				API:          APIConfig{Key: "aaaaaaa"},
+				Traces:       TracesExporterConfig{TraceBuffer: 10},
+				HostMetadata: HostMetadataConfig{Enabled: true, ReporterPeriod: 10 * time.Minute},
 			},
 		},
 		{
 			name: "With peer_tags",
 			cfg: &Config{
-				API: APIConfig{Key: "notnull"},
+				API: APIConfig{Key: "aaaaaaa"},
 				Traces: TracesExporterConfig{
 					TracesConfig: TracesConfig{
 						PeerTags: []string{"tag1", "tag2"},
 					},
 				},
+				HostMetadata: HostMetadataConfig{Enabled: true, ReporterPeriod: 10 * time.Minute},
 			},
 		},
 		{
 			name: "With confighttp client configs",
 			cfg: &Config{
-				API: APIConfig{Key: "notnull"},
+				API: APIConfig{Key: "aaaaaaa"},
 				ClientConfig: confighttp.ClientConfig{
 					ReadBufferSize:      100,
 					WriteBufferSize:     200,
 					Timeout:             10 * time.Second,
-					IdleConnTimeout:     &idleConnTimeout,
-					MaxIdleConns:        &maxIdleConn,
-					MaxIdleConnsPerHost: &maxIdleConnPerHost,
-					MaxConnsPerHost:     &maxConnPerHost,
+					IdleConnTimeout:     idleConnTimeout,
+					MaxIdleConns:        maxIdleConn,
+					MaxIdleConnsPerHost: maxIdleConnPerHost,
+					MaxConnsPerHost:     maxConnPerHost,
 					DisableKeepAlives:   true,
-					TLSSetting:          configtls.ClientConfig{InsecureSkipVerify: true},
+					TLS:                 configtls.ClientConfig{InsecureSkipVerify: true},
 				},
+				HostMetadata: HostMetadataConfig{Enabled: true, ReporterPeriod: 10 * time.Minute},
 			},
 		},
 
 		{
 			name: "unsupported confighttp client configs",
 			cfg: &Config{
-				API: APIConfig{Key: "notnull"},
+				API: APIConfig{Key: "aaaaaaa"},
 				ClientConfig: confighttp.ClientConfig{
 					Endpoint:             "endpoint",
 					Compression:          "gzip",
-					Auth:                 &auth,
+					Auth:                 someAuth,
 					Headers:              map[string]configopaque.String{"key": "val"},
 					HTTP2ReadIdleTimeout: 250,
 					HTTP2PingTimeout:     200,
 				},
+				HostMetadata: HostMetadataConfig{Enabled: true, ReporterPeriod: 10 * time.Minute},
 			},
 			err: "these confighttp client configs are currently not respected by Datadog exporter: auth, endpoint, compression, headers, http2_read_idle_timeout, http2_ping_timeout",
+		},
+		{
+			name: "Invalid reporter_period",
+			cfg: &Config{
+				API:          APIConfig{Key: "abcdef0"},
+				HostMetadata: HostMetadataConfig{Enabled: true, ReporterPeriod: 4 * time.Minute},
+			},
+			err: "reporter_period must be 5 minutes or higher",
 		},
 	}
 	for _, testInstance := range tests {
 		t.Run(testInstance.name, func(t *testing.T) {
 			err := testInstance.cfg.Validate()
 			if testInstance.err != "" {
-				assert.EqualError(t, err, testInstance.err)
+				assert.ErrorContains(t, err, testInstance.err)
 			} else {
 				assert.NoError(t, err)
 			}
@@ -194,12 +228,12 @@ func TestUnmarshal(t *testing.T) {
 	cfgWithHTTPConfigs.ReadBufferSize = 100
 	cfgWithHTTPConfigs.WriteBufferSize = 200
 	cfgWithHTTPConfigs.Timeout = 10 * time.Second
-	cfgWithHTTPConfigs.MaxIdleConns = &maxIdleConn
-	cfgWithHTTPConfigs.MaxIdleConnsPerHost = &maxIdleConnPerHost
-	cfgWithHTTPConfigs.MaxConnsPerHost = &maxConnPerHost
-	cfgWithHTTPConfigs.IdleConnTimeout = &idleConnTimeout
+	cfgWithHTTPConfigs.MaxIdleConns = maxIdleConn
+	cfgWithHTTPConfigs.MaxIdleConnsPerHost = maxIdleConnPerHost
+	cfgWithHTTPConfigs.MaxConnsPerHost = maxConnPerHost
+	cfgWithHTTPConfigs.IdleConnTimeout = idleConnTimeout
 	cfgWithHTTPConfigs.DisableKeepAlives = true
-	cfgWithHTTPConfigs.TLSSetting.InsecureSkipVerify = true
+	cfgWithHTTPConfigs.TLS.InsecureSkipVerify = true
 	cfgWithHTTPConfigs.warnings = nil
 
 	tests := []struct {
@@ -389,6 +423,9 @@ func TestCreateDefaultConfig(t *testing.T) {
 		},
 
 		Metrics: MetricsConfig{
+			ExporterConfig: MetricsExporterConfig{
+				InstrumentationScopeMetadataAsTags: true,
+			},
 			TCPAddrConfig: confignet.TCPAddrConfig{
 				Endpoint: "https://api.datadoghq.com",
 			},
@@ -411,7 +448,10 @@ func TestCreateDefaultConfig(t *testing.T) {
 				Endpoint: "https://trace.agent.datadoghq.com",
 			},
 			TracesConfig: TracesConfig{
-				IgnoreResources: []string{},
+				IgnoreResources:        []string{},
+				PeerServiceAggregation: true,
+				PeerTagsAggregation:    true,
+				ComputeStatsBySpanKind: true,
 			},
 		},
 		Logs: LogsConfig{
@@ -426,8 +466,10 @@ func TestCreateDefaultConfig(t *testing.T) {
 		HostMetadata: HostMetadataConfig{
 			Enabled:        true,
 			HostnameSource: HostnameSourceConfigOrSystem,
+			ReporterPeriod: 30 * time.Minute,
 		},
-		OnlyMetadata: false,
+		HostnameDetectionTimeout: 25 * time.Second,
+		OnlyMetadata:             false,
 	}, cfg, "failed to create default config")
 
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
@@ -458,6 +500,9 @@ func TestLoadConfig(t *testing.T) {
 				},
 
 				Metrics: MetricsConfig{
+					ExporterConfig: MetricsExporterConfig{
+						InstrumentationScopeMetadataAsTags: true,
+					},
 					TCPAddrConfig: confignet.TCPAddrConfig{
 						Endpoint: "https://api.datadoghq.com",
 					},
@@ -480,7 +525,10 @@ func TestLoadConfig(t *testing.T) {
 						Endpoint: "https://trace.agent.datadoghq.com",
 					},
 					TracesConfig: TracesConfig{
-						IgnoreResources: []string{},
+						IgnoreResources:        []string{},
+						PeerServiceAggregation: true,
+						PeerTagsAggregation:    true,
+						ComputeStatsBySpanKind: true,
 					},
 				},
 				Logs: LogsConfig{
@@ -494,8 +542,10 @@ func TestLoadConfig(t *testing.T) {
 				HostMetadata: HostMetadataConfig{
 					Enabled:        true,
 					HostnameSource: HostnameSourceConfigOrSystem,
+					ReporterPeriod: 30 * time.Minute,
 				},
-				OnlyMetadata: false,
+				HostnameDetectionTimeout: 25 * time.Second,
+				OnlyMetadata:             false,
 			},
 		},
 		{
@@ -513,6 +563,9 @@ func TestLoadConfig(t *testing.T) {
 					FailOnInvalidKey: true,
 				},
 				Metrics: MetricsConfig{
+					ExporterConfig: MetricsExporterConfig{
+						InstrumentationScopeMetadataAsTags: true,
+					},
 					TCPAddrConfig: confignet.TCPAddrConfig{
 						Endpoint: "https://api.datadoghq.eu",
 					},
@@ -540,6 +593,9 @@ func TestLoadConfig(t *testing.T) {
 						},
 						SpanNameAsResourceName: true,
 						IgnoreResources:        []string{},
+						PeerServiceAggregation: true,
+						PeerTagsAggregation:    true,
+						ComputeStatsBySpanKind: true,
 					},
 					TraceBuffer: 10,
 				},
@@ -555,7 +611,9 @@ func TestLoadConfig(t *testing.T) {
 				HostMetadata: HostMetadataConfig{
 					Enabled:        true,
 					HostnameSource: HostnameSourceConfigOrSystem,
+					ReporterPeriod: 30 * time.Minute,
 				},
+				HostnameDetectionTimeout: 25 * time.Second,
 			},
 		},
 		{
@@ -573,6 +631,9 @@ func TestLoadConfig(t *testing.T) {
 					FailOnInvalidKey: false,
 				},
 				Metrics: MetricsConfig{
+					ExporterConfig: MetricsExporterConfig{
+						InstrumentationScopeMetadataAsTags: true,
+					},
 					TCPAddrConfig: confignet.TCPAddrConfig{
 						Endpoint: "https://api.datadoghq.test",
 					},
@@ -598,7 +659,10 @@ func TestLoadConfig(t *testing.T) {
 							"old_name3": "new_name3",
 							"old_name4": "new_name4",
 						},
-						IgnoreResources: []string{},
+						IgnoreResources:        []string{},
+						PeerServiceAggregation: true,
+						PeerTagsAggregation:    true,
+						ComputeStatsBySpanKind: true,
 					},
 				},
 				Logs: LogsConfig{
@@ -613,7 +677,70 @@ func TestLoadConfig(t *testing.T) {
 					Enabled:        true,
 					HostnameSource: HostnameSourceConfigOrSystem,
 					Tags:           []string{"example:tag"},
+					ReporterPeriod: 30 * time.Minute,
 				},
+				HostnameDetectionTimeout: 25 * time.Second,
+			},
+		},
+		{
+			id: component.NewIDWithName(ddtype, "customReporterPeriod"),
+			expected: &Config{
+				ClientConfig:  defaultClientConfig(),
+				BackOffConfig: configretry.NewDefaultBackOffConfig(),
+				QueueSettings: exporterhelper.NewDefaultQueueConfig(),
+				API: APIConfig{
+					Key:              "abc",
+					Site:             "datadoghq.com",
+					FailOnInvalidKey: false,
+				},
+
+				Metrics: MetricsConfig{
+					ExporterConfig: MetricsExporterConfig{
+						InstrumentationScopeMetadataAsTags: true,
+					},
+					TCPAddrConfig: confignet.TCPAddrConfig{
+						Endpoint: "https://api.datadoghq.com",
+					},
+					DeltaTTL: 3600,
+					HistConfig: HistogramConfig{
+						Mode:             "distributions",
+						SendAggregations: false,
+					},
+					SumConfig: SumConfig{
+						CumulativeMonotonicMode:        CumulativeMonotonicSumModeToDelta,
+						InitialCumulativeMonotonicMode: InitialValueModeAuto,
+					},
+					SummaryConfig: SummaryConfig{
+						Mode: SummaryModeGauges,
+					},
+				},
+
+				Traces: TracesExporterConfig{
+					TCPAddrConfig: confignet.TCPAddrConfig{
+						Endpoint: "https://trace.agent.datadoghq.com",
+					},
+					TracesConfig: TracesConfig{
+						IgnoreResources:        []string{},
+						ComputeStatsBySpanKind: true,
+						PeerServiceAggregation: true,
+						PeerTagsAggregation:    true,
+					},
+				},
+				Logs: LogsConfig{
+					TCPAddrConfig: confignet.TCPAddrConfig{
+						Endpoint: "https://http-intake.logs.datadoghq.com",
+					},
+					UseCompression:   true,
+					CompressionLevel: 6,
+					BatchWait:        5,
+				},
+				HostMetadata: HostMetadataConfig{
+					Enabled:        true,
+					HostnameSource: HostnameSourceConfigOrSystem,
+					ReporterPeriod: 10 * time.Minute,
+				},
+				HostnameDetectionTimeout: 25 * time.Second,
+				OnlyMetadata:             false,
 			},
 		},
 	}
@@ -626,7 +753,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.NoError(t, xconfmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

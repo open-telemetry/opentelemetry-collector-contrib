@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver/internal/metadata"
@@ -27,6 +27,22 @@ const (
 	ErrHostPort            = "invalid config: 'endpoint' must be in the form <host>:<port> no matter what 'transport' is configured"
 )
 
+type TopQueryCollection struct {
+	MaxRowsPerQuery        int64         `mapstructure:"max_rows_per_query"`
+	TopNQuery              int64         `mapstructure:"top_n_query"`
+	MaxExplainEachInterval int64         `mapstructure:"max_explain_each_interval"`
+	QueryPlanCacheSize     int           `mapstructure:"query_plan_cache_size"`
+	QueryPlanCacheTTL      time.Duration `mapstructure:"query_plan_cache_ttl"`
+	// prevent unkeyed literal initialization
+	_ struct{}
+}
+
+type QuerySampleCollection struct {
+	MaxRowsPerQuery int64 `mapstructure:"max_rows_per_query"`
+	// prevent unkeyed literal initialization
+	_ struct{}
+}
+
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
 	Username                       string                         `mapstructure:"username"`
@@ -37,6 +53,9 @@ type Config struct {
 	configtls.ClientConfig         `mapstructure:"tls,omitempty"` // provides SSL details
 	ConnectionPool                 `mapstructure:"connection_pool,omitempty"`
 	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
+	metadata.LogsBuilderConfig     `mapstructure:",squash"`
+	QuerySampleCollection          `mapstructure:"query_sample_collection,omitempty"`
+	TopQueryCollection             `mapstructure:"top_query_collection,omitempty"`
 }
 
 type ConnectionPool struct {

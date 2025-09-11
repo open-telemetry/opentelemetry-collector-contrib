@@ -38,9 +38,9 @@ The number of hosts in the cluster.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| effective | Whether the host is effective in the vCenter cluster. | Any Bool |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| effective | Whether the host is effective in the vCenter cluster. | Any Bool | false |
 
 ### vcenter.cluster.memory.effective
 
@@ -70,9 +70,9 @@ The number of virtual machines in the cluster.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| power_state | The current power state of the virtual machine. | Str: ``on``, ``off``, ``suspended``, ``unknown`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| power_state | The current power state of the virtual machine. | Str: ``on``, ``off``, ``suspended``, ``unknown`` | false |
 
 ### vcenter.cluster.vm_template.count
 
@@ -100,9 +100,9 @@ The overall cluster latency while accessing vSAN storage.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| type | The type of vSAN latency. | Str: ``read``, ``write`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| type | The type of vSAN latency. | Str: ``read``, ``write`` | false |
 
 ### vcenter.cluster.vsan.operations
 
@@ -114,9 +114,9 @@ The vSAN IOPs of a cluster.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| type | The type of vSAN operation. | Str: ``read``, ``write``, ``unmap`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| type | The type of vSAN operation. | Str: ``read``, ``write``, ``unmap`` | false |
 
 ### vcenter.cluster.vsan.throughput
 
@@ -128,9 +128,9 @@ The vSAN throughput of a cluster.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| direction | The type of vSAN throughput. | Str: ``read``, ``write`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| direction | The type of vSAN throughput. | Str: ``read``, ``write`` | false |
 
 ### vcenter.datacenter.cluster.count
 
@@ -142,9 +142,9 @@ The number of clusters in the datacenter.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| status | The current status of the managed entity. | Str: ``red``, ``yellow``, ``green``, ``gray`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| status | The current status of the managed entity. | Str: ``red``, ``yellow``, ``green``, ``gray`` | false |
 
 ### vcenter.datacenter.cpu.limit
 
@@ -172,9 +172,9 @@ The amount of available and used disk space in the datacenter.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| disk_state | The state of storage and whether it is already allocated or free. | Str: ``available``, ``used`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| disk_state | The state of storage and whether it is already allocated or free. | Str: ``available``, ``used`` | false |
 
 ### vcenter.datacenter.host.count
 
@@ -186,10 +186,10 @@ The number of hosts in the datacenter.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| status | The current status of the managed entity. | Str: ``red``, ``yellow``, ``green``, ``gray`` |
-| power_state | The current power state of the host. | Str: ``on``, ``off``, ``standby``, ``unknown`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| status | The current status of the managed entity. | Str: ``red``, ``yellow``, ``green``, ``gray`` | false |
+| power_state | The current power state of the host. | Str: ``on``, ``off``, ``standby``, ``unknown`` | false |
 
 ### vcenter.datacenter.memory.limit
 
@@ -209,10 +209,10 @@ The number of VM's in the datacenter.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| status | The current status of the managed entity. | Str: ``red``, ``yellow``, ``green``, ``gray`` |
-| power_state | The current power state of the virtual machine. | Str: ``on``, ``off``, ``suspended``, ``unknown`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| status | The current status of the managed entity. | Str: ``red``, ``yellow``, ``green``, ``gray`` | false |
+| power_state | The current power state of the virtual machine. | Str: ``on``, ``off``, ``suspended``, ``unknown`` | false |
 
 ### vcenter.datastore.disk.usage
 
@@ -224,9 +224,9 @@ The amount of space in the datastore.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| disk_state | The state of storage and whether it is already allocated or free. | Str: ``available``, ``used`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| disk_state | The state of storage and whether it is already allocated or free. | Str: ``available``, ``used`` | false |
 
 ### vcenter.datastore.disk.utilization
 
@@ -254,9 +254,9 @@ The CPU of the host reserved for use by virtual machines.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| cpu_reservation_type | The type of CPU reservation for the host. | Str: ``total``, ``used`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| cpu_reservation_type | The type of CPU reservation for the host. | Str: ``total``, ``used`` | false |
 
 ### vcenter.host.cpu.usage
 
@@ -286,10 +286,10 @@ This latency is the sum of the device and kernel read and write latencies. Requi
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| direction | The direction of disk latency. | Str: ``read``, ``write`` |
-| object | The object on the virtual machine or host that is being reported on. | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| direction | The direction of disk latency. | Str: ``read``, ``write`` | false |
+| object | The object on the virtual machine or host that is being reported on. | Any Str | false |
 
 ### vcenter.host.disk.latency.max
 
@@ -303,9 +303,9 @@ As measured over the most recent 20s interval. Requires Performance Level 3.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| object | The object on the virtual machine or host that is being reported on. | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| object | The object on the virtual machine or host that is being reported on. | Any Str | false |
 
 ### vcenter.host.disk.throughput
 
@@ -319,10 +319,10 @@ As measured over the most recent 20s interval. Aggregated disk I/O rate. Require
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| direction | The direction of disk latency. | Str: ``read``, ``write`` |
-| object | The object on the virtual machine or host that is being reported on. | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| direction | The direction of disk latency. | Str: ``read``, ``write`` | false |
+| object | The object on the virtual machine or host that is being reported on. | Any Str | false |
 
 ### vcenter.host.memory.usage
 
@@ -352,10 +352,10 @@ As measured over the most recent 20s interval.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| direction | The direction of network throughput. | Str: ``transmitted``, ``received`` |
-| object | The object on the virtual machine or host that is being reported on. | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| direction | The direction of network throughput. | Str: ``transmitted``, ``received`` | false |
+| object | The object on the virtual machine or host that is being reported on. | Any Str | false |
 
 ### vcenter.host.network.packet.error.rate
 
@@ -369,10 +369,10 @@ As measured over the most recent 20s interval.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| direction | The direction of network throughput. | Str: ``transmitted``, ``received`` |
-| object | The object on the virtual machine or host that is being reported on. | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| direction | The direction of network throughput. | Str: ``transmitted``, ``received`` | false |
+| object | The object on the virtual machine or host that is being reported on. | Any Str | false |
 
 ### vcenter.host.network.packet.rate
 
@@ -386,10 +386,10 @@ As measured over the most recent 20s interval.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| direction | The direction of network throughput. | Str: ``transmitted``, ``received`` |
-| object | The object on the virtual machine or host that is being reported on. | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| direction | The direction of network throughput. | Str: ``transmitted``, ``received`` | false |
+| object | The object on the virtual machine or host that is being reported on. | Any Str | false |
 
 ### vcenter.host.network.throughput
 
@@ -403,10 +403,10 @@ As measured over the most recent 20s interval.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| direction | The direction of network throughput. | Str: ``transmitted``, ``received`` |
-| object | The object on the virtual machine or host that is being reported on. | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| direction | The direction of network throughput. | Str: ``transmitted``, ``received`` | false |
+| object | The object on the virtual machine or host that is being reported on. | Any Str | false |
 
 ### vcenter.host.network.usage
 
@@ -418,9 +418,9 @@ The sum of the data transmitted and received for all the NIC instances of the ho
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| object | The object on the virtual machine or host that is being reported on. | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| object | The object on the virtual machine or host that is being reported on. | Any Str | false |
 
 ### vcenter.host.vsan.cache.hit_rate
 
@@ -454,9 +454,9 @@ As measured over the most recent 5m interval.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| type | The type of vSAN latency. | Str: ``read``, ``write`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| type | The type of vSAN latency. | Str: ``read``, ``write`` | false |
 
 ### vcenter.host.vsan.operations
 
@@ -470,9 +470,9 @@ As measured over the most recent 5m interval.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| type | The type of vSAN operation. | Str: ``read``, ``write``, ``unmap`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| type | The type of vSAN operation. | Str: ``read``, ``write``, ``unmap`` | false |
 
 ### vcenter.host.vsan.throughput
 
@@ -486,9 +486,9 @@ As measured over the most recent 5m interval.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| direction | The type of vSAN throughput. | Str: ``read``, ``write`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| direction | The type of vSAN throughput. | Str: ``read``, ``write`` | false |
 
 ### vcenter.resource_pool.cpu.shares
 
@@ -524,9 +524,9 @@ The amount of memory that is granted to VMs in the resource pool from shared and
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| type | The type of memory granted. | Str: ``private``, ``shared`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| type | The type of memory granted. | Str: ``private``, ``shared`` | false |
 
 ### vcenter.resource_pool.memory.shares
 
@@ -554,9 +554,9 @@ The usage of the memory by the resource pool.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| type | The type of memory usage. | Str: ``guest``, ``host``, ``overhead`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| type | The type of memory usage. | Str: ``guest``, ``host``, ``overhead`` | false |
 
 ### vcenter.vm.cpu.readiness
 
@@ -594,11 +594,11 @@ Requires Performance Counter level 2 for metric to populate. As measured over th
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| direction | The direction of disk latency. | Str: ``read``, ``write`` |
-| disk_type | The type of storage device that is being recorded. | Str: ``virtual``, ``physical`` |
-| object | The object on the virtual machine or host that is being reported on. | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| direction | The direction of disk latency. | Str: ``read``, ``write`` | false |
+| disk_type | The type of storage device that is being recorded. | Str: ``virtual``, ``physical`` | false |
+| object | The object on the virtual machine or host that is being reported on. | Any Str | false |
 
 ### vcenter.vm.disk.latency.max
 
@@ -610,9 +610,9 @@ The highest reported total latency (device and kernel times) over an interval of
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| object | The object on the virtual machine or host that is being reported on. | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| object | The object on the virtual machine or host that is being reported on. | Any Str | false |
 
 ### vcenter.vm.disk.throughput
 
@@ -626,10 +626,10 @@ As measured over the most recent 20s interval. Requires Performance Level 2.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| direction | The direction of disk latency. | Str: ``read``, ``write`` |
-| object | The object on the virtual machine or host that is being reported on. | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| direction | The direction of disk latency. | Str: ``read``, ``write`` | false |
+| object | The object on the virtual machine or host that is being reported on. | Any Str | false |
 
 ### vcenter.vm.disk.usage
 
@@ -641,9 +641,9 @@ The amount of storage space used by the virtual machine.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| disk_state | The state of storage and whether it is already allocated or free. | Str: ``available``, ``used`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| disk_state | The state of storage and whether it is already allocated or free. | Str: ``available``, ``used`` | false |
 
 ### vcenter.vm.disk.utilization
 
@@ -705,10 +705,10 @@ As measured over the most recent 20s interval.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| direction | The direction of network throughput. | Str: ``transmitted``, ``received`` |
-| object | The object on the virtual machine or host that is being reported on. | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| direction | The direction of network throughput. | Str: ``transmitted``, ``received`` | false |
+| object | The object on the virtual machine or host that is being reported on. | Any Str | false |
 
 ### vcenter.vm.network.packet.rate
 
@@ -722,10 +722,10 @@ As measured over the most recent 20s interval.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| direction | The direction of network throughput. | Str: ``transmitted``, ``received`` |
-| object | The object on the virtual machine or host that is being reported on. | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| direction | The direction of network throughput. | Str: ``transmitted``, ``received`` | false |
+| object | The object on the virtual machine or host that is being reported on. | Any Str | false |
 
 ### vcenter.vm.network.throughput
 
@@ -739,10 +739,10 @@ As measured over the most recent 20s interval.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| direction | The direction of network throughput. | Str: ``transmitted``, ``received`` |
-| object | The object on the virtual machine or host that is being reported on. | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| direction | The direction of network throughput. | Str: ``transmitted``, ``received`` | false |
+| object | The object on the virtual machine or host that is being reported on. | Any Str | false |
 
 ### vcenter.vm.network.usage
 
@@ -756,9 +756,9 @@ As measured over the most recent 20s interval.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| object | The object on the virtual machine or host that is being reported on. | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| object | The object on the virtual machine or host that is being reported on. | Any Str | false |
 
 ### vcenter.vm.vsan.latency.avg
 
@@ -770,9 +770,9 @@ The virtual machine latency while accessing vSAN storage.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| type | The type of vSAN latency. | Str: ``read``, ``write`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| type | The type of vSAN latency. | Str: ``read``, ``write`` | false |
 
 ### vcenter.vm.vsan.operations
 
@@ -784,9 +784,9 @@ The vSAN IOPs of a virtual machine.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| type | The type of vSAN operation. | Str: ``read``, ``write``, ``unmap`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| type | The type of vSAN operation. | Str: ``read``, ``write``, ``unmap`` | false |
 
 ### vcenter.vm.vsan.throughput
 
@@ -798,9 +798,86 @@ The vSAN throughput of a virtual machine.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| direction | The type of vSAN throughput. | Str: ``read``, ``write`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| direction | The type of vSAN throughput. | Str: ``read``, ``write`` | false |
+
+## Optional Metrics
+
+The following metrics are not emitted by default. Each of them can be enabled by applying the following configuration:
+
+```yaml
+metrics:
+  <metric_name>:
+    enabled: true
+```
+
+### vcenter.host.memory.capacity
+
+Total memory  capacity of the host system.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| MiBy | Sum | Double | Cumulative | false |
+
+### vcenter.vm.cpu.time
+
+CPU time spent in idle, ready or wait state.
+
+As measured over the most recent 20s interval.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| % | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| cpu_state | CPU time spent in idle, ready or idle state. | Str: ``idle``, ``ready``, ``wait`` | false |
+| object | The object on the virtual machine or host that is being reported on. | Any Str | false |
+
+### vcenter.vm.memory.granted
+
+The amount of memory that is granted to a VM.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| MiBy | Sum | Int | Cumulative | false |
+
+### vcenter.vm.network.broadcast.packet.rate
+
+The rate of broadcast packets transmitted or received by each vNIC (virtual network interface controller) on the virtual machine.
+
+As measured over the most recent 20s interval.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {packets/s} | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| direction | The direction of network throughput. | Str: ``transmitted``, ``received`` | false |
+| object | The object on the virtual machine or host that is being reported on. | Any Str | false |
+
+### vcenter.vm.network.multicast.packet.rate
+
+The rate of multicast packets transmitted or received by each vNIC (virtual network interface controller) on the virtual machine.
+
+As measured over the most recent 20s interval.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {packets/s} | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| direction | The direction of network throughput. | Str: ``transmitted``, ``received`` | false |
+| object | The object on the virtual machine or host that is being reported on. | Any Str | false |
 
 ## Resource Attributes
 

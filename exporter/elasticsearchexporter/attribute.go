@@ -7,19 +7,15 @@ import "go.opentelemetry.io/collector/pdata/pcommon"
 
 // dynamic index attribute key constants
 const (
-	indexPrefix                  = "elasticsearch.index.prefix"
-	indexSuffix                  = "elasticsearch.index.suffix"
-	dataStreamDataset            = "data_stream.dataset"
-	dataStreamNamespace          = "data_stream.namespace"
-	dataStreamType               = "data_stream.type"
-	defaultDataStreamDataset     = "generic"
-	defaultDataStreamNamespace   = "default"
-	defaultDataStreamTypeLogs    = "logs"
-	defaultDataStreamTypeMetrics = "metrics"
-	defaultDataStreamTypeTraces  = "traces"
+	defaultDataStreamDataset      = "generic"
+	defaultDataStreamNamespace    = "default"
+	defaultDataStreamTypeLogs     = "logs"
+	defaultDataStreamTypeMetrics  = "metrics"
+	defaultDataStreamTypeTraces   = "traces"
+	defaultDataStreamTypeProfiles = "profiles"
 )
 
-func getFromAttributes(name string, defaultValue string, attributeMaps ...pcommon.Map) (string, bool) {
+func getFromAttributes(name, defaultValue string, attributeMaps ...pcommon.Map) (string, bool) {
 	for _, attributeMap := range attributeMaps {
 		if value, exists := attributeMap.Get(name); exists {
 			return value.AsString(), true

@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver/internal/metadata"
@@ -39,9 +39,9 @@ type vcenterScrapeData struct {
 	hostPerfMetricsByRef     map[string]*performance.EntityMetric
 	vmsByRef                 map[string]*mo.VirtualMachine
 	vmPerfMetricsByRef       map[string]*performance.EntityMetric
-	vmVSANMetricsByUUID      map[string]*VSANMetricResults
-	hostVSANMetricsByUUID    map[string]*VSANMetricResults
-	clusterVSANMetricsByUUID map[string]*VSANMetricResults
+	vmVSANMetricsByUUID      map[string]*vSANMetricResults
+	hostVSANMetricsByUUID    map[string]*vSANMetricResults
+	clusterVSANMetricsByUUID map[string]*vSANMetricResults
 }
 
 type vcenterMetricScraper struct {
@@ -82,9 +82,9 @@ func newVcenterScrapeData() *vcenterScrapeData {
 		rPoolsByRef:              make(map[string]*mo.ResourcePool),
 		vmsByRef:                 make(map[string]*mo.VirtualMachine),
 		vmPerfMetricsByRef:       make(map[string]*performance.EntityMetric),
-		vmVSANMetricsByUUID:      make(map[string]*VSANMetricResults),
-		hostVSANMetricsByUUID:    make(map[string]*VSANMetricResults),
-		clusterVSANMetricsByUUID: make(map[string]*VSANMetricResults),
+		vmVSANMetricsByUUID:      make(map[string]*vSANMetricResults),
+		hostVSANMetricsByUUID:    make(map[string]*vSANMetricResults),
+		clusterVSANMetricsByUUID: make(map[string]*vSANMetricResults),
 	}
 }
 
@@ -92,13 +92,15 @@ func (v *vcenterMetricScraper) Start(ctx context.Context, _ component.Host) erro
 	connectErr := v.client.EnsureConnection(ctx)
 	// don't fail to start if we cannot establish connection, just log an error
 	if connectErr != nil {
-		v.logger.Error(fmt.Sprintf("unable to establish a connection to the vSphere SDK %s", connectErr.Error()))
+		v.logger.Error("unable to establish a connection to the vSphere SDK " + connectErr.Error())
 	}
 	return nil
 }
+
 func (v *vcenterMetricScraper) Shutdown(ctx context.Context) error {
 	return v.client.Disconnect(ctx)
 }
+
 func (v *vcenterMetricScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	if v.client == nil {
 		v.client = newVcenterClient(v.logger, v.config)

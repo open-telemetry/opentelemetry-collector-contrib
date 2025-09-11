@@ -8,19 +8,20 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/pkg/samplingpolicy"
 )
 
 type And struct {
 	// the subpolicy evaluators
-	subpolicies []PolicyEvaluator
+	subpolicies []samplingpolicy.Evaluator
 	logger      *zap.Logger
 }
 
 func NewAnd(
 	logger *zap.Logger,
-	subpolicies []PolicyEvaluator,
-) PolicyEvaluator {
-
+	subpolicies []samplingpolicy.Evaluator,
+) samplingpolicy.Evaluator {
 	return &And{
 		subpolicies: subpolicies,
 		logger:      logger,
@@ -28,24 +29,17 @@ func NewAnd(
 }
 
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
-func (c *And) Evaluate(ctx context.Context, traceID pcommon.TraceID, trace *TraceData) (Decision, error) {
+func (c *And) Evaluate(ctx context.Context, traceID pcommon.TraceID, trace *samplingpolicy.TraceData) (samplingpolicy.Decision, error) {
 	// The policy iterates over all sub-policies and returns Sampled if all sub-policies returned a Sampled Decision.
-	// If any subpolicy returns NotSampled or InvertNotSampled it returns that
+	// If any subpolicy returns NotSampled or InvertNotSampled, it returns NotSampled Decision.
 	for _, sub := range c.subpolicies {
 		decision, err := sub.Evaluate(ctx, traceID, trace)
 		if err != nil {
-			return Unspecified, err
+			return samplingpolicy.Unspecified, err
 		}
-		if decision == NotSampled || decision == InvertNotSampled {
-			return decision, nil
+		if decision == samplingpolicy.NotSampled || decision == samplingpolicy.InvertNotSampled {
+			return samplingpolicy.NotSampled, nil
 		}
-
 	}
-	return Sampled, nil
-}
-
-// OnDroppedSpans is called when the trace needs to be dropped, due to memory
-// pressure, before the decision_wait time has been reached.
-func (c *And) OnDroppedSpans(pcommon.TraceID, *TraceData) (Decision, error) {
-	return Sampled, nil
+	return samplingpolicy.Sampled, nil
 }

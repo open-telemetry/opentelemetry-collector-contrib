@@ -4,14 +4,14 @@
 package helper // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 
 import (
-	"fmt"
+	"errors"
 	"regexp"
 )
 
 func MatchValues(value string, regexp *regexp.Regexp) (map[string]any, error) {
 	matches := regexp.FindStringSubmatch(value)
 	if matches == nil {
-		return nil, fmt.Errorf("regex pattern does not match")
+		return nil, errors.New("regex pattern does not match")
 	}
 
 	parsedValues := map[string]any{}

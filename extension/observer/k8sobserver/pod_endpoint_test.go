@@ -20,7 +20,9 @@ func TestPodObjectToPortEndpoint(t *testing.T) {
 				Name:      "pod-2",
 				Namespace: "default",
 				UID:       "pod-2-UID",
-				Labels:    map[string]string{"env": "prod"}}},
+				Labels:    map[string]string{"env": "prod"},
+			},
+		},
 		{
 			ID:     "namespace/pod-2-UID/container-2",
 			Target: "1.2.3.4",
@@ -32,7 +34,10 @@ func TestPodObjectToPortEndpoint(t *testing.T) {
 					Name:      "pod-2",
 					Namespace: "default",
 					UID:       "pod-2-UID",
-					Labels:    map[string]string{"env": "prod"}}}},
+					Labels:    map[string]string{"env": "prod"},
+				},
+			},
+		},
 		{
 			ID:     "namespace/pod-2-UID/https(443)",
 			Target: "1.2.3.4:443",
@@ -41,12 +46,14 @@ func TestPodObjectToPortEndpoint(t *testing.T) {
 					Name:      "pod-2",
 					Namespace: "default",
 					UID:       "pod-2-UID",
-					Labels:    map[string]string{"env": "prod"}},
+					Labels:    map[string]string{"env": "prod"},
+				},
 				Port:      443,
-				Transport: observer.ProtocolTCP}},
+				Transport: observer.ProtocolTCP,
+			},
+		},
 	}
 
 	endpoints := convertPodToEndpoints("namespace", podWithNamedPorts)
 	require.Equal(t, expectedEndpoints, endpoints)
-
 }

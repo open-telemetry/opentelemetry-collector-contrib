@@ -4,7 +4,6 @@
 package azuredataexplorerexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuredataexplorerexporter"
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -23,13 +22,17 @@ const (
 )
 
 // The timestamps used for the tests
-var tsUnix = time.Unix(time.Now().Unix(), time.Now().UnixNano())
-var ts = pcommon.NewTimestampFromTime(tsUnix)
-var tstr = ts.AsTime().Format(time.RFC3339Nano)
+var (
+	tsUnix = time.Unix(time.Now().Unix(), time.Now().UnixNano())
+	ts     = pcommon.NewTimestampFromTime(tsUnix)
+	tstr   = ts.AsTime().Format(time.RFC3339Nano)
+)
 
 // the histogram values and distribution for the tests
-var distributionBounds = []float64{1, 2, 4}
-var distributionCounts = []uint64{4, 2, 3, 5}
+var (
+	distributionBounds = []float64{1, 2, 4}
+	distributionCounts = []uint64{4, 2, 3, 5}
+)
 
 func Test_rawMetricsToAdxMetrics(t *testing.T) {
 	t.Parallel()
@@ -47,14 +50,14 @@ func Test_rawMetricsToAdxMetrics(t *testing.T) {
 		name               string                                                                    // name of the test
 		metricsDataFn      func(metricType pmetric.MetricType, ts pcommon.Timestamp) pmetric.Metrics // function that generates the metric
 		metricDataType     pmetric.MetricType
-		expectedAdxMetrics []*AdxMetric // expected results
+		expectedAdxMetrics []*adxMetric // expected results
 	}{
 		{
 			//
 			name:           "metrics_counter_over_time",
 			metricsDataFn:  newMetrics,
 			metricDataType: pmetric.MetricTypeSum,
-			expectedAdxMetrics: []*AdxMetric{
+			expectedAdxMetrics: []*adxMetric{
 				{
 					Timestamp:          tstr,
 					MetricName:         "page_faults",
@@ -71,7 +74,7 @@ func Test_rawMetricsToAdxMetrics(t *testing.T) {
 			name:           "metrics_simple_histogram_with_value",
 			metricsDataFn:  newMetrics,
 			metricDataType: pmetric.MetricTypeHistogram,
-			expectedAdxMetrics: []*AdxMetric{
+			expectedAdxMetrics: []*adxMetric{
 				{
 					Timestamp:          tstr,
 					MetricName:         "http.server.duration_sum",
@@ -149,7 +152,7 @@ func Test_rawMetricsToAdxMetrics(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			metrics := tt.metricsDataFn(tt.metricDataType, ts)
-			actualMetrics := rawMetricsToAdxMetrics(context.Background(), metrics, zap.NewNop())
+			actualMetrics := rawMetricsToAdxMetrics(t.Context(), metrics, zap.NewNop())
 			encoder := json.NewEncoder(io.Discard)
 			for i, expectedMetric := range tt.expectedAdxMetrics {
 				assert.Equal(t, expectedMetric.Timestamp, actualMetrics[i].Timestamp)
@@ -169,7 +172,6 @@ func Test_rawMetricsToAdxMetrics(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func Test_mapToAdxMetric(t *testing.T) {
@@ -184,7 +186,7 @@ func Test_mapToAdxMetric(t *testing.T) {
 		name               string                  // name of the test
 		resourceFn         func() pcommon.Resource // function that generates the resources
 		metricDataFn       func() pmetric.Metric   // function that generates the metric
-		expectedAdxMetrics []*AdxMetric            // expected results
+		expectedAdxMetrics []*adxMetric            // expected results
 		configFn           func() *Config          // the config to apply
 	}{
 		{
@@ -204,7 +206,7 @@ func Test_mapToAdxMetric(t *testing.T) {
 				return createDefaultConfig().(*Config)
 			},
 
-			expectedAdxMetrics: []*AdxMetric{
+			expectedAdxMetrics: []*adxMetric{
 				{
 					Timestamp:          tstr,
 					MetricName:         "page_faults",
@@ -234,7 +236,7 @@ func Test_mapToAdxMetric(t *testing.T) {
 				return createDefaultConfig().(*Config)
 			},
 
-			expectedAdxMetrics: []*AdxMetric{
+			expectedAdxMetrics: []*adxMetric{
 				{
 					Timestamp:          tstr,
 					MetricName:         "page_faults",
@@ -283,7 +285,7 @@ func Test_mapToAdxMetric(t *testing.T) {
 				return createDefaultConfig().(*Config)
 			},
 
-			expectedAdxMetrics: []*AdxMetric{
+			expectedAdxMetrics: []*adxMetric{
 				{
 					Timestamp:          tstr,
 					MetricName:         "http.server.duration_sum",
@@ -388,7 +390,7 @@ func Test_mapToAdxMetric(t *testing.T) {
 			configFn: func() *Config {
 				return createDefaultConfig().(*Config)
 			},
-			expectedAdxMetrics: []*AdxMetric{
+			expectedAdxMetrics: []*adxMetric{
 				{
 					Timestamp:          tstr,
 					MetricName:         "cpu.frequency",
@@ -419,7 +421,7 @@ func Test_mapToAdxMetric(t *testing.T) {
 			configFn: func() *Config {
 				return createDefaultConfig().(*Config)
 			},
-			expectedAdxMetrics: []*AdxMetric{
+			expectedAdxMetrics: []*adxMetric{
 				{
 					Timestamp:          tstr,
 					MetricName:         "cpu.frequency",
@@ -455,7 +457,7 @@ func Test_mapToAdxMetric(t *testing.T) {
 				qt2.SetValue(45)
 				return summary
 			},
-			expectedAdxMetrics: []*AdxMetric{
+			expectedAdxMetrics: []*adxMetric{
 				{
 					Timestamp:          tstr,
 					MetricName:         "http.server.duration_sum",

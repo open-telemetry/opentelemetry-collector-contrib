@@ -4,12 +4,17 @@
 package fingerprint
 
 import (
+	"compress/gzip"
+	"encoding/binary"
 	"fmt"
-	"math/rand"
+	"io"
+	"math/rand/v2"
 	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/filetest"
 )
 
 func TestNewDoesNotModifyOffset(t *testing.T) {
@@ -36,11 +41,11 @@ func TestNewDoesNotModifyOffset(t *testing.T) {
 	_, err = temp.Seek(0, 0)
 	require.NoError(t, err)
 
-	fp, err := NewFromFile(temp, len(fingerprint))
+	fp, err := NewFromFile(temp, len(fingerprint), false)
 	require.NoError(t, err)
 
 	// Validate the fingerprint is the correct size
-	require.Equal(t, len(fingerprint), len(fp.firstBytes))
+	require.Len(t, fp.firstBytes, len(fingerprint))
 
 	// Validate that reading the fingerprint did not adjust the
 	// file descriptor's internal offset (as using Seek does)
@@ -114,7 +119,6 @@ func TestNewFromFile(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -131,7 +135,7 @@ func TestNewFromFile(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, tc.fileSize, int(info.Size()))
 
-			fp, err := NewFromFile(temp, tc.fingerprintSize)
+			fp, err := NewFromFile(temp, tc.fingerprintSize, false)
 			require.NoError(t, err)
 
 			require.Len(t, fp.firstBytes, tc.expectedLen)
@@ -223,20 +227,34 @@ func TestStartsWith(t *testing.T) {
 // the file, while each iteration of the growing file represents
 // a possible state of the same file at a previous time.
 func TestStartsWith_FromFile(t *testing.T) {
-	r := rand.New(rand.NewSource(112358))
+	r := rand.New(rand.NewPCG(112, 358))
 	fingerprintSize := 10
 	fileLength := 12 * fingerprintSize
+	fillRandomBytes := func(buf []byte) {
+		// TODO: when we upgrade to go1.23,
+		// use rand.ChaCha8.Read.
+		//
+		// NOTE: we can cheat here since know the
+		// buffer length is a multiple of 4, due to
+		// fileLength being a multiple of 12.
+		for i := range len(buf) / 4 {
+			binary.BigEndian.PutUint32(
+				buf[i*4:(i+1)*4],
+				r.Uint32(),
+			)
+		}
+	}
 
 	tempDir := t.TempDir()
 
 	// Make a []byte we can write one at a time
 	content := make([]byte, fileLength)
-	r.Read(content) // Fill slice with random bytes
+	fillRandomBytes(content)
 
 	// Overwrite some bytes with \n to ensure
 	// we are testing a file with multiple lines
 	newlineMask := make([]byte, fileLength)
-	r.Read(newlineMask) // Fill slice with random bytes
+	fillRandomBytes(newlineMask)
 	for i, b := range newlineMask {
 		if b == 0 && i != 0 { // 1/256 chance, but never first byte
 			content[i] = byte('\n')
@@ -250,7 +268,7 @@ func TestStartsWith_FromFile(t *testing.T) {
 	_, err = fullFile.Write(content)
 	require.NoError(t, err)
 
-	fff, err := NewFromFile(fullFile, fingerprintSize)
+	fff, err := NewFromFile(fullFile, fingerprintSize, false)
 	require.NoError(t, err)
 
 	partialFile, err := os.CreateTemp(tempDir, "")
@@ -268,7 +286,7 @@ func TestStartsWith_FromFile(t *testing.T) {
 		_, err = partialFile.Write(content[i:i])
 		require.NoError(t, err)
 
-		pff, err := NewFromFile(partialFile, fingerprintSize)
+		pff, err := NewFromFile(partialFile, fingerprintSize, false)
 		require.NoError(t, err)
 
 		require.True(t, fff.StartsWith(pff))
@@ -279,7 +297,7 @@ func tokenWithLength(length int) []byte {
 	charset := "abcdefghijklmnopqrstuvwxyz"
 	b := make([]byte, length)
 	for i := range b {
-		b[i] = charset[rand.Intn(len(charset))]
+		b[i] = charset[rand.IntN(len(charset))]
 	}
 	return b
 }
@@ -293,4 +311,29 @@ func TestMarshalUnmarshal(t *testing.T) {
 	require.NoError(t, fp2.UnmarshalJSON(b))
 
 	require.Equal(t, fp, fp2)
+}
+
+// Test compressed and uncompressed file with same content have equal fingerprint
+func TestCompressionFingerprint(t *testing.T) {
+	tmp := t.TempDir()
+	compressedFile := filetest.OpenTempWithPattern(t, tmp, "*.gz")
+	gzipWriter := gzip.NewWriter(compressedFile)
+	defer gzipWriter.Close()
+
+	data := []byte("this is a first test line")
+	// Write data
+	n, err := gzipWriter.Write(data)
+	require.NoError(t, err)
+	require.NoError(t, gzipWriter.Close())
+	require.NotZero(t, n, "gzip file should not be empty")
+
+	// set seek to the start of the file
+	_, err = compressedFile.Seek(0, io.SeekStart)
+	require.NoError(t, err)
+
+	compressedFP, err := NewFromFile(compressedFile, len(data), true)
+	require.NoError(t, err)
+
+	uncompressedFP := New(data)
+	uncompressedFP.Equal(compressedFP)
 }

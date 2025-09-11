@@ -7,7 +7,7 @@ import (
 	"context"
 	"crypto/md5" // #nosec
 	"encoding/hex"
-	"fmt"
+	"errors"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
@@ -24,14 +24,13 @@ func createMD5Function[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ott
 	args, ok := oArgs.(*MD5Arguments[K])
 
 	if !ok {
-		return nil, fmt.Errorf("MD5Factory args must be of type *MD5Arguments[K]")
+		return nil, errors.New("MD5Factory args must be of type *MD5Arguments[K]")
 	}
 
 	return MD5HashString(args.Target)
 }
 
 func MD5HashString[K any](target ottl.StringGetter[K]) (ottl.ExprFunc[K], error) {
-
 	return func(ctx context.Context, tCtx K) (any, error) {
 		val, err := target.Get(ctx, tCtx)
 		if err != nil {

@@ -19,8 +19,8 @@ func TestMonitorPPID(t *testing.T) {
 	t.Run("Does not trigger if process with ppid never stops", func(t *testing.T) {
 		t.Parallel()
 
-		cmdContext, cmdCancel := context.WithCancel(context.Background())
-		cmd := longRunningComand(cmdContext)
+		cmdContext, cmdCancel := context.WithCancel(t.Context())
+		cmd := longRunningCommand(cmdContext)
 		cmd.Stdout = os.Stdout
 		require.NoError(t, cmd.Start())
 		cmdPid := cmd.Process.Pid
@@ -35,7 +35,7 @@ func TestMonitorPPID(t *testing.T) {
 			require.FailNow(t, "status report function should not be called")
 		}
 
-		monitorCtx, monitorCtxCancel := context.WithCancel(context.Background())
+		monitorCtx, monitorCtxCancel := context.WithCancel(t.Context())
 
 		go func() {
 			time.Sleep(50 * time.Millisecond)
@@ -48,8 +48,8 @@ func TestMonitorPPID(t *testing.T) {
 	t.Run("Emits fatal status if ppid changes", func(t *testing.T) {
 		t.Parallel()
 
-		cmdContext, cmdCancel := context.WithCancel(context.Background())
-		cmd := longRunningComand(cmdContext)
+		cmdContext, cmdCancel := context.WithCancel(t.Context())
+		cmd := longRunningCommand(cmdContext)
 		require.NoError(t, cmd.Start())
 		cmdPid := cmd.Process.Pid
 
@@ -69,7 +69,7 @@ func TestMonitorPPID(t *testing.T) {
 			close(cmdDoneChan)
 		}()
 
-		monitorPPID(context.Background(), 1*time.Millisecond, int32(cmdPid), statusReportFunc)
+		monitorPPID(t.Context(), 1*time.Millisecond, int32(cmdPid), statusReportFunc)
 		require.NotNil(t, status)
 		require.Equal(t, componentstatus.StatusFatalError, status.Status())
 
@@ -79,12 +79,10 @@ func TestMonitorPPID(t *testing.T) {
 		case <-time.After(5 * time.Second):
 			t.Fatalf("Timed out waiting for command to stop")
 		}
-
 	})
-
 }
 
-func longRunningComand(ctx context.Context) *exec.Cmd {
+func longRunningCommand(ctx context.Context) *exec.Cmd {
 	switch runtime.GOOS {
 	case "windows":
 		// Would prefer to use timeout.exe here, but it doesn't seem to work in

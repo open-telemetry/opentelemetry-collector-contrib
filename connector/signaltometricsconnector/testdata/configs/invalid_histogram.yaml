@@ -1,0 +1,21 @@
+signaltometrics:
+  spans:
+    - name: span.sum
+      attributes:
+        - key: key.1
+      histogram: {}
+  datapoints:
+    - name: dp.sum
+      attributes:
+        - key: key.1
+      histogram: {}
+  logs:
+    - name: log.sum
+      attributes:
+        - key: key.1
+      histogram: {}
+  profiles:
+    - name: profile.sum
+      attributes:
+        - key: key.1
+      histogram: {}

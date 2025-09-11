@@ -16,7 +16,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
@@ -52,7 +51,7 @@ func (dd *ddExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
 			ils := resSpans.ScopeSpans().At(i)
 			for s := 0; s < ils.Spans().Len(); s++ {
 				span := ils.Spans().At(s)
-				var newSpan = pb.Span{
+				newSpan := pb.Span{
 					Service:  "test",
 					Name:     "test",
 					Resource: "test",
@@ -63,10 +62,9 @@ func (dd *ddExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
 					Meta:     map[string]string{},
 					Type:     "custom",
 				}
-				span.Attributes().Range(func(k string, v pcommon.Value) bool {
+				for k, v := range span.Attributes().All() {
 					newSpan.GetMeta()[k] = v.AsString()
-					return true
-				})
+				}
 				var traceIDBytes [16]byte
 				var spanIDBytes [8]byte
 				var parentIDBytes [8]byte
@@ -87,7 +85,7 @@ func (dd *ddExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
 		return consumererror.NewPermanent(fmt.Errorf("failed to encode msgp: %w", err))
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "POST", dd.endpoint, &buf)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, dd.endpoint, &buf)
 	if err != nil {
 		return fmt.Errorf("failed to push trace data via DD exporter: %w", err)
 	}

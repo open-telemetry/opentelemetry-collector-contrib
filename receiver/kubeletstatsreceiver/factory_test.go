@@ -8,7 +8,6 @@
 package kubeletstatsreceiver
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -20,7 +19,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -32,7 +31,7 @@ import (
 func TestType(t *testing.T) {
 	factory := NewFactory()
 	ft := factory.Type()
-	require.EqualValues(t, metadata.Type, ft)
+	require.Equal(t, metadata.Type, ft)
 }
 
 func TestValidConfig(t *testing.T) {
@@ -44,8 +43,8 @@ func TestValidConfig(t *testing.T) {
 func TestCreateTraces(t *testing.T) {
 	factory := NewFactory()
 	traceReceiver, err := factory.CreateTraces(
-		context.Background(),
-		receivertest.NewNopSettings(),
+		t.Context(),
+		receivertest.NewNopSettings(metadata.Type),
 		factory.CreateDefaultConfig(),
 		nil,
 	)
@@ -56,8 +55,8 @@ func TestCreateTraces(t *testing.T) {
 func TestCreateMetrics(t *testing.T) {
 	factory := NewFactory()
 	metricsReceiver, err := factory.CreateMetrics(
-		context.Background(),
-		receivertest.NewNopSettings(),
+		t.Context(),
+		receivertest.NewNopSettings(metadata.Type),
 		tlsConfig(),
 		consumertest.NewNop(),
 	)
@@ -71,8 +70,8 @@ func TestFactoryInvalidExtraMetadataLabels(t *testing.T) {
 		ExtraMetadataLabels: []kubelet.MetadataLabel{kubelet.MetadataLabel("invalid-label")},
 	}
 	metricsReceiver, err := factory.CreateMetrics(
-		context.Background(),
-		receivertest.NewNopSettings(),
+		t.Context(),
+		receivertest.NewNopSettings(metadata.Type),
 		&cfg,
 		consumertest.NewNop(),
 	)
@@ -91,8 +90,8 @@ func TestFactoryBadAuthType(t *testing.T) {
 		},
 	}
 	_, err := factory.CreateMetrics(
-		context.Background(),
-		receivertest.NewNopSettings(),
+		t.Context(),
+		receivertest.NewNopSettings(metadata.Type),
 		cfg,
 		consumertest.NewNop(),
 	)

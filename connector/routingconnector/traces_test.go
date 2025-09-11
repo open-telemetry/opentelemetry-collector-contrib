@@ -16,6 +16,10 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pipeline"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/ptraceutiltest"
 )
 
 func TestTracesRegisterConsumersForValidRoute(t *testing.T) {
@@ -47,12 +51,12 @@ func TestTracesRegisterConsumersForValidRoute(t *testing.T) {
 		traces1:       &sink1,
 	})
 
-	conn, err := NewFactory().CreateTracesToTraces(context.Background(),
-		connectortest.NewNopSettings(), cfg, router.(consumer.Traces))
+	conn, err := NewFactory().CreateTracesToTraces(t.Context(),
+		connectortest.NewNopSettings(metadata.Type), cfg, router.(consumer.Traces))
 
 	require.NoError(t, err)
 	require.NotNil(t, conn)
-	assert.False(t, conn.Capabilities().MutatesData)
+	assert.True(t, conn.Capabilities().MutatesData)
 
 	rtConn := conn.(*tracesConnector)
 	require.NoError(t, err)
@@ -69,10 +73,8 @@ func TestTracesRegisterConsumersForValidRoute(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, routeConsumer, route.consumer)
 
-	require.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
-	defer func() {
-		assert.NoError(t, conn.Shutdown(context.Background()))
-	}()
+	require.NoError(t, conn.Start(t.Context(), componenttest.NewNopHost()))
+	assert.NoError(t, conn.Shutdown(t.Context()))
 }
 
 func TestTracesCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
@@ -114,17 +116,17 @@ func TestTracesCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 
 	factory := NewFactory()
 	conn, err := factory.CreateTracesToTraces(
-		context.Background(),
-		connectortest.NewNopSettings(),
+		t.Context(),
+		connectortest.NewNopSettings(metadata.Type),
 		cfg,
 		router.(consumer.Traces),
 	)
 
 	require.NoError(t, err)
 	require.NotNil(t, conn)
-	require.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, conn.Start(t.Context(), componenttest.NewNopHost()))
 	defer func() {
-		assert.NoError(t, conn.Shutdown(context.Background()))
+		assert.NoError(t, conn.Shutdown(t.Context()))
 	}()
 
 	t.Run("span matched by 0 expressions", func(t *testing.T) {
@@ -136,7 +138,7 @@ func TestTracesCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 		span := rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 		span.SetName("span")
 
-		require.NoError(t, conn.ConsumeTraces(context.Background(), tr))
+		require.NoError(t, conn.ConsumeTraces(t.Context(), tr))
 
 		assert.Len(t, defaultSink.AllTraces(), 1)
 		assert.Empty(t, sink0.AllTraces())
@@ -152,36 +154,11 @@ func TestTracesCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 		span := rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 		span.SetName("span")
 
-		require.NoError(t, conn.ConsumeTraces(context.Background(), tr))
+		require.NoError(t, conn.ConsumeTraces(t.Context(), tr))
 
 		assert.Empty(t, defaultSink.AllTraces())
 		assert.Len(t, sink0.AllTraces(), 1)
 		assert.Empty(t, sink1.AllTraces())
-	})
-
-	t.Run("span matched by all expressions", func(t *testing.T) {
-		resetSinks()
-
-		tr := ptrace.NewTraces()
-		rl := tr.ResourceSpans().AppendEmpty()
-		rl.Resource().Attributes().PutInt("value", 2)
-		span := rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
-		span.SetName("span")
-
-		rl = tr.ResourceSpans().AppendEmpty()
-		rl.Resource().Attributes().PutInt("value", 3)
-		span = rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
-		span.SetName("span1")
-
-		require.NoError(t, conn.ConsumeTraces(context.Background(), tr))
-
-		assert.Empty(t, defaultSink.AllTraces())
-		assert.Len(t, sink0.AllTraces(), 1)
-		assert.Len(t, sink1.AllTraces(), 1)
-
-		assert.Equal(t, 2, sink0.AllTraces()[0].SpanCount())
-		assert.Equal(t, 2, sink1.AllTraces()[0].SpanCount())
-		assert.Equal(t, sink0.AllTraces(), sink1.AllTraces())
 	})
 
 	t.Run("span matched by one expression, multiple pipelines", func(t *testing.T) {
@@ -193,7 +170,7 @@ func TestTracesCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 		span := rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 		span.SetName("span")
 
-		require.NoError(t, conn.ConsumeTraces(context.Background(), tr))
+		require.NoError(t, conn.ConsumeTraces(t.Context(), tr))
 
 		assert.Len(t, defaultSink.AllTraces(), 1)
 		assert.Len(t, sink0.AllTraces(), 1)
@@ -212,7 +189,6 @@ func TestTracesCorrectlyMatchOnceWithOTTL(t *testing.T) {
 
 	cfg := &Config{
 		DefaultPipelines: []pipeline.ID{tracesDefault},
-		MatchOnce:        true,
 		Table: []RoutingTableItem{
 			{
 				Statement: `route() where attributes["value"] > 0 and attributes["value"] < 4`,
@@ -245,17 +221,17 @@ func TestTracesCorrectlyMatchOnceWithOTTL(t *testing.T) {
 
 	factory := NewFactory()
 	conn, err := factory.CreateTracesToTraces(
-		context.Background(),
-		connectortest.NewNopSettings(),
+		t.Context(),
+		connectortest.NewNopSettings(metadata.Type),
 		cfg,
 		router.(consumer.Traces),
 	)
 
 	require.NoError(t, err)
 	require.NotNil(t, conn)
-	require.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, conn.Start(t.Context(), componenttest.NewNopHost()))
 	defer func() {
-		assert.NoError(t, conn.Shutdown(context.Background()))
+		assert.NoError(t, conn.Shutdown(t.Context()))
 	}()
 
 	t.Run("span matched by 0 expressions", func(t *testing.T) {
@@ -267,7 +243,7 @@ func TestTracesCorrectlyMatchOnceWithOTTL(t *testing.T) {
 		span := rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 		span.SetName("span")
 
-		require.NoError(t, conn.ConsumeTraces(context.Background(), tr))
+		require.NoError(t, conn.ConsumeTraces(t.Context(), tr))
 
 		assert.Len(t, defaultSink.AllTraces(), 1)
 		assert.Empty(t, sink0.AllTraces())
@@ -283,7 +259,7 @@ func TestTracesCorrectlyMatchOnceWithOTTL(t *testing.T) {
 		span := rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 		span.SetName("span")
 
-		require.NoError(t, conn.ConsumeTraces(context.Background(), tr))
+		require.NoError(t, conn.ConsumeTraces(t.Context(), tr))
 
 		assert.Empty(t, defaultSink.AllTraces())
 		assert.Len(t, sink0.AllTraces(), 1)
@@ -304,7 +280,7 @@ func TestTracesCorrectlyMatchOnceWithOTTL(t *testing.T) {
 		span = rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 		span.SetName("span1")
 
-		require.NoError(t, conn.ConsumeTraces(context.Background(), tr))
+		require.NoError(t, conn.ConsumeTraces(t.Context(), tr))
 
 		assert.Empty(t, defaultSink.AllTraces())
 		assert.Len(t, sink0.AllTraces(), 1)
@@ -322,7 +298,7 @@ func TestTracesCorrectlyMatchOnceWithOTTL(t *testing.T) {
 		span := rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 		span.SetName("span")
 
-		require.NoError(t, conn.ConsumeTraces(context.Background(), tr))
+		require.NoError(t, conn.ConsumeTraces(t.Context(), tr))
 
 		assert.Len(t, defaultSink.AllTraces(), 1)
 		assert.Len(t, sink0.AllTraces(), 1)
@@ -357,17 +333,17 @@ func TestTracesResourceAttributeDroppedByOTTL(t *testing.T) {
 
 	factory := NewFactory()
 	conn, err := factory.CreateTracesToTraces(
-		context.Background(),
-		connectortest.NewNopSettings(),
+		t.Context(),
+		connectortest.NewNopSettings(metadata.Type),
 		cfg,
 		router.(consumer.Traces),
 	)
 
 	require.NoError(t, err)
 	require.NotNil(t, conn)
-	require.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, conn.Start(t.Context(), componenttest.NewNopHost()))
 	defer func() {
-		assert.NoError(t, conn.Shutdown(context.Background()))
+		assert.NoError(t, conn.Shutdown(t.Context()))
 	}()
 
 	tr := ptrace.NewTraces()
@@ -375,7 +351,7 @@ func TestTracesResourceAttributeDroppedByOTTL(t *testing.T) {
 	rm.Resource().Attributes().PutStr("X-Tenant", "acme")
 	rm.Resource().Attributes().PutStr("attr", "acme")
 
-	assert.NoError(t, conn.ConsumeTraces(context.Background(), tr))
+	assert.NoError(t, conn.ConsumeTraces(t.Context(), tr))
 	traces := sink1.AllTraces()
 	require.Len(t, traces, 1,
 		"trace should be routed to non default pipeline",
@@ -410,12 +386,518 @@ func TestTraceConnectorCapabilities(t *testing.T) {
 
 	factory := NewFactory()
 	conn, err := factory.CreateTracesToTraces(
-		context.Background(),
-		connectortest.NewNopSettings(),
+		t.Context(),
+		connectortest.NewNopSettings(metadata.Type),
 		cfg,
 		router.(consumer.Traces),
 	)
 
 	require.NoError(t, err)
-	assert.False(t, conn.Capabilities().MutatesData)
+	assert.True(t, conn.Capabilities().MutatesData)
+}
+
+func TestTracesConnectorDetailed(t *testing.T) {
+	idSink0 := pipeline.NewIDWithName(pipeline.SignalTraces, "0")
+	idSink1 := pipeline.NewIDWithName(pipeline.SignalTraces, "1")
+	idSinkD := pipeline.NewIDWithName(pipeline.SignalTraces, "default")
+
+	isAcme := `request["X-Tenant"] == "acme"`
+
+	isResourceA := `attributes["resourceName"] == "resourceA"`
+	isResourceB := `attributes["resourceName"] == "resourceB"`
+	isResourceX := `attributes["resourceName"] == "resourceX"`
+	isResourceY := `attributes["resourceName"] == "resourceY"`
+
+	// IsMap and IsString are just candidate for Standard Converter Function to prevent any unknown regressions for this component
+	isResourceString := `IsString(attributes["resourceName"]) == true`
+	require.Contains(t, common.SpanFunctions(), "IsString")
+	isAttributesMap := `IsMap(attributes) == true`
+	require.Contains(t, common.SpanFunctions(), "IsMap")
+
+	isSpanE := `name == "spanE"`
+	isSpanF := `name == "spanF"`
+	isSpanX := `name == "spanX"`
+	isSpanY := `name == "spanY"`
+
+	isScopeCFromLowerContext := `instrumentation_scope.name == "scopeC"`
+	isScopeDFromLowerContext := `instrumentation_scope.name == "scopeD"`
+
+	isResourceBFromLowerContext := `resource.attributes["resourceName"] == "resourceB"`
+
+	testCases := []struct {
+		ctx         context.Context
+		input       ptrace.Traces
+		expectSink0 ptrace.Traces
+		expectSink1 ptrace.Traces
+		expectSinkD ptrace.Traces
+		cfg         *Config
+		name        string
+	}{
+		{
+			name: "request/no_request_values",
+			cfg: testConfig(
+				withRoute("request", isAcme, idSink0),
+				withDefault(idSinkD),
+			),
+			ctx:         t.Context(),
+			input:       ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
+			expectSink0: ptrace.Traces{},
+			expectSink1: ptrace.Traces{},
+			expectSinkD: ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
+		},
+		{
+			name: "request/match_any_value",
+			cfg: testConfig(
+				withRoute("request", isAcme, idSink0),
+				withDefault(idSinkD),
+			),
+			ctx: withGRPCMetadata(
+				withHTTPMetadata(
+					t.Context(),
+					map[string][]string{"X-Tenant": {"acme"}},
+				),
+				map[string]string{"X-Tenant": "notacme"},
+			),
+			input:       ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
+			expectSink0: ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
+			expectSink1: ptrace.Traces{},
+			expectSinkD: ptrace.Traces{},
+		},
+		{
+			name: "request/match_grpc_value",
+			cfg: testConfig(
+				withRoute("request", isAcme, idSink0),
+				withDefault(idSinkD),
+			),
+			ctx:         withGRPCMetadata(t.Context(), map[string]string{"X-Tenant": "acme"}),
+			input:       ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
+			expectSink0: ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
+			expectSink1: ptrace.Traces{},
+			expectSinkD: ptrace.Traces{},
+		},
+		{
+			name: "request/match_no_grpc_value",
+			cfg: testConfig(
+				withRoute("request", isAcme, idSink0),
+				withDefault(idSinkD),
+			),
+			ctx:         withGRPCMetadata(t.Context(), map[string]string{"X-Tenant": "notacme"}),
+			input:       ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
+			expectSink0: ptrace.Traces{},
+			expectSink1: ptrace.Traces{},
+			expectSinkD: ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
+		},
+		{
+			name: "request/match_http_value",
+			cfg: testConfig(
+				withRoute("request", isAcme, idSink0),
+				withDefault(idSinkD),
+			),
+			ctx:         withHTTPMetadata(t.Context(), map[string][]string{"X-Tenant": {"acme"}}),
+			input:       ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
+			expectSink0: ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
+			expectSink1: ptrace.Traces{},
+			expectSinkD: ptrace.Traces{},
+		},
+		{
+			name: "request/match_http_value2",
+			cfg: testConfig(
+				withRoute("request", isAcme, idSink0),
+				withDefault(idSinkD),
+			),
+			ctx:         withHTTPMetadata(t.Context(), map[string][]string{"X-Tenant": {"notacme", "acme"}}),
+			input:       ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
+			expectSink0: ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
+			expectSink1: ptrace.Traces{},
+			expectSinkD: ptrace.Traces{},
+		},
+		{
+			name: "request/match_no_http_value",
+			cfg: testConfig(
+				withRoute("request", isAcme, idSink0),
+				withDefault(idSinkD),
+			),
+			ctx:         withHTTPMetadata(t.Context(), map[string][]string{"X-Tenant": {"notacme"}}),
+			input:       ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
+			expectSink0: ptrace.Traces{},
+			expectSink1: ptrace.Traces{},
+			expectSinkD: ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
+		},
+		{
+			name: "resource/all_match_first_only",
+			cfg: testConfig(
+				withRoute("resource", "true", idSink0),
+				withRoute("resource", isResourceY, idSink1),
+				withDefault(idSinkD),
+			),
+			input:       ptraceutiltest.NewTraces("AB", "CD", "EF", "FG"),
+			expectSink0: ptraceutiltest.NewTraces("AB", "CD", "EF", "FG"),
+			expectSink1: ptrace.Traces{},
+			expectSinkD: ptrace.Traces{},
+		},
+		{
+			name: "resource/all_match_last_only",
+			cfg: testConfig(
+				withRoute("resource", isResourceX, idSink0),
+				withRoute("resource", "true", idSink1),
+				withDefault(idSinkD),
+			),
+			input:       ptraceutiltest.NewTraces("AB", "CD", "EF", "FG"),
+			expectSink0: ptrace.Traces{},
+			expectSink1: ptraceutiltest.NewTraces("AB", "CD", "EF", "FG"),
+			expectSinkD: ptrace.Traces{},
+		},
+		{
+			name: "resource/all_match_only_once",
+			cfg: testConfig(
+				withRoute("resource", "true", idSink0),
+				withRoute("resource", isResourceA+" or "+isResourceB, idSink1),
+				withDefault(idSinkD),
+			),
+			input:       ptraceutiltest.NewTraces("AB", "CD", "EF", "FG"),
+			expectSink0: ptraceutiltest.NewTraces("AB", "CD", "EF", "FG"),
+			expectSink1: ptrace.Traces{},
+			expectSinkD: ptrace.Traces{},
+		},
+		{
+			name: "resource/each_matches_one",
+			cfg: testConfig(
+				withRoute("resource", isResourceA, idSink0),
+				withRoute("resource", isResourceB, idSink1),
+				withDefault(idSinkD),
+			),
+			input:       ptraceutiltest.NewTraces("AB", "CD", "EF", "FG"),
+			expectSink0: ptraceutiltest.NewTraces("A", "CD", "EF", "FG"),
+			expectSink1: ptraceutiltest.NewTraces("B", "CD", "EF", "FG"),
+			expectSinkD: ptrace.Traces{},
+		},
+		{
+			name: "resource/some_match_with_default",
+			cfg: testConfig(
+				withRoute("resource", isResourceX, idSink0),
+				withRoute("resource", isResourceB, idSink1),
+				withDefault(idSinkD),
+			),
+			input:       ptraceutiltest.NewTraces("AB", "CD", "EF", "FG"),
+			expectSink0: ptrace.Traces{},
+			expectSink1: ptraceutiltest.NewTraces("B", "CD", "EF", "FG"),
+			expectSinkD: ptraceutiltest.NewTraces("A", "CD", "EF", "FG"),
+		},
+		{
+			name: "resource/some_match_without_default",
+			cfg: testConfig(
+				withRoute("resource", isResourceX, idSink0),
+				withRoute("resource", isResourceB, idSink1),
+			),
+			input:       ptraceutiltest.NewTraces("AB", "CD", "EF", "FG"),
+			expectSink0: ptrace.Traces{},
+			expectSink1: ptraceutiltest.NewTraces("B", "CD", "EF", "FG"),
+			expectSinkD: ptrace.Traces{},
+		},
+		{
+			name: "resource/match_none_with_default",
+			cfg: testConfig(
+				withRoute("resource", isResourceX, idSink0),
+				withRoute("resource", isResourceY, idSink1),
+				withDefault(idSinkD),
+			),
+			input:       ptraceutiltest.NewTraces("AB", "CD", "EF", "FG"),
+			expectSink0: ptrace.Traces{},
+			expectSink1: ptrace.Traces{},
+			expectSinkD: ptraceutiltest.NewTraces("AB", "CD", "EF", "FG"),
+		},
+		{
+			name: "resource/match_none_without_default",
+			cfg: testConfig(
+				withRoute("resource", isResourceX, idSink0),
+				withRoute("resource", isResourceY, idSink1),
+			),
+			input:       ptraceutiltest.NewTraces("AB", "CD", "EF", "FG"),
+			expectSink0: ptrace.Traces{},
+			expectSink1: ptrace.Traces{},
+			expectSinkD: ptrace.Traces{},
+		},
+		{
+			name: "resource/with_converter_function_is_string",
+			cfg: testConfig(
+				withRoute("resource", isResourceString, idSink0),
+				withDefault(idSinkD),
+			),
+			input:       ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
+			expectSink0: ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
+			expectSinkD: ptrace.Traces{},
+		},
+		{
+			name: "resource/with_converter_function_is_map",
+			cfg: testConfig(
+				withRoute("resource", isAttributesMap, idSink0),
+				withDefault(idSinkD),
+			),
+			input:       ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
+			expectSink0: ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
+			expectSinkD: ptrace.Traces{},
+		},
+		{
+			name: "span/all_match_first_only",
+			cfg: testConfig(
+				withRoute("span", "true", idSink0),
+				withRoute("span", isSpanY, idSink1),
+				withDefault(idSinkD),
+			),
+			input:       ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
+			expectSink0: ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
+			expectSink1: ptrace.Traces{},
+			expectSinkD: ptrace.Traces{},
+		},
+		{
+			name: "span/all_match_last_only",
+			cfg: testConfig(
+				withRoute("span", isSpanX, idSink0),
+				withRoute("span", "true", idSink1),
+				withDefault(idSinkD),
+			),
+			input:       ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
+			expectSink0: ptrace.Traces{},
+			expectSink1: ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
+			expectSinkD: ptrace.Traces{},
+		},
+		{
+			name: "span/all_match_only_once",
+			cfg: testConfig(
+				withRoute("span", "true", idSink0),
+				withRoute("span", isSpanE+" or "+isSpanF, idSink1),
+				withDefault(idSinkD),
+			),
+			input:       ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
+			expectSink0: ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
+			expectSink1: ptrace.Traces{},
+			expectSinkD: ptrace.Traces{},
+		},
+		{
+			name: "span/each_matches_one",
+			cfg: testConfig(
+				withRoute("span", isSpanE, idSink0),
+				withRoute("span", isSpanF, idSink1),
+				withDefault(idSinkD),
+			),
+			input:       ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
+			expectSink0: ptraceutiltest.NewTraces("AB", "CD", "E", "GH"),
+			expectSink1: ptraceutiltest.NewTraces("AB", "CD", "F", "GH"),
+			expectSinkD: ptrace.Traces{},
+		},
+		{
+			name: "span/some_match_with_default",
+			cfg: testConfig(
+				withRoute("span", isSpanX, idSink0),
+				withRoute("span", isSpanF, idSink1),
+				withDefault(idSinkD),
+			),
+			input:       ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
+			expectSink0: ptrace.Traces{},
+			expectSink1: ptraceutiltest.NewTraces("AB", "CD", "F", "GH"),
+			expectSinkD: ptraceutiltest.NewTraces("AB", "CD", "E", "GH"),
+		},
+		{
+			name: "span/some_match_without_default",
+			cfg: testConfig(
+				withRoute("span", isSpanX, idSink0),
+				withRoute("span", isSpanF, idSink1),
+			),
+			input:       ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
+			expectSink0: ptrace.Traces{},
+			expectSink1: ptraceutiltest.NewTraces("AB", "CD", "F", "GH"),
+			expectSinkD: ptrace.Traces{},
+		},
+		{
+			name: "span/match_none_with_default",
+			cfg: testConfig(
+				withRoute("span", isSpanX, idSink0),
+				withRoute("span", isSpanY, idSink1),
+				withDefault(idSinkD),
+			),
+			input:       ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
+			expectSink0: ptrace.Traces{},
+			expectSink1: ptrace.Traces{},
+			expectSinkD: ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
+		},
+		{
+			name: "span/match_none_without_default",
+			cfg: testConfig(
+				withRoute("span", isSpanX, idSink0),
+				withRoute("span", isSpanY, idSink1),
+			),
+			input:       ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
+			expectSink0: ptrace.Traces{},
+			expectSink1: ptrace.Traces{},
+			expectSinkD: ptrace.Traces{},
+		},
+		{
+			name: "span/with_resource_condition",
+			cfg: testConfig(
+				withRoute("span", isResourceBFromLowerContext, idSink0),
+				withRoute("span", isSpanY, idSink1),
+				withDefault(idSinkD),
+			),
+			input:       ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
+			expectSink0: ptraceutiltest.NewTraces("B", "CD", "EF", "GH"),
+			expectSink1: ptrace.Traces{},
+			expectSinkD: ptraceutiltest.NewTraces("A", "CD", "EF", "GH"),
+		},
+		{
+			name: "span/with_scope_condition",
+			cfg: testConfig(
+				withRoute("span", isScopeCFromLowerContext, idSink0),
+				withRoute("span", isSpanY, idSink1),
+				withDefault(idSinkD),
+			),
+			input:       ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
+			expectSink0: ptraceutiltest.NewTraces("AB", "C", "EF", "GH"),
+			expectSink1: ptrace.Traces{},
+			expectSinkD: ptraceutiltest.NewTraces("AB", "D", "EF", "GH"),
+		},
+		{
+			name: "span/with_resource_and_scope_conditions",
+			cfg: testConfig(
+				withRoute("span", isResourceBFromLowerContext+" and "+isScopeDFromLowerContext, idSink0),
+				withRoute("span", isSpanY, idSink1),
+				withDefault(idSinkD),
+			),
+			input:       ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
+			expectSink0: ptraceutiltest.NewTraces("B", "D", "EF", "GH"),
+			expectSink1: ptrace.Traces{},
+			expectSinkD: ptraceutiltest.NewTracesFromOpts(
+				ptraceutiltest.Resource("A",
+					ptraceutiltest.Scope("C",
+						ptraceutiltest.Span("E", ptraceutiltest.SpanEvent("G"), ptraceutiltest.SpanEvent("H")),
+						ptraceutiltest.Span("F", ptraceutiltest.SpanEvent("G"), ptraceutiltest.SpanEvent("H")),
+					),
+					ptraceutiltest.Scope("D",
+						ptraceutiltest.Span("E", ptraceutiltest.SpanEvent("G"), ptraceutiltest.SpanEvent("H")),
+						ptraceutiltest.Span("F", ptraceutiltest.SpanEvent("G"), ptraceutiltest.SpanEvent("H")),
+					),
+				),
+				ptraceutiltest.Resource("B",
+					ptraceutiltest.Scope("C",
+						ptraceutiltest.Span("E", ptraceutiltest.SpanEvent("G"), ptraceutiltest.SpanEvent("H")),
+						ptraceutiltest.Span("F", ptraceutiltest.SpanEvent("G"), ptraceutiltest.SpanEvent("H")),
+					),
+				),
+			),
+		},
+		{
+			name: "mixed/match_resource_then_metrics",
+			cfg: testConfig(
+				withRoute("resource", isResourceA, idSink0),
+				withRoute("span", isSpanE, idSink1),
+				withDefault(idSinkD),
+			),
+			input:       ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
+			expectSink0: ptraceutiltest.NewTraces("A", "CD", "EF", "GH"),
+			expectSink1: ptraceutiltest.NewTraces("B", "CD", "E", "GH"),
+			expectSinkD: ptraceutiltest.NewTraces("B", "CD", "F", "GH"),
+		},
+		{
+			name: "mixed/match_metrics_then_resource",
+			cfg: testConfig(
+				withRoute("span", isSpanE, idSink0),
+				withRoute("resource", isResourceB, idSink1),
+				withDefault(idSinkD),
+			),
+			input:       ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
+			expectSink0: ptraceutiltest.NewTraces("AB", "CD", "E", "GH"),
+			expectSink1: ptraceutiltest.NewTraces("B", "CD", "F", "GH"),
+			expectSinkD: ptraceutiltest.NewTraces("A", "CD", "F", "GH"),
+		},
+
+		{
+			name: "mixed/match_resource_then_grpc_request",
+			cfg: testConfig(
+				withRoute("resource", isResourceA, idSink0),
+				withRoute("request", isAcme, idSink1),
+				withDefault(idSinkD),
+			),
+			ctx:         withGRPCMetadata(t.Context(), map[string]string{"X-Tenant": "acme"}),
+			input:       ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
+			expectSink0: ptraceutiltest.NewTraces("A", "CD", "EF", "GH"),
+			expectSink1: ptraceutiltest.NewTraces("B", "CD", "EF", "GH"),
+			expectSinkD: ptrace.Traces{},
+		},
+		{
+			name: "mixed/match_metrics_then_grpc_request",
+			cfg: testConfig(
+				withRoute("span", isSpanF, idSink0),
+				withRoute("request", isAcme, idSink1),
+				withDefault(idSinkD),
+			),
+			ctx:         withGRPCMetadata(t.Context(), map[string]string{"X-Tenant": "acme"}),
+			input:       ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
+			expectSink0: ptraceutiltest.NewTraces("AB", "CD", "F", "GH"),
+			expectSink1: ptraceutiltest.NewTraces("AB", "CD", "E", "GH"),
+			expectSinkD: ptrace.Traces{},
+		},
+		{
+			name: "mixed/match_resource_then_http_request",
+			cfg: testConfig(
+				withRoute("resource", isResourceA, idSink0),
+				withRoute("request", isAcme, idSink1),
+				withDefault(idSinkD),
+			),
+			ctx:         withHTTPMetadata(t.Context(), map[string][]string{"X-Tenant": {"acme"}}),
+			input:       ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
+			expectSink0: ptraceutiltest.NewTraces("A", "CD", "EF", "GH"),
+			expectSink1: ptraceutiltest.NewTraces("B", "CD", "EF", "GH"),
+			expectSinkD: ptrace.Traces{},
+		},
+		{
+			name: "mixed/match_metrics_then_http_request",
+			cfg: testConfig(
+				withRoute("span", isSpanF, idSink0),
+				withRoute("request", isAcme, idSink1),
+				withDefault(idSinkD),
+			),
+			ctx:         withHTTPMetadata(t.Context(), map[string][]string{"X-Tenant": {"acme"}}),
+			input:       ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
+			expectSink0: ptraceutiltest.NewTraces("AB", "CD", "F", "GH"),
+			expectSink1: ptraceutiltest.NewTraces("AB", "CD", "E", "GH"),
+			expectSinkD: ptrace.Traces{},
+		},
+	}
+
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			var sinkD, sink0, sink1 consumertest.TracesSink
+			router := connector.NewTracesRouter(map[pipeline.ID]consumer.Traces{
+				pipeline.NewIDWithName(pipeline.SignalTraces, "0"):       &sink0,
+				pipeline.NewIDWithName(pipeline.SignalTraces, "1"):       &sink1,
+				pipeline.NewIDWithName(pipeline.SignalTraces, "default"): &sinkD,
+			})
+
+			conn, err := NewFactory().CreateTracesToTraces(
+				t.Context(),
+				connectortest.NewNopSettings(metadata.Type),
+				tt.cfg,
+				router.(consumer.Traces),
+			)
+			require.NoError(t, err)
+
+			ctx := t.Context()
+			if tt.ctx != nil {
+				ctx = tt.ctx
+			}
+
+			require.NoError(t, conn.ConsumeTraces(ctx, tt.input))
+
+			assertExpected := func(sink *consumertest.TracesSink, expected ptrace.Traces, name string) {
+				if expected == (ptrace.Traces{}) {
+					assert.Empty(t, sink.AllTraces(), name)
+				} else {
+					require.Len(t, sink.AllTraces(), 1, name)
+					assert.Equal(t, expected, sink.AllTraces()[0], name)
+				}
+			}
+			assertExpected(&sink0, tt.expectSink0, "sink0")
+			assertExpected(&sink1, tt.expectSink1, "sink1")
+			assertExpected(&sinkD, tt.expectSinkD, "sinkD")
+		})
+	}
 }

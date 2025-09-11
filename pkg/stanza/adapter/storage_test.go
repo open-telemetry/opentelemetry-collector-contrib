@@ -4,7 +4,6 @@
 package adapter
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -17,7 +16,7 @@ import (
 )
 
 func TestStorage(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	storageExt := storagetest.NewFileBackedStorageExtension("test", t.TempDir())
 	host := storagetest.NewStorageHost().
@@ -74,12 +73,12 @@ func TestFindCorrectStorageExtension(t *testing.T) {
 		WithFileBackedStorageExtension("bar", t.TempDir()).
 		WithNonStorageExtension("two")
 
-	err := r.Start(context.Background(), host)
+	err := r.Start(t.Context(), host)
 	require.NoError(t, err)
 	require.NotNil(t, r.storageClient)
-	defer func() { require.NoError(t, r.Shutdown(context.Background())) }()
+	defer func() { require.NoError(t, r.Shutdown(t.Context())) }()
 
-	clientCreatorID, err := storagetest.CreatorID(context.Background(), r.storageClient)
+	clientCreatorID, err := storagetest.CreatorID(t.Context(), r.storageClient)
 	require.NoError(t, err)
 	require.Equal(t, id, clientCreatorID)
 }
@@ -87,10 +86,10 @@ func TestFindCorrectStorageExtension(t *testing.T) {
 func TestFailOnMissingStorageExtension(t *testing.T) {
 	id := component.MustNewIDWithName("test", "missing")
 	r := createReceiver(t, id)
-	err := r.Start(context.Background(), storagetest.NewStorageHost())
+	err := r.Start(t.Context(), storagetest.NewStorageHost())
 	require.Error(t, err)
 	require.Equal(t, "storage client: storage extension 'test/missing' not found", err.Error())
-	require.NoError(t, r.Shutdown(context.Background()))
+	require.NoError(t, r.Shutdown(t.Context()))
 }
 
 func TestFailOnNonStorageExtension(t *testing.T) {
@@ -100,21 +99,21 @@ func TestFailOnNonStorageExtension(t *testing.T) {
 	host := storagetest.NewStorageHost().
 		WithExtension(id, nonStorageExt)
 
-	err := r.Start(context.Background(), host)
+	err := r.Start(t.Context(), host)
 	require.Error(t, err)
 	require.Equal(t, "storage client: non-storage extension 'non_storage/non' found", err.Error())
 }
 
 func createReceiver(t *testing.T, storageID component.ID) *receiver {
 	params := rcvr.Settings{
-		ID:                component.MustNewID("testreceiver"),
+		ID:                component.MustNewID("test"),
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 	}
 
 	factory := NewFactory(TestReceiverType{}, component.StabilityLevelDevelopment)
 
 	logsReceiver, err := factory.CreateLogs(
-		context.Background(),
+		t.Context(),
 		params,
 		factory.CreateDefaultConfig(),
 		consumertest.NewNop(),

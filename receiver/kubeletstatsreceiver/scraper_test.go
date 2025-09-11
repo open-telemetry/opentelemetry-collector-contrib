@@ -4,7 +4,6 @@
 package kubeletstatsreceiver
 
 import (
-	"context"
 	"errors"
 	"os"
 	"path/filepath"
@@ -55,16 +54,16 @@ func TestScraper(t *testing.T) {
 	options := &scraperOptions{
 		metricGroupsToCollect: allMetricGroups,
 	}
-	r, err := newKubletScraper(
+	r, err := newKubeletScraper(
 		&fakeRestClient{},
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(metadata.Type),
 		options,
 		metadata.DefaultMetricsBuilderConfig(),
 		"worker-42",
 	)
 	require.NoError(t, err)
 
-	md, err := r.Scrape(context.Background())
+	md, err := r.ScrapeMetrics(t.Context())
 	require.NoError(t, err)
 	require.Equal(t, dataLen, md.DataPointCount())
 	expectedFile := filepath.Join("testdata", "scraper", "test_scraper_expected.yaml")
@@ -82,10 +81,46 @@ func TestScraper(t *testing.T) {
 		pmetrictest.IgnoreMetricsOrder()))
 }
 
+func TestScraperWithInterfacesMetrics(t *testing.T) {
+	options := &scraperOptions{
+		metricGroupsToCollect: allMetricGroups,
+		allNetworkInterfaces: map[kubelet.MetricGroup]bool{
+			kubelet.NodeMetricGroup: true,
+			kubelet.PodMetricGroup:  true,
+		},
+	}
+	r, err := newKubeletScraper(
+		&fakeRestClient{},
+		receivertest.NewNopSettings(metadata.Type),
+		options,
+		metadata.DefaultMetricsBuilderConfig(),
+		"worker-42",
+	)
+	require.NoError(t, err)
+
+	md, err := r.ScrapeMetrics(t.Context())
+	require.NoError(t, err)
+
+	require.Equal(t, dataLen+numPods*4+numNodes*4, md.DataPointCount())
+	expectedFile := filepath.Join("testdata", "scraper", "test_scraper_with_interfaces_metrics.yaml")
+
+	// Uncomment to regenerate '*_expected.yaml' files
+	// golden.WriteMetrics(t, expectedFile, md)
+
+	expectedMetrics, err := golden.ReadMetrics(expectedFile)
+	require.NoError(t, err)
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, md,
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricDataPointsOrder(),
+		pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreMetricsOrder()))
+}
+
 func TestScraperWithCPUNodeUtilization(t *testing.T) {
 	watcherStarted := make(chan struct{})
 	// Create the fake client.
-	client := fake.NewSimpleClientset()
+	client := fake.NewClientset()
 	// A catch-all watch reactor that allows us to inject the watcherStarted channel.
 	client.PrependWatchReactor("*", func(action clienttesting.Action) (handled bool, ret watch.Interface, err error) {
 		gvr := action.GetResource()
@@ -105,9 +140,9 @@ func TestScraperWithCPUNodeUtilization(t *testing.T) {
 		},
 		k8sAPIClient: client,
 	}
-	r, err := newKubletScraper(
+	r, err := newKubeletScraper(
 		&fakeRestClient{},
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(metadata.Type),
 		options,
 		metadata.MetricsBuilderConfig{
 			Metrics: metadata.MetricsConfig{
@@ -124,21 +159,21 @@ func TestScraperWithCPUNodeUtilization(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	err = r.Start(context.Background(), nil)
+	err = r.Start(t.Context(), nil)
 	require.NoError(t, err)
 
 	// we wait until the watcher starts
 	<-watcherStarted
 	// Inject an event node into the fake client.
 	node := getNodeWithCPUCapacity("worker-42", 8)
-	_, err = client.CoreV1().Nodes().Create(context.TODO(), node, metav1.CreateOptions{})
+	_, err = client.CoreV1().Nodes().Create(t.Context(), node, metav1.CreateOptions{})
 	if err != nil {
 		require.NoError(t, err)
 	}
 
 	var md pmetric.Metrics
 	require.Eventually(t, func() bool {
-		md, err = r.Scrape(context.Background())
+		md, err = r.ScrapeMetrics(t.Context())
 		require.NoError(t, err)
 		return numContainers+numPods == md.DataPointCount()
 	}, 10*time.Second, 100*time.Millisecond,
@@ -158,14 +193,14 @@ func TestScraperWithCPUNodeUtilization(t *testing.T) {
 		pmetrictest.IgnoreTimestamp(),
 		pmetrictest.IgnoreMetricsOrder()))
 
-	err = r.Shutdown(context.Background())
+	err = r.Shutdown(t.Context())
 	require.NoError(t, err)
 }
 
 func TestScraperWithMemoryNodeUtilization(t *testing.T) {
 	watcherStarted := make(chan struct{})
 	// Create the fake client.
-	client := fake.NewSimpleClientset()
+	client := fake.NewClientset()
 	// A catch-all watch reactor that allows us to inject the watcherStarted channel.
 	client.PrependWatchReactor("*", func(action clienttesting.Action) (handled bool, ret watch.Interface, err error) {
 		gvr := action.GetResource()
@@ -185,9 +220,9 @@ func TestScraperWithMemoryNodeUtilization(t *testing.T) {
 		},
 		k8sAPIClient: client,
 	}
-	r, err := newKubletScraper(
+	r, err := newKubeletScraper(
 		&fakeRestClient{},
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(metadata.Type),
 		options,
 		metadata.MetricsBuilderConfig{
 			Metrics: metadata.MetricsConfig{
@@ -203,21 +238,21 @@ func TestScraperWithMemoryNodeUtilization(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	err = r.Start(context.Background(), nil)
+	err = r.Start(t.Context(), nil)
 	require.NoError(t, err)
 
 	// we wait until the watcher starts
 	<-watcherStarted
 	// Inject an event node into the fake client.
 	node := getNodeWithMemoryCapacity("worker-42", "32564740Ki")
-	_, err = client.CoreV1().Nodes().Create(context.TODO(), node, metav1.CreateOptions{})
+	_, err = client.CoreV1().Nodes().Create(t.Context(), node, metav1.CreateOptions{})
 	if err != nil {
 		require.NoError(t, err)
 	}
 
 	var md pmetric.Metrics
 	require.Eventually(t, func() bool {
-		md, err = r.Scrape(context.Background())
+		md, err = r.ScrapeMetrics(t.Context())
 		require.NoError(t, err)
 		return numContainers+numPods == md.DataPointCount()
 	}, 10*time.Second, 100*time.Millisecond,
@@ -236,7 +271,7 @@ func TestScraperWithMemoryNodeUtilization(t *testing.T) {
 		pmetrictest.IgnoreTimestamp(),
 		pmetrictest.IgnoreMetricsOrder()))
 
-	err = r.Shutdown(context.Background())
+	err = r.Shutdown(t.Context())
 	require.NoError(t, err)
 }
 
@@ -277,16 +312,16 @@ func TestScraperWithMetadata(t *testing.T) {
 				extraMetadataLabels:   tt.metadataLabels,
 				metricGroupsToCollect: tt.metricGroups,
 			}
-			r, err := newKubletScraper(
+			r, err := newKubeletScraper(
 				&fakeRestClient{},
-				receivertest.NewNopSettings(),
+				receivertest.NewNopSettings(metadata.Type),
 				options,
 				metadata.DefaultMetricsBuilderConfig(),
 				"worker-42",
 			)
 			require.NoError(t, err)
 
-			md, err := r.Scrape(context.Background())
+			md, err := r.ScrapeMetrics(t.Context())
 			require.NoError(t, err)
 
 			filename := "test_scraper_with_metadata_" + tt.name + "_expected.yaml"
@@ -303,7 +338,6 @@ func TestScraperWithMetadata(t *testing.T) {
 				pmetrictest.IgnoreMetricDataPointsOrder(),
 				pmetrictest.IgnoreTimestamp(),
 				pmetrictest.IgnoreMetricsOrder()))
-
 		})
 	}
 }
@@ -458,6 +492,9 @@ func TestScraperWithPercentMetrics(t *testing.T) {
 			K8sVolumeCapacity: metadata.MetricConfig{
 				Enabled: false,
 			},
+			K8sPodVolumeUsage: metadata.MetricConfig{
+				Enabled: false,
+			},
 			K8sVolumeInodes: metadata.MetricConfig{
 				Enabled: false,
 			},
@@ -470,16 +507,16 @@ func TestScraperWithPercentMetrics(t *testing.T) {
 		},
 		ResourceAttributes: metadata.DefaultResourceAttributesConfig(),
 	}
-	r, err := newKubletScraper(
+	r, err := newKubeletScraper(
 		&fakeRestClient{},
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(metadata.Type),
 		options,
 		metricsConfig,
 		"worker-42",
 	)
 	require.NoError(t, err)
 
-	md, err := r.Scrape(context.Background())
+	md, err := r.ScrapeMetrics(t.Context())
 	require.NoError(t, err)
 
 	expectedFile := filepath.Join("testdata", "scraper", "test_scraper_with_percent_expected.yaml")
@@ -546,9 +583,9 @@ func TestScraperWithMetricGroups(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			r, err := newKubletScraper(
+			r, err := newKubeletScraper(
 				&fakeRestClient{},
-				receivertest.NewNopSettings(),
+				receivertest.NewNopSettings(metadata.Type),
 				&scraperOptions{
 					extraMetadataLabels:   []kubelet.MetadataLabel{kubelet.MetadataLabelContainerID},
 					metricGroupsToCollect: test.metricGroups,
@@ -558,7 +595,7 @@ func TestScraperWithMetricGroups(t *testing.T) {
 			)
 			require.NoError(t, err)
 
-			md, err := r.Scrape(context.Background())
+			md, err := r.ScrapeMetrics(t.Context())
 			require.NoError(t, err)
 
 			filename := "test_scraper_with_metric_groups_" + test.name + "_expected.yaml"
@@ -596,7 +633,7 @@ func TestScraperWithPVCDetailedLabels(t *testing.T) {
 	}{
 		{
 			name:         "successful",
-			k8sAPIClient: fake.NewSimpleClientset(getValidMockedObjects()...),
+			k8sAPIClient: fake.NewClientset(getValidMockedObjects()...),
 			expectedVolumes: map[string]expectedVolume{
 				"volume_claim_1": {
 					name: "storage-provisioner-token-qzlx6",
@@ -628,8 +665,8 @@ func TestScraperWithPVCDetailedLabels(t *testing.T) {
 			dataLen: numVolumes,
 		},
 		{
-			name:         "pvc_doesnot_exist",
-			k8sAPIClient: fake.NewSimpleClientset(),
+			name:         "nonexistent_pvc",
+			k8sAPIClient: fake.NewClientset(),
 			dataLen:      numVolumes - 3,
 			volumeClaimsToMiss: map[string]bool{
 				"volume_claim_1": true,
@@ -640,7 +677,7 @@ func TestScraperWithPVCDetailedLabels(t *testing.T) {
 		},
 		{
 			name:         "empty_volume_name_in_pvc",
-			k8sAPIClient: fake.NewSimpleClientset(getMockedObjectsWithEmptyVolumeName()...),
+			k8sAPIClient: fake.NewClientset(getMockedObjectsWithEmptyVolumeName()...),
 			expectedVolumes: map[string]expectedVolume{
 				"volume_claim_1": {
 					name: "storage-provisioner-token-qzlx6",
@@ -671,7 +708,7 @@ func TestScraperWithPVCDetailedLabels(t *testing.T) {
 		},
 		{
 			name:         "non_existent_volume_in_pvc",
-			k8sAPIClient: fake.NewSimpleClientset(getMockedObjectsWithNonExistentVolumeName()...),
+			k8sAPIClient: fake.NewClientset(getMockedObjectsWithNonExistentVolumeName()...),
 			expectedVolumes: map[string]expectedVolume{
 				"volume_claim_1": {
 					name: "storage-provisioner-token-qzlx6",
@@ -708,9 +745,9 @@ func TestScraperWithPVCDetailedLabels(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			r, err := newKubletScraper(
+			r, err := newKubeletScraper(
 				&fakeRestClient{},
-				receivertest.NewNopSettings(),
+				receivertest.NewNopSettings(metadata.Type),
 				&scraperOptions{
 					extraMetadataLabels: []kubelet.MetadataLabel{kubelet.MetadataLabelVolumeType},
 					metricGroupsToCollect: map[kubelet.MetricGroup]bool{
@@ -723,7 +760,7 @@ func TestScraperWithPVCDetailedLabels(t *testing.T) {
 			)
 			require.NoError(t, err)
 
-			md, err := r.Scrape(context.Background())
+			md, err := r.ScrapeMetrics(t.Context())
 			require.NoError(t, err)
 
 			filename := "test_scraper_with_pvc_labels_" + test.name + "_expected.yaml"
@@ -790,13 +827,13 @@ func TestClientErrors(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			core, observedLogs := observer.New(zap.ErrorLevel)
 			logger := zap.New(core)
-			settings := receivertest.NewNopSettings()
+			settings := receivertest.NewNopSettings(metadata.Type)
 			settings.Logger = logger
 			options := &scraperOptions{
 				extraMetadataLabels:   test.extraMetadataLabels,
 				metricGroupsToCollect: test.metricGroupsToCollect,
 			}
-			r, err := newKubletScraper(
+			r, err := newKubeletScraper(
 				&fakeRestClient{
 					statsSummaryFail: test.statsSummaryFail,
 					podsFail:         test.podsFail,
@@ -808,7 +845,7 @@ func TestClientErrors(t *testing.T) {
 			)
 			require.NoError(t, err)
 
-			_, err = r.Scrape(context.Background())
+			_, err = r.ScrapeMetrics(t.Context())
 			if test.numLogs == 0 {
 				require.NoError(t, err)
 			} else {

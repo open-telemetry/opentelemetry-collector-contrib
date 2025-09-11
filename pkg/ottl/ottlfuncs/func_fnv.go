@@ -5,7 +5,7 @@ package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"hash/fnv"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -23,14 +23,13 @@ func createFnvFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ott
 	args, ok := oArgs.(*FnvArguments[K])
 
 	if !ok {
-		return nil, fmt.Errorf("FNVFactory args must be of type *FnvArguments[K]")
+		return nil, errors.New("FNVFactory args must be of type *FnvArguments[K]")
 	}
 
 	return FNVHashString(args.Target)
 }
 
 func FNVHashString[K any](target ottl.StringGetter[K]) (ottl.ExprFunc[K], error) {
-
 	return func(ctx context.Context, tCtx K) (any, error) {
 		val, err := target.Get(ctx, tCtx)
 		if err != nil {

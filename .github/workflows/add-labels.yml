@@ -3,13 +3,17 @@ on:
   issue_comment:
     types: [created]
 
+permissions: read-all
+
 jobs:
   add-labels:
     if: ${{ !github.event.issue.pull_request && startsWith(github.event.comment.body, '/label') && github.repository_owner == 'open-telemetry' }}
+    permissions:
+      issues: write
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
 
       - name: Run update permissions
         run: chmod +x ./.github/workflows/scripts/add-labels.sh

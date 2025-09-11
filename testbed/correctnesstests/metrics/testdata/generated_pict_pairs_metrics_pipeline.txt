@@ -1,2 +1,3 @@
 Receiver	Exporter
 otlp	otlp
+stef	stef

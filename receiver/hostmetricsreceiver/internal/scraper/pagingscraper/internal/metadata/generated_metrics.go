@@ -8,11 +8,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/receiver"
-	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
+	"go.opentelemetry.io/collector/scraper"
+	conventions "go.opentelemetry.io/otel/semconv/v1.9.0"
 )
 
-// AttributeDirection specifies the a value direction attribute.
+// AttributeDirection specifies the value direction attribute.
 type AttributeDirection int
 
 const (
@@ -38,7 +38,7 @@ var MapAttributeDirection = map[string]AttributeDirection{
 	"page_out": AttributeDirectionPageOut,
 }
 
-// AttributeState specifies the a value state attribute.
+// AttributeState specifies the value state attribute.
 type AttributeState int
 
 const (
@@ -68,7 +68,7 @@ var MapAttributeState = map[string]AttributeState{
 	"used":   AttributeStateUsed,
 }
 
-// AttributeType specifies the a value type attribute.
+// AttributeType specifies the value type attribute.
 type AttributeType int
 
 const (
@@ -92,6 +92,32 @@ func (av AttributeType) String() string {
 var MapAttributeType = map[string]AttributeType{
 	"major": AttributeTypeMajor,
 	"minor": AttributeTypeMinor,
+}
+
+var MetricsInfo = metricsInfo{
+	SystemPagingFaults: metricInfo{
+		Name: "system.paging.faults",
+	},
+	SystemPagingOperations: metricInfo{
+		Name: "system.paging.operations",
+	},
+	SystemPagingUsage: metricInfo{
+		Name: "system.paging.usage",
+	},
+	SystemPagingUtilization: metricInfo{
+		Name: "system.paging.utilization",
+	},
+}
+
+type metricsInfo struct {
+	SystemPagingFaults      metricInfo
+	SystemPagingOperations  metricInfo
+	SystemPagingUsage       metricInfo
+	SystemPagingUtilization metricInfo
+}
+
+type metricInfo struct {
+	Name string
 }
 
 type metricSystemPagingFaults struct {
@@ -338,8 +364,7 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 		mb.startTime = startTime
 	})
 }
-
-func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
+func NewMetricsBuilder(mbc MetricsBuilderConfig, settings scraper.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		config:                        mbc,
 		startTime:                     pcommon.NewTimestampFromTime(time.Now()),
@@ -412,7 +437,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	rm.SetSchemaUrl(conventions.SchemaURL)
 	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/pagingscraper")
+	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricSystemPagingFaults.emit(ils.Metrics())

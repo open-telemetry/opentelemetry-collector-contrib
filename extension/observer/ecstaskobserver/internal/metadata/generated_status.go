@@ -12,5 +12,5 @@ var (
 )
 
 const (
-	ExtensionStability = component.StabilityLevelBeta
+	ExtensionStability = component.StabilityLevelUnmaintained
 )

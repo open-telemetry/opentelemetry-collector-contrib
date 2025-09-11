@@ -4,7 +4,6 @@
 package metricsgenerationprocessor
 
 import (
-	"context"
 	"fmt"
 	"path/filepath"
 	"testing"
@@ -21,6 +20,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricsgenerationprocessor/internal/metadata"
 )
 
 type testMetric struct {
@@ -40,237 +40,235 @@ type metricsGenerationTest struct {
 	outMetrics pmetric.Metrics
 }
 
-var (
-	testCases = []metricsGenerationTest{
-		{
-			name:  "metrics_generation_expect_all",
-			rules: nil,
-			inMetrics: generateTestMetrics(testMetric{
-				metricNames:  []string{"metric_1", "metric_2"},
-				metricValues: [][]float64{{100}, {4}},
-			}),
-			outMetrics: generateTestMetrics(testMetric{
-				metricNames:  []string{"metric_1", "metric_2"},
-				metricValues: [][]float64{{100}, {4}},
-			}),
-		},
-		{
-			name: "metrics_generation_rule_scale",
-			rules: []Rule{
-				{
-					Name:      "metric_1_scaled",
-					Type:      "scale",
-					Metric1:   "metric_1",
-					Operation: "multiply",
-					ScaleBy:   5,
-				},
+var testCases = []metricsGenerationTest{
+	{
+		name:  "metrics_generation_expect_all",
+		rules: nil,
+		inMetrics: generateTestMetrics(testMetric{
+			metricNames:  []string{"metric_1", "metric_2"},
+			metricValues: [][]float64{{100}, {4}},
+		}),
+		outMetrics: generateTestMetrics(testMetric{
+			metricNames:  []string{"metric_1", "metric_2"},
+			metricValues: [][]float64{{100}, {4}},
+		}),
+	},
+	{
+		name: "metrics_generation_rule_scale",
+		rules: []Rule{
+			{
+				Name:      "metric_1_scaled",
+				Type:      "scale",
+				Metric1:   "metric_1",
+				Operation: "multiply",
+				ScaleBy:   5,
 			},
-			inMetrics: generateTestMetrics(testMetric{
-				metricNames:  []string{"metric_1", "metric_2"},
-				metricValues: [][]float64{{100}, {4}},
-			}),
-			outMetrics: generateTestMetrics(testMetric{
-				metricNames:  []string{"metric_1", "metric_2", "metric_1_scaled"},
-				metricValues: [][]float64{{100}, {4}, {500}},
-			}),
 		},
-		{
-			name: "metrics_generation_missing_first_metric",
-			rules: []Rule{
-				{
-					Name:      "metric_1_scaled",
-					Type:      "scale",
-					Operation: "multiply",
-					ScaleBy:   5,
-				},
+		inMetrics: generateTestMetrics(testMetric{
+			metricNames:  []string{"metric_1", "metric_2"},
+			metricValues: [][]float64{{100}, {4}},
+		}),
+		outMetrics: generateTestMetrics(testMetric{
+			metricNames:  []string{"metric_1", "metric_2", "metric_1_scaled"},
+			metricValues: [][]float64{{100}, {4}, {500}},
+		}),
+	},
+	{
+		name: "metrics_generation_missing_first_metric",
+		rules: []Rule{
+			{
+				Name:      "metric_1_scaled",
+				Type:      "scale",
+				Operation: "multiply",
+				ScaleBy:   5,
 			},
-			inMetrics: generateTestMetrics(testMetric{
-				metricNames:  []string{"metric_1", "metric_2"},
-				metricValues: [][]float64{{100}, {4}},
-			}),
-			outMetrics: generateTestMetrics(testMetric{
-				metricNames:  []string{"metric_1", "metric_2"},
-				metricValues: [][]float64{{100}, {4}},
-			}),
 		},
-		{
-			name: "metrics_generation_rule_calculate_divide",
-			rules: []Rule{
-				{
-					Name:      "metric_1_calculated_divide",
-					Type:      "calculate",
-					Metric1:   "metric_1",
-					Metric2:   "metric_2",
-					Operation: "divide",
-				},
+		inMetrics: generateTestMetrics(testMetric{
+			metricNames:  []string{"metric_1", "metric_2"},
+			metricValues: [][]float64{{100}, {4}},
+		}),
+		outMetrics: generateTestMetrics(testMetric{
+			metricNames:  []string{"metric_1", "metric_2"},
+			metricValues: [][]float64{{100}, {4}},
+		}),
+	},
+	{
+		name: "metrics_generation_rule_calculate_divide",
+		rules: []Rule{
+			{
+				Name:      "metric_1_calculated_divide",
+				Type:      "calculate",
+				Metric1:   "metric_1",
+				Metric2:   "metric_2",
+				Operation: "divide",
 			},
-			inMetrics: generateTestMetrics(testMetric{
-				metricNames:  []string{"metric_1", "metric_2"},
-				metricValues: [][]float64{{100}, {4}},
-			}),
-			outMetrics: generateTestMetrics(testMetric{
-				metricNames:  []string{"metric_1", "metric_2", "metric_1_calculated_divide"},
-				metricValues: [][]float64{{100}, {4}, {25}},
-			}),
 		},
-		{
-			name: "metrics_generation_rule_calculate_multiply",
-			rules: []Rule{
-				{
-					Name:      "metric_1_calculated_multiply",
-					Type:      "calculate",
-					Metric1:   "metric_1",
-					Metric2:   "metric_2",
-					Operation: "multiply",
-				},
+		inMetrics: generateTestMetrics(testMetric{
+			metricNames:  []string{"metric_1", "metric_2"},
+			metricValues: [][]float64{{100}, {4}},
+		}),
+		outMetrics: generateTestMetrics(testMetric{
+			metricNames:  []string{"metric_1", "metric_2", "metric_1_calculated_divide"},
+			metricValues: [][]float64{{100}, {4}, {25}},
+		}),
+	},
+	{
+		name: "metrics_generation_rule_calculate_multiply",
+		rules: []Rule{
+			{
+				Name:      "metric_1_calculated_multiply",
+				Type:      "calculate",
+				Metric1:   "metric_1",
+				Metric2:   "metric_2",
+				Operation: "multiply",
 			},
-			inMetrics: generateTestMetrics(testMetric{
-				metricNames:  []string{"metric_1", "metric_2"},
-				metricValues: [][]float64{{100}, {4}},
-			}),
-			outMetrics: generateTestMetrics(testMetric{
-				metricNames:  []string{"metric_1", "metric_2", "metric_1_calculated_multiply"},
-				metricValues: [][]float64{{100}, {4}, {400}},
-			}),
 		},
-		{
-			name: "metrics_generation_rule_calculate_add",
-			rules: []Rule{
-				{
-					Name:      "metric_1_calculated_add",
-					Type:      "calculate",
-					Metric1:   "metric_1",
-					Metric2:   "metric_2",
-					Operation: "add",
-				},
+		inMetrics: generateTestMetrics(testMetric{
+			metricNames:  []string{"metric_1", "metric_2"},
+			metricValues: [][]float64{{100}, {4}},
+		}),
+		outMetrics: generateTestMetrics(testMetric{
+			metricNames:  []string{"metric_1", "metric_2", "metric_1_calculated_multiply"},
+			metricValues: [][]float64{{100}, {4}, {400}},
+		}),
+	},
+	{
+		name: "metrics_generation_rule_calculate_add",
+		rules: []Rule{
+			{
+				Name:      "metric_1_calculated_add",
+				Type:      "calculate",
+				Metric1:   "metric_1",
+				Metric2:   "metric_2",
+				Operation: "add",
 			},
-			inMetrics: generateTestMetrics(testMetric{
-				metricNames:  []string{"metric_1", "metric_2"},
-				metricValues: [][]float64{{100}, {4}},
-			}),
-			outMetrics: generateTestMetrics(testMetric{
-				metricNames:  []string{"metric_1", "metric_2", "metric_1_calculated_add"},
-				metricValues: [][]float64{{100}, {4}, {104}},
-			}),
 		},
-		{
-			name: "metrics_generation_rule_calculate_subtract",
-			rules: []Rule{
-				{
-					Name:      "metric_1_calculated_subtract",
-					Type:      "calculate",
-					Metric1:   "metric_1",
-					Metric2:   "metric_2",
-					Operation: "subtract",
-				},
+		inMetrics: generateTestMetrics(testMetric{
+			metricNames:  []string{"metric_1", "metric_2"},
+			metricValues: [][]float64{{100}, {4}},
+		}),
+		outMetrics: generateTestMetrics(testMetric{
+			metricNames:  []string{"metric_1", "metric_2", "metric_1_calculated_add"},
+			metricValues: [][]float64{{100}, {4}, {104}},
+		}),
+	},
+	{
+		name: "metrics_generation_rule_calculate_subtract",
+		rules: []Rule{
+			{
+				Name:      "metric_1_calculated_subtract",
+				Type:      "calculate",
+				Metric1:   "metric_1",
+				Metric2:   "metric_2",
+				Operation: "subtract",
 			},
-			inMetrics: generateTestMetrics(testMetric{
-				metricNames:  []string{"metric_1", "metric_2"},
-				metricValues: [][]float64{{100}, {4}},
-			}),
-			outMetrics: generateTestMetrics(testMetric{
-				metricNames:  []string{"metric_1", "metric_2", "metric_1_calculated_subtract"},
-				metricValues: [][]float64{{100}, {4}, {96}},
-			}),
 		},
-		{
-			name: "metrics_generation_rule_calculate_percent",
-			rules: []Rule{
-				{
-					Name:      "metric_1_calculated_percent",
-					Type:      "calculate",
-					Metric1:   "metric_1",
-					Metric2:   "metric_2",
-					Operation: "percent",
-				},
+		inMetrics: generateTestMetrics(testMetric{
+			metricNames:  []string{"metric_1", "metric_2"},
+			metricValues: [][]float64{{100}, {4}},
+		}),
+		outMetrics: generateTestMetrics(testMetric{
+			metricNames:  []string{"metric_1", "metric_2", "metric_1_calculated_subtract"},
+			metricValues: [][]float64{{100}, {4}, {96}},
+		}),
+	},
+	{
+		name: "metrics_generation_rule_calculate_percent",
+		rules: []Rule{
+			{
+				Name:      "metric_1_calculated_percent",
+				Type:      "calculate",
+				Metric1:   "metric_1",
+				Metric2:   "metric_2",
+				Operation: "percent",
 			},
-			inMetrics: generateTestMetrics(testMetric{
-				metricNames:  []string{"metric_1", "metric_2"},
-				metricValues: [][]float64{{20}, {200}},
-			}),
-			outMetrics: generateTestMetrics(testMetric{
-				metricNames:  []string{"metric_1", "metric_2", "metric_1_calculated_percent"},
-				metricValues: [][]float64{{20}, {200}, {10}},
-			}),
 		},
-		{
-			name: "metrics_generation_rule_calculate_missing_2nd_metric",
-			rules: []Rule{
-				{
-					Name:      "metric_1_calculated_multiply",
-					Type:      "calculate",
-					Metric1:   "metric_1",
-					Operation: "multiply",
-				},
+		inMetrics: generateTestMetrics(testMetric{
+			metricNames:  []string{"metric_1", "metric_2"},
+			metricValues: [][]float64{{20}, {200}},
+		}),
+		outMetrics: generateTestMetrics(testMetric{
+			metricNames:  []string{"metric_1", "metric_2", "metric_1_calculated_percent"},
+			metricValues: [][]float64{{20}, {200}, {10}},
+		}),
+	},
+	{
+		name: "metrics_generation_rule_calculate_missing_2nd_metric",
+		rules: []Rule{
+			{
+				Name:      "metric_1_calculated_multiply",
+				Type:      "calculate",
+				Metric1:   "metric_1",
+				Operation: "multiply",
 			},
-			inMetrics: generateTestMetrics(testMetric{
-				metricNames:  []string{"metric_1", "metric_2"},
-				metricValues: [][]float64{{100}, {4}},
-			}),
-			outMetrics: generateTestMetrics(testMetric{
-				metricNames:  []string{"metric_1", "metric_2"},
-				metricValues: [][]float64{{100}, {4}},
-			}),
 		},
-		{
-			name: "metrics_generation_rule_calculate_divide_op2_zero",
-			rules: []Rule{
-				{
-					Name:      "metric_1_calculated_divide",
-					Type:      "calculate",
-					Metric1:   "metric_1",
-					Metric2:   "metric_2",
-					Operation: "divide",
-				},
+		inMetrics: generateTestMetrics(testMetric{
+			metricNames:  []string{"metric_1", "metric_2"},
+			metricValues: [][]float64{{100}, {4}},
+		}),
+		outMetrics: generateTestMetrics(testMetric{
+			metricNames:  []string{"metric_1", "metric_2"},
+			metricValues: [][]float64{{100}, {4}},
+		}),
+	},
+	{
+		name: "metrics_generation_rule_calculate_divide_op2_zero",
+		rules: []Rule{
+			{
+				Name:      "metric_1_calculated_divide",
+				Type:      "calculate",
+				Metric1:   "metric_1",
+				Metric2:   "metric_2",
+				Operation: "divide",
 			},
-			inMetrics: generateTestMetrics(testMetric{
-				metricNames:  []string{"metric_1", "metric_2"},
-				metricValues: [][]float64{{100}, {0}},
-			}),
-			outMetrics: generateTestMetrics(testMetric{
-				metricNames:  []string{"metric_1", "metric_2"},
-				metricValues: [][]float64{{100}, {0}},
-			}),
 		},
-		{
-			name: "metrics_generation_rule_calculate_invalid_operation",
-			rules: []Rule{
-				{
-					Name:      "metric_1_calculated_invalid",
-					Type:      "calculate",
-					Metric1:   "metric_1",
-					Metric2:   "metric_2",
-					Operation: "invalid",
-				},
+		inMetrics: generateTestMetrics(testMetric{
+			metricNames:  []string{"metric_1", "metric_2"},
+			metricValues: [][]float64{{100}, {0}},
+		}),
+		outMetrics: generateTestMetrics(testMetric{
+			metricNames:  []string{"metric_1", "metric_2"},
+			metricValues: [][]float64{{100}, {0}},
+		}),
+	},
+	{
+		name: "metrics_generation_rule_calculate_invalid_operation",
+		rules: []Rule{
+			{
+				Name:      "metric_1_calculated_invalid",
+				Type:      "calculate",
+				Metric1:   "metric_1",
+				Metric2:   "metric_2",
+				Operation: "invalid",
 			},
-			inMetrics: generateTestMetrics(testMetric{
-				metricNames:  []string{"metric_1", "metric_2"},
-				metricValues: [][]float64{{100}, {0}},
-			}),
-			outMetrics: generateTestMetrics(testMetric{
-				metricNames:  []string{"metric_1", "metric_2"},
-				metricValues: [][]float64{{100}, {0}},
-			}),
 		},
-		{
-			name: "metrics_generation_test_int_gauge_add",
-			rules: []Rule{
-				{
-					Name:      "metric_calculated",
-					Type:      "calculate",
-					Metric1:   "metric_1",
-					Metric2:   "metric_2",
-					Operation: "add",
-				},
+		inMetrics: generateTestMetrics(testMetric{
+			metricNames:  []string{"metric_1", "metric_2"},
+			metricValues: [][]float64{{100}, {0}},
+		}),
+		outMetrics: generateTestMetrics(testMetric{
+			metricNames:  []string{"metric_1", "metric_2"},
+			metricValues: [][]float64{{100}, {0}},
+		}),
+	},
+	{
+		name: "metrics_generation_test_int_gauge_add",
+		rules: []Rule{
+			{
+				Name:      "metric_calculated",
+				Type:      "calculate",
+				Metric1:   "metric_1",
+				Metric2:   "metric_2",
+				Operation: "add",
 			},
-			inMetrics: generateTestMetricsWithIntDatapoint(testMetricIntGauge{
-				metricNames:  []string{"metric_1", "metric_2"},
-				metricValues: [][]int64{{100}, {5}},
-			}),
-			outMetrics: getOutputForIntGaugeTest(),
 		},
-	}
-)
+		inMetrics: generateTestMetricsWithIntDatapoint(testMetricIntGauge{
+			metricNames:  []string{"metric_1", "metric_2"},
+			metricValues: [][]int64{{100}, {5}},
+		}),
+		outMetrics: getOutputForIntGaugeTest(),
+	},
+}
 
 func TestMetricsGenerationProcessor(t *testing.T) {
 	for _, test := range testCases {
@@ -282,8 +280,8 @@ func TestMetricsGenerationProcessor(t *testing.T) {
 			}
 			factory := NewFactory()
 			mgp, err := factory.CreateMetrics(
-				context.Background(),
-				processortest.NewNopSettings(),
+				t.Context(),
+				processortest.NewNopSettings(metadata.Type),
 				cfg,
 				next,
 			)
@@ -292,10 +290,10 @@ func TestMetricsGenerationProcessor(t *testing.T) {
 
 			caps := mgp.Capabilities()
 			assert.True(t, caps.MutatesData)
-			ctx := context.Background()
+			ctx := t.Context()
 			require.NoError(t, mgp.Start(ctx, nil))
 
-			cErr := mgp.ConsumeMetrics(context.Background(), test.inMetrics)
+			cErr := mgp.ConsumeMetrics(t.Context(), test.inMetrics)
 			assert.NoError(t, cErr)
 			got := next.AllMetrics()
 
@@ -325,10 +323,8 @@ func TestMetricsGenerationProcessor(t *testing.T) {
 						case pmetric.NumberDataPointValueTypeInt:
 							require.Equal(t, eDataPoints.At(j).IntValue(), aDataPoints.At(j).IntValue())
 						}
-
 					}
 				}
-
 			}
 
 			require.NoError(t, mgp.Shutdown(ctx))
@@ -532,8 +528,8 @@ func TestGoldenFileMetrics(t *testing.T) {
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			mgp, err := factory.CreateMetrics(
-				context.Background(),
-				processortest.NewNopSettings(),
+				t.Context(),
+				processortest.NewNopSettings(metadata.Type),
 				cfg,
 				next,
 			)
@@ -541,12 +537,12 @@ func TestGoldenFileMetrics(t *testing.T) {
 			assert.NoError(t, err)
 
 			assert.True(t, mgp.Capabilities().MutatesData)
-			require.NoError(t, mgp.Start(context.Background(), nil))
+			require.NoError(t, mgp.Start(t.Context(), nil))
 
 			inputMetrics, err := golden.ReadMetrics(filepath.Join("testdata", testCase.testDir, "metrics_input.yaml"))
 			assert.NoError(t, err)
 
-			err = mgp.ConsumeMetrics(context.Background(), inputMetrics)
+			err = mgp.ConsumeMetrics(t.Context(), inputMetrics)
 			assert.NoError(t, err)
 
 			got := next.AllMetrics()

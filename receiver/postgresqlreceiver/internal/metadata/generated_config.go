@@ -34,6 +34,8 @@ type MetricsConfig struct {
 	PostgresqlBgwriterCheckpointCount  MetricConfig `mapstructure:"postgresql.bgwriter.checkpoint.count"`
 	PostgresqlBgwriterDuration         MetricConfig `mapstructure:"postgresql.bgwriter.duration"`
 	PostgresqlBgwriterMaxwritten       MetricConfig `mapstructure:"postgresql.bgwriter.maxwritten"`
+	PostgresqlBlksHit                  MetricConfig `mapstructure:"postgresql.blks_hit"`
+	PostgresqlBlksRead                 MetricConfig `mapstructure:"postgresql.blks_read"`
 	PostgresqlBlocksRead               MetricConfig `mapstructure:"postgresql.blocks_read"`
 	PostgresqlCommits                  MetricConfig `mapstructure:"postgresql.commits"`
 	PostgresqlConnectionMax            MetricConfig `mapstructure:"postgresql.connection.max"`
@@ -41,6 +43,7 @@ type MetricsConfig struct {
 	PostgresqlDatabaseLocks            MetricConfig `mapstructure:"postgresql.database.locks"`
 	PostgresqlDbSize                   MetricConfig `mapstructure:"postgresql.db_size"`
 	PostgresqlDeadlocks                MetricConfig `mapstructure:"postgresql.deadlocks"`
+	PostgresqlFunctionCalls            MetricConfig `mapstructure:"postgresql.function.calls"`
 	PostgresqlIndexScans               MetricConfig `mapstructure:"postgresql.index.scans"`
 	PostgresqlIndexSize                MetricConfig `mapstructure:"postgresql.index.size"`
 	PostgresqlOperations               MetricConfig `mapstructure:"postgresql.operations"`
@@ -51,7 +54,13 @@ type MetricsConfig struct {
 	PostgresqlTableCount               MetricConfig `mapstructure:"postgresql.table.count"`
 	PostgresqlTableSize                MetricConfig `mapstructure:"postgresql.table.size"`
 	PostgresqlTableVacuumCount         MetricConfig `mapstructure:"postgresql.table.vacuum.count"`
+	PostgresqlTempIo                   MetricConfig `mapstructure:"postgresql.temp.io"`
 	PostgresqlTempFiles                MetricConfig `mapstructure:"postgresql.temp_files"`
+	PostgresqlTupDeleted               MetricConfig `mapstructure:"postgresql.tup_deleted"`
+	PostgresqlTupFetched               MetricConfig `mapstructure:"postgresql.tup_fetched"`
+	PostgresqlTupInserted              MetricConfig `mapstructure:"postgresql.tup_inserted"`
+	PostgresqlTupReturned              MetricConfig `mapstructure:"postgresql.tup_returned"`
+	PostgresqlTupUpdated               MetricConfig `mapstructure:"postgresql.tup_updated"`
 	PostgresqlWalAge                   MetricConfig `mapstructure:"postgresql.wal.age"`
 	PostgresqlWalDelay                 MetricConfig `mapstructure:"postgresql.wal.delay"`
 	PostgresqlWalLag                   MetricConfig `mapstructure:"postgresql.wal.lag"`
@@ -77,6 +86,12 @@ func DefaultMetricsConfig() MetricsConfig {
 		PostgresqlBgwriterMaxwritten: MetricConfig{
 			Enabled: true,
 		},
+		PostgresqlBlksHit: MetricConfig{
+			Enabled: false,
+		},
+		PostgresqlBlksRead: MetricConfig{
+			Enabled: false,
+		},
 		PostgresqlBlocksRead: MetricConfig{
 			Enabled: true,
 		},
@@ -96,6 +111,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		PostgresqlDeadlocks: MetricConfig{
+			Enabled: false,
+		},
+		PostgresqlFunctionCalls: MetricConfig{
 			Enabled: false,
 		},
 		PostgresqlIndexScans: MetricConfig{
@@ -128,7 +146,25 @@ func DefaultMetricsConfig() MetricsConfig {
 		PostgresqlTableVacuumCount: MetricConfig{
 			Enabled: true,
 		},
+		PostgresqlTempIo: MetricConfig{
+			Enabled: false,
+		},
 		PostgresqlTempFiles: MetricConfig{
+			Enabled: false,
+		},
+		PostgresqlTupDeleted: MetricConfig{
+			Enabled: false,
+		},
+		PostgresqlTupFetched: MetricConfig{
+			Enabled: false,
+		},
+		PostgresqlTupInserted: MetricConfig{
+			Enabled: false,
+		},
+		PostgresqlTupReturned: MetricConfig{
+			Enabled: false,
+		},
+		PostgresqlTupUpdated: MetricConfig{
 			Enabled: false,
 		},
 		PostgresqlWalAge: MetricConfig{
@@ -138,6 +174,42 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		PostgresqlWalLag: MetricConfig{
+			Enabled: true,
+		},
+	}
+}
+
+// EventConfig provides common config for a particular event.
+type EventConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+
+	enabledSetByUser bool
+}
+
+func (ec *EventConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(ec)
+	if err != nil {
+		return err
+	}
+	ec.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// EventsConfig provides config for postgresql events.
+type EventsConfig struct {
+	DbServerQuerySample EventConfig `mapstructure:"db.server.query_sample"`
+	DbServerTopQuery    EventConfig `mapstructure:"db.server.top_query"`
+}
+
+func DefaultEventsConfig() EventsConfig {
+	return EventsConfig{
+		DbServerQuerySample: EventConfig{
+			Enabled: true,
+		},
+		DbServerTopQuery: EventConfig{
 			Enabled: true,
 		},
 	}
@@ -153,6 +225,13 @@ type ResourceAttributeConfig struct {
 	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
 	// MetricsInclude has higher priority than MetricsExclude.
 	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+	// Experimental: EventsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only events with matching resource attribute values will be emitted.
+	EventsInclude []filter.Config `mapstructure:"events_include"`
+	// Experimental: EventsExclude defines a list of filters for attribute values.
+	// If the list is not empty, events with matching resource attribute values will not be emitted.
+	// EventsInclude has higher priority than EventsExclude.
+	EventsExclude []filter.Config `mapstructure:"events_exclude"`
 
 	enabledSetByUser bool
 }
@@ -203,6 +282,19 @@ type MetricsBuilderConfig struct {
 func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
 	return MetricsBuilderConfig{
 		Metrics:            DefaultMetricsConfig(),
+		ResourceAttributes: DefaultResourceAttributesConfig(),
+	}
+}
+
+// LogsBuilderConfig is a configuration for postgresql logs builder.
+type LogsBuilderConfig struct {
+	Events             EventsConfig             `mapstructure:"events"`
+	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
+}
+
+func DefaultLogsBuilderConfig() LogsBuilderConfig {
+	return LogsBuilderConfig{
+		Events:             DefaultEventsConfig(),
 		ResourceAttributes: DefaultResourceAttributesConfig(),
 	}
 }

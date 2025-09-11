@@ -20,6 +20,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logicmonitorexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logicmonitorexporter/internal/testutil"
 )
 
@@ -49,8 +50,8 @@ func Test_NewLogsExporter(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			set := exportertest.NewNopSettings()
-			exp := newLogsExporter(context.Background(), tt.args.config, set)
+			set := exportertest.NewNopSettings(metadata.Type)
+			exp := newLogsExporter(t.Context(), tt.args.config, set)
 			assert.NotNil(t, exp)
 		})
 	}
@@ -98,7 +99,7 @@ func TestPushLogData(t *testing.T) {
 				ctx context.Context
 				lg  plog.Logs
 			}{
-				ctx: context.Background(),
+				ctx: t.Context(),
 				lg:  testutil.CreateLogData(1),
 			},
 		},
@@ -106,7 +107,7 @@ func TestPushLogData(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			set := exportertest.NewNopSettings()
+			set := exportertest.NewNopSettings(metadata.Type)
 			exp := newLogsExporter(test.args.ctx, test.fields.config, set)
 
 			require.NoError(t, exp.start(test.args.ctx, componenttest.NewNopHost()))

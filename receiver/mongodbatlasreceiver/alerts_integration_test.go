@@ -7,7 +7,6 @@ package mongodbatlasreceiver
 
 import (
 	"bytes"
-	"context"
 	"crypto/hmac"
 	"crypto/sha1" // #nosec G505 -- SHA1 is the algorithm mongodbatlas uses, it must be used to calculate the HMAC signature
 	"crypto/tls"
@@ -34,6 +33,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/metadata"
 )
 
 var testPayloads = []string{
@@ -56,8 +56,8 @@ func TestAlertsReceiver(t *testing.T) {
 			require.NoError(t, err)
 
 			recv, err := fact.CreateLogs(
-				context.Background(),
-				receivertest.NewNopSettings(),
+				t.Context(),
+				receivertest.NewNopSettings(metadata.Type),
 				&Config{
 					Alerts: AlertConfig{
 						Enabled:  true,
@@ -70,17 +70,17 @@ func TestAlertsReceiver(t *testing.T) {
 			)
 			require.NoError(t, err)
 
-			err = recv.Start(context.Background(), componenttest.NewNopHost())
+			err = recv.Start(t.Context(), componenttest.NewNopHost())
 			require.NoError(t, err)
 
 			defer func() {
-				require.NoError(t, recv.Shutdown(context.Background()))
+				require.NoError(t, recv.Shutdown(t.Context()))
 			}()
 
 			payload, err := os.ReadFile(filepath.Join("testdata", "alerts", "sample-payloads", payloadName+".json"))
 			require.NoError(t, err)
 
-			req, err := http.NewRequest("POST", fmt.Sprintf("http://localhost:%s", testPort), bytes.NewBuffer(payload))
+			req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("http://localhost:%s", testPort), bytes.NewBuffer(payload))
 			require.NoError(t, err)
 
 			b64HMAC, err := calculateHMACb64(testSecret, payload)
@@ -121,8 +121,8 @@ func TestAlertsReceiverTLS(t *testing.T) {
 			require.NoError(t, err)
 
 			recv, err := fact.CreateLogs(
-				context.Background(),
-				receivertest.NewNopSettings(),
+				t.Context(),
+				receivertest.NewNopSettings(metadata.Type),
 				&Config{
 					Alerts: AlertConfig{
 						Enabled:  true,
@@ -141,17 +141,17 @@ func TestAlertsReceiverTLS(t *testing.T) {
 			)
 			require.NoError(t, err)
 
-			err = recv.Start(context.Background(), componenttest.NewNopHost())
+			err = recv.Start(t.Context(), componenttest.NewNopHost())
 			require.NoError(t, err)
 
 			defer func() {
-				require.NoError(t, recv.Shutdown(context.Background()))
+				require.NoError(t, recv.Shutdown(t.Context()))
 			}()
 
 			payload, err := os.ReadFile(filepath.Join("testdata", "alerts", "sample-payloads", payloadName+".json"))
 			require.NoError(t, err)
 
-			req, err := http.NewRequest("POST", fmt.Sprintf("https://localhost:%s", testPort), bytes.NewBuffer(payload))
+			req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("https://localhost:%s", testPort), bytes.NewBuffer(payload))
 			require.NoError(t, err)
 
 			b64HMAC, err := calculateHMACb64(testSecret, payload)
@@ -209,8 +209,8 @@ func TestAtlasPoll(t *testing.T) {
 	fact := NewFactory()
 
 	recv, err := fact.CreateLogs(
-		context.Background(),
-		receivertest.NewNopSettings(),
+		t.Context(),
+		receivertest.NewNopSettings(metadata.Type),
 		&Config{
 			Alerts: AlertConfig{
 				Enabled: true,
@@ -233,14 +233,14 @@ func TestAtlasPoll(t *testing.T) {
 	require.True(t, ok)
 	rcvr.alerts.client = &mockClient
 
-	err = recv.Start(context.Background(), componenttest.NewNopHost())
+	err = recv.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	require.Eventually(t, func() bool {
 		return sink.LogRecordCount() > 0
 	}, 5*time.Second, 10*time.Millisecond)
 
-	err = recv.Shutdown(context.Background())
+	err = recv.Shutdown(t.Context())
 	require.NoError(t, err)
 
 	logs := sink.AllLogs()[0]
@@ -278,7 +278,7 @@ func clientWithCert(path string) (*http.Client, error) {
 	roots := x509.NewCertPool()
 	ok := roots.AppendCertsFromPEM(b)
 	if !ok {
-		return nil, errors.New("failed to append certficate as root certificate")
+		return nil, errors.New("failed to append certificate as root certificate")
 	}
 
 	return &http.Client{

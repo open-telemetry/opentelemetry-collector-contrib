@@ -82,7 +82,7 @@ func valueFor(x any) value {
 }
 
 // comparison is a test helper that constructs a comparison object using valueFor
-func comparisonHelper(left any, right any, op string) *comparison {
+func comparisonHelper(left, right any, op string) *comparison {
 	return &comparison{
 		Left:  valueFor(left),
 		Right: valueFor(right),
@@ -115,7 +115,7 @@ func Test_newComparisonEvaluator(t *testing.T) {
 
 	JanFirst2023 := time.Date(2023, 1, 1, 0, 0, 0, 0, time.Local)
 
-	var tests = []struct {
+	tests := []struct {
 		name string
 		l    any
 		r    any
@@ -159,23 +159,23 @@ func Test_newComparisonEvaluator(t *testing.T) {
 		{name: "compare not greater than equal to durations", l: "dur1", r: "dur2", op: ">=", want: false, item: map[string]time.Duration{"dur1": oneMillisecond, "dur2": threeSeconds}},
 		{name: "compare equal times", l: "time1", r: "time2", op: "==", want: true, item: map[string]time.Time{"time1": JanFirst2023, "time2": JanFirst2023}},
 		{name: "compare unequal times", l: "time1", r: "time2", op: "==", want: false, item: map[string]time.Time{"time1": JanFirst2023, "time2": time.Date(2023, 1, 2, 0, 0, 0, 0, time.Local)}},
-		{name: "compare for not equal times", l: "time1", r: "time2", op: "!=", want: true, item: map[string]time.Time{"time1": JanFirst2023, "time2": time.Date(2002, 11, 2, 01, 01, 01, 01, time.Local)}},
-		{name: "compare for equal times using not equal", l: "time1", r: "time2", op: "!=", want: false, item: map[string]time.Time{"time1": time.Date(2002, 11, 2, 01, 01, 01, 01, time.Local), "time2": time.Date(2002, 11, 2, 01, 01, 01, 01, time.Local)}},
-		{name: "compare less than times", l: "time1", r: "time2", op: "<", want: true, item: map[string]time.Time{"time1": JanFirst2023, "time2": time.Date(2023, 5, 2, 01, 01, 01, 01, time.Local)}},
-		{name: "compare not less than times", l: "time1", r: "time2", op: "<", want: false, item: map[string]time.Time{"time1": time.Date(2023, 6, 2, 01, 01, 01, 01, time.Local), "time2": time.Date(2023, 5, 2, 01, 01, 01, 01, time.Local)}},
-		{name: "compare less than equal to times", l: "time1", r: "time2", op: "<=", want: true, item: map[string]time.Time{"time1": time.Date(2003, 5, 2, 01, 01, 01, 01, time.Local), "time2": time.Date(2003, 5, 2, 01, 01, 01, 01, time.Local)}},
-		{name: "compare not less than equal to times", l: "time1", r: "time2", op: "<=", want: false, item: map[string]time.Time{"time1": time.Date(2002, 5, 2, 01, 01, 01, 01, time.Local), "time2": time.Date(1999, 5, 2, 01, 01, 01, 01, time.Local)}},
-		{name: "compare not greater than equal to w/ times", l: "time1", r: "time2", op: ">=", want: false, item: map[string]time.Time{"time1": time.Date(2002, 5, 2, 01, 01, 01, 01, time.Local), "time2": time.Date(2003, 5, 2, 01, 01, 01, 01, time.Local)}},
-		{name: "compare greater than equal to w/ times", l: "time1", r: "time2", op: ">=", want: true, item: map[string]time.Time{"time1": time.Date(2022, 5, 2, 01, 01, 01, 01, time.Local), "time2": time.Date(2003, 5, 2, 01, 01, 01, 01, time.Local)}},
-		{name: "compare greater than w/ times", l: "time1", r: "time2", op: ">", want: true, item: map[string]time.Time{"time1": time.Date(2022, 5, 2, 01, 01, 01, 01, time.Local), "time2": time.Date(2003, 5, 2, 01, 01, 01, 01, time.Local)}},
-		{name: "compare not greater than w/ times", l: "time1", r: "time2", op: ">", want: false, item: map[string]time.Time{"time1": time.Date(2002, 3, 2, 01, 01, 01, 01, time.Local), "time2": time.Date(2003, 5, 2, 01, 01, 01, 01, time.Local)}},
+		{name: "compare for not equal times", l: "time1", r: "time2", op: "!=", want: true, item: map[string]time.Time{"time1": JanFirst2023, "time2": time.Date(2002, 11, 2, 0o1, 0o1, 0o1, 0o1, time.Local)}},
+		{name: "compare for equal times using not equal", l: "time1", r: "time2", op: "!=", want: false, item: map[string]time.Time{"time1": time.Date(2002, 11, 2, 0o1, 0o1, 0o1, 0o1, time.Local), "time2": time.Date(2002, 11, 2, 0o1, 0o1, 0o1, 0o1, time.Local)}},
+		{name: "compare less than times", l: "time1", r: "time2", op: "<", want: true, item: map[string]time.Time{"time1": JanFirst2023, "time2": time.Date(2023, 5, 2, 0o1, 0o1, 0o1, 0o1, time.Local)}},
+		{name: "compare not less than times", l: "time1", r: "time2", op: "<", want: false, item: map[string]time.Time{"time1": time.Date(2023, 6, 2, 0o1, 0o1, 0o1, 0o1, time.Local), "time2": time.Date(2023, 5, 2, 0o1, 0o1, 0o1, 0o1, time.Local)}},
+		{name: "compare less than equal to times", l: "time1", r: "time2", op: "<=", want: true, item: map[string]time.Time{"time1": time.Date(2003, 5, 2, 0o1, 0o1, 0o1, 0o1, time.Local), "time2": time.Date(2003, 5, 2, 0o1, 0o1, 0o1, 0o1, time.Local)}},
+		{name: "compare not less than equal to times", l: "time1", r: "time2", op: "<=", want: false, item: map[string]time.Time{"time1": time.Date(2002, 5, 2, 0o1, 0o1, 0o1, 0o1, time.Local), "time2": time.Date(1999, 5, 2, 0o1, 0o1, 0o1, 0o1, time.Local)}},
+		{name: "compare not greater than equal to w/ times", l: "time1", r: "time2", op: ">=", want: false, item: map[string]time.Time{"time1": time.Date(2002, 5, 2, 0o1, 0o1, 0o1, 0o1, time.Local), "time2": time.Date(2003, 5, 2, 0o1, 0o1, 0o1, 0o1, time.Local)}},
+		{name: "compare greater than equal to w/ times", l: "time1", r: "time2", op: ">=", want: true, item: map[string]time.Time{"time1": time.Date(2022, 5, 2, 0o1, 0o1, 0o1, 0o1, time.Local), "time2": time.Date(2003, 5, 2, 0o1, 0o1, 0o1, 0o1, time.Local)}},
+		{name: "compare greater than w/ times", l: "time1", r: "time2", op: ">", want: true, item: map[string]time.Time{"time1": time.Date(2022, 5, 2, 0o1, 0o1, 0o1, 0o1, time.Local), "time2": time.Date(2003, 5, 2, 0o1, 0o1, 0o1, 0o1, time.Local)}},
+		{name: "compare not greater than w/ times", l: "time1", r: "time2", op: ">", want: false, item: map[string]time.Time{"time1": time.Date(2002, 3, 2, 0o1, 0o1, 0o1, 0o1, time.Local), "time2": time.Date(2003, 5, 2, 0o1, 0o1, 0o1, 0o1, time.Local)}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			comp := comparisonHelper(tt.l, tt.r, tt.op)
 			evaluator, err := p.newComparisonEvaluator(comp)
 			assert.NoError(t, err)
-			result, err := evaluator.Eval(context.Background(), tt.item)
+			result, err := evaluator.Eval(t.Context(), tt.item)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.want, result)
 		})
@@ -216,12 +216,13 @@ func Test_newConditionEvaluator_invalid(t *testing.T) {
 }
 
 func True() (ExprFunc[any], error) {
-	return func(_ context.Context, _ any) (any, error) {
+	return func(context.Context, any) (any, error) {
 		return true, nil
 	}, nil
 }
+
 func False() (ExprFunc[any], error) {
-	return func(_ context.Context, _ any) (any, error) {
+	return func(context.Context, any) (any, error) {
 		return false, nil
 	}, nil
 }
@@ -243,7 +244,8 @@ func Test_newBooleanExpressionEvaluator(t *testing.T) {
 		want bool
 		expr *booleanExpression
 	}{
-		{"a", false,
+		{
+			"a", false,
 			&booleanExpression{
 				Left: &term{
 					Left: &booleanValue{
@@ -264,7 +266,8 @@ func Test_newBooleanExpressionEvaluator(t *testing.T) {
 				},
 			},
 		},
-		{"b", true,
+		{
+			"b", true,
 			&booleanExpression{
 				Left: &term{
 					Left: &booleanValue{
@@ -285,7 +288,8 @@ func Test_newBooleanExpressionEvaluator(t *testing.T) {
 				},
 			},
 		},
-		{"c", false,
+		{
+			"c", false,
 			&booleanExpression{
 				Left: &term{
 					Left: &booleanValue{
@@ -314,7 +318,8 @@ func Test_newBooleanExpressionEvaluator(t *testing.T) {
 				},
 			},
 		},
-		{"d", true,
+		{
+			"d", true,
 			&booleanExpression{
 				Left: &term{
 					Left: &booleanValue{
@@ -337,7 +342,8 @@ func Test_newBooleanExpressionEvaluator(t *testing.T) {
 				},
 			},
 		},
-		{"e", true,
+		{
+			"e", true,
 			&booleanExpression{
 				Left: &term{
 					Left: &booleanValue{
@@ -360,7 +366,8 @@ func Test_newBooleanExpressionEvaluator(t *testing.T) {
 				},
 			},
 		},
-		{"f", false,
+		{
+			"f", false,
 			&booleanExpression{
 				Left: &term{
 					Left: &booleanValue{
@@ -383,7 +390,8 @@ func Test_newBooleanExpressionEvaluator(t *testing.T) {
 				},
 			},
 		},
-		{"g", true,
+		{
+			"g", true,
 			&booleanExpression{
 				Left: &term{
 					Left: &booleanValue{
@@ -416,7 +424,8 @@ func Test_newBooleanExpressionEvaluator(t *testing.T) {
 				},
 			},
 		},
-		{"h", true,
+		{
+			"h", true,
 			&booleanExpression{
 				Left: &term{
 					Left: &booleanValue{
@@ -455,7 +464,8 @@ func Test_newBooleanExpressionEvaluator(t *testing.T) {
 				},
 			},
 		},
-		{"i", true,
+		{
+			"i", true,
 			&booleanExpression{
 				Left: &term{
 					Left: &booleanValue{
@@ -467,7 +477,8 @@ func Test_newBooleanExpressionEvaluator(t *testing.T) {
 				},
 			},
 		},
-		{"j", false,
+		{
+			"j", false,
 			&booleanExpression{
 				Left: &term{
 					Left: &booleanValue{
@@ -479,7 +490,8 @@ func Test_newBooleanExpressionEvaluator(t *testing.T) {
 				},
 			},
 		},
-		{"k", true,
+		{
+			"k", true,
 			&booleanExpression{
 				Left: &term{
 					Left: &booleanValue{
@@ -497,7 +509,8 @@ func Test_newBooleanExpressionEvaluator(t *testing.T) {
 				},
 			},
 		},
-		{"l", false,
+		{
+			"l", false,
 			&booleanExpression{
 				Left: &term{
 					Left: &booleanValue{
@@ -537,7 +550,8 @@ func Test_newBooleanExpressionEvaluator(t *testing.T) {
 				},
 			},
 		},
-		{"m", false,
+		{
+			"m", false,
 			&booleanExpression{
 				Left: &term{
 					Left: &booleanValue{
@@ -573,7 +587,8 @@ func Test_newBooleanExpressionEvaluator(t *testing.T) {
 				},
 			},
 		},
-		{"n", true,
+		{
+			"n", true,
 			&booleanExpression{
 				Left: &term{
 					Left: &booleanValue{
@@ -586,7 +601,8 @@ func Test_newBooleanExpressionEvaluator(t *testing.T) {
 				},
 			},
 		},
-		{"o", false,
+		{
+			"o", false,
 			&booleanExpression{
 				Left: &term{
 					Left: &booleanValue{
@@ -604,7 +620,7 @@ func Test_newBooleanExpressionEvaluator(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			evaluator, err := p.newBoolExpr(tt.expr)
 			assert.NoError(t, err)
-			result, err := evaluator.Eval(context.Background(), nil)
+			result, err := evaluator.Eval(t.Context(), nil)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.want, result)
 		})
@@ -644,7 +660,7 @@ func Test_newBooleanExpressionEvaluator_invalid(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			evaluator, err := p.newBoolExpr(tt.expr)
 			assert.NoError(t, err)
-			_, err = evaluator.Eval(context.Background(), nil)
+			_, err = evaluator.Eval(t.Context(), nil)
 			assert.Error(t, err)
 		})
 	}

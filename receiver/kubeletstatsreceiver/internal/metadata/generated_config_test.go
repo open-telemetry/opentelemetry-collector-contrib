@@ -9,6 +9,8 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
+
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -80,6 +82,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					K8sPodNetworkErrors:                  MetricConfig{Enabled: true},
 					K8sPodNetworkIo:                      MetricConfig{Enabled: true},
 					K8sPodUptime:                         MetricConfig{Enabled: true},
+					K8sPodVolumeUsage:                    MetricConfig{Enabled: true},
 					K8sVolumeAvailable:                   MetricConfig{Enabled: true},
 					K8sVolumeCapacity:                    MetricConfig{Enabled: true},
 					K8sVolumeInodes:                      MetricConfig{Enabled: true},
@@ -164,6 +167,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					K8sPodNetworkErrors:                  MetricConfig{Enabled: false},
 					K8sPodNetworkIo:                      MetricConfig{Enabled: false},
 					K8sPodUptime:                         MetricConfig{Enabled: false},
+					K8sPodVolumeUsage:                    MetricConfig{Enabled: false},
 					K8sVolumeAvailable:                   MetricConfig{Enabled: false},
 					K8sVolumeCapacity:                    MetricConfig{Enabled: false},
 					K8sVolumeInodes:                      MetricConfig{Enabled: false},
@@ -193,9 +197,8 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			if diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}, ResourceAttributeConfig{})); diff != "" {
-				t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
-			}
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}, ResourceAttributeConfig{}))
+			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
 }
@@ -206,7 +209,7 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
 	cfg := DefaultMetricsBuilderConfig()
-	require.NoError(t, sub.Unmarshal(&cfg))
+	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
 	return cfg
 }
 
@@ -263,9 +266,8 @@ func TestResourceAttributesConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, tt.name)
-			if diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ResourceAttributeConfig{})); diff != "" {
-				t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
-			}
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ResourceAttributeConfig{}))
+			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
 }

@@ -4,7 +4,7 @@
 package errors
 
 import (
-	"fmt"
+	"errors"
 	"testing"
 	"time"
 
@@ -29,7 +29,7 @@ func TestWithDetails(t *testing.T) {
 	})
 
 	t.Run("StandardError", func(t *testing.T) {
-		err := fmt.Errorf("Test error")
+		err := errors.New("Test error")
 		err2 := WithDetails(err, "foo", "bar")
 
 		require.Equal(t, ErrorDetails{"foo": "bar"}, err2.Details)
@@ -63,7 +63,7 @@ func TestWrap(t *testing.T) {
 	})
 
 	t.Run("StandardError", func(t *testing.T) {
-		err := fmt.Errorf("Test error")
+		err := errors.New("Test error")
 		err2 := Wrap(err, "Test context")
 		require.Equal(t, "Test context: Test error", err2.Error())
 	})

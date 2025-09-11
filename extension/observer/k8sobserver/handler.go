@@ -13,10 +13,13 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/endpointswatcher"
 )
 
-var _ cache.ResourceEventHandler = (*handler)(nil)
-var _ observer.EndpointsLister = (*handler)(nil)
+var (
+	_ cache.ResourceEventHandler       = (*handler)(nil)
+	_ endpointswatcher.EndpointsLister = (*handler)(nil)
+)
 
 // handler handles k8s cache informer callbacks.
 type handler struct {

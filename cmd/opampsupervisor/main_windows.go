@@ -31,7 +31,6 @@ func run() error {
 			// ignore this error and only return other errors
 			return fmt.Errorf("alloc console: %w", err)
 		}
-
 	}
 	defer func() {
 		_ = freeConsole()

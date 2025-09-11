@@ -21,6 +21,7 @@ spec:
           command:
             - /otelcontribcol
             - --config=/conf/relay.yaml
+            - --feature-gates=service.profilesSupport
           image: "otelcontribcol:latest"
           imagePullPolicy: Never
           ports:

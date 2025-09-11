@@ -8,7 +8,7 @@ import (
 	"errors"
 	"net"
 
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/otel/attribute"
 )
@@ -18,13 +18,16 @@ var ErrNoMetadataFound = errors.New("no geo IP metadata found")
 
 // Config is the configuration of a GeoIPProvider.
 type Config interface {
-	component.ConfigValidator
+	xconfmap.Validator
 }
 
 // GeoIPProvider defines methods for obtaining the geographical location based on the provided IP address.
 type GeoIPProvider interface {
 	// Location returns a set of attributes representing the geographical location for the given IP address. It requires a context for managing request lifetime.
 	Location(context.Context, net.IP) (attribute.Set, error)
+	// Close releases any resources held by the provider. It should be called when the
+	// provider is no longer needed to ensure proper cleanup.
+	Close(context.Context) error
 }
 
 // GeoIPProviderFactory can create GeoIPProvider instances.

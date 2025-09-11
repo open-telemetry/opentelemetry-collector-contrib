@@ -4,10 +4,10 @@
 package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 import (
 	"context"
-	"fmt"
+	"errors"
 
 	"github.com/ua-parser/uap-go/uaparser"
-	semconv "go.opentelemetry.io/collector/semconv/v1.25.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.34.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
@@ -23,7 +23,7 @@ func NewUserAgentFactory[K any]() ottl.Factory[K] {
 func createUserAgentFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
 	args, ok := oArgs.(*UserAgentArguments[K])
 	if !ok {
-		return nil, fmt.Errorf("URLFactory args must be of type *URLArguments[K]")
+		return nil, errors.New("URLFactory args must be of type *URLArguments[K]")
 	}
 
 	return userAgent[K](args.UserAgent), nil
@@ -38,10 +38,23 @@ func userAgent[K any](userAgentSource ottl.StringGetter[K]) ottl.ExprFunc[K] { /
 			return nil, err
 		}
 		parsedUserAgent := parser.ParseUserAgent(userAgentString)
-		return map[string]any{
-			semconv.AttributeUserAgentName:     parsedUserAgent.Family,
-			semconv.AttributeUserAgentOriginal: userAgentString,
-			semconv.AttributeUserAgentVersion:  parsedUserAgent.ToVersionString(),
-		}, nil
+		parsedOS := parser.ParseOs(userAgentString)
+		result := map[string]any{
+			string(semconv.UserAgentNameKey):     parsedUserAgent.Family,
+			string(semconv.UserAgentOriginalKey): userAgentString,
+			string(semconv.UserAgentVersionKey):  parsedUserAgent.ToVersionString(),
+		}
+
+		osName := parsedOS.Family
+		if osName != "" {
+			result[string(semconv.OSNameKey)] = osName
+		}
+
+		osVersion := parsedOS.ToVersionString()
+		if osVersion != "" {
+			result[string(semconv.OSVersionKey)] = osVersion
+		}
+
+		return result, nil
 	}
 }

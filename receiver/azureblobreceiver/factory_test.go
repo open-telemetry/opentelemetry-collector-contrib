@@ -4,7 +4,6 @@
 package azureblobreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver"
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -12,6 +11,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver/internal/metadata"
 )
 
 func TestNewFactory(t *testing.T) {
@@ -22,8 +23,8 @@ func TestNewFactory(t *testing.T) {
 
 func TestCreateTraces(t *testing.T) {
 	f := NewFactory()
-	ctx := context.Background()
-	params := receivertest.NewNopSettings()
+	ctx := t.Context()
+	params := receivertest.NewNopSettings(metadata.Type)
 	receiver, err := f.CreateTraces(ctx, params, getConfig(), consumertest.NewNop())
 
 	require.NoError(t, err)
@@ -32,8 +33,8 @@ func TestCreateTraces(t *testing.T) {
 
 func TestCreateLogs(t *testing.T) {
 	f := NewFactory()
-	ctx := context.Background()
-	params := receivertest.NewNopSettings()
+	ctx := t.Context()
+	params := receivertest.NewNopSettings(metadata.Type)
 	receiver, err := f.CreateLogs(ctx, params, getConfig(), consumertest.NewNop())
 
 	require.NoError(t, err)
@@ -42,8 +43,8 @@ func TestCreateLogs(t *testing.T) {
 
 func TestTracesAndLogsReceiversAreSame(t *testing.T) {
 	f := NewFactory()
-	ctx := context.Background()
-	params := receivertest.NewNopSettings()
+	ctx := t.Context()
+	params := receivertest.NewNopSettings(metadata.Type)
 	config := getConfig()
 	logsReceiver, err := f.CreateLogs(ctx, params, config, consumertest.NewNop())
 	require.NoError(t, err)

@@ -15,41 +15,24 @@ import (
 
 	apacheThrift "github.com/apache/thrift/lib/go/thrift"
 	"github.com/gorilla/mux"
-	"github.com/jaegertracing/jaeger/cmd/agent/app/configmanager"
-	"github.com/jaegertracing/jaeger/cmd/agent/app/httpserver"
-	"github.com/jaegertracing/jaeger/cmd/agent/app/processors"
-	"github.com/jaegertracing/jaeger/cmd/agent/app/servers"
-	"github.com/jaegertracing/jaeger/cmd/agent/app/servers/thriftudp"
-	"github.com/jaegertracing/jaeger/model"
-	"github.com/jaegertracing/jaeger/pkg/metrics"
-	"github.com/jaegertracing/jaeger/proto-gen/api_v2"
-	"github.com/jaegertracing/jaeger/thrift-gen/agent"
-	"github.com/jaegertracing/jaeger/thrift-gen/baggage"
-	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
-	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
+	"github.com/jaegertracing/jaeger-idl/model/v1"
+	"github.com/jaegertracing/jaeger-idl/proto-gen/api_v2"
+	"github.com/jaegertracing/jaeger-idl/thrift-gen/agent"
+	"github.com/jaegertracing/jaeger-idl/thrift-gen/jaeger"
+	"github.com/jaegertracing/jaeger-idl/thrift-gen/zipkincore"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
-	"go.opentelemetry.io/collector/config/configgrpc"
-	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/multierr"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
 	jaegertranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver/internal/udpserver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver/internal/udpserver/thriftudp"
 )
-
-// configuration defines the behavior and the ports that
-// the Jaeger receiver will use.
-type configuration struct {
-	HTTPServerConfig confighttp.ServerConfig
-	GRPCServerConfig configgrpc.ServerConfig
-
-	AgentCompactThrift ProtocolUDP
-	AgentBinaryThrift  ProtocolUDP
-	AgentHTTPEndpoint  string
-}
 
 // Receiver type is used to receive spans that were originally intended to be sent to Jaeger.
 // This receiver is basically a Jaeger collector.
@@ -57,13 +40,12 @@ type jReceiver struct {
 	nextConsumer consumer.Traces
 	id           component.ID
 
-	config *configuration
+	config Protocols
 
 	grpc            *grpc.Server
 	collectorServer *http.Server
 
-	agentProcessors []processors.Processor
-	agentServer     *http.Server
+	agentProcessors []*udpserver.ThriftProcessor
 
 	goroutines sync.WaitGroup
 
@@ -83,18 +65,16 @@ const (
 	protobufFormat = "protobuf"
 )
 
-var (
-	acceptedThriftFormats = map[string]struct{}{
-		"application/x-thrift":                 {},
-		"application/vnd.apache.thrift.binary": {},
-	}
-)
+var acceptedThriftFormats = map[string]struct{}{
+	"application/x-thrift":                 {},
+	"application/vnd.apache.thrift.binary": {},
+}
 
 // newJaegerReceiver creates a TracesReceiver that receives traffic as a Jaeger collector, and
 // also as a Jaeger agent.
 func newJaegerReceiver(
 	id component.ID,
-	config *configuration,
+	config Protocols,
 	nextConsumer consumer.Traces,
 	set receiver.Settings,
 ) (*jReceiver, error) {
@@ -126,7 +106,7 @@ func newJaegerReceiver(
 }
 
 func (jr *jReceiver) Start(ctx context.Context, host component.Host) error {
-	if err := jr.startAgent(host); err != nil {
+	if err := jr.startAgent(); err != nil {
 		return err
 	}
 
@@ -136,11 +116,6 @@ func (jr *jReceiver) Start(ctx context.Context, host component.Host) error {
 func (jr *jReceiver) Shutdown(ctx context.Context) error {
 	var errs error
 
-	if jr.agentServer != nil {
-		if aerr := jr.agentServer.Shutdown(ctx); aerr != nil {
-			errs = multierr.Append(errs, aerr)
-		}
-	}
 	for _, processor := range jr.agentProcessors {
 		processor.Stop()
 	}
@@ -169,21 +144,10 @@ func consumeTraces(ctx context.Context, batch *jaeger.Batch, consumer consumer.T
 	return len(batch.Spans), consumer.ConsumeTraces(ctx, td)
 }
 
-var _ agent.Agent = (*agentHandler)(nil)
-var _ api_v2.CollectorServiceServer = (*jReceiver)(nil)
-var _ configmanager.ClientConfigManager = (*notImplementedConfigManager)(nil)
-
-var errNotImplemented = fmt.Errorf("not implemented")
-
-type notImplementedConfigManager struct{}
-
-func (notImplementedConfigManager) GetSamplingStrategy(_ context.Context, _ string) (*api_v2.SamplingStrategyResponse, error) {
-	return nil, errNotImplemented
-}
-
-func (notImplementedConfigManager) GetBaggageRestrictions(_ context.Context, _ string) ([]*baggage.BaggageRestriction, error) {
-	return nil, errNotImplemented
-}
+var (
+	_ agent.Agent                   = (*agentHandler)(nil)
+	_ api_v2.CollectorServiceServer = (*jReceiver)(nil)
+)
 
 type agentHandler struct {
 	nextConsumer consumer.Traces
@@ -191,7 +155,7 @@ type agentHandler struct {
 }
 
 // EmitZipkinBatch is unsupported agent's
-func (h *agentHandler) EmitZipkinBatch(context.Context, []*zipkincore.Span) (err error) {
+func (*agentHandler) EmitZipkinBatch(context.Context, []*zipkincore.Span) (err error) {
 	panic("unsupported receiver")
 }
 
@@ -223,12 +187,8 @@ func (jr *jReceiver) PostSpans(ctx context.Context, r *api_v2.PostSpansRequest) 
 	return &api_v2.PostSpansResponse{}, nil
 }
 
-func (jr *jReceiver) startAgent(host component.Host) error {
-	if jr.config == nil {
-		return nil
-	}
-
-	if jr.config.AgentBinaryThrift.Endpoint != "" {
+func (jr *jReceiver) startAgent() error {
+	if jr.config.ThriftBinaryUDP.HasValue() {
 		obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 			ReceiverID:             jr.id,
 			Transport:              agentTransportBinary,
@@ -242,14 +202,17 @@ func (jr *jReceiver) startAgent(host component.Host) error {
 			nextConsumer: jr.nextConsumer,
 			obsrecv:      obsrecv,
 		}
-		processor, err := jr.buildProcessor(jr.config.AgentBinaryThrift.Endpoint, jr.config.AgentBinaryThrift.ServerConfigUDP, apacheThrift.NewTBinaryProtocolFactoryConf(nil), h)
+		binaryUDPConfig := jr.config.ThriftBinaryUDP.Get()
+		processor, err := jr.buildProcessor(binaryUDPConfig.Endpoint, binaryUDPConfig.ServerConfigUDP, apacheThrift.NewTBinaryProtocolFactoryConf(nil), h)
 		if err != nil {
 			return err
 		}
 		jr.agentProcessors = append(jr.agentProcessors, processor)
+
+		jr.settings.Logger.Info("Starting UDP server for Binary Thrift", zap.String("endpoint", binaryUDPConfig.Endpoint))
 	}
 
-	if jr.config.AgentCompactThrift.Endpoint != "" {
+	if jr.config.ThriftCompactUDP.HasValue() {
 		obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 			ReceiverID:             jr.id,
 			Transport:              agentTransportCompact,
@@ -262,59 +225,48 @@ func (jr *jReceiver) startAgent(host component.Host) error {
 			nextConsumer: jr.nextConsumer,
 			obsrecv:      obsrecv,
 		}
-		processor, err := jr.buildProcessor(jr.config.AgentCompactThrift.Endpoint, jr.config.AgentCompactThrift.ServerConfigUDP, apacheThrift.NewTCompactProtocolFactoryConf(nil), h)
+		compactUDPConfig := jr.config.ThriftCompactUDP.Get()
+		processor, err := jr.buildProcessor(compactUDPConfig.Endpoint, compactUDPConfig.ServerConfigUDP, apacheThrift.NewTCompactProtocolFactoryConf(nil), h)
 		if err != nil {
 			return err
 		}
 		jr.agentProcessors = append(jr.agentProcessors, processor)
+
+		jr.settings.Logger.Info("Starting UDP server for Compact Thrift", zap.String("endpoint", compactUDPConfig.Endpoint))
 	}
 
 	jr.goroutines.Add(len(jr.agentProcessors))
 	for _, processor := range jr.agentProcessors {
-		go func(p processors.Processor) {
+		go func(p *udpserver.ThriftProcessor) {
 			defer jr.goroutines.Done()
 			p.Serve()
 		}(processor)
 	}
 
-	if jr.config.AgentHTTPEndpoint != "" {
-		jr.agentServer = httpserver.NewHTTPServer(jr.config.AgentHTTPEndpoint, &notImplementedConfigManager{}, metrics.NullFactory, jr.settings.Logger)
-
-		jr.goroutines.Add(1)
-		go func() {
-			defer jr.goroutines.Done()
-			if err := jr.agentServer.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) && err != nil {
-				componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(fmt.Errorf("jaeger agent server error: %w", err)))
-			}
-		}()
-	}
-
 	return nil
 }
 
-func (jr *jReceiver) buildProcessor(address string, cfg ServerConfigUDP, factory apacheThrift.TProtocolFactory, a agent.Agent) (processors.Processor, error) {
+func (jr *jReceiver) buildProcessor(address string, cfg ServerConfigUDP, factory apacheThrift.TProtocolFactory, a agent.Agent) (*udpserver.ThriftProcessor, error) {
 	handler := agent.NewAgentProcessor(a)
 	transport, err := thriftudp.NewTUDPServerTransport(address)
 	if err != nil {
 		return nil, err
 	}
 	if cfg.SocketBufferSize > 0 {
-		if err = transport.SetSocketBufferSize(cfg.SocketBufferSize); err != nil {
+		err = transport.SetSocketBufferSize(cfg.SocketBufferSize)
+		if err != nil {
 			return nil, err
 		}
 	}
-	server, err := servers.NewTBufferedServer(transport, cfg.QueueSize, cfg.MaxPacketSize, metrics.NullFactory)
-	if err != nil {
-		return nil, err
-	}
-	processor, err := processors.NewThriftProcessor(server, cfg.Workers, metrics.NullFactory, factory, handler, jr.settings.Logger)
+	server := udpserver.NewUDPServer(transport, cfg.QueueSize, cfg.MaxPacketSize)
+	processor, err := udpserver.NewThriftProcessor(server, cfg.Workers, factory, handler, jr.settings.Logger)
 	if err != nil {
 		return nil, err
 	}
 	return processor, nil
 }
 
-func (jr *jReceiver) decodeThriftHTTPBody(r *http.Request) (*jaeger.Batch, *httpError) {
+func (*jReceiver) decodeThriftHTTPBody(r *http.Request) (*jaeger.Batch, *httpError) {
 	bodyBytes, err := io.ReadAll(r.Body)
 	r.Body.Close()
 	if err != nil {
@@ -370,23 +322,22 @@ func (jr *jReceiver) HandleThriftHTTPBatch(w http.ResponseWriter, r *http.Reques
 }
 
 func (jr *jReceiver) startCollector(ctx context.Context, host component.Host) error {
-	if jr.config == nil {
-		return nil
-	}
-
-	if jr.config.HTTPServerConfig.Endpoint != "" {
-		cln, err := jr.config.HTTPServerConfig.ToListener(ctx)
+	if jr.config.ThriftHTTP.HasValue() {
+		httpConfig := jr.config.ThriftHTTP.Get()
+		cln, err := httpConfig.ToListener(ctx)
 		if err != nil {
 			return fmt.Errorf("failed to bind to Collector address %q: %w",
-				jr.config.HTTPServerConfig.Endpoint, err)
+				httpConfig.Endpoint, err)
 		}
 
 		nr := mux.NewRouter()
 		nr.HandleFunc("/api/traces", jr.HandleThriftHTTPBatch).Methods(http.MethodPost)
-		jr.collectorServer, err = jr.config.HTTPServerConfig.ToServer(ctx, host, jr.settings.TelemetrySettings, nr)
+		jr.collectorServer, err = httpConfig.ToServer(ctx, host, jr.settings.TelemetrySettings, nr)
 		if err != nil {
 			return err
 		}
+
+		jr.settings.Logger.Info("Starting HTTP server for Jaeger Thrift", zap.String("endpoint", httpConfig.Endpoint))
 
 		jr.goroutines.Add(1)
 		go func() {
@@ -397,19 +348,22 @@ func (jr *jReceiver) startCollector(ctx context.Context, host component.Host) er
 		}()
 	}
 
-	if jr.config.GRPCServerConfig.NetAddr.Endpoint != "" {
+	if jr.config.GRPC.HasValue() {
+		grpcConfig := jr.config.GRPC.Get()
 		var err error
-		jr.grpc, err = jr.config.GRPCServerConfig.ToServer(ctx, host, jr.settings.TelemetrySettings)
+		jr.grpc, err = grpcConfig.ToServer(ctx, host, jr.settings.TelemetrySettings)
 		if err != nil {
 			return fmt.Errorf("failed to build the options for the Jaeger gRPC Collector: %w", err)
 		}
 
-		ln, err := jr.config.GRPCServerConfig.NetAddr.Listen(ctx)
+		ln, err := grpcConfig.NetAddr.Listen(ctx)
 		if err != nil {
-			return fmt.Errorf("failed to bind to gRPC address %q: %w", jr.config.GRPCServerConfig.NetAddr, err)
+			return fmt.Errorf("failed to bind to gRPC address %q: %w", grpcConfig.NetAddr, err)
 		}
 
 		api_v2.RegisterCollectorServiceServer(jr.grpc, jr)
+
+		jr.settings.Logger.Info("Starting gRPC server for Jaeger Protobuf", zap.String("endpoint", grpcConfig.NetAddr.Endpoint))
 
 		jr.goroutines.Add(1)
 		go func() {

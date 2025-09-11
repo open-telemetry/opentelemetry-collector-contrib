@@ -39,6 +39,7 @@ type Config struct {
 	syslog.BaseConfig  `mapstructure:",squash"`
 	TCP                *tcp.BaseConfig `mapstructure:"tcp"`
 	UDP                *udp.BaseConfig `mapstructure:"udp"`
+	OnError            string          `mapstructure:"on_error"`
 }
 
 func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error) {
@@ -52,6 +53,9 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 	syslogParserCfg.SetID(inputBase.ID() + "_internal_parser")
 	syslogParserCfg.OutputIDs = c.OutputIDs
 	syslogParserCfg.MaxOctets = c.MaxOctets
+	if c.OnError != "" {
+		syslogParserCfg.OnError = c.OnError
+	}
 	syslogParser, err := syslogParserCfg.Build(set)
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve syslog config: %w", err)
@@ -59,8 +63,8 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 
 	if c.TCP != nil {
 		tcpInputCfg := tcp.NewConfigWithID(inputBase.ID() + "_internal_tcp")
-		tcpInputCfg.InputConfig.AttributerConfig = c.InputConfig.AttributerConfig
-		tcpInputCfg.InputConfig.IdentifierConfig = c.InputConfig.IdentifierConfig
+		tcpInputCfg.AttributerConfig = c.AttributerConfig
+		tcpInputCfg.IdentifierConfig = c.IdentifierConfig
 		tcpInputCfg.BaseConfig = *c.TCP
 		if syslogParserCfg.EnableOctetCounting {
 			tcpInputCfg.SplitFuncBuilder = OctetSplitFuncBuilder
@@ -73,7 +77,7 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 
 		tcpInput.SetOutputIDs([]string{syslogParser.ID()})
 		if err := tcpInput.SetOutputs([]operator.Operator{syslogParser}); err != nil {
-			return nil, fmt.Errorf("failed to set outputs")
+			return nil, errors.New("failed to set outputs")
 		}
 
 		return &Input{
@@ -85,8 +89,8 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 
 	if c.UDP != nil {
 		udpInputCfg := udp.NewConfigWithID(inputBase.ID() + "_internal_udp")
-		udpInputCfg.InputConfig.AttributerConfig = c.InputConfig.AttributerConfig
-		udpInputCfg.InputConfig.IdentifierConfig = c.InputConfig.IdentifierConfig
+		udpInputCfg.AttributerConfig = c.AttributerConfig
+		udpInputCfg.IdentifierConfig = c.IdentifierConfig
 		udpInputCfg.BaseConfig = *c.UDP
 
 		// Octet counting and Non-Transparent-Framing are invalid for UDP connections
@@ -101,7 +105,7 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 
 		udpInput.SetOutputIDs([]string{syslogParser.ID()})
 		if err := udpInput.SetOutputs([]operator.Operator{syslogParser}); err != nil {
-			return nil, fmt.Errorf("failed to set outputs")
+			return nil, errors.New("failed to set outputs")
 		}
 
 		return &Input{
@@ -111,5 +115,5 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 		}, nil
 	}
 
-	return nil, fmt.Errorf("need tcp config or udp config")
+	return nil, errors.New("need tcp config or udp config")
 }

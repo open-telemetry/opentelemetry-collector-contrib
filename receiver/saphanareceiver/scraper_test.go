@@ -4,7 +4,6 @@
 package saphanareceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphanareceiver"
 
 import (
-	"context"
 	"encoding/json"
 	"os"
 	"testing"
@@ -14,12 +13,15 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphanareceiver/internal/metadata"
 )
 
-const fullExpectedMetricsPath = "./testdata/expected_metrics/full.yaml"
-const partialExpectedMetricsPath = "./testdata/expected_metrics/mostly_disabled.yaml"
-const allQueryMetrics = "./testdata/mocked_queries/all_query_results.json"
-const mostlyDisabledQueryMetrics = "./testdata/mocked_queries/mostly_disabled_results.json"
+const (
+	fullExpectedMetricsPath    = "./testdata/expected_metrics/full.yaml"
+	partialExpectedMetricsPath = "./testdata/expected_metrics/mostly_disabled.yaml"
+	allQueryMetrics            = "./testdata/mocked_queries/all_query_results.json"
+	mostlyDisabledQueryMetrics = "./testdata/mocked_queries/mostly_disabled_results.json"
+)
 
 func TestScraper(t *testing.T) {
 	t.Parallel()
@@ -27,13 +29,13 @@ func TestScraper(t *testing.T) {
 	dbWrapper := &testDBWrapper{}
 	initializeWrapper(t, dbWrapper, allQueryMetrics)
 
-	sc, err := newSapHanaScraper(receivertest.NewNopSettings(), createDefaultConfig().(*Config), &testConnectionFactory{dbWrapper})
+	sc, err := newSapHanaScraper(receivertest.NewNopSettings(metadata.Type), createDefaultConfig().(*Config), &testConnectionFactory{dbWrapper})
 	require.NoError(t, err)
 
 	expectedMetrics, err := golden.ReadMetrics(fullExpectedMetricsPath)
 	require.NoError(t, err)
 
-	actualMetrics, err := sc.Scrape(context.Background())
+	actualMetrics, err := sc.ScrapeMetrics(t.Context())
 	require.NoError(t, err)
 
 	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
@@ -48,59 +50,59 @@ func TestDisabledMetrics(t *testing.T) {
 	initializeWrapper(t, dbWrapper, mostlyDisabledQueryMetrics)
 
 	cfg := createDefaultConfig().(*Config)
-	cfg.MetricsBuilderConfig.Metrics.SaphanaAlertCount.Enabled = false
-	cfg.MetricsBuilderConfig.Metrics.SaphanaBackupLatest.Enabled = false
-	cfg.MetricsBuilderConfig.Metrics.SaphanaColumnMemoryUsed.Enabled = false
-	cfg.MetricsBuilderConfig.Metrics.SaphanaComponentMemoryUsed.Enabled = false
-	cfg.MetricsBuilderConfig.Metrics.SaphanaConnectionCount.Enabled = false
-	cfg.MetricsBuilderConfig.Metrics.SaphanaCPUUsed.Enabled = false
-	cfg.MetricsBuilderConfig.Metrics.SaphanaDiskSizeCurrent.Enabled = false
-	cfg.MetricsBuilderConfig.Metrics.SaphanaHostMemoryCurrent.Enabled = false
-	cfg.MetricsBuilderConfig.Metrics.SaphanaHostSwapCurrent.Enabled = false
-	cfg.MetricsBuilderConfig.Metrics.SaphanaInstanceCodeSize.Enabled = false
-	cfg.MetricsBuilderConfig.Metrics.SaphanaInstanceMemoryCurrent.Enabled = false
-	cfg.MetricsBuilderConfig.Metrics.SaphanaInstanceMemorySharedAllocated.Enabled = false
-	cfg.MetricsBuilderConfig.Metrics.SaphanaInstanceMemoryUsedPeak.Enabled = false
-	cfg.MetricsBuilderConfig.Metrics.SaphanaLicenseExpirationTime.Enabled = false
-	cfg.MetricsBuilderConfig.Metrics.SaphanaLicenseLimit.Enabled = false
-	cfg.MetricsBuilderConfig.Metrics.SaphanaLicensePeak.Enabled = false
-	cfg.MetricsBuilderConfig.Metrics.SaphanaNetworkRequestAverageTime.Enabled = false
-	cfg.MetricsBuilderConfig.Metrics.SaphanaNetworkRequestCount.Enabled = false
-	cfg.MetricsBuilderConfig.Metrics.SaphanaNetworkRequestFinishedCount.Enabled = false
-	cfg.MetricsBuilderConfig.Metrics.SaphanaReplicationAverageTime.Enabled = false
-	cfg.MetricsBuilderConfig.Metrics.SaphanaReplicationBacklogSize.Enabled = false
-	cfg.MetricsBuilderConfig.Metrics.SaphanaReplicationBacklogTime.Enabled = false
-	cfg.MetricsBuilderConfig.Metrics.SaphanaRowStoreMemoryUsed.Enabled = false
-	cfg.MetricsBuilderConfig.Metrics.SaphanaSchemaMemoryUsedCurrent.Enabled = false
-	cfg.MetricsBuilderConfig.Metrics.SaphanaSchemaMemoryUsedMax.Enabled = false
-	cfg.MetricsBuilderConfig.Metrics.SaphanaSchemaOperationCount.Enabled = false
-	cfg.MetricsBuilderConfig.Metrics.SaphanaSchemaRecordCompressedCount.Enabled = false
-	cfg.MetricsBuilderConfig.Metrics.SaphanaSchemaRecordCount.Enabled = false
-	cfg.MetricsBuilderConfig.Metrics.SaphanaServiceCodeSize.Enabled = false
-	cfg.MetricsBuilderConfig.Metrics.SaphanaServiceCount.Enabled = true // Service Count Enabled
-	cfg.MetricsBuilderConfig.Metrics.SaphanaServiceMemoryCompactorsAllocated.Enabled = false
-	cfg.MetricsBuilderConfig.Metrics.SaphanaServiceMemoryCompactorsFreeable.Enabled = false
-	cfg.MetricsBuilderConfig.Metrics.SaphanaServiceMemoryEffectiveLimit.Enabled = false
-	cfg.MetricsBuilderConfig.Metrics.SaphanaServiceMemoryHeapCurrent.Enabled = false
-	cfg.MetricsBuilderConfig.Metrics.SaphanaServiceMemoryLimit.Enabled = false
-	cfg.MetricsBuilderConfig.Metrics.SaphanaServiceMemorySharedCurrent.Enabled = false
-	cfg.MetricsBuilderConfig.Metrics.SaphanaServiceMemoryUsed.Enabled = false
-	cfg.MetricsBuilderConfig.Metrics.SaphanaServiceStackSize.Enabled = false
-	cfg.MetricsBuilderConfig.Metrics.SaphanaServiceThreadCount.Enabled = true // Service Thread Count Enabled
-	cfg.MetricsBuilderConfig.Metrics.SaphanaTransactionBlocked.Enabled = false
-	cfg.MetricsBuilderConfig.Metrics.SaphanaTransactionCount.Enabled = false
-	cfg.MetricsBuilderConfig.Metrics.SaphanaUptime.Enabled = false
-	cfg.MetricsBuilderConfig.Metrics.SaphanaVolumeOperationCount.Enabled = false
-	cfg.MetricsBuilderConfig.Metrics.SaphanaVolumeOperationSize.Enabled = false
-	cfg.MetricsBuilderConfig.Metrics.SaphanaVolumeOperationTime.Enabled = false
+	cfg.Metrics.SaphanaAlertCount.Enabled = false
+	cfg.Metrics.SaphanaBackupLatest.Enabled = false
+	cfg.Metrics.SaphanaColumnMemoryUsed.Enabled = false
+	cfg.Metrics.SaphanaComponentMemoryUsed.Enabled = false
+	cfg.Metrics.SaphanaConnectionCount.Enabled = false
+	cfg.Metrics.SaphanaCPUUsed.Enabled = false
+	cfg.Metrics.SaphanaDiskSizeCurrent.Enabled = false
+	cfg.Metrics.SaphanaHostMemoryCurrent.Enabled = false
+	cfg.Metrics.SaphanaHostSwapCurrent.Enabled = false
+	cfg.Metrics.SaphanaInstanceCodeSize.Enabled = false
+	cfg.Metrics.SaphanaInstanceMemoryCurrent.Enabled = false
+	cfg.Metrics.SaphanaInstanceMemorySharedAllocated.Enabled = false
+	cfg.Metrics.SaphanaInstanceMemoryUsedPeak.Enabled = false
+	cfg.Metrics.SaphanaLicenseExpirationTime.Enabled = false
+	cfg.Metrics.SaphanaLicenseLimit.Enabled = false
+	cfg.Metrics.SaphanaLicensePeak.Enabled = false
+	cfg.Metrics.SaphanaNetworkRequestAverageTime.Enabled = false
+	cfg.Metrics.SaphanaNetworkRequestCount.Enabled = false
+	cfg.Metrics.SaphanaNetworkRequestFinishedCount.Enabled = false
+	cfg.Metrics.SaphanaReplicationAverageTime.Enabled = false
+	cfg.Metrics.SaphanaReplicationBacklogSize.Enabled = false
+	cfg.Metrics.SaphanaReplicationBacklogTime.Enabled = false
+	cfg.Metrics.SaphanaRowStoreMemoryUsed.Enabled = false
+	cfg.Metrics.SaphanaSchemaMemoryUsedCurrent.Enabled = false
+	cfg.Metrics.SaphanaSchemaMemoryUsedMax.Enabled = false
+	cfg.Metrics.SaphanaSchemaOperationCount.Enabled = false
+	cfg.Metrics.SaphanaSchemaRecordCompressedCount.Enabled = false
+	cfg.Metrics.SaphanaSchemaRecordCount.Enabled = false
+	cfg.Metrics.SaphanaServiceCodeSize.Enabled = false
+	cfg.Metrics.SaphanaServiceCount.Enabled = true // Service Count Enabled
+	cfg.Metrics.SaphanaServiceMemoryCompactorsAllocated.Enabled = false
+	cfg.Metrics.SaphanaServiceMemoryCompactorsFreeable.Enabled = false
+	cfg.Metrics.SaphanaServiceMemoryEffectiveLimit.Enabled = false
+	cfg.Metrics.SaphanaServiceMemoryHeapCurrent.Enabled = false
+	cfg.Metrics.SaphanaServiceMemoryLimit.Enabled = false
+	cfg.Metrics.SaphanaServiceMemorySharedCurrent.Enabled = false
+	cfg.Metrics.SaphanaServiceMemoryUsed.Enabled = false
+	cfg.Metrics.SaphanaServiceStackSize.Enabled = false
+	cfg.Metrics.SaphanaServiceThreadCount.Enabled = true // Service Thread Count Enabled
+	cfg.Metrics.SaphanaTransactionBlocked.Enabled = false
+	cfg.Metrics.SaphanaTransactionCount.Enabled = false
+	cfg.Metrics.SaphanaUptime.Enabled = false
+	cfg.Metrics.SaphanaVolumeOperationCount.Enabled = false
+	cfg.Metrics.SaphanaVolumeOperationSize.Enabled = false
+	cfg.Metrics.SaphanaVolumeOperationTime.Enabled = false
 
-	sc, err := newSapHanaScraper(receivertest.NewNopSettings(), cfg, &testConnectionFactory{dbWrapper})
+	sc, err := newSapHanaScraper(receivertest.NewNopSettings(metadata.Type), cfg, &testConnectionFactory{dbWrapper})
 	require.NoError(t, err)
 
 	expectedMetrics, err := golden.ReadMetrics(partialExpectedMetricsPath)
 	require.NoError(t, err)
 
-	actualMetrics, err := sc.Scrape(context.Background())
+	actualMetrics, err := sc.ScrapeMetrics(t.Context())
 	require.NoError(t, err)
 
 	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,

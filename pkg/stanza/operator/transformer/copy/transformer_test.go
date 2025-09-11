@@ -3,7 +3,6 @@
 package copy
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -292,11 +291,10 @@ func TestBuildAndProcess(t *testing.T) {
 			op, err := cfg.Build(set)
 			require.NoError(t, err)
 
-			cp := op.(*Transformer)
 			fake := testutil.NewFakeOutput(t)
-			require.NoError(t, cp.SetOutputs([]operator.Operator{fake}))
+			require.NoError(t, op.SetOutputs([]operator.Operator{fake}))
 			val := tc.input()
-			err = cp.Process(context.Background(), val)
+			err = op.ProcessBatch(t.Context(), []*entry.Entry{val})
 			if tc.expectErr {
 				require.Error(t, err)
 			} else {

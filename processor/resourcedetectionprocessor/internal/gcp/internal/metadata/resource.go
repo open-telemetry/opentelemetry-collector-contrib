@@ -9,7 +9,7 @@ import (
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp"
 )
 
-func (rb *ResourceBuilder) SetFromCallable(set func(string), detect func() (string, error)) error {
+func (*ResourceBuilder) SetFromCallable(set func(string), detect func() (string, error)) error {
 	v, err := detect()
 	if err != nil {
 		return err
@@ -40,6 +40,23 @@ func (rb *ResourceBuilder) SetZoneOrRegion(detect func() (string, gcp.LocationTy
 		rb.SetCloudRegion(v)
 	default:
 		return fmt.Errorf("location must be zone or region. Got %v", locType)
+	}
+	return nil
+}
+
+func (rb *ResourceBuilder) SetManagedInstanceGroup(detect func() (gcp.ManagedInstanceGroup, error)) error {
+	v, err := detect()
+	if err != nil {
+		return err
+	}
+	if v.Name != "" {
+		rb.SetGcpGceInstanceGroupManagerName(v.Name)
+	}
+	switch v.Type {
+	case gcp.Zone:
+		rb.SetGcpGceInstanceGroupManagerZone(v.Location)
+	case gcp.Region:
+		rb.SetGcpGceInstanceGroupManagerRegion(v.Location)
 	}
 	return nil
 }

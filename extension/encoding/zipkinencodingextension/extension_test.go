@@ -4,7 +4,6 @@
 package zipkinencodingextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/zipkinencodingextension"
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -25,7 +24,7 @@ func TestExtension_Start(t *testing.T) {
 				factory := NewFactory()
 				cfg := factory.CreateDefaultConfig()
 				cfg.(*Config).Protocol = "zipkin_json"
-				return factory.Create(context.Background(), extensiontest.NewNopSettings(), cfg)
+				return factory.Create(t.Context(), extensiontest.NewNopSettings(factory.Type()), cfg)
 			},
 		},
 		{
@@ -34,7 +33,7 @@ func TestExtension_Start(t *testing.T) {
 				factory := NewFactory()
 				cfg := factory.CreateDefaultConfig()
 				cfg.(*Config).Protocol = "zipkin_proto"
-				return factory.Create(context.Background(), extensiontest.NewNopSettings(), cfg)
+				return factory.Create(t.Context(), extensiontest.NewNopSettings(factory.Type()), cfg)
 			},
 		},
 		{
@@ -44,7 +43,7 @@ func TestExtension_Start(t *testing.T) {
 				cfg := factory.CreateDefaultConfig()
 				cfg.(*Config).Protocol = "zipkin_thrift"
 				cfg.(*Config).Version = "v1"
-				return factory.Create(context.Background(), extensiontest.NewNopSettings(), cfg)
+				return factory.Create(t.Context(), extensiontest.NewNopSettings(factory.Type()), cfg)
 			},
 		},
 		{
@@ -54,7 +53,7 @@ func TestExtension_Start(t *testing.T) {
 				cfg := factory.CreateDefaultConfig()
 				cfg.(*Config).Protocol = "zipkin_thrift"
 				cfg.(*Config).Version = "v2"
-				return factory.Create(context.Background(), extensiontest.NewNopSettings(), cfg)
+				return factory.Create(t.Context(), extensiontest.NewNopSettings(factory.Type()), cfg)
 			},
 			expectedErr: "unsupported version: \"v2\"",
 		},
@@ -67,7 +66,7 @@ func TestExtension_Start(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 			}
-			err = ext.Start(context.Background(), componenttest.NewNopHost())
+			err = ext.Start(t.Context(), componenttest.NewNopHost())
 			if test.expectedErr != "" && err != nil {
 				require.ErrorContains(t, err, test.expectedErr)
 			} else {

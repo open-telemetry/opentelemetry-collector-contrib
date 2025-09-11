@@ -92,16 +92,24 @@ func createMetricsProcessor(
 	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (processor.Metrics, error) {
-
 	oCfg := cfg.(*Config)
 	attrProc, err := attraction.NewAttrProc(&oCfg.Settings)
 	if err != nil {
 		return nil, err
 	}
 
+	includeMatchProperties, err := filterconfig.CreateMetricMatchPropertiesFromDefault(oCfg.Include)
+	if err != nil {
+		return nil, err
+	}
+	excludeMatchProperties, err := filterconfig.CreateMetricMatchPropertiesFromDefault(oCfg.Exclude)
+	if err != nil {
+		return nil, err
+	}
+
 	skipExpr, err := filtermetric.NewSkipExpr(
-		filterconfig.CreateMetricMatchPropertiesFromDefault(oCfg.Include),
-		filterconfig.CreateMetricMatchPropertiesFromDefault(oCfg.Exclude),
+		includeMatchProperties,
+		excludeMatchProperties,
 	)
 	if err != nil {
 		return nil, err

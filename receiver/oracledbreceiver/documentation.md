@@ -166,10 +166,10 @@ Count of active sessions.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| session_type | Session type | Any Str |
-| session_status | Session status | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| session_type | Session type | Any Str | false |
+| session_status | Session status | Any Str | false |
 
 ### oracledb.tablespace_size.limit
 
@@ -181,9 +181,9 @@ Maximum size of tablespace in bytes, -1 if unlimited.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| tablespace_name | Tablespace name | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| tablespace_name | Tablespace name | Any Str | false |
 
 ### oracledb.tablespace_size.usage
 
@@ -195,9 +195,9 @@ Used tablespace in bytes.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| tablespace_name | Tablespace name | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| tablespace_name | Tablespace name | Any Str | false |
 
 ### oracledb.transactions.limit
 
@@ -257,8 +257,216 @@ Number of times a current block was requested from the buffer cache.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {gets} | Sum | Int | Cumulative | true |
 
+### oracledb.ddl_statements_parallelized
+
+Number of DDL statements that were executed in parallel
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {statements} | Sum | Int | Cumulative | true |
+
+### oracledb.dml_statements_parallelized
+
+Number of DML statements that were executed in parallel
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {statements} | Sum | Int | Cumulative | true |
+
+### oracledb.logons
+
+Number of logon operations
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {operation} | Sum | Int | Cumulative | true |
+
+### oracledb.parallel_operations_downgraded_1_to_25_pct
+
+Number of times parallel execution was requested and the degree of parallelism was reduced down to 1-25% because of insufficient parallel execution servers
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {executions} | Sum | Int | Cumulative | true |
+
+### oracledb.parallel_operations_downgraded_25_to_50_pct
+
+Number of times parallel execution was requested and the degree of parallelism was reduced down to 25-50% because of insufficient parallel execution servers
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {executions} | Sum | Int | Cumulative | true |
+
+### oracledb.parallel_operations_downgraded_50_to_75_pct
+
+Number of times parallel execution was requested and the degree of parallelism was reduced down to 50-75% because of insufficient parallel execution servers
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {executions} | Sum | Int | Cumulative | true |
+
+### oracledb.parallel_operations_downgraded_75_to_99_pct
+
+Number of times parallel execution was requested and the degree of parallelism was reduced down to 75-99% because of insufficient parallel execution servers
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {executions} | Sum | Int | Cumulative | true |
+
+### oracledb.parallel_operations_downgraded_to_serial
+
+Number of times parallel execution was requested but execution was serial because of insufficient parallel execution servers
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {executions} | Sum | Int | Cumulative | true |
+
+### oracledb.parallel_operations_not_downgraded
+
+Number of times parallel execution was executed at the requested degree of parallelism
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {executions} | Sum | Int | Cumulative | true |
+
+### oracledb.physical_read_io_requests
+
+Number of read requests for application activity
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {requests} | Sum | Int | Cumulative | true |
+
+### oracledb.physical_reads_direct
+
+Number of reads directly from disk, bypassing the buffer cache
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {reads} | Sum | Int | Cumulative | true |
+
+### oracledb.physical_write_io_requests
+
+Number of write requests for application activity
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {requests} | Sum | Int | Cumulative | true |
+
+### oracledb.physical_writes
+
+Number of physical writes
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {writes} | Sum | Int | Cumulative | true |
+
+### oracledb.physical_writes_direct
+
+Number of writes directly to disk, bypassing the buffer cache
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {writes} | Sum | Int | Cumulative | true |
+
+### oracledb.queries_parallelized
+
+Number of SELECT statements executed in parallel
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {queries} | Sum | Int | Cumulative | true |
+
+## Default Events
+
+The following events are emitted by default. Each of them can be disabled by applying the following configuration:
+
+```yaml
+events:
+  <event_name>:
+    enabled: false
+```
+
+## Optional Events
+
+The following events are not emitted by default. Each of them can be enabled by applying the following configuration:
+
+```yaml
+events:
+  <event_name>:
+    enabled: true
+```
+
+### db.server.query_sample
+
+sample query
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| db.query.text | The text of the database query being executed. | Any Str |
+| db.system.name | The database management system (DBMS) product as identified by the client instrumentation. | Any Str |
+| user.name | Database user name under which a session is connected to | Any Str |
+| db.namespace | The database name. | Any Str |
+| client.address | Hostname or address of the client. | Any Str |
+| client.port | TCP port used by the client. | Any Int |
+| network.peer.address | IP address of the peer client. | Any Str |
+| network.peer.port | TCP port used by the peer client. | Any Int |
+| oracledb.plan_hash_value | Binary hash value calculated on the query execution plan and used to identify similar query execution plans, reported in the HEX format. | Any Str |
+| oracledb.sql_id | The SQL ID of the query. | Any Str |
+| oracledb.child_number | The child number of the query. | Any Str |
+| oracledb.child_address | Address of the child cursor. | Any Str |
+| oracledb.sid | ID of the Oracle Server session. | Any Str |
+| oracledb.serial | Serial number associated with a session. | Any Str |
+| oracledb.process | The operating system process ID (PID) associated with a session. | Any Str |
+| oracledb.schemaname | Oracle schema under which SQL statements are being executed | Any Str |
+| oracledb.program | Name of the client program or tool that initiated the Oracle database session. | Any Str |
+| oracledb.module | Logical module name of the client application that initiated a query or session. | Any Str |
+| oracledb.status | Execution state or result of a database query or session. | Any Str |
+| oracledb.state | Current state of the query or the session executing it. | Any Str |
+| oracledb.wait_class | The category of wait events a query or session is currently experiencing in Oracle Database. | Any Str |
+| oracledb.event | The specific wait event that a query or session is currently experiencing. | Any Str |
+| oracledb.object_name | Name of the database object that a query is accessing. | Any Str |
+| oracledb.object_type | Type of the database object that a query is accessing. | Any Str |
+| oracledb.osuser | Name of the operating system user that initiated or is running the Oracle database session. | Any Str |
+| oracledb.duration_sec | Total time taken by a database query to execute. | Any Double |
+
+### db.server.top_query
+
+Collection of event metrics for top N queries, filtered based on the highest CPU time consumed (oracledb.elapsed_time).
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| db.system.name | The database management system (DBMS) product as identified by the client instrumentation. | Any Str |
+| db.server.name | The name of the server hosting the database. | Any Str |
+| db.query.text | The text of the database query being executed. | Any Str |
+| oracledb.query_plan | The query execution plan used by the SQL Server. | Any Str |
+| oracledb.sql_id | The SQL ID of the query. | Any Str |
+| oracledb.child_number | The child number of the query. | Any Str |
+| oracledb.child_address | Address of the child cursor. | Any Str |
+| oracledb.application_wait_time | The total time (in seconds) a query spent waiting on the application before it could proceed with execution (reporting delta). | Any Double |
+| oracledb.buffer_gets | Number of logical reads (i.e., buffer cache accesses) performed by a query (reporting delta). | Any Int |
+| oracledb.cluster_wait_time | Total time (in seconds) that a query waited due to Oracle Real Application Clusters (RAC) coordination (reporting delta). | Any Double |
+| oracledb.concurrency_wait_time | Total time (in seconds) a query spent waiting on concurrency-related events (reporting delta). | Any Double |
+| oracledb.cpu_time | Total time (in seconds) that the CPU spent actively processing a query, excluding time spent waiting (reporting delta). | Any Double |
+| oracledb.direct_reads | The number of direct path reads performed by a query — i.e., data blocks read directly from disk into the session’s memory (reporting delta). | Any Int |
+| oracledb.direct_writes | The number of direct path write operations, where data is written directly to disk from user memory (reporting delta). | Any Int |
+| oracledb.disk_reads | The number of physical reads a query performs — that is, the number of data blocks read from disk (reporting delta). | Any Int |
+| oracledb.elapsed_time | The total time (in seconds) taken by a query from start to finish, including CPU time and all types of waits (reporting delta). | Any Double |
+| oracledb.executions | The number of times a specific SQL query has been executed (reporting delta). | Any Int |
+| oracledb.physical_read_bytes | The total number of bytes read from disk by a query (reporting delta). | Any Int |
+| oracledb.physical_read_requests | The number of physical I/O read operations performed by a query (reporting delta). | Any Int |
+| oracledb.physical_write_bytes | The total number of bytes written to disk by a query (reporting delta). | Any Int |
+| oracledb.physical_write_requests | The number of times a query requested to write data to disk (reporting delta). | Any Int |
+| oracledb.rows_processed | The total number of rows that a query has read, returned, or affected during its execution (reporting delta). | Any Int |
+| oracledb.user_io_wait_time | The total time (in seconds) a query spent waiting for user I/O operations—such as reading or writing data to disk or network file systems (reporting delta). | Any Double |
+
 ## Resource Attributes
 
 | Name | Description | Values | Enabled |
 | ---- | ----------- | ------ | ------- |
+| host.name | The host name of Oracle Server | Any Str | true |
 | oracledb.instance.name | The name of the instance that data is coming from. | Any Str | true |

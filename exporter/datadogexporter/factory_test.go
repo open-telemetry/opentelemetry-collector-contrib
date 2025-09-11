@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil"
-	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata"
-	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata/payload"
+	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/inframetadata"
+	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/inframetadata/payload"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -21,12 +21,12 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
+	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
 )
 
 var _ inframetadata.Pusher = (*testPusher)(nil)
@@ -78,14 +78,14 @@ func TestCreateAPIMetricsExporter(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
 
-	c := cfg.(*Config)
-	c.Metrics.TCPAddrConfig.Endpoint = server.URL
+	c := cfg.(*datadogconfig.Config)
+	c.Metrics.Endpoint = server.URL
 	c.HostMetadata.Enabled = false
 
-	ctx := context.Background()
+	ctx := t.Context()
 	exp, err := factory.CreateMetrics(
 		ctx,
-		exportertest.NewNopSettings(),
+		exportertest.NewNopSettings(metadata.Type),
 		cfg,
 	)
 
@@ -93,16 +93,9 @@ func TestCreateAPIMetricsExporter(t *testing.T) {
 	assert.NotNil(t, exp)
 }
 
-func TestCreateAPIExporterFailOnInvalidKey_Zorkian(t *testing.T) {
-	featuregateErr := featuregate.GlobalRegistry().Set("exporter.datadogexporter.UseLogsAgentExporter", false)
-	assert.NoError(t, featuregateErr)
+func TestCreateAPIExporterFailOnInvalidKey_Serializer(t *testing.T) {
 	server := testutil.DatadogServerMock(testutil.ValidateAPIKeyEndpointInvalid)
 	defer server.Close()
-
-	if isMetricExportV2Enabled() {
-		require.NoError(t, enableZorkianMetricExport())
-		defer require.NoError(t, enableNativeMetricExport())
-	}
 
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
@@ -114,17 +107,17 @@ func TestCreateAPIExporterFailOnInvalidKey_Zorkian(t *testing.T) {
 	require.NoError(t, sub.Unmarshal(cfg))
 
 	// Use the mock server for API key validation
-	c := cfg.(*Config)
-	c.Metrics.TCPAddrConfig.Endpoint = server.URL
+	c := cfg.(*datadogconfig.Config)
+	c.Metrics.Endpoint = server.URL
 	c.HostMetadata.Enabled = false
 
 	t.Run("true", func(t *testing.T) {
 		c.API.FailOnInvalidKey = true
-		ctx := context.Background()
+		ctx := t.Context()
 		// metrics exporter
 		mexp, err := factory.CreateMetrics(
 			ctx,
-			exportertest.NewNopSettings(),
+			exportertest.NewNopSettings(metadata.Type),
 			cfg,
 		)
 		assert.EqualError(t, err, "API Key validation failed")
@@ -132,7 +125,7 @@ func TestCreateAPIExporterFailOnInvalidKey_Zorkian(t *testing.T) {
 
 		texp, err := factory.CreateTraces(
 			ctx,
-			exportertest.NewNopSettings(),
+			exportertest.NewNopSettings(metadata.Type),
 			cfg,
 		)
 		assert.EqualError(t, err, "API Key validation failed")
@@ -140,18 +133,19 @@ func TestCreateAPIExporterFailOnInvalidKey_Zorkian(t *testing.T) {
 
 		lexp, err := factory.CreateLogs(
 			ctx,
-			exportertest.NewNopSettings(),
+			exportertest.NewNopSettings(metadata.Type),
 			cfg,
 		)
-		assert.EqualError(t, err, "API Key validation failed")
-		assert.Nil(t, lexp)
+		// logs agent exporter does not fail on  invalid api key
+		assert.NoError(t, err)
+		assert.NotNil(t, lexp)
 	})
 	t.Run("false", func(t *testing.T) {
 		c.API.FailOnInvalidKey = false
-		ctx := context.Background()
+		ctx := t.Context()
 		exp, err := factory.CreateMetrics(
 			ctx,
-			exportertest.NewNopSettings(),
+			exportertest.NewNopSettings(metadata.Type),
 			cfg,
 		)
 		assert.NoError(t, err)
@@ -159,7 +153,7 @@ func TestCreateAPIExporterFailOnInvalidKey_Zorkian(t *testing.T) {
 
 		texp, err := factory.CreateTraces(
 			ctx,
-			exportertest.NewNopSettings(),
+			exportertest.NewNopSettings(metadata.Type),
 			cfg,
 		)
 		assert.NoError(t, err)
@@ -167,98 +161,12 @@ func TestCreateAPIExporterFailOnInvalidKey_Zorkian(t *testing.T) {
 
 		lexp, err := factory.CreateLogs(
 			ctx,
-			exportertest.NewNopSettings(),
+			exportertest.NewNopSettings(metadata.Type),
 			cfg,
 		)
 		assert.NoError(t, err)
 		assert.NotNil(t, lexp)
 	})
-	featuregateErr = featuregate.GlobalRegistry().Set("exporter.datadogexporter.UseLogsAgentExporter", true)
-	assert.NoError(t, featuregateErr)
-}
-
-func TestCreateAPIExporterFailOnInvalidKey(t *testing.T) {
-	featuregateErr := featuregate.GlobalRegistry().Set("exporter.datadogexporter.UseLogsAgentExporter", false)
-	assert.NoError(t, featuregateErr)
-	server := testutil.DatadogServerMock(testutil.ValidateAPIKeyEndpointInvalid)
-	defer server.Close()
-
-	if !isMetricExportV2Enabled() {
-		require.NoError(t, enableNativeMetricExport())
-		defer require.NoError(t, enableZorkianMetricExport())
-	}
-
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
-	require.NoError(t, err)
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
-
-	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "api").String())
-	require.NoError(t, err)
-	require.NoError(t, sub.Unmarshal(cfg))
-
-	// Use the mock server for API key validation
-	c := cfg.(*Config)
-	c.Metrics.TCPAddrConfig.Endpoint = server.URL
-	c.HostMetadata.Enabled = false
-
-	t.Run("true", func(t *testing.T) {
-		c.API.FailOnInvalidKey = true
-		ctx := context.Background()
-		// metrics exporter
-		mexp, err := factory.CreateMetrics(
-			ctx,
-			exportertest.NewNopSettings(),
-			cfg,
-		)
-		assert.EqualError(t, err, "API Key validation failed")
-		assert.Nil(t, mexp)
-
-		texp, err := factory.CreateTraces(
-			ctx,
-			exportertest.NewNopSettings(),
-			cfg,
-		)
-		assert.EqualError(t, err, "API Key validation failed")
-		assert.Nil(t, texp)
-
-		lexp, err := factory.CreateLogs(
-			ctx,
-			exportertest.NewNopSettings(),
-			cfg,
-		)
-		assert.EqualError(t, err, "API Key validation failed")
-		assert.Nil(t, lexp)
-	})
-	t.Run("false", func(t *testing.T) {
-		c.API.FailOnInvalidKey = false
-		ctx := context.Background()
-		exp, err := factory.CreateMetrics(
-			ctx,
-			exportertest.NewNopSettings(),
-			cfg,
-		)
-		assert.NoError(t, err)
-		assert.NotNil(t, exp)
-
-		texp, err := factory.CreateTraces(
-			ctx,
-			exportertest.NewNopSettings(),
-			cfg,
-		)
-		assert.NoError(t, err)
-		assert.NotNil(t, texp)
-
-		lexp, err := factory.CreateLogs(
-			ctx,
-			exportertest.NewNopSettings(),
-			cfg,
-		)
-		assert.NoError(t, err)
-		assert.NotNil(t, lexp)
-	})
-	featuregateErr = featuregate.GlobalRegistry().Set("exporter.datadogexporter.UseLogsAgentExporter", true)
-	assert.NoError(t, featuregateErr)
 }
 
 func TestCreateAPILogsExporter(t *testing.T) {
@@ -274,14 +182,14 @@ func TestCreateAPILogsExporter(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
 
-	c := cfg.(*Config)
-	c.Metrics.TCPAddrConfig.Endpoint = server.URL
+	c := cfg.(*datadogconfig.Config)
+	c.Metrics.Endpoint = server.URL
 	c.HostMetadata.Enabled = false
 
-	ctx := context.Background()
+	ctx := t.Context()
 	exp, err := factory.CreateLogs(
 		ctx,
-		exportertest.NewNopSettings(),
+		exportertest.NewNopSettings(metadata.Type),
 		cfg,
 	)
 
@@ -294,27 +202,27 @@ func TestOnlyMetadata(t *testing.T) {
 	defer server.Close()
 
 	factory := NewFactory()
-	ctx := context.Background()
-	cfg := &Config{
+	ctx := t.Context()
+	cfg := &datadogconfig.Config{
 		ClientConfig:  defaultClientConfig(),
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),
 		QueueSettings: exporterhelper.NewDefaultQueueConfig(),
 
-		API:          APIConfig{Key: "notnull"},
-		Metrics:      MetricsConfig{TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: server.URL}},
-		Traces:       TracesConfig{TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: server.URL}},
+		API:          datadogconfig.APIConfig{Key: "aaaaaaa"},
+		Metrics:      datadogconfig.MetricsConfig{TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: server.URL}},
+		Traces:       datadogconfig.TracesExporterConfig{TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: server.URL}},
 		OnlyMetadata: true,
 
-		HostMetadata: HostMetadataConfig{
+		HostMetadata: datadogconfig.HostMetadataConfig{
 			Enabled:        true,
-			HostnameSource: HostnameSourceFirstResource,
+			ReporterPeriod: 30 * time.Minute,
 		},
+		HostnameDetectionTimeout: 50 * time.Millisecond,
 	}
-	cfg.HostMetadata.SetSourceTimeout(50 * time.Millisecond)
 
 	expTraces, err := factory.CreateTraces(
 		ctx,
-		exportertest.NewNopSettings(),
+		exportertest.NewNopSettings(metadata.Type),
 		cfg,
 	)
 	assert.NoError(t, err)
@@ -322,7 +230,7 @@ func TestOnlyMetadata(t *testing.T) {
 
 	expMetrics, err := factory.CreateMetrics(
 		ctx,
-		exportertest.NewNopSettings(),
+		exportertest.NewNopSettings(metadata.Type),
 		cfg,
 	)
 	assert.NoError(t, err)
@@ -340,7 +248,7 @@ func TestOnlyMetadata(t *testing.T) {
 	require.NoError(t, err)
 
 	recvMetadata := <-server.MetadataChan
-	assert.Equal(t, "custom-hostname", recvMetadata.InternalHostname)
+	assert.NotEmpty(t, recvMetadata.InternalHostname)
 }
 
 func TestStopExporters(t *testing.T) {
@@ -356,21 +264,21 @@ func TestStopExporters(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
 
-	c := cfg.(*Config)
-	c.Metrics.TCPAddrConfig.Endpoint = server.URL
+	c := cfg.(*datadogconfig.Config)
+	c.Metrics.Endpoint = server.URL
 	c.HostMetadata.Enabled = false
 
-	ctx := context.Background()
+	ctx := t.Context()
 	expTraces, err := factory.CreateTraces(
 		ctx,
-		exportertest.NewNopSettings(),
+		exportertest.NewNopSettings(metadata.Type),
 		cfg,
 	)
 	assert.NoError(t, err)
 	assert.NotNil(t, expTraces)
 	expMetrics, err := factory.CreateMetrics(
 		ctx,
-		exportertest.NewNopSettings(),
+		exportertest.NewNopSettings(metadata.Type),
 		cfg,
 	)
 	assert.NoError(t, err)

@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
@@ -29,8 +29,8 @@ type perfCounterMetricWatcher struct {
 
 type newWatcherFunc func(string, string, string) (winperfcounters.PerfCounterWatcher, error)
 
-// scraper is the type that scrapes various host metrics.
-type scraper struct {
+// windowsPerfCountersScraper is the type that scrapes various host metrics.
+type windowsPerfCountersScraper struct {
 	cfg      *Config
 	settings component.TelemetrySettings
 	watchers []perfCounterMetricWatcher
@@ -39,11 +39,11 @@ type scraper struct {
 	newWatcher newWatcherFunc
 }
 
-func newScraper(cfg *Config, settings component.TelemetrySettings) *scraper {
-	return &scraper{cfg: cfg, settings: settings, newWatcher: winperfcounters.NewWatcher}
+func newScraper(cfg *Config, settings component.TelemetrySettings) *windowsPerfCountersScraper {
+	return &windowsPerfCountersScraper{cfg: cfg, settings: settings, newWatcher: winperfcounters.NewWatcher}
 }
 
-func (s *scraper) start(context.Context, component.Host) error {
+func (s *windowsPerfCountersScraper) start(context.Context, component.Host) error {
 	watchers, err := s.initWatchers()
 	if err != nil {
 		s.settings.Logger.Warn("some performance counters could not be initialized", zap.Error(err))
@@ -52,7 +52,7 @@ func (s *scraper) start(context.Context, component.Host) error {
 	return nil
 }
 
-func (s *scraper) initWatchers() ([]perfCounterMetricWatcher, error) {
+func (s *windowsPerfCountersScraper) initWatchers() ([]perfCounterMetricWatcher, error) {
 	var errs error
 	var watchers []perfCounterMetricWatcher
 
@@ -71,9 +71,9 @@ func (s *scraper) initWatchers() ([]perfCounterMetricWatcher, error) {
 					recreate:           counterCfg.RecreateQuery,
 				}
 				if counterCfg.MetricRep.Name != "" {
-					watcher.MetricRep.Name = counterCfg.MetricRep.Name
-					if counterCfg.MetricRep.Attributes != nil {
-						watcher.MetricRep.Attributes = counterCfg.MetricRep.Attributes
+					watcher.Name = counterCfg.MetricRep.Name
+					if counterCfg.Attributes != nil {
+						watcher.Attributes = counterCfg.Attributes
 					}
 				}
 
@@ -85,7 +85,7 @@ func (s *scraper) initWatchers() ([]perfCounterMetricWatcher, error) {
 	return watchers, errs
 }
 
-func (s *scraper) shutdown(context.Context) error {
+func (s *windowsPerfCountersScraper) shutdown(context.Context) error {
 	var errs error
 	for _, watcher := range s.watchers {
 		err := watcher.Close()
@@ -96,7 +96,7 @@ func (s *scraper) shutdown(context.Context) error {
 	return errs
 }
 
-func (s *scraper) scrape(context.Context) (pmetric.Metrics, error) {
+func (s *windowsPerfCountersScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	md := pmetric.NewMetrics()
 	metricSlice := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
 	now := pcommon.NewTimestampFromTime(time.Now())
@@ -145,16 +145,16 @@ func (s *scraper) scrape(context.Context) (pmetric.Metrics, error) {
 
 		for _, val := range counterVals {
 			var metric pmetric.Metric
-			if builtmetric, ok := metrics[watcher.MetricRep.Name]; ok {
+			if builtmetric, ok := metrics[watcher.Name]; ok {
 				metric = builtmetric
 			} else {
 				metric = metricSlice.AppendEmpty()
-				metric.SetName(watcher.MetricRep.Name)
+				metric.SetName(watcher.Name)
 				metric.SetUnit("1")
 				metric.SetEmptyGauge()
 			}
 
-			initializeMetricDps(metric, now, val, watcher.MetricRep.Attributes)
+			initializeMetricDps(metric, now, val, watcher.Attributes)
 		}
 	}
 
@@ -179,7 +179,8 @@ func (s *scraper) scrape(context.Context) (pmetric.Metrics, error) {
 }
 
 func initializeMetricDps(metric pmetric.Metric, now pcommon.Timestamp, counterValue winperfcounters.CounterValue,
-	attributes map[string]string) {
+	attributes map[string]string,
+) {
 	var dps pmetric.NumberDataPointSlice
 
 	if metric.Type() == pmetric.MetricTypeGauge {

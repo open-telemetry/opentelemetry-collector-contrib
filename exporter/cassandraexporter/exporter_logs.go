@@ -25,7 +25,6 @@ type logsExporter struct {
 }
 
 func newLogsExporter(logger *zap.Logger, cfg *Config) *logsExporter {
-
 	return &logsExporter{logger: logger, cfg: cfg}
 }
 

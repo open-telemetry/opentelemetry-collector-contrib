@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
@@ -25,7 +26,7 @@ func TestWriteMetrics(t *testing.T) {
 	metricslice.CopyTo(metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics())
 
 	actualFile := filepath.Join(t.TempDir(), "metrics.yaml")
-	require.NoError(t, writeMetrics(actualFile, metrics))
+	require.NoError(t, WriteMetricsToFile(actualFile, metrics))
 
 	actualBytes, err := os.ReadFile(actualFile)
 	require.NoError(t, err)
@@ -48,7 +49,7 @@ func TestWriteMetrics_SkipTimestampNormalization(t *testing.T) {
 	metricslice.CopyTo(metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics())
 
 	actualFile := filepath.Join(t.TempDir(), "metrics.yaml")
-	require.NoError(t, writeMetrics(actualFile, metrics, SkipMetricTimestampNormalization()))
+	require.NoError(t, WriteMetricsToFile(actualFile, metrics, SkipMetricTimestampNormalization()))
 
 	actualBytes, err := os.ReadFile(actualFile)
 	require.NoError(t, err)
@@ -82,7 +83,7 @@ func TestRoundTrip(t *testing.T) {
 	metricslice.CopyTo(expectedMetrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics())
 
 	tempDir := filepath.Join(t.TempDir(), "metrics.yaml")
-	require.NoError(t, writeMetrics(tempDir, expectedMetrics))
+	require.NoError(t, WriteMetricsToFile(tempDir, expectedMetrics))
 
 	actualMetrics, err := ReadMetrics(tempDir)
 	require.NoError(t, err)
@@ -141,7 +142,7 @@ func testMetrics() pmetric.MetricSlice {
 
 	dp = dps.AppendEmpty()
 	attributes = pcommon.NewMap()
-	setDPDoubleVal(dp, 2, attributes, time.Date(1997, 07, 27, 1, 1, 1, 1, &time.Location{}))
+	setDPDoubleVal(dp, 2, attributes, time.Date(1997, 0o7, 27, 1, 1, 1, 1, &time.Location{}))
 	return slice
 }
 
@@ -185,7 +186,7 @@ func TestWriteLogs(t *testing.T) {
 	logs := CreateTestLogs()
 
 	actualFile := filepath.Join(t.TempDir(), "logs.yaml")
-	require.NoError(t, writeLogs(actualFile, logs))
+	require.NoError(t, WriteLogsToFile(actualFile, logs))
 
 	actualBytes, err := os.ReadFile(actualFile)
 	require.NoError(t, err)
@@ -206,7 +207,7 @@ func TestLogsRoundTrip(t *testing.T) {
 	expectedLogs := CreateTestLogs()
 
 	tempDir := filepath.Join(t.TempDir(), "logs.yaml")
-	require.NoError(t, writeLogs(tempDir, expectedLogs))
+	require.NoError(t, WriteLogsToFile(tempDir, expectedLogs))
 
 	actualLogs, err := ReadLogs(tempDir)
 	require.NoError(t, err)
@@ -250,7 +251,7 @@ func TestWriteTraces(t *testing.T) {
 	traces := CreateTestTraces()
 
 	actualFile := filepath.Join("./testdata/traces-roundtrip", "traces.yaml")
-	require.NoError(t, writeTraces(actualFile, traces))
+	require.NoError(t, WriteTracesToFile(actualFile, traces))
 
 	actualBytes, err := os.ReadFile(actualFile)
 	require.NoError(t, err)
@@ -322,4 +323,87 @@ func TestSortAndNormalizeMetrics(t *testing.T) {
 	normalizeTimestamps(before)
 
 	require.Equal(t, before, after)
+}
+
+func TestReadProfiles(t *testing.T) {
+	expectedProfiles := CreateTestProfiles()
+
+	expectedFile := filepath.Join("testdata", "profiles-roundtrip", "expected.yaml")
+	actualProfiles, err := ReadProfiles(expectedFile)
+	require.NoError(t, err)
+	require.Equal(t, expectedProfiles, actualProfiles)
+}
+
+func TestWriteProfiles(t *testing.T) {
+	profiles := CreateTestProfiles()
+
+	actualFile := filepath.Join(t.TempDir(), "profiles.yaml")
+	require.NoError(t, WriteProfilesToFile(actualFile, profiles))
+
+	actualBytes, err := os.ReadFile(actualFile)
+	require.NoError(t, err)
+
+	expectedFile := filepath.Join("testdata", "profiles-roundtrip", "expected.yaml")
+	expectedBytes, err := os.ReadFile(expectedFile)
+	require.NoError(t, err)
+
+	if runtime.GOOS == "windows" {
+		// os.ReadFile adds a '\r' that we don't actually expect
+		expectedBytes = bytes.ReplaceAll(expectedBytes, []byte("\r\n"), []byte("\n"))
+	}
+
+	require.Equal(t, expectedBytes, actualBytes)
+}
+
+func TestProfilesRoundTrip(t *testing.T) {
+	expectedProfiles := CreateTestProfiles()
+
+	tempDir := filepath.Join(t.TempDir(), "profiles.yaml")
+	require.NoError(t, WriteProfilesToFile(tempDir, expectedProfiles))
+
+	actualProfiles, err := ReadProfiles(tempDir)
+	require.NoError(t, err)
+	require.Equal(t, expectedProfiles, actualProfiles)
+}
+
+func CreateTestProfiles() pprofile.Profiles {
+	profiles := pprofile.NewProfiles()
+	dic := profiles.Dictionary()
+	resource := profiles.ResourceProfiles().AppendEmpty()
+	scope := resource.ScopeProfiles().AppendEmpty()
+	profile := scope.Profiles().AppendEmpty()
+
+	dic.StringTable().Append("samples", "count", "cpu", "nanoseconds")
+	st := profile.SampleType().AppendEmpty()
+	st.SetTypeStrindex(0)
+	st.SetUnitStrindex(1)
+	pt := profile.PeriodType()
+	pt.SetTypeStrindex(2)
+	pt.SetUnitStrindex(3)
+
+	a := dic.AttributeTable().AppendEmpty()
+	a.SetKey("process.executable.build_id.htlhash")
+	a.Value().SetStr("600DCAFE4A110000F2BF38C493F5FB92")
+	a = dic.AttributeTable().AppendEmpty()
+	a.SetKey("profile.frame.type")
+	a.Value().SetStr("native")
+	a = dic.AttributeTable().AppendEmpty()
+	a.SetKey("host.id")
+	a.Value().SetStr("localhost")
+
+	profile.AttributeIndices().Append(2)
+
+	sample := profile.Sample().AppendEmpty()
+	sample.TimestampsUnixNano().Append(0)
+	sample.SetLocationsLength(1)
+
+	m := dic.MappingTable().AppendEmpty()
+	m.AttributeIndices().Append(0)
+
+	l := dic.LocationTable().AppendEmpty()
+	l.SetMappingIndex(0)
+	l.SetAddress(111)
+	l.AttributeIndices().Append(1)
+
+	return profiles
 }

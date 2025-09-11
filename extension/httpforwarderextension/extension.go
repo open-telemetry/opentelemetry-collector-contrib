@@ -10,6 +10,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"sync"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
@@ -23,6 +24,7 @@ type httpForwarder struct {
 	server     *http.Server
 	settings   component.TelemetrySettings
 	config     *Config
+	shutdownWG sync.WaitGroup
 }
 
 var _ extension.Extension = (*httpForwarder)(nil)
@@ -47,7 +49,9 @@ func (h *httpForwarder) Start(ctx context.Context, host component.Host) error {
 		return fmt.Errorf("failed to create HTTP Client: %w", err)
 	}
 
+	h.shutdownWG.Add(1)
 	go func() {
+		defer h.shutdownWG.Done()
 		if errHTTP := h.server.Serve(listener); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
 			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(errHTTP))
 		}
@@ -60,7 +64,9 @@ func (h *httpForwarder) Shutdown(_ context.Context) error {
 	if h.server == nil {
 		return nil
 	}
-	return h.server.Close()
+	err := h.server.Close()
+	h.shutdownWG.Wait()
+	return err
 }
 
 func (h *httpForwarder) forwardRequest(writer http.ResponseWriter, request *http.Request) {
@@ -107,7 +113,7 @@ func (h *httpForwarder) forwardRequest(writer http.ResponseWriter, request *http
 	}
 }
 
-func addViaHeader(header http.Header, protocol string, host string) {
+func addViaHeader(header http.Header, protocol, host string) {
 	header.Add("Via", fmt.Sprintf("%s %s", protocol, host))
 }
 
@@ -116,7 +122,7 @@ func newHTTPForwarder(config *Config, settings component.TelemetrySettings) (ext
 		return nil, errors.New("'egress.endpoint' config option cannot be empty")
 	}
 
-	var url, err = url.Parse(config.Egress.Endpoint)
+	url, err := url.Parse(config.Egress.Endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("enter a valid URL for 'egress.endpoint': %w", err)
 	}

@@ -5,6 +5,7 @@ package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -21,10 +22,11 @@ type AppendArguments[K any] struct {
 func NewAppendFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("append", &AppendArguments[K]{}, createAppendFunction[K])
 }
+
 func createAppendFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
 	args, ok := oArgs.(*AppendArguments[K])
 	if !ok {
-		return nil, fmt.Errorf("AppendFactory args must be of type *Appendrguments[K]")
+		return nil, errors.New("AppendFactory args must be of type *Appendrguments[K]")
 	}
 
 	return appendTo(args.Target, args.Value, args.Values)
@@ -32,7 +34,7 @@ func createAppendFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (
 
 func appendTo[K any](target ottl.GetSetter[K], value ottl.Optional[ottl.Getter[K]], values ottl.Optional[[]ottl.Getter[K]]) (ottl.ExprFunc[K], error) {
 	if value.IsEmpty() && values.IsEmpty() {
-		return nil, fmt.Errorf("at least one of the optional arguments ('value' or 'values') must be provided")
+		return nil, errors.New("at least one of the optional arguments ('value' or 'values') must be provided")
 	}
 
 	return func(ctx context.Context, tCtx K) (any, error) {

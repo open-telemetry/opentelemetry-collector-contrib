@@ -5,12 +5,11 @@ package aerospikereceiver // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"crypto/tls"
-	"fmt"
 	"strings"
 	"sync"
 	"time"
 
-	as "github.com/aerospike/aerospike-client-go/v7"
+	as "github.com/aerospike/aerospike-client-go/v8"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver/cluster"
@@ -71,7 +70,6 @@ func nodeGetterFactory(cfg *clientConfig, policy *as.ClientPolicy, authEnabled b
 		authEnabled,
 	)
 	return cluster, err
-
 }
 
 // newASClient creates a new defaultASClient connected to the given host and port
@@ -201,7 +199,7 @@ func mapNodeInfoFunc(nodes []cluster.Node, nodeF nodeFunc, policy *as.InfoPolicy
 			name := nd.GetName()
 			metrics, err := nodeF(nd, policy)
 			if err != nil {
-				logger.Errorf("mapNodeInfoFunc err: %w", err)
+				logger.Errorf("mapNodeInfoFunc err: %v", err)
 			}
 
 			ns := nodeStats{
@@ -267,7 +265,7 @@ func allNamespaceInfo(n cluster.Node, policy *as.InfoPolicy) (metricsMap, error)
 
 	commands := make([]string, len(names))
 	for i, name := range names {
-		commands[i] = fmt.Sprintf("namespace/%s", name)
+		commands[i] = "namespace/" + name
 	}
 
 	res, err = n.RequestInfo(policy, commands...)

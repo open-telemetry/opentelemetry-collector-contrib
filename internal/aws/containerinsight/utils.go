@@ -7,7 +7,6 @@ import (
 	"log"
 	"strconv"
 	"strings"
-	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -139,12 +138,12 @@ func getPrefixByMetricType(mType string) string {
 
 // MetricName returns the metric name based on metric type and measurement name
 // For example, a type "node" and a measurement "cpu_utilization" gives "node_cpu_utilization"
-func MetricName(mType string, measurement string) string {
+func MetricName(mType, measurement string) string {
 	return getPrefixByMetricType(mType) + measurement
 }
 
 // RemovePrefix removes the prefix (e.g. "node_", "pod_") from the metric name
-func RemovePrefix(mType string, metricName string) string {
+func RemovePrefix(mType, metricName string) string {
 	prefix := getPrefixByMetricType(mType)
 	return strings.Replace(metricName, prefix, "", 1)
 }
@@ -154,7 +153,9 @@ func GetUnitForMetric(metric string) string {
 	return metricToUnitMap[metric]
 }
 
-// ConvertToOTLPMetrics converts a field containing metric values and a tag containing the relevant labels to OTLP metrics
+// ConvertToOTLPMetrics converts a field containing metric values and tags containing the relevant labels to OTLP metrics.
+// For legacy reasons, the timestamp is stored in the tags map with the key "Timestamp", but, unlike other tags,
+// it is not added as a resource attribute to avoid high-cardinality metrics.
 func ConvertToOTLPMetrics(fields map[string]any, tags map[string]string, logger *zap.Logger) pmetric.Metrics {
 	md := pmetric.NewMetrics()
 	rms := md.ResourceMetrics()
@@ -166,8 +167,9 @@ func ConvertToOTLPMetrics(fields map[string]any, tags map[string]string, logger 
 		if tagKey == Timestamp {
 			timeNs, _ := strconv.ParseUint(tagValue, 10, 64)
 			timestamp = pcommon.Timestamp(timeNs)
-			// convert from nanosecond to millisecond (as emf log use millisecond timestamp)
-			tagValue = strconv.FormatUint(timeNs/uint64(time.Millisecond), 10)
+
+			// Do not add Timestamp as a resource attribute to avoid high-cardinality.
+			continue
 		}
 		resource.Attributes().PutStr(tagKey, tagValue)
 	}
@@ -204,7 +206,7 @@ func ConvertToOTLPMetrics(fields map[string]any, tags map[string]string, logger 
 	return md
 }
 
-func intGauge(ilm pmetric.ScopeMetrics, metricName string, unit string, value int64, ts pcommon.Timestamp) {
+func intGauge(ilm pmetric.ScopeMetrics, metricName, unit string, value int64, ts pcommon.Timestamp) {
 	metric := initMetric(ilm, metricName, unit)
 
 	intGauge := metric.SetEmptyGauge()
@@ -215,7 +217,7 @@ func intGauge(ilm pmetric.ScopeMetrics, metricName string, unit string, value in
 	dataPoint.SetTimestamp(ts)
 }
 
-func doubleGauge(ilm pmetric.ScopeMetrics, metricName string, unit string, value float64, ts pcommon.Timestamp) {
+func doubleGauge(ilm pmetric.ScopeMetrics, metricName, unit string, value float64, ts pcommon.Timestamp) {
 	metric := initMetric(ilm, metricName, unit)
 
 	doubleGauge := metric.SetEmptyGauge()

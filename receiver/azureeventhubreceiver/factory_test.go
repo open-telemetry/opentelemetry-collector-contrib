@@ -4,7 +4,6 @@
 package azureeventhubreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver"
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -21,14 +20,14 @@ func Test_NewFactory(t *testing.T) {
 
 func Test_NewLogsReceiver(t *testing.T) {
 	f := NewFactory()
-	receiver, err := f.CreateLogs(context.Background(), receivertest.NewNopSettings(), f.CreateDefaultConfig(), consumertest.NewNop())
+	receiver, err := f.CreateLogs(t.Context(), receivertest.NewNopSettings(metadata.Type), f.CreateDefaultConfig(), consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, receiver)
 }
 
 func Test_NewMetricsReceiver(t *testing.T) {
 	f := NewFactory()
-	receiver, err := f.CreateMetrics(context.Background(), receivertest.NewNopSettings(), f.CreateDefaultConfig(), consumertest.NewNop())
+	receiver, err := f.CreateMetrics(t.Context(), receivertest.NewNopSettings(metadata.Type), f.CreateDefaultConfig(), consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, receiver)
 }

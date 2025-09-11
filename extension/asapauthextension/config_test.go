@@ -4,6 +4,10 @@
 package asapauthextension
 
 import (
+	"crypto/x509"
+	"encoding/base64"
+	"encoding/pem"
+	"net/http/httptest"
 	"path/filepath"
 	"testing"
 	"time"
@@ -13,18 +17,39 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauthextension/internal/metadata"
 )
 
 // Test keys. Not for use anywhere but these tests.
-const (
-	privateKey = configopaque.String("data:application/pkcs8;kid=test;base64,MIIBUwIBADANBgkqhkiG9w0BAQEFAASCAT0wggE5AgEAAkEA0ZPr5JeyVDoB8RyZqQsx6qUD+9gMFg1/0hgdAvmytWBMXQJYdwkK2dFJwwZcWJVhJGcOJBDfB/8tcbdJd34KZQIDAQABAkBZD20tJTHJDSWKGsdJyNIbjqhUu4jXTkFFPK4Hd6jz3gV3fFvGnaolsD5Bt50dTXAiSCpFNSb9M9GY6XUAAdlBAiEA6MccfdZRfVapxKtAZbjXuAgMvnPtTvkVmwvhWLT5Wy0CIQDmfE8Et/pou0Jl6eM0eniT8/8oRzBWgy9ejDGfj86PGQIgWePqIL4OofRBgu0O5TlINI0HPtTNo12U9lbUIslgMdECICXT2RQpLcvqj+cyD7wZLZj6vrHZnTFVrnyR/cL2UyxhAiBswe/MCcD7T7J4QkNrCG+ceQGypc7LsxlIxQuKh5GWYA==")
-	publicKey  = `-----BEGIN PUBLIC KEY-----
-MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBANGT6+SXslQ6AfEcmakLMeqlA/vYDBYN
-f9IYHQL5srVgTF0CWHcJCtnRScMGXFiVYSRnDiQQ3wf/LXG3SXd+CmUCAwEAAQ==
------END PUBLIC KEY-----`
+var (
+	privateKey configopaque.String
+	publicKey  string
 )
+
+func init() {
+	// Use httptest to create a key pair for testing purposes.
+	srv := httptest.NewTLSServer(nil)
+	srv.Close()
+
+	data, err := x509.MarshalPKCS8PrivateKey(srv.TLS.Certificates[0].PrivateKey)
+	if err != nil {
+		panic(err)
+	}
+	privateKey = configopaque.String(
+		"data:application/pkcs8;kid=test;base64," + base64.StdEncoding.EncodeToString(data),
+	)
+
+	data, err = x509.MarshalPKIXPublicKey(srv.TLS.Certificates[0].Leaf.PublicKey)
+	if err != nil {
+		panic(err)
+	}
+	publicKey = string(pem.EncodeToMemory(&pem.Block{
+		Type:  "PUBLIC KEY",
+		Bytes: data,
+	}))
+}
 
 func TestLoadConfig(t *testing.T) {
 	t.Parallel()
@@ -41,7 +66,7 @@ func TestLoadConfig(t *testing.T) {
 				Audience:   []string{"test_service1", "test_service2"},
 				Issuer:     "test_issuer",
 				KeyID:      "test_issuer/test_kid",
-				PrivateKey: privateKey,
+				PrivateKey: configopaque.String("data:application/pkcs8;kid=test;base64,MIIBUwIBADANBgkqhkiG9w0BAQEFAASCAT0wggE5AgEAAkEA0ZPr5JeyVDoB8RyZqQsx6qUD+9gMFg1/0hgdAvmytWBMXQJYdwkK2dFJwwZcWJVhJGcOJBDfB/8tcbdJd34KZQIDAQABAkBZD20tJTHJDSWKGsdJyNIbjqhUu4jXTkFFPK4Hd6jz3gV3fFvGnaolsD5Bt50dTXAiSCpFNSb9M9GY6XUAAdlBAiEA6MccfdZRfVapxKtAZbjXuAgMvnPtTvkVmwvhWLT5Wy0CIQDmfE8Et/pou0Jl6eM0eniT8/8oRzBWgy9ejDGfj86PGQIgWePqIL4OofRBgu0O5TlINI0HPtTNo12U9lbUIslgMdECICXT2RQpLcvqj+cyD7wZLZj6vrHZnTFVrnyR/cL2UyxhAiBswe/MCcD7T7J4QkNrCG+ceQGypc7LsxlIxQuKh5GWYA=="),
 			},
 		},
 		{
@@ -71,10 +96,10 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 			if tt.expectedErr != nil {
-				assert.ErrorIs(t, component.ValidateConfig(cfg), tt.expectedErr)
+				assert.ErrorIs(t, xconfmap.Validate(cfg), tt.expectedErr)
 				return
 			}
-			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.NoError(t, xconfmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

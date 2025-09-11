@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"unicode/utf8"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
@@ -57,7 +58,7 @@ func NewParseCSVFactory[K any]() ottl.Factory[K] {
 func createParseCSVFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
 	args, ok := oArgs.(*ParseCSVArguments[K])
 	if !ok {
-		return nil, fmt.Errorf("ParseCSVFactory args must be of type *ParseCSVArguments[K]")
+		return nil, errors.New("ParseCSVFactory args must be of type *ParseCSVArguments[K]")
 	}
 
 	if err := args.validate(); err != nil {
@@ -66,7 +67,7 @@ func createParseCSVFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments)
 
 	delimiter := parseCSVDefaultDelimiter
 	if !args.Delimiter.IsEmpty() {
-		delimiter = []rune(args.Delimiter.Get())[0]
+		delimiter, _ = utf8.DecodeRuneInString(args.Delimiter.Get())
 	}
 
 	// headerDelimiter defaults to the chosen delimter,

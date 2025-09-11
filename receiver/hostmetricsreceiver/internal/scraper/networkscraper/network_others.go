@@ -4,6 +4,13 @@
 //go:build !linux
 
 package networkscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/networkscraper"
+import (
+	"context"
+)
+
+const (
+	conntrackMetricsLen = 0
+)
 
 var allTCPStates = []string{
 	"CLOSE_WAIT",
@@ -20,6 +27,6 @@ var allTCPStates = []string{
 	"TIME_WAIT",
 }
 
-func (s *scraper) recordNetworkConntrackMetrics() error {
+func (*networkScraper) recordNetworkConntrackMetrics(context.Context) error {
 	return nil
 }

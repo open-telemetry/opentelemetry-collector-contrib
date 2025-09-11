@@ -28,7 +28,7 @@ func TestNewSigv4Extension(t *testing.T) {
 func TestRoundTripper(t *testing.T) {
 	awsCredsProvider := mockCredentials()
 
-	base := (http.RoundTripper)(http.DefaultTransport.(*http.Transport).Clone())
+	base := http.RoundTripper(http.DefaultTransport.(*http.Transport).Clone())
 	awsSDKInfo := "awsSDKInfo"
 	cfg := &Config{Region: "region", Service: "service", AssumeRole: AssumeRole{ARN: "rolearn", STSRegion: "region"}, credsProvider: awsCredsProvider}
 
@@ -44,16 +44,6 @@ func TestRoundTripper(t *testing.T) {
 	assert.Equal(t, cfg.Service, si.service)
 	assert.Equal(t, awsSDKInfo, si.awsSDKInfo)
 	assert.Equal(t, cfg.credsProvider, si.credsProvider)
-
-}
-
-func TestPerRPCCredentials(t *testing.T) {
-	cfg := &Config{Region: "region", Service: "service", AssumeRole: AssumeRole{ARN: "rolearn", STSRegion: "region"}}
-	sa := newSigv4Extension(cfg, "", zap.NewNop())
-
-	rpc, err := sa.PerRPCCredentials()
-	assert.Nil(t, rpc)
-	assert.Error(t, err)
 }
 
 func TestGetCredsProviderFromConfig(t *testing.T) {
@@ -95,18 +85,56 @@ func TestGetCredsProviderFromConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NotNil(t, credsProvider)
 
-			creds, err := (*credsProvider).Retrieve(context.Background())
+			creds, err := (*credsProvider).Retrieve(t.Context())
 			require.NoError(t, err)
 			require.NotNil(t, creds)
 		})
 	}
 }
 
+func TestGetCredsProviderFromWebIdentityConfig(t *testing.T) {
+	tests := []struct {
+		name        string
+		cfg         *Config
+		shouldError bool
+	}{
+		{
+			"valid_token",
+			&Config{Region: "region", Service: "service", AssumeRole: AssumeRole{ARN: "arn:aws:iam::123456789012:role/my_role", WebIdentityTokenFile: "testdata/token_file"}},
+			false,
+		},
+		{
+			"missing_token_file",
+			&Config{Region: "region", Service: "service", AssumeRole: AssumeRole{ARN: "arn:aws:iam::123456789012:role/my_role", WebIdentityTokenFile: "testdata/no_token_file"}},
+			true,
+		},
+	}
+	// run tests
+	for _, testcase := range tests {
+		t.Run(testcase.name, func(t *testing.T) {
+			credsProvider, err := getCredsProviderFromWebIdentityConfig(testcase.cfg)
+
+			if testcase.shouldError {
+				assert.Error(t, err)
+				assert.Nil(t, credsProvider)
+				return
+			}
+
+			require.NoError(t, err)
+			require.NotNil(t, credsProvider)
+
+			// Should always error out as we are not providing a real token.
+			_, err = (*credsProvider).Retrieve(t.Context())
+			assert.Error(t, err)
+		})
+	}
+}
+
 func TestCloneRequest(t *testing.T) {
-	req1, err := http.NewRequest("GET", "https://example.com", nil)
+	req1, err := http.NewRequest(http.MethodGet, "https://example.com", http.NoBody)
 	assert.NoError(t, err)
 
-	req2, err := http.NewRequest("GET", "https://example.com", nil)
+	req2, err := http.NewRequest(http.MethodGet, "https://example.com", http.NoBody)
 	assert.NoError(t, err)
 	req2.Header.Add("Header1", "val1")
 
@@ -127,8 +155,8 @@ func TestCloneRequest(t *testing.T) {
 	for _, testcase := range tests {
 		t.Run(testcase.name, func(t *testing.T) {
 			r2 := cloneRequest(testcase.request)
-			assert.EqualValues(t, testcase.request.Header, r2.Header)
-			assert.EqualValues(t, testcase.request.Body, r2.Body)
+			assert.Equal(t, testcase.request.Header, r2.Header)
+			assert.Equal(t, testcase.request.Body, r2.Body)
 		})
 	}
 }

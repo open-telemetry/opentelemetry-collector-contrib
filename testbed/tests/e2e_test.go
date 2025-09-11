@@ -17,7 +17,6 @@ import (
 )
 
 func TestIdleMode(t *testing.T) {
-
 	options := testbed.LoadOptions{DataItemsPerSecond: 10_000, ItemsPerBatch: 10}
 	dataProvider := testbed.NewPerfTestDataProvider(options)
 
@@ -29,7 +28,7 @@ func TestIdleMode(t *testing.T) {
 	cfg := createConfigYaml(t, sender, receiver, resultDir, nil, nil)
 	cp := testbed.NewChildProcessCollector(testbed.WithEnvVar("GOMAXPROCS", "2"))
 
-	cleanup, err := cp.PrepareConfig(cfg)
+	cleanup, err := cp.PrepareConfig(t, cfg)
 	require.NoError(t, err)
 	t.Cleanup(cleanup)
 

@@ -3,10 +3,11 @@ type: health_check
 status:
   class: extension
   stability:
-    beta: [extension]
+    unmaintained: [extension]
   distributions: [core, contrib, k8s]
   codeowners:
-    active: [jpkrohling]
+    active: []
+    seeking_new: true
 
 tests:
   config:

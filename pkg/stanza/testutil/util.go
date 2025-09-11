@@ -8,6 +8,8 @@ import (
 	"strings"
 	"sync"
 
+	"go.opentelemetry.io/collector/extension/xextension/storage"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 )
 
@@ -46,6 +48,24 @@ func (p *mockPersister) Delete(_ context.Context, k string) error {
 	return nil
 }
 
+func (p *mockPersister) Batch(_ context.Context, ops ...*storage.Operation) error {
+	var err error
+	for _, op := range ops {
+		switch op.Type {
+		case storage.Get:
+			op.Value, err = p.Get(context.Background(), op.Key)
+		case storage.Set:
+			err = p.Set(context.Background(), op.Key, op.Value)
+		case storage.Delete:
+			err = p.Delete(context.Background(), op.Key)
+		}
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // NewUnscopedMockPersister will return a new persister for testing
 func NewUnscopedMockPersister() operator.Persister {
 	data := make(map[string][]byte)
@@ -68,7 +88,7 @@ func Trim(s string) string {
 	lines := strings.Split(s, "\n")
 	trimmed := make([]string, 0, len(lines))
 	for _, line := range lines {
-		if len(line) == 0 {
+		if line == "" {
 			continue
 		}
 		trimmed = append(trimmed, strings.Trim(line, " \t\n"))

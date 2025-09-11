@@ -275,7 +275,7 @@ func Test_GroupDataPoints(t *testing.T) {
 
 	hashHistogram := dataPointHashKey(mapAttr, pcommon.NewTimestampFromTime(time.Time{}), false, false, 0)
 
-	hashExpHistogram := dataPointHashKey(mapAttr, pcommon.NewTimestampFromTime(time.Time{}), 0, false, false, 0, 0, 0)
+	hashExpHistogram := dataPointHashKey(mapAttr, pcommon.NewTimestampFromTime(time.Time{}), 0, false, false, 0)
 
 	tests := []struct {
 		name     string
@@ -365,7 +365,10 @@ func Test_GroupDataPoints(t *testing.T) {
 				d := s.DataPoints().AppendEmpty()
 				d.SetTimestamp(pcommon.NewTimestampFromTime(time.Time{}))
 				d.Attributes().PutStr("attr1", "val1")
-				d.SetCount(1)
+				d.SetCount(9)
+				d.SetZeroCount(2)
+				d.Positive().BucketCounts().Append(0, 1, 2, 3)
+				d.Negative().BucketCounts().Append(0, 1)
 				return m
 			},
 			want: AggGroups{
@@ -392,7 +395,7 @@ func Test_MergeDataPoints(t *testing.T) {
 
 	hashHistogram := dataPointHashKey(mapAttr, pcommon.NewTimestampFromTime(time.Time{}), false, false, 0)
 
-	hashExpHistogram := dataPointHashKey(mapAttr, pcommon.NewTimestampFromTime(time.Time{}), 0, false, false, 0, 0, 0)
+	hashExpHistogram := dataPointHashKey(mapAttr, pcommon.NewTimestampFromTime(time.Time{}), 0, false, false, 0)
 
 	tests := []struct {
 		name     string
@@ -483,8 +486,49 @@ func Test_MergeDataPoints(t *testing.T) {
 				s := m.SetEmptyExponentialHistogram()
 				d := s.DataPoints().AppendEmpty()
 				d.Attributes().PutStr("attr1", "val1")
-				d.SetCount(3)
+				d.SetCount(16)
 				d.SetSum(0)
+				d.SetZeroCount(3)
+				d.Positive().BucketCounts().Append(0, 2, 4, 3)
+				d.Negative().BucketCounts().Append(0, 2, 2)
+				return m
+			},
+			in: func() pmetric.Metric {
+				m := pmetric.NewMetric()
+				m.SetEmptyExponentialHistogram()
+				return m
+			},
+		},
+		{
+			name: "exp histogram with different offsets",
+			aggGroup: AggGroups{
+				expHistogram: map[string]pmetric.ExponentialHistogramDataPointSlice{
+					hashExpHistogram: testDataExpHistogramWithDifferentOffsets(),
+				},
+			},
+			typ: Sum,
+			want: func() pmetric.Metric {
+				m := pmetric.NewMetric()
+				s := m.SetEmptyExponentialHistogram()
+				d := s.DataPoints().AppendEmpty()
+				d.Attributes().PutStr("attr1", "val1")
+				d.SetCount(12)
+				d.SetSum(0)
+				d.SetZeroCount(3)
+				// First datapoint: positive offset 0, buckets [1, 2]
+				// Second datapoint: positive offset 1, buckets [3, 4] (represents [0, 3, 4])
+				// Third datapoint: positive offset 5, buckets [1] (represents [0, 0, 0, 0, 0, 1])
+				// Result: [1+0+0, 2+3+0, 4+0+0, 0+0+0, 0+0+0, 0+0+1] = [1, 5, 4, 0, 0, 1]
+				d.Positive().BucketCounts().Append(1, 5, 4, 0, 0, 1)
+				d.Positive().SetOffset(0)
+
+				// First data point: negative offset 3, buckets [1, 2] (represents [0, 0, 0, 1, 2])
+				// Second data point: negative offset 1, buckets [5, 6] (represents [0, 5, 6])
+				// Third data point: negative side empty
+				// Result: [0+0, 0+5, 0+6, 1+0, 2+0] = [0, 5, 6, 1, 2] (with offset 1: [5, 6, 1, 2])
+				d.Negative().BucketCounts().Append(5, 6, 1, 2)
+				d.Negative().SetOffset(1)
+
 				return m
 			},
 			in: func() pmetric.Metric {
@@ -547,18 +591,67 @@ func testDataExpHistogram() pmetric.ExponentialHistogramDataPointSlice {
 	data := pmetric.NewExponentialHistogramDataPointSlice()
 	d := data.AppendEmpty()
 	d.Attributes().PutStr("attr1", "val1")
-	d.SetCount(2)
+	d.SetCount(7)
+	d.SetZeroCount(1)
+	d.Positive().BucketCounts().Append(0, 1, 2)
+	d.Negative().BucketCounts().Append(0, 1, 2)
 	return data
 }
 
 func testDataExpHistogramDouble() pmetric.ExponentialHistogramDataPointSlice {
 	dataWant := pmetric.NewExponentialHistogramDataPointSlice()
+
 	dWant := dataWant.AppendEmpty()
 	dWant.Attributes().PutStr("attr1", "val1")
-	dWant.SetCount(2)
+	dWant.SetCount(7)
+	dWant.SetZeroCount(1)
+	dWant.Positive().BucketCounts().Append(0, 1, 2)
+	dWant.Negative().BucketCounts().Append(0, 1, 2)
+
 	dWant2 := dataWant.AppendEmpty()
 	dWant2.SetTimestamp(pcommon.NewTimestampFromTime(time.Time{}))
 	dWant2.Attributes().PutStr("attr1", "val1")
-	dWant2.SetCount(1)
+	dWant2.SetCount(9)
+	dWant2.SetZeroCount(2)
+	// Use a larger number of buckets than above to check that we expand the
+	// destination array as needed while merging.
+	dWant2.Positive().BucketCounts().Append(0, 1, 2, 3)
+	// Use a smaller number of buckets than above to check that we merge values
+	// into the correct, existing buckets.
+	dWant2.Negative().BucketCounts().Append(0, 1)
+
+	return dataWant
+}
+
+func testDataExpHistogramWithDifferentOffsets() pmetric.ExponentialHistogramDataPointSlice {
+	dataWant := pmetric.NewExponentialHistogramDataPointSlice()
+
+	dWant := dataWant.AppendEmpty()
+	dWant.Attributes().PutStr("attr1", "val1")
+	dWant.SetCount(6)
+	dWant.SetZeroCount(2)
+	dWant.Positive().SetOffset(0)
+	dWant.Positive().BucketCounts().Append(1, 2) // [1, 2]
+	dWant.Negative().SetOffset(3)
+	dWant.Negative().BucketCounts().Append(1, 2) // [0, 0, 0, 1, 2]
+
+	// Different offsets
+	dWant2 := dataWant.AppendEmpty()
+	dWant2.Attributes().PutStr("attr1", "val1")
+	dWant2.SetCount(5)
+	dWant2.SetZeroCount(1)
+	dWant2.Positive().SetOffset(1)
+	dWant2.Positive().BucketCounts().Append(3, 4) // [0, 3, 4]
+	dWant2.Negative().SetOffset(1)
+	dWant2.Negative().BucketCounts().Append(5, 6) // [0, 5, 6]
+
+	// Set large offset for positive, no offset for negative
+	dWant3 := dataWant.AppendEmpty()
+	dWant3.Attributes().PutStr("attr1", "val1")
+	dWant3.SetCount(1)
+	dWant3.SetZeroCount(0)
+	dWant3.Positive().SetOffset(5)
+	dWant3.Positive().BucketCounts().Append(1) // [0, 0, 0, 0, 0, 1]
+
 	return dataWant
 }

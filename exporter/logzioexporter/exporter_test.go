@@ -6,13 +6,10 @@ package logzioexporter
 import (
 	"bytes"
 	"compress/gzip"
-	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 	"time"
 
@@ -24,9 +21,13 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 	"go.opentelemetry.io/collector/pdata/testdata"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter/internal/metadata"
 )
 
 const (
@@ -63,19 +64,6 @@ func fillLogOne(log plog.LogRecord) {
 	attNestedMap.PutDouble("number", 499)
 }
 
-func fillLogTwo(log plog.LogRecord) {
-	log.SetTimestamp(TestLogTimestamp)
-	log.SetDroppedAttributesCount(1)
-	log.SetSeverityNumber(plog.SeverityNumberInfo)
-	log.SetSeverityText("Info")
-	attrs := log.Attributes()
-	attrs.PutStr("customer", "acme")
-	attrs.PutDouble("number", 64)
-	attrs.PutBool("bool", true)
-	attrs.PutStr("env", "dev")
-	log.Body().SetStr("something happened")
-}
-
 func fillLogNoTimestamp(log plog.LogRecord) {
 	log.SetDroppedAttributesCount(1)
 	log.SetSeverityNumber(plog.SeverityNumberInfo)
@@ -97,19 +85,19 @@ func generateLogsOneEmptyTimestamp() plog.Logs {
 	return ld
 }
 
-func testLogsExporter(ld plog.Logs, t *testing.T, cfg *Config) error {
+func testLogsExporter(t *testing.T, ld plog.Logs, cfg *Config) error {
 	var err error
-	params := exportertest.NewNopSettings()
-	exporter, err := createLogsExporter(context.Background(), params, cfg)
+	params := exportertest.NewNopSettings(metadata.Type)
+	exporter, err := createLogsExporter(t.Context(), params, cfg)
 	if err != nil {
 		return err
 	}
-	err = exporter.Start(context.Background(), componenttest.NewNopHost())
+	err = exporter.Start(t.Context(), componenttest.NewNopHost())
 	if err != nil {
 		return err
 	}
 	require.NoError(t, err)
-	ctx := context.Background()
+	ctx := t.Context()
 	err = exporter.ConsumeLogs(ctx, ld)
 	if err != nil {
 		return err
@@ -146,18 +134,18 @@ func newTestTraces() ptrace.Traces {
 	return td
 }
 
-func testTracesExporter(td ptrace.Traces, t *testing.T, cfg *Config) error {
-	params := exportertest.NewNopSettings()
-	exporter, err := createTracesExporter(context.Background(), params, cfg)
+func testTracesExporter(t *testing.T, td ptrace.Traces, cfg *Config) error {
+	params := exportertest.NewNopSettings(metadata.Type)
+	exporter, err := createTracesExporter(t.Context(), params, cfg)
 	if err != nil {
 		return err
 	}
-	err = exporter.Start(context.Background(), componenttest.NewNopHost())
+	err = exporter.Start(t.Context(), componenttest.NewNopHost())
 	if err != nil {
 		return err
 	}
 	require.NoError(t, err)
-	ctx := context.Background()
+	ctx := t.Context()
 	err = exporter.ConsumeTraces(ctx, td)
 	if err != nil {
 		return err
@@ -173,7 +161,7 @@ func TestExportErrors(tester *testing.T) {
 	type ExportErrorsTest struct {
 		status int
 	}
-	var ExportErrorsTests = []ExportErrorsTest{
+	ExportErrorsTests := []ExportErrorsTest{
 		{http.StatusUnauthorized},
 		{http.StatusBadGateway},
 		{http.StatusInternalServerError},
@@ -196,25 +184,24 @@ func TestExportErrors(tester *testing.T) {
 		}
 		td := newTestTracesWithAttributes()
 		ld := testdata.GenerateLogs(10)
-		err := testTracesExporter(td, tester, cfg)
+		err := testTracesExporter(tester, td, cfg)
 		fmt.Println(err.Error())
 		require.Error(tester, err)
-		err = testLogsExporter(ld, tester, cfg)
+		err = testLogsExporter(tester, ld, cfg)
 		fmt.Println(err.Error())
 		server.Close()
 		require.Error(tester, err)
 	}
-
 }
 
 func TestNullTracesExporterConfig(tester *testing.T) {
-	params := exportertest.NewNopSettings()
+	params := exportertest.NewNopSettings(metadata.Type)
 	_, err := newLogzioTracesExporter(nil, params)
 	assert.Error(tester, err, "Null exporter config should produce error")
 }
 
 func TestNullExporterConfig(tester *testing.T) {
-	params := exportertest.NewNopSettings()
+	params := exportertest.NewNopSettings(metadata.Type)
 	_, err := newLogzioExporter(nil, params)
 	assert.Error(tester, err, "Null exporter config should produce error")
 }
@@ -252,20 +239,18 @@ func TestPushTraceData(tester *testing.T) {
 	defer server.Close()
 	td := newTestTraces()
 	res := td.ResourceSpans().At(0).Resource()
-	res.Attributes().PutStr(conventions.AttributeServiceName, testService)
-	res.Attributes().PutStr(conventions.AttributeHostName, testHost)
-	err := testTracesExporter(td, tester, &cfg)
+	res.Attributes().PutStr(string(conventions.ServiceNameKey), testService)
+	res.Attributes().PutStr(string(conventions.HostNameKey), testHost)
+	err := testTracesExporter(tester, td, &cfg)
 	require.NoError(tester, err)
-	var newSpan logzioSpan
+	requests := ptraceotlp.NewExportRequest()
 	decoded, _ := gUnzipData(recordedRequests)
-	requests := strings.Split(string(decoded), "\n")
-	assert.NoError(tester, json.Unmarshal([]byte(requests[0]), &newSpan))
-	assert.Equal(tester, testOperation, newSpan.OperationName)
-	assert.Equal(tester, testService, newSpan.Process.ServiceName)
-	var newService logzioService
-	assert.NoError(tester, json.Unmarshal([]byte(requests[1]), &newService))
-	assert.Equal(tester, testOperation, newService.OperationName)
-	assert.Equal(tester, testService, newService.ServiceName)
+	err = requests.UnmarshalProto(decoded)
+	require.NoError(tester, err)
+	resultSpans := requests.Traces()
+	assert.Equal(tester, td.SpanCount(), requests.Traces().SpanCount())
+	assert.Equal(tester, td.ResourceSpans().At(0).Resource().Attributes().AsRaw(), resultSpans.ResourceSpans().At(0).Resource().Attributes().AsRaw())
+	assert.Equal(tester, td.ResourceSpans(), resultSpans.ResourceSpans())
 }
 
 func TestPushLogsData(tester *testing.T) {
@@ -285,28 +270,24 @@ func TestPushLogsData(tester *testing.T) {
 	defer server.Close()
 	ld := generateLogsOneEmptyTimestamp()
 	res := ld.ResourceLogs().At(0).Resource()
-	res.Attributes().PutStr(conventions.AttributeServiceName, testService)
-	res.Attributes().PutStr(conventions.AttributeHostName, testHost)
-	err := testLogsExporter(ld, tester, &cfg)
+	res.Attributes().PutStr(string(conventions.ServiceNameKey), testService)
+	res.Attributes().PutStr(string(conventions.HostNameKey), testHost)
+	err := testLogsExporter(tester, ld, &cfg)
 	require.NoError(tester, err)
-	var jsonLog map[string]any
+	requests := plogotlp.NewExportRequest()
 	decoded, _ := gUnzipData(recordedRequests)
-	requests := strings.Split(string(decoded), "\n")
-	assert.NoError(tester, json.Unmarshal([]byte(requests[0]), &jsonLog))
-	assert.Equal(tester, testHost, jsonLog["host.name"])
-	assert.Equal(tester, testService, jsonLog["service.name"])
-	assert.Equal(tester, "server", jsonLog["app"])
-	assert.Equal(tester, 1.0, jsonLog["instance_num"])
-	assert.Equal(tester, "logScopeName", jsonLog["scopeName"])
-	assert.Equal(tester, "hello there", jsonLog["message"])
-	assert.Equal(tester, "bar", jsonLog["foo"])
-	assert.Equal(tester, 45.0, jsonLog["23"])
+	err = requests.UnmarshalProto(decoded)
+	require.NoError(tester, err)
+	resultLogs := requests.Logs()
+	assert.Equal(tester, ld.LogRecordCount(), resultLogs.LogRecordCount())
+	assert.Equal(tester, ld.ResourceLogs().At(0).Resource().Attributes().AsRaw(), resultLogs.ResourceLogs().At(0).Resource().Attributes().AsRaw())
+	assert.Equal(tester, ld.ResourceLogs(), resultLogs.ResourceLogs())
 }
 
 func TestMergeMapEntries(tester *testing.T) {
-	var firstMap = pcommon.NewMap()
-	var secondMap = pcommon.NewMap()
-	var expectedMap = pcommon.NewMap()
+	firstMap := pcommon.NewMap()
+	secondMap := pcommon.NewMap()
+	expectedMap := pcommon.NewMap()
 	firstMap.PutStr("name", "exporter")
 	firstMap.PutStr("host", "localhost")
 	firstMap.PutStr("instanceNum", "1")
@@ -317,17 +298,17 @@ func TestMergeMapEntries(tester *testing.T) {
 	secondMap.PutEmptyMap("id").PutInt("instance_a", 1)
 	expectedMap.PutStr("name", "exporter")
 	expectedMap.PutStr("tag", "test")
-	var slice = expectedMap.PutEmptySlice("host")
+	slice := expectedMap.PutEmptySlice("host")
 	slice.AppendEmpty().SetStr("localhost")
 	slice.AppendEmpty().SetStr("ec2")
 	slice = expectedMap.PutEmptySlice("instanceNum")
-	var val = slice.AppendEmpty()
+	val := slice.AppendEmpty()
 	val.SetStr("1")
 	val = slice.AppendEmpty()
 	val.SetInt(3)
 	slice = expectedMap.PutEmptySlice("id")
 	slice.AppendEmpty().SetInt(4)
 	slice.AppendEmpty().SetEmptyMap().PutInt("instance_a", 1)
-	var mergedMap = mergeMapEntries(firstMap, secondMap)
+	mergedMap := mergeMapEntries(firstMap, secondMap)
 	assert.Equal(tester, expectedMap.AsRaw(), mergedMap.AsRaw())
 }

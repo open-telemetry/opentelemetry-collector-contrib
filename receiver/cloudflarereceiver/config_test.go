@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudflarereceiver/internal/metadata"
 )
@@ -87,6 +88,16 @@ func TestValidate(t *testing.T) {
 			},
 			expectedErr: errNoCert.Error(),
 		},
+		{
+			name: "invalid timestamp_format",
+			config: Config{
+				Logs: LogsConfig{
+					Endpoint:        "0.0.0.0:9999",
+					TimestampFormat: "bad",
+				},
+			},
+			expectedErr: "invalid timestamp_format \"bad\"",
+		},
 	}
 
 	for _, tc := range cases {
@@ -120,8 +131,10 @@ func TestLoadConfig(t *testing.T) {
 							KeyFile:  "some_key_file",
 						},
 					},
-					Secret:         "1234567890abcdef1234567890abcdef",
-					TimestampField: "EdgeStartTimestamp",
+					Secret:          "1234567890abcdef1234567890abcdef",
+					TimestampField:  "EdgeStartTimestamp",
+					TimestampFormat: "rfc3339",
+					Separator:       ".",
 					Attributes: map[string]string{
 						"ClientIP":         "http_request.client_ip",
 						"ClientRequestURI": "http_request.uri",
@@ -140,7 +153,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, loaded.Unmarshal(cfg))
 			require.Equal(t, tc.expectedConfig, cfg)
-			require.NoError(t, component.ValidateConfig(cfg))
+			require.NoError(t, xconfmap.Validate(cfg))
 		})
 	}
 }

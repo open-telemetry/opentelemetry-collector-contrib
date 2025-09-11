@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/collector/scraper/scrapertest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 )
@@ -48,7 +48,7 @@ func TestMetricsBuilder(t *testing.T) {
 			start := pcommon.Timestamp(1_000_000_000)
 			ts := pcommon.Timestamp(1_000_001_000)
 			observedZapCore, observedLogs := observer.New(zap.WarnLevel)
-			settings := receivertest.NewNopSettings()
+			settings := scrapertest.NewNopSettings(scrapertest.NopType)
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 
@@ -108,19 +108,19 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("device")
 					assert.True(t, ok)
-					assert.EqualValues(t, "device-val", attrVal.Str())
+					assert.Equal(t, "device-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("mode")
 					assert.True(t, ok)
-					assert.EqualValues(t, "mode-val", attrVal.Str())
+					assert.Equal(t, "mode-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("mountpoint")
 					assert.True(t, ok)
-					assert.EqualValues(t, "mountpoint-val", attrVal.Str())
+					assert.Equal(t, "mountpoint-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("type")
 					assert.True(t, ok)
-					assert.EqualValues(t, "type-val", attrVal.Str())
+					assert.Equal(t, "type-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("state")
 					assert.True(t, ok)
-					assert.EqualValues(t, "free", attrVal.Str())
+					assert.Equal(t, "free", attrVal.Str())
 				case "system.filesystem.usage":
 					assert.False(t, validatedMetrics["system.filesystem.usage"], "Found a duplicate in the metrics slice: system.filesystem.usage")
 					validatedMetrics["system.filesystem.usage"] = true
@@ -137,19 +137,19 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("device")
 					assert.True(t, ok)
-					assert.EqualValues(t, "device-val", attrVal.Str())
+					assert.Equal(t, "device-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("mode")
 					assert.True(t, ok)
-					assert.EqualValues(t, "mode-val", attrVal.Str())
+					assert.Equal(t, "mode-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("mountpoint")
 					assert.True(t, ok)
-					assert.EqualValues(t, "mountpoint-val", attrVal.Str())
+					assert.Equal(t, "mountpoint-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("type")
 					assert.True(t, ok)
-					assert.EqualValues(t, "type-val", attrVal.Str())
+					assert.Equal(t, "type-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("state")
 					assert.True(t, ok)
-					assert.EqualValues(t, "free", attrVal.Str())
+					assert.Equal(t, "free", attrVal.Str())
 				case "system.filesystem.utilization":
 					assert.False(t, validatedMetrics["system.filesystem.utilization"], "Found a duplicate in the metrics slice: system.filesystem.utilization")
 					validatedMetrics["system.filesystem.utilization"] = true
@@ -164,16 +164,16 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("device")
 					assert.True(t, ok)
-					assert.EqualValues(t, "device-val", attrVal.Str())
+					assert.Equal(t, "device-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("mode")
 					assert.True(t, ok)
-					assert.EqualValues(t, "mode-val", attrVal.Str())
+					assert.Equal(t, "mode-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("mountpoint")
 					assert.True(t, ok)
-					assert.EqualValues(t, "mountpoint-val", attrVal.Str())
+					assert.Equal(t, "mountpoint-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("type")
 					assert.True(t, ok)
-					assert.EqualValues(t, "type-val", attrVal.Str())
+					assert.Equal(t, "type-val", attrVal.Str())
 				}
 			}
 		})

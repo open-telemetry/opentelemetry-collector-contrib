@@ -8,6 +8,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/prometheus/prometheus/config"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configretry"
@@ -26,6 +27,20 @@ var retryOn429FeatureGate = featuregate.GlobalRegistry().MustRegister(
 	featuregate.WithRegisterDescription("When enabled, the Prometheus remote write exporter will retry 429 http status code. Requires exporter.prometheusremotewritexporter.metrics.RetryOn429 to be enabled."),
 )
 
+var enableMultipleWorkersFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"exporter.prometheusremotewritexporter.EnableMultipleWorkers",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled and settings configured, the Prometheus remote exporter will"+
+		" spawn multiple workers/goroutines to handle incoming metrics batches concurrently"),
+)
+
+var enableSendingRW2FeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"exporter.prometheusremotewritexporter.enableSendingRW2",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterFromVersion("v0.125.0"),
+	featuregate.WithRegisterDescription("When enabled, the Prometheus remote write exporter will support sending rw2. Extra configuration is still required besides enabling this feature gate."),
+)
+
 // NewFactory creates a new Prometheus Remote Write exporter.
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
@@ -35,11 +50,15 @@ func NewFactory() exporter.Factory {
 }
 
 func createMetricsExporter(ctx context.Context, set exporter.Settings,
-	cfg component.Config) (exporter.Metrics, error) {
-
+	cfg component.Config,
+) (exporter.Metrics, error) {
 	prwCfg, ok := cfg.(*Config)
 	if !ok {
 		return nil, errors.New("invalid configuration")
+	}
+
+	if !enableMultipleWorkersFeatureGate.IsEnabled() && prwCfg.RemoteWriteQueue.NumConsumers != 5 {
+		set.Logger.Warn("`remote_write_queue.num_consumers` will be used to configure processing parallelism, rather than request parallelism in a future release. This may cause out-of-order issues unless you take action. Please migrate to using `max_batch_request_parallelism` to keep the your existing behavior.")
 	}
 
 	prwe, err := newPRWExporter(prwCfg, set)
@@ -47,22 +66,21 @@ func createMetricsExporter(ctx context.Context, set exporter.Settings,
 		return nil, err
 	}
 
-	// Don't allow users to configure the queue.
-	// See https://github.com/open-telemetry/opentelemetry-collector/issues/2949.
-	// Prometheus remote write samples needs to be in chronological
-	// order for each timeseries. If we shard the incoming metrics
-	// without considering this limitation, we experience
-	// "out of order samples" errors.
+	numConsumers := 1
+	if enableMultipleWorkersFeatureGate.IsEnabled() {
+		numConsumers = prwCfg.RemoteWriteQueue.NumConsumers
+	}
 	exporter, err := exporterhelper.NewMetrics(
 		ctx,
 		set,
 		cfg,
 		prwe.PushMetrics,
 		exporterhelper.WithTimeout(prwCfg.TimeoutSettings),
-		exporterhelper.WithQueue(exporterhelper.QueueConfig{
+		exporterhelper.WithQueue(exporterhelper.QueueBatchConfig{
 			Enabled:      prwCfg.RemoteWriteQueue.Enabled,
-			NumConsumers: 1,
-			QueueSize:    prwCfg.RemoteWriteQueue.QueueSize,
+			NumConsumers: numConsumers,
+			QueueSize:    int64(prwCfg.RemoteWriteQueue.QueueSize),
+			Sizer:        exporterhelper.RequestSizerTypeRequests,
 		}),
 		exporterhelper.WithStart(prwe.Start),
 		exporterhelper.WithShutdown(prwe.Shutdown),
@@ -83,26 +101,30 @@ func createDefaultConfig() component.Config {
 	clientConfig.WriteBufferSize = 512 * 1024
 	clientConfig.Timeout = exporterhelper.NewDefaultTimeoutConfig().Timeout
 
+	numConsumers := 5
+	if enableMultipleWorkersFeatureGate.IsEnabled() {
+		numConsumers = 1
+	}
 	return &Config{
 		Namespace:         "",
 		ExternalLabels:    map[string]string{},
 		MaxBatchSizeBytes: 3000000,
-		TimeoutSettings:   exporterhelper.NewDefaultTimeoutConfig(),
-		BackOffConfig:     retrySettings,
-		AddMetricSuffixes: true,
-		SendMetadata:      false,
-		ClientConfig:      clientConfig,
+		// To set this as default once `exporter.prometheusremotewritexporter.EnableMultipleWorkers` is removed
+		// MaxBatchRequestParallelism: 5,
+		TimeoutSettings:     exporterhelper.NewDefaultTimeoutConfig(),
+		BackOffConfig:       retrySettings,
+		AddMetricSuffixes:   true,
+		SendMetadata:        false,
+		RemoteWriteProtoMsg: config.RemoteWriteProtoMsgV1,
+		ClientConfig:        clientConfig,
 		// TODO(jbd): Adjust the default queue size.
 		RemoteWriteQueue: RemoteWriteQueue{
 			Enabled:      true,
 			QueueSize:    10000,
-			NumConsumers: 5,
+			NumConsumers: numConsumers,
 		},
-		TargetInfo: &TargetInfo{
+		TargetInfo: TargetInfo{
 			Enabled: true,
-		},
-		CreatedMetric: &CreatedMetric{
-			Enabled: false,
 		},
 	}
 }

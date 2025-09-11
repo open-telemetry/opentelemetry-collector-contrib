@@ -9,6 +9,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
+
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -24,6 +25,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 		{
 			name: "all_set",
 			want: ResourceAttributesConfig{
+				AzuremonitorSubscription:   ResourceAttributeConfig{Enabled: true},
 				AzuremonitorSubscriptionID: ResourceAttributeConfig{Enabled: true},
 				AzuremonitorTenantID:       ResourceAttributeConfig{Enabled: true},
 			},
@@ -31,6 +33,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 		{
 			name: "none_set",
 			want: ResourceAttributesConfig{
+				AzuremonitorSubscription:   ResourceAttributeConfig{Enabled: false},
 				AzuremonitorSubscriptionID: ResourceAttributeConfig{Enabled: false},
 				AzuremonitorTenantID:       ResourceAttributeConfig{Enabled: false},
 			},
@@ -39,9 +42,8 @@ func TestResourceAttributesConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, tt.name)
-			if diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ResourceAttributeConfig{})); diff != "" {
-				t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
-			}
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ResourceAttributeConfig{}))
+			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
 }

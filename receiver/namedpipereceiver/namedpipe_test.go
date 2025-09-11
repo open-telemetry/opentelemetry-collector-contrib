@@ -6,7 +6,6 @@
 package namedpipereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/namedpipereceiver"
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -17,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
@@ -24,6 +24,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/namedpipe"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/namedpipereceiver/internal/metadata"
 )
 
 func TestDefaultConfig(t *testing.T) {
@@ -44,7 +45,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
 
-	assert.NoError(t, component.ValidateConfig(cfg))
+	assert.NoError(t, xconfmap.Validate(cfg))
 	assert.Equal(t, testdataConfigYaml(), cfg)
 }
 
@@ -55,14 +56,10 @@ func TestReadPipe(t *testing.T) {
 	sink := new(consumertest.LogsSink)
 	cfg := testdataConfigYaml()
 
-	converter := adapter.NewConverter(componenttest.NewNopTelemetrySettings())
-	converter.Start()
-	defer converter.Stop()
-
-	rcvr, err := f.CreateLogs(context.Background(), receivertest.NewNopSettings(), cfg, sink)
+	rcvr, err := f.CreateLogs(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, sink)
 	require.NoError(t, err, "failed to create receiver")
-	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
-	defer func() { require.NoError(t, rcvr.Shutdown(context.Background())) }()
+	require.NoError(t, rcvr.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() { require.NoError(t, rcvr.Shutdown(t.Context())) }()
 
 	pipe, err := os.OpenFile("/tmp/pipe", os.O_WRONLY, 0o600)
 	require.NoError(t, err, "failed to open pipe")

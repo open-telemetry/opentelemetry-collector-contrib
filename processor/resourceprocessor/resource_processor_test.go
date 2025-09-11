@@ -4,7 +4,6 @@
 package resourceprocessor
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -12,25 +11,26 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processortest"
+	"go.opentelemetry.io/collector/processor/xprocessor"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/ptracetest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor/internal/metadata"
 )
 
-var (
-	cfg = &Config{
-		AttributesActions: []attraction.ActionKeyValue{
-			{Key: "cloud.availability_zone", Value: "zone-1", Action: attraction.UPSERT},
-			{Key: "k8s.cluster.name", FromAttribute: "k8s-cluster", Action: attraction.INSERT},
-			{Key: "redundant-attribute", Action: attraction.DELETE},
-		},
-	}
-)
+var cfg = &Config{
+	AttributesActions: []attraction.ActionKeyValue{
+		{Key: "cloud.availability_zone", Value: "zone-1", Action: attraction.UPSERT},
+		{Key: "k8s.cluster.name", FromAttribute: "k8s-cluster", Action: attraction.INSERT},
+		{Key: "redundant-attribute", Action: attraction.DELETE},
+	},
+}
 
 func TestResourceProcessorAttributesUpsert(t *testing.T) {
 	tests := []struct {
@@ -92,13 +92,13 @@ func TestResourceProcessorAttributesUpsert(t *testing.T) {
 			ttn := new(consumertest.TracesSink)
 
 			factory := NewFactory()
-			rtp, err := factory.CreateTraces(context.Background(), processortest.NewNopSettings(), tt.config, ttn)
+			rtp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), tt.config, ttn)
 			require.NoError(t, err)
 			assert.True(t, rtp.Capabilities().MutatesData)
 
 			sourceTraceData := generateTraceData(tt.sourceAttributes)
 			wantTraceData := generateTraceData(tt.wantAttributes)
-			err = rtp.ConsumeTraces(context.Background(), sourceTraceData)
+			err = rtp.ConsumeTraces(t.Context(), sourceTraceData)
 			require.NoError(t, err)
 			traces := ttn.AllTraces()
 			require.Len(t, traces, 1)
@@ -106,13 +106,13 @@ func TestResourceProcessorAttributesUpsert(t *testing.T) {
 
 			// Test metrics consumer
 			tmn := new(consumertest.MetricsSink)
-			rmp, err := factory.CreateMetrics(context.Background(), processortest.NewNopSettings(), tt.config, tmn)
+			rmp, err := factory.CreateMetrics(t.Context(), processortest.NewNopSettings(metadata.Type), tt.config, tmn)
 			require.NoError(t, err)
 			assert.True(t, rtp.Capabilities().MutatesData)
 
 			sourceMetricData := generateMetricData(tt.sourceAttributes)
 			wantMetricData := generateMetricData(tt.wantAttributes)
-			err = rmp.ConsumeMetrics(context.Background(), sourceMetricData)
+			err = rmp.ConsumeMetrics(t.Context(), sourceMetricData)
 			require.NoError(t, err)
 			metrics := tmn.AllMetrics()
 			require.Len(t, metrics, 1)
@@ -120,17 +120,31 @@ func TestResourceProcessorAttributesUpsert(t *testing.T) {
 
 			// Test logs consumer
 			tln := new(consumertest.LogsSink)
-			rlp, err := factory.CreateLogs(context.Background(), processortest.NewNopSettings(), tt.config, tln)
+			rlp, err := factory.CreateLogs(t.Context(), processortest.NewNopSettings(metadata.Type), tt.config, tln)
 			require.NoError(t, err)
 			assert.True(t, rtp.Capabilities().MutatesData)
 
 			sourceLogData := generateLogData(tt.sourceAttributes)
 			wantLogData := generateLogData(tt.wantAttributes)
-			err = rlp.ConsumeLogs(context.Background(), sourceLogData)
+			err = rlp.ConsumeLogs(t.Context(), sourceLogData)
 			require.NoError(t, err)
 			logs := tln.AllLogs()
 			require.Len(t, logs, 1)
 			assert.NoError(t, plogtest.CompareLogs(wantLogData, logs[0]))
+
+			// Test profiles consumer
+			tpn := new(consumertest.ProfilesSink)
+			rpp, err := factory.(xprocessor.Factory).CreateProfiles(t.Context(), processortest.NewNopSettings(metadata.Type), tt.config, tpn)
+			require.NoError(t, err)
+			assert.True(t, rpp.Capabilities().MutatesData)
+
+			sourceProfileData := generateProfileData(tt.sourceAttributes)
+			wantProfileData := generateProfileData(tt.wantAttributes)
+			err = rpp.ConsumeProfiles(t.Context(), sourceProfileData)
+			require.NoError(t, err)
+			profiles := tpn.AllProfiles()
+			require.Len(t, profiles, 1)
+			compareProfileAttributes(t, wantProfileData, sourceProfileData)
 		})
 	}
 }
@@ -169,4 +183,29 @@ func generateLogData(attributes map[string]string) plog.Logs {
 		resource.Attributes().PutStr(k, v)
 	}
 	return ld
+}
+
+func generateProfileData(attributes map[string]string) pprofile.Profiles {
+	p := pprofile.NewProfiles()
+	rp := p.ResourceProfiles().AppendEmpty()
+
+	for k, v := range attributes {
+		rp.Resource().Attributes().PutStr(k, v)
+	}
+	return p
+}
+
+func compareProfileAttributes(t *testing.T, expected, got pprofile.Profiles) {
+	require.Equal(t, expected.ResourceProfiles().Len(), got.ResourceProfiles().Len())
+
+	for i := 0; i < expected.ResourceProfiles().Len(); i++ {
+		expectedResourceProfile := expected.ResourceProfiles().At(i)
+		gotResourceProfile := got.ResourceProfiles().At(i)
+
+		for k, v := range expectedResourceProfile.Resource().Attributes().All() {
+			get, ok := gotResourceProfile.Resource().Attributes().Get(k)
+			require.True(t, ok)
+			require.Equal(t, v, get)
+		}
+	}
 }

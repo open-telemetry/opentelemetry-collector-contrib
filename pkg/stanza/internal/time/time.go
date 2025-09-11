@@ -9,12 +9,14 @@ import (
 	"github.com/jonboulle/clockwork"
 )
 
-var Now = time.Now
-var Since = time.Since
+var (
+	Now   = time.Now
+	Since = time.Since
+)
 
 // Clock where Now() always returns a greater value than the previous return value
 type AlwaysIncreasingClock struct {
-	clockwork.FakeClock
+	*clockwork.FakeClock
 }
 
 func NewAlwaysIncreasingClock() AlwaysIncreasingClock {
@@ -32,4 +34,8 @@ func (c AlwaysIncreasingClock) Since(t time.Time) time.Duration {
 	// ensure that internal c.FakeClock.Now() will return a greater value
 	c.FakeClock.Advance(time.Nanosecond)
 	return c.FakeClock.Since(t)
+}
+
+func (c AlwaysIncreasingClock) Advance(d time.Duration) {
+	c.FakeClock.Advance(d)
 }

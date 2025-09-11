@@ -34,18 +34,21 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
 
-	customConfig := factory.CreateDefaultConfig().(*Config)
+	expectedConfig := factory.CreateDefaultConfig().(*Config)
 
-	customConfig.ProjectID = "my-project"
-	customConfig.UserAgent = "opentelemetry-collector-contrib {{version}}"
-	customConfig.TimeoutSettings = exporterhelper.TimeoutConfig{
+	expectedConfig.ProjectID = "my-project"
+	expectedConfig.UserAgent = "opentelemetry-collector-contrib {{version}}"
+	expectedConfig.TimeoutSettings = exporterhelper.TimeoutConfig{
 		Timeout: 20 * time.Second,
 	}
-	customConfig.Topic = "projects/my-project/topics/otlp-topic"
-	customConfig.Compression = "gzip"
-	customConfig.Watermark.Behavior = "earliest"
-	customConfig.Watermark.AllowedDrift = time.Hour
-	assert.Equal(t, cfg, customConfig)
+	expectedConfig.Topic = "projects/my-project/topics/otlp-topic"
+	expectedConfig.Compression = "gzip"
+	expectedConfig.Watermark.Behavior = "earliest"
+	expectedConfig.Watermark.AllowedDrift = time.Hour
+	expectedConfig.Ordering.Enabled = true
+	expectedConfig.Ordering.FromResourceAttribute = "ordering_key"
+	expectedConfig.Ordering.RemoveResourceAttribute = true
+	assert.Equal(t, expectedConfig, cfg)
 }
 
 func TestTopicConfigValidation(t *testing.T) {
@@ -99,4 +102,15 @@ func TestWatermarkDefaultMaxDriftValidation(t *testing.T) {
 	assert.Equal(t, time.Duration(0), c.Watermark.AllowedDrift)
 	assert.NoError(t, c.Validate())
 	assert.Equal(t, time.Duration(9223372036854775807), c.Watermark.AllowedDrift)
+}
+
+func TestOrderConfigValidation(t *testing.T) {
+	factory := NewFactory()
+	c := factory.CreateDefaultConfig().(*Config)
+	c.Topic = "projects/project/topics/my-topic"
+	assert.NoError(t, c.Validate())
+	c.Ordering.Enabled = true
+	assert.Error(t, c.Validate())
+	c.Ordering.FromResourceAttribute = "key"
+	assert.NoError(t, c.Validate())
 }

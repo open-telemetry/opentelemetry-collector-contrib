@@ -18,10 +18,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-kit/log"
 	"github.com/prometheus/client_golang/prometheus"
 	commonconfig "github.com/prometheus/common/config"
 	"github.com/prometheus/common/model"
+	"github.com/prometheus/common/promslog"
 	promconfig "github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/discovery"
 	promHTTP "github.com/prometheus/prometheus/discovery/http"
@@ -33,6 +33,8 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
 )
 
 type MockTargetAllocator struct {
@@ -65,9 +67,10 @@ type expectedMetricRelabelConfigTestResult struct {
 }
 
 type expectedTestResultJobMap struct {
-	Targets             []string
-	Labels              model.LabelSet
-	MetricRelabelConfig *expectedMetricRelabelConfigTestResult
+	Targets                []string
+	Labels                 model.LabelSet
+	MetricRelabelConfig    *expectedMetricRelabelConfigTestResult
+	ScrapeFallbackProtocol promconfig.ScrapeProtocol
 }
 
 type expectedTestResult struct {
@@ -81,14 +84,14 @@ func (mta *MockTargetAllocator) ServeHTTP(rw http.ResponseWriter, req *http.Requ
 
 	iptr, ok := mta.accessIndex[req.URL.Path]
 	if !ok {
-		rw.WriteHeader(404)
+		rw.WriteHeader(http.StatusNotFound)
 		return
 	}
 	index := int(iptr.Load())
 	iptr.Add(1)
 	pages := mta.endpoints[req.URL.Path]
 	if index >= len(pages) {
-		rw.WriteHeader(404)
+		rw.WriteHeader(http.StatusNotFound)
 		return
 	}
 	rw.Header().Set("Content-Type", "application/json")
@@ -282,14 +285,15 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 					"/scrape_configs": {
 						mockTargetAllocatorResponseRaw{code: 200, data: map[string]map[string]any{
 							"job1": {
-								"job_name":               "job1",
-								"scrape_interval":        "30s",
-								"scrape_timeout":         "30s",
-								"scrape_protocols":       []string{"OpenMetricsText1.0.0", "OpenMetricsText0.0.1", "PrometheusText0.0.4"},
-								"metrics_path":           "/metrics",
-								"scheme":                 "http",
-								"relabel_configs":        nil,
-								"metric_relabel_configs": nil,
+								"job_name":                 "job1",
+								"scrape_interval":          "30s",
+								"scrape_timeout":           "30s",
+								"scrape_protocols":         []string{"OpenMetricsText1.0.0", "OpenMetricsText0.0.1", "PrometheusText0.0.4"},
+								"metrics_path":             "/metrics",
+								"scheme":                   "http",
+								"relabel_configs":          nil,
+								"metric_relabel_configs":   nil,
+								"fallback_scrape_protocol": promconfig.PrometheusText1_0_0,
 							},
 							"job2": {
 								"job_name":               "job2",
@@ -305,34 +309,42 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 					},
 					"/jobs/job1/targets": {
 						mockTargetAllocatorResponseRaw{code: 200, data: []hTTPSDResponse{
-							{Targets: []string{"localhost:9090", "10.0.10.3:9100", "10.0.10.4:9100", "10.0.10.5:9100"},
+							{
+								Targets: []string{"localhost:9090", "10.0.10.3:9100", "10.0.10.4:9100", "10.0.10.5:9100"},
 								Labels: map[model.LabelName]model.LabelValue{
 									"__meta_datacenter":     "london",
 									"__meta_prometheus_job": "node",
-								}},
+								},
+							},
 						}},
 						mockTargetAllocatorResponseRaw{code: 200, data: []hTTPSDResponse{
-							{Targets: []string{"localhost:9090", "10.0.10.3:9100", "10.0.10.4:9100", "10.0.10.5:9100"},
+							{
+								Targets: []string{"localhost:9090", "10.0.10.3:9100", "10.0.10.4:9100", "10.0.10.5:9100"},
 								Labels: map[model.LabelName]model.LabelValue{
 									"__meta_datacenter":     "london",
 									"__meta_prometheus_job": "node",
-								}},
+								},
+							},
 						}},
 					},
 					"/jobs/job2/targets": {
 						mockTargetAllocatorResponseRaw{code: 200, data: []hTTPSDResponse{
-							{Targets: []string{"10.0.40.2:9100", "10.0.40.3:9100"},
+							{
+								Targets: []string{"10.0.40.2:9100", "10.0.40.3:9100"},
 								Labels: map[model.LabelName]model.LabelValue{
 									"__meta_datacenter":     "london",
 									"__meta_prometheus_job": "alertmanager",
-								}},
+								},
+							},
 						}},
 						mockTargetAllocatorResponseRaw{code: 200, data: []hTTPSDResponse{
-							{Targets: []string{"10.0.40.2:9100", "10.0.40.3:9100"},
+							{
+								Targets: []string{"10.0.40.2:9100", "10.0.40.3:9100"},
 								Labels: map[model.LabelName]model.LabelValue{
 									"__meta_datacenter":     "london",
 									"__meta_prometheus_job": "alertmanager",
-								}},
+								},
+							},
 						}},
 					},
 				},
@@ -359,12 +371,16 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 							"__meta_datacenter":     "london",
 							"__meta_prometheus_job": "node",
 						},
+						ScrapeFallbackProtocol: promconfig.PrometheusText1_0_0,
 					},
-					"job2": {Targets: []string{"10.0.40.2:9100", "10.0.40.3:9100"},
+					"job2": {
+						Targets: []string{"10.0.40.2:9100", "10.0.40.3:9100"},
 						Labels: map[model.LabelName]model.LabelValue{
 							"__meta_datacenter":     "london",
 							"__meta_prometheus_job": "alertmanager",
-						}},
+						},
+						ScrapeFallbackProtocol: promconfig.PrometheusText0_0_4, // Tests default value
+					},
 				},
 			},
 		},
@@ -398,34 +414,42 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 					},
 					"/jobs/job1/targets": {
 						mockTargetAllocatorResponseRaw{code: 200, data: []hTTPSDResponse{
-							{Targets: []string{"localhost:9090", "10.0.10.3:9100", "10.0.10.4:9100", "10.0.10.5:9100"},
+							{
+								Targets: []string{"localhost:9090", "10.0.10.3:9100", "10.0.10.4:9100", "10.0.10.5:9100"},
 								Labels: map[model.LabelName]model.LabelValue{
 									"__meta_datacenter":     "london",
 									"__meta_prometheus_job": "node",
-								}},
+								},
+							},
 						}},
 						mockTargetAllocatorResponseRaw{code: 200, data: []hTTPSDResponse{
-							{Targets: []string{"localhost:9090"},
+							{
+								Targets: []string{"localhost:9090"},
 								Labels: map[model.LabelName]model.LabelValue{
 									"__meta_datacenter":     "london",
 									"__meta_prometheus_job": "node",
 									"test":                  "aTest",
-								}},
+								},
+							},
 						}},
 					},
 					"/jobs/job2/targets": {
 						mockTargetAllocatorResponseRaw{code: 200, data: []hTTPSDResponse{
-							{Targets: []string{"10.0.40.3:9100"},
+							{
+								Targets: []string{"10.0.40.3:9100"},
 								Labels: map[model.LabelName]model.LabelValue{
 									"__meta_datacenter":     "london",
 									"__meta_prometheus_job": "alertmanager",
-								}},
+								},
+							},
 						}},
 						mockTargetAllocatorResponseRaw{code: 200, data: []hTTPSDResponse{
-							{Targets: []string{"10.0.40.2:9100", "10.0.40.3:9100"},
+							{
+								Targets: []string{"10.0.40.2:9100", "10.0.40.3:9100"},
 								Labels: map[model.LabelName]model.LabelValue{
 									"__meta_datacenter": "london",
-								}},
+								},
+							},
 						}},
 					},
 				},
@@ -449,10 +473,12 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 							"test":                  "aTest",
 						},
 					},
-					"job2": {Targets: []string{"10.0.40.2:9100", "10.0.40.3:9100"},
+					"job2": {
+						Targets: []string{"10.0.40.2:9100", "10.0.40.3:9100"},
 						Labels: map[model.LabelName]model.LabelValue{
 							"__meta_datacenter": "london",
-						}},
+						},
+					},
 				},
 			},
 		},
@@ -511,34 +537,42 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 					},
 					"/jobs/job1/targets": {
 						mockTargetAllocatorResponseRaw{code: 200, data: []hTTPSDResponse{
-							{Targets: []string{"localhost:9090"},
+							{
+								Targets: []string{"localhost:9090"},
 								Labels: map[model.LabelName]model.LabelValue{
 									"__meta_datacenter":     "london",
 									"__meta_prometheus_job": "node",
-								}},
+								},
+							},
 						}},
 						mockTargetAllocatorResponseRaw{code: 200, data: []hTTPSDResponse{
-							{Targets: []string{"localhost:9090"},
+							{
+								Targets: []string{"localhost:9090"},
 								Labels: map[model.LabelName]model.LabelValue{
 									"__meta_datacenter":     "london",
 									"__meta_prometheus_job": "node",
-								}},
+								},
+							},
 						}},
 					},
 					"/jobs/job3/targets": {
 						mockTargetAllocatorResponseRaw{code: 200, data: []hTTPSDResponse{
-							{Targets: []string{"10.0.40.3:9100"},
+							{
+								Targets: []string{"10.0.40.3:9100"},
 								Labels: map[model.LabelName]model.LabelValue{
 									"__meta_datacenter":     "london",
 									"__meta_prometheus_job": "alertmanager",
-								}},
+								},
+							},
 						}},
 						mockTargetAllocatorResponseRaw{code: 200, data: []hTTPSDResponse{
-							{Targets: []string{"10.0.40.3:9100"},
+							{
+								Targets: []string{"10.0.40.3:9100"},
 								Labels: map[model.LabelName]model.LabelValue{
 									"__meta_datacenter":     "london",
 									"__meta_prometheus_job": "alertmanager",
-								}},
+								},
+							},
 						}},
 					},
 				},
@@ -561,11 +595,13 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 							"__meta_prometheus_job": "node",
 						},
 					},
-					"job3": {Targets: []string{"10.0.40.3:9100"},
+					"job3": {
+						Targets: []string{"10.0.40.3:9100"},
 						Labels: map[model.LabelName]model.LabelValue{
 							"__meta_datacenter":     "london",
 							"__meta_prometheus_job": "alertmanager",
-						}},
+						},
+					},
 				},
 			},
 		},
@@ -640,18 +676,22 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 					},
 					"/jobs/job1/targets": {
 						mockTargetAllocatorResponseRaw{code: 200, data: []hTTPSDResponse{
-							{Targets: []string{"localhost:9090"},
+							{
+								Targets: []string{"localhost:9090"},
 								Labels: map[model.LabelName]model.LabelValue{
 									"__meta_datacenter":     "london",
 									"__meta_prometheus_job": "node",
-								}},
+								},
+							},
 						}},
 						mockTargetAllocatorResponseRaw{code: 200, data: []hTTPSDResponse{
-							{Targets: []string{"localhost:9090"},
+							{
+								Targets: []string{"localhost:9090"},
 								Labels: map[model.LabelName]model.LabelValue{
 									"__meta_datacenter":     "london",
 									"__meta_prometheus_job": "node",
-								}},
+								},
+							},
 						}},
 					},
 				},
@@ -683,7 +723,7 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
-			ctx := context.Background()
+			ctx := t.Context()
 
 			allocator, err := setupMockTargetAllocator(tc.responses)
 			require.NoError(t, err, "Failed to create allocator", tc.responses)
@@ -694,8 +734,9 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 			tc.cfg.Endpoint = allocator.srv.URL // set service URL with the automatic generated one
 			scrapeManager, discoveryManager := initPrometheusManagers(ctx, t)
 
-			baseCfg := promconfig.Config{GlobalConfig: promconfig.DefaultGlobalConfig}
-			manager := NewManager(receivertest.NewNopSettings(), tc.cfg, &baseCfg, false)
+			baseCfg, err := promconfig.Load("", nil)
+			require.NoError(t, err)
+			manager := NewManager(receivertest.NewNopSettings(metadata.Type), tc.cfg, baseCfg, false)
 			require.NoError(t, manager.Start(ctx, componenttest.NewNopHost(), scrapeManager, discoveryManager))
 
 			allocator.wg.Wait()
@@ -733,6 +774,14 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 						// which is identical to the source url
 						s.Labels["__meta_url"] = model.LabelValue(sdConfig.URL)
 						require.Equal(t, s.Labels, group.Labels)
+
+						// The manager may not be done processing the Refresh call by the
+						// time we check the value of the ScrapeConfig.
+						require.Eventually(t, func() bool {
+							v := manager.configUpdateCount.Load()
+							return v >= int64(len(tc.responses.responses["/scrape_configs"]))
+						}, 5*time.Second, 250*time.Millisecond)
+
 						if s.MetricRelabelConfig != nil {
 							for _, sc := range manager.promCfg.ScrapeConfigs {
 								if sc.JobName == s.MetricRelabelConfig.JobName {
@@ -742,6 +791,15 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 								}
 							}
 						}
+
+						if s.ScrapeFallbackProtocol != "" {
+							for _, sc := range manager.promCfg.ScrapeConfigs {
+								if sc.JobName == job {
+									require.Equal(t, sc.ScrapeFallbackProtocol, s.ScrapeFallbackProtocol)
+								}
+							}
+						}
+
 						found = true
 					}
 					require.True(t, found, "Returned job is not defined in expected values", group)
@@ -753,7 +811,7 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 
 func TestConfigureSDHTTPClientConfigFromTA(t *testing.T) {
 	ta := &Config{}
-	ta.TLSSetting = configtls.ClientConfig{
+	ta.TLS = configtls.ClientConfig{
 		InsecureSkipVerify: true,
 		ServerName:         "test.server",
 		Config: configtls.Config{
@@ -799,15 +857,113 @@ func TestConfigureSDHTTPClientConfigFromTA(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestManagerSyncWithInitialScrapeConfigs(t *testing.T) {
+	ctx := t.Context()
+	initialScrapeConfigs := []*promconfig.ScrapeConfig{
+		{
+			JobName:         "job1",
+			HonorTimestamps: true,
+			ScrapeInterval:  model.Duration(30 * time.Second),
+			ScrapeTimeout:   model.Duration(30 * time.Second),
+			MetricsPath:     "/metrics",
+			Scheme:          "http",
+		},
+		{
+			JobName:         "job2",
+			HonorTimestamps: true,
+			ScrapeInterval:  model.Duration(30 * time.Second),
+			ScrapeTimeout:   model.Duration(30 * time.Second),
+			MetricsPath:     "/metrics",
+			Scheme:          "http",
+		},
+	}
+
+	// Mock target allocator response
+	mockResponse := Responses{
+		responses: map[string][]mockTargetAllocatorResponseRaw{
+			"/scrape_configs": {
+				mockTargetAllocatorResponseRaw{code: 200, data: map[string]map[string]any{
+					"job1": {
+						"job_name":               "job3",
+						"scrape_interval":        "30s",
+						"scrape_timeout":         "30s",
+						"scrape_protocols":       []string{"OpenMetricsText1.0.0", "OpenMetricsText0.0.1", "PrometheusText0.0.4"},
+						"metrics_path":           "/metrics",
+						"scheme":                 "http",
+						"relabel_configs":        nil,
+						"metric_relabel_configs": nil,
+					},
+				}},
+			},
+			"/jobs/job1/targets": {
+				mockTargetAllocatorResponseRaw{code: 200, data: []hTTPSDResponse{
+					{
+						Targets: []string{"localhost:9090", "10.0.10.3:9100", "10.0.10.4:9100", "10.0.10.5:9100"},
+						Labels: map[model.LabelName]model.LabelValue{
+							"__meta_datacenter":     "london",
+							"__meta_prometheus_job": "node",
+						},
+					},
+				}},
+				mockTargetAllocatorResponseRaw{code: 200, data: []hTTPSDResponse{
+					{
+						Targets: []string{"localhost:9090", "10.0.10.3:9100", "10.0.10.4:9100", "10.0.10.5:9100"},
+						Labels: map[model.LabelName]model.LabelValue{
+							"__meta_datacenter":     "london",
+							"__meta_prometheus_job": "node",
+						},
+					},
+				}},
+			},
+		},
+	}
+
+	cfg := &Config{
+		Interval:    10 * time.Second,
+		CollectorID: "collector-1",
+		HTTPSDConfig: &PromHTTPSDConfig{
+			HTTPClientConfig: commonconfig.HTTPClientConfig{},
+			RefreshInterval:  model.Duration(60 * time.Second),
+		},
+	}
+
+	allocator, err := setupMockTargetAllocator(mockResponse)
+	require.NoError(t, err, "Failed to create allocator")
+
+	allocator.Start()
+	defer allocator.Stop()
+	cfg.Endpoint = allocator.srv.URL // set service URL with the automatic generated one
+	scrapeManager, discoveryManager := initPrometheusManagers(ctx, t)
+
+	baseCfg, err := promconfig.Load("", nil)
+	require.NoError(t, err)
+	baseCfg.ScrapeConfigs = initialScrapeConfigs
+	manager := NewManager(receivertest.NewNopSettings(metadata.Type), cfg, baseCfg, false)
+	require.NoError(t, manager.Start(ctx, componenttest.NewNopHost(), scrapeManager, discoveryManager))
+
+	allocator.wg.Wait()
+
+	providers := discoveryManager.Providers()
+
+	require.NotNil(t, providers)
+	require.Len(t, providers, 2)
+	require.IsType(t, &promHTTP.Discovery{}, providers[1].Discoverer())
+
+	require.Len(t, manager.promCfg.ScrapeConfigs, 3)
+	require.Equal(t, "job1", manager.promCfg.ScrapeConfigs[0].JobName)
+	require.Equal(t, "job2", manager.promCfg.ScrapeConfigs[1].JobName)
+	require.Equal(t, "job3", manager.promCfg.ScrapeConfigs[2].JobName)
+}
+
 func initPrometheusManagers(ctx context.Context, t *testing.T) (*scrape.Manager, *discovery.Manager) {
-	logger := log.NewNopLogger()
+	logger := promslog.NewNopLogger()
 	reg := prometheus.NewRegistry()
 	sdMetrics, err := discovery.RegisterSDMetrics(reg, discovery.NewRefreshMetrics(reg))
 	require.NoError(t, err)
 	discoveryManager := discovery.NewManager(ctx, logger, reg, sdMetrics)
 	require.NotNil(t, discoveryManager)
 
-	scrapeManager, err := scrape.NewManager(&scrape.Options{}, logger, nil, reg)
+	scrapeManager, err := scrape.NewManager(&scrape.Options{}, logger, nil, nil, reg)
 	require.NoError(t, err)
 	return scrapeManager, discoveryManager
 }

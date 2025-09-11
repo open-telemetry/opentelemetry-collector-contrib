@@ -4,7 +4,6 @@
 package metricsgenerationprocessor
 
 import (
-	"context"
 	"path/filepath"
 	"testing"
 
@@ -40,7 +39,6 @@ func TestCreateProcessors(t *testing.T) {
 	for k := range cm.ToStringMap() {
 		// Check if all processor variations that are defined in test config can be actually created
 		t.Run(k, func(t *testing.T) {
-
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig()
 
@@ -49,8 +47,8 @@ func TestCreateProcessors(t *testing.T) {
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			tp, tErr := factory.CreateTraces(
-				context.Background(),
-				processortest.NewNopSettings(),
+				t.Context(),
+				processortest.NewNopSettings(metadata.Type),
 				cfg,
 				consumertest.NewNop())
 			// Not implemented error
@@ -58,8 +56,8 @@ func TestCreateProcessors(t *testing.T) {
 			assert.Nil(t, tp)
 
 			mp, mErr := factory.CreateMetrics(
-				context.Background(),
-				processortest.NewNopSettings(),
+				t.Context(),
+				processortest.NewNopSettings(metadata.Type),
 				cfg,
 				consumertest.NewNop())
 			assert.NotNil(t, mp)

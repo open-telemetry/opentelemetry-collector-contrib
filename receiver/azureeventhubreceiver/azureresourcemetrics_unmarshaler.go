@@ -9,25 +9,23 @@ import (
 	"strings"
 	"time"
 
-	eventhub "github.com/Azure/azure-event-hubs-go/v3"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/relvacode/iso8601"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver/internal/metadata"
 )
 
-const (
-	azureResourceID = "azure.resource.id"
-)
+const azureResourceID = "azure.resource.id"
 
 type azureResourceMetricsUnmarshaler struct {
-	buildInfo component.BuildInfo
-	logger    *zap.Logger
+	buildInfo  component.BuildInfo
+	logger     *zap.Logger
+	TimeFormat []string
 }
 
 // azureMetricRecords represents an array of Azure metric records
@@ -50,11 +48,11 @@ type azureMetricRecord struct {
 	Average    float64 `json:"average"`
 }
 
-func newAzureResourceMetricsUnmarshaler(buildInfo component.BuildInfo, logger *zap.Logger) eventMetricsUnmarshaler {
-
+func newAzureResourceMetricsUnmarshaler(buildInfo component.BuildInfo, logger *zap.Logger, timeFormat []string) eventMetricsUnmarshaler {
 	return azureResourceMetricsUnmarshaler{
-		buildInfo: buildInfo,
-		logger:    logger,
+		buildInfo:  buildInfo,
+		logger:     logger,
+		TimeFormat: timeFormat,
 	}
 }
 
@@ -63,12 +61,11 @@ func newAzureResourceMetricsUnmarshaler(buildInfo component.BuildInfo, logger *z
 // an OpenTelemetry pmetric.Metrics object. The data in the Azure
 // metric record appears as fields and attributes in the
 // OpenTelemetry representation;
-func (r azureResourceMetricsUnmarshaler) UnmarshalMetrics(event *eventhub.Event) (pmetric.Metrics, error) {
-
+func (r azureResourceMetricsUnmarshaler) UnmarshalMetrics(event *azureEvent) (pmetric.Metrics, error) {
 	md := pmetric.NewMetrics()
 
 	var azureMetrics azureMetricRecords
-	decoder := jsoniter.NewDecoder(bytes.NewReader(event.Data))
+	decoder := jsoniter.NewDecoder(bytes.NewReader(event.Data()))
 	err := decoder.Decode(&azureMetrics)
 	if err != nil {
 		return md, err
@@ -76,10 +73,10 @@ func (r azureResourceMetricsUnmarshaler) UnmarshalMetrics(event *eventhub.Event)
 
 	resourceMetrics := md.ResourceMetrics().AppendEmpty()
 	resource := resourceMetrics.Resource()
-	resource.Attributes().PutStr(conventions.AttributeTelemetrySDKName, metadata.ScopeName)
-	resource.Attributes().PutStr(conventions.AttributeTelemetrySDKLanguage, conventions.AttributeTelemetrySDKLanguageGo)
-	resource.Attributes().PutStr(conventions.AttributeTelemetrySDKVersion, r.buildInfo.Version)
-	resource.Attributes().PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAzure)
+	resource.Attributes().PutStr(string(conventions.TelemetrySDKNameKey), metadata.ScopeName)
+	resource.Attributes().PutStr(string(conventions.TelemetrySDKLanguageKey), conventions.TelemetrySDKLanguageGo.Value.AsString())
+	resource.Attributes().PutStr(string(conventions.TelemetrySDKVersionKey), r.buildInfo.Version)
+	resource.Attributes().PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAzure.Value.AsString())
 
 	scopeMetrics := resourceMetrics.ScopeMetrics().AppendEmpty()
 
@@ -92,19 +89,18 @@ func (r azureResourceMetricsUnmarshaler) UnmarshalMetrics(event *eventhub.Event)
 			resourceID = azureMetric.ResourceID
 		}
 
-		nanos, err := asTimestamp(azureMetric.Time)
+		nanos, err := asTimestamp(azureMetric.Time, r.TimeFormat)
 		if err != nil {
 			r.logger.Warn("Invalid Timestamp", zap.String("time", azureMetric.Time))
 			continue
 		}
 
 		var startTimestamp pcommon.Timestamp
-		if azureMetric.TimeGrain == "PT1M" {
-			startTimestamp = pcommon.NewTimestampFromTime(nanos.AsTime().Add(-time.Minute))
-		} else {
+		if azureMetric.TimeGrain != "PT1M" {
 			r.logger.Warn("Unhandled Time Grain", zap.String("timegrain", azureMetric.TimeGrain))
 			continue
 		}
+		startTimestamp = pcommon.NewTimestampFromTime(nanos.AsTime().Add(-time.Minute))
 
 		metricTotal := metrics.AppendEmpty()
 		metricTotal.SetName(strings.ToLower(fmt.Sprintf("%s_%s", strings.ReplaceAll(azureMetric.MetricName, " ", "_"), "Total")))
@@ -154,10 +150,19 @@ func (r azureResourceMetricsUnmarshaler) UnmarshalMetrics(event *eventhub.Event)
 // asTimestamp will parse an ISO8601 string into an OpenTelemetry
 // nanosecond timestamp. If the string cannot be parsed, it will
 // return zero and the error.
-func asTimestamp(s string) (pcommon.Timestamp, error) {
-	t, err := iso8601.ParseString(s)
-	if err != nil {
-		return 0, err
+func asTimestamp(s string, formats []string) (pcommon.Timestamp, error) {
+	var err error
+	var t time.Time
+	// Try parsing with provided formats first
+	for _, format := range formats {
+		if t, err = time.Parse(format, s); err == nil {
+			return pcommon.Timestamp(t.UnixNano()), nil
+		}
 	}
-	return pcommon.Timestamp(t.UnixNano()), nil
+
+	// Fallback to ISO 8601 parsing if no format matches
+	if t, err = iso8601.ParseString(s); err == nil {
+		return pcommon.Timestamp(t.UnixNano()), nil
+	}
+	return 0, err
 }

@@ -6,12 +6,12 @@ package jaeger
 import (
 	"testing"
 
-	"github.com/jaegertracing/jaeger/model"
+	"github.com/jaegertracing/jaeger-idl/model/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.16.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/goldendataset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
@@ -27,7 +27,7 @@ func TestGetTagFromStatusCode(t *testing.T) {
 			name: "ok",
 			code: ptrace.StatusCodeOk,
 			tag: model.KeyValue{
-				Key:   conventions.OtelStatusCode,
+				Key:   string(conventions.OtelStatusCodeKey),
 				VType: model.ValueType_STRING,
 				VStr:  statusOk,
 			},
@@ -37,7 +37,7 @@ func TestGetTagFromStatusCode(t *testing.T) {
 			name: "error",
 			code: ptrace.StatusCodeError,
 			tag: model.KeyValue{
-				Key:   conventions.OtelStatusCode,
+				Key:   string(conventions.OtelStatusCodeKey),
 				VType: model.ValueType_STRING,
 				VStr:  statusError,
 			},
@@ -48,7 +48,7 @@ func TestGetTagFromStatusCode(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			got, ok := getTagFromStatusCode(test.code)
 			assert.True(t, ok)
-			assert.EqualValues(t, test.tag, got)
+			assert.Equal(t, test.tag, got)
 		})
 	}
 }
@@ -68,7 +68,7 @@ func TestGetErrorTagFromStatusCode(t *testing.T) {
 
 	got, ok := getErrorTagFromStatusCode(ptrace.StatusCodeError)
 	assert.True(t, ok)
-	assert.EqualValues(t, errTag, got)
+	assert.Equal(t, errTag, got)
 }
 
 func TestGetTagFromStatusMsg(t *testing.T) {
@@ -77,8 +77,8 @@ func TestGetTagFromStatusMsg(t *testing.T) {
 
 	got, ok := getTagFromStatusMsg("test-error")
 	assert.True(t, ok)
-	assert.EqualValues(t, model.KeyValue{
-		Key:   conventions.OtelStatusDescription,
+	assert.Equal(t, model.KeyValue{
+		Key:   string(conventions.OtelStatusDescriptionKey),
 		VStr:  "test-error",
 		VType: model.ValueType_STRING,
 	}, got)
@@ -158,20 +158,19 @@ func TestGetTagFromSpanKind(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			got, ok := getTagFromSpanKind(test.kind)
 			assert.Equal(t, test.ok, ok)
-			assert.EqualValues(t, test.tag, got)
+			assert.Equal(t, test.tag, got)
 		})
 	}
 }
 
 func TestAttributesToJaegerProtoTags(t *testing.T) {
-
 	attributes := pcommon.NewMap()
 	attributes.PutBool("bool-val", true)
 	attributes.PutInt("int-val", 123)
 	attributes.PutStr("string-val", "abc")
 	attributes.PutDouble("double-val", 1.23)
 	attributes.PutEmptyBytes("bytes-val").FromRaw([]byte{1, 2, 3, 4})
-	attributes.PutStr(conventions.AttributeServiceName, "service-name")
+	attributes.PutStr(string(conventions.ServiceNameKey), "service-name")
 
 	expected := []model.KeyValue{
 		{
@@ -200,22 +199,21 @@ func TestAttributesToJaegerProtoTags(t *testing.T) {
 			VBinary: []byte{1, 2, 3, 4},
 		},
 		{
-			Key:   conventions.AttributeServiceName,
+			Key:   string(conventions.ServiceNameKey),
 			VType: model.ValueType_STRING,
 			VStr:  "service-name",
 		},
 	}
 
 	got := appendTagsFromAttributes(make([]model.KeyValue, 0, len(expected)), attributes)
-	require.EqualValues(t, expected, got)
+	require.Equal(t, expected, got)
 
 	// The last item in expected ("service-name") must be skipped in resource tags translation
 	got = appendTagsFromResourceAttributes(make([]model.KeyValue, 0, len(expected)-1), attributes)
-	require.EqualValues(t, expected[:5], got)
+	require.Equal(t, expected[:5], got)
 }
 
 func TestInternalTracesToJaegerProto(t *testing.T) {
-
 	tests := []struct {
 		name string
 		td   ptrace.Traces
@@ -326,7 +324,7 @@ func TestInternalTracesToJaegerProto(t *testing.T) {
 				assert.Empty(t, jbs)
 			} else {
 				require.Len(t, jbs, 1)
-				assert.EqualValues(t, test.jb, jbs[0])
+				assert.Equal(t, test.jb, jbs[0])
 			}
 		})
 	}

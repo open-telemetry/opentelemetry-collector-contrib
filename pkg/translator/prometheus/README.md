@@ -1,23 +1,12 @@
 # Prometheus Normalization
 
-[OpenTelemetry's metric semantic convention](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/semantic_conventions/README.md) is not compatible with [Prometheus' own metrics naming convention](https://prometheus.io/docs/practices/naming/). This module provides centralized functions to convert OpenTelemetry metrics to Prometheus-compliant metrics. These functions are used by the following components for Prometheus:
+[OpenTelemetry's metric semantic convention](https://github.com/open-telemetry/semantic-conventions/blob/main/docs/general/metrics.md) is not compatible with [Prometheus' own metrics naming convention](https://prometheus.io/docs/practices/naming/). This module provides centralized functions to convert OpenTelemetry metrics to Prometheus-compliant metrics. These functions are used by the following components for Prometheus:
 
 * [prometheusreceiver](../../../receiver/prometheusreceiver/)
 * [prometheusexporter](../../../exporter/prometheusexporter/)
 * [prometheusremotewriteexporter](../../../exporter/prometheusremotewriteexporter/)
 
 ## Metric name
-
-### Full normalization
-
-> **Warning**
->
-> This feature can be controlled with [feature gate](https://github.com/open-telemetry/opentelemetry-collector/tree/main/featuregate) `pkg.translator.prometheus.NormalizeName`. It is currently enabled by default (beta stage).
->
->  Example of how to disable it:
-> ```shell-session
-> $ otelcol --config=config.yaml --feature-gates=-pkg.translator.prometheus.NormalizeName
-> ```
 
 #### List of transformations to convert OpenTelemetry metrics to Prometheus metrics
 
@@ -78,7 +67,7 @@ List of standard OpenTelemetry units that will be translated to [Prometheus stan
 
 ### Simple normalization
 
-If feature `pkg.translator.prometheus.NormalizeName` is not enabled, a simple sanitization of the OpenTelemetry metric name is performed to ensure it follows Prometheus naming conventions:
+A simple sanitization of the OpenTelemetry metric name is performed to ensure it follows Prometheus naming conventions:
 
 * Drop unsupported characters and replace with underscores (`_`)
 * Remove redundant, leading and trailing underscores

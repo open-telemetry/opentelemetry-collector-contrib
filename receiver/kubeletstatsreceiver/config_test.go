@@ -14,7 +14,8 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	kube "github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet"
@@ -296,14 +297,13 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			err = component.ValidateConfig(cfg)
+			err = xconfmap.Validate(cfg)
 			if tt.expectedValidationErr != "" {
 				assert.EqualError(t, err, tt.expectedValidationErr)
 			} else {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.expected, cfg)
 			}
-
 		})
 	}
 }
@@ -338,6 +338,10 @@ func TestGetReceiverOptions(t *testing.T) {
 				metricGroupsToCollect: map[kubelet.MetricGroup]bool{
 					kubelet.NodeMetricGroup: true,
 					kubelet.PodMetricGroup:  true,
+				},
+				allNetworkInterfaces: map[kubelet.MetricGroup]bool{
+					kubelet.NodeMetricGroup: false,
+					kubelet.PodMetricGroup:  false,
 				},
 				collectionInterval: 10 * time.Second,
 			},

@@ -18,6 +18,7 @@ const (
 	LogFileOwnerName      = "log.file.owner.name"
 	LogFileOwnerGroupName = "log.file.owner.group.name"
 	LogFileRecordNumber   = "log.file.record_number"
+	LogFileRecordOffset   = "log.file.record_offset"
 )
 
 type Resolver struct {
@@ -30,7 +31,7 @@ type Resolver struct {
 }
 
 func (r *Resolver) Resolve(file *os.File) (attributes map[string]any, err error) {
-	var path = file.Name()
+	path := file.Name()
 	// size 2 is sufficient if not resolving symlinks. This optimizes for the most performant cases.
 	attributes = make(map[string]any, 2)
 	if r.IncludeFileName {

@@ -6,14 +6,14 @@
 package awscloudwatchreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscloudwatchreceiver"
 
 import (
-	"context"
-	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
 
-	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
+	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
+	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs/types"
+	"github.com/goccy/go-json"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -22,14 +22,15 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscloudwatchreceiver/internal/metadata"
 )
 
 func TestLoggingIntegration(t *testing.T) {
 	mc := &mockClient{}
-	mc.On("DescribeLogGroupsWithContext", mock.Anything, mock.Anything, mock.Anything).
+	mc.On("DescribeLogGroups", mock.Anything, mock.Anything, mock.Anything).
 		Return(loadLogGroups(t), nil)
 
-	mc.On("FilterLogEventsWithContext", mock.Anything, mock.Anything, mock.Anything).
+	mc.On("FilterLogEvents", mock.Anything, mock.Anything, mock.Anything).
 		Return(loadLogEvents(t), nil)
 
 	sink := &consumertest.LogsSink{}
@@ -40,8 +41,8 @@ func TestLoggingIntegration(t *testing.T) {
 		Limit: 1,
 	}
 	recv, err := NewFactory().CreateLogs(
-		context.Background(),
-		receivertest.NewNopSettings(),
+		t.Context(),
+		receivertest.NewNopSettings(metadata.Type),
 		cfg,
 		sink,
 	)
@@ -51,14 +52,14 @@ func TestLoggingIntegration(t *testing.T) {
 	require.True(t, ok)
 	rcvr.client = mc
 
-	err = recv.Start(context.Background(), componenttest.NewNopHost())
+	err = recv.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	require.Eventually(t, func() bool {
 		return sink.LogRecordCount() > 0
 	}, 5*time.Second, 10*time.Millisecond)
 
-	err = recv.Shutdown(context.Background())
+	err = recv.Shutdown(t.Context())
 	require.NoError(t, err)
 
 	logs := sink.AllLogs()[0]
@@ -78,14 +79,14 @@ var (
 )
 
 func loadLogGroups(t *testing.T) *cloudwatchlogs.DescribeLogGroupsOutput {
-	output := make([]*cloudwatchlogs.LogGroup, len(logGroupFiles))
+	output := make([]types.LogGroup, len(logGroupFiles))
 	for i, lg := range logGroupFiles {
 		bytes, err := os.ReadFile(lg)
 		require.NoError(t, err)
-		var logGroup cloudwatchlogs.LogGroup
+		var logGroup types.LogGroup
 		err = json.Unmarshal(bytes, &logGroup)
 		require.NoError(t, err)
-		output[i] = &logGroup
+		output[i] = logGroup
 	}
 
 	return &cloudwatchlogs.DescribeLogGroupsOutput{
@@ -95,14 +96,14 @@ func loadLogGroups(t *testing.T) *cloudwatchlogs.DescribeLogGroupsOutput {
 }
 
 func loadLogEvents(t *testing.T) *cloudwatchlogs.FilterLogEventsOutput {
-	output := make([]*cloudwatchlogs.FilteredLogEvent, len(logEventsFiles))
+	output := make([]types.FilteredLogEvent, len(logEventsFiles))
 	for i, lg := range logEventsFiles {
 		bytes, err := os.ReadFile(lg)
 		require.NoError(t, err)
-		var event cloudwatchlogs.FilteredLogEvent
+		var event types.FilteredLogEvent
 		err = json.Unmarshal(bytes, &event)
 		require.NoError(t, err)
-		output[i] = &event
+		output[i] = event
 	}
 
 	return &cloudwatchlogs.FilterLogEventsOutput{

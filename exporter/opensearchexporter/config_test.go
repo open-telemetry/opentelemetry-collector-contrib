@@ -14,8 +14,10 @@ import (
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter/internal/metadata"
 )
@@ -62,9 +64,9 @@ func TestLoadConfig(t *testing.T) {
 					config.Headers = map[string]configopaque.String{
 						"myheader": "test",
 					}
-					config.MaxIdleConns = &maxIdleConns
-					config.IdleConnTimeout = &idleConnTimeout
-					config.Auth = &configauth.Authentication{AuthenticatorID: component.MustNewID("sample_basic_auth")}
+					config.MaxIdleConns = maxIdleConns
+					config.IdleConnTimeout = idleConnTimeout
+					config.Auth = configoptional.Some(configauth.Config{AuthenticatorID: component.MustNewID("sample_basic_auth")})
 				}),
 				BackOffConfig: configretry.BackOffConfig{
 					Enabled:             true,
@@ -113,6 +115,136 @@ func TestLoadConfig(t *testing.T) {
 				return assert.ErrorContains(t, err, errBulkActionInvalid.Error())
 			},
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "dynamic_log_indexing"),
+			expected: withDefaultConfig(func(config *Config) {
+				config.Endpoint = sampleEndpoint
+				config.LogsIndex = "otel-logs-%{service.name}"
+				config.LogsIndexFallback = "default-service"
+				config.LogsIndexTimeFormat = "yyyy.MM.dd"
+			}),
+			configValidateAssert: assert.NoError,
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "invalid_dynamic_log_indexing"),
+			expected: withDefaultConfig(func(config *Config) {
+				config.Endpoint = sampleEndpoint
+				config.LogsIndex = "otel-logs-%{service.name}-%{invalid.placeholder}"
+				config.LogsIndexFallback = "default-service"
+			}),
+			configValidateAssert: func(t assert.TestingT, err error, _ ...any) bool {
+				return assert.ErrorContains(t, err, errLogsIndexInvalidPlaceholder.Error())
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "log_index_time_format_valid"),
+			expected: withDefaultConfig(func(config *Config) {
+				config.Endpoint = sampleEndpoint
+				config.LogsIndex = "otel-logs-%{service.name}"
+				config.LogsIndexFallback = "default-service"
+				config.LogsIndexTimeFormat = "yyyy.MM.dd"
+			}),
+			configValidateAssert: assert.NoError,
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "log_index_time_format_empty"),
+			expected: withDefaultConfig(func(config *Config) {
+				config.Endpoint = sampleEndpoint
+				config.LogsIndex = "otel-logs-%{service.name}"
+				config.LogsIndexFallback = "default-service"
+				config.LogsIndexTimeFormat = ""
+			}),
+			configValidateAssert: assert.NoError,
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "log_index_time_format_invalid"),
+			expected: withDefaultConfig(func(config *Config) {
+				config.Endpoint = sampleEndpoint
+				config.LogsIndex = "otel-logs-%{service.name}"
+				config.LogsIndexFallback = "default-service"
+				config.LogsIndexTimeFormat = "invalid_format!"
+			}),
+			configValidateAssert: func(t assert.TestingT, err error, _ ...any) bool {
+				return assert.ErrorContains(t, err, errLogsIndexTimeFormatInvalid.Error())
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "log_index_time_format_whitespace"),
+			expected: withDefaultConfig(func(config *Config) {
+				config.Endpoint = sampleEndpoint
+				config.LogsIndex = "otel-logs-%{service.name}"
+				config.LogsIndexFallback = "default-service"
+				config.LogsIndexTimeFormat = "   "
+			}),
+			configValidateAssert: func(t assert.TestingT, err error, _ ...any) bool {
+				return assert.ErrorContains(t, err, errLogsIndexTimeFormatInvalid.Error())
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "log_index_time_format_special_chars"),
+			expected: withDefaultConfig(func(config *Config) {
+				config.Endpoint = sampleEndpoint
+				config.LogsIndex = "otel-logs-%{service.name}"
+				config.LogsIndexFallback = "default-service"
+				config.LogsIndexTimeFormat = "yyyy/MM/dd@!#"
+			}),
+			configValidateAssert: func(t assert.TestingT, err error, _ ...any) bool {
+				return assert.ErrorContains(t, err, errLogsIndexTimeFormatInvalid.Error())
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "traces_index_valid"),
+			expected: withDefaultConfig(func(config *Config) {
+				config.Endpoint = sampleEndpoint
+				config.TracesIndex = "otel-traces-%{service.name}"
+				config.TracesIndexFallback = "default-service"
+				config.TracesIndexTimeFormat = "yyyy.MM.dd"
+			}),
+			configValidateAssert: assert.NoError,
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "traces_index_invalid_placeholder"),
+			expected: withDefaultConfig(func(config *Config) {
+				config.Endpoint = sampleEndpoint
+				config.TracesIndex = "otel-traces-%{service.name}-%{invalid.placeholder}"
+				config.TracesIndexFallback = "default-service"
+			}),
+			configValidateAssert: func(t assert.TestingT, err error, _ ...any) bool {
+				return assert.ErrorContains(t, err, errTracesIndexInvalidPlaceholder.Error())
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "traces_index_time_format_valid"),
+			expected: withDefaultConfig(func(config *Config) {
+				config.Endpoint = sampleEndpoint
+				config.TracesIndex = "otel-traces-%{service.name}"
+				config.TracesIndexFallback = "default-service"
+				config.TracesIndexTimeFormat = "yyyy.MM.dd"
+			}),
+			configValidateAssert: assert.NoError,
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "traces_index_time_format_empty"),
+			expected: withDefaultConfig(func(config *Config) {
+				config.Endpoint = sampleEndpoint
+				config.TracesIndex = "otel-traces-%{service.name}"
+				config.TracesIndexFallback = "default-service"
+				config.TracesIndexTimeFormat = ""
+			}),
+			configValidateAssert: assert.NoError,
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "traces_index_time_format_invalid"),
+			expected: withDefaultConfig(func(config *Config) {
+				config.Endpoint = sampleEndpoint
+				config.TracesIndex = "otel-traces-%{service.name}"
+				config.TracesIndexFallback = "default-service"
+				config.TracesIndexTimeFormat = "invalid_format!"
+			}),
+			configValidateAssert: func(t assert.TestingT, err error, _ ...any) bool {
+				return assert.ErrorContains(t, err, errTracesIndexTimeFormatInvalid.Error())
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -124,7 +256,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			vv := component.ValidateConfig(cfg)
+			vv := xconfmap.Validate(cfg)
 			tt.configValidateAssert(t, vv)
 			assert.Equal(t, tt.expected, cfg)
 		})

@@ -2,11 +2,6 @@ type: resourcedetectionprocessor/consul
 
 parent: resourcedetection
 
-status:
-  class: pkg
-  codeowners:
-    active:
-
 resource_attributes:
   cloud.region:
     description: The cloud.region

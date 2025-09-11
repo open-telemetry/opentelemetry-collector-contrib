@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor/internal/metadata"
 )
@@ -27,7 +28,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				Transforms: []transform{
 					{
-						MetricIncludeFilter: FilterConfig{
+						MetricIncludeFilter: filterConfig{
 							Include:   "name",
 							MatchType: "",
 						},
@@ -43,13 +44,13 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				Transforms: []transform{
 					{
-						MetricIncludeFilter: FilterConfig{
+						MetricIncludeFilter: filterConfig{
 							Include:   "name1",
 							MatchType: "strict",
 						},
 						Action:  "insert",
 						NewName: "new_name",
-						Operations: []Operation{
+						Operations: []operation{
 							{
 								Action:   "add_label",
 								NewLabel: "my_label",
@@ -58,7 +59,7 @@ func TestLoadConfig(t *testing.T) {
 						},
 					},
 					{
-						MetricIncludeFilter: FilterConfig{
+						MetricIncludeFilter: filterConfig{
 							Include:   "new_name",
 							MatchType: "strict",
 							MatchLabels: map[string]string{
@@ -69,7 +70,7 @@ func TestLoadConfig(t *testing.T) {
 						NewName: "new_name_copy_1",
 					},
 					{
-						MetricIncludeFilter: FilterConfig{
+						MetricIncludeFilter: filterConfig{
 							Include:   "new_name",
 							MatchType: "regexp",
 							MatchLabels: map[string]string{
@@ -80,17 +81,17 @@ func TestLoadConfig(t *testing.T) {
 						NewName: "new_name_copy_2",
 					},
 					{
-						MetricIncludeFilter: FilterConfig{
+						MetricIncludeFilter: filterConfig{
 							Include:   "name2",
 							MatchType: "",
 						},
 						Action: "update",
-						Operations: []Operation{
+						Operations: []operation{
 							{
 								Action:   "update_label",
 								Label:    "label",
 								NewLabel: "new_label_key",
-								ValueActions: []ValueAction{
+								ValueActions: []valueAction{
 									{Value: "label1", NewValue: "new_label1"},
 								},
 							},
@@ -109,12 +110,12 @@ func TestLoadConfig(t *testing.T) {
 						},
 					},
 					{
-						MetricIncludeFilter: FilterConfig{
+						MetricIncludeFilter: filterConfig{
 							Include:   "name3",
 							MatchType: "strict",
 						},
 						Action: "update",
-						Operations: []Operation{
+						Operations: []operation{
 							{
 								Action:     "delete_label_value",
 								Label:      "my_label",
@@ -123,7 +124,7 @@ func TestLoadConfig(t *testing.T) {
 						},
 					},
 					{
-						MetricIncludeFilter: FilterConfig{
+						MetricIncludeFilter: filterConfig{
 							Include:   "^regexp (?P<my_label>.*)$",
 							MatchType: "regexp",
 						},
@@ -132,7 +133,7 @@ func TestLoadConfig(t *testing.T) {
 						SubmatchCase: "lower",
 					},
 					{
-						MetricIncludeFilter: FilterConfig{
+						MetricIncludeFilter: filterConfig{
 							Include:   "name2",
 							MatchType: "strict",
 						},
@@ -156,7 +157,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.NoError(t, xconfmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

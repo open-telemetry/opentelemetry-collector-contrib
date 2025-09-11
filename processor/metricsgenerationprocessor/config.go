@@ -30,9 +30,11 @@ const (
 
 // Config defines the configuration for the processor.
 type Config struct {
-
 	// Set of rules for generating new metrics
 	Rules []Rule `mapstructure:"rules"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type Rule struct {
@@ -62,7 +64,7 @@ type GenerationType string
 
 const (
 
-	// Generates a new metric applying an arithmatic operation with two operands
+	// Generates a new metric applying an arithmetic operation with two operands
 	calculate GenerationType = "calculate"
 
 	// Generates a new metric scaling the value of s given metric with a provided constant
@@ -161,6 +163,13 @@ func (config *Config) Validate() error {
 
 		if rule.Operation != "" && !rule.Operation.isValid() {
 			return fmt.Errorf("%q must be in %q", operationFieldName, operationTypeKeys())
+		}
+
+		switch rule.Name {
+		case rule.Metric1:
+			return fmt.Errorf("value of field %q may not match value of field %q", nameFieldName, metric1FieldName)
+		case rule.Metric2:
+			return fmt.Errorf("value of field %q may not match value of field %q", nameFieldName, metric2FieldName)
 		}
 	}
 	return nil

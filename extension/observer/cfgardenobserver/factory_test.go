@@ -4,7 +4,6 @@
 package cfgardenobserver
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -19,8 +18,8 @@ func TestValidConfig(t *testing.T) {
 
 func TestCreateCFGardenObserver(t *testing.T) {
 	cfGardenObserver, err := createExtension(
-		context.Background(),
-		extensiontest.NewNopSettings(),
+		t.Context(),
+		extensiontest.NewNopSettings(extensiontest.NopType),
 		&Config{},
 	)
 	require.NoError(t, err)

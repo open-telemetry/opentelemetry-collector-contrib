@@ -13,8 +13,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 )
 
-var _ encoding.TracesUnmarshalerExtension = &jaegerExtension{}
-var _ ptrace.Unmarshaler = &jaegerExtension{}
+var (
+	_ encoding.TracesUnmarshalerExtension = &jaegerExtension{}
+	_ ptrace.Unmarshaler                  = &jaegerExtension{}
+)
 
 type jaegerExtension struct {
 	config      *Config
@@ -37,6 +39,6 @@ func (e *jaegerExtension) Start(_ context.Context, _ component.Host) error {
 	return nil
 }
 
-func (e *jaegerExtension) Shutdown(_ context.Context) error {
+func (*jaegerExtension) Shutdown(context.Context) error {
 	return nil
 }

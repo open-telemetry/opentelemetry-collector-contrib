@@ -5,8 +5,8 @@
 // JSON documents.
 //
 // The JSON parsing in OpenSearch does not support parsing JSON documents
-// with duplicate fields. The fields in the docuemt can be sort and duplicate entries
-// can be removed before serializing. Deduplication ensures that ambigious
+// with duplicate fields. The fields in the document can be sort and duplicate entries
+// can be removed before serializing. Deduplication ensures that ambiguous
 // events can still be indexed.
 //
 // With attributes map encoded as a list of key value
@@ -29,7 +29,7 @@
 // Ingest Node is used. But either way, we try to present only well formed
 // document to OpenSearch.
 
-// nolint:errcheck
+//nolint:errcheck
 package objmodel // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter/internal/objmodel"
 
 import (
@@ -85,8 +85,10 @@ const (
 
 const tsLayout = "2006-01-02T15:04:05.000000000Z"
 
-var nilValue = Value{kind: KindNil}
-var ignoreValue = Value{kind: KindIgnore}
+var (
+	nilValue    = Value{kind: KindNil}
+	ignoreValue = Value{kind: KindIgnore}
+)
 
 // DocumentFromAttributes creates a document from a OpenTelemetry attribute
 // map. All nested maps will be flattened, with keys being joined using a `.` symbol.
@@ -121,7 +123,7 @@ func (doc *Document) Add(key string, v Value) {
 }
 
 // AddString adds a string to the document.
-func (doc *Document) AddString(key string, v string) {
+func (doc *Document) AddString(key, v string) {
 	if v != "" {
 		doc.Add(key, StringValue(v))
 	}
@@ -289,7 +291,7 @@ func (doc *Document) iterJSONDedot(w *json.Visitor) error {
 
 			// remove levels and append write list of outstanding '}' into the writer
 			if L > 0 {
-				for delta := objPrefix[L:]; len(delta) > 0; {
+				for delta := objPrefix[L:]; delta != ""; {
 					idx := strings.IndexByte(delta, '.')
 					if idx < 0 {
 						break
@@ -491,14 +493,13 @@ func arrFromAttributes(aa pcommon.Slice) []Value {
 }
 
 func appendAttributeFields(fields []field, path string, am pcommon.Map) []field {
-	am.Range(func(k string, val pcommon.Value) bool {
+	for k, val := range am.All() {
 		fields = appendAttributeValue(fields, path, k, val)
-		return true
-	})
+	}
 	return fields
 }
 
-func appendAttributeValue(fields []field, path string, key string, attr pcommon.Value) []field {
+func appendAttributeValue(fields []field, path, key string, attr pcommon.Value) []field {
 	if attr.Type() == pcommon.ValueTypeEmpty {
 		return fields
 	}

@@ -9,6 +9,8 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
+
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -42,11 +44,13 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					MysqlJoins:                   MetricConfig{Enabled: true},
 					MysqlLocks:                   MetricConfig{Enabled: true},
 					MysqlLogOperations:           MetricConfig{Enabled: true},
+					MysqlMaxUsedConnections:      MetricConfig{Enabled: true},
 					MysqlMysqlxConnections:       MetricConfig{Enabled: true},
 					MysqlMysqlxWorkerThreads:     MetricConfig{Enabled: true},
 					MysqlOpenedResources:         MetricConfig{Enabled: true},
 					MysqlOperations:              MetricConfig{Enabled: true},
 					MysqlPageOperations:          MetricConfig{Enabled: true},
+					MysqlPageSize:                MetricConfig{Enabled: true},
 					MysqlPreparedStatements:      MetricConfig{Enabled: true},
 					MysqlQueryClientCount:        MetricConfig{Enabled: true},
 					MysqlQueryCount:              MetricConfig{Enabled: true},
@@ -98,11 +102,13 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					MysqlJoins:                   MetricConfig{Enabled: false},
 					MysqlLocks:                   MetricConfig{Enabled: false},
 					MysqlLogOperations:           MetricConfig{Enabled: false},
+					MysqlMaxUsedConnections:      MetricConfig{Enabled: false},
 					MysqlMysqlxConnections:       MetricConfig{Enabled: false},
 					MysqlMysqlxWorkerThreads:     MetricConfig{Enabled: false},
 					MysqlOpenedResources:         MetricConfig{Enabled: false},
 					MysqlOperations:              MetricConfig{Enabled: false},
 					MysqlPageOperations:          MetricConfig{Enabled: false},
+					MysqlPageSize:                MetricConfig{Enabled: false},
 					MysqlPreparedStatements:      MetricConfig{Enabled: false},
 					MysqlQueryClientCount:        MetricConfig{Enabled: false},
 					MysqlQueryCount:              MetricConfig{Enabled: false},
@@ -137,9 +143,8 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			if diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}, ResourceAttributeConfig{})); diff != "" {
-				t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
-			}
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}, ResourceAttributeConfig{}))
+			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
 }
@@ -150,7 +155,17 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
 	cfg := DefaultMetricsBuilderConfig()
-	require.NoError(t, sub.Unmarshal(&cfg))
+	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
+	return cfg
+}
+
+func loadLogsBuilderConfig(t *testing.T, name string) LogsBuilderConfig {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+	sub, err := cm.Sub(name)
+	require.NoError(t, err)
+	cfg := DefaultLogsBuilderConfig()
+	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
 	return cfg
 }
 
@@ -179,9 +194,8 @@ func TestResourceAttributesConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, tt.name)
-			if diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ResourceAttributeConfig{})); diff != "" {
-				t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
-			}
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ResourceAttributeConfig{}))
+			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
 }

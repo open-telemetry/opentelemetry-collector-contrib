@@ -16,14 +16,62 @@ env:
   # Make sure to exit early if cache segment download times out after 2 minutes.
   # We limit cache download as a whole to 5 minutes.
   SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
-
 # Do not cancel this workflow on main
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
 
+permissions: read-all
+
 jobs:
+  setup-environment:
+    if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Windows') || github.event_name == 'push' || github.event_name == 'merge_group') }}
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [ windows-latest, windows-11-arm ]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
+        id: go-setup
+        with:
+          go-version: oldstable
+          cache-dependency-path: "**/*.sum"
+      - name: Install dependencies
+        if: steps.go-setup.outputs.cache-hit != 'true'
+        run: make -j2 gomoddownload
+      - name: Install Tools
+        if: steps.go-setup.outputs.cache-hit != 'true'
+        run: make install-tools
+
+  windows-smoke-build:
+    needs: [setup-environment]
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [ windows-latest, windows-11-arm ]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
+        id: go-setup
+        with:
+          go-version: oldstable
+          cache-dependency-path: "**/*.sum"
+      - name: Install dependencies
+        if: steps.go-setup.outputs.cache-hit != 'true'
+        run: make -j2 gomoddownload
+      - name: Install Tools
+        if: steps.go-setup.outputs.cache-hit != 'true'
+        run: make install-tools
+      - name: Generate otelcontribcol files
+        run: make genotelcontribcol
+      - name: Build Collector
+        run: make otelcontribcol
+
   windows-unittest-matrix:
+    needs: [setup-environment]
     strategy:
       fail-fast: false
       matrix:
@@ -43,9 +91,9 @@ jobs:
           - internal
           - pkg
           - cmd-0
-          - cmd-1
           - other
-    runs-on: windows-latest
+        os: [windows-2022, windows-2025]
+    runs-on: ${{ matrix.os }}
     if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Windows') || github.event_name == 'push' || github.event_name == 'merge_group') }}
     env:
       # Limit memory usage via GC environment variables to avoid OOM on GH runners, especially for `cmd/otelcontribcol`,
@@ -53,22 +101,12 @@ jobs:
       GOGC: 50
       GOMEMLIMIT: 2GiB
     steps:
-      - uses: actions/checkout@v4
-      - name: install IIS
-        run: Install-WindowsFeature -name Web-Server -IncludeManagementTools
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
+        id: go-setup
         with:
-          go-version: "1.22.8"
-          cache: false
-      - name: Cache Go
-        id: go-mod-cache
-        timeout-minutes: 25
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~\go\pkg\mod
-            ~\AppData\Local\go-build
-          key: go-build-cache-${{ runner.os }}-${{ matrix.group }}-go-${{ hashFiles('**/go.sum') }}
+          go-version: oldstable
+          cache-dependency-path: "**/*.sum"
       - name: Ensure required ports in the dynamic range are available
         run: |
           & ${{ github.workspace }}\.github\workflows\scripts\win-required-ports.ps1
@@ -77,8 +115,38 @@ jobs:
         # concurrent component tests clashing when building such targets. This applies
         # specifically to Windows, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/34691
         run: make "$(${PWD} -replace '\\', '/')/.tools/gotestsum"
-      - name: Run Unit tests
+      
+      # Unit tests without JUnit output are much faster, so it's fine to run on every PR.
+      # The only time we don't run them is when we already ran them with JUnit output.
+      - name: Run Unit Tests
+        id: tests
+        if: github.ref != 'refs/heads/main'
         run: make -j2 gotest GROUP=${{ matrix.group }}
+
+      # JUnit tests are super long, so we only run them on pushes to the main branch.
+      # This is used for automation that automatically creates issues for flaky tests that are
+      # merged to main, so we don't run them on every PR.
+      - name: Run Unit Tests With JUnit and Coverage
+        id: tests-with-junit
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        continue-on-error: true # Allow uploading artifacts even if the test fails
+        run: make gotest-with-junit-and-cover GROUP=${{ matrix.group }}
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        with:
+          name: test-results-windows-${{ matrix.os }}-${{ matrix.group }}
+          path: internal/tools/testresults/
+          retention-days: 4
+      - name: Fail workflow if tests fails
+        if: always()
+        shell: bash
+        run: |
+          if [[ "${{ steps.tests-with-junit.outcome }}" == "failure" || "${{ steps.tests.outcome }}" == "failure" ]]; then
+            echo "Tests failed. Failing workflow."
+            exit 1
+          else
+            echo "Tests passed or were skipped. Continuing."
+          fi
   windows-unittest:
     if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Windows') || github.event_name == 'push' || github.event_name == 'merge_group') }}
     runs-on: windows-latest
@@ -96,3 +164,36 @@ jobs:
             echo "One or more matrix jobs failed."
             false
           fi
+  flakytests-generate-issues:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    strategy:
+      matrix:
+        os: [windows-2022, windows-2025]
+    runs-on: ubuntu-24.04
+    needs: [windows-unittest-matrix]
+    permissions:
+      issues: write
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
+        id: go-setup
+        with:
+          go-version: oldstable
+          cache-dependency-path: "**/*.sum"
+      - name: Install dependencies
+        if: steps.go-setup.outputs.cache-hit != 'true'
+        run: make -j2 gomoddownload
+      - name: Install Tools
+        if: steps.go-setup.outputs.cache-hit != 'true'
+        run: make install-tools
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        with:
+          merge-multiple: true
+          pattern: test-results-windows-${{ matrix.os }}-*
+          path: ./internal/tools/testresults/
+      - name: Generate Issues
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          make install-tools
+          ./.tools/issuegenerator -path ./internal/tools/testresults/

@@ -4,7 +4,7 @@
 package k8snode // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/k8snode"
 
 import (
-	"fmt"
+	"errors"
 	"os"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -43,7 +43,7 @@ func (c *Config) UpdateDefaults() error {
 		c.NodeFromEnvVar = "K8S_NODE_NAME"
 	}
 	if value, envExists := os.LookupEnv(c.NodeFromEnvVar); !envExists || value == "" {
-		return fmt.Errorf("node name can't be found. Check the readme on how to set the required env variable")
+		return errors.New("node name can't be found. Check the readme on how to set the required env variable")
 	}
 	return nil
 }

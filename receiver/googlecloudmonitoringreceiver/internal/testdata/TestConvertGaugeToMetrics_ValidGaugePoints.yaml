@@ -1,0 +1,10 @@
+resourceMetrics:
+  - resource: {}
+    scopeMetrics:
+      - metrics:
+          - gauge:
+              dataPoints:
+                - asDouble: 42
+                  startTimeUnixNano: "10000000000"
+                  timeUnixNano: "20000000000"
+        scope: {}

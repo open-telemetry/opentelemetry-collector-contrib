@@ -32,6 +32,7 @@ type Config struct {
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 	TimeoutSettings           exporterhelper.TimeoutConfig `mapstructure:",squash"`
 	MappingsSettings          `mapstructure:"mapping"`
+	QueueConfig               exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
 
 	// The Observability indices would follow the recommended for immutable data stream ingestion pattern using
 	// the data_stream concepts. See https://opensearch.org/docs/latest/dashboards/im-dashboards/datastream/
@@ -42,7 +43,16 @@ type Config struct {
 	// LogsIndex configures the index, index alias, or data stream name logs should be indexed in.
 	// https://opensearch.org/docs/latest/im-plugin/index/
 	// https://opensearch.org/docs/latest/dashboards/im-dashboards/datastream/
-	LogsIndex string `mapstructure:"logs_index"`
+	LogsIndex           string `mapstructure:"logs_index"`
+	LogsIndexFallback   string `mapstructure:"logs_index_fallback"`
+	LogsIndexTimeFormat string `mapstructure:"logs_index_time_format"`
+
+	// TracesIndex configures the index, index alias, or data stream name traces should be indexed in.
+	// https://opensearch.org/docs/latest/im-plugin/index/
+	// https://opensearch.org/docs/latest/dashboards/im-dashboards/datastream/
+	TracesIndex           string `mapstructure:"traces_index"`
+	TracesIndexFallback   string `mapstructure:"traces_index_fallback"`
+	TracesIndexTimeFormat string `mapstructure:"traces_index_time_format"`
 
 	// BulkAction configures the action for ingesting data. Only `create` and `index` are allowed here.
 	// If not specified, the default value `create` will be used.
@@ -50,11 +60,15 @@ type Config struct {
 }
 
 var (
-	errConfigNoEndpoint   = errors.New("endpoint must be specified")
-	errDatasetNoValue     = errors.New("dataset must be specified")
-	errNamespaceNoValue   = errors.New("namespace must be specified")
-	errBulkActionInvalid  = errors.New("bulk_action can either be `create` or `index`")
-	errMappingModeInvalid = errors.New("mapping.mode is invalid")
+	errConfigNoEndpoint              = errors.New("endpoint must be specified")
+	errDatasetNoValue                = errors.New("dataset must be specified")
+	errNamespaceNoValue              = errors.New("namespace must be specified")
+	errBulkActionInvalid             = errors.New("bulk_action can either be `create` or `index`")
+	errMappingModeInvalid            = errors.New("mapping.mode is invalid")
+	errLogsIndexInvalidPlaceholder   = errors.New("logs_index can only have one attribute or context key placeholder")
+	errLogsIndexTimeFormatInvalid    = errors.New("logs_index_time_format contains unsupported or invalid tokens")
+	errTracesIndexInvalidPlaceholder = errors.New("traces_index can only have one attribute or context key placeholder")
+	errTracesIndexTimeFormatInvalid  = errors.New("traces_index_time_format contains unsupported or invalid tokens")
 )
 
 type MappingsSettings struct {
@@ -82,7 +96,7 @@ type MappingsSettings struct {
 	// Field to store timestamp in.  If not set uses the default @timestamp
 	TimestampField string `mapstructure:"timestamp_field"`
 
-	// Whether to store timestamp in Epoch miliseconds
+	// Whether to store timestamp in Epoch milliseconds
 	UnixTimestamp bool `mapstructure:"unix_timestamp"`
 
 	// Try to find and remove duplicate fields
@@ -129,24 +143,71 @@ var mappingModes = func() map[string]MappingMode {
 // Validate validates the opensearch server configuration.
 func (cfg *Config) Validate() error {
 	var multiErr []error
-	if len(cfg.Endpoint) == 0 {
+	if cfg.Endpoint == "" {
 		multiErr = append(multiErr, errConfigNoEndpoint)
 	}
 
-	if len(cfg.Dataset) == 0 {
+	if cfg.Dataset == "" {
 		multiErr = append(multiErr, errDatasetNoValue)
 	}
-	if len(cfg.Namespace) == 0 {
+	if cfg.Namespace == "" {
 		multiErr = append(multiErr, errNamespaceNoValue)
+	}
+
+	// Validate logs index configuration only contains one placeholder
+	if cfg.LogsIndex != "" {
+		placeholderCount := strings.Count(cfg.LogsIndex, "%{")
+		if placeholderCount > 1 {
+			multiErr = append(multiErr, errLogsIndexInvalidPlaceholder)
+		}
+	}
+
+	// Validate LogsIndexTimeFormat if set
+	if cfg.LogsIndexTimeFormat != "" {
+		if err := validateTimeFormat(cfg.LogsIndexTimeFormat); err != nil {
+			multiErr = append(multiErr, errLogsIndexTimeFormatInvalid)
+		}
+	}
+
+	// Validate traces index configuration only contains one placeholder
+	if cfg.TracesIndex != "" {
+		placeholderCount := strings.Count(cfg.TracesIndex, "%{")
+		if placeholderCount > 1 {
+			multiErr = append(multiErr, errTracesIndexInvalidPlaceholder)
+		}
+	}
+
+	// Validate TracesIndexTimeFormat if set
+	if cfg.TracesIndexTimeFormat != "" {
+		if err := validateTimeFormat(cfg.TracesIndexTimeFormat); err != nil {
+			multiErr = append(multiErr, errTracesIndexTimeFormatInvalid)
+		}
 	}
 
 	if cfg.BulkAction != "create" && cfg.BulkAction != "index" {
 		return errBulkActionInvalid
 	}
 
-	if _, ok := mappingModes[cfg.MappingsSettings.Mode]; !ok {
+	if _, ok := mappingModes[cfg.Mode]; !ok {
 		multiErr = append(multiErr, errMappingModeInvalid)
 	}
 
 	return errors.Join(multiErr...)
+}
+
+// validateTimeFormat validates a time format string contains only valid tokens and separators
+func validateTimeFormat(format string) error {
+	validTokens := []string{"yyyy", "yy", "MM", "dd", "HH", "mm", "ss"}
+	remaining := format
+	for _, token := range validTokens {
+		remaining = strings.ReplaceAll(remaining, token, "")
+	}
+	// After removing all valid tokens, only allowed separators should remain
+	allowed := "-._+"
+	for _, r := range remaining {
+		if !strings.ContainsRune(allowed, r) {
+			return errors.New("invalid time format")
+		}
+	}
+	return nil
 }

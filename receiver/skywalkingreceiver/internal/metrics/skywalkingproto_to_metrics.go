@@ -8,7 +8,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
 	common "skywalking.apache.org/repo/goapi/collect/common/v3"
 	agent "skywalking.apache.org/repo/goapi/collect/language/agent/v3"
 )
@@ -37,11 +37,11 @@ func SwMetricsToMetrics(collection *agent.JVMMetricCollection) pmetric.Metrics {
 	return md
 }
 
-func jvmMetricToResource(serviceName string, serviceInstance string, resource pcommon.Resource) {
+func jvmMetricToResource(serviceName, serviceInstance string, resource pcommon.Resource) {
 	attrs := resource.Attributes()
 	attrs.EnsureCapacity(2)
-	attrs.PutStr(semconv.AttributeServiceName, serviceName)
-	attrs.PutStr(semconv.AttributeServiceInstanceID, serviceInstance)
+	attrs.PutStr(string(semconv.ServiceNameKey), serviceName)
+	attrs.PutStr(string(semconv.ServiceInstanceIDKey), serviceInstance)
 }
 
 func jvmMetricToResourceMetrics(jvmMetric *agent.JVMMetric, sm pmetric.ScopeMetrics) {
@@ -96,7 +96,6 @@ func memoryPoolMetricToMetrics(timestamp int64, memoryPools []*agent.MemoryPool,
 		fillNumberDataPointIntValue(timestamp, memoryPool.Used, dpsMp[MemoryPoolUsedName].AppendEmpty(), attrs)
 		fillNumberDataPointIntValue(timestamp, memoryPool.Committed, dpsMp[MemoryPoolCommittedName].AppendEmpty(), attrs)
 	}
-
 }
 
 func buildMemoryPoolAttrs(pool *agent.MemoryPool) pcommon.Map {
@@ -110,7 +109,6 @@ func buildMemoryPoolAttrs(pool *agent.MemoryPool) pcommon.Map {
 	case agent.PoolType_NEWGEN_USAGE, agent.PoolType_OLDGEN_USAGE, agent.PoolType_SURVIVOR_USAGE:
 		memoryType = "heap"
 	default:
-
 	}
 	attrs.PutStr("jvm.memory.type", memoryType)
 	return attrs
@@ -149,7 +147,7 @@ func cpuMetricToMetrics(timestamp int64, cpu *common.CPU, dest pmetric.ScopeMetr
 	fillNumberDataPointDoubleValue(timestamp, cpu.UsagePercent, metricDps.AppendEmpty(), pcommon.NewMap())
 }
 
-func fillNumberDataPointIntValue(timestamp int64, value int64, point pmetric.NumberDataPoint, attrs pcommon.Map) {
+func fillNumberDataPointIntValue(timestamp, value int64, point pmetric.NumberDataPoint, attrs pcommon.Map) {
 	attrs.CopyTo(point.Attributes())
 	point.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(timestamp)))
 	point.SetIntValue(value)

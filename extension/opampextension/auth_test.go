@@ -54,7 +54,7 @@ func TestMakeHeadersFunc(t *testing.T) {
 			},
 		}, host)
 
-		require.EqualError(t, err, `auth extension "bearerauth" is not an auth.Client`)
+		require.EqualError(t, err, `auth extension "bearerauth" is not an extensionauth.HTTPClient`)
 		require.Nil(t, headersFunc)
 	})
 
@@ -113,6 +113,7 @@ func (m mockAuthClient) RoundTripper(base http.RoundTripper) (http.RoundTripper,
 		base:   base,
 	}, nil
 }
+
 func (mockAuthClient) PerRPCCredentials() (credentials.PerRPCCredentials, error) {
 	return nil, nil
 }

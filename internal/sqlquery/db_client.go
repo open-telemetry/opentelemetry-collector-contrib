@@ -7,14 +7,7 @@ import (
 	"context"
 	"errors"
 
-	// register Db drivers
-	_ "github.com/SAP/go-hdb/driver"
-	_ "github.com/go-sql-driver/mysql"
-	_ "github.com/lib/pq"
-	_ "github.com/microsoft/go-mssqldb"
-	_ "github.com/microsoft/go-mssqldb/integratedauth/krb5"
-	_ "github.com/sijms/go-ora/v2"
-	_ "github.com/snowflakedb/gosnowflake"
+	// Do not register any Db drivers here: users should register the ones that are applicable to them.
 	"go.uber.org/zap"
 )
 
@@ -70,8 +63,9 @@ func (cl DbSQLClient) QueryRows(ctx context.Context, args ...any) ([]StringMap, 
 func (cl DbSQLClient) prepareQueryFields(sql string, args []any) []zap.Field {
 	var logFields []zap.Field
 	if cl.Telemetry.Logs.Query {
-		logFields = append(logFields, zap.String("query", sql))
-		logFields = append(logFields, zap.Any("parameters", args))
+		logFields = append(logFields,
+			zap.String("query", sql),
+			zap.Any("parameters", args))
 	}
 	return logFields
 }

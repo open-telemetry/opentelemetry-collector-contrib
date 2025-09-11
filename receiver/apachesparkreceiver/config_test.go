@@ -8,7 +8,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 )
 
 func TestValidate(t *testing.T) {
@@ -40,7 +40,7 @@ func TestValidate(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			actualErr := tc.cfg.Validate()
 			if tc.expectedErr != nil {
-				require.EqualError(t, actualErr, tc.expectedErr.Error())
+				require.ErrorContains(t, actualErr, tc.expectedErr.Error())
 			} else {
 				require.NoError(t, actualErr)
 			}

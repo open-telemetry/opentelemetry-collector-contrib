@@ -13,19 +13,21 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/endpointswatcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
 	dcommon "github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/docker"
 )
 
 const runningStatus = "RUNNING"
 
-var _ extension.Extension = (*ecsTaskObserver)(nil)
-var _ observer.EndpointsLister = (*ecsTaskObserver)(nil)
-var _ observer.Observable = (*ecsTaskObserver)(nil)
+var (
+	_ extension.Extension = (*ecsTaskObserver)(nil)
+	_ observer.Observable = (*ecsTaskObserver)(nil)
+)
 
 type ecsTaskObserver struct {
 	extension.Extension
-	*observer.EndpointsWatcher
+	*endpointswatcher.EndpointsWatcher
 	config           *Config
 	metadataProvider ecsutil.MetadataProvider
 	telemetry        component.TelemetrySettings
@@ -97,7 +99,6 @@ func (e *ecsTaskObserver) portFromLabels(labels map[string]string) uint16 {
 	for _, portLabel := range e.config.PortLabels {
 		if p, ok := labels[portLabel]; ok {
 			port, err := strconv.ParseUint(p, 10, 16)
-
 			if err != nil {
 				e.telemetry.Logger.Warn("failed parsing port label", zap.String("label", portLabel), zap.Error(err))
 				continue

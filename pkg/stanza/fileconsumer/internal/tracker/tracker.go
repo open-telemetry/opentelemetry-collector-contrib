@@ -5,20 +5,26 @@ package tracker // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"context"
-	"fmt"
+	"os"
 
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/checkpoint"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/archive"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fileset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 )
 
+const (
+	FileTracker    = "fileTracker"
+	NoStateTracker = "noStateTracker"
+)
+
 // Interface for tracking files that are being consumed.
 type Tracker interface {
+	Name() string
 	Add(reader *reader.Reader)
 	GetCurrentFile(fp *fingerprint.Fingerprint) *reader.Reader
 	GetOpenFile(fp *fingerprint.Fingerprint) *reader.Reader
@@ -28,9 +34,11 @@ type Tracker interface {
 	CurrentPollFiles() []*reader.Reader
 	PreviousPollFiles() []*reader.Reader
 	ClosePreviousFiles() int
-	EndPoll()
+	EndPoll(context.Context)
 	EndConsume() int
 	TotalReaders() int
+	AddUnmatched(*os.File, *fingerprint.Fingerprint)
+	LookupArchive(context.Context) ([]*os.File, []*fingerprint.Fingerprint, []*reader.Metadata)
 }
 
 // fileTracker tracks known offsets for files that are being consumed by the manager.
@@ -43,30 +51,32 @@ type fileTracker struct {
 	previousPollFiles *fileset.Fileset[*reader.Reader]
 	knownFiles        []*fileset.Fileset[*reader.Metadata]
 
-	// persister is to be used to store offsets older than 3 poll cycles.
-	// These offsets will be stored on disk
-	persister operator.Persister
+	unmatchedFiles []*os.File
+	unmatchedFps   []*fingerprint.Fingerprint
 
-	pollsToArchive int
-	archiveIndex   int
+	archive archive.Archive
 }
 
-func NewFileTracker(set component.TelemetrySettings, maxBatchFiles int, pollsToArchive int, persister operator.Persister) Tracker {
+func NewFileTracker(ctx context.Context, set component.TelemetrySettings, maxBatchFiles, pollsToArchive int, persister operator.Persister) Tracker {
 	knownFiles := make([]*fileset.Fileset[*reader.Metadata], 3)
 	for i := 0; i < len(knownFiles); i++ {
 		knownFiles[i] = fileset.New[*reader.Metadata](maxBatchFiles)
 	}
 	set.Logger = set.Logger.With(zap.String("tracker", "fileTracker"))
-	return &fileTracker{
+
+	t := &fileTracker{
 		set:               set,
 		maxBatchFiles:     maxBatchFiles,
 		currentPollFiles:  fileset.New[*reader.Reader](maxBatchFiles),
 		previousPollFiles: fileset.New[*reader.Reader](maxBatchFiles),
 		knownFiles:        knownFiles,
-		pollsToArchive:    pollsToArchive,
-		persister:         persister,
-		archiveIndex:      0,
+		archive:           archive.New(ctx, set.Logger.Named("archive"), pollsToArchive, persister),
 	}
+	return t
+}
+
+func (*fileTracker) Name() string {
+	return FileTracker
 }
 
 func (t *fileTracker) Add(reader *reader.Reader) {
@@ -89,6 +99,24 @@ func (t *fileTracker) GetClosedFile(fp *fingerprint.Fingerprint) *reader.Metadat
 		}
 	}
 	return nil
+}
+
+func (t *fileTracker) AddUnmatched(file *os.File, fp *fingerprint.Fingerprint) {
+	// exclude duplicate fingerprints
+	for _, f := range t.unmatchedFps {
+		if fp.Equal(f) {
+			t.set.Logger.Debug("Skipping duplicate file", zap.String("path", file.Name()))
+			return
+		}
+	}
+	t.unmatchedFps = append(t.unmatchedFps, fp)
+	t.unmatchedFiles = append(t.unmatchedFiles, file)
+}
+
+func (t *fileTracker) LookupArchive(ctx context.Context) ([]*os.File, []*fingerprint.Fingerprint, []*reader.Metadata) {
+	// LookupArchive performs fingerprint matching against the archive and returns matched metadata, files and fingerprints.
+	metadata := t.archive.FindFiles(ctx, t.unmatchedFps)
+	return t.unmatchedFiles, t.unmatchedFps, metadata
 }
 
 func (t *fileTracker) GetMetadata() []*reader.Metadata {
@@ -125,12 +153,12 @@ func (t *fileTracker) ClosePreviousFiles() (filesClosed int) {
 	return
 }
 
-func (t *fileTracker) EndPoll() {
+func (t *fileTracker) EndPoll(ctx context.Context) {
 	// shift the filesets at end of every poll() call
 	// t.knownFiles[0] -> t.knownFiles[1] -> t.knownFiles[2]
 
 	// Instead of throwing it away, archive it.
-	t.archive(t.knownFiles[2])
+	t.archive.WriteFiles(ctx, t.knownFiles[2])
 	copy(t.knownFiles[1:], t.knownFiles)
 	t.knownFiles[0] = fileset.New[*reader.Metadata](t.maxBatchFiles)
 }
@@ -143,34 +171,6 @@ func (t *fileTracker) TotalReaders() int {
 	return total
 }
 
-func (t *fileTracker) archive(metadata *fileset.Fileset[*reader.Metadata]) {
-	// We make use of a ring buffer, where each set of files is stored under a specific index.
-	// Instead of discarding knownFiles[2], write it to the next index and eventually roll over.
-	// Separate storage keys knownFilesArchive0, knownFilesArchive1, ..., knownFilesArchiveN, roll over back to knownFilesArchive0
-
-	// Archiving:  ┌─────────────────────on-disk archive─────────────────────────┐
-	//             |    ┌───┐     ┌───┐                     ┌──────────────────┐ |
-	// index       | ▶  │ 0 │  ▶  │ 1 │  ▶      ...       ▶ │ polls_to_archive │ |
-	//             | ▲  └───┘     └───┘                     └──────────────────┘ |
-	//             | ▲    ▲                                                ▼     |
-	//             | ▲    │ Roll over overriting older offsets, if any     ◀     |
-	//             └──────│──────────────────────────────────────────────────────┘
-	//                    │
-	//                    │
-	//                    │
-	//                   start
-	//                   index
-
-	if t.pollsToArchive <= 0 || t.persister == nil {
-		return
-	}
-	key := fmt.Sprintf("knownFiles%d", t.archiveIndex)
-	if err := checkpoint.SaveKey(context.Background(), t.persister, metadata.Get(), key); err != nil {
-		t.set.Logger.Error("error faced while saving to the archive", zap.Error(err))
-	}
-	t.archiveIndex = (t.archiveIndex + 1) % t.pollsToArchive // increment the index
-}
-
 // noStateTracker only tracks the current polled files. Once the poll is
 // complete and telemetry is consumed, the tracked files are closed. The next
 // poll will create fresh readers with no previously tracked offsets.
@@ -178,6 +178,8 @@ type noStateTracker struct {
 	set              component.TelemetrySettings
 	maxBatchFiles    int
 	currentPollFiles *fileset.Fileset[*reader.Reader]
+	unmatchedFiles   []*os.File
+	unmatchedFps     []*fingerprint.Fingerprint
 }
 
 func NewNoStateTracker(set component.TelemetrySettings, maxBatchFiles int) Tracker {
@@ -187,6 +189,10 @@ func NewNoStateTracker(set component.TelemetrySettings, maxBatchFiles int) Track
 		maxBatchFiles:    maxBatchFiles,
 		currentPollFiles: fileset.New[*reader.Reader](maxBatchFiles),
 	}
+}
+
+func (*noStateTracker) Name() string {
+	return NoStateTracker
 }
 
 func (t *noStateTracker) Add(reader *reader.Reader) {
@@ -207,21 +213,32 @@ func (t *noStateTracker) EndConsume() (filesClosed int) {
 		r.Close()
 		filesClosed++
 	}
+	t.unmatchedFiles = make([]*os.File, 0)
+	t.unmatchedFps = make([]*fingerprint.Fingerprint, 0)
 	return
 }
 
-func (t *noStateTracker) GetOpenFile(_ *fingerprint.Fingerprint) *reader.Reader { return nil }
+func (*noStateTracker) GetOpenFile(*fingerprint.Fingerprint) *reader.Reader { return nil }
 
-func (t *noStateTracker) GetClosedFile(_ *fingerprint.Fingerprint) *reader.Metadata { return nil }
+func (*noStateTracker) GetClosedFile(*fingerprint.Fingerprint) *reader.Metadata { return nil }
 
-func (t *noStateTracker) GetMetadata() []*reader.Metadata { return nil }
+func (*noStateTracker) GetMetadata() []*reader.Metadata { return nil }
 
-func (t *noStateTracker) LoadMetadata(_ []*reader.Metadata) {}
+func (*noStateTracker) LoadMetadata([]*reader.Metadata) {}
 
-func (t *noStateTracker) PreviousPollFiles() []*reader.Reader { return nil }
+func (*noStateTracker) PreviousPollFiles() []*reader.Reader { return nil }
 
-func (t *noStateTracker) ClosePreviousFiles() int { return 0 }
+func (*noStateTracker) ClosePreviousFiles() int { return 0 }
 
-func (t *noStateTracker) EndPoll() {}
+func (*noStateTracker) EndPoll(context.Context) {}
 
-func (t *noStateTracker) TotalReaders() int { return 0 }
+func (*noStateTracker) TotalReaders() int { return 0 }
+
+func (t *noStateTracker) AddUnmatched(file *os.File, fp *fingerprint.Fingerprint) {
+	t.unmatchedFiles = append(t.unmatchedFiles, file)
+	t.unmatchedFps = append(t.unmatchedFps, fp)
+}
+
+func (t *noStateTracker) LookupArchive(context.Context) ([]*os.File, []*fingerprint.Fingerprint, []*reader.Metadata) {
+	return t.unmatchedFiles, t.unmatchedFps, make([]*reader.Metadata, len(t.unmatchedFps))
+}

@@ -4,7 +4,6 @@
 package env
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -16,7 +15,7 @@ import (
 )
 
 func TestNewDetector(t *testing.T) {
-	d, err := NewDetector(processortest.NewNopSettings(), nil)
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), nil)
 	assert.NotNil(t, d)
 	assert.NoError(t, err)
 }
@@ -25,8 +24,8 @@ func TestDetectTrue(t *testing.T) {
 	t.Setenv(envVar, "key=value")
 
 	detector := &Detector{}
-	res, schemaURL, err := detector.Detect(context.Background())
-	assert.Equal(t, "", schemaURL)
+	res, schemaURL, err := detector.Detect(t.Context())
+	assert.Empty(t, schemaURL)
 	require.NoError(t, err)
 	assert.Equal(t, map[string]any{"key": "value"}, res.Attributes().AsRaw())
 }
@@ -35,9 +34,9 @@ func TestDetectFalse(t *testing.T) {
 	t.Setenv(envVar, "")
 
 	detector := &Detector{}
-	res, schemaURL, err := detector.Detect(context.Background())
+	res, schemaURL, err := detector.Detect(t.Context())
 	require.NoError(t, err)
-	assert.Equal(t, "", schemaURL)
+	assert.Empty(t, schemaURL)
 	assert.True(t, internal.IsEmptyResource(res))
 }
 
@@ -46,9 +45,9 @@ func TestDetectDeprecatedEnv(t *testing.T) {
 	t.Setenv(deprecatedEnvVar, "key=value")
 
 	detector := &Detector{}
-	res, schemaURL, err := detector.Detect(context.Background())
+	res, schemaURL, err := detector.Detect(t.Context())
 	require.NoError(t, err)
-	assert.Equal(t, "", schemaURL)
+	assert.Empty(t, schemaURL)
 	assert.Equal(t, map[string]any{"key": "value"}, res.Attributes().AsRaw())
 }
 
@@ -56,9 +55,9 @@ func TestDetectError(t *testing.T) {
 	t.Setenv(envVar, "key=value,key")
 
 	detector := &Detector{}
-	res, schemaURL, err := detector.Detect(context.Background())
+	res, schemaURL, err := detector.Detect(t.Context())
 	assert.Error(t, err)
-	assert.Equal(t, "", schemaURL)
+	assert.Empty(t, schemaURL)
 	assert.True(t, internal.IsEmptyResource(res))
 }
 

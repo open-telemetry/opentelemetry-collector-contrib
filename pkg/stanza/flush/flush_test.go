@@ -41,8 +41,6 @@ func TestNewlineSplitFunc(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		t.Run(tc.name+"/WithPeriod", splittest.New(WithPeriod(tc.baseFunc, tc.flushPeriod), tc.input, tc.steps...))
-
 		previousState := &State{LastDataChange: time.Now()}
 		t.Run(tc.name+"/Func", splittest.New(previousState.Func(tc.baseFunc, tc.flushPeriod), tc.input, tc.steps...))
 	}

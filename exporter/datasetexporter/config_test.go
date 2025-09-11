@@ -4,14 +4,12 @@
 package datasetexporter
 
 import (
-	"fmt"
+	"errors"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 func TestConfigUnmarshalUnknownAttributes(t *testing.T) {
@@ -40,15 +38,15 @@ func TestConfigUseDefaults(t *testing.T) {
 	assert.Equal(t, "https://example.com", config.DatasetURL)
 	assert.Equal(t, "secret", string(config.APIKey))
 	assert.Equal(t, bufferMaxLifetime, config.MaxLifetime)
-	assert.Equal(t, logsExportResourceInfoDefault, config.LogsSettings.ExportResourceInfo)
-	assert.Equal(t, logsExportResourcePrefixDefault, config.LogsSettings.ExportResourcePrefix)
-	assert.Equal(t, logsExportScopeInfoDefault, config.LogsSettings.ExportScopeInfo)
-	assert.Equal(t, logsExportScopePrefixDefault, config.LogsSettings.ExportScopePrefix)
-	assert.Equal(t, logsDecomposeComplexMessageFieldDefault, config.LogsSettings.DecomposeComplexMessageField)
-	assert.Equal(t, exportSeparatorDefault, config.LogsSettings.exportSettings.ExportSeparator)
-	assert.Equal(t, exportDistinguishingSuffix, config.LogsSettings.exportSettings.ExportDistinguishingSuffix)
-	assert.Equal(t, exportSeparatorDefault, config.TracesSettings.exportSettings.ExportSeparator)
-	assert.Equal(t, exportDistinguishingSuffix, config.TracesSettings.exportSettings.ExportDistinguishingSuffix)
+	assert.Equal(t, logsExportResourceInfoDefault, config.ExportResourceInfo)
+	assert.Equal(t, logsExportResourcePrefixDefault, config.ExportResourcePrefix)
+	assert.Equal(t, logsExportScopeInfoDefault, config.ExportScopeInfo)
+	assert.Equal(t, logsExportScopePrefixDefault, config.ExportScopePrefix)
+	assert.Equal(t, logsDecomposeComplexMessageFieldDefault, config.DecomposeComplexMessageField)
+	assert.Equal(t, exportSeparatorDefault, config.LogsSettings.ExportSeparator)
+	assert.Equal(t, exportDistinguishingSuffix, config.LogsSettings.ExportDistinguishingSuffix)
+	assert.Equal(t, exportSeparatorDefault, config.TracesSettings.ExportSeparator)
+	assert.Equal(t, exportDistinguishingSuffix, config.TracesSettings.ExportDistinguishingSuffix)
 }
 
 func TestConfigValidate(t *testing.T) {
@@ -76,7 +74,7 @@ func TestConfigValidate(t *testing.T) {
 					MaxLifetime: bufferMaxLifetime,
 				},
 			},
-			expected: fmt.Errorf("api_key is required"),
+			expected: errors.New("api_key is required"),
 		},
 		{
 			name: "missing dataset_url",
@@ -86,7 +84,7 @@ func TestConfigValidate(t *testing.T) {
 					MaxLifetime: bufferMaxLifetime,
 				},
 			},
-			expected: fmt.Errorf("dataset_url is required"),
+			expected: errors.New("dataset_url is required"),
 		},
 	}
 
@@ -102,49 +100,6 @@ func TestConfigValidate(t *testing.T) {
 	}
 }
 
-func TestConfigString(t *testing.T) {
-	config := Config{
-		DatasetURL: "https://example.com",
-		APIKey:     "secret",
-		Debug:      true,
-		BufferSettings: BufferSettings{
-			MaxLifetime:    123,
-			PurgeOlderThan: 567,
-			GroupBy:        []string{"field1", "field2"},
-		},
-		TracesSettings: TracesSettings{
-			exportSettings: exportSettings{
-				ExportSeparator:            "TTT",
-				ExportDistinguishingSuffix: "UUU",
-			},
-		},
-		LogsSettings: LogsSettings{
-			ExportResourceInfo:             true,
-			ExportResourcePrefix:           "AAA",
-			ExportScopeInfo:                true,
-			ExportScopePrefix:              "BBB",
-			DecomposeComplexMessageField:   true,
-			DecomposedComplexMessagePrefix: "EEE",
-			exportSettings: exportSettings{
-				ExportSeparator:            "CCC",
-				ExportDistinguishingSuffix: "DDD",
-			},
-		},
-		ServerHostSettings: ServerHostSettings{
-			ServerHost:  "foo-bar",
-			UseHostName: false,
-		},
-		BackOffConfig:   configretry.NewDefaultBackOffConfig(),
-		QueueSettings:   exporterhelper.NewDefaultQueueConfig(),
-		TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
-	}
-
-	assert.Equal(t,
-		"DatasetURL: https://example.com; APIKey: [REDACTED] (6); Debug: true; BufferSettings: {MaxLifetime:123ns PurgeOlderThan:567ns GroupBy:[field1 field2] RetryInitialInterval:0s RetryMaxInterval:0s RetryMaxElapsedTime:0s RetryShutdownTimeout:0s MaxParallelOutgoing:0}; LogsSettings: {ExportResourceInfo:true ExportResourcePrefix:AAA ExportScopeInfo:true ExportScopePrefix:BBB DecomposeComplexMessageField:true DecomposedComplexMessagePrefix:EEE exportSettings:{ExportSeparator:CCC ExportDistinguishingSuffix:DDD}}; TracesSettings: {exportSettings:{ExportSeparator:TTT ExportDistinguishingSuffix:UUU}}; ServerHostSettings: {UseHostName:false ServerHost:foo-bar}; BackOffConfig: {Enabled:true InitialInterval:5s RandomizationFactor:0.5 Multiplier:1.5 MaxInterval:30s MaxElapsedTime:5m0s}; QueueSettings: {Enabled:true NumConsumers:10 QueueSize:1000 StorageID:<nil>}; TimeoutSettings: {Timeout:5s}",
-		config.String(),
-	)
-}
-
 func TestConfigUseProvidedExportResourceInfoValue(t *testing.T) {
 	f := NewFactory()
 	config := f.CreateDefaultConfig().(*Config)
@@ -157,7 +112,7 @@ func TestConfigUseProvidedExportResourceInfoValue(t *testing.T) {
 	})
 	err := config.Unmarshal(configMap)
 	assert.NoError(t, err)
-	assert.True(t, config.LogsSettings.ExportResourceInfo)
+	assert.True(t, config.ExportResourceInfo)
 }
 
 func TestConfigUseProvidedExportScopeInfoValue(t *testing.T) {
@@ -172,5 +127,5 @@ func TestConfigUseProvidedExportScopeInfoValue(t *testing.T) {
 	})
 	err := config.Unmarshal(configMap)
 	assert.NoError(t, err)
-	assert.False(t, config.LogsSettings.ExportScopeInfo)
+	assert.False(t, config.ExportScopeInfo)
 }

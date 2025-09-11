@@ -13,18 +13,20 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlprofile"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
 )
 
-// count can count spans, span event, metrics, data points, or log records
-// and emit the counts onto a metrics pipeline.
+// count can count spans, span event, metrics, data points, log records or
+// profiles and emit the counts onto a metrics pipeline.
 type count struct {
 	metricsConsumer consumer.Metrics
 	component.StartFunc
@@ -35,9 +37,10 @@ type count struct {
 	metricsMetricDefs    map[string]metricDef[ottlmetric.TransformContext]
 	dataPointsMetricDefs map[string]metricDef[ottldatapoint.TransformContext]
 	logsMetricDefs       map[string]metricDef[ottllog.TransformContext]
+	profilesMetricDefs   map[string]metricDef[ottlprofile.TransformContext]
 }
 
-func (c *count) Capabilities() consumer.Capabilities {
+func (*count) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
@@ -188,6 +191,45 @@ func (c *count) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 		resourceLog.Resource().Attributes().CopyTo(countResource.Resource().Attributes())
 
 		countResource.ScopeMetrics().EnsureCapacity(resourceLog.ScopeLogs().Len())
+		countScope := countResource.ScopeMetrics().AppendEmpty()
+		countScope.Scope().SetName(metadata.ScopeName)
+
+		counter.appendMetricsTo(countScope.Metrics())
+	}
+	if multiError != nil {
+		return multiError
+	}
+	return c.metricsConsumer.ConsumeMetrics(ctx, countMetrics)
+}
+
+func (c *count) ConsumeProfiles(ctx context.Context, ld pprofile.Profiles) error {
+	var multiError error
+	countMetrics := pmetric.NewMetrics()
+	countMetrics.ResourceMetrics().EnsureCapacity(ld.ResourceProfiles().Len())
+	for i := 0; i < ld.ResourceProfiles().Len(); i++ {
+		resourceProfile := ld.ResourceProfiles().At(i)
+		counter := newCounter[ottlprofile.TransformContext](c.profilesMetricDefs)
+
+		for j := 0; j < resourceProfile.ScopeProfiles().Len(); j++ {
+			scopeProfile := resourceProfile.ScopeProfiles().At(j)
+
+			for k := 0; k < scopeProfile.Profiles().Len(); k++ {
+				profile := scopeProfile.Profiles().At(k)
+
+				pCtx := ottlprofile.NewTransformContext(profile, ld.Dictionary(), scopeProfile.Scope(), resourceProfile.Resource(), scopeProfile, resourceProfile)
+				attributes := pprofile.FromAttributeIndices(ld.Dictionary().AttributeTable(), profile)
+				multiError = errors.Join(multiError, counter.update(ctx, attributes, pCtx))
+			}
+		}
+
+		if len(counter.counts) == 0 {
+			continue // don't add an empty resource
+		}
+
+		countResource := countMetrics.ResourceMetrics().AppendEmpty()
+		resourceProfile.Resource().Attributes().CopyTo(countResource.Resource().Attributes())
+
+		countResource.ScopeMetrics().EnsureCapacity(resourceProfile.ScopeProfiles().Len())
 		countScope := countResource.ScopeMetrics().AppendEmpty()
 		countScope.Scope().SetName(metadata.ScopeName)
 

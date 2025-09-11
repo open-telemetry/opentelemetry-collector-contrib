@@ -4,14 +4,16 @@
 package mongodbreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver"
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"reflect"
 
 	"github.com/hashicorp/go-version"
-	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver/internal/metadata"
 )
@@ -191,7 +193,7 @@ func (s *mongodbScraper) recordSessionCount(now pcommon.Timestamp, doc bson.M, e
 		return
 	}
 	if storageEngine != "wiredTiger" {
-		// mongodb is using a different storage engine and this metric can not be collected
+		// mongodb is using a different storage engine and this metric cannot be collected
 		return
 	}
 
@@ -220,6 +222,8 @@ func (s *mongodbScraper) recordLatencyTime(now pcommon.Timestamp, doc bson.M, er
 
 // Admin Stats
 func (s *mongodbScraper) recordOperations(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
+	currentCounts := make(map[string]int64)
+
 	for operationVal, operation := range metadata.MapAttributeOperation {
 		metricPath := []string{"opcounters", operationVal}
 		metricName := "mongodb.operation.count"
@@ -228,21 +232,186 @@ func (s *mongodbScraper) recordOperations(now pcommon.Timestamp, doc bson.M, err
 			errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, operationVal, err))
 			continue
 		}
+
 		s.mb.RecordMongodbOperationCountDataPoint(now, val, operation)
+
+		currentCounts[operationVal] = val
+		s.recordOperationPerSecond(now, operationVal, val)
 	}
+
+	// For telegraf metrics to get QPS for opcounters
+	// Store current counts for next iteration
+	s.prevCounts = currentCounts
+	s.prevTimestamp = now
 }
 
 func (s *mongodbScraper) recordOperationsRepl(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
+	replDoc := doc
+	var highestInsertCount int64 = -1
+
+	if len(s.secondaryClients) > 0 {
+		ctx := context.Background()
+		for _, secondaryClient := range s.secondaryClients {
+			status, err := secondaryClient.ServerStatus(ctx, "admin")
+			if err != nil {
+				s.logger.Debug("Failed to get secondary server status", zap.Error(err))
+				continue
+			}
+
+			if opcountersRepl, ok := status["opcountersRepl"].(bson.M); ok {
+				if insertCount, ok := opcountersRepl["insert"].(int64); ok {
+					if insertCount > highestInsertCount {
+						highestInsertCount = insertCount
+						replDoc = status
+					}
+				}
+			}
+		}
+	}
+
+	currentCounts := make(map[string]int64)
 	for operationVal, operation := range metadata.MapAttributeOperation {
 		metricPath := []string{"opcountersRepl", operationVal}
 		metricName := "mongodb.operation.repl.count"
-		val, err := collectMetric(doc, metricPath)
+		val, err := collectMetric(replDoc, metricPath)
 		if err != nil {
 			errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, operationVal, err))
 			continue
 		}
 		s.mb.RecordMongodbOperationReplCountDataPoint(now, val, operation)
+
+		currentCounts[operationVal] = val
+		s.recordReplOperationPerSecond(now, operationVal, val)
 	}
+
+	s.prevReplCounts = currentCounts
+	s.prevReplTimestamp = now
+}
+
+func (s *mongodbScraper) recordReplOperationPerSecond(now pcommon.Timestamp, operationVal string, currentCount int64) {
+	if s.prevReplTimestamp > 0 {
+		timeDelta := float64(now-s.prevReplTimestamp) / 1e9
+		if timeDelta > 0 {
+			if prevReplCount, exists := s.prevReplCounts[operationVal]; exists {
+				delta := currentCount - prevReplCount
+				queriesPerSec := float64(delta) / timeDelta
+
+				switch operationVal {
+				case "query":
+					s.mb.RecordMongodbReplQueriesPerSecDataPoint(now, queriesPerSec)
+				case "insert":
+					s.mb.RecordMongodbReplInsertsPerSecDataPoint(now, queriesPerSec)
+				case "command":
+					s.mb.RecordMongodbReplCommandsPerSecDataPoint(now, queriesPerSec)
+				case "getmore":
+					s.mb.RecordMongodbReplGetmoresPerSecDataPoint(now, queriesPerSec)
+				case "delete":
+					s.mb.RecordMongodbReplDeletesPerSecDataPoint(now, queriesPerSec)
+				case "update":
+					s.mb.RecordMongodbReplUpdatesPerSecDataPoint(now, queriesPerSec)
+				default:
+					fmt.Printf("Unhandled repl operation: %s\n", operationVal)
+				}
+			}
+		}
+	}
+}
+
+func (s *mongodbScraper) recordFlushesPerSecond(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
+	metricPath := []string{"wiredTiger", "checkpoint", "total succeed number of checkpoints"}
+	metricName := "mongodb.flushes.rate"
+	currentFlushes, err := collectMetric(doc, metricPath)
+	if err != nil {
+		errs.AddPartial(1, fmt.Errorf(collectMetricError, metricName, err))
+		return
+	}
+
+	if s.prevFlushTimestamp > 0 {
+		timeDelta := float64(now-s.prevFlushTimestamp) / 1e9
+		if timeDelta > 0 {
+			if prevFlushCount := s.prevFlushCount; true {
+				delta := currentFlushes - prevFlushCount
+				flushesPerSec := float64(delta) / timeDelta
+				s.mb.RecordMongodbFlushesRateDataPoint(now, flushesPerSec)
+			}
+		}
+	}
+
+	s.prevFlushCount = currentFlushes
+	s.prevFlushTimestamp = now
+}
+
+func (s *mongodbScraper) recordOperationPerSecond(now pcommon.Timestamp, operationVal string, currentCount int64) {
+	if s.prevTimestamp > 0 {
+		timeDelta := float64(now-s.prevTimestamp) / 1e9
+		if timeDelta > 0 {
+			if prevCount, exists := s.prevCounts[operationVal]; exists {
+				delta := currentCount - prevCount
+				queriesPerSec := float64(delta) / timeDelta
+
+				switch operationVal {
+				case "query":
+					s.mb.RecordMongodbQueriesRateDataPoint(now, queriesPerSec)
+				case "insert":
+					s.mb.RecordMongodbInsertsRateDataPoint(now, queriesPerSec)
+				case "command":
+					s.mb.RecordMongodbCommandsRateDataPoint(now, queriesPerSec)
+				case "getmore":
+					s.mb.RecordMongodbGetmoresRateDataPoint(now, queriesPerSec)
+				case "delete":
+					s.mb.RecordMongodbDeletesRateDataPoint(now, queriesPerSec)
+				case "update":
+					s.mb.RecordMongodbUpdatesRateDataPoint(now, queriesPerSec)
+				default:
+					fmt.Printf("Unhandled operation: %s\n", operationVal)
+				}
+			}
+		}
+	}
+}
+
+func (s *mongodbScraper) recordActiveWrites(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
+	metricPath := []string{"globalLock", "activeClients", "writers"}
+	metricName := "mongodb.active.writes"
+	val, err := collectMetric(doc, metricPath)
+	if err != nil {
+		errs.AddPartial(1, fmt.Errorf(collectMetricError, metricName, err))
+		return
+	}
+	s.mb.RecordMongodbActiveWritesDataPoint(now, val)
+}
+
+func (s *mongodbScraper) recordActiveReads(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
+	metricPath := []string{"globalLock", "activeClients", "readers"}
+	metricName := "mongodb.active.reads"
+	val, err := collectMetric(doc, metricPath)
+	if err != nil {
+		errs.AddPartial(1, fmt.Errorf(collectMetricError, metricName, err))
+		return
+	}
+	s.mb.RecordMongodbActiveReadsDataPoint(now, val)
+}
+
+func (s *mongodbScraper) recordWTCacheBytes(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
+	metricPath := []string{"wiredTiger", "cache", "bytes read into cache"}
+	metricName := "mongodb.wtcache.bytes.read"
+	val, err := collectMetric(doc, metricPath)
+	if err != nil {
+		errs.AddPartial(1, fmt.Errorf(collectMetricError, metricName, err))
+		return
+	}
+	s.mb.RecordMongodbWtcacheBytesReadDataPoint(now, val)
+}
+
+func (s *mongodbScraper) recordPageFaults(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
+	metricPath := []string{"extra_info", "page_faults"}
+	metricName := "mongodb.page_faults"
+	val, err := collectMetric(doc, metricPath)
+	if err != nil {
+		errs.AddPartial(1, fmt.Errorf(collectMetricError, metricName, err))
+		return
+	}
+	s.mb.RecordMongodbPageFaultsDataPoint(now, val)
 }
 
 func (s *mongodbScraper) recordCacheOperations(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
@@ -252,7 +421,7 @@ func (s *mongodbScraper) recordCacheOperations(now pcommon.Timestamp, doc bson.M
 		return
 	}
 	if storageEngine != "wiredTiger" {
-		// mongodb is using a different storage engine and this metric can not be collected
+		// mongodb is using a different storage engine and this metric cannot be collected
 		return
 	}
 
@@ -472,15 +641,14 @@ func (s *mongodbScraper) recordLockDeadlockCount(now pcommon.Timestamp, doc bson
 }
 
 // Index Stats
-func (s *mongodbScraper) recordIndexAccess(now pcommon.Timestamp, documents []bson.M, dbName string, collectionName string, errs *scrapererror.ScrapeErrors) {
+func (s *mongodbScraper) recordIndexAccess(now pcommon.Timestamp, documents []bson.M, dbName, collectionName string, errs *scrapererror.ScrapeErrors) {
 	metricName := "mongodb.index.access.count"
 	var indexAccessTotal int64
 	for _, doc := range documents {
 		metricAttributes := fmt.Sprintf("%s, %s", dbName, collectionName)
-		indexAccess, ok := doc["accesses"].(bson.M)["ops"]
-		if !ok {
-			err := errors.New("could not find key for index access metric")
-			errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, metricAttributes, err))
+		indexAccess, err := dig(doc, []string{"accesses", "ops"})
+		if err != nil {
+			errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, metricAttributes, errors.New("could not find key for index access metric")))
 			return
 		}
 		indexAccessValue, err := parseInt(indexAccess)
@@ -541,14 +709,19 @@ func getOperationTimeValues(document bson.M, collectionPathName, operation strin
 }
 
 func digForCollectionPathNames(document bson.M) ([]string, error) {
-	docTotals, ok := document["totals"].(bson.M)
-	if !ok {
-		return nil, errKeyNotFound
+	docTotals, err := dig(document, []string{"totals"})
+	if err != nil {
+		return nil, err
 	}
+	docTotalsMap, ok := docTotals.(bson.D)
+	if !ok {
+		return nil, fmt.Errorf("expected bson.D, got %T", docTotals)
+	}
+
 	var collectionPathNames []string
-	for collectionPathName := range docTotals {
-		if collectionPathName != "note" {
-			collectionPathNames = append(collectionPathNames, collectionPathName)
+	for _, v := range docTotalsMap {
+		if v.Key != "note" {
+			collectionPathNames = append(collectionPathNames, v.Key)
 		}
 	}
 	return collectionPathNames, nil
@@ -563,6 +736,9 @@ func collectMetric(document bson.M, path []string) (int64, error) {
 }
 
 func dig(document bson.M, path []string) (any, error) {
+	if len(path) == 0 {
+		return nil, errKeyNotFound
+	}
 	curItem, remainingPath := path[0], path[1:]
 	value := document[curItem]
 	if value == nil {
@@ -571,7 +747,35 @@ func dig(document bson.M, path []string) (any, error) {
 	if len(remainingPath) == 0 {
 		return value, nil
 	}
-	return dig(value.(bson.M), remainingPath)
+	if value, ok := value.(bson.M); ok {
+		return dig(value, remainingPath)
+	}
+	if value, ok := value.(bson.D); ok {
+		return digBsonD(value, remainingPath)
+	}
+	return nil, fmt.Errorf("expected bson.M, got %T", value)
+}
+
+func digBsonD(value bson.D, remainingPath []string) (any, error) {
+	if len(remainingPath) == 0 {
+		return value, nil
+	}
+	curItem, remainingPath := remainingPath[0], remainingPath[1:]
+	for _, v := range value {
+		if v.Key == curItem {
+			if len(remainingPath) == 0 {
+				return v.Value, nil
+			}
+			if value, ok := v.Value.(bson.D); ok {
+				return digBsonD(value, remainingPath)
+			}
+			if value, ok := v.Value.(bson.M); ok {
+				return dig(value, remainingPath)
+			}
+			return nil, fmt.Errorf("expected bson.M or bson.D, got %T", v.Value)
+		}
+	}
+	return nil, errKeyNotFound
 }
 
 func parseInt(val any) (int64, error) {

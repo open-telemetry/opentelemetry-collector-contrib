@@ -4,18 +4,26 @@
 package postgresqlreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver"
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
+	_ "embed"
 	"errors"
 	"fmt"
+	"math"
 	"net"
+	"strconv"
 	"strings"
+	"text/template"
 	"time"
 
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/multierr"
+	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
 )
 
 const lagMetricsInSecondsFeatureGateID = "postgresqlreceiver.preciselagmetrics"
@@ -38,6 +46,9 @@ type tableIdentifier string
 // indexIdentifier is a unique string that identifies a particular index and is separated by the "|" character
 type indexIdentifer string
 
+// functionIdentifier is a unique string that identifies a particular function and is separated by the "|" character
+type functionIdentifer string
+
 // errNoLastArchive is an error that occurs when there is no previous wal archive, so there is no way to compute the
 // last archived point
 var errNoLastArchive = errors.New("no last archive found, not able to calculate oldest WAL age")
@@ -55,12 +66,58 @@ type client interface {
 	getLatestWalAgeSeconds(ctx context.Context) (int64, error)
 	getMaxConnections(ctx context.Context) (int64, error)
 	getIndexStats(ctx context.Context, database string) (map[indexIdentifer]indexStat, error)
+	getFunctionStats(ctx context.Context, database string) (map[functionIdentifer]functionStat, error)
 	listDatabases(ctx context.Context) ([]string, error)
+	getVersion(ctx context.Context) (string, error)
+	getQuerySamples(ctx context.Context, limit int64, newestQueryTimestamp float64, logger *zap.Logger) ([]map[string]any, float64, error)
+	getTopQuery(ctx context.Context, limit int64, logger *zap.Logger) ([]map[string]any, error)
+	explainQuery(query, queryID string, logger *zap.Logger) (string, error)
 }
 
 type postgreSQLClient struct {
 	client  *sql.DB
 	closeFn func() error
+}
+
+// explainQuery implements client.
+func (c *postgreSQLClient) explainQuery(query, queryID string, logger *zap.Logger) (string, error) {
+	normalizedQueryID := strings.ReplaceAll(queryID, "-", "_")
+	var queryBuilder strings.Builder
+	var nulls []string
+	counter := 1
+
+	for _, ch := range query {
+		if ch == '?' {
+			queryBuilder.WriteString(fmt.Sprintf("$%d", counter))
+			counter++
+			nulls = append(nulls, "null")
+		} else {
+			queryBuilder.WriteRune(ch)
+		}
+	}
+
+	preparedQuery := queryBuilder.String()
+
+	//nolint:errcheck
+	defer c.client.Exec(fmt.Sprintf("/* otel-collector-ignore */ DEALLOCATE PREPARE otel_%s", normalizedQueryID))
+
+	// if there is no parameter needed, we can not put an empty bracket
+	nullsString := ""
+	if len(nulls) > 0 {
+		nullsString = "(" + strings.Join(nulls, ", ") + ")"
+	}
+	setPlanCacheMode := "/* otel-collector-ignore */ SET plan_cache_mode = force_generic_plan;"
+	prepareStatement := fmt.Sprintf("PREPARE otel_%s AS %s;", normalizedQueryID, preparedQuery)
+	explainStatement := fmt.Sprintf("EXPLAIN(FORMAT JSON) EXECUTE otel_%s%s;", normalizedQueryID, nullsString)
+
+	wrappedDb := sqlquery.NewDbClient(sqlquery.DbWrapper{Db: c.client}, setPlanCacheMode+prepareStatement+explainStatement, logger, sqlquery.TelemetryConfig{})
+
+	result, err := wrappedDb.QueryRows(context.Background())
+	if err != nil {
+		logger.Error("failed to explain statement", zap.Error(err))
+		return "", err
+	}
+	return obfuscateSQLExecPlan(result[0]["QUERY PLAN"])
 }
 
 var _ client = (*postgreSQLClient)(nil)
@@ -116,7 +173,7 @@ func (c postgreSQLConfig) ConnectionString() (string, error) {
 
 	if c.address.Transport == confignet.TransportTypeUnix {
 		// lib/pg expects a unix socket host to start with a "/" and appends the appropriate .s.PGSQL.port internally
-		host = fmt.Sprintf("/%s", host)
+		host = "/" + host
 	}
 
 	return fmt.Sprintf("port=%s host=%s user=%s password=%s dbname=%s %s", port, host, c.username, c.password, database, sslConnectionString(c.tls)), nil
@@ -133,21 +190,36 @@ type databaseStats struct {
 	transactionCommitted int64
 	transactionRollback  int64
 	deadlocks            int64
+	tempIo               int64
 	tempFiles            int64
+	tupUpdated           int64
+	tupReturned          int64
+	tupFetched           int64
+	tupInserted          int64
+	tupDeleted           int64
+	blksHit              int64
+	blksRead             int64
 }
 
 func (c *postgreSQLClient) getDatabaseStats(ctx context.Context, databases []string) (map[databaseName]databaseStats, error) {
-	query := filterQueryByDatabases("SELECT datname, xact_commit, xact_rollback, deadlocks, temp_files FROM pg_stat_database", databases, false)
+	query := filterQueryByDatabases(
+		"SELECT datname, xact_commit, xact_rollback, deadlocks, temp_files, temp_bytes, tup_updated, tup_returned, tup_fetched, tup_inserted, tup_deleted, blks_hit, blks_read FROM pg_stat_database",
+		databases,
+		false,
+	)
+
 	rows, err := c.client.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
 	}
+
 	var errs error
 	dbStats := map[databaseName]databaseStats{}
+
 	for rows.Next() {
 		var datname string
-		var transactionCommitted, transactionRollback, deadlocks, tempFiles int64
-		err = rows.Scan(&datname, &transactionCommitted, &transactionRollback, &deadlocks, &tempFiles)
+		var transactionCommitted, transactionRollback, deadlocks, tempIo, tempFiles, tupUpdated, tupReturned, tupFetched, tupInserted, tupDeleted, blksHit, blksRead int64
+		err = rows.Scan(&datname, &transactionCommitted, &transactionRollback, &deadlocks, &tempFiles, &tempIo, &tupUpdated, &tupReturned, &tupFetched, &tupInserted, &tupDeleted, &blksHit, &blksRead)
 		if err != nil {
 			errs = multierr.Append(errs, err)
 			continue
@@ -157,7 +229,15 @@ func (c *postgreSQLClient) getDatabaseStats(ctx context.Context, databases []str
 				transactionCommitted: transactionCommitted,
 				transactionRollback:  transactionRollback,
 				deadlocks:            deadlocks,
+				tempIo:               tempIo,
 				tempFiles:            tempFiles,
+				tupUpdated:           tupUpdated,
+				tupReturned:          tupReturned,
+				tupFetched:           tupFetched,
+				tupInserted:          tupInserted,
+				tupDeleted:           tupDeleted,
+				blksHit:              blksHit,
+				blksRead:             blksRead,
 			}
 		}
 	}
@@ -415,13 +495,66 @@ func (c *postgreSQLClient) getIndexStats(ctx context.Context, database string) (
 	return stats, multierr.Combine(errs...)
 }
 
+type functionStat struct {
+	function string
+	schema   string
+	database string
+	calls    int64
+}
+
+func (c *postgreSQLClient) getFunctionStats(ctx context.Context, database string) (map[functionIdentifer]functionStat, error) {
+	query := `WITH overloaded_funcs AS (
+ SELECT funcname
+   FROM pg_stat_user_functions s
+  GROUP BY s.funcname
+ HAVING COUNT(*) > 1
+)
+SELECT s.schemaname,
+       CASE WHEN o.funcname IS NULL OR p.proargnames IS NULL THEN p.proname
+            ELSE p.proname || '_' || array_to_string(p.proargnames, '_')
+        END funcname,
+        s.calls
+  FROM pg_proc p
+  JOIN pg_stat_user_functions s
+    ON p.oid = s.funcid
+  LEFT JOIN overloaded_funcs o
+    ON o.funcname = s.funcname;`
+
+	stats := map[functionIdentifer]functionStat{}
+
+	rows, err := c.client.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var errs []error
+	for rows.Next() {
+		var (
+			schema, function string
+			calls            int64
+		)
+		err := rows.Scan(&schema, &function, &calls)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		stats[functionKey(database, schema, function)] = functionStat{
+			function: function,
+			schema:   schema,
+			database: database,
+			calls:    calls,
+		}
+	}
+	return stats, multierr.Combine(errs...)
+}
+
 type bgStat struct {
 	checkpointsReq       int64
 	checkpointsScheduled int64
 	checkpointWriteTime  float64
 	checkpointSyncTime   float64
 	bgWrites             int64
-	backendWrites        int64
 	bufferBackendWrites  int64
 	bufferFsyncWrites    int64
 	bufferCheckpoints    int64
@@ -430,50 +563,100 @@ type bgStat struct {
 }
 
 func (c *postgreSQLClient) getBGWriterStats(ctx context.Context) (*bgStat, error) {
-	query := `SELECT
-	checkpoints_req AS checkpoint_req,
-	checkpoints_timed AS checkpoint_scheduled,
-	checkpoint_write_time AS checkpoint_duration_write,
-	checkpoint_sync_time AS checkpoint_duration_sync,
-	buffers_clean AS bg_writes,
-	buffers_backend AS backend_writes,
-	buffers_backend_fsync AS buffers_written_fsync,
-	buffers_checkpoint AS buffers_checkpoints,
-	buffers_alloc AS buffers_allocated,
-	maxwritten_clean AS maxwritten_count
-	FROM pg_stat_bgwriter;`
+	version, err := c.getVersion(ctx)
+	if err != nil {
+		return nil, err
+	}
 
-	row := c.client.QueryRowContext(ctx, query)
+	major, err := parseMajorVersion(version)
+	if err != nil {
+		return nil, err
+	}
+
 	var (
 		checkpointsReq, checkpointsScheduled               int64
 		checkpointSyncTime, checkpointWriteTime            float64
 		bgWrites, bufferCheckpoints, bufferAllocated       int64
 		bufferBackendWrites, bufferFsyncWrites, maxWritten int64
 	)
-	err := row.Scan(
+
+	if major < 17 {
+		query := `SELECT
+		checkpoints_req AS checkpoint_req,
+		checkpoints_timed AS checkpoint_scheduled,
+		checkpoint_write_time AS checkpoint_duration_write,
+		checkpoint_sync_time AS checkpoint_duration_sync,
+		buffers_clean AS bg_writes,
+		buffers_backend AS backend_writes,
+		buffers_backend_fsync AS buffers_written_fsync,
+		buffers_checkpoint AS buffers_checkpoints,
+		buffers_alloc AS buffers_allocated,
+		maxwritten_clean AS maxwritten_count
+		FROM pg_stat_bgwriter;`
+
+		row := c.client.QueryRowContext(ctx, query)
+
+		if err := row.Scan(
+			&checkpointsReq,
+			&checkpointsScheduled,
+			&checkpointWriteTime,
+			&checkpointSyncTime,
+			&bgWrites,
+			&bufferBackendWrites,
+			&bufferFsyncWrites,
+			&bufferCheckpoints,
+			&bufferAllocated,
+			&maxWritten,
+		); err != nil {
+			return nil, err
+		}
+		return &bgStat{
+			checkpointsReq:       checkpointsReq,
+			checkpointsScheduled: checkpointsScheduled,
+			checkpointWriteTime:  checkpointWriteTime,
+			checkpointSyncTime:   checkpointSyncTime,
+			bgWrites:             bgWrites,
+			bufferBackendWrites:  bufferBackendWrites,
+			bufferFsyncWrites:    bufferFsyncWrites,
+			bufferCheckpoints:    bufferCheckpoints,
+			buffersAllocated:     bufferAllocated,
+			maxWritten:           maxWritten,
+		}, nil
+	}
+	query := `SELECT
+		cp.num_requested AS checkpoint_req,
+		cp.num_timed AS checkpoint_scheduled,
+		cp.write_time AS checkpoint_duration_write,
+		cp.sync_time AS checkpoint_duration_sync,
+		cp.buffers_written AS buffers_checkpoints,
+		bg.buffers_clean AS bg_writes,
+		bg.buffers_alloc AS buffers_allocated,
+		bg.maxwritten_clean AS maxwritten_count
+		FROM pg_stat_bgwriter bg, pg_stat_checkpointer cp;`
+
+	row := c.client.QueryRowContext(ctx, query)
+
+	if err := row.Scan(
 		&checkpointsReq,
 		&checkpointsScheduled,
 		&checkpointWriteTime,
 		&checkpointSyncTime,
-		&bgWrites,
-		&bufferBackendWrites,
-		&bufferFsyncWrites,
 		&bufferCheckpoints,
+		&bgWrites,
 		&bufferAllocated,
 		&maxWritten,
-	)
-	if err != nil {
+	); err != nil {
 		return nil, err
 	}
+
 	return &bgStat{
 		checkpointsReq:       checkpointsReq,
 		checkpointsScheduled: checkpointsScheduled,
 		checkpointWriteTime:  checkpointWriteTime,
 		checkpointSyncTime:   checkpointSyncTime,
 		bgWrites:             bgWrites,
-		backendWrites:        bufferBackendWrites,
-		bufferBackendWrites:  bufferBackendWrites,
-		bufferFsyncWrites:    bufferFsyncWrites,
+		bufferBackendWrites:  -1, // Not found in pg17+ tables
+		bufferFsyncWrites:    -1, // Not found in pg17+ tables
 		bufferCheckpoints:    bufferCheckpoints,
 		buffersAllocated:     bufferAllocated,
 		maxWritten:           maxWritten,
@@ -620,6 +803,23 @@ func (c *postgreSQLClient) listDatabases(ctx context.Context) ([]string, error) 
 	return databases, nil
 }
 
+func (c *postgreSQLClient) getVersion(ctx context.Context) (string, error) {
+	query := "SHOW server_version;"
+	row := c.client.QueryRowContext(ctx, query)
+	var version string
+	err := row.Scan(&version)
+	return version, err
+}
+
+func parseMajorVersion(ver string) (int, error) {
+	parts := strings.Split(ver, ".")
+	if len(parts) < 2 {
+		return 0, fmt.Errorf("unexpected version string: %s", ver)
+	}
+
+	return strconv.Atoi(parts[0])
+}
+
 func filterQueryByDatabases(baseQuery string, databases []string, groupBy bool) string {
 	if len(databases) > 0 {
 		var queryDatabases []string
@@ -645,4 +845,215 @@ func tableKey(database, schema, table string) tableIdentifier {
 
 func indexKey(database, schema, table, index string) indexIdentifer {
 	return indexIdentifer(fmt.Sprintf("%s|%s|%s|%s", database, schema, table, index))
+}
+
+func functionKey(database, schema, function string) functionIdentifer {
+	return functionIdentifer(fmt.Sprintf("%s|%s|%s", database, schema, function))
+}
+
+//go:embed templates/querySampleTemplate.tmpl
+var querySampleTemplate string
+
+func (c *postgreSQLClient) getQuerySamples(ctx context.Context, limit int64, newestQueryTimestamp float64, logger *zap.Logger) ([]map[string]any, float64, error) {
+	tmpl := template.Must(template.New("querySample").Option("missingkey=error").Parse(querySampleTemplate))
+	buf := bytes.Buffer{}
+
+	if err := tmpl.Execute(&buf, map[string]any{
+		"limit":                limit,
+		"newestQueryTimestamp": newestQueryTimestamp,
+	}); err != nil {
+		logger.Error("failed to execute template", zap.Error(err))
+		return []map[string]any{}, newestQueryTimestamp, fmt.Errorf("failed executing template: %w", err)
+	}
+
+	wrappedDb := sqlquery.NewDbClient(sqlquery.DbWrapper{Db: c.client}, buf.String(), logger, sqlquery.TelemetryConfig{})
+
+	rows, err := wrappedDb.QueryRows(ctx)
+	if err != nil {
+		if !errors.Is(err, sqlquery.ErrNullValueWarning) {
+			logger.Error("failed getting log rows", zap.Error(err))
+			return []map[string]any{}, newestQueryTimestamp, fmt.Errorf("getQuerySamples failed getting log rows: %w", err)
+		}
+		// in case the sql returned rows contains null value, we just log a warning and continue
+		logger.Warn("problems encountered getting log rows", zap.Error(err))
+	}
+
+	errs := make([]error, 0)
+	finalAttributes := make([]map[string]any, 0)
+	dbPrefix := "postgresql."
+	for _, row := range rows {
+		if row["query"] == "<insufficient privilege>" {
+			logger.Warn("skipping query sample due to insufficient privileges")
+			errs = append(errs, errors.New("skipping query sample due to insufficient privileges"))
+			continue
+		}
+		currentAttributes := make(map[string]any)
+		simpleColumns := []string{
+			"client_hostname",
+			"query_start",
+			"wait_event_type",
+			"wait_event",
+			"query_id",
+			"state",
+			"application_name",
+		}
+
+		for _, col := range simpleColumns {
+			currentAttributes[dbPrefix+col] = row[col]
+		}
+
+		clientPort := int64(0)
+		if row["client_port"] != "" {
+			clientPort, err = strconv.ParseInt(row["client_port"], 10, 64)
+			if err != nil {
+				logger.Warn("failed to convert client_port to int", zap.Error(err))
+				errs = append(errs, err)
+			}
+		}
+		pid := int64(0)
+		if row["pid"] != "" {
+			pid, err = strconv.ParseInt(row["pid"], 10, 64)
+			if err != nil {
+				logger.Warn("failed to convert pid to int64", zap.Error(err))
+				errs = append(errs, err)
+			}
+		}
+		_queryStartTimestamp := float64(0)
+		if row["_query_start_timestamp"] != "" {
+			_queryStartTimestamp, err = strconv.ParseFloat(row["_query_start_timestamp"], 64)
+			if err != nil {
+				logger.Warn("failed to convert _query_start_timestamp", zap.Error(err))
+				errs = append(errs, err)
+			}
+		}
+		newestQueryTimestamp = math.Max(newestQueryTimestamp, _queryStartTimestamp)
+
+		// TODO: check if the query is truncated.
+		obfuscated, err := obfuscateSQL(row["query"])
+		if err != nil {
+			logger.Warn("failed to obfuscate query", zap.String("query", row["query"]))
+			obfuscated = ""
+		}
+		currentAttributes[dbPrefix+"pid"] = pid
+		currentAttributes["network.peer.port"] = clientPort
+		currentAttributes["network.peer.address"] = row["client_addrs"]
+		currentAttributes["db.query.text"] = obfuscated
+		currentAttributes["db.namespace"] = row["datname"]
+		currentAttributes["user.name"] = row["usename"]
+		currentAttributes["db.system.name"] = "postgresql"
+		finalAttributes = append(finalAttributes, currentAttributes)
+	}
+
+	return finalAttributes, newestQueryTimestamp, errors.Join(errs...)
+}
+
+func convertMillisecondToSecond(column, value string, logger *zap.Logger) (any, error) {
+	result := float64(0)
+	var err error
+	if value != "" {
+		result, err = strconv.ParseFloat(value, 64)
+		if err != nil {
+			logger.Error("failed to parse float", zap.String("column", column), zap.String("value", value), zap.Error(err))
+		}
+	}
+	return result / 1000.0, err
+}
+
+func convertToInt(column, value string, logger *zap.Logger) (any, error) {
+	result := 0
+	var err error
+	if value != "" {
+		result, err = strconv.Atoi(value)
+		if err != nil {
+			logger.Error("failed to parse int", zap.String("column", column), zap.String("value", value), zap.Error(err))
+		}
+	}
+	return int64(result), err
+}
+
+//go:embed templates/topQueryTemplate.tmpl
+var topQueryTemplate string
+
+// getTopQuery implements client.
+func (c *postgreSQLClient) getTopQuery(ctx context.Context, limit int64, logger *zap.Logger) ([]map[string]any, error) {
+	tmpl := template.Must(template.New("topQuery").Option("missingkey=error").Parse(topQueryTemplate))
+	buf := bytes.Buffer{}
+
+	// TODO: Only get query after the oldest query we got from the previous sample query colelction.
+	// For instance, if from the last sample query we got queries executed between 8:00 ~ 8:15,
+	// in this query, we should only gather query after 8:15
+	if err := tmpl.Execute(&buf, map[string]any{
+		"limit": limit,
+	}); err != nil {
+		logger.Error("failed to execute template", zap.Error(err))
+		return []map[string]any{}, fmt.Errorf("failed executing template: %w", err)
+	}
+
+	wrappedDb := sqlquery.NewDbClient(sqlquery.DbWrapper{Db: c.client}, buf.String(), logger, sqlquery.TelemetryConfig{})
+
+	rows, err := wrappedDb.QueryRows(ctx)
+	if err != nil {
+		if !errors.Is(err, sqlquery.ErrNullValueWarning) {
+			logger.Error("failed getting log rows", zap.Error(err))
+			return []map[string]any{}, fmt.Errorf("getTopQuery failed getting log rows: %w", err)
+		}
+		// in case the sql returned rows contains null value, we just log a warning and continue
+		logger.Warn("problems encountered getting log rows", zap.Error(err))
+	}
+
+	errs := make([]error, 0)
+	finalAttributes := make([]map[string]any, 0)
+
+	for _, row := range rows {
+		hasConvention := map[string]string{
+			"datname": "db.namespace",
+			"query":   QueryTextAttributeName,
+		}
+
+		needConversion := map[string]func(string, string, *zap.Logger) (any, error){
+			callsColumnName:             convertToInt,
+			rowsColumnName:              convertToInt,
+			sharedBlksDirtiedColumnName: convertToInt,
+			sharedBlksHitColumnName:     convertToInt,
+			sharedBlksReadColumnName:    convertToInt,
+			sharedBlksWrittenColumnName: convertToInt,
+			tempBlksReadColumnName:      convertToInt,
+			tempBlksWrittenColumnName:   convertToInt,
+			totalExecTimeColumnName:     convertMillisecondToSecond,
+			totalPlanTimeColumnName:     convertMillisecondToSecond,
+			"query": func(_, val string, logger *zap.Logger) (any, error) {
+				// TODO: check if it is truncated.
+				result, err := obfuscateSQL(val)
+				if err != nil {
+					logger.Error("failed to obfuscate query", zap.String("query", val))
+					return "", err
+				}
+				return result, nil
+			},
+		}
+		currentAttributes := make(map[string]any)
+
+		for col := range row {
+			var val any
+			var err error
+			converter, ok := needConversion[col]
+			if ok {
+				val, err = converter(col, row[col], logger)
+				if err != nil {
+					logger.Warn("failed to convert column to int", zap.String("column", col), zap.Error(err))
+					errs = append(errs, err)
+				}
+			} else {
+				val = row[col]
+			}
+			if hasConvention[col] != "" {
+				currentAttributes[hasConvention[col]] = val
+			} else {
+				currentAttributes[dbAttributePrefix+col] = val
+			}
+		}
+		finalAttributes = append(finalAttributes, currentAttributes)
+	}
+
+	return finalAttributes, errors.Join(errs...)
 }

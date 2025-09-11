@@ -30,11 +30,11 @@ Current approximate lag of consumer group at partition of topic
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| group | The ID (string) of a consumer group | Any Str |
-| topic | The ID (integer) of a topic | Any Str |
-| partition | The number (integer) of the partition | Any Int |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| group | The ID (string) of a consumer group | Any Str | false |
+| topic | The ID (integer) of a topic | Any Str | false |
+| partition | The number (integer) of the partition | Any Int | false |
 
 ### kafka.consumer_group.lag_sum
 
@@ -46,10 +46,10 @@ Current approximate sum of consumer group lag across all partitions of topic
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| group | The ID (string) of a consumer group | Any Str |
-| topic | The ID (integer) of a topic | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| group | The ID (string) of a consumer group | Any Str | false |
+| topic | The ID (integer) of a topic | Any Str | false |
 
 ### kafka.consumer_group.members
 
@@ -61,9 +61,9 @@ Count of members in the consumer group
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| group | The ID (string) of a consumer group | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| group | The ID (string) of a consumer group | Any Str | false |
 
 ### kafka.consumer_group.offset
 
@@ -75,11 +75,11 @@ Current offset of the consumer group at partition of topic
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| group | The ID (string) of a consumer group | Any Str |
-| topic | The ID (integer) of a topic | Any Str |
-| partition | The number (integer) of the partition | Any Int |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| group | The ID (string) of a consumer group | Any Str | false |
+| topic | The ID (integer) of a topic | Any Str | false |
+| partition | The number (integer) of the partition | Any Int | false |
 
 ### kafka.consumer_group.offset_sum
 
@@ -91,10 +91,10 @@ Sum of consumer group offset across partitions of topic
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| group | The ID (string) of a consumer group | Any Str |
-| topic | The ID (integer) of a topic | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| group | The ID (string) of a consumer group | Any Str | false |
+| topic | The ID (integer) of a topic | Any Str | false |
 
 ### kafka.partition.current_offset
 
@@ -106,10 +106,10 @@ Current offset of partition of topic.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| topic | The ID (integer) of a topic | Any Str |
-| partition | The number (integer) of the partition | Any Int |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| topic | The ID (integer) of a topic | Any Str | false |
+| partition | The number (integer) of the partition | Any Int | false |
 
 ### kafka.partition.oldest_offset
 
@@ -121,10 +121,10 @@ Oldest offset of partition of topic
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| topic | The ID (integer) of a topic | Any Str |
-| partition | The number (integer) of the partition | Any Int |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| topic | The ID (integer) of a topic | Any Str | false |
+| partition | The number (integer) of the partition | Any Int | false |
 
 ### kafka.partition.replicas
 
@@ -136,10 +136,10 @@ Number of replicas for partition of topic
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| topic | The ID (integer) of a topic | Any Str |
-| partition | The number (integer) of the partition | Any Int |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| topic | The ID (integer) of a topic | Any Str | false |
+| partition | The number (integer) of the partition | Any Int | false |
 
 ### kafka.partition.replicas_in_sync
 
@@ -151,10 +151,10 @@ Number of synchronized replicas of partition
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| topic | The ID (integer) of a topic | Any Str |
-| partition | The number (integer) of the partition | Any Int |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| topic | The ID (integer) of a topic | Any Str | false |
+| partition | The number (integer) of the partition | Any Int | false |
 
 ### kafka.topic.partitions
 
@@ -166,9 +166,9 @@ Number of partitions in topic.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| topic | The ID (integer) of a topic | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| topic | The ID (integer) of a topic | Any Str | false |
 
 ## Optional Metrics
 
@@ -190,9 +190,9 @@ log retention time (s) of a broker.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| broker | The ID of the kafka broker | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| broker | The ID of the kafka broker | Any Str | false |
 
 ### kafka.topic.log_retention_period
 
@@ -204,9 +204,9 @@ log retention period of a topic (s).
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| topic | The ID (integer) of a topic | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| topic | The ID (integer) of a topic | Any Str | false |
 
 ### kafka.topic.log_retention_size
 
@@ -218,13 +218,13 @@ log retention size of a topic in Bytes, The value (-1) indicates infinite size.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| topic | The ID (integer) of a topic | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| topic | The ID (integer) of a topic | Any Str | false |
 
 ### kafka.topic.min_insync_replicas
 
-minimum insync replicas of a topic.
+minimum in-sync replicas of a topic.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -232,9 +232,9 @@ minimum insync replicas of a topic.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| topic | The ID (integer) of a topic | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| topic | The ID (integer) of a topic | Any Str | false |
 
 ### kafka.topic.replication_factor
 
@@ -246,9 +246,9 @@ replication factor of a topic.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| topic | The ID (integer) of a topic | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| topic | The ID (integer) of a topic | Any Str | false |
 
 ## Resource Attributes
 

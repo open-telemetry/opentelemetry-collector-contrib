@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
-// AttributeBufferPoolData specifies the a value buffer_pool_data attribute.
+// AttributeBufferPoolData specifies the value buffer_pool_data attribute.
 type AttributeBufferPoolData int
 
 const (
@@ -40,7 +40,7 @@ var MapAttributeBufferPoolData = map[string]AttributeBufferPoolData{
 	"clean": AttributeBufferPoolDataClean,
 }
 
-// AttributeBufferPoolOperations specifies the a value buffer_pool_operations attribute.
+// AttributeBufferPoolOperations specifies the value buffer_pool_operations attribute.
 type AttributeBufferPoolOperations int
 
 const (
@@ -86,7 +86,7 @@ var MapAttributeBufferPoolOperations = map[string]AttributeBufferPoolOperations{
 	"write_requests":     AttributeBufferPoolOperationsWriteRequests,
 }
 
-// AttributeBufferPoolPages specifies the a value buffer_pool_pages attribute.
+// AttributeBufferPoolPages specifies the value buffer_pool_pages attribute.
 type AttributeBufferPoolPages int
 
 const (
@@ -94,6 +94,7 @@ const (
 	AttributeBufferPoolPagesData
 	AttributeBufferPoolPagesFree
 	AttributeBufferPoolPagesMisc
+	AttributeBufferPoolPagesTotal
 )
 
 // String returns the string representation of the AttributeBufferPoolPages.
@@ -105,18 +106,21 @@ func (av AttributeBufferPoolPages) String() string {
 		return "free"
 	case AttributeBufferPoolPagesMisc:
 		return "misc"
+	case AttributeBufferPoolPagesTotal:
+		return "total"
 	}
 	return ""
 }
 
 // MapAttributeBufferPoolPages is a helper map of string to AttributeBufferPoolPages attribute value.
 var MapAttributeBufferPoolPages = map[string]AttributeBufferPoolPages{
-	"data": AttributeBufferPoolPagesData,
-	"free": AttributeBufferPoolPagesFree,
-	"misc": AttributeBufferPoolPagesMisc,
+	"data":  AttributeBufferPoolPagesData,
+	"free":  AttributeBufferPoolPagesFree,
+	"misc":  AttributeBufferPoolPagesMisc,
+	"total": AttributeBufferPoolPagesTotal,
 }
 
-// AttributeCacheStatus specifies the a value cache_status attribute.
+// AttributeCacheStatus specifies the value cache_status attribute.
 type AttributeCacheStatus int
 
 const (
@@ -146,15 +150,17 @@ var MapAttributeCacheStatus = map[string]AttributeCacheStatus{
 	"overflow": AttributeCacheStatusOverflow,
 }
 
-// AttributeCommand specifies the a value command attribute.
+// AttributeCommand specifies the value command attribute.
 type AttributeCommand int
 
 const (
 	_ AttributeCommand = iota
 	AttributeCommandDelete
+	AttributeCommandDeleteMulti
 	AttributeCommandInsert
 	AttributeCommandSelect
 	AttributeCommandUpdate
+	AttributeCommandUpdateMulti
 )
 
 // String returns the string representation of the AttributeCommand.
@@ -162,25 +168,31 @@ func (av AttributeCommand) String() string {
 	switch av {
 	case AttributeCommandDelete:
 		return "delete"
+	case AttributeCommandDeleteMulti:
+		return "delete_multi"
 	case AttributeCommandInsert:
 		return "insert"
 	case AttributeCommandSelect:
 		return "select"
 	case AttributeCommandUpdate:
 		return "update"
+	case AttributeCommandUpdateMulti:
+		return "update_multi"
 	}
 	return ""
 }
 
 // MapAttributeCommand is a helper map of string to AttributeCommand attribute value.
 var MapAttributeCommand = map[string]AttributeCommand{
-	"delete": AttributeCommandDelete,
-	"insert": AttributeCommandInsert,
-	"select": AttributeCommandSelect,
-	"update": AttributeCommandUpdate,
+	"delete":       AttributeCommandDelete,
+	"delete_multi": AttributeCommandDeleteMulti,
+	"insert":       AttributeCommandInsert,
+	"select":       AttributeCommandSelect,
+	"update":       AttributeCommandUpdate,
+	"update_multi": AttributeCommandUpdateMulti,
 }
 
-// AttributeConnectionError specifies the a value connection_error attribute.
+// AttributeConnectionError specifies the value connection_error attribute.
 type AttributeConnectionError int
 
 const (
@@ -234,7 +246,7 @@ var MapAttributeConnectionError = map[string]AttributeConnectionError{
 	"locked":          AttributeConnectionErrorLocked,
 }
 
-// AttributeConnectionStatus specifies the a value connection_status attribute.
+// AttributeConnectionStatus specifies the value connection_status attribute.
 type AttributeConnectionStatus int
 
 const (
@@ -264,7 +276,29 @@ var MapAttributeConnectionStatus = map[string]AttributeConnectionStatus{
 	"rejected": AttributeConnectionStatusRejected,
 }
 
-// AttributeDirection specifies the a value direction attribute.
+// AttributeDbSystemName specifies the value db.system.name attribute.
+type AttributeDbSystemName int
+
+const (
+	_ AttributeDbSystemName = iota
+	AttributeDbSystemNameMysql
+)
+
+// String returns the string representation of the AttributeDbSystemName.
+func (av AttributeDbSystemName) String() string {
+	switch av {
+	case AttributeDbSystemNameMysql:
+		return "mysql"
+	}
+	return ""
+}
+
+// MapAttributeDbSystemName is a helper map of string to AttributeDbSystemName attribute value.
+var MapAttributeDbSystemName = map[string]AttributeDbSystemName{
+	"mysql": AttributeDbSystemNameMysql,
+}
+
+// AttributeDirection specifies the value direction attribute.
 type AttributeDirection int
 
 const (
@@ -290,7 +324,7 @@ var MapAttributeDirection = map[string]AttributeDirection{
 	"sent":     AttributeDirectionSent,
 }
 
-// AttributeDoubleWrites specifies the a value double_writes attribute.
+// AttributeDoubleWrites specifies the value double_writes attribute.
 type AttributeDoubleWrites int
 
 const (
@@ -316,7 +350,7 @@ var MapAttributeDoubleWrites = map[string]AttributeDoubleWrites{
 	"writes":        AttributeDoubleWritesWrites,
 }
 
-// AttributeEventState specifies the a value event_state attribute.
+// AttributeEventState specifies the value event_state attribute.
 type AttributeEventState int
 
 const (
@@ -374,7 +408,7 @@ var MapAttributeEventState = map[string]AttributeEventState{
 	"no_index_used":           AttributeEventStateNoIndexUsed,
 }
 
-// AttributeHandler specifies the a value handler attribute.
+// AttributeHandler specifies the value handler attribute.
 type AttributeHandler int
 
 const (
@@ -464,7 +498,7 @@ var MapAttributeHandler = map[string]AttributeHandler{
 	"write":              AttributeHandlerWrite,
 }
 
-// AttributeIoWaitsOperations specifies the a value io_waits_operations attribute.
+// AttributeIoWaitsOperations specifies the value io_waits_operations attribute.
 type AttributeIoWaitsOperations int
 
 const (
@@ -498,7 +532,7 @@ var MapAttributeIoWaitsOperations = map[string]AttributeIoWaitsOperations{
 	"update": AttributeIoWaitsOperationsUpdate,
 }
 
-// AttributeJoinKind specifies the a value join_kind attribute.
+// AttributeJoinKind specifies the value join_kind attribute.
 type AttributeJoinKind int
 
 const (
@@ -536,7 +570,7 @@ var MapAttributeJoinKind = map[string]AttributeJoinKind{
 	"scan":        AttributeJoinKindScan,
 }
 
-// AttributeLocks specifies the a value locks attribute.
+// AttributeLocks specifies the value locks attribute.
 type AttributeLocks int
 
 const (
@@ -562,7 +596,7 @@ var MapAttributeLocks = map[string]AttributeLocks{
 	"waited":    AttributeLocksWaited,
 }
 
-// AttributeLogOperations specifies the a value log_operations attribute.
+// AttributeLogOperations specifies the value log_operations attribute.
 type AttributeLogOperations int
 
 const (
@@ -570,6 +604,7 @@ const (
 	AttributeLogOperationsWaits
 	AttributeLogOperationsWriteRequests
 	AttributeLogOperationsWrites
+	AttributeLogOperationsFsyncs
 )
 
 // String returns the string representation of the AttributeLogOperations.
@@ -581,6 +616,8 @@ func (av AttributeLogOperations) String() string {
 		return "write_requests"
 	case AttributeLogOperationsWrites:
 		return "writes"
+	case AttributeLogOperationsFsyncs:
+		return "fsyncs"
 	}
 	return ""
 }
@@ -590,9 +627,10 @@ var MapAttributeLogOperations = map[string]AttributeLogOperations{
 	"waits":          AttributeLogOperationsWaits,
 	"write_requests": AttributeLogOperationsWriteRequests,
 	"writes":         AttributeLogOperationsWrites,
+	"fsyncs":         AttributeLogOperationsFsyncs,
 }
 
-// AttributeMysqlxThreads specifies the a value mysqlx_threads attribute.
+// AttributeMysqlxThreads specifies the value mysqlx_threads attribute.
 type AttributeMysqlxThreads int
 
 const (
@@ -618,7 +656,7 @@ var MapAttributeMysqlxThreads = map[string]AttributeMysqlxThreads{
 	"active":    AttributeMysqlxThreadsActive,
 }
 
-// AttributeOpenedResources specifies the a value opened_resources attribute.
+// AttributeOpenedResources specifies the value opened_resources attribute.
 type AttributeOpenedResources int
 
 const (
@@ -648,7 +686,7 @@ var MapAttributeOpenedResources = map[string]AttributeOpenedResources{
 	"table":            AttributeOpenedResourcesTable,
 }
 
-// AttributeOperations specifies the a value operations attribute.
+// AttributeOperations specifies the value operations attribute.
 type AttributeOperations int
 
 const (
@@ -678,7 +716,7 @@ var MapAttributeOperations = map[string]AttributeOperations{
 	"writes": AttributeOperationsWrites,
 }
 
-// AttributePageOperations specifies the a value page_operations attribute.
+// AttributePageOperations specifies the value page_operations attribute.
 type AttributePageOperations int
 
 const (
@@ -708,7 +746,7 @@ var MapAttributePageOperations = map[string]AttributePageOperations{
 	"written": AttributePageOperationsWritten,
 }
 
-// AttributePreparedStatementsCommand specifies the a value prepared_statements_command attribute.
+// AttributePreparedStatementsCommand specifies the value prepared_statements_command attribute.
 type AttributePreparedStatementsCommand int
 
 const (
@@ -750,7 +788,7 @@ var MapAttributePreparedStatementsCommand = map[string]AttributePreparedStatemen
 	"send_long_data": AttributePreparedStatementsCommandSendLongData,
 }
 
-// AttributeReadLockType specifies the a value read_lock_type attribute.
+// AttributeReadLockType specifies the value read_lock_type attribute.
 type AttributeReadLockType int
 
 const (
@@ -788,7 +826,7 @@ var MapAttributeReadLockType = map[string]AttributeReadLockType{
 	"external":          AttributeReadLockTypeExternal,
 }
 
-// AttributeRowLocks specifies the a value row_locks attribute.
+// AttributeRowLocks specifies the value row_locks attribute.
 type AttributeRowLocks int
 
 const (
@@ -814,7 +852,7 @@ var MapAttributeRowLocks = map[string]AttributeRowLocks{
 	"time":  AttributeRowLocksTime,
 }
 
-// AttributeRowOperations specifies the a value row_operations attribute.
+// AttributeRowOperations specifies the value row_operations attribute.
 type AttributeRowOperations int
 
 const (
@@ -848,7 +886,7 @@ var MapAttributeRowOperations = map[string]AttributeRowOperations{
 	"updated":  AttributeRowOperationsUpdated,
 }
 
-// AttributeSorts specifies the a value sorts attribute.
+// AttributeSorts specifies the value sorts attribute.
 type AttributeSorts int
 
 const (
@@ -882,7 +920,7 @@ var MapAttributeSorts = map[string]AttributeSorts{
 	"scan":         AttributeSortsScan,
 }
 
-// AttributeTableSizeType specifies the a value table_size_type attribute.
+// AttributeTableSizeType specifies the value table_size_type attribute.
 type AttributeTableSizeType int
 
 const (
@@ -908,7 +946,7 @@ var MapAttributeTableSizeType = map[string]AttributeTableSizeType{
 	"index": AttributeTableSizeTypeIndex,
 }
 
-// AttributeThreads specifies the a value threads attribute.
+// AttributeThreads specifies the value threads attribute.
 type AttributeThreads int
 
 const (
@@ -942,7 +980,7 @@ var MapAttributeThreads = map[string]AttributeThreads{
 	"running":   AttributeThreadsRunning,
 }
 
-// AttributeTmpResource specifies the a value tmp_resource attribute.
+// AttributeTmpResource specifies the value tmp_resource attribute.
 type AttributeTmpResource int
 
 const (
@@ -972,7 +1010,7 @@ var MapAttributeTmpResource = map[string]AttributeTmpResource{
 	"tables":      AttributeTmpResourceTables,
 }
 
-// AttributeWriteLockType specifies the a value write_lock_type attribute.
+// AttributeWriteLockType specifies the value write_lock_type attribute.
 type AttributeWriteLockType int
 
 const (
@@ -1008,6 +1046,208 @@ var MapAttributeWriteLockType = map[string]AttributeWriteLockType{
 	"low_priority":      AttributeWriteLockTypeLowPriority,
 	"normal":            AttributeWriteLockTypeNormal,
 	"external":          AttributeWriteLockTypeExternal,
+}
+
+var MetricsInfo = metricsInfo{
+	MysqlBufferPoolDataPages: metricInfo{
+		Name: "mysql.buffer_pool.data_pages",
+	},
+	MysqlBufferPoolLimit: metricInfo{
+		Name: "mysql.buffer_pool.limit",
+	},
+	MysqlBufferPoolOperations: metricInfo{
+		Name: "mysql.buffer_pool.operations",
+	},
+	MysqlBufferPoolPageFlushes: metricInfo{
+		Name: "mysql.buffer_pool.page_flushes",
+	},
+	MysqlBufferPoolPages: metricInfo{
+		Name: "mysql.buffer_pool.pages",
+	},
+	MysqlBufferPoolUsage: metricInfo{
+		Name: "mysql.buffer_pool.usage",
+	},
+	MysqlClientNetworkIo: metricInfo{
+		Name: "mysql.client.network.io",
+	},
+	MysqlCommands: metricInfo{
+		Name: "mysql.commands",
+	},
+	MysqlConnectionCount: metricInfo{
+		Name: "mysql.connection.count",
+	},
+	MysqlConnectionErrors: metricInfo{
+		Name: "mysql.connection.errors",
+	},
+	MysqlDoubleWrites: metricInfo{
+		Name: "mysql.double_writes",
+	},
+	MysqlHandlers: metricInfo{
+		Name: "mysql.handlers",
+	},
+	MysqlIndexIoWaitCount: metricInfo{
+		Name: "mysql.index.io.wait.count",
+	},
+	MysqlIndexIoWaitTime: metricInfo{
+		Name: "mysql.index.io.wait.time",
+	},
+	MysqlJoins: metricInfo{
+		Name: "mysql.joins",
+	},
+	MysqlLocks: metricInfo{
+		Name: "mysql.locks",
+	},
+	MysqlLogOperations: metricInfo{
+		Name: "mysql.log_operations",
+	},
+	MysqlMaxUsedConnections: metricInfo{
+		Name: "mysql.max_used_connections",
+	},
+	MysqlMysqlxConnections: metricInfo{
+		Name: "mysql.mysqlx_connections",
+	},
+	MysqlMysqlxWorkerThreads: metricInfo{
+		Name: "mysql.mysqlx_worker_threads",
+	},
+	MysqlOpenedResources: metricInfo{
+		Name: "mysql.opened_resources",
+	},
+	MysqlOperations: metricInfo{
+		Name: "mysql.operations",
+	},
+	MysqlPageOperations: metricInfo{
+		Name: "mysql.page_operations",
+	},
+	MysqlPageSize: metricInfo{
+		Name: "mysql.page_size",
+	},
+	MysqlPreparedStatements: metricInfo{
+		Name: "mysql.prepared_statements",
+	},
+	MysqlQueryClientCount: metricInfo{
+		Name: "mysql.query.client.count",
+	},
+	MysqlQueryCount: metricInfo{
+		Name: "mysql.query.count",
+	},
+	MysqlQuerySlowCount: metricInfo{
+		Name: "mysql.query.slow.count",
+	},
+	MysqlReplicaSQLDelay: metricInfo{
+		Name: "mysql.replica.sql_delay",
+	},
+	MysqlReplicaTimeBehindSource: metricInfo{
+		Name: "mysql.replica.time_behind_source",
+	},
+	MysqlRowLocks: metricInfo{
+		Name: "mysql.row_locks",
+	},
+	MysqlRowOperations: metricInfo{
+		Name: "mysql.row_operations",
+	},
+	MysqlSorts: metricInfo{
+		Name: "mysql.sorts",
+	},
+	MysqlStatementEventCount: metricInfo{
+		Name: "mysql.statement_event.count",
+	},
+	MysqlStatementEventWaitTime: metricInfo{
+		Name: "mysql.statement_event.wait.time",
+	},
+	MysqlTableAverageRowLength: metricInfo{
+		Name: "mysql.table.average_row_length",
+	},
+	MysqlTableIoWaitCount: metricInfo{
+		Name: "mysql.table.io.wait.count",
+	},
+	MysqlTableIoWaitTime: metricInfo{
+		Name: "mysql.table.io.wait.time",
+	},
+	MysqlTableLockWaitReadCount: metricInfo{
+		Name: "mysql.table.lock_wait.read.count",
+	},
+	MysqlTableLockWaitReadTime: metricInfo{
+		Name: "mysql.table.lock_wait.read.time",
+	},
+	MysqlTableLockWaitWriteCount: metricInfo{
+		Name: "mysql.table.lock_wait.write.count",
+	},
+	MysqlTableLockWaitWriteTime: metricInfo{
+		Name: "mysql.table.lock_wait.write.time",
+	},
+	MysqlTableRows: metricInfo{
+		Name: "mysql.table.rows",
+	},
+	MysqlTableSize: metricInfo{
+		Name: "mysql.table.size",
+	},
+	MysqlTableOpenCache: metricInfo{
+		Name: "mysql.table_open_cache",
+	},
+	MysqlThreads: metricInfo{
+		Name: "mysql.threads",
+	},
+	MysqlTmpResources: metricInfo{
+		Name: "mysql.tmp_resources",
+	},
+	MysqlUptime: metricInfo{
+		Name: "mysql.uptime",
+	},
+}
+
+type metricsInfo struct {
+	MysqlBufferPoolDataPages     metricInfo
+	MysqlBufferPoolLimit         metricInfo
+	MysqlBufferPoolOperations    metricInfo
+	MysqlBufferPoolPageFlushes   metricInfo
+	MysqlBufferPoolPages         metricInfo
+	MysqlBufferPoolUsage         metricInfo
+	MysqlClientNetworkIo         metricInfo
+	MysqlCommands                metricInfo
+	MysqlConnectionCount         metricInfo
+	MysqlConnectionErrors        metricInfo
+	MysqlDoubleWrites            metricInfo
+	MysqlHandlers                metricInfo
+	MysqlIndexIoWaitCount        metricInfo
+	MysqlIndexIoWaitTime         metricInfo
+	MysqlJoins                   metricInfo
+	MysqlLocks                   metricInfo
+	MysqlLogOperations           metricInfo
+	MysqlMaxUsedConnections      metricInfo
+	MysqlMysqlxConnections       metricInfo
+	MysqlMysqlxWorkerThreads     metricInfo
+	MysqlOpenedResources         metricInfo
+	MysqlOperations              metricInfo
+	MysqlPageOperations          metricInfo
+	MysqlPageSize                metricInfo
+	MysqlPreparedStatements      metricInfo
+	MysqlQueryClientCount        metricInfo
+	MysqlQueryCount              metricInfo
+	MysqlQuerySlowCount          metricInfo
+	MysqlReplicaSQLDelay         metricInfo
+	MysqlReplicaTimeBehindSource metricInfo
+	MysqlRowLocks                metricInfo
+	MysqlRowOperations           metricInfo
+	MysqlSorts                   metricInfo
+	MysqlStatementEventCount     metricInfo
+	MysqlStatementEventWaitTime  metricInfo
+	MysqlTableAverageRowLength   metricInfo
+	MysqlTableIoWaitCount        metricInfo
+	MysqlTableIoWaitTime         metricInfo
+	MysqlTableLockWaitReadCount  metricInfo
+	MysqlTableLockWaitReadTime   metricInfo
+	MysqlTableLockWaitWriteCount metricInfo
+	MysqlTableLockWaitWriteTime  metricInfo
+	MysqlTableRows               metricInfo
+	MysqlTableSize               metricInfo
+	MysqlTableOpenCache          metricInfo
+	MysqlThreads                 metricInfo
+	MysqlTmpResources            metricInfo
+	MysqlUptime                  metricInfo
+}
+
+type metricInfo struct {
+	Name string
 }
 
 type metricMysqlBufferPoolDataPages struct {
@@ -1911,6 +2151,57 @@ func newMetricMysqlLogOperations(cfg MetricConfig) metricMysqlLogOperations {
 	return m
 }
 
+type metricMysqlMaxUsedConnections struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.max_used_connections metric with initial data.
+func (m *metricMysqlMaxUsedConnections) init() {
+	m.data.SetName("mysql.max_used_connections")
+	m.data.SetDescription("Maximum number of connections used simultaneously since the server started.")
+	m.data.SetUnit("1")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMysqlMaxUsedConnections) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlMaxUsedConnections) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlMaxUsedConnections) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlMaxUsedConnections(cfg MetricConfig) metricMysqlMaxUsedConnections {
+	m := metricMysqlMaxUsedConnections{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricMysqlMysqlxConnections struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -2169,6 +2460,57 @@ func (m *metricMysqlPageOperations) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMysqlPageOperations(cfg MetricConfig) metricMysqlPageOperations {
 	m := metricMysqlPageOperations{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlPageSize struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.page_size metric with initial data.
+func (m *metricMysqlPageSize) init() {
+	m.data.SetName("mysql.page_size")
+	m.data.SetDescription("InnoDB page size.")
+	m.data.SetUnit("By")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMysqlPageSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlPageSize) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlPageSize) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlPageSize(cfg MetricConfig) metricMysqlPageSize {
+	m := metricMysqlPageSize{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3484,11 +3826,13 @@ type MetricsBuilder struct {
 	metricMysqlJoins                   metricMysqlJoins
 	metricMysqlLocks                   metricMysqlLocks
 	metricMysqlLogOperations           metricMysqlLogOperations
+	metricMysqlMaxUsedConnections      metricMysqlMaxUsedConnections
 	metricMysqlMysqlxConnections       metricMysqlMysqlxConnections
 	metricMysqlMysqlxWorkerThreads     metricMysqlMysqlxWorkerThreads
 	metricMysqlOpenedResources         metricMysqlOpenedResources
 	metricMysqlOperations              metricMysqlOperations
 	metricMysqlPageOperations          metricMysqlPageOperations
+	metricMysqlPageSize                metricMysqlPageSize
 	metricMysqlPreparedStatements      metricMysqlPreparedStatements
 	metricMysqlQueryClientCount        metricMysqlQueryClientCount
 	metricMysqlQueryCount              metricMysqlQueryCount
@@ -3532,7 +3876,6 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 		mb.startTime = startTime
 	})
 }
-
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		config:                             mbc,
@@ -3556,11 +3899,13 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricMysqlJoins:                   newMetricMysqlJoins(mbc.Metrics.MysqlJoins),
 		metricMysqlLocks:                   newMetricMysqlLocks(mbc.Metrics.MysqlLocks),
 		metricMysqlLogOperations:           newMetricMysqlLogOperations(mbc.Metrics.MysqlLogOperations),
+		metricMysqlMaxUsedConnections:      newMetricMysqlMaxUsedConnections(mbc.Metrics.MysqlMaxUsedConnections),
 		metricMysqlMysqlxConnections:       newMetricMysqlMysqlxConnections(mbc.Metrics.MysqlMysqlxConnections),
 		metricMysqlMysqlxWorkerThreads:     newMetricMysqlMysqlxWorkerThreads(mbc.Metrics.MysqlMysqlxWorkerThreads),
 		metricMysqlOpenedResources:         newMetricMysqlOpenedResources(mbc.Metrics.MysqlOpenedResources),
 		metricMysqlOperations:              newMetricMysqlOperations(mbc.Metrics.MysqlOperations),
 		metricMysqlPageOperations:          newMetricMysqlPageOperations(mbc.Metrics.MysqlPageOperations),
+		metricMysqlPageSize:                newMetricMysqlPageSize(mbc.Metrics.MysqlPageSize),
 		metricMysqlPreparedStatements:      newMetricMysqlPreparedStatements(mbc.Metrics.MysqlPreparedStatements),
 		metricMysqlQueryClientCount:        newMetricMysqlQueryClientCount(mbc.Metrics.MysqlQueryClientCount),
 		metricMysqlQueryCount:              newMetricMysqlQueryCount(mbc.Metrics.MysqlQueryCount),
@@ -3660,7 +4005,7 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver")
+	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricMysqlBufferPoolDataPages.emit(ils.Metrics())
@@ -3680,11 +4025,13 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricMysqlJoins.emit(ils.Metrics())
 	mb.metricMysqlLocks.emit(ils.Metrics())
 	mb.metricMysqlLogOperations.emit(ils.Metrics())
+	mb.metricMysqlMaxUsedConnections.emit(ils.Metrics())
 	mb.metricMysqlMysqlxConnections.emit(ils.Metrics())
 	mb.metricMysqlMysqlxWorkerThreads.emit(ils.Metrics())
 	mb.metricMysqlOpenedResources.emit(ils.Metrics())
 	mb.metricMysqlOperations.emit(ils.Metrics())
 	mb.metricMysqlPageOperations.emit(ils.Metrics())
+	mb.metricMysqlPageSize.emit(ils.Metrics())
 	mb.metricMysqlPreparedStatements.emit(ils.Metrics())
 	mb.metricMysqlQueryClientCount.emit(ils.Metrics())
 	mb.metricMysqlQueryCount.emit(ils.Metrics())
@@ -3890,6 +4237,16 @@ func (mb *MetricsBuilder) RecordMysqlLogOperationsDataPoint(ts pcommon.Timestamp
 	return nil
 }
 
+// RecordMysqlMaxUsedConnectionsDataPoint adds a data point to mysql.max_used_connections metric.
+func (mb *MetricsBuilder) RecordMysqlMaxUsedConnectionsDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlMaxUsedConnections, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlMaxUsedConnections.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
 // RecordMysqlMysqlxConnectionsDataPoint adds a data point to mysql.mysqlx_connections metric.
 func (mb *MetricsBuilder) RecordMysqlMysqlxConnectionsDataPoint(ts pcommon.Timestamp, inputVal string, connectionStatusAttributeValue AttributeConnectionStatus) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
@@ -3937,6 +4294,16 @@ func (mb *MetricsBuilder) RecordMysqlPageOperationsDataPoint(ts pcommon.Timestam
 		return fmt.Errorf("failed to parse int64 for MysqlPageOperations, value was %s: %w", inputVal, err)
 	}
 	mb.metricMysqlPageOperations.recordDataPoint(mb.startTime, ts, val, pageOperationsAttributeValue.String())
+	return nil
+}
+
+// RecordMysqlPageSizeDataPoint adds a data point to mysql.page_size metric.
+func (mb *MetricsBuilder) RecordMysqlPageSizeDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlPageSize, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlPageSize.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 

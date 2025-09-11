@@ -4,13 +4,12 @@
 package storagetest
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/extension/experimental/storage"
+	"go.opentelemetry.io/collector/extension/xextension/storage"
 )
 
 func TestID(t *testing.T) {
@@ -33,7 +32,7 @@ func TestFileBackedLifecycle(t *testing.T) {
 }
 
 func runExtensionLifecycle(t *testing.T, ext *TestStorage, expectPersistence bool) {
-	ctx := context.Background()
+	ctx := t.Context()
 	require.NoError(t, ext.Start(ctx, componenttest.NewNopHost()))
 
 	clientOne, err := ext.GetClient(ctx, component.KindProcessor, component.MustNewID("foo"), "client_one")

@@ -4,6 +4,7 @@
 package statsdreceiver
 
 import (
+	"errors"
 	"fmt"
 	"path/filepath"
 	"testing"
@@ -15,9 +16,10 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/internal/protocol"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -41,6 +43,7 @@ func TestLoadConfig(t *testing.T) {
 					Endpoint:  "localhost:12345",
 					Transport: confignet.TransportTypeUDP6,
 				},
+				SocketPermissions:   0o622,
 				AggregationInterval: 70 * time.Second,
 				TimerHistogramMapping: []protocol.TimerHistogramMapping{
 					{
@@ -52,6 +55,16 @@ func TestLoadConfig(t *testing.T) {
 						ObserverType: "histogram",
 						Histogram: protocol.HistogramConfig{
 							MaxSize: 170,
+							ExplicitBuckets: []protocol.ExplicitBucket{
+								{
+									MatcherPattern: "foo.*",
+									Buckets:        []float64{1, 10, 100},
+								},
+								{
+									MatcherPattern: "bar.*",
+									Buckets:        []float64{.1, .5, 1},
+								},
+							},
 						},
 					},
 					{
@@ -75,7 +88,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.NoError(t, xconfmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -89,12 +102,13 @@ func TestValidate(t *testing.T) {
 	}
 
 	const (
-		negativeAggregationIntervalErr = "aggregation_interval must be a positive duration"
-		noObjectNameErr                = "must specify object id for all TimerHistogramMappings"
-		statsdTypeNotSupportErr        = "statsd_type is not a supported mapping for histogram and timing metrics: %s"
-		observerTypeNotSupportErr      = "observer_type is not supported for histogram and timing metrics: %s"
-		invalidHistogramErr            = "histogram configuration requires observer_type: histogram"
-		invalidSummaryErr              = "summary configuration requires observer_type: summary"
+		negativeAggregationIntervalErr    = "aggregation_interval must be a positive duration"
+		noObjectNameErr                   = "must specify object id for all TimerHistogramMappings"
+		statsdTypeNotSupportErr           = "statsd_type is not a supported mapping for histogram and timing metrics: %s"
+		observerTypeNotSupportErr         = "observer_type is not supported for histogram and timing metrics: %s"
+		invalidHistogramErr               = "histogram configuration requires observer_type: histogram"
+		invalidSummaryErr                 = "summary configuration requires observer_type: summary"
+		invalidExplicitBucketNoPatternErr = "explicit bucket [0] matcher_pattern must not be empty"
 	)
 
 	tests := []test{
@@ -190,6 +204,27 @@ func TestValidate(t *testing.T) {
 			},
 			expectedErr: negativeAggregationIntervalErr,
 		},
+		{
+			name: "NotEmptyExplicitBuckets-invalidExplicitBucketsEmptyPattern",
+			cfg: &Config{
+				AggregationInterval: 20 * time.Second,
+				TimerHistogramMapping: []protocol.TimerHistogramMapping{
+					{
+						StatsdType:   "timing",
+						ObserverType: "histogram",
+						Histogram: protocol.HistogramConfig{
+							MaxSize: 100,
+							ExplicitBuckets: []protocol.ExplicitBucket{
+								{
+									Buckets: []float64{1, 2, 3},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedErr: invalidExplicitBucketNoPatternErr,
+		},
 	}
 
 	for _, test := range tests {
@@ -198,6 +233,7 @@ func TestValidate(t *testing.T) {
 		})
 	}
 }
+
 func TestConfig_Validate_MaxSize(t *testing.T) {
 	for _, maxSize := range []int32{structure.MaximumMaxSize + 1, -1, -structure.MaximumMaxSize} {
 		cfg := &Config{
@@ -216,6 +252,7 @@ func TestConfig_Validate_MaxSize(t *testing.T) {
 		assert.ErrorContains(t, err, "histogram max_size out of range")
 	}
 }
+
 func TestConfig_Validate_HistogramGoodConfig(t *testing.T) {
 	for _, maxSize := range []int32{structure.MaximumMaxSize, 0, 2} {
 		cfg := &Config{
@@ -232,5 +269,73 @@ func TestConfig_Validate_HistogramGoodConfig(t *testing.T) {
 		}
 		err := cfg.Validate()
 		assert.NoError(t, err)
+	}
+}
+
+func TestConfig_validateExplicitBuckets(t *testing.T) {
+	tt := []struct {
+		_               struct{}
+		Name            string
+		Explicitbuckets []protocol.ExplicitBucket
+		Want            error
+	}{
+		{
+			Name: "EmptyPattern",
+			Explicitbuckets: []protocol.ExplicitBucket{
+				{
+					Buckets: []float64{1, 2, 3},
+				},
+			},
+			Want: errors.New("explicit bucket [0] matcher_pattern must not be empty"),
+		},
+		{
+			Name: "EmptyBuckets",
+			Explicitbuckets: []protocol.ExplicitBucket{
+				{
+					MatcherPattern: "foo.*",
+				},
+			},
+			Want: errors.New("explicit bucket [0] buckets must not be empty"),
+		},
+		{
+			Name: "InvalidMatcherPattern",
+			Explicitbuckets: []protocol.ExplicitBucket{
+				{
+					MatcherPattern: `foo.*\k`,
+					Buckets:        []float64{1, 2, 3},
+				},
+			},
+			Want: errors.New("explicit bucket [0] matcher_pattern is not a valid regular expression: error parsing regexp: invalid escape sequence: `\\k`"),
+		},
+		{
+			Name: "UnsortedBuckets",
+			Explicitbuckets: []protocol.ExplicitBucket{
+				{
+					MatcherPattern: "foo.*",
+					Buckets:        []float64{3, 2, 1},
+				},
+			},
+			Want: errors.New("explicit bucket [0] buckets are not unique or not ascendingly sorted [3 2 1]"),
+		},
+		{
+			Name: "DuplicatedBucket",
+			Explicitbuckets: []protocol.ExplicitBucket{
+				{
+					MatcherPattern: "foo.*",
+					Buckets:        []float64{1, 2, 3, 2, 4, 5},
+				},
+			},
+			Want: errors.New("explicit bucket [0] buckets are not unique or not ascendingly sorted [1 2 3 2 4 5]"),
+		},
+	}
+
+	cfg := &Config{}
+	for i := range tt {
+		tc := tt[i]
+		t.Run(tc.Name, func(t *testing.T) {
+			t.Parallel()
+			got := cfg.validateExplicitBuckets(tc.Explicitbuckets)
+			require.EqualError(t, got, tc.Want.Error())
+		})
 	}
 }

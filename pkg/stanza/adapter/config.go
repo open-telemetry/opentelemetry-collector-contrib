@@ -19,7 +19,6 @@ type BaseConfig struct {
 	RetryOnFailure consumerretry.Config `mapstructure:"retry_on_failure"`
 
 	// currently not configurable by users, but available for benchmarking
-	numWorkers    int
 	maxBatchSize  uint
 	flushInterval time.Duration
 }

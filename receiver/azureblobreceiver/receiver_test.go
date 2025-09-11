@@ -4,7 +4,6 @@
 package azureblobreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver"
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -12,6 +11,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver/internal/metadata"
 )
 
 var (
@@ -36,7 +37,7 @@ func TestConsumeLogsJSON(t *testing.T) {
 
 	logsConsumer.setNextLogsConsumer(logsSink)
 
-	err := logsConsumer.consumeLogsJSON(context.Background(), logsJSON)
+	err := logsConsumer.consumeLogsJSON(t.Context(), logsJSON)
 	require.NoError(t, err)
 	assert.Equal(t, 1, logsSink.LogRecordCount())
 }
@@ -50,13 +51,13 @@ func TestConsumeTracesJSON(t *testing.T) {
 
 	tracesConsumer.setNextTracesConsumer(tracesSink)
 
-	err := tracesConsumer.consumeTracesJSON(context.Background(), tracesJSON)
+	err := tracesConsumer.consumeTracesJSON(t.Context(), tracesJSON)
 	require.NoError(t, err)
 	assert.Equal(t, 2, tracesSink.SpanCount())
 }
 
 func getBlobReceiver(t *testing.T) (component.Component, error) {
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettings(metadata.Type)
 
 	blobClient := newMockBlobClient()
 	blobEventHandler := getBlobEventHandler(t, blobClient)

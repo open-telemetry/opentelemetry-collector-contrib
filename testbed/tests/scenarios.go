@@ -8,9 +8,10 @@ package tests // import "github.com/open-telemetry/opentelemetry-collector-contr
 
 import (
 	"fmt"
-	"math/rand"
+	"math/rand/v2"
 	"path"
 	"path/filepath"
+	"regexp"
 	"testing"
 	"time"
 
@@ -23,6 +24,8 @@ import (
 )
 
 var (
+	batchRegex                                           = regexp.MustCompile(` batch_index=(\S+) `)
+	itemRegex                                            = regexp.MustCompile(` item_index=(\S+) `)
 	performanceResultsSummary testbed.TestResultsSummary = &testbed.PerformanceResults{}
 )
 
@@ -44,7 +47,6 @@ func createConfigYaml(
 	processors []ProcessorNameAndConfigBody,
 	extensions map[string]string,
 ) string {
-
 	// Create a config. Note that our DataSender is used to generate a config for Collector's
 	// receiver and our DataReceiver is used to generate a config for Collector's exporter.
 	// This is because our DataSender sends to Collector's receiver and our DataReceiver
@@ -140,23 +142,27 @@ func Scenario10kItemsPerSecond(
 	resultsSummary testbed.TestResultsSummary,
 	processors []ProcessorNameAndConfigBody,
 	extensions map[string]string,
+	loadOptions *testbed.LoadOptions,
 ) {
 	resultDir, err := filepath.Abs(path.Join("results", t.Name()))
 	require.NoError(t, err)
 
-	options := testbed.LoadOptions{
-		DataItemsPerSecond: 10_000,
-		ItemsPerBatch:      100,
-		Parallel:           1,
+	if loadOptions == nil {
+		loadOptions = &testbed.LoadOptions{
+			ItemsPerBatch: 100,
+			Parallel:      1,
+		}
 	}
+	loadOptions.DataItemsPerSecond = 10_000
+
 	agentProc := testbed.NewChildProcessCollector(testbed.WithEnvVar("GOMAXPROCS", "2"))
 
 	configStr := createConfigYaml(t, sender, receiver, resultDir, processors, extensions)
-	configCleanup, err := agentProc.PrepareConfig(configStr)
+	configCleanup, err := agentProc.PrepareConfig(t, configStr)
 	require.NoError(t, err)
 	defer configCleanup()
 
-	dataProvider := testbed.NewPerfTestDataProvider(options)
+	dataProvider := testbed.NewPerfTestDataProvider(*loadOptions)
 	tc := testbed.NewTestCase(
 		t,
 		dataProvider,
@@ -172,7 +178,7 @@ func Scenario10kItemsPerSecond(
 	tc.StartBackend()
 	tc.StartAgent()
 
-	tc.StartLoad(options)
+	tc.StartLoad(*loadOptions)
 
 	tc.WaitFor(func() bool { return tc.LoadGenerator.DataItemsSent() > 0 }, "load generator started")
 
@@ -211,7 +217,7 @@ func Scenario10kItemsPerSecondAlternateBackend(
 
 	configStr := createConfigYaml(t, sender, receiver, resultDir, processors, extensions)
 	fmt.Println(configStr)
-	configCleanup, err := agentProc.PrepareConfig(configStr)
+	configCleanup, err := agentProc.PrepareConfig(t, configStr)
 	require.NoError(t, err)
 	defer configCleanup()
 
@@ -259,7 +265,7 @@ type TestCase struct {
 func genRandByteString(length int) string {
 	b := make([]byte, length)
 	for i := range b {
-		b[i] = byte(rand.Intn(128))
+		b[i] = byte(rand.IntN(128))
 	}
 	return string(b)
 }
@@ -267,11 +273,8 @@ func genRandByteString(length int) string {
 // Scenario1kSPSWithAttrs runs a performance test at 1k sps with specified span attributes
 // and test options.
 func Scenario1kSPSWithAttrs(t *testing.T, args []string, tests []TestCase, processors []ProcessorNameAndConfigBody, extensions map[string]string) {
-	for i := range tests {
-		test := tests[i]
-
+	for _, test := range tests {
 		t.Run(fmt.Sprintf("%d*%dbytes", test.attrCount, test.attrSizeByte), func(t *testing.T) {
-
 			options := constructLoadOptions(test)
 
 			agentProc := testbed.NewChildProcessCollector(testbed.WithEnvVar("GOMAXPROCS", "2"))
@@ -286,7 +289,7 @@ func Scenario1kSPSWithAttrs(t *testing.T, args []string, tests []TestCase, proce
 
 			// Prepare config.
 			configStr := createConfigYaml(t, sender, receiver, resultDir, processors, extensions)
-			configCleanup, err := agentProc.PrepareConfig(configStr)
+			configCleanup, err := agentProc.PrepareConfig(t, configStr)
 			require.NoError(t, err)
 			defer configCleanup()
 
@@ -342,7 +345,7 @@ func ScenarioTestTraceNoBackend10kSPS(
 	options := testbed.LoadOptions{DataItemsPerSecond: 10000, ItemsPerBatch: 10}
 	agentProc := testbed.NewChildProcessCollector(testbed.WithEnvVar("GOMAXPROCS", "2"))
 	configStr := createConfigYaml(t, sender, receiver, resultDir, configuration.Processor, nil)
-	configCleanup, err := agentProc.PrepareConfig(configStr)
+	configCleanup, err := agentProc.PrepareConfig(t, configStr)
 	require.NoError(t, err)
 	defer configCleanup()
 
@@ -388,7 +391,7 @@ func ScenarioSendingQueuesFull(
 	agentProc := testbed.NewChildProcessCollector(testbed.WithEnvVar("GOMAXPROCS", "2"))
 
 	configStr := createConfigYaml(t, sender, receiver, resultDir, processors, extensions)
-	configCleanup, err := agentProc.PrepareConfig(configStr)
+	configCleanup, err := agentProc.PrepareConfig(t, configStr)
 	require.NoError(t, err)
 	defer configCleanup()
 	dataProvider := testbed.NewPerfTestDataProvider(loadOptions)
@@ -470,7 +473,7 @@ func ScenarioSendingQueuesNotFull(
 	agentProc := testbed.NewChildProcessCollector(testbed.WithEnvVar("GOMAXPROCS", "2"))
 
 	configStr := createConfigYaml(t, sender, receiver, resultDir, processors, extensions)
-	configCleanup, err := agentProc.PrepareConfig(configStr)
+	configCleanup, err := agentProc.PrepareConfig(t, configStr)
 	require.NoError(t, err)
 	defer configCleanup()
 	dataProvider := testbed.NewPerfTestDataProvider(loadOptions)
@@ -521,7 +524,7 @@ func ScenarioLong(
 	agentProc := testbed.NewChildProcessCollector(testbed.WithEnvVar("GOMAXPROCS", "2"))
 
 	configStr := createConfigYaml(t, sender, receiver, resultDir, processors, nil)
-	configCleanup, err := agentProc.PrepareConfig(configStr)
+	configCleanup, err := agentProc.PrepareConfig(t, configStr)
 	require.NoError(t, err)
 	defer configCleanup()
 	dataProvider := testbed.NewPerfTestDataProvider(loadOptions)
@@ -552,14 +555,102 @@ func ScenarioLong(
 	tc.ValidateData()
 }
 
+func ScenarioMemoryLimiterHit(
+	t *testing.T,
+	sender testbed.DataSender,
+	receiver testbed.DataReceiver,
+	loadOptions testbed.LoadOptions,
+	resultsSummary testbed.TestResultsSummary,
+	sleepTime int,
+	processors []ProcessorNameAndConfigBody,
+) {
+	resultDir, err := filepath.Abs(path.Join("results", t.Name()))
+	require.NoError(t, err)
+
+	agentProc := testbed.NewChildProcessCollector(testbed.WithEnvVar("GOMAXPROCS", "2"))
+
+	configStr := createConfigYaml(t, sender, receiver, resultDir, processors, nil)
+	configCleanup, err := agentProc.PrepareConfig(t, configStr)
+	require.NoError(t, err)
+	defer configCleanup()
+	dataProvider := testbed.NewPerfTestDataProvider(loadOptions)
+	dataChannel := make(chan bool)
+	tc := testbed.NewTestCase(
+		t,
+		dataProvider,
+		sender,
+		receiver,
+		agentProc,
+		&testbed.CorrectnessLogTestValidator{},
+		resultsSummary,
+		testbed.WithDecisionFunc(func() error { return testbed.GenerateNonPernamentErrorUntil(dataChannel) }),
+	)
+	t.Cleanup(tc.Stop)
+	tc.MockBackend.EnableRecording()
+
+	tc.StartBackend()
+	tc.StartAgent()
+
+	tc.StartLoad(loadOptions)
+
+	tc.WaitFor(func() bool { return tc.LoadGenerator.DataItemsSent() > 0 }, "load generator started")
+
+	var timer *time.Timer
+
+	// check for "Memory usage is above soft limit"
+	tc.WaitForN(func() bool {
+		logFound := tc.AgentLogsContains("Memory usage is above soft limit. Refusing data.")
+		if !logFound {
+			dataChannel <- true
+			return false
+		}
+		// Log found. But keep the collector under stress for 10 more seconds so it starts refusing data
+		if timer == nil {
+			timer = time.NewTimer(10 * time.Second)
+		}
+		select {
+		case <-timer.C:
+		default:
+			return false
+		}
+		close(dataChannel)
+		return logFound
+	}, time.Second*time.Duration(sleepTime), "memory limit not hit")
+
+	// check if data started to be received successfully
+	tc.WaitForN(func() bool {
+		return tc.MockBackend.DataItemsReceived() > 0
+	}, time.Second*time.Duration(sleepTime), "data started to be successfully received")
+
+	// stop sending any more data
+	tc.StopLoad()
+
+	tc.WaitForN(func() bool { return tc.LoadGenerator.DataItemsSent() == tc.MockBackend.DataItemsReceived() }, time.Second*time.Duration(sleepTime), "all logs received")
+
+	tc.WaitForN(func() bool {
+		// get IDs from logs to retry
+		logsToRetry := getLogsID(tc.MockBackend.LogsToRetry)
+
+		// get IDs from logs received successfully
+		successfulLogs := getLogsID(tc.MockBackend.ReceivedLogs)
+
+		// check if all the logs to retry were actually retried
+		logsWereRetried := allElementsExistInSlice(logsToRetry, successfulLogs)
+		return logsWereRetried
+	}, time.Second*time.Duration(sleepTime), "all logs were retried successfully")
+
+	tc.StopAgent()
+	tc.ValidateData()
+}
+
 func constructLoadOptions(test TestCase) testbed.LoadOptions {
 	options := testbed.LoadOptions{DataItemsPerSecond: 1000, ItemsPerBatch: 10}
 	options.Attributes = make(map[string]string)
 
 	// Generate attributes.
 	for i := 0; i < test.attrCount; i++ {
-		attrName := genRandByteString(rand.Intn(199) + 1)
-		options.Attributes[attrName] = genRandByteString(rand.Intn(test.attrSizeByte*2-1) + 1)
+		attrName := genRandByteString(rand.IntN(199) + 1)
+		options.Attributes[attrName] = genRandByteString(rand.IntN(test.attrSizeByte*2-1) + 1)
 	}
 	return options
 }
@@ -570,9 +661,8 @@ func getLogsID(logToRetry []plog.Logs) []string {
 		logRecord := logElement.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
 		for index := 0; index < logRecord.Len(); index++ {
 			logObj := logRecord.At(index)
-			itemIndex, _ := logObj.Attributes().Get("item_index")
-			batchIndex, _ := logObj.Attributes().Get("batch_index")
-			result = append(result, fmt.Sprintf("%s%s", batchIndex.AsString(), itemIndex.AsString()))
+			itemIndex, batchIndex := extractIDFromLog(logObj)
+			result = append(result, fmt.Sprintf("%s%s", batchIndex, itemIndex))
 		}
 	}
 	return result
@@ -595,4 +685,26 @@ func allElementsExistInSlice(slice1, slice2 []string) bool {
 	}
 
 	return true
+}
+
+// in case of filelog receiver, the batch_index and item_index are a part of log body.
+// we use regex to extract them
+func extractIDFromLog(log plog.LogRecord) (string, string) {
+	var batch, item string
+	match := batchRegex.FindStringSubmatch(log.Body().AsString())
+	if len(match) == 2 {
+		batch = match[0]
+	}
+	match = itemRegex.FindStringSubmatch(log.Body().AsString())
+	if len(match) == 2 {
+		batch = match[0]
+	}
+	// in case of otlp receiver, batch_index and item_index are part of attributes.
+	if batchIndex, ok := log.Attributes().Get("batch_index"); ok {
+		batch = batchIndex.AsString()
+	}
+	if itemIndex, ok := log.Attributes().Get("item_index"); ok {
+		item = itemIndex.AsString()
+	}
+	return batch, item
 }

@@ -597,6 +597,15 @@ resourceMetrics:
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
             unit: '{KiBy/s}'
+          - description: Total memory  capacity of the host system.
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: 784648.000000
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: vcenter.host.memory.capacity
+            unit: 'MiBy'
           - description: The amount of memory the host system is using.
             name: vcenter.host.memory.usage
             sum:
@@ -1332,6 +1341,15 @@ resourceMetrics:
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
             unit: '{KiBy/s}'
+          - description: Total memory  capacity of the host system.
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: 784648.000000
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: vcenter.host.memory.capacity
+            unit: 'MiBy'
           - description: The amount of memory the host system is using.
             name: vcenter.host.memory.usage
             sum:
@@ -2149,6 +2167,41 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: vcenter.vm.cpu.readiness
             unit: '%'
+          - description: CPU time spent in idle, ready or wait state.
+            gauge:
+              dataPoints:
+                - asDouble: "1.0"
+                  attributes:
+                    - key: cpu_state
+                      value:
+                        stringValue: "idle"
+                    - key: object
+                      value:
+                        stringValue: "4000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: "2.5"
+                  attributes:
+                    - key: cpu_state
+                      value:
+                        stringValue: "ready"
+                    - key: object
+                      value:
+                        stringValue: "4000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: "1.5"
+                  attributes:
+                    - key: cpu_state
+                      value:
+                        stringValue: "wait"
+                    - key: object
+                      value:
+                        stringValue: "4000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+            name: vcenter.vm.cpu.time
+            unit: "%"
           - description: The amount of CPU used by the VM.
             name: vcenter.vm.cpu.usage
             sum:
@@ -2291,6 +2344,15 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: MiBy
+          - description: The amount of memory that is granted to a VM.
+            name: vcenter.vm.memory.granted
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: MiBy
           - description: The portion of memory that is granted to this VM from the host's swap space.
             name: vcenter.vm.memory.swapped
             sum:
@@ -2326,6 +2388,156 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: vcenter.vm.memory.utilization
             unit: '%'
+          - description: The rate of broadcast packets transmitted or received by each vNIC (virtual network interface controller) on the virtual machine.
+            gauge:
+              dataPoints:
+                - asDouble: 3.5
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: "4000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: 3.5
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: 3.5
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: "4000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: 3.5
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: 3.5
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic1
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: 3.5
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: 3.5
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic3
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+            name: vcenter.vm.network.broadcast.packet.rate
+            unit: '{packets/s}'
+          - description: The rate of multicast packets transmitted or received by each vNIC (virtual network interface controller) on the virtual machine.
+            gauge:
+              dataPoints:
+                - asDouble: 3.5
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: "4000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: 4.5
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: 4.5
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: "4000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: 4.5
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: 4.5
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic1
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: 4.5
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: 4.5
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic3
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+            name: vcenter.vm.network.multicast.packet.rate
+            unit: '{packets/s}'
           - description: The rate of transmitted or received packets dropped by each vNIC (virtual network interface controller) on the virtual machine.
             gauge:
               dataPoints:
@@ -2786,6 +2998,41 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: vcenter.vm.cpu.readiness
             unit: '%'
+          - description: CPU time spent in idle, ready or wait state. 
+            gauge:
+              dataPoints:
+                - asDouble: "1.0"
+                  attributes:
+                    - key: cpu_state
+                      value:
+                        stringValue: "idle"
+                    - key: object
+                      value:
+                        stringValue: "4000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: "2.5"
+                  attributes:
+                    - key: cpu_state
+                      value:
+                        stringValue: "ready"
+                    - key: object
+                      value:
+                        stringValue: "4000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: "1.5"
+                  attributes:
+                    - key: cpu_state
+                      value:
+                        stringValue: "wait"
+                    - key: object
+                      value:
+                        stringValue: "4000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+            name: vcenter.vm.cpu.time
+            unit: "%"
           - description: The amount of CPU used by the VM.
             name: vcenter.vm.cpu.usage
             sum:
@@ -2928,6 +3175,15 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: MiBy
+          - description: The amount of memory that is granted to a VM.
+            name: vcenter.vm.memory.granted
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: MiBy
           - description: The portion of memory that is granted to this VM from the host's swap space.
             name: vcenter.vm.memory.swapped
             sum:
@@ -2963,6 +3219,156 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: vcenter.vm.memory.utilization
             unit: '%'
+          - description: The rate of broadcast packets transmitted or received by each vNIC (virtual network interface controller) on the virtual machine.
+            gauge:
+              dataPoints:
+                - asDouble: 4.5
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: 3.5
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: 3.5
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: "4000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: 3.5
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: 3.5
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic1
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: 3.5
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: 3.5
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic3
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+            name: vcenter.vm.network.broadcast.packet.rate
+            unit: '{packets/s}'
+          - description: The rate of multicast packets transmitted or received by each vNIC (virtual network interface controller) on the virtual machine.
+            gauge:
+              dataPoints:
+                - asDouble: 4.5
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: 4.5
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: 4.5
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: "4000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: 4.5
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: 4.5
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic1
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: 4.5
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: 4.5
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic3
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+            name: vcenter.vm.network.multicast.packet.rate
+            unit: '{packets/s}'
           - description: The rate of transmitted or received packets dropped by each vNIC (virtual network interface controller) on the virtual machine.
             gauge:
               dataPoints:
@@ -3522,6 +3928,41 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: vcenter.vm.cpu.readiness
             unit: '%'
+          - description: CPU time spent in idle, ready or wait state. 
+            gauge:
+              dataPoints:
+                - asDouble: "1.0"
+                  attributes:
+                    - key: cpu_state
+                      value:
+                        stringValue: "idle"
+                    - key: object
+                      value:
+                        stringValue: "4000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: "2.5"
+                  attributes:
+                    - key: cpu_state
+                      value:
+                        stringValue: "ready"
+                    - key: object
+                      value:
+                        stringValue: "4000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: "1.50"
+                  attributes:
+                    - key: cpu_state
+                      value:
+                        stringValue: "wait"
+                    - key: object
+                      value:
+                        stringValue: "4000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+            name: vcenter.vm.cpu.time
+            unit: "%"
           - description: The amount of CPU used by the VM.
             name: vcenter.vm.cpu.usage
             sum:
@@ -3664,6 +4105,15 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: MiBy
+          - description: The amount of memory that is granted to a VM.
+            name: vcenter.vm.memory.granted
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: MiBy
           - description: The portion of memory that is granted to this VM from the host's swap space.
             name: vcenter.vm.memory.swapped
             sum:
@@ -3699,6 +4149,156 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: vcenter.vm.memory.utilization
             unit: '%'
+          - description: The rate of broadcast packets transmitted or received by each vNIC (virtual network interface controller) on the virtual machine.
+            gauge:
+              dataPoints:
+                - asDouble: 3.5
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: 3.5
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: 3.5
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: "4000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: 3.5
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: 3.5
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic1
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: 3.5
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: 3.5
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic3
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+            name: vcenter.vm.network.broadcast.packet.rate
+            unit: '{packets/s}'
+          - description: The rate of multicast packets transmitted or received by each vNIC (virtual network interface controller) on the virtual machine.
+            gauge:
+              dataPoints:
+                - asDouble: 3.5
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: 1.0
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: 4.5
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: "4000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: 4.5
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: 4.5
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic1
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: 4.5
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: 4.5
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic3
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+            name: vcenter.vm.network.multicast.packet.rate
+            unit: '{packets/s}'
           - description: The rate of transmitted or received packets dropped by each vNIC (virtual network interface controller) on the virtual machine.
             gauge:
               dataPoints:

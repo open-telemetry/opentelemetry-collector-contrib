@@ -82,7 +82,7 @@ func TestPublishAckedWithinTimeout(t *testing.T) {
 	publisher, err := NewConnection(zap.NewNop(), client, makeDialConfig())
 	require.NoError(t, err)
 
-	err = publisher.Publish(context.Background(), makePublishMessage())
+	err = publisher.Publish(t.Context(), makePublishMessage())
 
 	require.NoError(t, err)
 	client.AssertExpectations(t)
@@ -93,13 +93,13 @@ func TestPublishAckedWithinTimeout(t *testing.T) {
 
 func TestPublishNackedWithinTimeout(t *testing.T) {
 	client, connection, channel, confirmation := setupMocksForSuccessfulPublish()
-	resetCall(confirmation.ExpectedCalls, "Acked", t)
+	resetCall(t, confirmation.ExpectedCalls, "Acked")
 	confirmation.On("Acked").Return(false)
 
 	publisher, err := NewConnection(zap.NewNop(), client, makeDialConfig())
 	require.NoError(t, err)
 
-	err = publisher.Publish(context.Background(), makePublishMessage())
+	err = publisher.Publish(t.Context(), makePublishMessage())
 
 	assert.EqualError(t, err, "received nack from rabbitmq publishing confirmation")
 	client.AssertExpectations(t)
@@ -111,15 +111,15 @@ func TestPublishNackedWithinTimeout(t *testing.T) {
 func TestPublishTimeoutBeforeAck(t *testing.T) {
 	client, connection, channel, confirmation := setupMocksForSuccessfulPublish()
 
-	resetCall(confirmation.ExpectedCalls, "Done", t)
-	resetCall(confirmation.ExpectedCalls, "Acked", t)
+	resetCall(t, confirmation.ExpectedCalls, "Done")
+	resetCall(t, confirmation.ExpectedCalls, "Acked")
 	emptyConfirmationChan := make(<-chan struct{})
 	confirmation.On("Done").Return(emptyConfirmationChan)
 
 	publisher, err := NewConnection(zap.NewNop(), client, makeDialConfig())
 	require.NoError(t, err)
 
-	err = publisher.Publish(context.Background(), makePublishMessage())
+	err = publisher.Publish(t.Context(), makePublishMessage())
 
 	assert.EqualError(t, err, "timeout waiting for publish confirmation after 20ms")
 	client.AssertExpectations(t)
@@ -136,15 +136,15 @@ func TestPublishTwiceReusingSameConnection(t *testing.T) {
 	confirmationChan <- struct{}{}
 	confirmationChan <- struct{}{}
 	var confirmationChanRet <-chan struct{} = confirmationChan
-	resetCall(confirmation.ExpectedCalls, "Done", t)
+	resetCall(t, confirmation.ExpectedCalls, "Done")
 	confirmation.On("Done").Return(confirmationChanRet)
 
 	publisher, err := NewConnection(zap.NewNop(), client, makeDialConfig())
 	require.NoError(t, err)
 
-	err = publisher.Publish(context.Background(), makePublishMessage())
+	err = publisher.Publish(t.Context(), makePublishMessage())
 	require.NoError(t, err)
-	err = publisher.Publish(context.Background(), makePublishMessage())
+	err = publisher.Publish(t.Context(), makePublishMessage())
 	require.NoError(t, err)
 
 	client.AssertNumberOfCalls(t, "DialConfig", 1)
@@ -158,7 +158,7 @@ func TestRestoreUnhealthyConnectionDuringPublish(t *testing.T) {
 	client, connection, channel, confirmation := setupMocksForSuccessfulPublish()
 
 	// Capture the channel that the amqp library uses to notify about connection issues so that we can simulate the notification
-	resetCall(connection.ExpectedCalls, "NotifyClose", t)
+	resetCall(t, connection.ExpectedCalls, "NotifyClose")
 	var connectionErrChan chan *amqp.Error
 	connection.On("NotifyClose", mock.Anything).Return(make(chan *amqp.Error)).Run(func(args mock.Arguments) {
 		connectionErrChan = args.Get(0).(chan *amqp.Error)
@@ -170,12 +170,12 @@ func TestRestoreUnhealthyConnectionDuringPublish(t *testing.T) {
 	connectionErrChan <- amqp.ErrClosed
 	connection.On("Close").Return(nil)
 
-	err = publisher.Publish(context.Background(), makePublishMessage())
+	err = publisher.Publish(t.Context(), makePublishMessage())
 
 	require.NoError(t, err)
 	connection.AssertNumberOfCalls(t, "ReconnectIfUnhealthy", 1)
 	client.AssertExpectations(t)
-	resetCall(connection.ExpectedCalls, "Close", t)
+	resetCall(t, connection.ExpectedCalls, "Close")
 	connection.AssertExpectations(t)
 	channel.AssertExpectations(t)
 	confirmation.AssertExpectations(t)
@@ -188,7 +188,7 @@ func TestRestoreClosedConnectionDuringPublish(t *testing.T) {
 	publisher, err := NewConnection(zap.NewNop(), client, makeDialConfig())
 	require.NoError(t, err)
 
-	err = publisher.Publish(context.Background(), makePublishMessage())
+	err = publisher.Publish(t.Context(), makePublishMessage())
 	require.NoError(t, err)
 	client.AssertNumberOfCalls(t, "DialConfig", 1)
 	client.AssertExpectations(t)
@@ -206,36 +206,36 @@ func TestFailRestoreConnectionDuringPublishing(t *testing.T) {
 
 	connection.On("IsClosed").Return(true)
 
-	resetCall(client.ExpectedCalls, "DialConfig", t)
+	resetCall(t, client.ExpectedCalls, "DialConfig")
 	client.On("DialConfig", connectURL, mock.Anything).Return(nil, errors.New("simulated connection error"))
 
-	_ = publisher.Publish(context.Background(), makePublishMessage())
+	_ = publisher.Publish(t.Context(), makePublishMessage())
 	client.AssertNumberOfCalls(t, "DialConfig", 1)
 }
 
 func TestErrCreatingChannel(t *testing.T) {
 	client, connection, _, _ := setupMocksForSuccessfulPublish()
 
-	resetCall(connection.ExpectedCalls, "Channel", t)
+	resetCall(t, connection.ExpectedCalls, "Channel")
 	connection.On("Channel").Return(nil, errors.New("simulated error creating channel"))
 
 	publisher, err := NewConnection(zap.NewNop(), client, makeDialConfig())
 	require.NoError(t, err)
 
-	err = publisher.Publish(context.Background(), makePublishMessage())
+	err = publisher.Publish(t.Context(), makePublishMessage())
 	assert.EqualError(t, err, "simulated error creating channel")
 }
 
 func TestErrSettingChannelConfirmMode(t *testing.T) {
 	client, _, channel, _ := setupMocksForSuccessfulPublish()
 
-	resetCall(channel.ExpectedCalls, "Confirm", t)
+	resetCall(t, channel.ExpectedCalls, "Confirm")
 	channel.On("Confirm", false).Return(errors.New("simulated error setting channel confirm mode"))
 
 	publisher, err := NewConnection(zap.NewNop(), client, makeDialConfig())
 	require.NoError(t, err)
 
-	err = publisher.Publish(context.Background(), makePublishMessage())
+	err = publisher.Publish(t.Context(), makePublishMessage())
 	assert.EqualError(t, err, "simulated error setting channel confirm mode")
 }
 
@@ -246,13 +246,13 @@ func TestErrPublishing(t *testing.T) {
 	channel.On("Confirm", false).Return(nil)
 	channel.On("PublishWithDeferredConfirmWithContext", mock.Anything, exchange, routingKey, true, false, mock.MatchedBy(isPersistentDeliverMode)).Return(nil, errors.New("simulated error publishing"))
 	channel.On("Close").Return(nil)
-	resetCall(connection.ExpectedCalls, "Channel", t)
+	resetCall(t, connection.ExpectedCalls, "Channel")
 	connection.On("Channel").Return(&channel, nil)
 
 	publisher, err := NewConnection(zap.NewNop(), client, makeDialConfig())
 	require.NoError(t, err)
 
-	err = publisher.Publish(context.Background(), makePublishMessage())
+	err = publisher.Publish(t.Context(), makePublishMessage())
 	assert.EqualError(t, err, "error publishing message\nsimulated error publishing")
 }
 
@@ -286,14 +286,14 @@ func isPersistentDeliverMode(p amqp.Publishing) bool {
 	return p.DeliveryMode == amqp.Persistent
 }
 
-func resetCall(calls []*mock.Call, methodName string, t *testing.T) {
+func resetCall(t *testing.T, calls []*mock.Call, methodName string) {
 	for _, call := range calls {
 		if call.Method == methodName {
 			call.Unset()
 			return
 		}
 	}
-	t.Errorf("Faild to reset method %s", methodName)
+	t.Errorf("Failed to reset method %s", methodName)
 	t.FailNow()
 }
 

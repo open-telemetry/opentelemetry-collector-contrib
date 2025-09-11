@@ -4,7 +4,6 @@
 package splunkhecexporter
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -112,10 +111,10 @@ func TestBatchLogs_ConsumeLogs(t *testing.T) {
 			logs, err := golden.ReadLogs("testdata/batchperscope/" + tt.in)
 			require.NoError(t, err)
 
-			err = consumer.ConsumeLogs(context.Background(), logs)
+			err = consumer.ConsumeLogs(t.Context(), logs)
 			assert.NoError(t, err)
 
-			require.Equal(t, len(tt.out), len(sink.AllLogs()))
+			require.Len(t, tt.out, len(sink.AllLogs()))
 			for i, out := range tt.out {
 				expected, err := golden.ReadLogs("testdata/batchperscope/" + out)
 				require.NoError(t, err)

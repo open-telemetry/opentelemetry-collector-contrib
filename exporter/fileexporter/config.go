@@ -5,7 +5,6 @@ package fileexporter // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"errors"
-	"fmt"
 	"strings"
 	"time"
 
@@ -20,7 +19,6 @@ const (
 
 // Config defines configuration for file exporter.
 type Config struct {
-
 	// Path of the file to write to. Path is relative to current directory.
 	Path string `mapstructure:"path"`
 
@@ -102,10 +100,10 @@ func (cfg *Config) Validate() error {
 		return errors.New("path must be non-empty")
 	}
 	if cfg.Append && cfg.Compression != "" {
-		return fmt.Errorf("append and compression enabled at the same time is not supported")
+		return errors.New("append and compression enabled at the same time is not supported")
 	}
 	if cfg.Append && cfg.Rotation != nil {
-		return fmt.Errorf("append and rotation enabled at the same time is not supported")
+		return errors.New("append and rotation enabled at the same time is not supported")
 	}
 	if cfg.FormatType != formatTypeJSON && cfg.FormatType != formatTypeProto {
 		return errors.New("format type is not supported")
@@ -120,10 +118,10 @@ func (cfg *Config) Validate() error {
 	if cfg.GroupBy != nil && cfg.GroupBy.Enabled {
 		pathParts := strings.Split(cfg.Path, "*")
 		if len(pathParts) != 2 {
-			return errors.New("path must contain exatcly one * when group_by is enabled")
+			return errors.New("path must contain exactly one * when group_by is enabled")
 		}
 
-		if len(pathParts[0]) == 0 {
+		if pathParts[0] == "" {
 			return errors.New("path must not start with * when group_by is enabled")
 		}
 

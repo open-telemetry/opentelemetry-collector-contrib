@@ -9,18 +9,18 @@ import (
 	"context"
 	"runtime"
 
-	"github.com/shirou/gopsutil/v4/common"
 	"github.com/shirou/gopsutil/v4/process"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processesscraper/internal/metadata"
 )
 
-const enableProcessesCount = true
-const enableProcessesCreated = runtime.GOOS == "openbsd" || runtime.GOOS == "linux"
+const (
+	enableProcessesCount   = true
+	enableProcessesCreated = runtime.GOOS == "openbsd" || runtime.GOOS == "linux"
+)
 
-func (s *scraper) getProcessesMetadata() (processesMetadata, error) {
-	ctx := context.WithValue(context.Background(), common.EnvKey, s.config.EnvMap)
-	processes, err := s.getProcesses()
+func (s *processesScraper) getProcessesMetadata(ctx context.Context) (processesMetadata, error) {
+	processes, err := s.getProcesses(ctx)
 	if err != nil {
 		return processesMetadata{}, err
 	}
@@ -74,7 +74,7 @@ func (s *scraper) getProcessesMetadata() (processesMetadata, error) {
 }
 
 func toAttributeStatus(status []string) (metadata.AttributeStatus, bool) {
-	if len(status) == 0 || len(status[0]) == 0 {
+	if len(status) == 0 || status[0] == "" {
 		return metadata.AttributeStatus(0), false
 	}
 	state, ok := charToState[status[0]]

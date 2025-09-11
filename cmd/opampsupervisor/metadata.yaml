@@ -1,6 +1,9 @@
 type: opampsupervisor
 
 status:
+  disable_codecov_badge: true
   class: cmd
+  stability:
+    alpha: [metrics]
   codeowners:
-    active: [evan-bradley, atoulme, tigrannajaryan, BinaryFissionGames]
+    active: [evan-bradley, atoulme, tigrannajaryan]

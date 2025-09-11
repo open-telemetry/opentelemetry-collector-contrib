@@ -114,7 +114,6 @@ func TestCpuUtilizationCalculator_Calculate(t *testing.T) {
 		},
 	}
 	for _, test := range testCases {
-		test := test
 		t.Run(test.name, func(t *testing.T) {
 			recorder := inMemoryRecorder{}
 			calculator := CPUUtilizationCalculator{
@@ -130,13 +129,11 @@ func TestCpuUtilizationCalculator_Calculate(t *testing.T) {
 				assert.InDelta(t, test.expectedUtilization.User, recorder.cpuUtilization.User, 0.00001)
 				assert.InDelta(t, test.expectedUtilization.Iowait, recorder.cpuUtilization.Iowait, 0.00001)
 			}
-
 		})
 	}
 }
 
 func Test_cpuUtilization(t *testing.T) {
-
 	startTime := pcommon.Timestamp(1640097435776827000)
 	halfSecondLater := pcommon.Timestamp(uint64(startTime) + uint64(time.Second.Nanoseconds()/2))
 	startStat := &cpu.TimesStat{
@@ -159,5 +156,4 @@ func Test_cpuUtilization(t *testing.T) {
 	assert.InDelta(t, expectedUtilization.User, actualUtilization.User, 0.00001)
 	assert.InDelta(t, expectedUtilization.System, actualUtilization.System, 0.00001)
 	assert.InDelta(t, expectedUtilization.Iowait, actualUtilization.Iowait, 0.00001)
-
 }

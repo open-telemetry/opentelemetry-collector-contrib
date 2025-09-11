@@ -1,0 +1,72 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: resource.foo
+          value:
+            stringValue: foo
+        - key: signaltometrics.service.instance.id
+          value:
+            stringValue: 627cc493-f310-47de-96bd-71410b7dec09
+        - key: signaltometrics.service.name
+          value:
+            stringValue: signaltometrics
+        - key: signaltometrics.service.namespace
+          value:
+            stringValue: test
+    scopeMetrics:
+      - metrics:
+          - description: A histogram created from gauge values
+            histogram:
+              aggregationTemporality: 1
+              dataPoints:
+                - attributes:
+                    - key: datapoint.foo
+                      value:
+                        stringValue: foo
+                  bucketCounts:
+                    - "0"
+                    - "1"
+                    - "1"
+                    - "0"
+                    - "1"
+                    - "1"
+                    - "0"
+                    - "0"
+                  count: "4"
+                  explicitBounds:
+                    - 1
+                    - 4
+                    - 5
+                    - 8
+                    - 200
+                    - 500
+                    - 1000
+                  sum: 584.79
+                  timeUnixNano: "1000000"
+                - attributes:
+                    - key: datapoint.foo
+                      value:
+                        stringValue: notfoo
+                  bucketCounts:
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "1"
+                    - "0"
+                    - "0"
+                    - "1"
+                    - "0"
+                  count: "2"
+                  explicitBounds:
+                    - 1
+                    - 4
+                    - 5
+                    - 8
+                    - 200
+                    - 500
+                    - 1000
+                  sum: 796.89
+                  timeUnixNano: "1000000"
+            name: gauge.to.histogram
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector

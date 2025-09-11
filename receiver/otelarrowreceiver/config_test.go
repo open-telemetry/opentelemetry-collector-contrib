@@ -10,11 +10,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 )
 
 func TestUnmarshalDefaultConfig(t *testing.T) {
@@ -52,29 +53,29 @@ func TestUnmarshalConfig(t *testing.T) {
 						Endpoint:  "0.0.0.0:4317",
 						Transport: confignet.TransportTypeTCP,
 					},
-					TLSSetting: &configtls.ServerConfig{
+					TLS: configoptional.Some(configtls.ServerConfig{
 						Config: configtls.Config{
 							CertFile: "test.crt",
 							KeyFile:  "test.key",
 						},
-					},
+					}),
 					MaxRecvMsgSizeMiB:    32,
 					MaxConcurrentStreams: 16,
 					ReadBufferSize:       1024,
 					WriteBufferSize:      1024,
-					Keepalive: &configgrpc.KeepaliveServerConfig{
-						ServerParameters: &configgrpc.KeepaliveServerParameters{
+					Keepalive: configoptional.Some(configgrpc.KeepaliveServerConfig{
+						ServerParameters: configoptional.Some(configgrpc.KeepaliveServerParameters{
 							MaxConnectionIdle:     11 * time.Second,
 							MaxConnectionAge:      12 * time.Second,
 							MaxConnectionAgeGrace: 13 * time.Second,
 							Time:                  30 * time.Second,
 							Timeout:               5 * time.Second,
-						},
-						EnforcementPolicy: &configgrpc.KeepaliveEnforcementPolicy{
+						}),
+						EnforcementPolicy: configoptional.Some(configgrpc.KeepaliveEnforcementPolicy{
 							MinTime:             10 * time.Second,
 							PermitWithoutStream: true,
-						},
-					},
+						}),
+					}),
 				},
 				Arrow: ArrowConfig{
 					MemoryLimitMiB: 123,
@@ -82,10 +83,9 @@ func TestUnmarshalConfig(t *testing.T) {
 			},
 			Admission: AdmissionConfig{
 				RequestLimitMiB: 80,
-				WaiterLimit:     100,
+				WaitingLimitMiB: 100,
 			},
 		}, cfg)
-
 }
 
 // Tests that a deprecated config validation sets RequestLimitMiB and WaiterLimit in the correct config block.
@@ -107,7 +107,6 @@ func TestValidateDeprecatedConfig(t *testing.T) {
 			Admission: AdmissionConfig{
 				// cfg.Validate should now set these fields.
 				RequestLimitMiB: 80,
-				WaiterLimit:     100,
 			},
 		}, cfg)
 }
@@ -134,7 +133,7 @@ func TestUnmarshalConfigUnix(t *testing.T) {
 			},
 			Admission: AdmissionConfig{
 				RequestLimitMiB: defaultRequestLimitMiB,
-				WaiterLimit:     defaultWaiterLimit,
+				WaitingLimitMiB: defaultWaitingLimitMiB,
 			},
 		}, cfg)
 }
@@ -159,5 +158,5 @@ func TestUnmarshalConfigNoProtocols(t *testing.T) {
 	cfg := Config{}
 	// This now produces an error due to breaking change.
 	// https://github.com/open-telemetry/opentelemetry-collector/pull/9385
-	assert.ErrorContains(t, component.ValidateConfig(cfg), "invalid transport type")
+	assert.ErrorContains(t, xconfmap.Validate(cfg), "invalid transport type")
 }

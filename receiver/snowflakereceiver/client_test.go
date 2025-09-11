@@ -4,7 +4,6 @@
 package snowflakereceiver
 
 import (
-	"context"
 	"database/sql"
 	"database/sql/driver"
 	"reflect"
@@ -15,6 +14,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snowflakereceiver/internal/metadata"
 )
 
 func TestDefaultClientCreation(t *testing.T) {
@@ -45,10 +46,10 @@ func TestClientReadDB(t *testing.T) {
 
 	client := snowflakeClient{
 		client: db,
-		logger: receivertest.NewNopSettings().Logger,
+		logger: receivertest.NewNopSettings(metadata.Type).Logger,
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	_, err = client.readDB(ctx, q)
 	if err != nil {
@@ -146,15 +147,19 @@ func TestMetricQueries(t *testing.T) {
 		{
 			desc:  "FetchDbMetrics",
 			query: dbMetricsQuery,
-			columns: []string{"schemaname", "execution_status", "error_message",
+			columns: []string{
+				"schemaname", "execution_status", "error_message",
 				"query_type", "wh_name", "db_name", "wh_size", "username",
 				"count_queryid", "queued_overload", "queued_repair", "queued_provision",
 				"total_elapsed", "execution_time", "comp_time", "bytes_scanned",
 				"bytes_written", "bytes_deleted", "bytes_spilled_local", "bytes_spilled_remote",
 				"percentage_cache", "partitions_scanned", "rows_unloaded", "rows_deleted",
-				"rows_updated", "rows_inserted", "rows_produced"},
-			params: []driver.Value{"a", "b", "c", "d", "e", "f", "g", "h", 1, 2.0, 3.0, 4.0, 5.0, 6.0,
-				7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0},
+				"rows_updated", "rows_inserted", "rows_produced",
+			},
+			params: []driver.Value{
+				"a", "b", "c", "d", "e", "f", "g", "h", 1, 2.0, 3.0, 4.0, 5.0, 6.0,
+				7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0,
+			},
 			expect: dbMetric{
 				attributes: dbMetricAttributes{
 					userName: sql.NullString{
@@ -214,7 +219,7 @@ func TestMetricQueries(t *testing.T) {
 		{
 			desc:    "FetchSessionMetrics",
 			query:   sessionMetricsQuery,
-			columns: []string{"username", "disctinct_id"},
+			columns: []string{"username", "distinct_id"},
 			params:  []driver.Value{"t", 3.0},
 			expect: sessionMetric{
 				userName: sql.NullString{
@@ -228,32 +233,31 @@ func TestMetricQueries(t *testing.T) {
 			desc:    "FetchSnowpipeMetrics",
 			query:   snowpipeMetricsQuery,
 			columns: []string{"pipe_name", "credits_used", "bytes_inserted", "files_inserted"},
-			params:  []driver.Value{"t", 1.0, 2.0, 3.0},
+			params:  []driver.Value{"t", 1.3, 2.4, 3},
 			expect: snowpipeMetric{
 				pipeName: sql.NullString{
 					String: "t",
 					Valid:  true,
 				},
-				creditsUsed:   1.0,
-				bytesInserted: 2.0,
-				filesInserted: 3.0,
+				creditsUsed:   1.3,
+				bytesInserted: 2.4,
+				filesInserted: 3,
 			},
 		},
 		{
 			desc:    "FetchStorageMetrics",
 			query:   storageMetricsQuery,
 			columns: []string{"storage_bytes", "stage_bytes", "failsafe_bytes"},
-			params:  []driver.Value{1.0, 2.0, 3.0},
+			params:  []driver.Value{1.4, 2.0, 3.67},
 			expect: storageMetric{
-				storageBytes:  1,
-				stageBytes:    2,
-				failsafeBytes: 3,
+				storageBytes:  1.4,
+				stageBytes:    2.0,
+				failsafeBytes: 3.67,
 			},
 		},
 	}
 
-	for i := range tests {
-		test := tests[i]
+	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
 			db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 			if err != nil {
@@ -266,23 +270,50 @@ func TestMetricQueries(t *testing.T) {
 
 			client := snowflakeClient{
 				client: db,
-				logger: receivertest.NewNopSettings().Logger,
+				logger: receivertest.NewNopSettings(metadata.Type).Logger,
 			}
-			ctx := context.Background()
+			ctx := t.Context()
 
 			// iteratively call each client method with the correct db mock
 			clientVal := reflect.ValueOf(&client)
 			clientObj := reflect.Indirect(clientVal)
 			returnVal := clientObj.MethodByName(test.desc).Call([]reflect.Value{reflect.ValueOf(ctx)})
 
-			// GetMetric functions return a slice of type <metricType> but since we only have one
-			// row we can safely just compare the first elem from the reflected slice
-			metric := returnVal[0].Type().Elem().Elem()
+			// Check for errors first
 			if err, ok := returnVal[1].Interface().(error); ok && err != nil {
 				t.Errorf("DB error %v", err)
+				return
 			}
 
-			assert.Equal(t, reflect.TypeOf(test.expect), metric)
+			actualSliceVal := returnVal[0]
+			if actualSliceVal.Kind() == reflect.Ptr {
+				actualSliceVal = actualSliceVal.Elem()
+			}
+
+			if actualSliceVal.Kind() != reflect.Slice {
+				t.Errorf("Expected slice, got %v", actualSliceVal.Kind())
+				return
+			}
+
+			// Verify we got at least one result
+			if actualSliceVal.Len() == 0 {
+				t.Error("Expected at least one result, got empty slice")
+				return
+			}
+
+			actualMetric := actualSliceVal.Index(0).Interface()
+
+			// Type Check
+			expectedType := reflect.TypeOf(test.expect)
+			actualType := reflect.TypeOf(actualMetric)
+			assert.Equal(t, expectedType, actualType, "Metric types should match")
+
+			// Value Check
+			assert.Equal(t, test.expect, actualMetric, "Metric values should match expected values")
+
+			if err := mock.ExpectationsWereMet(); err != nil {
+				t.Errorf("Unfulfilled mock expectations: %s", err)
+			}
 		})
 	}
 }

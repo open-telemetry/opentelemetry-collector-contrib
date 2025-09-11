@@ -4,7 +4,6 @@
 package adapter
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -16,7 +15,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
@@ -26,8 +24,6 @@ import (
 
 func createNoopReceiver(nextConsumer consumer.Logs) (*receiver, error) {
 	set := componenttest.NewNopTelemetrySettings()
-	set.Logger = zap.NewNop()
-	emitter := helper.NewLogEmitter(set)
 	pipe, err := pipeline.Config{
 		Operators: []operator.Config{
 			{
@@ -42,21 +38,24 @@ func createNoopReceiver(nextConsumer consumer.Logs) (*receiver, error) {
 	receiverID := component.MustNewID("test")
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             receiverID,
-		ReceiverCreateSettings: receivertest.NewNopSettings(),
+		ReceiverCreateSettings: receivertest.NewNopSettings(receiverID.Type()),
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	return &receiver{
-		set:       set,
-		id:        component.MustNewID("testReceiver"),
-		pipe:      pipe,
-		emitter:   emitter,
-		consumer:  nextConsumer,
-		converter: NewConverter(componenttest.NewNopTelemetrySettings()),
-		obsrecv:   obsrecv,
-	}, nil
+	rcv := &receiver{
+		set:      set,
+		id:       component.MustNewID("testReceiver"),
+		pipe:     pipe,
+		consumer: nextConsumer,
+		obsrecv:  obsrecv,
+	}
+
+	emitter := helper.NewBatchingLogEmitter(set, rcv.consumeEntries)
+
+	rcv.emitter = emitter
+	return rcv, nil
 }
 
 // BenchmarkEmitterToConsumer serves as a benchmark for entries going from the emitter to consumer,
@@ -67,15 +66,13 @@ func BenchmarkEmitterToConsumer(b *testing.B) {
 		hostsCount = 4
 	)
 
-	var (
-		entries = complexEntriesForNDifferentHosts(entryCount, hostsCount)
-	)
+	entries := complexEntriesForNDifferentHosts(entryCount, hostsCount)
 
 	cl := &consumertest.LogsSink{}
 	logsReceiver, err := createNoopReceiver(cl)
 	require.NoError(b, err)
 
-	err = logsReceiver.Start(context.Background(), componenttest.NewNopHost())
+	err = logsReceiver.Start(b.Context(), componenttest.NewNopHost())
 	require.NoError(b, err)
 
 	b.ResetTimer()
@@ -84,7 +81,7 @@ func BenchmarkEmitterToConsumer(b *testing.B) {
 		cl.Reset()
 
 		go func() {
-			ctx := context.Background()
+			ctx := b.Context()
 			for _, e := range entries {
 				_ = logsReceiver.emitter.Process(ctx, e)
 			}
@@ -106,15 +103,13 @@ func BenchmarkEmitterToConsumerScopeGroupping(b *testing.B) {
 		scopesCount = 2
 	)
 
-	var (
-		entries = complexEntriesForNDifferentHostsMDifferentScopes(entryCount, hostsCount, scopesCount)
-	)
+	entries := complexEntriesForNDifferentHostsMDifferentScopes(entryCount, hostsCount, scopesCount)
 
 	cl := &consumertest.LogsSink{}
 	logsReceiver, err := createNoopReceiver(cl)
 	require.NoError(b, err)
 
-	err = logsReceiver.Start(context.Background(), componenttest.NewNopHost())
+	err = logsReceiver.Start(b.Context(), componenttest.NewNopHost())
 	require.NoError(b, err)
 
 	b.ResetTimer()
@@ -123,7 +118,7 @@ func BenchmarkEmitterToConsumerScopeGroupping(b *testing.B) {
 		cl.Reset()
 
 		go func() {
-			ctx := context.Background()
+			ctx := b.Context()
 			for _, e := range entries {
 				_ = logsReceiver.emitter.Process(ctx, e)
 			}
@@ -150,15 +145,15 @@ func TestEmitterToConsumer(t *testing.T) {
 	logsReceiver, err := createNoopReceiver(cl)
 	require.NoError(t, err)
 
-	err = logsReceiver.Start(context.Background(), componenttest.NewNopHost())
+	err = logsReceiver.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	defer func() {
 		require.NoError(t, logsReceiver.emitter.Stop())
-		require.NoError(t, logsReceiver.Shutdown(context.Background()))
+		require.NoError(t, logsReceiver.Shutdown(t.Context()))
 	}()
 
 	go func() {
-		ctx := context.Background()
+		ctx := t.Context()
 		for _, e := range entries {
 			assert.NoError(t, logsReceiver.emitter.Process(ctx, e))
 		}

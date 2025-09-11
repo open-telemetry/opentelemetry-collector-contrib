@@ -4,9 +4,7 @@
 package awsecscontainermetricsreceiver
 
 import (
-	"context"
 	"errors"
-	"fmt"
 	"os"
 	"testing"
 
@@ -44,7 +42,7 @@ func TestReceiver(t *testing.T) {
 	require.NotNil(t, metricsReceiver)
 
 	r := metricsReceiver.(*awsEcsContainerMetricsReceiver)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	err = r.Start(ctx, componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -66,7 +64,7 @@ func TestCollectDataFromEndpoint(t *testing.T) {
 	require.NotNil(t, metricsReceiver)
 
 	r := metricsReceiver.(*awsEcsContainerMetricsReceiver)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	err = r.collectDataFromEndpoint(ctx)
 	require.NoError(t, err)
@@ -86,17 +84,16 @@ func TestCollectDataFromEndpointWithConsumerError(t *testing.T) {
 	require.NotNil(t, metricsReceiver)
 
 	r := metricsReceiver.(*awsEcsContainerMetricsReceiver)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	err = r.collectDataFromEndpoint(ctx)
 	require.EqualError(t, err, "Test Error for Metrics Consumer")
 }
 
-type invalidFakeClient struct {
-}
+type invalidFakeClient struct{}
 
-func (f invalidFakeClient) GetResponse(_ string) ([]byte, error) {
-	return nil, fmt.Errorf("intentional error")
+func (invalidFakeClient) GetResponse(string) ([]byte, error) {
+	return nil, errors.New("intentional error")
 }
 
 func TestCollectDataFromEndpointWithEndpointError(t *testing.T) {
@@ -112,7 +109,7 @@ func TestCollectDataFromEndpointWithEndpointError(t *testing.T) {
 	require.NotNil(t, metricsReceiver)
 
 	r := metricsReceiver.(*awsEcsContainerMetricsReceiver)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	err = r.collectDataFromEndpoint(ctx)
 	require.Error(t, err)

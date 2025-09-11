@@ -41,12 +41,18 @@ type Config struct {
 	// Env represents the respective environment value valid to scrape
 	Env string `mapstructure:"env"`
 
-	// ArrayName represents the display name that is appended to the received metrics, as the `host` label if not provided by OpenMetrics output, and to the `fa_array_name` label always.
+	// ArrayName represents the display name that is appended to the received metrics, as the `host` label if not provided by OpenMetrics output, and to the `fa_array_name` label always
 	ArrayName string `mapstructure:"fa_array_name"`
+
+	// Namespace selects the OpenMetrics namespace requested
+	Namespace string `mapstructure:"namespace"`
 }
 
 type Settings struct {
 	ReloadIntervals *ReloadIntervals `mapstructure:"reload_intervals"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type ReloadIntervals struct {
@@ -55,6 +61,9 @@ type ReloadIntervals struct {
 	Directories time.Duration `mapstructure:"directories"`
 	Pods        time.Duration `mapstructure:"pods"`
 	Volumes     time.Duration `mapstructure:"volumes"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func (c *Config) Validate() error {
@@ -62,6 +71,9 @@ func (c *Config) Validate() error {
 
 	if c.ArrayName == "" {
 		errs = multierr.Append(errs, errors.New("the array's pretty name as 'fa_array_name' must be provided"))
+	}
+	if c.Namespace == "" {
+		errs = multierr.Append(errs, errors.New("a specified namespace must be provided"))
 	}
 	if c.Settings.ReloadIntervals.Array == 0 {
 		errs = multierr.Append(errs, errors.New("reload interval for 'array' must be provided"))

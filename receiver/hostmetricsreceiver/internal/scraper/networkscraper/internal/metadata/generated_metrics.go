@@ -8,11 +8,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/receiver"
-	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
+	"go.opentelemetry.io/collector/scraper"
+	conventions "go.opentelemetry.io/otel/semconv/v1.9.0"
 )
 
-// AttributeDirection specifies the a value direction attribute.
+// AttributeDirection specifies the value direction attribute.
 type AttributeDirection int
 
 const (
@@ -38,7 +38,7 @@ var MapAttributeDirection = map[string]AttributeDirection{
 	"transmit": AttributeDirectionTransmit,
 }
 
-// AttributeProtocol specifies the a value protocol attribute.
+// AttributeProtocol specifies the value protocol attribute.
 type AttributeProtocol int
 
 const (
@@ -58,6 +58,44 @@ func (av AttributeProtocol) String() string {
 // MapAttributeProtocol is a helper map of string to AttributeProtocol attribute value.
 var MapAttributeProtocol = map[string]AttributeProtocol{
 	"tcp": AttributeProtocolTcp,
+}
+
+var MetricsInfo = metricsInfo{
+	SystemNetworkConnections: metricInfo{
+		Name: "system.network.connections",
+	},
+	SystemNetworkConntrackCount: metricInfo{
+		Name: "system.network.conntrack.count",
+	},
+	SystemNetworkConntrackMax: metricInfo{
+		Name: "system.network.conntrack.max",
+	},
+	SystemNetworkDropped: metricInfo{
+		Name: "system.network.dropped",
+	},
+	SystemNetworkErrors: metricInfo{
+		Name: "system.network.errors",
+	},
+	SystemNetworkIo: metricInfo{
+		Name: "system.network.io",
+	},
+	SystemNetworkPackets: metricInfo{
+		Name: "system.network.packets",
+	},
+}
+
+type metricsInfo struct {
+	SystemNetworkConnections    metricInfo
+	SystemNetworkConntrackCount metricInfo
+	SystemNetworkConntrackMax   metricInfo
+	SystemNetworkDropped        metricInfo
+	SystemNetworkErrors         metricInfo
+	SystemNetworkIo             metricInfo
+	SystemNetworkPackets        metricInfo
+}
+
+type metricInfo struct {
+	Name string
 }
 
 type metricSystemNetworkConnections struct {
@@ -466,8 +504,7 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 		mb.startTime = startTime
 	})
 }
-
-func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
+func NewMetricsBuilder(mbc MetricsBuilderConfig, settings scraper.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		config:                            mbc,
 		startTime:                         pcommon.NewTimestampFromTime(time.Now()),
@@ -543,7 +580,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	rm.SetSchemaUrl(conventions.SchemaURL)
 	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/networkscraper")
+	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricSystemNetworkConnections.emit(ils.Metrics())

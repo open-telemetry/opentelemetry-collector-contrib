@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 )
@@ -150,6 +151,44 @@ func (e *groupingFileExporter) consumeLogs(ctx context.Context, ld plog.Logs) er
 	return nil
 }
 
+func (e *groupingFileExporter) consumeProfiles(ctx context.Context, pd pprofile.Profiles) error {
+	if pd.ResourceProfiles().Len() == 0 {
+		return nil
+	}
+
+	groups := make(map[string][]pprofile.ResourceProfiles)
+
+	for i := 0; i < pd.ResourceProfiles().Len(); i++ {
+		rProfiles := pd.ResourceProfiles().At(i)
+		group(e, groups, rProfiles.Resource(), rProfiles)
+	}
+
+	var errs error
+	for pathSegment, rProfilesSlice := range groups {
+		profiles := pprofile.NewProfiles()
+		for _, rProfiles := range rProfilesSlice {
+			rProfiles.CopyTo(profiles.ResourceProfiles().AppendEmpty())
+		}
+
+		buf, err := e.marshaller.marshalProfiles(profiles)
+		if err != nil {
+			errs = errors.Join(errs, err)
+			continue
+		}
+
+		err = e.write(ctx, pathSegment, buf)
+		if err != nil {
+			errs = errors.Join(errs, err)
+		}
+	}
+
+	if errs != nil {
+		return consumererror.NewPermanent(errs)
+	}
+
+	return nil
+}
+
 func (e *groupingFileExporter) write(_ context.Context, pathSegment string, buf []byte) error {
 	writer, err := e.getWriter(pathSegment)
 	if err != nil {
@@ -175,7 +214,7 @@ func (e *groupingFileExporter) getWriter(pathSegment string) (*fileWriter, error
 		return writer, nil
 	}
 
-	err := os.MkdirAll(path.Dir(fullPath), 0755)
+	err := os.MkdirAll(path.Dir(fullPath), 0o755)
 	if err != nil {
 		return nil, err
 	}

@@ -26,19 +26,19 @@ func TestEndToEnd(t *testing.T) {
 	numEntries := 123_456
 	numHosts := 4
 
-	ctx := context.Background()
+	ctx := t.Context()
 	f := NewFactory(BenchReceiverType{}, component.StabilityLevelUndefined)
 	cfg := f.CreateDefaultConfig().(*BenchConfig)
-	cfg.BenchOpConfig.NumEntries = numEntries
-	cfg.BenchOpConfig.NumHosts = numHosts
+	cfg.NumEntries = numEntries
+	cfg.NumHosts = numHosts
 	sink := new(consumertest.LogsSink)
 
-	rcvr, err := f.CreateLogs(ctx, receivertest.NewNopSettings(), cfg, sink)
+	rcvr, err := f.CreateLogs(ctx, receivertest.NewNopSettings(f.Type()), cfg, sink)
 	require.NoError(t, err)
 
-	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, rcvr.Start(t.Context(), componenttest.NewNopHost()))
 	defer func() {
-		require.NoError(t, rcvr.Shutdown(context.Background()))
+		require.NoError(t, rcvr.Shutdown(t.Context()))
 	}()
 	require.Eventually(t, func() bool {
 		return sink.LogRecordCount() == numEntries
@@ -46,7 +46,6 @@ func TestEndToEnd(t *testing.T) {
 }
 
 type benchCase struct {
-	workerCount   int
 	maxBatchSize  uint
 	flushInterval time.Duration
 }
@@ -55,21 +54,20 @@ func (bc benchCase) run(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		f := NewFactory(BenchReceiverType{}, component.StabilityLevelUndefined)
 		cfg := f.CreateDefaultConfig().(*BenchConfig)
-		cfg.BaseConfig.numWorkers = bc.workerCount
-		cfg.BaseConfig.maxBatchSize = bc.maxBatchSize
-		cfg.BaseConfig.flushInterval = bc.flushInterval
-		cfg.BenchOpConfig.NumEntries = numEntries
-		cfg.BenchOpConfig.NumHosts = numHosts
+		cfg.maxBatchSize = bc.maxBatchSize
+		cfg.flushInterval = bc.flushInterval
+		cfg.NumEntries = numEntries
+		cfg.NumHosts = numHosts
 		sink := new(consumertest.LogsSink)
 
-		rcvr, err := f.CreateLogs(context.Background(), receivertest.NewNopSettings(), cfg, sink)
+		rcvr, err := f.CreateLogs(b.Context(), receivertest.NewNopSettings(f.Type()), cfg, sink)
 		require.NoError(b, err)
 
 		b.ReportAllocs()
 
-		require.NoError(b, rcvr.Start(context.Background(), componenttest.NewNopHost()))
+		require.NoError(b, rcvr.Start(b.Context(), componenttest.NewNopHost()))
 		defer func() {
-			require.NoError(b, rcvr.Shutdown(context.Background()))
+			require.NoError(b, rcvr.Shutdown(b.Context()))
 		}()
 		require.Eventually(b, func() bool {
 			return sink.LogRecordCount() == numEntries
@@ -86,25 +84,19 @@ const (
 )
 
 func BenchmarkEndToEnd(b *testing.B) {
-
 	// These values may have meaningful performance implications, so benchmarks
 	// should cover a variety of values in order to highlight impacts.
 	var (
-		// converter
-		workerCounts = []int{1, 2, 4, 8, 16}
-
 		// emitter
 		maxBatchSizes  = []uint{1, 10, 100, 1000, 10_000}
 		flushIntervals = []time.Duration{10 * time.Millisecond, 100 * time.Millisecond}
 	)
 
-	for _, wc := range workerCounts {
-		for _, bs := range maxBatchSizes {
-			for _, fi := range flushIntervals {
-				name := fmt.Sprintf("workerCount=%d,maxBatchSize=%d,flushInterval=%s", wc, bs, fi)
-				bc := benchCase{workerCount: wc, maxBatchSize: bs, flushInterval: fi}
-				b.Run(name, bc.run)
-			}
+	for _, bs := range maxBatchSizes {
+		for _, fi := range flushIntervals {
+			name := fmt.Sprintf("maxBatchSize=%d,flushInterval=%s", bs, fi)
+			bc := benchCase{maxBatchSize: bs, flushInterval: fi}
+			b.Run(name, bc.run)
 		}
 	}
 }
@@ -119,11 +111,11 @@ type BenchConfig struct {
 }
 type BenchReceiverType struct{}
 
-func (f BenchReceiverType) Type() component.Type {
+func (BenchReceiverType) Type() component.Type {
 	return benchType
 }
 
-func (f BenchReceiverType) CreateDefaultConfig() component.Config {
+func (BenchReceiverType) CreateDefaultConfig() component.Config {
 	return &BenchConfig{
 		BaseConfig: BaseConfig{
 			Operators: []operator.Config{},
@@ -132,11 +124,11 @@ func (f BenchReceiverType) CreateDefaultConfig() component.Config {
 	}
 }
 
-func (f BenchReceiverType) BaseConfig(cfg component.Config) BaseConfig {
+func (BenchReceiverType) BaseConfig(cfg component.Config) BaseConfig {
 	return cfg.(*BenchConfig).BaseConfig
 }
 
-func (f BenchReceiverType) InputConfig(cfg component.Config) operator.Config {
+func (BenchReceiverType) InputConfig(cfg component.Config) operator.Config {
 	return operator.NewConfig(cfg.(*BenchConfig))
 }
 

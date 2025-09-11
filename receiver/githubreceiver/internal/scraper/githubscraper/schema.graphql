@@ -4995,7 +4995,7 @@ type Issue implements Node & Assignable & Closable & Comment & Deletable & Updat
   projectV2("The project number." number: Int!): ProjectV2
   "A list of projects under the owner."
   projectsV2(
-    "A project to search for under the the owner."
+    "A project to search for under the owner."
     query: String
     "How to order the returned projects."
     orderBy: ProjectV2Order = { field: NUMBER, direction: DESC }
@@ -8917,7 +8917,7 @@ type Organization implements Node & Actor & PackageOwner & ProjectOwner & Projec
   projectsUrl: URI!
   "A list of projects under the owner."
   projectsV2(
-    "A project to search for under the the owner."
+    "A project to search for under the owner."
     query: String
     "How to order the returned projects."
     orderBy: ProjectV2Order = { field: NUMBER, direction: DESC }
@@ -10585,7 +10585,7 @@ type ProjectV2SingleSelectField implements ProjectV2FieldCommon & Node {
   name: String!
   "Options for the single select field"
   options(
-    "Filter returned options to only those matching these names, case insensitive."
+    "Filter returned options to only those matching these names, case-insensitive."
     names: [String!]
   ): [ProjectV2SingleSelectFieldOption!]!
   "The project that contains this field."
@@ -11120,7 +11120,7 @@ type PullRequest implements Node & Assignable & Closable & Comment & Updatable &
   projectV2("The project number." number: Int!): ProjectV2
   "A list of projects under the owner."
   projectsV2(
-    "A project to search for under the the owner."
+    "A project to search for under the owner."
     query: String
     "How to order the returned projects."
     orderBy: ProjectV2Order = { field: NUMBER, direction: DESC }
@@ -17778,7 +17778,7 @@ type User implements Node & Actor & PackageOwner & ProjectOwner & ProjectV2Owner
   projectsUrl: URI!
   "A list of projects under the owner."
   projectsV2(
-    "A project to search for under the the owner."
+    "A project to search for under the owner."
     query: String
     "How to order the returned projects."
     orderBy: ProjectV2Order = { field: NUMBER, direction: DESC }
@@ -18867,7 +18867,7 @@ interface ProjectV2Owner {
   projectV2("The project number." number: Int!): ProjectV2
   "A list of projects under the owner."
   projectsV2(
-    "A project to search for under the the owner."
+    "A project to search for under the owner."
     query: String
     "How to order the returned projects."
     orderBy: ProjectV2Order = { field: NUMBER, direction: DESC }
@@ -22370,7 +22370,7 @@ enum ThreadSubscriptionState {
   SUBSCRIBED_TO_THREAD_EVENTS
   "The User is never notified because they are ignoring the thread"
   IGNORING_THREAD
-  "The User is notified becuase they are watching the list"
+  "The User is notified because they are watching the list"
   SUBSCRIBED_TO_LIST
   "The User is notified because they chose custom settings for this thread."
   SUBSCRIBED_TO_THREAD_TYPE
@@ -23903,7 +23903,7 @@ input Environments {
   "The direction in which to order environments by the specified field."
   direction: OrderDirection!
 }
-"A command to add a file at the given path with the given contents as part of a commit.  Any existing file at that that path will be replaced."
+"A command to add a file at the given path with the given contents as part of a commit.  Any existing file at that path will be replaced."
 input FileAddition {
   "The path in the repository where the file will be located"
   path: String!
@@ -23948,7 +23948,7 @@ with a newline.
 
 ### Modeling file changes
 
-Each of the the five types of conceptual changes that can be made in a
+Each of the five types of conceptual changes that can be made in a
 git commit can be described using the `FileChanges` type as follows:
 
 1. New file addition: create file `hello world\n` at path `docs/README.txt`:
@@ -24667,7 +24667,7 @@ input RepositoryRulesetBypassActorInput {
   actorId: ID
   "For role bypasses, the role database ID"
   repositoryRoleDatabaseId: Int
-  "For org admin bupasses, true"
+  "For org admin bypasses, true"
   organizationAdmin: Boolean
   "The bypass mode for this actor."
   bypassMode: RepositoryRulesetBypassActorBypassMode!

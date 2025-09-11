@@ -58,6 +58,7 @@ message SpanData {
 
     oneof type_data {
       SendSpan send_span = 8;
+      DeleteSpan delete_span = 9;
     }
   }
 
@@ -80,6 +81,10 @@ message SpanData {
     string protocol = 7;
     optional string protocol_version = 8;
 
+    // Partition number of the queue the message is being delivered from,
+    // if the associated queue is a partitioned queue
+    optional uint32 partition_number = 9;
+
     enum Outcome {
       ACCEPTED = 0;
       REJECTED = 1;
@@ -90,6 +95,114 @@ message SpanData {
       TRANSACTION_COMMIT_FAILED = 6;
       TRANSACTION_ROLLBACK = 7;
     }
+  }
+
+  // This message contains information unique to a DeleteSpan.
+  message DeleteSpan {
+    // The name of the queue or topic endpoint the message is being deleted
+    // from.
+    oneof endpoint_name {
+      string queue_name = 1;
+      string topic_endpoint_name = 2;
+    }
+
+    // The nested "info" message below provides the following information:
+    // * The reason for the message being deleted.
+    // * Any additional information associated with that particular reason.
+    //   Some reasons have no additional information, so their associated info
+    //   messages have no fields within them.
+    oneof type_info {
+      MaxRedeliveriesInfo max_redeliveries_info = 3;
+      TtlExpiredInfo ttl_expired_info = 4;
+      RejectedOutcomeInfo rejected_outcome_info = 5;
+      HopCountExceededInfo hop_count_exceeded_info = 6;
+      IngressSelectorInfo ingress_selector_info = 7;
+      AdminActionInfo admin_action_info = 8;
+    }
+    
+    // Partition number of the queue the message is being deleted from, 
+    // if the associated queue is a partitioned queue
+    optional uint32 partition_number = 9;
+  }
+
+  // The presence of this message implies the reason for the span is that a
+  // message exceeded the maximum number of redeliveries.
+  message MaxRedeliveriesInfo {
+  }
+
+  // The presence of this message implies the reason for the span is that the
+  // message's TTL has expired.
+  message TtlExpiredInfo {
+  }
+
+  // The presence of this message implies the reason for the span is that a
+  // consuming client settled the message with an outcome of "rejected".
+  message RejectedOutcomeInfo {
+  }
+
+  // The presence of this message implies the reason for the span is that the
+  // message exceeded its maximum hop count. Hop count limits are used to
+  // prevent messages from cycling through a loop indefinitely in a network of
+  // brokers. This could be caused by certain bridge configurations. In some
+  // documentation an interfaces, this may be referred to as SMF TTL or bridge
+  // TTL. Here the term TTL is being avoided to avoid confusion with the
+  // Guaranteed Messaging TTL, which is specified as a time duration.
+  message HopCountExceededInfo {
+  }
+
+  // The presence of this message implies the reason for the span is that the
+  // message did not match a topic endpoint's ingress selector. The message's
+  // receive span would have indicated it was being enqueued on the topic
+  // endpoint, but before the message is eligible to be delivered to a
+  // consumer, the message was discarded because it did not match the ingress
+  // selector.
+  message IngressSelectorInfo {
+  }
+
+  // The presence of this message implies the reason for the discard was an
+  // administrative delete message command. These spans are only generated
+  // when the command deletes a single message.
+  message AdminActionInfo {
+	// The authenticated username of the administrator that requested the
+	// operation.
+	string username = 1;
+   
+	// Information identifying the user's session.
+	oneof session_info {
+	  CliSessionInfo cli_session_info = 2;
+	  SempSessionInfo semp_session_info = 3;
+	}
+  }
+   
+  message CliSessionInfo {
+	// CLI Sessions are identified as coming from either a remote SSH connection
+	// or from a local terminal. The information provided differs in each case.
+	oneof descriptor {
+	  TerminalCliSessionDescriptor local_session = 1;
+	  SshCliSessionDescriptor remote_session = 2;
+	}
+
+	// The session number the broker uses to identify a CLI session.
+	uint32 sessionNumber = 3;
+  }
+   
+  message TerminalCliSessionDescriptor {
+	string terminal_name = 1;
+  }
+   
+  message SshCliSessionDescriptor {
+	// A valid IP will be 4 or 16 bytes in length. If the length is 4 bytes,
+	// the address is an IPv4 address. If it is 16 bytes, it is an IPv6
+	// address.
+	bytes peer_ip = 1;
+  }
+   
+  message SempSessionInfo {
+	uint32 sempVersion = 1;
+	// A valid IP will be 4 or 16 bytes in length. If the length is 4 bytes,
+	// the address is an IPv4 address. If it is 16 bytes, it is an IPv6
+	// address.
+	bytes peer_ip = 2;
   }
 
   // When a span has a transaction event, it indicates the span occurs as part

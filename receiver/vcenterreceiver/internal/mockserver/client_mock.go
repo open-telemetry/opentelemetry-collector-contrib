@@ -53,7 +53,7 @@ func MockServer(t *testing.T, useTLS bool) *httptest.Server {
 
 		body, err := routeBody(t, requestType, sr.Envelope.Body)
 		if errors.Is(err, errNotFound) {
-			w.WriteHeader(404)
+			w.WriteHeader(http.StatusNotFound)
 			return
 		}
 		w.WriteHeader(http.StatusOK)
@@ -77,7 +77,7 @@ func routeBody(t *testing.T, requestType string, body map[string]any) ([]byte, e
 	case "Logout":
 		return loadResponse("logout.xml")
 	case "RetrievePropertiesEx":
-		return routeRetreivePropertiesEx(t, body)
+		return routeRetrievePropertiesEx(t, body)
 	case "QueryPerf":
 		return routePerformanceQuery(t, body)
 	case "CreateContainerView":
@@ -91,12 +91,12 @@ func routeBody(t *testing.T, requestType string, body map[string]any) ([]byte, e
 	return []byte{}, errNotFound
 }
 
-func routeRetreivePropertiesEx(t *testing.T, body map[string]any) ([]byte, error) {
+func routeRetrievePropertiesEx(t *testing.T, body map[string]any) ([]byte, error) {
 	rp, ok := body["RetrievePropertiesEx"].(map[string]any)
 	require.True(t, ok)
 	specSet := rp["specSet"].(map[string]any)
 
-	var objectSetArray = false
+	objectSetArray := false
 	objectSet, ok := specSet["objectSet"].(map[string]any)
 	if !ok {
 		objectSetArray = true

@@ -130,12 +130,12 @@ func (proc *logFieldsConversionProcessor) processLogs(logs plog.Logs) error {
 	return nil
 }
 
-func (proc *logFieldsConversionProcessor) processMetrics(_ pmetric.Metrics) error {
+func (*logFieldsConversionProcessor) processMetrics(pmetric.Metrics) error {
 	// No-op. Metrics should not be translated.
 	return nil
 }
 
-func (proc *logFieldsConversionProcessor) processTraces(_ ptrace.Traces) error {
+func (*logFieldsConversionProcessor) processTraces(ptrace.Traces) error {
 	// No-op. Traces should not be translated.
 	return nil
 }

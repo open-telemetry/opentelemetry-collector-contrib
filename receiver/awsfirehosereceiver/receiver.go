@@ -12,9 +12,11 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"strconv"
 	"sync"
 	"time"
 
+	jsoniter "github.com/json-iterator/go"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/receiver"
@@ -30,7 +32,6 @@ const (
 )
 
 var (
-	errMissingHost              = errors.New("nil host")
 	errInvalidAccessKey         = errors.New("invalid firehose access key")
 	errInHeaderMissingRequestID = errors.New("missing request id in header")
 	errInBodyMissingRequestID   = errors.New("missing request id in body")
@@ -39,9 +40,16 @@ var (
 
 // The firehoseConsumer is responsible for using the unmarshaler and the consumer.
 type firehoseConsumer interface {
-	// Consume unmarshalls and consumes the records.
-	Consume(ctx context.Context, records [][]byte, commonAttributes map[string]string) (int, error)
+	Start(context.Context, component.Host) error
+
+	// Consume unmarshals and consumes the records returned by f.
+	Consume(ctx context.Context, f nextRecordFunc, commonAttributes map[string]string) (int, error)
 }
+
+// nextRecordFunc is a function provided to consumers for obtaining the
+// next record to consume. The function returns (nil, io.EOF) when there
+// are no more records.
+type nextRecordFunc func() ([]byte, error)
 
 // firehoseReceiver
 type firehoseReceiver struct {
@@ -101,26 +109,28 @@ type firehoseCommonAttributes struct {
 	CommonAttributes map[string]string `json:"commonAttributes"`
 }
 
-var _ receiver.Metrics = (*firehoseReceiver)(nil)
-var _ http.Handler = (*firehoseReceiver)(nil)
+var (
+	_ receiver.Metrics = (*firehoseReceiver)(nil)
+	_ http.Handler     = (*firehoseReceiver)(nil)
+)
 
 // Start spins up the receiver's HTTP server and makes the receiver start
 // its processing.
 func (fmr *firehoseReceiver) Start(ctx context.Context, host component.Host) error {
-	if host == nil {
-		return errMissingHost
+	if err := fmr.consumer.Start(ctx, host); err != nil {
+		return fmt.Errorf("failed to start consumer: %w", err)
 	}
 
 	var err error
-	fmr.server, err = fmr.config.ServerConfig.ToServer(ctx, host, fmr.settings.TelemetrySettings, fmr)
+	fmr.server, err = fmr.config.ToServer(ctx, host, fmr.settings.TelemetrySettings, fmr)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to initialize HTTP server: %w", err)
 	}
 
 	var listener net.Listener
-	listener, err = fmr.config.ServerConfig.ToListener(ctx)
+	listener, err = fmr.config.ToListener(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to start listening for HTTP requests: %w", err)
 	}
 	fmr.shutdownWG.Add(1)
 	go func() {
@@ -171,14 +181,8 @@ func (fmr *firehoseReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	body, err := fmr.getBody(r)
-	if err != nil {
-		fmr.sendResponse(w, requestID, http.StatusBadRequest, err)
-		return
-	}
-
 	var fr firehoseRequest
-	if err = json.Unmarshal(body, &fr); err != nil {
+	if err := jsoniter.ConfigFastest.NewDecoder(r.Body).Decode(&fr); err != nil {
 		fmr.sendResponse(w, requestID, http.StatusBadRequest, err)
 		return
 	}
@@ -191,24 +195,6 @@ func (fmr *firehoseReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	records := make([][]byte, 0, len(fr.Records))
-	for index, record := range fr.Records {
-		if record.Data != "" {
-			var decoded []byte
-			decoded, err = base64.StdEncoding.DecodeString(record.Data)
-			if err != nil {
-				fmr.sendResponse(
-					w,
-					requestID,
-					http.StatusBadRequest,
-					fmt.Errorf("unable to base64 decode the record at index %d: %w", index, err),
-				)
-				return
-			}
-			records = append(records, decoded)
-		}
-	}
-
 	commonAttributes, err := fmr.getCommonAttributes(r)
 	if err != nil {
 		fmr.settings.Logger.Error(
@@ -217,7 +203,24 @@ func (fmr *firehoseReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		)
 	}
 
-	statusCode, err := fmr.consumer.Consume(ctx, records, commonAttributes)
+	var recordIndex int
+	var recordBuf []byte
+	nextRecord := func() ([]byte, error) {
+		if recordIndex == len(fr.Records) {
+			return nil, io.EOF
+		}
+		record := fr.Records[recordIndex]
+		recordIndex++
+
+		var decodeErr error
+		recordBuf, decodeErr = base64.StdEncoding.AppendDecode(recordBuf[:0], []byte(record.Data))
+		if decodeErr != nil {
+			return nil, fmt.Errorf("unable to base64 decode the record at index %d: %w", recordIndex-1, decodeErr)
+		}
+		return recordBuf, nil
+	}
+
+	statusCode, err := fmr.consumer.Consume(ctx, nextRecord, commonAttributes)
 	if err != nil {
 		fmr.settings.Logger.Error(
 			"Unable to consume records",
@@ -226,7 +229,6 @@ func (fmr *firehoseReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		fmr.sendResponse(w, requestID, statusCode, err)
 		return
 	}
-
 	fmr.sendResponse(w, requestID, http.StatusOK, nil)
 }
 
@@ -243,21 +245,8 @@ func (fmr *firehoseReceiver) validate(r *http.Request) (int, error) {
 	return http.StatusUnauthorized, errInvalidAccessKey
 }
 
-// getBody reads the body from the request as a slice of bytes.
-func (fmr *firehoseReceiver) getBody(r *http.Request) ([]byte, error) {
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		return nil, err
-	}
-	err = r.Body.Close()
-	if err != nil {
-		return nil, err
-	}
-	return body, nil
-}
-
 // getCommonAttributes unmarshalls the common attributes from the request header
-func (fmr *firehoseReceiver) getCommonAttributes(r *http.Request) (map[string]string, error) {
+func (*firehoseReceiver) getCommonAttributes(r *http.Request) (map[string]string, error) {
 	attributes := make(map[string]string)
 	if commonAttributes := r.Header.Get(headerFirehoseCommonAttributes); commonAttributes != "" {
 		var fca firehoseCommonAttributes
@@ -282,9 +271,36 @@ func (fmr *firehoseReceiver) sendResponse(w http.ResponseWriter, requestID strin
 	}
 	payload, _ := json.Marshal(body)
 	w.Header().Set(headerContentType, "application/json")
-	w.Header().Set(headerContentLength, fmt.Sprintf("%d", len(payload)))
+	w.Header().Set(headerContentLength, strconv.Itoa(len(payload)))
 	w.WriteHeader(statusCode)
 	if _, err = w.Write(payload); err != nil {
 		fmr.settings.Logger.Error("Failed to send response", zap.Error(err))
 	}
+}
+
+// loadEncodingExtension tries to load an available extension for the given encoding.
+func loadEncodingExtension[T any](host component.Host, encoding, signalType string) (T, error) {
+	var zero T
+	extensionID, err := encodingToComponentID(encoding)
+	if err != nil {
+		return zero, err
+	}
+	encodingExtension, ok := host.GetExtensions()[*extensionID]
+	if !ok {
+		return zero, fmt.Errorf("unknown encoding extension %q", encoding)
+	}
+	unmarshaler, ok := encodingExtension.(T)
+	if !ok {
+		return zero, fmt.Errorf("extension %q is not a %s unmarshaler", encoding, signalType)
+	}
+	return unmarshaler, nil
+}
+
+// encodingToComponentID attempts to parse the encoding string as a component ID.
+func encodingToComponentID(encoding string) (*component.ID, error) {
+	var id component.ID
+	if err := id.UnmarshalText([]byte(encoding)); err != nil {
+		return nil, fmt.Errorf("invalid component type: %w", err)
+	}
+	return &id, nil
 }

@@ -6,13 +6,13 @@ package azuredataexplorerexporter // import "github.com/open-telemetry/opentelem
 import (
 	"context"
 	"io"
-	"math/rand"
+	"math/rand/v2"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/Azure/azure-kusto-go/kusto"
-	"github.com/Azure/azure-kusto-go/kusto/ingest"
+	"github.com/Azure/azure-kusto-go/azkustodata"
+	"github.com/Azure/azure-kusto-go/azkustoingest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -25,7 +25,8 @@ import (
 
 func TestNewExporter(t *testing.T) {
 	logger := zaptest.NewLogger(t)
-	c := Config{ClusterURI: "https://CLUSTER.kusto.windows.net",
+	c := Config{
+		ClusterURI:         "https://CLUSTER.kusto.windows.net",
 		ApplicationID:      "unknown",
 		ApplicationKey:     "unknown",
 		TenantID:           "unknown",
@@ -40,133 +41,135 @@ func TestNewExporter(t *testing.T) {
 	mexp, err := newExporter(&c, logger, metricsType, component.NewDefaultBuildInfo().Version)
 	assert.NoError(t, err)
 	assert.NotNil(t, mexp)
-	assert.NoError(t, mexp.Close(context.Background()))
+	assert.NoError(t, mexp.Close(t.Context()))
 
 	lexp, err := newExporter(&c, logger, logsType, component.NewDefaultBuildInfo().Version)
 	assert.NoError(t, err)
 	assert.NotNil(t, lexp)
-	assert.NoError(t, lexp.Close(context.Background()))
+	assert.NoError(t, lexp.Close(t.Context()))
 
 	texp, err := newExporter(&c, logger, tracesType, component.NewDefaultBuildInfo().Version)
 	assert.NoError(t, err)
 	assert.NotNil(t, texp)
-	assert.NoError(t, texp.Close(context.Background()))
+	assert.NoError(t, texp.Close(t.Context()))
 
 	fexp, err := newExporter(&c, logger, 5, component.NewDefaultBuildInfo().Version)
 	assert.Error(t, err)
 	assert.Nil(t, fexp)
 }
 
+func getKcsb() *azkustodata.ConnectionStringBuilder {
+	return createKcsb(&Config{
+		ClusterURI:         "https://CLUSTER.kusto.windows.net",
+		ApplicationID:      "unknown",
+		ApplicationKey:     "unknown",
+		TenantID:           "unknown",
+		Database:           "not-configured",
+		MetricTable:        "OTELMetrics",
+		LogTable:           "OTELLogs",
+		TraceTable:         "OTELTraces",
+		MetricTableMapping: "otelmetrics_mapping",
+		LogTableMapping:    "otellogs_mapping",
+		TraceTableMapping:  "oteltraces_mapping",
+	}, "1.0.0")
+}
+
 func TestMetricsDataPusherStreaming(t *testing.T) {
 	logger := zaptest.NewLogger(t)
-	kustoClient := kusto.NewMockClient()
-	var ingestOptions []ingest.FileOption
-	ingestOptions = append(ingestOptions, ingest.FileFormat(ingest.JSON))
-	managedStreamingIngest, _ := ingest.NewManaged(kustoClient, "testDB", "OTELMetrics")
+	var ingestOptions []azkustoingest.FileOption
+	ingestOptions = append(ingestOptions, azkustoingest.FileFormat(azkustoingest.JSON))
+	managedStreamingIngest, _ := azkustoingest.NewManaged(getKcsb(), azkustoingest.WithDefaultDatabase("testDB"), azkustoingest.WithDefaultTable("OTELMetrics"))
 
 	adxDataProducer := &adxDataProducer{
-		client:        kustoClient,
 		ingestor:      managedStreamingIngest,
 		ingestOptions: ingestOptions,
 		logger:        logger,
 	}
 	assert.NotNil(t, adxDataProducer)
-	err := adxDataProducer.metricsDataPusher(context.Background(), createMetricsData(10))
+	err := adxDataProducer.metricsDataPusher(t.Context(), createMetricsData(10))
 	assert.Error(t, err)
-	assert.NoError(t, adxDataProducer.Close(context.Background()))
+	assert.NoError(t, adxDataProducer.Close(t.Context()))
 }
 
 func TestMetricsDataPusherQueued(t *testing.T) {
 	logger := zaptest.NewLogger(t)
-	kustoClient := kusto.NewMockClient()
-	var ingestOptions []ingest.FileOption
-	ingestOptions = append(ingestOptions, ingest.FileFormat(ingest.JSON))
-	queuedingest, _ := ingest.New(kustoClient, "testDB", "OTELMetrics")
+	var ingestOptions []azkustoingest.FileOption
+	ingestOptions = append(ingestOptions, azkustoingest.FileFormat(azkustoingest.JSON))
+	queuedingest, _ := azkustoingest.New(getKcsb(), azkustoingest.WithDefaultDatabase("testDB"), azkustoingest.WithDefaultTable("OTELMetrics"))
 
 	adxDataProducer := &adxDataProducer{
-		client:        kustoClient,
 		ingestor:      queuedingest,
 		ingestOptions: ingestOptions,
 		logger:        logger,
 	}
 	assert.NotNil(t, adxDataProducer)
-	err := adxDataProducer.metricsDataPusher(context.Background(), createMetricsData(10))
+	err := adxDataProducer.metricsDataPusher(t.Context(), createMetricsData(10))
 	assert.Error(t, err)
-	assert.NoError(t, adxDataProducer.Close(context.Background()))
+	assert.NoError(t, adxDataProducer.Close(t.Context()))
 }
 
 func TestLogsDataPusher(t *testing.T) {
 	logger := zaptest.NewLogger(t)
-	kustoClient := kusto.NewMockClient()
-	var ingestOptions []ingest.FileOption
-	ingestOptions = append(ingestOptions, ingest.FileFormat(ingest.JSON))
-	managedStreamingIngest, _ := ingest.NewManaged(kustoClient, "testDB", "OTELLogs")
+	var ingestOptions []azkustoingest.FileOption
+	ingestOptions = append(ingestOptions, azkustoingest.FileFormat(azkustoingest.JSON))
+	managedStreamingIngest, _ := azkustoingest.NewManaged(getKcsb(), azkustoingest.WithDefaultDatabase("testDB"), azkustoingest.WithDefaultTable("OTELLogs"))
 
 	adxDataProducer := &adxDataProducer{
-		client:        kustoClient,
 		ingestor:      managedStreamingIngest,
 		ingestOptions: ingestOptions,
 		logger:        logger,
 	}
 	assert.NotNil(t, adxDataProducer)
-	err := adxDataProducer.logsDataPusher(context.Background(), createLogsData())
+	err := adxDataProducer.logsDataPusher(t.Context(), createLogsData())
 	assert.Error(t, err)
-	assert.NoError(t, adxDataProducer.Close(context.Background()))
+	assert.NoError(t, adxDataProducer.Close(t.Context()))
 }
 
 func TestTracesDataPusher(t *testing.T) {
 	logger := zaptest.NewLogger(t)
-	kustoClient := kusto.NewMockClient()
-	var ingestOptions []ingest.FileOption
-	ingestOptions = append(ingestOptions, ingest.FileFormat(ingest.JSON))
-	managedStreamingIngest, _ := ingest.NewManaged(kustoClient, "testDB", "OTELLogs")
+	var ingestOptions []azkustoingest.FileOption
+	ingestOptions = append(ingestOptions, azkustoingest.FileFormat(azkustoingest.JSON))
+	managedStreamingIngest, _ := azkustoingest.NewManaged(getKcsb(), azkustoingest.WithDefaultDatabase("testDB"), azkustoingest.WithDefaultTable("OTELLogs"))
 
 	adxDataProducer := &adxDataProducer{
-		client:        kustoClient,
 		ingestor:      managedStreamingIngest,
 		ingestOptions: ingestOptions,
 		logger:        logger,
 	}
 	assert.NotNil(t, adxDataProducer)
-	err := adxDataProducer.tracesDataPusher(context.Background(), createTracesData())
+	err := adxDataProducer.tracesDataPusher(t.Context(), createTracesData())
 	assert.Error(t, err)
-	assert.NoError(t, adxDataProducer.Close(context.Background()))
+	assert.NoError(t, adxDataProducer.Close(t.Context()))
 }
 
 func TestClose(t *testing.T) {
 	logger := zaptest.NewLogger(t)
-	kustoClient := kusto.NewMockClient()
-	var ingestOptions []ingest.FileOption
-	ingestOptions = append(ingestOptions, ingest.FileFormat(ingest.JSON))
-	managedStreamingIngest, _ := ingest.NewManaged(kustoClient, "testDB", "OTELMetrics")
+	var ingestOptions []azkustoingest.FileOption
+	ingestOptions = append(ingestOptions, azkustoingest.FileFormat(azkustoingest.JSON))
+	managedStreamingIngest, _ := azkustoingest.NewManaged(getKcsb(), azkustoingest.WithDefaultDatabase("testDB"), azkustoingest.WithDefaultTable("OTELMetrics"))
 
 	adxDataProducer := &adxDataProducer{
-		client:        kustoClient,
 		ingestor:      managedStreamingIngest,
 		ingestOptions: ingestOptions,
 		logger:        logger,
 	}
-	err := adxDataProducer.Close(context.Background())
+	err := adxDataProducer.Close(t.Context())
 	assert.NoError(t, err)
 }
 
 func TestIngestedDataRecordCount(t *testing.T) {
 	logger := zaptest.NewLogger(t)
-	kustoClient := kusto.NewMockClient()
-	ingestOptions := make([]ingest.FileOption, 2)
-	ingestOptions[0] = ingest.FileFormat(ingest.JSON)
+	ingestOptions := make([]azkustoingest.FileOption, 2)
+	ingestOptions[0] = azkustoingest.FileFormat(azkustoingest.JSON)
 	ingestor := &mockingestor{}
 
 	adxDataProducer := &adxDataProducer{
-		client:        kustoClient,
 		ingestor:      ingestor,
 		ingestOptions: ingestOptions,
 		logger:        logger,
 	}
-	source := rand.NewSource(time.Now().UTC().UnixNano())
-	genRand := rand.New(source)
-	recordstoingest := genRand.Intn(20)
-	err := adxDataProducer.metricsDataPusher(context.Background(), createMetricsData(recordstoingest))
+	recordstoingest := rand.IntN(20)
+	err := adxDataProducer.metricsDataPusher(t.Context(), createMetricsData(recordstoingest))
 	ingestedrecordsactual := ingestor.Records()
 	assert.Len(t, ingestedrecordsactual, recordstoingest, "Number of metrics created should match number of records ingested")
 	assert.NoError(t, err)
@@ -227,8 +230,7 @@ func TestCreateKcsb(t *testing.T) {
 			isAzureAuth: true,
 		},
 	}
-	for i := range tests {
-		tt := tests[i]
+	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			wantAppID := tt.applicationID
 			gotKcsb := createKcsb(&tt.config, "1.0.0")
@@ -237,7 +239,7 @@ func TestCreateKcsb(t *testing.T) {
 			wantIsMsi := tt.isMsi
 			assert.Equal(t, wantIsMsi, gotKcsb.MsiAuthentication)
 			wantManagedID := tt.managedIdentityID
-			assert.Equal(t, wantManagedID, gotKcsb.ManagedServiceIdentity)
+			assert.Equal(t, wantManagedID, gotKcsb.ManagedServiceIdentityClientId)
 			assert.Equal(t, "https://CLUSTER.kusto.windows.net", gotKcsb.DataSource)
 			wantIsAzure := tt.isAzureAuth
 			assert.Equal(t, wantIsAzure, gotKcsb.DefaultAuth)
@@ -249,15 +251,15 @@ type mockingestor struct {
 	records []string
 }
 
-func (m *mockingestor) FromReader(_ context.Context, reader io.Reader, _ ...ingest.FileOption) (*ingest.Result, error) {
+func (m *mockingestor) FromReader(_ context.Context, reader io.Reader, _ ...azkustoingest.FileOption) (*azkustoingest.Result, error) {
 	bufbytes, _ := io.ReadAll(reader)
 	metricjson := string(bufbytes)
 	m.SetRecords(strings.Split(metricjson, "\n"))
-	return &ingest.Result{}, nil
+	return &azkustoingest.Result{}, nil
 }
 
-func (m *mockingestor) FromFile(_ context.Context, _ string, _ ...ingest.FileOption) (*ingest.Result, error) {
-	return &ingest.Result{}, nil
+func (*mockingestor) FromFile(context.Context, string, ...azkustoingest.FileOption) (*azkustoingest.Result, error) {
+	return &azkustoingest.Result{}, nil
 }
 
 func (m *mockingestor) SetRecords(records []string) {
@@ -269,7 +271,7 @@ func (m *mockingestor) Records() []string {
 	return m.records
 }
 
-func (m *mockingestor) Close() error {
+func (*mockingestor) Close() error {
 	return nil
 }
 
@@ -310,7 +312,6 @@ func createLogsData() plog.Logs {
 	log.SetSeverityNumber(plog.SeverityNumberDebug)
 	log.SetSeverityText("DEBUG")
 	return logs
-
 }
 
 func createTracesData() ptrace.Traces {

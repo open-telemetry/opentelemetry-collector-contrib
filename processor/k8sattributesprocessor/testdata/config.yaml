@@ -27,7 +27,6 @@ k8sattributes/2:
         from: pod
       - tag_name: a2 # extracts value of annotation with key `annotation-two` with regexp and inserts it as a tag with key `a2`
         key: annotation-two
-        regex: field=(?P<value>.+)
         from: pod
     labels:
       - tag_name: l1 # extracts value of label with key `label1` and inserts it as a tag with key `l1`
@@ -35,7 +34,6 @@ k8sattributes/2:
         from: pod
       - tag_name: l2 # extracts value of label with key `label1` with regexp and inserts it as a tag with key `l2`
         key: label2
-        regex: field=(?P<value>.+)
         from: pod
 
   filter:
@@ -89,7 +87,7 @@ k8sattributes/4:
   auth_type: "kubeConfig"
   extract:
     metadata:
-      # the following metadata field has been depracated
+      # the following metadata field has been deprecated
       - k8s.cluster.name
 
 k8sattributes/too_many_sources:
@@ -105,17 +103,6 @@ k8sattributes/too_many_sources:
           name: host.name
         - from: connection
           name: ip
-
-k8sattributes/deprecated-regex:
-  passthrough: false
-  auth_type: "kubeConfig"
-  extract:
-    labels:
-      - regex: field=(?P<value>.+)
-        from: pod
-    annotations:
-      - regex: field=(?P<value>.+)
-        from: pod
 
 k8sattributes/bad_keys_labels:
   extract:
@@ -145,22 +132,6 @@ k8sattributes/bad_from_annotations:
         key: annotation1
         from: unknown
 
-k8sattributes/bad_regex_labels:
-  extract:
-    labels:
-      - tag_name: a1
-        key: label1
-        from: pod
-        regex: "["
-
-k8sattributes/bad_regex_annotations:
-  extract:
-    annotations:
-      - tag_name: a1
-        key: annotation1
-        from: pod
-        regex: "["
-
 k8sattributes/bad_keyregex_labels:
   extract:
     labels:
@@ -174,40 +145,6 @@ k8sattributes/bad_keyregex_annotations:
       - tag_name: a1
         from: pod
         key_regex: "["
-
-
-k8sattributes/bad_regex_groups_labels:
-  extract:
-    labels:
-      - tag_name: a1
-        key: label1
-        from: pod
-        regex: "((.*)*)"
-
-k8sattributes/bad_regex_groups_annotations:
-  extract:
-    annotations:
-      - tag_name: a1
-        key: annotation1
-        from: pod
-        regex: "((.*)*)"
-
-
-k8sattributes/bad_regex_name_labels:
-  extract:
-    labels:
-      - tag_name: a1
-        key: label1
-        from: pod
-        regex: "field=(?P<notvalue>.+)"
-
-k8sattributes/bad_regex_name_annotations:
-  extract:
-    annotations:
-      - tag_name: a1
-        key: annotation1
-        from: pod
-        regex: "field=(?P<notvalue>.+)"
 
 k8sattributes/bad_filter_label_op:
   filter:

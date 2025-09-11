@@ -10,11 +10,12 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 
-	telemetry "github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/lineartelemetry"
+	telemetry "github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/telemetry"
 )
 
-var _ component.ConfigValidator = (*Config)(nil)
+var _ xconfmap.Validator = (*Config)(nil)
 
 type Config struct {
 	MaxStale   time.Duration `mapstructure:"max_stale"`
@@ -35,7 +36,7 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		MaxStale: 5 * time.Minute,
 
-		// disable. TODO: find good default
+		// TODO: find good default
 		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/31603
 		MaxStreams: math.MaxInt,
 	}

@@ -5,9 +5,9 @@ package opensearchexporter // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"context"
-	"strings"
+	"time"
 
-	"github.com/opensearch-project/opensearch-go/v2"
+	"github.com/opensearch-project/opensearch-go/v4/opensearchapi"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter"
@@ -15,32 +15,35 @@ import (
 )
 
 type logExporter struct {
-	client       *opensearch.Client
-	Index        string
-	bulkAction   string
-	model        mappingModel
-	httpSettings confighttp.ClientConfig
-	telemetry    component.TelemetrySettings
+	client        *opensearchapi.Client
+	Index         string
+	bulkAction    string
+	model         mappingModel
+	httpSettings  confighttp.ClientConfig
+	telemetry     component.TelemetrySettings
+	config        *Config
+	indexResolver *indexResolver
 }
 
 func newLogExporter(cfg *Config, set exporter.Settings) *logExporter {
 	model := &encodeModel{
 		dedup:             cfg.Dedup,
 		dedot:             cfg.Dedot,
-		sso:               cfg.MappingsSettings.Mode == MappingSS4O.String(),
-		flattenAttributes: cfg.MappingsSettings.Mode == MappingFlattenAttributes.String(),
-		timestampField:    cfg.MappingsSettings.TimestampField,
-		unixTime:          cfg.MappingsSettings.UnixTimestamp,
+		sso:               cfg.Mode == MappingSS4O.String(),
+		flattenAttributes: cfg.Mode == MappingFlattenAttributes.String(),
+		timestampField:    cfg.TimestampField,
+		unixTime:          cfg.UnixTimestamp,
 		dataset:           cfg.Dataset,
 		namespace:         cfg.Namespace,
 	}
 
 	return &logExporter{
-		telemetry:    set.TelemetrySettings,
-		Index:        getIndexName(cfg.Dataset, cfg.Namespace, cfg.LogsIndex),
-		bulkAction:   cfg.BulkAction,
-		httpSettings: cfg.ClientConfig,
-		model:        model,
+		telemetry:     set.TelemetrySettings,
+		bulkAction:    cfg.BulkAction,
+		httpSettings:  cfg.ClientConfig,
+		model:         model,
+		config:        cfg,
+		indexResolver: newIndexResolver(),
 	}
 }
 
@@ -60,20 +63,18 @@ func (l *logExporter) Start(ctx context.Context, host component.Host) error {
 }
 
 func (l *logExporter) pushLogData(ctx context.Context, ld plog.Logs) error {
-	indexer := newLogBulkIndexer(l.Index, l.bulkAction, l.model)
+	indexer := newLogBulkIndexer("", l.bulkAction, l.model)
 	startErr := indexer.start(l.client)
 	if startErr != nil {
 		return startErr
 	}
+
+	// Resolve index name using the common index resolver
+	logTimestamp := time.Now() // Replace with actual log timestamp extraction
+	indexName := l.indexResolver.ResolveLogIndex(l.config, ld, logTimestamp)
+
+	indexer.index = indexName
 	indexer.submit(ctx, ld)
 	indexer.close(ctx)
 	return indexer.joinedError()
-}
-
-func getIndexName(dataset, namespace, index string) string {
-	if len(index) != 0 {
-		return index
-	}
-
-	return strings.Join([]string{"ss4o_logs", dataset, namespace}, "-")
 }

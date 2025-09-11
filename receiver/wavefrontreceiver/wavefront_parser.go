@@ -17,25 +17,30 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
 )
 
-// WavefrontParser converts metrics in the Wavefront format, see
+// wavefrontParser converts metrics in the Wavefront format, see
 // https://docs.wavefront.com/wavefront_data_format.html#metrics-data-format-syntax,
 // into the internal format of the Collector
-type WavefrontParser struct {
+type wavefrontParser struct {
 	ExtractCollectdTags bool `mapstructure:"extract_collectd_tags"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
-var _ protocol.Parser = (*WavefrontParser)(nil)
-var _ protocol.ParserConfig = (*WavefrontParser)(nil)
+var (
+	_ protocol.Parser       = (*wavefrontParser)(nil)
+	_ protocol.ParserConfig = (*wavefrontParser)(nil)
+)
 
-// Only two chars can be espcaped per Wavafront SDK, see
+// Only two chars can be escaped per Wavefront SDK, see
 // https://github.com/wavefrontHQ/wavefront-sdk-go/blob/2c5891318fcd83c35c93bba2b411640495473333/senders/formatter.go#L20
 var escapedCharReplacer = strings.NewReplacer(
 	`\"`, `"`, // Replaces escaped double-quotes
-	`\n`, "\n", // Repaces escaped new-line.
+	`\n`, "\n", // Replaces escaped new-line.
 )
 
 // BuildParser creates a new Parser instance that receives Wavefront metric data.
-func (wp *WavefrontParser) BuildParser() (protocol.Parser, error) {
+func (wp *wavefrontParser) BuildParser() (protocol.Parser, error) {
 	return wp, nil
 }
 
@@ -48,7 +53,7 @@ func (wp *WavefrontParser) BuildParser() (protocol.Parser, error) {
 //	"<metricName> <metricValue> [<timestamp>] source=<source> [pointTags]"
 //
 // Detailed description of each element is available on the link above.
-func (wp *WavefrontParser) Parse(line string) (pmetric.Metric, error) {
+func (wp *wavefrontParser) Parse(line string) (pmetric.Metric, error) {
 	parts := strings.SplitN(line, " ", 3)
 	if len(parts) < 3 {
 		return pmetric.Metric{}, fmt.Errorf("invalid wavefront metric [%s]", line)
@@ -111,7 +116,7 @@ func (wp *WavefrontParser) Parse(line string) (pmetric.Metric, error) {
 	return metric, nil
 }
 
-func (wp *WavefrontParser) injectCollectDLabels(
+func (*wavefrontParser) injectCollectDLabels(
 	metricName string,
 	attributes pcommon.Map,
 ) string {
@@ -139,7 +144,7 @@ func (wp *WavefrontParser) injectCollectDLabels(
 func buildLabels(attributes pcommon.Map, tags string) error {
 	for {
 		tags = strings.TrimLeft(tags, " ")
-		if len(tags) == 0 {
+		if tags == "" {
 			return nil
 		}
 

@@ -4,7 +4,6 @@
 package tests
 
 import (
-	"context"
 	"path/filepath"
 	"testing"
 
@@ -49,7 +48,6 @@ type resourceProcessorTestCase struct {
 }
 
 func getResourceProcessorTestCases() []resourceProcessorTestCase {
-
 	tests := []resourceProcessorTestCase{
 		{
 			name: "update_and_rename_existing_attributes",
@@ -113,7 +111,7 @@ func TestMetricResourceProcessor(t *testing.T) {
 				{Name: "resource", Body: test.resourceProcessorConfig},
 			}
 			configStr := createConfigYaml(t, sender, receiver, resultDir, processors, nil)
-			configCleanup, err := agentProc.PrepareConfig(configStr)
+			configCleanup, err := agentProc.PrepareConfig(t, configStr)
 			require.NoError(t, err)
 			defer configCleanup()
 
@@ -145,7 +143,7 @@ func TestMetricResourceProcessor(t *testing.T) {
 			sender, ok := tc.LoadGenerator.(*testbed.ProviderSender).Sender.(testbed.MetricDataSender)
 			require.True(t, ok, "unsupported metric sender")
 
-			require.NoError(t, sender.ConsumeMetrics(context.Background(), test.mockedConsumedMetrics))
+			require.NoError(t, sender.ConsumeMetrics(t.Context(), test.mockedConsumedMetrics))
 
 			// We bypass the load generator in this test, but make sure to increment the
 			// counter since it is used in final reports.

@@ -4,7 +4,6 @@
 package bearertokenauthextension
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -15,14 +14,14 @@ import (
 
 func TestFactory_CreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
-	assert.Equal(t, &Config{Scheme: defaultScheme}, cfg)
+	assert.Equal(t, &Config{Header: defaultHeader, Scheme: defaultScheme}, cfg)
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
 func TestFactory_Create(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.BearerToken = "somerandometoken"
-	ext, err := createExtension(context.Background(), extensiontest.NewNopSettings(), cfg)
+	ext, err := createExtension(t.Context(), extensiontest.NewNopSettings(extensiontest.NopType), cfg)
 	require.NoError(t, err)
 	require.NotNil(t, ext)
 }

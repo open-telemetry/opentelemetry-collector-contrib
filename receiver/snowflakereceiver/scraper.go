@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snowflakereceiver/internal/metadata"
 )
@@ -107,8 +107,11 @@ func (s *snowflakeMetricsScraper) scrape(ctx context.Context) (pmetric.Metrics, 
 }
 
 func (s *snowflakeMetricsScraper) scrapeBillingMetrics(ctx context.Context, t pcommon.Timestamp, errs chan<- error) {
-	billingMetrics, err := s.client.FetchBillingMetrics(ctx)
+	if !s.conf.Metrics.SnowflakeBillingCloudServiceTotal.Enabled && !s.conf.Metrics.SnowflakeBillingTotalCreditTotal.Enabled && !s.conf.Metrics.SnowflakeBillingVirtualWarehouseTotal.Enabled {
+		return
+	}
 
+	billingMetrics, err := s.client.FetchBillingMetrics(ctx)
 	if err != nil {
 		errs <- err
 		return
@@ -122,8 +125,11 @@ func (s *snowflakeMetricsScraper) scrapeBillingMetrics(ctx context.Context, t pc
 }
 
 func (s *snowflakeMetricsScraper) scrapeWarehouseBillingMetrics(ctx context.Context, t pcommon.Timestamp, errs chan<- error) {
-	warehouseBillingMetrics, err := s.client.FetchWarehouseBillingMetrics(ctx)
+	if !s.conf.Metrics.SnowflakeBillingWarehouseTotalCreditTotal.Enabled && !s.conf.Metrics.SnowflakeBillingWarehouseCloudServiceTotal.Enabled && !s.conf.Metrics.SnowflakeBillingWarehouseVirtualWarehouseTotal.Enabled {
+		return
+	}
 
+	warehouseBillingMetrics, err := s.client.FetchWarehouseBillingMetrics(ctx)
 	if err != nil {
 		errs <- err
 		return
@@ -137,8 +143,11 @@ func (s *snowflakeMetricsScraper) scrapeWarehouseBillingMetrics(ctx context.Cont
 }
 
 func (s *snowflakeMetricsScraper) scrapeLoginMetrics(ctx context.Context, t pcommon.Timestamp, errs chan<- error) {
-	loginMetrics, err := s.client.FetchLoginMetrics(ctx)
+	if !s.conf.Metrics.SnowflakeLoginsTotal.Enabled {
+		return
+	}
 
+	loginMetrics, err := s.client.FetchLoginMetrics(ctx)
 	if err != nil {
 		errs <- err
 		return
@@ -150,8 +159,10 @@ func (s *snowflakeMetricsScraper) scrapeLoginMetrics(ctx context.Context, t pcom
 }
 
 func (s *snowflakeMetricsScraper) scrapeHighLevelQueryMetrics(ctx context.Context, t pcommon.Timestamp, errs chan<- error) {
+	if !s.conf.Metrics.SnowflakeQueryExecuted.Enabled && !s.conf.Metrics.SnowflakeQueryBlocked.Enabled && !s.conf.Metrics.SnowflakeQueryQueuedOverload.Enabled && !s.conf.Metrics.SnowflakeQueryQueuedProvision.Enabled {
+		return
+	}
 	highLevelQueryMetrics, err := s.client.FetchHighLevelQueryMetrics(ctx)
-
 	if err != nil {
 		errs <- err
 		return
@@ -166,8 +177,19 @@ func (s *snowflakeMetricsScraper) scrapeHighLevelQueryMetrics(ctx context.Contex
 }
 
 func (s *snowflakeMetricsScraper) scrapeDBMetrics(ctx context.Context, t pcommon.Timestamp, errs chan<- error) {
+	if !s.conf.Metrics.SnowflakeDatabaseQueryCount.Enabled && !s.conf.Metrics.SnowflakeDatabaseBytesScannedAvg.Enabled &&
+		!s.conf.Metrics.SnowflakeQueryBytesDeletedAvg.Enabled && !s.conf.Metrics.SnowflakeQueryBytesSpilledLocalAvg.Enabled &&
+		!s.conf.Metrics.SnowflakeQueryBytesSpilledRemoteAvg.Enabled && !s.conf.Metrics.SnowflakeQueryBytesWrittenAvg.Enabled &&
+		!s.conf.Metrics.SnowflakeQueryCompilationTimeAvg.Enabled && !s.conf.Metrics.SnowflakeQueryDataScannedCacheAvg.Enabled &&
+		!s.conf.Metrics.SnowflakeQueryExecutionTimeAvg.Enabled && !s.conf.Metrics.SnowflakeQueryPartitionsScannedAvg.Enabled &&
+		!s.conf.Metrics.SnowflakeQueuedOverloadTimeAvg.Enabled && !s.conf.Metrics.SnowflakeQueuedProvisioningTimeAvg.Enabled &&
+		!s.conf.Metrics.SnowflakeQueuedRepairTimeAvg.Enabled && !s.conf.Metrics.SnowflakeRowsInsertedAvg.Enabled &&
+		!s.conf.Metrics.SnowflakeRowsDeletedAvg.Enabled && !s.conf.Metrics.SnowflakeRowsProducedAvg.Enabled &&
+		!s.conf.Metrics.SnowflakeRowsUnloadedAvg.Enabled && !s.conf.Metrics.SnowflakeRowsUpdatedAvg.Enabled &&
+		!s.conf.Metrics.SnowflakeTotalElapsedTimeAvg.Enabled {
+		return
+	}
 	DBMetrics, err := s.client.FetchDbMetrics(ctx)
-
 	if err != nil {
 		errs <- err
 		return
@@ -197,8 +219,11 @@ func (s *snowflakeMetricsScraper) scrapeDBMetrics(ctx context.Context, t pcommon
 }
 
 func (s *snowflakeMetricsScraper) scrapeSessionMetrics(ctx context.Context, t pcommon.Timestamp, errs chan<- error) {
-	sessionMetrics, err := s.client.FetchSessionMetrics(ctx)
+	if !s.conf.Metrics.SnowflakeSessionIDCount.Enabled {
+		return
+	}
 
+	sessionMetrics, err := s.client.FetchSessionMetrics(ctx)
 	if err != nil {
 		errs <- err
 		return
@@ -210,8 +235,11 @@ func (s *snowflakeMetricsScraper) scrapeSessionMetrics(ctx context.Context, t pc
 }
 
 func (s *snowflakeMetricsScraper) scrapeSnowpipeMetrics(ctx context.Context, t pcommon.Timestamp, errs chan<- error) {
-	snowpipeMetrics, err := s.client.FetchSnowpipeMetrics(ctx)
+	if !s.conf.Metrics.SnowflakePipeCreditsUsedTotal.Enabled {
+		return
+	}
 
+	snowpipeMetrics, err := s.client.FetchSnowpipeMetrics(ctx)
 	if err != nil {
 		errs <- err
 		return
@@ -223,8 +251,11 @@ func (s *snowflakeMetricsScraper) scrapeSnowpipeMetrics(ctx context.Context, t p
 }
 
 func (s *snowflakeMetricsScraper) scrapeStorageMetrics(ctx context.Context, t pcommon.Timestamp, errs chan<- error) {
-	storageMetrics, err := s.client.FetchStorageMetrics(ctx)
+	if !s.conf.Metrics.SnowflakeStorageStorageBytesTotal.Enabled && !s.conf.Metrics.SnowflakeStorageStageBytesTotal.Enabled && !s.conf.Metrics.SnowflakeStorageFailsafeBytesTotal.Enabled {
+		return
+	}
 
+	storageMetrics, err := s.client.FetchStorageMetrics(ctx)
 	if err != nil {
 		errs <- err
 		return

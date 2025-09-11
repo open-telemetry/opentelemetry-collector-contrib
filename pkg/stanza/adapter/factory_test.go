@@ -4,7 +4,6 @@
 package adapter
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -26,7 +25,7 @@ func TestCreateReceiver(t *testing.T) {
 				Builder: json.NewConfig(),
 			},
 		}
-		receiver, err := factory.CreateLogs(context.Background(), receivertest.NewNopSettings(), cfg, consumertest.NewNop())
+		receiver, err := factory.CreateLogs(t.Context(), receivertest.NewNopSettings(factory.Type()), cfg, consumertest.NewNop())
 		require.NoError(t, err, "receiver creation failed")
 		require.NotNil(t, receiver, "receiver creation failed")
 	})
@@ -39,7 +38,7 @@ func TestCreateReceiver(t *testing.T) {
 				Builder: regex.NewConfig(),
 			},
 		}
-		receiver, err := factory.CreateLogs(context.Background(), receivertest.NewNopSettings(), badCfg, consumertest.NewNop())
+		receiver, err := factory.CreateLogs(t.Context(), receivertest.NewNopSettings(factory.Type()), badCfg, consumertest.NewNop())
 		require.Error(t, err, "receiver creation should fail if parser configs aren't valid")
 		require.Nil(t, receiver, "receiver creation should fail if parser configs aren't valid")
 	})

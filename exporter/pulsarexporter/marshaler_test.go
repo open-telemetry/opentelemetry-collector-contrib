@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 )
 
 func TestDefaultTracesMarshalers(t *testing.T) {
@@ -24,7 +24,7 @@ func TestDefaultTracesMarshalers(t *testing.T) {
 		"jaeger_json",
 	}
 	marshalers := tracesMarshalers()
-	assert.Equal(t, len(expectedEncodings), len(marshalers))
+	assert.Len(t, marshalers, len(expectedEncodings))
 	for _, e := range expectedEncodings {
 		t.Run(e, func(t *testing.T) {
 			m, ok := marshalers[e]
@@ -40,7 +40,7 @@ func TestDefaultMetricsMarshalers(t *testing.T) {
 		"otlp_json",
 	}
 	marshalers := metricsMarshalers()
-	assert.Equal(t, len(expectedEncodings), len(marshalers))
+	assert.Len(t, marshalers, len(expectedEncodings))
 	for _, e := range expectedEncodings {
 		t.Run(e, func(t *testing.T) {
 			m, ok := marshalers[e]
@@ -56,7 +56,7 @@ func TestDefaultLogsMarshalers(t *testing.T) {
 		"otlp_json",
 	}
 	marshalers := logsMarshalers()
-	assert.Equal(t, len(expectedEncodings), len(marshalers))
+	assert.Len(t, marshalers, len(expectedEncodings))
 	for _, e := range expectedEncodings {
 		t.Run(e, func(t *testing.T) {
 			m, ok := marshalers[e]
@@ -111,7 +111,6 @@ func TestOTLPTracesJsonMarshaling(t *testing.T) {
 						"scope": map[string]any{},
 						"spans": []any{
 							map[string]any{
-								"traceId":           "",
 								"spanId":            "0001020304050607",
 								"parentSpanId":      "08090a0b0c0d0e00",
 								"name":              t.Name(),

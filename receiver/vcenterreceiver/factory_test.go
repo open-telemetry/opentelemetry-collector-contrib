@@ -4,12 +4,13 @@
 package vcenterreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver"
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver/internal/metadata"
 )
 
 func TestCreateMetrics(t *testing.T) {
@@ -22,8 +23,8 @@ func TestCreateMetrics(t *testing.T) {
 			testFn: func(t *testing.T) {
 				t.Parallel()
 				_, err := createMetricsReceiver(
-					context.Background(),
-					receivertest.NewNopSettings(),
+					t.Context(),
+					receivertest.NewNopSettings(metadata.Type),
 					createDefaultConfig(),
 					consumertest.NewNop(),
 				)
@@ -35,8 +36,8 @@ func TestCreateMetrics(t *testing.T) {
 			testFn: func(t *testing.T) {
 				t.Parallel()
 				_, err := createMetricsReceiver(
-					context.Background(),
-					receivertest.NewNopSettings(),
+					t.Context(),
+					receivertest.NewNopSettings(metadata.Type),
 					nil,
 					consumertest.NewNop(),
 				)

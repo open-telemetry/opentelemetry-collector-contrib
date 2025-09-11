@@ -215,7 +215,6 @@ func Test_metricDataToSplunk(t *testing.T) {
 				return res
 			},
 			metricsDataFn: func() pmetric.Metric {
-
 				doubleGauge := pmetric.NewMetric()
 				doubleGauge.SetName("gauge_double_with_dims")
 				doubleDataPt := doubleGauge.SetEmptyGauge().DataPoints().AppendEmpty()

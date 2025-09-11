@@ -14,9 +14,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processortest"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.uber.org/zap"
 
@@ -24,7 +27,7 @@ import (
 )
 
 func TestEventCallback(t *testing.T) {
-	set := processortest.NewNopSettings()
+	set := processortest.NewNopSettings(metadata.Type)
 	tel, _ := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 
 	for _, tt := range []struct {
@@ -106,7 +109,7 @@ func TestEventCallback(t *testing.T) {
 }
 
 func TestEventCallbackNotSet(t *testing.T) {
-	set := processortest.NewNopSettings()
+	set := processortest.NewNopSettings(metadata.Type)
 	tel, _ := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	for _, tt := range []struct {
 		casename string
@@ -155,7 +158,7 @@ func TestEventCallbackNotSet(t *testing.T) {
 }
 
 func TestEventInvalidPayload(t *testing.T) {
-	set := processortest.NewNopSettings()
+	set := processortest.NewNopSettings(metadata.Type)
 	tel, _ := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	for _, tt := range []struct {
 		casename         string
@@ -226,7 +229,7 @@ func TestEventInvalidPayload(t *testing.T) {
 }
 
 func TestEventUnknownType(t *testing.T) {
-	set := processortest.NewNopSettings()
+	set := processortest.NewNopSettings(metadata.Type)
 	tel, _ := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	// prepare
 	logger, err := zap.NewDevelopment()
@@ -251,7 +254,7 @@ func TestEventUnknownType(t *testing.T) {
 }
 
 func TestEventTracePerWorker(t *testing.T) {
-	set := processortest.NewNopSettings()
+	set := processortest.NewNopSettings(metadata.Type)
 	tel, _ := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	for _, tt := range []struct {
 		casename  string
@@ -356,7 +359,7 @@ func TestEventConsumeConsistency(t *testing.T) {
 }
 
 func TestEventShutdown(t *testing.T) {
-	set := processortest.NewNopSettings()
+	set := processortest.NewNopSettings(metadata.Type)
 	tel, _ := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	// prepare
 	wg := sync.WaitGroup{}
@@ -430,7 +433,10 @@ func TestEventShutdown(t *testing.T) {
 func TestPeriodicMetrics(t *testing.T) {
 	// prepare
 	s := setupTestTelemetry()
-	telemetryBuilder, err := metadata.NewTelemetryBuilder(s.NewSettings().TelemetrySettings)
+	t.Cleanup(func() {
+		require.NoError(t, s.Shutdown(t.Context()))
+	})
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(s.newTelemetrySettings())
 	require.NoError(t, err)
 
 	em := newEventMachine(zap.NewNop(), 50, 1, 1_000, telemetryBuilder)
@@ -461,16 +467,20 @@ func TestPeriodicMetrics(t *testing.T) {
 	em.workers[0].fire(event{typ: traceReceived}) // the first is consumed right away, the second is in the queue
 	go em.periodicMetrics()
 
+	// TODO: Remove time.Sleep below, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42515
+	time.Sleep(10 * time.Millisecond)
 	// ensure our gauge is showing 1 item in the queue
-	assert.Eventually(t, func() bool {
-		return getGaugeValue(t, "otelcol_processor_groupbytrace_num_events_in_queue", s) == 1
+	assert.EventuallyWithT(t, func(tt *assert.CollectT) {
+		val := getGaugeValue(t.Context(), tt, "otelcol_processor_groupbytrace_num_events_in_queue", s)
+		assert.Equal(tt, int64(1), val)
 	}, 1*time.Second, 10*time.Millisecond)
 
 	wg.Done() // release all events
 
 	// ensure our gauge is now showing no items in the queue
-	assert.Eventually(t, func() bool {
-		return getGaugeValue(t, "otelcol_processor_groupbytrace_num_events_in_queue", s) == 0
+	assert.EventuallyWithT(t, func(tt *assert.CollectT) {
+		val := getGaugeValue(t.Context(), tt, "otelcol_processor_groupbytrace_num_events_in_queue", s)
+		assert.Equal(tt, int64(0), val)
 	}, 1*time.Second, 10*time.Millisecond)
 
 	// signal and wait for the recursive call to finish
@@ -481,7 +491,7 @@ func TestPeriodicMetrics(t *testing.T) {
 }
 
 func TestForceShutdown(t *testing.T) {
-	set := processortest.NewNopSettings()
+	set := processortest.NewNopSettings(metadata.Type)
 	tel, _ := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	// prepare
 	em := newEventMachine(zap.NewNop(), 50, 1, 1_000, tel)
@@ -528,18 +538,58 @@ func TestDoWithTimeout_TimeoutTrigger(t *testing.T) {
 	assert.WithinDuration(t, start, time.Now(), 100*time.Millisecond)
 }
 
-func getGaugeValue(t *testing.T, name string, tt componentTestTelemetry) int64 {
+func getGaugeValue(ctx context.Context, t *assert.CollectT, name string, tt testTelemetry) int64 {
 	var md metricdata.ResourceMetrics
-	require.NoError(t, tt.reader.Collect(context.Background(), &md))
+	require.NoError(t, tt.reader.Collect(ctx, &md))
 	m := tt.getMetric(name, md).Data
-	g := m.(metricdata.Gauge[int64])
-	assert.Len(t, g.DataPoints, 1, "expected exactly one data point")
+	var g metricdata.Gauge[int64]
+	var ok bool
+	if g, ok = m.(metricdata.Gauge[int64]); !ok {
+		assert.Fail(t, "missing gauge data")
+	} else {
+		assert.Len(t, g.DataPoints, 1, "expected exactly one data point")
+	}
 	return g.DataPoints[0].Value
 }
 
-func assertGaugeNotCreated(t *testing.T, name string, tt componentTestTelemetry) {
+func assertGaugeNotCreated(t *testing.T, name string, tt testTelemetry) {
 	var md metricdata.ResourceMetrics
-	require.NoError(t, tt.reader.Collect(context.Background(), &md))
+	require.NoError(t, tt.reader.Collect(t.Context(), &md))
 	got := tt.getMetric(name, md)
 	assert.Equal(t, metricdata.Metrics{}, got, "gauge exists already but shouldn't")
+}
+
+type testTelemetry struct {
+	reader        *sdkmetric.ManualReader
+	meterProvider *sdkmetric.MeterProvider
+}
+
+func setupTestTelemetry() testTelemetry {
+	reader := sdkmetric.NewManualReader()
+	return testTelemetry{
+		reader:        reader,
+		meterProvider: sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader)),
+	}
+}
+
+func (tt *testTelemetry) newTelemetrySettings() component.TelemetrySettings {
+	set := componenttest.NewNopTelemetrySettings()
+	set.MeterProvider = tt.meterProvider
+	return set
+}
+
+func (*testTelemetry) getMetric(name string, got metricdata.ResourceMetrics) metricdata.Metrics {
+	for _, sm := range got.ScopeMetrics {
+		for _, m := range sm.Metrics {
+			if m.Name == name {
+				return m
+			}
+		}
+	}
+
+	return metricdata.Metrics{}
+}
+
+func (tt *testTelemetry) Shutdown(ctx context.Context) error {
+	return tt.meterProvider.Shutdown(ctx)
 }

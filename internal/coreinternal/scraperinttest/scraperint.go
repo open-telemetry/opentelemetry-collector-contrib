@@ -71,15 +71,15 @@ func (it *IntegrationTest) Run(t *testing.T) {
 	cfg := it.factory.CreateDefaultConfig()
 	it.customConfig(t, cfg, ci)
 	sink := new(consumertest.MetricsSink)
-	settings := receivertest.NewNopSettings()
+	settings := receivertest.NewNopSettings(it.factory.Type())
 	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
 	settings.Logger = zap.New(observedZapCore)
 
-	rcvr, err := it.factory.CreateMetrics(context.Background(), settings, cfg, sink)
+	rcvr, err := it.factory.CreateMetrics(t.Context(), settings, cfg, sink)
 	require.NoError(t, err, "failed creating metrics receiver")
-	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, rcvr.Start(t.Context(), componenttest.NewNopHost()))
 	defer func() {
-		require.NoError(t, rcvr.Shutdown(context.Background()))
+		require.NoError(t, rcvr.Shutdown(t.Context()))
 	}()
 
 	var expected pmetric.Metrics
@@ -145,7 +145,7 @@ func (it *IntegrationTest) createContainers(t *testing.T) *ContainerInfo {
 			var errs error
 			assert.Eventuallyf(t, func() bool {
 				c, err := testcontainers.GenericContainer(
-					context.Background(),
+					t.Context(),
 					testcontainers.GenericContainerRequest{
 						ContainerRequest: req,
 						Started:          true,
@@ -253,7 +253,7 @@ func (ci *ContainerInfo) Host(t *testing.T) string {
 
 func (ci *ContainerInfo) HostForNamedContainer(t *testing.T, containerName string) string {
 	c := ci.container(t, containerName)
-	h, err := c.Host(context.Background())
+	h, err := c.Host(t.Context())
 	require.NoErrorf(t, err, "get host for container %q: %v", containerName, err)
 	return h
 }
@@ -262,9 +262,9 @@ func (ci *ContainerInfo) MappedPort(t *testing.T, port string) string {
 	return ci.MappedPortForNamedContainer(t, "", port)
 }
 
-func (ci *ContainerInfo) MappedPortForNamedContainer(t *testing.T, containerName string, port string) string {
+func (ci *ContainerInfo) MappedPortForNamedContainer(t *testing.T, containerName, port string) string {
 	c := ci.container(t, containerName)
-	p, err := c.MappedPort(context.Background(), nat.Port(port))
+	p, err := c.MappedPort(t.Context(), nat.Port(port))
 	require.NoErrorf(t, err, "get port %q for container %q: %v", port, containerName, err)
 	return p.Port()
 }
@@ -284,7 +284,7 @@ func (ci *ContainerInfo) add(name string, c testcontainers.Container) {
 
 func (ci *ContainerInfo) terminate(t *testing.T) {
 	for name, c := range ci.containers {
-		require.NoError(t, c.Terminate(context.Background()), "terminate container %q", name)
+		require.NoError(t, c.Terminate(t.Context()), "terminate container %q", name)
 	}
 }
 

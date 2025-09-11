@@ -69,11 +69,10 @@ func newAMQPMessagingServiceFactory(cfg *Config, logger *zap.Logger) (messagingS
 			logger:         logger,
 		}
 	}, nil
-
 }
 
 type amqpConnectConfig struct {
-	// conenct config
+	// connect config
 	addr       string
 	saslConfig amqp.SASLType
 	tlsConfig  *tls.Config
@@ -186,21 +185,21 @@ var (
 
 // toAMQPAuthentication configures authentication in amqp.ConnOption slice
 func toAMQPAuthentication(config *Config) (amqp.SASLType, error) {
-	if config.Auth.PlainText != nil {
-		plaintext := config.Auth.PlainText
+	if config.Auth.PlainText.HasValue() {
+		plaintext := config.Auth.PlainText.Get()
 		if plaintext.Password == "" || plaintext.Username == "" {
 			return nil, errMissingPlainTextParams
 		}
 		return connSASLPlain(plaintext.Username, string(plaintext.Password)), nil
 	}
-	if config.Auth.XAuth2 != nil {
-		xauth := config.Auth.XAuth2
+	if config.Auth.XAuth2.HasValue() {
+		xauth := config.Auth.XAuth2.Get()
 		if xauth.Bearer == "" || xauth.Username == "" {
 			return nil, errMissingXauth2Params
 		}
 		return connSASLXOAUTH2(xauth.Username, xauth.Bearer, saslMaxInitFrameSizeOverride), nil
 	}
-	if config.Auth.External != nil {
+	if config.Auth.External.HasValue() {
 		return connSASLExternal(""), nil
 	}
 	return nil, errMissingAuthDetails

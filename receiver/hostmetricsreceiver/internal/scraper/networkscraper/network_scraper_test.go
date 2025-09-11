@@ -14,8 +14,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scrapertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
@@ -37,7 +37,7 @@ func TestScrape(t *testing.T) {
 		initializationErr       string
 		expectedErr             string
 		expectedErrCount        int
-		mutateScraper           func(*scraper)
+		mutateScraper           func(*networkScraper)
 	}
 
 	testCases := []testCase{
@@ -129,7 +129,7 @@ func TestScrape(t *testing.T) {
 			name: "Connections metrics is disabled",
 			config: func() *Config {
 				cfg := Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()}
-				cfg.MetricsBuilderConfig.Metrics.SystemNetworkConnections.Enabled = false
+				cfg.Metrics.SystemNetworkConnections.Enabled = false
 				return &cfg
 			}(),
 			connectionsFunc: func(context.Context, string) ([]net.ConnectionStat, error) {
@@ -141,7 +141,7 @@ func TestScrape(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper, err := newNetworkScraper(context.Background(), receivertest.NewNopSettings(), test.config)
+			scraper, err := newNetworkScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), test.config)
 			if test.mutateScraper != nil {
 				test.mutateScraper(scraper)
 			}
@@ -165,14 +165,14 @@ func TestScrape(t *testing.T) {
 				scraper.conntrack = test.conntrackFunc
 			}
 
-			err = scraper.start(context.Background(), componenttest.NewNopHost())
+			err = scraper.start(t.Context(), componenttest.NewNopHost())
 			if test.initializationErr != "" {
 				assert.EqualError(t, err, test.initializationErr)
 				return
 			}
 			require.NoError(t, err, "Failed to initialize network scraper: %v", err)
 
-			md, err := scraper.scrape(context.Background())
+			md, err := scraper.scrape(t.Context())
 			if test.expectedErr != "" {
 				assert.EqualError(t, err, test.expectedErr)
 

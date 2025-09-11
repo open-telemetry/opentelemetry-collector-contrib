@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
-// AttributeDirection specifies the a value direction attribute.
+// AttributeDirection specifies the value direction attribute.
 type AttributeDirection int
 
 const (
@@ -36,6 +36,260 @@ func (av AttributeDirection) String() string {
 var MapAttributeDirection = map[string]AttributeDirection{
 	"receive":  AttributeDirectionReceive,
 	"transmit": AttributeDirectionTransmit,
+}
+
+var MetricsInfo = metricsInfo{
+	ContainerCPUTime: metricInfo{
+		Name: "container.cpu.time",
+	},
+	ContainerCPUUsage: metricInfo{
+		Name: "container.cpu.usage",
+	},
+	ContainerCPUUtilization: metricInfo{
+		Name: "container.cpu.utilization",
+	},
+	ContainerFilesystemAvailable: metricInfo{
+		Name: "container.filesystem.available",
+	},
+	ContainerFilesystemCapacity: metricInfo{
+		Name: "container.filesystem.capacity",
+	},
+	ContainerFilesystemUsage: metricInfo{
+		Name: "container.filesystem.usage",
+	},
+	ContainerMemoryAvailable: metricInfo{
+		Name: "container.memory.available",
+	},
+	ContainerMemoryMajorPageFaults: metricInfo{
+		Name: "container.memory.major_page_faults",
+	},
+	ContainerMemoryPageFaults: metricInfo{
+		Name: "container.memory.page_faults",
+	},
+	ContainerMemoryRss: metricInfo{
+		Name: "container.memory.rss",
+	},
+	ContainerMemoryUsage: metricInfo{
+		Name: "container.memory.usage",
+	},
+	ContainerMemoryWorkingSet: metricInfo{
+		Name: "container.memory.working_set",
+	},
+	ContainerUptime: metricInfo{
+		Name: "container.uptime",
+	},
+	K8sContainerCPUNodeUtilization: metricInfo{
+		Name: "k8s.container.cpu.node.utilization",
+	},
+	K8sContainerCPULimitUtilization: metricInfo{
+		Name: "k8s.container.cpu_limit_utilization",
+	},
+	K8sContainerCPURequestUtilization: metricInfo{
+		Name: "k8s.container.cpu_request_utilization",
+	},
+	K8sContainerMemoryNodeUtilization: metricInfo{
+		Name: "k8s.container.memory.node.utilization",
+	},
+	K8sContainerMemoryLimitUtilization: metricInfo{
+		Name: "k8s.container.memory_limit_utilization",
+	},
+	K8sContainerMemoryRequestUtilization: metricInfo{
+		Name: "k8s.container.memory_request_utilization",
+	},
+	K8sNodeCPUTime: metricInfo{
+		Name: "k8s.node.cpu.time",
+	},
+	K8sNodeCPUUsage: metricInfo{
+		Name: "k8s.node.cpu.usage",
+	},
+	K8sNodeCPUUtilization: metricInfo{
+		Name: "k8s.node.cpu.utilization",
+	},
+	K8sNodeFilesystemAvailable: metricInfo{
+		Name: "k8s.node.filesystem.available",
+	},
+	K8sNodeFilesystemCapacity: metricInfo{
+		Name: "k8s.node.filesystem.capacity",
+	},
+	K8sNodeFilesystemUsage: metricInfo{
+		Name: "k8s.node.filesystem.usage",
+	},
+	K8sNodeMemoryAvailable: metricInfo{
+		Name: "k8s.node.memory.available",
+	},
+	K8sNodeMemoryMajorPageFaults: metricInfo{
+		Name: "k8s.node.memory.major_page_faults",
+	},
+	K8sNodeMemoryPageFaults: metricInfo{
+		Name: "k8s.node.memory.page_faults",
+	},
+	K8sNodeMemoryRss: metricInfo{
+		Name: "k8s.node.memory.rss",
+	},
+	K8sNodeMemoryUsage: metricInfo{
+		Name: "k8s.node.memory.usage",
+	},
+	K8sNodeMemoryWorkingSet: metricInfo{
+		Name: "k8s.node.memory.working_set",
+	},
+	K8sNodeNetworkErrors: metricInfo{
+		Name: "k8s.node.network.errors",
+	},
+	K8sNodeNetworkIo: metricInfo{
+		Name: "k8s.node.network.io",
+	},
+	K8sNodeUptime: metricInfo{
+		Name: "k8s.node.uptime",
+	},
+	K8sPodCPUNodeUtilization: metricInfo{
+		Name: "k8s.pod.cpu.node.utilization",
+	},
+	K8sPodCPUTime: metricInfo{
+		Name: "k8s.pod.cpu.time",
+	},
+	K8sPodCPUUsage: metricInfo{
+		Name: "k8s.pod.cpu.usage",
+	},
+	K8sPodCPUUtilization: metricInfo{
+		Name: "k8s.pod.cpu.utilization",
+	},
+	K8sPodCPULimitUtilization: metricInfo{
+		Name: "k8s.pod.cpu_limit_utilization",
+	},
+	K8sPodCPURequestUtilization: metricInfo{
+		Name: "k8s.pod.cpu_request_utilization",
+	},
+	K8sPodFilesystemAvailable: metricInfo{
+		Name: "k8s.pod.filesystem.available",
+	},
+	K8sPodFilesystemCapacity: metricInfo{
+		Name: "k8s.pod.filesystem.capacity",
+	},
+	K8sPodFilesystemUsage: metricInfo{
+		Name: "k8s.pod.filesystem.usage",
+	},
+	K8sPodMemoryAvailable: metricInfo{
+		Name: "k8s.pod.memory.available",
+	},
+	K8sPodMemoryMajorPageFaults: metricInfo{
+		Name: "k8s.pod.memory.major_page_faults",
+	},
+	K8sPodMemoryNodeUtilization: metricInfo{
+		Name: "k8s.pod.memory.node.utilization",
+	},
+	K8sPodMemoryPageFaults: metricInfo{
+		Name: "k8s.pod.memory.page_faults",
+	},
+	K8sPodMemoryRss: metricInfo{
+		Name: "k8s.pod.memory.rss",
+	},
+	K8sPodMemoryUsage: metricInfo{
+		Name: "k8s.pod.memory.usage",
+	},
+	K8sPodMemoryWorkingSet: metricInfo{
+		Name: "k8s.pod.memory.working_set",
+	},
+	K8sPodMemoryLimitUtilization: metricInfo{
+		Name: "k8s.pod.memory_limit_utilization",
+	},
+	K8sPodMemoryRequestUtilization: metricInfo{
+		Name: "k8s.pod.memory_request_utilization",
+	},
+	K8sPodNetworkErrors: metricInfo{
+		Name: "k8s.pod.network.errors",
+	},
+	K8sPodNetworkIo: metricInfo{
+		Name: "k8s.pod.network.io",
+	},
+	K8sPodUptime: metricInfo{
+		Name: "k8s.pod.uptime",
+	},
+	K8sPodVolumeUsage: metricInfo{
+		Name: "k8s.pod.volume.usage",
+	},
+	K8sVolumeAvailable: metricInfo{
+		Name: "k8s.volume.available",
+	},
+	K8sVolumeCapacity: metricInfo{
+		Name: "k8s.volume.capacity",
+	},
+	K8sVolumeInodes: metricInfo{
+		Name: "k8s.volume.inodes",
+	},
+	K8sVolumeInodesFree: metricInfo{
+		Name: "k8s.volume.inodes.free",
+	},
+	K8sVolumeInodesUsed: metricInfo{
+		Name: "k8s.volume.inodes.used",
+	},
+}
+
+type metricsInfo struct {
+	ContainerCPUTime                     metricInfo
+	ContainerCPUUsage                    metricInfo
+	ContainerCPUUtilization              metricInfo
+	ContainerFilesystemAvailable         metricInfo
+	ContainerFilesystemCapacity          metricInfo
+	ContainerFilesystemUsage             metricInfo
+	ContainerMemoryAvailable             metricInfo
+	ContainerMemoryMajorPageFaults       metricInfo
+	ContainerMemoryPageFaults            metricInfo
+	ContainerMemoryRss                   metricInfo
+	ContainerMemoryUsage                 metricInfo
+	ContainerMemoryWorkingSet            metricInfo
+	ContainerUptime                      metricInfo
+	K8sContainerCPUNodeUtilization       metricInfo
+	K8sContainerCPULimitUtilization      metricInfo
+	K8sContainerCPURequestUtilization    metricInfo
+	K8sContainerMemoryNodeUtilization    metricInfo
+	K8sContainerMemoryLimitUtilization   metricInfo
+	K8sContainerMemoryRequestUtilization metricInfo
+	K8sNodeCPUTime                       metricInfo
+	K8sNodeCPUUsage                      metricInfo
+	K8sNodeCPUUtilization                metricInfo
+	K8sNodeFilesystemAvailable           metricInfo
+	K8sNodeFilesystemCapacity            metricInfo
+	K8sNodeFilesystemUsage               metricInfo
+	K8sNodeMemoryAvailable               metricInfo
+	K8sNodeMemoryMajorPageFaults         metricInfo
+	K8sNodeMemoryPageFaults              metricInfo
+	K8sNodeMemoryRss                     metricInfo
+	K8sNodeMemoryUsage                   metricInfo
+	K8sNodeMemoryWorkingSet              metricInfo
+	K8sNodeNetworkErrors                 metricInfo
+	K8sNodeNetworkIo                     metricInfo
+	K8sNodeUptime                        metricInfo
+	K8sPodCPUNodeUtilization             metricInfo
+	K8sPodCPUTime                        metricInfo
+	K8sPodCPUUsage                       metricInfo
+	K8sPodCPUUtilization                 metricInfo
+	K8sPodCPULimitUtilization            metricInfo
+	K8sPodCPURequestUtilization          metricInfo
+	K8sPodFilesystemAvailable            metricInfo
+	K8sPodFilesystemCapacity             metricInfo
+	K8sPodFilesystemUsage                metricInfo
+	K8sPodMemoryAvailable                metricInfo
+	K8sPodMemoryMajorPageFaults          metricInfo
+	K8sPodMemoryNodeUtilization          metricInfo
+	K8sPodMemoryPageFaults               metricInfo
+	K8sPodMemoryRss                      metricInfo
+	K8sPodMemoryUsage                    metricInfo
+	K8sPodMemoryWorkingSet               metricInfo
+	K8sPodMemoryLimitUtilization         metricInfo
+	K8sPodMemoryRequestUtilization       metricInfo
+	K8sPodNetworkErrors                  metricInfo
+	K8sPodNetworkIo                      metricInfo
+	K8sPodUptime                         metricInfo
+	K8sPodVolumeUsage                    metricInfo
+	K8sVolumeAvailable                   metricInfo
+	K8sVolumeCapacity                    metricInfo
+	K8sVolumeInodes                      metricInfo
+	K8sVolumeInodesFree                  metricInfo
+	K8sVolumeInodesUsed                  metricInfo
+}
+
+type metricInfo struct {
+	Name string
 }
 
 type metricContainerCPUTime struct {
@@ -2765,6 +3019,57 @@ func newMetricK8sPodUptime(cfg MetricConfig) metricK8sPodUptime {
 	return m
 }
 
+type metricK8sPodVolumeUsage struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills k8s.pod.volume.usage metric with initial data.
+func (m *metricK8sPodVolumeUsage) init() {
+	m.data.SetName("k8s.pod.volume.usage")
+	m.data.SetDescription("The number of used bytes in the pod volume.")
+	m.data.SetUnit("By")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricK8sPodVolumeUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricK8sPodVolumeUsage) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricK8sPodVolumeUsage) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricK8sPodVolumeUsage(cfg MetricConfig) metricK8sPodVolumeUsage {
+	m := metricK8sPodVolumeUsage{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricK8sVolumeAvailable struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -3075,6 +3380,7 @@ type MetricsBuilder struct {
 	metricK8sPodNetworkErrors                  metricK8sPodNetworkErrors
 	metricK8sPodNetworkIo                      metricK8sPodNetworkIo
 	metricK8sPodUptime                         metricK8sPodUptime
+	metricK8sPodVolumeUsage                    metricK8sPodVolumeUsage
 	metricK8sVolumeAvailable                   metricK8sVolumeAvailable
 	metricK8sVolumeCapacity                    metricK8sVolumeCapacity
 	metricK8sVolumeInodes                      metricK8sVolumeInodes
@@ -3099,17 +3405,7 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 		mb.startTime = startTime
 	})
 }
-
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
-	if mbc.Metrics.ContainerCPUUtilization.Enabled {
-		settings.Logger.Warn("[WARNING] `container.cpu.utilization` should not be enabled: This metric will be disabled in a future release. Use metric container.cpu.usage instead.")
-	}
-	if mbc.Metrics.K8sNodeCPUUtilization.Enabled {
-		settings.Logger.Warn("[WARNING] `k8s.node.cpu.utilization` should not be enabled: This metric will be disabled in a future release. Use metric k8s.node.cpu.usage instead.")
-	}
-	if mbc.Metrics.K8sPodCPUUtilization.Enabled {
-		settings.Logger.Warn("[WARNING] `k8s.pod.cpu.utilization` should not be enabled: This metric will be disabled in a future release. Use metric k8s.pod.cpu.usage instead.")
-	}
 	mb := &MetricsBuilder{
 		config:                                     mbc,
 		startTime:                                  pcommon.NewTimestampFromTime(time.Now()),
@@ -3170,6 +3466,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricK8sPodNetworkErrors:                  newMetricK8sPodNetworkErrors(mbc.Metrics.K8sPodNetworkErrors),
 		metricK8sPodNetworkIo:                      newMetricK8sPodNetworkIo(mbc.Metrics.K8sPodNetworkIo),
 		metricK8sPodUptime:                         newMetricK8sPodUptime(mbc.Metrics.K8sPodUptime),
+		metricK8sPodVolumeUsage:                    newMetricK8sPodVolumeUsage(mbc.Metrics.K8sPodVolumeUsage),
 		metricK8sVolumeAvailable:                   newMetricK8sVolumeAvailable(mbc.Metrics.K8sVolumeAvailable),
 		metricK8sVolumeCapacity:                    newMetricK8sVolumeCapacity(mbc.Metrics.K8sVolumeCapacity),
 		metricK8sVolumeInodes:                      newMetricK8sVolumeInodes(mbc.Metrics.K8sVolumeInodes),
@@ -3334,7 +3631,7 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver")
+	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricContainerCPUTime.emit(ils.Metrics())
@@ -3392,6 +3689,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricK8sPodNetworkErrors.emit(ils.Metrics())
 	mb.metricK8sPodNetworkIo.emit(ils.Metrics())
 	mb.metricK8sPodUptime.emit(ils.Metrics())
+	mb.metricK8sPodVolumeUsage.emit(ils.Metrics())
 	mb.metricK8sVolumeAvailable.emit(ils.Metrics())
 	mb.metricK8sVolumeCapacity.emit(ils.Metrics())
 	mb.metricK8sVolumeInodes.emit(ils.Metrics())
@@ -3701,6 +3999,11 @@ func (mb *MetricsBuilder) RecordK8sPodNetworkIoDataPoint(ts pcommon.Timestamp, v
 // RecordK8sPodUptimeDataPoint adds a data point to k8s.pod.uptime metric.
 func (mb *MetricsBuilder) RecordK8sPodUptimeDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricK8sPodUptime.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordK8sPodVolumeUsageDataPoint adds a data point to k8s.pod.volume.usage metric.
+func (mb *MetricsBuilder) RecordK8sPodVolumeUsageDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricK8sPodVolumeUsage.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordK8sVolumeAvailableDataPoint adds a data point to k8s.volume.available metric.

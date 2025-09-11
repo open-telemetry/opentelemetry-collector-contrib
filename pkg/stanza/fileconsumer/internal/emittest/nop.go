@@ -7,6 +7,6 @@ import (
 	"context"
 )
 
-func Nop(_ context.Context, _ []byte, _ map[string]any) error {
+func Nop(_ context.Context, _ [][]byte, _ map[string]any, _ int64, _ []int64) error {
 	return nil
 }

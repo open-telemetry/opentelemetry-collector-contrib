@@ -17,7 +17,7 @@ import (
 	"time"
 )
 
-func CheckEventsFromSplunk(searchQuery string, startTime string, endTimeOptional ...string) []any {
+func CheckEventsFromSplunk(searchQuery, startTime string, endTimeOptional ...string) []any {
 	logger := log.New(os.Stdout, "", log.LstdFlags)
 	logger.Println("-->> Splunk Search: checking events in Splunk --")
 	user := GetConfigVariable("USER")
@@ -43,11 +43,11 @@ func CheckEventsFromSplunk(searchQuery string, startTime string, endTimeOptional
 	return results
 }
 
-func getSplunkSearchResults(user string, password string, baseURL string, jobID string) []any {
+func getSplunkSearchResults(user, password, baseURL, jobID string) []any {
 	logger := log.New(os.Stdout, "", log.LstdFlags)
 	eventURL := fmt.Sprintf("%s/services/search/jobs/%s/events?output_mode=json", baseURL, jobID)
 	logger.Println("URL: " + eventURL)
-	reqEvents, err := http.NewRequest("GET", eventURL, nil)
+	reqEvents, err := http.NewRequest(http.MethodGet, eventURL, http.NoBody)
 	if err != nil {
 		panic(err)
 	}
@@ -81,7 +81,7 @@ func getSplunkSearchResults(user string, password string, baseURL string, jobID 
 	return results
 }
 
-func checkSearchJobStatusCode(user string, password string, baseURL string, jobID string) any {
+func checkSearchJobStatusCode(user, password, baseURL, jobID string) any {
 	logger := log.New(os.Stdout, "", log.LstdFlags)
 	checkEventURL := baseURL + "/services/search/jobs/" + jobID + "?output_mode=json"
 	logger.Println("URL: " + checkEventURL)
@@ -89,7 +89,7 @@ func checkSearchJobStatusCode(user string, password string, baseURL string, jobI
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 	client := &http.Client{Transport: tr}
-	checkReqEvents, err := http.NewRequest("GET", checkEventURL, nil)
+	checkReqEvents, err := http.NewRequest(http.MethodGet, checkEventURL, http.NoBody)
 	if err != nil {
 		panic(err)
 	}
@@ -115,7 +115,8 @@ func checkSearchJobStatusCode(user string, password string, baseURL string, jobI
 	logger.Printf("Is Splunk Search completed [isDone flag]: %v\n", isDone)
 	return isDone
 }
-func postSearchRequest(user string, password string, baseURL string, searchQuery string, startTime string, endTime string) string {
+
+func postSearchRequest(user, password, baseURL, searchQuery, startTime, endTime string) string {
 	logger := log.New(os.Stdout, "", log.LstdFlags)
 	searchURL := fmt.Sprintf("%s/services/search/jobs?output_mode=json", baseURL)
 	query := "search " + searchQuery
@@ -129,7 +130,7 @@ func postSearchRequest(user string, password string, baseURL string, searchQuery
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 	client := &http.Client{Transport: tr}
-	req, err := http.NewRequest("POST", searchURL, strings.NewReader(data.Encode()))
+	req, err := http.NewRequest(http.MethodPost, searchURL, strings.NewReader(data.Encode()))
 	if err != nil {
 		logger.Printf("Error while preparing POST request")
 		panic(err)
@@ -158,7 +159,7 @@ func postSearchRequest(user string, password string, baseURL string, searchQuery
 	return jsonResponse["sid"].(string)
 }
 
-func CheckMetricsFromSplunk(index string, metricName string) []any {
+func CheckMetricsFromSplunk(index, metricName string) []any {
 	logger := log.New(os.Stdout, "", log.LstdFlags)
 	logger.Println("-->> Splunk Search: checking metrics in Splunk --")
 	baseURL := "https://" + GetConfigVariable("HOST") + ":" + GetConfigVariable("MANAGEMENT_PORT")
@@ -172,7 +173,7 @@ func CheckMetricsFromSplunk(index string, metricName string) []any {
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 	client := &http.Client{Transport: tr, Timeout: 10 * time.Second}
-	req, err := http.NewRequest("GET", apiURL, nil)
+	req, err := http.NewRequest(http.MethodGet, apiURL, http.NoBody)
 	if err != nil {
 		panic(err)
 	}
@@ -195,7 +196,7 @@ func CheckMetricsFromSplunk(index string, metricName string) []any {
 	return events
 }
 
-func CreateAnIndexInSplunk(index string, indexType string) {
+func CreateAnIndexInSplunk(index, indexType string) {
 	logger := log.New(os.Stdout, "", log.LstdFlags)
 	user := GetConfigVariable("USER")
 	password := GetConfigVariable("PASSWORD")
@@ -209,7 +210,7 @@ func CreateAnIndexInSplunk(index string, indexType string) {
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 	client := &http.Client{Transport: tr}
-	req, err := http.NewRequest("POST", indexURL, strings.NewReader(data.Encode()))
+	req, err := http.NewRequest(http.MethodPost, indexURL, strings.NewReader(data.Encode()))
 	if err != nil {
 		logger.Printf("Error while preparing POST request")
 		panic(err)

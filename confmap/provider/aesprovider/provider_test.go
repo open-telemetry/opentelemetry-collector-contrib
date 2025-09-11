@@ -4,8 +4,6 @@
 package aesprovider
 
 import (
-	"context"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -13,13 +11,12 @@ import (
 )
 
 func TestAESCredentialProvider(t *testing.T) {
-
 	tests := []struct {
+		envVars       map[string]string
 		name          string
 		configValue   string
 		expectedValue string
 		expectedError string
-		envVars       map[string]string
 	}{
 		{
 			name:          "Valid type, key, JSON value",
@@ -96,22 +93,18 @@ func TestAESCredentialProvider(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			os.Clearenv()
 			for k, v := range tt.envVars {
-				if err := os.Setenv(k, v); err != nil {
-					t.Fatalf("Failed to set env var %s: %v", k, err)
-				}
+				t.Setenv(k, v)
 			}
 
 			p := NewFactory().Create(confmap.ProviderSettings{})
-			retrieved, err := p.Retrieve(context.Background(), tt.configValue, nil)
-			if tt.expectedError == "" {
-				require.NoError(t, err)
-			} else {
+			retrieved, err := p.Retrieve(t.Context(), tt.configValue, nil)
+			if tt.expectedError != "" {
 				require.Error(t, err)
 				require.Equal(t, tt.expectedError, err.Error())
 				return
 			}
+			require.NoError(t, err)
 			require.NotNil(t, retrieved)
 			stringValue, err := retrieved.AsString()
 			require.NoError(t, err)

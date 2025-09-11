@@ -10,6 +10,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
@@ -28,6 +29,7 @@ var _ receiver.Metrics = (*collectdReceiver)(nil)
 type collectdReceiver struct {
 	logger             *zap.Logger
 	server             *http.Server
+	shutdownWG         sync.WaitGroup
 	defaultAttrsPrefix string
 	nextConsumer       consumer.Metrics
 	obsrecv            *receiverhelper.ObsReport
@@ -41,8 +43,8 @@ func newCollectdReceiver(
 	cfg *Config,
 	defaultAttrsPrefix string,
 	nextConsumer consumer.Metrics,
-	createSettings receiver.Settings) (receiver.Metrics, error) {
-
+	createSettings receiver.Settings,
+) (receiver.Metrics, error) {
 	r := &collectdReceiver{
 		logger:             logger,
 		nextConsumer:       nextConsumer,
@@ -56,7 +58,7 @@ func newCollectdReceiver(
 // Start starts an HTTP server that can process CollectD JSON requests.
 func (cdr *collectdReceiver) Start(ctx context.Context, host component.Host) error {
 	var err error
-	cdr.server, err = cdr.config.ServerConfig.ToServer(ctx, host, cdr.createSettings.TelemetrySettings, cdr)
+	cdr.server, err = cdr.config.ToServer(ctx, host, cdr.createSettings.TelemetrySettings, cdr)
 	if err != nil {
 		return err
 	}
@@ -70,11 +72,13 @@ func (cdr *collectdReceiver) Start(ctx context.Context, host component.Host) err
 	if err != nil {
 		return err
 	}
-	l, err := cdr.config.ServerConfig.ToListener(ctx)
+	l, err := cdr.config.ToListener(ctx)
 	if err != nil {
 		return err
 	}
+	cdr.shutdownWG.Add(1)
 	go func() {
+		defer cdr.shutdownWG.Done()
 		if err := cdr.server.Serve(l); !errors.Is(err, http.ErrServerClosed) && err != nil {
 			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 		}
@@ -87,7 +91,9 @@ func (cdr *collectdReceiver) Shutdown(context.Context) error {
 	if cdr.server == nil {
 		return nil
 	}
-	return cdr.server.Shutdown(context.Background())
+	err := cdr.server.Shutdown(context.Background())
+	cdr.shutdownWG.Wait()
+	return err
 }
 
 // ServeHTTP acts as the default and only HTTP handler for the CollectD receiver.
@@ -95,7 +101,7 @@ func (cdr *collectdReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	ctx = cdr.obsrecv.StartMetricsOp(ctx)
 
-	if r.Method != "POST" {
+	if r.Method != http.MethodPost {
 		cdr.obsrecv.EndMetricsOp(ctx, metadata.Type.String(), 0, errors.New("invalid http verb"))
 		w.WriteHeader(http.StatusBadRequest)
 		return
@@ -152,7 +158,7 @@ func (cdr *collectdReceiver) defaultAttributes(req *http.Request) map[string]str
 	for key := range params {
 		if strings.HasPrefix(key, cdr.defaultAttrsPrefix) {
 			value := params.Get(key)
-			if len(value) == 0 {
+			if value == "" {
 				cdr.logger.Debug("blank attribute value", zap.String("key", key))
 				continue
 			}

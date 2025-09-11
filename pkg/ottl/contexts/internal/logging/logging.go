@@ -45,7 +45,7 @@ type Map pcommon.Map
 func (m Map) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
 	mm := pcommon.Map(m)
 	var err error
-	mm.Range(func(k string, v pcommon.Value) bool {
+	for k, v := range mm.All() {
 		switch v.Type() {
 		case pcommon.ValueTypeStr:
 			encoder.AddString(k, v.Str())
@@ -62,8 +62,7 @@ func (m Map) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
 		case pcommon.ValueTypeBytes:
 			encoder.AddByteString(k, v.Bytes().AsRaw())
 		}
-		return true
-	})
+	}
 	return nil
 }
 
@@ -169,8 +168,8 @@ func (m Metric) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
 	encoder.AddString("name", mm.Name())
 	encoder.AddString("unit", mm.Unit())
 	encoder.AddString("type", mm.Type().String())
+	err := encoder.AddObject("metadata", Map(mm.Metadata()))
 
-	var err error
 	switch mm.Type() {
 	case pmetric.MetricTypeSum:
 		encoder.AddString("aggregation_temporality", mm.Sum().AggregationTemporality().String())

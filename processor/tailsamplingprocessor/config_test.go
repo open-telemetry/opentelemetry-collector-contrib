@@ -35,7 +35,7 @@ func TestLoadConfig(t *testing.T) {
 			DecisionWait:            10 * time.Second,
 			NumTraces:               100,
 			ExpectedNewTracesPerSec: 10,
-			DecisionCache:           DecisionCacheConfig{SampledCacheSize: 500},
+			DecisionCache:           DecisionCacheConfig{SampledCacheSize: 1_000, NonSampledCacheSize: 10_000},
 			PolicyCfgs: []PolicyCfg{
 				{
 					sharedPolicyCfg: sharedPolicyCfg{
@@ -89,7 +89,7 @@ func TestLoadConfig(t *testing.T) {
 					sharedPolicyCfg: sharedPolicyCfg{
 						Name:         "test-policy-8",
 						Type:         SpanCount,
-						SpanCountCfg: SpanCountCfg{MinSpans: 2, MaxSpans: 20},
+						SpanCountCfg: SpanCountCfg{MinSpans: 2},
 					},
 				},
 				{

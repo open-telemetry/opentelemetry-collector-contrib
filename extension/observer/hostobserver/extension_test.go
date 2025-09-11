@@ -4,7 +4,6 @@
 package hostobserver
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net"
@@ -24,6 +23,7 @@ import (
 	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/endpointswatcher"
 )
 
 // Tests observer with real connections on system.
@@ -111,7 +111,6 @@ func TestHostObserver(t *testing.T) {
 				assert.Equal(t, filepath.Base(exe), details.ProcessName)
 				assert.Equal(t, tt.protocol, details.Transport)
 				assert.Equal(t, isIPv6, details.IsIPv6)
-
 			}
 		})
 	}
@@ -156,7 +155,8 @@ func getExpectedHost(host string, isIPv6 bool) string {
 
 func startAndStopObserver(
 	t *testing.T,
-	getConnectionsOverride func() (conns []psnet.ConnectionStat, err error)) mockNotifier {
+	getConnectionsOverride func() (conns []psnet.ConnectionStat, err error),
+) mockNotifier {
 	ml := endpointsLister{
 		logger:                zap.NewNop(),
 		observerName:          "host_observer/1",
@@ -173,11 +173,11 @@ func startAndStopObserver(
 	require.NotNil(t, ml.getProcess)
 	require.NotNil(t, ml.collectProcessDetails)
 
-	h := &hostObserver{EndpointsWatcher: observer.NewEndpointsWatcher(ml, 10*time.Second, zaptest.NewLogger(t))}
+	h := &hostObserver{EndpointsWatcher: endpointswatcher.New(ml, 10*time.Second, zaptest.NewLogger(t))}
 
 	mn := mockNotifier{map[observer.EndpointID]observer.Endpoint{}}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	require.NoError(t, h.Start(ctx, componenttest.NewNopHost()))
 	h.ListAndWatch(mn)
 
@@ -248,7 +248,7 @@ type mockNotifier struct {
 	endpointsMap map[observer.EndpointID]observer.Endpoint
 }
 
-func (m mockNotifier) ID() observer.NotifyID {
+func (mockNotifier) ID() observer.NotifyID {
 	return "mockNotifier"
 }
 

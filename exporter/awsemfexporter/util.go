@@ -11,7 +11,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
 )
 
@@ -49,7 +49,7 @@ func replacePatternWithAttrValue(s, patternKey string, attrMap map[string]string
 	return s, true
 }
 
-func replace(s, pattern string, value string, logger *zap.Logger) (string, bool) {
+func replace(s, pattern, value string, logger *zap.Logger) (string, bool) {
 	if value == "" {
 		logger.Debug("Empty resource attribute value found for pattern " + pattern)
 		return strings.ReplaceAll(s, pattern, "undefined"), false
@@ -59,9 +59,9 @@ func replace(s, pattern string, value string, logger *zap.Logger) (string, bool)
 
 // getNamespace retrieves namespace for given set of metrics from user config.
 func getNamespace(rm pmetric.ResourceMetrics, namespace string) string {
-	if len(namespace) == 0 {
-		serviceName, svcNameOk := rm.Resource().Attributes().Get(conventions.AttributeServiceName)
-		serviceNamespace, svcNsOk := rm.Resource().Attributes().Get(conventions.AttributeServiceNamespace)
+	if namespace == "" {
+		serviceName, svcNameOk := rm.Resource().Attributes().Get(string(conventions.ServiceNameKey))
+		serviceNamespace, svcNsOk := rm.Resource().Attributes().Get(string(conventions.ServiceNamespaceKey))
 		switch {
 		case svcNameOk && svcNsOk && serviceName.Type() == pcommon.ValueTypeStr && serviceNamespace.Type() == pcommon.ValueTypeStr:
 			namespace = fmt.Sprintf("%s/%s", serviceNamespace.Str(), serviceName.Str())
@@ -72,7 +72,7 @@ func getNamespace(rm pmetric.ResourceMetrics, namespace string) string {
 		}
 	}
 
-	if len(namespace) == 0 {
+	if namespace == "" {
 		namespace = defaultNamespace
 	}
 	return namespace
@@ -91,10 +91,10 @@ func getLogInfo(rm pmetric.ResourceMetrics, cWNamespace string, config *Config) 
 	strAttributeMap := attrMaptoStringMap(rm.Resource().Attributes())
 
 	// Override log group/stream if specified in config. However, in this case, customer won't have correlation experience
-	if len(config.LogGroupName) > 0 {
+	if config.LogGroupName != "" {
 		logGroup, groupReplaced = replacePatterns(config.LogGroupName, strAttributeMap, config.logger)
 	}
-	if len(config.LogStreamName) > 0 {
+	if config.LogStreamName != "" {
 		logStream, streamReplaced = replacePatterns(config.LogStreamName, strAttributeMap, config.logger)
 	}
 
@@ -165,9 +165,8 @@ func unixNanoToMilliseconds(timestamp pcommon.Timestamp) int64 {
 func attrMaptoStringMap(attrMap pcommon.Map) map[string]string {
 	strMap := make(map[string]string, attrMap.Len())
 
-	attrMap.Range(func(k string, v pcommon.Value) bool {
+	for k, v := range attrMap.All() {
 		strMap[k] = v.AsString()
-		return true
-	})
+	}
 	return strMap
 }

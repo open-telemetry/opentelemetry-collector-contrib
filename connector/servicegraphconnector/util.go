@@ -5,11 +5,22 @@ package servicegraphconnector // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	semconv "go.opentelemetry.io/collector/semconv/v1.25.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.25.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil"
 )
 
 func findServiceName(attributes pcommon.Map) (string, bool) {
-	return pdatautil.GetAttributeValue(semconv.AttributeServiceName, attributes)
+	return pdatautil.GetAttributeValue(string(semconv.ServiceNameKey), attributes)
+}
+
+func getFirstMatchingValue(keys []string, attributes ...pcommon.Map) (string, bool) {
+	for _, key := range keys {
+		for _, attr := range attributes {
+			if v, ok := pdatautil.GetAttributeValue(key, attr); ok {
+				return v, true
+			}
+		}
+	}
+	return "", false
 }

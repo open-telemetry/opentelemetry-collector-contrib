@@ -119,6 +119,27 @@ func (rb *ResourceBuilder) SetK8sHpaName(val string) {
 	}
 }
 
+// SetK8sHpaScaletargetrefApiversion sets provided value as "k8s.hpa.scaletargetref.apiversion" attribute.
+func (rb *ResourceBuilder) SetK8sHpaScaletargetrefApiversion(val string) {
+	if rb.config.K8sHpaScaletargetrefApiversion.Enabled {
+		rb.res.Attributes().PutStr("k8s.hpa.scaletargetref.apiversion", val)
+	}
+}
+
+// SetK8sHpaScaletargetrefKind sets provided value as "k8s.hpa.scaletargetref.kind" attribute.
+func (rb *ResourceBuilder) SetK8sHpaScaletargetrefKind(val string) {
+	if rb.config.K8sHpaScaletargetrefKind.Enabled {
+		rb.res.Attributes().PutStr("k8s.hpa.scaletargetref.kind", val)
+	}
+}
+
+// SetK8sHpaScaletargetrefName sets provided value as "k8s.hpa.scaletargetref.name" attribute.
+func (rb *ResourceBuilder) SetK8sHpaScaletargetrefName(val string) {
+	if rb.config.K8sHpaScaletargetrefName.Enabled {
+		rb.res.Attributes().PutStr("k8s.hpa.scaletargetref.name", val)
+	}
+}
+
 // SetK8sHpaUID sets provided value as "k8s.hpa.uid" attribute.
 func (rb *ResourceBuilder) SetK8sHpaUID(val string) {
 	if rb.config.K8sHpaUID.Enabled {

@@ -4,6 +4,8 @@ server:
 capabilities:
   reports_effective_config: true
   reports_own_metrics: true
+  reports_own_logs: true
+  reports_own_traces: true
   reports_health: true
   accepts_remote_config: true
   reports_remote_config: true
@@ -14,4 +16,10 @@ storage:
 
 agent:
   executable: ../../bin/otelcontribcol_{{.goos}}_{{.goarch}}{{.extension}}
-  health_check_port: {{ .healthcheck_port }}
+  {{- if .local_config }}
+  config_files:
+    - {{ .local_config }}
+  {{- end }}
+  {{- if .use_hup_config_reload }}
+  use_hup_config_reload: {{ .use_hup_config_reload }}
+  {{- end }}

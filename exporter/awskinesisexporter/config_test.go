@@ -8,13 +8,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
+	"github.com/cenkalti/backoff/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/batch"
@@ -86,7 +87,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.NoError(t, xconfmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -95,4 +96,20 @@ func TestLoadConfig(t *testing.T) {
 func TestConfigCheck(t *testing.T) {
 	cfg := (NewFactory()).CreateDefaultConfig()
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
+}
+
+func TestValidate(t *testing.T) {
+	cfg := &Config{
+		QueueSettings: exporterhelper.QueueBatchConfig{
+			Enabled:      true,
+			NumConsumers: -1,
+		},
+	}
+	err := cfg.Validate()
+	assert.ErrorContains(t, err, "queue settings has invalid configuration",
+		"Validate() error = %v, wantErr %v", err, "queue settings has invalid configuration")
+
+	cfg.QueueSettings.Enabled = false
+	err = cfg.Validate()
+	assert.NoError(t, err, "Validate() error = %v, wantNoErr", err)
 }

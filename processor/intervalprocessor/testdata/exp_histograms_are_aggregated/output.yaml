@@ -16,18 +16,18 @@ resourceMetrics:
                 stringValue: bar
         metrics:
           - name: cumulative.exphistogram.test
-            histogram:
+            exponentialHistogram:
               aggregationTemporality: 2
               dataPoints:
                 - timeUnixNano: 80
                   scale: 4
                   zeroCount: 5
                   positive:
-                    offset: 2
                     bucketCounts: [9, 12, 17, 8, 34]
+                    offset: 2
                   negative:
-                    offset: 6
                     bucketCounts: [6, 21, 9, 19, 7]
+                    offset: 6
                   attributes:
                     - key: aaa
                       value:

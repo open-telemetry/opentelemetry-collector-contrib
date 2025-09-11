@@ -4,35 +4,35 @@
 package filesystemscraper
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/collector/scraper/scrapertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper/internal/metadata"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
-	factory := &Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.IsType(t, &Config{}, cfg)
 }
 
-func TestCreateMetricsScraper(t *testing.T) {
-	factory := &Factory{}
+func TestCreateMetrics(t *testing.T) {
+	factory := NewFactory()
 	cfg := &Config{}
 
-	scraper, err := factory.CreateMetricsScraper(context.Background(), receivertest.NewNopSettings(), cfg)
+	scraper, err := factory.CreateMetrics(t.Context(), scrapertest.NewNopSettings(metadata.Type), cfg)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, scraper)
-	assert.Equal(t, scraperType.String(), scraper.ID().String())
 }
 
-func TestCreateMetricsScraper_Error(t *testing.T) {
-	factory := &Factory{}
+func TestCreateMetrics_Error(t *testing.T) {
+	factory := NewFactory()
 	cfg := &Config{IncludeDevices: DeviceMatchConfig{Devices: []string{""}}}
 
-	_, err := factory.CreateMetricsScraper(context.Background(), receivertest.NewNopSettings(), cfg)
+	_, err := factory.CreateMetrics(t.Context(), scrapertest.NewNopSettings(metadata.Type), cfg)
 
 	assert.Error(t, err)
 }

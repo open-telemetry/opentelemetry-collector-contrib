@@ -5,58 +5,56 @@ package tlscheckreceiver // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"errors"
-	"fmt"
-	"net/url"
 
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tlscheckreceiver/internal/metadata"
 )
 
 // Predefined error responses for configuration validation failures
-var (
-	errMissingURL = errors.New(`"url" must be specified`)
-	errInvalidURL = errors.New(`"url" must be in the form of <scheme>://<hostname>[:<port>]`)
-)
+var errInvalidEndpoint = errors.New(`"endpoint" must be in the form of <hostname>:<port>`)
+
+// CertificateTarget represents a target for certificate checking, which can be either
+// a network endpoint or a local file
+type CertificateTarget struct {
+	confignet.TCPAddrConfig `mapstructure:",squash"`
+	FilePath                string `mapstructure:"file_path"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
+}
 
 // Config defines the configuration for the various elements of the receiver agent.
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
 	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
-	Targets                        []*targetConfig `mapstructure:"targets"`
+	Targets                        []*CertificateTarget `mapstructure:"targets"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
-type targetConfig struct {
-	URL string `mapstructure:"url"`
-}
-
-// Validate validates the configuration by checking for missing or invalid fields
-func (cfg *targetConfig) Validate() error {
-	var err error
-
-	if cfg.URL == "" {
-		err = multierr.Append(err, errMissingURL)
-	} else {
-		_, parseErr := url.ParseRequestURI(cfg.URL)
-		if parseErr != nil {
-			err = multierr.Append(err, fmt.Errorf("%s: %w", errInvalidURL.Error(), parseErr))
-		}
+func validateTarget(ct *CertificateTarget) error {
+	if ct.Endpoint != "" && ct.FilePath != "" {
+		return errors.New("cannot specify both endpoint and file_path")
 	}
-
-	return err
+	if ct.Endpoint == "" && ct.FilePath == "" {
+		return errors.New("must specify either endpoint or file_path")
+	}
+	return nil
 }
 
-// Validate validates the configuration by checking for missing or invalid fields
 func (cfg *Config) Validate() error {
 	var err error
 
 	if len(cfg.Targets) == 0 {
-		err = multierr.Append(err, errMissingURL)
+		err = multierr.Append(err, errMissingTargets)
 	}
 
 	for _, target := range cfg.Targets {
-		err = multierr.Append(err, target.Validate())
+		err = multierr.Append(err, validateTarget(target))
 	}
 
 	return err

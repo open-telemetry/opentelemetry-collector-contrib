@@ -9,8 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 
@@ -18,55 +17,51 @@ import (
 	ci "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
 )
 
-type mockNodeCapacity struct {
-}
+type mockNodeCapacity struct{}
 
-func (m *mockNodeCapacity) getMemoryCapacity() int64 {
+func (*mockNodeCapacity) getMemoryCapacity() int64 {
 	return 1024
 }
 
-func (m *mockNodeCapacity) getNumCores() int64 {
+func (*mockNodeCapacity) getNumCores() int64 {
 	return 2
 }
 
-type mockEC2Metadata struct {
-}
+type mockEC2Metadata struct{}
 
-func (m *mockEC2Metadata) getInstanceID() string {
+func (*mockEC2Metadata) getInstanceID() string {
 	return "instance-id"
 }
 
-func (m *mockEC2Metadata) getInstanceIP() string {
+func (*mockEC2Metadata) getInstanceIP() string {
 	return "instance-ip"
 }
 
-func (m *mockEC2Metadata) getInstanceType() string {
+func (*mockEC2Metadata) getInstanceType() string {
 	return "instance-type"
 }
 
-func (m *mockEC2Metadata) getRegion() string {
+func (*mockEC2Metadata) getRegion() string {
 	return "region"
 }
 
-type mockEBSVolume struct {
-}
+type mockEBSVolume struct{}
 
-func (m *mockEBSVolume) getEBSVolumeID(_ string) string {
+func (*mockEBSVolume) getEBSVolumeID(_ string) string {
 	return "ebs-volume-id"
 }
 
-func (m *mockEBSVolume) extractEbsIDsUsedByKubernetes() map[string]string {
+func (*mockEBSVolume) extractEbsIDsUsedByKubernetes() map[string]string {
 	return map[string]string{}
 }
 
-type mockEC2Tags struct {
-}
+type mockEC2Tags struct{}
 
-func (m *mockEC2Tags) getClusterName() string {
+func (*mockEC2Tags) getClusterName() string {
 	return "cluster-name"
 }
 
-func (m *mockEC2Tags) getAutoScalingGroupName() string {
+func (*mockEC2Tags) getAutoScalingGroupName() string {
 	return "asg"
 }
 
@@ -88,8 +83,8 @@ func TestInfo(t *testing.T) {
 		}
 	}
 	awsSessionCreatorOpt := func(m *Info) {
-		m.awsSessionCreator = func(*zap.Logger, awsutil.ConnAttr, *awsutil.AWSSessionSettings) (*aws.Config, *session.Session, error) {
-			return nil, nil, errors.New("error")
+		m.awsConfigCreator = func(context.Context, *zap.Logger, *awsutil.AWSSessionSettings) (aws.Config, error) {
+			return aws.Config{}, errors.New("error")
 		}
 	}
 	m, err = NewInfo(ci.EKS, time.Minute, zap.NewNop(), nodeCapacityCreatorOpt, awsSessionCreatorOpt)
@@ -98,25 +93,28 @@ func TestInfo(t *testing.T) {
 
 	// test normal case where everything is working
 	awsSessionCreatorOpt = func(m *Info) {
-		m.awsSessionCreator = func(*zap.Logger, awsutil.ConnAttr, *awsutil.AWSSessionSettings) (*aws.Config, *session.Session, error) {
-			return &aws.Config{}, &session.Session{}, nil
+		m.awsConfigCreator = func(context.Context, *zap.Logger, *awsutil.AWSSessionSettings) (aws.Config, error) {
+			return aws.Config{}, nil
 		}
 	}
 	ec2MetadataCreatorOpt := func(m *Info) {
-		m.ec2MetadataCreator = func(context.Context, *session.Session, time.Duration, chan bool, chan bool, *zap.Logger,
-			...ec2MetadataOption) ec2MetadataProvider {
+		m.ec2MetadataCreator = func(context.Context, aws.Config, time.Duration, chan bool, chan bool, *zap.Logger,
+			...ec2MetadataOption,
+		) ec2MetadataProvider {
 			return &mockEC2Metadata{}
 		}
 	}
 	ebsVolumeCreatorOpt := func(m *Info) {
-		m.ebsVolumeCreator = func(context.Context, *session.Session, string, string, time.Duration, *zap.Logger,
-			...ebsVolumeOption) ebsVolumeProvider {
+		m.ebsVolumeCreator = func(context.Context, aws.Config, string, string, time.Duration, *zap.Logger,
+			...ebsVolumeOption,
+		) ebsVolumeProvider {
 			return &mockEBSVolume{}
 		}
 	}
 	ec2TagsCreatorOpt := func(m *Info) {
-		m.ec2TagsCreator = func(context.Context, *session.Session, string, string, string, time.Duration, *zap.Logger,
-			...ec2TagsOption) ec2TagsProvider {
+		m.ec2TagsCreator = func(context.Context, aws.Config, string, string, string, time.Duration, *zap.Logger,
+			...ec2TagsOption,
+		) ec2TagsProvider {
 			return &mockEC2Tags{}
 		}
 	}
@@ -125,10 +123,11 @@ func TestInfo(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, m)
 
-	// befoe ebsVolume and ec2Tags are initialized
-	assert.Equal(t, "", m.GetEBSVolumeID("dev"))
-	assert.Equal(t, "", m.GetClusterName())
-	assert.Equal(t, "", m.GetAutoScalingGroupName())
+	assert.NotNil(t, m.awsConfig)
+	// before ebsVolume and ec2Tags are initialized
+	assert.Empty(t, m.GetEBSVolumeID("dev"))
+	assert.Empty(t, m.GetClusterName())
+	assert.Empty(t, m.GetAutoScalingGroupName())
 
 	// close the channel so that ebsVolume and ec2Tags can be initialized
 	close(m.instanceIDReadyC)
@@ -162,8 +161,8 @@ func TestInfoForECS(t *testing.T) {
 		}
 	}
 	awsSessionCreatorOpt := func(m *Info) {
-		m.awsSessionCreator = func(*zap.Logger, awsutil.ConnAttr, *awsutil.AWSSessionSettings) (*aws.Config, *session.Session, error) {
-			return nil, nil, errors.New("error")
+		m.awsConfigCreator = func(context.Context, *zap.Logger, *awsutil.AWSSessionSettings) (aws.Config, error) {
+			return aws.Config{}, errors.New("error")
 		}
 	}
 	m, err = NewInfo(ci.ECS, time.Minute, zap.NewNop(), nodeCapacityCreatorOpt, awsSessionCreatorOpt)
@@ -172,25 +171,28 @@ func TestInfoForECS(t *testing.T) {
 
 	// test normal case where everything is working
 	awsSessionCreatorOpt = func(m *Info) {
-		m.awsSessionCreator = func(*zap.Logger, awsutil.ConnAttr, *awsutil.AWSSessionSettings) (*aws.Config, *session.Session, error) {
-			return &aws.Config{}, &session.Session{}, nil
+		m.awsConfigCreator = func(context.Context, *zap.Logger, *awsutil.AWSSessionSettings) (aws.Config, error) {
+			return aws.Config{}, nil
 		}
 	}
 	ec2MetadataCreatorOpt := func(m *Info) {
-		m.ec2MetadataCreator = func(context.Context, *session.Session, time.Duration, chan bool, chan bool, *zap.Logger,
-			...ec2MetadataOption) ec2MetadataProvider {
+		m.ec2MetadataCreator = func(context.Context, aws.Config, time.Duration, chan bool, chan bool, *zap.Logger,
+			...ec2MetadataOption,
+		) ec2MetadataProvider {
 			return &mockEC2Metadata{}
 		}
 	}
 	ebsVolumeCreatorOpt := func(m *Info) {
-		m.ebsVolumeCreator = func(context.Context, *session.Session, string, string, time.Duration, *zap.Logger,
-			...ebsVolumeOption) ebsVolumeProvider {
+		m.ebsVolumeCreator = func(context.Context, aws.Config, string, string, time.Duration, *zap.Logger,
+			...ebsVolumeOption,
+		) ebsVolumeProvider {
 			return &mockEBSVolume{}
 		}
 	}
 	ec2TagsCreatorOpt := func(m *Info) {
-		m.ec2TagsCreator = func(context.Context, *session.Session, string, string, string, time.Duration, *zap.Logger,
-			...ec2TagsOption) ec2TagsProvider {
+		m.ec2TagsCreator = func(context.Context, aws.Config, string, string, string, time.Duration, *zap.Logger,
+			...ec2TagsOption,
+		) ec2TagsProvider {
 			return &mockEC2Tags{}
 		}
 	}
@@ -199,9 +201,9 @@ func TestInfoForECS(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, m)
 
-	// befoe ebsVolume and ec2Tags are initialized
-	assert.Equal(t, "", m.GetEBSVolumeID("dev"))
-	assert.Equal(t, "", m.GetAutoScalingGroupName())
+	// before ebsVolume and ec2Tags are initialized
+	assert.Empty(t, m.GetEBSVolumeID("dev"))
+	assert.Empty(t, m.GetAutoScalingGroupName())
 
 	// close the channel so that ebsVolume and ec2Tags can be initialized
 	close(m.instanceIDReadyC)

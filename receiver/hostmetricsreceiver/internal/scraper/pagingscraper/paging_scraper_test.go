@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/collector/scraper/scrapertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/pagingscraper/internal/metadata"
@@ -26,7 +26,7 @@ func TestScrape(t *testing.T) {
 		config            *Config
 		expectedStartTime pcommon.Timestamp
 		initializationErr string
-		mutateScraper     func(*scraper)
+		mutateScraper     func(*pagingScraper)
 	}
 
 	config := metadata.DefaultMetricsBuilderConfig()
@@ -44,7 +44,7 @@ func TestScrape(t *testing.T) {
 		{
 			name:   "Validate Start Time",
 			config: &Config{MetricsBuilderConfig: config},
-			mutateScraper: func(s *scraper) {
+			mutateScraper: func(s *pagingScraper) {
 				s.bootTime = func(context.Context) (uint64, error) { return 100, nil }
 			},
 			expectedStartTime: 100 * 1e9,
@@ -52,7 +52,7 @@ func TestScrape(t *testing.T) {
 		{
 			name:   "Boot Time Error",
 			config: &Config{MetricsBuilderConfig: config},
-			mutateScraper: func(s *scraper) {
+			mutateScraper: func(s *pagingScraper) {
 				s.bootTime = func(context.Context) (uint64, error) { return 0, errors.New("err1") }
 			},
 			initializationErr: "err1",
@@ -61,53 +61,58 @@ func TestScrape(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper := newPagingScraper(context.Background(), receivertest.NewNopSettings(), test.config)
+			scraper := newPagingScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), test.config)
 			if test.mutateScraper != nil {
 				test.mutateScraper(scraper)
 			}
 
-			err := scraper.start(context.Background(), componenttest.NewNopHost())
+			err := scraper.start(t.Context(), componenttest.NewNopHost())
 			if test.initializationErr != "" {
 				assert.EqualError(t, err, test.initializationErr)
 				return
 			}
 			require.NoError(t, err, "Failed to initialize paging scraper: %v", err)
 
-			md, err := scraper.scrape(context.Background())
+			md, err := scraper.scrape(t.Context())
 			require.NoError(t, err)
 			metrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 
-			// Windows does not currently support the faults metric
 			expectedMetrics := 4
-			if runtime.GOOS == "windows" {
-				expectedMetrics = 3
-			}
-
-			// linux + ARM runner has no swap
-			if runtime.GOOS == "linux" && runtime.GOARCH == "arm64" {
-				expectedMetrics = 2
-			}
-
 			assert.Equal(t, expectedMetrics, md.MetricCount())
 
-			startIndex := 0
-			if runtime.GOOS != "windows" {
-				assertPageFaultsMetricValid(t, metrics.At(startIndex), test.expectedStartTime)
-				startIndex++
+			var pagingUsageMetricIdx, pagingUtilizationMetricIdx, pagingOperationsMetricIdx, pagingFaultsMetricIdx int
+			for i := 0; i < metrics.Len(); i++ {
+				metric := metrics.At(i)
+				switch metric.Name() {
+				case "system.paging.faults":
+					pagingFaultsMetricIdx = i
+				case "system.paging.operations":
+					pagingOperationsMetricIdx = i
+				case "system.paging.usage":
+					pagingUsageMetricIdx = i
+				case "system.paging.utilization":
+					pagingUtilizationMetricIdx = i
+				default:
+					assert.Fail(t, "Unexpected metric found", metric.Name())
+				}
 			}
 
-			assertPagingOperationsMetricValid(t, []pmetric.Metric{metrics.At(startIndex)},
+			// This test historically ensured that some metrics had the same timestamp, keeping this legacy behavior.
+
+			assertPageFaultsMetricValid(t, metrics.At(pagingFaultsMetricIdx), test.expectedStartTime)
+
+			assertPagingOperationsMetricValid(t, []pmetric.Metric{metrics.At(pagingOperationsMetricIdx)},
 				test.expectedStartTime, false)
 
-			internal.AssertSameTimeStampForMetrics(t, metrics, 0, metrics.Len()-2)
-			startIndex++
+			internal.AssertSameTimeStampForMetrics(t, metrics, pagingUsageMetricIdx, pagingUsageMetricIdx+2)
 
-			if !(runtime.GOOS == "linux" && runtime.GOARCH == "arm64") {
-				assertPagingUsageMetricValid(t, metrics.At(startIndex))
-				internal.AssertSameTimeStampForMetrics(t, metrics, startIndex, metrics.Len())
-				startIndex++
-				assertPagingUtilizationMetricValid(t, metrics.At(startIndex))
+			assertPagingUsageMetricValid(t, metrics.At(pagingUsageMetricIdx))
+			if runtime.GOOS != "windows" {
+				// On Windows, page faults do not have the same timestamp as paging operations
+				internal.AssertSameTimeStampForMetrics(t, metrics, pagingFaultsMetricIdx, pagingFaultsMetricIdx+2)
 			}
+
+			assertPagingUtilizationMetricValid(t, metrics.At(pagingUtilizationMetricIdx))
 		})
 	}
 }
@@ -189,7 +194,6 @@ func assertPagingUtilizationMetricValid(t *testing.T, hostPagingUtilizationMetri
 }
 
 func assertPagingOperationsMetricValid(t *testing.T, pagingMetric []pmetric.Metric, startTime pcommon.Timestamp, removeAttribute bool) {
-
 	type test struct {
 		name        string
 		description string

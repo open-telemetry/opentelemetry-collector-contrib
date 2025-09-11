@@ -4,7 +4,6 @@
 package loadbalancingexporter
 
 import (
-	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -17,9 +16,11 @@ import (
 	"go.uber.org/zap"
 )
 
-var instanceID = "test"
-var namespaceName = "cloudmap"
-var statusFilterHealthy = types.HealthStatusFilterHealthy
+var (
+	instanceID          = "test"
+	namespaceName       = "cloudmap"
+	statusFilterHealthy = types.HealthStatusFilterHealthy
+)
 
 var port uint16 = 1234
 
@@ -44,9 +45,9 @@ func TestInitialCloudMapResolution(t *testing.T) {
 	res.onChange(func(endpoints []string) {
 		resolved = endpoints
 	})
-	require.NoError(t, res.start(context.Background()))
+	require.NoError(t, res.start(t.Context()))
 	defer func() {
-		require.NoError(t, res.shutdown(context.Background()))
+		require.NoError(t, res.shutdown(t.Context()))
 	}()
 
 	// verify
@@ -78,9 +79,9 @@ func TestInitialCloudMapResolutionWithPort(t *testing.T) {
 	res.onChange(func(endpoints []string) {
 		resolved = endpoints
 	})
-	require.NoError(t, res.start(context.Background()))
+	require.NoError(t, res.start(t.Context()))
 	defer func() {
-		require.NoError(t, res.shutdown(context.Background()))
+		require.NoError(t, res.shutdown(t.Context()))
 	}()
 
 	// verify
@@ -102,8 +103,8 @@ func makeSummary(i int) types.HttpInstanceSummary {
 		ServiceName:   nil,
 	}
 }
-func mockDiscovery(*servicediscovery.DiscoverInstancesInput) (*servicediscovery.DiscoverInstancesOutput, error) {
 
+func mockDiscovery(*servicediscovery.DiscoverInstancesInput) (*servicediscovery.DiscoverInstancesOutput, error) {
 	s := &servicediscovery.DiscoverInstancesOutput{
 		Instances: []types.HttpInstanceSummary{
 			makeSummary(1),

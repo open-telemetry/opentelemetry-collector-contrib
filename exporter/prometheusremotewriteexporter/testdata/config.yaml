@@ -2,6 +2,7 @@ prometheusremotewrite:
 
 prometheusremotewrite/2:
   namespace: "test-space"
+  max_batch_request_parallelism: 10
   retry_on_failure:
     enabled: true
     initial_interval: 10s
@@ -20,8 +21,6 @@ prometheusremotewrite/2:
     key2: value2
   resource_to_telemetry_conversion:
     enabled: true
-  export_created_metric:
-    enabled: true
   remote_write_queue:
     queue_size: 2000
     num_consumers: 10
@@ -38,6 +37,10 @@ prometheusremotewrite/negative_num_consumers:
     queue_size: 5
     num_consumers: -1
 
+prometheusremotewrite/less_than_1_max_batch_request_parallelism:
+  endpoint: "localhost:8888"
+  max_batch_request_parallelism: 0
+
 prometheusremotewrite/disabled_target_info:
   endpoint: "localhost:8888"
   target_info:
@@ -48,3 +51,10 @@ prometheusremotewrite/disabled_queue:
   remote_write_queue:
     enabled: false
     num_consumers: 10
+
+prometheusremotewrite/non_snappy_compression_type:
+  endpoint: "localhost:8888"
+  compression: "gzip"
+
+prometheusremotewrite/unknown_protobuf_message:
+  protobuf_message: "io.prometheus.write.v4.Request"

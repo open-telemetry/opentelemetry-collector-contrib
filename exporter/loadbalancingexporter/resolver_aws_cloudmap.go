@@ -85,11 +85,11 @@ func newCloudMapResolver(
 	// Using the Config value, create the DynamoDB client
 	svc := servicediscovery.NewFromConfig(cfg)
 
-	if namespaceName == nil || len(*namespaceName) == 0 {
+	if namespaceName == nil || *namespaceName == "" {
 		return nil, errNoNamespace
 	}
 
-	if serviceName == nil || len(*serviceName) == 0 {
+	if serviceName == nil || *serviceName == "" {
 		return nil, errNoServiceName
 	}
 
@@ -101,7 +101,7 @@ func newCloudMapResolver(
 	}
 
 	if healthStatus == nil {
-		var healthStatusFilter = types.HealthStatusFilterHealthy
+		healthStatusFilter := types.HealthStatusFilterHealthy
 		healthStatus = &healthStatusFilter
 	}
 

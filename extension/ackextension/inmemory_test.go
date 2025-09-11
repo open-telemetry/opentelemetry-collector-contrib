@@ -57,7 +57,7 @@ func TestExtensionAck_ProcessEvents_Concurrency(t *testing.T) {
 	go func() {
 		for i := 0; i < 100; i++ {
 			// each partition has 3 events
-			map1[ext.ProcessEvent(fmt.Sprint(partitionName))] = struct{}{}
+			map1[ext.ProcessEvent(partitionName)] = struct{}{}
 		}
 		wg.Done()
 	}()
@@ -65,7 +65,7 @@ func TestExtensionAck_ProcessEvents_Concurrency(t *testing.T) {
 	go func() {
 		for i := 0; i < 100; i++ {
 			// each partition has 3 events
-			map2[ext.ProcessEvent(fmt.Sprint(partitionName))] = struct{}{}
+			map2[ext.ProcessEvent(partitionName)] = struct{}{}
 		}
 		wg.Done()
 	}()
@@ -73,7 +73,7 @@ func TestExtensionAck_ProcessEvents_Concurrency(t *testing.T) {
 	go func() {
 		for i := 0; i < 100; i++ {
 			// each partition has 3 events
-			map3[ext.ProcessEvent(fmt.Sprint(partitionName))] = struct{}{}
+			map3[ext.ProcessEvent(partitionName)] = struct{}{}
 		}
 		wg.Done()
 	}()
@@ -218,7 +218,6 @@ func TestExtensionAckAsync(t *testing.T) {
 	wg.Add(partitionCount)
 	// send events through different partitions
 	for i := 0; i < partitionCount; i++ {
-		i := i
 		go func() {
 			// each partition has 3 events
 			for j := 0; j < 3; j++ {
@@ -242,7 +241,6 @@ func TestExtensionAckAsync(t *testing.T) {
 	wg.Add(partitionCount)
 	// ack the second event of all even partitions and first and third events of all odd partitions
 	for i := 0; i < partitionCount; i++ {
-		i := i
 		go func() {
 			if i%2 == 0 {
 				ext.Ack(fmt.Sprintf("part-%d", i), 2)
@@ -275,7 +273,6 @@ func TestExtensionAckAsync(t *testing.T) {
 	resultChan := make(chan map[uint64]bool, partitionCount)
 	// querying the same acked events should result in false
 	for i := 0; i < partitionCount; i++ {
-		i := i
 		go func() {
 			resultChan <- ext.QueryAcks(fmt.Sprintf("part-%d", i), []uint64{1, 2, 3})
 			wg.Done()

@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:generate mdatagen metadata.yaml
+
 package aesprovider // import "github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/aesprovider"
 
 import (
@@ -8,6 +10,7 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -46,7 +49,6 @@ func (*provider) Shutdown(context.Context) error {
 }
 
 func (p *provider) Retrieve(_ context.Context, uri string, _ confmap.WatcherFunc) (*confmap.Retrieved, error) {
-
 	if !strings.HasPrefix(uri, schemaName+":") {
 		return nil, fmt.Errorf("%q uri is not supported by %q provider", uri, schemaName)
 	}
@@ -76,7 +78,6 @@ func (p *provider) Retrieve(_ context.Context, uri string, _ confmap.WatcherFunc
 }
 
 func (p *provider) decrypt(cipherText string) (string, error) {
-
 	cipherBytes, err := base64.StdEncoding.DecodeString(cipherText)
 	if err != nil {
 		return "", err
@@ -94,7 +95,7 @@ func (p *provider) decrypt(cipherText string) (string, error) {
 
 	nonceSize := aesGCM.NonceSize()
 	if len(cipherBytes) < nonceSize {
-		return "", fmt.Errorf("ciphertext too short")
+		return "", errors.New("ciphertext too short")
 	}
 
 	nonce, cipherBytes := cipherBytes[:nonceSize], cipherBytes[nonceSize:]

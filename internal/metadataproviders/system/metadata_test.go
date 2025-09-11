@@ -5,6 +5,7 @@ package system
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"testing"
@@ -68,7 +69,7 @@ func TestHostID(t *testing.T) {
 		{
 			name:     "error",
 			resValue: "",
-			resError: fmt.Errorf("some error"),
+			resError: errors.New("some error"),
 			err:      `failed to obtain "host.id": some error`,
 			expected: "",
 		},
@@ -89,7 +90,7 @@ func TestHostID(t *testing.T) {
 
 				return ret, tt.resError
 			}
-			id, err := p.HostID(context.Background())
+			id, err := p.HostID(t.Context())
 
 			if tt.err != "" {
 				require.EqualError(t, err, tt.err)

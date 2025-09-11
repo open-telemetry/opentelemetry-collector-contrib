@@ -382,31 +382,31 @@ func TestGetJobNamePrefix(t *testing.T) {
 	assert.Equal(t, "abcd", getJobNamePrefix("abcd.-efg"))
 	assert.Equal(t, "abcdefg", getJobNamePrefix("abcdefg"))
 	assert.Equal(t, "abcdefg", getJobNamePrefix("abcdefg-"))
-	assert.Equal(t, "", getJobNamePrefix(".abcd-efg"))
-	assert.Equal(t, "", getJobNamePrefix(""))
+	assert.Empty(t, getJobNamePrefix(".abcd-efg"))
+	assert.Empty(t, getJobNamePrefix(""))
 }
 
 type mockReplicaSetInfo1 struct{}
 
-func (m *mockReplicaSetInfo1) ReplicaSetToDeployment() map[string]string {
+func (*mockReplicaSetInfo1) ReplicaSetToDeployment() map[string]string {
 	return map[string]string{}
 }
 
 type mockK8sClient1 struct{}
 
-func (m *mockK8sClient1) GetReplicaSetClient() k8sclient.ReplicaSetClient {
+func (*mockK8sClient1) GetReplicaSetClient() k8sclient.ReplicaSetClient {
 	return &mockReplicaSetInfo1{}
 }
 
 type mockReplicaSetInfo2 struct{}
 
-func (m *mockReplicaSetInfo2) ReplicaSetToDeployment() map[string]string {
+func (*mockReplicaSetInfo2) ReplicaSetToDeployment() map[string]string {
 	return map[string]string{"DeploymentTest-sftrz2785": "DeploymentTest"}
 }
 
 type mockK8sClient2 struct{}
 
-func (m *mockK8sClient2) GetReplicaSetClient() k8sclient.ReplicaSetClient {
+func (*mockK8sClient2) GetReplicaSetClient() k8sclient.ReplicaSetClient {
 	return &mockReplicaSetInfo2{}
 }
 
@@ -496,7 +496,7 @@ func TestPodStore_addPodOwnersAndPodName(t *testing.T) {
 	expectedOwner["pod_owners"] = []any{map[string]string{"owner_kind": ci.ReplicationController, "owner_name": rcName}}
 	expectedOwnerName = rcName
 	assert.Equal(t, expectedOwnerName, metric.GetTag(ci.PodNameKey))
-	assert.Equal(t, "", metric.GetTag(ci.FullPodNameKey))
+	assert.Empty(t, metric.GetTag(ci.FullPodNameKey))
 	assert.Equal(t, expectedOwner, kubernetesBlob)
 
 	// Test Job
@@ -505,13 +505,13 @@ func TestPodStore_addPodOwnersAndPodName(t *testing.T) {
 	metric = generateMetric(fields, tags)
 	jobName := "JobTest"
 	pod.OwnerReferences[0].Kind = ci.Job
-	surfixHash := ".088123x12"
-	pod.Name = jobName + surfixHash
-	pod.OwnerReferences[0].Name = jobName + surfixHash
+	suffixHash := ".088123x12"
+	pod.Name = jobName + suffixHash
+	pod.OwnerReferences[0].Name = jobName + suffixHash
 	kubernetesBlob = map[string]any{}
 	podStore.addPodOwnersAndPodName(metric, pod, kubernetesBlob)
-	expectedOwner["pod_owners"] = []any{map[string]string{"owner_kind": ci.Job, "owner_name": jobName + surfixHash}}
-	expectedOwnerName = jobName + surfixHash
+	expectedOwner["pod_owners"] = []any{map[string]string{"owner_kind": ci.Job, "owner_name": jobName + suffixHash}}
+	expectedOwnerName = jobName + suffixHash
 	assert.Equal(t, expectedOwnerName, metric.GetTag(ci.PodNameKey))
 	assert.Equal(t, pod.Name, metric.GetTag(ci.FullPodNameKey))
 	assert.Equal(t, expectedOwner, kubernetesBlob)
@@ -569,10 +569,9 @@ func TestPodStore_addPodOwnersAndPodName(t *testing.T) {
 	assert.Empty(t, kubernetesBlob)
 }
 
-type mockPodClient struct {
-}
+type mockPodClient struct{}
 
-func (m *mockPodClient) ListPods() ([]corev1.Pod, error) {
+func (*mockPodClient) ListPods() ([]corev1.Pod, error) {
 	pod := getBaseTestPodInfo()
 	podList := []corev1.Pod{*pod}
 	return podList, nil
@@ -583,7 +582,7 @@ func TestPodStore_RefreshTick(t *testing.T) {
 	defer require.NoError(t, podStore.Shutdown())
 	podStore.podClient = &mockPodClient{}
 	podStore.lastRefreshed = time.Now().Add(-time.Minute)
-	podStore.RefreshTick(context.Background())
+	podStore.RefreshTick(t.Context())
 
 	assert.Equal(t, uint64(10), podStore.nodeInfo.nodeStats.cpuReq)
 	assert.Equal(t, uint64(50*1024*1024), podStore.nodeInfo.nodeStats.memReq)
@@ -687,7 +686,7 @@ func TestPodStore_Decorate(t *testing.T) {
 	metric := &mockCIMetric{
 		tags: tags,
 	}
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 	podStore := getPodStore()
 	defer require.NoError(t, podStore.Shutdown())

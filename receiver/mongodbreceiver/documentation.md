@@ -22,9 +22,9 @@ The number of cache operations of the instance.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| type | The result of a cache request. | Str: ``hit``, ``miss`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| type | The result of a cache request. | Str: ``hit``, ``miss`` | false |
 
 ### mongodb.collection.count
 
@@ -44,9 +44,9 @@ The number of connections.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| type | The status of the connection. | Str: ``active``, ``available``, ``current`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| type | The status of the connection. | Str: ``active``, ``available``, ``current`` | false |
 
 ### mongodb.cursor.count
 
@@ -90,9 +90,9 @@ The number of document operations executed.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| operation | The MongoDB operation being counted. | Str: ``insert``, ``query``, ``update``, ``delete``, ``getmore``, ``command`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| operation | The MongoDB operation being counted. | Str: ``insert``, ``query``, ``update``, ``delete``, ``getmore``, ``command`` | false |
 
 ### mongodb.extent.count
 
@@ -120,9 +120,9 @@ The number of times an index has been accessed.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| collection | The name of a collection. | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| collection | The name of a collection. | Any Str | false |
 
 ### mongodb.index.count
 
@@ -150,9 +150,9 @@ The amount of memory used.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| type | The type of memory used. | Str: ``resident``, ``virtual`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| type | The type of memory used. | Str: ``resident``, ``virtual`` | false |
 
 ### mongodb.network.io.receive
 
@@ -196,9 +196,9 @@ The number of operations executed.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| operation | The MongoDB operation being counted. | Str: ``insert``, ``query``, ``update``, ``delete``, ``getmore``, ``command`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| operation | The MongoDB operation being counted. | Str: ``insert``, ``query``, ``update``, ``delete``, ``getmore``, ``command`` | false |
 
 ### mongodb.operation.time
 
@@ -210,9 +210,9 @@ The total time spent performing operations.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| operation | The MongoDB operation being counted. | Str: ``insert``, ``query``, ``update``, ``delete``, ``getmore``, ``command`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| operation | The MongoDB operation being counted. | Str: ``insert``, ``query``, ``update``, ``delete``, ``getmore``, ``command`` | false |
 
 ### mongodb.session.count
 
@@ -242,6 +242,54 @@ metrics:
     enabled: true
 ```
 
+### mongodb.active.reads
+
+The number of read operations currently being processed.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {reads} | Sum | Int | Cumulative | false |
+
+### mongodb.active.writes
+
+The number of write operations currently being processed.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {writes} | Sum | Int | Cumulative | false |
+
+### mongodb.commands.rate
+
+The number of commands executed per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {command}/s | Gauge | Double |
+
+### mongodb.deletes.rate
+
+The number of deletes executed per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {delete}/s | Gauge | Double |
+
+### mongodb.flushes.rate
+
+The number of flushes executed per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {flush}/s | Gauge | Double |
+
+### mongodb.getmores.rate
+
+The number of getmores executed per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {getmore}/s | Gauge | Double |
+
 ### mongodb.health
 
 The health status of the server.
@@ -251,6 +299,14 @@ A value of '1' indicates healthy. A value of '0' indicates unhealthy.
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | 1 | Gauge | Int |
+
+### mongodb.inserts.rate
+
+The number of insertions executed per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {insert}/s | Gauge | Double |
 
 ### mongodb.lock.acquire.count
 
@@ -262,10 +318,10 @@ Number of times the lock was acquired in the specified mode.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| lock_type | The Resource over which the Lock controls access | Str: ``parallel_batch_write_mode``, ``replication_state_transition``, ``global``, ``database``, ``collection``, ``mutex``, ``metadata``, ``oplog`` |
-| lock_mode | The mode of Lock which denotes the degree of access | Str: ``shared``, ``exclusive``, ``intent_shared``, ``intent_exclusive`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| lock_type | The Resource over which the Lock controls access | Str: ``parallel_batch_write_mode``, ``replication_state_transition``, ``global``, ``database``, ``collection``, ``mutex``, ``metadata``, ``oplog`` | false |
+| lock_mode | The mode of Lock which denotes the degree of access | Str: ``shared``, ``exclusive``, ``intent_shared``, ``intent_exclusive`` | false |
 
 ### mongodb.lock.acquire.time
 
@@ -277,10 +333,10 @@ Cumulative wait time for the lock acquisitions.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| lock_type | The Resource over which the Lock controls access | Str: ``parallel_batch_write_mode``, ``replication_state_transition``, ``global``, ``database``, ``collection``, ``mutex``, ``metadata``, ``oplog`` |
-| lock_mode | The mode of Lock which denotes the degree of access | Str: ``shared``, ``exclusive``, ``intent_shared``, ``intent_exclusive`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| lock_type | The Resource over which the Lock controls access | Str: ``parallel_batch_write_mode``, ``replication_state_transition``, ``global``, ``database``, ``collection``, ``mutex``, ``metadata``, ``oplog`` | false |
+| lock_mode | The mode of Lock which denotes the degree of access | Str: ``shared``, ``exclusive``, ``intent_shared``, ``intent_exclusive`` | false |
 
 ### mongodb.lock.acquire.wait_count
 
@@ -292,10 +348,10 @@ Number of times the lock acquisitions encountered waits because the locks were h
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| lock_type | The Resource over which the Lock controls access | Str: ``parallel_batch_write_mode``, ``replication_state_transition``, ``global``, ``database``, ``collection``, ``mutex``, ``metadata``, ``oplog`` |
-| lock_mode | The mode of Lock which denotes the degree of access | Str: ``shared``, ``exclusive``, ``intent_shared``, ``intent_exclusive`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| lock_type | The Resource over which the Lock controls access | Str: ``parallel_batch_write_mode``, ``replication_state_transition``, ``global``, ``database``, ``collection``, ``mutex``, ``metadata``, ``oplog`` | false |
+| lock_mode | The mode of Lock which denotes the degree of access | Str: ``shared``, ``exclusive``, ``intent_shared``, ``intent_exclusive`` | false |
 
 ### mongodb.lock.deadlock.count
 
@@ -307,10 +363,10 @@ Number of times the lock acquisitions encountered deadlocks.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| lock_type | The Resource over which the Lock controls access | Str: ``parallel_batch_write_mode``, ``replication_state_transition``, ``global``, ``database``, ``collection``, ``mutex``, ``metadata``, ``oplog`` |
-| lock_mode | The mode of Lock which denotes the degree of access | Str: ``shared``, ``exclusive``, ``intent_shared``, ``intent_exclusive`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| lock_type | The Resource over which the Lock controls access | Str: ``parallel_batch_write_mode``, ``replication_state_transition``, ``global``, ``database``, ``collection``, ``mutex``, ``metadata``, ``oplog`` | false |
+| lock_mode | The mode of Lock which denotes the degree of access | Str: ``shared``, ``exclusive``, ``intent_shared``, ``intent_exclusive`` | false |
 
 ### mongodb.operation.latency.time
 
@@ -322,9 +378,9 @@ The latency of operations.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| operation | The MongoDB operation with regards to latency | Str: ``read``, ``write``, ``command`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| operation | The MongoDB operation with regards to latency | Str: ``read``, ``write``, ``command`` | false |
 
 ### mongodb.operation.repl.count
 
@@ -336,9 +392,81 @@ The number of replicated operations executed.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| operation | The MongoDB operation being counted. | Str: ``insert``, ``query``, ``update``, ``delete``, ``getmore``, ``command`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| operation | The MongoDB operation being counted. | Str: ``insert``, ``query``, ``update``, ``delete``, ``getmore``, ``command`` | false |
+
+### mongodb.page_faults
+
+The number of page faults.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {faults} | Sum | Int | Cumulative | true |
+
+### mongodb.queries.rate
+
+The number of queries executed per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {query}/s | Gauge | Double |
+
+### mongodb.repl_commands_per_sec
+
+The number of replicated commands executed per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {command}/s | Gauge | Double |
+
+### mongodb.repl_deletes_per_sec
+
+The number of replicated deletes executed per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {delete}/s | Gauge | Double |
+
+### mongodb.repl_getmores_per_sec
+
+The number of replicated getmores executed per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {getmore}/s | Gauge | Double |
+
+### mongodb.repl_inserts_per_sec
+
+The number of replicated insertions executed per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {insert}/s | Gauge | Double |
+
+### mongodb.repl_queries_per_sec
+
+The number of replicated queries executed per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {query}/s | Gauge | Double |
+
+### mongodb.repl_updates_per_sec
+
+The number of replicated updates executed per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {update}/s | Gauge | Double |
+
+### mongodb.updates.rate
+
+The number of updates executed per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {update}/s | Gauge | Double |
 
 ### mongodb.uptime
 
@@ -347,6 +475,14 @@ The amount of time that the server has been running.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | ms | Sum | Int | Cumulative | true |
+
+### mongodb.wtcache.bytes.read
+
+The number of bytes read into the WiredTiger cache.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | true |
 
 ## Resource Attributes
 

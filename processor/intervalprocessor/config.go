@@ -10,9 +10,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-var (
-	ErrInvalidIntervalValue = errors.New("invalid interval value")
-)
+var ErrInvalidIntervalValue = errors.New("invalid interval value")
 
 var _ component.Config = (*Config)(nil)
 

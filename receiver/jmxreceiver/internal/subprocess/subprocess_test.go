@@ -43,11 +43,11 @@ func TestShutdownTimeout(t *testing.T) {
 	subprocess := NewSubprocess(config, logger)
 	require.NotNil(t, subprocess)
 
-	_, cancel := context.WithCancel(context.Background())
+	_, cancel := context.WithCancel(t.Context())
 	subprocess.cancel = cancel
 
 	t0 := time.Now()
-	err := subprocess.Shutdown(context.Background())
+	err := subprocess.Shutdown(t.Context())
 	require.NoError(t, err)
 
 	elapsed := int64(time.Since(t0))
@@ -65,5 +65,4 @@ func TestPidAccessors(t *testing.T) {
 	subprocess.pid.setPid(123)
 	require.Equal(t, 123, subprocess.pid.getPid())
 	require.Equal(t, 123, subprocess.Pid())
-
 }

@@ -8,5 +8,5 @@ type pageFileStats struct {
 	usedBytes   uint64
 	freeBytes   uint64
 	totalBytes  uint64
-	cachedBytes *uint64 //nolint:unused
+	cachedBytes *uint64
 }

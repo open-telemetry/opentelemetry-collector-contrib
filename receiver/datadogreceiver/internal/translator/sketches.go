@@ -22,13 +22,13 @@ const (
 	// The relativeAccuracy (also called epsilon or eps) comes from DDSketch's logarithmic mapping, which is used for sketches
 	// in the Datadog agent. The Datadog agent uses the default value from opentelemetry-go-mapping configuration
 	// See:
-	// https://github.com/DataDog/opentelemetry-mapping-go/blob/4a6d530273741c84fe2d8f76c55c514cd5eb7488/pkg/quantile/config.go#L15
+	// https://github.com/DataDog/datadog-agent/blob/fcb59435e45053bcb53a1eec482104290f1dd166/pkg/util/quantile/config.go#L15
 	relativeAccuracy = 1.0 / 128
 
 	// The gamma value comes from the default values of the epsilon/relative accuracy from opentelemetry-go-mapping. This value is used for
 	// finding the lower boundary of the bucket at a specific index
 	// See:
-	// https://github.com/DataDog/opentelemetry-mapping-go/blob/4a6d530273741c84fe2d8f76c55c514cd5eb7488/pkg/quantile/config.go#L138
+	// https://github.com/DataDog/datadog-agent/blob/fcb59435e45053bcb53a1eec482104290f1dd166/pkg/util/quantile/config.go#L138
 	gamma = 1 + 2*relativeAccuracy
 
 	// Since the default bucket factor for Sketches (gamma value) is 1.015625, this corresponds to a scale between 5 (2^2^-5=1.0219)
@@ -40,18 +40,18 @@ const (
 	// emin = math.Floor((math.Log(min)/math.Log1p(2*relativeAccuracy))
 	// offset = -emin + 1
 	// The resulting value is 1338.
-	// See: https://github.com/DataDog/opentelemetry-mapping-go/blob/4a6d530273741c84fe2d8f76c55c514cd5eb7488/pkg/quantile/config.go#L154
+	// See: https://github.com/DataDog/datadog-agent/blob/fcb59435e45053bcb53a1eec482104290f1dd166/pkg/util/quantile/config.go#L154
 	// (Note: in Datadog's code, it is referred to as 'bias')
 	agentSketchOffset int32 = 1338
 
 	// The max limit for the index of a sketch bucket
-	// See https://github.com/DataDog/opentelemetry-mapping-go/blob/00c3f838161a00de395d7d0ed44d967ac71e43b9/pkg/quantile/ddsketch.go#L21
-	// and https://github.com/DataDog/opentelemetry-mapping-go/blob/00c3f838161a00de395d7d0ed44d967ac71e43b9/pkg/quantile/ddsketch.go#L127
+	// See https://github.com/DataDog/datadog-agent/blob/fcb59435e45053bcb53a1eec482104290f1dd166/pkg/util/quantile/ddsketch.go#L21
+	// and https://github.com/DataDog/datadog-agent/blob/fcb59435e45053bcb53a1eec482104290f1dd166/pkg/util/quantile/ddsketch.go#L138
 	maxIndex = math.MaxInt16
 )
 
 // Unmarshal the sketch payload, which contains the underlying Dogsketch structure used for the translation
-func (mt *MetricsTranslator) HandleSketchesPayload(req *http.Request) (sp []gogen.SketchPayload_Sketch, err error) {
+func (*MetricsTranslator) HandleSketchesPayload(req *http.Request) (sp []gogen.SketchPayload_Sketch, err error) {
 	buf := GetBuffer()
 	defer PutBuffer(buf)
 	if _, err := io.Copy(buf, req.Body); err != nil {
@@ -140,8 +140,8 @@ func sketchToDatapoint(sketch gogen.SketchPayload_Sketch_Dogsketch, dp pmetric.E
 func mapSketchBucketsToHistogramBuckets(sketchKeys []int32, sketchCounts []uint32) (map[int]uint64, map[int]uint64, uint64, error) {
 	var zeroCount uint64
 
-	var positiveBuckets = make(map[int]uint64)
-	var negativeBuckets = make(map[int]uint64)
+	positiveBuckets := make(map[int]uint64)
+	negativeBuckets := make(map[int]uint64)
 
 	// The data format for the sketch received from the sketch payload does not have separate positive and negative buckets,
 	// and instead just uses a single list of sketch keys that are in order by increasing bucket index, starting with negative indices,
@@ -152,7 +152,7 @@ func mapSketchBucketsToHistogramBuckets(sketchKeys []int32, sketchCounts []uint3
 			continue
 		}
 		if sketchKeys[i] >= maxIndex {
-			// This should not happen, as sketches that contain bucket(s) with an index higher than the max
+			// This should not happen, as sketches that contain bucket(s) with an index greater than the max
 			// limit should have already been discarded. However, if there happens to be an index > maxIndex,
 			// it can cause an infinite loop within the below inner for loop on some operating systems. Therefore,
 			// throw an error for sketches that have an index above the max limit
@@ -173,7 +173,7 @@ func mapSketchBucketsToHistogramBuckets(sketchKeys []int32, sketchCounts []uint3
 		targetBucketCount := uint64(sketchCounts[i])
 		var currentAssignedCount uint64
 
-		//TODO: look into better algorithms for applying fractional counts
+		// TODO: look into better algorithms for applying fractional counts
 		for outIndex := histogramKey; histogramLowerBound(outIndex) < sketchUpperBound; outIndex++ {
 			histogramLowerBound, histogramUpperBound := getHistogramBounds(outIndex)
 			lowerIntersection := math.Max(histogramLowerBound, sketchLowerBound)
@@ -208,7 +208,6 @@ func mapSketchBucketsToHistogramBuckets(sketchKeys []int32, sketchCounts []uint3
 				positiveBuckets[highestCountIdx] += additionalCount
 			}
 		}
-
 	}
 
 	return negativeBuckets, positiveBuckets, zeroCount, nil
@@ -257,7 +256,7 @@ func getSketchBounds(index int32) (float64, float64) {
 // It uses the index offset and multiplier (represented by (1 / math.Log(gamma))). The logic behind this
 // is based on the DD agent using logarithmic mapping for definition DD agent sketches
 // See:
-// https://github.com/DataDog/opentelemetry-mapping-go/blob/4a6d530273741c84fe2d8f76c55c514cd5eb7488/pkg/quantile/config.go#L54
+// https://github.com/DataDog/datadog-agent/blob/fcb59435e45053bcb53a1eec482104290f1dd166/pkg/util/quantile/config.go#L54
 // https://github.com/DataDog/sketches-go/blob/8a1961cf57f80fbbe26e7283464fcc01ebf17d5c/ddsketch/mapping/logarithmic_mapping.go#L39
 func sketchLowerBound(index int32) float64 {
 	if index < 0 {

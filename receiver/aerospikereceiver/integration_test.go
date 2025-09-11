@@ -14,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	as "github.com/aerospike/aerospike-client-go/v7"
+	as "github.com/aerospike/aerospike-client-go/v8"
 	"github.com/docker/go-connections/nat"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -72,7 +72,7 @@ func integrationTest(cfgMod func(*Config)) func(*testing.T) {
 
 type waitStrategy struct{}
 
-func (ws waitStrategy) WaitUntilReady(ctx context.Context, st wait.StrategyTarget) error {
+func (waitStrategy) WaitUntilReady(ctx context.Context, st wait.StrategyTarget) error {
 	if err := wait.ForAll(
 		wait.ForListeningPort(nat.Port(aerospikePort)),
 		wait.ForLog("service ready: soon there will be cake!"),
@@ -120,8 +120,10 @@ type recordsCheckable interface {
 	Results() <-chan *as.Result
 }
 
-type aeroDoneFunc func() (doneCheckable, as.Error)
-type aeroRecordsFunc func() (recordsCheckable, as.Error)
+type (
+	aeroDoneFunc    func() (doneCheckable, as.Error)
+	aeroRecordsFunc func() (recordsCheckable, as.Error)
+)
 
 func doneWaitAndCheck(f aeroDoneFunc) error {
 	chk, err := f()
@@ -200,7 +202,7 @@ func populateMetrics(host *as.Host) error {
 	if err != nil {
 		return errors.New("failed registering udf file")
 	}
-	if nil != <-task.OnComplete() {
+	if <-task.OnComplete() != nil {
 		return errors.New("failed while registering udf file")
 	}
 

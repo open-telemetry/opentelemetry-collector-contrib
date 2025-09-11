@@ -6,9 +6,8 @@
 package rabbitmqexporter
 
 import (
-	"context"
 	"fmt"
-	"math/rand"
+	"math/rand/v2"
 	"strconv"
 	"testing"
 	"time"
@@ -21,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/rabbitmqexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
 
@@ -46,12 +46,12 @@ func TestExportWithNetworkIssueRecovery(t *testing.T) {
 			port := randPort()
 			container := startRabbitMQContainer(t, c.image, port)
 			defer func() {
-				err := container.Terminate(context.Background())
+				err := container.Terminate(t.Context())
 				require.NoError(t, err)
 			}()
 
 			// Connect to rabbitmq then create a queue and queue consumer
-			host, err := container.Host(context.Background())
+			host, err := container.Host(t.Context())
 			require.NoError(t, err)
 			endpoint := fmt.Sprintf("amqp://%s:%s", host, port)
 			connection, channel, consumer := setupQueueConsumer(t, logsRoutingKey, endpoint)
@@ -62,18 +62,18 @@ func TestExportWithNetworkIssueRecovery(t *testing.T) {
 			cfg.Connection.Endpoint = endpoint
 			cfg.Connection.VHost = vhost
 			cfg.Connection.Auth = AuthConfig{Plain: PlainAuth{Username: username, Password: password}}
-			exporter, err := factory.CreateLogs(context.Background(), exportertest.NewNopSettings(), cfg)
+			exporter, err := factory.CreateLogs(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
 			require.NoError(t, err)
-			err = exporter.Start(context.Background(), componenttest.NewNopHost())
+			err = exporter.Start(t.Context(), componenttest.NewNopHost())
 			require.NoError(t, err)
 			defer func() {
-				err = exporter.Shutdown(context.Background())
+				err = exporter.Shutdown(t.Context())
 				require.NoError(t, err)
 			}()
 
 			// Export and verify data is consumed
 			logs := testdata.GenerateLogsOneLogRecord()
-			err = exporter.ConsumeLogs(context.Background(), logs)
+			err = exporter.ConsumeLogs(t.Context(), logs)
 			require.NoError(t, err)
 			consumed := <-consumer
 			unmarshaller := &plog.ProtoUnmarshaler{}
@@ -87,14 +87,14 @@ func TestExportWithNetworkIssueRecovery(t *testing.T) {
 			err = connection.Close()
 			require.NoError(t, err)
 			stopTimeout := time.Second * 5
-			err = container.Stop(context.Background(), &stopTimeout)
+			err = container.Stop(t.Context(), &stopTimeout)
 			require.NoError(t, err)
 			logs = testdata.GenerateLogsOneLogRecord()
-			err = exporter.ConsumeLogs(context.Background(), logs)
+			err = exporter.ConsumeLogs(t.Context(), logs)
 			require.Error(t, err)
 
 			// Restart container to simulate network issue recovery
-			err = container.Start(context.Background())
+			err = container.Start(t.Context())
 			require.NoError(t, err)
 			connection, channel, consumer = setupQueueConsumer(t, logsRoutingKey, endpoint)
 			defer func() {
@@ -103,7 +103,7 @@ func TestExportWithNetworkIssueRecovery(t *testing.T) {
 			}()
 
 			logs = testdata.GenerateLogsOneLogRecord()
-			err = exporter.ConsumeLogs(context.Background(), logs)
+			err = exporter.ConsumeLogs(t.Context(), logs)
 			require.NoError(t, err)
 			consumed = <-consumer
 			receivedLogs, err = unmarshaller.UnmarshalLogs(consumed.Body)
@@ -113,9 +113,9 @@ func TestExportWithNetworkIssueRecovery(t *testing.T) {
 	}
 }
 
-func startRabbitMQContainer(t *testing.T, image string, port string) testcontainers.Container {
+func startRabbitMQContainer(t *testing.T, image, port string) testcontainers.Container {
 	container, err := testcontainers.GenericContainer(
-		context.Background(),
+		t.Context(),
 		testcontainers.GenericContainerRequest{
 			ContainerRequest: testcontainers.ContainerRequest{
 				Image:        image,
@@ -136,12 +136,12 @@ func startRabbitMQContainer(t *testing.T, image string, port string) testcontain
 		})
 	require.NoError(t, err)
 
-	err = container.Start(context.Background())
+	err = container.Start(t.Context())
 	require.NoError(t, err)
 	return container
 }
 
-func setupQueueConsumer(t *testing.T, queueName string, endpoint string) (*amqp.Connection, *amqp.Channel, <-chan amqp.Delivery) {
+func setupQueueConsumer(t *testing.T, queueName, endpoint string) (*amqp.Connection, *amqp.Channel, <-chan amqp.Delivery) {
 	connection, err := amqp.DialConfig(endpoint, amqp.Config{
 		SASL: []amqp.Authentication{
 			&amqp.PlainAuth{
@@ -166,7 +166,5 @@ func setupQueueConsumer(t *testing.T, queueName string, endpoint string) (*amqp.
 }
 
 func randPort() string {
-	rs := rand.NewSource(time.Now().Unix())
-	r := rand.New(rs)
-	return strconv.Itoa(r.Intn(999) + 9000)
+	return strconv.Itoa(rand.IntN(999) + 9000)
 }

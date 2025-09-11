@@ -10,7 +10,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver/internal/metadata"
@@ -27,13 +28,12 @@ func createDefaultConfig() component.Config {
 	scs := scraperhelper.NewDefaultControllerConfig()
 	scs.CollectionInterval = 10 * time.Second
 	scs.Timeout = 5 * time.Second
+	config := *docker.NewDefaultConfig()
+	config.DockerAPIVersion = defaultDockerAPIVersion
+	config.Timeout = scs.Timeout
 	return &Config{
-		ControllerConfig: scs,
-		Config: docker.Config{
-			Endpoint:         "unix:///var/run/docker.sock",
-			DockerAPIVersion: defaultDockerAPIVersion,
-			Timeout:          scs.Timeout,
-		},
+		ControllerConfig:     scs,
+		Config:               config,
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
 }
@@ -47,10 +47,10 @@ func createMetricsReceiver(
 	dockerConfig := config.(*Config)
 	dsr := newMetricsReceiver(params, dockerConfig)
 
-	scrp, err := scraperhelper.NewScraper(metadata.Type, dsr.scrapeV2, scraperhelper.WithStart(dsr.start), scraperhelper.WithShutdown(dsr.shutdown))
+	scrp, err := scraper.NewMetrics(dsr.scrapeV2, scraper.WithStart(dsr.start), scraper.WithShutdown(dsr.shutdown))
 	if err != nil {
 		return nil, err
 	}
 
-	return scraperhelper.NewScraperControllerReceiver(&dsr.config.ControllerConfig, params, consumer, scraperhelper.AddScraper(scrp))
+	return scraperhelper.NewMetricsController(&dsr.config.ControllerConfig, params, consumer, scraperhelper.AddScraper(metadata.Type, scrp))
 }

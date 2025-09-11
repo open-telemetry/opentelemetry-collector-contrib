@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awss3receiver/internal/metadata"
 )
@@ -21,21 +22,45 @@ func TestLoadConfig_Validate_Invalid(t *testing.T) {
 }
 
 func TestConfig_Validate_Valid(t *testing.T) {
-	cfg := Config{
-		S3Downloader: S3DownloaderConfig{
-			Region:              "",
-			S3Bucket:            "abucket",
-			S3Prefix:            "",
-			S3Partition:         "minute",
-			FilePrefix:          "",
-			Endpoint:            "",
-			EndpointPartitionID: "aws",
-			S3ForcePathStyle:    false,
-		},
-		StartTime: "2024-01-01",
-		EndTime:   "2024-01-01",
-	}
-	assert.NoError(t, cfg.Validate())
+	// Valid config with StartTime/EndTime
+	t.Run("with time range", func(t *testing.T) {
+		cfg := Config{
+			S3Downloader: S3DownloaderConfig{
+				Region:              "",
+				S3Bucket:            "abucket",
+				S3Prefix:            "",
+				S3Partition:         "minute",
+				FilePrefix:          "",
+				Endpoint:            "",
+				EndpointPartitionID: "aws",
+				S3ForcePathStyle:    false,
+			},
+			StartTime: "2024-01-01",
+			EndTime:   "2024-01-01",
+		}
+		assert.NoError(t, cfg.Validate())
+	})
+
+	// Valid config with SQS
+	t.Run("with sqs", func(t *testing.T) {
+		cfg := Config{
+			S3Downloader: S3DownloaderConfig{
+				Region:              "",
+				S3Bucket:            "abucket",
+				S3Prefix:            "",
+				S3Partition:         "minute",
+				FilePrefix:          "",
+				Endpoint:            "",
+				EndpointPartitionID: "aws",
+				S3ForcePathStyle:    false,
+			},
+			SQS: &SQSConfig{
+				QueueURL: "https://sqs.us-east-1.amazonaws.com/123456789012/test-queue",
+				Region:   "us-east-1",
+			},
+		}
+		assert.NoError(t, cfg.Validate())
+	})
 }
 
 func TestLoadConfig(t *testing.T) {
@@ -49,11 +74,11 @@ func TestLoadConfig(t *testing.T) {
 	}{
 		{
 			id:           component.NewIDWithName(metadata.Type, ""),
-			errorMessage: "bucket is required; starttime is required; endtime is required",
+			errorMessage: "bucket is required; either starttime/endtime or sqs configuration must be provided",
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "1"),
-			errorMessage: "s3_partition must be either 'hour' or 'minute'; unable to parse starttime (a date), accepted formats: 2006-01-02 15:04, 2006-01-02; unable to parse endtime (2024-02-03a), accepted formats: 2006-01-02 15:04, 2006-01-02",
+			errorMessage: "s3_partition must be either 'hour' or 'minute'; unable to parse starttime (a date), accepted formats: 2006-01-02T15:04:05Z07:00, 2006-01-02 15:04, 2006-01-02; unable to parse endtime (2024-02-03a), accepted formats: 2006-01-02T15:04:05Z07:00, 2006-01-02 15:04, 2006-01-02",
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "2"),
@@ -94,6 +119,35 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "4"),
+			expected: &Config{
+				S3Downloader: S3DownloaderConfig{
+					Region:              "us-east-1",
+					S3Bucket:            "abucket",
+					S3Partition:         "minute",
+					EndpointPartitionID: "aws",
+				},
+				StartTime: "2024-01-31T15:00:00Z",
+				EndTime:   "2024-02-03T00:00:00Z",
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "5"),
+			expected: &Config{
+				S3Downloader: S3DownloaderConfig{
+					Region:              "us-east-1",
+					S3Bucket:            "abucket",
+					S3Partition:         "minute",
+					EndpointPartitionID: "aws",
+				},
+				SQS: &SQSConfig{
+					QueueURL: "https://sqs.us-east-1.amazonaws.com/123456789012/test-queue",
+					Region:   "us-east-1",
+					Endpoint: "http://localhost:4575",
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -106,11 +160,11 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			if tt.errorMessage != "" {
-				assert.EqualError(t, component.ValidateConfig(cfg), tt.errorMessage)
+				assert.EqualError(t, xconfmap.Validate(cfg), tt.errorMessage)
 				return
 			}
 
-			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.NoError(t, xconfmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

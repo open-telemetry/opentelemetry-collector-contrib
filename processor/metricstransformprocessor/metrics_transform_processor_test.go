@@ -4,7 +4,6 @@
 package metricstransformprocessor
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -15,6 +14,8 @@ import (
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor/internal/metadata"
 )
 
 func TestMetricsTransformProcessor(t *testing.T) {
@@ -28,8 +29,8 @@ func TestMetricsTransformProcessor(t *testing.T) {
 			}
 
 			mtp, err := processorhelper.NewMetrics(
-				context.Background(),
-				processortest.NewNopSettings(),
+				t.Context(),
+				processortest.NewNopSettings(metadata.Type),
 				&Config{},
 				next,
 				p.processMetrics,
@@ -45,7 +46,7 @@ func TestMetricsTransformProcessor(t *testing.T) {
 			for _, m := range test.in {
 				m.MoveTo(inMetricsSlice.AppendEmpty())
 			}
-			cErr := mtp.ConsumeMetrics(context.Background(), inMetrics)
+			cErr := mtp.ConsumeMetrics(t.Context(), inMetrics)
 			assert.NoError(t, cErr)
 
 			// get and check results
@@ -114,13 +115,11 @@ func lessAttributes(a, b pcommon.Map) bool {
 	}
 
 	var res bool
-	a.Range(func(k string, v pcommon.Value) bool {
+	for k, v := range a.All() {
 		bv, ok := b.Get(k)
 		if !ok || v.Str() < bv.Str() {
-			res = true
-			return false
+			return true
 		}
-		return true
-	})
+	}
 	return res
 }

@@ -6,6 +6,7 @@ package syslogexporter // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -41,35 +42,35 @@ func (f *rfc5424Formatter) format(logRecord plog.LogRecord) string {
 	return formatted
 }
 
-func (f *rfc5424Formatter) formatPriority(logRecord plog.LogRecord) string {
+func (*rfc5424Formatter) formatPriority(logRecord plog.LogRecord) string {
 	return getAttributeValueOrDefault(logRecord, priority, strconv.Itoa(defaultPriority))
 }
 
-func (f *rfc5424Formatter) formatVersion(logRecord plog.LogRecord) string {
+func (*rfc5424Formatter) formatVersion(logRecord plog.LogRecord) string {
 	return getAttributeValueOrDefault(logRecord, version, strconv.Itoa(versionRFC5424))
 }
 
-func (f *rfc5424Formatter) formatTimestamp(logRecord plog.LogRecord) string {
+func (*rfc5424Formatter) formatTimestamp(logRecord plog.LogRecord) string {
 	return logRecord.Timestamp().AsTime().Format(time.RFC3339Nano)
 }
 
-func (f *rfc5424Formatter) formatHostname(logRecord plog.LogRecord) string {
+func (*rfc5424Formatter) formatHostname(logRecord plog.LogRecord) string {
 	return getAttributeValueOrDefault(logRecord, hostname, emptyValue)
 }
 
-func (f *rfc5424Formatter) formatAppname(logRecord plog.LogRecord) string {
+func (*rfc5424Formatter) formatAppname(logRecord plog.LogRecord) string {
 	return getAttributeValueOrDefault(logRecord, app, emptyValue)
 }
 
-func (f *rfc5424Formatter) formatPid(logRecord plog.LogRecord) string {
+func (*rfc5424Formatter) formatPid(logRecord plog.LogRecord) string {
 	return getAttributeValueOrDefault(logRecord, pid, emptyValue)
 }
 
-func (f *rfc5424Formatter) formatMessageID(logRecord plog.LogRecord) string {
+func (*rfc5424Formatter) formatMessageID(logRecord plog.LogRecord) string {
 	return getAttributeValueOrDefault(logRecord, msgID, emptyValue)
 }
 
-func (f *rfc5424Formatter) formatStructuredData(logRecord plog.LogRecord) string {
+func (*rfc5424Formatter) formatStructuredData(logRecord plog.LogRecord) string {
 	structuredDataAttributeValue, found := logRecord.Attributes().Get(structuredData)
 	if !found {
 		return emptyValue
@@ -78,9 +79,9 @@ func (f *rfc5424Formatter) formatStructuredData(logRecord plog.LogRecord) string
 		return emptyValue
 	}
 
-	sdElements := []string{}
+	var sdBuilder strings.Builder
 	for key, val := range structuredDataAttributeValue.Map().AsRaw() {
-		sdElements = append(sdElements, key)
+		sdElements := []string{key}
 		vval, ok := val.(map[string]any)
 		if !ok {
 			continue
@@ -90,16 +91,16 @@ func (f *rfc5424Formatter) formatStructuredData(logRecord plog.LogRecord) string
 			if !ok {
 				continue
 			}
-			sdElements = append(sdElements, fmt.Sprintf("%s=\"%s\"", k, vv))
+			sdElements = append(sdElements, fmt.Sprintf("%s=%q", k, vv))
 		}
+		sdBuilder.WriteString(fmt.Sprint(sdElements))
 	}
-	return fmt.Sprint(sdElements)
-
+	return sdBuilder.String()
 }
 
-func (f *rfc5424Formatter) formatMessage(logRecord plog.LogRecord) string {
+func (*rfc5424Formatter) formatMessage(logRecord plog.LogRecord) string {
 	formatted := getAttributeValueOrDefault(logRecord, message, emptyMessage)
-	if len(formatted) > 0 {
+	if formatted != "" {
 		formatted = " " + formatted
 	}
 	return formatted

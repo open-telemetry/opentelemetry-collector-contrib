@@ -4,13 +4,14 @@
 package sampling
 
 import (
-	"context"
 	"sync/atomic"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/pkg/samplingpolicy"
 )
 
 func TestRateLimiter(t *testing.T) {
@@ -22,30 +23,30 @@ func TestRateLimiter(t *testing.T) {
 	traceSpanCount := &atomic.Int64{}
 	traceSpanCount.Store(10)
 	trace.SpanCount = traceSpanCount
-	decision, err := rateLimiter.Evaluate(context.Background(), traceID, trace)
+	decision, err := rateLimiter.Evaluate(t.Context(), traceID, trace)
 	assert.NoError(t, err)
-	assert.Equal(t, NotSampled, decision)
+	assert.Equal(t, samplingpolicy.NotSampled, decision)
 
 	// Trace span count equal to spans per second
 	traceSpanCount = &atomic.Int64{}
 	traceSpanCount.Store(3)
 	trace.SpanCount = traceSpanCount
-	decision, err = rateLimiter.Evaluate(context.Background(), traceID, trace)
+	decision, err = rateLimiter.Evaluate(t.Context(), traceID, trace)
 	assert.NoError(t, err)
-	assert.Equal(t, NotSampled, decision)
+	assert.Equal(t, samplingpolicy.NotSampled, decision)
 
 	// Trace span count less than spans per second
 	traceSpanCount = &atomic.Int64{}
 	traceSpanCount.Store(2)
 	trace.SpanCount = traceSpanCount
-	decision, err = rateLimiter.Evaluate(context.Background(), traceID, trace)
+	decision, err = rateLimiter.Evaluate(t.Context(), traceID, trace)
 	assert.NoError(t, err)
-	assert.Equal(t, Sampled, decision)
+	assert.Equal(t, samplingpolicy.Sampled, decision)
 
 	// Trace span count less than spans per second
 	traceSpanCount = &atomic.Int64{}
 	trace.SpanCount = traceSpanCount
-	decision, err = rateLimiter.Evaluate(context.Background(), traceID, trace)
+	decision, err = rateLimiter.Evaluate(t.Context(), traceID, trace)
 	assert.NoError(t, err)
-	assert.Equal(t, Sampled, decision)
+	assert.Equal(t, samplingpolicy.Sampled, decision)
 }

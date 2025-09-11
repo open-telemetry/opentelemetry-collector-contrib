@@ -1,0 +1,72 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: ip
+          value:
+            stringValue: 1.2.2.1
+    schemaUrl: https://test-res-schema.com/schema
+    scopeMetrics:
+      - metrics:
+          - description: This also isn't a real metric
+            name: storage.amplitude
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: a
+                      value:
+                        stringValue: AAAA
+                    - key: client.address
+                      value:
+                        stringValue: 1.2.3.4
+              isMonotonic: false
+            unit: "1"
+          - name: delta.histogram.test
+            histogram:
+              aggregationTemporality: 1
+              dataPoints:
+                - explicitBounds: [0.01, 0.1, 1, 10, 100]
+                  timeUnixNano: "1000000"
+                  bucketCounts: [9, 12, 17, 8, 34]
+                  attributes:
+                    - key: client.address
+                      value:
+                        stringValue: 1.2.3.4
+          - name: summary.test
+            summary:
+              dataPoints:
+                - timeUnixNano: "1000000"
+                  quantileValues:
+                    - quantile: 0.25
+                      value: 50
+                    - quantile: 0.5
+                      value: 20
+                    - quantile: 0.75
+                      value: 75
+                    - quantile: 0.95
+                      value: 10
+                  attributes:
+                    - key: client.address
+                      value:
+                        stringValue: 1.2.3.4
+          - gauge:
+              dataPoints:
+                - asDouble: 345
+                  attributes:
+                    - key: client.address
+                      value:
+                        stringValue: 1.2.3.4
+                    - key: aaa
+                      value:
+                        stringValue: bbb
+                  timeUnixNano: "1000000"
+            name: test.gauge
+        schemaUrl: https://test-scope-schema.com/schema
+        scope:
+          attributes:
+            - key: foo
+              value:
+                stringValue: bar
+          name: MyTestInstrument
+          version: 1.2.3

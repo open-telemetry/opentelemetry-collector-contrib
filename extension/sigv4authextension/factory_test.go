@@ -4,7 +4,6 @@
 package sigv4authextension
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -19,8 +18,8 @@ func TestNewFactory(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	assert.Equal(t, f.CreateDefaultConfig().(*Config), cfg)
 
-	ext, _ := createExtension(context.Background(), extensiontest.NewNopSettings(), cfg)
-	fext, _ := f.Create(context.Background(), extensiontest.NewNopSettings(), cfg)
+	ext, _ := createExtension(t.Context(), extensiontest.NewNopSettings(f.Type()), cfg)
+	fext, _ := f.Create(t.Context(), extensiontest.NewNopSettings(f.Type()), cfg)
 	assert.Equal(t, fext, ext)
 }
 
@@ -33,8 +32,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 func TestCreate(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 
-	ext, err := createExtension(context.Background(), extensiontest.NewNopSettings(), cfg)
+	ext, err := createExtension(t.Context(), extensiontest.NewNopSettings(extensiontest.NopType), cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, ext)
-
 }

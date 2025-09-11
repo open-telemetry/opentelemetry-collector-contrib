@@ -1,0 +1,13 @@
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: test-k8scluster-receiver-hpa
+  namespace: my-namespace
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: StatefulSet
+    name: test-k8scluster-receiver-statefulset
+  minReplicas: 1
+  maxReplicas: 1
+  targetCPUUtilizationPercentage: 50

@@ -14,7 +14,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snowflakereceiver/internal/metadata"
@@ -90,9 +91,7 @@ func TestValidateConfig(t *testing.T) {
 		},
 	}
 
-	for i := range tests {
-		test := tests[i]
-
+	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
 			t.Parallel()
 
@@ -135,7 +134,7 @@ func TestLoadConfig(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 
 	require.NoError(t, cmNoStr.Unmarshal(cfg))
-	assert.NoError(t, component.ValidateConfig(cfg))
+	assert.NoError(t, xconfmap.Validate(cfg))
 
 	diff := cmp.Diff(expected, cfg, cmpopts.IgnoreUnexported(metadata.MetricConfig{}), cmpopts.IgnoreUnexported(metadata.ResourceAttributeConfig{}))
 	if diff != "" {

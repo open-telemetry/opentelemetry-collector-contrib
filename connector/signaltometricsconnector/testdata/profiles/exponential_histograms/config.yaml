@@ -1,0 +1,40 @@
+signaltometrics:
+  profiles:
+    - name: total.profiles.exphistogram
+      description: Profiles as exponential histogram with duration
+      exponential_histogram:
+        count: "1"
+        value: duration_unix_nano
+    - name: total.profiles.resource.foo.exphistogram
+      description: Profiles with resource attribute foo as exponential histogram with duration
+      include_resource_attributes:
+        - key: resource.foo
+      exponential_histogram:
+        count: "1"
+        value: duration_unix_nano
+    - name: profiles.foo.exphistogram
+      description: Count total number of profiles as per profiles.foo attribute as exponential histogram with duration
+      attributes:
+        - key: profile.foo
+      exponential_histogram:
+        count: "1"
+        value: duration_unix_nano
+    - name: profiles.bar.exphistogram
+      description: Count total number of profiles as per profiles.bar attribute as exponential histogram with duration
+      conditions: # Will evaluate to true
+        - resource.attributes["404.attribute"] != nil
+        - resource.attributes["resource.foo"] != nil
+      attributes:
+        - key: profiles.bar
+      exponential_histogram:
+        count: "1"
+        value: duration_unix_nano
+    - name: ignored.exphistogram
+      description: Will be ignored due to conditions evaluating to false
+      conditions: # Will evaluate to false
+        - resource.attributes["404.attribute"] != nil
+      attributes:
+        - key: profiles.bar
+      exponential_histogram:
+        count: "2"
+        value: duration_unix_nano

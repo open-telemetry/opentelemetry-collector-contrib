@@ -170,27 +170,27 @@ func TestScale(t *testing.T) {
 			)
 
 			expressionFunc, _ := Scale(tt.args)
-			_, err := expressionFunc(context.Background(), target)
+			_, err := expressionFunc(t.Context(), target)
 
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
 			}
-			assert.EqualValues(t, tt.wantFunc(), target.GetMetric())
+			assert.Equal(t, tt.wantFunc(), target.GetMetric())
 		})
 	}
 }
 
-func getTestScalingHistogramMetric(count uint64, sum, min, max float64, bounds []float64, bucketCounts []uint64, exemplars []float64, start, timestamp pcommon.Timestamp) pmetric.Metric {
+func getTestScalingHistogramMetric(count uint64, sum, minVal, maxVal float64, bounds []float64, bucketCounts []uint64, exemplars []float64, start, timestamp pcommon.Timestamp) pmetric.Metric {
 	metric := pmetric.NewMetric()
 	metric.SetName("test-metric")
 	metric.SetEmptyHistogram()
 	histogramDatapoint := metric.Histogram().DataPoints().AppendEmpty()
 	histogramDatapoint.SetCount(count)
 	histogramDatapoint.SetSum(sum)
-	histogramDatapoint.SetMin(min)
-	histogramDatapoint.SetMax(max)
+	histogramDatapoint.SetMin(minVal)
+	histogramDatapoint.SetMax(maxVal)
 	histogramDatapoint.ExplicitBounds().FromRaw(bounds)
 	histogramDatapoint.BucketCounts().FromRaw(bucketCounts)
 	for i := 0; i < len(exemplars); i++ {

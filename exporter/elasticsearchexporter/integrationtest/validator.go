@@ -18,9 +18,9 @@ type countValidator struct {
 }
 
 // newCountValidator creates a new instance of the CountValidator.
-func newCountValidator(t testing.TB, provider testbed.DataProvider) *countValidator {
+func newCountValidator(tb testing.TB, provider testbed.DataProvider) *countValidator {
 	return &countValidator{
-		t:            t,
+		t:            tb,
 		dataProvider: provider,
 	}
 }
@@ -34,4 +34,4 @@ func (v *countValidator) Validate(tc *testbed.TestCase) {
 	)
 }
 
-func (v *countValidator) RecordResults(_ *testbed.TestCase) {}
+func (*countValidator) RecordResults(*testbed.TestCase) {}

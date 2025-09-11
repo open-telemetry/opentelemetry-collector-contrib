@@ -4,18 +4,17 @@
 package pulsarreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pulsarreceiver"
 
 import (
-	"context"
 	"testing"
 
 	"github.com/apache/thrift/lib/go/thrift"
-	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
+	"github.com/jaegertracing/jaeger-idl/thrift-gen/zipkincore"
 	"github.com/openzipkin/zipkin-go/proto/zipkin_proto3"
 	zipkinreporter "github.com/openzipkin/zipkin-go/reporter"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinv2"
 )
@@ -26,7 +25,7 @@ var v2FromTranslator zipkinv2.FromTranslator
 func TestUnmarshalZipkin(t *testing.T) {
 	td := ptrace.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
-	rs.Resource().Attributes().PutStr(conventions.AttributeServiceName, "my_service")
+	rs.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), "my_service")
 	span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetName("foo")
 	span.SetStartTimestamp(pcommon.Timestamp(1597759000))
@@ -44,12 +43,12 @@ func TestUnmarshalZipkin(t *testing.T) {
 	tSpan := &zipkincore.Span{Name: "foo"}
 	thriftTransport := thrift.NewTMemoryBuffer()
 	protocolTransport := thrift.NewTBinaryProtocolConf(thriftTransport, nil)
-	require.NoError(t, protocolTransport.WriteListBegin(context.Background(), thrift.STRUCT, 1))
-	err = tSpan.Write(context.Background(), protocolTransport)
+	require.NoError(t, protocolTransport.WriteListBegin(t.Context(), thrift.STRUCT, 1))
+	err = tSpan.Write(t.Context(), protocolTransport)
 	require.NoError(t, err)
-	require.NoError(t, protocolTransport.WriteListEnd(context.Background()))
+	require.NoError(t, protocolTransport.WriteListEnd(t.Context()))
 
-	tdThrift, err := newZipkinThriftUnmarshaler().Unmarshal(thriftTransport.Buffer.Bytes())
+	tdThrift, err := newZipkinThriftUnmarshaler().Unmarshal(thriftTransport.Bytes())
 	require.NoError(t, err)
 
 	protoBytes, err := new(zipkin_proto3.SpanSerializer).Serialize(spans)
@@ -76,7 +75,7 @@ func TestUnmarshalZipkin(t *testing.T) {
 		{
 			unmarshaler: newZipkinThriftUnmarshaler(),
 			encoding:    "zipkin_thrift",
-			bytes:       thriftTransport.Buffer.Bytes(),
+			bytes:       thriftTransport.Bytes(),
 			expected:    tdThrift,
 		},
 	}

@@ -4,6 +4,7 @@
 package openshift // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/openshift"
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
@@ -28,11 +29,11 @@ func readK8STokenFromFile() (string, error) {
 func readSVCAddressFromENV() (string, error) {
 	host := os.Getenv("KUBERNETES_SERVICE_HOST")
 	if host == "" {
-		return "", fmt.Errorf("could not extract openshift api host")
+		return "", errors.New("could not extract openshift api host")
 	}
 	port := os.Getenv("KUBERNETES_SERVICE_PORT")
 	if port == "" {
-		return "", fmt.Errorf("could not extract openshift api port")
+		return "", errors.New("could not extract openshift api port")
 	}
 	return fmt.Sprintf("https://%s:%s", host, port), nil
 }
@@ -46,9 +47,9 @@ type Config struct {
 	// Token is used to identify against the openshift api server
 	Token string `mapstructure:"token"`
 
-	// TLSSettings contains TLS configurations that are specific to client
-	// connection used to communicate with the Openshift API.
-	TLSSettings configtls.ClientConfig `mapstructure:"tls"`
+	// TLSs contains TLS configurations that are specific to client
+	// connection used to communicate with the OpenShift API.
+	TLSs configtls.ClientConfig `mapstructure:"tls"`
 
 	ResourceAttributes metadata.ResourceAttributesConfig `mapstructure:"resource_attributes"`
 }
@@ -71,8 +72,8 @@ func (c *Config) MergeWithDefaults() error {
 		c.Address = addr
 	}
 
-	if !c.TLSSettings.Insecure && c.TLSSettings.CAFile == "" {
-		c.TLSSettings.CAFile = defaultCAPath
+	if !c.TLSs.Insecure && c.TLSs.CAFile == "" {
+		c.TLSs.CAFile = defaultCAPath
 	}
 	return nil
 }

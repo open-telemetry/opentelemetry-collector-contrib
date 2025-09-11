@@ -5,9 +5,11 @@ package router // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/expr-lang/expr/vm"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -30,33 +32,44 @@ type Route struct {
 }
 
 // CanProcess will always return true for a router operator
-func (t *Transformer) CanProcess() bool {
+func (*Transformer) CanProcess() bool {
 	return true
+}
+
+func (t *Transformer) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
+	var errs error
+	for i := range entries {
+		errs = multierr.Append(errs, t.Process(ctx, entries[i]))
+	}
+	return errs
 }
 
 // Process will route incoming entries based on matching expressions
 func (t *Transformer) Process(ctx context.Context, entry *entry.Entry) error {
+	if entry == nil {
+		return errors.New("got a nil entry, this should not happen and is potentially a bug")
+	}
+
 	env := helper.GetExprEnv(entry)
 	defer helper.PutExprEnv(env)
 
 	for _, route := range t.routes {
 		matches, err := vm.Run(route.Expression, env)
 		if err != nil {
-			t.Logger().Warn("Running expression returned an error", zap.Error(err))
+			t.Logger().Warn("Running expression returned an error", zapAttributes(entry, err)...)
 			continue
 		}
 
 		// we compile the expression with "AsBool", so this should be safe
 		if matches.(bool) {
 			if err = route.Attribute(entry); err != nil {
-				t.Logger().Error("Failed to label entry", zap.Error(err))
+				t.Logger().Error("Failed to label entry", zapAttributes(entry, err)...)
 				return err
 			}
 
 			for _, output := range route.OutputOperators {
-				err = output.Process(ctx, entry)
-				if err != nil {
-					t.Logger().Error("Failed to process entry", zap.Error(err))
+				if err = output.Process(ctx, entry); err != nil {
+					t.Logger().Error("Failed to process entry", zapAttributes(entry, err)...)
 				}
 			}
 			break
@@ -67,7 +80,7 @@ func (t *Transformer) Process(ctx context.Context, entry *entry.Entry) error {
 }
 
 // CanOutput will always return true for a router operator
-func (t *Transformer) CanOutput() bool {
+func (*Transformer) CanOutput() bool {
 	return true
 }
 
@@ -103,7 +116,7 @@ func (t *Transformer) SetOutputs(operators []operator.Operator) error {
 }
 
 // SetOutputIDs will do nothing.
-func (t *Transformer) SetOutputIDs(_ []string) {}
+func (*Transformer) SetOutputIDs(_ []string) {}
 
 // findOperators will find a subset of operators from a collection.
 func (t *Transformer) findOperators(operators []operator.Operator, operatorIDs []string) ([]operator.Operator, error) {
@@ -119,11 +132,21 @@ func (t *Transformer) findOperators(operators []operator.Operator, operatorIDs [
 }
 
 // findOperator will find an operator from a collection.
-func (t *Transformer) findOperator(operators []operator.Operator, operatorID string) (operator.Operator, error) {
+func (*Transformer) findOperator(operators []operator.Operator, operatorID string) (operator.Operator, error) {
 	for _, operator := range operators {
 		if operator.ID() == operatorID {
 			return operator, nil
 		}
 	}
 	return nil, fmt.Errorf("operator %s does not exist", operatorID)
+}
+
+func zapAttributes(entry *entry.Entry, err error) []zap.Field {
+	logFields := make([]zap.Field, 0, 2+len(entry.Attributes))
+	logFields = append(logFields, zap.Time("entry.timestamp", entry.Timestamp))
+	for attrName, attrValue := range entry.Attributes {
+		logFields = append(logFields, zap.Any(attrName, attrValue))
+	}
+	logFields = append(logFields, zap.Error(err))
+	return logFields
 }

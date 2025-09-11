@@ -14,14 +14,12 @@ import (
 
 const connectionPoolGateID = "receiver.postgresql.connectionPool"
 
-var (
-	connectionPoolGate = featuregate.GlobalRegistry().MustRegister(
-		connectionPoolGateID,
-		featuregate.StageAlpha,
-		featuregate.WithRegisterDescription("Use of connection pooling"),
-		featuregate.WithRegisterFromVersion("0.96.0"),
-		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/30831"),
-	)
+var connectionPoolGate = featuregate.GlobalRegistry().MustRegister(
+	connectionPoolGateID,
+	featuregate.StageBeta,
+	featuregate.WithRegisterDescription("Use of connection pooling"),
+	featuregate.WithRegisterFromVersion("0.96.0"),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/30831"),
 )
 
 type postgreSQLClientFactory interface {
@@ -53,7 +51,7 @@ func (d *defaultClientFactory) getClient(database string) (client, error) {
 	return &postgreSQLClient{client: db, closeFn: db.Close}, nil
 }
 
-func (d *defaultClientFactory) close() error {
+func (*defaultClientFactory) close() error {
 	return nil
 }
 

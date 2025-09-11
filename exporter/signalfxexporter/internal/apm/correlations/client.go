@@ -21,10 +21,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/apm/requests/requestcounter"
 )
 
-var ErrChFull = errors.New("request channel full")
-var errRetryChFull = errors.New("retry channel full")
-var errMaxAttempts = errors.New("maximum attempts exceeded")
-var errRequestCancelled = errors.New("request cancelled")
+var (
+	ErrChFull           = errors.New("request channel full")
+	errRetryChFull      = errors.New("retry channel full")
+	errMaxAttempts      = errors.New("maximum attempts exceeded")
+	errRequestCancelled = errors.New("request cancelled")
+)
 
 // ErrMaxEntries is an error returned when the correlation endpoint returns a 418 http status
 // code indicating that the set of services or environments is too large to add another value
@@ -42,7 +44,7 @@ var _ error = (*ErrMaxEntries)(nil)
 type CorrelationClient interface {
 	Correlate(*Correlation, CorrelateCB)
 	Delete(*Correlation, SuccessfulDeleteCB)
-	Get(dimName string, dimValue string, cb SuccessfulGetCB)
+	Get(dimName, dimValue string, cb SuccessfulGetCB)
 	Start()
 	Shutdown()
 }
@@ -174,7 +176,7 @@ func (cc *Client) putRequestOnRetryChan(r *request) error {
 }
 
 // CorrelateCB is a call back invoked with Correlate requests
-// it is not invoked if the reqeust is deduplicated, cancelled, or the client context is cancelled
+// it is not invoked if the request is deduplicated, cancelled, or the client context is cancelled
 type CorrelateCB func(cor *Correlation, err error)
 
 // Correlate
@@ -189,17 +191,18 @@ func (cc *Client) Correlate(cor *Correlation, cb CorrelateCB) {
 					cor.Logger(cc.log).WithFields(log.Fields{"method": http.MethodPut}).Info("Updated dimension")
 				}
 			case http.StatusTeapot:
-				max := &ErrMaxEntries{}
-				err = json.Unmarshal(body, max)
+				maxEntry := &ErrMaxEntries{}
+				err = json.Unmarshal(body, maxEntry)
 				if err == nil {
-					err = max
+					err = maxEntry
 				}
 			}
 			if err != nil {
 				cor.Logger(cc.log).WithError(err).WithFields(log.Fields{"method": http.MethodPut}).Error("Unable to update dimension, not retrying")
 			}
 			cb(cor, err)
-		}})
+		},
+	})
 	if err != nil {
 		cor.Logger(cc.log).WithError(err).WithFields(log.Fields{"method": http.MethodPut}).Debug("Unable to update dimension, not retrying")
 	}
@@ -223,7 +226,8 @@ func (cc *Client) Delete(cor *Correlation, callback SuccessfulDeleteCB) {
 			default:
 				cc.log.WithError(err).Error("Unable to update dimension, not retrying")
 			}
-		}})
+		},
+	})
 	if err != nil {
 		cor.Logger(cc.log).WithError(err).WithFields(log.Fields{"method": http.MethodDelete}).Debug("Unable to update dimension, not retrying")
 	}
@@ -233,7 +237,7 @@ func (cc *Client) Delete(cor *Correlation, callback SuccessfulDeleteCB) {
 type SuccessfulGetCB func(map[string][]string)
 
 // Get
-func (cc *Client) Get(dimName string, dimValue string, callback SuccessfulGetCB) {
+func (cc *Client) Get(dimName, dimValue string, callback SuccessfulGetCB) {
 	err := cc.putRequestOnChan(&request{
 		Correlation: &Correlation{
 			DimName:  dimName,
@@ -243,7 +247,7 @@ func (cc *Client) Get(dimName string, dimValue string, callback SuccessfulGetCB)
 		callback: func(body []byte, statuscode int, err error) {
 			switch statuscode {
 			case http.StatusOK:
-				var response = map[string][]string{}
+				response := map[string][]string{}
 				err = json.Unmarshal(body, &response)
 				if err != nil {
 					cc.log.WithError(err).WithFields(log.Fields{"dim": dimName, "value": dimValue}).Error("Unable to unmarshall correlations for dimension")
@@ -275,7 +279,7 @@ func (cc *Client) makeRequest(r *request) {
 
 	switch r.operation {
 	case http.MethodGet:
-		req, err = http.NewRequest(r.operation, endpoint, nil)
+		req, err = http.NewRequest(r.operation, endpoint, http.NoBody)
 	case http.MethodPut:
 		// TODO: pool the reader
 		endpoint = fmt.Sprintf("%s/%s", endpoint, r.Type)
@@ -283,9 +287,9 @@ func (cc *Client) makeRequest(r *request) {
 		req.Header.Add("Content-Type", "text/plain")
 	case http.MethodDelete:
 		endpoint = fmt.Sprintf("%s/%s/%s", endpoint, r.Type, url.PathEscape(r.Value))
-		req, err = http.NewRequest(r.operation, endpoint, nil)
+		req, err = http.NewRequest(r.operation, endpoint, http.NoBody)
 	default:
-		err = fmt.Errorf("unknown operation")
+		err = errors.New("unknown operation")
 	}
 
 	if err != nil {

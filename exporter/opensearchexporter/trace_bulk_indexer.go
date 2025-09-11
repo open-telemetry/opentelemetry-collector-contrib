@@ -8,33 +8,31 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"strings"
 
-	"github.com/opensearch-project/opensearch-go/v2"
-	"github.com/opensearch-project/opensearch-go/v2/opensearchutil"
+	"github.com/opensearch-project/opensearch-go/v4/opensearchapi"
+	"github.com/opensearch-project/opensearch-go/v4/opensearchutil"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 type traceBulkIndexer struct {
-	dataset     string
-	namespace   string
+	index       string
 	bulkAction  string
 	model       mappingModel
 	errs        []error
 	bulkIndexer opensearchutil.BulkIndexer
 }
 
-func newTraceBulkIndexer(dataset string, namespace string, bulkAction string, model mappingModel) *traceBulkIndexer {
-	return &traceBulkIndexer{dataset, namespace, bulkAction, model, nil, nil}
+func newTraceBulkIndexer(index, bulkAction string, model mappingModel) *traceBulkIndexer {
+	return &traceBulkIndexer{index: index, bulkAction: bulkAction, model: model, errs: nil, bulkIndexer: nil}
 }
 
 func (tbi *traceBulkIndexer) joinedError() error {
 	return errors.Join(tbi.errs...)
 }
 
-func (tbi *traceBulkIndexer) start(client *opensearch.Client) error {
+func (tbi *traceBulkIndexer) start(client *opensearchapi.Client) error {
 	var startErr error
 	tbi.bulkIndexer, startErr = newOpenSearchBulkIndexer(client, tbi.onIndexerError)
 	return startErr
@@ -67,7 +65,7 @@ func (tbi *traceBulkIndexer) submit(ctx context.Context, td ptrace.Traces) {
 		if err != nil {
 			tbi.appendPermanentError(err)
 		} else {
-			ItemFailureHandler := func(_ context.Context, _ opensearchutil.BulkIndexerItem, resp opensearchutil.BulkIndexerResponseItem, itemErr error) {
+			ItemFailureHandler := func(_ context.Context, _ opensearchutil.BulkIndexerItem, resp opensearchapi.BulkRespItem, itemErr error) {
 				// Setup error handler. The handler handles the per item response status based on the
 				// selective ACKing in the bulk response.
 				tbi.processItemFailure(resp, itemErr, makeTrace(resource, resourceSchemaURL, scope, scopeSchemaURL, span))
@@ -98,7 +96,7 @@ func makeTrace(resource pcommon.Resource, resourceSchemaURL string, scope pcommo
 	return traces
 }
 
-func (tbi *traceBulkIndexer) processItemFailure(resp opensearchutil.BulkIndexerResponseItem, itemErr error, traces ptrace.Traces) {
+func (tbi *traceBulkIndexer) processItemFailure(resp opensearchapi.BulkRespItem, itemErr error, traces ptrace.Traces) {
 	switch {
 	case shouldRetryEvent(resp.Status):
 		// Recoverable OpenSearch error
@@ -112,23 +110,22 @@ func (tbi *traceBulkIndexer) processItemFailure(resp opensearchutil.BulkIndexerR
 	}
 }
 
-// responseAsError converts an opensearchutil.BulkIndexerResponseItem.Error into an error
-func responseAsError(item opensearchutil.BulkIndexerResponseItem) error {
+// responseAsError converts an opensearchapi.BulkRespItem.Error into an error
+func responseAsError(item opensearchapi.BulkRespItem) error {
 	errorJSON, _ := json.Marshal(item.Error)
 	return errors.New(string(errorJSON))
 }
 
 func attributesToMapString(attributes pcommon.Map) map[string]string {
 	m := make(map[string]string, attributes.Len())
-	attributes.Range(func(k string, v pcommon.Value) bool {
+	for k, v := range attributes.All() {
 		m[k] = v.AsString()
-		return true
-	})
+	}
 	return m
 }
 
 func shouldRetryEvent(status int) bool {
-	var retryOnStatus = []int{500, 502, 503, 504, 429}
+	retryOnStatus := []int{500, 502, 503, 504, 429}
 	for _, retryable := range retryOnStatus {
 		if status == retryable {
 			return true
@@ -139,15 +136,11 @@ func shouldRetryEvent(status int) bool {
 
 func (tbi *traceBulkIndexer) newBulkIndexerItem(document []byte) opensearchutil.BulkIndexerItem {
 	body := bytes.NewReader(document)
-	item := opensearchutil.BulkIndexerItem{Action: tbi.bulkAction, Index: tbi.getIndexName(), Body: body}
+	item := opensearchutil.BulkIndexerItem{Action: tbi.bulkAction, Index: tbi.index, Body: body}
 	return item
 }
 
-func (tbi *traceBulkIndexer) getIndexName() string {
-	return strings.Join([]string{"ss4o_traces", tbi.dataset, tbi.namespace}, "-")
-}
-
-func newOpenSearchBulkIndexer(client *opensearch.Client, onIndexerError func(context.Context, error)) (opensearchutil.BulkIndexer, error) {
+func newOpenSearchBulkIndexer(client *opensearchapi.Client, onIndexerError func(context.Context, error)) (opensearchutil.BulkIndexer, error) {
 	return opensearchutil.NewBulkIndexer(opensearchutil.BulkIndexerConfig{
 		NumWorkers: 1,
 		Client:     client,

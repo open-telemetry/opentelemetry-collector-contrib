@@ -4,12 +4,13 @@
 package elasticsearchreceiver
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver/internal/metadata"
 )
 
 func TestCreateMetrics(t *testing.T) {
@@ -23,8 +24,8 @@ func TestCreateMetrics(t *testing.T) {
 				t.Parallel()
 
 				_, err := createMetricsReceiver(
-					context.Background(),
-					receivertest.NewNopSettings(),
+					t.Context(),
+					receivertest.NewNopSettings(metadata.Type),
 					createDefaultConfig(),
 					consumertest.NewNop(),
 				)
@@ -38,8 +39,8 @@ func TestCreateMetrics(t *testing.T) {
 				t.Parallel()
 
 				_, err := createMetricsReceiver(
-					context.Background(),
-					receivertest.NewNopSettings(),
+					t.Context(),
+					receivertest.NewNopSettings(metadata.Type),
 					nil,
 					consumertest.NewNop(),
 				)

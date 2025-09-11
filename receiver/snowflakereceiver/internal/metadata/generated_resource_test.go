@@ -33,7 +33,7 @@ func TestResourceBuilder(t *testing.T) {
 			val, ok := res.Attributes().Get("snowflake.account.name")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "snowflake.account.name-val", val.Str())
+				assert.Equal(t, "snowflake.account.name-val", val.Str())
 			}
 		})
 	}

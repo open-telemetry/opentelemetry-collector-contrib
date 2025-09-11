@@ -170,7 +170,7 @@ func Test_IsList(t *testing.T) {
 					return tt.value, nil
 				},
 			})
-			result, err := exprFunc(context.Background(), nil)
+			result, err := exprFunc(t.Context(), nil)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
 		})
@@ -183,7 +183,7 @@ func Test_IsList_Error(t *testing.T) {
 			return nil, ottl.TypeError("")
 		},
 	})
-	result, err := exprFunc(context.Background(), nil)
+	result, err := exprFunc(t.Context(), nil)
 	assert.Equal(t, false, result)
 	assert.IsType(t, ottl.TypeError(""), err)
 }

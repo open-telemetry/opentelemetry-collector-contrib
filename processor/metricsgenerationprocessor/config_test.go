@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricsgenerationprocessor/internal/metadata"
 )
@@ -75,6 +76,14 @@ func TestLoadConfig(t *testing.T) {
 			id:           component.NewIDWithName(metadata.Type, "invalid_operation"),
 			errorMessage: fmt.Sprintf("%q must be in %q", operationFieldName, operationTypeKeys()),
 		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "matching_metric1"),
+			errorMessage: fmt.Sprintf("value of field %q may not match value of field %q", nameFieldName, metric1FieldName),
+		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "matching_metric2"),
+			errorMessage: fmt.Sprintf("value of field %q may not match value of field %q", nameFieldName, metric2FieldName),
+		},
 	}
 
 	for _, tt := range tests {
@@ -89,10 +98,10 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			if tt.expected == nil {
-				assert.EqualError(t, component.ValidateConfig(cfg), tt.errorMessage)
+				assert.EqualError(t, xconfmap.Validate(cfg), tt.errorMessage)
 				return
 			}
-			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.NoError(t, xconfmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

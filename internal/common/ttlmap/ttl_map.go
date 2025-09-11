@@ -11,8 +11,8 @@ import (
 // TTLMap is a map that evicts entries after the configured ttl has elapsed.
 type TTLMap struct {
 	md            *ttlMapData
-	sweepInterval int64
 	done          chan struct{}
+	sweepInterval int64
 }
 
 // New creates a TTLMap. The sweepIntervalSeconds arg indicates how often
@@ -21,7 +21,7 @@ type TTLMap struct {
 // TTLMap to begin periodic sweeps which check for expiration and evict entries
 // as needed.
 // done is the channel that will be used to signal to the timer to stop its work.
-func New(sweepIntervalSeconds int64, maxAgeSeconds int64, done chan struct{}) *TTLMap {
+func New(sweepIntervalSeconds, maxAgeSeconds int64, done chan struct{}) *TTLMap {
 	return &TTLMap{
 		sweepInterval: sweepIntervalSeconds,
 		md:            newTTLMapData(maxAgeSeconds),
@@ -66,8 +66,8 @@ func (m *TTLMap) Shutdown() {
 }
 
 type entry struct {
-	createTime int64
 	v          any
+	createTime int64
 }
 
 type ttlMapData struct {

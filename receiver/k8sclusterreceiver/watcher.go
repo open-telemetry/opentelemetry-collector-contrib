@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"strings"
 	"sync/atomic"
 	"time"
 
@@ -30,12 +31,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/cronjob"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/demonset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/daemonset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/deployment"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/gvk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/hpa"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/jobs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/namespace"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/node"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/pod"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/replicaset"
@@ -90,7 +92,7 @@ func (rw *resourceWatcher) initialize() error {
 	}
 	rw.client = client
 
-	if rw.config.Distribution == distributionOpenShift {
+	if rw.config.Distribution == distributionOpenShift && rw.config.Namespace == "" && len(rw.config.Namespaces) == 0 {
 		rw.osQuotaClient, err = rw.makeOpenShiftQuotaClient(rw.config.APIConfig)
 		if err != nil {
 			return fmt.Errorf("Failed to create OpenShift quota API client: %w", err)
@@ -106,7 +108,7 @@ func (rw *resourceWatcher) initialize() error {
 }
 
 func (rw *resourceWatcher) prepareSharedInformerFactory() error {
-	factory := informers.NewSharedInformerFactoryWithOptions(rw.client, rw.config.MetadataCollectionInterval)
+	factories := rw.getInformerFactories()
 
 	// Map of supported group version kinds by name of a kind.
 	// If none of the group versions are supported by k8s server for a specific kind,
@@ -137,7 +139,7 @@ func (rw *resourceWatcher) prepareSharedInformerFactory() error {
 			}
 			if supported {
 				anySupported = true
-				rw.setupInformerForKind(gvk, factory)
+				rw.setupInformerForKind(gvk, factories)
 			}
 		}
 		if !anySupported {
@@ -148,12 +150,50 @@ func (rw *resourceWatcher) prepareSharedInformerFactory() error {
 
 	if rw.osQuotaClient != nil {
 		quotaFactory := quotainformersv1.NewSharedInformerFactory(rw.osQuotaClient, 0)
-		rw.setupInformer(gvk.ClusterResourceQuota, quotaFactory.Quota().V1().ClusterResourceQuotas().Informer())
+		rw.setupInformer(gvk.ClusterResourceQuota, metadata.ClusterWideInformerKey, quotaFactory.Quota().V1().ClusterResourceQuotas().Informer())
 		rw.informerFactories = append(rw.informerFactories, quotaFactory)
 	}
-	rw.informerFactories = append(rw.informerFactories, factory)
+	for _, factory := range factories {
+		rw.informerFactories = append(rw.informerFactories, factory)
+	}
 
 	return nil
+}
+
+// getInformerFactories creates the informer factories which are used to set up the informers for the
+// resources that should be observed. The informer factories are returned as a map[string]informer.SharedInformerFactory,
+// where the map keys represent the namespace that should be observed. If the factory is created for the whole cluster,
+// the factory is stored under an empty string
+func (rw *resourceWatcher) getInformerFactories() map[string]informers.SharedInformerFactory {
+	factories := map[string]informers.SharedInformerFactory{}
+
+	switch {
+	case len(rw.config.Namespaces) > 0:
+		rw.logger.Info("Namespaces filter has been enabled. Nodes and namespaces will not be observed.", zap.String("namespaces", strings.Join(rw.config.Namespaces, ",")))
+		for _, ns := range rw.config.Namespaces {
+			factories[ns] = informers.NewSharedInformerFactoryWithOptions(
+				rw.client,
+				rw.config.MetadataCollectionInterval,
+				informers.WithNamespace(ns),
+			)
+		}
+	case rw.config.Namespace != "":
+		rw.logger.Info("Namespace filter has been enabled. Nodes and namespaces will not be observed.", zap.String("namespace", rw.config.Namespace))
+		factories[rw.config.Namespace] = informers.NewSharedInformerFactoryWithOptions(
+			rw.client,
+			rw.config.MetadataCollectionInterval,
+			informers.WithNamespace(rw.config.Namespace),
+		)
+	default:
+		// if no namespace is provided, the informer observes the whole cluster, and is stored under
+		// the key "<cluster-wide-informer-key>"
+		factories[metadata.ClusterWideInformerKey] = informers.NewSharedInformerFactoryWithOptions(
+			rw.client,
+			rw.config.MetadataCollectionInterval,
+		)
+	}
+
+	return factories
 }
 
 func (rw *resourceWatcher) isKindSupported(gvk schema.GroupVersionKind) (bool, error) {
@@ -174,34 +214,69 @@ func (rw *resourceWatcher) isKindSupported(gvk schema.GroupVersionKind) (bool, e
 	return false, nil
 }
 
-func (rw *resourceWatcher) setupInformerForKind(kind schema.GroupVersionKind, factory informers.SharedInformerFactory) {
+// setupInformerForKind creates the informers for the given GVKs, based on the provided informer factories.
+// The factories are provided as a map[string]informers.SharedInformerFactory where the map keys represent the namespace
+// of the informer factory. For cluster wide informers, an empty string is used as a key
+func (rw *resourceWatcher) setupInformerForKind(kind schema.GroupVersionKind, factories map[string]informers.SharedInformerFactory) {
 	switch kind {
 	case gvk.Pod:
-		rw.setupInformer(kind, factory.Core().V1().Pods().Informer())
+		for ns, factory := range factories {
+			rw.setupInformer(kind, ns, factory.Core().V1().Pods().Informer())
+		}
 	case gvk.Node:
-		rw.setupInformer(kind, factory.Core().V1().Nodes().Informer())
+		if len(rw.config.Namespaces) == 0 && rw.config.Namespace == "" && len(factories) >= 1 {
+			// if no namespace is provided, the cluster wide informer factory, which is stored under the key "" is used to create the informer
+			if factory, ok := factories[metadata.ClusterWideInformerKey]; ok {
+				rw.setupInformer(kind, metadata.ClusterWideInformerKey, factory.Core().V1().Nodes().Informer())
+			}
+		}
 	case gvk.Namespace:
-		rw.setupInformer(kind, factory.Core().V1().Namespaces().Informer())
+		if len(rw.config.Namespaces) == 0 && rw.config.Namespace == "" && len(factories) >= 1 {
+			// if no namespace is provided, the cluster wide informer factory, which is stored under the key "" is used to create the informer
+			if factory, ok := factories[metadata.ClusterWideInformerKey]; ok {
+				rw.setupInformer(kind, metadata.ClusterWideInformerKey, factory.Core().V1().Namespaces().Informer())
+			}
+		}
 	case gvk.ReplicationController:
-		rw.setupInformer(kind, factory.Core().V1().ReplicationControllers().Informer())
+		for ns, factory := range factories {
+			rw.setupInformer(kind, ns, factory.Core().V1().ReplicationControllers().Informer())
+		}
 	case gvk.ResourceQuota:
-		rw.setupInformer(kind, factory.Core().V1().ResourceQuotas().Informer())
+		for ns, factory := range factories {
+			rw.setupInformer(kind, ns, factory.Core().V1().ResourceQuotas().Informer())
+		}
 	case gvk.Service:
-		rw.setupInformer(kind, factory.Core().V1().Services().Informer())
+		for ns, factory := range factories {
+			rw.setupInformer(kind, ns, factory.Core().V1().Services().Informer())
+		}
 	case gvk.DaemonSet:
-		rw.setupInformer(kind, factory.Apps().V1().DaemonSets().Informer())
+		for ns, factory := range factories {
+			rw.setupInformer(kind, ns, factory.Apps().V1().DaemonSets().Informer())
+		}
 	case gvk.Deployment:
-		rw.setupInformer(kind, factory.Apps().V1().Deployments().Informer())
+		for ns, factory := range factories {
+			rw.setupInformer(kind, ns, factory.Apps().V1().Deployments().Informer())
+		}
 	case gvk.ReplicaSet:
-		rw.setupInformer(kind, factory.Apps().V1().ReplicaSets().Informer())
+		for ns, factory := range factories {
+			rw.setupInformer(kind, ns, factory.Apps().V1().ReplicaSets().Informer())
+		}
 	case gvk.StatefulSet:
-		rw.setupInformer(kind, factory.Apps().V1().StatefulSets().Informer())
+		for ns, factory := range factories {
+			rw.setupInformer(kind, ns, factory.Apps().V1().StatefulSets().Informer())
+		}
 	case gvk.Job:
-		rw.setupInformer(kind, factory.Batch().V1().Jobs().Informer())
+		for ns, factory := range factories {
+			rw.setupInformer(kind, ns, factory.Batch().V1().Jobs().Informer())
+		}
 	case gvk.CronJob:
-		rw.setupInformer(kind, factory.Batch().V1().CronJobs().Informer())
+		for ns, factory := range factories {
+			rw.setupInformer(kind, ns, factory.Batch().V1().CronJobs().Informer())
+		}
 	case gvk.HorizontalPodAutoscaler:
-		rw.setupInformer(kind, factory.Autoscaling().V2().HorizontalPodAutoscalers().Informer())
+		for ns, factory := range factories {
+			rw.setupInformer(kind, ns, factory.Autoscaling().V2().HorizontalPodAutoscalers().Informer())
+		}
 	default:
 		rw.logger.Error("Could not setup an informer for provided group version kind",
 			zap.String("group version kind", kind.String()))
@@ -228,7 +303,7 @@ func (rw *resourceWatcher) startWatchingResources(ctx context.Context, inf share
 }
 
 // setupInformer adds event handlers to informers and setups a metadataStore.
-func (rw *resourceWatcher) setupInformer(gvk schema.GroupVersionKind, informer cache.SharedIndexInformer) {
+func (rw *resourceWatcher) setupInformer(gvk schema.GroupVersionKind, namespace string, informer cache.SharedIndexInformer) {
 	err := informer.SetTransform(transformObject)
 	if err != nil {
 		rw.logger.Error("error setting informer transform function", zap.Error(err))
@@ -236,11 +311,12 @@ func (rw *resourceWatcher) setupInformer(gvk schema.GroupVersionKind, informer c
 	_, err = informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    rw.onAdd,
 		UpdateFunc: rw.onUpdate,
+		DeleteFunc: rw.onDelete,
 	})
 	if err != nil {
 		rw.logger.Error("error adding event handler to informer", zap.Error(err))
 	}
-	rw.metadataStore.Setup(gvk, informer.GetStore())
+	rw.metadataStore.Setup(gvk, namespace, informer.GetStore())
 }
 
 func (rw *resourceWatcher) onAdd(obj any) {
@@ -269,6 +345,17 @@ func (rw *resourceWatcher) onUpdate(oldObj, newObj any) {
 	rw.syncMetadataUpdate(rw.objMetadata(oldObj), rw.objMetadata(newObj))
 }
 
+func (rw *resourceWatcher) onDelete(oldObj any) {
+	rw.waitForInitialInformerSync()
+
+	// Sync metadata only if there's at least one destination for it to sent.
+	if !rw.hasDestination() {
+		return
+	}
+
+	rw.syncMetadataUpdate(rw.objMetadata(oldObj), map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{})
+}
+
 // objMetadata returns the metadata for the given object.
 func (rw *resourceWatcher) objMetadata(obj any) map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata {
 	switch o := obj.(type) {
@@ -283,7 +370,7 @@ func (rw *resourceWatcher) objMetadata(obj any) map[experimentalmetricmetadata.R
 	case *appsv1.ReplicaSet:
 		return replicaset.GetMetadata(o)
 	case *appsv1.DaemonSet:
-		return demonset.GetMetadata(o)
+		return daemonset.GetMetadata(o)
 	case *appsv1.StatefulSet:
 		return statefulset.GetMetadata(o)
 	case *batchv1.Job:
@@ -292,6 +379,8 @@ func (rw *resourceWatcher) objMetadata(obj any) map[experimentalmetricmetadata.R
 		return cronjob.GetMetadata(o)
 	case *autoscalingv2.HorizontalPodAutoscaler:
 		return hpa.GetMetadata(o)
+	case *corev1.Namespace:
+		return namespace.GetMetadata(o)
 	}
 	return nil
 }

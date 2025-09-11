@@ -5,7 +5,6 @@ package checkpoint
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"testing"
 
@@ -19,20 +18,20 @@ import (
 )
 
 func TestLoadNothing(t *testing.T) {
-	reloaded, err := Load(context.Background(), testutil.NewUnscopedMockPersister())
+	reloaded, err := Load(t.Context(), testutil.NewUnscopedMockPersister())
 	assert.NoError(t, err)
 	assert.Equal(t, []*reader.Metadata{}, reloaded)
 }
 
 func TestSaveErr(t *testing.T) {
-	assert.Error(t, Save(context.Background(),
+	assert.Error(t, Save(t.Context(),
 		testutil.NewErrPersister(map[string]error{
 			"knownFiles": assert.AnError,
 		}), []*reader.Metadata{}))
 }
 
 func TestLoadErr(t *testing.T) {
-	_, err := Load(context.Background(),
+	_, err := Load(t.Context(),
 		testutil.NewErrPersister(map[string]error{
 			"knownFiles": assert.AnError,
 		}))
@@ -104,8 +103,8 @@ func TestNopEncodingDifferentLogSizes(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			p := testutil.NewUnscopedMockPersister()
-			assert.NoError(t, Save(context.Background(), p, tc.rmds))
-			reloaded, err := Load(context.Background(), p)
+			assert.NoError(t, Save(t.Context(), p, tc.rmds))
+			reloaded, err := Load(t.Context(), p)
 			assert.NoError(t, err)
 			assert.Equal(t, tc.rmds, reloaded)
 		})
@@ -130,7 +129,7 @@ func TestMigrateHeaderAttributes(t *testing.T) {
 			},
 		},
 	})
-	reloaded, err := Load(context.Background(), p)
+	reloaded, err := Load(t.Context(), p)
 	assert.NoError(t, err)
 	assert.Equal(t, []*reader.Metadata{
 		{
@@ -141,7 +140,6 @@ func TestMigrateHeaderAttributes(t *testing.T) {
 			},
 		},
 	}, reloaded)
-
 }
 
 func saveDeprecated(t *testing.T, persister operator.Persister, dep *deprecatedMetadata) {
@@ -149,5 +147,5 @@ func saveDeprecated(t *testing.T, persister operator.Persister, dep *deprecatedM
 	enc := json.NewEncoder(&buf)
 	require.NoError(t, enc.Encode(1))
 	require.NoError(t, enc.Encode(dep))
-	require.NoError(t, persister.Set(context.Background(), knownFilesKey, buf.Bytes()))
+	require.NoError(t, persister.Set(t.Context(), knownFilesKey, buf.Bytes()))
 }

@@ -12,6 +12,7 @@ import (
 	"github.com/spf13/cast"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pipeline"
 	rcvr "go.opentelemetry.io/collector/receiver"
@@ -116,13 +117,13 @@ func (run *receiverRunner) start(
 }
 
 // shutdown the given receiver.
-func (run *receiverRunner) shutdown(rcvr component.Component) error {
+func (*receiverRunner) shutdown(rcvr component.Component) error {
 	return rcvr.Shutdown(context.Background())
 }
 
 // loadRuntimeReceiverConfig loads the given receiverTemplate merged with config values
 // that may have been discovered at runtime.
-func (run *receiverRunner) loadRuntimeReceiverConfig(
+func (*receiverRunner) loadRuntimeReceiverConfig(
 	factory rcvr.Factory,
 	receiver receiverConfig,
 	discoveredConfig userConfigMap,
@@ -137,7 +138,7 @@ func (run *receiverRunner) loadRuntimeReceiverConfig(
 	if err := mergedConfig.Unmarshal(receiverCfg); err != nil {
 		return nil, "", fmt.Errorf("failed to load %q template config: %w", receiver.id.String(), err)
 	}
-	if err := component.ValidateConfig(receiverCfg); err != nil {
+	if err := xconfmap.Validate(receiverCfg); err != nil {
 		return nil, "", fmt.Errorf("invalid runtime receiver config: receivers::%s: %w", receiver.id, err)
 	}
 	return receiverCfg, targetEndpoint, nil
@@ -157,11 +158,8 @@ func mergeTemplatedAndDiscoveredConfigs(factory rcvr.Factory, templated, discove
 			endpointConfigKey: targetEndpoint,
 		})
 		if err := endpointConfig.Unmarshal(factory.CreateDefaultConfig()); err != nil {
-			// rather than attach to error content that can change over time,
-			// confirm the error only arises w/ ErrorUnused mapstructure setting ("invalid keys")
-			if err = endpointConfig.Unmarshal(factory.CreateDefaultConfig(), confmap.WithIgnoreUnused()); err == nil {
-				delete(discovered, endpointConfigKey)
-			}
+			// we assume that the error is due to unused keys in the config, so we need to remove endpoint key
+			delete(discovered, endpointConfigKey)
 		}
 	}
 	discoveredConfig := confmap.NewFromStringMap(discovered)

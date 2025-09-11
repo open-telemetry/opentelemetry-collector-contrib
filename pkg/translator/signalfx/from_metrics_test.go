@@ -390,7 +390,7 @@ func Test_FromMetrics(t *testing.T) {
 			// of those is not deterministic.
 			sortDimensions(tt.wantSfxDataPoints)
 			sortDimensions(gotSfxDataPoints)
-			assert.EqualValues(t, tt.wantSfxDataPoints, gotSfxDataPoints)
+			assert.Equal(t, tt.wantSfxDataPoints, gotSfxDataPoints)
 		})
 	}
 
@@ -479,7 +479,7 @@ func Test_FromMetrics(t *testing.T) {
 			// of those is not deterministic.
 			sortDimensions(tt.wantSfxDataPoints)
 			sortDimensions(gotSfxDataPoints)
-			assert.EqualValues(t, tt.wantSfxDataPoints, gotSfxDataPoints)
+			assert.Equal(t, tt.wantSfxDataPoints, gotSfxDataPoints)
 		})
 	}
 
@@ -516,7 +516,7 @@ func Test_FromMetrics(t *testing.T) {
 			// of those is not deterministic.
 			sortDimensions(tt.wantSfxDataPoints)
 			sortDimensions(gotSfxDataPoints)
-			assert.EqualValues(t, tt.wantSfxDataPoints, gotSfxDataPoints)
+			assert.Equal(t, tt.wantSfxDataPoints, gotSfxDataPoints)
 		})
 	}
 }

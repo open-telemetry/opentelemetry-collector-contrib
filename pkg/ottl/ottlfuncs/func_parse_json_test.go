@@ -24,7 +24,7 @@ func Test_ParseJSON(t *testing.T) {
 		{
 			name: "handle string",
 			target: ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return `{"test":"string value"}`, nil
 				},
 			},
@@ -35,7 +35,7 @@ func Test_ParseJSON(t *testing.T) {
 		{
 			name: "handle bool",
 			target: ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return `{"test":true}`, nil
 				},
 			},
@@ -46,7 +46,7 @@ func Test_ParseJSON(t *testing.T) {
 		{
 			name: "handle int",
 			target: ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return `{"test":1}`, nil
 				},
 			},
@@ -57,7 +57,7 @@ func Test_ParseJSON(t *testing.T) {
 		{
 			name: "handle float",
 			target: ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return `{"test":1.1}`, nil
 				},
 			},
@@ -68,7 +68,7 @@ func Test_ParseJSON(t *testing.T) {
 		{
 			name: "handle nil",
 			target: ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return `{"test":null}`, nil
 				},
 			},
@@ -79,7 +79,7 @@ func Test_ParseJSON(t *testing.T) {
 		{
 			name: "handle array",
 			target: ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return `{"test":["string","value"]}`, nil
 				},
 			},
@@ -92,7 +92,7 @@ func Test_ParseJSON(t *testing.T) {
 		{
 			name: "handle top level array",
 			target: ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return `["string","value"]`, nil
 				},
 			},
@@ -104,12 +104,11 @@ func Test_ParseJSON(t *testing.T) {
 		{
 			name: "handle top level array of objects",
 			target: ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return `[{"test":"value"},{"test":"value"}]`, nil
 				},
 			},
 			wantSlice: func(expectedSlice pcommon.Slice) {
-
 				expectedSlice.AppendEmpty().SetEmptyMap().PutStr("test", "value")
 				expectedSlice.AppendEmpty().SetEmptyMap().PutStr("test", "value")
 			},
@@ -117,7 +116,7 @@ func Test_ParseJSON(t *testing.T) {
 		{
 			name: "handle nested object",
 			target: ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return `{"test":{"nested":"true"}}`, nil
 				},
 			},
@@ -129,7 +128,7 @@ func Test_ParseJSON(t *testing.T) {
 		{
 			name: "updates existing",
 			target: ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return `{"existing":"pass"}`, nil
 				},
 			},
@@ -140,7 +139,7 @@ func Test_ParseJSON(t *testing.T) {
 		{
 			name: "complex",
 			target: ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return `{"test1":{"nested":"true"},"test2":"string","test3":1,"test4":1.1,"test5":[[1], [2, 3],[]],"test6":null}`, nil
 				},
 			},
@@ -164,7 +163,7 @@ func Test_ParseJSON(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			exprFunc := parseJSON(tt.target)
-			result, err := exprFunc(context.Background(), nil)
+			result, err := exprFunc(t.Context(), nil)
 			assert.NoError(t, err)
 
 			if tt.wantMap != nil {
@@ -173,12 +172,11 @@ func Test_ParseJSON(t *testing.T) {
 				expected := pcommon.NewMap()
 				tt.wantMap(expected)
 				assert.Equal(t, expected.Len(), resultMap.Len())
-				expected.Range(func(k string, _ pcommon.Value) bool {
+				for k := range expected.All() {
 					ev, _ := expected.Get(k)
 					av, _ := resultMap.Get(k)
 					assert.Equal(t, ev, av)
-					return true
-				})
+				}
 			} else if tt.wantSlice != nil {
 				resultSlice, ok := result.(pcommon.Slice)
 				require.True(t, ok)
@@ -186,19 +184,18 @@ func Test_ParseJSON(t *testing.T) {
 				tt.wantSlice(expected)
 				assert.Equal(t, expected, resultSlice)
 			}
-
 		})
 	}
 }
 
 func Test_ParseJSON_Error(t *testing.T) {
 	target := &ottl.StandardStringGetter[any]{
-		Getter: func(_ context.Context, _ any) (any, error) {
+		Getter: func(context.Context, any) (any, error) {
 			return 1, nil
 		},
 	}
 	exprFunc := parseJSON[any](target)
-	_, err := exprFunc(context.Background(), nil)
+	_, err := exprFunc(t.Context(), nil)
 	assert.Error(t, err)
 }
 
@@ -249,12 +246,12 @@ const benchData = `{
 }`
 
 func BenchmarkParseJSON(b *testing.B) {
-	ctx := context.Background()
+	ctx := b.Context()
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		_, err := parseJSON(ottl.StandardStringGetter[any]{
-			Getter: func(_ context.Context, _ any) (any, error) {
+			Getter: func(context.Context, any) (any, error) {
 				return benchData, nil
 			},
 		})(ctx, nil)

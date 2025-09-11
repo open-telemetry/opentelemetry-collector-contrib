@@ -4,10 +4,13 @@
 package supervisor
 
 import (
-	"bytes"
 	"context"
+	"crypto/sha256"
+	"errors"
 	"fmt"
+	"io"
 	"net"
+	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -18,29 +21,52 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/knadh/koanf/parsers/yaml"
+	"github.com/knadh/koanf/providers/rawbytes"
+	"github.com/knadh/koanf/v2"
 	"github.com/open-telemetry/opamp-go/client"
 	"github.com/open-telemetry/opamp-go/client/types"
 	"github.com/open-telemetry/opamp-go/protobufs"
 	serverTypes "github.com/open-telemetry/opamp-go/server/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/trace/noop"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/telemetry"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
-func setupSupervisorConfig(t *testing.T) config.Supervisor {
-	t.Helper()
+const configTemplate = `
+server:
+  endpoint: ws://localhost/v1/opamp
+  tls:
+    insecure: true
 
-	tmpDir, err := os.MkdirTemp(os.TempDir(), "*")
-	require.NoError(t, err)
+capabilities:
+  reports_effective_config: true
+  reports_own_metrics: true
+  reports_own_logs: true
+  reports_own_traces: true
+  reports_health: true
+  accepts_remote_config: true
+  reports_remote_config: true
+  accepts_restart_command: true
 
-	executablePath := filepath.Join(tmpDir, "binary")
-	err = os.WriteFile(executablePath, []byte{}, 0o600)
-	require.NoError(t, err)
+storage:
+  directory: %s
 
-	configuration := `
+agent:
+  executable: %s
+`
+
+const configTemplateWithTelemetrySettings = `
 server:
   endpoint: ws://localhost/v1/opamp
   tls:
@@ -59,7 +85,40 @@ storage:
 
 agent:
   executable: %s
+
+telemetry:
+  traces:
+    processors:
+      - batch:
+          exporter:
+            otlp:
+              protocol: http/protobuf
+              endpoint: https://backend:4317
+  metrics:
+    readers:
+      - periodic:
+          exporter:
+            otlp:
+              protocol: http/protobuf
+              endpoint: http://localhost:14317
+  logs:
+    level: info
+    processors:
+      - batch:
+          exporter:
+            otlp:
+              protocol: http/protobuf
+              endpoint: https://backend:4317
 `
+
+func setupSupervisorConfig(t *testing.T, configuration string) config.Supervisor {
+	t.Helper()
+
+	tmpDir := t.TempDir()
+
+	executablePath := filepath.Join(tmpDir, "binary")
+	err := os.WriteFile(executablePath, []byte{}, 0o600)
+	require.NoError(t, err)
 	configuration = fmt.Sprintf(configuration, filepath.Join(tmpDir, "storage"), executablePath)
 
 	cfgPath := filepath.Join(tmpDir, "config.yaml")
@@ -77,57 +136,54 @@ agent:
 	return cfg
 }
 
+func newNopTelemetrySettings() telemetrySettings {
+	return telemetrySettings{
+		TelemetrySettings: component.TelemetrySettings{
+			Logger:         zap.NewNop(),
+			TracerProvider: noop.NewTracerProvider(),
+		},
+	}
+}
+
 func Test_NewSupervisor(t *testing.T) {
-	cfg := setupSupervisorConfig(t)
-	supervisor, err := NewSupervisor(zap.L(), cfg)
+	cfg := setupSupervisorConfig(t, configTemplate)
+	supervisor, err := NewSupervisor(t.Context(), zap.L(), cfg)
 	require.NoError(t, err)
 	require.NotNil(t, supervisor)
+}
+
+func Test_NewSupervisorWithTelemetrySettings(t *testing.T) {
+	cfg := setupSupervisorConfig(t, configTemplateWithTelemetrySettings)
+	supervisor, err := NewSupervisor(t.Context(), zap.L(), cfg)
+	require.NoError(t, err)
+	require.NotNil(t, supervisor)
+	require.NotEmpty(t, supervisor.telemetrySettings)
+	require.NotNil(t, supervisor.telemetrySettings.MeterProvider)
+	require.NotNil(t, supervisor.telemetrySettings.TracerProvider)
+	require.NotNil(t, supervisor.telemetrySettings.Logger)
+	require.NotNil(t, supervisor.telemetrySettings.loggerProvider)
+
+	supervisor.runCtx, supervisor.runCtxCancel = context.WithCancel(t.Context())
+
+	supervisor.Shutdown()
 }
 
 func Test_NewSupervisorFailedStorageCreation(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("Skipping test on Windows because chmod doesn't affect permissions on Windows, so this test won't work.")
 	}
-	cfg := setupSupervisorConfig(t)
+	cfg := setupSupervisorConfig(t, configTemplate)
 
 	dir := filepath.Dir(cfg.Storage.Directory)
 	require.NoError(t, os.Chmod(dir, 0o500))
 
-	supervisor, err := NewSupervisor(zap.L(), cfg)
+	supervisor, err := NewSupervisor(t.Context(), zap.L(), cfg)
 	require.Error(t, err)
 	require.ErrorContains(t, err, "error creating storage dir")
 	require.Nil(t, supervisor)
 }
 
 func Test_composeEffectiveConfig(t *testing.T) {
-	acceptsRemoteConfig := true
-	s := Supervisor{
-		logger:                       zap.NewNop(),
-		persistentState:              &persistentState{},
-		config:                       config.Supervisor{Capabilities: config.Capabilities{AcceptsRemoteConfig: acceptsRemoteConfig}},
-		pidProvider:                  staticPIDProvider(1234),
-		hasNewConfig:                 make(chan struct{}, 1),
-		agentConfigOwnMetricsSection: &atomic.Value{},
-		cfgState:                     &atomic.Value{},
-		agentHealthCheckEndpoint:     "localhost:8000",
-	}
-
-	agentDesc := &atomic.Value{}
-	agentDesc.Store(&protobufs.AgentDescription{
-		IdentifyingAttributes: []*protobufs.KeyValue{
-			{
-				Key: "service.name",
-				Value: &protobufs.AnyValue{
-					Value: &protobufs.AnyValue_StringValue{
-						StringValue: "otelcol",
-					},
-				},
-			},
-		},
-	})
-
-	s.agentDescription = agentDesc
-
 	fileLogConfig := `
 receivers:
   filelog:
@@ -144,26 +200,122 @@ service:
       receivers: [filelog]
       exporters: [file]`
 
-	require.NoError(t, s.createTemplates())
-	require.NoError(t, s.loadAndWriteInitialMergedConfig())
+	// load expected effective config bytes once
+	effectiveConfig, err := os.ReadFile("../testdata/collector/effective_config.yaml")
+	require.NoError(t, err)
 
-	configChanged, err := s.composeMergedConfig(&protobufs.AgentRemoteConfig{
-		Config: &protobufs.AgentConfigMap{
-			ConfigMap: map[string]*protobufs.AgentConfigFile{
-				"": {
-					Body: []byte(fileLogConfig),
+	mergedLocalConfig, err := os.ReadFile("./testdata/merged_local_config.yaml")
+	require.NoError(t, err)
+
+	tests := []struct {
+		name                string
+		configFiles         []string
+		acceptsRemoteConfig bool
+		remoteConfig        *protobufs.AgentRemoteConfig
+		wantErr             bool
+		wantChanged         bool
+		wantConfig          []byte
+	}{
+		{
+			name:                "can accept remote config, receives one",
+			configFiles:         []string{"testdata/local_config1.yaml", "testdata/local_config2.yaml"},
+			acceptsRemoteConfig: true,
+			remoteConfig: &protobufs.AgentRemoteConfig{
+				Config: &protobufs.AgentConfigMap{
+					ConfigMap: map[string]*protobufs.AgentConfigFile{
+						"": {Body: []byte(fileLogConfig)},
+					},
 				},
 			},
+			wantErr:     false,
+			wantChanged: true,
+			wantConfig:  effectiveConfig,
 		},
-	})
-	require.NoError(t, err)
+		{
+			name:                "can accept remote config, receives none",
+			configFiles:         []string{"testdata/local_config1.yaml", "testdata/local_config2.yaml"},
+			acceptsRemoteConfig: true,
+			remoteConfig:        nil,
+			wantErr:             false,
+			wantChanged:         false,
+			wantConfig:          mergedLocalConfig,
+		},
+		{
+			name:                "cannot accept remote config, receives one",
+			configFiles:         []string{"../testdata/collector/effective_config_without_extensions.yaml"},
+			acceptsRemoteConfig: false,
+			remoteConfig: &protobufs.AgentRemoteConfig{
+				Config: &protobufs.AgentConfigMap{
+					ConfigMap: map[string]*protobufs.AgentConfigFile{
+						"": {Body: []byte(fileLogConfig)},
+					},
+				},
+			},
+			wantErr:     false,
+			wantChanged: false,
+			wantConfig:  effectiveConfig,
+		},
+		{
+			name:                "cannot accept remote config, receives none",
+			configFiles:         []string{"../testdata/collector/effective_config_without_extensions.yaml"},
+			acceptsRemoteConfig: false,
+			remoteConfig:        nil,
+			wantErr:             false,
+			wantChanged:         false,
+			wantConfig:          effectiveConfig,
+		},
+	}
 
-	expectedConfig, err := os.ReadFile("../testdata/collector/effective_config.yaml")
-	require.NoError(t, err)
-	expectedConfig = bytes.ReplaceAll(expectedConfig, []byte("\r\n"), []byte("\n"))
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := Supervisor{
+				telemetrySettings: newNopTelemetrySettings(),
+				persistentState:   &persistentState{},
+				config: config.Supervisor{
+					Capabilities: config.Capabilities{AcceptsRemoteConfig: tt.acceptsRemoteConfig},
+					Agent:        config.Agent{ConfigFiles: tt.configFiles},
+					Storage:      config.Storage{Directory: t.TempDir()},
+				},
+				pidProvider:                    staticPIDProvider(1234),
+				hasNewConfig:                   make(chan struct{}, 1),
+				agentConfigOwnTelemetrySection: &atomic.Value{},
+				cfgState:                       &atomic.Value{},
+			}
+			agentDesc := &atomic.Value{}
+			agentDesc.Store(&protobufs.AgentDescription{
+				IdentifyingAttributes: []*protobufs.KeyValue{
+					{
+						Key: "service.name",
+						Value: &protobufs.AnyValue{
+							Value: &protobufs.AnyValue_StringValue{StringValue: "otelcol"},
+						},
+					},
+				},
+			})
+			s.agentDescription = agentDesc
 
-	require.True(t, configChanged)
-	require.Equal(t, string(expectedConfig), s.cfgState.Load().(*configState).mergedConfig)
+			require.NoError(t, s.createTemplates())
+			require.NoError(t, s.loadAndWriteInitialMergedConfig())
+
+			changed, err := s.composeMergedConfig(tt.remoteConfig)
+			if tt.wantErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, tt.wantChanged, changed)
+			got := s.cfgState.Load().(*configState).mergedConfig
+
+			k := koanf.New("::")
+			err = k.Load(rawbytes.Provider(tt.wantConfig), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc))
+			require.NoError(t, err)
+
+			gotParsed, err := k.Marshal(yaml.Parser())
+
+			require.NoError(t, err)
+			require.Equal(t, string(gotParsed), got)
+		})
+	}
 }
 
 func Test_onMessage(t *testing.T) {
@@ -173,21 +325,20 @@ func Test_onMessage(t *testing.T) {
 		initialID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
 		newID := uuid.MustParse("018fef3f-14a8-73ef-b63e-3b96b146ea38")
 		s := Supervisor{
-			logger:                       zap.NewNop(),
-			pidProvider:                  defaultPIDProvider{},
-			config:                       config.Supervisor{},
-			hasNewConfig:                 make(chan struct{}, 1),
-			persistentState:              &persistentState{InstanceID: initialID},
-			agentDescription:             agentDesc,
-			agentConfigOwnMetricsSection: &atomic.Value{},
-			cfgState:                     &atomic.Value{},
-			effectiveConfig:              &atomic.Value{},
-			agentHealthCheckEndpoint:     "localhost:8000",
-			opampClient:                  client.NewHTTP(newLoggerFromZap(zap.NewNop())),
+			telemetrySettings:              newNopTelemetrySettings(),
+			pidProvider:                    defaultPIDProvider{},
+			config:                         config.Supervisor{},
+			hasNewConfig:                   make(chan struct{}, 1),
+			persistentState:                &persistentState{InstanceID: initialID},
+			agentDescription:               agentDesc,
+			agentConfigOwnTelemetrySection: &atomic.Value{},
+			cfgState:                       &atomic.Value{},
+			effectiveConfig:                &atomic.Value{},
+			opampClient:                    client.NewHTTP(newLoggerFromZap(zap.NewNop(), "opamp-client")),
 		}
 		require.NoError(t, s.createTemplates())
 
-		s.onMessage(context.Background(), &types.MessageData{
+		s.onMessage(t.Context(), &types.MessageData{
 			AgentIdentification: &protobufs.AgentIdentification{
 				NewInstanceUid: newID[:],
 			},
@@ -202,20 +353,19 @@ func Test_onMessage(t *testing.T) {
 
 		testUUID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
 		s := Supervisor{
-			logger:                       zap.NewNop(),
-			pidProvider:                  defaultPIDProvider{},
-			config:                       config.Supervisor{},
-			hasNewConfig:                 make(chan struct{}, 1),
-			persistentState:              &persistentState{InstanceID: testUUID},
-			agentDescription:             agentDesc,
-			agentConfigOwnMetricsSection: &atomic.Value{},
-			cfgState:                     &atomic.Value{},
-			effectiveConfig:              &atomic.Value{},
-			agentHealthCheckEndpoint:     "localhost:8000",
+			telemetrySettings:              newNopTelemetrySettings(),
+			pidProvider:                    defaultPIDProvider{},
+			config:                         config.Supervisor{},
+			hasNewConfig:                   make(chan struct{}, 1),
+			persistentState:                &persistentState{InstanceID: testUUID},
+			agentDescription:               agentDesc,
+			agentConfigOwnTelemetrySection: &atomic.Value{},
+			cfgState:                       &atomic.Value{},
+			effectiveConfig:                &atomic.Value{},
 		}
 		require.NoError(t, s.createTemplates())
 
-		s.onMessage(context.Background(), &types.MessageData{
+		s.onMessage(t.Context(), &types.MessageData{
 			AgentIdentification: &protobufs.AgentIdentification{
 				NewInstanceUid: []byte("invalid-value"),
 			},
@@ -249,21 +399,20 @@ func Test_onMessage(t *testing.T) {
 		agentConnAtomic.Store(agentConn)
 
 		s := Supervisor{
-			logger:                       zap.NewNop(),
-			pidProvider:                  defaultPIDProvider{},
-			config:                       config.Supervisor{},
-			hasNewConfig:                 make(chan struct{}, 1),
-			persistentState:              &persistentState{InstanceID: testUUID},
-			agentConfigOwnMetricsSection: &atomic.Value{},
-			cfgState:                     &atomic.Value{},
-			effectiveConfig:              &atomic.Value{},
-			agentConn:                    agentConnAtomic,
-			agentHealthCheckEndpoint:     "localhost:8000",
-			customMessageToServer:        make(chan *protobufs.CustomMessage, 10),
-			doneChan:                     make(chan struct{}),
+			telemetrySettings:              newNopTelemetrySettings(),
+			pidProvider:                    defaultPIDProvider{},
+			config:                         config.Supervisor{},
+			hasNewConfig:                   make(chan struct{}, 1),
+			persistentState:                &persistentState{InstanceID: testUUID},
+			agentConfigOwnTelemetrySection: &atomic.Value{},
+			cfgState:                       &atomic.Value{},
+			effectiveConfig:                &atomic.Value{},
+			agentConn:                      agentConnAtomic,
+			customMessageToServer:          make(chan *protobufs.CustomMessage, 10),
+			doneChan:                       make(chan struct{}),
 		}
 
-		s.onMessage(context.Background(), &types.MessageData{
+		s.onMessage(t.Context(), &types.MessageData{
 			CustomMessage: customMessage,
 		})
 
@@ -292,20 +441,19 @@ func Test_onMessage(t *testing.T) {
 		agentConnAtomic.Store(agentConn)
 
 		s := Supervisor{
-			logger:                       zap.NewNop(),
-			pidProvider:                  defaultPIDProvider{},
-			config:                       config.Supervisor{},
-			hasNewConfig:                 make(chan struct{}, 1),
-			persistentState:              &persistentState{InstanceID: testUUID},
-			agentConfigOwnMetricsSection: &atomic.Value{},
-			effectiveConfig:              &atomic.Value{},
-			agentConn:                    agentConnAtomic,
-			agentHealthCheckEndpoint:     "localhost:8000",
-			customMessageToServer:        make(chan *protobufs.CustomMessage, 10),
-			doneChan:                     make(chan struct{}),
+			telemetrySettings:              newNopTelemetrySettings(),
+			pidProvider:                    defaultPIDProvider{},
+			config:                         config.Supervisor{},
+			hasNewConfig:                   make(chan struct{}, 1),
+			persistentState:                &persistentState{InstanceID: testUUID},
+			agentConfigOwnTelemetrySection: &atomic.Value{},
+			effectiveConfig:                &atomic.Value{},
+			agentConn:                      agentConnAtomic,
+			customMessageToServer:          make(chan *protobufs.CustomMessage, 10),
+			doneChan:                       make(chan struct{}),
 		}
 
-		s.onMessage(context.Background(), &types.MessageData{
+		s.onMessage(t.Context(), &types.MessageData{
 			CustomCapabilities: customCapabilities,
 		})
 
@@ -329,21 +477,24 @@ func Test_onMessage(t *testing.T) {
 		initialID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
 		newID := uuid.MustParse("018fef3f-14a8-73ef-b63e-3b96b146ea38")
 		s := Supervisor{
-			logger:                       zap.NewNop(),
-			pidProvider:                  defaultPIDProvider{},
-			config:                       config.Supervisor{},
-			hasNewConfig:                 make(chan struct{}, 1),
-			persistentState:              &persistentState{InstanceID: initialID},
-			agentDescription:             agentDesc,
-			agentConfigOwnMetricsSection: &atomic.Value{},
-			cfgState:                     &atomic.Value{},
-			effectiveConfig:              &atomic.Value{},
-			agentHealthCheckEndpoint:     "localhost:8000",
-			opampClient:                  client.NewHTTP(newLoggerFromZap(zap.NewNop())),
+			telemetrySettings: newNopTelemetrySettings(),
+			pidProvider:       defaultPIDProvider{},
+			config: config.Supervisor{
+				Storage: config.Storage{
+					Directory: t.TempDir(),
+				},
+			},
+			hasNewConfig:                   make(chan struct{}, 1),
+			persistentState:                &persistentState{InstanceID: initialID},
+			agentDescription:               agentDesc,
+			agentConfigOwnTelemetrySection: &atomic.Value{},
+			cfgState:                       &atomic.Value{},
+			effectiveConfig:                &atomic.Value{},
+			opampClient:                    client.NewHTTP(newLoggerFromZap(zap.NewNop(), "opamp-client")),
 		}
 		require.NoError(t, s.createTemplates())
 
-		s.onMessage(context.Background(), &types.MessageData{
+		s.onMessage(t.Context(), &types.MessageData{
 			AgentIdentification: &protobufs.AgentIdentification{
 				NewInstanceUid: newID[:],
 			},
@@ -357,26 +508,30 @@ func Test_onMessage(t *testing.T) {
 				},
 			},
 			OwnMetricsConnSettings: &protobufs.TelemetryConnectionSettings{
-				DestinationEndpoint: "http://localhost:4318",
+				DestinationEndpoint: "http://127.0.0.1:4318",
+				Headers: &protobufs.Headers{
+					Headers: []*protobufs.Header{
+						{Key: "testkey", Value: "testval"},
+						{Key: "testkey2", Value: "testval2"},
+					},
+				},
 			},
 		})
 
 		require.Equal(t, newID, s.persistentState.InstanceID)
 		t.Log(s.cfgState.Load())
 		mergedCfg := s.cfgState.Load().(*configState).mergedConfig
-		require.Contains(t, mergedCfg, "prometheus/own_metrics")
 		require.Contains(t, mergedCfg, newID.String())
 		require.Contains(t, mergedCfg, "runtime.type: test")
 	})
 	t.Run("RemoteConfig - Remote Config message is processed and merged into local config", func(t *testing.T) {
-
 		const testConfigMessage = `receivers:
   debug:`
 
 		const expectedMergedConfig = `extensions:
-    health_check:
-        endpoint: localhost:8000
     opamp:
+        capabilities:
+            reports_available_components: false
         instance_uid: 018fee23-4a51-7303-a441-73faed7d9deb
         ppid: 88888
         ppid_poll_interval: 5s
@@ -389,11 +544,14 @@ receivers:
     debug: null
 service:
     extensions:
-        - health_check
         - opamp
     telemetry:
         logs:
             encoding: json
+            error_output_paths:
+                - stderr
+            output_paths:
+                - stdout
         resource: null
 `
 
@@ -417,13 +575,13 @@ service:
 					t,
 					&protobufs.RemoteConfigStatus{
 						LastRemoteConfigHash: remoteConfig.ConfigHash,
-						Status:               protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED,
+						Status:               protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLYING,
 					},
 					rcs,
 				)
 				return nil
 			},
-			updateEffectiveConfigFunc: func(_ context.Context) error {
+			updateEffectiveConfigFunc: func(context.Context) error {
 				return nil
 			},
 		}
@@ -431,23 +589,23 @@ service:
 		configStorageDir := t.TempDir()
 
 		s := Supervisor{
-			logger:      zap.NewNop(),
-			pidProvider: staticPIDProvider(88888),
+			telemetrySettings: newNopTelemetrySettings(),
+			pidProvider:       staticPIDProvider(88888),
 			config: config.Supervisor{
+				Capabilities: config.Capabilities{AcceptsRemoteConfig: true},
 				Storage: config.Storage{
 					Directory: configStorageDir,
 				},
 			},
-			hasNewConfig:                 make(chan struct{}, 1),
-			persistentState:              &persistentState{InstanceID: testUUID},
-			agentConfigOwnMetricsSection: &atomic.Value{},
-			effectiveConfig:              &atomic.Value{},
-			opampClient:                  mc,
-			agentDescription:             &atomic.Value{},
-			cfgState:                     &atomic.Value{},
-			agentHealthCheckEndpoint:     "localhost:8000",
-			customMessageToServer:        make(chan *protobufs.CustomMessage, 10),
-			doneChan:                     make(chan struct{}),
+			hasNewConfig:                   make(chan struct{}, 1),
+			persistentState:                &persistentState{InstanceID: testUUID},
+			agentConfigOwnTelemetrySection: &atomic.Value{},
+			effectiveConfig:                &atomic.Value{},
+			opampClient:                    mc,
+			agentDescription:               &atomic.Value{},
+			cfgState:                       &atomic.Value{},
+			customMessageToServer:          make(chan *protobufs.CustomMessage, 10),
+			doneChan:                       make(chan struct{}),
 		}
 
 		require.NoError(t, s.createTemplates())
@@ -457,7 +615,7 @@ service:
 			NonIdentifyingAttributes: []*protobufs.KeyValue{},
 		})
 
-		s.onMessage(context.Background(), &types.MessageData{
+		s.onMessage(t.Context(), &types.MessageData{
 			RemoteConfig: remoteConfig,
 		})
 
@@ -468,14 +626,13 @@ service:
 		assert.True(t, remoteConfigStatusUpdated)
 	})
 	t.Run("RemoteConfig - Remote Config message is processed but OpAmp Client fails", func(t *testing.T) {
-
 		const testConfigMessage = `receivers:
   debug:`
 
 		const expectedMergedConfig = `extensions:
-    health_check:
-        endpoint: localhost:8000
     opamp:
+        capabilities:
+            reports_available_components: false
         instance_uid: 018fee23-4a51-7303-a441-73faed7d9deb
         ppid: 88888
         ppid_poll_interval: 5s
@@ -488,11 +645,14 @@ receivers:
     debug: null
 service:
     extensions:
-        - health_check
         - opamp
     telemetry:
         logs:
             encoding: json
+            error_output_paths:
+                - stderr
+            output_paths:
+                - stdout
         resource: null
 `
 
@@ -516,13 +676,13 @@ service:
 					t,
 					&protobufs.RemoteConfigStatus{
 						LastRemoteConfigHash: remoteConfig.ConfigHash,
-						Status:               protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED,
+						Status:               protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLYING,
 					},
 					rcs,
 				)
-				return fmt.Errorf("unexpected error")
+				return errors.New("unexpected error")
 			},
-			updateEffectiveConfigFunc: func(_ context.Context) error {
+			updateEffectiveConfigFunc: func(context.Context) error {
 				return nil
 			},
 		}
@@ -530,23 +690,23 @@ service:
 		configStorageDir := t.TempDir()
 
 		s := Supervisor{
-			logger:      zap.NewNop(),
-			pidProvider: staticPIDProvider(88888),
+			telemetrySettings: newNopTelemetrySettings(),
+			pidProvider:       staticPIDProvider(88888),
 			config: config.Supervisor{
+				Capabilities: config.Capabilities{AcceptsRemoteConfig: true},
 				Storage: config.Storage{
 					Directory: configStorageDir,
 				},
 			},
-			hasNewConfig:                 make(chan struct{}, 1),
-			persistentState:              &persistentState{InstanceID: testUUID},
-			agentConfigOwnMetricsSection: &atomic.Value{},
-			effectiveConfig:              &atomic.Value{},
-			opampClient:                  mc,
-			agentDescription:             &atomic.Value{},
-			cfgState:                     &atomic.Value{},
-			agentHealthCheckEndpoint:     "localhost:8000",
-			customMessageToServer:        make(chan *protobufs.CustomMessage, 10),
-			doneChan:                     make(chan struct{}),
+			hasNewConfig:                   make(chan struct{}, 1),
+			persistentState:                &persistentState{InstanceID: testUUID},
+			agentConfigOwnTelemetrySection: &atomic.Value{},
+			effectiveConfig:                &atomic.Value{},
+			opampClient:                    mc,
+			agentDescription:               &atomic.Value{},
+			cfgState:                       &atomic.Value{},
+			customMessageToServer:          make(chan *protobufs.CustomMessage, 10),
+			doneChan:                       make(chan struct{}),
 		}
 
 		require.NoError(t, s.createTemplates())
@@ -556,7 +716,7 @@ service:
 			NonIdentifyingAttributes: []*protobufs.KeyValue{},
 		})
 
-		s.onMessage(context.Background(), &types.MessageData{
+		s.onMessage(t.Context(), &types.MessageData{
 			RemoteConfig: remoteConfig,
 		})
 
@@ -567,7 +727,6 @@ service:
 		assert.True(t, remoteConfigStatusUpdated)
 	})
 	t.Run("RemoteConfig - Invalid Remote Config message is detected and status is set appropriately", func(t *testing.T) {
-
 		const testConfigMessage = `invalid`
 
 		remoteConfig := &protobufs.AgentRemoteConfig{
@@ -591,31 +750,39 @@ service:
 				assert.NotEmpty(t, rcs.ErrorMessage)
 				return nil
 			},
-			updateEffectiveConfigFunc: func(_ context.Context) error {
+			updateEffectiveConfigFunc: func(context.Context) error {
 				return nil
 			},
 		}
 
 		configStorageDir := t.TempDir()
 
+		mp := metric.NewMeterProvider()
+		metrics, err := telemetry.NewMetrics(mp)
+		require.NoError(t, err)
+		defer func() {
+			_ = mp.Shutdown(t.Context())
+		}()
+
 		s := Supervisor{
-			logger:      zap.NewNop(),
-			pidProvider: defaultPIDProvider{},
+			telemetrySettings: newNopTelemetrySettings(),
+			pidProvider:       defaultPIDProvider{},
 			config: config.Supervisor{
+				Capabilities: config.Capabilities{AcceptsRemoteConfig: true},
 				Storage: config.Storage{
 					Directory: configStorageDir,
 				},
 			},
-			hasNewConfig:                 make(chan struct{}, 1),
-			persistentState:              &persistentState{InstanceID: testUUID},
-			agentConfigOwnMetricsSection: &atomic.Value{},
-			effectiveConfig:              &atomic.Value{},
-			opampClient:                  mc,
-			agentDescription:             &atomic.Value{},
-			cfgState:                     &atomic.Value{},
-			agentHealthCheckEndpoint:     "localhost:8000",
-			customMessageToServer:        make(chan *protobufs.CustomMessage, 10),
-			doneChan:                     make(chan struct{}),
+			hasNewConfig:                   make(chan struct{}, 1),
+			persistentState:                &persistentState{InstanceID: testUUID},
+			agentConfigOwnTelemetrySection: &atomic.Value{},
+			effectiveConfig:                &atomic.Value{},
+			opampClient:                    mc,
+			agentDescription:               &atomic.Value{},
+			cfgState:                       &atomic.Value{},
+			customMessageToServer:          make(chan *protobufs.CustomMessage, 10),
+			doneChan:                       make(chan struct{}),
+			metrics:                        metrics,
 		}
 
 		require.NoError(t, s.createTemplates())
@@ -625,7 +792,7 @@ service:
 			NonIdentifyingAttributes: []*protobufs.KeyValue{},
 		})
 
-		s.onMessage(context.Background(), &types.MessageData{
+		s.onMessage(t.Context(), &types.MessageData{
 			RemoteConfig: remoteConfig,
 		})
 
@@ -635,7 +802,237 @@ service:
 		assert.Nil(t, s.cfgState.Load())
 		assert.True(t, remoteConfigStatusUpdated)
 	})
+	t.Run("RemoteConfig - Report applied status if config is not changed", func(t *testing.T) {
+		const initialConfigMessage = `receivers:
+  debug:
+  exporters:
+    nop:`
+		const remoteConfigMessage = `exporters:
+  nop:
+receivers:
+  debug:
+`
+		// mergedConfig should be the result of creating the config for both the initial and remote config messages
+		const mergedConfig = `exporters:
+    nop: null
+extensions:
+    opamp:
+        capabilities:
+            reports_available_components: false
+        instance_uid: 018fee23-4a51-7303-a441-73faed7d9deb
+        ppid: 88888
+        ppid_poll_interval: 5s
+        server:
+            ws:
+                endpoint: ws://127.0.0.1:0/v1/opamp
+                tls:
+                    insecure: true
+receivers:
+    debug: null
+service:
+    extensions:
+        - opamp
+    telemetry:
+        logs:
+            encoding: json
+            error_output_paths:
+                - stderr
+            output_paths:
+                - stdout
+        resource: null
+`
 
+		// store the initial remote config message so the supervisor is initialized with it
+		configStorageDir := t.TempDir()
+		err := os.WriteFile(filepath.Join(configStorageDir, lastRecvRemoteConfigFile), []byte(initialConfigMessage), 0o600)
+		require.NoError(t, err)
+
+		// the remote config message we will send that will get merged and compared with the initial config
+		remoteConfigHash := sha256.Sum256([]byte(remoteConfigMessage))
+		remoteConfig := &protobufs.AgentRemoteConfig{
+			Config: &protobufs.AgentConfigMap{
+				ConfigMap: map[string]*protobufs.AgentConfigFile{
+					"": {
+						Body: []byte(remoteConfigMessage),
+					},
+				},
+			},
+			ConfigHash: remoteConfigHash[:],
+		}
+
+		remoteConfigStatusUpdated := false
+		mc := &mockOpAMPClient{
+			setRemoteConfigStatusFunc: func(rcs *protobufs.RemoteConfigStatus) error {
+				remoteConfigStatusUpdated = true
+				// assert the Supervisor reports the new hash as applied
+				assert.Equal(t, remoteConfig.ConfigHash, rcs.LastRemoteConfigHash)
+				assert.Equal(t, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED, rcs.Status)
+				assert.Empty(t, rcs.ErrorMessage)
+				return nil
+			},
+			updateEffectiveConfigFunc: func(context.Context) error {
+				return nil
+			},
+		}
+
+		// initial persistent state should be the result of the initial config message
+		testUUID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
+		initialRemoteConfigHash := sha256.Sum256([]byte(initialConfigMessage))
+		startingPersistentState := &persistentState{InstanceID: testUUID, LastRemoteConfigStatus: &RemoteConfigStatus{
+			LastRemoteConfigHash: string(initialRemoteConfigHash[:]),
+			Status:               protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED,
+			ErrorMessage:         "",
+		}}
+
+		s := Supervisor{
+			telemetrySettings: newNopTelemetrySettings(),
+			pidProvider:       staticPIDProvider(88888),
+			config: config.Supervisor{
+				Capabilities: config.Capabilities{AcceptsRemoteConfig: true},
+				Storage: config.Storage{
+					Directory: configStorageDir,
+				},
+			},
+			hasNewConfig:                   make(chan struct{}, 1),
+			persistentState:                startingPersistentState,
+			agentConfigOwnTelemetrySection: &atomic.Value{},
+			effectiveConfig:                &atomic.Value{},
+			opampClient:                    mc,
+			agentDescription:               &atomic.Value{},
+			cfgState:                       &atomic.Value{},
+			customMessageToServer:          make(chan *protobufs.CustomMessage, 10),
+			doneChan:                       make(chan struct{}),
+		}
+
+		require.NoError(t, s.createTemplates())
+
+		// need to set the agent description as part of initialization
+		s.agentDescription.Store(&protobufs.AgentDescription{
+			IdentifyingAttributes:    []*protobufs.KeyValue{},
+			NonIdentifyingAttributes: []*protobufs.KeyValue{},
+		})
+
+		// store the initial merged config
+		s.cfgState.Store(&configState{
+			mergedConfig:     mergedConfig,
+			configMapIsEmpty: false,
+		})
+
+		s.onMessage(t.Context(), &types.MessageData{
+			RemoteConfig: remoteConfig,
+		})
+
+		// assert the remote config status callback was called
+		assert.True(t, remoteConfigStatusUpdated)
+
+		// assert the config file and stored data are updated
+		fileContent, err := os.ReadFile(filepath.Join(configStorageDir, lastRecvRemoteConfigFile))
+		require.NoError(t, err)
+		assert.Contains(t, string(fileContent), remoteConfigMessage)
+		assert.Equal(t, mergedConfig, s.cfgState.Load().(*configState).mergedConfig)
+	})
+
+	t.Run("RemoteConfig - do nothing if not capable of accepting remote config", func(t *testing.T) {
+		const testConfigMessage = `receivers:
+  debug:`
+
+		const expectedEffectiveConfig = `extensions:
+    opamp:
+        capabilities:
+            reports_available_components: false
+        instance_uid: 018fee23-4a51-7303-a441-73faed7d9deb
+        ppid: 88888
+        ppid_poll_interval: 5s
+        server:
+            ws:
+                endpoint: ws://127.0.0.1:0/v1/opamp
+                tls:
+                    insecure: true
+service:
+    extensions:
+        - opamp
+    telemetry:
+        logs:
+            encoding: json
+            error_output_paths:
+                - stderr
+            output_paths:
+                - stdout
+        resource: null
+`
+
+		remoteConfig := &protobufs.AgentRemoteConfig{
+			Config: &protobufs.AgentConfigMap{
+				ConfigMap: map[string]*protobufs.AgentConfigFile{
+					"": {
+						Body: []byte(testConfigMessage),
+					},
+				},
+			},
+			ConfigHash: []byte("hash"),
+		}
+		testUUID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
+
+		remoteConfigStatusUpdated := false
+		mc := &mockOpAMPClient{
+			setRemoteConfigStatusFunc: func(rcs *protobufs.RemoteConfigStatus) error {
+				remoteConfigStatusUpdated = true
+				assert.Equal(
+					t,
+					&protobufs.RemoteConfigStatus{
+						LastRemoteConfigHash: remoteConfig.ConfigHash,
+						Status:               protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLYING,
+					},
+					rcs,
+				)
+				return nil
+			},
+			updateEffectiveConfigFunc: func(context.Context) error {
+				return nil
+			},
+		}
+
+		configStorageDir := t.TempDir()
+
+		s := Supervisor{
+			telemetrySettings: newNopTelemetrySettings(),
+			pidProvider:       staticPIDProvider(88888),
+			config: config.Supervisor{
+				Capabilities: config.Capabilities{AcceptsRemoteConfig: false},
+				Storage: config.Storage{
+					Directory: configStorageDir,
+				},
+			},
+			hasNewConfig:                   make(chan struct{}, 1),
+			persistentState:                &persistentState{InstanceID: testUUID},
+			agentConfigOwnTelemetrySection: &atomic.Value{},
+			effectiveConfig:                &atomic.Value{},
+			opampClient:                    mc,
+			agentDescription:               &atomic.Value{},
+			cfgState:                       &atomic.Value{},
+			customMessageToServer:          make(chan *protobufs.CustomMessage, 10),
+			doneChan:                       make(chan struct{}),
+		}
+
+		require.NoError(t, s.createTemplates())
+
+		s.agentDescription.Store(&protobufs.AgentDescription{
+			IdentifyingAttributes:    []*protobufs.KeyValue{},
+			NonIdentifyingAttributes: []*protobufs.KeyValue{},
+		})
+
+		s.cfgState.Store(&configState{
+			mergedConfig:     expectedEffectiveConfig,
+			configMapIsEmpty: false,
+		})
+
+		s.onMessage(t.Context(), &types.MessageData{
+			RemoteConfig: remoteConfig,
+		})
+
+		assert.Equal(t, expectedEffectiveConfig, s.cfgState.Load().(*configState).mergedConfig)
+		assert.False(t, remoteConfigStatusUpdated)
+	})
 }
 
 func Test_handleAgentOpAMPMessage(t *testing.T) {
@@ -659,19 +1056,23 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 		}
 
 		testUUID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
+		runCtx, runCtxCancel := context.WithCancel(t.Context())
 		s := Supervisor{
-			logger:                       zap.NewNop(),
-			pidProvider:                  defaultPIDProvider{},
-			config:                       config.Supervisor{},
-			hasNewConfig:                 make(chan struct{}, 1),
-			persistentState:              &persistentState{InstanceID: testUUID},
-			agentConfigOwnMetricsSection: &atomic.Value{},
-			effectiveConfig:              &atomic.Value{},
-			agentConn:                    &atomic.Value{},
-			opampClient:                  client,
-			agentHealthCheckEndpoint:     "localhost:8000",
-			customMessageToServer:        make(chan *protobufs.CustomMessage, 10),
-			doneChan:                     make(chan struct{}),
+			telemetrySettings:              newNopTelemetrySettings(),
+			pidProvider:                    defaultPIDProvider{},
+			config:                         config.Supervisor{},
+			hasNewConfig:                   make(chan struct{}, 1),
+			persistentState:                &persistentState{InstanceID: testUUID},
+			agentConfigOwnTelemetrySection: &atomic.Value{},
+			effectiveConfig:                &atomic.Value{},
+			agentConn:                      &atomic.Value{},
+			opampClient:                    client,
+			customMessageToServer:          make(chan *protobufs.CustomMessage, 10),
+			doneChan:                       make(chan struct{}),
+			agentReadyChan:                 make(chan struct{}),
+			agentReady:                     atomic.Bool{},
+			runCtx:                         runCtx,
+			runCtxCancel:                   runCtxCancel,
 		}
 
 		loopDoneChan := make(chan struct{})
@@ -712,19 +1113,21 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 		}
 
 		testUUID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
+		runCtx, runCtxCancel := context.WithCancel(t.Context())
 		s := Supervisor{
-			logger:                       zap.NewNop(),
-			pidProvider:                  defaultPIDProvider{},
-			config:                       config.Supervisor{},
-			hasNewConfig:                 make(chan struct{}, 1),
-			persistentState:              &persistentState{InstanceID: testUUID},
-			agentConfigOwnMetricsSection: &atomic.Value{},
-			effectiveConfig:              &atomic.Value{},
-			agentConn:                    &atomic.Value{},
-			opampClient:                  client,
-			agentHealthCheckEndpoint:     "localhost:8000",
-			customMessageToServer:        make(chan *protobufs.CustomMessage, 10),
-			doneChan:                     make(chan struct{}),
+			telemetrySettings:              newNopTelemetrySettings(),
+			pidProvider:                    defaultPIDProvider{},
+			config:                         config.Supervisor{},
+			hasNewConfig:                   make(chan struct{}, 1),
+			persistentState:                &persistentState{InstanceID: testUUID},
+			agentConfigOwnTelemetrySection: &atomic.Value{},
+			effectiveConfig:                &atomic.Value{},
+			agentConn:                      &atomic.Value{},
+			opampClient:                    client,
+			customMessageToServer:          make(chan *protobufs.CustomMessage, 10),
+			doneChan:                       make(chan struct{}),
+			runCtx:                         runCtx,
+			runCtxCancel:                   runCtxCancel,
 		}
 
 		s.handleAgentOpAMPMessage(&mockConn{}, &protobufs.AgentToServer{
@@ -735,26 +1138,28 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 	t.Run("EffectiveConfig - Effective config from agent is stored in OpAmpClient", func(t *testing.T) {
 		updatedClientEffectiveConfig := false
 		mc := &mockOpAMPClient{
-			updateEffectiveConfigFunc: func(_ context.Context) error {
+			updateEffectiveConfigFunc: func(context.Context) error {
 				updatedClientEffectiveConfig = true
 				return nil
 			},
 		}
 
 		testUUID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
+		runCtx, runCtxCancel := context.WithCancel(t.Context())
 		s := Supervisor{
-			logger:                       zap.NewNop(),
-			pidProvider:                  defaultPIDProvider{},
-			config:                       config.Supervisor{},
-			hasNewConfig:                 make(chan struct{}, 1),
-			persistentState:              &persistentState{InstanceID: testUUID},
-			agentConfigOwnMetricsSection: &atomic.Value{},
-			effectiveConfig:              &atomic.Value{},
-			agentConn:                    &atomic.Value{},
-			opampClient:                  mc,
-			agentHealthCheckEndpoint:     "localhost:8000",
-			customMessageToServer:        make(chan *protobufs.CustomMessage, 10),
-			doneChan:                     make(chan struct{}),
+			telemetrySettings:              newNopTelemetrySettings(),
+			pidProvider:                    defaultPIDProvider{},
+			config:                         config.Supervisor{},
+			hasNewConfig:                   make(chan struct{}, 1),
+			persistentState:                &persistentState{InstanceID: testUUID},
+			agentConfigOwnTelemetrySection: &atomic.Value{},
+			effectiveConfig:                &atomic.Value{},
+			agentConn:                      &atomic.Value{},
+			opampClient:                    mc,
+			customMessageToServer:          make(chan *protobufs.CustomMessage, 10),
+			doneChan:                       make(chan struct{}),
+			runCtx:                         runCtx,
+			runCtxCancel:                   runCtxCancel,
 		}
 
 		s.handleAgentOpAMPMessage(&mockConn{}, &protobufs.AgentToServer{
@@ -775,26 +1180,28 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 	t.Run("EffectiveConfig - Effective config from agent is stored in OpAmpClient; client returns error", func(t *testing.T) {
 		updatedClientEffectiveConfig := false
 		mc := &mockOpAMPClient{
-			updateEffectiveConfigFunc: func(_ context.Context) error {
+			updateEffectiveConfigFunc: func(context.Context) error {
 				updatedClientEffectiveConfig = true
-				return fmt.Errorf("unexpected error")
+				return errors.New("unexpected error")
 			},
 		}
 
 		testUUID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
+		runCtx, runCtxCancel := context.WithCancel(t.Context())
 		s := Supervisor{
-			logger:                       zap.NewNop(),
-			pidProvider:                  defaultPIDProvider{},
-			config:                       config.Supervisor{},
-			hasNewConfig:                 make(chan struct{}, 1),
-			persistentState:              &persistentState{InstanceID: testUUID},
-			agentConfigOwnMetricsSection: &atomic.Value{},
-			effectiveConfig:              &atomic.Value{},
-			agentConn:                    &atomic.Value{},
-			opampClient:                  mc,
-			agentHealthCheckEndpoint:     "localhost:8000",
-			customMessageToServer:        make(chan *protobufs.CustomMessage, 10),
-			doneChan:                     make(chan struct{}),
+			telemetrySettings:              newNopTelemetrySettings(),
+			pidProvider:                    defaultPIDProvider{},
+			config:                         config.Supervisor{},
+			hasNewConfig:                   make(chan struct{}, 1),
+			persistentState:                &persistentState{InstanceID: testUUID},
+			agentConfigOwnTelemetrySection: &atomic.Value{},
+			effectiveConfig:                &atomic.Value{},
+			agentConn:                      &atomic.Value{},
+			opampClient:                    mc,
+			customMessageToServer:          make(chan *protobufs.CustomMessage, 10),
+			doneChan:                       make(chan struct{}),
+			runCtx:                         runCtx,
+			runCtxCancel:                   runCtxCancel,
 		}
 
 		s.handleAgentOpAMPMessage(&mockConn{}, &protobufs.AgentToServer{
@@ -815,26 +1222,28 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 	t.Run("EffectiveConfig - Effective config message contains an empty config", func(t *testing.T) {
 		updatedClientEffectiveConfig := false
 		mc := &mockOpAMPClient{
-			updateEffectiveConfigFunc: func(_ context.Context) error {
+			updateEffectiveConfigFunc: func(context.Context) error {
 				updatedClientEffectiveConfig = true
 				return nil
 			},
 		}
 
 		testUUID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
+		runCtx, runCtxCancel := context.WithCancel(t.Context())
 		s := Supervisor{
-			logger:                       zap.NewNop(),
-			pidProvider:                  defaultPIDProvider{},
-			config:                       config.Supervisor{},
-			hasNewConfig:                 make(chan struct{}, 1),
-			persistentState:              &persistentState{InstanceID: testUUID},
-			agentConfigOwnMetricsSection: &atomic.Value{},
-			effectiveConfig:              &atomic.Value{},
-			agentConn:                    &atomic.Value{},
-			opampClient:                  mc,
-			agentHealthCheckEndpoint:     "localhost:8000",
-			customMessageToServer:        make(chan *protobufs.CustomMessage, 10),
-			doneChan:                     make(chan struct{}),
+			telemetrySettings:              newNopTelemetrySettings(),
+			pidProvider:                    defaultPIDProvider{},
+			config:                         config.Supervisor{},
+			hasNewConfig:                   make(chan struct{}, 1),
+			persistentState:                &persistentState{InstanceID: testUUID},
+			agentConfigOwnTelemetrySection: &atomic.Value{},
+			effectiveConfig:                &atomic.Value{},
+			agentConn:                      &atomic.Value{},
+			opampClient:                    mc,
+			customMessageToServer:          make(chan *protobufs.CustomMessage, 10),
+			doneChan:                       make(chan struct{}),
+			runCtx:                         runCtx,
+			runCtxCancel:                   runCtxCancel,
 		}
 
 		s.handleAgentOpAMPMessage(&mockConn{}, &protobufs.AgentToServer{
@@ -847,6 +1256,50 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 
 		assert.Empty(t, s.effectiveConfig.Load())
 		assert.False(t, updatedClientEffectiveConfig)
+	})
+
+	t.Run("ComponentHealth - Component health from agent is set in OpAmpClient", func(t *testing.T) {
+		healthSet := false
+		mc := &mockOpAMPClient{
+			setHealthFunc: func(*protobufs.ComponentHealth) {
+				healthSet = true
+			},
+		}
+
+		testUUID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
+		mp := metric.NewMeterProvider()
+		metrics, err := telemetry.NewMetrics(mp)
+		require.NoError(t, err)
+		defer func() {
+			_ = mp.Shutdown(t.Context())
+		}()
+		runCtx, runCtxCancel := context.WithCancel(t.Context())
+		s := Supervisor{
+			telemetrySettings:              newNopTelemetrySettings(),
+			pidProvider:                    defaultPIDProvider{},
+			config:                         config.Supervisor{},
+			hasNewConfig:                   make(chan struct{}, 1),
+			persistentState:                &persistentState{InstanceID: testUUID},
+			agentConfigOwnTelemetrySection: &atomic.Value{},
+			effectiveConfig:                &atomic.Value{},
+			agentConn:                      &atomic.Value{},
+			opampClient:                    mc,
+			customMessageToServer:          make(chan *protobufs.CustomMessage, 10),
+			doneChan:                       make(chan struct{}),
+			agentReadyChan:                 make(chan struct{}),
+			agentReady:                     atomic.Bool{},
+			metrics:                        metrics,
+			runCtx:                         runCtx,
+			runCtxCancel:                   runCtxCancel,
+		}
+
+		s.handleAgentOpAMPMessage(&mockConn{}, &protobufs.AgentToServer{
+			Health: &protobufs.ComponentHealth{
+				Healthy: true,
+			},
+		})
+
+		assert.True(t, healthSet)
 	})
 }
 
@@ -981,13 +1434,18 @@ type mockOpAMPClient struct {
 	setCustomCapabilitiesFunc func(customCapabilities *protobufs.CustomCapabilities) error
 	updateEffectiveConfigFunc func(ctx context.Context) error
 	setRemoteConfigStatusFunc func(rcs *protobufs.RemoteConfigStatus) error
+	setHealthFunc             func(health *protobufs.ComponentHealth)
 }
 
-func (mockOpAMPClient) Start(_ context.Context, _ types.StartSettings) error {
+func (mockOpAMPClient) SetCapabilities(*protobufs.AgentCapabilities) error {
 	return nil
 }
 
-func (mockOpAMPClient) Stop(_ context.Context) error {
+func (mockOpAMPClient) Start(context.Context, types.StartSettings) error {
+	return nil
+}
+
+func (mockOpAMPClient) Stop(context.Context) error {
 	return nil
 }
 
@@ -1000,7 +1458,8 @@ func (m mockOpAMPClient) AgentDescription() *protobufs.AgentDescription {
 	return m.agentDesc
 }
 
-func (mockOpAMPClient) SetHealth(_ *protobufs.ComponentHealth) error {
+func (m mockOpAMPClient) SetHealth(h *protobufs.ComponentHealth) error {
+	m.setHealthFunc(h)
 	return nil
 }
 
@@ -1012,11 +1471,11 @@ func (m mockOpAMPClient) SetRemoteConfigStatus(rcs *protobufs.RemoteConfigStatus
 	return m.setRemoteConfigStatusFunc(rcs)
 }
 
-func (mockOpAMPClient) SetPackageStatuses(_ *protobufs.PackageStatuses) error {
+func (mockOpAMPClient) SetPackageStatuses(*protobufs.PackageStatuses) error {
 	return nil
 }
 
-func (mockOpAMPClient) RequestConnectionSettings(_ *protobufs.ConnectionSettingsRequest) error {
+func (mockOpAMPClient) RequestConnectionSettings(*protobufs.ConnectionSettingsRequest) error {
 	return nil
 }
 
@@ -1037,6 +1496,12 @@ func (m mockOpAMPClient) SendCustomMessage(message *protobufs.CustomMessage) (me
 	return msgChan, nil
 }
 
+func (mockOpAMPClient) SetAvailableComponents(*protobufs.AvailableComponents) (err error) {
+	return nil
+}
+
+func (mockOpAMPClient) SetFlags(protobufs.AgentToServerFlags) {}
+
 type mockConn struct {
 	sendFunc func(ctx context.Context, message *protobufs.ServerToAgent) error
 }
@@ -1044,12 +1509,14 @@ type mockConn struct {
 func (mockConn) Connection() net.Conn {
 	return nil
 }
+
 func (m mockConn) Send(ctx context.Context, message *protobufs.ServerToAgent) error {
 	if m.sendFunc != nil {
 		return m.sendFunc(ctx, message)
 	}
 	return nil
 }
+
 func (mockConn) Disconnect() error {
 	return nil
 }
@@ -1062,15 +1529,15 @@ func TestSupervisor_findRandomPort(t *testing.T) {
 	require.NotZero(t, port)
 }
 
-func TestSupervisor_setupOwnMetrics(t *testing.T) {
+func TestSupervisor_setupOwnTelemetry(t *testing.T) {
 	testUUID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
 	t.Run("No DestinationEndpoint set", func(t *testing.T) {
 		s := Supervisor{
-			logger:                       zap.NewNop(),
-			agentConfigOwnMetricsSection: &atomic.Value{},
-			cfgState:                     &atomic.Value{},
-			persistentState:              &persistentState{InstanceID: testUUID},
-			pidProvider:                  staticPIDProvider(1234),
+			telemetrySettings:              newNopTelemetrySettings(),
+			agentConfigOwnTelemetrySection: &atomic.Value{},
+			cfgState:                       &atomic.Value{},
+			persistentState:                &persistentState{InstanceID: testUUID},
+			pidProvider:                    staticPIDProvider(1234),
 		}
 		require.NoError(t, s.createTemplates())
 
@@ -1090,20 +1557,25 @@ func TestSupervisor_setupOwnMetrics(t *testing.T) {
 
 		s.agentDescription = agentDesc
 
-		configChanged := s.setupOwnMetrics(context.Background(), &protobufs.TelemetryConnectionSettings{
+		configChanged := s.setupOwnTelemetry(t.Context(), &protobufs.ConnectionSettingsOffers{OwnMetrics: &protobufs.TelemetryConnectionSettings{
 			DestinationEndpoint: "",
-		})
+		}})
 
 		assert.True(t, configChanged)
-		assert.Empty(t, s.agentConfigOwnMetricsSection.Load().(string))
+		assert.Empty(t, s.agentConfigOwnTelemetrySection.Load().(string))
 	})
 	t.Run("DestinationEndpoint set - enable own metrics", func(t *testing.T) {
 		s := Supervisor{
-			logger:                       zap.NewNop(),
-			agentConfigOwnMetricsSection: &atomic.Value{},
-			cfgState:                     &atomic.Value{},
-			persistentState:              &persistentState{InstanceID: testUUID},
-			pidProvider:                  staticPIDProvider(1234),
+			telemetrySettings:              newNopTelemetrySettings(),
+			agentConfigOwnTelemetrySection: &atomic.Value{},
+			cfgState:                       &atomic.Value{},
+			persistentState:                &persistentState{InstanceID: testUUID},
+			pidProvider:                    staticPIDProvider(1234),
+			config: config.Supervisor{
+				Storage: config.Storage{
+					Directory: t.TempDir(),
+				},
+			},
 		}
 		err := s.createTemplates()
 
@@ -1125,51 +1597,49 @@ func TestSupervisor_setupOwnMetrics(t *testing.T) {
 
 		require.NoError(t, err)
 
-		configChanged := s.setupOwnMetrics(context.Background(), &protobufs.TelemetryConnectionSettings{
-			DestinationEndpoint: "localhost",
-		})
+		configChanged := s.setupOwnTelemetry(t.Context(), &protobufs.ConnectionSettingsOffers{OwnMetrics: &protobufs.TelemetryConnectionSettings{
+			DestinationEndpoint: "http://127.0.0.1:4318",
+			Headers: &protobufs.Headers{
+				Headers: []*protobufs.Header{
+					{Key: "testkey", Value: "testval"},
+					{Key: "testkey2", Value: "testval2"},
+				},
+			},
+		}})
 
-		expectedOwnMetricsSection := `receivers:
-  # Collect own metrics
-  prometheus/own_metrics:
-    config:
-      scrape_configs:
-        - job_name: 'otel-collector'
-          scrape_interval: 10s
-          static_configs:
-            - targets: ['0.0.0.0:55555']  
-exporters:
-  otlphttp/own_metrics:
-    metrics_endpoint: "localhost"
-
+		expectedOwnMetricsSection := `
 service:
   telemetry:
     metrics:
-      address: ":55555"
-  pipelines:
-    metrics/own_metrics:
-      receivers: [prometheus/own_metrics]
-      exporters: [otlphttp/own_metrics]
+      readers:
+        - periodic:
+            exporter:
+              otlp:
+                protocol: http/protobuf
+                endpoint: http://127.0.0.1:4318
+                headers:
+                  "testkey": "testval"
+                  "testkey2": "testval2"
 `
 
 		assert.True(t, configChanged)
 
-		got := s.agentConfigOwnMetricsSection.Load().(string)
+		got := s.agentConfigOwnTelemetrySection.Load().(string)
 		got = strings.ReplaceAll(got, "\r\n", "\n")
 
 		// replace the port because that changes on each run
-		portRegex := regexp.MustCompile(":[0-9]{5}")
+		portRegex := regexp.MustCompile(`:\d{5}`)
 		replaced := portRegex.ReplaceAll([]byte(got), []byte(":55555"))
 		assert.Equal(t, expectedOwnMetricsSection, string(replaced))
 	})
 }
 
 func TestSupervisor_createEffectiveConfigMsg(t *testing.T) {
-
 	t.Run("empty config", func(t *testing.T) {
 		s := Supervisor{
-			effectiveConfig: &atomic.Value{},
-			cfgState:        &atomic.Value{},
+			effectiveConfig:   &atomic.Value{},
+			cfgState:          &atomic.Value{},
+			telemetrySettings: newNopTelemetrySettings(),
 		}
 		got := s.createEffectiveConfigMsg()
 
@@ -1177,8 +1647,9 @@ func TestSupervisor_createEffectiveConfigMsg(t *testing.T) {
 	})
 	t.Run("effective and merged config set - prefer effective config", func(t *testing.T) {
 		s := Supervisor{
-			effectiveConfig: &atomic.Value{},
-			cfgState:        &atomic.Value{},
+			effectiveConfig:   &atomic.Value{},
+			cfgState:          &atomic.Value{},
+			telemetrySettings: newNopTelemetrySettings(),
 		}
 
 		s.effectiveConfig.Store("effective")
@@ -1190,8 +1661,9 @@ func TestSupervisor_createEffectiveConfigMsg(t *testing.T) {
 	})
 	t.Run("only merged config set", func(t *testing.T) {
 		s := Supervisor{
-			effectiveConfig: &atomic.Value{},
-			cfgState:        &atomic.Value{},
+			effectiveConfig:   &atomic.Value{},
+			cfgState:          &atomic.Value{},
+			telemetrySettings: newNopTelemetrySettings(),
 		}
 
 		s.cfgState.Store(&configState{mergedConfig: "merged"})
@@ -1200,26 +1672,20 @@ func TestSupervisor_createEffectiveConfigMsg(t *testing.T) {
 
 		assert.Equal(t, []byte("merged"), got.ConfigMap.ConfigMap[""].Body)
 	})
-
 }
 
 func TestSupervisor_loadAndWriteInitialMergedConfig(t *testing.T) {
-
 	t.Run("load initial config", func(t *testing.T) {
-
 		configDir := t.TempDir()
 
 		const testLastReceivedRemoteConfig = `receiver:
   debug/remote:
 `
 
-		const expectedMergedConfig = `exporters:
-    otlphttp/own_metrics:
-        metrics_endpoint: localhost
-extensions:
-    health_check:
-        endpoint: ""
+		const expectedMergedConfig = `extensions:
     opamp:
+        capabilities:
+            reports_available_components: false
         instance_uid: 018fee23-4a51-7303-a441-73faed7d9deb
         ppid: 1234
         ppid_poll_interval: 5s
@@ -1230,32 +1696,38 @@ extensions:
                     insecure: true
 receiver:
     debug/remote: null
-receivers:
-    prometheus/own_metrics:
-        config:
-            scrape_configs:
-                - job_name: otel-collector
-                  scrape_interval: 10s
-                  static_configs:
-                    - targets:
-                        - 0.0.0.0:55555
 service:
     extensions:
-        - health_check
         - opamp
-    pipelines:
-        metrics/own_metrics:
-            exporters:
-                - otlphttp/own_metrics
-            receivers:
-                - prometheus/own_metrics
     telemetry:
         logs:
             encoding: json
+            error_output_paths:
+                - stderr
+            output_paths:
+                - stdout
+            processors:
+                - batch:
+                    exporter:
+                        otlp:
+                            endpoint: localhost-logs
+                            protocol: http/protobuf
         metrics:
-            address: :55555
+            readers:
+                - periodic:
+                    exporter:
+                        otlp:
+                            endpoint: localhost-metrics
+                            protocol: http/protobuf
         resource:
             service.name: otelcol
+        traces:
+            processors:
+                - batch:
+                    exporter:
+                        otlp:
+                            endpoint: localhost-traces
+                            protocol: http/protobuf
 `
 
 		remoteCfg := &protobufs.AgentRemoteConfig{
@@ -1272,29 +1744,39 @@ service:
 		marshalledRemoteCfg, err := proto.Marshal(remoteCfg)
 		require.NoError(t, err)
 
-		ownMetricsCfg := &protobufs.TelemetryConnectionSettings{
-			DestinationEndpoint: "localhost",
+		ownTelemetryCfg := &protobufs.ConnectionSettingsOffers{
+			OwnMetrics: &protobufs.TelemetryConnectionSettings{
+				DestinationEndpoint: "localhost-metrics",
+			},
+			OwnLogs: &protobufs.TelemetryConnectionSettings{
+				DestinationEndpoint: "localhost-logs",
+			},
+			OwnTraces: &protobufs.TelemetryConnectionSettings{
+				DestinationEndpoint: "localhost-traces",
+			},
 		}
 
-		marshalledOwnMetricsCfg, err := proto.Marshal(ownMetricsCfg)
+		marshalledOwnTelemetryCfg, err := proto.Marshal(ownTelemetryCfg)
 		require.NoError(t, err)
 
-		require.NoError(t, os.WriteFile(filepath.Join(configDir, lastRecvRemoteConfigFile), marshalledRemoteCfg, 0600))
-		require.NoError(t, os.WriteFile(filepath.Join(configDir, lastRecvOwnMetricsConfigFile), marshalledOwnMetricsCfg, 0600))
+		require.NoError(t, os.WriteFile(filepath.Join(configDir, lastRecvRemoteConfigFile), marshalledRemoteCfg, 0o600))
+		require.NoError(t, os.WriteFile(filepath.Join(configDir, lastRecvOwnTelemetryConfigFile), marshalledOwnTelemetryCfg, 0o600))
 
 		s := Supervisor{
-			logger: zap.NewNop(),
+			telemetrySettings: newNopTelemetrySettings(),
 			config: config.Supervisor{
 				Capabilities: config.Capabilities{
 					AcceptsRemoteConfig: true,
 					ReportsOwnMetrics:   true,
+					ReportsOwnLogs:      true,
+					ReportsOwnTraces:    true,
 				},
 				Storage: config.Storage{
 					Directory: configDir,
 				},
 			},
-			agentConfigOwnMetricsSection: &atomic.Value{},
-			cfgState:                     &atomic.Value{},
+			agentConfigOwnTelemetrySection: &atomic.Value{},
+			cfgState:                       &atomic.Value{},
 			persistentState: &persistentState{
 				InstanceID: uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb"),
 			},
@@ -1316,6 +1798,7 @@ service:
 
 		s.agentDescription = agentDesc
 
+		s.loadRemoteConfig()
 		require.NoError(t, s.createTemplates())
 		require.NoError(t, s.loadAndWriteInitialMergedConfig())
 
@@ -1324,19 +1807,19 @@ service:
 		gotMergedConfig := s.cfgState.Load().(*configState).mergedConfig
 		gotMergedConfig = strings.ReplaceAll(gotMergedConfig, "\r\n", "\n")
 		// replace random port numbers
-		portRegex := regexp.MustCompile(":[0-9]{5}")
+		portRegex := regexp.MustCompile(`:\d{5}`)
 		replacedMergedConfig := portRegex.ReplaceAll([]byte(gotMergedConfig), []byte(":55555"))
 		assert.Equal(t, expectedMergedConfig, string(replacedMergedConfig))
 	})
-
 }
 
 func TestSupervisor_composeNoopConfig(t *testing.T) {
-
 	const expectedConfig = `exporters:
     nop: null
 extensions:
     opamp:
+        capabilities:
+            reports_available_components: false
         instance_uid: 018fee23-4a51-7303-a441-73faed7d9deb
         ppid: 1234
         ppid_poll_interval: 5s
@@ -1371,4 +1854,367 @@ service:
 
 	require.NoError(t, err)
 	require.Equal(t, expectedConfig, noopConfig)
+}
+
+func TestSupervisor_composeNoopConfigReportAvailableComponents(t *testing.T) {
+	const expectedConfig = `exporters:
+    nop: null
+extensions:
+    opamp:
+        capabilities:
+            reports_available_components: true
+        instance_uid: 018fee23-4a51-7303-a441-73faed7d9deb
+        ppid: 1234
+        ppid_poll_interval: 5s
+        server:
+            ws:
+                endpoint: ws://127.0.0.1:0/v1/opamp
+                tls:
+                    insecure: true
+receivers:
+    nop: null
+service:
+    extensions:
+        - opamp
+    pipelines:
+        traces:
+            exporters:
+                - nop
+            receivers:
+                - nop
+`
+	s := Supervisor{
+		persistentState: &persistentState{
+			InstanceID: uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb"),
+		},
+		pidProvider: staticPIDProvider(1234),
+		config: config.Supervisor{
+			Capabilities: config.Capabilities{
+				ReportsAvailableComponents: true,
+			},
+		},
+	}
+
+	require.NoError(t, s.createTemplates())
+
+	noopConfigBytes, err := s.composeNoopConfig()
+	noopConfig := strings.ReplaceAll(string(noopConfigBytes), "\r\n", "\n")
+
+	require.NoError(t, err)
+	require.Equal(t, expectedConfig, noopConfig)
+}
+
+func TestSupervisor_configStrictUnmarshal(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	configuration := `
+server:
+  endpoint: ws://localhost/v1/opamp
+  tls:
+    insecure: true
+
+capabilities:
+  reports_effective_config: true
+  invalid_key: invalid_value
+`
+
+	cfgPath := filepath.Join(tmpDir, "config.yaml")
+	err := os.WriteFile(cfgPath, []byte(configuration), 0o600)
+	require.NoError(t, err)
+
+	_, err = config.Load(cfgPath)
+	require.Error(t, err)
+	require.ErrorContains(t, err, "decoding failed")
+
+	t.Cleanup(func() {
+		require.NoError(t, os.Chmod(tmpDir, 0o700))
+		require.NoError(t, os.RemoveAll(tmpDir))
+	})
+}
+
+func TestSupervisor_exportLogsWithSDK(t *testing.T) {
+	template := `
+server:
+  endpoint: ws://localhost/v1/opamp
+  tls:
+    insecure: true
+
+capabilities:
+  reports_effective_config: true
+  reports_own_metrics: true
+  reports_health: true
+  accepts_remote_config: true
+  reports_remote_config: true
+  accepts_restart_command: true
+
+storage:
+  directory: %s
+
+agent:
+  executable: %s
+
+telemetry:
+  logs:
+    level: info
+    processors:
+      - batch:
+          exporter:
+            otlp:
+              protocol: http/protobuf
+              endpoint: http://127.0.0.1:4318
+`
+
+	cfg := setupSupervisorConfig(t, template)
+	supervisor, err := NewSupervisor(t.Context(), zap.NewNop(), cfg)
+	require.NoError(t, err)
+
+	path := filepath.Join(t.TempDir(), "output.txt")
+	backend := testbed.NewOTLPHTTPDataReceiver(4318)
+	mockBackend := testbed.NewMockBackend(path, backend)
+	err = mockBackend.Start()
+	require.NoError(t, err)
+
+	mockBackend.EnableRecording()
+	supervisor.telemetrySettings.Logger.Info("test log")
+
+	require.Eventually(t, func() bool {
+		return len(mockBackend.GetReceivedLogs()) > 0
+	}, 5*time.Second, 1*time.Second)
+
+	mockBackend.Stop()
+
+	receivedLogs := mockBackend.GetReceivedLogs()
+	require.Len(t, receivedLogs, 1)
+	l := mockBackend.ReceivedLogs[0]
+	require.Equal(t, 1, l.ResourceLogs().Len())
+	l.ResourceLogs().RemoveIf(func(rl plog.ResourceLogs) bool {
+		require.Equal(t, 1, rl.ScopeLogs().Len())
+		rl.ScopeLogs().RemoveIf(func(sl plog.ScopeLogs) bool {
+			require.Equal(t, 1, sl.LogRecords().Len())
+			sl.LogRecords().RemoveIf(func(lr plog.LogRecord) bool {
+				assert.Equal(t, "test log", lr.Body().Str())
+				return false
+			})
+			return false
+		})
+		return false
+	})
+
+	supervisor.Shutdown()
+}
+
+func TestSupervisor_addSpecialConfigFiles(t *testing.T) {
+	cfg := setupSupervisorConfig(t, configTemplate)
+
+	testCases := []struct {
+		name                string
+		configFiles         []string
+		expectedConfigFiles []string
+	}{
+		{
+			name: "User config files and all special files are provided in the right order",
+			configFiles: []string{
+				"$OWN_TELEMETRY_CONFIG",
+				"some_file.yaml",
+				"$OPAMP_EXTENSION_CONFIG",
+				"$REMOTE_CONFIG",
+			},
+			expectedConfigFiles: []string{
+				"$OWN_TELEMETRY_CONFIG",
+				"some_file.yaml",
+				"$OPAMP_EXTENSION_CONFIG",
+				"$REMOTE_CONFIG",
+			},
+		},
+		{
+			name: "User config files and all special files are provided in a custom order",
+			configFiles: []string{
+				"$REMOTE_CONFIG",
+				"$OPAMP_EXTENSION_CONFIG",
+				"$OWN_TELEMETRY_CONFIG",
+				"some_file.yaml",
+			},
+			expectedConfigFiles: []string{
+				"$REMOTE_CONFIG",
+				"$OPAMP_EXTENSION_CONFIG",
+				"$OWN_TELEMETRY_CONFIG",
+				"some_file.yaml",
+			},
+		},
+		{
+			name:        "No config files provided, default config files are added",
+			configFiles: []string{},
+			expectedConfigFiles: []string{
+				"$OWN_TELEMETRY_CONFIG",
+				"$OPAMP_EXTENSION_CONFIG",
+				"$REMOTE_CONFIG",
+			},
+		},
+		{
+			name:        "Special config files partially provided, missing defaults are added",
+			configFiles: []string{"$REMOTE_CONFIG"},
+			// The order here is not exactly the same as the default order
+			// because some special config files were manually provided.
+			// Only the missing ones are added where the default order would
+			// have them.
+			expectedConfigFiles: []string{
+				"$OWN_TELEMETRY_CONFIG",
+				"$REMOTE_CONFIG",
+				"$OPAMP_EXTENSION_CONFIG",
+			},
+		},
+		{
+			name:        "Only normal config files provided, special config files are added",
+			configFiles: []string{"some_file.yaml"},
+			expectedConfigFiles: []string{
+				"$OWN_TELEMETRY_CONFIG",
+				"some_file.yaml",
+				"$OPAMP_EXTENSION_CONFIG",
+				"$REMOTE_CONFIG",
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg.Agent.ConfigFiles = tc.configFiles
+			supervisor := Supervisor{config: cfg}
+			supervisor.addSpecialConfigFiles()
+			require.Equal(t, tc.expectedConfigFiles, supervisor.config.Agent.ConfigFiles)
+		})
+	}
+}
+
+func TestSupervisor_HealthCheckServer(t *testing.T) {
+	testUUID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
+	runCtx, runCtxCancel := context.WithCancel(t.Context())
+	s := &Supervisor{
+		telemetrySettings: newNopTelemetrySettings(),
+		persistentState:   &persistentState{InstanceID: testUUID},
+		cfgState:          &atomic.Value{},
+		doneChan:          make(chan struct{}),
+		runCtx:            runCtx,
+		runCtxCancel:      runCtxCancel,
+	}
+
+	healthyConfig := &configState{
+		mergedConfig:     "test-config",
+		configMapIsEmpty: false,
+	}
+	s.cfgState.Store(healthyConfig)
+
+	t.Run("Health check isn't started when port isn't configured", func(t *testing.T) {
+		err := s.startHealthCheckServer()
+		require.NoError(t, err)
+		require.Nil(t, s.healthCheckServer)
+	})
+
+	t.Run("Health check server is started when port is configured", func(t *testing.T) {
+		s.config = config.Supervisor{
+			HealthCheck: config.HealthCheck{
+				ServerConfig: confighttp.ServerConfig{
+					Endpoint: "localhost:23233",
+				},
+			},
+		}
+		err := s.startHealthCheckServer()
+		require.NoError(t, err)
+		require.NotNil(t, s.healthCheckServer)
+	})
+
+	addr := fmt.Sprintf("localhost:%d", s.config.HealthCheck.Port())
+	require.NotEmpty(t, addr)
+
+	sendHealthCheckRequest := func() (*http.Response, error) {
+		return http.Get(fmt.Sprintf("http://%s/health", addr))
+	}
+
+	t.Run("Health check server startup", func(t *testing.T) {
+		resp, respErr := sendHealthCheckRequest()
+		require.NoError(t, respErr)
+		defer resp.Body.Close()
+		body, bodyErr := io.ReadAll(resp.Body)
+		require.NoError(t, bodyErr)
+		assert.Equalf(t, http.StatusOK, resp.StatusCode, "expected %d, got %d, response body: %s", http.StatusOK, resp.StatusCode, string(body))
+	})
+
+	t.Run("/health endpoint returns OK when healthy", func(t *testing.T) {
+		s.cfgState.Store(healthyConfig)
+		s.persistentState = &persistentState{InstanceID: testUUID}
+
+		resp, respErr := sendHealthCheckRequest()
+		require.NoError(t, respErr)
+		defer resp.Body.Close()
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+	})
+
+	t.Run("/health endpoint returns 503 when persistent state is nil", func(t *testing.T) {
+		originalState := s.persistentState
+		t.Cleanup(func() {
+			s.persistentState = originalState
+		})
+		s.persistentState = nil
+
+		resp, respErr := sendHealthCheckRequest()
+		require.NoError(t, respErr)
+		defer resp.Body.Close()
+		assert.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)
+	})
+
+	t.Run("/health endpoint returns 503 when config state is not loaded", func(t *testing.T) {
+		originalCfgState := s.cfgState.Load()
+		t.Cleanup(func() {
+			s.cfgState.Store(originalCfgState)
+		})
+		s.cfgState = &atomic.Value{}
+
+		resp, respErr := sendHealthCheckRequest()
+		require.NoError(t, respErr)
+		defer resp.Body.Close()
+		assert.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)
+	})
+
+	t.Run("/health endpoint returns 503 when config state is nil", func(t *testing.T) {
+		originalCfgState := s.cfgState.Load()
+		t.Cleanup(func() {
+			s.cfgState.Store(originalCfgState)
+		})
+		s.cfgState = &atomic.Value{}
+
+		resp, respErr := sendHealthCheckRequest()
+		require.NoError(t, respErr)
+		defer resp.Body.Close()
+		assert.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)
+	})
+
+	t.Run("Health check server errors out if port is in-use", func(t *testing.T) {
+		newSupervisor := &Supervisor{
+			telemetrySettings: newNopTelemetrySettings(),
+			persistentState:   &persistentState{InstanceID: testUUID},
+			cfgState:          &atomic.Value{},
+			doneChan:          make(chan struct{}),
+			config: config.Supervisor{
+				HealthCheck: config.HealthCheck{
+					ServerConfig: confighttp.ServerConfig{
+						Endpoint: "localhost:23233",
+					},
+				},
+			},
+		}
+		err := newSupervisor.startHealthCheckServer()
+		require.Error(t, err)
+		require.ErrorContains(t, err, "failed to listen on port 23233")
+	})
+
+	t.Run("Health check server shutdown is handled gracefully in Supervisor.Shutdown", func(t *testing.T) {
+		resp, err := sendHealthCheckRequest()
+		require.NoError(t, err)
+		resp.Body.Close()
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+		s.Shutdown()
+
+		_, err = sendHealthCheckRequest()
+		assert.Error(t, err)
+	})
 }

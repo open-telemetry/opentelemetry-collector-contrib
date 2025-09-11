@@ -7,20 +7,20 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Azure/azure-event-hubs-go/v3/persist"
 	jsoniter "github.com/json-iterator/go"
-	"go.opentelemetry.io/collector/extension/experimental/storage"
+	"go.opentelemetry.io/collector/extension/xextension/storage"
 )
 
 const (
 	storageKeyFormat = "%s/%s/%s/%s"
 )
 
-type storageCheckpointPersister struct {
+type storageCheckpointPersister[T any] struct {
 	storageClient storage.Client
+	defaultValue  T
 }
 
-func (s *storageCheckpointPersister) Write(namespace, name, consumerGroup, partitionID string, checkpoint persist.Checkpoint) error {
+func (s *storageCheckpointPersister[T]) Write(namespace, name, consumerGroup, partitionID string, checkpoint T) error {
 	b, err := jsoniter.Marshal(checkpoint)
 	if err != nil {
 		return err
@@ -28,14 +28,14 @@ func (s *storageCheckpointPersister) Write(namespace, name, consumerGroup, parti
 	return s.storageClient.Set(context.Background(), fmt.Sprintf(storageKeyFormat, namespace, name, consumerGroup, partitionID), b)
 }
 
-func (s *storageCheckpointPersister) Read(namespace, name, consumerGroup, partitionID string) (persist.Checkpoint, error) {
-	var checkpoint persist.Checkpoint
+func (s *storageCheckpointPersister[T]) Read(namespace, name, consumerGroup, partitionID string) (T, error) {
+	var checkpoint T
 	bytes, err := s.storageClient.Get(context.Background(), fmt.Sprintf(storageKeyFormat, namespace, name, consumerGroup, partitionID))
 	if err != nil {
-		return persist.NewCheckpointFromStartOfStream(), err
+		return s.defaultValue, err
 	}
 	if len(bytes) == 0 {
-		return persist.NewCheckpointFromStartOfStream(), err
+		return s.defaultValue, err
 	}
 	err = jsoniter.Unmarshal(bytes, &checkpoint)
 	return checkpoint, err

@@ -6,6 +6,7 @@ package targetallocator // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"hash/fnv"
 	"io"
@@ -13,8 +14,12 @@ import (
 	"net/url"
 	"os"
 	"sort"
+	"sync/atomic"
+	"syscall"
 	"time"
 
+	"github.com/cenkalti/backoff/v5"
+	"github.com/goccy/go-yaml"
 	commonconfig "github.com/prometheus/common/config"
 	"github.com/prometheus/common/model"
 	promconfig "github.com/prometheus/prometheus/config"
@@ -24,7 +29,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
-	"gopkg.in/yaml.v2"
 )
 
 type Manager struct {
@@ -32,9 +36,14 @@ type Manager struct {
 	shutdown               chan struct{}
 	cfg                    *Config
 	promCfg                *promconfig.Config
+	initialScrapeConfigs   []*promconfig.ScrapeConfig
 	scrapeManager          *scrape.Manager
 	discoveryManager       *discovery.Manager
 	enableNativeHistograms bool
+
+	// configUpdateCount tracks how many times the config has changed, for
+	// testing.
+	configUpdateCount *atomic.Int64
 }
 
 func NewManager(set receiver.Settings, cfg *Config, promCfg *promconfig.Config, enableNativeHistograms bool) *Manager {
@@ -43,7 +52,9 @@ func NewManager(set receiver.Settings, cfg *Config, promCfg *promconfig.Config, 
 		settings:               set,
 		cfg:                    cfg,
 		promCfg:                promCfg,
+		initialScrapeConfigs:   promCfg.ScrapeConfigs,
 		enableNativeHistograms: enableNativeHistograms,
+		configUpdateCount:      &atomic.Int64{},
 	}
 }
 
@@ -59,14 +70,25 @@ func (m *Manager) Start(ctx context.Context, host component.Host, sm *scrape.Man
 		// the target allocator is disabled
 		return nil
 	}
-	httpClient, err := m.cfg.ClientConfig.ToClient(ctx, host, m.settings.TelemetrySettings)
+	httpClient, err := m.cfg.ToClient(ctx, host, m.settings.TelemetrySettings)
 	if err != nil {
 		m.settings.Logger.Error("Failed to create http client", zap.Error(err))
 		return err
 	}
 	m.settings.Logger.Info("Starting target allocator discovery")
+
+	operation := func() (uint64, error) {
+		savedHash, opErr := m.sync(uint64(0), httpClient)
+		if opErr != nil {
+			if errors.Is(opErr, syscall.ECONNREFUSED) {
+				return 0, backoff.RetryAfter(1)
+			}
+			return 0, opErr
+		}
+		return savedHash, nil
+	}
 	// immediately sync jobs, not waiting for the first tick
-	savedHash, err := m.sync(uint64(0), httpClient)
+	savedHash, err := backoff.Retry(ctx, operation, backoff.WithBackOff(backoff.NewExponentialBackOff()))
 	if err != nil {
 		return err
 	}
@@ -115,8 +137,11 @@ func (m *Manager) sync(compareHash uint64, httpClient *http.Client) (uint64, err
 		return hash, nil
 	}
 
-	// Clear out the current configurations
-	m.promCfg.ScrapeConfigs = []*promconfig.ScrapeConfig{}
+	// Copy initial scrape configurations
+	initialConfig := make([]*promconfig.ScrapeConfig, len(m.initialScrapeConfigs))
+	copy(initialConfig, m.initialScrapeConfigs)
+
+	m.promCfg.ScrapeConfigs = initialConfig
 
 	for jobName, scrapeConfig := range scrapeConfigsResponse {
 		var httpSD promHTTP.SDConfig
@@ -145,6 +170,17 @@ func (m *Manager) sync(compareHash uint64, httpClient *http.Client) (uint64, err
 			scrapeConfig.HTTPClientConfig = commonconfig.HTTPClientConfig(*m.cfg.HTTPScrapeConfig)
 		}
 
+		if scrapeConfig.ScrapeFallbackProtocol == "" {
+			scrapeConfig.ScrapeFallbackProtocol = promconfig.PrometheusText0_0_4
+		}
+
+		// Validate the scrape config and also fill in the defaults from the global config as needed.
+		err = scrapeConfig.Validate(m.promCfg.GlobalConfig)
+		if err != nil {
+			m.settings.Logger.Error("Failed to validate the scrape configuration", zap.Error(err))
+			return 0, err
+		}
+
 		m.promCfg.ScrapeConfigs = append(m.promCfg.ScrapeConfigs, scrapeConfig)
 	}
 
@@ -154,18 +190,22 @@ func (m *Manager) sync(compareHash uint64, httpClient *http.Client) (uint64, err
 		return 0, err
 	}
 
+	if m.configUpdateCount != nil {
+		m.configUpdateCount.Add(1)
+	}
 	return hash, nil
 }
 
 func (m *Manager) applyCfg() error {
 	scrapeConfigs, err := m.promCfg.GetScrapeConfigs()
+	truePtr := true
 	if err != nil {
 		return fmt.Errorf("could not get scrape configs: %w", err)
 	}
 	if !m.enableNativeHistograms {
 		// Enforce scraping classic histograms to avoid dropping them.
 		for _, scrapeConfig := range m.promCfg.ScrapeConfigs {
-			scrapeConfig.ScrapeClassicHistograms = true
+			scrapeConfig.AlwaysScrapeClassicHistograms = &truePtr
 		}
 	}
 
@@ -182,7 +222,7 @@ func (m *Manager) applyCfg() error {
 }
 
 func getScrapeConfigsResponse(httpClient *http.Client, baseURL string) (map[string]*promconfig.ScrapeConfig, error) {
-	scrapeConfigsURL := fmt.Sprintf("%s/scrape_configs", baseURL)
+	scrapeConfigsURL := baseURL + "/scrape_configs"
 	_, err := url.Parse(scrapeConfigsURL) // check if valid
 	if err != nil {
 		return nil, err

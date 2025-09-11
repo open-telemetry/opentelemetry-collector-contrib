@@ -13,12 +13,10 @@ import (
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/extension/experimental/storage"
+	"go.opentelemetry.io/collector/extension/xextension/storage"
 )
 
-var (
-	errClientClosed = errors.New("client closed")
-)
+var errClientClosed = errors.New("client closed")
 
 type TestClient struct {
 	cache    map[string][]byte
@@ -47,10 +45,10 @@ func NewInMemoryClient(kind component.Kind, id component.ID, name string) *TestC
 // NewFileBackedClient creates a storage.Client that will load previous
 // storage contents upon creation and save storage contents when closed.
 // It also has metadata which may be used to validate test expectations.
-func NewFileBackedClient(kind component.Kind, id component.ID, name string, storageDir string) *TestClient {
+func NewFileBackedClient(kind component.Kind, id component.ID, name, storageDir string) *TestClient {
 	client := NewInMemoryClient(kind, id, name)
 
-	client.storageFile = filepath.Join(storageDir, fmt.Sprintf("%d_%s_%s_%s", kind, id.Type(), id.Name(), name))
+	client.storageFile = filepath.Join(storageDir, fmt.Sprintf("%s_%s_%s_%s", kind, id.Type(), id.Name(), name))
 
 	// Attempt to load previous storage content
 	contents, err := os.ReadFile(client.storageFile)
@@ -101,7 +99,7 @@ func (p *TestClient) Delete(_ context.Context, key string) error {
 	return nil
 }
 
-func (p *TestClient) Batch(_ context.Context, ops ...storage.Operation) error {
+func (p *TestClient) Batch(_ context.Context, ops ...*storage.Operation) error {
 	p.cacheMux.Lock()
 	defer p.cacheMux.Unlock()
 	if p.closed {
@@ -139,7 +137,7 @@ func (p *TestClient) Close(_ context.Context) error {
 		return err
 	}
 
-	return os.WriteFile(p.storageFile, contents, os.FileMode(0600))
+	return os.WriteFile(p.storageFile, contents, os.FileMode(0o600))
 }
 
 const clientCreatorID = "client_creator_id"

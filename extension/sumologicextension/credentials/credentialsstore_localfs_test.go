@@ -18,11 +18,7 @@ import (
 )
 
 func TestCredentialsStoreLocalFs(t *testing.T) {
-	dir, err := os.MkdirTemp("", "otelcol-sumo-credentials-store-local-fs-test-*")
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		os.RemoveAll(dir)
-	})
+	dir := t.TempDir()
 
 	const key = "my_storage_key"
 
@@ -62,18 +58,18 @@ func TestCredentialsStoreLocalFs(t *testing.T) {
 			},
 		),
 	)
-	require.EqualValues(t, 0, fileCounter)
+	require.Equal(t, 0, fileCounter)
 }
 
 func TestCredentialsStoreValidate(t *testing.T) {
 	var expectedFileMode fs.FileMode
 	dir := filepath.Join(t.TempDir(), "store")
 	if runtime.GOOS == "windows" { // on Windows, we get 0777 for writable directories
-		expectedFileMode = fs.FileMode(0777)
+		expectedFileMode = fs.FileMode(0o777)
 	} else {
-		expectedFileMode = fs.FileMode(0700)
+		expectedFileMode = fs.FileMode(0o700)
 	}
-	err := os.Mkdir(dir, 0400)
+	err := os.Mkdir(dir, 0o400)
 	require.NoError(t, err)
 
 	store, err := NewLocalFsStore(WithCredentialsDirectory(dir), WithLogger(zap.NewNop()))

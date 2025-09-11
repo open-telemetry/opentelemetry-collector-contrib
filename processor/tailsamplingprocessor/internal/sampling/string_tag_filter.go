@@ -12,6 +12,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/pkg/samplingpolicy"
 )
 
 const defaultCacheSize = 128
@@ -30,11 +32,11 @@ type regexStrSetting struct {
 	filterList   []*regexp.Regexp
 }
 
-var _ PolicyEvaluator = (*stringAttributeFilter)(nil)
+var _ samplingpolicy.Evaluator = (*stringAttributeFilter)(nil)
 
 // NewStringAttributeFilter creates a policy evaluator that samples all traces with
 // the given attribute in the given numeric range.
-func NewStringAttributeFilter(settings component.TelemetrySettings, key string, values []string, regexMatchEnabled bool, evictSize int, invertMatch bool) PolicyEvaluator {
+func NewStringAttributeFilter(settings component.TelemetrySettings, key string, values []string, regexMatchEnabled bool, evictSize int, invertMatch bool) samplingpolicy.Evaluator {
 	// initialize regex filter rules and LRU cache for matched results
 	if regexMatchEnabled {
 		if evictSize <= 0 {
@@ -91,8 +93,8 @@ func NewStringAttributeFilter(settings component.TelemetrySettings, key string, 
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
 // The SamplingDecision is made by comparing the attribute values with the matching values,
 // which might be static strings or regular expressions.
-func (saf *stringAttributeFilter) Evaluate(_ context.Context, _ pcommon.TraceID, trace *TraceData) (Decision, error) {
-	saf.logger.Debug("Evaluting spans in string-tag filter")
+func (saf *stringAttributeFilter) Evaluate(_ context.Context, _ pcommon.TraceID, trace *samplingpolicy.TraceData) (samplingpolicy.Decision, error) {
+	saf.logger.Debug("Evaluating spans in string-tag filter")
 	trace.Lock()
 	defer trace.Unlock()
 	batches := trace.ReceivedBatches
@@ -111,8 +113,8 @@ func (saf *stringAttributeFilter) Evaluate(_ context.Context, _ pcommon.TraceID,
 			},
 			func(span ptrace.Span) bool {
 				if v, ok := span.Attributes().Get(saf.key); ok {
-					truncableStr := v.Str()
-					if len(truncableStr) > 0 {
+					truncatableStr := v.Str()
+					if truncatableStr != "" {
 						if ok := saf.matcher(v.Str()); ok {
 							return false
 						}
@@ -135,8 +137,8 @@ func (saf *stringAttributeFilter) Evaluate(_ context.Context, _ pcommon.TraceID,
 		},
 		func(span ptrace.Span) bool {
 			if v, ok := span.Attributes().Get(saf.key); ok {
-				truncableStr := v.Str()
-				if len(truncableStr) > 0 {
+				truncatableStr := v.Str()
+				if truncatableStr != "" {
 					if ok := saf.matcher(v.Str()); ok {
 						return true
 					}

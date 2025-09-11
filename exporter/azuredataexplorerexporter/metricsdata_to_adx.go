@@ -32,7 +32,7 @@ const (
 )
 
 // This is derived from the specification https://opentelemetry.io/docs/reference/specification/metrics/datamodel/
-type AdxMetric struct {
+type adxMetric struct {
 	Timestamp string // The timestamp of the occurrence. A metric is measured at a point of time. Formatted into string as RFC3339Nano
 	// Including name, the Metric object is defined by the following properties:
 	MetricName        string         // Name of the metric field
@@ -50,7 +50,7 @@ type AdxMetric struct {
 	Convert the pMetric to the type ADXMetric , this matches the scheme in the OTELMetric table in the database
 */
 
-func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[string]any, logger *zap.Logger) []*AdxMetric {
+func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[string]any, logger *zap.Logger) []*adxMetric {
 	logger.Debug("Entering processing of toAdxMetric function")
 	// default to collectors host name. Ignore the error here. This should not cause the failure of the process
 	host, err := os.Hostname()
@@ -61,7 +61,7 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 	if h := resourceAttrs[hostkey]; h != nil {
 		host = h.(string)
 	}
-	createMetric := func(times time.Time, attr pcommon.Map, value func() float64, name string, desc string, mt pmetric.MetricType) *AdxMetric {
+	createMetric := func(times time.Time, attr pcommon.Map, value func() float64, name, desc string, mt pmetric.MetricType) *adxMetric {
 		clonedScopedAttributes := copyMap(cloneMap(scopeattrs), attr.AsRaw())
 		if isEmpty(name) {
 			name = md.Name()
@@ -69,7 +69,7 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 		if isEmpty(desc) {
 			desc = md.Description()
 		}
-		return &AdxMetric{
+		return &adxMetric{
 			Timestamp:          times.Format(time.RFC3339Nano),
 			MetricName:         name,
 			MetricType:         mt.String(),
@@ -85,7 +85,7 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 	switch md.Type() {
 	case pmetric.MetricTypeGauge:
 		dataPoints := md.Gauge().DataPoints()
-		adxMetrics := make([]*AdxMetric, dataPoints.Len())
+		adxMetrics := make([]*adxMetric, dataPoints.Len())
 		for gi := 0; gi < dataPoints.Len(); gi++ {
 			dataPoint := dataPoints.At(gi)
 			adxMetrics[gi] = createMetric(dataPoint.Timestamp().AsTime(), dataPoint.Attributes(), func() float64 {
@@ -102,29 +102,24 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 		return adxMetrics
 	case pmetric.MetricTypeHistogram:
 		dataPoints := md.Histogram().DataPoints()
-		var adxMetrics []*AdxMetric
+		var adxMetrics []*adxMetric
 		for gi := 0; gi < dataPoints.Len(); gi++ {
 			dataPoint := dataPoints.At(gi)
 			bounds := dataPoint.ExplicitBounds()
 			counts := dataPoint.BucketCounts()
-			// first, add one event for sum, and one for count
-			{
-				adxMetrics = append(adxMetrics,
-					createMetric(dataPoint.Timestamp().AsTime(), dataPoint.Attributes(), dataPoint.Sum,
-						fmt.Sprintf("%s_%s", md.Name(), sumsuffix),
-						fmt.Sprintf("%s%s", md.Description(), sumdescription),
-						pmetric.MetricTypeHistogram))
-			}
-			{
-				adxMetrics = append(adxMetrics,
-					createMetric(dataPoint.Timestamp().AsTime(), dataPoint.Attributes(), func() float64 {
-						// Change int to float. The value is a float64 in the table
-						return float64(dataPoint.Count())
-					},
-						fmt.Sprintf("%s_%s", md.Name(), countsuffix),
-						fmt.Sprintf("%s%s", md.Description(), countdescription),
-						pmetric.MetricTypeHistogram))
-			}
+			adxMetrics = append(adxMetrics,
+				// first, add one event for sum, and one for count
+				createMetric(dataPoint.Timestamp().AsTime(), dataPoint.Attributes(), dataPoint.Sum,
+					fmt.Sprintf("%s_%s", md.Name(), sumsuffix),
+					fmt.Sprintf("%s%s", md.Description(), sumdescription),
+					pmetric.MetricTypeHistogram),
+				createMetric(dataPoint.Timestamp().AsTime(), dataPoint.Attributes(), func() float64 {
+					// Change int to float. The value is a float64 in the table
+					return float64(dataPoint.Count())
+				},
+					fmt.Sprintf("%s_%s", md.Name(), countsuffix),
+					fmt.Sprintf("%s%s", md.Description(), countdescription),
+					pmetric.MetricTypeHistogram))
 			// Spec says counts is optional but if present it must have one more
 			// element than the bounds array.
 			if counts.Len() == 0 || counts.Len() != bounds.Len()+1 {
@@ -133,8 +128,7 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 			value := uint64(0)
 			// now create buckets for each bound.
 			for bi := 0; bi < bounds.Len(); bi++ {
-				customMap :=
-					copyMap(map[string]any{"le": float64ToDimValue(bounds.At(bi))}, dataPoint.Attributes().AsRaw())
+				customMap := copyMap(map[string]any{"le": float64ToDimValue(bounds.At(bi))}, dataPoint.Attributes().AsRaw())
 
 				value += counts.At(bi)
 				vMap := pcommon.NewMap()
@@ -151,10 +145,9 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 			// add an upper bound for +Inf
 			{
 				// Add the LE field for the bucket's bound
-				customMap :=
-					copyMap(map[string]any{
-						"le": float64ToDimValue(math.Inf(1)),
-					}, dataPoint.Attributes().AsRaw())
+				customMap := copyMap(map[string]any{
+					"le": float64ToDimValue(math.Inf(1)),
+				}, dataPoint.Attributes().AsRaw())
 				vMap := pcommon.NewMap()
 				//nolint:errcheck
 				vMap.FromRaw(customMap)
@@ -170,7 +163,7 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 		return adxMetrics
 	case pmetric.MetricTypeSum:
 		dataPoints := md.Sum().DataPoints()
-		adxMetrics := make([]*AdxMetric, dataPoints.Len())
+		adxMetrics := make([]*adxMetric, dataPoints.Len())
 		for gi := 0; gi < dataPoints.Len(); gi++ {
 			dataPoint := dataPoints.At(gi)
 			adxMetrics[gi] = createMetric(dataPoint.Timestamp().AsTime(), dataPoint.Attributes(), func() float64 {
@@ -183,24 +176,21 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 				}
 				return metricValue
 			}, "", "", pmetric.MetricTypeSum)
-
 		}
 		return adxMetrics
 	case pmetric.MetricTypeSummary:
 		dataPoints := md.Summary().DataPoints()
-		var adxMetrics []*AdxMetric
+		var adxMetrics []*adxMetric
 		for gi := 0; gi < dataPoints.Len(); gi++ {
 			dataPoint := dataPoints.At(gi)
-			// first, add one event for sum, and one for count
-			{
-				adxMetrics = append(adxMetrics, createMetric(dataPoint.Timestamp().AsTime(), dataPoint.Attributes(), dataPoint.Sum,
+			adxMetrics = append(adxMetrics,
+				// first, add one event for sum, and one for count
+				createMetric(dataPoint.Timestamp().AsTime(), dataPoint.Attributes(), dataPoint.Sum,
 					fmt.Sprintf("%s_%s", md.Name(), sumsuffix),
 					fmt.Sprintf("%s%s", md.Description(), sumdescription),
-					pmetric.MetricTypeSummary))
-			}
-			// counts
-			{
-				adxMetrics = append(adxMetrics, createMetric(dataPoint.Timestamp().AsTime(),
+					pmetric.MetricTypeSummary),
+				// counts
+				createMetric(dataPoint.Timestamp().AsTime(),
 					dataPoint.Attributes(),
 					func() float64 {
 						return float64(dataPoint.Count())
@@ -208,8 +198,6 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 					fmt.Sprintf("%s_%s", md.Name(), countsuffix),
 					fmt.Sprintf("%s%s", md.Description(), countdescription),
 					pmetric.MetricTypeSummary))
-
-			}
 			// now create values for each quantile.
 			for bi := 0; bi < dataPoint.QuantileValues().Len(); bi++ {
 				dp := dataPoint.QuantileValues().At(bi)
@@ -231,8 +219,6 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 			}
 		}
 		return adxMetrics
-	case pmetric.MetricTypeExponentialHistogram, pmetric.MetricTypeEmpty:
-		fallthrough
 	default:
 		logger.Warn(
 			"Unsupported metric type : ",
@@ -242,8 +228,8 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 }
 
 // Given all the metrics , transform that to the representative structure
-func rawMetricsToAdxMetrics(_ context.Context, metrics pmetric.Metrics, logger *zap.Logger) []*AdxMetric {
-	var transformedAdxMetrics []*AdxMetric
+func rawMetricsToAdxMetrics(_ context.Context, metrics pmetric.Metrics, logger *zap.Logger) []*adxMetric {
+	var transformedAdxMetrics []*adxMetric
 	resourceMetric := metrics.ResourceMetrics()
 	for i := 0; i < resourceMetric.Len(); i++ {
 		res := resourceMetric.At(i).Resource()
@@ -261,7 +247,7 @@ func rawMetricsToAdxMetrics(_ context.Context, metrics pmetric.Metrics, logger *
 	return transformedAdxMetrics
 }
 
-func copyMap(toAttrib map[string]any, fromAttrib map[string]any) map[string]any {
+func copyMap(toAttrib, fromAttrib map[string]any) map[string]any {
 	for k, v := range fromAttrib {
 		toAttrib[k] = v
 	}

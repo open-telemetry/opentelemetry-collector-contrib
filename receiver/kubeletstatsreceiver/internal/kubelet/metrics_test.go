@@ -16,14 +16,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
 
-type fakeRestClient struct {
-}
+type fakeRestClient struct{}
 
-func (f fakeRestClient) StatsSummary() ([]byte, error) {
+func (fakeRestClient) StatsSummary() ([]byte, error) {
 	return os.ReadFile("../../testdata/stats-summary.json")
 }
 
-func (f fakeRestClient) Pods() ([]byte, error) {
+func (fakeRestClient) Pods() ([]byte, error) {
 	return os.ReadFile("../../testdata/pods.json")
 }
 
@@ -33,19 +32,23 @@ func TestMetricAccumulator(t *testing.T) {
 	summary, _ := statsProvider.StatsSummary()
 	metadataProvider := NewMetadataProvider(rc)
 	podsMetadata, _ := metadataProvider.Pods()
-	k8sMetadata := NewMetadata([]MetadataLabel{MetadataLabelContainerID}, podsMetadata, NodeCapacity{}, nil)
+	k8sMetadata := NewMetadata([]MetadataLabel{MetadataLabelContainerID}, podsMetadata, NodeInfo{}, nil)
 	mbs := &metadata.MetricsBuilders{
-		NodeMetricsBuilder:      metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings()),
-		PodMetricsBuilder:       metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings()),
-		ContainerMetricsBuilder: metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings()),
-		OtherMetricsBuilder:     metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings()),
+		NodeMetricsBuilder:      metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type)),
+		PodMetricsBuilder:       metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type)),
+		ContainerMetricsBuilder: metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type)),
+		OtherMetricsBuilder:     metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type)),
 	}
-	requireMetricsOk(t, MetricsData(zap.NewNop(), summary, k8sMetadata, ValidMetricGroups, mbs))
+	ifaces := map[MetricGroup]bool{
+		NodeMetricGroup: true,
+		PodMetricGroup:  true,
+	}
+	requireMetricsOk(t, MetricsData(zap.NewNop(), summary, k8sMetadata, ValidMetricGroups, ifaces, mbs))
 	// Disable all groups
 	mbs.NodeMetricsBuilder.Reset()
 	mbs.PodMetricsBuilder.Reset()
 	mbs.OtherMetricsBuilder.Reset()
-	require.Empty(t, MetricsData(zap.NewNop(), summary, k8sMetadata, map[MetricGroup]bool{}, mbs))
+	require.Empty(t, MetricsData(zap.NewNop(), summary, k8sMetadata, map[MetricGroup]bool{}, map[MetricGroup]bool{}, mbs))
 }
 
 func requireMetricsOk(t *testing.T, mds []pmetric.Metrics) {
@@ -65,7 +68,7 @@ func requireMetricsOk(t *testing.T, mds []pmetric.Metrics) {
 }
 
 func requireMetricOk(t *testing.T, m pmetric.Metric) {
-	require.NotZero(t, m.Name())
+	require.NotEmpty(t, m.Name())
 	require.NotEqual(t, pmetric.MetricTypeEmpty, m.Type())
 	switch m.Type() {
 	case pmetric.MetricTypeGauge:
@@ -143,6 +146,10 @@ func TestUptime(t *testing.T) {
 		PodMetricGroup:       true,
 		NodeMetricGroup:      true,
 	}
+	ifaces := map[MetricGroup]bool{
+		NodeMetricGroup: true,
+		PodMetricGroup:  true,
+	}
 
 	cfg := metadata.DefaultMetricsBuilderConfig()
 	cfg.Metrics.K8sNodeUptime.Enabled = true
@@ -150,12 +157,12 @@ func TestUptime(t *testing.T) {
 	cfg.Metrics.ContainerUptime.Enabled = true
 
 	mbs := &metadata.MetricsBuilders{
-		NodeMetricsBuilder:      metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings()),
-		PodMetricsBuilder:       metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings()),
-		ContainerMetricsBuilder: metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings()),
+		NodeMetricsBuilder:      metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
+		PodMetricsBuilder:       metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
+		ContainerMetricsBuilder: metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
 	}
 
-	metrics := indexedFakeMetrics(MetricsData(zap.NewNop(), summary, Metadata{}, mgs, mbs))
+	metrics := indexedFakeMetrics(MetricsData(zap.NewNop(), summary, Metadata{}, mgs, ifaces, mbs))
 
 	requireContains(t, metrics, "k8s.node.uptime")
 	requireContains(t, metrics, "k8s.pod.uptime")
@@ -215,11 +222,15 @@ func fakeMetrics() []pmetric.Metrics {
 		PodMetricGroup:       true,
 		NodeMetricGroup:      true,
 	}
-	mbs := &metadata.MetricsBuilders{
-		NodeMetricsBuilder:      metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings()),
-		PodMetricsBuilder:       metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings()),
-		ContainerMetricsBuilder: metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings()),
-		OtherMetricsBuilder:     metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings()),
+	ifaces := map[MetricGroup]bool{
+		NodeMetricGroup: true,
+		PodMetricGroup:  true,
 	}
-	return MetricsData(zap.NewNop(), summary, Metadata{}, mgs, mbs)
+	mbs := &metadata.MetricsBuilders{
+		NodeMetricsBuilder:      metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type)),
+		PodMetricsBuilder:       metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type)),
+		ContainerMetricsBuilder: metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type)),
+		OtherMetricsBuilder:     metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type)),
+	}
+	return MetricsData(zap.NewNop(), summary, Metadata{}, mgs, ifaces, mbs)
 }

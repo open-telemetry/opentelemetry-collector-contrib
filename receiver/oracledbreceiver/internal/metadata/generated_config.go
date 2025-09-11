@@ -28,33 +28,48 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for oracledb metrics.
 type MetricsConfig struct {
-	OracledbConsistentGets        MetricConfig `mapstructure:"oracledb.consistent_gets"`
-	OracledbCPUTime               MetricConfig `mapstructure:"oracledb.cpu_time"`
-	OracledbDbBlockGets           MetricConfig `mapstructure:"oracledb.db_block_gets"`
-	OracledbDmlLocksLimit         MetricConfig `mapstructure:"oracledb.dml_locks.limit"`
-	OracledbDmlLocksUsage         MetricConfig `mapstructure:"oracledb.dml_locks.usage"`
-	OracledbEnqueueDeadlocks      MetricConfig `mapstructure:"oracledb.enqueue_deadlocks"`
-	OracledbEnqueueLocksLimit     MetricConfig `mapstructure:"oracledb.enqueue_locks.limit"`
-	OracledbEnqueueLocksUsage     MetricConfig `mapstructure:"oracledb.enqueue_locks.usage"`
-	OracledbEnqueueResourcesLimit MetricConfig `mapstructure:"oracledb.enqueue_resources.limit"`
-	OracledbEnqueueResourcesUsage MetricConfig `mapstructure:"oracledb.enqueue_resources.usage"`
-	OracledbExchangeDeadlocks     MetricConfig `mapstructure:"oracledb.exchange_deadlocks"`
-	OracledbExecutions            MetricConfig `mapstructure:"oracledb.executions"`
-	OracledbHardParses            MetricConfig `mapstructure:"oracledb.hard_parses"`
-	OracledbLogicalReads          MetricConfig `mapstructure:"oracledb.logical_reads"`
-	OracledbParseCalls            MetricConfig `mapstructure:"oracledb.parse_calls"`
-	OracledbPgaMemory             MetricConfig `mapstructure:"oracledb.pga_memory"`
-	OracledbPhysicalReads         MetricConfig `mapstructure:"oracledb.physical_reads"`
-	OracledbProcessesLimit        MetricConfig `mapstructure:"oracledb.processes.limit"`
-	OracledbProcessesUsage        MetricConfig `mapstructure:"oracledb.processes.usage"`
-	OracledbSessionsLimit         MetricConfig `mapstructure:"oracledb.sessions.limit"`
-	OracledbSessionsUsage         MetricConfig `mapstructure:"oracledb.sessions.usage"`
-	OracledbTablespaceSizeLimit   MetricConfig `mapstructure:"oracledb.tablespace_size.limit"`
-	OracledbTablespaceSizeUsage   MetricConfig `mapstructure:"oracledb.tablespace_size.usage"`
-	OracledbTransactionsLimit     MetricConfig `mapstructure:"oracledb.transactions.limit"`
-	OracledbTransactionsUsage     MetricConfig `mapstructure:"oracledb.transactions.usage"`
-	OracledbUserCommits           MetricConfig `mapstructure:"oracledb.user_commits"`
-	OracledbUserRollbacks         MetricConfig `mapstructure:"oracledb.user_rollbacks"`
+	OracledbConsistentGets                        MetricConfig `mapstructure:"oracledb.consistent_gets"`
+	OracledbCPUTime                               MetricConfig `mapstructure:"oracledb.cpu_time"`
+	OracledbDbBlockGets                           MetricConfig `mapstructure:"oracledb.db_block_gets"`
+	OracledbDdlStatementsParallelized             MetricConfig `mapstructure:"oracledb.ddl_statements_parallelized"`
+	OracledbDmlLocksLimit                         MetricConfig `mapstructure:"oracledb.dml_locks.limit"`
+	OracledbDmlLocksUsage                         MetricConfig `mapstructure:"oracledb.dml_locks.usage"`
+	OracledbDmlStatementsParallelized             MetricConfig `mapstructure:"oracledb.dml_statements_parallelized"`
+	OracledbEnqueueDeadlocks                      MetricConfig `mapstructure:"oracledb.enqueue_deadlocks"`
+	OracledbEnqueueLocksLimit                     MetricConfig `mapstructure:"oracledb.enqueue_locks.limit"`
+	OracledbEnqueueLocksUsage                     MetricConfig `mapstructure:"oracledb.enqueue_locks.usage"`
+	OracledbEnqueueResourcesLimit                 MetricConfig `mapstructure:"oracledb.enqueue_resources.limit"`
+	OracledbEnqueueResourcesUsage                 MetricConfig `mapstructure:"oracledb.enqueue_resources.usage"`
+	OracledbExchangeDeadlocks                     MetricConfig `mapstructure:"oracledb.exchange_deadlocks"`
+	OracledbExecutions                            MetricConfig `mapstructure:"oracledb.executions"`
+	OracledbHardParses                            MetricConfig `mapstructure:"oracledb.hard_parses"`
+	OracledbLogicalReads                          MetricConfig `mapstructure:"oracledb.logical_reads"`
+	OracledbLogons                                MetricConfig `mapstructure:"oracledb.logons"`
+	OracledbParallelOperationsDowngraded1To25Pct  MetricConfig `mapstructure:"oracledb.parallel_operations_downgraded_1_to_25_pct"`
+	OracledbParallelOperationsDowngraded25To50Pct MetricConfig `mapstructure:"oracledb.parallel_operations_downgraded_25_to_50_pct"`
+	OracledbParallelOperationsDowngraded50To75Pct MetricConfig `mapstructure:"oracledb.parallel_operations_downgraded_50_to_75_pct"`
+	OracledbParallelOperationsDowngraded75To99Pct MetricConfig `mapstructure:"oracledb.parallel_operations_downgraded_75_to_99_pct"`
+	OracledbParallelOperationsDowngradedToSerial  MetricConfig `mapstructure:"oracledb.parallel_operations_downgraded_to_serial"`
+	OracledbParallelOperationsNotDowngraded       MetricConfig `mapstructure:"oracledb.parallel_operations_not_downgraded"`
+	OracledbParseCalls                            MetricConfig `mapstructure:"oracledb.parse_calls"`
+	OracledbPgaMemory                             MetricConfig `mapstructure:"oracledb.pga_memory"`
+	OracledbPhysicalReadIoRequests                MetricConfig `mapstructure:"oracledb.physical_read_io_requests"`
+	OracledbPhysicalReads                         MetricConfig `mapstructure:"oracledb.physical_reads"`
+	OracledbPhysicalReadsDirect                   MetricConfig `mapstructure:"oracledb.physical_reads_direct"`
+	OracledbPhysicalWriteIoRequests               MetricConfig `mapstructure:"oracledb.physical_write_io_requests"`
+	OracledbPhysicalWrites                        MetricConfig `mapstructure:"oracledb.physical_writes"`
+	OracledbPhysicalWritesDirect                  MetricConfig `mapstructure:"oracledb.physical_writes_direct"`
+	OracledbProcessesLimit                        MetricConfig `mapstructure:"oracledb.processes.limit"`
+	OracledbProcessesUsage                        MetricConfig `mapstructure:"oracledb.processes.usage"`
+	OracledbQueriesParallelized                   MetricConfig `mapstructure:"oracledb.queries_parallelized"`
+	OracledbSessionsLimit                         MetricConfig `mapstructure:"oracledb.sessions.limit"`
+	OracledbSessionsUsage                         MetricConfig `mapstructure:"oracledb.sessions.usage"`
+	OracledbTablespaceSizeLimit                   MetricConfig `mapstructure:"oracledb.tablespace_size.limit"`
+	OracledbTablespaceSizeUsage                   MetricConfig `mapstructure:"oracledb.tablespace_size.usage"`
+	OracledbTransactionsLimit                     MetricConfig `mapstructure:"oracledb.transactions.limit"`
+	OracledbTransactionsUsage                     MetricConfig `mapstructure:"oracledb.transactions.usage"`
+	OracledbUserCommits                           MetricConfig `mapstructure:"oracledb.user_commits"`
+	OracledbUserRollbacks                         MetricConfig `mapstructure:"oracledb.user_rollbacks"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -68,11 +83,17 @@ func DefaultMetricsConfig() MetricsConfig {
 		OracledbDbBlockGets: MetricConfig{
 			Enabled: false,
 		},
+		OracledbDdlStatementsParallelized: MetricConfig{
+			Enabled: false,
+		},
 		OracledbDmlLocksLimit: MetricConfig{
 			Enabled: true,
 		},
 		OracledbDmlLocksUsage: MetricConfig{
 			Enabled: true,
+		},
+		OracledbDmlStatementsParallelized: MetricConfig{
+			Enabled: false,
 		},
 		OracledbEnqueueDeadlocks: MetricConfig{
 			Enabled: true,
@@ -101,20 +122,59 @@ func DefaultMetricsConfig() MetricsConfig {
 		OracledbLogicalReads: MetricConfig{
 			Enabled: true,
 		},
+		OracledbLogons: MetricConfig{
+			Enabled: false,
+		},
+		OracledbParallelOperationsDowngraded1To25Pct: MetricConfig{
+			Enabled: false,
+		},
+		OracledbParallelOperationsDowngraded25To50Pct: MetricConfig{
+			Enabled: false,
+		},
+		OracledbParallelOperationsDowngraded50To75Pct: MetricConfig{
+			Enabled: false,
+		},
+		OracledbParallelOperationsDowngraded75To99Pct: MetricConfig{
+			Enabled: false,
+		},
+		OracledbParallelOperationsDowngradedToSerial: MetricConfig{
+			Enabled: false,
+		},
+		OracledbParallelOperationsNotDowngraded: MetricConfig{
+			Enabled: false,
+		},
 		OracledbParseCalls: MetricConfig{
 			Enabled: true,
 		},
 		OracledbPgaMemory: MetricConfig{
 			Enabled: true,
 		},
+		OracledbPhysicalReadIoRequests: MetricConfig{
+			Enabled: false,
+		},
 		OracledbPhysicalReads: MetricConfig{
 			Enabled: true,
+		},
+		OracledbPhysicalReadsDirect: MetricConfig{
+			Enabled: false,
+		},
+		OracledbPhysicalWriteIoRequests: MetricConfig{
+			Enabled: false,
+		},
+		OracledbPhysicalWrites: MetricConfig{
+			Enabled: false,
+		},
+		OracledbPhysicalWritesDirect: MetricConfig{
+			Enabled: false,
 		},
 		OracledbProcessesLimit: MetricConfig{
 			Enabled: true,
 		},
 		OracledbProcessesUsage: MetricConfig{
 			Enabled: true,
+		},
+		OracledbQueriesParallelized: MetricConfig{
+			Enabled: false,
 		},
 		OracledbSessionsLimit: MetricConfig{
 			Enabled: true,
@@ -143,6 +203,42 @@ func DefaultMetricsConfig() MetricsConfig {
 	}
 }
 
+// EventConfig provides common config for a particular event.
+type EventConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+
+	enabledSetByUser bool
+}
+
+func (ec *EventConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(ec)
+	if err != nil {
+		return err
+	}
+	ec.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// EventsConfig provides config for oracledb events.
+type EventsConfig struct {
+	DbServerQuerySample EventConfig `mapstructure:"db.server.query_sample"`
+	DbServerTopQuery    EventConfig `mapstructure:"db.server.top_query"`
+}
+
+func DefaultEventsConfig() EventsConfig {
+	return EventsConfig{
+		DbServerQuerySample: EventConfig{
+			Enabled: false,
+		},
+		DbServerTopQuery: EventConfig{
+			Enabled: false,
+		},
+	}
+}
+
 // ResourceAttributeConfig provides common config for a particular resource attribute.
 type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
@@ -153,6 +249,13 @@ type ResourceAttributeConfig struct {
 	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
 	// MetricsInclude has higher priority than MetricsExclude.
 	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+	// Experimental: EventsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only events with matching resource attribute values will be emitted.
+	EventsInclude []filter.Config `mapstructure:"events_include"`
+	// Experimental: EventsExclude defines a list of filters for attribute values.
+	// If the list is not empty, events with matching resource attribute values will not be emitted.
+	// EventsInclude has higher priority than EventsExclude.
+	EventsExclude []filter.Config `mapstructure:"events_exclude"`
 
 	enabledSetByUser bool
 }
@@ -171,11 +274,15 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 
 // ResourceAttributesConfig provides config for oracledb resource attributes.
 type ResourceAttributesConfig struct {
+	HostName             ResourceAttributeConfig `mapstructure:"host.name"`
 	OracledbInstanceName ResourceAttributeConfig `mapstructure:"oracledb.instance.name"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
+		HostName: ResourceAttributeConfig{
+			Enabled: true,
+		},
 		OracledbInstanceName: ResourceAttributeConfig{
 			Enabled: true,
 		},
@@ -191,6 +298,19 @@ type MetricsBuilderConfig struct {
 func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
 	return MetricsBuilderConfig{
 		Metrics:            DefaultMetricsConfig(),
+		ResourceAttributes: DefaultResourceAttributesConfig(),
+	}
+}
+
+// LogsBuilderConfig is a configuration for oracledb logs builder.
+type LogsBuilderConfig struct {
+	Events             EventsConfig             `mapstructure:"events"`
+	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
+}
+
+func DefaultLogsBuilderConfig() LogsBuilderConfig {
+	return LogsBuilderConfig{
+		Events:             DefaultEventsConfig(),
 		ResourceAttributes: DefaultResourceAttributesConfig(),
 	}
 }

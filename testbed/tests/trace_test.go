@@ -10,17 +10,16 @@ package tests
 // coded in this file or use scenarios from perf_scenarios.go.
 
 import (
-	"context"
 	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/idutils"
+	idutils "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datasenders"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
@@ -38,15 +37,6 @@ func TestTrace10kSPS(t *testing.T) {
 		receiver     testbed.DataReceiver
 		resourceSpec testbed.ResourceSpec
 	}{
-		{
-			"OpenCensus",
-			datasenders.NewOCTraceDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
-			datareceivers.NewOCDataReceiver(testutil.GetAvailablePort(t)),
-			testbed.ResourceSpec{
-				ExpectedMaxCPU: 39,
-				ExpectedMaxRAM: 100,
-			},
-		},
 		{
 			"OTLP-gRPC",
 			testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
@@ -93,33 +83,6 @@ func TestTrace10kSPS(t *testing.T) {
 			},
 		},
 		{
-			"SAPM",
-			datasenders.NewSapmDataSender(testutil.GetAvailablePort(t), ""),
-			datareceivers.NewSapmDataReceiver(testutil.GetAvailablePort(t), ""),
-			testbed.ResourceSpec{
-				ExpectedMaxCPU: 32,
-				ExpectedMaxRAM: 100,
-			},
-		},
-		{
-			"SAPM-gzip",
-			datasenders.NewSapmDataSender(testutil.GetAvailablePort(t), "gzip"),
-			datareceivers.NewSapmDataReceiver(testutil.GetAvailablePort(t), "gzip"),
-			testbed.ResourceSpec{
-				ExpectedMaxCPU: 35,
-				ExpectedMaxRAM: 110,
-			},
-		},
-		{
-			"SAPM-zstd",
-			datasenders.NewSapmDataSender(testutil.GetAvailablePort(t), "zstd"),
-			datareceivers.NewSapmDataReceiver(testutil.GetAvailablePort(t), "zstd"),
-			testbed.ResourceSpec{
-				ExpectedMaxCPU: 32,
-				ExpectedMaxRAM: 300,
-			},
-		},
-		{
 			"Zipkin",
 			datasenders.NewZipkinDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
 			datareceivers.NewZipkinDataReceiver(testutil.GetAvailablePort(t)),
@@ -148,6 +111,7 @@ func TestTrace10kSPS(t *testing.T) {
 				test.resourceSpec,
 				performanceResultsSummary,
 				processors,
+				nil,
 				nil,
 			)
 		})
@@ -180,7 +144,6 @@ func TestTrace10kSPSJaegerGRPC(t *testing.T) {
 }
 
 func TestTraceNoBackend10kSPS(t *testing.T) {
-
 	limitProcessors := []ProcessorNameAndConfigBody{
 		{
 			Name: "memory_limiter",
@@ -194,7 +157,7 @@ func TestTraceNoBackend10kSPS(t *testing.T) {
 
 	noLimitProcessors := []ProcessorNameAndConfigBody{}
 
-	var processorsConfig = []processorConfig{
+	processorsConfig := []processorConfig{
 		{
 			Name:                "NoMemoryLimit",
 			Processor:           noLimitProcessors,
@@ -277,7 +240,6 @@ func verifySingleSpan(
 	spanName string,
 	verifyReceived func(span ptrace.Span),
 ) {
-
 	// Clear previously received traces.
 	tc.MockBackend.ClearReceivedItems()
 	startCounter := tc.MockBackend.DataItemsReceived()
@@ -285,14 +247,14 @@ func verifySingleSpan(
 	// Send one span.
 	td := ptrace.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
-	rs.Resource().Attributes().PutStr(conventions.AttributeServiceName, serviceName)
+	rs.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), serviceName)
 	span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetTraceID(idutils.UInt64ToTraceID(0, 1))
 	span.SetSpanID(idutils.UInt64ToSpanID(1))
 	span.SetName(spanName)
 
 	sender := tc.LoadGenerator.(*testbed.ProviderSender).Sender.(testbed.TraceDataSender)
-	require.NoError(t, sender.ConsumeTraces(context.Background(), td))
+	require.NoError(t, sender.ConsumeTraces(t.Context(), td))
 
 	// We bypass the load generator in this test, but make sure to increment the
 	// counter since it is used in final reports.
@@ -317,7 +279,7 @@ func verifySingleSpan(
 			}
 		}
 	}
-	assert.EqualValues(t, 1, count, "must receive one span")
+	assert.Equal(t, 1, count, "must receive one span")
 }
 
 func TestTraceAttributesProcessor(t *testing.T) {
@@ -364,7 +326,7 @@ func TestTraceAttributesProcessor(t *testing.T) {
 
 			agentProc := testbed.NewChildProcessCollector(testbed.WithEnvVar("GOMAXPROCS", "2"))
 			configStr := createConfigYaml(t, test.sender, test.receiver, resultDir, processors, nil)
-			configCleanup, err := agentProc.PrepareConfig(configStr)
+			configCleanup, err := agentProc.PrepareConfig(t, configStr)
 			require.NoError(t, err)
 			defer configCleanup()
 
@@ -400,7 +362,7 @@ func TestTraceAttributesProcessor(t *testing.T) {
 				require.Equal(t, 1, span.Attributes().Len())
 				attrVal, ok := span.Attributes().Get("new_attr")
 				assert.True(t, ok)
-				assert.EqualValues(t, "string value", attrVal.Str())
+				assert.Equal(t, "string value", attrVal.Str())
 			}
 
 			verifySingleSpan(t, tc, nodeToInclude, spanToInclude, verifySpan)
@@ -456,7 +418,7 @@ func TestTraceAttributesProcessorJaegerGRPC(t *testing.T) {
 
 	agentProc := testbed.NewChildProcessCollector(testbed.WithEnvVar("GOMAXPROCS", "2"))
 	configStr := createConfigYaml(t, sender, receiver, resultDir, processors, nil)
-	configCleanup, err := agentProc.PrepareConfig(configStr)
+	configCleanup, err := agentProc.PrepareConfig(t, configStr)
 	require.NoError(t, err)
 	defer configCleanup()
 
@@ -494,7 +456,7 @@ func TestTraceAttributesProcessorJaegerGRPC(t *testing.T) {
 		require.Equal(t, 1, span.Attributes().Len())
 		attrVal, ok := span.Attributes().Get("new_attr")
 		assert.True(t, ok)
-		assert.EqualValues(t, "string value", attrVal.Str())
+		assert.Equal(t, "string value", attrVal.Str())
 	}
 
 	verifySingleSpan(t, tc, nodeToInclude, spanToInclude, verifySpan)

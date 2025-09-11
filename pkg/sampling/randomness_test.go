@@ -24,7 +24,7 @@ func TestExplicitRandomness(t *testing.T) {
 
 func ExampleTraceIDToRandomness() {
 	// TraceID represented in hex as "abababababababababd29d6a7215ced0"
-	var exampleTid = pcommon.TraceID{
+	exampleTid := pcommon.TraceID{
 		// 9 meaningless bytes
 		0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
 		// 7 bytes randomness

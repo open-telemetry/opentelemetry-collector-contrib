@@ -38,3 +38,9 @@ datadog/default:
   api:
     key: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 
+datadog/customReporterPeriod:
+  api:
+    key: abc
+  host_metadata:
+    enabled: true
+    reporter_period: 10m

@@ -7,3 +7,4 @@ status:
   distributions: [contrib]
   codeowners:
     active: [atoulme]
+    seeking_new: true

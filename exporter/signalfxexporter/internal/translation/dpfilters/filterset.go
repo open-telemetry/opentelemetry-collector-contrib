@@ -5,7 +5,7 @@ package dpfilters // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 
-// FilterSet is a collection of datapont filters, any one of which must match
+// FilterSet is a collection of datapoint filters, any one of which must match
 // for a datapoint to be matched.
 type FilterSet struct {
 	excludeFilters []*dataPointFilter
@@ -30,7 +30,7 @@ func (fs *FilterSet) Matches(dp *sfxpb.DataPoint) bool {
 	return false
 }
 
-func NewFilterSet(excludes []MetricFilter, includes []MetricFilter) (*FilterSet, error) {
+func NewFilterSet(excludes, includes []MetricFilter) (*FilterSet, error) {
 	excludeSet, err := getDataPointFilters(excludes)
 	if err != nil {
 		return nil, err

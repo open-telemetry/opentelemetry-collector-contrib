@@ -6,7 +6,7 @@ status:
     alpha: [metrics, logs]
   distributions: [contrib]
   codeowners:
-    active: [Aneurysm9]
+    active: [Aneurysm9, axw]
 
 tests:
   config:

@@ -19,6 +19,8 @@ all_set:
       enabled: true
     splunk.data.indexes.extended.total.size:
       enabled: true
+    splunk.health:
+      enabled: true
     splunk.indexer.avg.rate:
       enabled: true
     splunk.indexer.cpu.time:
@@ -26,6 +28,8 @@ all_set:
     splunk.indexer.queue.ratio:
       enabled: true
     splunk.indexer.raw.write.time:
+      enabled: true
+    splunk.indexer.rollingrestart.status:
       enabled: true
     splunk.indexer.throughput:
       enabled: true
@@ -59,21 +63,41 @@ all_set:
       enabled: true
     splunk.scheduler.completion.ratio:
       enabled: true
+    splunk.search.duration:
+      enabled: true
+    splunk.search.initiation:
+      enabled: true
+    splunk.search.status:
+      enabled: true
+    splunk.search.success:
+      enabled: true
     splunk.server.introspection.queues.current:
       enabled: true
     splunk.server.introspection.queues.current.bytes:
       enabled: true
     splunk.server.searchartifacts.adhoc:
       enabled: true
+    splunk.server.searchartifacts.adhoc.size:
+      enabled: true
     splunk.server.searchartifacts.completed:
+      enabled: true
+    splunk.server.searchartifacts.completed.size:
       enabled: true
     splunk.server.searchartifacts.incomplete:
       enabled: true
+    splunk.server.searchartifacts.incomplete.size:
+      enabled: true
     splunk.server.searchartifacts.invalid:
+      enabled: true
+    splunk.server.searchartifacts.job.cache.count:
+      enabled: true
+    splunk.server.searchartifacts.job.cache.size:
       enabled: true
     splunk.server.searchartifacts.savedsearches:
       enabled: true
     splunk.server.searchartifacts.scheduled:
+      enabled: true
+    splunk.server.searchartifacts.scheduled.size:
       enabled: true
     splunk.typing.queue.ratio:
       enabled: true
@@ -97,6 +121,8 @@ none_set:
       enabled: false
     splunk.data.indexes.extended.total.size:
       enabled: false
+    splunk.health:
+      enabled: false
     splunk.indexer.avg.rate:
       enabled: false
     splunk.indexer.cpu.time:
@@ -104,6 +130,8 @@ none_set:
     splunk.indexer.queue.ratio:
       enabled: false
     splunk.indexer.raw.write.time:
+      enabled: false
+    splunk.indexer.rollingrestart.status:
       enabled: false
     splunk.indexer.throughput:
       enabled: false
@@ -137,21 +165,41 @@ none_set:
       enabled: false
     splunk.scheduler.completion.ratio:
       enabled: false
+    splunk.search.duration:
+      enabled: false
+    splunk.search.initiation:
+      enabled: false
+    splunk.search.status:
+      enabled: false
+    splunk.search.success:
+      enabled: false
     splunk.server.introspection.queues.current:
       enabled: false
     splunk.server.introspection.queues.current.bytes:
       enabled: false
     splunk.server.searchartifacts.adhoc:
       enabled: false
+    splunk.server.searchartifacts.adhoc.size:
+      enabled: false
     splunk.server.searchartifacts.completed:
+      enabled: false
+    splunk.server.searchartifacts.completed.size:
       enabled: false
     splunk.server.searchartifacts.incomplete:
       enabled: false
+    splunk.server.searchartifacts.incomplete.size:
+      enabled: false
     splunk.server.searchartifacts.invalid:
+      enabled: false
+    splunk.server.searchartifacts.job.cache.count:
+      enabled: false
+    splunk.server.searchartifacts.job.cache.size:
       enabled: false
     splunk.server.searchartifacts.savedsearches:
       enabled: false
     splunk.server.searchartifacts.scheduled:
+      enabled: false
+    splunk.server.searchartifacts.scheduled.size:
       enabled: false
     splunk.typing.queue.ratio:
       enabled: false

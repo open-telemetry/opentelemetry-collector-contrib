@@ -4,7 +4,6 @@
 package awsxrayreceiver
 
 import (
-	"context"
 	"runtime"
 	"testing"
 
@@ -36,8 +35,8 @@ func TestCreateTraces(t *testing.T) {
 
 	factory := NewFactory()
 	_, err := factory.CreateTraces(
-		context.Background(),
-		receivertest.NewNopSettings(),
+		t.Context(),
+		receivertest.NewNopSettings(metadata.Type),
 		factory.CreateDefaultConfig().(*Config),
 		consumertest.NewNop(),
 	)
@@ -47,8 +46,8 @@ func TestCreateTraces(t *testing.T) {
 func TestCreateMetrics(t *testing.T) {
 	factory := NewFactory()
 	_, err := factory.CreateMetrics(
-		context.Background(),
-		receivertest.NewNopSettings(),
+		t.Context(),
+		receivertest.NewNopSettings(metadata.Type),
 		factory.CreateDefaultConfig().(*Config),
 		consumertest.NewNop(),
 	)

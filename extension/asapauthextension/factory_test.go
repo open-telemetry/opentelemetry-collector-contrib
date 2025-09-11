@@ -4,7 +4,6 @@
 package asapauthextension
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -72,7 +71,7 @@ func TestCreate(t *testing.T) {
 			cfg.PrivateKey = testcase.settings.PrivateKey
 
 			// validate extension creation
-			ext, err := createExtension(context.Background(), extensiontest.NewNopSettings(), cfg)
+			ext, err := createExtension(t.Context(), extensiontest.NewNopSettings(extensiontest.NopType), cfg)
 			if testcase.shouldError {
 				assert.Error(t, err)
 			} else {

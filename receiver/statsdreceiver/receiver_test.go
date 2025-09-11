@@ -4,8 +4,8 @@
 package statsdreceiver
 
 import (
-	"context"
 	"errors"
+	"runtime"
 	"testing"
 	"time"
 
@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/internal/transport/client"
 )
 
@@ -48,34 +49,34 @@ func Test_statsdreceiver_Start(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			receiver, err := newReceiver(receivertest.NewNopSettings(), tt.args.config, tt.args.nextConsumer)
+			receiver, err := newReceiver(receivertest.NewNopSettings(metadata.Type), tt.args.config, tt.args.nextConsumer)
 			require.NoError(t, err)
-			err = receiver.Start(context.Background(), componenttest.NewNopHost())
+			err = receiver.Start(t.Context(), componenttest.NewNopHost())
 			assert.Equal(t, tt.wantErr, err)
 
-			assert.NoError(t, receiver.Shutdown(context.Background()))
+			assert.NoError(t, receiver.Shutdown(t.Context()))
 		})
 	}
 }
 
 func TestStatsdReceiver_ShutdownBeforeStart(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	cfg := createDefaultConfig().(*Config)
 	nextConsumer := consumertest.NewNop()
-	rcv, err := newReceiver(receivertest.NewNopSettings(), *cfg, nextConsumer)
+	rcv, err := newReceiver(receivertest.NewNopSettings(metadata.Type), *cfg, nextConsumer)
 	assert.NoError(t, err)
 	r := rcv.(*statsdReceiver)
 	assert.NoError(t, r.Shutdown(ctx))
 }
 
 func TestStatsdReceiver_Flush(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	cfg := createDefaultConfig().(*Config)
 	nextConsumer := consumertest.NewNop()
-	rcv, err := newReceiver(receivertest.NewNopSettings(), *cfg, nextConsumer)
+	rcv, err := newReceiver(receivertest.NewNopSettings(metadata.Type), *cfg, nextConsumer)
 	assert.NoError(t, err)
 	r := rcv.(*statsdReceiver)
-	var metrics = pmetric.NewMetrics()
+	metrics := pmetric.NewMetrics()
 	assert.NoError(t, r.Flush(ctx, metrics, nextConsumer))
 	assert.NoError(t, r.Start(ctx, componenttest.NewNopHost()))
 	assert.NoError(t, r.Shutdown(ctx))
@@ -97,6 +98,7 @@ func Test_statsdreceiver_EndToEnd(t *testing.T) {
 						Endpoint:  defaultBindEndpoint,
 						Transport: confignet.TransportTypeUDP,
 					},
+					SocketPermissions:   defaultSocketPermissions,
 					AggregationInterval: 4 * time.Second,
 				}
 			},
@@ -106,19 +108,41 @@ func Test_statsdreceiver_EndToEnd(t *testing.T) {
 				return c
 			},
 		},
+		{
+			name: "UDS server with 4s interval",
+			addr: "/tmp/statsd_test.sock",
+			configFn: func() *Config {
+				return &Config{
+					NetAddr: confignet.AddrConfig{
+						Endpoint:  "/tmp/statsd_test.sock",
+						Transport: confignet.TransportTypeUnixgram,
+					},
+					SocketPermissions:   defaultSocketPermissions,
+					AggregationInterval: 4 * time.Second,
+				}
+			},
+			clientFn: func(t *testing.T, addr string) *client.StatsD {
+				c, err := client.NewStatsD("unixgram", addr)
+				require.NoError(t, err)
+				return c
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := tt.configFn()
+			if runtime.GOOS == "windows" && (cfg.NetAddr.Transport == confignet.TransportTypeUnix || cfg.NetAddr.Transport == confignet.TransportTypeUnixgram || cfg.NetAddr.Transport == confignet.TransportTypeUnixPacket) {
+				t.Skip("skipping UDS test on windows")
+			}
 			cfg.NetAddr.Endpoint = tt.addr
 			sink := new(consumertest.MetricsSink)
-			rcv, err := newReceiver(receivertest.NewNopSettings(), *cfg, sink)
+			rcv, err := newReceiver(receivertest.NewNopSettings(metadata.Type), *cfg, sink)
 			require.NoError(t, err)
 			r := rcv.(*statsdReceiver)
 
-			require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
+			require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()))
 			defer func() {
-				assert.NoError(t, r.Shutdown(context.Background()))
+				assert.NoError(t, r.Shutdown(t.Context()))
 			}()
 
 			statsdClient := tt.clientFn(t, tt.addr)

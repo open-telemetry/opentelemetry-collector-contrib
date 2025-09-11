@@ -46,13 +46,12 @@ func convertIngressToEndpoints(idNamespace string, ingress *v1.Ingress) []observ
 				})
 			}
 		}
-
 	}
 
 	return endpoints
 }
 
-// getTLSHosts return a list of tls hosts for an ingress ressource.
+// getTLSHosts return a list of tls hosts for an ingress resource.
 func getTLSHosts(i *v1.Ingress) []string {
 	var hosts []string
 
@@ -64,7 +63,7 @@ func getTLSHosts(i *v1.Ingress) []string {
 }
 
 // matchesHostPattern returns true if the host matches the host pattern or wildcard pattern.
-func matchesHostPattern(pattern string, host string) bool {
+func matchesHostPattern(pattern, host string) bool {
 	// if host match the pattern (host pattern).
 	if pattern == host {
 		return true

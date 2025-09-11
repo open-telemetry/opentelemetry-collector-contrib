@@ -1,7 +1,8 @@
 CREATE TABLE IF NOT EXISTS %s	
 (	
     service_name          VARCHAR(200),	
-    timestamp             DATETIME(6),	
+    timestamp             DATETIME(6),
+    service_instance_id   VARCHAR(200),
     trace_id              VARCHAR(200),	
     span_id               STRING,	
     trace_state           STRING,	
@@ -19,7 +20,8 @@ CREATE TABLE IF NOT EXISTS %s
     scope_name            STRING,	
     scope_version         STRING,	
     INDEX idx_service_name(service_name) USING INVERTED,	
-    INDEX idx_timestamp(timestamp) USING INVERTED,	
+    INDEX idx_timestamp(timestamp) USING INVERTED,
+    INDEX idx_service_instance_id(service_instance_id) USING INVERTED,
     INDEX idx_trace_id(trace_id) USING INVERTED,	
     INDEX idx_span_id(span_id) USING INVERTED,	
     INDEX idx_trace_state(trace_state) USING INVERTED,	
@@ -38,5 +40,5 @@ CREATE TABLE IF NOT EXISTS %s
 ENGINE = OLAP	
 DUPLICATE KEY(service_name, timestamp)	
 PARTITION BY RANGE(timestamp) ()	
-DISTRIBUTED BY HASH(trace_id) BUCKETS AUTO	
+DISTRIBUTED BY RANDOM BUCKETS AUTO	
 %s;

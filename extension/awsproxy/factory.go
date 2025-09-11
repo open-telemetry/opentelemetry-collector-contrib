@@ -36,9 +36,7 @@ func createDefaultConfig() component.Config {
 			TCPAddrConfig: confignet.TCPAddrConfig{
 				Endpoint: testutil.EndpointForPort(defaultPort),
 			},
-			TLSSetting: configtls.ClientConfig{
-				Insecure: false,
-			},
+			TLS: configtls.NewDefaultClientConfig(),
 		},
 	}
 }

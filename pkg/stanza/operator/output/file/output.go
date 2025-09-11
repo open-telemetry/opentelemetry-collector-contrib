@@ -6,10 +6,11 @@ package file // import "github.com/open-telemetry/opentelemetry-collector-contri
 import (
 	"context"
 	"encoding/json"
-	"html/template"
 	"os"
 	"sync"
+	"text/template"
 
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -31,7 +32,7 @@ type Output struct {
 // Start will open the output file.
 func (o *Output) Start(_ operator.Persister) error {
 	var err error
-	o.file, err = os.OpenFile(o.path, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0600)
+	o.file, err = os.OpenFile(o.path, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0o600)
 	if err != nil {
 		return err
 	}
@@ -50,6 +51,14 @@ func (o *Output) Stop() error {
 		}
 	}
 	return nil
+}
+
+func (o *Output) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
+	var errs error
+	for i := range entries {
+		errs = multierr.Append(errs, o.Process(ctx, entries[i]))
+	}
+	return errs
 }
 
 // Process will write an entry to the output file.

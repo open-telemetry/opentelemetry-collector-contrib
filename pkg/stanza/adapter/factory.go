@@ -8,6 +8,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/featuregate"
 	rcvr "go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 
@@ -15,6 +16,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/pipeline"
+)
+
+var synchronousLogEmitterFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"stanza.synchronousLogEmitter",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("Prevents possible data loss in Stanza-based receivers by emitting logs synchronously."),
+	featuregate.WithRegisterFromVersion("v0.122.0"),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/35456"),
 )
 
 // LogReceiverType is the interface used by stanza-based log receivers
@@ -46,6 +55,21 @@ func createLogsReceiver(logReceiverType LogReceiverType) rcvr.CreateLogsFunc {
 
 		operators := append([]operator.Config{inputCfg}, baseCfg.Operators...)
 
+		obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+			ReceiverID:             params.ID,
+			ReceiverCreateSettings: params,
+		})
+		if err != nil {
+			return nil, err
+		}
+		rcv := &receiver{
+			set:       params.TelemetrySettings,
+			id:        params.ID,
+			consumer:  consumerretry.NewLogs(baseCfg.RetryOnFailure, params.Logger, nextConsumer),
+			obsrecv:   obsrecv,
+			storageID: baseCfg.StorageID,
+		}
+
 		var emitterOpts []helper.EmitterOption
 		if baseCfg.maxBatchSize > 0 {
 			emitterOpts = append(emitterOpts, helper.WithMaxBatchSize(baseCfg.maxBatchSize))
@@ -53,7 +77,14 @@ func createLogsReceiver(logReceiverType LogReceiverType) rcvr.CreateLogsFunc {
 		if baseCfg.flushInterval > 0 {
 			emitterOpts = append(emitterOpts, helper.WithFlushInterval(baseCfg.flushInterval))
 		}
-		emitter := helper.NewLogEmitter(params.TelemetrySettings, emitterOpts...)
+
+		var emitter helper.LogEmitter
+		if synchronousLogEmitterFeatureGate.IsEnabled() {
+			emitter = helper.NewSynchronousLogEmitter(params.TelemetrySettings, rcv.consumeEntries)
+		} else {
+			emitter = helper.NewBatchingLogEmitter(params.TelemetrySettings, rcv.consumeEntries, emitterOpts...)
+		}
+
 		pipe, err := pipeline.Config{
 			Operators:     operators,
 			DefaultOutput: emitter,
@@ -62,27 +93,9 @@ func createLogsReceiver(logReceiverType LogReceiverType) rcvr.CreateLogsFunc {
 			return nil, err
 		}
 
-		var converterOpts []converterOption
-		if baseCfg.numWorkers > 0 {
-			converterOpts = append(converterOpts, withWorkerCount(baseCfg.numWorkers))
-		}
-		converter := NewConverter(params.TelemetrySettings, converterOpts...)
-		obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
-			ReceiverID:             params.ID,
-			ReceiverCreateSettings: params,
-		})
-		if err != nil {
-			return nil, err
-		}
-		return &receiver{
-			set:       params.TelemetrySettings,
-			id:        params.ID,
-			pipe:      pipe,
-			emitter:   emitter,
-			consumer:  consumerretry.NewLogs(baseCfg.RetryOnFailure, params.Logger, nextConsumer),
-			converter: converter,
-			obsrecv:   obsrecv,
-			storageID: baseCfg.StorageID,
-		}, nil
+		rcv.emitter = emitter
+		rcv.pipe = pipe
+
+		return rcv, nil
 	}
 }

@@ -9,7 +9,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	yaml "gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 type FakeBuilder struct {
@@ -18,12 +18,12 @@ type FakeBuilder struct {
 	Array        []string `json:"array" yaml:"array"`
 }
 
-func (f *FakeBuilder) Build(_ component.TelemetrySettings) (Operator, error) {
+func (*FakeBuilder) Build(component.TelemetrySettings) (Operator, error) {
 	return nil, nil
 }
-func (f *FakeBuilder) ID() string     { return "operator" }
-func (f *FakeBuilder) Type() string   { return "operator" }
-func (f *FakeBuilder) SetID(_ string) {}
+func (*FakeBuilder) ID() string   { return "operator" }
+func (*FakeBuilder) Type() string { return "operator" }
+func (*FakeBuilder) SetID(string) {}
 
 func TestUnmarshalJSONErrors(t *testing.T) {
 	t.Cleanup(func() {

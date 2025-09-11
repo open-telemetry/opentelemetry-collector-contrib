@@ -54,7 +54,7 @@ func NewFluentLogsForwarder(t *testing.T, port int) *FluentLogsForwarder {
 	// file FLUENT_DATA_SENDER_DATA_FILE and forward data to FLUENT_DATA_SENDER_RECEIVER_PORT
 	// on 127.0.0.1.
 	if dataFileName := os.Getenv(fluentDatafileVar); dataFileName != "" {
-		f.dataFile, err = os.OpenFile(dataFileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
+		f.dataFile, err = os.OpenFile(dataFileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600)
 		require.NoError(t, err)
 	} else {
 		logger, err := fluent.New(fluent.Config{FluentPort: port, Async: true})
@@ -64,11 +64,11 @@ func NewFluentLogsForwarder(t *testing.T, port int) *FluentLogsForwarder {
 	return f
 }
 
-func (f *FluentLogsForwarder) Capabilities() consumer.Capabilities {
+func (*FluentLogsForwarder) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
-func (f *FluentLogsForwarder) Start() error {
+func (*FluentLogsForwarder) Start() error {
 	return nil
 }
 
@@ -96,14 +96,14 @@ func (f *FluentLogsForwarder) ConsumeLogs(_ context.Context, logs plog.Logs) err
 	return nil
 }
 
-func (f *FluentLogsForwarder) convertLogToMap(lr plog.LogRecord) map[string]string {
+func (*FluentLogsForwarder) convertLogToMap(lr plog.LogRecord) map[string]string {
 	out := map[string]string{}
 
 	if lr.Body().Type() == pcommon.ValueTypeStr {
 		out["log"] = lr.Body().Str()
 	}
 
-	lr.Attributes().Range(func(k string, v pcommon.Value) bool {
+	for k, v := range lr.Attributes().All() {
 		switch v.Type() {
 		case pcommon.ValueTypeStr:
 			out[k] = v.Str()
@@ -116,19 +116,18 @@ func (f *FluentLogsForwarder) convertLogToMap(lr plog.LogRecord) map[string]stri
 		default:
 			panic("missing case")
 		}
-		return true
-	})
+	}
 
 	return out
 }
 
-func (f *FluentLogsForwarder) convertLogToJSON(lr plog.LogRecord) []byte {
+func (*FluentLogsForwarder) convertLogToJSON(lr plog.LogRecord) []byte {
 	rec := map[string]string{
 		"time": time.Unix(0, int64(lr.Timestamp())).Format("02/01/2006:15:04:05Z"),
 	}
 	rec["log"] = lr.Body().Str()
 
-	lr.Attributes().Range(func(k string, v pcommon.Value) bool {
+	for k, v := range lr.Attributes().All() {
 		switch v.Type() {
 		case pcommon.ValueTypeStr:
 			rec[k] = v.Str()
@@ -141,8 +140,7 @@ func (f *FluentLogsForwarder) convertLogToJSON(lr plog.LogRecord) []byte {
 		default:
 			panic("missing case")
 		}
-		return true
-	})
+	}
 	b, err := json.Marshal(rec)
 	if err != nil {
 		panic("failed to write log: " + err.Error())
@@ -160,6 +158,6 @@ func (f *FluentLogsForwarder) GenConfigYAMLStr() string {
     endpoint: 127.0.0.1:%d`, f.Port)
 }
 
-func (f *FluentLogsForwarder) ProtocolName() string {
+func (*FluentLogsForwarder) ProtocolName() string {
 	return "fluentforward"
 }

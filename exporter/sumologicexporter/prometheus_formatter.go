@@ -32,7 +32,7 @@ const (
 )
 
 func newPrometheusFormatter() prometheusFormatter {
-	sanitNameRegex := regexp.MustCompile(`[^0-9a-zA-Z\./_:\-]`)
+	sanitNameRegex := regexp.MustCompile(`[^0-9a-zA-Z./_:\-]`)
 
 	return prometheusFormatter{
 		sanitNameRegex: sanitNameRegex,
@@ -43,7 +43,7 @@ func newPrometheusFormatter() prometheusFormatter {
 }
 
 // PrometheusLabels returns all attributes as sanitized prometheus labels string
-func (f *prometheusFormatter) tags2String(attr pcommon.Map, labels pcommon.Map) prometheusTags {
+func (f *prometheusFormatter) tags2String(attr, labels pcommon.Map) prometheusTags {
 	attrsPlusLabelsLen := attr.Len() + labels.Len()
 	if attrsPlusLabelsLen == 0 {
 		return ""
@@ -53,14 +53,13 @@ func (f *prometheusFormatter) tags2String(attr pcommon.Map, labels pcommon.Map) 
 	mergedAttributes.EnsureCapacity(attrsPlusLabelsLen)
 
 	attr.CopyTo(mergedAttributes)
-	labels.Range(func(k string, v pcommon.Value) bool {
+	for k, v := range labels.All() {
 		mergedAttributes.PutStr(k, v.AsString())
-		return true
-	})
+	}
 	length := mergedAttributes.Len()
 
 	returnValue := make([]string, 0, length)
-	mergedAttributes.Range(func(k string, v pcommon.Value) bool {
+	for k, v := range mergedAttributes.All() {
 		key := f.sanitizeKeyBytes([]byte(k))
 		value := f.sanitizeValue(v.AsString())
 
@@ -68,8 +67,7 @@ func (f *prometheusFormatter) tags2String(attr pcommon.Map, labels pcommon.Map) 
 			returnValue,
 			formatKeyValuePair(key, value),
 		)
-		return true
-	})
+	}
 
 	return prometheusTags(stringsJoinAndSurround(returnValue, ",", "{", "}"))
 }
@@ -96,7 +94,7 @@ func formatKeyValuePair(key []byte, value string) string {
 // stringsJoinAndSurround joins the strings in s slice using the separator adds front
 // to the front of the resulting string and back at the end.
 //
-// This has a benefit over using the strings.Join() of using just one strings.Buidler
+// This has a benefit over using the strings.Join() of using just one strings.Builder
 // instance and hence using less allocations to produce the final string.
 func stringsJoinAndSurround(s []string, separator, front, back string) string {
 	switch len(s) {
@@ -221,30 +219,29 @@ func (f *prometheusFormatter) numberDataPointValueLine(name string, dp pmetric.N
 }
 
 // sumMetric returns _sum suffixed metric name
-func (f *prometheusFormatter) sumMetric(name string) string {
+func (*prometheusFormatter) sumMetric(name string) string {
 	return fmt.Sprintf("%s_sum", name)
 }
 
 // countMetric returns _count suffixed metric name
-func (f *prometheusFormatter) countMetric(name string) string {
+func (*prometheusFormatter) countMetric(name string) string {
 	return fmt.Sprintf("%s_count", name)
 }
 
 // bucketMetric returns _bucket suffixed metric name
-func (f *prometheusFormatter) bucketMetric(name string) string {
+func (*prometheusFormatter) bucketMetric(name string) string {
 	return fmt.Sprintf("%s_bucket", name)
 }
 
 // mergeAttributes gets two pcommon.Maps and returns new which contains values from both of them
-func (f *prometheusFormatter) mergeAttributes(attributes pcommon.Map, additionalAttributes pcommon.Map) pcommon.Map {
+func (*prometheusFormatter) mergeAttributes(attributes, additionalAttributes pcommon.Map) pcommon.Map {
 	mergedAttributes := pcommon.NewMap()
 	mergedAttributes.EnsureCapacity(attributes.Len() + additionalAttributes.Len())
 
 	attributes.CopyTo(mergedAttributes)
-	additionalAttributes.Range(func(k string, v pcommon.Value) bool {
+	for k, v := range additionalAttributes.All() {
 		v.CopyTo(mergedAttributes.PutEmpty(k))
-		return true
-	})
+	}
 	return mergedAttributes
 }
 

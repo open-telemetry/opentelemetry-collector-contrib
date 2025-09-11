@@ -7,6 +7,7 @@ package subprocess
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -41,12 +42,12 @@ func TestSubprocessIntegration(t *testing.T) {
 
 func (suite *SubprocessIntegrationSuite) SetupSuite() {
 	t := suite.T()
-	scriptFile, err := os.CreateTemp("", "subproc")
+	scriptFile, err := os.CreateTemp(t.TempDir(), "subproc")
 	require.NoError(t, err)
 
-	_, err = scriptFile.Write([]byte(scriptContents))
+	_, err = scriptFile.WriteString(scriptContents)
 	require.NoError(t, err)
-	require.NoError(t, scriptFile.Chmod(0700))
+	require.NoError(t, scriptFile.Chmod(0o700))
 	scriptFile.Close()
 
 	suite.scriptPath = scriptFile.Name()
@@ -231,7 +232,7 @@ func (suite *SubprocessIntegrationSuite) TestSendingStdinFails() {
 
 	subprocess := NewSubprocess(&Config{ExecutablePath: "echo", Args: []string{"finished"}}, logger)
 
-	intentionalError := fmt.Errorf("intentional failure")
+	intentionalError := errors.New("intentional failure")
 	subprocess.sendToStdIn = func(string, io.Writer) error {
 		return intentionalError
 	}
@@ -297,5 +298,5 @@ func (suite *SubprocessIntegrationSuite) TestSubprocessSuccessfullyReturns() {
 func TestShutdownBeforeStartIntegration(t *testing.T) {
 	t.Parallel()
 	subprocess := NewSubprocess(&Config{ExecutablePath: "sh", Args: []string{}}, zap.NewNop())
-	require.EqualError(t, subprocess.Shutdown(context.Background()), "no subprocess.cancel().  Has it been started properly?")
+	require.EqualError(t, subprocess.Shutdown(t.Context()), "no subprocess.cancel().  Has it been started properly?")
 }

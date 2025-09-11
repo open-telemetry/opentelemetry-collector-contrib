@@ -4,6 +4,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
@@ -35,12 +36,15 @@ func runInteractive() error {
 		return fmt.Errorf("failed to create logger: %w", err)
 	}
 
-	supervisor, err := supervisor.NewSupervisor(logger, cfg)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	supervisor, err := supervisor.NewSupervisor(ctx, logger.Named("supervisor"), cfg)
 	if err != nil {
 		return fmt.Errorf("failed to create supervisor: %w", err)
 	}
 
-	err = supervisor.Start()
+	err = supervisor.Start(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to start supervisor: %w", err)
 	}

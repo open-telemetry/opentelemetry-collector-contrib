@@ -17,7 +17,8 @@ import (
 const defaultZeroThreshold = 1e-128
 
 func (c *prometheusConverter) addExponentialHistogramDataPoints(dataPoints pmetric.ExponentialHistogramDataPointSlice,
-	resource pcommon.Resource, settings Settings, baseName string) error {
+	resource pcommon.Resource, settings Settings, baseName string,
+) error {
 	for x := 0; x < dataPoints.Len(); x++ {
 		pt := dataPoints.At(x)
 		lbls := createAttributes(
@@ -26,6 +27,7 @@ func (c *prometheusConverter) addExponentialHistogramDataPoints(dataPoints pmetr
 			settings.ExternalLabels,
 			nil,
 			true,
+			c.labelNamer,
 			model.MetricNameLabel,
 			baseName,
 		)

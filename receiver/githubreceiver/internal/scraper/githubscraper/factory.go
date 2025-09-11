@@ -9,7 +9,7 @@ import (
 
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver/internal/metadata"
@@ -18,12 +18,13 @@ import (
 // This file implements factory for the GitHub Scraper as part of the GitHub Receiver
 
 const (
+	TypeStr            = "scraper"
 	defaultHTTPTimeout = 15 * time.Second
 )
 
 type Factory struct{}
 
-func (f *Factory) CreateDefaultConfig() internal.Config {
+func (*Factory) CreateDefaultConfig() internal.Config {
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.Timeout = defaultHTTPTimeout
 	return &Config{
@@ -32,17 +33,16 @@ func (f *Factory) CreateDefaultConfig() internal.Config {
 	}
 }
 
-func (f *Factory) CreateMetricsScraper(
-	ctx context.Context,
+func (*Factory) CreateMetricsScraper(
+	_ context.Context,
 	params receiver.Settings,
 	cfg internal.Config,
-) (scraperhelper.Scraper, error) {
+) (scraper.Metrics, error) {
 	conf := cfg.(*Config)
-	s := newGitHubScraper(ctx, params, conf)
+	s := newGitHubScraper(params, conf)
 
-	return scraperhelper.NewScraper(
-		metadata.Type,
+	return scraper.NewMetrics(
 		s.scrape,
-		scraperhelper.WithStart(s.start),
+		scraper.WithStart(s.start),
 	)
 }

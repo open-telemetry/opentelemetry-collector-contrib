@@ -4,9 +4,8 @@
 package regex
 
 import (
-	"context"
 	"fmt"
-	"math/rand"
+	"math/rand/v2"
 	"sync"
 	"testing"
 	"time"
@@ -148,7 +147,7 @@ func TestParserRegex(t *testing.T) {
 			tc.input.ObservedTimestamp = ots
 			tc.expected.ObservedTimestamp = ots
 
-			err = op.Process(context.Background(), tc.input)
+			err = op.Process(t.Context(), tc.input)
 			require.NoError(t, err)
 
 			fake.ExpectEntry(t, tc.expected)
@@ -213,7 +212,7 @@ func benchParseInput() (patterns []string) {
 	for i := 1; i <= 100; i++ {
 		b := make([]byte, 15)
 		for i := range b {
-			b[i] = letterBytes[rand.Intn(len(letterBytes))]
+			b[i] = letterBytes[rand.IntN(len(letterBytes))]
 		}
 		randomStr := string(b)
 		p := fmt.Sprintf("%s-5644d7b6d9-mzngq_kube-system_coredns-901f7510281180a402936c92f5bc0f3557f5a21ccb5a4591c5bf98f3ddbffdd6.log", randomStr)

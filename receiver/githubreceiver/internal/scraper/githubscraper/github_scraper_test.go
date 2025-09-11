@@ -4,14 +4,13 @@
 package githubscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver"
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
 	"testing"
 	"time"
 
-	"github.com/google/go-github/v66/github"
+	"github.com/google/go-github/v74/github"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -27,7 +26,7 @@ func TestNewGitHubScraper(t *testing.T) {
 	factory := Factory{}
 	defaultConfig := factory.CreateDefaultConfig()
 
-	s := newGitHubScraper(context.Background(), receiver.Settings{}, defaultConfig.(*Config))
+	s := newGitHubScraper(receiver.Settings{}, defaultConfig.(*Config))
 
 	assert.NotNil(t, s)
 }
@@ -134,7 +133,6 @@ func TestScrape(t *testing.T) {
 							History: BranchHistoryTargetCommitHistoryCommitHistoryConnection{
 								Nodes: []CommitNode{
 									{
-
 										CommittedDate: time.Now().AddDate(0, 0, -1),
 										Additions:     10,
 										Deletions:     9,
@@ -149,7 +147,7 @@ func TestScrape(t *testing.T) {
 					contribs: [][]*github.Contributor{
 						{
 							{
-								ID: github.Int64(1),
+								ID: github.Ptr(int64(1)),
 							},
 						},
 					},
@@ -166,14 +164,14 @@ func TestScrape(t *testing.T) {
 
 			cfg := &Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()}
 
-			ghs := newGitHubScraper(context.Background(), receivertest.NewNopSettings(), cfg)
+			ghs := newGitHubScraper(receivertest.NewNopSettings(metadata.Type), cfg)
 			ghs.cfg.GitHubOrg = "open-telemetry"
-			ghs.cfg.ClientConfig.Endpoint = server.URL
+			ghs.cfg.Endpoint = server.URL
 
-			err := ghs.start(context.Background(), componenttest.NewNopHost())
+			err := ghs.start(t.Context(), componenttest.NewNopHost())
 			require.NoError(t, err)
 
-			actualMetrics, err := ghs.scrape(context.Background())
+			actualMetrics, err := ghs.scrape(t.Context())
 			require.NoError(t, err)
 
 			expectedFile := filepath.Join("testdata", "scraper", tc.testFile)
@@ -196,7 +194,6 @@ func TestScrape(t *testing.T) {
 				pmetrictest.IgnoreTimestamp(),
 				pmetrictest.IgnoreStartTimestamp(),
 			))
-
 		})
 	}
 }

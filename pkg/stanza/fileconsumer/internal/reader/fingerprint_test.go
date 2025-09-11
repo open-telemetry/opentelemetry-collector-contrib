@@ -4,16 +4,15 @@
 package reader
 
 import (
-	"context"
 	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/filetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/scanner"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/filetest"
 )
 
 func TestReaderUpdateFingerprint(t *testing.T) {
@@ -298,7 +297,7 @@ func (tc updateFingerprintTest) run(bufferSize int) func(*testing.T) {
 		require.NoError(t, err)
 		require.Len(t, tc.moreBytes, i)
 
-		r.ReadToEnd(context.Background())
+		r.ReadToEnd(t.Context())
 
 		sink.ExpectTokens(t, tc.expectTokens...)
 
@@ -342,7 +341,7 @@ func TestReadingWithLargeFingerPrintSizeAndFileLargerThanScannerBuf(t *testing.T
 	require.NoError(t, err)
 
 	initialFingerPrintSize := r.Fingerprint.Len()
-	r.ReadToEnd(context.Background())
+	r.ReadToEnd(t.Context())
 	require.Equal(t, initialFingerPrintSize, r.Fingerprint.Len())
 
 	sink.ExpectTokens(t, expected...)

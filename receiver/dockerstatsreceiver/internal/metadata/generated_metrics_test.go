@@ -57,7 +57,7 @@ func TestMetricsBuilder(t *testing.T) {
 			start := pcommon.Timestamp(1_000_000_000)
 			ts := pcommon.Timestamp(1_000_001_000)
 			observedZapCore, observedLogs := observer.New(zap.WarnLevel)
-			settings := receivertest.NewNopSettings()
+			settings := receivertest.NewNopSettings(receivertest.NopType)
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 
@@ -341,13 +341,13 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("device_major")
 					assert.True(t, ok)
-					assert.EqualValues(t, "device_major-val", attrVal.Str())
+					assert.Equal(t, "device_major-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("device_minor")
 					assert.True(t, ok)
-					assert.EqualValues(t, "device_minor-val", attrVal.Str())
+					assert.Equal(t, "device_minor-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("operation")
 					assert.True(t, ok)
-					assert.EqualValues(t, "operation-val", attrVal.Str())
+					assert.Equal(t, "operation-val", attrVal.Str())
 				case "container.blockio.io_queued_recursive":
 					assert.False(t, validatedMetrics["container.blockio.io_queued_recursive"], "Found a duplicate in the metrics slice: container.blockio.io_queued_recursive")
 					validatedMetrics["container.blockio.io_queued_recursive"] = true
@@ -364,13 +364,13 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("device_major")
 					assert.True(t, ok)
-					assert.EqualValues(t, "device_major-val", attrVal.Str())
+					assert.Equal(t, "device_major-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("device_minor")
 					assert.True(t, ok)
-					assert.EqualValues(t, "device_minor-val", attrVal.Str())
+					assert.Equal(t, "device_minor-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("operation")
 					assert.True(t, ok)
-					assert.EqualValues(t, "operation-val", attrVal.Str())
+					assert.Equal(t, "operation-val", attrVal.Str())
 				case "container.blockio.io_service_bytes_recursive":
 					assert.False(t, validatedMetrics["container.blockio.io_service_bytes_recursive"], "Found a duplicate in the metrics slice: container.blockio.io_service_bytes_recursive")
 					validatedMetrics["container.blockio.io_service_bytes_recursive"] = true
@@ -387,13 +387,13 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("device_major")
 					assert.True(t, ok)
-					assert.EqualValues(t, "device_major-val", attrVal.Str())
+					assert.Equal(t, "device_major-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("device_minor")
 					assert.True(t, ok)
-					assert.EqualValues(t, "device_minor-val", attrVal.Str())
+					assert.Equal(t, "device_minor-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("operation")
 					assert.True(t, ok)
-					assert.EqualValues(t, "operation-val", attrVal.Str())
+					assert.Equal(t, "operation-val", attrVal.Str())
 				case "container.blockio.io_service_time_recursive":
 					assert.False(t, validatedMetrics["container.blockio.io_service_time_recursive"], "Found a duplicate in the metrics slice: container.blockio.io_service_time_recursive")
 					validatedMetrics["container.blockio.io_service_time_recursive"] = true
@@ -410,13 +410,13 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("device_major")
 					assert.True(t, ok)
-					assert.EqualValues(t, "device_major-val", attrVal.Str())
+					assert.Equal(t, "device_major-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("device_minor")
 					assert.True(t, ok)
-					assert.EqualValues(t, "device_minor-val", attrVal.Str())
+					assert.Equal(t, "device_minor-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("operation")
 					assert.True(t, ok)
-					assert.EqualValues(t, "operation-val", attrVal.Str())
+					assert.Equal(t, "operation-val", attrVal.Str())
 				case "container.blockio.io_serviced_recursive":
 					assert.False(t, validatedMetrics["container.blockio.io_serviced_recursive"], "Found a duplicate in the metrics slice: container.blockio.io_serviced_recursive")
 					validatedMetrics["container.blockio.io_serviced_recursive"] = true
@@ -433,13 +433,13 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("device_major")
 					assert.True(t, ok)
-					assert.EqualValues(t, "device_major-val", attrVal.Str())
+					assert.Equal(t, "device_major-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("device_minor")
 					assert.True(t, ok)
-					assert.EqualValues(t, "device_minor-val", attrVal.Str())
+					assert.Equal(t, "device_minor-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("operation")
 					assert.True(t, ok)
-					assert.EqualValues(t, "operation-val", attrVal.Str())
+					assert.Equal(t, "operation-val", attrVal.Str())
 				case "container.blockio.io_time_recursive":
 					assert.False(t, validatedMetrics["container.blockio.io_time_recursive"], "Found a duplicate in the metrics slice: container.blockio.io_time_recursive")
 					validatedMetrics["container.blockio.io_time_recursive"] = true
@@ -456,13 +456,13 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("device_major")
 					assert.True(t, ok)
-					assert.EqualValues(t, "device_major-val", attrVal.Str())
+					assert.Equal(t, "device_major-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("device_minor")
 					assert.True(t, ok)
-					assert.EqualValues(t, "device_minor-val", attrVal.Str())
+					assert.Equal(t, "device_minor-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("operation")
 					assert.True(t, ok)
-					assert.EqualValues(t, "operation-val", attrVal.Str())
+					assert.Equal(t, "operation-val", attrVal.Str())
 				case "container.blockio.io_wait_time_recursive":
 					assert.False(t, validatedMetrics["container.blockio.io_wait_time_recursive"], "Found a duplicate in the metrics slice: container.blockio.io_wait_time_recursive")
 					validatedMetrics["container.blockio.io_wait_time_recursive"] = true
@@ -479,13 +479,13 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("device_major")
 					assert.True(t, ok)
-					assert.EqualValues(t, "device_major-val", attrVal.Str())
+					assert.Equal(t, "device_major-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("device_minor")
 					assert.True(t, ok)
-					assert.EqualValues(t, "device_minor-val", attrVal.Str())
+					assert.Equal(t, "device_minor-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("operation")
 					assert.True(t, ok)
-					assert.EqualValues(t, "operation-val", attrVal.Str())
+					assert.Equal(t, "operation-val", attrVal.Str())
 				case "container.blockio.sectors_recursive":
 					assert.False(t, validatedMetrics["container.blockio.sectors_recursive"], "Found a duplicate in the metrics slice: container.blockio.sectors_recursive")
 					validatedMetrics["container.blockio.sectors_recursive"] = true
@@ -502,13 +502,13 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("device_major")
 					assert.True(t, ok)
-					assert.EqualValues(t, "device_major-val", attrVal.Str())
+					assert.Equal(t, "device_major-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("device_minor")
 					assert.True(t, ok)
-					assert.EqualValues(t, "device_minor-val", attrVal.Str())
+					assert.Equal(t, "device_minor-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("operation")
 					assert.True(t, ok)
-					assert.EqualValues(t, "operation-val", attrVal.Str())
+					assert.Equal(t, "operation-val", attrVal.Str())
 				case "container.cpu.limit":
 					assert.False(t, validatedMetrics["container.cpu.limit"], "Found a duplicate in the metrics slice: container.cpu.limit")
 					validatedMetrics["container.cpu.limit"] = true
@@ -617,7 +617,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("core")
 					assert.True(t, ok)
-					assert.EqualValues(t, "core-val", attrVal.Str())
+					assert.Equal(t, "core-val", attrVal.Str())
 				case "container.cpu.usage.system":
 					assert.False(t, validatedMetrics["container.cpu.usage.system"], "Found a duplicate in the metrics slice: container.cpu.usage.system")
 					validatedMetrics["container.cpu.usage.system"] = true
@@ -845,7 +845,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["container.memory.percent"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Percentage of memory used.", ms.At(i).Description())
+					assert.Equal(t, "Percentage of memory used. Not supported on Windows.", ms.At(i).Description())
 					assert.Equal(t, "1", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -969,7 +969,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["container.memory.total_cache"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Total amount of memory used by the processes of this cgroup (and descendants) that can be associated with a block on a block device. Also accounts for memory used by tmpfs (Only available with cgroups v1).", ms.At(i).Description())
+					assert.Equal(t, "Total amount of memory used by the processes of this cgroup (and descendants) that can be associated with a block on a block device. Also accounts for memory used by tmpfs (Only available with cgroups v1). Not supported on Windows.", ms.At(i).Description())
 					assert.Equal(t, "By", ms.At(i).Unit())
 					assert.False(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
@@ -1165,7 +1165,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["container.memory.usage.limit"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Memory limit of the container.", ms.At(i).Description())
+					assert.Equal(t, "Memory limit of the container. Not supported on Windows.", ms.At(i).Description())
 					assert.Equal(t, "By", ms.At(i).Unit())
 					assert.False(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
@@ -1232,7 +1232,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("interface")
 					assert.True(t, ok)
-					assert.EqualValues(t, "interface-val", attrVal.Str())
+					assert.Equal(t, "interface-val", attrVal.Str())
 				case "container.network.io.usage.rx_dropped":
 					assert.False(t, validatedMetrics["container.network.io.usage.rx_dropped"], "Found a duplicate in the metrics slice: container.network.io.usage.rx_dropped")
 					validatedMetrics["container.network.io.usage.rx_dropped"] = true
@@ -1249,13 +1249,13 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("interface")
 					assert.True(t, ok)
-					assert.EqualValues(t, "interface-val", attrVal.Str())
+					assert.Equal(t, "interface-val", attrVal.Str())
 				case "container.network.io.usage.rx_errors":
 					assert.False(t, validatedMetrics["container.network.io.usage.rx_errors"], "Found a duplicate in the metrics slice: container.network.io.usage.rx_errors")
 					validatedMetrics["container.network.io.usage.rx_errors"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Received errors.", ms.At(i).Description())
+					assert.Equal(t, "Received errors. Not supported on Windows.", ms.At(i).Description())
 					assert.Equal(t, "{errors}", ms.At(i).Unit())
 					assert.True(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
@@ -1266,7 +1266,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("interface")
 					assert.True(t, ok)
-					assert.EqualValues(t, "interface-val", attrVal.Str())
+					assert.Equal(t, "interface-val", attrVal.Str())
 				case "container.network.io.usage.rx_packets":
 					assert.False(t, validatedMetrics["container.network.io.usage.rx_packets"], "Found a duplicate in the metrics slice: container.network.io.usage.rx_packets")
 					validatedMetrics["container.network.io.usage.rx_packets"] = true
@@ -1283,7 +1283,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("interface")
 					assert.True(t, ok)
-					assert.EqualValues(t, "interface-val", attrVal.Str())
+					assert.Equal(t, "interface-val", attrVal.Str())
 				case "container.network.io.usage.tx_bytes":
 					assert.False(t, validatedMetrics["container.network.io.usage.tx_bytes"], "Found a duplicate in the metrics slice: container.network.io.usage.tx_bytes")
 					validatedMetrics["container.network.io.usage.tx_bytes"] = true
@@ -1300,7 +1300,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("interface")
 					assert.True(t, ok)
-					assert.EqualValues(t, "interface-val", attrVal.Str())
+					assert.Equal(t, "interface-val", attrVal.Str())
 				case "container.network.io.usage.tx_dropped":
 					assert.False(t, validatedMetrics["container.network.io.usage.tx_dropped"], "Found a duplicate in the metrics slice: container.network.io.usage.tx_dropped")
 					validatedMetrics["container.network.io.usage.tx_dropped"] = true
@@ -1317,13 +1317,13 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("interface")
 					assert.True(t, ok)
-					assert.EqualValues(t, "interface-val", attrVal.Str())
+					assert.Equal(t, "interface-val", attrVal.Str())
 				case "container.network.io.usage.tx_errors":
 					assert.False(t, validatedMetrics["container.network.io.usage.tx_errors"], "Found a duplicate in the metrics slice: container.network.io.usage.tx_errors")
 					validatedMetrics["container.network.io.usage.tx_errors"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Sent errors.", ms.At(i).Description())
+					assert.Equal(t, "Sent errors. Not supported on Windows.", ms.At(i).Description())
 					assert.Equal(t, "{errors}", ms.At(i).Unit())
 					assert.True(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
@@ -1334,7 +1334,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("interface")
 					assert.True(t, ok)
-					assert.EqualValues(t, "interface-val", attrVal.Str())
+					assert.Equal(t, "interface-val", attrVal.Str())
 				case "container.network.io.usage.tx_packets":
 					assert.False(t, validatedMetrics["container.network.io.usage.tx_packets"], "Found a duplicate in the metrics slice: container.network.io.usage.tx_packets")
 					validatedMetrics["container.network.io.usage.tx_packets"] = true
@@ -1351,7 +1351,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("interface")
 					assert.True(t, ok)
-					assert.EqualValues(t, "interface-val", attrVal.Str())
+					assert.Equal(t, "interface-val", attrVal.Str())
 				case "container.pids.count":
 					assert.False(t, validatedMetrics["container.pids.count"], "Found a duplicate in the metrics slice: container.pids.count")
 					validatedMetrics["container.pids.count"] = true

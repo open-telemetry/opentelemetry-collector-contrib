@@ -1,9 +1,10 @@
 type: telemetrygen
 
 status:
+  disable_codecov_badge: true
   class: cmd
   stability:
     alpha: [traces]
     development: [metrics, logs]
   codeowners:
-    active: [mx-psi, codeboten]
+    active: [mx-psi, codeboten, Erog38]

@@ -4,7 +4,6 @@
 package logicmonitorexporter
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -13,6 +12,8 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logicmonitorexporter/internal/metadata"
 )
 
 // Test that the factory creates the default configuration
@@ -49,15 +50,15 @@ func TestCreateLogs(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig().(*Config)
-			set := exportertest.NewNopSettings()
-			oexp, err := factory.CreateLogs(context.Background(), set, cfg)
+			set := exportertest.NewNopSettings(metadata.Type)
+			oexp, err := factory.CreateLogs(t.Context(), set, cfg)
 			if (err != nil) != tt.shouldError {
 				t.Errorf("CreateLogs() error = %v, shouldError %v", err, tt.shouldError)
 				return
 			}
 			if tt.shouldError {
 				assert.Error(t, err)
-				if len(tt.errorMessage) != 0 {
+				if tt.errorMessage != "" {
 					assert.Equal(t, tt.errorMessage, err.Error())
 				}
 				return
@@ -89,15 +90,15 @@ func TestCreateTraces(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig().(*Config)
-			set := exportertest.NewNopSettings()
-			oexp, err := factory.CreateTraces(context.Background(), set, cfg)
+			set := exportertest.NewNopSettings(metadata.Type)
+			oexp, err := factory.CreateTraces(t.Context(), set, cfg)
 			if (err != nil) != tt.shouldError {
 				t.Errorf("CreateTraces() error = %v, shouldError %v", err, tt.shouldError)
 				return
 			}
 			if tt.shouldError {
 				assert.Error(t, err)
-				if len(tt.errorMessage) != 0 {
+				if tt.errorMessage != "" {
 					assert.Equal(t, tt.errorMessage, err.Error())
 				}
 				return

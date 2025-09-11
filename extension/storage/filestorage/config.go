@@ -12,8 +12,10 @@ import (
 	"time"
 )
 
-var errInvalidOctal = errors.New("directory_permissions value must be a valid octal representation")
-var errInvalidPermissionBits = errors.New("directory_permissions contain invalid bits for file access")
+var (
+	errInvalidOctal          = errors.New("directory_permissions value must be a valid octal representation")
+	errInvalidPermissionBits = errors.New("directory_permissions contain invalid bits for file access")
+)
 
 // Config defines configuration for file storage extension.
 type Config struct {
@@ -29,6 +31,8 @@ type Config struct {
 	CreateDirectory            bool   `mapstructure:"create_directory,omitempty"`
 	DirectoryPermissions       string `mapstructure:"directory_permissions,omitempty"`
 	directoryPermissionsParsed int64  `mapstructure:"-,omitempty"`
+
+	Recreate bool `mapstructure:"recreate,omitempty"`
 }
 
 // CompactionConfig defines configuration for optional file storage compaction.

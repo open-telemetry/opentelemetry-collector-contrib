@@ -11,9 +11,7 @@ import (
 	"sync"
 )
 
-var (
-	errOverCapacity = errors.New("over capacity")
-)
+var errOverCapacity = errors.New("over capacity")
 
 type buffer interface {
 	io.Writer
@@ -48,7 +46,7 @@ func (c *cancellableBytesWriter) Reset() {
 	c.innerWriter.Reset()
 }
 
-func (c *cancellableBytesWriter) Close() error {
+func (*cancellableBytesWriter) Close() error {
 	return nil
 }
 

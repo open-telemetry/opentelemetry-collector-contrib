@@ -109,9 +109,36 @@ type summaryMetricEntry struct {
 	count uint64
 }
 
+// dataPointSplit is a structure used to manage segments of data points split from a histogram.
+// It is not safe for concurrent use.
+type dataPointSplit struct {
+	cWMetricHistogram *cWMetricHistogram
+	length            int
+	capacity          int
+}
+
+func (split *dataPointSplit) isFull() bool {
+	return split.length >= split.capacity
+}
+
+func (split *dataPointSplit) setMax(maxVal float64) {
+	split.cWMetricHistogram.Max = maxVal
+}
+
+func (split *dataPointSplit) setMin(minVal float64) {
+	split.cWMetricHistogram.Min = minVal
+}
+
+func (split *dataPointSplit) appendMetricData(metricVal float64, count uint64) {
+	split.cWMetricHistogram.Values = append(split.cWMetricHistogram.Values, metricVal)
+	split.cWMetricHistogram.Counts = append(split.cWMetricHistogram.Counts, float64(count))
+	split.length++
+	split.cWMetricHistogram.Count += count
+}
+
 // CalculateDeltaDatapoints retrieves the NumberDataPoint at the given index and performs rate/delta calculation if necessary.
 func (dps numberDataPointSlice) CalculateDeltaDatapoints(i int, instrumentationScopeName string, _ bool, calculators *emfCalculators) ([]dataPoint, bool) {
-	metric := dps.NumberDataPointSlice.At(i)
+	metric := dps.At(i)
 	labels := createLabels(metric.Attributes(), instrumentationScopeName)
 	timestampMs := unixNanoToMilliseconds(metric.Timestamp())
 
@@ -150,7 +177,7 @@ func (dps numberDataPointSlice) CalculateDeltaDatapoints(i int, instrumentationS
 }
 
 func (dps numberDataPointSlice) IsStaleNaNInf(i int) (bool, pcommon.Map) {
-	metric := dps.NumberDataPointSlice.At(i)
+	metric := dps.At(i)
 	if metric.Flags().NoRecordedValue() {
 		return true, metric.Attributes()
 	}
@@ -162,7 +189,7 @@ func (dps numberDataPointSlice) IsStaleNaNInf(i int) (bool, pcommon.Map) {
 
 // CalculateDeltaDatapoints retrieves the HistogramDataPoint at the given index.
 func (dps histogramDataPointSlice) CalculateDeltaDatapoints(i int, instrumentationScopeName string, _ bool, _ *emfCalculators) ([]dataPoint, bool) {
-	metric := dps.HistogramDataPointSlice.At(i)
+	metric := dps.At(i)
 	labels := createLabels(metric.Attributes(), instrumentationScopeName)
 	timestamp := unixNanoToMilliseconds(metric.Timestamp())
 
@@ -180,7 +207,7 @@ func (dps histogramDataPointSlice) CalculateDeltaDatapoints(i int, instrumentati
 }
 
 func (dps histogramDataPointSlice) IsStaleNaNInf(i int) (bool, pcommon.Map) {
-	metric := dps.HistogramDataPointSlice.At(i)
+	metric := dps.At(i)
 	if metric.Flags().NoRecordedValue() {
 		return true, metric.Attributes()
 	}
@@ -193,58 +220,171 @@ func (dps histogramDataPointSlice) IsStaleNaNInf(i int) (bool, pcommon.Map) {
 }
 
 // CalculateDeltaDatapoints retrieves the ExponentialHistogramDataPoint at the given index.
+// As CloudWatch EMF logs allows in maximum of 100 target members, the exponential histogram metric are split into multiple data points as needed,
+// each containing a maximum of 100 buckets, to comply with CloudWatch EMF log constraints.
+// Note that the number of values and counts in each split may not be less than splitThreshold as we are only adding non-zero bucket counts.
+//
+// For each split data point:
+// - Min and Max values are recalculated based on the bucket boundary within that specific split.
+// - Sum is only assigned to the first split to ensure the total sum of the datapoints after aggregation is correct.
+// - Count is accumulated based on the bucket counts within each split.
 func (dps exponentialHistogramDataPointSlice) CalculateDeltaDatapoints(idx int, instrumentationScopeName string, _ bool, _ *emfCalculators) ([]dataPoint, bool) {
-	metric := dps.ExponentialHistogramDataPointSlice.At(idx)
+	metric := dps.At(idx)
+
+	const splitThreshold = 100
+	currentBucketIndex := 0
+	currentPositiveIndex := metric.Positive().BucketCounts().Len() - 1
+	currentZeroIndex := 0
+	currentNegativeIndex := 0
+	var datapoints []dataPoint
+	totalBucketLen := metric.Positive().BucketCounts().Len() + metric.Negative().BucketCounts().Len()
+	if metric.ZeroCount() > 0 {
+		totalBucketLen++
+	}
+
+	for currentBucketIndex < totalBucketLen {
+		// Create a new dataPointSplit with a capacity of up to splitThreshold buckets
+		capacity := min(splitThreshold, totalBucketLen-currentBucketIndex)
+
+		sum := 0.0
+		// Only assign `Sum` if this is the first split to make sure the total sum of the datapoints after aggregation is correct.
+		if currentBucketIndex == 0 {
+			sum = metric.Sum()
+		}
+
+		split := dataPointSplit{
+			cWMetricHistogram: &cWMetricHistogram{
+				Values: []float64{},
+				Counts: []float64{},
+				Max:    metric.Max(),
+				Min:    metric.Min(),
+				Count:  0,
+				Sum:    sum,
+			},
+			length:   0,
+			capacity: capacity,
+		}
+
+		// Set collect values from positive buckets and save into split.
+		currentBucketIndex, currentPositiveIndex = collectDatapointsWithPositiveBuckets(&split, metric, currentBucketIndex, currentPositiveIndex)
+		// Set collect values from zero buckets and save into split.
+		currentBucketIndex, currentZeroIndex = collectDatapointsWithZeroBucket(&split, metric, currentBucketIndex, currentZeroIndex)
+		// Set collect values from negative buckets and save into split.
+		currentBucketIndex, currentNegativeIndex = collectDatapointsWithNegativeBuckets(&split, metric, currentBucketIndex, currentNegativeIndex)
+
+		if split.length > 0 {
+			// Add the current split to the datapoints list
+			datapoints = append(datapoints, dataPoint{
+				name:        dps.metricName,
+				value:       split.cWMetricHistogram,
+				labels:      createLabels(metric.Attributes(), instrumentationScopeName),
+				timestampMs: unixNanoToMilliseconds(metric.Timestamp()),
+			})
+		}
+	}
+
+	if len(datapoints) == 0 {
+		return []dataPoint{{
+			name: dps.metricName,
+			value: &cWMetricHistogram{
+				Values: []float64{},
+				Counts: []float64{},
+				Count:  metric.Count(),
+				Sum:    metric.Sum(),
+				Max:    metric.Max(),
+				Min:    metric.Min(),
+			},
+			labels:      createLabels(metric.Attributes(), instrumentationScopeName),
+			timestampMs: unixNanoToMilliseconds(metric.Timestamp()),
+		}}, true
+	}
+
+	// Override the min and max values of the first and last splits with the raw data of the metric.
+	datapoints[0].value.(*cWMetricHistogram).Max = metric.Max()
+	datapoints[len(datapoints)-1].value.(*cWMetricHistogram).Min = metric.Min()
+
+	return datapoints, true
+}
+
+func collectDatapointsWithPositiveBuckets(split *dataPointSplit, metric pmetric.ExponentialHistogramDataPoint, currentBucketIndex, currentPositiveIndex int) (int, int) {
+	if split.isFull() || currentPositiveIndex < 0 {
+		return currentBucketIndex, currentPositiveIndex
+	}
 
 	scale := metric.Scale()
 	base := math.Pow(2, math.Pow(2, float64(-scale)))
-	arrayValues := []float64{}
-	arrayCounts := []float64{}
-	var bucketBegin float64
-	var bucketEnd float64
-
-	// Set mid-point of positive buckets in values/counts array.
 	positiveBuckets := metric.Positive()
 	positiveOffset := positiveBuckets.Offset()
 	positiveBucketCounts := positiveBuckets.BucketCounts()
-	bucketBegin = 0
-	bucketEnd = 0
-	for i := 0; i < positiveBucketCounts.Len(); i++ {
-		index := i + int(positiveOffset)
-		if bucketBegin == 0 {
-			bucketBegin = math.Pow(base, float64(index))
+	bucketBegin := 0.0
+	bucketEnd := 0.0
+
+	for !split.isFull() && currentPositiveIndex >= 0 {
+		index := currentPositiveIndex + int(positiveOffset)
+		if bucketEnd == 0 {
+			bucketEnd = math.Pow(base, float64(index+1))
 		} else {
-			bucketBegin = bucketEnd
+			bucketEnd = bucketBegin
 		}
-		bucketEnd = math.Pow(base, float64(index+1))
+		bucketBegin = math.Pow(base, float64(index))
 		metricVal := (bucketBegin + bucketEnd) / 2
-		count := positiveBucketCounts.At(i)
+		count := positiveBucketCounts.At(currentPositiveIndex)
 		if count > 0 {
-			arrayValues = append(arrayValues, metricVal)
-			arrayCounts = append(arrayCounts, float64(count))
+			split.appendMetricData(metricVal, count)
+
+			// The value are append from high to low, set Max from the first bucket (highest value) and Min from the last bucket (lowest value)
+			if split.length == 1 {
+				split.setMax(bucketEnd)
+			}
+			if split.isFull() {
+				split.setMin(bucketBegin)
+			}
 		}
+		currentBucketIndex++
+		currentPositiveIndex--
 	}
 
-	// Set count of zero bucket in values/counts array.
-	if metric.ZeroCount() > 0 {
-		arrayValues = append(arrayValues, 0)
-		arrayCounts = append(arrayCounts, float64(metric.ZeroCount()))
+	return currentBucketIndex, currentPositiveIndex
+}
+
+func collectDatapointsWithZeroBucket(split *dataPointSplit, metric pmetric.ExponentialHistogramDataPoint, currentBucketIndex, currentZeroIndex int) (int, int) {
+	if metric.ZeroCount() > 0 && !split.isFull() && currentZeroIndex == 0 {
+		split.appendMetricData(0, metric.ZeroCount())
+
+		// The value are append from high to low, set Max from the first bucket (highest value) and Min from the last bucket (lowest value)
+		if split.length == 1 {
+			split.setMax(0)
+		}
+		if split.isFull() {
+			split.setMin(0)
+		}
+		currentZeroIndex++
+		currentBucketIndex++
 	}
 
-	// Set mid-point of negative buckets in values/counts array.
+	return currentBucketIndex, currentZeroIndex
+}
+
+func collectDatapointsWithNegativeBuckets(split *dataPointSplit, metric pmetric.ExponentialHistogramDataPoint, currentBucketIndex, currentNegativeIndex int) (int, int) {
 	// According to metrics spec, the value in histogram is expected to be non-negative.
 	// https://opentelemetry.io/docs/specs/otel/metrics/api/#histogram
 	// However, the negative support is defined in metrics data model.
 	// https://opentelemetry.io/docs/specs/otel/metrics/data-model/#exponentialhistogram
 	// The negative is also supported but only verified with unit test.
+	if split.isFull() || currentNegativeIndex >= metric.Negative().BucketCounts().Len() {
+		return currentBucketIndex, currentNegativeIndex
+	}
 
+	scale := metric.Scale()
+	base := math.Pow(2, math.Pow(2, float64(-scale)))
 	negativeBuckets := metric.Negative()
 	negativeOffset := negativeBuckets.Offset()
 	negativeBucketCounts := negativeBuckets.BucketCounts()
-	bucketBegin = 0
-	bucketEnd = 0
-	for i := 0; i < negativeBucketCounts.Len(); i++ {
-		index := i + int(negativeOffset)
+	bucketBegin := 0.0
+	bucketEnd := 0.0
+
+	for !split.isFull() && currentNegativeIndex < metric.Negative().BucketCounts().Len() {
+		index := currentNegativeIndex + int(negativeOffset)
 		if bucketEnd == 0 {
 			bucketEnd = -math.Pow(base, float64(index))
 		} else {
@@ -252,30 +392,27 @@ func (dps exponentialHistogramDataPointSlice) CalculateDeltaDatapoints(idx int, 
 		}
 		bucketBegin = -math.Pow(base, float64(index+1))
 		metricVal := (bucketBegin + bucketEnd) / 2
-		count := negativeBucketCounts.At(i)
+		count := negativeBucketCounts.At(currentNegativeIndex)
 		if count > 0 {
-			arrayValues = append(arrayValues, metricVal)
-			arrayCounts = append(arrayCounts, float64(count))
+			split.appendMetricData(metricVal, count)
+
+			// The value are append from high to low, set Max from the first bucket (highest value) and Min from the last bucket (lowest value)
+			if split.length == 1 {
+				split.setMax(bucketEnd)
+			}
+			if split.isFull() {
+				split.setMin(bucketBegin)
+			}
 		}
+		currentBucketIndex++
+		currentNegativeIndex++
 	}
 
-	return []dataPoint{{
-		name: dps.metricName,
-		value: &cWMetricHistogram{
-			Values: arrayValues,
-			Counts: arrayCounts,
-			Count:  metric.Count(),
-			Sum:    metric.Sum(),
-			Max:    metric.Max(),
-			Min:    metric.Min(),
-		},
-		labels:      createLabels(metric.Attributes(), instrumentationScopeName),
-		timestampMs: unixNanoToMilliseconds(metric.Timestamp()),
-	}}, true
+	return currentBucketIndex, currentNegativeIndex
 }
 
 func (dps exponentialHistogramDataPointSlice) IsStaleNaNInf(i int) (bool, pcommon.Map) {
-	metric := dps.ExponentialHistogramDataPointSlice.At(i)
+	metric := dps.At(i)
 	if metric.Flags().NoRecordedValue() {
 		return true, metric.Attributes()
 	}
@@ -293,7 +430,7 @@ func (dps exponentialHistogramDataPointSlice) IsStaleNaNInf(i int) (bool, pcommo
 
 // CalculateDeltaDatapoints retrieves the SummaryDataPoint at the given index and perform calculation with sum and count while retain the quantile value.
 func (dps summaryDataPointSlice) CalculateDeltaDatapoints(i int, instrumentationScopeName string, detailedMetrics bool, calculators *emfCalculators) ([]dataPoint, bool) {
-	metric := dps.SummaryDataPointSlice.At(i)
+	metric := dps.At(i)
 	labels := createLabels(metric.Attributes(), instrumentationScopeName)
 	timestampMs := unixNanoToMilliseconds(metric.Timestamp())
 
@@ -326,15 +463,15 @@ func (dps summaryDataPointSlice) CalculateDeltaDatapoints(i int, instrumentation
 		// Instead of sending metrics as a Statistical Set (contains min,max, count, sum), the emfexporter will enrich the
 		// values by sending each quantile values as a datapoint (from quantile 0 ... 1)
 		values := metric.QuantileValues()
-		datapoints = append(datapoints, dataPoint{name: fmt.Sprint(dps.metricName, summarySumSuffix), value: sum, labels: labels, timestampMs: timestampMs})
-		datapoints = append(datapoints, dataPoint{name: fmt.Sprint(dps.metricName, summaryCountSuffix), value: count, labels: labels, timestampMs: timestampMs})
+		datapoints = append(datapoints,
+			dataPoint{name: fmt.Sprint(dps.metricName, summarySumSuffix), value: sum, labels: labels, timestampMs: timestampMs},
+			dataPoint{name: fmt.Sprint(dps.metricName, summaryCountSuffix), value: count, labels: labels, timestampMs: timestampMs})
 
 		for i := 0; i < values.Len(); i++ {
 			cLabels := maps.Clone(labels)
 			quantile := values.At(i)
 			cLabels["quantile"] = strconv.FormatFloat(quantile.Quantile(), 'g', -1, 64)
 			datapoints = append(datapoints, dataPoint{name: dps.metricName, value: quantile.Value(), labels: cLabels, timestampMs: timestampMs})
-
 		}
 	} else {
 		metricVal := &cWMetricStats{Count: count, Sum: sum}
@@ -349,7 +486,7 @@ func (dps summaryDataPointSlice) CalculateDeltaDatapoints(i int, instrumentation
 }
 
 func (dps summaryDataPointSlice) IsStaleNaNInf(i int) (bool, pcommon.Map) {
-	metric := dps.SummaryDataPointSlice.At(i)
+	metric := dps.At(i)
 	if metric.Flags().NoRecordedValue() {
 		return true, metric.Attributes()
 	}
@@ -373,10 +510,9 @@ func (dps summaryDataPointSlice) IsStaleNaNInf(i int) (bool, pcommon.Map) {
 // and optionally adds in the OTel instrumentation library name
 func createLabels(attributes pcommon.Map, instrLibName string) map[string]string {
 	labels := make(map[string]string, attributes.Len()+1)
-	attributes.Range(func(k string, v pcommon.Value) bool {
+	for k, v := range attributes.All() {
 		labels[k] = v.AsString()
-		return true
-	})
+	}
 
 	// Add OTel instrumentation lib name as an additional label if it is defined
 	if instrLibName != "" {
@@ -431,7 +567,7 @@ func getDataPoints(pmd pmetric.Metric, metadata cWMetricMetadata, logger *zap.Lo
 		// For summaries coming from the prometheus receiver, the sum and count are cumulative, whereas for summaries
 		// coming from other sources, e.g. SDK, the sum and count are delta by being accumulated and reset periodically.
 		// In order to ensure metrics are sent as deltas, we check the receiver attribute (which can be injected by
-		// attribute processor) from resource metrics. If it exists, and equals to prometheus, the sum and count will be
+		// attribute processor) from resource metrics. If it exists, and is equal to prometheus, the sum and count will be
 		// converted.
 		// For more information: https://github.com/open-telemetry/opentelemetry-collector/blob/main/receiver/prometheusreceiver/DESIGN.md#summary
 		metricMetadata.adjustToDelta = metadata.receiver == prometheusReceiver

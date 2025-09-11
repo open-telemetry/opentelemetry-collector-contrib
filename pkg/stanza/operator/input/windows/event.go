@@ -13,8 +13,10 @@ import (
 )
 
 // systemPropertiesRenderContext stores a custom rendering context to get only the event properties.
-var systemPropertiesRenderContext = uintptr(0)
-var systemPropertiesRenderContextErr error
+var (
+	systemPropertiesRenderContext    = uintptr(0)
+	systemPropertiesRenderContextErr error
+)
 
 func init() {
 	// This is not expected to fail, however, collecting the error if a new failure mode appears.
@@ -27,9 +29,9 @@ type Event struct {
 }
 
 // GetPublisherName will get the publisher name of the event.
-func (e *Event) GetPublisherName(buffer Buffer) (string, error) {
+func (e *Event) GetPublisherName(buffer *Buffer) (string, error) {
 	if e.handle == 0 {
-		return "", fmt.Errorf("event handle does not exist")
+		return "", errors.New("event handle does not exist")
 	}
 
 	if systemPropertiesRenderContextErr != nil {
@@ -77,9 +79,9 @@ func NewEvent(handle uintptr) Event {
 }
 
 // RenderSimple will render the event as EventXML without formatted info.
-func (e *Event) RenderSimple(buffer Buffer) (*EventXML, error) {
+func (e *Event) RenderSimple(buffer *Buffer) (*EventXML, error) {
 	if e.handle == 0 {
-		return nil, fmt.Errorf("event handle does not exist")
+		return nil, errors.New("event handle does not exist")
 	}
 
 	bufferUsed, err := evtRender(0, e.handle, EvtRenderEventXML, buffer.SizeBytes(), buffer.FirstByte())
@@ -100,9 +102,9 @@ func (e *Event) RenderSimple(buffer Buffer) (*EventXML, error) {
 }
 
 // RenderDeep will render the event as EventXML with all available formatted info.
-func (e *Event) RenderDeep(buffer Buffer, publisher Publisher) (*EventXML, error) {
+func (e *Event) RenderDeep(buffer *Buffer, publisher Publisher) (*EventXML, error) {
 	if e.handle == 0 {
-		return nil, fmt.Errorf("event handle does not exist")
+		return nil, errors.New("event handle does not exist")
 	}
 
 	bufferUsed, err := evtFormatMessage(publisher.handle, e.handle, 0, 0, 0, EvtFormatMessageXML, buffer.SizeWide(), buffer.FirstByte())

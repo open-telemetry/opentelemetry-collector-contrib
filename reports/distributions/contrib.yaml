@@ -12,7 +12,9 @@ components:
         - roundrobin
         - routing
         - servicegraph
+        - signaltometrics
         - spanmetrics
+        - sum
     exporter:
         - alibabacloud_logservice
         - awscloudwatchlogs
@@ -20,15 +22,19 @@ components:
         - awskinesis
         - awss3
         - awsxray
+        - azureblob
         - azuredataexplorer
         - azuremonitor
+        - bmchelix
         - carbon
         - cassandra
         - clickhouse
         - coralogix
         - datadog
         - dataset
+        - doris
         - elasticsearch
+        - faro
         - file
         - googlecloud
         - googlecloudpubsub
@@ -39,9 +45,7 @@ components:
         - loadbalancing
         - logicmonitor
         - logzio
-        - loki
         - mezmo
-        - opencensus
         - opensearch
         - otelarrow
         - prometheus
@@ -52,55 +56,81 @@ components:
         - sentry
         - signalfx
         - splunk_hec
+        - stef
         - sumologic
         - syslog
         - tencentcloud_logservice
+        - tinybird
         - zipkin
     extension:
         - ack
         - asapclient
+        - awscloudwatchmetricstreams_encoding
+        - awslogs_encoding
         - awsproxy
+        - azureauth
         - basicauth
         - bearertokenauth
+        - cgroupruntime
+        - datadog
         - db_storage
         - docker_observer
         - ecs_observer
         - ecs_task_observer
         - file_storage
+        - googleclientauth
+        - googlecloudlogentry_encoding
         - headers_setter
         - health_check
         - host_observer
         - http_forwarder
+        - jaeger_encoding
         - jaegerremotesampling
+        - json_log_encoding
+        - k8s_leader_elector
         - k8s_observer
+        - kafkatopics_observer
         - oauth2client
         - oidc
         - opamp
+        - otlp_encoding
         - pprof
+        - redis_storage
         - sigv4auth
+        - skywalking_encoding
+        - text_encoding
+        - zipkin_encoding
     processor:
         - attributes
         - cumulativetodelta
+        - datadogsemantics
         - deltatocumulative
         - deltatorate
         - filter
         - geoip
         - groupbyattrs
         - groupbytrace
+        - interval
+        - isolationforest
         - k8sattributes
         - logdedup
         - metricsgeneration
+        - metricstarttime
         - metricstransform
         - probabilistic_sampler
         - redaction
         - remotetap
         - resource
         - resourcedetection
-        - routing
         - span
         - sumologic
         - tail_sampling
         - transform
+    provider:
+        - aes
+        - googlesecretmanager
+        - s3
+        - secretsmanager
     receiver:
         - active_directory_ds
         - aerospike
@@ -110,6 +140,7 @@ components:
         - awscontainerinsightreceiver
         - awsecscontainermetrics
         - awsfirehose
+        - awss3
         - awsxray
         - azureblob
         - azureeventhub
@@ -124,13 +155,17 @@ components:
         - datadog
         - docker_stats
         - elasticsearch
+        - envoyals
         - expvar
+        - faro
         - filelog
         - filestats
         - flinkmetrics
         - fluentforward
         - github
         - googlecloudmonitoring
+        - googlecloudpubsub
+        - googlecloudspanner
         - haproxy
         - hostmetrics
         - httpcheck
@@ -145,15 +180,17 @@ components:
         - kafka
         - kafkametrics
         - kubeletstats
+        - libhoney
         - loki
         - memcached
         - mongodb
         - mongodbatlas
         - mysql
         - namedpipe
+        - netflow
         - nginx
         - nsxt
-        - opencensus
+        - ntp
         - oracledb
         - otelarrow
         - otlpjsonfile
@@ -161,6 +198,7 @@ components:
         - postgresql
         - prometheus
         - prometheus_simple
+        - prometheusremotewrite
         - pulsar
         - purefa
         - purefb
@@ -168,18 +206,21 @@ components:
         - receiver_creator
         - redis
         - riak
-        - sapm
+        - saphana
         - signalfx
         - skywalking
         - snmp
         - snowflake
         - solace
         - splunk_hec
+        - splunkenterprise
         - sqlquery
         - sqlserver
         - sshcheck
         - statsd
+        - stef
         - syslog
+        - tcpcheck
         - tcplog
         - tlscheck
         - udplog
@@ -188,5 +229,19 @@ components:
         - webhookevent
         - windowseventlog
         - windowsperfcounters
+        - windowsservice
         - zipkin
+        - zookeeper
+    scraper:
+        - cpu
+        - disk
+        - filesystem
+        - load
+        - memory
+        - network
+        - nfs
+        - paging
+        - process
+        - processes
+        - system
         - zookeeper

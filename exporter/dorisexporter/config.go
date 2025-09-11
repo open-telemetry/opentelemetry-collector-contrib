@@ -16,9 +16,10 @@ import (
 )
 
 type Config struct {
+	// confighttp.ClientConfig.Headers is the headers of doris stream load.
 	confighttp.ClientConfig   `mapstructure:",squash"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
-	QueueSettings             exporterhelper.QueueConfig `mapstructure:"sending_queue"`
+	QueueSettings             exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
 
 	// TableNames is the table name for logs, traces and metrics.
 	Table `mapstructure:"table"`
@@ -42,6 +43,15 @@ type Config struct {
 	ReplicationNum int32 `mapstructure:"replication_num"`
 	// Timezone is the timezone of the doris.
 	TimeZone string `mapstructure:"timezone"`
+	// LogResponse is whether to log the response of doris stream load.
+	LogResponse bool `mapstructure:"log_response"`
+	// LabelPrefix is the prefix of the label in doris stream load.
+	LabelPrefix string `mapstructure:"label_prefix"`
+	// ProgressInterval is the interval of the progress reporter.
+	LogProgressInterval int `mapstructure:"log_progress_interval"`
+
+	// not in config file, will be set in Validate
+	timeLocation *time.Location `mapstructure:"-"`
 }
 
 type Table struct {
@@ -84,17 +94,18 @@ func (cfg *Config) Validate() (err error) {
 	if !re.MatchString(cfg.Database) {
 		err = errors.Join(err, errors.New("database name must be alphanumeric and underscore"))
 	}
-	if !re.MatchString(cfg.Table.Logs) {
+	if !re.MatchString(cfg.Logs) {
 		err = errors.Join(err, errors.New("logs table name must be alphanumeric and underscore"))
 	}
-	if !re.MatchString(cfg.Table.Traces) {
+	if !re.MatchString(cfg.Traces) {
 		err = errors.Join(err, errors.New("traces table name must be alphanumeric and underscore"))
 	}
-	if !re.MatchString(cfg.Table.Metrics) {
+	if !re.MatchString(cfg.Metrics) {
 		err = errors.Join(err, errors.New("metrics table name must be alphanumeric and underscore"))
 	}
 
-	_, errT := cfg.timeZone()
+	var errT error
+	cfg.timeLocation, errT = time.LoadLocation(cfg.TimeZone)
 	if errT != nil {
 		err = errors.Join(err, errors.New("invalid timezone"))
 	}
@@ -113,27 +124,35 @@ func (cfg *Config) startHistoryDays() int32 {
 	return -cfg.HistoryDays
 }
 
-func (cfg *Config) timeZone() (*time.Location, error) {
-	return time.LoadLocation(cfg.TimeZone)
-}
-
 const (
 	properties = `
 PROPERTIES (
 "replication_num" = "%d",
-"enable_single_replica_compaction" = "true",
-"compaction_policy" = "time_series",
+"compaction_policy" = "%s",
 "dynamic_partition.enable" = "true",
 "dynamic_partition.create_history_partition" = "true",
 "dynamic_partition.time_unit" = "DAY",
 "dynamic_partition.start" = "%d",
 "dynamic_partition.history_partition_num" = "%d",
 "dynamic_partition.end" = "1",
-"dynamic_partition.prefix" = "p"
+"dynamic_partition.prefix" = "p",
+"compression" = "zstd",
+"inverted_index_storage_format" = "V2"
 )
 `
 )
 
+const (
+	compactionPolicySizeBased  = "size_based"
+	compactionPolicyTimeSeries = "time_series"
+)
+
+// // propertiesStr returns the properties string for non-unique key tables.
 func (cfg *Config) propertiesStr() string {
-	return fmt.Sprintf(properties, cfg.ReplicationNum, cfg.startHistoryDays(), cfg.CreateHistoryDays)
+	return fmt.Sprintf(properties, cfg.ReplicationNum, compactionPolicyTimeSeries, cfg.startHistoryDays(), cfg.CreateHistoryDays)
+}
+
+// // propertiesStrForUniqueKey returns the properties string for unique key tables.
+func (cfg *Config) propertiesStrForUniqueKey() string {
+	return fmt.Sprintf(properties, cfg.ReplicationNum, compactionPolicySizeBased, cfg.startHistoryDays(), cfg.CreateHistoryDays)
 }

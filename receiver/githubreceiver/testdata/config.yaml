@@ -3,13 +3,29 @@ receivers:
     initial_delay: 1s
     collection_interval: 60s
     scrapers:
-      github:
+      scraper:
+    webhook:
+      endpoint: localhost:8080
+      read_timeout: "500ms"
+      write_timeout: "500ms"
+      path: "some/path"
+      health_path: "health/path"
+      required_headers:
+        key: value-present
 
   github/customname:
     initial_delay: 1s
     collection_interval: 30s
     scrapers:
-      github:
+      scraper:
+    webhook:
+      endpoint: localhost:8080
+      read_timeout: "500ms"
+      write_timeout: "500ms"
+      path: "some/path"
+      health_path: "health/path"
+      required_headers:
+        key: value-present
 
 processors:
   nop:
@@ -23,4 +39,7 @@ service:
       receivers: [github, github/customname]
       processors: [nop]
       exporters: [nop]
-
+    traces:
+      receivers: [github, github/customname]
+      processors: [nop]
+      exporters: [nop]

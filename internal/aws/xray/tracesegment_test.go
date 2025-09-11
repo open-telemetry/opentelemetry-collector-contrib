@@ -6,11 +6,12 @@ package awsxray
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"testing"
 
-	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -501,7 +502,7 @@ var rawExpectedSegmentForInstrumentedServer = Segment{
 	EndTime:   aws.Float64(1596648396.6401389),
 	HTTP: &HTTPData{
 		Request: &RequestData{
-			Method:        String("GET"),
+			Method:        String(http.MethodGet),
 			URL:           String("http://localhost:8000/"),
 			ClientIP:      String("127.0.0.1"),
 			UserAgent:     String("Go-http-client/1.1"),
@@ -598,7 +599,6 @@ func TestTraceBodyUnMarshalling(t *testing.T) {
 						ExceptionID: String("abcdefghijklmnop"),
 					},
 				}, actualSeg, testCase+": unmarshalled segment is different from the expected")
-
 			},
 		},
 		{
@@ -627,7 +627,7 @@ func TestTraceBodyUnMarshalling(t *testing.T) {
 
 	for _, tc := range tests {
 		content, err := os.ReadFile(tc.samplePath)
-		assert.NoErrorf(t, err, "[%s] can not read raw segment", tc.testCase)
+		assert.NoErrorf(t, err, "[%s] cannot read raw segment", tc.testCase)
 
 		assert.NotEmptyf(t, content, "[%s] content length is 0", tc.testCase)
 
@@ -647,14 +647,14 @@ func TestValidate(t *testing.T) {
 		{
 			testCase:         "missing segment name",
 			input:            &Segment{},
-			expectedErrorStr: `segment "name" can not be nil`,
+			expectedErrorStr: `segment "name" cannot be nil`,
 		},
 		{
 			testCase: "missing segment id",
 			input: &Segment{
 				Name: String("a name"),
 			},
-			expectedErrorStr: `segment "id" can not be nil`,
+			expectedErrorStr: `segment "id" cannot be nil`,
 		},
 		{
 			testCase: "missing segment start_time",
@@ -662,7 +662,7 @@ func TestValidate(t *testing.T) {
 				Name: String("a name"),
 				ID:   String("an ID"),
 			},
-			expectedErrorStr: `segment "start_time" can not be nil`,
+			expectedErrorStr: `segment "start_time" cannot be nil`,
 		},
 		{
 			testCase: "missing segment trace_id",
@@ -671,7 +671,7 @@ func TestValidate(t *testing.T) {
 				ID:        String("an ID"),
 				StartTime: aws.Float64(10),
 			},
-			expectedErrorStr: `segment "trace_id" can not be nil`,
+			expectedErrorStr: `segment "trace_id" cannot be nil`,
 		},
 		{
 			testCase: "happy case",
@@ -687,7 +687,7 @@ func TestValidate(t *testing.T) {
 	for _, tc := range tests {
 		err := tc.input.Validate()
 
-		if len(tc.expectedErrorStr) > 0 {
+		if tc.expectedErrorStr != "" {
 			assert.EqualError(t, err, tc.expectedErrorStr)
 		} else {
 			assert.NoError(t, err, "Validate should not fail")

@@ -6,7 +6,7 @@ package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-c
 import (
 	"context"
 	"encoding/base64"
-	"fmt"
+	"errors"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
@@ -23,14 +23,13 @@ func createBase64DecodeFunction[K any](_ ottl.FunctionContext, oArgs ottl.Argume
 	args, ok := oArgs.(*Base64DecodeArguments[K])
 
 	if !ok {
-		return nil, fmt.Errorf("Base64DecodeFactory args must be of type *Base64DecodeArguments[K]")
+		return nil, errors.New("Base64DecodeFactory args must be of type *Base64DecodeArguments[K]")
 	}
 
 	return Base64Decode(args.Target)
 }
 
 func Base64Decode[K any](target ottl.StringGetter[K]) (ottl.ExprFunc[K], error) {
-
 	return func(ctx context.Context, tCtx K) (any, error) {
 		val, err := target.Get(ctx, tCtx)
 		if err != nil {

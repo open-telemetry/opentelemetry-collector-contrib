@@ -41,26 +41,31 @@ func ToTDigest(dp pmetric.ExponentialHistogramDataPoint) (counts []int64, values
 		}
 		lb := -LowerBoundary(offset+i+1, scale)
 		ub := -LowerBoundary(offset+i, scale)
-		counts = append(counts, int64(count))
+		counts = append(counts, safeUint64ToInt64(count))
 		values = append(values, lb+(ub-lb)/2)
 	}
 
 	if zeroCount := dp.ZeroCount(); zeroCount != 0 {
-		counts = append(counts, int64(zeroCount))
+		counts = append(counts, safeUint64ToInt64(zeroCount))
 		values = append(values, 0)
 	}
 
 	offset = int(dp.Positive().Offset())
-	bucketCounts = dp.Positive().BucketCounts()
-	for i := 0; i < bucketCounts.Len(); i++ {
-		count := bucketCounts.At(i)
+	for i, count := range dp.Positive().BucketCounts().All() {
 		if count == 0 {
 			continue
 		}
 		lb := LowerBoundary(offset+i, scale)
 		ub := LowerBoundary(offset+i+1, scale)
-		counts = append(counts, int64(count))
+		counts = append(counts, safeUint64ToInt64(count))
 		values = append(values, lb+(ub-lb)/2)
 	}
 	return
+}
+
+func safeUint64ToInt64(v uint64) int64 {
+	if v > math.MaxInt64 {
+		return math.MaxInt64
+	}
+	return int64(v) //nolint:goset // overflow checked
 }

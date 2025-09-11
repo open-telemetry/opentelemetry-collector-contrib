@@ -35,7 +35,7 @@ func newRedisClient(options *redis.Options) client {
 }
 
 // Redis strings are CRLF delimited.
-func (c *redisClient) delimiter() string {
+func (*redisClient) delimiter() string {
 	return "\r\n"
 }
 
@@ -44,7 +44,7 @@ func (c *redisClient) retrieveInfo() (string, error) {
 	return c.client.Info(context.Background(), "all").Result()
 }
 
-// close client to release connention pool.
+// close client to release connection pool.
 func (c *redisClient) close() error {
 	return c.client.Close()
 }

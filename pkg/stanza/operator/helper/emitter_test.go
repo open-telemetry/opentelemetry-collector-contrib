@@ -6,6 +6,7 @@ package helper
 import (
 	"context"
 	"fmt"
+	"sync"
 	"testing"
 	"time"
 
@@ -16,8 +17,17 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 )
 
-func TestLogEmitter(t *testing.T) {
-	emitter := NewLogEmitter(componenttest.NewNopTelemetrySettings())
+func TestBatchingLogEmitter(t *testing.T) {
+	rwMtx := &sync.RWMutex{}
+	var receivedEntries []*entry.Entry
+	emitter := NewBatchingLogEmitter(
+		componenttest.NewNopTelemetrySettings(),
+		func(_ context.Context, entries []*entry.Entry) {
+			rwMtx.Lock()
+			defer rwMtx.Unlock()
+			receivedEntries = entries
+		},
+	)
 
 	require.NoError(t, emitter.Start(nil))
 
@@ -27,24 +37,31 @@ func TestLogEmitter(t *testing.T) {
 
 	in := entry.New()
 
-	go func() {
-		assert.NoError(t, emitter.Process(context.Background(), in))
-	}()
+	assert.NoError(t, emitter.Process(t.Context(), in))
 
-	select {
-	case out := <-emitter.logChan:
-		require.Equal(t, in, out[0])
-	case <-time.After(time.Second):
-		require.FailNow(t, "Timed out waiting for output")
-	}
+	require.Eventually(t, func() bool {
+		rwMtx.RLock()
+		defer rwMtx.RUnlock()
+		return receivedEntries != nil
+	}, time.Second, 10*time.Millisecond)
+	require.Equal(t, in, receivedEntries[0])
 }
 
-func TestLogEmitterEmitsOnMaxBatchSize(t *testing.T) {
+func TestBatchingLogEmitterEmitsOnMaxBatchSize(t *testing.T) {
 	const (
 		maxBatchSize = 100
 		timeout      = time.Second
 	)
-	emitter := NewLogEmitter(componenttest.NewNopTelemetrySettings())
+	rwMtx := &sync.RWMutex{}
+	var receivedEntries []*entry.Entry
+	emitter := NewBatchingLogEmitter(
+		componenttest.NewNopTelemetrySettings(),
+		func(_ context.Context, entries []*entry.Entry) {
+			rwMtx.Lock()
+			defer rwMtx.Unlock()
+			receivedEntries = entries
+		},
+	)
 
 	require.NoError(t, emitter.Start(nil))
 	defer func() {
@@ -53,29 +70,35 @@ func TestLogEmitterEmitsOnMaxBatchSize(t *testing.T) {
 
 	entries := complexEntries(maxBatchSize)
 
-	go func() {
-		ctx := context.Background()
-		for _, e := range entries {
-			assert.NoError(t, emitter.Process(ctx, e))
-		}
-	}()
-
-	timeoutChan := time.After(timeout)
-
-	select {
-	case recv := <-emitter.logChan:
-		require.Len(t, recv, maxBatchSize, "Length of received entries was not the same as max batch size!")
-	case <-timeoutChan:
-		require.FailNow(t, "Failed to receive log entries before timeout")
+	ctx := t.Context()
+	for _, e := range entries {
+		assert.NoError(t, emitter.Process(ctx, e))
 	}
+
+	require.Eventually(t, func() bool {
+		rwMtx.RLock()
+		defer rwMtx.RUnlock()
+		return receivedEntries != nil
+	}, timeout, 10*time.Millisecond)
+	require.Len(t, receivedEntries, maxBatchSize)
 }
 
-func TestLogEmitterEmitsOnFlushInterval(t *testing.T) {
+func TestBatchingLogEmitterEmitsOnFlushInterval(t *testing.T) {
 	const (
 		flushInterval = 100 * time.Millisecond
 		timeout       = time.Second
 	)
-	emitter := NewLogEmitter(componenttest.NewNopTelemetrySettings())
+	rwMtx := &sync.RWMutex{}
+	var receivedEntries []*entry.Entry
+	emitter := NewBatchingLogEmitter(
+		componenttest.NewNopTelemetrySettings(),
+		func(_ context.Context, entries []*entry.Entry) {
+			rwMtx.Lock()
+			defer rwMtx.Unlock()
+			receivedEntries = entries
+		},
+	)
+	emitter.flushInterval = flushInterval
 
 	require.NoError(t, emitter.Start(nil))
 	defer func() {
@@ -84,19 +107,46 @@ func TestLogEmitterEmitsOnFlushInterval(t *testing.T) {
 
 	entry := complexEntry()
 
-	go func() {
-		ctx := context.Background()
-		assert.NoError(t, emitter.Process(ctx, entry))
+	ctx := t.Context()
+	assert.NoError(t, emitter.Process(ctx, entry))
+
+	require.Eventually(t, func() bool {
+		rwMtx.RLock()
+		defer rwMtx.RUnlock()
+		return receivedEntries != nil
+	}, timeout, 10*time.Millisecond)
+
+	require.Len(t, receivedEntries, 1)
+}
+
+func TestSynchronousLogEmitter(t *testing.T) {
+	rwMtx := &sync.RWMutex{}
+	var receivedEntries []*entry.Entry
+	emitter := NewSynchronousLogEmitter(
+		componenttest.NewNopTelemetrySettings(),
+		func(_ context.Context, entries []*entry.Entry) {
+			rwMtx.Lock()
+			defer rwMtx.Unlock()
+			receivedEntries = entries
+		},
+	)
+
+	require.NoError(t, emitter.Start(nil))
+
+	defer func() {
+		require.NoError(t, emitter.Stop())
 	}()
 
-	timeoutChan := time.After(timeout)
+	in := entry.New()
 
-	select {
-	case recv := <-emitter.logChan:
-		require.Len(t, recv, 1, "Should have received one entry, got %d instead", len(recv))
-	case <-timeoutChan:
-		require.FailNow(t, "Failed to receive log entry before timeout")
-	}
+	assert.NoError(t, emitter.Process(t.Context(), in))
+
+	require.Eventually(t, func() bool {
+		rwMtx.RLock()
+		defer rwMtx.RUnlock()
+		return receivedEntries != nil
+	}, time.Second, 10*time.Millisecond)
+	require.Equal(t, in, receivedEntries[0])
 }
 
 func complexEntries(count int) []*entry.Entry {
@@ -154,7 +204,7 @@ func complexEntry() *entry.Entry {
 	return e
 }
 
-func complexEntriesForNDifferentHosts(count int, n int) []*entry.Entry {
+func complexEntriesForNDifferentHosts(count, n int) []*entry.Entry {
 	ret := make([]*entry.Entry, count)
 	for i := 0; i < count; i++ {
 		e := entry.New()

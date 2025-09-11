@@ -9,6 +9,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/compression/zstd"
 )
@@ -17,18 +18,24 @@ import (
 type Protocols struct {
 	GRPC  configgrpc.ServerConfig `mapstructure:"grpc"`
 	Arrow ArrowConfig             `mapstructure:"arrow"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type AdmissionConfig struct {
 	// RequestLimitMiB limits the number of requests that are received by the stream based on
 	// uncompressed request size. Request size is used to control how much traffic we admit
-	// for processing.
+	// for processing.  When this field is zero, admission control is disabled.
 	RequestLimitMiB uint64 `mapstructure:"request_limit_mib"`
 
-	// WaiterLimit is the limit on the number of waiters waiting to be processed and consumed.
+	// WaitingLimitMiB is the limit on the amount of data waiting to be consumed.
 	// This is a dimension of memory limiting to ensure waiters are not consuming an
 	// unexpectedly large amount of memory in the arrow receiver.
-	WaiterLimit int64 `mapstructure:"waiter_limit"`
+	WaitingLimitMiB uint64 `mapstructure:"waiting_limit_mib"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // ArrowConfig support configuring the Arrow receiver.
@@ -46,6 +53,9 @@ type ArrowConfig struct {
 
 	// Zstd settings apply to OTel-Arrow use of gRPC specifically.
 	Zstd zstd.DecoderConfig `mapstructure:"zstd"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // Config defines configuration for OTel Arrow receiver.
@@ -54,10 +64,15 @@ type Config struct {
 	Protocols `mapstructure:"protocols"`
 	// Admission is the configuration for controlling amount of request memory entering the receiver.
 	Admission AdmissionConfig `mapstructure:"admission"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
-var _ component.Config = (*Config)(nil)
-var _ component.ConfigValidator = (*ArrowConfig)(nil)
+var (
+	_ component.Config   = (*Config)(nil)
+	_ xconfmap.Validator = (*ArrowConfig)(nil)
+)
 
 func (cfg *ArrowConfig) Validate() error {
 	if err := cfg.Zstd.Validate(); err != nil {
@@ -83,9 +98,6 @@ func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 	}
 	if cfg.Admission.RequestLimitMiB == 0 && cfg.Arrow.DeprecatedAdmissionLimitMiB != 0 {
 		cfg.Admission.RequestLimitMiB = cfg.Arrow.DeprecatedAdmissionLimitMiB
-	}
-	if cfg.Admission.WaiterLimit == 0 && cfg.Arrow.DeprecatedWaiterLimit != 0 {
-		cfg.Admission.WaiterLimit = cfg.Arrow.DeprecatedWaiterLimit
 	}
 	return nil
 }

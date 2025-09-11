@@ -14,7 +14,6 @@ import (
 )
 
 func TestDecode(t *testing.T) {
-
 	testByteSlice := pcommon.NewByteSlice()
 	testByteSlice.FromRaw([]byte("test string"))
 	testByteSliceB64 := pcommon.NewByteSlice()
@@ -146,7 +145,7 @@ func TestDecode(t *testing.T) {
 			value:         "test string",
 			encoding:      "GB2312",
 			want:          nil,
-			expectedError: "no decoder available for encoding: GB2312",
+			expectedError: "no charmap defined for encoding 'GB2312'",
 		},
 		{
 			name:          "non-string",
@@ -171,6 +170,30 @@ func TestDecode(t *testing.T) {
 			value:         "cmVtb3ZlZCBwYWRkaW5nCg",
 			encoding:      "base64",
 			expectedError: "illegal base64 data at input byte",
+		},
+		{
+			name:     "base64 with url-safe sensitive characters",
+			value:    "R28/L1p+eA==",
+			encoding: "base64",
+			want:     "Go?/Z~x",
+		},
+		{
+			name:     "base64-raw with url-safe sensitive characters",
+			value:    "R28/L1p+eA",
+			encoding: "base64-raw",
+			want:     "Go?/Z~x",
+		},
+		{
+			name:     "base64-url with url-safe sensitive characters",
+			value:    "R28_L1p-eA==",
+			encoding: "base64-url",
+			want:     "Go?/Z~x",
+		},
+		{
+			name:     "base64-raw-url with url-safe sensitive characters",
+			value:    "R28_L1p-eA",
+			encoding: "base64-raw-url",
+			want:     "Go?/Z~x",
 		},
 	}
 	for _, tt := range tests {

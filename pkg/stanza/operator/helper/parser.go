@@ -5,12 +5,12 @@ package helper // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"context"
-	"fmt"
+	"errors"
 
 	"go.opentelemetry.io/collector/component"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
+	stanza_errors "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
 )
 
 // NewParserConfig creates a new parser config with default values
@@ -42,7 +42,7 @@ func (c ParserConfig) Build(set component.TelemetrySettings) (ParserOperator, er
 	}
 
 	if c.BodyField != nil && c.ParseTo.String() == entry.NewBodyField().String() {
-		return ParserOperator{}, fmt.Errorf("`parse_to: body` not allowed when `body` is configured")
+		return ParserOperator{}, errors.New("`parse_to: body` not allowed when `body` is configured")
 	}
 
 	parserOperator := ParserOperator{
@@ -93,6 +93,49 @@ type ParserOperator struct {
 	ScopeNameParser *ScopeNameParser
 }
 
+func (p *ParserOperator) ProcessBatchWith(ctx context.Context, entries []*entry.Entry, parse ParseFunction) error {
+	return p.ProcessBatchWithCallback(ctx, entries, parse, nil)
+}
+
+func (p *ParserOperator) ProcessBatchWithCallback(ctx context.Context, entries []*entry.Entry, parse ParseFunction, cb func(*entry.Entry) error) error {
+	processedEntries := make([]*entry.Entry, 0, len(entries))
+	write := func(_ context.Context, ent *entry.Entry) error {
+		processedEntries = append(processedEntries, ent)
+		return nil
+	}
+	var errs []error
+	for _, ent := range entries {
+		skip, err := p.Skip(ctx, ent)
+		if err != nil {
+			errs = append(errs, p.HandleEntryErrorWithWrite(ctx, ent, err, write))
+			continue
+		}
+		if skip {
+			_ = write(ctx, ent)
+			continue
+		}
+
+		if err = p.ParseWith(ctx, ent, parse, write); err != nil {
+			if p.OnError != DropOnErrorQuiet && p.OnError != SendOnErrorQuiet {
+				errs = append(errs, err)
+			}
+			continue
+		}
+
+		if cb != nil {
+			if err = cb(ent); err != nil {
+				errs = append(errs, p.HandleEntryErrorWithWrite(ctx, ent, err, write))
+				continue
+			}
+		}
+
+		_ = write(ctx, ent)
+	}
+
+	errs = append(errs, p.WriteBatch(ctx, processedEntries))
+	return errors.Join(errs...)
+}
+
 // ProcessWith will run ParseWith on the entry, then forward the entry on to the next operators.
 func (p *ParserOperator) ProcessWith(ctx context.Context, entry *entry.Entry, parse ParseFunction) error {
 	return p.ProcessWithCallback(ctx, entry, parse, nil)
@@ -108,7 +151,7 @@ func (p *ParserOperator) ProcessWithCallback(ctx context.Context, entry *entry.E
 		return p.Write(ctx, entry)
 	}
 
-	if err = p.ParseWith(ctx, entry, parse); err != nil {
+	if err = p.ParseWith(ctx, entry, parse, p.Write); err != nil {
 		if p.OnError == DropOnErrorQuiet || p.OnError == SendOnErrorQuiet {
 			return nil
 		}
@@ -126,24 +169,24 @@ func (p *ParserOperator) ProcessWithCallback(ctx context.Context, entry *entry.E
 }
 
 // ParseWith will process an entry's field with a parser function.
-func (p *ParserOperator) ParseWith(ctx context.Context, entry *entry.Entry, parse ParseFunction) error {
+func (p *ParserOperator) ParseWith(ctx context.Context, entry *entry.Entry, parse ParseFunction, write WriteFunction) error {
 	value, ok := entry.Get(p.ParseFrom)
 	if !ok {
-		err := errors.NewError(
+		err := stanza_errors.NewError(
 			"Entry is missing the expected parse_from field.",
 			"Ensure that all incoming entries contain the parse_from field.",
 			"parse_from", p.ParseFrom.String(),
 		)
-		return p.HandleEntryError(ctx, entry, err)
+		return p.HandleEntryErrorWithWrite(ctx, entry, err, write)
 	}
 
 	newValue, err := parse(value)
 	if err != nil {
-		return p.HandleEntryError(ctx, entry, err)
+		return p.HandleEntryErrorWithWrite(ctx, entry, err, write)
 	}
 
 	if err := entry.Set(p.ParseTo, newValue); err != nil {
-		return p.HandleEntryError(ctx, entry, errors.Wrap(err, "set parse_to"))
+		return p.HandleEntryErrorWithWrite(ctx, entry, stanza_errors.Wrap(err, "set parse_to"), write)
 	}
 
 	if p.BodyField != nil {
@@ -174,16 +217,16 @@ func (p *ParserOperator) ParseWith(ctx context.Context, entry *entry.Entry, pars
 
 	// Handle parsing errors after attempting to parse all
 	if timeParseErr != nil {
-		return p.HandleEntryError(ctx, entry, errors.Wrap(timeParseErr, "time parser"))
+		return p.HandleEntryErrorWithWrite(ctx, entry, stanza_errors.Wrap(timeParseErr, "time parser"), write)
 	}
 	if severityParseErr != nil {
-		return p.HandleEntryError(ctx, entry, errors.Wrap(severityParseErr, "severity parser"))
+		return p.HandleEntryErrorWithWrite(ctx, entry, stanza_errors.Wrap(severityParseErr, "severity parser"), write)
 	}
 	if traceParseErr != nil {
-		return p.HandleEntryError(ctx, entry, errors.Wrap(traceParseErr, "trace parser"))
+		return p.HandleEntryErrorWithWrite(ctx, entry, stanza_errors.Wrap(traceParseErr, "trace parser"), write)
 	}
 	if scopeNameParserErr != nil {
-		return p.HandleEntryError(ctx, entry, errors.Wrap(scopeNameParserErr, "scope_name parser"))
+		return p.HandleEntryErrorWithWrite(ctx, entry, stanza_errors.Wrap(scopeNameParserErr, "scope_name parser"), write)
 	}
 	return nil
 }

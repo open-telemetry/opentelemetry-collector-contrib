@@ -25,18 +25,18 @@ type connectorMetrics struct {
 
 // newMetricsConnector is a function to create a new connector for metrics extraction
 func newMetricsConnector(set connector.Settings, config component.Config, metricsConsumer consumer.Metrics) *connectorMetrics {
-	set.TelemetrySettings.Logger.Info("Building otlpjson connector for metrics")
+	set.Logger.Info("Building otlpjson connector for metrics")
 	cfg := config.(*Config)
 
 	return &connectorMetrics{
 		config:          *cfg,
-		logger:          set.TelemetrySettings.Logger,
+		logger:          set.Logger,
 		metricsConsumer: metricsConsumer,
 	}
 }
 
 // Capabilities implements the consumer interface.
-func (c *connectorMetrics) Capabilities() consumer.Capabilities {
+func (*connectorMetrics) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
@@ -51,15 +51,26 @@ func (c *connectorMetrics) ConsumeLogs(ctx context.Context, pl plog.Logs) error 
 			for k := 0; k < logRecord.LogRecords().Len(); k++ {
 				lRecord := logRecord.LogRecords().At(k)
 				token := lRecord.Body()
-				var m pmetric.Metrics
-				m, err := metricsUnmarshaler.UnmarshalMetrics([]byte(token.AsString()))
-				if err != nil {
-					c.logger.Error("could extract metrics from otlp json", zap.Error(err))
+
+				value := token.AsString()
+				switch {
+				case metricRegex.MatchString(value):
+					var m pmetric.Metrics
+					m, err := metricsUnmarshaler.UnmarshalMetrics([]byte(value))
+					if err != nil {
+						c.logger.Error("could not extract metrics from otlp json", zap.Error(err))
+						continue
+					}
+					err = c.metricsConsumer.ConsumeMetrics(ctx, m)
+					if err != nil {
+						c.logger.Error("could not consume metrics from otlp json", zap.Error(err))
+					}
+				case logRegex.MatchString(value), traceRegex.MatchString(value):
+					// If it's a log or trace payload, simply continue
 					continue
-				}
-				err = c.metricsConsumer.ConsumeMetrics(ctx, m)
-				if err != nil {
-					c.logger.Error("could not consume metrics from otlp json", zap.Error(err))
+				default:
+					// If no regex matches, log the invalid payload
+					c.logger.Error("Invalid otlp payload")
 				}
 			}
 		}

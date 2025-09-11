@@ -5,7 +5,6 @@ package metrics // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"path"
@@ -23,7 +22,7 @@ type result struct {
 }
 
 func (r *results) Init(resultsDir string) {
-	err := os.MkdirAll(resultsDir, os.FileMode(0755))
+	err := os.MkdirAll(resultsDir, os.FileMode(0o755))
 	if err != nil {
 		log.Fatal(err.Error())
 	}
@@ -51,7 +50,7 @@ func (r *results) Add(_ string, rslt any) {
 }
 
 func (r *results) writeString(s string) {
-	_, _ = io.WriteString(r.resultsFile, s)
+	_, _ = r.resultsFile.WriteString(s)
 }
 
 func (r *results) Save() {

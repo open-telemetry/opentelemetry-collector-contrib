@@ -24,16 +24,17 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver/internal/metadata"
 )
 
 func setupServer(t *testing.T) (func() net.Conn, *consumertest.LogsSink, *observer.ObservedLogs, context.CancelFunc) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 
 	next := new(consumertest.LogsSink)
 	logCore, logObserver := observer.New(zap.DebugLevel)
 	logger := zap.New(logCore)
 
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettings(metadata.Type)
 	set.Logger = logger
 
 	conf := &Config{
@@ -109,7 +110,7 @@ func TestMessageEvent(t *testing.T) {
 		return len(converted) == 1
 	}, 5*time.Second, 10*time.Millisecond)
 
-	require.NoError(t, plogtest.CompareLogs(logConstructor(Log{
+	require.NoError(t, plogtest.CompareLogs(logConstructor(log{
 		Timestamp: 1593031012000000000,
 		Body:      pcommon.NewValueStr("..."),
 		Attributes: map[string]any{
@@ -140,7 +141,7 @@ func TestForwardEvent(t *testing.T) {
 	}, 5*time.Second, 10*time.Millisecond)
 
 	require.NoError(t, plogtest.CompareLogs(logConstructor(
-		Log{
+		log{
 			Timestamp: 1593032377776693638,
 			Body:      pcommon.NewValueEmpty(),
 			Attributes: map[string]any{
@@ -153,7 +154,7 @@ func TestForwardEvent(t *testing.T) {
 				"fluent.tag": "mem.0",
 			},
 		},
-		Log{
+		log{
 			Timestamp: 1593032378756829346,
 			Body:      pcommon.NewValueEmpty(),
 			Attributes: map[string]any{
@@ -219,7 +220,7 @@ func TestForwardPackedEvent(t *testing.T) {
 	}, 5*time.Second, 10*time.Millisecond)
 
 	require.NoError(t, plogtest.CompareLogs(logConstructor(
-		Log{
+		log{
 			Timestamp: 1593032517024597622,
 			Body:      pcommon.NewValueStr("starting fluentd worker pid=17 ppid=7 worker=0"),
 			Attributes: map[string]any{
@@ -229,21 +230,21 @@ func TestForwardPackedEvent(t *testing.T) {
 				"worker":     0,
 			},
 		},
-		Log{
+		log{
 			Timestamp: 1593032517028573686,
 			Body:      pcommon.NewValueStr("delayed_commit_timeout is overwritten by ack_response_timeout"),
 			Attributes: map[string]any{
 				"fluent.tag": "fluent.info",
 			},
 		},
-		Log{
+		log{
 			Timestamp: 1593032517028815948,
 			Body:      pcommon.NewValueStr("following tail of /var/log/kern.log"),
 			Attributes: map[string]any{
 				"fluent.tag": "fluent.info",
 			},
 		},
-		Log{
+		log{
 			Timestamp: 1593032517031174229,
 			Body:      pcommon.NewValueStr("fluentd worker is now running worker=0"),
 			Attributes: map[string]any{
@@ -251,7 +252,7 @@ func TestForwardPackedEvent(t *testing.T) {
 				"worker":     0,
 			},
 		},
-		Log{
+		log{
 			Timestamp: 1593032522187382822,
 			Body:      pcommon.NewValueStr("fluentd worker is now stopping worker=0"),
 			Attributes: map[string]any{
@@ -281,7 +282,7 @@ func TestForwardPackedCompressedEvent(t *testing.T) {
 	}, 5*time.Second, 10*time.Millisecond)
 
 	require.NoError(t, plogtest.CompareLogs(logConstructor(
-		Log{
+		log{
 			Timestamp: 1593032426012197420,
 			Body:      pcommon.NewValueStr("starting fluentd worker pid=17 ppid=7 worker=0"),
 			Attributes: map[string]any{
@@ -291,21 +292,21 @@ func TestForwardPackedCompressedEvent(t *testing.T) {
 				"worker":     0,
 			},
 		},
-		Log{
+		log{
 			Timestamp: 1593032426013724933,
 			Body:      pcommon.NewValueStr("delayed_commit_timeout is overwritten by ack_response_timeout"),
 			Attributes: map[string]any{
 				"fluent.tag": "fluent.info",
 			},
 		},
-		Log{
+		log{
 			Timestamp: 1593032426020510455,
 			Body:      pcommon.NewValueStr("following tail of /var/log/kern.log"),
 			Attributes: map[string]any{
 				"fluent.tag": "fluent.info",
 			},
 		},
-		Log{
+		log{
 			Timestamp: 1593032426024346580,
 			Body:      pcommon.NewValueStr("fluentd worker is now running worker=0"),
 			Attributes: map[string]any{
@@ -313,7 +314,7 @@ func TestForwardPackedCompressedEvent(t *testing.T) {
 				"worker":     0,
 			},
 		},
-		Log{
+		log{
 			Timestamp: 1593032434346935532,
 			Body:      pcommon.NewValueStr("fluentd worker is now stopping worker=0"),
 			Attributes: map[string]any{
@@ -325,7 +326,7 @@ func TestForwardPackedCompressedEvent(t *testing.T) {
 }
 
 func TestUnixEndpoint(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
 	next := new(consumertest.LogsSink)
@@ -336,7 +337,7 @@ func TestUnixEndpoint(t *testing.T) {
 		ListenAddress: "unix://" + filepath.Join(tmpdir, "fluent.sock"),
 	}
 
-	receiver, err := newFluentReceiver(receivertest.NewNopSettings(), conf, next)
+	receiver, err := newFluentReceiver(receivertest.NewNopSettings(metadata.Type), conf, next)
 	require.NoError(t, err)
 	require.NoError(t, receiver.Start(ctx, nil))
 	defer func() { require.NoError(t, receiver.Shutdown(ctx)) }()

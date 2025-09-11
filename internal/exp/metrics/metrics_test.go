@@ -4,14 +4,14 @@
 package metrics_test
 
 import (
-	"math/rand"
+	"math/rand/v2"
 	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
@@ -49,7 +49,7 @@ func TestMergeMetrics(t *testing.T) {
 	}
 }
 
-func naiveMerge(mdA pmetric.Metrics, mdB pmetric.Metrics) pmetric.Metrics {
+func naiveMerge(mdA, mdB pmetric.Metrics) pmetric.Metrics {
 	for i := 0; i < mdB.ResourceMetrics().Len(); i++ {
 		rm := mdB.ResourceMetrics().At(i)
 
@@ -63,7 +63,7 @@ func naiveMerge(mdA pmetric.Metrics, mdB pmetric.Metrics) pmetric.Metrics {
 func BenchmarkMergeManyIntoSingle(b *testing.B) {
 	benchmarks := []struct {
 		name      string
-		mergeFunc func(mdA pmetric.Metrics, mdB pmetric.Metrics) pmetric.Metrics
+		mergeFunc func(mdA, mdB pmetric.Metrics) pmetric.Metrics
 	}{
 		{
 			name:      "Naive",
@@ -97,7 +97,7 @@ func BenchmarkMergeManyIntoSingle(b *testing.B) {
 func BenchmarkMergeManyIntoMany(b *testing.B) {
 	benchmarks := []struct {
 		name      string
-		mergeFunc func(mdA pmetric.Metrics, mdB pmetric.Metrics) pmetric.Metrics
+		mergeFunc func(mdA, mdB pmetric.Metrics) pmetric.Metrics
 	}{
 		{
 			name:      "Naive",
@@ -133,13 +133,13 @@ func BenchmarkMergeManyIntoMany(b *testing.B) {
 func generateMetrics(t require.TestingT, rmCount int) pmetric.Metrics {
 	md := pmetric.NewMetrics()
 
-	timeStamp := pcommon.Timestamp(rand.Intn(256))
-	value := int64(rand.Intn(256))
+	timeStamp := pcommon.Timestamp(rand.IntN(256))
+	value := rand.Int64N(256)
 
 	for i := 0; i < rmCount; i++ {
 		rm := md.ResourceMetrics().AppendEmpty()
 		err := rm.Resource().Attributes().FromRaw(map[string]any{
-			conventions.AttributeServiceName: "service-test",
+			string(conventions.ServiceNameKey): "service-test",
 		})
 		require.NoError(t, err)
 

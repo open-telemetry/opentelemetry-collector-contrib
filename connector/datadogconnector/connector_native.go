@@ -6,15 +6,17 @@ package datadogconnector // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/statsprocessor"
+	"github.com/DataDog/datadog-agent/pkg/obfuscate"
+	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes"
+	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics"
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	"github.com/DataDog/datadog-agent/pkg/trace/config"
 	"github.com/DataDog/datadog-agent/pkg/trace/stats"
 	"github.com/DataDog/datadog-go/v5/statsd"
-	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
-	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -27,6 +29,8 @@ import (
 type traceToMetricConnectorNative struct {
 	metricsConsumer consumer.Metrics // the next component in the pipeline to ingest metrics after connector
 	logger          *zap.Logger
+
+	wg sync.WaitGroup
 
 	// concentrator ingests spans and produces APM stats
 	concentrator *stats.Concentrator
@@ -47,6 +51,10 @@ type traceToMetricConnectorNative struct {
 	// statsout specifies the channel through which the agent will output Stats Payloads
 	// resulting from ingested traces.
 	statsout chan *pb.StatsPayload
+
+	// obfuscator is used to obfuscate sensitive data from various span
+	// tags based on their type.
+	obfuscator *obfuscate.Obfuscator
 
 	// exit specifies the exit channel, which will be closed upon shutdown.
 	exit chan struct{}
@@ -73,6 +81,10 @@ func newTraceToMetricConnectorNative(set component.TelemetrySettings, cfg compon
 	}
 
 	tcfg := getTraceAgentCfg(set.Logger, cfg.(*Config).Traces, attributesTranslator)
+	oconf := tcfg.Obfuscation.Export(tcfg)
+	oconf.Statsd = metricsClient
+	oconf.Redis.Enabled = true
+
 	return &traceToMetricConnectorNative{
 		logger:          set.Logger,
 		translator:      trans,
@@ -82,14 +94,16 @@ func newTraceToMetricConnectorNative(set component.TelemetrySettings, cfg compon
 		concentrator:    stats.NewConcentrator(tcfg, statsWriter, time.Now(), metricsClient),
 		statsout:        statsout,
 		metricsConsumer: metricsConsumer,
+		obfuscator:      obfuscate.NewObfuscator(oconf),
 		exit:            make(chan struct{}),
 	}, nil
 }
 
 // Start implements the component.Component interface.
-func (c *traceToMetricConnectorNative) Start(_ context.Context, _ component.Host) error {
+func (c *traceToMetricConnectorNative) Start(context.Context, component.Host) error {
 	c.logger.Info("Starting datadogconnector")
 	c.concentrator.Start()
+	c.wg.Add(1)
 	go c.run()
 	c.isStarted = true
 	return nil
@@ -103,22 +117,23 @@ func (c *traceToMetricConnectorNative) Shutdown(context.Context) error {
 		return nil
 	}
 	c.logger.Info("Shutting down datadog connector")
-	c.logger.Info("Stopping concentrator")
-	// stop the concentrator and wait for the run loop to exit
+	c.logger.Info("Stopping obfuscator and concentrator")
+	// stop the obfuscator and concentrator and wait for the run loop to exit
+	c.obfuscator.Stop()
 	c.concentrator.Stop()
-	c.exit <- struct{}{} // signal exit
-	<-c.exit             // wait for close
+	close(c.exit)
+	c.wg.Wait()
 	return nil
 }
 
 // Capabilities implements the consumer interface.
 // tells use whether the component(connector) will mutate the data passed into it. if set to true the connector does modify the data
-func (c *traceToMetricConnectorNative) Capabilities() consumer.Capabilities {
+func (*traceToMetricConnectorNative) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
 func (c *traceToMetricConnectorNative) ConsumeTraces(_ context.Context, traces ptrace.Traces) error {
-	inputs := stats.OTLPTracesToConcentratorInputs(traces, c.tcfg, c.ctagKeys, c.peerTagKeys)
+	inputs := stats.OTLPTracesToConcentratorInputsWithObfuscation(traces, c.tcfg, c.ctagKeys, c.peerTagKeys, c.obfuscator)
 	for _, input := range inputs {
 		c.concentrator.Add(input)
 	}
@@ -128,7 +143,7 @@ func (c *traceToMetricConnectorNative) ConsumeTraces(_ context.Context, traces p
 // run awaits incoming stats resulting from the agent's ingestion, converts them
 // to metrics and flushes them using the configured metrics exporter.
 func (c *traceToMetricConnectorNative) run() {
-	defer close(c.exit)
+	defer c.wg.Done()
 	for {
 		select {
 		case stats := <-c.statsout:

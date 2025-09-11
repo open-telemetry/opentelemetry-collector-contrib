@@ -23,7 +23,8 @@ func TestServiceObjectToEndpoint(t *testing.T) {
 				Labels:      map[string]string{"env": "prod"},
 				ServiceType: "ClusterIP",
 				ClusterIP:   "1.2.3.4",
-			}},
+			},
+		},
 	}
 
 	endpoints := convertServiceToEndpoints("namespace", serviceWithClusterIP)

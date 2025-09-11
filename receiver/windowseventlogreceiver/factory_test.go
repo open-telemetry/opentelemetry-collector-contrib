@@ -4,7 +4,6 @@
 package windowseventlogreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver"
 
 import (
-	"context"
 	"runtime"
 	"testing"
 
@@ -20,7 +19,7 @@ import (
 func TestNewFactory(t *testing.T) {
 	t.Run("NewFactoryCorrectType", func(t *testing.T) {
 		factory := NewFactory()
-		require.EqualValues(t, metadata.Type, factory.Type())
+		require.Equal(t, metadata.Type, factory.Type())
 	})
 }
 
@@ -36,8 +35,8 @@ func TestCreateAndShutdown(t *testing.T) {
 	cfg := defaultConfig.(*WindowsLogConfig) // This cast should work on all platforms.
 	cfg.InputConfig.Channel = "Application"  // Must be explicitly set to a valid channel.
 
-	ctx := context.Background()
-	settings := receivertest.NewNopSettings()
+	ctx := t.Context()
+	settings := receivertest.NewNopSettings(metadata.Type)
 	sink := new(consumertest.LogsSink)
 	receiver, err := factory.CreateLogs(ctx, settings, cfg, sink)
 

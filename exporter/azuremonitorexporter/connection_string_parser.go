@@ -4,6 +4,7 @@
 package azuremonitorexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter"
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
@@ -11,7 +12,7 @@ import (
 	"strings"
 )
 
-type ConnectionVars struct {
+type connectionVars struct {
 	InstrumentationKey string
 	IngestionURL       string
 }
@@ -24,7 +25,7 @@ const (
 	ConnectionStringMaxLength           = 4096
 )
 
-func parseConnectionString(exporterConfig *Config) (*ConnectionVars, error) {
+func parseConnectionString(exporterConfig *Config) (*connectionVars, error) {
 	// First, try to get the connection string from the environment variable
 	connectionString := os.Getenv(ApplicationInsightsConnectionString)
 
@@ -34,10 +35,10 @@ func parseConnectionString(exporterConfig *Config) (*ConnectionVars, error) {
 	}
 
 	instrumentationKey := string(exporterConfig.InstrumentationKey)
-	connectionVars := &ConnectionVars{}
+	connectionVars := &connectionVars{}
 
 	if connectionString == "" && instrumentationKey == "" {
-		return nil, fmt.Errorf("ConnectionString and InstrumentationKey cannot be empty")
+		return nil, errors.New("ConnectionString and InstrumentationKey cannot be empty")
 	}
 	if len(connectionString) > ConnectionStringMaxLength {
 		return nil, fmt.Errorf("ConnectionString exceeds maximum length of %d characters", ConnectionStringMaxLength)
@@ -62,7 +63,7 @@ func parseConnectionString(exporterConfig *Config) (*ConnectionVars, error) {
 
 		key, value := strings.TrimSpace(kv[0]), strings.TrimSpace(kv[1])
 		if key == "" {
-			return nil, fmt.Errorf("key cannot be empty")
+			return nil, errors.New("key cannot be empty")
 		}
 		values[key] = value
 	}

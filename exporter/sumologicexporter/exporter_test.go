@@ -4,7 +4,6 @@
 package sumologicexporter
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"sync"
@@ -15,8 +14,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -25,6 +26,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pipeline"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter/internal/metadata"
 )
 
 func logRecordsToLogs(records []plog.LogRecord) plog.Logs {
@@ -45,7 +48,7 @@ type exporterTest struct {
 
 func createTestConfig() *Config {
 	config := createDefaultConfig().(*Config)
-	config.ClientConfig.Compression = NoCompression
+	config.Compression = NoCompression
 	config.LogFormat = TextFormat
 	config.MaxRequestBodySize = 20_971_520
 	config.MetricFormat = OTLPMetricFormat
@@ -78,13 +81,13 @@ func prepareExporterTest(t *testing.T, cfg *Config, cb []func(w http.ResponseWri
 		)
 	})
 
-	cfg.ClientConfig.Endpoint = testServer.URL
-	cfg.ClientConfig.Auth = nil
+	cfg.Endpoint = testServer.URL
+	cfg.Auth = configoptional.None[configauth.Config]()
 
-	exp, err := initExporter(cfg, exportertest.NewNopSettings())
+	exp, err := initExporter(cfg, exportertest.NewNopSettings(metadata.Type))
 	require.NoError(t, err)
 
-	require.NoError(t, exp.start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, exp.start(t.Context(), componenttest.NewNopHost()))
 
 	return &exporterTest{
 		srv:        testServer,
@@ -98,14 +101,14 @@ func TestAllSuccess(t *testing.T) {
 		func(_ http.ResponseWriter, req *http.Request) {
 			body := extractBody(t, req)
 			assert.Equal(t, `Example log`, body)
-			assert.Equal(t, "", req.Header.Get("X-Sumo-Fields"))
+			assert.Empty(t, req.Header.Get("X-Sumo-Fields"))
 		},
 	})
 
 	logs := logRecordsToLogs(exampleLog())
 	logs.MarkReadOnly()
 
-	err := test.exp.pushLogsData(context.Background(), logs)
+	err := test.exp.pushLogsData(t.Context(), logs)
 	assert.NoError(t, err)
 }
 
@@ -157,7 +160,7 @@ func TestLogsResourceAttributesSentAsFields(t *testing.T) {
 			test := prepareExporterTest(t, cfg, tc.callbacks)
 
 			logs := tc.logsFunc()
-			assert.NoError(t, test.exp.pushLogsData(context.Background(), logs))
+			assert.NoError(t, test.exp.pushLogsData(t.Context(), logs))
 			assert.EqualValues(t, len(tc.callbacks), atomic.LoadInt32(test.reqCounter))
 		})
 	}
@@ -166,7 +169,7 @@ func TestLogsResourceAttributesSentAsFields(t *testing.T) {
 func TestAllFailed(t *testing.T) {
 	test := prepareExporterTest(t, createTestConfig(), []func(w http.ResponseWriter, req *http.Request){
 		func(w http.ResponseWriter, req *http.Request) {
-			w.WriteHeader(500)
+			w.WriteHeader(http.StatusInternalServerError)
 
 			body := extractBody(t, req)
 			assert.Equal(t, "Example log\nAnother example log", body)
@@ -187,7 +190,7 @@ func TestAllFailed(t *testing.T) {
 	logsExpected := plog.NewLogs()
 	logsSlice.CopyTo(logsExpected.ResourceLogs().AppendEmpty())
 
-	err := test.exp.pushLogsData(context.Background(), logs)
+	err := test.exp.pushLogsData(t.Context(), logs)
 	assert.EqualError(t, err, "failed sending data: status: 500 Internal Server Error")
 
 	var partial consumererror.Logs
@@ -204,7 +207,7 @@ func TestPartiallyFailed(t *testing.T) {
 			assert.Empty(t, req.Header.Get("X-Sumo-Fields"))
 		},
 		func(w http.ResponseWriter, req *http.Request) {
-			w.WriteHeader(500)
+			w.WriteHeader(http.StatusInternalServerError)
 
 			body := extractBody(t, req)
 			assert.Equal(t, "Another example log", body)
@@ -226,7 +229,7 @@ func TestPartiallyFailed(t *testing.T) {
 	logsExpected := plog.NewLogs()
 	logsSlice2.CopyTo(logsExpected.ResourceLogs().AppendEmpty())
 
-	err := test.exp.pushLogsData(context.Background(), logs)
+	err := test.exp.pushLogsData(t.Context(), logs)
 	assert.EqualError(t, err, "failed sending data: status: 500 Internal Server Error")
 
 	var partial consumererror.Logs
@@ -234,21 +237,21 @@ func TestPartiallyFailed(t *testing.T) {
 	assert.Equal(t, logsExpected, partial.Data())
 }
 
-func TestInvalidHTTPCLient(t *testing.T) {
+func TestInvalidHTTPClient(t *testing.T) {
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.Endpoint = "test_endpoint"
-	clientConfig.TLSSetting = configtls.ClientConfig{
+	clientConfig.TLS = configtls.ClientConfig{
 		Config: configtls.Config{
 			MinVersion: "invalid",
 		},
 	}
 	exp, err := initExporter(&Config{
 		ClientConfig: clientConfig,
-	}, exportertest.NewNopSettings())
+	}, exportertest.NewNopSettings(metadata.Type))
 	require.NoError(t, err)
 
 	assert.EqualError(t,
-		exp.start(context.Background(), componenttest.NewNopHost()),
+		exp.start(t.Context(), componenttest.NewNopHost()),
 		"failed to create HTTP Client: failed to load TLS config: invalid TLS min_version: unsupported TLS version: \"invalid\"",
 	)
 }
@@ -308,7 +311,7 @@ func TestPushLogs_DontRemoveSourceAttributes(t *testing.T) {
 	config.MaxRequestBodySize = 32
 
 	test := prepareExporterTest(t, config, callbacks)
-	assert.NoError(t, test.exp.pushLogsData(context.Background(), createLogs()))
+	assert.NoError(t, test.exp.pushLogsData(t.Context(), createLogs()))
 }
 
 func TestAllMetricsSuccess(t *testing.T) {
@@ -344,29 +347,13 @@ gauge_metric_name{foo="bar",remote_name="156955",url="http://another_url"} 245 1
 			metric := metricAndAttributesToPdataMetrics(tc.metricFunc())
 			metric.MarkReadOnly()
 
-			err := test.exp.pushMetricsData(context.Background(), metric)
+			err := test.exp.pushMetricsData(t.Context(), metric)
 			assert.NoError(t, err)
 		})
 	}
 }
 
 func TestAllMetricsOTLP(t *testing.T) {
-	test := prepareExporterTest(t, createTestConfig(), []func(w http.ResponseWriter, req *http.Request){
-		func(_ http.ResponseWriter, req *http.Request) {
-			body := extractBody(t, req)
-
-			md, err := (&pmetric.ProtoUnmarshaler{}).UnmarshalMetrics([]byte(body))
-			assert.NoError(t, err)
-			assert.NotNil(t, md)
-
-			//nolint:lll
-			expected := "\nf\n/\n\x14\n\x04test\x12\f\n\ntest_value\n\x17\n\x05test2\x12\x0e\n\fsecond_value\x123\n\x00\x12/\n\x10test.metric.data\x1a\x05bytes:\x14\n\x12\x19\x00\x12\x94\v\xd1\x00H\x161\xa48\x00\x00\x00\x00\x00\x00\n\xc2\x01\n\x0e\n\f\n\x03foo\x12\x05\n\x03bar\x12\xaf\x01\n\x00\x12\xaa\x01\n\x11gauge_metric_name*\x94\x01\nH\x19\x80GX\xef\xdb4Q\x161|\x00\x00\x00\x00\x00\x00\x00:\x17\n\vremote_name\x12\b\n\x06156920:\x1b\n\x03url\x12\x14\n\x12http://example_url\nH\x19\x80\x11\xf3*\xdc4Q\x161\xf5\x00\x00\x00\x00\x00\x00\x00:\x17\n\vremote_name\x12\b\n\x06156955:\x1b\n\x03url\x12\x14\n\x12http://another_url"
-			assert.Equal(t, expected, body)
-			assert.Equal(t, "application/x-protobuf", req.Header.Get("Content-Type"))
-		},
-	})
-	test.exp.config.MetricFormat = OTLPMetricFormat
-
 	metricSum, attrsSum := exampleIntMetric()
 	metricGauge, attrsGauge := exampleIntGaugeMetric()
 	metrics := metricPairToMetrics(
@@ -380,7 +367,22 @@ func TestAllMetricsOTLP(t *testing.T) {
 		},
 	)
 
-	err := test.exp.pushMetricsData(context.Background(), metrics)
+	test := prepareExporterTest(t, createTestConfig(), []func(w http.ResponseWriter, req *http.Request){
+		func(_ http.ResponseWriter, req *http.Request) {
+			body := extractBody(t, req)
+
+			md, err := (&pmetric.ProtoUnmarshaler{}).UnmarshalMetrics([]byte(body))
+			assert.NoError(t, err)
+			assert.NotNil(t, md)
+
+			// Need to check with read only bit, because metricPairToMetrics marks metrics as read only.
+			md.MarkReadOnly()
+			assert.Equal(t, metrics, md)
+			assert.Equal(t, "application/x-protobuf", req.Header.Get("Content-Type"))
+		},
+	})
+	test.exp.config.MetricFormat = OTLPMetricFormat
+	err := test.exp.pushMetricsData(t.Context(), metrics)
 	assert.NoError(t, err)
 }
 
@@ -395,7 +397,7 @@ func TestAllMetricsFailed(t *testing.T) {
 			name: "sent together when metrics under the same resource",
 			callbacks: []func(w http.ResponseWriter, req *http.Request){
 				func(w http.ResponseWriter, req *http.Request) {
-					w.WriteHeader(500)
+					w.WriteHeader(http.StatusInternalServerError)
 
 					body := extractBody(t, req)
 					expected := `test.metric.data{test="test_value",test2="second_value"} 14500 1605534165000
@@ -421,7 +423,7 @@ gauge_metric_name{test="test_value",test2="second_value",remote_name="156955",ur
 			name: "sent together when metrics under different resources",
 			callbacks: []func(w http.ResponseWriter, req *http.Request){
 				func(w http.ResponseWriter, req *http.Request) {
-					w.WriteHeader(500)
+					w.WriteHeader(http.StatusInternalServerError)
 
 					body := extractBody(t, req)
 					expected := `test.metric.data{test="test_value",test2="second_value"} 14500 1605534165000
@@ -456,7 +458,7 @@ gauge_metric_name{foo="bar",remote_name="156955",url="http://another_url"} 245 1
 			test.exp.config.MetricFormat = PrometheusFormat
 
 			metrics := tc.metricFunc()
-			err := test.exp.pushMetricsData(context.Background(), metrics)
+			err := test.exp.pushMetricsData(t.Context(), metrics)
 
 			assert.EqualError(t, err, tc.expectedError)
 
@@ -487,7 +489,7 @@ func TestMetricsPrometheusFormatMetadataFilter(t *testing.T) {
 
 	metrics.MarkReadOnly()
 
-	err := test.exp.pushMetricsData(context.Background(), metrics)
+	err := test.exp.pushMetricsData(t.Context(), metrics)
 	assert.NoError(t, err)
 }
 
@@ -496,8 +498,8 @@ func Benchmark_ExporterPushLogs(b *testing.B) {
 		config := createDefaultConfig().(*Config)
 		config.MetricFormat = PrometheusFormat
 		config.LogFormat = TextFormat
-		config.ClientConfig.Auth = nil
-		config.ClientConfig.Compression = configcompression.TypeGzip
+		config.Auth = configoptional.None[configauth.Config]()
+		config.Compression = configcompression.TypeGzip
 		return config
 	}
 
@@ -506,13 +508,13 @@ func Benchmark_ExporterPushLogs(b *testing.B) {
 	b.Cleanup(func() { testServer.Close() })
 
 	cfg := createConfig()
-	cfg.ClientConfig.Endpoint = testServer.URL
+	cfg.Endpoint = testServer.URL
 
-	exp, err := initExporter(cfg, exportertest.NewNopSettings())
+	exp, err := initExporter(cfg, exportertest.NewNopSettings(metadata.Type))
 	require.NoError(b, err)
-	require.NoError(b, exp.start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(b, exp.start(b.Context(), componenttest.NewNopHost()))
 	defer func() {
-		require.NoError(b, exp.shutdown(context.Background()))
+		require.NoError(b, exp.shutdown(b.Context()))
 	}()
 
 	b.ResetTimer()
@@ -523,7 +525,7 @@ func Benchmark_ExporterPushLogs(b *testing.B) {
 			go func() {
 				logs := logRecordsToLogs(exampleNLogs(128))
 				logs.MarkReadOnly()
-				err := exp.pushLogsData(context.Background(), logs)
+				err := exp.pushLogsData(b.Context(), logs)
 				if err != nil {
 					b.Logf("Failed pushing logs: %v", err)
 				}
@@ -543,7 +545,7 @@ func TestSendEmptyLogsOTLP(t *testing.T) {
 	logs := plog.NewLogs()
 	logs.MarkReadOnly()
 
-	err := test.exp.pushLogsData(context.Background(), logs)
+	err := test.exp.pushLogsData(t.Context(), logs)
 	assert.NoError(t, err)
 }
 
@@ -555,7 +557,7 @@ func TestSendEmptyMetricsOTLP(t *testing.T) {
 
 	metrics := metricPairToMetrics()
 
-	err := test.exp.pushMetricsData(context.Background(), metrics)
+	err := test.exp.pushMetricsData(t.Context(), metrics)
 	assert.NoError(t, err)
 }
 
@@ -566,7 +568,7 @@ func TestSendEmptyTraces(t *testing.T) {
 
 	traces := ptrace.NewTraces()
 
-	err := test.exp.pushTracesData(context.Background(), traces)
+	err := test.exp.pushTracesData(t.Context(), traces)
 	assert.NoError(t, err)
 }
 
@@ -642,6 +644,54 @@ func TestGetSignalURL(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 			}
+			require.Equal(t, testCase.expected, actual)
+		})
+	}
+}
+
+func TestNChars(t *testing.T) {
+	s := nchars('*', 10)
+	require.Equal(t, "**********", s)
+	s = nchars(' ', 2)
+	require.Equal(t, "  ", s)
+}
+
+func TestSanitizeURL(t *testing.T) {
+	testCases := []struct {
+		description string
+		urlString   string
+		expected    string
+	}{
+		{
+			description: "sanitized logs url",
+			urlString:   "https://collectors.au.sumologic.com/receiver/v1/otlp/xxxxx/v1/logs",
+			expected:    "https://collectors.au.sumologic.com/receiver/v1/otlp/*****/v1/logs",
+		},
+		{
+			description: "sanitized metrics url",
+			urlString:   "https://collectors.au.sumologic.com/receiver/v1/otlp/xxxx==/v1/metrics",
+			expected:    "https://collectors.au.sumologic.com/receiver/v1/otlp/******/v1/metrics",
+		},
+		{
+			description: "sanitized traces url",
+			urlString:   "https://collectors.au.sumologic.com/receiver/v1/otlp/xxxx==/v1/traces",
+			expected:    "https://collectors.au.sumologic.com/receiver/v1/otlp/******/v1/traces",
+		},
+		{
+			description: "no sanitization required",
+			urlString:   "https://collectors.au.sumologic.com/receiver/v1/xxxx==/v1/traces",
+			expected:    "https://collectors.au.sumologic.com/receiver/v1/xxxx==/v1/traces",
+		},
+		{
+			description: "no sanitization required with otlp/ appearing after v1/",
+			urlString:   "https://collectors.au.sumologic.com/receiver/v1/v1/xxxx==/otlp/traces",
+			expected:    "https://collectors.au.sumologic.com/receiver/v1/v1/xxxx==/otlp/traces",
+		},
+	}
+	for _, tC := range testCases {
+		testCase := tC
+		t.Run(tC.description, func(t *testing.T) {
+			actual := sanitizeURL(testCase.urlString)
 			require.Equal(t, testCase.expected, actual)
 		})
 	}

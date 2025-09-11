@@ -95,7 +95,6 @@ func (w *fileWriter) start() {
 // Shutdown stops the exporter and is invoked during shutdown.
 // It stops the flush ticker if set.
 func (w *fileWriter) shutdown() error {
-
 	// Stop the flush ticker.
 	if w.flushTicker != nil {
 		// Stop the go routine.

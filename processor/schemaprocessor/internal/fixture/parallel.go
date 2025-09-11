@@ -14,7 +14,7 @@ import (
 )
 
 // ParallelRaceCompute starts `count` number of go routines that calls the provided function `fn`
-// at the same to allow the race detector greater oppotunity to capture known race conditions.
+// at the same to allow the race detector greater opportunity to capture known race conditions.
 // This method blocks until each count number of fn has completed, any returned errors is considered
 // a failing test method.
 // If the race detector is not enabled, the function then skips with an notice.

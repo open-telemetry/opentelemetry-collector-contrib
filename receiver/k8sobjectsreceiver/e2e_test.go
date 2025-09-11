@@ -16,20 +16,24 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8stest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
+	k8stest "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xk8stest"
 )
 
-const testKubeConfig = "/tmp/kube-config-otelcol-e2e-testing"
-const testObjectsDir = "./testdata/e2e/testobjects/"
-const expectedDir = "./testdata/e2e/expected/"
+const (
+	testKubeConfig = "/tmp/kube-config-otelcol-e2e-testing"
+	testObjectsDir = "./testdata/e2e/testobjects/"
+	expectedDir    = "./testdata/e2e/expected/"
+)
 
 type objAction int
 
@@ -39,8 +43,20 @@ const (
 	none
 )
 
-func TestE2E(t *testing.T) {
+// getOrInsertDefault is a helper function to get or insert a default value for a configoptional.Optional type.
+func getOrInsertDefault[T any](t *testing.T, opt *configoptional.Optional[T]) *T {
+	if opt.HasValue() {
+		return opt.Get()
+	}
 
+	empty := confmap.NewFromStringMap(map[string]any{})
+	require.NoError(t, empty.Unmarshal(opt))
+	val := opt.Get()
+	require.NotNil(t, "Expected a default value to be set for %T", val)
+	return val
+}
+
+func TestE2E(t *testing.T) {
 	k8sClient, err := k8stest.NewK8sClient(testKubeConfig)
 	require.NoError(t, err)
 
@@ -48,18 +64,17 @@ func TestE2E(t *testing.T) {
 
 	f := otlpreceiver.NewFactory()
 	cfg := f.CreateDefaultConfig().(*otlpreceiver.Config)
-	cfg.HTTP = nil
-	cfg.GRPC.NetAddr.Endpoint = "0.0.0.0:4317"
+	getOrInsertDefault(t, &cfg.GRPC).NetAddr.Endpoint = "0.0.0.0:4317"
 	logsConsumer := new(consumertest.LogsSink)
-	rcvr, err := f.CreateLogs(context.Background(), receivertest.NewNopSettings(), cfg, logsConsumer)
-	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
+	rcvr, err := f.CreateLogs(context.Background(), receivertest.NewNopSettings(f.Type()), cfg, logsConsumer)
 	require.NoError(t, err, "failed creating logs receiver")
+	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
 		assert.NoError(t, rcvr.Shutdown(context.Background()))
 	}()
 
 	// startup collector in k8s cluster
-	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, "")
+	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, "", map[string]string{}, "")
 
 	defer func() {
 		for _, obj := range collectorObjs {
@@ -144,11 +159,14 @@ func TestE2E(t *testing.T) {
 			}, time.Duration(tc.timeoutMinutes)*time.Minute, 1*time.Second,
 				"Timeout: failed to receive logs in %d minutes", tc.timeoutMinutes)
 
+			// golden.WriteLogs(t, expectedFile, logsConsumer.AllLogs()[0])
+
 			require.NoErrorf(t, plogtest.CompareLogs(expected, logsConsumer.AllLogs()[0],
 				plogtest.IgnoreObservedTimestamp(),
 				plogtest.IgnoreResourceLogsOrder(),
 				plogtest.IgnoreScopeLogsOrder(),
-				plogtest.IgnoreLogRecordsOrder()),
+				plogtest.IgnoreLogRecordsOrder(),
+				plogtest.IgnoreScopeLogsVersion()),
 				"Received logs did not match log records in file %s", expectedFile,
 			)
 		})

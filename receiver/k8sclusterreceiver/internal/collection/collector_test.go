@@ -20,7 +20,7 @@ func TestCollectMetricData(t *testing.T) {
 	ms := metadata.NewStore()
 	var expectedRMs int
 
-	ms.Setup(gvk.Pod, &testutils.MockStore{
+	ms.Setup(gvk.Pod, metadata.ClusterWideInformerKey, &testutils.MockStore{
 		Cache: map[string]any{
 			"pod1-uid": testutils.NewPodWithContainer(
 				"1",
@@ -31,7 +31,7 @@ func TestCollectMetricData(t *testing.T) {
 	})
 	expectedRMs += 2 // 1 for pod, 1 for container
 
-	ms.Setup(gvk.Node, &testutils.MockStore{
+	ms.Setup(gvk.Node, metadata.ClusterWideInformerKey, &testutils.MockStore{
 		Cache: map[string]any{
 			"node1-uid": testutils.NewNode("1"),
 			"node2-uid": testutils.NewNode("2"),
@@ -39,77 +39,77 @@ func TestCollectMetricData(t *testing.T) {
 	})
 	expectedRMs += 2
 
-	ms.Setup(gvk.Namespace, &testutils.MockStore{
+	ms.Setup(gvk.Namespace, metadata.ClusterWideInformerKey, &testutils.MockStore{
 		Cache: map[string]any{
 			"namespace1-uid": testutils.NewNamespace("1"),
 		},
 	})
 	expectedRMs++
 
-	ms.Setup(gvk.ReplicationController, &testutils.MockStore{
+	ms.Setup(gvk.ReplicationController, metadata.ClusterWideInformerKey, &testutils.MockStore{
 		Cache: map[string]any{
 			"replicationcontroller1-uid": testutils.NewReplicationController("1"),
 		},
 	})
 	expectedRMs++
 
-	ms.Setup(gvk.ResourceQuota, &testutils.MockStore{
+	ms.Setup(gvk.ResourceQuota, metadata.ClusterWideInformerKey, &testutils.MockStore{
 		Cache: map[string]any{
 			"resourcequota1-uid": testutils.NewResourceQuota("1"),
 		},
 	})
 	expectedRMs++
 
-	ms.Setup(gvk.Deployment, &testutils.MockStore{
+	ms.Setup(gvk.Deployment, metadata.ClusterWideInformerKey, &testutils.MockStore{
 		Cache: map[string]any{
 			"deployment1-uid": testutils.NewDeployment("1"),
 		},
 	})
 	expectedRMs++
 
-	ms.Setup(gvk.ReplicaSet, &testutils.MockStore{
+	ms.Setup(gvk.ReplicaSet, metadata.ClusterWideInformerKey, &testutils.MockStore{
 		Cache: map[string]any{
 			"replicaset1-uid": testutils.NewReplicaSet("1"),
 		},
 	})
 	expectedRMs++
 
-	ms.Setup(gvk.DaemonSet, &testutils.MockStore{
+	ms.Setup(gvk.DaemonSet, metadata.ClusterWideInformerKey, &testutils.MockStore{
 		Cache: map[string]any{
 			"daemonset1-uid": testutils.NewDaemonset("1"),
 		},
 	})
 	expectedRMs++
 
-	ms.Setup(gvk.StatefulSet, &testutils.MockStore{
+	ms.Setup(gvk.StatefulSet, metadata.ClusterWideInformerKey, &testutils.MockStore{
 		Cache: map[string]any{
 			"statefulset1-uid": testutils.NewStatefulset("1"),
 		},
 	})
 	expectedRMs++
 
-	ms.Setup(gvk.Job, &testutils.MockStore{
+	ms.Setup(gvk.Job, metadata.ClusterWideInformerKey, &testutils.MockStore{
 		Cache: map[string]any{
 			"job1-uid": testutils.NewJob("1"),
 		},
 	})
 	expectedRMs++
 
-	ms.Setup(gvk.CronJob, &testutils.MockStore{
+	ms.Setup(gvk.CronJob, metadata.ClusterWideInformerKey, &testutils.MockStore{
 		Cache: map[string]any{
 			"cronjob1-uid": testutils.NewCronJob("1"),
 		},
 	})
 	expectedRMs++
 
-	ms.Setup(gvk.HorizontalPodAutoscaler, &testutils.MockStore{
+	ms.Setup(gvk.HorizontalPodAutoscaler, metadata.ClusterWideInformerKey, &testutils.MockStore{
 		Cache: map[string]any{
 			"horizontalpodautoscaler1-uid": testutils.NewHPA("1"),
 		},
 	})
 	expectedRMs++
 
-	dc := NewDataCollector(receivertest.NewNopSettings(), ms, metadata.DefaultMetricsBuilderConfig(), []string{"Ready"}, nil)
+	dc := NewDataCollector(receivertest.NewNopSettings(metadata.Type), ms, metadata.DefaultMetricsBuilderConfig(), []string{"Ready"}, nil)
 	m1 := dc.CollectMetricData(time.Now())
 
 	// Verify number of resource metrics only, content is tested in other tests.

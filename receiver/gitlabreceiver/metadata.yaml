@@ -1,0 +1,13 @@
+type: gitlab
+
+status: 
+  class: receiver
+  stability: 
+    development: [traces]
+  distributions: []
+  codeowners:
+    active: [adrielp, atoulme]
+tests:
+  config:
+    webhook:
+      endpoint: "localhost:0" #dynamic port allocation to avoid falky tests

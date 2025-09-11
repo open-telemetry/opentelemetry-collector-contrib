@@ -15,6 +15,7 @@ import (
 	"sync"
 
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
+	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
@@ -88,7 +89,7 @@ func (s *sfxDPClient) pushMetricsData(
 	}
 
 	// All metrics in the pmetric.Metrics will have the same access token because of the BatchPerResourceMetrics.
-	metricToken := s.retrieveAccessToken(rms.At(0))
+	metricToken := s.retrieveAccessToken(ctx, rms.At(0))
 
 	// export SFx format
 	sfxDataPoints := s.converter.MetricsToSignalFxV2(md)
@@ -111,7 +112,6 @@ func (s *sfxDPClient) pushMetricsData(
 	}
 
 	return 0, nil
-
 }
 
 func (s *sfxDPClient) postData(ctx context.Context, body io.Reader, headers map[string]string) error {
@@ -119,7 +119,7 @@ func (s *sfxDPClient) postData(ctx context.Context, body io.Reader, headers map[
 	if !strings.HasSuffix(datapointURL.Path, "v2/datapoint") {
 		datapointURL.Path = path.Join(datapointURL.Path, "v2/datapoint")
 	}
-	req, err := http.NewRequestWithContext(ctx, "POST", datapointURL.String(), body)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, datapointURL.String(), body)
 	if err != nil {
 		return consumererror.NewPermanent(err)
 	}
@@ -154,7 +154,6 @@ func (s *sfxDPClient) postData(ctx context.Context, body io.Reader, headers map[
 }
 
 func (s *sfxDPClient) pushMetricsDataForToken(ctx context.Context, sfxDataPoints []*sfxpb.DataPoint, accessToken string) (int, error) {
-
 	if s.logDataPoints {
 		for _, dp := range sfxDataPoints {
 			s.logger.Debug("Dispatching SFx datapoint", zap.Stringer("dp", dp))
@@ -196,10 +195,16 @@ func (s *sfxDPClient) encodeBody(dps []*sfxpb.DataPoint) (bodyReader io.Reader, 
 	return s.getReader(body)
 }
 
-func (s *sfxDPClient) retrieveAccessToken(md pmetric.ResourceMetrics) string {
+func (s *sfxDPClient) retrieveAccessToken(ctx context.Context, md pmetric.ResourceMetrics) string {
 	if !s.accessTokenPassthrough {
 		// Nothing to do if token is pass through not configured or resource is nil.
 		return ""
+	}
+
+	cl := client.FromContext(ctx)
+	ss := cl.Metadata.Get(splunk.SFxAccessTokenHeader)
+	if len(ss) > 0 {
+		return ss[0]
 	}
 
 	attrs := md.Resource().Attributes()
@@ -210,7 +215,6 @@ func (s *sfxDPClient) retrieveAccessToken(md pmetric.ResourceMetrics) string {
 }
 
 func (s *sfxDPClient) pushOTLPMetricsDataForToken(ctx context.Context, mh pmetric.Metrics, accessToken string) (int, error) {
-
 	dataPointCount := mh.DataPointCount()
 	if s.logDataPoints {
 		s.logger.Debug("Count of metrics to send in OTLP format",
@@ -247,7 +251,6 @@ func (s *sfxDPClient) pushOTLPMetricsDataForToken(ctx context.Context, mh pmetri
 	s.logger.Debug("Sending metrics in OTLP format")
 
 	err = s.postData(ctx, body, headers)
-
 	if err != nil {
 		return dataPointCount, consumererror.NewMetrics(err, mh)
 	}
@@ -256,11 +259,9 @@ func (s *sfxDPClient) pushOTLPMetricsDataForToken(ctx context.Context, mh pmetri
 }
 
 func (s *sfxDPClient) encodeOTLPBody(md pmetric.Metrics) (bodyReader io.Reader, compressed bool, err error) {
-
 	tr := pmetricotlp.NewExportRequestFromMetrics(md)
 
 	body, err := tr.MarshalProto()
-
 	if err != nil {
 		return nil, false, err
 	}

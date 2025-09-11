@@ -4,8 +4,8 @@
 package cumulativetodeltaprocessor
 
 import (
-	"context"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -48,8 +48,8 @@ func TestCreateProcessors(t *testing.T) {
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			tp, tErr := factory.CreateTraces(
-				context.Background(),
-				processortest.NewNopSettings(),
+				t.Context(),
+				processortest.NewNopSettings(metadata.Type),
 				cfg,
 				consumertest.NewNop())
 			// Not implemented error
@@ -57,13 +57,19 @@ func TestCreateProcessors(t *testing.T) {
 			assert.Nil(t, tp)
 
 			mp, mErr := factory.CreateMetrics(
-				context.Background(),
-				processortest.NewNopSettings(),
+				t.Context(),
+				processortest.NewNopSettings(metadata.Type),
 				cfg,
 				consumertest.NewNop())
+
+			if strings.Contains(k, "invalid") {
+				assert.Error(t, mErr)
+				assert.Nil(t, mp)
+				return
+			}
 			assert.NotNil(t, mp)
 			assert.NoError(t, mErr)
-			assert.NoError(t, mp.Shutdown(context.Background()))
+			assert.NoError(t, mp.Shutdown(t.Context()))
 		})
 	}
 }

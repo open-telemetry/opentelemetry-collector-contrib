@@ -218,7 +218,6 @@ func SetDecoderConfig(cfg DecoderConfig) error {
 		updateOne(&staticInstances.byLevel[level].dec)
 	}
 	return nil
-
 }
 
 func (cfg EncoderConfig) options() (opts []zstdlib.EOption) {
@@ -280,7 +279,7 @@ func (c *combined) Compress(w io.Writer) (io.WriteCloser, error) {
 		}
 		z = &writer{Encoder: encoder, pool: &c.enc.pool, Gen: gen}
 	} else {
-		z.Encoder.Reset(w)
+		z.Reset(w)
 	}
 	return z, nil
 }
@@ -305,7 +304,7 @@ func (c *combined) Decompress(r io.Reader) (io.Reader, error) {
 		// background references to the decoder that prevent it from
 		// being GC'ed.
 		runtime.SetFinalizer(z, (*reader).Close)
-	} else if err := z.Decoder.Reset(r); err != nil {
+	} else if err := z.Reset(r); err != nil {
 		return nil, err
 	}
 	return z, nil

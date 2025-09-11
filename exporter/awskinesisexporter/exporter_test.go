@@ -4,7 +4,6 @@
 package awskinesisexporter
 
 import (
-	"context"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -57,11 +56,10 @@ func TestCreatingExporter(t *testing.T) {
 			},
 		},
 	} {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			exp, err := createExporter(context.Background(), tc.conf, zaptest.NewLogger(t), func(opt *options) {
+			exp, err := createExporter(t.Context(), tc.conf, zaptest.NewLogger(t), func(opt *options) {
 				opt.NewKinesisClient = tc.validateNew(t)
 			})
 			assert.ErrorIs(t, err, tc.err, "Must match the expected error")

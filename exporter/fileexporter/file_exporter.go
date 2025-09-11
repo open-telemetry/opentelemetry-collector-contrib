@@ -9,6 +9,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
@@ -37,6 +38,14 @@ func (e *fileExporter) consumeMetrics(_ context.Context, md pmetric.Metrics) err
 
 func (e *fileExporter) consumeLogs(_ context.Context, ld plog.Logs) error {
 	buf, err := e.marshaller.marshalLogs(ld)
+	if err != nil {
+		return err
+	}
+	return e.writer.export(buf)
+}
+
+func (e *fileExporter) consumeProfiles(_ context.Context, pd pprofile.Profiles) error {
+	buf, err := e.marshaller.marshalProfiles(pd)
 	if err != nil {
 		return err
 	}

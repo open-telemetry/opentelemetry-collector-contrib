@@ -53,7 +53,8 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 									{
 										Line: `{"attributes":{"http.status":200,"tenant.id":"1"}}`,
 									},
-								}},
+								},
+							},
 						},
 					},
 				},
@@ -105,7 +106,8 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 									{
 										Line: `{"attributes":{"http.status":200},"resources":{"tenant.id":"11"}}`,
 									},
-								}},
+								},
+							},
 						},
 					},
 				},
@@ -148,7 +150,8 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 									{
 										Line: `{"attributes":{"http.status":200}}`,
 									},
-								}},
+								},
+							},
 						},
 					},
 				},
@@ -191,7 +194,8 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 									{
 										Line: `{"attributes":{"http.status":200,"tenant.id":"31"},"resources":{"tenant.id":"21"}}`,
 									},
-								}},
+								},
+							},
 						},
 					},
 				},
@@ -454,7 +458,7 @@ func TestLogsToLokiRequestWithoutTenant(t *testing.T) {
 							attrs = tt.attrs
 						}
 
-						if len(tt.levelAttribute) > 0 {
+						if tt.levelAttribute != "" {
 							attrs[levelAttributeName] = tt.levelAttribute
 						}
 						if val, ok := tt.hints[hintAttributes]; ok {
@@ -681,7 +685,7 @@ func TestLogToLokiEntry(t *testing.T) {
 				resource.Attributes().PutStr(k, fmt.Sprintf("%v", v))
 			}
 			lr.SetSeverityNumber(tt.severity)
-			if len(tt.levelAttribute) > 0 {
+			if tt.levelAttribute != "" {
 				lr.Attributes().PutStr(levelAttributeName, tt.levelAttribute)
 			}
 

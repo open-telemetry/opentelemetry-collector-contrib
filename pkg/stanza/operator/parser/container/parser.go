@@ -13,25 +13,29 @@ import (
 	"time"
 
 	"github.com/goccy/go-json"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/attrs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
-const dockerFormat = "docker"
-const crioFormat = "crio"
-const containerdFormat = "containerd"
-const recombineInternalID = "recombine_container_internal"
-const dockerPattern = "^\\{"
-const crioPattern = "^(?P<time>[^ Z]+) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) ?(?P<log>.*)$"
-const containerdPattern = "^(?P<time>[^ ^Z]+Z) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) ?(?P<log>.*)$"
-const logpathPattern = "^.*(\\/|\\\\)(?P<namespace>[^_]+)_(?P<pod_name>[^_]+)_(?P<uid>[a-f0-9\\-]+)(\\/|\\\\)(?P<container_name>[^\\._]+)(\\/|\\\\)(?P<restart_count>\\d+)\\.log$"
-const logPathField = "log.file.path"
-const crioTimeLayout = "2006-01-02T15:04:05.999999999Z07:00"
-const goTimeLayout = "2006-01-02T15:04:05.999Z"
+const (
+	dockerFormat        = "docker"
+	crioFormat          = "crio"
+	containerdFormat    = "containerd"
+	recombineInternalID = "recombine_container_internal"
+	dockerPattern       = "^\\{"
+	crioPattern         = "^(?P<time>[^ Z]+) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) ?(?P<log>.*)$"
+	containerdPattern   = "^(?P<time>[^ ^Z]+Z) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) ?(?P<log>.*)$"
+	logpathPattern      = "^.*(\\/|\\\\)(?P<namespace>[^_]+)_(?P<pod_name>[^_]+)_(?P<uid>[a-f0-9\\-]+)(\\/|\\\\)(?P<container_name>[^\\._]+)(\\/|\\\\)(?P<restart_count>\\d+)\\.log(\\.\\d{8}-\\d{6})?$"
+	logPathField        = attrs.LogFilePath
+	crioTimeLayout      = "2006-01-02T15:04:05.999999999Z07:00"
+	goTimeLayout        = "2006-01-02T15:04:05.999Z"
+)
 
 var (
 	dockerMatcher     = regexp.MustCompile(dockerPattern)
@@ -59,16 +63,19 @@ type Parser struct {
 	recombineParser         operator.Operator
 	format                  string
 	addMetadataFromFilepath bool
-	criLogEmitter           *helper.LogEmitter
+	criLogEmitter           *helper.BatchingLogEmitter
 	asyncConsumerStarted    bool
 	criConsumerStartOnce    sync.Once
 	criConsumers            *sync.WaitGroup
+	timeLayout              string
+}
+
+func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
+	return p.TransformerOperator.ProcessBatchWith(ctx, entries, p.Process)
 }
 
 // Process will parse an entry of Container logs
 func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
-	var timeLayout string
-
 	format := p.format
 	if format == "" {
 		format, err = p.detectFormat(entry)
@@ -79,14 +86,10 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
 
 	switch format {
 	case dockerFormat:
-		err = p.ParserOperator.ProcessWithCallback(ctx, entry, p.parseDocker, p.handleAttributeMappings)
+		p.timeLayout = goTimeLayout
+		err = p.ProcessWithCallback(ctx, entry, p.parseDocker, p.handleTimeAndAttributeMappings)
 		if err != nil {
 			return fmt.Errorf("failed to process the docker log: %w", err)
-		}
-		timeLayout = goTimeLayout
-		err = parseTime(entry, timeLayout)
-		if err != nil {
-			return fmt.Errorf("failed to parse time: %w", err)
 		}
 	case containerdFormat, crioFormat:
 		p.criConsumerStartOnce.Do(func() {
@@ -100,7 +103,6 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
 				p.Logger().Error("unable to start the internal recombine operator", zap.Error(err))
 				return
 			}
-			go p.criConsumer(ctx)
 			p.asyncConsumerStarted = true
 		})
 
@@ -115,26 +117,21 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
 
 		if format == containerdFormat {
 			// parse the message
-			err = p.ParserOperator.ParseWith(ctx, entry, p.parseContainerd)
+			err = p.ParseWith(ctx, entry, p.parseContainerd, p.Write)
 			if err != nil {
 				return fmt.Errorf("failed to parse containerd log: %w", err)
 			}
-			timeLayout = goTimeLayout
+			p.timeLayout = goTimeLayout
 		} else {
 			// parse the message
-			err = p.ParserOperator.ParseWith(ctx, entry, p.parseCRIO)
+			err = p.ParseWith(ctx, entry, p.parseCRIO, p.Write)
 			if err != nil {
 				return fmt.Errorf("failed to parse crio log: %w", err)
 			}
-			timeLayout = crioTimeLayout
+			p.timeLayout = crioTimeLayout
 		}
 
-		err = parseTime(entry, timeLayout)
-		if err != nil {
-			return fmt.Errorf("failed to parse time: %w", err)
-		}
-
-		err = p.handleAttributeMappings(entry)
+		err = p.handleTimeAndAttributeMappings(entry)
 		if err != nil {
 			return fmt.Errorf("failed to handle attribute mappings: %w", err)
 		}
@@ -145,26 +142,10 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
 			return fmt.Errorf("failed to recombine the crio log: %w", err)
 		}
 	default:
-		return fmt.Errorf("failed to detect a valid container log format")
+		return errors.New("failed to detect a valid container log format")
 	}
 
 	return nil
-}
-
-// criConsumer receives log entries from the criLogEmitter and
-// writes them to the output of the main parser
-func (p *Parser) criConsumer(ctx context.Context) {
-	entriesChan := p.criLogEmitter.OutChannel()
-	p.criConsumers.Add(1)
-	defer p.criConsumers.Done()
-	for entries := range entriesChan {
-		for _, e := range entries {
-			err := p.Write(ctx, e)
-			if err != nil {
-				p.Logger().Error("failed to write entry", zap.Error(err))
-			}
-		}
-	}
 }
 
 // Stop ensures that the internal recombineParser, the internal criLogEmitter and
@@ -175,29 +156,26 @@ func (p *Parser) Stop() error {
 		// nothing is started return
 		return nil
 	}
-
-	var stopErrs []error
-	err := p.recombineParser.Stop()
-	if err != nil {
-		stopErrs = append(stopErrs, fmt.Errorf("unable to stop the internal recombine operator: %w", err))
+	var errs error
+	if err := p.recombineParser.Stop(); err != nil {
+		errs = multierr.Append(errs, fmt.Errorf("unable to stop the internal recombine operator: %w", err))
 	}
 	// the recombineParser will call the Process of the criLogEmitter synchronously so the entries will be first
 	// written to the channel before the Stop of the recombineParser returns. Then since the criLogEmitter handles
 	// the entries synchronously it is safe to call its Stop.
 	// After criLogEmitter is stopped the crioConsumer will consume the remaining messages and return.
-	err = p.criLogEmitter.Stop()
-	if err != nil {
-		stopErrs = append(stopErrs, fmt.Errorf("unable to stop the internal LogEmitter: %w", err))
+	if err := p.criLogEmitter.Stop(); err != nil {
+		errs = multierr.Append(errs, fmt.Errorf("unable to stop the internal LogEmitter: %w", err))
 	}
 	p.criConsumers.Wait()
-	return errors.Join(stopErrs...)
+	return errs
 }
 
 // detectFormat will detect the container log format
 func (p *Parser) detectFormat(e *entry.Entry) (string, error) {
 	value, ok := e.Get(p.ParseFrom)
 	if !ok {
-		return "", fmt.Errorf("entry cannot be parsed as container logs")
+		return "", errors.New("entry cannot be parsed as container logs")
 	}
 
 	raw, ok := value.(string)
@@ -217,7 +195,7 @@ func (p *Parser) detectFormat(e *entry.Entry) (string, error) {
 }
 
 // parseCRIO will parse a crio log value based on a fixed regexp
-func (p *Parser) parseCRIO(value any) (any, error) {
+func (*Parser) parseCRIO(value any) (any, error) {
 	raw, ok := value.(string)
 	if !ok {
 		return "", fmt.Errorf("type '%T' cannot be parsed as cri-o container logs", value)
@@ -227,7 +205,7 @@ func (p *Parser) parseCRIO(value any) (any, error) {
 }
 
 // parseContainerd will parse a containerd log value based on a fixed regexp
-func (p *Parser) parseContainerd(value any) (any, error) {
+func (*Parser) parseContainerd(value any) (any, error) {
 	raw, ok := value.(string)
 	if !ok {
 		return nil, fmt.Errorf("type '%T' cannot be parsed as containerd logs", value)
@@ -237,7 +215,7 @@ func (p *Parser) parseContainerd(value any) (any, error) {
 }
 
 // parseDocker will parse a docker log value as JSON
-func (p *Parser) parseDocker(value any) (any, error) {
+func (*Parser) parseDocker(value any) (any, error) {
 	raw, ok := value.(string)
 	if !ok {
 		return nil, fmt.Errorf("type '%T' cannot be parsed as docker container logs", value)
@@ -251,9 +229,14 @@ func (p *Parser) parseDocker(value any) (any, error) {
 	return parsedValue, nil
 }
 
-// handleAttributeMappings handles fields' mappings and k8s meta extraction
-func (p *Parser) handleAttributeMappings(e *entry.Entry) error {
-	err := p.handleMoveAttributes(e)
+// handleTimeAndAttributeMappings handles fields' mappings and k8s meta extraction
+func (p *Parser) handleTimeAndAttributeMappings(e *entry.Entry) error {
+	err := parseTime(e, p.timeLayout)
+	if err != nil {
+		return fmt.Errorf("failed to parse time: %w", err)
+	}
+
+	err = p.handleMoveAttributes(e)
 	if err != nil {
 		return err
 	}
@@ -266,7 +249,7 @@ func (p *Parser) handleAttributeMappings(e *entry.Entry) error {
 }
 
 // handleMoveAttributes moves fields to final attributes
-func (p *Parser) handleMoveAttributes(e *entry.Entry) error {
+func (*Parser) handleMoveAttributes(e *entry.Entry) error {
 	// move `log` to `body` explicitly first to avoid
 	// moving after more attributes have been added under the `log.*` key
 	err := moveFieldToBody(e, "log", "body")
@@ -297,7 +280,7 @@ func (p *Parser) extractk8sMetaFromFilePath(e *entry.Entry) error {
 
 	parsedValues, err := helper.MatchValues(rawLogPath, pathMatcher)
 	if err != nil {
-		return fmt.Errorf("failed to detect a valid log path")
+		return errors.New("failed to detect a valid log path")
 	}
 
 	for originalKey, attributeKey := range k8sMetadataMapping {
@@ -305,9 +288,17 @@ func (p *Parser) extractk8sMetaFromFilePath(e *entry.Entry) error {
 		if err := newField.Set(e, parsedValues[originalKey]); err != nil {
 			return fmt.Errorf("failed to set %v as metadata at %v", originalKey, attributeKey)
 		}
-
 	}
 	return nil
+}
+
+func (p *Parser) consumeEntries(ctx context.Context, entries []*entry.Entry) {
+	for _, e := range entries {
+		err := p.Write(ctx, e)
+		if err != nil {
+			p.Logger().Error("failed to write entry", zap.Error(err))
+		}
+	}
 }
 
 func moveField(e *entry.Entry, originalKey, mappedKey string) error {
@@ -356,9 +347,7 @@ func parseTime(e *entry.Entry, layout string) error {
 	// timeutils.ParseGotime calls timeutils.SetTimestampYear before returning the timeValue
 	e.Timestamp = timeValue
 
-	if removeOriginalTimeField.IsEnabled() {
-		e.Delete(entry.NewAttributeField(parseFrom))
-	}
+	e.Delete(entry.NewAttributeField(parseFrom))
 
 	return nil
 }

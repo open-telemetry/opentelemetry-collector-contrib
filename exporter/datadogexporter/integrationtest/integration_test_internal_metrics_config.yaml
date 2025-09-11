@@ -3,21 +3,12 @@ receivers:
   otlp:
     protocols:
       http:
-        endpoint: "localhost:4318"
-      grpc:
-        endpoint: "localhost:4317"
-  prometheus:
-    config:
-      scrape_configs:
-        - job_name: 'otelcol'
-          scrape_interval: 1s
-          static_configs:
-            - targets: [ 'localhost:8888' ]
+        endpoint: ${env:OTLP_HTTP_SERVER}
 
 exporters:
   datadog:
     api:
-      key: "key"
+      key: "aaa"
     tls:
       insecure_skip_verify: true
     host_metadata:
@@ -32,12 +23,19 @@ exporters:
 service:
   telemetry:
     metrics:
-      level: basic
-      address: "localhost:8888"
+      level: "basic"
+      readers:
+        - periodic:
+            interval: 5000 # milliseconds
+            exporter:
+              otlp:
+                protocol: http/protobuf
+                insecure: true
+                endpoint: ${env:OTLP_HTTP_SERVER}
   pipelines:
     traces:
       receivers: [otlp]
       exporters: [datadog]
     metrics:
-      receivers: [prometheus]
+      receivers: [otlp]
       exporters: [datadog]

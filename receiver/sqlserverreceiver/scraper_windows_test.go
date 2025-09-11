@@ -6,7 +6,6 @@
 package sqlserverreceiver
 
 import (
-	"context"
 	"path/filepath"
 	"testing"
 
@@ -28,9 +27,19 @@ type mockPerfCounterWatcher struct {
 	mock.Mock
 }
 
+// ScrapeRawValue implements winperfcounters.PerfCounterWatcher.
+func (*mockPerfCounterWatcher) ScrapeRawValue(*int64) (bool, error) {
+	panic("unimplemented")
+}
+
+// ScrapeRawValues implements winperfcounters.PerfCounterWatcher.
+func (*mockPerfCounterWatcher) ScrapeRawValues() ([]winperfcounters.RawCounterValue, error) {
+	panic("unimplemented")
+}
+
 // Close provides a mock function with given fields:
-func (_m *mockPerfCounterWatcher) Close() error {
-	ret := _m.Called()
+func (w *mockPerfCounterWatcher) Close() error {
+	ret := w.Called()
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func() error); ok {
@@ -43,8 +52,8 @@ func (_m *mockPerfCounterWatcher) Close() error {
 }
 
 // Path provides a mock function with given fields:
-func (_m *mockPerfCounterWatcher) Path() string {
-	ret := _m.Called()
+func (w *mockPerfCounterWatcher) Path() string {
+	ret := w.Called()
 
 	var r0 string
 	if rf, ok := ret.Get(0).(func() string); ok {
@@ -57,8 +66,8 @@ func (_m *mockPerfCounterWatcher) Path() string {
 }
 
 // ScrapeData provides a mock function with given fields:
-func (_m *mockPerfCounterWatcher) ScrapeData() ([]winperfcounters.CounterValue, error) {
-	ret := _m.Called()
+func (w *mockPerfCounterWatcher) ScrapeData() ([]winperfcounters.CounterValue, error) {
+	ret := w.Called()
 
 	var r0 []winperfcounters.CounterValue
 	if rf, ok := ret.Get(0).(func() []winperfcounters.CounterValue); ok {
@@ -77,7 +86,7 @@ func (_m *mockPerfCounterWatcher) ScrapeData() ([]winperfcounters.CounterValue, 
 	return r0, r1
 }
 
-func (_m *mockPerfCounterWatcher) Reset() error {
+func (*mockPerfCounterWatcher) Reset() error {
 	return nil
 }
 
@@ -85,11 +94,11 @@ func TestSqlServerScraper(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	logger, obsLogs := observer.New(zap.WarnLevel)
-	settings := receivertest.NewNopSettings()
+	settings := receivertest.NewNopSettings(metadata.Type)
 	settings.Logger = zap.New(logger)
 	s := newSQLServerPCScraper(settings, cfg)
 
-	assert.NoError(t, s.start(context.Background(), nil))
+	assert.NoError(t, s.start(t.Context(), nil))
 	assert.Empty(t, s.watcherRecorders)
 	assert.Equal(t, 21, obsLogs.Len())
 	assert.Equal(t, 21, obsLogs.FilterMessageSnippet("failed to create perf counter with path \\SQLServer:").Len())
@@ -101,23 +110,25 @@ func TestSqlServerScraper(t *testing.T) {
 	assert.Equal(t, 1, obsLogs.FilterMessageSnippet("\\SQLServer:Access Methods(_Total)\\").Len())
 	assert.Equal(t, 8, obsLogs.FilterMessageSnippet("\\SQLServer:Databases(*)\\").Len())
 
-	metrics, err := s.scrape(context.Background())
+	metrics, err := s.scrape(t.Context())
 	require.NoError(t, err)
 	assert.Equal(t, 0, metrics.ResourceMetrics().Len())
 
-	err = s.shutdown(context.Background())
+	err = s.shutdown(t.Context())
 	require.NoError(t, err)
 }
 
-var goldenScrapePath = filepath.Join("testdata", "golden_scrape.yaml")
-var goldenNamedInstanceScrapePath = filepath.Join("testdata", "golden_named_instance_scrape.yaml")
-var dbInstance = "db-instance"
+var (
+	goldenScrapePath              = filepath.Join("testdata", "golden_scrape.yaml")
+	goldenNamedInstanceScrapePath = filepath.Join("testdata", "golden_named_instance_scrape.yaml")
+	dbInstance                    = "db-instance"
+)
 
 func TestScrape(t *testing.T) {
 	t.Run("default", func(t *testing.T) {
 		factory := NewFactory()
 		cfg := factory.CreateDefaultConfig().(*Config)
-		settings := receivertest.NewNopSettings()
+		settings := receivertest.NewNopSettings(metadata.Type)
 		scraper := newSQLServerPCScraper(settings, cfg)
 
 		for i, rec := range perfCounterRecorders {
@@ -131,7 +142,7 @@ func TestScrape(t *testing.T) {
 			}
 		}
 
-		scrapeData, err := scraper.scrape(context.Background())
+		scrapeData, err := scraper.scrape(t.Context())
 		require.NoError(t, err)
 
 		expectedMetrics, err := golden.ReadMetrics(goldenScrapePath)
@@ -161,7 +172,7 @@ func TestScrape(t *testing.T) {
 		cfg.ComputerName = "CustomServer"
 		cfg.InstanceName = "CustomInstance"
 
-		settings := receivertest.NewNopSettings()
+		settings := receivertest.NewNopSettings(metadata.Type)
 		scraper := newSQLServerPCScraper(settings, cfg)
 
 		for i, rec := range perfCounterRecorders {
@@ -175,7 +186,7 @@ func TestScrape(t *testing.T) {
 			}
 		}
 
-		scrapeData, err := scraper.scrape(context.Background())
+		scrapeData, err := scraper.scrape(t.Context())
 		require.NoError(t, err)
 
 		expectedMetrics, err := golden.ReadMetrics(goldenNamedInstanceScrapePath)

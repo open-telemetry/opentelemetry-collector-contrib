@@ -8,25 +8,69 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 )
 
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	Driver                         string          `mapstructure:"driver"`
-	DataSource                     string          `mapstructure:"datasource"`
-	Queries                        []Query         `mapstructure:"queries"`
-	StorageID                      *component.ID   `mapstructure:"storage"`
-	Telemetry                      TelemetryConfig `mapstructure:"telemetry"`
+	Driver                         string              `mapstructure:"driver"`
+	DataSource                     string              `mapstructure:"datasource"`
+	Host                           string              `mapstructure:"host"`
+	Port                           int                 `mapstructure:"port"`
+	Database                       string              `mapstructure:"database"`
+	Username                       string              `mapstructure:"username"`
+	Password                       configopaque.String `mapstructure:"password"`
+	AdditionalParams               map[string]any      `mapstructure:"additional_params"`
+	Queries                        []Query             `mapstructure:"queries"`
+	StorageID                      *component.ID       `mapstructure:"storage"`
+	Telemetry                      TelemetryConfig     `mapstructure:"telemetry"`
 }
 
 func (c Config) Validate() error {
 	if c.Driver == "" {
 		return errors.New("'driver' cannot be empty")
 	}
-	if c.DataSource == "" {
-		return errors.New("'datasource' cannot be empty")
+
+	// check if driver is supported
+	if !IsValidDriver(c.Driver) {
+		return fmt.Errorf("unsupported driver: %s", c.Driver)
 	}
+
+	// If datasource is set, none of the individual connection parameters should be set
+	if c.DataSource != "" {
+		if c.Host != "" {
+			return errors.New("'host' cannot be set when 'datasource' is specified")
+		}
+		if c.Port != 0 {
+			return errors.New("'port' cannot be set when 'datasource' is specified")
+		}
+		if c.Database != "" {
+			return errors.New("'database' cannot be set when 'datasource' is specified")
+		}
+		if c.Username != "" {
+			return errors.New("'username' cannot be set when 'datasource' is specified")
+		}
+		if c.Password != "" {
+			return errors.New("'password' cannot be set when 'datasource' is specified")
+		}
+		if len(c.AdditionalParams) > 0 {
+			return errors.New("'additional_params' cannot be set when 'datasource' is specified")
+		}
+	} else {
+		// If datasource is not set, host, port, and database are required
+		if c.Host == "" {
+			return errors.New("'host' or 'datasource' must be specified")
+		}
+		// For sqlserver, port is optional
+		if c.Driver != DriverSQLServer && c.Port == 0 {
+			return errors.New("'port' or 'datasource' must be specified")
+		}
+		if c.Database == "" {
+			return errors.New("'database' or 'datasource' must be specified")
+		}
+	}
+
 	if len(c.Queries) == 0 {
 		return errors.New("'queries' cannot be empty")
 	}

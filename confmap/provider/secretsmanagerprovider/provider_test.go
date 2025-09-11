@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/confmap"
+	"go.uber.org/zap"
 )
 
 // Mock AWS secretsmanager
@@ -20,25 +21,42 @@ type testSecretManagerClient struct {
 }
 
 // Implement GetSecretValue()
-func (client *testSecretManagerClient) GetSecretValue(_ context.Context, _ *secretsmanager.GetSecretValueInput,
-	_ ...func(*secretsmanager.Options)) (*secretsmanager.GetSecretValueOutput, error) {
+func (client *testSecretManagerClient) GetSecretValue(context.Context, *secretsmanager.GetSecretValueInput,
+	...func(*secretsmanager.Options),
+) (*secretsmanager.GetSecretValueOutput, error) {
 	return &secretsmanager.GetSecretValueOutput{SecretString: &client.secretValue}, nil
 }
 
 // Create a provider using mock secretsmanager client
-func NewTestProvider(secretValue string) confmap.Provider {
-	return &provider{client: &testSecretManagerClient{secretValue: secretValue}}
+func newTestProvider(secretValue string) confmap.Provider {
+	return &provider{client: &testSecretManagerClient{secretValue: secretValue}, logger: zap.NewNop()}
 }
 
 func TestSecretsManagerFetchSecret(t *testing.T) {
 	secretName := "FOO"
 	secretValue := "BAR"
 
-	fp := NewTestProvider(secretValue)
-	result, err := fp.Retrieve(context.Background(), "secretsmanager:"+secretName, nil)
+	fp := newTestProvider(secretValue)
+	result, err := fp.Retrieve(t.Context(), "secretsmanager:"+secretName, nil)
 
 	assert.NoError(t, err)
-	assert.NoError(t, fp.Shutdown(context.Background()))
+	assert.NoError(t, fp.Shutdown(t.Context()))
+
+	value, err := result.AsRaw()
+	assert.NoError(t, err)
+	assert.NotNil(t, value)
+	assert.Equal(t, secretValue, value)
+}
+
+func TestSecretsManagerFetchSecretIgnoreDefault(t *testing.T) {
+	secretName := "FOO"
+	secretValue := "BAR"
+
+	fp := newTestProvider(secretValue)
+	result, err := fp.Retrieve(t.Context(), "secretsmanager:"+secretName+":-defaultValue", nil)
+
+	assert.NoError(t, err)
+	assert.NoError(t, fp.Shutdown(t.Context()))
 
 	value, err := result.AsRaw()
 	assert.NoError(t, err)
@@ -49,13 +67,13 @@ func TestSecretsManagerFetchSecret(t *testing.T) {
 func TestFetchSecretsManagerFieldValidJson(t *testing.T) {
 	secretName := "FOO#field1"
 	secretValue := "BAR"
-	secretJSON := fmt.Sprintf("{\"field1\": \"%s\"}", secretValue)
+	secretJSON := fmt.Sprintf("{\"field1\": \"%s\"}", secretValue) //nolint:gocritic //sprintfQuotedString for JSON
 
-	fp := NewTestProvider(secretJSON)
-	result, err := fp.Retrieve(context.Background(), "secretsmanager:"+secretName, nil)
+	fp := newTestProvider(secretJSON)
+	result, err := fp.Retrieve(t.Context(), "secretsmanager:"+secretName, nil)
 
 	assert.NoError(t, err)
-	assert.NoError(t, fp.Shutdown(context.Background()))
+	assert.NoError(t, fp.Shutdown(t.Context()))
 
 	value, err := result.AsRaw()
 	assert.NoError(t, err)
@@ -67,23 +85,57 @@ func TestFetchSecretsManagerFieldInvalidJson(t *testing.T) {
 	secretName := "FOO#field1"
 	secretValue := "BAR"
 
-	fp := NewTestProvider(secretValue)
-	_, err := fp.Retrieve(context.Background(), "secretsmanager:"+secretName, nil)
+	fp := newTestProvider(secretValue)
+	_, err := fp.Retrieve(t.Context(), "secretsmanager:"+secretName, nil)
 
 	assert.Error(t, err)
-	assert.NoError(t, fp.Shutdown(context.Background()))
+	assert.NoError(t, fp.Shutdown(t.Context()))
 }
 
 func TestFetchSecretsManagerFieldMissingInJson(t *testing.T) {
 	secretName := "FOO#field1"
 	secretValue := "BAR"
-	secretJSON := fmt.Sprintf("{\"field0\": \"%s\"}", secretValue)
+	secretJSON := fmt.Sprintf("{\"field0\": \"%s\"}", secretValue) //nolint:gocritic //sprintfQuotedString for JSON
 
-	fp := NewTestProvider(secretJSON)
-	_, err := fp.Retrieve(context.Background(), "secretsmanager:"+secretName, nil)
+	fp := newTestProvider(secretJSON)
+	_, err := fp.Retrieve(t.Context(), "secretsmanager:"+secretName, nil)
 
 	assert.Error(t, err)
-	assert.NoError(t, fp.Shutdown(context.Background()))
+	assert.NoError(t, fp.Shutdown(t.Context()))
+}
+
+func TestFetchSecretsManagerDefaultValueEmptySelector(t *testing.T) {
+	secretValue := "BAR"
+	defaultValue := "defaultValue"
+
+	fp := newTestProvider(secretValue)
+	result, err := fp.Retrieve(t.Context(), "secretsmanager::-"+defaultValue, nil)
+
+	assert.NoError(t, err)
+	assert.NoError(t, fp.Shutdown(t.Context()))
+
+	value, err := result.AsRaw()
+	assert.NoError(t, err)
+	assert.NotNil(t, value)
+	assert.Equal(t, defaultValue, value)
+}
+
+func TestFetchSecretsManagerDefaultValueEmptySecret(t *testing.T) {
+	secretName := "FOO#field1"
+	secretValue := "BAR"
+	secretJSON := fmt.Sprintf("{\"field0\": \"%s\"}", secretValue) //nolint:gocritic //sprintfQuotedString for JSON
+	defaultValue := "defaultValue"
+
+	fp := newTestProvider(secretJSON)
+	result, err := fp.Retrieve(t.Context(), "secretsmanager:"+secretName+":-"+defaultValue, nil)
+
+	assert.NoError(t, err)
+	assert.NoError(t, fp.Shutdown(t.Context()))
+
+	value, err := result.AsRaw()
+	assert.NoError(t, err)
+	assert.NotNil(t, value)
+	assert.Equal(t, defaultValue, value)
 }
 
 func TestFactory(t *testing.T) {

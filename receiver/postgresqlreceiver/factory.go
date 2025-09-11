@@ -7,21 +7,47 @@ import (
 	"context"
 	"time"
 
+	lru "github.com/hashicorp/golang-lru/v2"
+	"github.com/hashicorp/golang-lru/v2/expirable"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver/internal/metadata"
 )
+
+// newCache creates a new cache with the given size.
+// If the size is less or equal to 0, it will be set to 1.
+// It will never return an error.
+func newCache(size int) *lru.Cache[string, float64] {
+	if size <= 0 {
+		size = 1
+	}
+	// lru will only return error when the size is less than 0
+	cache, _ := lru.New[string, float64](size)
+	return cache
+}
+
+func newTTLCache[v any](size int, ttl time.Duration) *expirable.LRU[string, v] {
+	if size <= 0 {
+		size = 1
+	}
+	cache := expirable.NewLRU[string, v](size, nil, ttl)
+	return cache
+}
 
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
+		receiver.WithLogs(createLogsReceiver, metadata.LogsStability),
+	)
 }
 
 func createDefaultConfig() component.Config {
@@ -39,6 +65,17 @@ func createDefaultConfig() component.Config {
 			InsecureSkipVerify: true,
 		},
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		LogsBuilderConfig:    metadata.DefaultLogsBuilderConfig(),
+		QuerySampleCollection: QuerySampleCollection{
+			MaxRowsPerQuery: 1000,
+		},
+		TopQueryCollection: TopQueryCollection{
+			TopNQuery:              1000,
+			MaxRowsPerQuery:        1000,
+			MaxExplainEachInterval: 1000,
+			QueryPlanCacheSize:     1000,
+			QueryPlanCacheTTL:      time.Hour,
+		},
 	}
 }
 
@@ -57,14 +94,72 @@ func createMetricsReceiver(
 		clientFactory = newDefaultClientFactory(cfg)
 	}
 
-	ns := newPostgreSQLScraper(params, cfg, clientFactory)
-	scraper, err := scraperhelper.NewScraper(metadata.Type, ns.scrape, scraperhelper.WithShutdown(ns.shutdown))
+	ns := newPostgreSQLScraper(params, cfg, clientFactory, newCache(1), newTTLCache[string](1, time.Second))
+	s, err := scraper.NewMetrics(ns.scrape, scraper.WithShutdown(ns.shutdown))
 	if err != nil {
 		return nil, err
 	}
 
-	return scraperhelper.NewScraperControllerReceiver(
+	return scraperhelper.NewMetricsController(
 		&cfg.ControllerConfig, params, consumer,
-		scraperhelper.AddScraper(scraper),
+		scraperhelper.AddScraper(metadata.Type, s),
+	)
+}
+
+// createLogsReceiver create a logs receiver based on provided config.
+func createLogsReceiver(
+	_ context.Context,
+	params receiver.Settings,
+	receiverCfg component.Config,
+	logsConsumer consumer.Logs,
+) (receiver.Logs, error) {
+	cfg := receiverCfg.(*Config)
+
+	var clientFactory postgreSQLClientFactory
+	if connectionPoolGate.IsEnabled() {
+		clientFactory = newPoolClientFactory(cfg)
+	} else {
+		clientFactory = newDefaultClientFactory(cfg)
+	}
+
+	opts := make([]scraperhelper.ControllerOption, 0)
+
+	if cfg.Events.DbServerQuerySample.Enabled {
+		// query sample collection does not need cache, but we do not want to make it
+		// nil, so create one size 1 cache as a placeholder.
+		ns := newPostgreSQLScraper(params, cfg, clientFactory, newCache(1), newTTLCache[string](1, time.Second))
+		s, err := scraper.NewLogs(func(ctx context.Context) (plog.Logs, error) {
+			return ns.scrapeQuerySamples(ctx, cfg.QuerySampleCollection.MaxRowsPerQuery)
+		}, scraper.WithShutdown(ns.shutdown))
+		if err != nil {
+			return nil, err
+		}
+		opt := scraperhelper.AddFactoryWithConfig(
+			scraper.NewFactory(metadata.Type, nil,
+				scraper.WithLogs(func(context.Context, scraper.Settings, component.Config) (scraper.Logs, error) {
+					return s, nil
+				}, component.StabilityLevelAlpha)), nil)
+		opts = append(opts, opt)
+	}
+
+	if cfg.Events.DbServerTopQuery.Enabled {
+		// we have 10 updated only attributes. so we set the cache size accordingly.
+		ns := newPostgreSQLScraper(params, cfg, clientFactory, newCache(int(cfg.TopNQuery*10*2)), newTTLCache[string](cfg.QueryPlanCacheSize, cfg.QueryPlanCacheTTL))
+		s, err := scraper.NewLogs(func(ctx context.Context) (plog.Logs, error) {
+			return ns.scrapeTopQuery(ctx, cfg.TopQueryCollection.MaxRowsPerQuery, cfg.TopNQuery, cfg.MaxExplainEachInterval)
+		}, scraper.WithShutdown(ns.shutdown))
+		if err != nil {
+			return nil, err
+		}
+		opt := scraperhelper.AddFactoryWithConfig(
+			scraper.NewFactory(metadata.Type, nil,
+				scraper.WithLogs(func(context.Context, scraper.Settings, component.Config) (scraper.Logs, error) {
+					return s, nil
+				}, component.StabilityLevelAlpha)), nil)
+		opts = append(opts, opt)
+	}
+
+	return scraperhelper.NewLogsController(
+		&cfg.ControllerConfig, params, logsConsumer, opts...,
 	)
 }

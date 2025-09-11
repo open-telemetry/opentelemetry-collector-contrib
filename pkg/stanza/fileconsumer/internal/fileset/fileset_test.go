@@ -55,7 +55,6 @@ func match[T Matchable](ele T, expect bool) func(t *testing.T, fileset *Fileset[
 			require.Nil(t, r)
 			require.Equal(t, pr, fileset.Len())
 		}
-
 	}
 }
 

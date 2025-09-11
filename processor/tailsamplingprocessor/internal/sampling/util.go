@@ -6,6 +6,8 @@ package sampling // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/pkg/samplingpolicy"
 )
 
 // hasResourceOrSpanWithCondition iterates through all the resources and instrumentation library spans until any
@@ -14,20 +16,20 @@ func hasResourceOrSpanWithCondition(
 	td ptrace.Traces,
 	shouldSampleResource func(resource pcommon.Resource) bool,
 	shouldSampleSpan func(span ptrace.Span) bool,
-) Decision {
+) samplingpolicy.Decision {
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rs := td.ResourceSpans().At(i)
 
 		resource := rs.Resource()
 		if shouldSampleResource(resource) {
-			return Sampled
+			return samplingpolicy.Sampled
 		}
 
-		if hasInstrumentationLibrarySpanWithCondition(rs.ScopeSpans(), shouldSampleSpan) {
-			return Sampled
+		if hasInstrumentationLibrarySpanWithCondition(rs.ScopeSpans(), shouldSampleSpan, false) {
+			return samplingpolicy.Sampled
 		}
 	}
-	return NotSampled
+	return samplingpolicy.NotSampled
 }
 
 // invertHasResourceOrSpanWithCondition iterates through all the resources and instrumentation library spans until any
@@ -36,60 +38,82 @@ func invertHasResourceOrSpanWithCondition(
 	td ptrace.Traces,
 	shouldSampleResource func(resource pcommon.Resource) bool,
 	shouldSampleSpan func(span ptrace.Span) bool,
-) Decision {
+) samplingpolicy.Decision {
+	isd := IsInvertDecisionsDisabled()
+
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rs := td.ResourceSpans().At(i)
 
 		resource := rs.Resource()
 		if !shouldSampleResource(resource) {
-			return InvertNotSampled
+			if isd {
+				return samplingpolicy.NotSampled
+			}
+			return samplingpolicy.InvertNotSampled
 		}
 
-		if !invertHasInstrumentationLibrarySpanWithCondition(rs.ScopeSpans(), shouldSampleSpan) {
-			return InvertNotSampled
+		if !hasInstrumentationLibrarySpanWithCondition(rs.ScopeSpans(), shouldSampleSpan, true) {
+			if isd {
+				return samplingpolicy.NotSampled
+			}
+			return samplingpolicy.InvertNotSampled
 		}
 	}
-	return InvertSampled
+
+	if isd {
+		return samplingpolicy.Sampled
+	}
+	return samplingpolicy.InvertSampled
 }
 
 // hasSpanWithCondition iterates through all the instrumentation library spans until any callback returns true.
-func hasSpanWithCondition(td ptrace.Traces, shouldSample func(span ptrace.Span) bool) Decision {
+func hasSpanWithCondition(td ptrace.Traces, shouldSample func(span ptrace.Span) bool) samplingpolicy.Decision {
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rs := td.ResourceSpans().At(i)
 
-		if hasInstrumentationLibrarySpanWithCondition(rs.ScopeSpans(), shouldSample) {
-			return Sampled
+		if hasInstrumentationLibrarySpanWithCondition(rs.ScopeSpans(), shouldSample, false) {
+			return samplingpolicy.Sampled
 		}
 	}
-	return NotSampled
+	return samplingpolicy.NotSampled
 }
 
-func hasInstrumentationLibrarySpanWithCondition(ilss ptrace.ScopeSpansSlice, check func(span ptrace.Span) bool) bool {
+func hasInstrumentationLibrarySpanWithCondition(ilss ptrace.ScopeSpansSlice, check func(span ptrace.Span) bool, invert bool) bool {
 	for i := 0; i < ilss.Len(); i++ {
 		ils := ilss.At(i)
 
 		for j := 0; j < ils.Spans().Len(); j++ {
 			span := ils.Spans().At(j)
 
-			if check(span) {
-				return true
+			if r := check(span); r != invert {
+				return r
 			}
 		}
 	}
-	return false
+	return invert
 }
 
-func invertHasInstrumentationLibrarySpanWithCondition(ilss ptrace.ScopeSpansSlice, check func(span ptrace.Span) bool) bool {
-	for i := 0; i < ilss.Len(); i++ {
-		ils := ilss.At(i)
+func SetAttrOnScopeSpans(data *samplingpolicy.TraceData, attrName, attrKey string) {
+	data.Lock()
+	defer data.Unlock()
 
-		for j := 0; j < ils.Spans().Len(); j++ {
-			span := ils.Spans().At(j)
-
-			if !check(span) {
-				return false
-			}
+	rs := data.ReceivedBatches.ResourceSpans()
+	for i := 0; i < rs.Len(); i++ {
+		rss := rs.At(i)
+		for j := 0; j < rss.ScopeSpans().Len(); j++ {
+			ss := rss.ScopeSpans().At(j)
+			ss.Scope().Attributes().PutStr(attrName, attrKey)
 		}
 	}
-	return true
+}
+
+func SetBoolAttrOnScopeSpans(data ptrace.Traces, attrName string, attrValue bool) {
+	rs := data.ResourceSpans()
+	for i := 0; i < rs.Len(); i++ {
+		rss := rs.At(i)
+		for j := 0; j < rss.ScopeSpans().Len(); j++ {
+			ss := rss.ScopeSpans().At(j)
+			ss.Scope().Attributes().PutBool(attrName, attrValue)
+		}
+	}
 }

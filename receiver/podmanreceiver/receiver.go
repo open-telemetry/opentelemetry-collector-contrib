@@ -16,8 +16,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver/internal/metadata"
@@ -27,7 +28,7 @@ type metricsReceiver struct {
 	config        *Config
 	set           receiver.Settings
 	clientFactory clientFactory
-	scraper       *ContainerScraper
+	scraper       *containerScraper
 	mb            *metadata.MetricsBuilder
 	cancel        context.CancelFunc
 }
@@ -58,11 +59,11 @@ func createMetricsReceiver(
 	podmanConfig := config.(*Config)
 
 	recv := newMetricsReceiver(params, podmanConfig, nil)
-	scrp, err := scraperhelper.NewScraper(metadata.Type, recv.scrape, scraperhelper.WithStart(recv.start), scraperhelper.WithShutdown(recv.shutdown))
+	scrp, err := scraper.NewMetrics(recv.scrape, scraper.WithStart(recv.start), scraper.WithShutdown(recv.shutdown))
 	if err != nil {
 		return nil, err
 	}
-	return scraperhelper.NewScraperControllerReceiver(&recv.config.ControllerConfig, params, consumer, scraperhelper.AddScraper(scrp))
+	return scraperhelper.NewMetricsController(&recv.config.ControllerConfig, params, consumer, scraperhelper.AddScraper(metadata.Type, scrp))
 }
 
 func (r *metricsReceiver) start(ctx context.Context, _ component.Host) error {
@@ -72,7 +73,8 @@ func (r *metricsReceiver) start(ctx context.Context, _ component.Host) error {
 	}
 
 	r.scraper = newContainerScraper(podmanClient, r.set.Logger, r.config)
-	if err = r.scraper.loadContainerList(ctx); err != nil {
+	err = r.scraper.loadContainerList(ctx)
+	if err != nil {
 		return err
 	}
 

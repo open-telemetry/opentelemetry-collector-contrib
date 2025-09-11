@@ -4,7 +4,6 @@
 package logdedupprocessor
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -22,7 +21,7 @@ func Test_newLogAggregator(t *testing.T) {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 
-	aggregator := newLogAggregator(cfg.LogCountAttribute, time.UTC, telemetryBuilder)
+	aggregator := newLogAggregator(cfg.LogCountAttribute, time.UTC, telemetryBuilder, cfg.IncludeFields)
 	require.Equal(t, cfg.LogCountAttribute, aggregator.logCountAttribute)
 	require.Equal(t, time.UTC, aggregator.timezone)
 	require.NotNil(t, aggregator.resources)
@@ -44,7 +43,7 @@ func Test_logAggregatorAdd(t *testing.T) {
 	require.NoError(t, err)
 
 	// Setup aggregator
-	aggregator := newLogAggregator("log_count", time.UTC, telemetryBuilder)
+	aggregator := newLogAggregator("log_count", time.UTC, telemetryBuilder, nil)
 	logRecord := plog.NewLogRecord()
 
 	resource := pcommon.NewResource()
@@ -54,7 +53,7 @@ func Test_logAggregatorAdd(t *testing.T) {
 
 	expectedResourceKey := getResourceKey(resource)
 	expectedScopeKey := getScopeKey(scope)
-	expectedLogKey := getLogKey(logRecord)
+	expectedLogKey := getLogKey(logRecord, nil)
 
 	// Add logRecord
 	aggregator.Add(resource, scope, logRecord)
@@ -94,12 +93,12 @@ func Test_logAggregatorReset(t *testing.T) {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 
-	aggregator := newLogAggregator("log_count", time.UTC, telemetryBuilder)
+	aggregator := newLogAggregator("log_count", time.UTC, telemetryBuilder, nil)
 	for i := 0; i < 2; i++ {
 		resource := pcommon.NewResource()
 		resource.Attributes().PutInt("i", int64(i))
 		key := getResourceKey(resource)
-		aggregator.resources[key] = newResourceAggregator(resource)
+		aggregator.resources[key] = newResourceAggregator(resource, nil)
 	}
 
 	require.Len(t, aggregator.resources, 2)
@@ -129,19 +128,17 @@ func Test_logAggregatorExport(t *testing.T) {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 
-	aggregator := newLogAggregator(defaultLogCountAttribute, location, telemetryBuilder)
+	aggregator := newLogAggregator(defaultLogCountAttribute, location, telemetryBuilder, nil)
 	resource := pcommon.NewResource()
 	resource.Attributes().PutStr("one", "two")
 	expectedHash := pdatautil.MapHash(resource.Attributes())
 
 	scope := pcommon.NewInstrumentationScope()
 
-	logRecord := generateTestLogRecord(t, "body string")
-
 	// Add logRecord
-	aggregator.Add(resource, scope, logRecord)
+	aggregator.Add(resource, scope, generateTestLogRecord(t, "body string"))
 
-	exportedLogs := aggregator.Export(context.Background())
+	exportedLogs := aggregator.Export(t.Context())
 	require.Equal(t, 1, exportedLogs.LogRecordCount())
 	require.Equal(t, 1, exportedLogs.ResourceLogs().Len())
 
@@ -157,15 +154,17 @@ func Test_logAggregatorExport(t *testing.T) {
 	require.Equal(t, 1, sl.LogRecords().Len())
 	actualLogRecord := sl.LogRecords().At(0)
 
+	expectedLogRecord := generateTestLogRecord(t, "body string")
+
 	// Check logRecord
-	require.Equal(t, logRecord.Body().AsString(), actualLogRecord.Body().AsString())
-	require.Equal(t, logRecord.SeverityNumber(), actualLogRecord.SeverityNumber())
-	require.Equal(t, logRecord.SeverityText(), actualLogRecord.SeverityText())
+	require.Equal(t, expectedLogRecord.Body().AsString(), actualLogRecord.Body().AsString())
+	require.Equal(t, expectedLogRecord.SeverityNumber(), actualLogRecord.SeverityNumber())
+	require.Equal(t, expectedLogRecord.SeverityText(), actualLogRecord.SeverityText())
 	require.Equal(t, expectedTimestamp.UnixMilli(), actualLogRecord.ObservedTimestamp().AsTime().UnixMilli())
 	require.Equal(t, expectedTimestamp.UnixMilli(), actualLogRecord.Timestamp().AsTime().UnixMilli())
 
 	actualRawAttrs := actualLogRecord.Attributes().AsRaw()
-	for key, val := range logRecord.Attributes().AsRaw() {
+	for key, val := range expectedLogRecord.Attributes().AsRaw() {
 		actualVal, ok := actualRawAttrs[key]
 		require.True(t, ok)
 		require.Equal(t, val, actualVal)
@@ -188,7 +187,7 @@ func Test_logAggregatorExport(t *testing.T) {
 func Test_newResourceAggregator(t *testing.T) {
 	resource := pcommon.NewResource()
 	resource.Attributes().PutStr("one", "two")
-	aggregator := newResourceAggregator(resource)
+	aggregator := newResourceAggregator(resource, nil)
 	require.NotNil(t, aggregator.scopeCounters)
 	require.Equal(t, resource, aggregator.resource)
 }
@@ -196,7 +195,7 @@ func Test_newResourceAggregator(t *testing.T) {
 func Test_newScopeCounter(t *testing.T) {
 	scope := pcommon.NewInstrumentationScope()
 	scope.Attributes().PutStr("one", "two")
-	sc := newScopeAggregator(scope)
+	sc := newScopeAggregator(scope, nil)
 	require.Equal(t, scope, sc.scope)
 	require.NotNil(t, sc.logCounters)
 }
@@ -254,8 +253,8 @@ func Test_getLogKey(t *testing.T) {
 
 				logRecord2 := generateTestLogRecord(t, "Body of the log")
 
-				key1 := getLogKey(logRecord1)
-				key2 := getLogKey(logRecord2)
+				key1 := getLogKey(logRecord1, nil)
+				key2 := getLogKey(logRecord2, nil)
 
 				require.Equal(t, key1, key2)
 			},
@@ -267,10 +266,63 @@ func Test_getLogKey(t *testing.T) {
 
 				logRecord2 := generateTestLogRecord(t, "A different Body of the log")
 
-				key1 := getLogKey(logRecord1)
-				key2 := getLogKey(logRecord2)
+				key1 := getLogKey(logRecord1, nil)
+				key2 := getLogKey(logRecord2, nil)
 
 				require.NotEqual(t, key1, key2)
+			},
+		},
+		{
+			desc: "getLogKey returns the dedup key",
+			testFunc: func(t *testing.T) {
+				dedupValue := "abc123"
+				logRecord := generateTestLogRecordWithMap(t)
+				logRecord.Body().Map().PutStr("dedup_key", dedupValue)
+				logRecord.Attributes().PutStr("dedup_key", dedupValue)
+
+				expected := pdatautil.Hash64(
+					pdatautil.WithString(dedupValue),
+				)
+				expectedMulti := pdatautil.Hash64(
+					pdatautil.WithString(dedupValue),
+					pdatautil.WithString(dedupValue),
+				)
+
+				require.Equal(t, expected, getLogKey(logRecord, []string{"body.dedup_key"}))
+				require.Equal(t, expected, getLogKey(logRecord, []string{"attributes.dedup_key"}))
+				require.Equal(t, expectedMulti, getLogKey(logRecord, []string{"body.dedup_key", "attributes.dedup_key"}))
+			},
+		},
+		{
+			desc: "getLogKey hashes full message if dedup key is body-based and no body was provided",
+			testFunc: func(t *testing.T) {
+				logRecord := plog.NewLogRecord()
+				logRecord.Attributes().PutStr("str", "attr str")
+
+				expected := pdatautil.Hash64(
+					pdatautil.WithMap(logRecord.Attributes()),
+					pdatautil.WithValue(logRecord.Body()),
+					pdatautil.WithString(logRecord.SeverityNumber().String()),
+					pdatautil.WithString(logRecord.SeverityText()),
+				)
+
+				require.Equal(t, expected, getLogKey(logRecord, []string{"body.dedup_key"}))
+			},
+		},
+		{
+			desc: "getLogKey hashes full message if dedup key is body-based and body is not map type",
+			testFunc: func(t *testing.T) {
+				logRecord := plog.NewLogRecord()
+				logRecord.Body().SetStr("hello, this is a message body string")
+
+				expected := pdatautil.Hash64(
+					pdatautil.WithMap(logRecord.Attributes()),
+					pdatautil.WithValue(logRecord.Body()),
+					pdatautil.WithString(logRecord.SeverityNumber().String()),
+					pdatautil.WithString(logRecord.SeverityText()),
+				)
+
+				require.Equal(t, expected, getLogKey(logRecord, []string{"body.dedup_key"}))
 			},
 		},
 	}
@@ -289,5 +341,12 @@ func generateTestLogRecord(t *testing.T, body string) plog.LogRecord {
 	logRecord.Attributes().PutBool("bool", true)
 	logRecord.Attributes().PutStr("str", "attr str")
 	logRecord.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+	return logRecord
+}
+
+func generateTestLogRecordWithMap(t *testing.T) plog.LogRecord {
+	t.Helper()
+	logRecord := generateTestLogRecord(t, "")
+	logRecord.Body().SetEmptyMap()
 	return logRecord
 }

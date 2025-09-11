@@ -20,8 +20,10 @@ const (
 
 type Unit int8
 
-var _ encoding.TextMarshaler = (*Unit)(nil)
-var _ encoding.TextUnmarshaler = (*Unit)(nil)
+var (
+	_ encoding.TextMarshaler   = (*Unit)(nil)
+	_ encoding.TextUnmarshaler = (*Unit)(nil)
+)
 
 func (u Unit) String() string {
 	switch u {

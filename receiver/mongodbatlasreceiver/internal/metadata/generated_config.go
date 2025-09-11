@@ -34,8 +34,10 @@ type MetricsConfig struct {
 	MongodbatlasDiskPartitionIopsMax                      MetricConfig `mapstructure:"mongodbatlas.disk.partition.iops.max"`
 	MongodbatlasDiskPartitionLatencyAverage               MetricConfig `mapstructure:"mongodbatlas.disk.partition.latency.average"`
 	MongodbatlasDiskPartitionLatencyMax                   MetricConfig `mapstructure:"mongodbatlas.disk.partition.latency.max"`
+	MongodbatlasDiskPartitionQueueDepth                   MetricConfig `mapstructure:"mongodbatlas.disk.partition.queue.depth"`
 	MongodbatlasDiskPartitionSpaceAverage                 MetricConfig `mapstructure:"mongodbatlas.disk.partition.space.average"`
 	MongodbatlasDiskPartitionSpaceMax                     MetricConfig `mapstructure:"mongodbatlas.disk.partition.space.max"`
+	MongodbatlasDiskPartitionThroughput                   MetricConfig `mapstructure:"mongodbatlas.disk.partition.throughput"`
 	MongodbatlasDiskPartitionUsageAverage                 MetricConfig `mapstructure:"mongodbatlas.disk.partition.usage.average"`
 	MongodbatlasDiskPartitionUsageMax                     MetricConfig `mapstructure:"mongodbatlas.disk.partition.usage.max"`
 	MongodbatlasDiskPartitionUtilizationAverage           MetricConfig `mapstructure:"mongodbatlas.disk.partition.utilization.average"`
@@ -43,6 +45,7 @@ type MetricsConfig struct {
 	MongodbatlasProcessAsserts                            MetricConfig `mapstructure:"mongodbatlas.process.asserts"`
 	MongodbatlasProcessBackgroundFlush                    MetricConfig `mapstructure:"mongodbatlas.process.background_flush"`
 	MongodbatlasProcessCacheIo                            MetricConfig `mapstructure:"mongodbatlas.process.cache.io"`
+	MongodbatlasProcessCacheRatio                         MetricConfig `mapstructure:"mongodbatlas.process.cache.ratio"`
 	MongodbatlasProcessCacheSize                          MetricConfig `mapstructure:"mongodbatlas.process.cache.size"`
 	MongodbatlasProcessConnections                        MetricConfig `mapstructure:"mongodbatlas.process.connections"`
 	MongodbatlasProcessCPUChildrenNormalizedUsageAverage  MetricConfig `mapstructure:"mongodbatlas.process.cpu.children.normalized.usage.average"`
@@ -112,11 +115,17 @@ func DefaultMetricsConfig() MetricsConfig {
 		MongodbatlasDiskPartitionLatencyMax: MetricConfig{
 			Enabled: true,
 		},
+		MongodbatlasDiskPartitionQueueDepth: MetricConfig{
+			Enabled: false,
+		},
 		MongodbatlasDiskPartitionSpaceAverage: MetricConfig{
 			Enabled: true,
 		},
 		MongodbatlasDiskPartitionSpaceMax: MetricConfig{
 			Enabled: true,
+		},
+		MongodbatlasDiskPartitionThroughput: MetricConfig{
+			Enabled: false,
 		},
 		MongodbatlasDiskPartitionUsageAverage: MetricConfig{
 			Enabled: true,
@@ -138,6 +147,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		MongodbatlasProcessCacheIo: MetricConfig{
 			Enabled: true,
+		},
+		MongodbatlasProcessCacheRatio: MetricConfig{
+			Enabled: false,
 		},
 		MongodbatlasProcessCacheSize: MetricConfig{
 			Enabled: true,

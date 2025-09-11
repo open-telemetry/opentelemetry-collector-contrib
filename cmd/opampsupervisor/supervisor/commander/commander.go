@@ -11,11 +11,14 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"sync/atomic"
+	"syscall"
 	"time"
 
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
 )
 
@@ -69,10 +72,12 @@ func (c *Commander) Start(ctx context.Context) error {
 		default:
 		}
 	}
-
 	c.logger.Debug("Starting agent", zap.String("agent", c.cfg.Executable))
 
-	c.cmd = exec.CommandContext(ctx, c.cfg.Executable, c.args...) // #nosec G204
+	args := slices.Concat(c.args, c.cfg.Arguments)
+
+	c.cmd = exec.CommandContext(ctx, c.cfg.Executable, args...) // #nosec G204
+	c.cmd.Env = common.EnvVarMapToEnvMapSlice(c.cfg.Env)
 	c.cmd.SysProcAttr = sysProcAttrs()
 
 	// PassthroughLogging changes how collector start up happens
@@ -89,6 +94,19 @@ func (c *Commander) Restart(ctx context.Context) error {
 	}
 
 	return c.Start(ctx)
+}
+
+func (c *Commander) ReloadConfigFile() error {
+	if c.cmd == nil || c.cmd.Process == nil {
+		return errors.New("agent process is not running")
+	}
+
+	c.logger.Debug("Sending SIGHUP to agent process to reload config", zap.Int("pid", c.cmd.Process.Pid))
+	if err := c.cmd.Process.Signal(syscall.SIGHUP); err != nil {
+		return fmt.Errorf("failed to send SIGHUP to agent process: %w", err)
+	}
+
+	return nil
 }
 
 func (c *Commander) startNormal() error {
@@ -153,7 +171,7 @@ func (c *Commander) startWithPassthroughLogging() error {
 		scanner := bufio.NewScanner(stderrPipe)
 		for scanner.Scan() {
 			line := scanner.Text()
-			colLogger.Info(line)
+			colLogger.Error(line)
 		}
 		if err := scanner.Err(); err != nil {
 			c.logger.Error("Error reading agent stderr: %w", zap.Error(err))
@@ -180,6 +198,108 @@ func (c *Commander) watch() {
 	c.running.Store(0)
 	c.doneCh <- struct{}{}
 	c.exitCh <- struct{}{}
+}
+
+// StartOneShot starts the Collector with the expectation that it will immediately
+// exit after it finishes a quick operation. This is useful for situations like reading stdout/sterr
+// to e.g. check the feature gate the Collector supports.
+func (c *Commander) StartOneShot() ([]byte, []byte, error) {
+	stdout := []byte{}
+	stderr := []byte{}
+	ctx := context.Background()
+
+	cmd := exec.CommandContext(ctx, c.cfg.Executable, c.args...) // #nosec G204
+	cmd.Env = common.EnvVarMapToEnvMapSlice(c.cfg.Env)
+	cmd.SysProcAttr = sysProcAttrs()
+	// grab cmd pipes
+	stdoutPipe, err := cmd.StdoutPipe()
+	if err != nil {
+		return nil, nil, fmt.Errorf("stdoutPipe: %w", err)
+	}
+	stderrPipe, err := cmd.StderrPipe()
+	if err != nil {
+		return nil, nil, fmt.Errorf("stderrPipe: %w", err)
+	}
+
+	// start agent
+	if err := cmd.Start(); err != nil {
+		return nil, nil, fmt.Errorf("start: %w", err)
+	}
+	// capture agent output
+	go func() {
+		scanner := bufio.NewScanner(stdoutPipe)
+		for scanner.Scan() {
+			stdout = append(stdout, scanner.Bytes()...)
+			stdout = append(stdout, byte('\n'))
+		}
+		if err := scanner.Err(); err != nil {
+			c.logger.Error("Error reading agent stdout: %w", zap.Error(err))
+		}
+	}()
+	go func() {
+		scanner := bufio.NewScanner(stderrPipe)
+		for scanner.Scan() {
+			stderr = append(stderr, scanner.Bytes()...)
+			stderr = append(stderr, byte('\n'))
+		}
+		if err := scanner.Err(); err != nil {
+			c.logger.Error("Error reading agent stderr: %w", zap.Error(err))
+		}
+	}()
+
+	c.logger.Debug("Agent process started", zap.Int("pid", cmd.Process.Pid))
+
+	doneCh := make(chan struct{}, 1)
+
+	go func() {
+		err := cmd.Wait()
+		if err != nil {
+			c.logger.Error("One-shot Collector encountered an error during execution", zap.Error(err))
+		}
+		doneCh <- struct{}{}
+	}()
+
+	waitCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
+
+	defer cancel()
+
+	select {
+	case <-doneCh:
+	case <-waitCtx.Done():
+		pid := cmd.Process.Pid
+		c.logger.Debug("Stopping agent process", zap.Int("pid", pid))
+
+		// Gracefully signal process to stop.
+		if err := sendShutdownSignal(cmd.Process); err != nil {
+			return nil, nil, err
+		}
+
+		innerWaitCtx, innerCancel := context.WithTimeout(ctx, 10*time.Second)
+
+		// Setup a goroutine to wait a while for process to finish and send kill signal
+		// to the process if it doesn't finish.
+		var innerErr error
+		go func() {
+			<-innerWaitCtx.Done()
+
+			if !errors.Is(innerWaitCtx.Err(), context.DeadlineExceeded) {
+				c.logger.Debug("Agent process successfully stopped.", zap.Int("pid", pid))
+				return
+			}
+
+			// Time is out. Kill the process.
+			c.logger.Debug(
+				"Agent process is not responding to SIGTERM. Sending SIGKILL to kill forcibly.",
+				zap.Int("pid", pid))
+			if innerErr = cmd.Process.Signal(os.Kill); innerErr != nil {
+				return
+			}
+		}()
+
+		innerCancel()
+	}
+
+	return stdout, stderr, nil
 }
 
 // Exited returns a channel that will send a signal when the Agent process exits.
@@ -217,7 +337,7 @@ func (c *Commander) Stop(ctx context.Context) error {
 	}
 
 	pid := c.cmd.Process.Pid
-	c.logger.Debug("Stopping agent process", zap.Int("pid", pid))
+	c.logger.Debug("sending shutdown signal to agent process", zap.Int("pid", pid))
 
 	// Gracefully signal process to stop.
 	if err := sendShutdownSignal(c.cmd.Process); err != nil {

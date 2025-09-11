@@ -10,14 +10,15 @@ import (
 	"github.com/apache/pulsar-client-go/pulsar"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 // Config defines configuration for Pulsar exporter.
 type Config struct {
-	TimeoutSettings           exporterhelper.TimeoutConfig `mapstructure:",squash"`
-	QueueSettings             exporterhelper.QueueConfig   `mapstructure:"sending_queue"`
+	TimeoutSettings           exporterhelper.TimeoutConfig    `mapstructure:",squash"`
+	QueueSettings             exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 
 	// Endpoint of pulsar broker (default "pulsar://localhost:6650")
@@ -35,14 +36,14 @@ type Config struct {
 	Authentication             Authentication `mapstructure:"auth"`
 	OperationTimeout           time.Duration  `mapstructure:"operation_timeout"`
 	ConnectionTimeout          time.Duration  `mapstructure:"connection_timeout"`
-	MaxConnectionsPerBroker    int            `mapstructure:"map_connections_per_broker"`
+	MaxConnectionsPerBroker    int            `mapstructure:"max_connections_per_broker"`
 }
 
 type Authentication struct {
-	TLS    *TLS    `mapstructure:"tls"`
-	Token  *Token  `mapstructure:"token"`
-	Athenz *Athenz `mapstructure:"athenz"`
-	OAuth2 *OAuth2 `mapstructure:"oauth2"`
+	TLS    configoptional.Optional[TLS]    `mapstructure:"tls"`
+	Token  configoptional.Optional[Token]  `mapstructure:"token"`
+	Athenz configoptional.Optional[Athenz] `mapstructure:"athenz"`
+	OAuth2 configoptional.Optional[OAuth2] `mapstructure:"oauth2"`
 }
 
 type TLS struct {
@@ -89,35 +90,38 @@ type Producer struct {
 var _ component.Config = (*Config)(nil)
 
 // Validate checks if the exporter configuration is valid
-func (cfg *Config) Validate() error {
-
+func (*Config) Validate() error {
 	return nil
 }
 
 func (cfg *Config) auth() pulsar.Authentication {
 	authentication := cfg.Authentication
-	if authentication.TLS != nil {
-		return pulsar.NewAuthenticationTLS(authentication.TLS.CertFile, authentication.TLS.KeyFile)
+	if authentication.TLS.HasValue() {
+		tlsCfg := authentication.TLS.Get()
+		return pulsar.NewAuthenticationTLS(tlsCfg.CertFile, tlsCfg.KeyFile)
 	}
-	if authentication.Token != nil {
-		return pulsar.NewAuthenticationToken(string(authentication.Token.Token))
+	if authentication.Token.HasValue() {
+		tokenCfg := authentication.Token.Get()
+		return pulsar.NewAuthenticationToken(string(tokenCfg.Token))
 	}
-	if authentication.OAuth2 != nil {
+	if authentication.OAuth2.HasValue() {
+		oauth2Cfg := authentication.OAuth2.Get()
 		return pulsar.NewAuthenticationOAuth2(map[string]string{
-			"issuerUrl": authentication.OAuth2.IssuerURL,
-			"clientId":  authentication.OAuth2.ClientID,
-			"audience":  authentication.OAuth2.Audience,
+			"issuerUrl": oauth2Cfg.IssuerURL,
+			"clientId":  oauth2Cfg.ClientID,
+			"audience":  oauth2Cfg.Audience,
 		})
 	}
-	if authentication.Athenz != nil {
+	if authentication.Athenz.HasValue() {
+		athenzCfg := authentication.Athenz.Get()
 		return pulsar.NewAuthenticationAthenz(map[string]string{
-			"providerDomain":  authentication.Athenz.ProviderDomain,
-			"tenantDomain":    authentication.Athenz.TenantDomain,
-			"tenantService":   authentication.Athenz.TenantService,
-			"privateKey":      string(authentication.Athenz.PrivateKey),
-			"keyId":           authentication.Athenz.KeyID,
-			"principalHeader": authentication.Athenz.PrincipalHeader,
-			"ztsUrl":          authentication.Athenz.ZtsURL,
+			"providerDomain":  athenzCfg.ProviderDomain,
+			"tenantDomain":    athenzCfg.TenantDomain,
+			"tenantService":   athenzCfg.TenantService,
+			"privateKey":      string(athenzCfg.PrivateKey),
+			"keyId":           athenzCfg.KeyID,
+			"principalHeader": athenzCfg.PrincipalHeader,
+			"ztsUrl":          athenzCfg.ZtsURL,
 		})
 	}
 
@@ -133,7 +137,7 @@ func (cfg *Config) clientOptions() pulsar.ClientOptions {
 	}
 
 	options.TLSAllowInsecureConnection = cfg.TLSAllowInsecureConnection
-	if len(cfg.TLSTrustCertsFilePath) > 0 {
+	if cfg.TLSTrustCertsFilePath != "" {
 		options.TLSTrustCertsFilePath = cfg.TLSTrustCertsFilePath
 	}
 

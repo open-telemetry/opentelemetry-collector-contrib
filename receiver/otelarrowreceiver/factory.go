@@ -21,7 +21,7 @@ const (
 
 	defaultMemoryLimitMiB  = 128
 	defaultRequestLimitMiB = 128
-	defaultWaiterLimit     = 1000
+	defaultWaitingLimitMiB = 32
 )
 
 // NewFactory creates a new OTel-Arrow receiver factory.
@@ -52,7 +52,7 @@ func createDefaultConfig() component.Config {
 		},
 		Admission: AdmissionConfig{
 			RequestLimitMiB: defaultRequestLimitMiB,
-			WaiterLimit:     defaultWaiterLimit,
+			WaitingLimitMiB: defaultWaitingLimitMiB,
 		},
 	}
 }

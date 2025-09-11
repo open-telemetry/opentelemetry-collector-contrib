@@ -4,7 +4,6 @@
 package nsxtreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver"
 
 import (
-	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -50,11 +49,11 @@ func TestScrape(t *testing.T) {
 		&Config{
 			MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 		},
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(metadata.Type),
 	)
 	scraper.client = mockClient
 
-	metrics, err := scraper.scrape(context.Background())
+	metrics, err := scraper.scrape(t.Context())
 	require.NoError(t, err)
 
 	expectedMetrics, err := golden.ReadMetrics(filepath.Join("testdata", "metrics", "expected_metrics.yaml"))
@@ -74,11 +73,11 @@ func TestScrapeTransportNodeErrors(t *testing.T) {
 		&Config{
 			MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 		},
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(metadata.Type),
 	)
 	scraper.client = mockClient
 
-	_, err := scraper.scrape(context.Background())
+	_, err := scraper.scrape(t.Context())
 	require.Error(t, err)
 	require.ErrorContains(t, err, errUnauthorized.Error())
 }
@@ -92,11 +91,11 @@ func TestScrapeClusterNodeErrors(t *testing.T) {
 		&Config{
 			MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 		},
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(metadata.Type),
 	)
 	scraper.client = mockClient
 
-	_, err := scraper.scrape(context.Background())
+	_, err := scraper.scrape(t.Context())
 	require.Error(t, err)
 	require.ErrorContains(t, err, errUnauthorized.Error())
 }
@@ -112,9 +111,9 @@ func TestStartClientAlreadySet(t *testing.T) {
 				Endpoint: mockClient.URL,
 			},
 		},
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(metadata.Type),
 	)
-	_ = scraper.start(context.Background(), componenttest.NewNopHost())
+	_ = scraper.start(t.Context(), componenttest.NewNopHost())
 	require.NotNil(t, scraper.client)
 }
 
@@ -126,10 +125,10 @@ func TestStartBadUrl(t *testing.T) {
 				Endpoint: "\x00",
 			},
 		},
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(metadata.Type),
 	)
 
-	_ = scraper.start(context.Background(), componenttest.NewNopHost())
+	_ = scraper.start(t.Context(), componenttest.NewNopHost())
 	require.Nil(t, scraper.client)
 }
 
@@ -141,7 +140,7 @@ func TestScraperRecordNoStat(_ *testing.T) {
 			},
 			MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 		},
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(metadata.Type),
 	)
 	scraper.host = componenttest.NewNopHost()
 	scraper.recordNode(pcommon.NewTimestampFromTime(time.Now()), &nodeInfo{stats: nil})

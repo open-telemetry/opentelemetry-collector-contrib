@@ -9,6 +9,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
+
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -49,6 +50,10 @@ func TestResourceAttributesConfig(t *testing.T) {
 				K8sReplicasetUID:          ResourceAttributeConfig{Enabled: true},
 				K8sStatefulsetName:        ResourceAttributeConfig{Enabled: true},
 				K8sStatefulsetUID:         ResourceAttributeConfig{Enabled: true},
+				ServiceInstanceID:         ResourceAttributeConfig{Enabled: true},
+				ServiceName:               ResourceAttributeConfig{Enabled: true},
+				ServiceNamespace:          ResourceAttributeConfig{Enabled: true},
+				ServiceVersion:            ResourceAttributeConfig{Enabled: true},
 			},
 		},
 		{
@@ -79,15 +84,18 @@ func TestResourceAttributesConfig(t *testing.T) {
 				K8sReplicasetUID:          ResourceAttributeConfig{Enabled: false},
 				K8sStatefulsetName:        ResourceAttributeConfig{Enabled: false},
 				K8sStatefulsetUID:         ResourceAttributeConfig{Enabled: false},
+				ServiceInstanceID:         ResourceAttributeConfig{Enabled: false},
+				ServiceName:               ResourceAttributeConfig{Enabled: false},
+				ServiceNamespace:          ResourceAttributeConfig{Enabled: false},
+				ServiceVersion:            ResourceAttributeConfig{Enabled: false},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, tt.name)
-			if diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ResourceAttributeConfig{})); diff != "" {
-				t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
-			}
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ResourceAttributeConfig{}))
+			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
 }

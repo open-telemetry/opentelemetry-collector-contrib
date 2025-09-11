@@ -13,6 +13,10 @@ all_set:
       enabled: true
     postgresql.bgwriter.maxwritten:
       enabled: true
+    postgresql.blks_hit:
+      enabled: true
+    postgresql.blks_read:
+      enabled: true
     postgresql.blocks_read:
       enabled: true
     postgresql.commits:
@@ -26,6 +30,8 @@ all_set:
     postgresql.db_size:
       enabled: true
     postgresql.deadlocks:
+      enabled: true
+    postgresql.function.calls:
       enabled: true
     postgresql.index.scans:
       enabled: true
@@ -47,13 +53,30 @@ all_set:
       enabled: true
     postgresql.table.vacuum.count:
       enabled: true
+    postgresql.temp.io:
+      enabled: true
     postgresql.temp_files:
+      enabled: true
+    postgresql.tup_deleted:
+      enabled: true
+    postgresql.tup_fetched:
+      enabled: true
+    postgresql.tup_inserted:
+      enabled: true
+    postgresql.tup_returned:
+      enabled: true
+    postgresql.tup_updated:
       enabled: true
     postgresql.wal.age:
       enabled: true
     postgresql.wal.delay:
       enabled: true
     postgresql.wal.lag:
+      enabled: true
+  events:
+    db.server.query_sample:
+      enabled: true
+    db.server.top_query:
       enabled: true
   resource_attributes:
     postgresql.database.name:
@@ -78,6 +101,10 @@ none_set:
       enabled: false
     postgresql.bgwriter.maxwritten:
       enabled: false
+    postgresql.blks_hit:
+      enabled: false
+    postgresql.blks_read:
+      enabled: false
     postgresql.blocks_read:
       enabled: false
     postgresql.commits:
@@ -91,6 +118,8 @@ none_set:
     postgresql.db_size:
       enabled: false
     postgresql.deadlocks:
+      enabled: false
+    postgresql.function.calls:
       enabled: false
     postgresql.index.scans:
       enabled: false
@@ -112,13 +141,30 @@ none_set:
       enabled: false
     postgresql.table.vacuum.count:
       enabled: false
+    postgresql.temp.io:
+      enabled: false
     postgresql.temp_files:
+      enabled: false
+    postgresql.tup_deleted:
+      enabled: false
+    postgresql.tup_fetched:
+      enabled: false
+    postgresql.tup_inserted:
+      enabled: false
+    postgresql.tup_returned:
+      enabled: false
+    postgresql.tup_updated:
       enabled: false
     postgresql.wal.age:
       enabled: false
     postgresql.wal.delay:
       enabled: false
     postgresql.wal.lag:
+      enabled: false
+  events:
+    db.server.query_sample:
+      enabled: false
+    db.server.top_query:
       enabled: false
   resource_attributes:
     postgresql.database.name:
@@ -135,17 +181,25 @@ filter_set_include:
       enabled: true
       metrics_include:
         - regexp: ".*"
+      events_include:
+        - regexp: ".*"
     postgresql.index.name:
       enabled: true
       metrics_include:
+        - regexp: ".*"
+      events_include:
         - regexp: ".*"
     postgresql.schema.name:
       enabled: true
       metrics_include:
         - regexp: ".*"
+      events_include:
+        - regexp: ".*"
     postgresql.table.name:
       enabled: true
       metrics_include:
+        - regexp: ".*"
+      events_include:
         - regexp: ".*"
 filter_set_exclude:
   resource_attributes:
@@ -153,15 +207,23 @@ filter_set_exclude:
       enabled: true
       metrics_exclude:
         - strict: "postgresql.database.name-val"
+      events_exclude:
+        - strict: "postgresql.database.name-val"
     postgresql.index.name:
       enabled: true
       metrics_exclude:
+        - strict: "postgresql.index.name-val"
+      events_exclude:
         - strict: "postgresql.index.name-val"
     postgresql.schema.name:
       enabled: true
       metrics_exclude:
         - strict: "postgresql.schema.name-val"
+      events_exclude:
+        - strict: "postgresql.schema.name-val"
     postgresql.table.name:
       enabled: true
       metrics_exclude:
+        - strict: "postgresql.table.name-val"
+      events_exclude:
         - strict: "postgresql.table.name-val"

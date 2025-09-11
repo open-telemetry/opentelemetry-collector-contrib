@@ -16,7 +16,7 @@ import (
 	"go.opentelemetry.io/collector/pipeline"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/goldendataset"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/idutils"
+	idutils "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 )
 
@@ -60,7 +60,6 @@ func (dp *perfTestDataProvider) GenerateTraces() (ptrace.Traces, bool) {
 
 	traceID := dp.traceIDSequence.Add(1)
 	for i := 0; i < dp.options.ItemsPerBatch; i++ {
-
 		startTime := time.Now().Add(time.Duration(i+int(traceID)*1000) * time.Second)
 		endTime := startTime.Add(time.Millisecond)
 
@@ -177,7 +176,7 @@ type goldenDataProvider struct {
 
 // NewGoldenDataProvider creates a new instance of goldenDataProvider which generates test data based
 // on the pairwise combinations specified in the tracePairsFile and spanPairsFile input variables.
-func NewGoldenDataProvider(tracePairsFile string, spanPairsFile string, metricPairsFile string) DataProvider {
+func NewGoldenDataProvider(tracePairsFile, spanPairsFile, metricPairsFile string) DataProvider {
 	return &goldenDataProvider{
 		tracePairsFile:  tracePairsFile,
 		spanPairsFile:   spanPairsFile,
@@ -224,7 +223,7 @@ func (dp *goldenDataProvider) GenerateMetrics() (pmetric.Metrics, bool) {
 	return pdm, false
 }
 
-func (dp *goldenDataProvider) GenerateLogs() (plog.Logs, bool) {
+func (*goldenDataProvider) GenerateLogs() (plog.Logs, bool) {
 	return plog.NewLogs(), true
 }
 

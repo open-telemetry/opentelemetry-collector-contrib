@@ -14,7 +14,7 @@ import (
 type Config struct {
 	confignet.TCPAddrConfig `mapstructure:",squash"`
 
-	// TCPIdleTimeout is the timout for idle TCP connections.
+	// TCPIdleTimeout is the timeout for idle TCP connections.
 	TCPIdleTimeout time.Duration `mapstructure:"tcp_idle_timeout"`
 
 	// ExtractCollectdTags instructs the Wavefront receiver to attempt to extract

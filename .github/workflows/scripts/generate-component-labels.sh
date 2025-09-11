@@ -23,13 +23,11 @@ COLORS["testbed"]="#336600"
 
 FALLBACK_COLOR="#999966"
 
-CUR_DIRECTORY=$(dirname "$0")
-COMPONENTS=$(sh "${CUR_DIRECTORY}/get-components.sh")
+COMPONENTS=$(awk '/^[^#]/ { print $2 }' .github/component_labels.txt)
 
-for COMPONENT in ${COMPONENTS}; do
-    TYPE=$(echo "${COMPONENT}" | cut -f1 -d '/' )
-    LABEL_NAME=$(echo "${COMPONENT}" | sed -E 's%^(.+)/(.+)\1%\1/\2%')
-
+for LABEL_NAME in ${COMPONENTS}; do
+    TYPE=$(echo "${LABEL_NAME}" | cut -f1 -d '/' )
+    
     if (( "${#LABEL_NAME}" > 50 )); then
         echo "'${LABEL_NAME}' exceeds GitHubs 50-character limit on labels, skipping"
         continue

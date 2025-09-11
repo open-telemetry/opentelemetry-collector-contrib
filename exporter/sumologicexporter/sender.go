@@ -182,7 +182,8 @@ func (s *sender) send(ctx context.Context, pipeline PipelineType, reader *counti
 		return err
 	}
 
-	if err = s.addRequestHeaders(req, pipeline, flds); err != nil {
+	err = s.addRequestHeaders(req, pipeline, flds)
+	if err != nil {
 		return err
 	}
 
@@ -213,9 +214,9 @@ func (s *sender) handleReceiverResponse(resp *http.Response) error {
 		s.updateStickySessionCookie(resp)
 	}
 
-	// API responds with a 200 or 204 with ConentLength set to 0 when all data
+	// API responds with a 200 or 204 with ContentLength set to 0 when all data
 	// has been successfully ingested.
-	if resp.ContentLength == 0 && (resp.StatusCode == 200 || resp.StatusCode == 204) {
+	if resp.ContentLength == 0 && (resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusNoContent) {
 		return nil
 	}
 
@@ -229,7 +230,7 @@ func (s *sender) handleReceiverResponse(resp *http.Response) error {
 	// API responds with a 200 or 204 with a JSON body describing what issues
 	// were encountered when processing the sent data.
 	switch resp.StatusCode {
-	case 200, 204:
+	case http.StatusOK, http.StatusNoContent:
 		if resp.ContentLength < 0 {
 			s.logger.Warn("Unknown length of server response")
 			return nil
@@ -247,19 +248,19 @@ func (s *sender) handleReceiverResponse(resp *http.Response) error {
 		}
 
 		l := s.logger.With(zap.String("status", resp.Status))
-		if len(rResponse.ID) > 0 {
+		if rResponse.ID != "" {
 			l = l.With(zap.String("id", rResponse.ID))
 		}
-		if len(rResponse.Code) > 0 {
+		if rResponse.Code != "" {
 			l = l.With(zap.String("code", rResponse.Code))
 		}
-		if len(rResponse.Message) > 0 {
+		if rResponse.Message != "" {
 			l = l.With(zap.String("message", rResponse.Message))
 		}
 		l.Warn("There was an issue sending data")
 		return nil
 
-	case 401:
+	case http.StatusUnauthorized:
 		return errUnauthorized
 
 	default:
@@ -289,13 +290,13 @@ func (s *sender) handleReceiverResponse(resp *http.Response) error {
 			fmt.Sprintf("status: %s", resp.Status),
 		}
 
-		if len(rResponse.ID) > 0 {
+		if rResponse.ID != "" {
 			errMsgs = append(errMsgs, fmt.Sprintf("id: %s", rResponse.ID))
 		}
-		if len(rResponse.Code) > 0 {
+		if rResponse.Code != "" {
 			errMsgs = append(errMsgs, fmt.Sprintf("code: %s", rResponse.Code))
 		}
-		if len(rResponse.Message) > 0 {
+		if rResponse.Message != "" {
 			errMsgs = append(errMsgs, fmt.Sprintf("message: %s", rResponse.Message))
 		}
 		if len(rResponse.Errors) > 0 {
@@ -336,12 +337,12 @@ func (s *sender) createRequest(ctx context.Context, pipeline PipelineType, data 
 }
 
 // logToText converts LogRecord to a plain text line, returns it and error eventually
-func (s *sender) logToText(record plog.LogRecord) string {
+func (*sender) logToText(record plog.LogRecord) string {
 	return record.Body().AsString()
 }
 
 // logToJSON converts LogRecord to a json line, returns it and error eventually
-func (s *sender) logToJSON(record plog.LogRecord) (string, error) {
+func (*sender) logToJSON(record plog.LogRecord) (string, error) {
 	recordCopy := plog.NewLogRecord()
 	record.CopyTo(recordCopy)
 
@@ -354,7 +355,6 @@ func (s *sender) logToJSON(record plog.LogRecord) (string, error) {
 	enc := json.NewEncoder(nextLine)
 	enc.SetEscapeHTML(false)
 	err := enc.Encode(recordCopy.Attributes().AsRaw())
-
 	if err != nil {
 		return "", err
 	}
@@ -367,7 +367,7 @@ func isEmptyAttributeValue(att pcommon.Value) bool {
 	case pcommon.ValueTypeEmpty:
 		return true
 	case pcommon.ValueTypeStr:
-		return len(att.Str()) == 0
+		return att.Str() == ""
 	case pcommon.ValueTypeSlice:
 		return att.Slice().Len() == 0
 	case pcommon.ValueTypeMap:
@@ -384,7 +384,7 @@ func isEmptyAttributeValue(att pcommon.Value) bool {
 // returns array of records which has not been sent correctly and error
 func (s *sender) sendNonOTLPLogs(ctx context.Context, rl plog.ResourceLogs, flds fields) ([]plog.LogRecord, error) {
 	if s.config.LogFormat == OTLPLogFormat {
-		return nil, fmt.Errorf("attempting to send OTLP logs as non-OTLP data")
+		return nil, errors.New("attempting to send OTLP logs as non-OTLP data")
 	}
 
 	var (
@@ -460,7 +460,7 @@ func (s *sender) sendOTLPLogs(ctx context.Context, ld plog.Logs) error {
 // sendNonOTLPMetrics sends metrics in right format basing on the s.config.MetricFormat
 func (s *sender) sendNonOTLPMetrics(ctx context.Context, md pmetric.Metrics) (pmetric.Metrics, []error) {
 	if s.config.MetricFormat == OTLPMetricFormat {
-		return md, []error{fmt.Errorf("attempting to send OTLP metrics as non-OTLP data")}
+		return md, []error{errors.New("attempting to send OTLP metrics as non-OTLP data")}
 	}
 
 	var (
@@ -485,7 +485,6 @@ func (s *sender) sendNonOTLPMetrics(ctx context.Context, md pmetric.Metrics) (pm
 			previousFields := newFields(rms.At(i - 1).Resource().Attributes())
 			previousSourceHeaders := getSourcesHeaders(previousFields)
 			if !reflect.DeepEqual(previousSourceHeaders, currentSourceHeaders) && body.Len() > 0 {
-
 				if err := s.send(ctx, MetricsPipeline, body.toCountingReader(), previousFields); err != nil {
 					errs = append(errs, err)
 					for _, resource := range currentResources {
@@ -537,7 +536,6 @@ func (s *sender) sendNonOTLPMetrics(ctx context.Context, md pmetric.Metrics) (pm
 		}
 
 		currentResources = append(currentResources, rm)
-
 	}
 
 	if body.Len() > 0 {
@@ -580,7 +578,6 @@ func (s *sender) appendAndMaybeSend(
 	body *bodyBuilder,
 	flds fields,
 ) (sent bool, err error) {
-
 	linesTotalLength := 0
 	for _, line := range lines {
 		linesTotalLength += len(line) + 1 // count the newline as well
@@ -703,6 +700,7 @@ func (s *sender) addRequestHeaders(req *http.Request, pipeline PipelineType, fld
 	}
 	return nil
 }
+
 func (s *sender) recordMetrics(duration time.Duration, count int64, req *http.Request, resp *http.Response, pipeline PipelineType) {
 	statusCode := 0
 
@@ -725,11 +723,11 @@ func (s *sender) recordMetrics(duration time.Duration, count int64, req *http.Re
 }
 
 func (s *sender) addStickySessionCookie(req *http.Request) {
-	currectCookieValue := s.stickySessionCookieFunc()
-	if currectCookieValue != "" {
+	currentCookieValue := s.stickySessionCookieFunc()
+	if currentCookieValue != "" {
 		cookie := &http.Cookie{
 			Name:  stickySessionKey,
-			Value: currectCookieValue,
+			Value: currentCookieValue,
 		}
 		req.AddCookie(cookie)
 	}

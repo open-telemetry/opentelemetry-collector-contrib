@@ -19,11 +19,11 @@ type XDGSCRAMClient struct {
 
 // Begin starts the XDGSCRAMClient conversation.
 func (x *XDGSCRAMClient) Begin(userName, password, authzID string) (err error) {
-	x.Client, err = x.HashGeneratorFcn.NewClient(userName, password, authzID)
+	x.Client, err = x.NewClient(userName, password, authzID)
 	if err != nil {
 		return err
 	}
-	x.ClientConversation = x.Client.NewConversation()
+	x.ClientConversation = x.NewConversation()
 	return nil
 }
 
@@ -34,7 +34,6 @@ func (x *XDGSCRAMClient) Begin(userName, password, authzID string) (err error) {
 // completes is also an error.
 func (x *XDGSCRAMClient) Step(challenge string) (response string, err error) {
 	return x.ClientConversation.Step(challenge)
-
 }
 
 // Done returns true if the conversation is completed or has errored.

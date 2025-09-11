@@ -23,6 +23,7 @@ components:
         - health_check
         - host_observer
         - http_forwarder
+        - k8s_leader_elector
         - k8s_observer
         - oauth2client
         - oidc
@@ -36,6 +37,7 @@ components:
         - filter
         - groupbyattrs
         - groupbytrace
+        - interval
         - k8sattributes
         - logdedup
         - metricstransform
@@ -57,8 +59,19 @@ components:
         - k8s_events
         - k8sobjects
         - kubeletstats
-        - opencensus
         - otelarrow
         - prometheus
         - receiver_creator
         - zipkin
+    scraper:
+        - cpu
+        - disk
+        - filesystem
+        - load
+        - memory
+        - network
+        - nfs
+        - paging
+        - process
+        - processes
+        - system

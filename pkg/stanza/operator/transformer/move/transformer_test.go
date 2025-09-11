@@ -4,7 +4,6 @@
 package move
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -507,11 +506,10 @@ func TestProcessAndBuild(t *testing.T) {
 			op, err := cfg.Build(set)
 			require.NoError(t, err)
 
-			move := op.(*Transformer)
 			fake := testutil.NewFakeOutput(t)
-			require.NoError(t, move.SetOutputs([]operator.Operator{fake}))
+			require.NoError(t, op.SetOutputs([]operator.Operator{fake}))
 			val := tc.input()
-			err = move.Process(context.Background(), val)
+			err = op.ProcessBatch(t.Context(), []*entry.Entry{val})
 			if tc.expectErr {
 				require.Error(t, err)
 			} else {

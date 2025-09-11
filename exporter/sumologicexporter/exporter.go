@@ -15,6 +15,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configauth"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -178,7 +180,7 @@ func (se *sumologicexporter) configure(ctx context.Context) error {
 
 	for _, e := range se.host.GetExtensions() {
 		v, ok := e.(*sumologicextension.SumologicExtension)
-		if ok && httpSettings.Auth.AuthenticatorID == v.ComponentID() {
+		if ok && httpSettings.Auth.HasValue() && httpSettings.Auth.Get().AuthenticatorID == v.ComponentID() {
 			ext = v
 			foundSumoExt = true
 			se.foundSumologicExtension = true
@@ -188,8 +190,8 @@ func (se *sumologicexporter) configure(ctx context.Context) error {
 	}
 
 	switch {
-	case httpSettings.Endpoint == "" && httpSettings.Auth != nil &&
-		httpSettings.Auth.AuthenticatorID.Type() == sumologicextension.NewFactory().Type():
+	case httpSettings.Endpoint == "" && httpSettings.Auth.HasValue() &&
+		httpSettings.Auth.Get().AuthenticatorID.Type() == sumologicextension.NewFactory().Type():
 		// If user specified using sumologicextension as auth but none was
 		// found then return an error.
 		if !foundSumoExt {
@@ -197,7 +199,7 @@ func (se *sumologicexporter) configure(ctx context.Context) error {
 				"sumologic was specified as auth extension (named: %q) but "+
 					"a matching extension was not found in the config, "+
 					"please re-check the config and/or define the sumologicextension",
-				httpSettings.Auth.AuthenticatorID.String(),
+				httpSettings.Auth.Get().AuthenticatorID.String(),
 			)
 		}
 
@@ -235,11 +237,11 @@ func (se *sumologicexporter) configure(ctx context.Context) error {
 
 		// Clean authenticator if set to sumologic.
 		// Setting to null in configuration doesn't work, so we have to force it that way.
-		if httpSettings.Auth != nil && httpSettings.Auth.AuthenticatorID.Type() == sumologicextension.NewFactory().Type() {
-			httpSettings.Auth = nil
+		if httpSettings.Auth.HasValue() && httpSettings.Auth.Get().AuthenticatorID.Type() == sumologicextension.NewFactory().Type() {
+			httpSettings.Auth = configoptional.None[configauth.Config]()
 		}
 	default:
-		return fmt.Errorf("no auth extension and no endpoint specified")
+		return errors.New("no auth extension and no endpoint specified")
 	}
 
 	client, err := httpSettings.ToClient(ctx, se.host, componenttest.NewNopTelemetrySettings())
@@ -281,7 +283,7 @@ func (se *sumologicexporter) getHTTPClient() *http.Client {
 
 func (se *sumologicexporter) setDataURLs(logs, metrics, traces string) {
 	se.dataURLsLock.Lock()
-	se.logger.Info("setting data urls", zap.String("logs_url", logs), zap.String("metrics_url", metrics), zap.String("traces_url", traces))
+	se.logger.Info("setting data urls", zap.String("logs_url", sanitizeURL(logs)), zap.String("metrics_url", sanitizeURL(metrics)), zap.String("traces_url", sanitizeURL(traces)))
 	se.dataURLLogs, se.dataURLMetrics, se.dataURLTraces = logs, metrics, traces
 	se.dataURLsLock.Unlock()
 }
@@ -292,7 +294,7 @@ func (se *sumologicexporter) getDataURLs() (logs, metrics, traces string) {
 	return se.dataURLLogs, se.dataURLMetrics, se.dataURLTraces
 }
 
-func (se *sumologicexporter) shutdown(context.Context) error {
+func (*sumologicexporter) shutdown(context.Context) error {
 	return nil
 }
 
@@ -390,12 +392,12 @@ func (se *sumologicexporter) handleUnauthorizedErrors(ctx context.Context, errs 
 	for _, err := range errs {
 		if errors.Is(err, errUnauthorized) {
 			se.logger.Warn("Received unauthorized status code, triggering reconfiguration")
-			if errC := se.configure(ctx); errC != nil {
-				se.logger.Error("Error configuring the exporter with new credentials", zap.Error(err))
-			} else {
+			errC := se.configure(ctx)
+			if errC == nil {
 				// It's enough to successfully reconfigure the exporter just once.
 				return
 			}
+			se.logger.Error("Error configuring the exporter with new credentials", zap.Error(err))
 		}
 	}
 }
@@ -455,4 +457,32 @@ func getSignalURL(oCfg *Config, endpointURL string, signal pipeline.Signal) (str
 	}
 
 	return url.String(), nil
+}
+
+func sanitizeURL(urlString string) string {
+	strBefore := "otlp/"
+	strAfter := "/v1/"
+	leftIndex := strings.Index(urlString, strBefore)
+	rightIndex := strings.LastIndex(urlString, strAfter)
+	if leftIndex == -1 || rightIndex == -1 {
+		return urlString
+	}
+	length := len(strBefore)
+	checkSensitiveStrLen := (rightIndex - leftIndex) - length
+	if checkSensitiveStrLen > 0 {
+		s1 := urlString[0 : leftIndex+len(strBefore)]
+		s2 := nchars('*', (rightIndex - leftIndex - length))
+		s3 := urlString[rightIndex:]
+		sanitizedStr := s1 + s2 + s3
+		return sanitizedStr
+	}
+	return urlString
+}
+
+func nchars(b byte, n int) string {
+	s := make([]byte, n)
+	for i := range n {
+		s[i] = b
+	}
+	return string(s)
 }

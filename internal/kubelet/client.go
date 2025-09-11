@@ -33,7 +33,7 @@ type Client interface {
 }
 
 func NewClientProvider(endpoint string, cfg *ClientConfig, logger *zap.Logger) (ClientProvider, error) {
-	switch cfg.APIConfig.AuthType {
+	switch cfg.AuthType {
 	case k8sconfig.AuthTypeTLS:
 		return &tlsClientProvider{
 			endpoint: endpoint,
@@ -42,11 +42,11 @@ func NewClientProvider(endpoint string, cfg *ClientConfig, logger *zap.Logger) (
 		}, nil
 	case k8sconfig.AuthTypeServiceAccount:
 		return &saClientProvider{
-			endpoint:           endpoint,
-			caCertPath:         svcAcctCACertPath,
-			tokenPath:          svcAcctTokenPath,
-			insecureSkipVerify: cfg.InsecureSkipVerify,
-			logger:             logger,
+			endpoint:   endpoint,
+			caCertPath: svcAcctCACertPath,
+			cfg:        cfg,
+			tokenPath:  svcAcctTokenPath,
+			logger:     logger,
 		}, nil
 	case k8sconfig.AuthTypeNone:
 		return &readOnlyClientProvider{
@@ -60,7 +60,7 @@ func NewClientProvider(endpoint string, cfg *ClientConfig, logger *zap.Logger) (
 			logger:   logger,
 		}, nil
 	default:
-		return nil, fmt.Errorf("AuthType [%s] not supported", cfg.APIConfig.AuthType)
+		return nil, fmt.Errorf("AuthType [%s] not supported", cfg.AuthType)
 	}
 }
 
@@ -81,9 +81,9 @@ func (p *kubeConfigClientProvider) BuildClient() (Client, error) {
 	}
 	if p.cfg.InsecureSkipVerify {
 		// Override InsecureSkipVerify from kubeconfig
-		authConf.TLSClientConfig.CAFile = ""
-		authConf.TLSClientConfig.CAData = nil
-		authConf.TLSClientConfig.Insecure = true
+		authConf.CAFile = ""
+		authConf.CAData = nil
+		authConf.Insecure = true
 	}
 
 	client, err := rest.HTTPClientFor(authConf)
@@ -101,7 +101,6 @@ func (p *kubeConfigClientProvider) BuildClient() (Client, error) {
 		tok:        nil,
 		logger:     p.logger,
 	}, nil
-
 }
 
 type readOnlyClientProvider struct {
@@ -121,7 +120,6 @@ func (p *readOnlyClientProvider) BuildClient() (Client, error) {
 		tok:        nil,
 		logger:     p.logger,
 	}, nil
-
 }
 
 type tlsClientProvider struct {
@@ -150,15 +148,19 @@ func (p *tlsClientProvider) BuildClient() (Client, error) {
 }
 
 type saClientProvider struct {
-	endpoint           string
-	caCertPath         string
-	tokenPath          string
-	insecureSkipVerify bool
-	logger             *zap.Logger
+	endpoint   string
+	caCertPath string
+	cfg        *ClientConfig
+	tokenPath  string
+	logger     *zap.Logger
 }
 
 func (p *saClientProvider) BuildClient() (Client, error) {
-	rootCAs, err := systemCertPoolPlusPath(p.caCertPath)
+	caCertPath := p.caCertPath
+	if p.cfg.CAFile != "" {
+		caCertPath = p.cfg.CAFile
+	}
+	rootCAs, err := systemCertPoolPlusPath(caCertPath)
 	if err != nil {
 		return nil, err
 	}
@@ -169,7 +171,7 @@ func (p *saClientProvider) BuildClient() (Client, error) {
 	tr := defaultTransport()
 	tr.TLSClientConfig = &tls.Config{
 		RootCAs:            rootCAs,
-		InsecureSkipVerify: p.insecureSkipVerify,
+		InsecureSkipVerify: p.cfg.InsecureSkipVerify,
 	}
 	endpoint, err := buildEndpoint(p.endpoint, true, p.logger)
 	if err != nil {
@@ -296,7 +298,7 @@ func (c *clientImpl) buildReq(p string) (*http.Request, error) {
 	if err != nil {
 		return nil, err
 	}
-	req, err := http.NewRequest("GET", reqURL, nil)
+	req, err := http.NewRequest(http.MethodGet, reqURL, http.NoBody)
 	if err != nil {
 		return nil, err
 	}

@@ -14,8 +14,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver/internal/metadata"
@@ -25,7 +25,6 @@ type brokerScraper struct {
 	client       sarama.Client
 	settings     receiver.Settings
 	config       Config
-	saramaConfig *sarama.Config
 	clusterAdmin sarama.ClusterAdmin
 	mb           *metadata.MetricsBuilder
 }
@@ -47,11 +46,10 @@ func (s *brokerScraper) shutdown(context.Context) error {
 }
 
 func (s *brokerScraper) scrape(context.Context) (pmetric.Metrics, error) {
-
-	var scrapeErrors = scrapererror.ScrapeErrors{}
+	scrapeErrors := scrapererror.ScrapeErrors{}
 
 	if s.client == nil {
-		client, err := newSaramaClient(s.config.Brokers, s.saramaConfig)
+		client, err := newSaramaClient(context.Background(), s.config.ClientConfig)
 		if err != nil {
 			return pmetric.Metrics{}, fmt.Errorf("failed to create client in brokers scraper: %w", err)
 		}
@@ -69,7 +67,7 @@ func (s *brokerScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	}
 
 	if s.clusterAdmin == nil {
-		admin, err := newClusterAdmin(s.config.Brokers, s.saramaConfig)
+		admin, err := newClusterAdmin(s.client)
 		if err != nil {
 			s.settings.Logger.Error("Error creating kafka client with admin privileges", zap.Error(err))
 			return s.mb.Emit(metadata.WithResource(rb.Emit())), scrapeErrors.Combine()
@@ -103,17 +101,14 @@ func (s *brokerScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	return s.mb.Emit(metadata.WithResource(rb.Emit())), scrapeErrors.Combine()
 }
 
-func createBrokerScraper(_ context.Context, cfg Config, saramaConfig *sarama.Config,
-	settings receiver.Settings) (scraperhelper.Scraper, error) {
+func createBrokerScraper(_ context.Context, cfg Config, settings receiver.Settings) (scraper.Metrics, error) {
 	s := brokerScraper{
-		settings:     settings,
-		config:       cfg,
-		saramaConfig: saramaConfig,
+		settings: settings,
+		config:   cfg,
 	}
-	return scraperhelper.NewScraper(
-		brokersScraperType,
+	return scraper.NewMetrics(
 		s.scrape,
-		scraperhelper.WithStart(s.start),
-		scraperhelper.WithShutdown(s.shutdown),
+		scraper.WithStart(s.start),
+		scraper.WithShutdown(s.shutdown),
 	)
 }

@@ -4,7 +4,7 @@
 package split
 
 import (
-	"fmt"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -40,11 +40,11 @@ func TestConfigFunc(t *testing.T) {
 	t.Run("NopEncodingError", func(t *testing.T) {
 		endCfg := Config{LineEndPattern: "\n"}
 		_, err := endCfg.Func(encoding.Nop, false, 0)
-		require.Equal(t, err, fmt.Errorf("line_end_pattern should not be set when using nop encoding"))
+		require.Equal(t, err, errors.New("line_end_pattern should not be set when using nop encoding"))
 
 		startCfg := Config{LineStartPattern: "\n"}
 		_, err = startCfg.Func(encoding.Nop, false, 0)
-		require.Equal(t, err, fmt.Errorf("line_start_pattern should not be set when using nop encoding"))
+		require.Equal(t, err, errors.New("line_start_pattern should not be set when using nop encoding"))
 	})
 
 	t.Run("Newline", func(t *testing.T) {

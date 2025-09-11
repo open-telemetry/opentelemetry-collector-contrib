@@ -4,32 +4,24 @@
 package container // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/container"
 
 import (
+	"errors"
 	"fmt"
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/featuregate"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
+	stanza_errors "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/attrs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/transformer/recombine"
 )
 
 const (
-	operatorType                       = "container"
-	recombineSourceIdentifier          = "log.file.path"
-	recombineIsLastEntry               = "attributes.logtag == 'F'"
-	removeOriginalTimeFieldFeatureFlag = "filelog.container.removeOriginalTimeField"
-)
-
-var removeOriginalTimeField = featuregate.GlobalRegistry().MustRegister(
-	removeOriginalTimeFieldFeatureFlag,
-	featuregate.StageBeta,
-	featuregate.WithRegisterDescription("When enabled, deletes the original `time` field from the Log Attributes. Time is parsed to Timestamp field, which should be used instead."),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33389"),
+	operatorType              = "container"
+	recombineSourceIdentifier = attrs.LogFilePath
+	recombineIsLastEntry      = "attributes.logtag == 'F'"
 )
 
 func init() {
@@ -67,19 +59,11 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 		return nil, err
 	}
 
-	cLogEmitter := helper.NewLogEmitter(set)
-	recombineParser, err := createRecombine(set, c, cLogEmitter)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create internal recombine config: %w", err)
-	}
-
-	wg := sync.WaitGroup{}
-
 	if c.Format != "" {
 		switch c.Format {
 		case dockerFormat, crioFormat, containerdFormat:
 		default:
-			return &Parser{}, errors.NewError(
+			return &Parser{}, stanza_errors.NewError(
 				"operator config has an invalid `format` field.",
 				"ensure that the `format` field is set to one of `docker`, `crio`, `containerd`.",
 				"format", c.OnError,
@@ -87,22 +71,24 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 		}
 	}
 
-	if !removeOriginalTimeField.IsEnabled() {
-		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33389
-		set.Logger.Info("`time` log record attribute will be removed in a future release. Switch now using the feature gate.",
-			zap.String("attribute", "time"),
-			zap.String("feature gate", removeOriginalTimeFieldFeatureFlag),
-		)
-	}
+	wg := sync.WaitGroup{}
 
 	p := &Parser{
 		ParserOperator:          parserOperator,
-		recombineParser:         recombineParser,
 		format:                  c.Format,
 		addMetadataFromFilepath: c.AddMetadataFromFilePath,
-		criLogEmitter:           cLogEmitter,
 		criConsumers:            &wg,
 	}
+
+	cLogEmitter := helper.NewBatchingLogEmitter(set, p.consumeEntries)
+	p.criLogEmitter = cLogEmitter
+	recombineParser, err := createRecombine(set, c, cLogEmitter)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create internal recombine config: %w", err)
+	}
+
+	p.recombineParser = recombineParser
+
 	return p, nil
 }
 
@@ -115,7 +101,7 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 //	max_log_size: 102400
 //	source_identifier: attributes["log.file.path"]
 //	type: recombine
-func createRecombine(set component.TelemetrySettings, c Config, cLogEmitter *helper.LogEmitter) (operator.Operator, error) {
+func createRecombine(set component.TelemetrySettings, c Config, cLogEmitter *helper.BatchingLogEmitter) (operator.Operator, error) {
 	recombineParserCfg := createRecombineConfig(c)
 	recombineParser, err := recombineParserCfg.Build(set)
 	if err != nil {
@@ -125,7 +111,7 @@ func createRecombine(set component.TelemetrySettings, c Config, cLogEmitter *hel
 	// set the LogEmmiter as the output of the recombine parser
 	recombineParser.SetOutputIDs([]string{cLogEmitter.OperatorID})
 	if err := recombineParser.SetOutputs([]operator.Operator{cLogEmitter}); err != nil {
-		return nil, fmt.Errorf("failed to set outputs of internal recombine")
+		return nil, errors.New("failed to set outputs of internal recombine")
 	}
 
 	return recombineParser, nil

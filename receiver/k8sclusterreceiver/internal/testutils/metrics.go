@@ -10,15 +10,15 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-func AssertMetricInt(t testing.TB, m pmetric.Metric, expectedMetric string, expectedType pmetric.MetricType, expectedValue any) {
-	dps := assertMetric(t, m, expectedMetric, expectedType)
-	require.EqualValues(t, expectedValue, dps.At(0).IntValue(), "mismatching metric values")
+func AssertMetricInt(tb testing.TB, m pmetric.Metric, expectedMetric string, expectedType pmetric.MetricType, expectedValue any) {
+	dps := assertMetric(tb, m, expectedMetric, expectedType)
+	require.EqualValues(tb, expectedValue, dps.At(0).IntValue(), "mismatching metric values")
 }
 
-func assertMetric(t testing.TB, m pmetric.Metric, expectedMetric string, expectedType pmetric.MetricType) pmetric.NumberDataPointSlice {
-	require.Equal(t, expectedMetric, m.Name(), "mismatching metric names")
-	require.NotEmpty(t, m.Description(), "empty description on metric")
-	require.Equal(t, expectedType, m.Type(), "mismatching metric types")
+func assertMetric(tb testing.TB, m pmetric.Metric, expectedMetric string, expectedType pmetric.MetricType) pmetric.NumberDataPointSlice {
+	require.Equal(tb, expectedMetric, m.Name(), "mismatching metric names")
+	require.NotEmpty(tb, m.Description(), "empty description on metric")
+	require.Equal(tb, expectedType, m.Type(), "mismatching metric types")
 	var dps pmetric.NumberDataPointSlice
 	//exhaustive:enforce
 	switch expectedType {
@@ -27,14 +27,14 @@ func assertMetric(t testing.TB, m pmetric.Metric, expectedMetric string, expecte
 	case pmetric.MetricTypeSum:
 		dps = m.Sum().DataPoints()
 	case pmetric.MetricTypeHistogram:
-		require.Fail(t, "unsupported")
+		require.Fail(tb, "unsupported")
 	case pmetric.MetricTypeExponentialHistogram:
-		require.Fail(t, "unsupported")
+		require.Fail(tb, "unsupported")
 	case pmetric.MetricTypeSummary:
-		require.Fail(t, "unsupported")
+		require.Fail(tb, "unsupported")
 	case pmetric.MetricTypeEmpty:
-		require.Fail(t, "unsupported")
+		require.Fail(tb, "unsupported")
 	}
-	require.Equal(t, 1, dps.Len())
+	require.Equal(tb, 1, dps.Len())
 	return dps
 }

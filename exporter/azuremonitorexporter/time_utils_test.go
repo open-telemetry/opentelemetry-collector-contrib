@@ -17,7 +17,7 @@ func TestToTime(t *testing.T) {
 	output := toTime(input)
 
 	assert.NotNil(t, output)
-	expected := time.Date(1970, 01, 01, 00, 01, 00, 1, time.UTC)
+	expected := time.Date(1970, 0o1, 0o1, 0o0, 0o1, 0o0, 1, time.UTC)
 	assert.Equal(t, "1970-01-01T00:01:00.000000001Z", expected.Format(time.RFC3339Nano))
 }
 

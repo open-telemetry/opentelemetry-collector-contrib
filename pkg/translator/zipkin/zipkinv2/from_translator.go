@@ -14,11 +14,12 @@ import (
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/otel/semconv/v1.15.0"
+	conventions161 "go.opentelemetry.io/otel/semconv/v1.6.1"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/idutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
+	idutils "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/internal/zipkin"
 )
 
@@ -27,16 +28,14 @@ const (
 	spanLinkDataFormat  = "%s|%s|%s|%s|%d"
 )
 
-var (
-	sampled = true
-)
+var sampled = true
 
 // FromTranslator converts from pdata to Zipkin data model.
 type FromTranslator struct{}
 
 // FromTraces translates internal trace data into Zipkin v2 spans.
 // Returns a slice of Zipkin SpanModel's.
-func (t FromTranslator) FromTraces(td ptrace.Traces) ([]*zipkinmodel.SpanModel, error) {
+func (FromTranslator) FromTraces(td ptrace.Traces) ([]*zipkinmodel.SpanModel, error) {
 	resourceSpans := td.ResourceSpans()
 	if resourceSpans.Len() == 0 {
 		return nil, nil
@@ -85,11 +84,16 @@ func resourceSpansToZipkinSpans(rs ptrace.ResourceSpans, estSpanCount int) ([]*z
 }
 
 func extractScopeTags(il pcommon.InstrumentationScope, zTags map[string]string) {
+	attrs := il.Attributes()
+	for k, v := range attrs.All() {
+		zTags[k] = v.AsString()
+	}
+
 	if ilName := il.Name(); ilName != "" {
-		zTags[conventions.OtelLibraryName] = ilName
+		zTags[string(conventions.OtelLibraryNameKey)] = ilName
 	}
 	if ilVer := il.Version(); ilVer != "" {
-		zTags[conventions.OtelLibraryVersion] = ilVer
+		zTags[string(conventions.OtelLibraryVersionKey)] = ilVer
 	}
 }
 
@@ -98,7 +102,6 @@ func spanToZipkinSpan(
 	localServiceName string,
 	zTags map[string]string,
 ) (*zipkinmodel.SpanModel, error) {
-
 	tags := aggregateSpanTags(span, zTags)
 
 	zs := &zipkinmodel.SpanModel{}
@@ -179,9 +182,9 @@ func populateStatus(status ptrace.Status, zs *zipkinmodel.SpanModel, tags map[st
 		return
 	}
 
-	tags[conventions.OtelStatusCode] = traceutil.StatusCodeStr(status.Code())
+	tags[string(conventions.OtelStatusCodeKey)] = traceutil.StatusCodeStr(status.Code())
 	if status.Message() != "" {
-		tags[conventions.OtelStatusDescription] = status.Message()
+		tags[string(conventions.OtelStatusDescriptionKey)] = status.Message()
 		zs.Err = fmt.Errorf("%s", status.Message())
 	}
 }
@@ -241,10 +244,9 @@ func spanLinksToZipkinTags(links ptrace.SpanLinkSlice, zTags map[string]string) 
 
 func attributeMapToStringMap(attrMap pcommon.Map) map[string]string {
 	rawMap := make(map[string]string)
-	attrMap.Range(func(k string, v pcommon.Value) bool {
+	for k, v := range attrMap.All() {
 		rawMap[k] = v.AsString()
-		return true
-	})
+	}
 	return rawMap
 }
 
@@ -265,10 +267,9 @@ func resourceToZipkinEndpointServiceNameAndAttributeMap(
 		return tracetranslator.ResourceNoServiceName, zTags
 	}
 
-	attrs.Range(func(k string, v pcommon.Value) bool {
+	for k, v := range attrs.All() {
 		zTags[k] = v.AsString()
-		return true
-	})
+	}
 
 	serviceName = extractZipkinServiceName(zTags)
 	return serviceName, zTags
@@ -276,21 +277,21 @@ func resourceToZipkinEndpointServiceNameAndAttributeMap(
 
 func extractZipkinServiceName(zTags map[string]string) string {
 	var serviceName string
-	if sn, ok := zTags[conventions.AttributeServiceName]; ok {
+	if sn, ok := zTags[string(conventions.ServiceNameKey)]; ok {
 		serviceName = sn
-		delete(zTags, conventions.AttributeServiceName)
-	} else if fn, ok := zTags[conventions.AttributeFaaSName]; ok {
+		delete(zTags, string(conventions.ServiceNameKey))
+	} else if fn, ok := zTags[string(conventions.FaaSNameKey)]; ok {
 		serviceName = fn
-		delete(zTags, conventions.AttributeFaaSName)
-		zTags[zipkin.TagServiceNameSource] = conventions.AttributeFaaSName
-	} else if fn, ok := zTags[conventions.AttributeK8SDeploymentName]; ok {
+		delete(zTags, string(conventions.FaaSNameKey))
+		zTags[zipkin.TagServiceNameSource] = string(conventions.FaaSNameKey)
+	} else if fn, ok := zTags[string(conventions.K8SDeploymentNameKey)]; ok {
 		serviceName = fn
-		delete(zTags, conventions.AttributeK8SDeploymentName)
-		zTags[zipkin.TagServiceNameSource] = conventions.AttributeK8SDeploymentName
-	} else if fn, ok := zTags[conventions.AttributeProcessExecutableName]; ok {
+		delete(zTags, string(conventions.K8SDeploymentNameKey))
+		zTags[zipkin.TagServiceNameSource] = string(conventions.K8SDeploymentNameKey)
+	} else if fn, ok := zTags[string(conventions.ProcessExecutableNameKey)]; ok {
 		serviceName = fn
-		delete(zTags, conventions.AttributeProcessExecutableName)
-		zTags[zipkin.TagServiceNameSource] = conventions.AttributeProcessExecutableName
+		delete(zTags, string(conventions.ProcessExecutableNameKey))
+		zTags[zipkin.TagServiceNameSource] = string(conventions.ProcessExecutableNameKey)
 	} else {
 		serviceName = tracetranslator.ResourceNoServiceName
 	}
@@ -318,18 +319,17 @@ func zipkinEndpointFromTags(
 	remoteEndpoint bool,
 	redundantKeys map[string]bool,
 ) (endpoint *zipkinmodel.Endpoint) {
-
 	serviceName := localServiceName
-	if peerSvc, ok := zTags[conventions.AttributePeerService]; ok && remoteEndpoint {
+	if peerSvc, ok := zTags[string(conventions.PeerServiceKey)]; ok && remoteEndpoint {
 		serviceName = peerSvc
-		redundantKeys[conventions.AttributePeerService] = true
+		redundantKeys[string(conventions.PeerServiceKey)] = true
 	}
 
 	var ipKey, portKey string
 	if remoteEndpoint {
-		ipKey, portKey = conventions.AttributeNetPeerIP, conventions.AttributeNetPeerPort
+		ipKey, portKey = string(conventions161.NetPeerIPKey), string(conventions.NetPeerPortKey)
 	} else {
-		ipKey, portKey = conventions.AttributeNetHostIP, conventions.AttributeNetHostPort
+		ipKey, portKey = string(conventions161.NetHostIPKey), string(conventions.NetHostPortKey)
 	}
 
 	var ip net.IP

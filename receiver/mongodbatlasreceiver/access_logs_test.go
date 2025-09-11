@@ -17,15 +17,16 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/extension/experimental/storage"
+	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/metadata"
 )
 
 var (
@@ -103,7 +104,7 @@ func TestAccessLogToLogRecord(t *testing.T) {
 	}))
 
 	lr.SetObservedTimestamp(now)
-	lr.SetTimestamp(pcommon.NewTimestampFromTime(time.Date(2023, time.April, 26, 02, 38, 56, 444000000, time.UTC)))
+	lr.SetTimestamp(pcommon.NewTimestampFromTime(time.Date(2023, time.April, 26, 0o2, 38, 56, 444000000, time.UTC)))
 	lr.SetSeverityNumber(plog.SeverityNumberInfo)
 	lr.SetSeverityText(plog.SeverityNumberInfo.String())
 
@@ -125,7 +126,7 @@ func TestAccessLogToLogRecord(t *testing.T) {
 
 	lr.SetObservedTimestamp(now)
 	// Second log does not have internal timestamp in ISO8601, it has external in unixDate format with less precision
-	lr.SetTimestamp(pcommon.NewTimestampFromTime(time.Date(2023, time.April, 26, 02, 38, 56, 0, time.UTC)))
+	lr.SetTimestamp(pcommon.NewTimestampFromTime(time.Date(2023, time.April, 26, 0o2, 38, 56, 0, time.UTC)))
 	lr.SetSeverityNumber(plog.SeverityNumberWarn)
 	lr.SetSeverityText(plog.SeverityNumberWarn.String())
 
@@ -276,17 +277,18 @@ func TestAccessLogsRetrieval(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			logSink := &consumertest.LogsSink{}
-			rcvr := newAccessLogsReceiver(receivertest.NewNopSettings(), tc.config(), logSink)
+			rcvr, e := newAccessLogsReceiver(receivertest.NewNopSettings(metadata.Type), tc.config(), logSink)
+			require.NoError(t, e)
 			tc.setup(rcvr)
 
-			err := rcvr.Start(context.Background(), componenttest.NewNopHost(), storage.NewNopClient())
+			err := rcvr.Start(t.Context(), componenttest.NewNopHost(), storage.NewNopClient())
 			require.NoError(t, err)
 
 			require.Eventually(t, func() bool {
 				return logSink.LogRecordCount() >= tc.expectedLogCount
 			}, 10*time.Second, 10*time.Millisecond)
 
-			require.NoError(t, rcvr.Shutdown(context.Background()))
+			require.NoError(t, rcvr.Shutdown(t.Context()))
 			tc.validateEntries(t, logSink.AllLogs())
 		})
 	}
@@ -313,13 +315,14 @@ func TestCheckpointing(t *testing.T) {
 	}
 
 	logSink := &consumertest.LogsSink{}
-	rcvr := newAccessLogsReceiver(receivertest.NewNopSettings(), config, logSink)
+	rcvr, e := newAccessLogsReceiver(receivertest.NewNopSettings(metadata.Type), config, logSink)
+	require.NoError(t, e)
 	rcvr.client = simpleAccessLogClient()
 
 	// First cluster checkpoint should be nil
 	clusterCheckpoint := rcvr.getClusterCheckpoint(testProjectID, testClusterName)
 	require.Nil(t, clusterCheckpoint)
-	err := rcvr.pollAccessLogs(context.Background(), pc)
+	err := rcvr.pollAccessLogs(t.Context(), pc)
 	require.NoError(t, err)
 
 	// Second cluster checkpoint should have the last timestamp date +100ms
@@ -384,7 +387,7 @@ func repeatedRequestAccessLogClient() accessLogClient {
 				IPAddress:   "192.168.1.1",
 				AuthResult:  &authTrue,
 				AuthSource:  "admin",
-				LogLine:     fmt.Sprintf("{\"t\":{\"$date\":\"%s\"}}", currentTime.Add(1000*time.Millisecond).Format(time.RFC3339)),
+				LogLine:     fmt.Sprintf("{\"t\":{\"$date\":\"%s\"}}", currentTime.Add(1000*time.Millisecond).Format(time.RFC3339)), //nolint:gocritic //sprintfQuotedString for JSON
 				Username:    "test",
 			},
 			{
@@ -394,7 +397,7 @@ func repeatedRequestAccessLogClient() accessLogClient {
 				IPAddress:   "192.168.1.1",
 				AuthResult:  &authTrue,
 				AuthSource:  "admin",
-				LogLine:     fmt.Sprintf("{\"t\":{\"$date\":\"%s\"}}", currentTime.Add(900*time.Millisecond).Format(time.RFC3339)),
+				LogLine:     fmt.Sprintf("{\"t\":{\"$date\":\"%s\"}}", currentTime.Add(900*time.Millisecond).Format(time.RFC3339)), //nolint:gocritic //sprintfQuotedString for JSON
 				Username:    "test",
 			},
 		},
@@ -409,7 +412,7 @@ func repeatedRequestAccessLogClient() accessLogClient {
 				IPAddress:   "192.168.1.1",
 				AuthResult:  &authTrue,
 				AuthSource:  "admin",
-				LogLine:     fmt.Sprintf("{\"t\":{\"$date\":\"%s\"}}", currentTime.Add(800*time.Millisecond).Format(time.RFC3339)),
+				LogLine:     fmt.Sprintf("{\"t\":{\"$date\":\"%s\"}}", currentTime.Add(800*time.Millisecond).Format(time.RFC3339)), //nolint:gocritic //sprintfQuotedString for JSON
 				Username:    "test",
 			},
 		},
@@ -429,7 +432,7 @@ func maxSizeButOldDataAccessLogsClient() accessLogClient {
 				IPAddress:   "192.168.1.1",
 				AuthResult:  &authTrue,
 				AuthSource:  "admin",
-				LogLine:     fmt.Sprintf("{\"t\":{\"$date\":\"%s\"}}", currentTime.Add(500*time.Millisecond).Format(time.RFC3339)),
+				LogLine:     fmt.Sprintf("{\"t\":{\"$date\":\"%s\"}}", currentTime.Add(500*time.Millisecond).Format(time.RFC3339)), //nolint:gocritic //sprintfQuotedString for JSON
 				Username:    "test",
 			},
 			{
@@ -439,7 +442,7 @@ func maxSizeButOldDataAccessLogsClient() accessLogClient {
 				IPAddress:   "192.168.1.1",
 				AuthResult:  &authTrue,
 				AuthSource:  "admin",
-				LogLine:     fmt.Sprintf("{\"t\":{\"$date\":\"%s\"}}", currentTime.Add(-100*time.Millisecond).Format(time.RFC3339)),
+				LogLine:     fmt.Sprintf("{\"t\":{\"$date\":\"%s\"}}", currentTime.Add(-100*time.Millisecond).Format(time.RFC3339)), //nolint:gocritic //sprintfQuotedString for JSON
 				Username:    "test",
 			},
 		},
@@ -461,7 +464,7 @@ func (mac *mockAccessLogsClient) GetClusters(ctx context.Context, groupID string
 	return args.Get(0).([]mongodbatlas.Cluster), args.Error(1)
 }
 
-func (mac *mockAccessLogsClient) GetAccessLogs(ctx context.Context, groupID string, clusterName string, opts *internal.GetAccessLogsOptions) (ret []*mongodbatlas.AccessLogs, err error) {
+func (mac *mockAccessLogsClient) GetAccessLogs(ctx context.Context, groupID, clusterName string, opts *internal.GetAccessLogsOptions) (ret []*mongodbatlas.AccessLogs, err error) {
 	args := mac.Called(ctx, groupID, clusterName, opts)
 	return args.Get(0).([]*mongodbatlas.AccessLogs), args.Error(1)
 }

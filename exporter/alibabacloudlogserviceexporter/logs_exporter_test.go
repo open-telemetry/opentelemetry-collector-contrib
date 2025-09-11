@@ -4,7 +4,6 @@
 package alibabacloudlogserviceexporter
 
 import (
-	"context"
 	"path/filepath"
 	"testing"
 	"time"
@@ -14,7 +13,9 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter/internal/metadata"
 )
 
 func createSimpleLogData(numberOfLogs int) plog.Logs {
@@ -28,9 +29,9 @@ func createSimpleLogData(numberOfLogs int) plog.Logs {
 		ts := pcommon.Timestamp(int64(i) * time.Millisecond.Nanoseconds())
 		logRecord := sl.LogRecords().AppendEmpty()
 		logRecord.Body().SetStr("mylog")
-		logRecord.Attributes().PutStr(conventions.AttributeServiceName, "myapp")
+		logRecord.Attributes().PutStr(string(conventions.ServiceNameKey), "myapp")
 		logRecord.Attributes().PutStr("my-label", "myapp-type")
-		logRecord.Attributes().PutStr(conventions.AttributeHostName, "myhost")
+		logRecord.Attributes().PutStr(string(conventions.HostNameKey), "myhost")
 		logRecord.Attributes().PutStr("custom", "custom")
 		logRecord.SetTimestamp(ts)
 	}
@@ -40,7 +41,7 @@ func createSimpleLogData(numberOfLogs int) plog.Logs {
 }
 
 func TestNewLogsExporter(t *testing.T) {
-	got, err := newLogsExporter(exportertest.NewNopSettings(), &Config{
+	got, err := newLogsExporter(exportertest.NewNopSettings(metadata.Type), &Config{
 		Endpoint: "us-west-1.log.aliyuncs.com",
 		Project:  "demo-project",
 		Logstore: "demo-logstore",
@@ -49,13 +50,13 @@ func TestNewLogsExporter(t *testing.T) {
 	require.NotNil(t, got)
 
 	// This will put trace data to send buffer and return success.
-	err = got.ConsumeLogs(context.Background(), createSimpleLogData(3))
+	err = got.ConsumeLogs(t.Context(), createSimpleLogData(3))
 	assert.NoError(t, err)
 	time.Sleep(time.Second * 4)
 }
 
 func TestSTSTokenExporter(t *testing.T) {
-	got, err := newLogsExporter(exportertest.NewNopSettings(), &Config{
+	got, err := newLogsExporter(exportertest.NewNopSettings(metadata.Type), &Config{
 		Endpoint:      "us-west-1.log.aliyuncs.com",
 		Project:       "demo-project",
 		Logstore:      "demo-logstore",
@@ -66,7 +67,7 @@ func TestSTSTokenExporter(t *testing.T) {
 }
 
 func TestNewFailsWithEmptyLogsExporterName(t *testing.T) {
-	got, err := newLogsExporter(exportertest.NewNopSettings(), &Config{})
+	got, err := newLogsExporter(exportertest.NewNopSettings(metadata.Type), &Config{})
 	assert.Error(t, err)
 	require.Nil(t, got)
 }

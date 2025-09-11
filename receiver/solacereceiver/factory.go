@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pipeline"
@@ -17,8 +18,8 @@ import (
 )
 
 const (
-	// default value for max unaked messages
-	defaultMaxUnaked int32 = 1000
+	// default value for max unacked messages
+	defaultMaxUnacked int32 = 1000
 	// default value for host
 	defaultHost string = "localhost:5671"
 )
@@ -36,16 +37,16 @@ func NewFactory() receiver.Factory {
 func createDefaultConfig() component.Config {
 	return &Config{
 		Broker:     []string{defaultHost},
-		MaxUnacked: defaultMaxUnaked,
+		MaxUnacked: defaultMaxUnacked,
 		Auth:       Authentication{},
 		TLS: configtls.ClientConfig{
 			InsecureSkipVerify: false,
 			Insecure:           false,
 		},
 		Flow: FlowControl{
-			DelayedRetry: &FlowControlDelayedRetry{
+			DelayedRetry: configoptional.Some(FlowControlDelayedRetry{
 				Delay: 10 * time.Millisecond,
-			},
+			}),
 		},
 	}
 }

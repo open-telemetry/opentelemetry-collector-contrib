@@ -33,7 +33,7 @@ func (m *mock) getEC2Region(_ *session.Session) (string, error) {
 	return ec2Region, nil
 }
 
-func (m *mock) newAWSSession(_ string, _ string, _ *zap.Logger) (*session.Session, error) {
+func (m *mock) newAWSSession(string, string, *zap.Logger) (*session.Session, error) {
 	return m.sn, nil
 }
 
@@ -43,7 +43,8 @@ func logSetup() (*zap.Logger, *observer.ObservedLogs) {
 }
 
 func setupMock(sess *session.Session) (f1 func(s *session.Session) (string, error),
-	f2 func(roleArn string, region string, logger *zap.Logger) (*session.Session, error)) {
+	f2 func(roleArn, region string, logger *zap.Logger) (*session.Session, error),
+) {
 	f1 = getEC2Region
 	f2 = newAWSSession
 	m := mock{sn: sess}
@@ -54,7 +55,7 @@ func setupMock(sess *session.Session) (f1 func(s *session.Session) (string, erro
 
 func tearDownMock(
 	f1 func(s *session.Session) (string, error),
-	f2 func(roleArn string, region string, logger *zap.Logger) (*session.Session, error),
+	f2 func(roleArn, region string, logger *zap.Logger) (*session.Session, error),
 ) {
 	getEC2Region = f1
 	newAWSSession = f2
@@ -279,7 +280,7 @@ func TestGetProxyAddressFromConfigFile(t *testing.T) {
 }
 
 func TestGetProxyAddressWhenNotExist(t *testing.T) {
-	assert.Equal(t, "", getProxyAddress(""), "Expect function return value to be empty")
+	assert.Empty(t, getProxyAddress(""), "Expect function return value to be empty")
 }
 
 func TestGetProxyAddressPriority(t *testing.T) {
@@ -299,7 +300,7 @@ func TestGetPartition(t *testing.T) {
 	assert.Equal(t, endpoints.AwsUsGovPartitionID, p)
 
 	p = getPartition("XYZ")
-	assert.Equal(t, "", p)
+	assert.Empty(t, p)
 }
 
 func TestGetSTSRegionalEndpoint(t *testing.T) {
@@ -313,7 +314,7 @@ func TestGetSTSRegionalEndpoint(t *testing.T) {
 	assert.Equal(t, "https://sts.us-gov-east-1.amazonaws.com", p)
 
 	p = getPartition("XYZ")
-	assert.Equal(t, "", p)
+	assert.Empty(t, p)
 }
 
 func TestNewSessionCreationFailed(t *testing.T) {
@@ -399,22 +400,21 @@ func TestGetSTSCredsFromPrimaryRegionEndpoint(t *testing.T) {
 		"expected error message")
 }
 
-type mockAWSErr struct {
-}
+type mockAWSErr struct{}
 
-func (m *mockAWSErr) Error() string {
+func (*mockAWSErr) Error() string {
 	return "mockAWSErr"
 }
 
-func (m *mockAWSErr) Code() string {
+func (*mockAWSErr) Code() string {
 	return sts.ErrCodeRegionDisabledException
 }
 
-func (m *mockAWSErr) Message() string {
+func (*mockAWSErr) Message() string {
 	return ""
 }
 
-func (m *mockAWSErr) OrigErr() error {
+func (*mockAWSErr) OrigErr() error {
 	return errors.New("mockAWSErr")
 }
 
@@ -430,9 +430,10 @@ func (m *mockProvider) Retrieve() (credentials.Value, error) {
 	return val, nil
 }
 
-func (m *mockProvider) IsExpired() bool {
+func (*mockProvider) IsExpired() bool {
 	return true
 }
+
 func TestSTSRegionalEndpointDisabled(t *testing.T) {
 	logger, recordedLogs := logSetup()
 

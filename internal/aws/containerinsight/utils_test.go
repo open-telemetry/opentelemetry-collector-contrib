@@ -132,24 +132,30 @@ func convertToFloat64(value any) float64 {
 }
 
 func checkMetricsAreExpected(t *testing.T, md pmetric.Metrics, fields map[string]any, tags map[string]string,
-	expectedUnits map[string]string) {
-
+	expectedUnits map[string]string,
+) {
 	rms := md.ResourceMetrics()
 	assert.Equal(t, 1, rms.Len())
 
 	// check the attributes are expected
 	rm := rms.At(0)
 	attributes := rm.Resource().Attributes()
-	assert.Equal(t, len(tags), attributes.Len())
+	assert.Equal(t, len(tags)-1, attributes.Len()) // tags has Timestamp but attributes should not have it
 	var timeUnixNano uint64
 	for key, val := range tags {
 		log.Printf("key=%v value=%v", key, val)
 		attr, ok := attributes.Get(key)
-		assert.True(t, ok)
 		if key == Timestamp {
-			timeUnixNano, _ = strconv.ParseUint(val, 10, 64)
-			val = strconv.FormatUint(timeUnixNano/uint64(time.Millisecond), 10)
+			// Capture the timestamp for later check.
+			var err error
+			timeUnixNano, err = strconv.ParseUint(val, 10, 64)
+			assert.NoError(t, err)
+
+			// Timestamp is passed on tags but should NOT be in attributes.
+			assert.False(t, ok)
+			continue
 		}
+		assert.True(t, ok)
 		assert.Equal(t, val, attr.Str())
 	}
 
@@ -265,7 +271,6 @@ func TestConvertToOTLPMetricsForClusterMetrics(t *testing.T) {
 	}
 	md = ConvertToOTLPMetrics(fields, tags, zap.NewNop())
 	checkMetricsAreExpected(t, md, fields, tags, expectedUnits)
-
 }
 
 func TestConvertToOTLPMetricsForContainerMetrics(t *testing.T) {

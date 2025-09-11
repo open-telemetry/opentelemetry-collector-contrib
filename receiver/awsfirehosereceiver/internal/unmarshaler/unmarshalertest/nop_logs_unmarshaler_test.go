@@ -4,7 +4,7 @@
 package unmarshalertest
 
 import (
-	"fmt"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -13,7 +13,7 @@ import (
 
 func TestNewNopLogs(t *testing.T) {
 	unmarshaler := NewNopLogs()
-	got, err := unmarshaler.Unmarshal(nil)
+	got, err := unmarshaler.UnmarshalLogs(nil)
 	require.NoError(t, err)
 	require.NotNil(t, got)
 	require.Equal(t, typeStr, unmarshaler.Type())
@@ -23,7 +23,7 @@ func TestNewWithLogs(t *testing.T) {
 	logs := plog.NewLogs()
 	logs.ResourceLogs().AppendEmpty()
 	unmarshaler := NewWithLogs(logs)
-	got, err := unmarshaler.Unmarshal(nil)
+	got, err := unmarshaler.UnmarshalLogs(nil)
 	require.NoError(t, err)
 	require.NotNil(t, got)
 	require.Equal(t, logs, got)
@@ -31,9 +31,9 @@ func TestNewWithLogs(t *testing.T) {
 }
 
 func TestNewErrLogs(t *testing.T) {
-	wantErr := fmt.Errorf("test error")
+	wantErr := errors.New("test error")
 	unmarshaler := NewErrLogs(wantErr)
-	got, err := unmarshaler.Unmarshal(nil)
+	got, err := unmarshaler.UnmarshalLogs(nil)
 	require.Error(t, err)
 	require.Equal(t, wantErr, err)
 	require.NotNil(t, got)

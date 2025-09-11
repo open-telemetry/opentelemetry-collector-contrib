@@ -33,6 +33,13 @@ var enableNativeHistogramsGate = featuregate.GlobalRegistry().MustRegister(
 		" those Prometheus classic histograms that have a native histogram alternative"),
 )
 
+var enableCreatedTimestampZeroIngestionGate = featuregate.GlobalRegistry().MustRegister(
+	"receiver.prometheusreceiver.EnableCreatedTimestampZeroIngestion",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("Enables ingestion of created timestamp."+
+		" Created timestamps are injected as 0 valued samples when appropriate."),
+)
+
 // NewFactory creates a new Prometheus receiver factory.
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
@@ -56,7 +63,7 @@ func createMetricsReceiver(
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	configWarnings(set.Logger, cfg.(*Config))
-	return newPrometheusReceiver(set, cfg.(*Config), nextConsumer), nil
+	return newPrometheusReceiver(set, cfg.(*Config), nextConsumer)
 }
 
 func configWarnings(logger *zap.Logger, cfg *Config) {

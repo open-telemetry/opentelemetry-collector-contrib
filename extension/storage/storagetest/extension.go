@@ -8,7 +8,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
-	"go.opentelemetry.io/collector/extension/experimental/storage"
+	"go.opentelemetry.io/collector/extension/xextension/storage"
 )
 
 var testStorageType component.Type = component.MustNewType("test_storage")
@@ -36,7 +36,7 @@ func NewInMemoryStorageExtension(name string) *TestStorage {
 }
 
 // NewFileBackedStorageExtension creates a TestStorage extension
-func NewFileBackedStorageExtension(name string, storageDir string) *TestStorage {
+func NewFileBackedStorageExtension(name, storageDir string) *TestStorage {
 	return &TestStorage{
 		ID:         NewStorageID(name),
 		storageDir: storageDir,

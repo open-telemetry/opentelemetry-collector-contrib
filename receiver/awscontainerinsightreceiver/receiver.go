@@ -6,6 +6,7 @@ package awscontainerinsightreceiver // import "github.com/open-telemetry/opentel
 import (
 	"context"
 	"errors"
+	"sync"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -35,6 +36,7 @@ type awsContainerInsightReceiver struct {
 	nextConsumer consumer.Metrics
 	config       *Config
 	cancel       context.CancelFunc
+	cancelWg     sync.WaitGroup
 	cadvisor     metricsProvider
 	k8sapiserver metricsProvider
 }
@@ -43,8 +45,8 @@ type awsContainerInsightReceiver struct {
 func newAWSContainerInsightReceiver(
 	settings component.TelemetrySettings,
 	config *Config,
-	nextConsumer consumer.Metrics) (receiver.Metrics, error) {
-
+	nextConsumer consumer.Metrics,
+) (receiver.Metrics, error) {
 	r := &awsContainerInsightReceiver{
 		settings:     settings,
 		nextConsumer: nextConsumer,
@@ -79,7 +81,6 @@ func (acir *awsContainerInsightReceiver) Start(ctx context.Context, host compone
 		}
 	}
 	if acir.config.ContainerOrchestrator == ci.ECS {
-
 		ecsInfo, err := ecsinfo.NewECSInfo(acir.config.CollectionInterval, hostinfo, host, acir.settings)
 		if err != nil {
 			return err
@@ -93,7 +94,10 @@ func (acir *awsContainerInsightReceiver) Start(ctx context.Context, host compone
 		}
 	}
 
+	acir.cancelWg.Add(1)
 	go func() {
+		defer acir.cancelWg.Done()
+
 		// cadvisor collects data at dynamical intervals (from 1 to 15 seconds). If the ticker happens
 		// at beginning of a minute, it might read the data collected at end of last minute. To avoid this,
 		// we want to wait until at least two cadvisor collection intervals happens before collecting the metrics
@@ -123,6 +127,7 @@ func (acir *awsContainerInsightReceiver) Shutdown(context.Context) error {
 		return nil
 	}
 	acir.cancel()
+	acir.cancelWg.Wait()
 
 	var errs error
 
@@ -134,7 +139,6 @@ func (acir *awsContainerInsightReceiver) Shutdown(context.Context) error {
 	}
 
 	return errs
-
 }
 
 // collectData collects container stats from cAdvisor and k8s api server (if it is an elected leader)

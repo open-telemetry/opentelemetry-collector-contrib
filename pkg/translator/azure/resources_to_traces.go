@@ -11,7 +11,7 @@ import (
 	jsoniter "github.com/json-iterator/go"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.13.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.13.0"
 	"go.uber.org/zap"
 )
 
@@ -62,8 +62,9 @@ type azureTracesRecord struct {
 var _ ptrace.Unmarshaler = (*TracesUnmarshaler)(nil)
 
 type TracesUnmarshaler struct {
-	Version string
-	Logger  *zap.Logger
+	Version     string
+	Logger      *zap.Logger
+	TimeFormats []string
 }
 
 func (r TracesUnmarshaler) UnmarshalTraces(buf []byte) (ptrace.Traces, error) {
@@ -78,10 +79,10 @@ func (r TracesUnmarshaler) UnmarshalTraces(buf []byte) (ptrace.Traces, error) {
 
 	resourceTraces := t.ResourceSpans().AppendEmpty()
 	resource := resourceTraces.Resource()
-	resource.Attributes().PutStr(conventions.AttributeTelemetrySDKName, scopeName)
-	resource.Attributes().PutStr(conventions.AttributeTelemetrySDKLanguage, conventions.AttributeTelemetrySDKLanguageGo)
-	resource.Attributes().PutStr(conventions.AttributeTelemetrySDKVersion, r.Version)
-	resource.Attributes().PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAzure)
+	resource.Attributes().PutStr(string(conventions.TelemetrySDKNameKey), scopeName)
+	resource.Attributes().PutStr(string(conventions.TelemetrySDKLanguageKey), conventions.TelemetrySDKLanguageGo.Value.AsString())
+	resource.Attributes().PutStr(string(conventions.TelemetrySDKVersionKey), r.Version)
+	resource.Attributes().PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAzure.Value.AsString())
 
 	scopeSpans := resourceTraces.ScopeSpans().AppendEmpty()
 
@@ -95,23 +96,23 @@ func (r TracesUnmarshaler) UnmarshalTraces(buf []byte) (ptrace.Traces, error) {
 
 		resource.Attributes().PutStr("service.name", azureTrace.AppRoleName)
 
-		nanos, err := asTimestamp(azureTrace.Time)
+		nanos, err := asTimestamp(azureTrace.Time, r.TimeFormats...)
 		if err != nil {
 			r.Logger.Warn("Invalid Timestamp", zap.String("time", azureTrace.Time))
 			continue
 		}
 
-		var traceID, traceErr = TraceIDFromHex(azureTrace.OperationID)
+		traceID, traceErr := TraceIDFromHex(azureTrace.OperationID)
 		if traceErr != nil {
 			r.Logger.Warn("Invalid TraceID", zap.String("traceID", azureTrace.OperationID))
 			return t, err
 		}
-		var spanID, spanErr = SpanIDFromHex(azureTrace.SpanID)
+		spanID, spanErr := SpanIDFromHex(azureTrace.SpanID)
 		if spanErr != nil {
 			r.Logger.Warn("Invalid SpanID", zap.String("spanID", azureTrace.SpanID))
 			return t, err
 		}
-		var parentID, parentErr = SpanIDFromHex(azureTrace.ParentID)
+		parentID, parentErr := SpanIDFromHex(azureTrace.ParentID)
 		if parentErr != nil {
 			r.Logger.Warn("Invalid ParentID", zap.String("parentID", azureTrace.ParentID))
 			return t, err
@@ -145,6 +146,12 @@ func (r TracesUnmarshaler) UnmarshalTraces(buf []byte) (ptrace.Traces, error) {
 		span.Attributes().PutStr("http.client_country", azureTrace.ClientCountryOrRegion)
 		span.Attributes().PutStr("http.scheme", scheme)
 		span.Attributes().PutStr("http.method", azureTrace.Properties["HTTP Method"])
+
+		for key, value := range azureTrace.Properties {
+			if key != "HTTP Method" { // HTTP Method is already mapped to http.method
+				span.Attributes().PutStr(key, value)
+			}
+		}
 
 		span.SetKind(ptrace.SpanKindServer)
 		span.SetName(azureTrace.Name)

@@ -7,7 +7,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"fmt"
+	"errors"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
@@ -24,14 +24,13 @@ func createSHA256Function[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (
 	args, ok := oArgs.(*SHA256Arguments[K])
 
 	if !ok {
-		return nil, fmt.Errorf("SHA256Factory args must be of type *SHA256Arguments[K]")
+		return nil, errors.New("SHA256Factory args must be of type *SHA256Arguments[K]")
 	}
 
 	return SHA256HashString(args.Target)
 }
 
 func SHA256HashString[K any](target ottl.StringGetter[K]) (ottl.ExprFunc[K], error) {
-
 	return func(ctx context.Context, tCtx K) (any, error) {
 		val, err := target.Get(ctx, tCtx)
 		if err != nil {

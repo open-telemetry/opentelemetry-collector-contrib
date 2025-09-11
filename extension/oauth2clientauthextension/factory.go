@@ -5,10 +5,10 @@ package oauth2clientauthextension // import "github.com/open-telemetry/opentelem
 
 import (
 	"context"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
-	"go.opentelemetry.io/collector/extension/auth"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension/internal/metadata"
 )
@@ -24,17 +24,11 @@ func NewFactory() extension.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	return &Config{}
+	return &Config{
+		ExpiryBuffer: 5 * time.Minute,
+	}
 }
 
 func createExtension(_ context.Context, set extension.Settings, cfg component.Config) (extension.Extension, error) {
-	ca, err := newClientAuthenticator(cfg.(*Config), set.Logger)
-	if err != nil {
-		return nil, err
-	}
-
-	return auth.NewClient(
-		auth.WithClientRoundTripper(ca.roundTripper),
-		auth.WithClientPerRPCCredentials(ca.perRPCCredentials),
-	), nil
+	return newClientAuthenticator(cfg.(*Config), set.Logger)
 }

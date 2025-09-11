@@ -19,7 +19,7 @@ import (
 	"go.opentelemetry.io/collector/processor/memorylimiterprocessor"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor"
@@ -53,10 +53,8 @@ func TestExamples(t *testing.T) {
 			continue
 		}
 		t.Run(filepath.Base(f.Name()), func(t *testing.T) {
-			t.Setenv("DD_API_KEY", "testvalue")
+			t.Setenv("DD_API_KEY", "aaaaaaaaa")
 			name := filepath.Join(folder, f.Name())
-			// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33594
-			// nolint:staticcheck
 			_, err := otelcoltest.LoadConfigAndValidate(name, factories)
 			require.NoError(t, err, "All yaml config must validate. Please ensure that all necessary component factories are added in newTestComponents()")
 		})
@@ -78,15 +76,13 @@ func TestExamples(t *testing.T) {
 		require.NotEmpty(t, out.Data.YAML)
 
 		data := []byte(out.Data.YAML)
-		f, err := os.CreateTemp("", "ddexporter-yaml-test-")
+		f, err := os.CreateTemp(t.TempDir(), "ddexporter-yaml-test-")
 		require.NoError(t, err)
 		n, err := f.Write(data)
 		require.NoError(t, err)
 		require.Len(t, data, n)
 		require.NoError(t, f.Close())
 		defer os.RemoveAll(f.Name())
-		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33594
-		// nolint:staticcheck
 		_, err = otelcoltest.LoadConfigAndValidate(f.Name(), factories)
 		require.NoError(t, err, "All yaml config must validate. Please ensure that all necessary component factories are added in newTestComponents()")
 	})
@@ -99,7 +95,7 @@ func newTestComponents(t *testing.T) otelcol.Factories {
 		factories otelcol.Factories
 		err       error
 	)
-	factories.Receivers, err = receiver.MakeFactoryMap(
+	factories.Receivers, err = otelcol.MakeFactoryMap[receiver.Factory](
 		[]receiver.Factory{
 			otlpreceiver.NewFactory(),
 			hostmetricsreceiver.NewFactory(),
@@ -109,7 +105,7 @@ func newTestComponents(t *testing.T) otelcol.Factories {
 		}...,
 	)
 	require.NoError(t, err)
-	factories.Processors, err = processor.MakeFactoryMap(
+	factories.Processors, err = otelcol.MakeFactoryMap[processor.Factory](
 		[]processor.Factory{
 			batchprocessor.NewFactory(),
 			memorylimiterprocessor.NewFactory(),
@@ -120,13 +116,13 @@ func newTestComponents(t *testing.T) otelcol.Factories {
 		}...,
 	)
 	require.NoError(t, err)
-	factories.Connectors, err = connector.MakeFactoryMap(
+	factories.Connectors, err = otelcol.MakeFactoryMap[connector.Factory](
 		[]connector.Factory{
 			datadogconnector.NewFactory(),
 		}...,
 	)
 	require.NoError(t, err)
-	factories.Exporters, err = exporter.MakeFactoryMap(
+	factories.Exporters, err = otelcol.MakeFactoryMap[exporter.Factory](
 		[]exporter.Factory{
 			NewFactory(),
 		}...,

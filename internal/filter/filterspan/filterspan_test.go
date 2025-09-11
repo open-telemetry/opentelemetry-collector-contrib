@@ -4,7 +4,6 @@
 package filterspan
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -12,7 +11,7 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
@@ -38,14 +37,14 @@ func TestSpan_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 		{
 			name:        "empty_property",
 			property:    &filterconfig.MatchProperties{},
-			errorString: filterconfig.ErrMissingRequiredField.Error(),
+			errorString: filterconfig.ErrMissingRequiredSpanField.Error(),
 		},
 		{
 			name: "empty_service_span_names_and_attributes",
 			property: &filterconfig.MatchProperties{
 				Services: []string{},
 			},
-			errorString: filterconfig.ErrMissingRequiredField.Error(),
+			errorString: filterconfig.ErrMissingRequiredSpanField.Error(),
 		},
 		{
 			name: "log_properties",
@@ -179,7 +178,7 @@ func TestSpan_Matching_False(t *testing.T) {
 			require.NoError(t, err)
 			assert.NotNil(t, expr)
 
-			val, err := expr.Eval(context.Background(), ottlspan.NewTransformContext(span, library, resource, ptrace.NewScopeSpans(), ptrace.NewResourceSpans()))
+			val, err := expr.Eval(t.Context(), ottlspan.NewTransformContext(span, library, resource, ptrace.NewScopeSpans(), ptrace.NewResourceSpans()))
 			require.NoError(t, err)
 			assert.False(t, val)
 		})
@@ -197,7 +196,7 @@ func TestSpan_MissingServiceName(t *testing.T) {
 	assert.NotNil(t, mp)
 
 	emptySpan := ptrace.NewSpan()
-	val, err := mp.Eval(context.Background(), ottlspan.NewTransformContext(emptySpan, pcommon.NewInstrumentationScope(), pcommon.NewResource(), ptrace.NewScopeSpans(), ptrace.NewResourceSpans()))
+	val, err := mp.Eval(t.Context(), ottlspan.NewTransformContext(emptySpan, pcommon.NewInstrumentationScope(), pcommon.NewResource(), ptrace.NewScopeSpans(), ptrace.NewResourceSpans()))
 	require.NoError(t, err)
 	assert.False(t, val)
 }
@@ -278,7 +277,7 @@ func TestSpan_Matching_True(t *testing.T) {
 	assert.NotNil(t, span)
 
 	resource := pcommon.NewResource()
-	resource.Attributes().PutStr(conventions.AttributeServiceName, "svcA")
+	resource.Attributes().PutStr(string(conventions.ServiceNameKey), "svcA")
 
 	library := pcommon.NewInstrumentationScope()
 
@@ -288,7 +287,7 @@ func TestSpan_Matching_True(t *testing.T) {
 			require.NoError(t, err)
 			assert.NotNil(t, mp)
 
-			val, err := mp.Eval(context.Background(), ottlspan.NewTransformContext(span, library, resource, ptrace.NewScopeSpans(), ptrace.NewResourceSpans()))
+			val, err := mp.Eval(t.Context(), ottlspan.NewTransformContext(span, library, resource, ptrace.NewScopeSpans(), ptrace.NewResourceSpans()))
 			require.NoError(t, err)
 			assert.True(t, val)
 		})
@@ -304,7 +303,6 @@ func TestServiceNameForResource(t *testing.T) {
 	resource := td.ResourceSpans().At(0).Resource()
 	name = serviceNameForResource(resource)
 	require.Equal(t, "<nil-service-name>", name)
-
 }
 
 func Test_NewSkipExpr_With_Bridge(t *testing.T) {
@@ -1215,12 +1213,12 @@ func Test_NewSkipExpr_With_Bridge(t *testing.T) {
 
 			boolExpr, err := NewSkipExpr(tt.condition)
 			require.NoError(t, err)
-			expectedResult, err := boolExpr.Eval(context.Background(), tCtx)
+			expectedResult, err := boolExpr.Eval(t.Context(), tCtx)
 			assert.NoError(t, err)
 
 			ottlBoolExpr, err := filterottl.NewSpanSkipExprBridge(tt.condition)
 			assert.NoError(t, err)
-			ottlResult, err := ottlBoolExpr.Eval(context.Background(), tCtx)
+			ottlResult, err := ottlBoolExpr.Eval(t.Context(), tCtx)
 			assert.NoError(t, err)
 
 			assert.Equal(t, expectedResult, ottlResult)
@@ -1275,7 +1273,7 @@ func BenchmarkFilterspan_NewSkipExpr(b *testing.B) {
 		span.SetKind(ptrace.SpanKindClient)
 
 		resource := pcommon.NewResource()
-		resource.Attributes().PutStr(conventions.AttributeServiceName, "svcA")
+		resource.Attributes().PutStr(string(conventions.ServiceNameKey), "svcA")
 
 		scope := pcommon.NewInstrumentationScope()
 
@@ -1284,7 +1282,7 @@ func BenchmarkFilterspan_NewSkipExpr(b *testing.B) {
 		b.Run(tt.name, func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
 				var skip bool
-				skip, err = skipExpr.Eval(context.Background(), tCtx)
+				skip, err = skipExpr.Eval(b.Context(), tCtx)
 				assert.NoError(b, err)
 				assert.Equal(b, tt.skip, skip)
 			}

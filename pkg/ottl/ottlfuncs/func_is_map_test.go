@@ -52,21 +52,21 @@ func Test_IsMap(t *testing.T) {
 					return tt.value, nil
 				},
 			})
-			result, err := exprFunc(context.Background(), nil)
+			result, err := exprFunc(t.Context(), nil)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
 		})
 	}
 }
 
-// nolint:errorlint
+//nolint:errorlint
 func Test_IsMap_Error(t *testing.T) {
 	exprFunc := isMap[any](&ottl.StandardPMapGetter[any]{
 		Getter: func(context.Context, any) (any, error) {
 			return nil, ottl.TypeError("")
 		},
 	})
-	result, err := exprFunc(context.Background(), nil)
+	result, err := exprFunc(t.Context(), nil)
 	assert.Equal(t, false, result)
 	assert.Error(t, err)
 	_, ok := err.(ottl.TypeError)

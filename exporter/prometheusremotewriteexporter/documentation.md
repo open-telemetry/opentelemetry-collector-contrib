@@ -6,6 +6,14 @@
 
 The following telemetry is emitted by this component.
 
+### otelcol_exporter_prometheusremotewrite_consumers
+
+Number of configured workers to use to fan out the outgoing requests
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {consumer} | Sum | Int | false |
+
 ### otelcol_exporter_prometheusremotewrite_failed_translations
 
 Number of translation operations that failed to translate metrics from Otel to Prometheus
@@ -14,6 +22,14 @@ Number of translation operations that failed to translate metrics from Otel to P
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
+### otelcol_exporter_prometheusremotewrite_sent_batches
+
+Number of remote write request batches sent to the remote write endpoint regardless of success or failure
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {batch} | Sum | Int | true |
+
 ### otelcol_exporter_prometheusremotewrite_translated_time_series
 
 Number of Prometheus time series that were translated from OTel metrics
@@ -21,3 +37,99 @@ Number of Prometheus time series that were translated from OTel metrics
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
+
+### otelcol_exporter_prometheusremotewrite_wal_bytes_read
+
+Total number of bytes read from the WAL
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| By | Sum | Int | true |
+
+### otelcol_exporter_prometheusremotewrite_wal_bytes_written
+
+Total number of bytes written to the WAL
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| By | Sum | Int | true |
+
+### otelcol_exporter_prometheusremotewrite_wal_lag
+
+WAL lag
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+### otelcol_exporter_prometheusremotewrite_wal_read_latency
+
+Response latency in ms for the WAL reads.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| ms | Histogram | Int |
+
+### otelcol_exporter_prometheusremotewrite_wal_reads
+
+Number of WAL reads
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Sum | Int | true |
+
+### otelcol_exporter_prometheusremotewrite_wal_reads_failures
+
+Number of WAL reads that failed
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Sum | Int | true |
+
+### otelcol_exporter_prometheusremotewrite_wal_write_latency
+
+Response latency in ms for the WAL writes.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| ms | Histogram | Int |
+
+### otelcol_exporter_prometheusremotewrite_wal_writes
+
+Number of WAL writes
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Sum | Int | true |
+
+### otelcol_exporter_prometheusremotewrite_wal_writes_failures
+
+Number of WAL writes that failed
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Sum | Int | true |
+
+### otelcol_exporter_prometheusremotewrite_written_exemplars
+
+Number of Prometheus Exemplars that were successfully written to the remote write endpoint (only available when using remote write v2)
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {exemplar} | Sum | Int | true |
+
+### otelcol_exporter_prometheusremotewrite_written_histograms
+
+Number of Prometheus Histograms that were successfully written to the remote write endpoint (only available when using remote write v2)
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {histogram} | Sum | Int | true |
+
+### otelcol_exporter_prometheusremotewrite_written_samples
+
+Number of Prometheus Samples that were successfully written to the remote write endpoint (only available when using remote write v2)
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {sample} | Sum | Int | true |

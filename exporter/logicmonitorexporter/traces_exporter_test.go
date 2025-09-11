@@ -4,7 +4,6 @@
 package logicmonitorexporter
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -16,6 +15,8 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logicmonitorexporter/internal/metadata"
 )
 
 func Test_NewTracesExporter(t *testing.T) {
@@ -26,8 +27,8 @@ func Test_NewTracesExporter(t *testing.T) {
 			},
 			APIToken: APIToken{AccessID: "testid", AccessKey: "testkey"},
 		}
-		set := exportertest.NewNopSettings()
-		exp := newTracesExporter(context.Background(), config, set)
+		set := exportertest.NewNopSettings(metadata.Type)
+		exp := newTracesExporter(t.Context(), config, set)
 		assert.NotNil(t, exp)
 	})
 }
@@ -42,7 +43,7 @@ func TestPushTraceData(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	params := exportertest.NewNopSettings()
+	params := exportertest.NewNopSettings(metadata.Type)
 	f := NewFactory()
 	config := &Config{
 		ClientConfig: confighttp.ClientConfig{
@@ -50,7 +51,7 @@ func TestPushTraceData(t *testing.T) {
 		},
 		APIToken: APIToken{AccessID: "testid", AccessKey: "testkey"},
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 	exp, err := f.CreateTraces(ctx, params, config)
 	assert.NoError(t, err)
 	assert.NoError(t, exp.Start(ctx, componenttest.NewNopHost()))
@@ -58,7 +59,7 @@ func TestPushTraceData(t *testing.T) {
 
 	testTraces := ptrace.NewTraces()
 	generateTraces().CopyTo(testTraces)
-	err = exp.ConsumeTraces(context.Background(), testTraces)
+	err = exp.ConsumeTraces(t.Context(), testTraces)
 	assert.NoError(t, err)
 }
 

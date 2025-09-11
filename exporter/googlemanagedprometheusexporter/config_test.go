@@ -25,8 +25,6 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Exporters[metadata.Type] = factory
-	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33594
-	// nolint:staticcheck
 	cfg, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
@@ -77,12 +75,14 @@ func TestLoadConfig(t *testing.T) {
 						Regex: "host.id",
 					},
 				},
+				CumulativeNormalization: false,
 			},
 		},
-		QueueSettings: exporterhelper.QueueConfig{
+		QueueSettings: exporterhelper.QueueBatchConfig{
 			Enabled:      true,
 			NumConsumers: 2,
 			QueueSize:    10,
+			Sizer:        exporterhelper.RequestSizerTypeRequests,
 		},
 	}, r1)
 }

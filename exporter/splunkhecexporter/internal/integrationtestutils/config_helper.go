@@ -10,7 +10,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-var configFilePth = "./testdata/integration_tests_config.yaml"
+var configFilePath = "./testdata/integration_tests_config.yaml"
 
 type IntegrationTestsConfig struct {
 	Host           string `yaml:"HOST"`
@@ -28,7 +28,7 @@ type IntegrationTestsConfig struct {
 
 func GetConfigVariable(key string) string {
 	// Read YAML file
-	fileData, err := os.ReadFile(configFilePth)
+	fileData, err := os.ReadFile(configFilePath)
 	if err != nil {
 		fmt.Println("Error reading file:", err)
 	}
@@ -68,9 +68,9 @@ func GetConfigVariable(key string) string {
 	}
 }
 
-func SetConfigVariable(key string, value string) {
+func SetConfigVariable(key, value string) {
 	// Read YAML file
-	fileData, err := os.ReadFile(configFilePth)
+	fileData, err := os.ReadFile(configFilePath)
 	if err != nil {
 		fmt.Println("Error reading file:", err)
 	}
@@ -102,12 +102,11 @@ func SetConfigVariable(key string, value string) {
 	}
 
 	// Write yaml file
-	err = os.WriteFile(configFilePth, newData, 0600)
+	err = os.WriteFile(configFilePath, newData, 0o600)
 	if err != nil {
 		fmt.Printf("Error writing file: %v", err)
 		return
 	}
 
 	fmt.Println("Host value updated successfully!")
-
 }

@@ -9,14 +9,16 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	semconv "go.opentelemetry.io/collector/semconv/v1.9.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/watch"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/internal/metadata"
 )
 
 type attrUpdaterFunc func(pcommon.Map)
 
-func watchObjectsToLogData(event *watch.Event, observedAt time.Time, config *K8sObjectsConfig) (plog.Logs, error) {
+func watchObjectsToLogData(event *watch.Event, observedAt time.Time, config *K8sObjectsConfig, version string) (plog.Logs, error) {
 	udata, ok := event.Object.(*unstructured.Unstructured)
 	if !ok {
 		return plog.Logs{}, fmt.Errorf("received data that wasnt unstructure, %v", event)
@@ -31,7 +33,7 @@ func watchObjectsToLogData(event *watch.Event, observedAt time.Time, config *K8s
 		}},
 	}
 
-	return unstructuredListToLogData(&ul, observedAt, config, func(attrs pcommon.Map) {
+	return unstructuredListToLogData(&ul, observedAt, config, version, func(attrs pcommon.Map) {
 		objectMeta := udata.Object["metadata"].(map[string]any)
 		name := objectMeta["name"].(string)
 		if name != "" {
@@ -41,26 +43,28 @@ func watchObjectsToLogData(event *watch.Event, observedAt time.Time, config *K8s
 	}), nil
 }
 
-func pullObjectsToLogData(event *unstructured.UnstructuredList, observedAt time.Time, config *K8sObjectsConfig) plog.Logs {
-	return unstructuredListToLogData(event, observedAt, config)
+func pullObjectsToLogData(event *unstructured.UnstructuredList, observedAt time.Time, config *K8sObjectsConfig, version string) plog.Logs {
+	return unstructuredListToLogData(event, observedAt, config, version)
 }
 
-func unstructuredListToLogData(event *unstructured.UnstructuredList, observedAt time.Time, config *K8sObjectsConfig, attrUpdaters ...attrUpdaterFunc) plog.Logs {
+func unstructuredListToLogData(event *unstructured.UnstructuredList, observedAt time.Time, config *K8sObjectsConfig, version string, attrUpdaters ...attrUpdaterFunc) plog.Logs {
 	out := plog.NewLogs()
 	resourceLogs := out.ResourceLogs()
 	namespaceResourceMap := make(map[string]plog.LogRecordSlice)
 
 	for _, e := range event.Items {
-		logSlice, ok := namespaceResourceMap[e.GetNamespace()]
+		logSlice, ok := namespaceResourceMap[getNamespace(e)]
 		if !ok {
 			rl := resourceLogs.AppendEmpty()
 			resourceAttrs := rl.Resource().Attributes()
-			if namespace := e.GetNamespace(); namespace != "" {
-				resourceAttrs.PutStr(semconv.AttributeK8SNamespaceName, namespace)
+			if namespace := getNamespace(e); namespace != "" {
+				resourceAttrs.PutStr(string(semconv.K8SNamespaceNameKey), namespace)
 			}
 			sl := rl.ScopeLogs().AppendEmpty()
+			sl.Scope().SetName(metadata.ScopeName)
+			sl.Scope().SetVersion(version)
 			logSlice = sl.LogRecords()
-			namespaceResourceMap[e.GetNamespace()] = logSlice
+			namespaceResourceMap[getNamespace(e)] = logSlice
 		}
 		record := logSlice.AppendEmpty()
 		record.SetObservedTimestamp(pcommon.NewTimestampFromTime(observedAt))
@@ -78,4 +82,16 @@ func unstructuredListToLogData(event *unstructured.UnstructuredList, observedAt 
 		destMap.FromRaw(e.Object)
 	}
 	return out
+}
+
+func getNamespace(e unstructured.Unstructured) string {
+	// first, try to use the GetNamespace() method, which checks for the metadata.namespace property
+	if namespace := e.GetNamespace(); namespace != "" {
+		return namespace
+	}
+	// try to look up namespace in object.metadata.namespace (for objects reported via watch mode)
+	if namespace, ok, _ := unstructured.NestedString(e.Object, "object", "metadata", "namespace"); ok {
+		return namespace
+	}
+	return ""
 }

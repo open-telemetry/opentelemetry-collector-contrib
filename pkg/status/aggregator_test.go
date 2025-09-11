@@ -20,7 +20,7 @@ import (
 
 func TestAggregateStatus(t *testing.T) {
 	agg := status.NewAggregator(status.PriorityPermanent)
-	traces := testhelpers.NewPipelineMetadata("traces")
+	traces := testhelpers.NewPipelineMetadata(pipeline.SignalTraces)
 
 	t.Run("zero value", func(t *testing.T) {
 		st, ok := agg.AggregateStatus(status.ScopeAll, status.Concise)
@@ -69,7 +69,7 @@ func TestAggregateStatus(t *testing.T) {
 
 func TestAggregateStatusVerbose(t *testing.T) {
 	agg := status.NewAggregator(status.PriorityPermanent)
-	traces := testhelpers.NewPipelineMetadata("traces")
+	traces := testhelpers.NewPipelineMetadata(pipeline.SignalTraces)
 	tracesKey := toPipelineKey(traces.PipelineID)
 
 	t.Run("zero value", func(t *testing.T) {
@@ -127,12 +127,11 @@ func TestAggregateStatusVerbose(t *testing.T) {
 			st.ComponentStatusMap[tracesKey].ComponentStatusMap[toComponentKey(traces.ExporterID)],
 		)
 	})
-
 }
 
 func TestAggregateStatusPriorityRecoverable(t *testing.T) {
 	agg := status.NewAggregator(status.PriorityRecoverable)
-	traces := testhelpers.NewPipelineMetadata("traces")
+	traces := testhelpers.NewPipelineMetadata(pipeline.SignalTraces)
 
 	testhelpers.SeedAggregator(agg, traces.InstanceIDs(), componentstatus.StatusOK)
 
@@ -175,7 +174,7 @@ func TestAggregateStatusPriorityRecoverable(t *testing.T) {
 
 func TestPipelineAggregateStatus(t *testing.T) {
 	agg := status.NewAggregator(status.PriorityPermanent)
-	traces := testhelpers.NewPipelineMetadata("traces")
+	traces := testhelpers.NewPipelineMetadata(pipeline.SignalTraces)
 
 	t.Run("non existent pipeline", func(t *testing.T) {
 		st, ok := agg.AggregateStatus("doesnotexist", status.Concise)
@@ -211,7 +210,7 @@ func TestPipelineAggregateStatus(t *testing.T) {
 
 func TestPipelineAggregateStatusVerbose(t *testing.T) {
 	agg := status.NewAggregator(status.PriorityPermanent)
-	traces := testhelpers.NewPipelineMetadata("traces")
+	traces := testhelpers.NewPipelineMetadata(pipeline.SignalTraces)
 
 	t.Run("non existent pipeline", func(t *testing.T) {
 		st, ok := agg.AggregateStatus("doesnotexist", status.Verbose)
@@ -257,9 +256,8 @@ func TestPipelineAggregateStatusVerbose(t *testing.T) {
 func TestAggregateStatusExtensions(t *testing.T) {
 	agg := status.NewAggregator(status.PriorityPermanent)
 
-	extsID := pipeline.MustNewID("extensions")
-	extInstanceID1 := componentstatus.NewInstanceID(component.MustNewID("ext1"), component.KindExtension).WithPipelines(extsID)
-	extInstanceID2 := componentstatus.NewInstanceID(component.MustNewID("ext2"), component.KindExtension).WithPipelines(extsID)
+	extInstanceID1 := componentstatus.NewInstanceID(component.MustNewID("ext1"), component.KindExtension)
+	extInstanceID2 := componentstatus.NewInstanceID(component.MustNewID("ext2"), component.KindExtension)
 	extInstanceIDs := []*componentstatus.InstanceID{extInstanceID1, extInstanceID2}
 
 	testhelpers.SeedAggregator(agg, extInstanceIDs, componentstatus.StatusOK)
@@ -304,8 +302,8 @@ func TestStreaming(t *testing.T) {
 	agg := status.NewAggregator(status.PriorityPermanent)
 	defer agg.Close()
 
-	traces := testhelpers.NewPipelineMetadata("traces")
-	metrics := testhelpers.NewPipelineMetadata("metrics")
+	traces := testhelpers.NewPipelineMetadata(pipeline.SignalTraces)
+	metrics := testhelpers.NewPipelineMetadata(pipeline.SignalMetrics)
 
 	traceEvents, traceUnsub := agg.Subscribe(status.Scope(traces.PipelineID.String()), status.Concise)
 	defer traceUnsub()
@@ -365,7 +363,7 @@ func TestStreamingVerbose(t *testing.T) {
 	agg := status.NewAggregator(status.PriorityPermanent)
 	defer agg.Close()
 
-	traces := testhelpers.NewPipelineMetadata("traces")
+	traces := testhelpers.NewPipelineMetadata(pipeline.SignalTraces)
 	tracesKey := toPipelineKey(traces.PipelineID)
 
 	allEvents, unsub := agg.Subscribe(status.ScopeAll, status.Verbose)
@@ -425,7 +423,7 @@ func TestUnsubscribe(t *testing.T) {
 	agg := status.NewAggregator(status.PriorityPermanent)
 	defer agg.Close()
 
-	traces := testhelpers.NewPipelineMetadata("traces")
+	traces := testhelpers.NewPipelineMetadata(pipeline.SignalTraces)
 
 	traceEvents, traceUnsub := agg.Subscribe(status.Scope(traces.PipelineID.String()), status.Concise)
 	allEvents, allUnsub := agg.Subscribe(status.ScopeAll, status.Concise)
@@ -459,7 +457,7 @@ func assertEventsMatch(
 	expectedStatus componentstatus.Status,
 	statuses ...*status.AggregateStatus,
 ) {
-	err0 := statuses[0].Event.Err()
+	err0 := statuses[0].Err()
 	for _, st := range statuses {
 		ev := st.Event
 		assert.Equal(t, expectedStatus, ev.Status())

@@ -4,7 +4,6 @@
 package influxdbexporter
 
 import (
-	"context"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -130,11 +129,11 @@ func Test_influxHTTPWriterBatch_maxPayload(t *testing.T) {
 				},
 			}
 
-			err := batch.EnqueuePoint(context.Background(), "m", map[string]string{"k": "v"}, map[string]any{"f": int64(1)}, time.Unix(1, 0), 0)
+			err := batch.EnqueuePoint(t.Context(), "m", map[string]string{"k": "v"}, map[string]any{"f": int64(1)}, time.Unix(1, 0), 0)
 			require.NoError(t, err)
-			err = batch.EnqueuePoint(context.Background(), "m", map[string]string{"k": "v"}, map[string]any{"f": int64(2)}, time.Unix(2, 0), 0)
+			err = batch.EnqueuePoint(t.Context(), "m", map[string]string{"k": "v"}, map[string]any{"f": int64(2)}, time.Unix(2, 0), 0)
 			require.NoError(t, err)
-			err = batch.WriteBatch(context.Background())
+			err = batch.WriteBatch(t.Context())
 			require.NoError(t, err)
 
 			if testCase.expectMultipleRequests {
@@ -158,13 +157,13 @@ func Test_influxHTTPWriterBatch_EnqueuePoint_emptyTagValue(t *testing.T) {
 	t.Cleanup(noopHTTPServer.Close)
 
 	nowTime := time.Unix(1000, 2000)
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = noopHTTPServer.URL
 
 	influxWriter, err := newInfluxHTTPWriter(
 		new(common.NoopLogger),
 		&Config{
-			ClientConfig: confighttp.ClientConfig{
-				Endpoint: noopHTTPServer.URL,
-			},
+			ClientConfig: clientConfig,
 		},
 		componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
@@ -172,14 +171,14 @@ func Test_influxHTTPWriterBatch_EnqueuePoint_emptyTagValue(t *testing.T) {
 	influxWriterBatch := influxWriter.NewBatch()
 
 	err = influxWriterBatch.EnqueuePoint(
-		context.Background(),
+		t.Context(),
 		"m",
 		map[string]string{"k": "v", "empty": ""},
 		map[string]any{"f": int64(1)},
 		nowTime,
 		common.InfluxMetricValueTypeUntyped)
 	require.NoError(t, err)
-	err = influxWriterBatch.WriteBatch(context.Background())
+	err = influxWriterBatch.WriteBatch(t.Context())
 	require.NoError(t, err)
 
 	if assert.NotNil(t, recordedRequest) {

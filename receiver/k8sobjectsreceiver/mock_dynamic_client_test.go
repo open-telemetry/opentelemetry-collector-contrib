@@ -30,7 +30,6 @@ func newMockDynamicClient() mockDynamicClient {
 	return mockDynamicClient{
 		client: fakeClient,
 	}
-
 }
 
 func (c mockDynamicClient) getMockDynamicClient() (dynamic.Interface, error) {

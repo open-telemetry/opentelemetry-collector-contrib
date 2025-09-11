@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
@@ -19,6 +20,25 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/metadata"
 )
+
+func assertConfigContainsDefaultFunctions(t *testing.T, config Config) {
+	t.Helper()
+	for _, f := range DefaultLogFunctions() {
+		assert.Contains(t, config.logFunctions, f.Name(), "missing log function %v", f.Name())
+	}
+	for _, f := range DefaultDataPointFunctions() {
+		assert.Contains(t, config.dataPointFunctions, f.Name(), "missing data point function %v", f.Name())
+	}
+	for _, f := range DefaultMetricFunctions() {
+		assert.Contains(t, config.metricFunctions, f.Name(), "missing metric function %v", f.Name())
+	}
+	for _, f := range DefaultSpanFunctions() {
+		assert.Contains(t, config.spanFunctions, f.Name(), "missing span function %v", f.Name())
+	}
+	for _, f := range DefaultSpanEventFunctions() {
+		assert.Contains(t, config.spanEventFunctions, f.Name(), "missing span event function %v", f.Name())
+	}
+}
 
 // TestLoadingConfigRegexp tests loading testdata/config_strict.yaml
 func TestLoadingConfigStrict(t *testing.T) {
@@ -89,15 +109,15 @@ func TestLoadingConfigStrict(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, component.ValidateConfig(cfg))
-			assert.Equal(t, tt.expected, cfg)
+			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.EqualExportedValues(t, tt.expected, cfg)
+			assertConfigContainsDefaultFunctions(t, *cfg.(*Config))
 		})
 	}
 }
 
 // TestLoadingConfigStrictLogs tests loading testdata/config_logs_strict.yaml
 func TestLoadingConfigStrictLogs(t *testing.T) {
-
 	testDataLogPropertiesInclude := &LogMatchProperties{
 		LogMatchType: strictType,
 		ResourceAttributes: []filterconfig.Attribute{
@@ -172,15 +192,15 @@ func TestLoadingConfigStrictLogs(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, component.ValidateConfig(cfg))
-			assert.Equal(t, tt.expected, cfg)
+			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.EqualExportedValues(t, tt.expected, cfg)
+			assertConfigContainsDefaultFunctions(t, *cfg.(*Config))
 		})
 	}
 }
 
 // TestLoadingConfigSeverityLogsStrict tests loading testdata/config_logs_severity_strict.yaml
 func TestLoadingConfigSeverityLogsStrict(t *testing.T) {
-
 	testDataLogPropertiesInclude := &LogMatchProperties{
 		LogMatchType:  strictType,
 		SeverityTexts: []string{"INFO"},
@@ -235,8 +255,9 @@ func TestLoadingConfigSeverityLogsStrict(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, component.ValidateConfig(cfg))
-			assert.Equal(t, tt.expected, cfg)
+			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.EqualExportedValues(t, tt.expected, cfg)
+			assertConfigContainsDefaultFunctions(t, *cfg.(*Config))
 		})
 	}
 }
@@ -297,15 +318,15 @@ func TestLoadingConfigSeverityLogsRegexp(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, component.ValidateConfig(cfg))
-			assert.Equal(t, tt.expected, cfg)
+			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.EqualExportedValues(t, tt.expected, cfg)
+			assertConfigContainsDefaultFunctions(t, *cfg.(*Config))
 		})
 	}
 }
 
 // TestLoadingConfigBodyLogsStrict tests loading testdata/config_logs_body_strict.yaml
 func TestLoadingConfigBodyLogsStrict(t *testing.T) {
-
 	testDataLogPropertiesInclude := &LogMatchProperties{
 		LogMatchType: strictType,
 		LogBodies:    []string{"This is an important event"},
@@ -360,15 +381,15 @@ func TestLoadingConfigBodyLogsStrict(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, component.ValidateConfig(cfg))
-			assert.Equal(t, tt.expected, cfg)
+			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.EqualExportedValues(t, tt.expected, cfg)
+			assertConfigContainsDefaultFunctions(t, *cfg.(*Config))
 		})
 	}
 }
 
 // TestLoadingConfigBodyLogsStrict tests loading testdata/config_logs_body_regexp.yaml
 func TestLoadingConfigBodyLogsRegexp(t *testing.T) {
-
 	testDataLogPropertiesInclude := &LogMatchProperties{
 		LogMatchType: regexpType,
 		LogBodies:    []string{"^IMPORTANT:"},
@@ -423,8 +444,9 @@ func TestLoadingConfigBodyLogsRegexp(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, component.ValidateConfig(cfg))
-			assert.Equal(t, tt.expected, cfg)
+			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.EqualExportedValues(t, tt.expected, cfg)
+			assertConfigContainsDefaultFunctions(t, *cfg.(*Config))
 		})
 	}
 }
@@ -488,8 +510,9 @@ func TestLoadingConfigMinSeverityNumberLogs(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, component.ValidateConfig(cfg))
-			assert.Equal(t, tt.expected, cfg)
+			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.EqualExportedValues(t, tt.expected, cfg)
+			assertConfigContainsDefaultFunctions(t, *cfg.(*Config))
 		})
 	}
 }
@@ -577,8 +600,9 @@ func TestLoadingConfigRegexp(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, component.ValidateConfig(cfg))
-			assert.Equal(t, tt.expected, cfg)
+			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.EqualExportedValues(t, tt.expected, cfg)
+			assertConfigContainsDefaultFunctions(t, *cfg.(*Config))
 		})
 	}
 }
@@ -627,8 +651,9 @@ func TestLoadingSpans(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, component.ValidateConfig(cfg))
-			assert.Equal(t, tt.expected, cfg)
+			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.EqualExportedValues(t, tt.expected, cfg)
+			assertConfigContainsDefaultFunctions(t, *cfg.(*Config))
 		})
 	}
 }
@@ -712,8 +737,9 @@ func TestLoadingConfigExpr(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, component.ValidateConfig(cfg))
-			assert.Equal(t, tt.expected, cfg)
+			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.EqualExportedValues(t, tt.expected, cfg)
+			assertConfigContainsDefaultFunctions(t, *cfg.(*Config))
 		})
 	}
 }
@@ -832,7 +858,6 @@ func TestLogSeverity_severityValidate(t *testing.T) {
 }
 
 func TestLoadingConfigOTTL(t *testing.T) {
-
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_ottl.yaml"))
 	require.NoError(t, err)
 
@@ -920,13 +945,14 @@ func TestLoadingConfigOTTL(t *testing.T) {
 
 			if tt.expected == nil {
 				if tt.errorMessage != "" {
-					assert.EqualError(t, component.ValidateConfig(cfg), tt.errorMessage)
+					assert.EqualError(t, xconfmap.Validate(cfg), tt.errorMessage)
 				} else {
-					assert.Error(t, component.ValidateConfig(cfg))
+					assert.Error(t, xconfmap.Validate(cfg))
 				}
 			} else {
-				assert.NoError(t, component.ValidateConfig(cfg))
-				assert.Equal(t, tt.expected, cfg)
+				assert.NoError(t, xconfmap.Validate(cfg))
+				assert.EqualExportedValues(t, tt.expected, cfg)
+				assertConfigContainsDefaultFunctions(t, *cfg.(*Config))
 			}
 		})
 	}

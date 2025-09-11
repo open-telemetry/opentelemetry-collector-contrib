@@ -4,7 +4,6 @@
 package signalfxexporter
 
 import (
-	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -22,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 )
@@ -38,7 +38,7 @@ func TestCreateMetrics(t *testing.T) {
 	c.AccessToken = "access_token"
 	c.Realm = "us0"
 
-	_, err := createMetricsExporter(context.Background(), exportertest.NewNopSettings(), cfg)
+	_, err := createMetricsExporter(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
 	assert.NoError(t, err)
 }
 
@@ -48,7 +48,7 @@ func TestCreateTraces(t *testing.T) {
 	c.AccessToken = "access_token"
 	c.Realm = "us0"
 
-	_, err := createTracesExporter(context.Background(), exportertest.NewNopSettings(), cfg)
+	_, err := createTracesExporter(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
 	assert.NoError(t, err)
 }
 
@@ -57,7 +57,7 @@ func TestCreateTracesNoAccessToken(t *testing.T) {
 	c := cfg.(*Config)
 	c.Realm = "us0"
 
-	_, err := createTracesExporter(context.Background(), exportertest.NewNopSettings(), cfg)
+	_, err := createTracesExporter(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
 	assert.EqualError(t, err, "access_token is required")
 }
 
@@ -70,8 +70,8 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	c.Realm = "us0"
 
 	exp, err := factory.CreateMetrics(
-		context.Background(),
-		exportertest.NewNopSettings(),
+		t.Context(),
+		exportertest.NewNopSettings(metadata.Type),
 		cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)
@@ -81,20 +81,20 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	expCfg.AccessToken = "testToken"
 	expCfg.Realm = "us1"
 	exp, err = factory.CreateMetrics(
-		context.Background(),
-		exportertest.NewNopSettings(),
+		t.Context(),
+		exportertest.NewNopSettings(metadata.Type),
 		cfg)
 	assert.NoError(t, err)
 	require.NotNil(t, exp)
 
 	logExp, err := factory.CreateLogs(
-		context.Background(),
-		exportertest.NewNopSettings(),
+		t.Context(),
+		exportertest.NewNopSettings(metadata.Type),
 		cfg)
 	assert.NoError(t, err)
 	require.NotNil(t, logExp)
 
-	assert.NoError(t, exp.Shutdown(context.Background()))
+	assert.NoError(t, exp.Shutdown(t.Context()))
 }
 
 func TestCreateMetrics_CustomConfig(t *testing.T) {
@@ -110,7 +110,7 @@ func TestCreateMetrics_CustomConfig(t *testing.T) {
 		},
 	}
 
-	te, err := createMetricsExporter(context.Background(), exportertest.NewNopSettings(), config)
+	te, err := createMetricsExporter(t.Context(), exportertest.NewNopSettings(metadata.Type), config)
 	assert.NoError(t, err)
 	assert.NotNil(t, te)
 }
@@ -584,7 +584,6 @@ func TestDefaultExcludesTranslated(t *testing.T) {
 	// (because cpu.utilization_per_core is supplied) and should not be excluded
 	require.Len(t, dps, 1)
 	require.Equal(t, "cpu.utilization", dps[0].Metric)
-
 }
 
 func TestDefaultExcludes_not_translated(t *testing.T) {
@@ -600,7 +599,7 @@ func TestDefaultExcludes_not_translated(t *testing.T) {
 	require.NoError(t, err)
 
 	md := getMetrics(metrics)
-	require.Equal(t, 68, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())
+	require.Equal(t, 54, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())
 	dps := converter.MetricsToSignalFxV2(md)
 	require.Empty(t, dps)
 }

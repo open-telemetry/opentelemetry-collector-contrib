@@ -26,12 +26,11 @@ func getInterfacesStats(stats *cinfo.ContainerStats) []cinfo.InterfaceStats {
 	return ifceStats
 }
 
-func (n *NetMetricExtractor) HasValue(info *cinfo.ContainerInfo) bool {
+func (*NetMetricExtractor) HasValue(info *cinfo.ContainerInfo) bool {
 	return info.Spec.HasNetwork
 }
 
 func (n *NetMetricExtractor) GetValue(info *cinfo.ContainerInfo, _ CPUMemInfoProvider, containerType string) []*CAdvisorMetric {
-
 	// Just a protection here, there is no Container level Net metrics
 	if containerType == ci.TypePod || containerType == ci.TypeContainer {
 		return nil

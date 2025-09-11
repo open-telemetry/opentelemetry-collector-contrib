@@ -47,6 +47,25 @@ type WriterOperator struct {
 	OutputOperators []operator.Operator
 }
 
+// WriteBatch writes a batch of entries to the outputs of the operator.
+// A batch is a collection of entries that are sent in one go.
+func (w *WriterOperator) WriteBatch(ctx context.Context, entries []*entry.Entry) error {
+	for i, op := range w.OutputOperators {
+		if i == len(w.OutputOperators)-1 {
+			return op.ProcessBatch(ctx, entries)
+		}
+		copyOfEntries := make([]*entry.Entry, 0, len(entries))
+		for i := range entries {
+			copyOfEntries = append(copyOfEntries, entries[i].Copy())
+		}
+		err := op.ProcessBatch(ctx, copyOfEntries)
+		if err != nil {
+			w.Logger().Error("Failed to process entries", zap.Error(err))
+		}
+	}
+	return nil
+}
+
 // Write will write an entry to the outputs of the operator.
 func (w *WriterOperator) Write(ctx context.Context, e *entry.Entry) error {
 	for i, op := range w.OutputOperators {
@@ -62,7 +81,7 @@ func (w *WriterOperator) Write(ctx context.Context, e *entry.Entry) error {
 }
 
 // CanOutput always returns true for a writer operator.
-func (w *WriterOperator) CanOutput() bool {
+func (*WriterOperator) CanOutput() bool {
 	return true
 }
 
@@ -103,7 +122,7 @@ func (w *WriterOperator) SetOutputIDs(opIDs []string) {
 }
 
 // FindOperator will find an operator matching the supplied id.
-func (w *WriterOperator) findOperator(operators []operator.Operator, operatorID string) (operator.Operator, bool) {
+func (*WriterOperator) findOperator(operators []operator.Operator, operatorID string) (operator.Operator, bool) {
 	for _, operator := range operators {
 		if operator.ID() == operatorID {
 			return operator, true
@@ -111,3 +130,5 @@ func (w *WriterOperator) findOperator(operators []operator.Operator, operatorID 
 	}
 	return nil, false
 }
+
+type WriteFunction = func(context.Context, *entry.Entry) error

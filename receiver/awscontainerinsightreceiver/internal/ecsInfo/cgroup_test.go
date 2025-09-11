@@ -45,7 +45,6 @@ func TestGetCGroupPathForTask(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			got, err := getCGroupPathForTask(cgroupMount, controller, tt.input, clusterName)
 
 			if tt.err != nil {
@@ -96,7 +95,6 @@ func TestGetCGroupPathFromARN(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			got, err := getTaskCgroupPathFromARN(tt.input)
 
 			if tt.err != nil {
@@ -110,7 +108,6 @@ func TestGetCGroupPathFromARN(t *testing.T) {
 }
 
 func TestGetCGroupMountPoint(t *testing.T) {
-
 	tests := []struct {
 		name    string
 		input   string
@@ -149,7 +146,6 @@ func TestGetCGroupMountPoint(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			got, err := getCGroupMountPoint(tt.input)
 
 			if tt.err != nil {
@@ -160,11 +156,10 @@ func TestGetCGroupMountPoint(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func TestGetCPUReservedInTask(t *testing.T) {
-	var ctx, cancel = context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 	taskinfo := &MockTaskInfo{
 		tasks: []ECSTask{},
@@ -217,11 +212,10 @@ func TestGetCPUReservedInTask(t *testing.T) {
 			assert.Equal(t, tt.expectRes, got)
 		})
 	}
-
 }
 
 func TestGetMEMReservedInTask(t *testing.T) {
-	var ctx, cancel = context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 	taskinfo := &MockTaskInfo{
 		tasks: []ECSTask{},
@@ -275,7 +269,7 @@ func TestGetMEMReservedInTask(t *testing.T) {
 }
 
 func TestGetCPUReservedAndMemReserved(t *testing.T) {
-	var ctx, cancel = context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	var tasks []ECSTask
 	var containers []ECSContainer
 
@@ -298,8 +292,7 @@ func TestGetCPUReservedAndMemReserved(t *testing.T) {
 		DockerID: "container2",
 	}
 
-	containers = append(containers, container1)
-	containers = append(containers, container2)
+	containers = append(containers, container1, container2)
 
 	task2 := ECSTask{
 		KnownStatus: "RUNNING",
@@ -307,9 +300,7 @@ func TestGetCPUReservedAndMemReserved(t *testing.T) {
 		Containers:  containers,
 	}
 
-	tasks = append(tasks, task1)
-	tasks = append(tasks, task2)
-	tasks = append(tasks, task3)
+	tasks = append(tasks, task1, task2, task3)
 
 	taskinfo := &MockTaskInfo{
 		tasks: tasks,
@@ -337,5 +328,4 @@ func TestGetCPUReservedAndMemReserved(t *testing.T) {
 	assert.Equal(t, int64(0), cgroup.getCPUReserved())
 
 	assert.Equal(t, int64(0), cgroup.getMemReserved())
-
 }

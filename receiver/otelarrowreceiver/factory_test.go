@@ -4,7 +4,6 @@
 package otelarrowreceiver
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -17,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/metadata"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -31,12 +31,12 @@ func TestCreateReceiver(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPC.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
 
-	creationSet := receivertest.NewNopSettings()
-	tReceiver, err := factory.CreateTraces(context.Background(), creationSet, cfg, consumertest.NewNop())
+	creationSet := receivertest.NewNopSettings(metadata.Type)
+	tReceiver, err := factory.CreateTraces(t.Context(), creationSet, cfg, consumertest.NewNop())
 	assert.NotNil(t, tReceiver)
 	assert.NoError(t, err)
 
-	mReceiver, err := factory.CreateMetrics(context.Background(), creationSet, cfg, consumertest.NewNop())
+	mReceiver, err := factory.CreateMetrics(t.Context(), creationSet, cfg, consumertest.NewNop())
 	assert.NotNil(t, mReceiver)
 	assert.NoError(t, err)
 }
@@ -78,8 +78,8 @@ func TestCreateTraces(t *testing.T) {
 			wantErr: true,
 		},
 	}
-	ctx := context.Background()
-	creationSet := receivertest.NewNopSettings()
+	ctx := t.Context()
+	creationSet := receivertest.NewNopSettings(metadata.Type)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.TracesSink)
@@ -87,11 +87,11 @@ func TestCreateTraces(t *testing.T) {
 			assert.NoError(t, err)
 			require.NotNil(t, tr)
 			if tt.wantErr {
-				assert.Error(t, tr.Start(context.Background(), componenttest.NewNopHost()))
-				assert.NoError(t, tr.Shutdown(context.Background()))
+				assert.Error(t, tr.Start(t.Context(), componenttest.NewNopHost()))
+				assert.NoError(t, tr.Shutdown(t.Context()))
 			} else {
-				assert.NoError(t, tr.Start(context.Background(), componenttest.NewNopHost()))
-				assert.NoError(t, tr.Shutdown(context.Background()))
+				assert.NoError(t, tr.Start(t.Context(), componenttest.NewNopHost()))
+				assert.NoError(t, tr.Shutdown(t.Context()))
 			}
 		})
 	}
@@ -134,8 +134,8 @@ func TestCreateMetricReceiver(t *testing.T) {
 			wantErr: true,
 		},
 	}
-	ctx := context.Background()
-	creationSet := receivertest.NewNopSettings()
+	ctx := t.Context()
+	creationSet := receivertest.NewNopSettings(metadata.Type)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.MetricsSink)
@@ -143,10 +143,10 @@ func TestCreateMetricReceiver(t *testing.T) {
 			assert.NoError(t, err)
 			require.NotNil(t, mr)
 			if tt.wantErr {
-				assert.Error(t, mr.Start(context.Background(), componenttest.NewNopHost()))
+				assert.Error(t, mr.Start(t.Context(), componenttest.NewNopHost()))
 			} else {
-				require.NoError(t, mr.Start(context.Background(), componenttest.NewNopHost()))
-				assert.NoError(t, mr.Shutdown(context.Background()))
+				require.NoError(t, mr.Start(t.Context(), componenttest.NewNopHost()))
+				assert.NoError(t, mr.Shutdown(t.Context()))
 			}
 		})
 	}
@@ -193,8 +193,8 @@ func TestCreateLogReceiver(t *testing.T) {
 			sink:         new(consumertest.LogsSink),
 		},
 	}
-	ctx := context.Background()
-	creationSet := receivertest.NewNopSettings()
+	ctx := t.Context()
+	creationSet := receivertest.NewNopSettings(metadata.Type)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mr, err := factory.CreateLogs(ctx, creationSet, tt.cfg, tt.sink)
@@ -206,11 +206,11 @@ func TestCreateLogReceiver(t *testing.T) {
 			require.NotNil(t, mr)
 
 			if tt.wantStartErr {
-				assert.Error(t, mr.Start(context.Background(), componenttest.NewNopHost()))
-				assert.NoError(t, mr.Shutdown(context.Background()))
+				assert.Error(t, mr.Start(t.Context(), componenttest.NewNopHost()))
+				assert.NoError(t, mr.Shutdown(t.Context()))
 			} else {
-				require.NoError(t, mr.Start(context.Background(), componenttest.NewNopHost()))
-				assert.NoError(t, mr.Shutdown(context.Background()))
+				require.NoError(t, mr.Start(t.Context(), componenttest.NewNopHost()))
+				assert.NoError(t, mr.Shutdown(t.Context()))
 			}
 		})
 	}

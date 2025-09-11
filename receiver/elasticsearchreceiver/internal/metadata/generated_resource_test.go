@@ -36,22 +36,22 @@ func TestResourceBuilder(t *testing.T) {
 			val, ok := res.Attributes().Get("elasticsearch.cluster.name")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "elasticsearch.cluster.name-val", val.Str())
+				assert.Equal(t, "elasticsearch.cluster.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("elasticsearch.index.name")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "elasticsearch.index.name-val", val.Str())
+				assert.Equal(t, "elasticsearch.index.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("elasticsearch.node.name")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "elasticsearch.node.name-val", val.Str())
+				assert.Equal(t, "elasticsearch.node.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("elasticsearch.node.version")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "elasticsearch.node.version-val", val.Str())
+				assert.Equal(t, "elasticsearch.node.version-val", val.Str())
 			}
 		})
 	}

@@ -5,103 +5,142 @@ package cwlog // import "github.com/open-telemetry/opentelemetry-collector-contr
 
 import (
 	"bytes"
-	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
+	"sync"
+	"time"
 
+	jsoniter "github.com/json-iterator/go"
+	"github.com/klauspost/compress/gzip"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/cwlog/compression"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/metadata"
 )
 
 const (
-	TypeStr         = "cwlogs"
-	recordDelimiter = "\n"
+	TypeStr = "cwlogs"
+
+	attributeAWSCloudWatchLogGroupName  = "aws.cloudwatch.log_group_name"
+	attributeAWSCloudWatchLogStreamName = "aws.cloudwatch.log_stream_name"
 )
 
 var (
-	errInvalidRecords = errors.New("record format invalid")
+	errInvalidRecords   = errors.New("record format invalid")
+	errMissingOwner     = errors.New("cloudwatch log record is missing owner field")
+	errMissingLogGroup  = errors.New("cloudwatch log record is missing logGroup field")
+	errMissingLogStream = errors.New("cloudwatch log record is missing logStream field")
 )
 
 // Unmarshaler for the CloudWatch Log JSON record format.
 type Unmarshaler struct {
-	logger *zap.Logger
+	logger    *zap.Logger
+	buildInfo component.BuildInfo
+	gzipPool  sync.Pool
 }
 
-var _ unmarshaler.LogsUnmarshaler = (*Unmarshaler)(nil)
+var _ plog.Unmarshaler = (*Unmarshaler)(nil)
 
 // NewUnmarshaler creates a new instance of the Unmarshaler.
-func NewUnmarshaler(logger *zap.Logger) *Unmarshaler {
-	return &Unmarshaler{logger}
+func NewUnmarshaler(logger *zap.Logger, buildInfo component.BuildInfo) *Unmarshaler {
+	return &Unmarshaler{logger: logger, buildInfo: buildInfo}
 }
 
-// Unmarshal deserializes the records into cWLogs and uses the
-// resourceLogsBuilder to group them into a single plog.Logs.
-// Skips invalid cWLogs received in the record and
-func (u Unmarshaler) Unmarshal(records [][]byte) (plog.Logs, error) {
-	md := plog.NewLogs()
-	builders := make(map[resourceAttributes]*resourceLogsBuilder)
-	for recordIndex, compressedRecord := range records {
-		record, err := compression.Unzip(compressedRecord)
-		if err != nil {
-			u.logger.Error("Failed to unzip record",
-				zap.Error(err),
-				zap.Int("record_index", recordIndex),
+// UnmarshalLogs deserializes the given record as CloudWatch Logs events
+// into a plog.Logs, grouping logs by owner (account ID), log group, and
+// log stream. Logs are assumed to be gzip-compressed as specified at
+// https://docs.aws.amazon.com/firehose/latest/dev/writing-with-cloudwatch-logs.html.
+func (u *Unmarshaler) UnmarshalLogs(compressedRecord []byte) (plog.Logs, error) {
+	var err error
+	r, ok := u.gzipPool.Get().(*gzip.Reader)
+	if !ok {
+		r, err = gzip.NewReader(bytes.NewReader(compressedRecord))
+	} else {
+		err = r.Reset(bytes.NewReader(compressedRecord))
+	}
+	if err != nil {
+		return plog.Logs{}, fmt.Errorf("failed to decompress record: %w", err)
+	}
+	defer u.gzipPool.Put(r)
+
+	data, err := io.ReadAll(r)
+	if err != nil {
+		u.logger.Error("Error reading log data", zap.Error(err))
+		return plog.Logs{}, fmt.Errorf("error reading log data: %w", err)
+	}
+
+	cwLog, control, err := parseLog(data)
+	if err != nil {
+		u.logger.Error("Error unmarshalling log message", zap.Error(err))
+		return plog.Logs{}, fmt.Errorf("%w: %w", errInvalidRecords, err)
+	}
+
+	if control {
+		for _, event := range cwLog.LogEvents {
+			u.logger.Debug(
+				"Skipping CloudWatch control message event",
+				zap.Time("timestamp", time.UnixMilli(event.Timestamp)),
+				zap.String("message", event.Message),
 			)
-			continue
 		}
-		// Multiple logs in each record separated by newline character
-		for datumIndex, datum := range bytes.Split(record, []byte(recordDelimiter)) {
-			if len(datum) > 0 {
-				var log cWLog
-				err := json.Unmarshal(datum, &log)
-				if err != nil {
-					u.logger.Error(
-						"Unable to unmarshal input",
-						zap.Error(err),
-						zap.Int("datum_index", datumIndex),
-						zap.Int("record_index", recordIndex),
-					)
-					continue
-				}
-				if !u.isValid(log) {
-					u.logger.Error(
-						"Invalid log",
-						zap.Int("datum_index", datumIndex),
-						zap.Int("record_index", recordIndex),
-					)
-					continue
-				}
-				attrs := resourceAttributes{
-					owner:     log.Owner,
-					logGroup:  log.LogGroup,
-					logStream: log.LogStream,
-				}
-				lb, ok := builders[attrs]
-				if !ok {
-					lb = newResourceLogsBuilder(md, attrs)
-					builders[attrs] = lb
-				}
-				lb.AddLog(log)
-
-			}
-		}
+		return plog.NewLogs(), nil
 	}
 
-	if len(builders) == 0 {
-		return plog.NewLogs(), errInvalidRecords
+	logs := plog.NewLogs()
+	rl := logs.ResourceLogs().AppendEmpty()
+	resourceAttrs := rl.Resource().Attributes()
+	resourceAttrs.PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAWS.Value.AsString())
+	resourceAttrs.PutStr(string(conventions.CloudAccountIDKey), cwLog.Owner)
+	resourceAttrs.PutEmptySlice(string(conventions.AWSLogGroupNamesKey)).AppendEmpty().SetStr(cwLog.LogGroup)
+	resourceAttrs.PutEmptySlice(string(conventions.AWSLogStreamNamesKey)).AppendEmpty().SetStr(cwLog.LogStream)
+	// Deprecated: [v0.121.0] Use `string(conventions.AWSLogGroupNamesKey)` instead
+	resourceAttrs.PutStr(attributeAWSCloudWatchLogGroupName, cwLog.LogGroup)
+	// Deprecated: [v0.121.0] Use `string(conventions.AWSLogStreamNamesKey)` instead
+	resourceAttrs.PutStr(attributeAWSCloudWatchLogStreamName, cwLog.LogStream)
+
+	sl := rl.ScopeLogs().AppendEmpty()
+	sl.Scope().SetName(metadata.ScopeName)
+	sl.Scope().SetVersion(u.buildInfo.Version)
+
+	for _, event := range cwLog.LogEvents {
+		logRecord := sl.LogRecords().AppendEmpty()
+		// pcommon.Timestamp is a time specified as UNIX Epoch time in nanoseconds
+		// but timestamp in cloudwatch logs are in milliseconds.
+		logRecord.SetTimestamp(pcommon.Timestamp(event.Timestamp * int64(time.Millisecond)))
+		logRecord.Body().SetStr(event.Message)
 	}
 
-	return md, nil
+	return logs, nil
 }
 
-// isValid validates that the cWLog has been unmarshalled correctly.
-func (u Unmarshaler) isValid(log cWLog) bool {
-	return log.Owner != "" && log.LogGroup != "" && log.LogStream != ""
+func parseLog(data []byte) (log cWLog, control bool, _ error) {
+	if err := jsoniter.ConfigFastest.Unmarshal(data, &log); err != nil {
+		return cWLog{}, false, err
+	}
+	switch log.MessageType {
+	case "DATA_MESSAGE":
+		if log.Owner == "" {
+			return cWLog{}, false, errMissingOwner
+		}
+		if log.LogGroup == "" {
+			return cWLog{}, false, errMissingLogGroup
+		}
+		if log.LogStream == "" {
+			return cWLog{}, false, errMissingLogStream
+		}
+		return log, false, nil
+	case "CONTROL_MESSAGE":
+		return log, true, nil
+	default:
+		return cWLog{}, false, fmt.Errorf("invalid message type %q", log.MessageType)
+	}
 }
 
 // Type of the serialized messages.
-func (u Unmarshaler) Type() string {
+func (*Unmarshaler) Type() string {
 	return TypeStr
 }

@@ -8,7 +8,6 @@ OTEL_STABLE_VERSION=main
 VERSION=$(shell git describe --always --match "v[0-9]*" HEAD)
 TRIMMED_VERSION=$(shell grep -o 'v[^-]*' <<< "$(VERSION)" | cut -c 2-)
 CORE_VERSIONS=$(SRC_PARENT_DIR)/opentelemetry-collector/versions.yaml
-GOMOD=$(SRC_ROOT)/cmd/otelcontribcol/go.mod
 
 COMP_REL_PATH=cmd/otelcontribcol/components.go
 MOD_NAME=github.com/open-telemetry/opentelemetry-collector-contrib
@@ -23,8 +22,8 @@ EX_INTERNAL=-not -path "./internal/*"
 EX_PKG=-not -path "./pkg/*"
 EX_CMD=-not -path "./cmd/*"
 
-# NONROOT_MODS includes ./* dirs (excludes . dir)
-NONROOT_MODS := $(shell find . $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
+# This includes a final slash
+ROOT_DIR := $(dir $(realpath $(lastword $(MAKEFILE_LIST))))
 
 RECEIVER_MODS_0 := $(shell find ./receiver/[a-f]* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
 RECEIVER_MODS_1 := $(shell find ./receiver/[g-o]* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
@@ -34,9 +33,6 @@ RECEIVER_MODS := $(RECEIVER_MODS_0) $(RECEIVER_MODS_1) $(RECEIVER_MODS_2) $(RECE
 PROCESSOR_MODS_0 := $(shell find ./processor/[a-o]* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
 PROCESSOR_MODS_1 := $(shell find ./processor/[p-z]* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
 PROCESSOR_MODS := $(PROCESSOR_MODS_0) $(PROCESSOR_MODS_1)
-EXPORTER_MODS_0 := $(shell find ./exporter/[a-m]* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
-EXPORTER_MODS_1 := $(shell find ./exporter/[n-z]* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
-EXPORTER_MODS := $(EXPORTER_MODS_0) $(EXPORTER_MODS_1)
 EXPORTER_MODS_0 := $(shell find ./exporter/[a-c]* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
 EXPORTER_MODS_1 := $(shell find ./exporter/[d-i]* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
 EXPORTER_MODS_2 := $(shell find ./exporter/[k-o]* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
@@ -46,15 +42,18 @@ EXTENSION_MODS := $(shell find ./extension/* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR
 CONNECTOR_MODS := $(shell find ./connector/* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
 INTERNAL_MODS := $(shell find ./internal/* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
 PKG_MODS := $(shell find ./pkg/* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
-CMD_MODS_0 := $(shell find ./cmd/[a-m]* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
-CMD_MODS_1 := $(shell find ./cmd/[n-z]* $(FIND_MOD_ARGS) -not -path "./cmd/otel*col/*" -exec $(TO_MOD_DIR) )
-CMD_MODS := $(CMD_MODS_0) $(CMD_MODS_1)
-OTHER_MODS := $(shell find . $(EX_COMPONENTS) $(EX_INTERNAL) $(EX_PKG) $(EX_CMD) $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) ) $(PWD)
+CMD_MODS_0 := $(shell find ./cmd/[a-z]* $(FIND_MOD_ARGS) -not -path "./cmd/otel*col/*" -exec $(TO_MOD_DIR) )
+CMD_MODS := $(CMD_MODS_0)
+OTHER_MODS := $(shell find . $(EX_COMPONENTS) $(EX_INTERNAL) $(EX_PKG) $(EX_CMD) $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
 ALL_MODS := $(RECEIVER_MODS) $(PROCESSOR_MODS) $(EXPORTER_MODS) $(EXTENSION_MODS) $(CONNECTOR_MODS) $(INTERNAL_MODS) $(PKG_MODS) $(CMD_MODS) $(OTHER_MODS)
-CGO_MODS := ./receiver/hostmetricsreceiver 
+
+CGO_MODS := ./receiver/hostmetricsreceiver
 
 FIND_INTEGRATION_TEST_MODS={ find . -type f -name "*integration_test.go" & find . -type f -name "*e2e_test.go" -not -path "./testbed/*"; }
 INTEGRATION_MODS := $(shell $(FIND_INTEGRATION_TEST_MODS) | xargs $(TO_MOD_DIR) | uniq)
+
+# Excluded from ALL_MODS
+GENERATED_MODS := $(shell find ./cmd/otel*col/* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR))
 
 ifeq ($(GOOS),windows)
 	EXTENSION := .exe
@@ -63,28 +62,32 @@ endif
 .DEFAULT_GOAL := all
 
 all-modules:
-	@echo $(NONROOT_MODS) | tr ' ' '\n' | sort
+	@echo $(ALL_MODS) | tr ' ' '\n' | sort
 
 all-groups:
-	@echo "receiver-0: $(RECEIVER_MODS_0)"
-	@echo "\nreceiver-1: $(RECEIVER_MODS_1)"
-	@echo "\nreceiver-2: $(RECEIVER_MODS_2)"
-	@echo "\nreceiver-3: $(RECEIVER_MODS_3)"
-	@echo "\nreceiver: $(RECEIVER_MODS)"
-	@echo "\nprocessor-0: $(PROCESSOR_MODS_0)"
-	@echo "\nprocessor-1: $(PROCESSOR_MODS_1)"
-	@echo "\nprocessor: $(PROCESSOR_MODS)"
-	@echo "\nexporter-0: $(EXPORTER_MODS_0)"
-	@echo "\nexporter-1: $(EXPORTER_MODS_1)"
-	@echo "\nexporter-2: $(EXPORTER_MODS_2)"
-	@echo "\nexporter-3: $(EXPORTER_MODS_3)"
-	@echo "\nextension: $(EXTENSION_MODS)"
-	@echo "\nconnector: $(CONNECTOR_MODS)"
-	@echo "\ninternal: $(INTERNAL_MODS)"
-	@echo "\npkg: $(PKG_MODS)"
-	@echo "\ncmd-0: $(CMD_MODS_0)"
-	@echo "\ncmd-1: $(CMD_MODS_1)"
-	@echo "\nother: $(OTHER_MODS)"
+	@echo -e "receiver-0: $(RECEIVER_MODS_0)"
+	@echo -e "\nreceiver-1: $(RECEIVER_MODS_1)"
+	@echo -e "\nreceiver-2: $(RECEIVER_MODS_2)"
+	@echo -e "\nreceiver-3: $(RECEIVER_MODS_3)"
+	@echo -e "\nreceiver: $(RECEIVER_MODS)"
+	@echo -e "\nprocessor-0: $(PROCESSOR_MODS_0)"
+	@echo -e "\nprocessor-1: $(PROCESSOR_MODS_1)"
+	@echo -e "\nprocessor: $(PROCESSOR_MODS)"
+	@echo -e "\nexporter-0: $(EXPORTER_MODS_0)"
+	@echo -e "\nexporter-1: $(EXPORTER_MODS_1)"
+	@echo -e "\nexporter-2: $(EXPORTER_MODS_2)"
+	@echo -e "\nexporter-3: $(EXPORTER_MODS_3)"
+	@echo -e "\nexporter: $(EXPORTER_MODS)"
+	@echo -e "\nextension: $(EXTENSION_MODS)"
+	@echo -e "\nconnector: $(CONNECTOR_MODS)"
+	@echo -e "\ninternal: $(INTERNAL_MODS)"
+	@echo -e "\npkg: $(PKG_MODS)"
+	@echo -e "\ncmd-0: $(CMD_MODS_0)"
+	@echo -e "\ncmd: $(CMD_MODS)"
+	@echo -e "\nother: $(OTHER_MODS)"
+	@echo -e "\nintegration: $(INTEGRATION_MODS)"
+	@echo -e "\ncgo: $(CGO_MODS)"
+	@echo -e "\ngenerated: $(GENERATED_MODS)"
 
 .PHONY: all
 all: install-tools all-common goporto multimod-verify gotest otelcontribcol
@@ -111,13 +114,53 @@ stability-tests: otelcontribcol
 	@echo Stability tests are disabled until we have a stable performance environment.
 	@echo To enable the tests replace this echo by $(MAKE) -C testbed run-stability-tests
 
+.PHONY: genlabels
+genlabels:
+	@echo "Generating path-to-label mappings..."
+	@echo "# This file is auto-generated. Do not edit manually." > .github/component_labels.txt
+	@grep -E '^[A-Za-z0-9/]' .github/CODEOWNERS | \
+		awk '{ print $$1 }' | \
+		sed -E 's%(.+)/$$%\1%' | \
+		while read -r COMPONENT; do \
+			PREFIX=$$(printf '%s' "$${COMPONENT}" | sed -E 's%([^/])/.+%\1%'); \
+			LABEL_NAME=$$(printf '%s\n' "$${COMPONENT}" | sed -E "s%^(.+)/(.+)$${PREFIX}%\1/\2%"); \
+			if (( $${#LABEL_NAME} > 50 )); then \
+				OIFS=$${IFS}; \
+				IFS='/'; \
+				for SEGMENT in $${COMPONENT}; do \
+					r="/$${SEGMENT}\$$"; \
+					if [[ "$${COMPONENT}" =~ $${r} ]]; then \
+						break; \
+					fi; \
+					LABEL_NAME=$$(echo "$${LABEL_NAME}" | sed -E "s%^(.+)$${SEGMENT}\$$%\1%"); \
+				done; \
+				IFS=$${OIFS}; \
+			fi; \
+			echo "$${COMPONENT} $${LABEL_NAME}" >> .github/component_labels.txt; \
+		done
+	@echo "Labels generated and saved to .github/component_labels.txt"
+
 .PHONY: gogci
 gogci:
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="gci"
 
+.PHONY: tidylist
+tidylist: $(CROSSLINK)
+	cd internal/tidylist && \
+	$(CROSSLINK) tidylist \
+		--validate \
+		--allow-circular allow-circular.txt \
+		--skip cmd/otelcontribcol/go.mod \
+		--skip cmd/oteltestbedcol/go.mod \
+		tidylist.txt
+
+# internal/tidylist/tidylist.txt lists modules in topological order, to ensure `go mod tidy` converges.
 .PHONY: gotidy
 gotidy:
-	$(MAKE) $(FOR_GROUP_TARGET) TARGET="tidy"
+	@for mod in $$(cat internal/tidylist/tidylist.txt); do \
+		echo "Tidying $$mod"; \
+		(cd $$mod && rm -rf go.sum && $(GOCMD) mod tidy -compat=1.24.0 && $(GOCMD) get toolchain@none) || exit $?; \
+	done
 
 .PHONY: remove-toolchain
 remove-toolchain:
@@ -136,6 +179,15 @@ gotest-with-cover:
 	@$(MAKE) $(FOR_GROUP_TARGET) TARGET="test-with-cover"
 	$(GOCMD) tool covdata textfmt -i=./coverage/unit -o ./$(GROUP)-coverage.txt
 
+.PHONY: gotest-with-junit
+gotest-with-junit:
+	@$(MAKE) $(FOR_GROUP_TARGET) TARGET="test-with-junit"
+
+.PHONY: gotest-with-junit-and-cover
+gotest-with-junit-and-cover:
+	@$(MAKE) $(FOR_GROUP_TARGET) TARGET="test-with-junit-and-cover"
+	@go tool covdata textfmt -i=$(COVER_DIR_ABS) -o $(GROUP)-coverage.txt
+
 .PHONY: gobuildtest
 gobuildtest:
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="buildtest"
@@ -147,6 +199,10 @@ gorunbuilttest:
 .PHONY: gointegration-test
 gointegration-test:
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="mod-integration-test"
+
+.PHONY: gointegration-sudo-test
+gointegration-sudo-test:
+	$(MAKE) $(FOR_GROUP_TARGET) TARGET="mod-integration-sudo-test"
 
 .PHONY: gofmt
 gofmt:
@@ -160,23 +216,21 @@ golint:
 gogovulncheck:
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="govulncheck"
 
-.PHONY: gotestifylint
-gotestifylint:
-	$(MAKE) $(FOR_GROUP_TARGET) TARGET="testifylint"
-
-.PHONY: gotestifylint-fix
-gotestifylint-fix:
-	$(MAKE) $(FOR_GROUP_TARGET) TARGET="testifylint-fix"
-
 .PHONY: goporto
 goporto: $(PORTO)
 	$(PORTO) -w --include-internal --skip-dirs "^cmd$$" ./
 
 .PHONY: for-all
 for-all:
-	@echo "running $${CMD} in root"
-	@$${CMD}
-	@set -e; for dir in $(NONROOT_MODS); do \
+	@set -e; for dir in $(ALL_MODS); do \
+	  (cd "$${dir}" && \
+	  	echo "running $${CMD} in $${dir}" && \
+	 	$${CMD} ); \
+	done
+
+.PHONY: for-generated
+for-generated:
+	@set -e; for dir in $(GENERATED_MODS); do \
 	  (cd "$${dir}" && \
 	  	echo "running $${CMD} in $${dir}" && \
 	 	$${CMD} ); \
@@ -260,9 +314,6 @@ for-cmd-target: $(CMD_MODS)
 .PHONY: for-cmd-0-target
 for-cmd-0-target: $(CMD_MODS_0)
 
-.PHONY: for-cmd-1-target
-for-cmd-1-target: $(CMD_MODS_1)
-
 .PHONY: for-other-target
 for-other-target: $(OTHER_MODS)
 
@@ -283,9 +334,9 @@ run:
 
 .PHONY: docker-component # Not intended to be used directly
 docker-component: check-component
-	GOOS=linux GOARCH=amd64 $(MAKE) $(COMPONENT)
-	cp ./bin/$(COMPONENT)_linux_amd64 ./cmd/$(COMPONENT)/$(COMPONENT)
-	docker build -t $(COMPONENT) ./cmd/$(COMPONENT)/
+	GOOS=linux GOARCH=$(GOARCH) $(MAKE) $(COMPONENT)
+	cp ./bin/$(COMPONENT)_linux_$(GOARCH) ./cmd/$(COMPONENT)/$(COMPONENT)
+	docker build --platform linux/$(GOARCH) -t $(COMPONENT) ./cmd/$(COMPONENT)/
 	rm ./cmd/$(COMPONENT)/$(COMPONENT)
 
 .PHONY: check-component
@@ -298,6 +349,10 @@ endif
 docker-otelcontribcol:
 	COMPONENT=otelcontribcol $(MAKE) docker-component
 
+.PHONY: docker-supervisor-otelcontribcol
+docker-supervisor-otelcontribcol: docker-otelcontribcol
+	COMPONENT=opampsupervisor $(MAKE) docker-component
+
 .PHONY: docker-telemetrygen
 docker-telemetrygen:
 	GOOS=linux GOARCH=$(GOARCH) $(MAKE) telemetrygen
@@ -305,26 +360,32 @@ docker-telemetrygen:
 	cd cmd/telemetrygen && docker build --platform linux/$(GOARCH) --build-arg="TARGETOS=$(GOOS)" --build-arg="TARGETARCH=$(GOARCH)" -t telemetrygen:latest .
 	rm cmd/telemetrygen/telemetrygen_*
 
-.PHONY: generate
-generate: install-tools
-	cd ./internal/tools && go install go.opentelemetry.io/collector/cmd/mdatagen
-	$(MAKE) for-all CMD="$(GOCMD) generate ./..."
-	$(MAKE) gofmt
+.PHONY: docker-golden
+docker-golden:
+	GOOS=linux GOARCH=$(GOARCH) $(MAKE) golden
+	cp bin/golden_* cmd/golden/
+	cd cmd/golden && docker build --platform linux/$(GOARCH) --build-arg="TARGETOS=$(GOOS)" --build-arg="TARGETARCH=$(GOARCH)" -t golden:latest .
+	rm cmd/golden/golden_*
 
-.PHONY: githubgen-install
-githubgen-install:
-	cd cmd/githubgen && $(GOCMD) install .
 
 .PHONY: gengithub
-gengithub: githubgen-install
-	githubgen
+gengithub: $(GITHUBGEN)
+	$(GITHUBGEN)
 
 .PHONY: gendistributions
-gendistributions: githubgen-install
-	githubgen distributions
+gendistributions: $(GITHUBGEN)
+	$(GITHUBGEN) distributions
+
+gencodecov: $(CODECOVGEN)
+	$(CODECOVGEN) --base-prefix github.com/open-telemetry/opentelemetry-collector-contrib --skipped-modules **/*test,**/examples/**,pkg/**,cmd/**,internal/**,*/encoding/**
 
 .PHONY: update-codeowners
-update-codeowners: gengithub generate
+update-codeowners: generate gengithub
+	$(MAKE) genlabels
+
+.PHONY: gencodeowners
+gencodeowners: install-tools
+	$(GITHUBGEN) -skipgithub
 
 FILENAME?=$(shell git branch --show-current)
 .PHONY: chlog-new
@@ -345,7 +406,8 @@ chlog-update: $(CHLOGGEN)
 
 .PHONY: genotelcontribcol
 genotelcontribcol: $(BUILDER)
-	$(BUILDER) --skip-compilation --config cmd/otelcontribcol/builder-config.yaml --output-path cmd/otelcontribcol
+	./internal/buildscripts/ocb-add-replaces.sh otelcontribcol
+	$(BUILDER) --skip-compilation --config cmd/otelcontribcol/builder-config-replaced.yaml
 
 # Build the Collector executable.
 .PHONY: otelcontribcol
@@ -361,7 +423,8 @@ otelcontribcollite: genotelcontribcol
 
 .PHONY: genoteltestbedcol
 genoteltestbedcol: $(BUILDER)
-	$(BUILDER) --skip-compilation --config cmd/oteltestbedcol/builder-config.yaml --output-path cmd/oteltestbedcol
+	./internal/buildscripts/ocb-add-replaces.sh oteltestbedcol
+	$(BUILDER) --skip-compilation --config cmd/oteltestbedcol/builder-config-replaced.yaml
 
 # Build the Collector executable, with only components used in testbed.
 .PHONY: oteltestbedcol
@@ -385,8 +448,32 @@ telemetrygenlite:
 	cd ./cmd/telemetrygen && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/telemetrygen_$(GOOS)_$(GOARCH)$(EXTENSION) \
 		-tags $(GO_BUILD_TAGS) -ldflags $(GO_BUILD_LDFLAGS) .
 
+# Build the Supervisor executable.
+.PHONY: opampsupervisor
+opampsupervisor:
+	cd ./cmd/opampsupervisor && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/opampsupervisor_$(GOOS)_$(GOARCH)$(EXTENSION) \
+		-tags $(GO_BUILD_TAGS) .
+
+# Build the golden executable.
+.PHONY: golden
+golden:
+	cd ./cmd/golden && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/golden_$(GOOS)_$(GOARCH)$(EXTENSION) \
+		-tags $(GO_BUILD_TAGS) .
+
+MODULES="internal/buildscripts/modules"
+.PHONY: update-core-modules
+update-core-module-list:
+	BETA_LINE=$$(grep -n '  beta:' $(CORE_VERSIONS) | cut -d : -f 1); \
+	(\
+		echo -e '#!/bin/bash\n\nbeta_modules=('; \
+		tail -n +$$BETA_LINE $(CORE_VERSIONS) | sed -En 's/^      - (.+)$$/  "\1"/p'; \
+		echo -e ')\n\nstable_modules=('; \
+		head -n $$BETA_LINE $(CORE_VERSIONS) | sed -En 's/^      - (.+)$$/  "\1"/p'; \
+		echo -e ')' \
+	) > $(MODULES);
+
 # helper function to update the core packages in builder-config.yaml
-# input parameters are 
+# input parameters are
 # $(1) = path/to/versions.yaml (where it greps the relevant packages)
 # $(2) = path/to/go.mod (where it greps the package-versions)
 # $(3) = path/to/builder-config.yaml (where we want to update the versions)
@@ -413,17 +500,25 @@ endef
 
 .PHONY: update-otel
 update-otel:$(MULTIMOD)
-	$(MULTIMOD) sync -s=true -o ../opentelemetry-collector -m stable --commit-hash $(OTEL_STABLE_VERSION)
-	git add . && git commit -s -m "[chore] multimod update stable modules" ; \
-	$(MULTIMOD) sync -s=true -o ../opentelemetry-collector -m beta --commit-hash $(OTEL_VERSION)
-	git add . && git commit -s -m "[chore] multimod update beta modules" ; \
-	$(MAKE) gotidy
-	$(call updatehelper,$(CORE_VERSIONS),$(GOMOD),./cmd/otelcontribcol/builder-config.yaml)
-	$(call updatehelper,$(CORE_VERSIONS),$(GOMOD),./cmd/oteltestbedcol/builder-config.yaml)
+	# Make sure cmd/otelcontribcol/go.mod and cmd/oteltestbedcol/go.mod are present
 	$(MAKE) genotelcontribcol
 	$(MAKE) genoteltestbedcol
-	$(MAKE) oteltestbedcol
+	$(MULTIMOD) sync -s=true -o ../opentelemetry-collector -m stable --commit-hash "$(OTEL_STABLE_VERSION)"
+	git add . && git commit -s -m "[chore] multimod update stable modules" ; \
+	$(MULTIMOD) sync -s=true -o ../opentelemetry-collector -m beta --commit-hash "$(OTEL_VERSION)"
+	git add . && git commit -s -m "[chore] multimod update beta modules" ; \
+	$(MAKE) gotidy
+	$(call updatehelper,$(CORE_VERSIONS),./cmd/otelcontribcol/go.mod,./cmd/otelcontribcol/builder-config.yaml)
+	$(call updatehelper,$(CORE_VERSIONS),./cmd/oteltestbedcol/go.mod,./cmd/oteltestbedcol/builder-config.yaml)
+	$(MAKE) -B install-tools
+	$(MAKE) genotelcontribcol
+	$(MAKE) genoteltestbedcol
+	$(MAKE) generate
+	$(MAKE) crosslink
+	# Tidy again after generating code
+	$(MAKE) gotidy
 	$(MAKE) remove-toolchain
+	git add . && git commit -s -m "[chore] mod and toolchain tidy" --allow-empty ; \
 
 .PHONY: otel-from-tree
 otel-from-tree:
@@ -435,16 +530,33 @@ otel-from-tree:
 	# 2. Run `make otel-from-tree` (only need to run it once to remap go modules)
 	# 3. You can now build contrib and it will use your local otel core changes.
 	# 4. Before committing/pushing your contrib changes, undo by running `make otel-from-lib`.
-	$(MAKE) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector=$(SRC_PARENT_DIR)/opentelemetry-collector"
+	@source $(MODULES) && \
+	replace_args=""; \
+	echo "# BEGIN otel-from-tree" >> "./cmd/otelcontribcol/builder-config.yaml"; \
+	echo "# BEGIN otel-from-tree" >> "./cmd/oteltestbedcol/builder-config.yaml"; \
+	for module in "$${beta_modules[@]}" "$${stable_modules[@]}"; do \
+		subpath=$${module#go.opentelemetry.io/collector}; \
+		if [ "$${subpath}" = "$${module}" ]; then subpath=""; fi; \
+		replace_args="$${replace_args} -replace $${module}=$(SRC_PARENT_DIR)/opentelemetry-collector$${subpath}"; \
+		echo "  - $${module} => $(SRC_PARENT_DIR)/opentelemetry-collector$${subpath}" >> "./cmd/otelcontribcol/builder-config.yaml"; \
+		echo "  - $${module} => $(SRC_PARENT_DIR)/opentelemetry-collector$${subpath}" >> "./cmd/oteltestbedcol/builder-config.yaml"; \
+	done; \
+	$(MAKE) for-all CMD="$(GOCMD) mod edit $${replace_args}"
 
 .PHONY: otel-from-lib
 otel-from-lib:
 	# Sets opentelemetry core to be not be pulled from local source tree. (Undoes otel-from-tree.)
-	$(MAKE) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector"
+	@source $(MODULES) && \
+	dropreplace_args=""; \
+	for module in "$${beta_modules[@]}" "$${stable_modules[@]}"; do \
+		dropreplace_args="$${dropreplace_args} -dropreplace $${module}"; \
+	done; \
+	sed -i '' '/# BEGIN otel-from-tree/,$$d' "./cmd/otelcontribcol/builder-config.yaml"; \
+	sed -i '' '/# BEGIN otel-from-tree/,$$d' "./cmd/oteltestbedcol/builder-config.yaml"; \
+	$(MAKE) for-all CMD="$(GOCMD) mod edit $${dropreplace_args}"
 
 .PHONY: build-examples
 build-examples:
-	docker compose -f examples/demo/docker-compose.yaml build
 	cd examples/secure-tracing/certs && $(MAKE) clean && $(MAKE) all && docker compose -f ../docker-compose.yaml build
 	docker compose -f exporter/splunkhecexporter/example/docker-compose.yml build
 
@@ -466,8 +578,8 @@ checkmetadata: $(CHECKFILE)
 	$(CHECKFILE) --project-path $(CURDIR) --component-rel-path $(COMP_REL_PATH) --module-name $(MOD_NAME) --file-name "metadata.yaml"
 
 .PHONY: checkapi
-checkapi:
-	$(GOCMD) run cmd/checkapi/main.go .
+checkapi: $(CHECKAPI)
+	$(CHECKAPI) -folder . -config .checkapi.yaml
 
 .PHONY: kind-ready
 kind-ready:
@@ -511,8 +623,7 @@ $(1)
 endef
 
 # List of directories where certificates are stored for unit tests.
-CERT_DIRS := receiver/sapmreceiver/testdata \
-             receiver/signalfxreceiver/testdata \
+CERT_DIRS := receiver/signalfxreceiver/testdata \
              receiver/splunkhecreceiver/testdata \
              receiver/mongodbatlasreceiver/testdata/alerts/cert \
              receiver/mongodbreceiver/testdata/certs \
@@ -543,6 +654,10 @@ crosslink: $(CROSSLINK)
 	@echo "Executing crosslink"
 	$(CROSSLINK) --root=$(shell pwd) --prune
 
+.PHONY: actionlint
+actionlint: $(ACTIONLINT)
+	$(ACTIONLINT) -config-file .github/actionlint.yaml -color $(filter-out $(wildcard .github/workflows/*windows.y*), $(wildcard .github/workflows/*.y*))
+
 .PHONY: clean
 clean:
 	@echo "Removing coverage files"
@@ -556,8 +671,7 @@ clean:
 
 .PHONY: generate-gh-issue-templates
 generate-gh-issue-templates:
-	cd cmd/githubgen && $(GOCMD) install .
-	githubgen issue-templates
+	$(GITHUBGEN) issue-templates
 
 .PHONY: checks
 checks:

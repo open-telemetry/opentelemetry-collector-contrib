@@ -5,8 +5,7 @@ package fileset // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"errors"
-
-	"golang.org/x/exp/slices"
+	"slices"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"

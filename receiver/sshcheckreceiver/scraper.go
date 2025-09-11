@@ -29,7 +29,7 @@ type sshcheckScraper struct {
 // start starts the scraper by creating a new SSH Client on the scraper
 func (s *sshcheckScraper) start(_ context.Context, host component.Host) error {
 	var err error
-	s.Client, err = s.Config.ToClient(host, s.settings)
+	s.Client, err = s.ToClient(host, s.settings)
 	return err
 }
 
@@ -37,7 +37,7 @@ func (s *sshcheckScraper) scrapeSSH(now pcommon.Timestamp) error {
 	var success int64
 
 	start := time.Now()
-	err := s.Client.Dial(s.Config.SSHClientSettings.Endpoint)
+	err := s.Dial(s.Endpoint)
 	if err == nil {
 		success = 1
 	}
@@ -51,7 +51,7 @@ func (s *sshcheckScraper) scrapeSFTP(now pcommon.Timestamp) error {
 
 	start := time.Now()
 	// upgrade to SFTP and read fs
-	sftpc, err := s.Client.SFTPClient()
+	sftpc, err := s.SFTPClient()
 	if err == nil {
 		_, err = sftpc.ReadDir(".")
 		if err == nil {
@@ -63,7 +63,7 @@ func (s *sshcheckScraper) scrapeSFTP(now pcommon.Timestamp) error {
 	return err
 }
 
-// timeout chooses the shorter between between a given deadline and timeout
+// timeout chooses the shorter duration between a given deadline and timeout
 func timeout(deadline time.Time, timeout time.Duration) time.Duration {
 	timeToDeadline := time.Until(deadline)
 	if timeToDeadline < timeout {
@@ -76,9 +76,7 @@ func timeout(deadline time.Time, timeout time.Duration) time.Duration {
 // is a bit awkward here, because the SFTP checks are not enabled by default and they would panic on nil
 // ref to the underlying Conn when SSH checks failed.
 func (s *sshcheckScraper) scrape(ctx context.Context) (_ pmetric.Metrics, err error) {
-	var (
-		to time.Duration
-	)
+	var to time.Duration
 	// check cancellation
 	select {
 	case <-ctx.Done():
@@ -87,7 +85,7 @@ func (s *sshcheckScraper) scrape(ctx context.Context) (_ pmetric.Metrics, err er
 	}
 
 	cleanup := func() {
-		s.Client.Close()
+		s.Close()
 	}
 
 	// if the context carries a shorter deadline then timeout that quickly
@@ -121,7 +119,7 @@ func (s *sshcheckScraper) scrape(ctx context.Context) (_ pmetric.Metrics, err er
 	}
 
 	rb := s.mb.NewResourceBuilder()
-	rb.SetSSHEndpoint(s.Config.SSHClientSettings.Endpoint)
+	rb.SetSSHEndpoint(s.Endpoint)
 	return s.mb.Emit(metadata.WithResource(rb.Emit())), nil
 }
 

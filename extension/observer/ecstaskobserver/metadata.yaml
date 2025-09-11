@@ -3,11 +3,12 @@ type: ecs_task_observer
 status:
   class: extension
   stability:
-    beta: [extension]
+    unmaintained: [extension]
   distributions: [contrib]
   codeowners:
     active: []
     emeritus: [rmfitzpatrick]
+    seeking_new: true
 
 # TODO: Update the extension to make the tests pass
 tests:

@@ -16,17 +16,17 @@ import (
 	"go.uber.org/zap"
 )
 
-type EnvelopeStreamFactory struct {
+type envelopeStreamFactory struct {
 	rlpGatewayClient *loggregator.RLPGatewayClient
 }
 
 func newEnvelopeStreamFactory(
 	ctx context.Context,
 	settings component.TelemetrySettings,
-	authTokenProvider *UAATokenProvider,
+	authTokenProvider *uaaTokenProvider,
 	httpConfig confighttp.ClientConfig,
-	host component.Host) (*EnvelopeStreamFactory, error) {
-
+	host component.Host,
+) (*envelopeStreamFactory, error) {
 	httpClient, err := httpConfig.ToClient(ctx, host, settings)
 	if err != nil {
 		return nil, fmt.Errorf("creating HTTP client for Cloud Foundry RLP Gateway: %w", err)
@@ -41,10 +41,10 @@ func newEnvelopeStreamFactory(
 		}),
 	)
 
-	return &EnvelopeStreamFactory{gatewayClient}, nil
+	return &envelopeStreamFactory{gatewayClient}, nil
 }
 
-func (rgc *EnvelopeStreamFactory) CreateMetricsStream(ctx context.Context, baseShardID string) loggregator.EnvelopeStream {
+func (rgc *envelopeStreamFactory) CreateMetricsStream(ctx context.Context, baseShardID string) loggregator.EnvelopeStream {
 	newShardID := baseShardID + "_metrics"
 	selectors := []*loggregator_v2.Selector{
 		{
@@ -65,7 +65,7 @@ func (rgc *EnvelopeStreamFactory) CreateMetricsStream(ctx context.Context, baseS
 	return stream
 }
 
-func (rgc *EnvelopeStreamFactory) CreateLogsStream(ctx context.Context, baseShardID string) loggregator.EnvelopeStream {
+func (rgc *envelopeStreamFactory) CreateLogsStream(ctx context.Context, baseShardID string) loggregator.EnvelopeStream {
 	newShardID := baseShardID + "_logs"
 	selectors := []*loggregator_v2.Selector{
 		{
@@ -83,18 +83,17 @@ func (rgc *EnvelopeStreamFactory) CreateLogsStream(ctx context.Context, baseShar
 
 type authorizationProvider struct {
 	logger            *zap.Logger
-	authTokenProvider *UAATokenProvider
+	authTokenProvider *uaaTokenProvider
 	client            *http.Client
 }
 
 func (ap *authorizationProvider) Do(request *http.Request) (*http.Response, error) {
 	token, err := ap.authTokenProvider.ProvideToken()
-	if err == nil {
-		request.Header.Set("Authorization", token)
-	} else {
+	if err != nil {
 		ap.logger.Error("fetching authentication token", zap.Error(err))
 		return nil, errors.New("obtaining authentication token for the request")
 	}
+	request.Header.Set("Authorization", token)
 
 	return ap.client.Do(request)
 }

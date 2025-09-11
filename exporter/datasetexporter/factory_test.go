@@ -4,7 +4,7 @@
 package datasetexporter
 
 import (
-	"fmt"
+	"errors"
 	"path/filepath"
 	"testing"
 	"time"
@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datasetexporter/internal/metadata"
@@ -128,10 +129,11 @@ func TestLoadConfig(t *testing.T) {
 					MaxInterval:         12 * time.Nanosecond,
 					MaxElapsedTime:      13 * time.Nanosecond,
 				},
-				QueueSettings: exporterhelper.QueueConfig{
+				QueueSettings: exporterhelper.QueueBatchConfig{
 					Enabled:      true,
 					NumConsumers: 14,
 					QueueSize:    15,
+					Sizer:        exporterhelper.RequestSizerTypeRequests,
 				},
 				TimeoutSettings: exporterhelper.TimeoutConfig{
 					Timeout: 16 * time.Nanosecond,
@@ -148,7 +150,7 @@ func TestLoadConfig(t *testing.T) {
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
-			if assert.NoError(t, component.ValidateConfig(cfg)) {
+			if assert.NoError(t, xconfmap.Validate(cfg)) {
 				assert.Equal(t, tt.expected, cfg)
 			}
 		})
@@ -160,39 +162,43 @@ func TestValidateConfigs(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(*testing.T) {
-			err := component.ValidateConfig(tt.config)
-			assert.Equal(t, tt.expectedError, err)
+			err := xconfmap.Validate(tt.config)
+			if tt.expectedError != nil {
+				assert.ErrorContains(t, err, tt.expectedError.Error())
+			} else {
+				assert.NoError(t, err)
+			}
 		})
 	}
 }
 
-type CreateTest struct {
+type createTest struct {
 	name          string
 	config        component.Config
 	expectedError error
 }
 
-func createExporterTests() []CreateTest {
+func createExporterTests() []createTest {
 	factory := NewFactory()
 	defaultCfg := factory.CreateDefaultConfig().(*Config)
 	defaultCfg.APIKey = "default-api-key"
 	defaultCfg.DatasetURL = "https://app.eu.scalyr.com"
 
-	return []CreateTest{
+	return []createTest{
 		{
 			name:          "broken",
 			config:        &Config{},
-			expectedError: fmt.Errorf("api_key is required"),
+			expectedError: errors.New("api_key is required"),
 		},
 		{
 			name:          "missing-url",
 			config:        &Config{APIKey: "AAA"},
-			expectedError: fmt.Errorf("dataset_url is required"),
+			expectedError: errors.New("dataset_url is required"),
 		},
 		{
 			name:          "missing-key",
 			config:        &Config{DatasetURL: "bbb"},
-			expectedError: fmt.Errorf("api_key is required"),
+			expectedError: errors.New("api_key is required"),
 		},
 		{
 			name: "valid",

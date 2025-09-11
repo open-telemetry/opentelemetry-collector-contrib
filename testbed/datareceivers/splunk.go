@@ -41,7 +41,7 @@ func (sr *SplunkHECDataReceiver) Start(_ consumer.Traces, _ consumer.Metrics, lc
 	}
 	var err error
 	f := splunkhecreceiver.NewFactory()
-	sr.receiver, err = f.CreateLogs(context.Background(), receivertest.NewNopSettings(), &config, lc)
+	sr.receiver, err = f.CreateLogs(context.Background(), receivertest.NewNopSettings(f.Type()), &config, lc)
 	if err != nil {
 		return err
 	}
@@ -64,6 +64,6 @@ func (sr *SplunkHECDataReceiver) GenConfigYAMLStr() string {
 }
 
 // ProtocolName returns protocol name as it is specified in Collector config.
-func (sr *SplunkHECDataReceiver) ProtocolName() string {
+func (*SplunkHECDataReceiver) ProtocolName() string {
 	return "splunk_hec"
 }

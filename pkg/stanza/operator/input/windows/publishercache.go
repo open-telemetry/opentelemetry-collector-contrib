@@ -6,7 +6,7 @@
 package windows // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/windows"
 
 import (
-	"errors"
+	"go.uber.org/multierr"
 )
 
 type publisherCache struct {
@@ -43,9 +43,7 @@ func (c *publisherCache) evictAll() error {
 	var errs error
 	for _, publisher := range c.cache {
 		if publisher.Valid() {
-			if err := publisher.Close(); err != nil {
-				errs = errors.Join(errs, err)
-			}
+			errs = multierr.Append(errs, publisher.Close())
 		}
 	}
 

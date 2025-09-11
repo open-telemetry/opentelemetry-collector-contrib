@@ -4,7 +4,6 @@
 package time
 
 import (
-	"context"
 	"math"
 	"testing"
 	"time"
@@ -132,7 +131,7 @@ func TestProcess(t *testing.T) {
 
 			require.True(t, op.CanOutput(), "expected test operator CanOutput to return true")
 
-			err = op.Process(context.Background(), tc.input)
+			err = op.Process(t.Context(), tc.input)
 			require.NoError(t, err)
 			require.Equal(t, tc.expect, tc.input)
 		})
@@ -215,7 +214,7 @@ func TestTimeParser(t *testing.T) {
 		{
 			name:           "oracle",
 			sample:         "2019-10-15T10:42:01.900436-10:00",
-			expected:       time.Date(2019, time.October, 15, 10, 42, 01, 900436*1000, hst),
+			expected:       time.Date(2019, time.October, 15, 10, 42, 0o1, 900436*1000, hst),
 			gotimeLayout:   "2006-01-02T15:04:05.999999-07:00",
 			strptimeLayout: "%Y-%m-%dT%H:%M:%S.%f%j",
 		},
@@ -498,11 +497,11 @@ func makeTestEntry(t *testing.T, field entry.Field, value any) *entry.Entry {
 	return e
 }
 
-func runTimeParseTest(t *testing.T, cfg *Config, ent *entry.Entry, buildErr bool, parseErr bool, expected time.Time) func(*testing.T) {
+func runTimeParseTest(t *testing.T, cfg *Config, ent *entry.Entry, buildErr, parseErr bool, expected time.Time) func(*testing.T) {
 	return runLossyTimeParseTest(t, cfg, ent, buildErr, parseErr, expected, time.Duration(0))
 }
 
-func runLossyTimeParseTest(_ *testing.T, cfg *Config, ent *entry.Entry, buildErr bool, parseErr bool, expected time.Time, maxLoss time.Duration) func(*testing.T) {
+func runLossyTimeParseTest(_ *testing.T, cfg *Config, ent *entry.Entry, buildErr, parseErr bool, expected time.Time, maxLoss time.Duration) func(*testing.T) {
 	return func(t *testing.T) {
 		set := componenttest.NewNopTelemetrySettings()
 		op, err := cfg.Build(set)

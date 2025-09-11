@@ -4,7 +4,6 @@
 package keyvalue
 
 import (
-	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -688,6 +687,24 @@ key=value`,
 			true,
 			false,
 		},
+		{
+			"containerd output",
+			func(_ *Config) {},
+			&entry.Entry{
+				Body: `time="2024-11-01T12:38:17.992190505Z" level=warning msg="cleanup warnings time='2024-11-01T12:38:17Z' level=debug msg=\"starting signal loop\" namespace=moby-10000.10000 pid=1608080 runtime=io.containerd.runc.v2" namespace=moby-10000.10000`,
+			},
+			&entry.Entry{
+				Attributes: map[string]any{
+					"time":      "2024-11-01T12:38:17.992190505Z",
+					"level":     "warning",
+					"msg":       `cleanup warnings time='2024-11-01T12:38:17Z' level=debug msg=\"starting signal loop\" namespace=moby-10000.10000 pid=1608080 runtime=io.containerd.runc.v2`,
+					"namespace": "moby-10000.10000",
+				},
+				Body: `time="2024-11-01T12:38:17.992190505Z" level=warning msg="cleanup warnings time='2024-11-01T12:38:17Z' level=debug msg=\"starting signal loop\" namespace=moby-10000.10000 pid=1608080 runtime=io.containerd.runc.v2" namespace=moby-10000.10000`,
+			},
+			false,
+			false,
+		},
 	}
 
 	for _, tc := range cases {
@@ -711,7 +728,7 @@ key=value`,
 			tc.input.ObservedTimestamp = ots
 			tc.expect.ObservedTimestamp = ots
 
-			err = op.Process(context.Background(), tc.input)
+			err = op.Process(t.Context(), tc.input)
 			if tc.expectError {
 				require.Error(t, err)
 				return

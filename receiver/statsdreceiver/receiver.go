@@ -21,7 +21,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/internal/protocol"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/internal/parser"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/internal/transport"
 )
 
@@ -35,7 +35,7 @@ type statsdReceiver struct {
 	server       transport.Server
 	reporter     *reporter
 	obsrecv      *receiverhelper.ObsReport
-	parser       protocol.Parser
+	parser       parser.Parser
 	nextConsumer consumer.Metrics
 	cancel       context.CancelFunc
 }
@@ -46,9 +46,14 @@ func newReceiver(
 	config Config,
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {
+	trans := transport.NewTransport(strings.ToLower(string(config.NetAddr.Transport)))
 
 	if config.NetAddr.Endpoint == "" {
-		config.NetAddr.Endpoint = "localhost:8125"
+		if trans == transport.UDS {
+			config.NetAddr.Endpoint = "/var/run/statsd-receiver.sock"
+		} else {
+			config.NetAddr.Endpoint = "localhost:8125"
+		}
 	}
 
 	rep, err := newReporter(set)
@@ -56,7 +61,6 @@ func newReceiver(
 		return nil, err
 	}
 
-	trans := transport.NewTransport(strings.ToLower(string(config.NetAddr.Transport)))
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		LongLivedCtx:           true,
 		ReceiverID:             set.ID,
@@ -73,7 +77,7 @@ func newReceiver(
 		nextConsumer: nextConsumer,
 		obsrecv:      obsrecv,
 		reporter:     rep,
-		parser: &protocol.StatsDParser{
+		parser: &parser.StatsDParser{
 			BuildInfo: set.BuildInfo,
 		},
 	}
@@ -81,13 +85,14 @@ func newReceiver(
 }
 
 func buildTransportServer(config Config) (transport.Server, error) {
-	// TODO: Add unix socket transport implementations
 	trans := transport.NewTransport(strings.ToLower(string(config.NetAddr.Transport)))
 	switch trans {
 	case transport.UDP, transport.UDP4, transport.UDP6:
 		return transport.NewUDPServer(trans, config.NetAddr.Endpoint)
 	case transport.TCP, transport.TCP4, transport.TCP6:
 		return transport.NewTCPServer(trans, config.NetAddr.Endpoint)
+	case transport.UDS:
+		return transport.NewUDSServer(trans, config.NetAddr.Endpoint, config.SocketPermissions)
 	}
 
 	return nil, fmt.Errorf("unsupported transport %q", string(config.NetAddr.Transport))
@@ -173,6 +178,6 @@ func (r *statsdReceiver) Shutdown(context.Context) error {
 	return err
 }
 
-func (r *statsdReceiver) Flush(ctx context.Context, metrics pmetric.Metrics, nextConsumer consumer.Metrics) error {
+func (*statsdReceiver) Flush(ctx context.Context, metrics pmetric.Metrics, nextConsumer consumer.Metrics) error {
 	return nextConsumer.ConsumeMetrics(ctx, metrics)
 }

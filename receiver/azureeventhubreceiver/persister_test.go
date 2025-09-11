@@ -12,12 +12,15 @@ import (
 
 	"github.com/Azure/azure-event-hubs-go/v3/persist"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/extension/experimental/storage"
+	"go.opentelemetry.io/collector/extension/xextension/storage"
 )
 
 func TestStorageOffsetPersisterUnknownCheckpoint(t *testing.T) {
 	client := newMockClient()
-	s := storageCheckpointPersister{storageClient: client}
+	s := storageCheckpointPersister[persist.Checkpoint]{
+		storageClient: client,
+		defaultValue:  persist.NewCheckpointFromStartOfStream(),
+	}
 	// check we have no match
 	checkpoint, err := s.Read("foo", "bar", "foobar", "foobarfoo")
 	assert.NoError(t, err)
@@ -27,7 +30,10 @@ func TestStorageOffsetPersisterUnknownCheckpoint(t *testing.T) {
 
 func TestStorageOffsetPersisterWithKnownCheckpoint(t *testing.T) {
 	client := newMockClient()
-	s := storageCheckpointPersister{storageClient: client}
+	s := storageCheckpointPersister[persist.Checkpoint]{
+		storageClient: client,
+		defaultValue:  persist.NewCheckpointFromStartOfStream(),
+	}
 	checkpoint := persist.Checkpoint{
 		Offset:         "foo",
 		SequenceNumber: 2,
@@ -74,7 +80,7 @@ func (p *mockClient) Delete(_ context.Context, key string) error {
 	return nil
 }
 
-func (p *mockClient) Batch(_ context.Context, ops ...storage.Operation) error {
+func (p *mockClient) Batch(_ context.Context, ops ...*storage.Operation) error {
 	p.cacheMux.Lock()
 	defer p.cacheMux.Unlock()
 

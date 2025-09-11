@@ -5,8 +5,10 @@ package config // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"encoding"
+	"errors"
 	"fmt"
 
+	otlpmetrics "github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics"
 	"go.opentelemetry.io/collector/config/confignet"
 )
 
@@ -79,7 +81,7 @@ type HistogramConfig struct {
 
 func (c *HistogramConfig) validate() error {
 	if c.Mode == HistogramModeNoBuckets && !c.SendAggregations {
-		return fmt.Errorf("'nobuckets' mode and `send_aggregation_metrics` set to false will send no histogram metrics")
+		return errors.New("'nobuckets' mode and `send_aggregation_metrics` set to false will send no histogram metrics")
 	}
 	return nil
 }
@@ -205,4 +207,39 @@ type MetricsExporterConfig struct {
 	// InstrumentationScopeMetadataAsTags, if set to true, adds the name and version of the
 	// instrumentation scope that created a metric to the metric tags
 	InstrumentationScopeMetadataAsTags bool `mapstructure:"instrumentation_scope_metadata_as_tags"`
+}
+
+// ToTranslatorOpts returns a list of metrics translator options from the metrics config
+func (mcfg MetricsConfig) ToTranslatorOpts() []otlpmetrics.TranslatorOption {
+	options := []otlpmetrics.TranslatorOption{
+		otlpmetrics.WithDeltaTTL(mcfg.DeltaTTL),
+	}
+
+	if mcfg.HistConfig.SendAggregations {
+		options = append(options, otlpmetrics.WithHistogramAggregations())
+	}
+
+	if mcfg.SummaryConfig.Mode == SummaryModeGauges {
+		options = append(options, otlpmetrics.WithQuantiles())
+	}
+
+	if mcfg.ExporterConfig.InstrumentationScopeMetadataAsTags {
+		options = append(options, otlpmetrics.WithInstrumentationScopeMetadataAsTags())
+	}
+
+	options = append(options, otlpmetrics.WithHistogramMode(otlpmetrics.HistogramMode(mcfg.HistConfig.Mode)))
+
+	var numberMode otlpmetrics.NumberMode
+	switch mcfg.SumConfig.CumulativeMonotonicMode {
+	case CumulativeMonotonicSumModeRawValue:
+		numberMode = otlpmetrics.NumberModeRawValue
+	case CumulativeMonotonicSumModeToDelta:
+		numberMode = otlpmetrics.NumberModeCumulativeToDelta
+	}
+	options = append(options,
+		otlpmetrics.WithNumberMode(numberMode),
+		otlpmetrics.WithInitialCumulMonoValueMode(
+			otlpmetrics.InitialCumulMonoValueMode(mcfg.SumConfig.InitialCumulativeMonotonicMode)))
+
+	return options
 }

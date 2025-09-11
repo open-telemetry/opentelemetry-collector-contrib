@@ -4,7 +4,6 @@
 package wavefrontreceiver
 
 import (
-	"context"
 	"fmt"
 	"net"
 	"strings"
@@ -20,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/wavefrontreceiver/internal/metadata"
 )
 
 func Test_wavefrontreceiver_EndToEnd(t *testing.T) {
@@ -30,14 +30,14 @@ func Test_wavefrontreceiver_EndToEnd(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	rCfg.Endpoint = addr
 	sink := new(consumertest.MetricsSink)
-	params := receivertest.NewNopSettings()
-	rcvr, err := createMetricsReceiver(context.Background(), params, rCfg, sink)
+	params := receivertest.NewNopSettings(metadata.Type)
+	rcvr, err := createMetricsReceiver(t.Context(), params, rCfg, sink)
 	require.NoError(t, err)
 
-	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, rcvr.Start(t.Context(), componenttest.NewNopHost()))
 
 	defer func() {
-		assert.NoError(t, rcvr.Shutdown(context.Background()))
+		assert.NoError(t, rcvr.Shutdown(t.Context()))
 	}()
 
 	tests := []struct {

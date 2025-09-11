@@ -10,6 +10,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -17,9 +18,12 @@ import (
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/metadatatest"
 )
 
 type logNameTest struct {
@@ -581,8 +585,8 @@ func TestFilterLogProcessor(t *testing.T) {
 			}
 			factory := NewFactory()
 			flp, err := factory.CreateLogs(
-				context.Background(),
-				processortest.NewNopSettings(),
+				t.Context(),
+				processortest.NewNopSettings(metadata.Type),
 				cfg,
 				next,
 			)
@@ -591,10 +595,10 @@ func TestFilterLogProcessor(t *testing.T) {
 
 			caps := flp.Capabilities()
 			assert.True(t, caps.MutatesData)
-			ctx := context.Background()
+			ctx := t.Context()
 			assert.NoError(t, flp.Start(ctx, nil))
 
-			cErr := flp.ConsumeLogs(context.Background(), test.inLogs)
+			cErr := flp.ConsumeLogs(t.Context(), test.inLogs)
 			assert.NoError(t, cErr)
 			got := next.AllLogs()
 
@@ -675,10 +679,10 @@ func requireNotPanicsLogs(t *testing.T, logs plog.Logs) {
 	pcfg.Logs = LogFilters{
 		Exclude: nil,
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 	proc, _ := factory.CreateLogs(
 		ctx,
-		processortest.NewNopSettings(),
+		processortest.NewNopSettings(metadata.Type),
 		cfg,
 		consumertest.NewNop(),
 	)
@@ -749,10 +753,11 @@ func TestFilterLogProcessorWithOTTL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			processor, err := newFilterLogsProcessor(processortest.NewNopSettings(), &Config{Logs: LogFilters{LogConditions: tt.conditions}})
+			cfg := &Config{Logs: LogFilters{LogConditions: tt.conditions}, logFunctions: defaultLogFunctionsMap()}
+			processor, err := newFilterLogsProcessor(processortest.NewNopSettings(metadata.Type), cfg)
 			assert.NoError(t, err)
 
-			got, err := processor.processLogs(context.Background(), constructLogs())
+			got, err := processor.processLogs(t.Context(), constructLogs())
 
 			if tt.filterEverything {
 				assert.Equal(t, processorhelper.ErrSkipProcessingData, err)
@@ -766,35 +771,23 @@ func TestFilterLogProcessorWithOTTL(t *testing.T) {
 }
 
 func TestFilterLogProcessorTelemetry(t *testing.T) {
-	tel := setupTestTelemetry()
-	processor, err := newFilterLogsProcessor(tel.NewSettings(), &Config{
-		Logs: LogFilters{LogConditions: []string{`IsMatch(body, "operationA")`}},
+	tel := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) }) //nolint:usetesting
+	processor, err := newFilterLogsProcessor(metadatatest.NewSettings(tel), &Config{
+		Logs:         LogFilters{LogConditions: []string{`IsMatch(body, "operationA")`}},
+		logFunctions: defaultLogFunctionsMap(),
 	})
 	assert.NoError(t, err)
 
-	_, err = processor.processLogs(context.Background(), constructLogs())
+	_, err = processor.processLogs(t.Context(), constructLogs())
 	assert.NoError(t, err)
 
-	want := []metricdata.Metrics{
+	metadatatest.AssertEqualProcessorFilterLogsFiltered(t, tel, []metricdata.DataPoint[int64]{
 		{
-			Name:        "otelcol_processor_filter_logs.filtered",
-			Description: "Number of logs dropped by the filter processor",
-			Unit:        "1",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{
-						Value:      2,
-						Attributes: attribute.NewSet(attribute.String("filter", "filter")),
-					},
-				},
-			},
+			Value:      2,
+			Attributes: attribute.NewSet(attribute.String("filter", "filter")),
 		},
-	}
-
-	tel.assertMetrics(t, want)
-
+	}, metricdatatest.IgnoreTimestamp())
 }
 
 func constructLogs() plog.Logs {
@@ -825,7 +818,6 @@ func fillLogOne(log plog.LogRecord) {
 	log.Attributes().PutStr("http.path", "/health")
 	log.Attributes().PutStr("http.url", "http://localhost/health")
 	log.Attributes().PutStr("flags", "A|B|C")
-
 }
 
 func fillLogTwo(log plog.LogRecord) {
@@ -836,5 +828,4 @@ func fillLogTwo(log plog.LogRecord) {
 	log.Attributes().PutStr("http.path", "/health")
 	log.Attributes().PutStr("http.url", "http://localhost/health")
 	log.Attributes().PutStr("flags", "C|D")
-
 }

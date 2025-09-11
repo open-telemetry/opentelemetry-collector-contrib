@@ -15,9 +15,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-var (
-	testTimestamp = int64(1700000000)
-)
+var testTimestamp = int64(1700000000)
 
 func TestHandleStructureParsing(t *testing.T) {
 	tests := []struct {

@@ -26,9 +26,7 @@ const (
 	queryTime  = "time"
 )
 
-var (
-	errCannotConvertValue = errors.New("cannot convert field value to attribute")
-)
+var errCannotConvertValue = errors.New("cannot convert field value to attribute")
 
 // splunkHecToLogData transforms splunk events into logs
 func splunkHecToLogData(logger *zap.Logger, events []*splunk.Event, resourceCustomizer func(pcommon.Resource), config *Config) (plog.Logs, error) {
@@ -54,9 +52,7 @@ func splunkHecToLogData(logger *zap.Logger, events []*splunk.Event, resourceCust
 			return ld, err
 		}
 
-		// Splunk timestamps are in seconds so convert to nanos by multiplying
-		// by 1 billion.
-		logRecord.SetTimestamp(pcommon.Timestamp(event.Time * 1e9))
+		logRecord.SetTimestamp(convertTimestamp(event.Time))
 
 		// Set event fields first, so the specialized attributes overwrite them if needed.
 		keys := make([]string, 0, len(event.Fields))
@@ -140,7 +136,6 @@ func convertToValue(logger *zap.Logger, src any, dest pcommon.Value) error {
 	default:
 		logger.Debug("Unsupported value conversion", zap.Any("value", src))
 		return errCannotConvertValue
-
 	}
 	return nil
 }

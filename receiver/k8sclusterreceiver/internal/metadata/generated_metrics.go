@@ -10,8 +10,228 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
-	conventions "go.opentelemetry.io/collector/semconv/v1.18.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.18.0"
 )
+
+// AttributeK8sContainerStatusState specifies the value k8s.container.status.state attribute.
+type AttributeK8sContainerStatusState int
+
+const (
+	_ AttributeK8sContainerStatusState = iota
+	AttributeK8sContainerStatusStateTerminated
+	AttributeK8sContainerStatusStateRunning
+	AttributeK8sContainerStatusStateWaiting
+)
+
+// String returns the string representation of the AttributeK8sContainerStatusState.
+func (av AttributeK8sContainerStatusState) String() string {
+	switch av {
+	case AttributeK8sContainerStatusStateTerminated:
+		return "terminated"
+	case AttributeK8sContainerStatusStateRunning:
+		return "running"
+	case AttributeK8sContainerStatusStateWaiting:
+		return "waiting"
+	}
+	return ""
+}
+
+// MapAttributeK8sContainerStatusState is a helper map of string to AttributeK8sContainerStatusState attribute value.
+var MapAttributeK8sContainerStatusState = map[string]AttributeK8sContainerStatusState{
+	"terminated": AttributeK8sContainerStatusStateTerminated,
+	"running":    AttributeK8sContainerStatusStateRunning,
+	"waiting":    AttributeK8sContainerStatusStateWaiting,
+}
+
+var MetricsInfo = metricsInfo{
+	K8sContainerCPULimit: metricInfo{
+		Name: "k8s.container.cpu_limit",
+	},
+	K8sContainerCPURequest: metricInfo{
+		Name: "k8s.container.cpu_request",
+	},
+	K8sContainerEphemeralstorageLimit: metricInfo{
+		Name: "k8s.container.ephemeralstorage_limit",
+	},
+	K8sContainerEphemeralstorageRequest: metricInfo{
+		Name: "k8s.container.ephemeralstorage_request",
+	},
+	K8sContainerMemoryLimit: metricInfo{
+		Name: "k8s.container.memory_limit",
+	},
+	K8sContainerMemoryRequest: metricInfo{
+		Name: "k8s.container.memory_request",
+	},
+	K8sContainerReady: metricInfo{
+		Name: "k8s.container.ready",
+	},
+	K8sContainerRestarts: metricInfo{
+		Name: "k8s.container.restarts",
+	},
+	K8sContainerStatusState: metricInfo{
+		Name: "k8s.container.status.state",
+	},
+	K8sContainerStorageLimit: metricInfo{
+		Name: "k8s.container.storage_limit",
+	},
+	K8sContainerStorageRequest: metricInfo{
+		Name: "k8s.container.storage_request",
+	},
+	K8sCronjobActiveJobs: metricInfo{
+		Name: "k8s.cronjob.active_jobs",
+	},
+	K8sDaemonsetCurrentScheduledNodes: metricInfo{
+		Name: "k8s.daemonset.current_scheduled_nodes",
+	},
+	K8sDaemonsetDesiredScheduledNodes: metricInfo{
+		Name: "k8s.daemonset.desired_scheduled_nodes",
+	},
+	K8sDaemonsetMisscheduledNodes: metricInfo{
+		Name: "k8s.daemonset.misscheduled_nodes",
+	},
+	K8sDaemonsetReadyNodes: metricInfo{
+		Name: "k8s.daemonset.ready_nodes",
+	},
+	K8sDeploymentAvailable: metricInfo{
+		Name: "k8s.deployment.available",
+	},
+	K8sDeploymentDesired: metricInfo{
+		Name: "k8s.deployment.desired",
+	},
+	K8sHpaCurrentReplicas: metricInfo{
+		Name: "k8s.hpa.current_replicas",
+	},
+	K8sHpaDesiredReplicas: metricInfo{
+		Name: "k8s.hpa.desired_replicas",
+	},
+	K8sHpaMaxReplicas: metricInfo{
+		Name: "k8s.hpa.max_replicas",
+	},
+	K8sHpaMinReplicas: metricInfo{
+		Name: "k8s.hpa.min_replicas",
+	},
+	K8sJobActivePods: metricInfo{
+		Name: "k8s.job.active_pods",
+	},
+	K8sJobDesiredSuccessfulPods: metricInfo{
+		Name: "k8s.job.desired_successful_pods",
+	},
+	K8sJobFailedPods: metricInfo{
+		Name: "k8s.job.failed_pods",
+	},
+	K8sJobMaxParallelPods: metricInfo{
+		Name: "k8s.job.max_parallel_pods",
+	},
+	K8sJobSuccessfulPods: metricInfo{
+		Name: "k8s.job.successful_pods",
+	},
+	K8sNamespacePhase: metricInfo{
+		Name: "k8s.namespace.phase",
+	},
+	K8sNodeCondition: metricInfo{
+		Name: "k8s.node.condition",
+	},
+	K8sPodPhase: metricInfo{
+		Name: "k8s.pod.phase",
+	},
+	K8sPodStatusReason: metricInfo{
+		Name: "k8s.pod.status_reason",
+	},
+	K8sReplicasetAvailable: metricInfo{
+		Name: "k8s.replicaset.available",
+	},
+	K8sReplicasetDesired: metricInfo{
+		Name: "k8s.replicaset.desired",
+	},
+	K8sReplicationControllerAvailable: metricInfo{
+		Name: "k8s.replication_controller.available",
+	},
+	K8sReplicationControllerDesired: metricInfo{
+		Name: "k8s.replication_controller.desired",
+	},
+	K8sResourceQuotaHardLimit: metricInfo{
+		Name: "k8s.resource_quota.hard_limit",
+	},
+	K8sResourceQuotaUsed: metricInfo{
+		Name: "k8s.resource_quota.used",
+	},
+	K8sStatefulsetCurrentPods: metricInfo{
+		Name: "k8s.statefulset.current_pods",
+	},
+	K8sStatefulsetDesiredPods: metricInfo{
+		Name: "k8s.statefulset.desired_pods",
+	},
+	K8sStatefulsetReadyPods: metricInfo{
+		Name: "k8s.statefulset.ready_pods",
+	},
+	K8sStatefulsetUpdatedPods: metricInfo{
+		Name: "k8s.statefulset.updated_pods",
+	},
+	OpenshiftAppliedclusterquotaLimit: metricInfo{
+		Name: "openshift.appliedclusterquota.limit",
+	},
+	OpenshiftAppliedclusterquotaUsed: metricInfo{
+		Name: "openshift.appliedclusterquota.used",
+	},
+	OpenshiftClusterquotaLimit: metricInfo{
+		Name: "openshift.clusterquota.limit",
+	},
+	OpenshiftClusterquotaUsed: metricInfo{
+		Name: "openshift.clusterquota.used",
+	},
+}
+
+type metricsInfo struct {
+	K8sContainerCPULimit                metricInfo
+	K8sContainerCPURequest              metricInfo
+	K8sContainerEphemeralstorageLimit   metricInfo
+	K8sContainerEphemeralstorageRequest metricInfo
+	K8sContainerMemoryLimit             metricInfo
+	K8sContainerMemoryRequest           metricInfo
+	K8sContainerReady                   metricInfo
+	K8sContainerRestarts                metricInfo
+	K8sContainerStatusState             metricInfo
+	K8sContainerStorageLimit            metricInfo
+	K8sContainerStorageRequest          metricInfo
+	K8sCronjobActiveJobs                metricInfo
+	K8sDaemonsetCurrentScheduledNodes   metricInfo
+	K8sDaemonsetDesiredScheduledNodes   metricInfo
+	K8sDaemonsetMisscheduledNodes       metricInfo
+	K8sDaemonsetReadyNodes              metricInfo
+	K8sDeploymentAvailable              metricInfo
+	K8sDeploymentDesired                metricInfo
+	K8sHpaCurrentReplicas               metricInfo
+	K8sHpaDesiredReplicas               metricInfo
+	K8sHpaMaxReplicas                   metricInfo
+	K8sHpaMinReplicas                   metricInfo
+	K8sJobActivePods                    metricInfo
+	K8sJobDesiredSuccessfulPods         metricInfo
+	K8sJobFailedPods                    metricInfo
+	K8sJobMaxParallelPods               metricInfo
+	K8sJobSuccessfulPods                metricInfo
+	K8sNamespacePhase                   metricInfo
+	K8sNodeCondition                    metricInfo
+	K8sPodPhase                         metricInfo
+	K8sPodStatusReason                  metricInfo
+	K8sReplicasetAvailable              metricInfo
+	K8sReplicasetDesired                metricInfo
+	K8sReplicationControllerAvailable   metricInfo
+	K8sReplicationControllerDesired     metricInfo
+	K8sResourceQuotaHardLimit           metricInfo
+	K8sResourceQuotaUsed                metricInfo
+	K8sStatefulsetCurrentPods           metricInfo
+	K8sStatefulsetDesiredPods           metricInfo
+	K8sStatefulsetReadyPods             metricInfo
+	K8sStatefulsetUpdatedPods           metricInfo
+	OpenshiftAppliedclusterquotaLimit   metricInfo
+	OpenshiftAppliedclusterquotaUsed    metricInfo
+	OpenshiftClusterquotaLimit          metricInfo
+	OpenshiftClusterquotaUsed           metricInfo
+}
+
+type metricInfo struct {
+	Name string
+}
 
 type metricK8sContainerCPULimit struct {
 	data     pmetric.Metric // data buffer for generated metric.
@@ -398,6 +618,59 @@ func (m *metricK8sContainerRestarts) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sContainerRestarts(cfg MetricConfig) metricK8sContainerRestarts {
 	m := metricK8sContainerRestarts{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricK8sContainerStatusState struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills k8s.container.status.state metric with initial data.
+func (m *metricK8sContainerStatusState) init() {
+	m.data.SetName("k8s.container.status.state")
+	m.data.SetDescription("Experimental metric, may experience breaking changes. Describes the number of K8s containers that are currently in a given state. All possible container states will be reported at each time interval to avoid missing metrics. Only the value corresponding to the current state will be non-zero.")
+	m.data.SetUnit("{container}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricK8sContainerStatusState) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, k8sContainerStatusStateAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("k8s.container.status.state", k8sContainerStatusStateAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricK8sContainerStatusState) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricK8sContainerStatusState) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricK8sContainerStatusState(cfg MetricConfig) metricK8sContainerStatusState {
+	m := metricK8sContainerStatusState{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2203,6 +2476,7 @@ type MetricsBuilder struct {
 	metricK8sContainerMemoryRequest           metricK8sContainerMemoryRequest
 	metricK8sContainerReady                   metricK8sContainerReady
 	metricK8sContainerRestarts                metricK8sContainerRestarts
+	metricK8sContainerStatusState             metricK8sContainerStatusState
 	metricK8sContainerStorageLimit            metricK8sContainerStorageLimit
 	metricK8sContainerStorageRequest          metricK8sContainerStorageRequest
 	metricK8sCronjobActiveJobs                metricK8sCronjobActiveJobs
@@ -2258,7 +2532,6 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 		mb.startTime = startTime
 	})
 }
-
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		config:                                  mbc,
@@ -2273,6 +2546,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricK8sContainerMemoryRequest:           newMetricK8sContainerMemoryRequest(mbc.Metrics.K8sContainerMemoryRequest),
 		metricK8sContainerReady:                   newMetricK8sContainerReady(mbc.Metrics.K8sContainerReady),
 		metricK8sContainerRestarts:                newMetricK8sContainerRestarts(mbc.Metrics.K8sContainerRestarts),
+		metricK8sContainerStatusState:             newMetricK8sContainerStatusState(mbc.Metrics.K8sContainerStatusState),
 		metricK8sContainerStorageLimit:            newMetricK8sContainerStorageLimit(mbc.Metrics.K8sContainerStorageLimit),
 		metricK8sContainerStorageRequest:          newMetricK8sContainerStorageRequest(mbc.Metrics.K8sContainerStorageRequest),
 		metricK8sCronjobActiveJobs:                newMetricK8sCronjobActiveJobs(mbc.Metrics.K8sCronjobActiveJobs),
@@ -2395,6 +2669,24 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 	}
 	if mbc.ResourceAttributes.K8sHpaName.MetricsExclude != nil {
 		mb.resourceAttributeExcludeFilter["k8s.hpa.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sHpaName.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.K8sHpaScaletargetrefApiversion.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.hpa.scaletargetref.apiversion"] = filter.CreateFilter(mbc.ResourceAttributes.K8sHpaScaletargetrefApiversion.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.K8sHpaScaletargetrefApiversion.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.hpa.scaletargetref.apiversion"] = filter.CreateFilter(mbc.ResourceAttributes.K8sHpaScaletargetrefApiversion.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.K8sHpaScaletargetrefKind.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.hpa.scaletargetref.kind"] = filter.CreateFilter(mbc.ResourceAttributes.K8sHpaScaletargetrefKind.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.K8sHpaScaletargetrefKind.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.hpa.scaletargetref.kind"] = filter.CreateFilter(mbc.ResourceAttributes.K8sHpaScaletargetrefKind.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.K8sHpaScaletargetrefName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.hpa.scaletargetref.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sHpaScaletargetrefName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.K8sHpaScaletargetrefName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.hpa.scaletargetref.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sHpaScaletargetrefName.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.K8sHpaUID.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["k8s.hpa.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sHpaUID.MetricsInclude)
@@ -2601,7 +2893,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	rm.SetSchemaUrl(conventions.SchemaURL)
 	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver")
+	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricK8sContainerCPULimit.emit(ils.Metrics())
@@ -2612,6 +2904,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricK8sContainerMemoryRequest.emit(ils.Metrics())
 	mb.metricK8sContainerReady.emit(ils.Metrics())
 	mb.metricK8sContainerRestarts.emit(ils.Metrics())
+	mb.metricK8sContainerStatusState.emit(ils.Metrics())
 	mb.metricK8sContainerStorageLimit.emit(ils.Metrics())
 	mb.metricK8sContainerStorageRequest.emit(ils.Metrics())
 	mb.metricK8sCronjobActiveJobs.emit(ils.Metrics())
@@ -2717,6 +3010,11 @@ func (mb *MetricsBuilder) RecordK8sContainerReadyDataPoint(ts pcommon.Timestamp,
 // RecordK8sContainerRestartsDataPoint adds a data point to k8s.container.restarts metric.
 func (mb *MetricsBuilder) RecordK8sContainerRestartsDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricK8sContainerRestarts.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordK8sContainerStatusStateDataPoint adds a data point to k8s.container.status.state metric.
+func (mb *MetricsBuilder) RecordK8sContainerStatusStateDataPoint(ts pcommon.Timestamp, val int64, k8sContainerStatusStateAttributeValue AttributeK8sContainerStatusState) {
+	mb.metricK8sContainerStatusState.recordDataPoint(mb.startTime, ts, val, k8sContainerStatusStateAttributeValue.String())
 }
 
 // RecordK8sContainerStorageLimitDataPoint adds a data point to k8s.container.storage_limit metric.

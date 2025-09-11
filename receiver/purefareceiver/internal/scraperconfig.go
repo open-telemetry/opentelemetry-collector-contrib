@@ -6,6 +6,6 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 import "go.opentelemetry.io/collector/config/configauth"
 
 type ScraperConfig struct {
-	Address string                    `mapstructure:"address"`
-	Auth    configauth.Authentication `mapstructure:"auth"`
+	Address string            `mapstructure:"address"`
+	Auth    configauth.Config `mapstructure:"auth"`
 }

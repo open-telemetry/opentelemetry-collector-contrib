@@ -4,7 +4,6 @@
 package filterlog
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -12,7 +11,7 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
@@ -151,11 +150,11 @@ func TestLogRecord_Matching_False(t *testing.T) {
 			assert.NoError(t, err)
 			require.NotNil(t, expr)
 
-			val, err := expr.Eval(context.Background(), ottllog.NewTransformContext(lr, pcommon.NewInstrumentationScope(), pcommon.NewResource(), plog.NewScopeLogs(), plog.NewResourceLogs()))
+			val, err := expr.Eval(t.Context(), ottllog.NewTransformContext(lr, pcommon.NewInstrumentationScope(), pcommon.NewResource(), plog.NewScopeLogs(), plog.NewResourceLogs()))
 			require.NoError(t, err)
 			assert.False(t, val)
 
-			val, err = expr.Eval(context.Background(), ottllog.NewTransformContext(lrm, pcommon.NewInstrumentationScope(), pcommon.NewResource(), plog.NewScopeLogs(), plog.NewResourceLogs()))
+			val, err = expr.Eval(t.Context(), ottllog.NewTransformContext(lrm, pcommon.NewInstrumentationScope(), pcommon.NewResource(), plog.NewScopeLogs(), plog.NewResourceLogs()))
 			require.NoError(t, err)
 			assert.False(t, val)
 		})
@@ -228,12 +227,12 @@ func TestLogRecord_Matching_True(t *testing.T) {
 			require.NotNil(t, expr)
 
 			assert.NotNil(t, lr)
-			val, err := expr.Eval(context.Background(), ottllog.NewTransformContext(lr, pcommon.NewInstrumentationScope(), pcommon.NewResource(), plog.NewScopeLogs(), plog.NewResourceLogs()))
+			val, err := expr.Eval(t.Context(), ottllog.NewTransformContext(lr, pcommon.NewInstrumentationScope(), pcommon.NewResource(), plog.NewScopeLogs(), plog.NewResourceLogs()))
 			require.NoError(t, err)
 			assert.True(t, val)
 
 			assert.NotNil(t, lrm)
-			val, err = expr.Eval(context.Background(), ottllog.NewTransformContext(lrm, pcommon.NewInstrumentationScope(), pcommon.NewResource(), plog.NewScopeLogs(), plog.NewResourceLogs()))
+			val, err = expr.Eval(t.Context(), ottllog.NewTransformContext(lrm, pcommon.NewInstrumentationScope(), pcommon.NewResource(), plog.NewScopeLogs(), plog.NewResourceLogs()))
 			require.NoError(t, err)
 			assert.True(t, val)
 		})
@@ -1300,7 +1299,7 @@ func Test_NewSkipExpr_With_Bridge(t *testing.T) {
 			log.SetSeverityNumber(tt.logSeverity)
 
 			resource := pcommon.NewResource()
-			resource.Attributes().PutStr(conventions.AttributeServiceName, "svcA")
+			resource.Attributes().PutStr(string(conventions.ServiceNameKey), "svcA")
 
 			scope := pcommon.NewInstrumentationScope()
 
@@ -1308,12 +1307,12 @@ func Test_NewSkipExpr_With_Bridge(t *testing.T) {
 
 			boolExpr, err := NewSkipExpr(tt.condition)
 			require.NoError(t, err)
-			expectedResult, err := boolExpr.Eval(context.Background(), tCtx)
+			expectedResult, err := boolExpr.Eval(t.Context(), tCtx)
 			assert.NoError(t, err)
 
 			ottlBoolExpr, err := filterottl.NewLogSkipExprBridge(tt.condition)
 			assert.NoError(t, err)
-			ottlResult, err := ottlBoolExpr.Eval(context.Background(), tCtx)
+			ottlResult, err := ottlBoolExpr.Eval(t.Context(), tCtx)
 			assert.NoError(t, err)
 
 			assert.Equal(t, expectedResult, ottlResult)
@@ -1383,7 +1382,7 @@ func BenchmarkFilterlog_NewSkipExpr(b *testing.B) {
 		b.Run(tt.name, func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
 				var skip bool
-				skip, err = skipExpr.Eval(context.Background(), tCtx)
+				skip, err = skipExpr.Eval(b.Context(), tCtx)
 				assert.NoError(b, err)
 				assert.Equal(b, tt.skip, skip)
 			}

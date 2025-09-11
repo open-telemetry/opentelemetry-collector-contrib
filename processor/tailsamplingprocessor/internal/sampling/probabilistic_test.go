@@ -4,14 +4,15 @@
 package sampling
 
 import (
-	"context"
 	"encoding/binary"
-	"math/rand"
+	"math/rand/v2"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/pkg/samplingpolicy"
 )
 
 func TestProbabilisticSampling(t *testing.T) {
@@ -74,10 +75,10 @@ func TestProbabilisticSampling(t *testing.T) {
 			for _, traceID := range genRandomTraceIDs(traceCount) {
 				trace := newTraceStringAttrs(nil, "example", "value")
 
-				decision, err := probabilisticSampler.Evaluate(context.Background(), traceID, trace)
+				decision, err := probabilisticSampler.Evaluate(t.Context(), traceID, trace)
 				assert.NoError(t, err)
 
-				if decision == Sampled {
+				if decision == samplingpolicy.Sampled {
 					sampled++
 				}
 			}
@@ -91,7 +92,10 @@ func TestProbabilisticSampling(t *testing.T) {
 }
 
 func genRandomTraceIDs(num int) (ids []pcommon.TraceID) {
-	r := rand.New(rand.NewSource(1))
+	// NOTE: using a fixed seed is intentional here,
+	// as otherwise the delta in the tests above will
+	// be unpredictable.
+	r := rand.New(rand.NewPCG(123, 456))
 	ids = make([]pcommon.TraceID, 0, num)
 	for i := 0; i < num; i++ {
 		traceID := [16]byte{}

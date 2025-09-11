@@ -6,9 +6,10 @@
 | Stability     | [beta]: metrics   |
 | Distributions | [core], [contrib], [k8s] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fprometheus%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fprometheus) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fprometheus%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fprometheus) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@Aneurysm9](https://www.github.com/Aneurysm9), [@dashpole](https://www.github.com/dashpole) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_prometheus)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_prometheus&displayType=list) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@Aneurysm9](https://www.github.com/Aneurysm9), [@dashpole](https://www.github.com/dashpole), [@ArthurSens](https://www.github.com/ArthurSens), [@krajorama](https://www.github.com/krajorama) |
 
-[beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
+[beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
 [core]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
 [k8s]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-k8s
@@ -58,39 +59,7 @@ you must escape them using `$$`.
 prometheus --config.file=prom.yaml
 ```
 
-**Feature gates**:
-
-- `receiver.prometheusreceiver.UseCreatedMetric`: Start time for Summary, Histogram 
-  and Sum metrics can be retrieved from `_created` metrics. Currently, this behaviour
-  is disabled by default. To enable it, use the following feature gate option:
-
-```shell
-"--feature-gates=receiver.prometheusreceiver.UseCreatedMetric"
-```
-
-- `receiver.prometheusreceiver.EnableNativeHistograms`: process and turn native histogram metrics into OpenTelemetry exponential histograms. For more details consult the [Prometheus native histograms](#prometheus-native-histograms) section.
-
-```shell
-"--feature-gates=receiver.prometheusreceiver.EnableNativeHistograms"
-```
-
-- `receiver.prometheusreceiver.RemoveLegacyResourceAttributes`: Remove `net.host.name`, `net.host.port`, and `http.scheme` resource attributes, which are redundant with the new `server.address`, `server.port`, and `url.scheme` attributes.
-
-```shell
-"--feature-gates=receiver.prometheusreceiver.RemoveLegacyResourceAttributes"
-```
-
-- `report_extra_scrape_metrics`: Extra Prometheus scrape metrics can be reported by setting this parameter to `true`
-
-You can copy and paste that same configuration under:
-
-```yaml
-receivers:
-  prometheus:
-    config:
-```
-
-For example:
+You can copy and paste that same configuration under the `config` attribute:
 
 ```yaml
 receivers:
@@ -119,14 +88,16 @@ The prometheus receiver also supports additional top-level options:
 - **trim_metric_suffixes**: [**Experimental**] When set to true, this enables trimming unit and some counter type suffixes from metric names. For example, it would cause `singing_duration_seconds_total` to be trimmed to `singing_duration`. This can be useful when trying to restore the original metric names used in OpenTelemetry instrumentation. Defaults to false.
 - **use_start_time_metric**: When set to true, this enables retrieving the start time of all counter metrics from the process_start_time_seconds metric. This is only correct if all counters on that endpoint started after the process start time, and the process is the only actor exporting the metric after the process started. It should not be used in "exporters" which export counters that may have started before the process itself. Use only if you know what you are doing, as this may result in incorrect rate calculations. Defaults to false.
 - **start_time_metric_regex**: The regular expression for the start time metric, and is only applied when use_start_time_metric is enabled.  Defaults to process_start_time_seconds.
+- **report_extra_scrape_metrics**: Extra Prometheus scrape metrics can be reported by setting this parameter to `true`
 
-For example,
+Example configuration:
 
 ```yaml
 receivers:
     prometheus:
       trim_metric_suffixes: true
       use_start_time_metric: true
+      report_extra_scrape_metrics: true
       start_time_metric_regex: foo_bar_.*
       config:
         scrape_configs:
@@ -187,3 +158,61 @@ the OpenTelemetry Instrumentation Scope name and version. It drops the `otel_sco
 and uses attributes (other than `otel_scope_name` and `otel_scope_version`) to populate Scope
 Attributes.
 
+## Prometheus API Server
+The Prometheus API server can be enabled to host info about the Prometheus targets, config, service discovery, and metrics. The `server_config` can be specified using the OpenTelemetry confighttp package. An example configuration would be:
+
+```
+receivers:
+  prometheus:
+    api_server:
+      enabled: true
+      server_config:
+        endpoint: "localhost:9090"
+```
+
+The API server hosts the same paths as the Prometheus agent-mode API. These include:
+- [/api/v1/targets](https://prometheus.io/docs/prometheus/latest/querying/api/#targets)
+- [/api/v1/targets/metadata](https://prometheus.io/docs/prometheus/latest/querying/api/#querying-target-metadata)
+- [/api/v1/status/config](https://prometheus.io/docs/prometheus/latest/querying/api/#config)
+- /api/v1/scrape_pools
+- /metrics
+
+More info about querying `/api/v1/` and the data format that is returned can be found in the [Prometheus documentation](https://prometheus.io/docs/prometheus/latest/querying/api/).
+
+
+## Feature gates
+
+- `receiver.prometheusreceiver.UseCreatedMetric`: Start time for Summary, Histogram 
+  and Sum metrics can be retrieved from `_created` metrics. Currently, this behaviour
+  is disabled by default. To enable it, use the following feature gate option:
+
+```shell
+"--feature-gates=receiver.prometheusreceiver.UseCreatedMetric"
+```
+- `receiver.prometheusreceiver.EnableCreatedTimestampZeroIngestion`: Enables the Prometheus feature flag [created-timestamps-zero-injection](https://prometheus.io/docs/prometheus/latest/feature_flags/#created-timestamps-zero-injection). Currently, this behaviour is disabled by default due to worse CPU performance with higher metric volumes. To enable it, use the following feature gate option:
+
+```shell
+"--feature-gates=receiver.prometheusreceiver.EnableCreatedTimestampZeroIngestion"
+```
+- `receiver.prometheusreceiver.UseCollectorStartTimeFallback`:  enables using
+  the collector start time as the metric start time if the
+  process_start_time_seconds metric yields no result (for example if targets
+  expose no process_start_time_seconds metric). This is useful when the collector
+  start time is a good approximation of the process start time - for example in
+  serverless workloads when the collector is deployed as a sidecar. To enable it,
+  use the following feature gate option:
+
+```shell
+"--feature-gates=receiver.prometheusreceiver.UseCollectorStartTimeFallback"
+```
+- `receiver.prometheusreceiver.EnableNativeHistograms`: process and turn native histogram metrics into OpenTelemetry exponential histograms. For more details consult the [Prometheus native histograms](#prometheus-native-histograms) section.
+
+```shell
+"--feature-gates=receiver.prometheusreceiver.EnableNativeHistograms"
+```
+
+- `receiver.prometheusreceiver.RemoveStartTimeAdjustment`: If enabled, the prometheus receiver no longer sets the start timestamp of metrics if it is not known. Use the `metricstarttime` processor instead if you need this functionality.
+
+```shell
+"--feature-gates=receiver.prometheusreceiver.RemoveStartTimeAdjustment"
+```

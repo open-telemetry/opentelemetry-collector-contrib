@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -54,7 +55,7 @@ func TestSetupMetadataExporters(t *testing.T) {
 			fields{},
 			args{
 				exporters: map[component.ID]component.Component{
-					component.MustNewID("nop"): MockExporter{},
+					component.MustNewID("nop"): mockExporter{},
 				},
 				metadataExportersFromConfig: []string{"nop"},
 			},
@@ -65,21 +66,23 @@ func TestSetupMetadataExporters(t *testing.T) {
 			fields{
 				metadataConsumers: []metadataConsumer{(&mockExporterWithK8sMetadata{}).ConsumeMetadata},
 			},
-			args{exporters: map[component.ID]component.Component{
-				component.MustNewID("nop"): mockExporterWithK8sMetadata{},
-			},
+			args{
+				exporters: map[component.ID]component.Component{
+					component.MustNewID("nop"): mockExporterWithK8sMetadata{},
+				},
 				metadataExportersFromConfig: []string{"nop"},
 			},
 			false,
 		},
 		{
-			"Non-existent exporter",
+			"Nonexistent exporter",
 			fields{
 				metadataConsumers: []metadataConsumer{},
 			},
-			args{exporters: map[component.ID]component.Component{
-				component.MustNewID("nop"): mockExporterWithK8sMetadata{},
-			},
+			args{
+				exporters: map[component.ID]component.Component{
+					component.MustNewID("nop"): mockExporterWithK8sMetadata{},
+				},
 				metadataExportersFromConfig: []string{"nop/1"},
 			},
 			true,
@@ -94,13 +97,13 @@ func TestSetupMetadataExporters(t *testing.T) {
 				t.Errorf("setupMetadataExporters() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
-			require.Equal(t, len(tt.fields.metadataConsumers), len(rw.metadataConsumers))
+			require.Len(t, rw.metadataConsumers, len(tt.fields.metadataConsumers))
 		})
 	}
 }
 
 func TestIsKindSupported(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		name     string
 		client   *fake.Clientset
 		gvk      schema.GroupVersionKind
@@ -108,7 +111,7 @@ func TestIsKindSupported(t *testing.T) {
 	}{
 		{
 			name:     "nothing_supported",
-			client:   fake.NewSimpleClientset(),
+			client:   fake.NewClientset(),
 			gvk:      gvk.Pod,
 			expected: false,
 		},
@@ -133,18 +136,22 @@ func TestIsKindSupported(t *testing.T) {
 }
 
 func TestPrepareSharedInformerFactory(t *testing.T) {
-	var tests = []struct {
-		name   string
-		client *fake.Clientset
+	tests := []struct {
+		name                  string
+		client                *fake.Clientset
+		config                *Config
+		wantInformerFactories int
 	}{
 		{
-			name:   "new_server_version",
-			client: newFakeClientWithAllResources(),
+			name:                  "new_server_version",
+			client:                newFakeClientWithAllResources(),
+			config:                &Config{},
+			wantInformerFactories: 1,
 		},
 		{
 			name: "old_server_version", // With no batch/v1.CronJob support.
 			client: func() *fake.Clientset {
-				client := fake.NewSimpleClientset()
+				client := fake.NewClientset()
 				client.Resources = []*metav1.APIResourceList{
 					{
 						GroupVersion: "v1",
@@ -181,22 +188,32 @@ func TestPrepareSharedInformerFactory(t *testing.T) {
 				}
 				return client
 			}(),
+			config:                &Config{},
+			wantInformerFactories: 1,
+		},
+		{
+			name:   "with namespaced informers",
+			client: newFakeClientWithAllResources(),
+			config: &Config{
+				Namespaces: []string{"namespace1", "namespace2"},
+			},
+			wantInformerFactories: 2,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			obs, logs := observer.New(zap.WarnLevel)
 			obsLogger := zap.New(obs)
 			rw := &resourceWatcher{
 				client:        newFakeClientWithAllResources(),
 				logger:        obsLogger,
 				metadataStore: metadata.NewStore(),
-				config:        &Config{},
+				config:        tt.config,
 			}
 
 			assert.NoError(t, rw.prepareSharedInformerFactory())
 
+			assert.Len(t, rw.informerFactories, tt.wantInformerFactories)
 			// Make sure no warning or error logs are raised
 			assert.Equal(t, 0, logs.Len())
 		})
@@ -212,10 +229,12 @@ func TestSetupInformerForKind(t *testing.T) {
 	}
 
 	factory := informers.NewSharedInformerFactoryWithOptions(rw.client, 0)
-	rw.setupInformerForKind(schema.GroupVersionKind{Group: "", Version: "v1", Kind: "WrongKind"}, factory)
+	rw.setupInformerForKind(schema.GroupVersionKind{Group: "", Version: "v1", Kind: "WrongKind"}, map[string]informers.SharedInformerFactory{
+		"<cluster-wide-informer-key>": factory,
+	})
 
 	assert.Equal(t, 1, logs.Len())
-	assert.Equal(t, "Could not setup an informer for provided group version kind", logs.All()[0].Entry.Message)
+	assert.Equal(t, "Could not setup an informer for provided group version kind", logs.All()[0].Message)
 }
 
 func TestSyncMetadataAndEmitEntityEvents(t *testing.T) {
@@ -224,12 +243,12 @@ func TestSyncMetadataAndEmitEntityEvents(t *testing.T) {
 	logsConsumer := new(consumertest.LogsSink)
 
 	// Setup k8s resources.
-	pods := createPods(t, client, 1)
+	pods := createPods(t, client, 1, false)
 
 	origPod := pods[0]
 	updatedPod := getUpdatedPod(origPod)
 
-	rw := newResourceWatcher(receivertest.NewNopSettings(), &Config{MetadataCollectionInterval: 2 * time.Hour}, metadata.NewStore())
+	rw := newResourceWatcher(receivertest.NewNopSettings(metadata.Type), &Config{MetadataCollectionInterval: 2 * time.Hour}, metadata.NewStore())
 	rw.entityLogConsumer = logsConsumer
 
 	step1 := time.Now()
@@ -260,7 +279,7 @@ func TestSyncMetadataAndEmitEntityEvents(t *testing.T) {
 	step6 := time.Now()
 
 	// Must have 5 entity events.
-	require.EqualValues(t, 5, logsConsumer.LogRecordCount())
+	require.Equal(t, 5, logsConsumer.LogRecordCount())
 
 	// Event 1 should contain the initial state of the pod.
 	lr := logsConsumer.AllLogs()[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
@@ -269,37 +288,38 @@ func TestSyncMetadataAndEmitEntityEvents(t *testing.T) {
 		"otel.entity.interval":   int64(7200000), // 2h in milliseconds
 		"otel.entity.type":       "k8s.pod",
 		"otel.entity.id":         map[string]any{"k8s.pod.uid": "pod0"},
-		"otel.entity.attributes": map[string]any{"pod.creation_timestamp": "0001-01-01T00:00:00Z"},
+		"otel.entity.attributes": map[string]any{"pod.creation_timestamp": "0001-01-01T00:00:00Z", "k8s.pod.phase": "Unknown", "k8s.namespace.name": "test", "k8s.pod.name": "0", string(conventions.K8SNodeNameKey): "test-node"},
 	}
-	assert.EqualValues(t, expected, lr.Attributes().AsRaw())
+	assert.Equal(t, expected, lr.Attributes().AsRaw())
 	assert.WithinRange(t, lr.Timestamp().AsTime(), step1, step2)
 
 	// Event 2 should contain the updated state of the pod.
 	lr = logsConsumer.AllLogs()[1].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
 	attrs := expected["otel.entity.attributes"].(map[string]any)
 	attrs["key"] = "value"
-	assert.EqualValues(t, expected, lr.Attributes().AsRaw())
+	assert.Equal(t, expected, lr.Attributes().AsRaw())
 	assert.WithinRange(t, lr.Timestamp().AsTime(), step2, step3)
 
 	// Event 3 should be identical to the previous one since pod state didn't change.
 	lr = logsConsumer.AllLogs()[2].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
-	assert.EqualValues(t, expected, lr.Attributes().AsRaw())
+	assert.Equal(t, expected, lr.Attributes().AsRaw())
 	assert.WithinRange(t, lr.Timestamp().AsTime(), step3, step4)
 
 	// Event 4 should contain the reverted state of the pod.
 	lr = logsConsumer.AllLogs()[3].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
 	attrs = expected["otel.entity.attributes"].(map[string]any)
 	delete(attrs, "key")
-	assert.EqualValues(t, expected, lr.Attributes().AsRaw())
+	assert.Equal(t, expected, lr.Attributes().AsRaw())
 	assert.WithinRange(t, lr.Timestamp().AsTime(), step4, step5)
 
 	// Event 5 should indicate pod deletion.
 	lr = logsConsumer.AllLogs()[4].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
 	expected = map[string]any{
 		"otel.entity.event.type": "entity_delete",
+		"otel.entity.type":       "k8s.pod",
 		"otel.entity.id":         map[string]any{"k8s.pod.uid": "pod0"},
 	}
-	assert.EqualValues(t, expected, lr.Attributes().AsRaw())
+	assert.Equal(t, expected, lr.Attributes().AsRaw())
 	assert.WithinRange(t, lr.Timestamp().AsTime(), step5, step6)
 }
 
@@ -323,14 +343,22 @@ func TestObjMetadata(t *testing.T) {
 					EntityType:    "k8s.pod",
 					ResourceIDKey: "k8s.pod.uid",
 					ResourceID:    "test-pod-0-uid",
-					Metadata:      commonPodMetadata,
+					Metadata:      allPodMetadata(map[string]string{"k8s.pod.phase": "Succeeded", "k8s.pod.name": "test-pod-0", "k8s.namespace.name": "test-namespace", string(conventions.K8SNodeNameKey): "test-node"}),
 				},
 				experimentalmetricmetadata.ResourceID("container-id"): {
 					EntityType:    "container",
 					ResourceIDKey: "container.id",
 					ResourceID:    "container-id",
 					Metadata: map[string]string{
-						"container.status": "running",
+						"container.status":             "running",
+						"container.creation_timestamp": "0001-01-01T01:01:01Z",
+						"container.image.name":         "container-image-name",
+						"container.image.tag":          "latest",
+						"k8s.container.name":           "container-name",
+						"k8s.pod.name":                 "test-pod-0",
+						"k8s.pod.uid":                  "test-pod-0-uid",
+						"k8s.namespace.name":           "test-namespace",
+						"k8s.node.name":                "test-node",
 					},
 				},
 			},
@@ -344,17 +372,22 @@ func TestObjMetadata(t *testing.T) {
 					Name: "test-statefulset-0",
 					UID:  "test-statefulset-0-uid",
 				},
-			}, testutils.NewPodWithContainer("0", &corev1.PodSpec{}, &corev1.PodStatus{})),
+			}, testutils.NewPodWithContainer("0", &corev1.PodSpec{NodeName: "test-node"}, &corev1.PodStatus{Phase: corev1.PodFailed, Reason: "Evicted"})),
 			want: map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{
 				experimentalmetricmetadata.ResourceID("test-pod-0-uid"): {
 					EntityType:    "k8s.pod",
 					ResourceIDKey: "k8s.pod.uid",
 					ResourceID:    "test-pod-0-uid",
 					Metadata: allPodMetadata(map[string]string{
-						"k8s.workload.kind":    "StatefulSet",
-						"k8s.workload.name":    "test-statefulset-0",
-						"k8s.statefulset.name": "test-statefulset-0",
-						"k8s.statefulset.uid":  "test-statefulset-0-uid",
+						"k8s.workload.kind":                "StatefulSet",
+						"k8s.workload.name":                "test-statefulset-0",
+						"k8s.statefulset.name":             "test-statefulset-0",
+						"k8s.statefulset.uid":              "test-statefulset-0-uid",
+						"k8s.pod.phase":                    "Failed",
+						"k8s.pod.status_reason":            "Evicted",
+						"k8s.pod.name":                     "test-pod-0",
+						"k8s.namespace.name":               "test-namespace",
+						string(conventions.K8SNodeNameKey): "test-node",
 					}),
 				},
 			},
@@ -363,7 +396,7 @@ func TestObjMetadata(t *testing.T) {
 			name: "Pod with Service metadata",
 			metadataStore: func() *metadata.Store {
 				ms := metadata.NewStore()
-				ms.Setup(gvk.Service, &testutils.MockStore{
+				ms.Setup(gvk.Service, metadata.ClusterWideInformerKey, &testutils.MockStore{
 					Cache: map[string]any{
 						"test-namespace/test-service": &corev1.Service{
 							ObjectMeta: metav1.ObjectMeta{
@@ -383,7 +416,7 @@ func TestObjMetadata(t *testing.T) {
 			}(),
 			resource: podWithAdditionalLabels(
 				map[string]string{"k8s-app": "my-app"},
-				testutils.NewPodWithContainer("0", &corev1.PodSpec{}, &corev1.PodStatus{}),
+				testutils.NewPodWithContainer("0", &corev1.PodSpec{NodeName: "test-node"}, &corev1.PodStatus{Phase: corev1.PodRunning}),
 			),
 			want: map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{
 				experimentalmetricmetadata.ResourceID("test-pod-0-uid"): {
@@ -391,8 +424,12 @@ func TestObjMetadata(t *testing.T) {
 					ResourceIDKey: "k8s.pod.uid",
 					ResourceID:    "test-pod-0-uid",
 					Metadata: allPodMetadata(map[string]string{
-						"k8s.service.test-service": "",
-						"k8s-app":                  "my-app",
+						"k8s.service.test-service":         "",
+						"k8s-app":                          "my-app",
+						"k8s.pod.phase":                    "Running",
+						"k8s.namespace.name":               "test-namespace",
+						"k8s.pod.name":                     "test-pod-0",
+						string(conventions.K8SNodeNameKey): "test-node",
 					}),
 				},
 			},
@@ -410,6 +447,7 @@ func TestObjMetadata(t *testing.T) {
 						"k8s.workload.kind":            "DaemonSet",
 						"k8s.workload.name":            "test-daemonset-1",
 						"daemonset.creation_timestamp": "0001-01-01T00:00:00Z",
+						"k8s.namespace.name":           "test-namespace",
 					},
 				},
 			},
@@ -428,6 +466,7 @@ func TestObjMetadata(t *testing.T) {
 						"k8s.workload.name":             "test-deployment-1",
 						"k8s.deployment.name":           "test-deployment-1",
 						"deployment.creation_timestamp": "0001-01-01T00:00:00Z",
+						"k8s.namespace.name":            "test-namespace",
 					},
 				},
 			},
@@ -445,6 +484,7 @@ func TestObjMetadata(t *testing.T) {
 						"k8s.workload.kind":      "HPA",
 						"k8s.workload.name":      "test-hpa-1",
 						"hpa.creation_timestamp": "0001-01-01T00:00:00Z",
+						"k8s.namespace.name":     "test-namespace",
 					},
 				},
 			},
@@ -464,6 +504,7 @@ func TestObjMetadata(t *testing.T) {
 						"k8s.workload.kind":      "Job",
 						"k8s.workload.name":      "test-job-1",
 						"job.creation_timestamp": "0001-01-01T00:00:00Z",
+						"k8s.namespace.name":     "test-namespace",
 					},
 				},
 			},
@@ -478,10 +519,15 @@ func TestObjMetadata(t *testing.T) {
 					ResourceIDKey: "k8s.node.uid",
 					ResourceID:    "test-node-1-uid",
 					Metadata: map[string]string{
-						"foo":                     "bar",
-						"foo1":                    "",
-						"k8s.node.name":           "test-node-1",
-						"node.creation_timestamp": "0001-01-01T00:00:00Z",
+						"foo":                                    "bar",
+						"foo1":                                   "",
+						"k8s.node.name":                          "test-node-1",
+						"node.creation_timestamp":                "0001-01-01T00:00:00Z",
+						"k8s.node.condition_disk_pressure":       "false",
+						"k8s.node.condition_memory_pressure":     "false",
+						"k8s.node.condition_network_unavailable": "false",
+						"k8s.node.condition_pid_pressure":        "false",
+						"k8s.node.condition_ready":               "true",
 					},
 				},
 			},
@@ -501,6 +547,7 @@ func TestObjMetadata(t *testing.T) {
 						"k8s.workload.kind":             "ReplicaSet",
 						"k8s.workload.name":             "test-replicaset-1",
 						"replicaset.creation_timestamp": "0001-01-01T00:00:00Z",
+						"k8s.namespace.name":            "test-namespace",
 					},
 				},
 			},
@@ -524,6 +571,34 @@ func TestObjMetadata(t *testing.T) {
 						"k8s.workload.kind":                        "ReplicationController",
 						"k8s.workload.name":                        "test-replicationcontroller-1",
 						"replicationcontroller.creation_timestamp": "0001-01-01T00:00:00Z",
+						"k8s.namespace.name":                       "test-namespace",
+					},
+				},
+			},
+		},
+		{
+			name:          "Namespace metadata",
+			metadataStore: metadata.NewStore(),
+			resource: &corev1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					UID:               types.UID("test-namespace-uid"),
+					Name:              "test-namespace",
+					Namespace:         "default",
+					CreationTimestamp: metav1.Time{Time: time.Now()},
+				},
+				Status: corev1.NamespaceStatus{
+					Phase: corev1.NamespaceActive,
+				},
+			},
+			want: map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{
+				experimentalmetricmetadata.ResourceID("test-namespace-uid"): {
+					EntityType:    "k8s.namespace",
+					ResourceIDKey: "k8s.namespace.uid",
+					ResourceID:    "test-namespace-uid",
+					Metadata: map[string]string{
+						"k8s.namespace.name":               "test-namespace",
+						"k8s.namespace.phase":              "active",
+						"k8s.namespace.creation_timestamp": time.Now().Format(time.RFC3339),
 					},
 				},
 			},
@@ -532,13 +607,13 @@ func TestObjMetadata(t *testing.T) {
 
 	for _, tt := range tests {
 		observedLogger, _ := observer.New(zapcore.WarnLevel)
-		set := receivertest.NewNopSettings()
-		set.TelemetrySettings.Logger = zap.New(observedLogger)
+		set := receivertest.NewNopSettings(metadata.Type)
+		set.Logger = zap.New(observedLogger)
 		t.Run(tt.name, func(t *testing.T) {
 			dc := &resourceWatcher{metadataStore: tt.metadataStore}
 
 			actual := dc.objMetadata(tt.resource)
-			require.Equal(t, len(tt.want), len(actual))
+			require.Len(t, actual, len(tt.want))
 
 			for key, item := range tt.want {
 				got, exists := actual[key]

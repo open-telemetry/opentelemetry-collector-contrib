@@ -8,60 +8,60 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 )
 
 var (
 	ec2Resource = func() pcommon.Resource {
 		res := pcommon.NewResource()
 		attr := res.Attributes()
-		attr.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
-		attr.PutStr(conventions.AttributeCloudAccountID, "1234")
-		attr.PutStr(conventions.AttributeCloudRegion, "us-west-2")
-		attr.PutStr(conventions.AttributeHostID, "i-abcd")
+		attr.PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAWS.Value.AsString())
+		attr.PutStr(string(conventions.CloudAccountIDKey), "1234")
+		attr.PutStr(string(conventions.CloudRegionKey), "us-west-2")
+		attr.PutStr(string(conventions.HostIDKey), "i-abcd")
 		return res
 	}()
 	ec2WithHost = func() pcommon.Resource {
 		res := pcommon.NewResource()
 		attr := res.Attributes()
-		attr.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
-		attr.PutStr(conventions.AttributeCloudAccountID, "1234")
-		attr.PutStr(conventions.AttributeCloudRegion, "us-west-2")
-		attr.PutStr(conventions.AttributeHostID, "i-abcd")
-		attr.PutStr(conventions.AttributeHostName, "localhost")
+		attr.PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAWS.Value.AsString())
+		attr.PutStr(string(conventions.CloudAccountIDKey), "1234")
+		attr.PutStr(string(conventions.CloudRegionKey), "us-west-2")
+		attr.PutStr(string(conventions.HostIDKey), "i-abcd")
+		attr.PutStr(string(conventions.HostNameKey), "localhost")
 		return res
 	}()
 	ec2PartialResource = func() pcommon.Resource {
 		res := pcommon.NewResource()
 		attr := res.Attributes()
-		attr.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
-		attr.PutStr(conventions.AttributeHostID, "i-abcd")
+		attr.PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAWS.Value.AsString())
+		attr.PutStr(string(conventions.HostIDKey), "i-abcd")
 		return res
 	}()
 	gcpResource = func() pcommon.Resource {
 		res := pcommon.NewResource()
 		attr := res.Attributes()
-		attr.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderGCP)
-		attr.PutStr(conventions.AttributeCloudAccountID, "1234")
-		attr.PutStr(conventions.AttributeHostID, "i-abcd")
+		attr.PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderGCP.Value.AsString())
+		attr.PutStr(string(conventions.CloudAccountIDKey), "1234")
+		attr.PutStr(string(conventions.HostIDKey), "i-abcd")
 		return res
 	}()
 	gcpPartialResource = func() pcommon.Resource {
 		res := pcommon.NewResource()
 		attr := res.Attributes()
-		attr.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderGCP)
-		attr.PutStr(conventions.AttributeCloudAccountID, "1234")
+		attr.PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderGCP.Value.AsString())
+		attr.PutStr(string(conventions.CloudAccountIDKey), "1234")
 		return res
 	}()
 	azureResource = func() pcommon.Resource {
 		res := pcommon.NewResource()
 		attrs := res.Attributes()
-		attrs.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAzure)
-		attrs.PutStr(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAzureVM)
-		attrs.PutStr(conventions.AttributeHostName, "myHostName")
-		attrs.PutStr(conventions.AttributeCloudRegion, "myCloudRegion")
-		attrs.PutStr(conventions.AttributeHostID, "myHostID")
-		attrs.PutStr(conventions.AttributeCloudAccountID, "myCloudAccount")
+		attrs.PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAzure.Value.AsString())
+		attrs.PutStr(string(conventions.CloudPlatformKey), conventions.CloudPlatformAzureVM.Value.AsString())
+		attrs.PutStr(string(conventions.HostNameKey), "myHostName")
+		attrs.PutStr(string(conventions.CloudRegionKey), "myCloudRegion")
+		attrs.PutStr(string(conventions.HostIDKey), "myHostID")
+		attrs.PutStr(string(conventions.CloudAccountIDKey), "myCloudAccount")
 		attrs.PutStr("azure.vm.name", "myVMName")
 		attrs.PutStr("azure.vm.size", "42")
 		attrs.PutStr("azure.resourcegroup.name", "myResourcegroupName")
@@ -70,12 +70,12 @@ var (
 	azureScalesetResource = func() pcommon.Resource {
 		res := pcommon.NewResource()
 		attrs := res.Attributes()
-		attrs.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAzure)
-		attrs.PutStr(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAzureVM)
-		attrs.PutStr(conventions.AttributeHostName, "my.fq.host.name")
-		attrs.PutStr(conventions.AttributeCloudRegion, "myCloudRegion")
-		attrs.PutStr(conventions.AttributeHostID, "myHostID")
-		attrs.PutStr(conventions.AttributeCloudAccountID, "myCloudAccount")
+		attrs.PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAzure.Value.AsString())
+		attrs.PutStr(string(conventions.CloudPlatformKey), conventions.CloudPlatformAzureVM.Value.AsString())
+		attrs.PutStr(string(conventions.HostNameKey), "my.fq.host.name")
+		attrs.PutStr(string(conventions.CloudRegionKey), "myCloudRegion")
+		attrs.PutStr(string(conventions.HostIDKey), "myHostID")
+		attrs.PutStr(string(conventions.CloudAccountIDKey), "myCloudAccount")
 		attrs.PutStr("azure.vm.name", "myVMScalesetName_1")
 		attrs.PutStr("azure.vm.size", "42")
 		attrs.PutStr("azure.vm.scaleset.name", "myVMScalesetName")
@@ -85,10 +85,10 @@ var (
 	azureMissingCloudAcct = func() pcommon.Resource {
 		res := pcommon.NewResource()
 		attrs := res.Attributes()
-		attrs.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAzure)
-		attrs.PutStr(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAzureVM)
-		attrs.PutStr(conventions.AttributeCloudRegion, "myCloudRegion")
-		attrs.PutStr(conventions.AttributeHostID, "myHostID")
+		attrs.PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAzure.Value.AsString())
+		attrs.PutStr(string(conventions.CloudPlatformKey), conventions.CloudPlatformAzureVM.Value.AsString())
+		attrs.PutStr(string(conventions.CloudRegionKey), "myCloudRegion")
+		attrs.PutStr(string(conventions.HostIDKey), "myHostID")
 		attrs.PutStr("azure.vm.size", "42")
 		attrs.PutStr("azure.resourcegroup.name", "myResourcegroupName")
 		return res
@@ -96,22 +96,22 @@ var (
 	azureMissingResourceGroup = func() pcommon.Resource {
 		res := pcommon.NewResource()
 		attrs := res.Attributes()
-		attrs.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAzure)
-		attrs.PutStr(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAzureVM)
-		attrs.PutStr(conventions.AttributeCloudRegion, "myCloudRegion")
-		attrs.PutStr(conventions.AttributeHostID, "myHostID")
-		attrs.PutStr(conventions.AttributeCloudAccountID, "myCloudAccount")
+		attrs.PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAzure.Value.AsString())
+		attrs.PutStr(string(conventions.CloudPlatformKey), conventions.CloudPlatformAzureVM.Value.AsString())
+		attrs.PutStr(string(conventions.CloudRegionKey), "myCloudRegion")
+		attrs.PutStr(string(conventions.HostIDKey), "myHostID")
+		attrs.PutStr(string(conventions.CloudAccountIDKey), "myCloudAccount")
 		attrs.PutStr("azure.vm.size", "42")
 		return res
 	}()
 	azureMissingHostName = func() pcommon.Resource {
 		res := pcommon.NewResource()
 		attrs := res.Attributes()
-		attrs.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAzure)
-		attrs.PutStr(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAzureVM)
-		attrs.PutStr(conventions.AttributeCloudRegion, "myCloudRegion")
-		attrs.PutStr(conventions.AttributeHostID, "myHostID")
-		attrs.PutStr(conventions.AttributeCloudAccountID, "myCloudAccount")
+		attrs.PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAzure.Value.AsString())
+		attrs.PutStr(string(conventions.CloudPlatformKey), conventions.CloudPlatformAzureVM.Value.AsString())
+		attrs.PutStr(string(conventions.CloudRegionKey), "myCloudRegion")
+		attrs.PutStr(string(conventions.HostIDKey), "myHostID")
+		attrs.PutStr(string(conventions.CloudAccountIDKey), "myCloudAccount")
 		attrs.PutStr("azure.resourcegroup.name", "myResourcegroupName")
 		attrs.PutStr("azure.vm.size", "42")
 		return res
@@ -119,15 +119,15 @@ var (
 	hostResource = func() pcommon.Resource {
 		res := pcommon.NewResource()
 		attr := res.Attributes()
-		attr.PutStr(conventions.AttributeHostName, "localhost")
+		attr.PutStr(string(conventions.HostNameKey), "localhost")
 		return res
 	}()
 	unknownResource = func() pcommon.Resource {
 		res := pcommon.NewResource()
 		attr := res.Attributes()
-		attr.PutStr(conventions.AttributeCloudProvider, "unknown")
-		attr.PutStr(conventions.AttributeCloudAccountID, "1234")
-		attr.PutStr(conventions.AttributeHostID, "i-abcd")
+		attr.PutStr(string(conventions.CloudProviderKey), "unknown")
+		attr.PutStr(string(conventions.CloudAccountIDKey), "1234")
+		attr.PutStr(string(conventions.HostIDKey), "i-abcd")
 		return res
 	}()
 )

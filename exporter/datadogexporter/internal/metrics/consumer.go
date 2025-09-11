@@ -6,38 +6,43 @@ package metrics // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"context"
 
+	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes"
+	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics"
+	"github.com/DataDog/datadog-agent/pkg/util/quantile"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
-	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics"
-	"github.com/DataDog/opentelemetry-mapping-go/pkg/quantile"
 	"go.opentelemetry.io/collector/component"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics/sketches"
 )
 
-var _ metrics.Consumer = (*Consumer)(nil)
-var _ metrics.HostConsumer = (*Consumer)(nil)
-var _ metrics.TagsConsumer = (*Consumer)(nil)
+var (
+	_ metrics.Consumer     = (*Consumer)(nil)
+	_ metrics.HostConsumer = (*Consumer)(nil)
+	_ metrics.TagsConsumer = (*Consumer)(nil)
+)
 
 // Consumer implements metrics.Consumer. It records consumed metrics, sketches and
 // APM stats payloads. It provides them to the caller using the All method.
 type Consumer struct {
-	ms        []datadogV2.MetricSeries
-	sl        sketches.SketchSeriesList
-	seenHosts map[string]struct{}
-	seenTags  map[string]struct{}
+	ms           []datadogV2.MetricSeries
+	sl           sketches.SketchSeriesList
+	seenHosts    map[string]struct{}
+	seenTags     map[string]struct{}
+	gatewayUsage *attributes.GatewayUsage
 }
 
 // NewConsumer creates a new Datadog consumer. It implements metrics.Consumer.
-func NewConsumer() *Consumer {
+func NewConsumer(gatewayUsage *attributes.GatewayUsage) *Consumer {
 	return &Consumer{
-		seenHosts: make(map[string]struct{}),
-		seenTags:  make(map[string]struct{}),
+		seenHosts:    make(map[string]struct{}),
+		seenTags:     make(map[string]struct{}),
+		gatewayUsage: gatewayUsage,
 	}
 }
 
 // toDataType maps translator datatypes to DatadogV2's datatypes.
-func (c *Consumer) toDataType(dt metrics.DataType) (out datadogV2.MetricIntakeType) {
+func (*Consumer) toDataType(dt metrics.DataType) (out datadogV2.MetricIntakeType) {
 	out = datadogV2.METRICINTAKETYPE_UNSPECIFIED
 
 	switch dt {
@@ -56,6 +61,9 @@ func (c *Consumer) runningMetrics(timestamp uint64, buildInfo component.BuildInf
 	for host := range c.seenHosts {
 		// Report the host as running
 		runningMetric := DefaultMetrics("metrics", host, timestamp, buildTags)
+		if c.gatewayUsage != nil {
+			series = append(series, GatewayUsageGauge(timestamp, host, buildTags, c.gatewayUsage))
+		}
 		series = append(series, runningMetric...)
 	}
 
@@ -68,7 +76,7 @@ func (c *Consumer) runningMetrics(timestamp uint64, buildInfo component.BuildInf
 	}
 
 	for _, lang := range metadata.Languages {
-		tags := append(buildTags, "language:"+lang) // nolint
+		tags := append(buildTags, "language:"+lang) //nolint:gocritic
 		runningMetric := DefaultMetrics("runtime_metrics", "", timestamp, tags)
 		series = append(series, runningMetric...)
 	}
@@ -98,10 +106,11 @@ func (c *Consumer) ConsumeTimeSeries(
 	dims *metrics.Dimensions,
 	typ metrics.DataType,
 	timestamp uint64,
+	interval int64,
 	value float64,
 ) {
 	dt := c.toDataType(typ)
-	met := NewMetric(dims.Name(), dt, timestamp, value, dims.Tags())
+	met := NewMetric(dims.Name(), dt, timestamp, interval, value, dims.Tags())
 	met.SetResources([]datadogV2.MetricResource{
 		{
 			Name: datadog.PtrString(dims.Host()),
@@ -116,13 +125,14 @@ func (c *Consumer) ConsumeSketch(
 	_ context.Context,
 	dims *metrics.Dimensions,
 	timestamp uint64,
+	interval int64,
 	sketch *quantile.Sketch,
 ) {
 	c.sl = append(c.sl, sketches.SketchSeries{
 		Name:     dims.Name(),
 		Tags:     dims.Tags(),
 		Host:     dims.Host(),
-		Interval: 1,
+		Interval: interval,
 		Points: []sketches.SketchPoint{{
 			Ts:     int64(timestamp / 1e9),
 			Sketch: sketch,

@@ -6,7 +6,6 @@ package sshcheckreceiver // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"net"
 	"os"
@@ -23,6 +22,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sshcheckreceiver/internal/metadata"
 )
 
 type sshServer struct {
@@ -49,7 +49,7 @@ func (s *sshServer) runSSHServer(t *testing.T) string {
 			if c.User() == "otelu" && string(pass) == "otelp" {
 				return nil, nil
 			}
-			return nil, fmt.Errorf("wrong username or password")
+			return nil, errors.New("wrong username or password")
 		},
 	}
 
@@ -93,7 +93,7 @@ func (s *sshServer) shutdown() {
 func handleChannels(chans <-chan ssh.NewChannel) {
 	for newChannel := range chans {
 		if t := newChannel.ChannelType(); t != "session" {
-			if err := newChannel.Reject(ssh.UnknownChannelType, fmt.Sprintf("unknown channel type: %s", t)); err != nil {
+			if err := newChannel.Reject(ssh.UnknownChannelType, "unknown channel type: "+t); err != nil {
 				return
 			}
 			continue
@@ -176,7 +176,7 @@ func TestScraper(t *testing.T) {
 
 			f := NewFactory()
 			cfg := f.CreateDefaultConfig().(*Config)
-			cfg.ControllerConfig.CollectionInterval = 100 * time.Millisecond
+			cfg.CollectionInterval = 100 * time.Millisecond
 			cfg.Username = "otelu"
 			cfg.Password = "otelp"
 			cfg.Endpoint = endpoint
@@ -186,12 +186,12 @@ func TestScraper(t *testing.T) {
 				cfg.MetricsBuilderConfig.Metrics.SshcheckSftpDuration.Enabled = true
 			}
 
-			settings := receivertest.NewNopSettings()
+			settings := receivertest.NewNopSettings(metadata.Type)
 
 			scrpr := newScraper(cfg, settings)
-			require.NoError(t, scrpr.start(context.Background(), componenttest.NewNopHost()), "failed starting scraper")
+			require.NoError(t, scrpr.start(t.Context(), componenttest.NewNopHost()), "failed starting scraper")
 
-			actualMetrics, err := scrpr.scrape(context.Background())
+			actualMetrics, err := scrpr.scrape(t.Context())
 			require.NoError(t, err, "failed scrape")
 			require.NoError(
 				t,
@@ -218,18 +218,18 @@ func TestScraperPropagatesResourceAttributes(t *testing.T) {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.MetricsBuilderConfig.ResourceAttributes.SSHEndpoint.Enabled = true
-	cfg.ControllerConfig.CollectionInterval = 100 * time.Millisecond
+	cfg.CollectionInterval = 100 * time.Millisecond
 	cfg.Username = "otelu"
 	cfg.Password = "otelp"
 	cfg.Endpoint = endpoint
 	cfg.IgnoreHostKey = true
 
-	settings := receivertest.NewNopSettings()
+	settings := receivertest.NewNopSettings(metadata.Type)
 
 	scraper := newScraper(cfg, settings)
-	require.NoError(t, scraper.start(context.Background(), componenttest.NewNopHost()), "failed starting scraper")
+	require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()), "failed starting scraper")
 
-	actualMetrics, err := scraper.scrape(context.Background())
+	actualMetrics, err := scraper.scrape(t.Context())
 	require.NoError(t, err, "failed scrape")
 
 	resourceMetrics := actualMetrics.ResourceMetrics()
@@ -253,18 +253,18 @@ func TestScraperDoesNotErrForSSHErr(t *testing.T) {
 
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
-	cfg.ControllerConfig.CollectionInterval = 100 * time.Millisecond
+	cfg.CollectionInterval = 100 * time.Millisecond
 	cfg.Username = "not-the-user"
 	cfg.Password = "not-the-password"
 	cfg.Endpoint = endpoint
 	cfg.IgnoreHostKey = true
 
-	settings := receivertest.NewNopSettings()
+	settings := receivertest.NewNopSettings(metadata.Type)
 
 	scraper := newScraper(cfg, settings)
-	require.NoError(t, scraper.start(context.Background(), componenttest.NewNopHost()), "should not err to start")
+	require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()), "should not err to start")
 
-	_, err = scraper.scrape(context.Background())
+	_, err = scraper.scrape(t.Context())
 	require.NoError(t, err, "should not err")
 }
 
@@ -301,20 +301,19 @@ func TestTimeout(t *testing.T) {
 func TestCancellation(t *testing.T) {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
-	cfg.ControllerConfig.CollectionInterval = 100 * time.Millisecond
+	cfg.CollectionInterval = 100 * time.Millisecond
 
-	settings := receivertest.NewNopSettings()
+	settings := receivertest.NewNopSettings(metadata.Type)
 
 	scrpr := newScraper(cfg, settings)
-	require.NoError(t, scrpr.start(context.Background(), componenttest.NewNopHost()), "failed starting scraper")
+	require.NoError(t, scrpr.start(t.Context(), componenttest.NewNopHost()), "failed starting scraper")
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	cancel()
 
 	_, err := scrpr.scrape(ctx)
 	require.Error(t, err, "should have returned error on canceled context")
-	require.EqualValues(t, err.Error(), ctx.Err().Error(), "scrape should return context's error")
-
+	require.EqualError(t, err, ctx.Err().Error(), "scrape should return context's error")
 }
 
 // issue # 18193
@@ -322,7 +321,7 @@ func TestCancellation(t *testing.T) {
 func TestWithoutStartErrsNotPanics(t *testing.T) {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
-	cfg.ControllerConfig.CollectionInterval = 100 * time.Millisecond
+	cfg.CollectionInterval = 100 * time.Millisecond
 	cfg.Username = "otelu"
 	cfg.Password = "otelp"
 	cfg.Endpoint = "localhost:22"
@@ -331,10 +330,10 @@ func TestWithoutStartErrsNotPanics(t *testing.T) {
 	cfg.MetricsBuilderConfig.Metrics.SshcheckSftpDuration.Enabled = true
 
 	// create the scraper without starting it, so Client is nil
-	scrpr := newScraper(cfg, receivertest.NewNopSettings())
+	scrpr := newScraper(cfg, receivertest.NewNopSettings(metadata.Type))
 
 	// scrape should error not panic
 	var err error
-	require.NotPanics(t, func() { _, err = scrpr.scrape(context.Background()) }, "scrape should not panic")
+	require.NotPanics(t, func() { _, err = scrpr.scrape(t.Context()) }, "scrape should not panic")
 	require.Error(t, err, "expected scrape to err when without start")
 }

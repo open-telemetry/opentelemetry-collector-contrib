@@ -20,9 +20,11 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	rcvr "go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver/internal/metadata"
 )
 
 func factory() (rcvr.Factory, *Config) {
@@ -33,9 +35,9 @@ func factory() (rcvr.Factory, *Config) {
 }
 
 func paramsAndContext(t *testing.T) (rcvr.Settings, context.Context, context.CancelFunc) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	logger := zaptest.NewLogger(t, zaptest.WrapOptions(zap.AddCaller()))
-	settings := receivertest.NewNopSettings()
+	settings := receivertest.NewNopSettings(metadata.Type)
 	settings.Logger = logger
 	return settings, ctx, cancel
 }
@@ -62,7 +64,7 @@ func hasResourceScopeMetrics(containerID string, metrics []pmetric.Metrics) bool
 		for i := 0; i < m.ResourceMetrics().Len(); i++ {
 			rm := m.ResourceMetrics().At(i)
 
-			id, ok := rm.Resource().Attributes().Get(conventions.AttributeContainerID)
+			id, ok := rm.Resource().Attributes().Get(string(conventions.ContainerIDKey))
 			if ok && id.AsString() == containerID && rm.ScopeMetrics().Len() > 0 {
 				return true
 			}
@@ -161,7 +163,7 @@ type nopHost struct {
 	reportFunc func(event *componentstatus.Event)
 }
 
-func (nh *nopHost) GetExtensions() map[component.ID]component.Component {
+func (*nopHost) GetExtensions() map[component.ID]component.Component {
 	return nil
 }
 

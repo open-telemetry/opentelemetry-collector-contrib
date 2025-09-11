@@ -4,16 +4,15 @@
 package prometheusreceiver
 
 import (
-	"fmt"
 	"os"
 	"testing"
 
+	"github.com/goccy/go-yaml"
 	"github.com/prometheus/prometheus/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
-	"gopkg.in/yaml.v2"
+	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
 )
 
 var scrapeFileTargetPage = `
@@ -42,9 +41,9 @@ func TestScrapeConfigFiles(t *testing.T) {
 		marshalledScrapeConfigs, err := yaml.Marshal(cfg.PrometheusConfig.ScrapeConfigs)
 		require.NoError(t, err)
 		tmpDir := t.TempDir()
-		cfgFileName := fmt.Sprintf("%s/test-scrape-config.yaml", tmpDir)
-		scrapeConfigFileContent := fmt.Sprintf("scrape_configs:\n%s", string(marshalledScrapeConfigs))
-		err = os.WriteFile(cfgFileName, []byte(scrapeConfigFileContent), 0400)
+		cfgFileName := tmpDir + "/test-scrape-config.yaml"
+		scrapeConfigFileContent := "scrape_configs:\n" + string(marshalledScrapeConfigs)
+		err = os.WriteFile(cfgFileName, []byte(scrapeConfigFileContent), 0o400)
 		require.NoError(t, err)
 		cfg.PrometheusConfig.ScrapeConfigs = []*config.ScrapeConfig{}
 		cfg.PrometheusConfig.ScrapeConfigFiles = []string{cfgFileName}
@@ -53,7 +52,7 @@ func TestScrapeConfigFiles(t *testing.T) {
 
 func verifyScrapeConfigFiles(t *testing.T, _ *testData, result []pmetric.ResourceMetrics) {
 	require.Len(t, result, 1)
-	serviceName, ok := result[0].Resource().Attributes().Get(semconv.AttributeServiceName)
+	serviceName, ok := result[0].Resource().Attributes().Get(string(semconv.ServiceNameKey))
 	assert.True(t, ok)
 	assert.Equal(t, "target1", serviceName.Str())
 	assert.Equal(t, 6, result[0].ScopeMetrics().At(0).Metrics().Len())

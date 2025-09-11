@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"go.etcd.io/bbolt"
-	"go.opentelemetry.io/collector/extension/experimental/storage"
+	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.uber.org/zap"
 )
 
@@ -50,7 +50,7 @@ func bboltOptions(timeout time.Duration, noSync bool) *bbolt.Options {
 
 func newClient(logger *zap.Logger, filePath string, timeout time.Duration, compactionCfg *CompactionConfig, noSync bool) (*fileStorageClient, error) {
 	options := bboltOptions(timeout, noSync)
-	db, err := bbolt.Open(filePath, 0600, options)
+	db, err := bbolt.Open(filePath, 0o600, options)
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +94,7 @@ func (c *fileStorageClient) Delete(ctx context.Context, key string) error {
 }
 
 // Batch executes the specified operations in order. Get operation results are updated in place
-func (c *fileStorageClient) Batch(_ context.Context, ops ...storage.Operation) error {
+func (c *fileStorageClient) Batch(_ context.Context, ops ...*storage.Operation) error {
 	batch := func(tx *bbolt.Tx) error {
 		bucket := tx.Bucket(defaultBucket)
 		if bucket == nil {
@@ -188,14 +188,15 @@ func (c *fileStorageClient) Compact(compactionDirectory string, timeout time.Dur
 		zap.String(tempDirectoryKey, file.Name()))
 
 	// cannot reuse newClient as db shouldn't contain any bucket
-	compactedDb, err = bbolt.Open(file.Name(), 0600, options)
+	compactedDb, err = bbolt.Open(file.Name(), 0o600, options)
 	if err != nil {
 		return err
 	}
 
 	compactionStart := time.Now()
 
-	if err = bbolt.Compact(compactedDb, c.db, maxTransactionSize); err != nil {
+	err = bbolt.Compact(compactedDb, c.db, maxTransactionSize)
+	if err != nil {
 		return err
 	}
 
@@ -209,7 +210,7 @@ func (c *fileStorageClient) Compact(compactionDirectory string, timeout time.Dur
 	// replace current db file with compacted db file
 	// we reopen the DB file irrespective of the success of the replace, as we can't leave it closed
 	moveErr := moveFileWithFallback(compactedDbPath, dbPath)
-	c.db, openErr = bbolt.Open(dbPath, 0600, options)
+	c.db, openErr = bbolt.Open(dbPath, 0o600, options)
 
 	// if we got errors for both rename and open, we'd rather return the open one
 	// this should not happen in any kind of normal circumstance - maybe we should panic instead?
@@ -297,7 +298,7 @@ func (c *fileStorageClient) shouldCompact() bool {
 	return true
 }
 
-func (c *fileStorageClient) getDbSize() (totalSizeResult int64, dataSizeResult int64, errResult error) {
+func (c *fileStorageClient) getDbSize() (totalSizeResult, dataSizeResult int64, errResult error) {
 	var totalSize int64
 
 	err := c.db.View(func(tx *bbolt.Tx) error {
@@ -315,7 +316,7 @@ func (c *fileStorageClient) getDbSize() (totalSizeResult int64, dataSizeResult i
 
 // moveFileWithFallback is the equivalent of os.Rename, except it falls back to
 // a non-atomic Truncate and Copy if the arguments are on different filesystems
-func moveFileWithFallback(src string, dest string) error {
+func moveFileWithFallback(src, dest string) error {
 	var err error
 	if err = os.Rename(src, dest); err == nil {
 		return nil
@@ -333,11 +334,13 @@ func moveFileWithFallback(src string, dest string) error {
 		return err
 	}
 
-	if err = os.Truncate(dest, 0); err != nil {
+	err = os.Truncate(dest, 0)
+	if err != nil {
 		return err
 	}
 
-	if err = os.WriteFile(dest, data, 0600); err != nil {
+	err = os.WriteFile(dest, data, 0o600)
+	if err != nil {
 		return err
 	}
 

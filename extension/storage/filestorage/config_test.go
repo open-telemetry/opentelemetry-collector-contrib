@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/extension"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage/internal/metadata"
@@ -66,7 +67,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.NoError(t, xconfmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -77,7 +78,7 @@ func TestHandleNonExistingDirectoryWithAnError(t *testing.T) {
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.Directory = "/not/a/dir"
 
-	err := component.ValidateConfig(cfg)
+	err := xconfmap.Validate(cfg)
 	require.Error(t, err)
 	require.True(t, strings.HasPrefix(err.Error(), "directory must exist: "))
 }
@@ -86,7 +87,7 @@ func TestHandleProvidingFilePathAsDirWithAnError(t *testing.T) {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
 
-	file, err := os.CreateTemp("", "")
+	file, err := os.CreateTemp(t.TempDir(), "")
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		require.NoError(t, file.Close())
@@ -95,10 +96,11 @@ func TestHandleProvidingFilePathAsDirWithAnError(t *testing.T) {
 
 	cfg.Directory = file.Name()
 
-	err = component.ValidateConfig(cfg)
+	err = xconfmap.Validate(cfg)
 	require.Error(t, err)
 	require.EqualError(t, err, file.Name()+" is not a directory")
 }
+
 func TestDirectoryCreateConfig(t *testing.T) {
 	tests := []struct {
 		name   string
@@ -195,7 +197,6 @@ func TestDirectoryCreateConfig(t *testing.T) {
 				cfg.CreateDirectory = false
 				cfg.DirectoryPermissions = "07771"
 				return cfg
-
 			},
 			err: nil,
 		},
@@ -267,7 +268,7 @@ func TestCompactionDirectory(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			require.ErrorIs(t, component.ValidateConfig(test.config(t)), test.err)
+			require.ErrorIs(t, xconfmap.Validate(test.config(t)), test.err)
 		})
 	}
 }

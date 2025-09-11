@@ -83,6 +83,7 @@ type MetricsConfig struct {
 	K8sPodNetworkErrors                  MetricConfig `mapstructure:"k8s.pod.network.errors"`
 	K8sPodNetworkIo                      MetricConfig `mapstructure:"k8s.pod.network.io"`
 	K8sPodUptime                         MetricConfig `mapstructure:"k8s.pod.uptime"`
+	K8sPodVolumeUsage                    MetricConfig `mapstructure:"k8s.pod.volume.usage"`
 	K8sVolumeAvailable                   MetricConfig `mapstructure:"k8s.volume.available"`
 	K8sVolumeCapacity                    MetricConfig `mapstructure:"k8s.volume.capacity"`
 	K8sVolumeInodes                      MetricConfig `mapstructure:"k8s.volume.inodes"`
@@ -96,10 +97,10 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		ContainerCPUUsage: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		ContainerCPUUtilization: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerFilesystemAvailable: MetricConfig{
 			Enabled: true,
@@ -153,10 +154,10 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		K8sNodeCPUUsage: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		K8sNodeCPUUtilization: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		K8sNodeFilesystemAvailable: MetricConfig{
 			Enabled: true,
@@ -201,10 +202,10 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		K8sPodCPUUsage: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		K8sPodCPUUtilization: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		K8sPodCPULimitUtilization: MetricConfig{
 			Enabled: false,
@@ -255,6 +256,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		K8sPodUptime: MetricConfig{
+			Enabled: false,
+		},
+		K8sPodVolumeUsage: MetricConfig{
 			Enabled: false,
 		},
 		K8sVolumeAvailable: MetricConfig{

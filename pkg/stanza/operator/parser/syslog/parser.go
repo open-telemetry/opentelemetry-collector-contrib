@@ -6,6 +6,7 @@ package syslog // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"regexp"
 	"time"
@@ -20,7 +21,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
-var priRegex = regexp.MustCompile(`\<\d{1,3}\>`)
+var priRegex = regexp.MustCompile(`<\d{1,3}>`)
 
 // parseFunc a parseFunc determines how the raw input is to be parsed into a syslog message
 type parseFunc func(input []byte) (sl.Message, error)
@@ -36,23 +37,25 @@ type Parser struct {
 	maxOctets                    int
 }
 
+func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
+	return p.TransformerOperator.ProcessBatchWith(ctx, entries, p.Process)
+}
+
 // Process will parse an entry field as syslog.
 func (p *Parser) Process(ctx context.Context, entry *entry.Entry) error {
-
 	// if pri header is missing and this is an expected behavior then facility and severity values should be skipped.
 	if !p.enableOctetCounting && p.allowSkipPriHeader {
-
 		bytes, err := toBytes(entry.Body)
 		if err != nil {
 			return err
 		}
 
 		if p.shouldSkipPriorityValues(bytes) {
-			return p.ParserOperator.ProcessWithCallback(ctx, entry, p.parse, postprocessWithoutPriHeader)
+			return p.ProcessWithCallback(ctx, entry, p.parse, postprocessWithoutPriHeader)
 		}
 	}
 
-	return p.ParserOperator.ProcessWithCallback(ctx, entry, p.parse, postprocess)
+	return p.ProcessWithCallback(ctx, entry, p.parse, postprocess)
 }
 
 // parse will parse a value as syslog.
@@ -80,7 +83,7 @@ func (p *Parser) parse(value any) (any, error) {
 	case *rfc5424.SyslogMessage:
 		return p.parseRFC5424(message, skipPriHeaderValues)
 	default:
-		return nil, fmt.Errorf("parsed value was not rfc3164 or rfc5424 compliant")
+		return nil, errors.New("parsed value was not rfc3164 or rfc5424 compliant")
 	}
 }
 
@@ -172,7 +175,7 @@ func (p *Parser) parseRFC5424(syslogMessage *rfc5424.SyslogMessage, skipPriHeade
 }
 
 // toSafeMap will dereference any pointers on the supplied map.
-func (p *Parser) toSafeMap(message map[string]any) (map[string]any, error) {
+func (*Parser) toSafeMap(message map[string]any) (map[string]any, error) {
 	for key, val := range message {
 		switch v := val.(type) {
 		case *string:
@@ -261,7 +264,7 @@ var severityField = entry.NewAttributeField("severity")
 func cleanupTimestamp(e *entry.Entry) error {
 	_, ok := entry.NewAttributeField("timestamp").Delete(e)
 	if !ok {
-		return fmt.Errorf("failed to cleanup timestamp")
+		return errors.New("failed to cleanup timestamp")
 	}
 
 	return nil
@@ -274,12 +277,12 @@ func postprocessWithoutPriHeader(e *entry.Entry) error {
 func postprocess(e *entry.Entry) error {
 	sev, ok := severityField.Delete(e)
 	if !ok {
-		return fmt.Errorf("severity field does not exist")
+		return errors.New("severity field does not exist")
 	}
 
 	sevInt, ok := sev.(int)
 	if !ok {
-		return fmt.Errorf("severity field is not an int")
+		return errors.New("severity field is not an int")
 	}
 
 	if sevInt < 0 || sevInt > 7 {

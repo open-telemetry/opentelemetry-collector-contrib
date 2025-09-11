@@ -39,29 +39,17 @@ func TestLoadConfig(t *testing.T) {
 						Interval:      time.Hour,
 						FieldSelector: "status.phase=Running",
 						LabelSelector: "environment in (production),tier in (frontend)",
-						gvr: &schema.GroupVersionResource{
-							Group:    "",
-							Version:  "v1",
-							Resource: "pods",
-						},
 					},
 					{
-						Name:            "events",
-						Mode:            WatchMode,
-						Namespaces:      []string{"default"},
-						Group:           "events.k8s.io",
-						ResourceVersion: "",
+						Name:       "events",
+						Mode:       WatchMode,
+						Namespaces: []string{"default"},
+						Group:      "events.k8s.io",
 						ExcludeWatchType: []apiWatch.EventType{
 							apiWatch.Deleted,
 						},
-						gvr: &schema.GroupVersionResource{
-							Group:    "events.k8s.io",
-							Version:  "v1",
-							Resource: "events",
-						},
 					},
 				},
-				makeDiscoveryClient: getMockDiscoveryClient,
 			},
 		},
 		{
@@ -76,24 +64,13 @@ func TestLoadConfig(t *testing.T) {
 						Mode:            PullMode,
 						ResourceVersion: "1",
 						Interval:        time.Hour,
-						gvr: &schema.GroupVersionResource{
-							Group:    "",
-							Version:  "v1",
-							Resource: "pods",
-						},
 					},
 					{
 						Name:     "events",
 						Mode:     PullMode,
 						Interval: time.Hour,
-						gvr: &schema.GroupVersionResource{
-							Group:    "",
-							Version:  "v1",
-							Resource: "events",
-						},
 					},
 				},
-				makeDiscoveryClient: getMockDiscoveryClient,
 			},
 		},
 		{
@@ -109,11 +86,6 @@ func TestLoadConfig(t *testing.T) {
 						Namespaces:      []string{"default"},
 						Group:           "events.k8s.io",
 						ResourceVersion: "",
-						gvr: &schema.GroupVersionResource{
-							Group:    "events.k8s.io",
-							Version:  "v1",
-							Resource: "events",
-						},
 					},
 					{
 						Name:            "events",
@@ -121,21 +93,9 @@ func TestLoadConfig(t *testing.T) {
 						Namespaces:      []string{"default"},
 						Group:           "events.k8s.io",
 						ResourceVersion: "2",
-						gvr: &schema.GroupVersionResource{
-							Group:    "events.k8s.io",
-							Version:  "v1",
-							Resource: "events",
-						},
 					},
 				},
-				makeDiscoveryClient: getMockDiscoveryClient,
 			},
-		},
-		{
-			id: component.NewIDWithName(metadata.Type, "invalid_resource"),
-		},
-		{
-			id: component.NewIDWithName(metadata.Type, "exclude_deleted_with_pull"),
 		},
 	}
 
@@ -146,58 +106,227 @@ func TestLoadConfig(t *testing.T) {
 
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig().(*Config)
-			cfg.makeDiscoveryClient = getMockDiscoveryClient
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			if tt.expected == nil {
-				err = component.ValidateConfig(cfg)
-				assert.Error(t, err)
-				return
-			}
-			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected.AuthType, cfg.AuthType)
 			assert.Equal(t, tt.expected.Objects, cfg.Objects)
+
+			err = cfg.Validate()
+			if tt.expected == nil {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
 		})
 	}
 }
 
-func TestValidateResourceConflict(t *testing.T) {
-	mockClient := newMockDynamicClient()
-	rCfg := createDefaultConfig().(*Config)
-	rCfg.makeDynamicClient = mockClient.getMockDynamicClient
-	rCfg.makeDiscoveryClient = getMockDiscoveryClient
-
-	// Validate it should choose first gvr if group is not specified
-	rCfg.Objects = []*K8sObjectsConfig{
+func TestValidate(t *testing.T) {
+	tests := []struct {
+		desc        string
+		cfg         *Config
+		expectedErr string
+	}{
 		{
-			Name: "myresources",
-			Mode: PullMode,
+			desc: "invalid mode",
+			cfg: &Config{
+				ErrorMode: PropagateError,
+				Objects: []*K8sObjectsConfig{
+					{
+						Name: "pods",
+						Mode: "invalid_mode",
+					},
+				},
+			},
+			expectedErr: "invalid mode: invalid_mode",
+		},
+		{
+			desc: "exclude watch type with pull mode",
+			cfg: &Config{
+				ErrorMode: PropagateError,
+				Objects: []*K8sObjectsConfig{
+					{
+						Name: "pods",
+						Mode: PullMode,
+						ExcludeWatchType: []apiWatch.EventType{
+							apiWatch.Deleted,
+						},
+					},
+				},
+			},
+			expectedErr: "the Exclude config can only be used with watch mode",
+		},
+		{
+			desc: "default mode is set",
+			cfg: &Config{
+				ErrorMode: PropagateError,
+				Objects: []*K8sObjectsConfig{
+					{
+						Name: "pods",
+					},
+				},
+			},
+		},
+		{
+			desc: "default interval for pull mode",
+			cfg: &Config{
+				ErrorMode: PropagateError,
+				Objects: []*K8sObjectsConfig{
+					{
+						Name: "pods",
+						Mode: PullMode,
+					},
+				},
+			},
 		},
 	}
 
-	err := rCfg.Validate()
-	require.NoError(t, err)
-	assert.Equal(t, "group1", rCfg.Objects[0].gvr.Group)
-
-	// Validate it should choose gvr for specified group
-	rCfg.Objects = []*K8sObjectsConfig{
-		{
-			Name:  "myresources",
-			Mode:  PullMode,
-			Group: "group2",
-		},
+	for _, tt := range tests {
+		t.Run(tt.desc, func(t *testing.T) {
+			err := tt.cfg.Validate()
+			if tt.expectedErr != "" {
+				assert.EqualError(t, err, tt.expectedErr)
+				return
+			}
+			assert.NoError(t, err)
+		})
 	}
-
-	err = rCfg.Validate()
-	require.NoError(t, err)
-	assert.Equal(t, "group2", rCfg.Objects[0].gvr.Group)
 }
 
-func TestClientRequired(t *testing.T) {
-	rCfg := createDefaultConfig().(*Config)
-	err := rCfg.Validate()
-	require.Error(t, err)
+func TestDeepCopy(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		expected *K8sObjectsConfig
+	}{
+		{
+			name: "deep copy",
+			expected: &K8sObjectsConfig{
+				Name:             "pods",
+				Group:            "group",
+				Namespaces:       []string{"default"},
+				Mode:             PullMode,
+				FieldSelector:    "status.phase=Running",
+				LabelSelector:    "environment in (production),tier in (frontend)",
+				Interval:         time.Hour,
+				ResourceVersion:  "1",
+				ExcludeWatchType: []apiWatch.EventType{apiWatch.Added},
+				exclude:          map[apiWatch.EventType]bool{apiWatch.Added: true},
+				gvr: &schema.GroupVersionResource{
+					Group:    "group",
+					Version:  "v1",
+					Resource: "pods",
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual := tt.expected.DeepCopy()
+			shallowCopy := tt.expected
+
+			// Change all of the fields in the deep copy
+			actual.Name = "changed"
+			actual.Group = "changed"
+			actual.Namespaces[0] = "changed"
+			actual.Mode = WatchMode
+			actual.FieldSelector = "changed"
+			actual.LabelSelector = "changed"
+			actual.Interval = time.Minute
+			actual.ResourceVersion = "changed"
+			actual.ExcludeWatchType[0] = apiWatch.Deleted
+			actual.exclude[apiWatch.Bookmark] = true
+			actual.gvr.Group = "changed"
+			actual.gvr.Version = "changed"
+			actual.gvr.Resource = "changed"
+
+			// Make sure changing the deep copy didn't change the original value
+			assert.Equal(t, tt.expected, shallowCopy)
+		})
+	}
+}
+
+func TestCreateDefaultConfigIncludeInitialState(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	// Verify that IncludeInitialState defaults to nil/false
+	assert.False(t, cfg.IncludeInitialState)
+}
+
+func TestConfigValidationIncludeInitialState(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		desc        string
+		cfg         *Config
+		expectedErr string
+	}{
+		{
+			desc: "include_initial_state true with watch mode is valid",
+			cfg: &Config{
+				ErrorMode:           PropagateError,
+				IncludeInitialState: true,
+				Objects: []*K8sObjectsConfig{
+					{
+						Name: "pods",
+						Mode: WatchMode,
+					},
+				},
+			},
+		},
+		{
+			desc: "include_initial_state false with watch mode is valid",
+			cfg: &Config{
+				ErrorMode:           PropagateError,
+				IncludeInitialState: false,
+				Objects: []*K8sObjectsConfig{
+					{
+						Name: "pods",
+						Mode: WatchMode,
+					},
+				},
+			},
+		},
+		{
+			desc: "include_initial_state true with pull mode is invalid",
+			cfg: &Config{
+				ErrorMode:           PropagateError,
+				IncludeInitialState: true,
+				Objects: []*K8sObjectsConfig{
+					{
+						Name: "pods",
+						Mode: PullMode,
+					},
+				},
+			},
+			expectedErr: "include_initial_state can only be used with watch mode",
+		},
+		{
+			desc: "include_initial_state nil with watch mode is valid (defaults to false)",
+			cfg: &Config{
+				ErrorMode: PropagateError,
+				Objects: []*K8sObjectsConfig{
+					{
+						Name: "pods",
+						Mode: WatchMode,
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.desc, func(t *testing.T) {
+			err := tt.cfg.Validate()
+			if tt.expectedErr != "" {
+				assert.EqualError(t, err, tt.expectedErr)
+				return
+			}
+			assert.NoError(t, err)
+		})
+	}
 }

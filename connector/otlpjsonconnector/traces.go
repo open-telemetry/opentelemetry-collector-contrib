@@ -25,18 +25,18 @@ type connectorTraces struct {
 
 // newTracesConnector is a function to create a new connector for traces extraction
 func newTracesConnector(set connector.Settings, config component.Config, tracesConsumer consumer.Traces) *connectorTraces {
-	set.TelemetrySettings.Logger.Info("Building otlpjson connector for traces")
+	set.Logger.Info("Building otlpjson connector for traces")
 	cfg := config.(*Config)
 
 	return &connectorTraces{
 		config:         *cfg,
-		logger:         set.TelemetrySettings.Logger,
+		logger:         set.Logger,
 		tracesConsumer: tracesConsumer,
 	}
 }
 
 // Capabilities implements the consumer interface.
-func (c *connectorTraces) Capabilities() consumer.Capabilities {
+func (*connectorTraces) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
@@ -51,15 +51,26 @@ func (c *connectorTraces) ConsumeLogs(ctx context.Context, pl plog.Logs) error {
 			for k := 0; k < logRecord.LogRecords().Len(); k++ {
 				lRecord := logRecord.LogRecords().At(k)
 				token := lRecord.Body()
-				var t ptrace.Traces
-				t, err := tracesUnmarshaler.UnmarshalTraces([]byte(token.AsString()))
-				if err != nil {
-					c.logger.Error("could extract traces from otlp json", zap.Error(err))
+
+				value := token.AsString()
+				switch {
+				case traceRegex.MatchString(value):
+					var t ptrace.Traces
+					t, err := tracesUnmarshaler.UnmarshalTraces([]byte(value))
+					if err != nil {
+						c.logger.Error("could not extract traces from otlp json", zap.Error(err))
+						continue
+					}
+					err = c.tracesConsumer.ConsumeTraces(ctx, t)
+					if err != nil {
+						c.logger.Error("could not consume traces from otlp json", zap.Error(err))
+					}
+				case metricRegex.MatchString(value), logRegex.MatchString(value):
+					// If it's a metric or log payload, continue to the next iteration
 					continue
-				}
-				err = c.tracesConsumer.ConsumeTraces(ctx, t)
-				if err != nil {
-					c.logger.Error("could not consume traces from otlp json", zap.Error(err))
+				default:
+					// If no regex matches, log the invalid payload
+					c.logger.Error("Invalid otlp payload")
 				}
 			}
 		}

@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"testing"
 
@@ -45,13 +46,23 @@ var skippedTests = map[string]struct{}{
 	"bad_exemplars_on_unallowed_samples_3": {}, "bad_exemplars_on_unallowed_metric_types_2": {},
 }
 
-func verifyPositiveTarget(t *testing.T, _ *testData, mds []pmetric.ResourceMetrics) {
+var positiveTestsWithoutSeries = []string{"null_byte", "empty_metadata"}
+
+func verifyPositiveTarget(t *testing.T, td *testData, mds []pmetric.ResourceMetrics) {
 	require.NotEmpty(t, mds, "At least one resource metric should be present")
 	metrics := getMetrics(mds[0])
 	assertUp(t, 1, metrics)
-	// if we only have one ResourceMetrics, then we should have a non-default metric in there
-	if len(mds) == 1 {
+	if slices.Contains(positiveTestsWithoutSeries, td.name) {
+		require.Equal(t, len(metrics), countScrapeMetrics(metrics, false))
+	} else {
 		require.Greater(t, len(metrics), countScrapeMetrics(metrics, false))
+	}
+	if len(mds) > 1 {
+		// We expect a single scrape and the rest (if exists) to be stale (up==0).
+		for _, m := range mds[1:] {
+			metrics = getMetrics(m)
+			assertUp(t, 0, metrics)
+		}
 	}
 }
 
@@ -92,7 +103,6 @@ func verifyFailTarget(t *testing.T, td *testData, mds []pmetric.ResourceMetrics)
 
 // Test open metrics negative test cases
 func TestOpenMetricsFail(t *testing.T) {
-
 	targetsMap := getOpenMetricsFailTestData()
 	var targets []*testData
 	for k, v := range targetsMap {
@@ -127,7 +137,6 @@ func verifyInvalidTarget(t *testing.T, td *testData, mds []pmetric.ResourceMetri
 }
 
 func TestOpenMetricsInvalid(t *testing.T) {
-
 	targetsMap := getOpenMetricsInvalidTestData()
 	var targets []*testData
 	for k, v := range targetsMap {
@@ -229,7 +238,6 @@ func TestInfoStatesetMetrics(t *testing.T) {
 	}
 
 	testComponent(t, targets, nil)
-
 }
 
 func verifyInfoStatesetMetrics(t *testing.T, td *testData, resourceMetrics []pmetric.ResourceMetrics) {
@@ -243,10 +251,11 @@ func verifyInfoStatesetMetrics(t *testing.T, td *testData, resourceMetrics []pme
 
 	metrics1 := m1.ScopeMetrics().At(0).Metrics()
 	ts1 := getTS(metrics1)
-	e1 := []testExpectation{
-		assertMetricPresent("foo",
-			compareMetricIsMonotonic(false),
-			compareMetricUnit(""),
+	e1 := []metricExpectation{
+		{
+			"foo",
+			pmetric.MetricTypeSum,
+			"",
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -262,10 +271,13 @@ func verifyInfoStatesetMetrics(t *testing.T, td *testData, resourceMetrics []pme
 						compareAttributes(map[string]string{"entity": "replica", "name": "prettiername", "version": "8.1.9"}),
 					},
 				},
-			}),
-		assertMetricPresent("bar",
+			},
 			compareMetricIsMonotonic(false),
-			compareMetricUnit(""),
+		},
+		{
+			"bar",
+			pmetric.MetricTypeSum,
+			"",
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -309,7 +321,9 @@ func verifyInfoStatesetMetrics(t *testing.T, td *testData, resourceMetrics []pme
 						compareAttributes(map[string]string{"entity": "replica", "foo": "ccc"}),
 					},
 				},
-			}),
+			},
+			compareMetricIsMonotonic(false),
+		},
 	}
 	doCompare(t, "scrape-infostatesetmetrics-1", wantAttributes, m1, e1)
 }

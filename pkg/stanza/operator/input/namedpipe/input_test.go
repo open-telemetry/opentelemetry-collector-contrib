@@ -22,15 +22,15 @@ import (
 )
 
 // filename attempts to get an unused filename.
-func filename(t testing.TB) string {
-	t.Helper()
+func filename(tb testing.TB) string {
+	tb.Helper()
 
-	file, err := os.CreateTemp("", "")
-	require.NoError(t, err)
+	file, err := os.CreateTemp(tb.TempDir(), "")
+	require.NoError(tb, err)
 
 	name := file.Name()
-	require.NoError(t, file.Close())
-	require.NoError(t, os.Remove(name))
+	require.NoError(tb, file.Close())
+	require.NoError(tb, os.Remove(name))
 
 	return name
 }
@@ -39,7 +39,7 @@ func filename(t testing.TB) string {
 func TestCreatePipe(t *testing.T) {
 	conf := NewConfig()
 	conf.Path = filename(t)
-	conf.Permissions = 0666
+	conf.Permissions = 0o666
 
 	set := componenttest.NewNopTelemetrySettings()
 	op, err := conf.Build(set)
@@ -62,7 +62,7 @@ func TestCreatePipe(t *testing.T) {
 func TestCreatePipeFailsWithFile(t *testing.T) {
 	conf := NewConfig()
 	conf.Path = filename(t)
-	conf.Permissions = 0666
+	conf.Permissions = 0o666
 
 	pipe, err := os.OpenFile(conf.Path, os.O_CREATE, 0)
 	require.NoError(t, err)
@@ -81,7 +81,7 @@ func TestCreatePipeFailsWithFile(t *testing.T) {
 func TestCreatePipeAlreadyExists(t *testing.T) {
 	conf := NewConfig()
 	conf.Path = filename(t)
-	conf.Permissions = 0666
+	conf.Permissions = 0o666
 
 	require.NoError(t, unix.Mkfifo(conf.Path, conf.Permissions))
 
@@ -99,7 +99,7 @@ func TestPipeWrites(t *testing.T) {
 
 	conf := NewConfig()
 	conf.Path = filename(t)
-	conf.Permissions = 0666
+	conf.Permissions = 0o666
 	conf.OutputIDs = []string{fake.ID()}
 
 	set := componenttest.NewNopTelemetrySettings()
@@ -147,6 +147,63 @@ func TestPipeWrites(t *testing.T) {
 			case <-time.After(time.Second):
 				t.Fatal("timed out waiting for entry")
 			}
+		}
+	}
+}
+
+// TestPipeHasDataAtStartup will test if the receiver can consume from a named
+// pipe that has buffered data before startup.
+func TestPipeHasDataAtStartup(t *testing.T) {
+	fake := testutil.NewFakeOutput(t)
+
+	conf := NewConfig()
+	conf.Path = filename(t)
+	conf.Permissions = 0o666
+	conf.OutputIDs = []string{fake.ID()}
+
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := conf.Build(set)
+	require.NoError(t, err)
+	ops := []operator.Operator{op, fake}
+
+	// create pipe
+	require.NoError(t, unix.Mkfifo(conf.Path, conf.Permissions))
+
+	pipe, err := os.OpenFile(conf.Path, os.O_RDWR|os.O_APPEND, os.ModeNamedPipe)
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, pipe.Close())
+	}()
+
+	logs := []string{"log1\n", "log2\n"}
+
+	for _, log := range logs {
+		_, err = pipe.WriteString(log)
+		require.NoError(t, err)
+	}
+
+	p, err := pipeline.NewDirectedPipeline(ops)
+	require.NoError(t, err)
+
+	// start receiver
+	require.NoError(t, p.Start(testutil.NewUnscopedMockPersister()))
+	defer func() {
+		require.NoError(t, p.Stop())
+	}()
+
+	for _, log := range logs {
+		expect := &entry.Entry{
+			Body: strings.TrimSpace(log),
+		}
+
+		select {
+		case e := <-fake.Received:
+			obs := time.Now()
+			expect.ObservedTimestamp = obs
+			e.ObservedTimestamp = obs
+			require.Equal(t, expect, e)
+		case <-time.After(time.Second):
+			t.Fatal("timed-out waiting for log entry")
 		}
 	}
 }

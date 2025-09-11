@@ -14,7 +14,37 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
-// AttributeCPULevel specifies the a value cpu_level attribute.
+// AttributeConnectionState specifies the value connection_state attribute.
+type AttributeConnectionState int
+
+const (
+	_ AttributeConnectionState = iota
+	AttributeConnectionStateWriting
+	AttributeConnectionStateKeepalive
+	AttributeConnectionStateClosing
+)
+
+// String returns the string representation of the AttributeConnectionState.
+func (av AttributeConnectionState) String() string {
+	switch av {
+	case AttributeConnectionStateWriting:
+		return "writing"
+	case AttributeConnectionStateKeepalive:
+		return "keepalive"
+	case AttributeConnectionStateClosing:
+		return "closing"
+	}
+	return ""
+}
+
+// MapAttributeConnectionState is a helper map of string to AttributeConnectionState attribute value.
+var MapAttributeConnectionState = map[string]AttributeConnectionState{
+	"writing":   AttributeConnectionStateWriting,
+	"keepalive": AttributeConnectionStateKeepalive,
+	"closing":   AttributeConnectionStateClosing,
+}
+
+// AttributeCPULevel specifies the value cpu_level attribute.
 type AttributeCPULevel int
 
 const (
@@ -40,7 +70,7 @@ var MapAttributeCPULevel = map[string]AttributeCPULevel{
 	"children": AttributeCPULevelChildren,
 }
 
-// AttributeCPUMode specifies the a value cpu_mode attribute.
+// AttributeCPUMode specifies the value cpu_mode attribute.
 type AttributeCPUMode int
 
 const (
@@ -66,7 +96,7 @@ var MapAttributeCPUMode = map[string]AttributeCPUMode{
 	"user":   AttributeCPUModeUser,
 }
 
-// AttributeScoreboardState specifies the a value scoreboard_state attribute.
+// AttributeScoreboardState specifies the value scoreboard_state attribute.
 type AttributeScoreboardState int
 
 const (
@@ -132,7 +162,7 @@ var MapAttributeScoreboardState = map[string]AttributeScoreboardState{
 	"unknown":      AttributeScoreboardStateUnknown,
 }
 
-// AttributeWorkersState specifies the a value workers_state attribute.
+// AttributeWorkersState specifies the value workers_state attribute.
 type AttributeWorkersState int
 
 const (
@@ -156,6 +186,119 @@ func (av AttributeWorkersState) String() string {
 var MapAttributeWorkersState = map[string]AttributeWorkersState{
 	"busy": AttributeWorkersStateBusy,
 	"idle": AttributeWorkersStateIdle,
+}
+
+var MetricsInfo = metricsInfo{
+	ApacheConnectionsAsync: metricInfo{
+		Name: "apache.connections.async",
+	},
+	ApacheCPULoad: metricInfo{
+		Name: "apache.cpu.load",
+	},
+	ApacheCPUTime: metricInfo{
+		Name: "apache.cpu.time",
+	},
+	ApacheCurrentConnections: metricInfo{
+		Name: "apache.current_connections",
+	},
+	ApacheLoad1: metricInfo{
+		Name: "apache.load.1",
+	},
+	ApacheLoad15: metricInfo{
+		Name: "apache.load.15",
+	},
+	ApacheLoad5: metricInfo{
+		Name: "apache.load.5",
+	},
+	ApacheRequestTime: metricInfo{
+		Name: "apache.request.time",
+	},
+	ApacheRequests: metricInfo{
+		Name: "apache.requests",
+	},
+	ApacheScoreboard: metricInfo{
+		Name: "apache.scoreboard",
+	},
+	ApacheTraffic: metricInfo{
+		Name: "apache.traffic",
+	},
+	ApacheUptime: metricInfo{
+		Name: "apache.uptime",
+	},
+	ApacheWorkers: metricInfo{
+		Name: "apache.workers",
+	},
+}
+
+type metricsInfo struct {
+	ApacheConnectionsAsync   metricInfo
+	ApacheCPULoad            metricInfo
+	ApacheCPUTime            metricInfo
+	ApacheCurrentConnections metricInfo
+	ApacheLoad1              metricInfo
+	ApacheLoad15             metricInfo
+	ApacheLoad5              metricInfo
+	ApacheRequestTime        metricInfo
+	ApacheRequests           metricInfo
+	ApacheScoreboard         metricInfo
+	ApacheTraffic            metricInfo
+	ApacheUptime             metricInfo
+	ApacheWorkers            metricInfo
+}
+
+type metricInfo struct {
+	Name string
+}
+
+type metricApacheConnectionsAsync struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills apache.connections.async metric with initial data.
+func (m *metricApacheConnectionsAsync) init() {
+	m.data.SetName("apache.connections.async")
+	m.data.SetDescription("The number of connections in different asynchronous states reported by Apache's server-status.")
+	m.data.SetUnit("{connections}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricApacheConnectionsAsync) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, connectionStateAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("connection_state", connectionStateAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricApacheConnectionsAsync) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricApacheConnectionsAsync) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricApacheConnectionsAsync(cfg MetricConfig) metricApacheConnectionsAsync {
+	m := metricApacheConnectionsAsync{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
 }
 
 type metricApacheCPULoad struct {
@@ -779,6 +922,7 @@ type MetricsBuilder struct {
 	buildInfo                      component.BuildInfo  // contains version information.
 	resourceAttributeIncludeFilter map[string]filter.Filter
 	resourceAttributeExcludeFilter map[string]filter.Filter
+	metricApacheConnectionsAsync   metricApacheConnectionsAsync
 	metricApacheCPULoad            metricApacheCPULoad
 	metricApacheCPUTime            metricApacheCPUTime
 	metricApacheCurrentConnections metricApacheCurrentConnections
@@ -810,13 +954,13 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 		mb.startTime = startTime
 	})
 }
-
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		config:                         mbc,
 		startTime:                      pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                  pmetric.NewMetrics(),
 		buildInfo:                      settings.BuildInfo,
+		metricApacheConnectionsAsync:   newMetricApacheConnectionsAsync(mbc.Metrics.ApacheConnectionsAsync),
 		metricApacheCPULoad:            newMetricApacheCPULoad(mbc.Metrics.ApacheCPULoad),
 		metricApacheCPUTime:            newMetricApacheCPUTime(mbc.Metrics.ApacheCPUTime),
 		metricApacheCurrentConnections: newMetricApacheCurrentConnections(mbc.Metrics.ApacheCurrentConnections),
@@ -910,9 +1054,10 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver")
+	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
+	mb.metricApacheConnectionsAsync.emit(ils.Metrics())
 	mb.metricApacheCPULoad.emit(ils.Metrics())
 	mb.metricApacheCPUTime.emit(ils.Metrics())
 	mb.metricApacheCurrentConnections.emit(ils.Metrics())
@@ -954,6 +1099,16 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 	metrics := mb.metricsBuffer
 	mb.metricsBuffer = pmetric.NewMetrics()
 	return metrics
+}
+
+// RecordApacheConnectionsAsyncDataPoint adds a data point to apache.connections.async metric.
+func (mb *MetricsBuilder) RecordApacheConnectionsAsyncDataPoint(ts pcommon.Timestamp, inputVal string, connectionStateAttributeValue AttributeConnectionState) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for ApacheConnectionsAsync, value was %s: %w", inputVal, err)
+	}
+	mb.metricApacheConnectionsAsync.recordDataPoint(mb.startTime, ts, val, connectionStateAttributeValue.String())
+	return nil
 }
 
 // RecordApacheCPULoadDataPoint adds a data point to apache.cpu.load metric.

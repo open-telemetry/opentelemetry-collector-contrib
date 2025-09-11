@@ -46,7 +46,8 @@ var sitePerfCounterRecorders = []perfCounterRecorderConf{
 				mb.RecordIisNetworkIoDataPoint(ts, int64(val), metadata.AttributeDirectionSent)
 			},
 			"Total Connection Attempts (all instances)": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp,
-				val float64) {
+				val float64,
+			) {
 				mb.RecordIisConnectionAttemptCountDataPoint(ts, int64(val))
 			},
 			"Total Delete Requests": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
@@ -99,6 +100,18 @@ var appPoolPerfCounterRecorders = []perfCounterRecorderConf{
 			},
 			"CurrentQueueSize": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
 				mb.RecordIisRequestQueueCountDataPoint(ts, int64(val))
+			},
+		},
+	},
+	{
+		object:   "APP_POOL_WAS",
+		instance: "*",
+		recorders: map[string]recordFunc{
+			"Current Application Pool State": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
+				mb.RecordIisApplicationPoolStateDataPoint(ts, int64(val))
+			},
+			"Current Application Pool Uptime": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
+				mb.RecordIisApplicationPoolUptimeDataPoint(ts, int64(val))
 			},
 		},
 	},

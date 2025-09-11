@@ -36,4 +36,4 @@ Represented in `json` format, an entry may look like the following:
 }
 ```
 
-Throughout the documentation, `json` format is used to represent entries. Fields are typically ommitted unless relevant to the behavior being described.
+Throughout the documentation, `json` format is used to represent entries. Fields are typically omitted unless relevant to the behavior being described.

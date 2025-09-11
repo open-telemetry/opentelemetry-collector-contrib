@@ -5,7 +5,7 @@ package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import (
 	"context"
-	"fmt"
+	"errors"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
@@ -22,13 +22,13 @@ func createIsDoubleFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments)
 	args, ok := oArgs.(*IsDoubleArguments[K])
 
 	if !ok {
-		return nil, fmt.Errorf("IsDoubleFactory args must be of type *IsDoubleArguments[K]")
+		return nil, errors.New("IsDoubleFactory args must be of type *IsDoubleArguments[K]")
 	}
 
 	return isDouble(args.Target), nil
 }
 
-// nolint:errorlint
+//nolint:errorlint
 func isDouble[K any](target ottl.FloatGetter[K]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		_, err := target.Get(ctx, tCtx)

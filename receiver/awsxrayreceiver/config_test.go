@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/metadata"
@@ -44,7 +45,7 @@ func TestLoadConfig(t *testing.T) {
 						Endpoint: "localhost:2000",
 					},
 					ProxyAddress: "",
-					TLSSetting: configtls.ClientConfig{
+					TLS: configtls.ClientConfig{
 						Insecure:   false,
 						ServerName: "",
 					},
@@ -67,7 +68,7 @@ func TestLoadConfig(t *testing.T) {
 						Endpoint: "0.0.0.0:1234",
 					},
 					ProxyAddress: "https://proxy.proxy.com",
-					TLSSetting: configtls.ClientConfig{
+					TLS: configtls.ClientConfig{
 						Insecure:   true,
 						ServerName: "something",
 					},
@@ -77,7 +78,8 @@ func TestLoadConfig(t *testing.T) {
 					LocalMode:   true,
 					ServiceName: "xray",
 				},
-			}},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -89,7 +91,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.NoError(t, xconfmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

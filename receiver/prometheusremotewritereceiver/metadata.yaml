@@ -3,9 +3,14 @@ type: prometheusremotewrite
 status:
   class: receiver
   stability:
-    development: [metrics]
-  distributions: []
+    alpha: [metrics]
+  distributions: [contrib]
   codeowners:
-    active: [dashpole, ArthurSens]
+    active: [dashpole, ArthurSens, perebaj]
 tests:
   config:
+  goleak:
+    ignore:
+      top:
+        # See https://github.com/census-instrumentation/opencensus-go/issues/1191 for more information.
+        - "go.opencensus.io/stats/view.(*worker).start"

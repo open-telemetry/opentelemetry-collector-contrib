@@ -10,7 +10,6 @@ import (
 )
 
 func TestValidate(t *testing.T) {
-
 	tests := []struct {
 		name string
 		cfg  *Config
@@ -45,7 +44,7 @@ func TestValidate(t *testing.T) {
 				Protocol: "rfc5424",
 				Network:  "ftp",
 			},
-			err: "unsupported network: network is required, only tcp/udp supported",
+			err: "unsupported network: network is required, only tcp/udp/unix supported",
 		},
 		{
 			name: "Unsupported Protocol",
@@ -56,6 +55,15 @@ func TestValidate(t *testing.T) {
 				Protocol: "rfc",
 			},
 			err: "unsupported protocol: Only rfc5424 and rfc3164 supported",
+		},
+		{
+			name: "invalid Unix Socket",
+			cfg: &Config{
+				Endpoint: "",
+				Network:  "unix",
+				Protocol: "rfc5424",
+			},
+			err: "invalid endpoint: endpoint is required but it is not configured",
 		},
 	}
 	for _, testInstance := range tests {

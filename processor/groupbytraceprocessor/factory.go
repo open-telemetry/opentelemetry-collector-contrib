@@ -5,7 +5,7 @@ package groupbytraceprocessor // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -24,13 +24,12 @@ const (
 )
 
 var (
-	errDiskStorageNotSupported    = fmt.Errorf("option 'disk storage' not supported in this release")
-	errDiscardOrphansNotSupported = fmt.Errorf("option 'discard orphans' not supported in this release")
+	errDiskStorageNotSupported    = errors.New("option 'disk storage' not supported in this release")
+	errDiscardOrphansNotSupported = errors.New("option 'discard orphans' not supported in this release")
 )
 
 // NewFactory returns a new factory for the Filter processor.
 func NewFactory() processor.Factory {
-
 	return processor.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
@@ -55,8 +54,8 @@ func createTracesProcessor(
 	_ context.Context,
 	params processor.Settings,
 	cfg component.Config,
-	nextConsumer consumer.Traces) (processor.Traces, error) {
-
+	nextConsumer consumer.Traces,
+) (processor.Traces, error) {
 	oCfg := cfg.(*Config)
 
 	var st storage

@@ -16,6 +16,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pipeline"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector/internal/metadata"
 )
 
 var errLogsConsumer = errors.New("Error from ConsumeLogs")
@@ -29,8 +31,6 @@ func TestLogsRegisterConsumers(t *testing.T) {
 	cfg := &Config{
 		PipelinePriority: [][]pipeline.ID{{logsFirst}, {logsSecond}, {logsThird}},
 		RetryInterval:    50 * time.Millisecond,
-		RetryGap:         10 * time.Millisecond,
-		MaxRetries:       10000,
 	}
 
 	router := connector.NewLogsRouter(map[pipeline.ID]consumer.Logs{
@@ -39,25 +39,24 @@ func TestLogsRegisterConsumers(t *testing.T) {
 		logsThird:  &sinkThird,
 	})
 
-	conn, err := NewFactory().CreateLogsToLogs(context.Background(),
-		connectortest.NewNopSettings(), cfg, router.(consumer.Logs))
+	conn, err := NewFactory().CreateLogsToLogs(t.Context(),
+		connectortest.NewNopSettings(metadata.Type), cfg, router.(consumer.Logs))
 
 	failoverConnector := conn.(*logsFailover)
 	defer func() {
-		assert.NoError(t, failoverConnector.Shutdown(context.Background()))
+		assert.NoError(t, failoverConnector.Shutdown(t.Context()))
 	}()
 
 	require.NoError(t, err)
 	require.NotNil(t, conn)
 
-	lc, _, ok := failoverConnector.failover.getCurrentConsumer()
-	lc1 := failoverConnector.failover.GetConsumerAtIndex(1)
-	lc2 := failoverConnector.failover.GetConsumerAtIndex(2)
+	lc := failoverConnector.failover.TestGetConsumerAtIndex(0)
+	lc1 := failoverConnector.failover.TestGetConsumerAtIndex(1)
+	lc2 := failoverConnector.failover.TestGetConsumerAtIndex(2)
 
-	assert.True(t, ok)
-	require.Implements(t, (*consumer.Logs)(nil), lc)
-	require.Implements(t, (*consumer.Logs)(nil), lc1)
-	require.Implements(t, (*consumer.Logs)(nil), lc2)
+	require.Equal(t, lc, &sinkFirst)
+	require.Equal(t, lc1, &sinkSecond)
+	require.Equal(t, lc2, &sinkThird)
 }
 
 func TestLogsWithValidFailover(t *testing.T) {
@@ -69,8 +68,6 @@ func TestLogsWithValidFailover(t *testing.T) {
 	cfg := &Config{
 		PipelinePriority: [][]pipeline.ID{{logsFirst}, {logsSecond}, {logsThird}},
 		RetryInterval:    50 * time.Millisecond,
-		RetryGap:         10 * time.Millisecond,
-		MaxRetries:       10000,
 	}
 
 	router := connector.NewLogsRouter(map[pipeline.ID]consumer.Logs{
@@ -79,15 +76,15 @@ func TestLogsWithValidFailover(t *testing.T) {
 		logsThird:  &sinkThird,
 	})
 
-	conn, err := NewFactory().CreateLogsToLogs(context.Background(),
-		connectortest.NewNopSettings(), cfg, router.(consumer.Logs))
+	conn, err := NewFactory().CreateLogsToLogs(t.Context(),
+		connectortest.NewNopSettings(metadata.Type), cfg, router.(consumer.Logs))
 
 	require.NoError(t, err)
 
 	failoverConnector := conn.(*logsFailover)
 	failoverConnector.failover.ModifyConsumerAtIndex(0, consumertest.NewErr(errLogsConsumer))
 	defer func() {
-		assert.NoError(t, failoverConnector.Shutdown(context.Background()))
+		assert.NoError(t, failoverConnector.Shutdown(t.Context()))
 	}()
 
 	ld := sampleLog()
@@ -106,8 +103,6 @@ func TestLogsWithFailoverError(t *testing.T) {
 	cfg := &Config{
 		PipelinePriority: [][]pipeline.ID{{logsFirst}, {logsSecond}, {logsThird}},
 		RetryInterval:    50 * time.Millisecond,
-		RetryGap:         10 * time.Millisecond,
-		MaxRetries:       10000,
 	}
 
 	router := connector.NewLogsRouter(map[pipeline.ID]consumer.Logs{
@@ -116,8 +111,8 @@ func TestLogsWithFailoverError(t *testing.T) {
 		logsThird:  &sinkThird,
 	})
 
-	conn, err := NewFactory().CreateLogsToLogs(context.Background(),
-		connectortest.NewNopSettings(), cfg, router.(consumer.Logs))
+	conn, err := NewFactory().CreateLogsToLogs(t.Context(),
+		connectortest.NewNopSettings(metadata.Type), cfg, router.(consumer.Logs))
 
 	require.NoError(t, err)
 
@@ -126,17 +121,17 @@ func TestLogsWithFailoverError(t *testing.T) {
 	failoverConnector.failover.ModifyConsumerAtIndex(1, consumertest.NewErr(errLogsConsumer))
 	failoverConnector.failover.ModifyConsumerAtIndex(2, consumertest.NewErr(errLogsConsumer))
 	defer func() {
-		assert.NoError(t, failoverConnector.Shutdown(context.Background()))
+		assert.NoError(t, failoverConnector.Shutdown(t.Context()))
 	}()
 
 	ld := sampleLog()
 
-	assert.EqualError(t, conn.ConsumeLogs(context.Background(), ld), "All provided pipelines return errors")
+	assert.EqualError(t, conn.ConsumeLogs(t.Context(), ld), "All provided pipelines return errors")
 }
 
 func consumeLogsAndCheckStable(conn *logsFailover, idx int, lr plog.Logs) bool {
 	_ = conn.ConsumeLogs(context.Background(), lr)
-	stableIndex := conn.failover.pS.TestStableIndex()
+	stableIndex := conn.failover.pS.CurrentPipeline()
 	return stableIndex == idx
 }
 

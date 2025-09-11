@@ -4,7 +4,6 @@
 package azureeventhubreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver"
 
 import (
-	eventhub "github.com/Azure/azure-event-hubs-go/v3"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
@@ -17,23 +16,25 @@ type logsUnmarshaler interface {
 	UnmarshalLogs([]byte) (plog.Logs, error)
 }
 
-type AzureResourceLogsEventUnmarshaler struct {
+type azureResourceLogsEventUnmarshaler struct {
 	unmarshaler logsUnmarshaler
 }
 
-func newAzureResourceLogsUnmarshaler(buildInfo component.BuildInfo, logger *zap.Logger, applySemanticConventions bool) eventLogsUnmarshaler {
+func newAzureResourceLogsUnmarshaler(buildInfo component.BuildInfo, logger *zap.Logger, applySemanticConventions bool, timeFormat []string) eventLogsUnmarshaler {
 	if applySemanticConventions {
-		return AzureResourceLogsEventUnmarshaler{
+		return azureResourceLogsEventUnmarshaler{
 			unmarshaler: &azurelogs.ResourceLogsUnmarshaler{
-				Version: buildInfo.Version,
-				Logger:  logger,
+				Version:     buildInfo.Version,
+				Logger:      logger,
+				TimeFormats: timeFormat,
 			},
 		}
 	}
-	return AzureResourceLogsEventUnmarshaler{
+	return azureResourceLogsEventUnmarshaler{
 		unmarshaler: &azure.ResourceLogsUnmarshaler{
-			Version: buildInfo.Version,
-			Logger:  logger,
+			Version:     buildInfo.Version,
+			Logger:      logger,
+			TimeFormats: timeFormat,
 		},
 	}
 }
@@ -44,7 +45,6 @@ func newAzureResourceLogsUnmarshaler(buildInfo component.BuildInfo, logger *zap.
 // log record appears as fields and attributes in the
 // OpenTelemetry representation; the bodies of the
 // OpenTelemetry log records are empty.
-func (r AzureResourceLogsEventUnmarshaler) UnmarshalLogs(event *eventhub.Event) (plog.Logs, error) {
-
-	return r.unmarshaler.UnmarshalLogs(event.Data)
+func (r azureResourceLogsEventUnmarshaler) UnmarshalLogs(event *azureEvent) (plog.Logs, error) {
+	return r.unmarshaler.UnmarshalLogs(event.Data())
 }

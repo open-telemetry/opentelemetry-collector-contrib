@@ -142,14 +142,6 @@ func (sp *spanProcessor) processFromAttributes(span ptrace.Span) {
 			sb.WriteString(strconv.FormatFloat(attr.Double(), 'f', -1, 64))
 		case pcommon.ValueTypeInt:
 			sb.WriteString(strconv.FormatInt(attr.Int(), 10))
-		case pcommon.ValueTypeEmpty:
-			fallthrough
-		case pcommon.ValueTypeSlice:
-			fallthrough
-		case pcommon.ValueTypeBytes:
-			fallthrough
-		case pcommon.ValueTypeMap:
-			fallthrough
 		default:
 			sb.WriteString("<unknown-attribute-type>")
 		}
@@ -187,7 +179,7 @@ func (sp *spanProcessor) processToAttributes(span ptrace.Span) {
 		var sb strings.Builder
 
 		// Index in the oldName until which we traversed.
-		var oldNameIndex = 0
+		oldNameIndex := 0
 
 		attrs := span.Attributes()
 
@@ -213,7 +205,9 @@ func (sp *spanProcessor) processToAttributes(span ptrace.Span) {
 		}
 
 		// Set new span name.
-		span.SetName(sb.String())
+		if !sp.config.Rename.ToAttributes.KeepOriginalName {
+			span.SetName(sb.String())
+		}
 
 		if sp.config.Rename.ToAttributes.BreakAfterMatch {
 			// Stop processing, break after first match is requested.

@@ -22,6 +22,9 @@ const (
 type Protocols struct {
 	GRPC *configgrpc.ServerConfig `mapstructure:"grpc"`
 	HTTP *confighttp.ServerConfig `mapstructure:"http"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // Config defines configuration for the lokireceiver receiver.
@@ -29,10 +32,15 @@ type Config struct {
 	// Protocols is the configuration for the supported protocols, currently gRPC and HTTP (Proto and JSON).
 	Protocols     `mapstructure:"protocols"`
 	KeepTimestamp bool `mapstructure:"use_incoming_timestamp"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
-var _ component.Config = (*Config)(nil)
-var _ confmap.Unmarshaler = (*Config)(nil)
+var (
+	_ component.Config    = (*Config)(nil)
+	_ confmap.Unmarshaler = (*Config)(nil)
+)
 
 // Validate checks the receiver configuration is valid
 func (cfg *Config) Validate() error {

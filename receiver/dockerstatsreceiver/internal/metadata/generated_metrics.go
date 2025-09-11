@@ -10,8 +10,302 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 )
+
+var MetricsInfo = metricsInfo{
+	ContainerBlockioIoMergedRecursive: metricInfo{
+		Name: "container.blockio.io_merged_recursive",
+	},
+	ContainerBlockioIoQueuedRecursive: metricInfo{
+		Name: "container.blockio.io_queued_recursive",
+	},
+	ContainerBlockioIoServiceBytesRecursive: metricInfo{
+		Name: "container.blockio.io_service_bytes_recursive",
+	},
+	ContainerBlockioIoServiceTimeRecursive: metricInfo{
+		Name: "container.blockio.io_service_time_recursive",
+	},
+	ContainerBlockioIoServicedRecursive: metricInfo{
+		Name: "container.blockio.io_serviced_recursive",
+	},
+	ContainerBlockioIoTimeRecursive: metricInfo{
+		Name: "container.blockio.io_time_recursive",
+	},
+	ContainerBlockioIoWaitTimeRecursive: metricInfo{
+		Name: "container.blockio.io_wait_time_recursive",
+	},
+	ContainerBlockioSectorsRecursive: metricInfo{
+		Name: "container.blockio.sectors_recursive",
+	},
+	ContainerCPULimit: metricInfo{
+		Name: "container.cpu.limit",
+	},
+	ContainerCPULogicalCount: metricInfo{
+		Name: "container.cpu.logical.count",
+	},
+	ContainerCPUShares: metricInfo{
+		Name: "container.cpu.shares",
+	},
+	ContainerCPUThrottlingDataPeriods: metricInfo{
+		Name: "container.cpu.throttling_data.periods",
+	},
+	ContainerCPUThrottlingDataThrottledPeriods: metricInfo{
+		Name: "container.cpu.throttling_data.throttled_periods",
+	},
+	ContainerCPUThrottlingDataThrottledTime: metricInfo{
+		Name: "container.cpu.throttling_data.throttled_time",
+	},
+	ContainerCPUUsageKernelmode: metricInfo{
+		Name: "container.cpu.usage.kernelmode",
+	},
+	ContainerCPUUsagePercpu: metricInfo{
+		Name: "container.cpu.usage.percpu",
+	},
+	ContainerCPUUsageSystem: metricInfo{
+		Name: "container.cpu.usage.system",
+	},
+	ContainerCPUUsageTotal: metricInfo{
+		Name: "container.cpu.usage.total",
+	},
+	ContainerCPUUsageUsermode: metricInfo{
+		Name: "container.cpu.usage.usermode",
+	},
+	ContainerCPUUtilization: metricInfo{
+		Name: "container.cpu.utilization",
+	},
+	ContainerMemoryActiveAnon: metricInfo{
+		Name: "container.memory.active_anon",
+	},
+	ContainerMemoryActiveFile: metricInfo{
+		Name: "container.memory.active_file",
+	},
+	ContainerMemoryAnon: metricInfo{
+		Name: "container.memory.anon",
+	},
+	ContainerMemoryCache: metricInfo{
+		Name: "container.memory.cache",
+	},
+	ContainerMemoryDirty: metricInfo{
+		Name: "container.memory.dirty",
+	},
+	ContainerMemoryFails: metricInfo{
+		Name: "container.memory.fails",
+	},
+	ContainerMemoryFile: metricInfo{
+		Name: "container.memory.file",
+	},
+	ContainerMemoryHierarchicalMemoryLimit: metricInfo{
+		Name: "container.memory.hierarchical_memory_limit",
+	},
+	ContainerMemoryHierarchicalMemswLimit: metricInfo{
+		Name: "container.memory.hierarchical_memsw_limit",
+	},
+	ContainerMemoryInactiveAnon: metricInfo{
+		Name: "container.memory.inactive_anon",
+	},
+	ContainerMemoryInactiveFile: metricInfo{
+		Name: "container.memory.inactive_file",
+	},
+	ContainerMemoryMappedFile: metricInfo{
+		Name: "container.memory.mapped_file",
+	},
+	ContainerMemoryPercent: metricInfo{
+		Name: "container.memory.percent",
+	},
+	ContainerMemoryPgfault: metricInfo{
+		Name: "container.memory.pgfault",
+	},
+	ContainerMemoryPgmajfault: metricInfo{
+		Name: "container.memory.pgmajfault",
+	},
+	ContainerMemoryPgpgin: metricInfo{
+		Name: "container.memory.pgpgin",
+	},
+	ContainerMemoryPgpgout: metricInfo{
+		Name: "container.memory.pgpgout",
+	},
+	ContainerMemoryRss: metricInfo{
+		Name: "container.memory.rss",
+	},
+	ContainerMemoryRssHuge: metricInfo{
+		Name: "container.memory.rss_huge",
+	},
+	ContainerMemoryTotalActiveAnon: metricInfo{
+		Name: "container.memory.total_active_anon",
+	},
+	ContainerMemoryTotalActiveFile: metricInfo{
+		Name: "container.memory.total_active_file",
+	},
+	ContainerMemoryTotalCache: metricInfo{
+		Name: "container.memory.total_cache",
+	},
+	ContainerMemoryTotalDirty: metricInfo{
+		Name: "container.memory.total_dirty",
+	},
+	ContainerMemoryTotalInactiveAnon: metricInfo{
+		Name: "container.memory.total_inactive_anon",
+	},
+	ContainerMemoryTotalInactiveFile: metricInfo{
+		Name: "container.memory.total_inactive_file",
+	},
+	ContainerMemoryTotalMappedFile: metricInfo{
+		Name: "container.memory.total_mapped_file",
+	},
+	ContainerMemoryTotalPgfault: metricInfo{
+		Name: "container.memory.total_pgfault",
+	},
+	ContainerMemoryTotalPgmajfault: metricInfo{
+		Name: "container.memory.total_pgmajfault",
+	},
+	ContainerMemoryTotalPgpgin: metricInfo{
+		Name: "container.memory.total_pgpgin",
+	},
+	ContainerMemoryTotalPgpgout: metricInfo{
+		Name: "container.memory.total_pgpgout",
+	},
+	ContainerMemoryTotalRss: metricInfo{
+		Name: "container.memory.total_rss",
+	},
+	ContainerMemoryTotalRssHuge: metricInfo{
+		Name: "container.memory.total_rss_huge",
+	},
+	ContainerMemoryTotalUnevictable: metricInfo{
+		Name: "container.memory.total_unevictable",
+	},
+	ContainerMemoryTotalWriteback: metricInfo{
+		Name: "container.memory.total_writeback",
+	},
+	ContainerMemoryUnevictable: metricInfo{
+		Name: "container.memory.unevictable",
+	},
+	ContainerMemoryUsageLimit: metricInfo{
+		Name: "container.memory.usage.limit",
+	},
+	ContainerMemoryUsageMax: metricInfo{
+		Name: "container.memory.usage.max",
+	},
+	ContainerMemoryUsageTotal: metricInfo{
+		Name: "container.memory.usage.total",
+	},
+	ContainerMemoryWriteback: metricInfo{
+		Name: "container.memory.writeback",
+	},
+	ContainerNetworkIoUsageRxBytes: metricInfo{
+		Name: "container.network.io.usage.rx_bytes",
+	},
+	ContainerNetworkIoUsageRxDropped: metricInfo{
+		Name: "container.network.io.usage.rx_dropped",
+	},
+	ContainerNetworkIoUsageRxErrors: metricInfo{
+		Name: "container.network.io.usage.rx_errors",
+	},
+	ContainerNetworkIoUsageRxPackets: metricInfo{
+		Name: "container.network.io.usage.rx_packets",
+	},
+	ContainerNetworkIoUsageTxBytes: metricInfo{
+		Name: "container.network.io.usage.tx_bytes",
+	},
+	ContainerNetworkIoUsageTxDropped: metricInfo{
+		Name: "container.network.io.usage.tx_dropped",
+	},
+	ContainerNetworkIoUsageTxErrors: metricInfo{
+		Name: "container.network.io.usage.tx_errors",
+	},
+	ContainerNetworkIoUsageTxPackets: metricInfo{
+		Name: "container.network.io.usage.tx_packets",
+	},
+	ContainerPidsCount: metricInfo{
+		Name: "container.pids.count",
+	},
+	ContainerPidsLimit: metricInfo{
+		Name: "container.pids.limit",
+	},
+	ContainerRestarts: metricInfo{
+		Name: "container.restarts",
+	},
+	ContainerUptime: metricInfo{
+		Name: "container.uptime",
+	},
+}
+
+type metricsInfo struct {
+	ContainerBlockioIoMergedRecursive          metricInfo
+	ContainerBlockioIoQueuedRecursive          metricInfo
+	ContainerBlockioIoServiceBytesRecursive    metricInfo
+	ContainerBlockioIoServiceTimeRecursive     metricInfo
+	ContainerBlockioIoServicedRecursive        metricInfo
+	ContainerBlockioIoTimeRecursive            metricInfo
+	ContainerBlockioIoWaitTimeRecursive        metricInfo
+	ContainerBlockioSectorsRecursive           metricInfo
+	ContainerCPULimit                          metricInfo
+	ContainerCPULogicalCount                   metricInfo
+	ContainerCPUShares                         metricInfo
+	ContainerCPUThrottlingDataPeriods          metricInfo
+	ContainerCPUThrottlingDataThrottledPeriods metricInfo
+	ContainerCPUThrottlingDataThrottledTime    metricInfo
+	ContainerCPUUsageKernelmode                metricInfo
+	ContainerCPUUsagePercpu                    metricInfo
+	ContainerCPUUsageSystem                    metricInfo
+	ContainerCPUUsageTotal                     metricInfo
+	ContainerCPUUsageUsermode                  metricInfo
+	ContainerCPUUtilization                    metricInfo
+	ContainerMemoryActiveAnon                  metricInfo
+	ContainerMemoryActiveFile                  metricInfo
+	ContainerMemoryAnon                        metricInfo
+	ContainerMemoryCache                       metricInfo
+	ContainerMemoryDirty                       metricInfo
+	ContainerMemoryFails                       metricInfo
+	ContainerMemoryFile                        metricInfo
+	ContainerMemoryHierarchicalMemoryLimit     metricInfo
+	ContainerMemoryHierarchicalMemswLimit      metricInfo
+	ContainerMemoryInactiveAnon                metricInfo
+	ContainerMemoryInactiveFile                metricInfo
+	ContainerMemoryMappedFile                  metricInfo
+	ContainerMemoryPercent                     metricInfo
+	ContainerMemoryPgfault                     metricInfo
+	ContainerMemoryPgmajfault                  metricInfo
+	ContainerMemoryPgpgin                      metricInfo
+	ContainerMemoryPgpgout                     metricInfo
+	ContainerMemoryRss                         metricInfo
+	ContainerMemoryRssHuge                     metricInfo
+	ContainerMemoryTotalActiveAnon             metricInfo
+	ContainerMemoryTotalActiveFile             metricInfo
+	ContainerMemoryTotalCache                  metricInfo
+	ContainerMemoryTotalDirty                  metricInfo
+	ContainerMemoryTotalInactiveAnon           metricInfo
+	ContainerMemoryTotalInactiveFile           metricInfo
+	ContainerMemoryTotalMappedFile             metricInfo
+	ContainerMemoryTotalPgfault                metricInfo
+	ContainerMemoryTotalPgmajfault             metricInfo
+	ContainerMemoryTotalPgpgin                 metricInfo
+	ContainerMemoryTotalPgpgout                metricInfo
+	ContainerMemoryTotalRss                    metricInfo
+	ContainerMemoryTotalRssHuge                metricInfo
+	ContainerMemoryTotalUnevictable            metricInfo
+	ContainerMemoryTotalWriteback              metricInfo
+	ContainerMemoryUnevictable                 metricInfo
+	ContainerMemoryUsageLimit                  metricInfo
+	ContainerMemoryUsageMax                    metricInfo
+	ContainerMemoryUsageTotal                  metricInfo
+	ContainerMemoryWriteback                   metricInfo
+	ContainerNetworkIoUsageRxBytes             metricInfo
+	ContainerNetworkIoUsageRxDropped           metricInfo
+	ContainerNetworkIoUsageRxErrors            metricInfo
+	ContainerNetworkIoUsageRxPackets           metricInfo
+	ContainerNetworkIoUsageTxBytes             metricInfo
+	ContainerNetworkIoUsageTxDropped           metricInfo
+	ContainerNetworkIoUsageTxErrors            metricInfo
+	ContainerNetworkIoUsageTxPackets           metricInfo
+	ContainerPidsCount                         metricInfo
+	ContainerPidsLimit                         metricInfo
+	ContainerRestarts                          metricInfo
+	ContainerUptime                            metricInfo
+}
+
+type metricInfo struct {
+	Name string
+}
 
 type metricContainerBlockioIoMergedRecursive struct {
 	data     pmetric.Metric // data buffer for generated metric.
@@ -1680,7 +1974,7 @@ type metricContainerMemoryPercent struct {
 // init fills container.memory.percent metric with initial data.
 func (m *metricContainerMemoryPercent) init() {
 	m.data.SetName("container.memory.percent")
-	m.data.SetDescription("Percentage of memory used.")
+	m.data.SetDescription("Percentage of memory used. Not supported on Windows.")
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 }
@@ -2137,7 +2431,7 @@ type metricContainerMemoryTotalCache struct {
 // init fills container.memory.total_cache metric with initial data.
 func (m *metricContainerMemoryTotalCache) init() {
 	m.data.SetName("container.memory.total_cache")
-	m.data.SetDescription("Total amount of memory used by the processes of this cgroup (and descendants) that can be associated with a block on a block device. Also accounts for memory used by tmpfs (Only available with cgroups v1).")
+	m.data.SetDescription("Total amount of memory used by the processes of this cgroup (and descendants) that can be associated with a block on a block device. Also accounts for memory used by tmpfs (Only available with cgroups v1). Not supported on Windows.")
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
@@ -2851,7 +3145,7 @@ type metricContainerMemoryUsageLimit struct {
 // init fills container.memory.usage.limit metric with initial data.
 func (m *metricContainerMemoryUsageLimit) init() {
 	m.data.SetName("container.memory.usage.limit")
-	m.data.SetDescription("Memory limit of the container.")
+	m.data.SetDescription("Memory limit of the container. Not supported on Windows.")
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
@@ -3161,7 +3455,7 @@ type metricContainerNetworkIoUsageRxErrors struct {
 // init fills container.network.io.usage.rx_errors metric with initial data.
 func (m *metricContainerNetworkIoUsageRxErrors) init() {
 	m.data.SetName("container.network.io.usage.rx_errors")
-	m.data.SetDescription("Received errors.")
+	m.data.SetDescription("Received errors. Not supported on Windows.")
 	m.data.SetUnit("{errors}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -3373,7 +3667,7 @@ type metricContainerNetworkIoUsageTxErrors struct {
 // init fills container.network.io.usage.tx_errors metric with initial data.
 func (m *metricContainerNetworkIoUsageTxErrors) init() {
 	m.data.SetName("container.network.io.usage.tx_errors")
-	m.data.SetDescription("Sent errors.")
+	m.data.SetDescription("Sent errors. Not supported on Windows.")
 	m.data.SetUnit("{errors}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -3772,7 +4066,6 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 		mb.startTime = startTime
 	})
 }
-
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		config:                                  mbc,
@@ -3962,7 +4255,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	rm.SetSchemaUrl(conventions.SchemaURL)
 	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver")
+	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricContainerBlockioIoMergedRecursive.emit(ils.Metrics())

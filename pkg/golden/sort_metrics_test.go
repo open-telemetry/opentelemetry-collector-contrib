@@ -27,10 +27,9 @@ func TestSortAttributes(t *testing.T) {
 	// Verify the sorted keys
 	expectedKeys := []string{"age", "isStudent", "location", "name"}
 	actualKeys := []string{}
-	mp.Range(func(key string, _ pcommon.Value) bool {
+	for key := range mp.All() {
 		actualKeys = append(actualKeys, key)
-		return true
-	})
+	}
 
 	// Check if the keys are sorted correctly
 	if len(expectedKeys) != len(actualKeys) {
@@ -42,7 +41,6 @@ func TestSortAttributes(t *testing.T) {
 			t.Errorf("Incorrect key at index %d. Expected: %s, Actual: %s", i, key, actualKeys[i])
 		}
 	}
-
 }
 
 func TestSortMetricsResourceAndScope(t *testing.T) {
@@ -56,5 +54,4 @@ func TestSortMetricsResourceAndScope(t *testing.T) {
 	after, err := ReadMetrics(afterPath)
 	require.NoError(t, err)
 	require.Equal(t, before, after)
-
 }

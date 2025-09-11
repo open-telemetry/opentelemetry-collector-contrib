@@ -4,7 +4,6 @@
 package noop
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -25,15 +24,15 @@ func TestProcess(t *testing.T) {
 	fake := testutil.NewFakeOutput(t)
 	require.NoError(t, op.SetOutputs([]operator.Operator{fake}))
 
-	entry := entry.New()
-	entry.AddAttribute("label", "value")
-	entry.AddResourceKey("resource", "value")
-	entry.TraceID = []byte{0x01}
-	entry.SpanID = []byte{0x01}
-	entry.TraceFlags = []byte{0x01}
+	val := entry.New()
+	val.AddAttribute("label", "value")
+	val.AddResourceKey("resource", "value")
+	val.TraceID = []byte{0x01}
+	val.SpanID = []byte{0x01}
+	val.TraceFlags = []byte{0x01}
 
-	expected := entry.Copy()
-	err = op.Process(context.Background(), entry)
+	expected := val.Copy()
+	err = op.ProcessBatch(t.Context(), []*entry.Entry{val})
 	require.NoError(t, err)
 
 	fake.ExpectEntry(t, expected)

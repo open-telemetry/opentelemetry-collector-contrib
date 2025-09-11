@@ -52,7 +52,7 @@ func (dr *prometheusDataReceiver) Start(_ consumer.Traces, mc consumer.Metrics, 
 		}},
 	}
 	var err error
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettings(factory.Type())
 	dr.receiver, err = factory.CreateMetrics(context.Background(), set, cfg, mc)
 	if err != nil {
 		return err
@@ -72,6 +72,6 @@ func (dr *prometheusDataReceiver) GenConfigYAMLStr() string {
 	return fmt.Sprintf(format, dr.Port)
 }
 
-func (dr *prometheusDataReceiver) ProtocolName() string {
+func (*prometheusDataReceiver) ProtocolName() string {
 	return "prometheus"
 }

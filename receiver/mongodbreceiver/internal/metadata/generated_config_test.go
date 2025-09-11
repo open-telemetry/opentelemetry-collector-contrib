@@ -9,6 +9,8 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
+
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -25,20 +27,27 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
+					MongodbActiveReads:            MetricConfig{Enabled: true},
+					MongodbActiveWrites:           MetricConfig{Enabled: true},
 					MongodbCacheOperations:        MetricConfig{Enabled: true},
 					MongodbCollectionCount:        MetricConfig{Enabled: true},
+					MongodbCommandsRate:           MetricConfig{Enabled: true},
 					MongodbConnectionCount:        MetricConfig{Enabled: true},
 					MongodbCursorCount:            MetricConfig{Enabled: true},
 					MongodbCursorTimeoutCount:     MetricConfig{Enabled: true},
 					MongodbDataSize:               MetricConfig{Enabled: true},
 					MongodbDatabaseCount:          MetricConfig{Enabled: true},
+					MongodbDeletesRate:            MetricConfig{Enabled: true},
 					MongodbDocumentOperationCount: MetricConfig{Enabled: true},
 					MongodbExtentCount:            MetricConfig{Enabled: true},
+					MongodbFlushesRate:            MetricConfig{Enabled: true},
+					MongodbGetmoresRate:           MetricConfig{Enabled: true},
 					MongodbGlobalLockTime:         MetricConfig{Enabled: true},
 					MongodbHealth:                 MetricConfig{Enabled: true},
 					MongodbIndexAccessCount:       MetricConfig{Enabled: true},
 					MongodbIndexCount:             MetricConfig{Enabled: true},
 					MongodbIndexSize:              MetricConfig{Enabled: true},
+					MongodbInsertsRate:            MetricConfig{Enabled: true},
 					MongodbLockAcquireCount:       MetricConfig{Enabled: true},
 					MongodbLockAcquireTime:        MetricConfig{Enabled: true},
 					MongodbLockAcquireWaitCount:   MetricConfig{Enabled: true},
@@ -52,9 +61,19 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					MongodbOperationLatencyTime:   MetricConfig{Enabled: true},
 					MongodbOperationReplCount:     MetricConfig{Enabled: true},
 					MongodbOperationTime:          MetricConfig{Enabled: true},
+					MongodbPageFaults:             MetricConfig{Enabled: true},
+					MongodbQueriesRate:            MetricConfig{Enabled: true},
+					MongodbReplCommandsPerSec:     MetricConfig{Enabled: true},
+					MongodbReplDeletesPerSec:      MetricConfig{Enabled: true},
+					MongodbReplGetmoresPerSec:     MetricConfig{Enabled: true},
+					MongodbReplInsertsPerSec:      MetricConfig{Enabled: true},
+					MongodbReplQueriesPerSec:      MetricConfig{Enabled: true},
+					MongodbReplUpdatesPerSec:      MetricConfig{Enabled: true},
 					MongodbSessionCount:           MetricConfig{Enabled: true},
 					MongodbStorageSize:            MetricConfig{Enabled: true},
+					MongodbUpdatesRate:            MetricConfig{Enabled: true},
 					MongodbUptime:                 MetricConfig{Enabled: true},
+					MongodbWtcacheBytesRead:       MetricConfig{Enabled: true},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					Database:      ResourceAttributeConfig{Enabled: true},
@@ -67,20 +86,27 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
+					MongodbActiveReads:            MetricConfig{Enabled: false},
+					MongodbActiveWrites:           MetricConfig{Enabled: false},
 					MongodbCacheOperations:        MetricConfig{Enabled: false},
 					MongodbCollectionCount:        MetricConfig{Enabled: false},
+					MongodbCommandsRate:           MetricConfig{Enabled: false},
 					MongodbConnectionCount:        MetricConfig{Enabled: false},
 					MongodbCursorCount:            MetricConfig{Enabled: false},
 					MongodbCursorTimeoutCount:     MetricConfig{Enabled: false},
 					MongodbDataSize:               MetricConfig{Enabled: false},
 					MongodbDatabaseCount:          MetricConfig{Enabled: false},
+					MongodbDeletesRate:            MetricConfig{Enabled: false},
 					MongodbDocumentOperationCount: MetricConfig{Enabled: false},
 					MongodbExtentCount:            MetricConfig{Enabled: false},
+					MongodbFlushesRate:            MetricConfig{Enabled: false},
+					MongodbGetmoresRate:           MetricConfig{Enabled: false},
 					MongodbGlobalLockTime:         MetricConfig{Enabled: false},
 					MongodbHealth:                 MetricConfig{Enabled: false},
 					MongodbIndexAccessCount:       MetricConfig{Enabled: false},
 					MongodbIndexCount:             MetricConfig{Enabled: false},
 					MongodbIndexSize:              MetricConfig{Enabled: false},
+					MongodbInsertsRate:            MetricConfig{Enabled: false},
 					MongodbLockAcquireCount:       MetricConfig{Enabled: false},
 					MongodbLockAcquireTime:        MetricConfig{Enabled: false},
 					MongodbLockAcquireWaitCount:   MetricConfig{Enabled: false},
@@ -94,9 +120,19 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					MongodbOperationLatencyTime:   MetricConfig{Enabled: false},
 					MongodbOperationReplCount:     MetricConfig{Enabled: false},
 					MongodbOperationTime:          MetricConfig{Enabled: false},
+					MongodbPageFaults:             MetricConfig{Enabled: false},
+					MongodbQueriesRate:            MetricConfig{Enabled: false},
+					MongodbReplCommandsPerSec:     MetricConfig{Enabled: false},
+					MongodbReplDeletesPerSec:      MetricConfig{Enabled: false},
+					MongodbReplGetmoresPerSec:     MetricConfig{Enabled: false},
+					MongodbReplInsertsPerSec:      MetricConfig{Enabled: false},
+					MongodbReplQueriesPerSec:      MetricConfig{Enabled: false},
+					MongodbReplUpdatesPerSec:      MetricConfig{Enabled: false},
 					MongodbSessionCount:           MetricConfig{Enabled: false},
 					MongodbStorageSize:            MetricConfig{Enabled: false},
+					MongodbUpdatesRate:            MetricConfig{Enabled: false},
 					MongodbUptime:                 MetricConfig{Enabled: false},
+					MongodbWtcacheBytesRead:       MetricConfig{Enabled: false},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					Database:      ResourceAttributeConfig{Enabled: false},
@@ -109,9 +145,8 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			if diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}, ResourceAttributeConfig{})); diff != "" {
-				t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
-			}
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}, ResourceAttributeConfig{}))
+			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
 }
@@ -122,7 +157,7 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
 	cfg := DefaultMetricsBuilderConfig()
-	require.NoError(t, sub.Unmarshal(&cfg))
+	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
 	return cfg
 }
 
@@ -155,9 +190,8 @@ func TestResourceAttributesConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, tt.name)
-			if diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ResourceAttributeConfig{})); diff != "" {
-				t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
-			}
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ResourceAttributeConfig{}))
+			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
 }

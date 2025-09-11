@@ -14,10 +14,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/vmware/govmomi"
 	"github.com/vmware/govmomi/find"
 	"github.com/vmware/govmomi/object"
 	"github.com/vmware/govmomi/performance"
+	"github.com/vmware/govmomi/session"
 	"github.com/vmware/govmomi/view"
 	"github.com/vmware/govmomi/vim25"
 	"github.com/vmware/govmomi/vim25/mo"
@@ -30,14 +30,14 @@ import (
 
 // vcenterClient is a client that collects data from a vCenter endpoint.
 type vcenterClient struct {
-	logger     *zap.Logger
-	moClient   *govmomi.Client
-	vimDriver  *vim25.Client
-	vsanDriver *vsan.Client
-	finder     *find.Finder
-	pm         *performance.Manager
-	vm         *view.Manager
-	cfg        *Config
+	logger         *zap.Logger
+	sessionManager *session.Manager
+	vimDriver      *vim25.Client
+	vsanDriver     *vsan.Client
+	finder         *find.Finder
+	pm             *performance.Manager
+	vm             *view.Manager
+	cfg            *Config
 }
 
 var newVcenterClient = defaultNewVcenterClient
@@ -51,8 +51,8 @@ func defaultNewVcenterClient(l *zap.Logger, c *Config) *vcenterClient {
 
 // EnsureConnection will establish a connection to the vSphere SDK if not already established
 func (vc *vcenterClient) EnsureConnection(ctx context.Context) error {
-	if vc.moClient != nil {
-		sessionActive, _ := vc.moClient.SessionManager.SessionIsActive(ctx)
+	if vc.sessionManager != nil {
+		sessionActive, _ := vc.sessionManager.SessionIsActive(ctx)
 		if sessionActive {
 			return nil
 		}
@@ -62,24 +62,30 @@ func (vc *vcenterClient) EnsureConnection(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	client, err := govmomi.NewClient(ctx, sdkURL, vc.cfg.Insecure)
-	if err != nil {
-		return fmt.Errorf("unable to connect to vSphere SDK on listed endpoint: %w", err)
-	}
+
+	soapClient := soap.NewClient(sdkURL, vc.cfg.Insecure)
 	tlsCfg, err := vc.cfg.LoadTLSConfig(ctx)
 	if err != nil {
 		return err
 	}
 	if tlsCfg != nil {
-		client.DefaultTransport().TLSClientConfig = tlsCfg
+		soapClient.DefaultTransport().TLSClientConfig = tlsCfg
 	}
+
+	client, err := vim25.NewClient(ctx, soapClient)
+	if err != nil {
+		return fmt.Errorf("unable to connect to vSphere SDK on listed endpoint: %w", err)
+	}
+
+	sessionManager := session.NewManager(client)
+
 	user := url.UserPassword(vc.cfg.Username, string(vc.cfg.Password))
-	err = client.Login(ctx, user)
+	err = sessionManager.Login(ctx, user)
 	if err != nil {
 		return fmt.Errorf("unable to login to vcenter sdk: %w", err)
 	}
-	vc.moClient = client
-	vc.vimDriver = client.Client
+	vc.sessionManager = sessionManager
+	vc.vimDriver = client
 	vc.finder = find.NewFinder(vc.vimDriver)
 	vc.pm = performance.NewManager(vc.vimDriver)
 	vc.vm = view.NewManager(vc.vimDriver)
@@ -92,10 +98,10 @@ func (vc *vcenterClient) EnsureConnection(ctx context.Context) error {
 	return nil
 }
 
-// Disconnect will logout of the autenticated session
+// Disconnect will logout of the authenticated session
 func (vc *vcenterClient) Disconnect(ctx context.Context) error {
-	if vc.moClient != nil {
-		return vc.moClient.Logout(ctx)
+	if vc.sessionManager != nil {
+		return vc.sessionManager.Logout(ctx)
 	}
 	return nil
 }
@@ -302,8 +308,8 @@ func (vc *vcenterClient) VAppInventoryListObjects(
 	return allVApps, nil
 }
 
-// PerfMetricsQueryResult contains performance metric related data
-type PerfMetricsQueryResult struct {
+// perfMetricsQueryResult contains performance metric related data
+type perfMetricsQueryResult struct {
 	// Contains performance metrics keyed by MoRef string
 	resultsByRef map[string]*performance.EntityMetric
 }
@@ -315,9 +321,9 @@ func (vc *vcenterClient) PerfMetricsQuery(
 	spec vt.PerfQuerySpec,
 	names []string,
 	objs []vt.ManagedObjectReference,
-) (*PerfMetricsQueryResult, error) {
+) (*perfMetricsQueryResult, error) {
 	if vc.pm == nil {
-		return &PerfMetricsQueryResult{}, nil
+		return &perfMetricsQueryResult{}, nil
 	}
 	vc.pm.Sort = true
 	sample, err := vc.pm.SampleByName(ctx, spec, names, objs)
@@ -333,27 +339,27 @@ func (vc *vcenterClient) PerfMetricsQuery(
 	for i := range result {
 		resultsByRef[result[i].Entity.Value] = &result[i]
 	}
-	return &PerfMetricsQueryResult{
+	return &perfMetricsQueryResult{
 		resultsByRef: resultsByRef,
 	}, nil
 }
 
-// VSANQueryResults contains all returned vSAN metric related data
-type VSANQueryResults struct {
+// vSANQueryResults contains all returned vSAN metric related data
+type vSANQueryResults struct {
 	// Contains vSAN metric data keyed by UUID string
-	MetricResultsByUUID map[string]*VSANMetricResults
+	MetricResultsByUUID map[string]*vSANMetricResults
 }
 
-// VSANMetricResults contains vSAN metric related data for a single resource
-type VSANMetricResults struct {
+// vSANMetricResults contains vSAN metric related data for a single resource
+type vSANMetricResults struct {
 	// Contains UUID info for related resource
 	UUID string
 	// Contains returned metric value info for all metrics
-	MetricDetails []*VSANMetricDetails
+	MetricDetails []*vSANMetricDetails
 }
 
-// VSANMetricDetails contains vSAN metric data for a single metric
-type VSANMetricDetails struct {
+// vSANMetricDetails contains vSAN metric data for a single metric
+type vSANMetricDetails struct {
 	// Contains the metric label
 	MetricLabel string
 	// Contains the metric interval in seconds
@@ -368,25 +374,25 @@ type VSANMetricDetails struct {
 type vSANQueryType string
 
 const (
-	VSANQueryTypeClusters        vSANQueryType = "cluster-domclient:*"
-	VSANQueryTypeHosts           vSANQueryType = "host-domclient:*"
-	VSANQueryTypeVirtualMachines vSANQueryType = "virtual-machine:*"
+	vSANQueryTypeClusters        vSANQueryType = "cluster-domclient:*"
+	vSANQueryTypeHosts           vSANQueryType = "host-domclient:*"
+	vSANQueryTypeVirtualMachines vSANQueryType = "virtual-machine:*"
 )
 
 // getLabelsForQueryType returns the appropriate labels for each query type
-func (vc *vcenterClient) getLabelsForQueryType(queryType vSANQueryType) []string {
+func (*vcenterClient) getLabelsForQueryType(queryType vSANQueryType) []string {
 	switch queryType {
-	case VSANQueryTypeClusters:
+	case vSANQueryTypeClusters:
 		return []string{
 			"iopsRead", "iopsWrite", "throughputRead", "throughputWrite",
 			"latencyAvgRead", "latencyAvgWrite", "congestion",
 		}
-	case VSANQueryTypeHosts:
+	case vSANQueryTypeHosts:
 		return []string{
 			"iopsRead", "iopsWrite", "throughputRead", "throughputWrite",
 			"latencyAvgRead", "latencyAvgWrite", "congestion", "clientCacheHitRate",
 		}
-	case VSANQueryTypeVirtualMachines:
+	case vSANQueryTypeVirtualMachines:
 		return []string{
 			"iopsRead", "iopsWrite", "throughputRead", "throughputWrite",
 			"latencyRead", "latencyWrite",
@@ -400,9 +406,9 @@ func (vc *vcenterClient) getLabelsForQueryType(queryType vSANQueryType) []string
 func (vc *vcenterClient) VSANClusters(
 	ctx context.Context,
 	clusterRefs []*vt.ManagedObjectReference,
-) (*VSANQueryResults, error) {
-	results, err := vc.vSANQuery(ctx, VSANQueryTypeClusters, clusterRefs)
-	err = vc.handleVSANError(err, VSANQueryTypeClusters)
+) (*vSANQueryResults, error) {
+	results, err := vc.vSANQuery(ctx, vSANQueryTypeClusters, clusterRefs)
+	err = vc.handleVSANError(err, vSANQueryTypeClusters)
 	return results, err
 }
 
@@ -410,9 +416,9 @@ func (vc *vcenterClient) VSANClusters(
 func (vc *vcenterClient) VSANHosts(
 	ctx context.Context,
 	clusterRefs []*vt.ManagedObjectReference,
-) (*VSANQueryResults, error) {
-	results, err := vc.vSANQuery(ctx, VSANQueryTypeHosts, clusterRefs)
-	err = vc.handleVSANError(err, VSANQueryTypeHosts)
+) (*vSANQueryResults, error) {
+	results, err := vc.vSANQuery(ctx, vSANQueryTypeHosts, clusterRefs)
+	err = vc.handleVSANError(err, vSANQueryTypeHosts)
 	return results, err
 }
 
@@ -420,9 +426,9 @@ func (vc *vcenterClient) VSANHosts(
 func (vc *vcenterClient) VSANVirtualMachines(
 	ctx context.Context,
 	clusterRefs []*vt.ManagedObjectReference,
-) (*VSANQueryResults, error) {
-	results, err := vc.vSANQuery(ctx, VSANQueryTypeVirtualMachines, clusterRefs)
-	err = vc.handleVSANError(err, VSANQueryTypeVirtualMachines)
+) (*vSANQueryResults, error) {
+	results, err := vc.vSANQuery(ctx, vSANQueryTypeVirtualMachines, clusterRefs)
+	err = vc.handleVSANError(err, vSANQueryTypeVirtualMachines)
 	return results, err
 }
 
@@ -431,9 +437,9 @@ func (vc *vcenterClient) vSANQuery(
 	ctx context.Context,
 	queryType vSANQueryType,
 	clusterRefs []*vt.ManagedObjectReference,
-) (*VSANQueryResults, error) {
-	allResults := VSANQueryResults{
-		MetricResultsByUUID: map[string]*VSANMetricResults{},
+) (*vSANQueryResults, error) {
+	allResults := vSANQueryResults{
+		MetricResultsByUUID: map[string]*vSANMetricResults{},
 	}
 
 	for _, clusterRef := range clusterRefs {
@@ -453,9 +459,9 @@ func (vc *vcenterClient) vSANQueryByCluster(
 	ctx context.Context,
 	queryType vSANQueryType,
 	clusterRef *vt.ManagedObjectReference,
-) (*VSANQueryResults, error) {
-	queryResults := VSANQueryResults{
-		MetricResultsByUUID: map[string]*VSANMetricResults{},
+) (*vSANQueryResults, error) {
+	queryResults := vSANQueryResults{
+		MetricResultsByUUID: map[string]*vSANMetricResults{},
 	}
 	// Not all vCenters support vSAN so just return an empty result
 	if vc.vsanDriver == nil {
@@ -476,7 +482,7 @@ func (vc *vcenterClient) vSANQueryByCluster(
 		return nil, fmt.Errorf("problem retrieving %s vSAN metrics for cluster %s: %w", queryType, clusterRef.Value, err)
 	}
 
-	queryResults.MetricResultsByUUID = map[string]*VSANMetricResults{}
+	queryResults.MetricResultsByUUID = map[string]*vSANMetricResults{}
 	for _, rawResult := range rawResults {
 		metricResults, err := vc.convertVSANResultToMetricResults(rawResult)
 		if err != nil && metricResults != nil {
@@ -521,15 +527,15 @@ func (vc *vcenterClient) handleVSANError(
 	}
 }
 
-func (vc *vcenterClient) convertVSANResultToMetricResults(vSANResult types.VsanPerfEntityMetricCSV) (*VSANMetricResults, error) {
+func (vc *vcenterClient) convertVSANResultToMetricResults(vSANResult types.VsanPerfEntityMetricCSV) (*vSANMetricResults, error) {
 	uuid, err := vc.uuidFromEntityRefID(vSANResult.EntityRefId)
 	if err != nil {
 		return nil, err
 	}
 
-	metricResults := VSANMetricResults{
+	metricResults := vSANMetricResults{
 		UUID:          uuid,
-		MetricDetails: []*VSANMetricDetails{},
+		MetricDetails: []*vSANMetricDetails{},
 	}
 
 	// Parse all timestamps
@@ -563,7 +569,7 @@ func (vc *vcenterClient) convertVSANResultToMetricResults(vSANResult types.VsanP
 func (vc *vcenterClient) convertVSANValueToMetricDetails(
 	vSANValue types.VsanPerfMetricSeriesCSV,
 	timestamps []time.Time,
-) (*VSANMetricDetails, error) {
+) (*vSANMetricDetails, error) {
 	metricLabel := vSANValue.MetricId.Label
 	metricInterval := vSANValue.MetricId.MetricsCollectInterval
 	// If not found assume the interval is 5m
@@ -571,7 +577,7 @@ func (vc *vcenterClient) convertVSANValueToMetricDetails(
 		vc.logger.Warn(fmt.Sprintf("no interval found for vSAN metric [%s] so assuming 5m", metricLabel))
 		metricInterval = 300
 	}
-	metricDetails := VSANMetricDetails{
+	metricDetails := vSANMetricDetails{
 		MetricLabel: metricLabel,
 		Interval:    metricInterval,
 		Timestamps:  []*time.Time{},
@@ -597,7 +603,7 @@ func (vc *vcenterClient) convertVSANValueToMetricDetails(
 }
 
 // uuidFromEntityRefID returns the UUID portion of the EntityRefId
-func (vc *vcenterClient) uuidFromEntityRefID(id string) (string, error) {
+func (*vcenterClient) uuidFromEntityRefID(id string) (string, error) {
 	colonIndex := strings.Index(id, ":")
 	if colonIndex != -1 {
 		uuid := id[colonIndex+1:]

@@ -38,17 +38,17 @@ func TestResourceBuilder(t *testing.T) {
 			val, ok := res.Attributes().Get("spark.application.id")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "spark.application.id-val", val.Str())
+				assert.Equal(t, "spark.application.id-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("spark.application.name")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "spark.application.name-val", val.Str())
+				assert.Equal(t, "spark.application.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("spark.executor.id")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "spark.executor.id-val", val.Str())
+				assert.Equal(t, "spark.executor.id-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("spark.job.id")
 			assert.True(t, ok)

@@ -4,7 +4,6 @@
 package opensearchexporter
 
 import (
-	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -18,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 )
 
@@ -109,14 +109,14 @@ func TestOpenSearchTraceExporter(t *testing.T) {
 
 	for _, tc := range tests {
 		// Create HTTP listener
-		var requestCount = 0
+		requestCount := 0
 		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			var err error
 			docs := getReceivedDocuments(r.Body)
 			assert.LessOrEqualf(t, requestCount, len(tc.RequestHandlers), "Test case generated more requests than it has response for.")
 			tc.RequestHandlers[requestCount].ValidateReceivedDocuments(t, requestCount, docs)
 
-			w.WriteHeader(200)
+			w.WriteHeader(http.StatusOK)
 			response, _ := os.ReadFile(tc.RequestHandlers[requestCount].ResponseJSONPath)
 			_, err = w.Write(response)
 			assert.NoError(t, err)
@@ -131,11 +131,11 @@ func TestOpenSearchTraceExporter(t *testing.T) {
 
 		// Create exporter
 		f := NewFactory()
-		exporter, err := f.CreateTraces(context.Background(), exportertest.NewNopSettings(), cfg)
+		exporter, err := f.CreateTraces(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
 		require.NoError(t, err)
 
 		// Initialize the exporter
-		err = exporter.Start(context.Background(), componenttest.NewNopHost())
+		err = exporter.Start(t.Context(), componenttest.NewNopHost())
 		require.NoError(t, err)
 
 		// Load sample data
@@ -143,9 +143,9 @@ func TestOpenSearchTraceExporter(t *testing.T) {
 		require.NoError(t, err)
 
 		// Send it
-		err = exporter.ConsumeTraces(context.Background(), traces)
+		err = exporter.ConsumeTraces(t.Context(), traces)
 		tc.ValidateExporterReturn(err)
-		err = exporter.Shutdown(context.Background())
+		err = exporter.Shutdown(t.Context())
 		require.NoError(t, err)
 		ts.Close()
 	}
@@ -239,14 +239,14 @@ func TestOpenSearchLogExporter(t *testing.T) {
 
 	for _, tc := range tests {
 		// Create HTTP listener
-		var requestCount = 0
+		requestCount := 0
 		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			var err error
 			docs := getReceivedDocuments(r.Body)
 			assert.LessOrEqualf(t, requestCount, len(tc.RequestHandlers), "Test case generated more requests than it has response for.")
 			tc.RequestHandlers[requestCount].ValidateReceivedDocuments(t, requestCount, docs)
 
-			w.WriteHeader(200)
+			w.WriteHeader(http.StatusOK)
 			response, _ := os.ReadFile(tc.RequestHandlers[requestCount].ResponseJSONPath)
 			_, err = w.Write(response)
 			assert.NoError(t, err)
@@ -261,11 +261,11 @@ func TestOpenSearchLogExporter(t *testing.T) {
 
 		// Create exporter
 		f := NewFactory()
-		exporter, err := f.CreateLogs(context.Background(), exportertest.NewNopSettings(), cfg)
+		exporter, err := f.CreateLogs(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
 		require.NoError(t, err)
 
 		// Initialize the exporter
-		err = exporter.Start(context.Background(), componenttest.NewNopHost())
+		err = exporter.Start(t.Context(), componenttest.NewNopHost())
 		require.NoError(t, err)
 
 		// Load sample data
@@ -273,9 +273,9 @@ func TestOpenSearchLogExporter(t *testing.T) {
 		require.NoError(t, err)
 
 		// Send it
-		err = exporter.ConsumeLogs(context.Background(), logs)
+		err = exporter.ConsumeLogs(t.Context(), logs)
 		tc.ValidateExporterReturn(err)
-		err = exporter.Shutdown(context.Background())
+		err = exporter.Shutdown(t.Context())
 		require.NoError(t, err)
 		ts.Close()
 	}

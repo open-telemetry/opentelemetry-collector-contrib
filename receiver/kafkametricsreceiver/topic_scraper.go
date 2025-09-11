@@ -15,8 +15,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver/internal/metadata"
@@ -27,15 +27,14 @@ type topicScraper struct {
 	clusterAdmin sarama.ClusterAdmin
 	settings     receiver.Settings
 	topicFilter  *regexp.Regexp
-	saramaConfig *sarama.Config
 	config       Config
 	mb           *metadata.MetricsBuilder
 }
 
 const (
-	minInsyncRelicas = "min.insync.replicas"
-	retentionMs      = "retention.ms"
-	retentionBytes   = "retention.bytes"
+	minInsyncReplicas = "min.insync.replicas"
+	retentionMs       = "retention.ms"
+	retentionBytes    = "retention.bytes"
 )
 
 func (s *topicScraper) shutdown(context.Context) error {
@@ -52,7 +51,7 @@ func (s *topicScraper) start(_ context.Context, _ component.Host) error {
 
 func (s *topicScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	if s.client == nil {
-		client, err := newSaramaClient(s.config.Brokers, s.saramaConfig)
+		client, err := newSaramaClient(context.Background(), s.config.ClientConfig)
 		if err != nil {
 			return pmetric.Metrics{}, fmt.Errorf("failed to create client in topics scraper: %w", err)
 		}
@@ -65,7 +64,7 @@ func (s *topicScraper) scrape(context.Context) (pmetric.Metrics, error) {
 		return pmetric.Metrics{}, err
 	}
 
-	var scrapeErrors = scrapererror.ScrapeErrors{}
+	scrapeErrors := scrapererror.ScrapeErrors{}
 
 	now := pcommon.NewTimestampFromTime(time.Now())
 
@@ -123,9 +122,9 @@ func (s *topicScraper) scrapeTopicConfigs(now pcommon.Timestamp, errors scrapere
 		return
 	}
 	if s.clusterAdmin == nil {
-		admin, err := newClusterAdmin(s.config.Brokers, s.saramaConfig)
+		admin, err := newClusterAdmin(s.client)
 		if err != nil {
-			s.settings.Logger.Error("Error creating kafka client with admin priviledges", zap.Error(err))
+			s.settings.Logger.Error("Error creating kafka client with admin privileges", zap.Error(err))
 			return
 		}
 		s.clusterAdmin = admin
@@ -141,12 +140,12 @@ func (s *topicScraper) scrapeTopicConfigs(now pcommon.Timestamp, errors scrapere
 		configEntries, _ := s.clusterAdmin.DescribeConfig(sarama.ConfigResource{
 			Type:        sarama.TopicResource,
 			Name:        name,
-			ConfigNames: []string{minInsyncRelicas, retentionMs, retentionBytes},
+			ConfigNames: []string{minInsyncReplicas, retentionMs, retentionBytes},
 		})
 
 		for _, config := range configEntries {
 			switch config.Name {
-			case minInsyncRelicas:
+			case minInsyncReplicas:
 				if val, err := strconv.Atoi(config.Value); err == nil {
 					s.mb.RecordKafkaTopicMinInsyncReplicasDataPoint(now, int64(val), name)
 				} else {
@@ -169,21 +168,19 @@ func (s *topicScraper) scrapeTopicConfigs(now pcommon.Timestamp, errors scrapere
 	}
 }
 
-func createTopicsScraper(_ context.Context, cfg Config, saramaConfig *sarama.Config, settings receiver.Settings) (scraperhelper.Scraper, error) {
+func createTopicsScraper(_ context.Context, cfg Config, settings receiver.Settings) (scraper.Metrics, error) {
 	topicFilter, err := regexp.Compile(cfg.TopicMatch)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile topic filter: %w", err)
 	}
 	s := topicScraper{
-		settings:     settings,
-		topicFilter:  topicFilter,
-		saramaConfig: saramaConfig,
-		config:       cfg,
+		settings:    settings,
+		topicFilter: topicFilter,
+		config:      cfg,
 	}
-	return scraperhelper.NewScraper(
-		topicsScraperType,
+	return scraper.NewMetrics(
 		s.scrape,
-		scraperhelper.WithStart(s.start),
-		scraperhelper.WithShutdown(s.shutdown),
+		scraper.WithStart(s.start),
+		scraper.WithShutdown(s.shutdown),
 	)
 }

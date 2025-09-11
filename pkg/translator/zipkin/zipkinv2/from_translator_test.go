@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/otel/semconv/v1.30.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/goldendataset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
@@ -76,13 +76,52 @@ func TestInternalTracesToZipkinSpans(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			spans, err := FromTranslator{}.FromTraces(test.td)
-			assert.EqualValues(t, test.err, err)
+			assert.Equal(t, test.err, err)
 			if test.name == "empty" {
 				assert.Nil(t, spans)
 			} else {
-				assert.Equal(t, len(test.zs), len(spans))
-				assert.EqualValues(t, test.zs, spans)
+				assert.Len(t, spans, len(test.zs))
+				assert.Equal(t, test.zs, spans)
 			}
+		})
+	}
+}
+
+func TestExtractScopeTags(t *testing.T) {
+	tests := []struct {
+		name     string
+		scopeCfg func(pcommon.InstrumentationScope)
+		res      map[string]string
+	}{
+		{
+			name:     "empty scope",
+			scopeCfg: func(_ pcommon.InstrumentationScope) {},
+			res:      map[string]string{},
+		},
+		{
+			name: "with attributes and name/version",
+			scopeCfg: func(il pcommon.InstrumentationScope) {
+				il.SetName("otel-lib")
+				il.SetVersion("v1.2.3")
+				il.Attributes().PutStr("custom.key", "custom.val")
+			},
+			res: map[string]string{
+				"custom.key":           "custom.val",
+				"otel.library.name":    "otel-lib",
+				"otel.library.version": "v1.2.3",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			il := pcommon.NewInstrumentationScope()
+			tt.scopeCfg(il)
+
+			zTags := map[string]string{}
+			extractScopeTags(il, zTags)
+
+			assert.Equal(t, tt.res, zTags)
 		})
 	}
 }
@@ -97,7 +136,7 @@ func TestInternalTracesToZipkinSpansAndBack(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Len(t, zipkinSpans, td.SpanCount())
 		tdFromZS, zErr := ToTranslator{}.ToTraces(zipkinSpans)
-		assert.NoError(t, zErr, zipkinSpans)
+		assert.NoError(t, zErr, "%+v", zipkinSpans)
 		assert.NotNil(t, tdFromZS)
 		assert.Equal(t, td.SpanCount(), tdFromZS.SpanCount())
 
@@ -139,8 +178,10 @@ func findSpanByID(rs ptrace.ResourceSpansSlice, spanID pcommon.SpanID) ptrace.Sp
 func generateTraceOneSpanOneTraceID(status ptrace.StatusCode) ptrace.Traces {
 	td := testdata.GenerateTracesOneSpan()
 	span := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
-	span.SetTraceID([16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
-		0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10})
+	span.SetTraceID([16]byte{
+		0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
+		0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10,
+	})
 	span.SetSpanID([8]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08})
 	switch status {
 	case ptrace.StatusCodeError:
@@ -166,10 +207,10 @@ func zipkinOneSpan(status ptrace.StatusCode) *zipkinmodel.SpanModel {
 
 	switch status {
 	case ptrace.StatusCodeOk:
-		spanTags[conventions.OtelStatusCode] = "STATUS_CODE_OK"
+		spanTags[string(conventions.OTelStatusCodeKey)] = "STATUS_CODE_OK"
 	case ptrace.StatusCodeError:
-		spanTags[conventions.OtelStatusCode] = "STATUS_CODE_ERROR"
-		spanTags[conventions.OtelStatusDescription] = "error message"
+		spanTags[string(conventions.OTelStatusCodeKey)] = "STATUS_CODE_ERROR"
+		spanTags[string(conventions.OTelStatusDescriptionKey)] = "error message"
 		spanTags[tracetranslator.TagError] = "true"
 		spanErr = errors.New("error message")
 	}

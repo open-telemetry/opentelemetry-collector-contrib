@@ -1,7 +1,13 @@
 resourceLogs:
-  - resource: {}
+  - resource:
+      attributes:
+        - key: k8s.namespace.name
+          value:
+            stringValue: default
     scopeLogs:
-      - scope: {}
+      - scope:
+          name: "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver"
+          version: latest
         logRecords:
           - observedTimeUnixNano: "1696719286858415159"
             body:

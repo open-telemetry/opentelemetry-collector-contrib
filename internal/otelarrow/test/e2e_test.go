@@ -7,7 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"math/rand"
+	"math/rand/v2"
 	"regexp"
 	"strings"
 	"sync"
@@ -15,13 +15,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/open-telemetry/otel-arrow/pkg/datagen"
-	otel_assert "github.com/open-telemetry/otel-arrow/pkg/otel/assert"
+	"github.com/open-telemetry/otel-arrow/go/pkg/datagen"
+	otel_assert "github.com/open-telemetry/otel-arrow/go/pkg/otel/assert"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -46,12 +47,16 @@ import (
 )
 
 type testParams struct {
-	threadCount  int
-	requestUntil func(*testConsumer) bool
+	threadCount      int
+	requestWhileTrue func(*testConsumer) bool
 
 	// missingDeadline is configured so the zero value implies a deadline,
 	// which is the default.
 	missingDeadline bool
+
+	// skipVerify allows skipping verification for very large tests.  The
+	// reason for this is that we have an O(N^2) verification step.
+	skipVerify bool
 }
 
 type testConsumer struct {
@@ -74,13 +79,15 @@ type testConsumer struct {
 
 var _ consumer.Traces = &testConsumer{}
 
-type ExpConfig = otelarrowexporter.Config
-type RecvConfig = otelarrowreceiver.Config
-type CfgFunc func(*ExpConfig, *RecvConfig)
-type GenFunc func(int) ptrace.Traces
-type MkGen func() GenFunc
-type EndFunc func(t *testing.T, tp testParams, testCon *testConsumer, expect [][]ptrace.Traces) (rops, eops map[string]int)
-type ConsumerErrFunc func(t *testing.T, err error)
+type (
+	ExpConfig       = otelarrowexporter.Config
+	RecvConfig      = otelarrowreceiver.Config
+	CfgFunc         func(*ExpConfig, *RecvConfig)
+	GenFunc         func(int) ptrace.Traces
+	MkGen           func() GenFunc
+	EndFunc         func(t *testing.T, tp testParams, testCon *testConsumer, expect [][]ptrace.Traces) (rops, eops map[string]int)
+	ConsumerErrFunc func(t *testing.T, err error)
+)
 
 func (*testConsumer) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{}
@@ -93,13 +100,6 @@ func (tc *testConsumer) ConsumeTraces(ctx context.Context, td ptrace.Traces) err
 	timeout := time.Until(dead)
 
 	require.Equal(tc.t, tc.expectDeadline, hasDeadline, "deadline set or not set: %v", timeout)
-	if tc.expectDeadline {
-		// expect allows 1/6 of the deadline to elapse in transit,
-		// so 1m becomes 50s.
-		expect := tc.expCfg.TimeoutSettings.Timeout * 5 / 6
-		require.Less(tc.t, expect, timeout)
-		require.Greater(tc.t, tc.expCfg.TimeoutSettings.Timeout, timeout)
-	}
 
 	return tc.sink.ConsumeTraces(ctx, td)
 }
@@ -107,7 +107,7 @@ func (tc *testConsumer) ConsumeTraces(ctx context.Context, td ptrace.Traces) err
 func testLoggerSettings(_ *testing.T) (component.TelemetrySettings, *observer.ObservedLogs, *tracetest.InMemoryExporter) {
 	tset := componenttest.NewNopTelemetrySettings()
 
-	core, obslogs := observer.New(zapcore.InfoLevel)
+	core, obslogs := observer.New(zapcore.DebugLevel)
 
 	exp := tracetest.NewInMemoryExporter()
 
@@ -122,7 +122,7 @@ func testLoggerSettings(_ *testing.T) (component.TelemetrySettings, *observer.Ob
 }
 
 func basicTestConfig(t *testing.T, tp testParams, cfgF CfgFunc) (*testConsumer, exporter.Traces, receiver.Traces) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	efact := otelarrowexporter.NewFactory()
 	rfact := otelarrowreceiver.NewFactory()
@@ -135,17 +135,21 @@ func basicTestConfig(t *testing.T, tp testParams, cfgF CfgFunc) (*testConsumer, 
 
 	addr := testutil.GetAvailableLocalAddress(t)
 
-	receiverCfg.Protocols.GRPC.NetAddr.Endpoint = addr
+	receiverCfg.GRPC.NetAddr.Endpoint = addr
 
-	exporterCfg.ClientConfig.Endpoint = addr
-	exporterCfg.ClientConfig.WaitForReady = true
-	exporterCfg.ClientConfig.TLSSetting.Insecure = true
+	exporterCfg.Endpoint = addr
+	exporterCfg.WaitForReady = true
+	exporterCfg.TLS.Insecure = true
 	exporterCfg.TimeoutSettings.Timeout = time.Minute
 	exporterCfg.QueueSettings.Enabled = false
 	exporterCfg.RetryConfig.Enabled = true
 	exporterCfg.Arrow.NumStreams = 1
 	exporterCfg.Arrow.MaxStreamLifetime = 5 * time.Second
 	exporterCfg.Arrow.DisableDowngrade = true
+
+	// The default exporter setting enables the memory queue; we
+	// disable to avoid flaky tests.
+	exporterCfg.QueueSettings.WaitForResult = true
 
 	if cfgF != nil {
 		cfgF(exporterCfg, receiverCfg)
@@ -170,19 +174,18 @@ func basicTestConfig(t *testing.T, tp testParams, cfgF CfgFunc) (*testConsumer, 
 	}
 
 	receiver, err := rfact.CreateTraces(ctx, receiver.Settings{
-		ID:                component.MustNewID("otelarrowreceiver"),
+		ID:                component.NewID(rfact.Type()),
 		TelemetrySettings: recvTset,
 	}, receiverCfg, testCon)
 	require.NoError(t, err)
 
 	exporter, err := efact.CreateTraces(ctx, exporter.Settings{
-		ID:                component.MustNewID("otelarrowexporter"),
+		ID:                component.NewID(efact.Type()),
 		TelemetrySettings: expTset,
 	}, exporterCfg)
 	require.NoError(t, err)
 
 	return testCon, exporter, receiver
-
 }
 
 func testIntegrationTraces(ctx context.Context, t *testing.T, tp testParams, cfgf CfgFunc, mkgen MkGen, errf ConsumerErrFunc, endf EndFunc) {
@@ -228,7 +231,7 @@ func testIntegrationTraces(ctx context.Context, t *testing.T, tp testParams, cfg
 		go func(num int) {
 			defer clientDoneWG.Done()
 			generator := mkgen()
-			for i := 0; tp.requestUntil(testCon); i++ {
+			for i := 0; tp.requestWhileTrue(testCon); i++ {
 				td := generator(i)
 
 				errf(t, exporter.ConsumeTraces(ctx, td))
@@ -283,7 +286,7 @@ func makeTestTraces(i int) ptrace.Traces {
 
 func bulkyGenFunc() MkGen {
 	return func() GenFunc {
-		entropy := datagen.NewTestEntropy(int64(rand.Uint64())) //nolint:gosec // only used for testing
+		entropy := datagen.NewTestEntropy()
 
 		tracesGen := datagen.NewTracesGenerator(
 			entropy,
@@ -297,26 +300,28 @@ func bulkyGenFunc() MkGen {
 			return tracesGen.Generate(1000, time.Minute)
 		}
 	}
-
 }
 
-func standardEnding(t *testing.T, _ testParams, testCon *testConsumer, expect [][]ptrace.Traces) (rops, eops map[string]int) {
+func standardEnding(t *testing.T, params testParams, testCon *testConsumer, expect [][]ptrace.Traces) (rops, eops map[string]int) {
 	// Check for matching request count and data
 	require.Equal(t, int(testCon.sentSpans.Load()), testCon.sink.SpanCount())
 
-	var expectJSON []json.Marshaler
-	for _, tdn := range expect {
-		for _, td := range tdn {
-			expectJSON = append(expectJSON, ptraceotlp.NewExportRequestFromTraces(td))
+	if !params.skipVerify {
+		var expectJSON []json.Marshaler
+		for _, tdn := range expect {
+			for _, td := range tdn {
+				expectJSON = append(expectJSON, ptraceotlp.NewExportRequestFromTraces(td))
+			}
 		}
-	}
-	var receivedJSON []json.Marshaler
+		var receivedJSON []json.Marshaler
 
-	for _, td := range testCon.sink.AllTraces() {
-		receivedJSON = append(receivedJSON, ptraceotlp.NewExportRequestFromTraces(td))
+		for _, td := range testCon.sink.AllTraces() {
+			receivedJSON = append(receivedJSON, ptraceotlp.NewExportRequestFromTraces(td))
+		}
+		asserter := otel_assert.NewStdUnitTest(t)
+
+		otel_assert.Equiv(asserter, expectJSON, receivedJSON)
 	}
-	asserter := otel_assert.NewStdUnitTest(t)
-	otel_assert.Equiv(asserter, expectJSON, receivedJSON)
 
 	rops = map[string]int{}
 	eops = map[string]int{}
@@ -395,14 +400,39 @@ func failureMemoryLimitEnding(t *testing.T, _ testParams, testCon *testConsumer,
 	eSigs, eMsgs := logSigs(testCon.expLogs)
 	rSigs, rMsgs := logSigs(testCon.recvLogs)
 
-	// Test for arrow receiver stream errors on both sides.
+	// Test for arrow stream errors on both sides.
 	require.Positive(t, eSigs["arrow stream error|||code///message///where"], "should have exporter arrow stream errors: %v", eMsgs)
 	require.Positive(t, rSigs["arrow stream error|||code///message///where"], "should have receiver arrow stream errors: %v", rSigs)
 
-	// Ensure both side's error logs include memory limit errors
-	// one way or another.
+	// Ensure both side's error logs include admission control errors.
 	require.Positive(t, countMemoryLimitErrors(rMsgs), "should have memory limit errors: %v", rMsgs)
 	require.Positive(t, countMemoryLimitErrors(eMsgs), "should have memory limit errors: %v", eMsgs)
+
+	return nil, nil
+}
+
+var admissionRegexp = regexp.MustCompile(`too much pending data`)
+
+func countAdmissionLimitErrors(msgs []string) (cnt int) {
+	for _, msg := range msgs {
+		if admissionRegexp.MatchString(msg) {
+			cnt++
+		}
+	}
+	return
+}
+
+func failureAdmissionLimitEnding(t *testing.T, _ testParams, testCon *testConsumer, _ [][]ptrace.Traces) (rops, eops map[string]int) {
+	eSigs, eMsgs := logSigs(testCon.expLogs)
+	rSigs, rMsgs := logSigs(testCon.recvLogs)
+
+	// Test for arrow stream errors on both sides.
+	require.Positive(t, eSigs["arrow stream error|||code///message///where"], "should have exporter arrow stream errors: %v", eMsgs)
+	require.Positive(t, rSigs["arrow stream error|||code///message///where"], "should have receiver arrow stream errors: %v", rSigs)
+
+	// Ensure both side's error logs include admission limit errors.
+	require.Positive(t, countAdmissionLimitErrors(rMsgs), "should have admission limit errors: %v", rMsgs)
+	require.Positive(t, countAdmissionLimitErrors(eMsgs), "should have admission limit errors: %v", eMsgs)
 
 	return nil, nil
 }
@@ -435,13 +465,13 @@ func consumerFailure(t *testing.T, err error) {
 func TestIntegrationTracesSimple(t *testing.T) {
 	for _, n := range []int{1, 2, 4, 8} {
 		t.Run(fmt.Sprint(n), func(t *testing.T) {
-			ctx, cancel := context.WithCancel(context.Background())
+			ctx, cancel := context.WithCancel(t.Context())
 			defer cancel()
 
 			// until 10 threads can write 1000 spans
-			var params = testParams{
+			params := testParams{
 				threadCount: 10,
-				requestUntil: func(test *testConsumer) bool {
+				requestWhileTrue: func(test *testConsumer) bool {
 					return test.sink.SpanCount() < 1000
 				},
 			}
@@ -456,13 +486,13 @@ func TestIntegrationTracesSimple(t *testing.T) {
 func TestIntegrationDeadlinePropagation(t *testing.T) {
 	for _, hasDeadline := range []bool{false, true} {
 		t.Run(fmt.Sprint("deadline=", hasDeadline), func(t *testing.T) {
-			ctx, cancel := context.WithCancel(context.Background())
+			ctx, cancel := context.WithCancel(t.Context())
 			defer cancel()
 
 			// Until at least one span is written.
-			var params = testParams{
+			params := testParams{
 				threadCount: 1,
-				requestUntil: func(test *testConsumer) bool {
+				requestWhileTrue: func(test *testConsumer) bool {
 					return test.sink.SpanCount() < 1
 				},
 				missingDeadline: !hasDeadline,
@@ -481,13 +511,13 @@ func TestIntegrationDeadlinePropagation(t *testing.T) {
 }
 
 func TestIntegrationMemoryLimited(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
 	// until exporter and receiver finish at least one ArrowTraces span.
 	params := testParams{
 		threadCount: 10,
-		requestUntil: func(test *testConsumer) bool {
+		requestWhileTrue: func(test *testConsumer) bool {
 			cf := func(spans tracetest.SpanStubs) (cnt int) {
 				for _, span := range spans {
 					if span.Name == "opentelemetry.proto.experimental.arrow.v1.ArrowTracesService/ArrowTraces" {
@@ -533,7 +563,7 @@ func multiStreamEnding(t *testing.T, p testParams, testCon *testConsumer, td [][
 
 	// Number of export requests: exact match.  This is the
 	// exporterhelper's base span.
-	require.Equal(t, total, expOps["exporter/otelarrowexporter/traces/Unset"])
+	require.Equal(t, total, expOps["exporter/otelarrow/traces/Unset"])
 
 	// Number of export requests: exact match.  This span covers
 	// handling one request in the Arrow exporter.
@@ -560,7 +590,7 @@ func multiStreamEnding(t *testing.T, p testParams, testCon *testConsumer, td [][
 	require.Equal(t, total, recvOps["otel_arrow_stream_recv/Unset"])
 
 	// This is in request context, the receiverhelper's per-request span.
-	require.Equal(t, total, recvOps["receiver/otelarrowreceiver/TraceDataReceived/Unset"])
+	require.Equal(t, total, recvOps["receiver/otelarrow/TraceDataReceived/Unset"])
 
 	// Exporter and Receiver stream span counts match:
 	require.Equal(t, expStreamsUnset+expStreamsError, recvStreamsUnset+recvStreamsError)
@@ -569,14 +599,13 @@ func multiStreamEnding(t *testing.T, p testParams, testCon *testConsumer, td [][
 }
 
 func TestIntegrationSelfTracing(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
 	// until 2 Arrow stream spans are received from self instrumentation
-	var params = testParams{
+	params := testParams{
 		threadCount: 10,
-		requestUntil: func(test *testConsumer) bool {
-
+		requestWhileTrue: func(test *testConsumer) bool {
 			cnt := 0
 			for _, span := range test.expSpans.GetSpans() {
 				if span.Name == "opentelemetry.proto.experimental.arrow.v1.ArrowTracesService/ArrowTraces" {
@@ -588,11 +617,118 @@ func TestIntegrationSelfTracing(t *testing.T) {
 	}
 
 	testIntegrationTraces(ctx, t, params, func(_ *ExpConfig, rcfg *RecvConfig) {
-		rcfg.Protocols.GRPC.Keepalive = &configgrpc.KeepaliveServerConfig{
-			ServerParameters: &configgrpc.KeepaliveServerParameters{
+		rcfg.GRPC.Keepalive = configoptional.Some(configgrpc.KeepaliveServerConfig{
+			ServerParameters: configoptional.Some(configgrpc.KeepaliveServerParameters{
 				MaxConnectionAge:      time.Second,
 				MaxConnectionAgeGrace: 5 * time.Second,
-			},
-		}
+			}),
+		})
 	}, func() GenFunc { return makeTestTraces }, consumerSuccess, multiStreamEnding)
+}
+
+func nearLimitGenFunc() MkGen {
+	var sizer ptrace.ProtoMarshaler
+	const nearLimit = 900 << 10 // close to 1 MiB
+	const hardLimit = 1 << 20   // 1 MiB
+
+	return func() GenFunc {
+		entropy := datagen.NewTestEntropy()
+
+		tracesGen := datagen.NewTracesGenerator(
+			entropy,
+			entropy.NewStandardResourceAttributes(),
+			entropy.NewStandardInstrumentationScopes(),
+		)
+
+		return func(int) ptrace.Traces {
+			size := 100
+			for {
+				td := tracesGen.Generate(size, time.Minute)
+				uncomp := sizer.TracesSize(td)
+				if uncomp > nearLimit && uncomp < hardLimit {
+					return td
+				}
+				switch {
+				case uncomp > hardLimit:
+					size -= 10
+				case uncomp < nearLimit/2:
+					size *= 2
+				default:
+					size += 10
+				}
+			}
+		}
+	}
+}
+
+func TestIntegrationAdmissionLimited(t *testing.T) {
+	for _, test := range []struct {
+		bounded   bool
+		allowWait bool
+	}{
+		{
+			bounded:   true,  // bounded queue
+			allowWait: false, // no waiters allowed
+		},
+		{
+			bounded:   true, // bounded queue
+			allowWait: true, // with waiters allowed
+		},
+		{
+			bounded:   false, // bounded queue
+			allowWait: true,  // config not used
+		},
+	} {
+		t.Run(fmt.Sprint("bounded=", test.bounded, ",allow_wait=", test.allowWait), func(t *testing.T) {
+			ctx, cancel := context.WithCancel(t.Context())
+			defer cancel()
+
+			// until exporter and receiver finish at least one ArrowTraces span.
+			params := testParams{
+				threadCount: 10,
+				requestWhileTrue: func(test *testConsumer) bool {
+					return test.sink.SpanCount() < 10000
+				},
+				missingDeadline: true,
+
+				// this test produces a lot of data,
+				// which is too expensive to verify
+				// with an O(N^2) algorithm.
+				skipVerify: true,
+			}
+
+			var ending func(*testing.T, testParams, *testConsumer, [][]ptrace.Traces) (_, _ map[string]int)
+			var waitingLimit uint64
+			var admitLimit uint64
+			if test.bounded {
+				if test.allowWait {
+					admitLimit = 1
+					waitingLimit = uint64(params.threadCount)
+					ending = standardEnding
+				} else {
+					admitLimit = 1
+					waitingLimit = 0
+					ending = failureAdmissionLimitEnding
+				}
+			} else {
+				admitLimit = 0
+				waitingLimit = 0
+				ending = standardEnding
+			}
+
+			testIntegrationTraces(ctx, t, params, func(ecfg *ExpConfig, rcfg *RecvConfig) {
+				rcfg.Admission.RequestLimitMiB = admitLimit
+				rcfg.Admission.WaitingLimitMiB = waitingLimit
+
+				ecfg.Arrow.NumStreams = 10
+
+				// Disable export timeout and retry,
+				// because we expect progress to be
+				// slow for this test.
+				ecfg.TimeoutSettings.Timeout = 0
+				ecfg.RetryConfig.Enabled = false
+				ecfg.Arrow.MaxStreamLifetime = 5 * time.Second
+			}, nearLimitGenFunc(), consumerFailure, ending)
+		})
+	}
 }

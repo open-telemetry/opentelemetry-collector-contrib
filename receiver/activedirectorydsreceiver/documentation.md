@@ -22,9 +22,9 @@ The number of binds per second serviced by this domain controller.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| type | The type of bind to the domain server. | Str: ``server``, ``client`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| type | The type of bind to the domain server. | Str: ``server``, ``client`` | false |
 
 ### active_directory.ds.ldap.bind.last_successful.time
 
@@ -84,9 +84,9 @@ The number of operations performed per second.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| type | The type of operation. | Str: ``read``, ``write``, ``search`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| type | The type of operation. | Str: ``read``, ``write``, ``search`` | false |
 
 ### active_directory.ds.replication.network.io
 
@@ -98,10 +98,10 @@ The amount of network data transmitted by the Directory Replication Agent.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| direction | The direction of data flow. | Str: ``sent``, ``received`` |
-| type | The type of network data sent. | Str: ``compressed``, ``uncompressed`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| direction | The direction of data flow. | Str: ``sent``, ``received`` | false |
+| type | The type of network data sent. | Str: ``compressed``, ``uncompressed`` | false |
 
 ### active_directory.ds.replication.object.rate
 
@@ -113,9 +113,9 @@ The number of objects transmitted by the Directory Replication Agent per second.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| direction | The direction of data flow. | Str: ``sent``, ``received`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| direction | The direction of data flow. | Str: ``sent``, ``received`` | false |
 
 ### active_directory.ds.replication.operation.pending
 
@@ -135,9 +135,9 @@ The number of properties transmitted by the Directory Replication Agent per seco
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| direction | The direction of data flow. | Str: ``sent``, ``received`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| direction | The direction of data flow. | Str: ``sent``, ``received`` | false |
 
 ### active_directory.ds.replication.sync.object.pending
 
@@ -157,9 +157,9 @@ The number of sync requests made by the Directory Replication Agent.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| result | The result status of the sync request. | Str: ``success``, ``schema_mismatch``, ``other`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| result | The result status of the sync request. | Str: ``success``, ``schema_mismatch``, ``other`` | false |
 
 ### active_directory.ds.replication.value.rate
 
@@ -171,10 +171,10 @@ The number of values transmitted by the Directory Replication Agent per second.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| direction | The direction of data flow. | Str: ``sent``, ``received`` |
-| type | The type of value sent. | Str: ``distingushed_names``, ``other`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| direction | The direction of data flow. | Str: ``sent``, ``received`` | false |
+| type | The type of value sent. | Str: ``distinguished_names``, ``other`` | false |
 
 ### active_directory.ds.security_descriptor_propagations_event.queued
 
@@ -194,9 +194,9 @@ The rate of sub-operations performed.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| type | The type of suboperation. | Str: ``security_descriptor_propagations_event``, ``search`` |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| type | The type of suboperation. | Str: ``security_descriptor_propagations_event``, ``search`` | false |
 
 ### active_directory.ds.thread.count
 

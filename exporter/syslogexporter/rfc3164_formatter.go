@@ -10,8 +10,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
-type rfc3164Formatter struct {
-}
+type rfc3164Formatter struct{}
 
 func newRFC3164Formatter() *rfc3164Formatter {
 	return &rfc3164Formatter{}
@@ -24,26 +23,26 @@ func (f *rfc3164Formatter) format(logRecord plog.LogRecord) string {
 	appnameString := f.formatAppname(logRecord)
 	messageString := f.formatMessage(logRecord)
 	appnameMessageDelimiter := ""
-	if len(appnameString) > 0 && messageString != emptyMessage {
+	if appnameString != "" && messageString != emptyMessage {
 		appnameMessageDelimiter = " "
 	}
 	formatted := fmt.Sprintf("<%s>%s %s %s%s%s\n", priorityString, timestampString, hostnameString, appnameString, appnameMessageDelimiter, messageString)
 	return formatted
 }
 
-func (f *rfc3164Formatter) formatPriority(logRecord plog.LogRecord) string {
+func (*rfc3164Formatter) formatPriority(logRecord plog.LogRecord) string {
 	return getAttributeValueOrDefault(logRecord, priority, strconv.Itoa(defaultPriority))
 }
 
-func (f *rfc3164Formatter) formatTimestamp(logRecord plog.LogRecord) string {
+func (*rfc3164Formatter) formatTimestamp(logRecord plog.LogRecord) string {
 	return logRecord.Timestamp().AsTime().Format("Jan 02 15:04:05")
 }
 
-func (f *rfc3164Formatter) formatHostname(logRecord plog.LogRecord) string {
+func (*rfc3164Formatter) formatHostname(logRecord plog.LogRecord) string {
 	return getAttributeValueOrDefault(logRecord, hostname, emptyValue)
 }
 
-func (f *rfc3164Formatter) formatAppname(logRecord plog.LogRecord) string {
+func (*rfc3164Formatter) formatAppname(logRecord plog.LogRecord) string {
 	value := getAttributeValueOrDefault(logRecord, app, "")
 	if value != "" {
 		value += ":"
@@ -51,6 +50,6 @@ func (f *rfc3164Formatter) formatAppname(logRecord plog.LogRecord) string {
 	return value
 }
 
-func (f *rfc3164Formatter) formatMessage(logRecord plog.LogRecord) string {
+func (*rfc3164Formatter) formatMessage(logRecord plog.LogRecord) string {
 	return getAttributeValueOrDefault(logRecord, message, emptyMessage)
 }

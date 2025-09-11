@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/otelarrowexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/testdata"
 )
 
@@ -39,40 +40,41 @@ func TestSendTracesWithMetadata(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.ClientConfig = configgrpc.ClientConfig{
 		Endpoint: ln.Addr().String(),
-		TLSSetting: configtls.ClientConfig{
+		TLS: configtls.ClientConfig{
 			Insecure: true,
 		},
 	}
 	cfg.Arrow.MaxStreamLifetime = 100 * time.Second
+	cfg.QueueSettings.Enabled = false
 
 	cfg.MetadataCardinalityLimit = 10
 	cfg.MetadataKeys = []string{"key1", "key2"}
-	set := exportertest.NewNopSettings()
+	set := exportertest.NewNopSettings(metadata.Type)
 	set.BuildInfo.Description = "Collector"
 	set.BuildInfo.Version = "1.2.3test"
-	bg := context.Background()
+	bg := t.Context()
 	exp, err := factory.CreateTraces(bg, set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	defer func() {
-		assert.NoError(t, exp.Shutdown(context.Background()))
+		assert.NoError(t, exp.Shutdown(t.Context()))
 	}()
 
 	host := componenttest.NewNopHost()
 
-	assert.NoError(t, exp.Start(context.Background(), host))
+	assert.NoError(t, exp.Start(t.Context(), host))
 
 	// Ensure that initially there is no data in the receiver.
 	assert.EqualValues(t, 0, rcv.requestCount.Load())
 
 	callCtxs := []context.Context{
-		client.NewContext(context.Background(), client.Info{
+		client.NewContext(t.Context(), client.Info{
 			Metadata: client.NewMetadata(map[string][]string{
 				"key1": {"first"},
 				"key2": {"second"},
 			}),
 		}),
-		client.NewContext(context.Background(), client.Info{
+		client.NewContext(t.Context(), client.Info{
 			Metadata: client.NewMetadata(map[string][]string{
 				"key1": {"third"},
 				"key2": {"fourth"},
@@ -144,7 +146,7 @@ func TestMetadataExporterCardinalityLimit(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.ClientConfig = configgrpc.ClientConfig{
 		Endpoint: ln.Addr().String(),
-		TLSSetting: configtls.ClientConfig{
+		TLS: configtls.ClientConfig{
 			Insecure: true,
 		},
 	}
@@ -155,18 +157,18 @@ func TestMetadataExporterCardinalityLimit(t *testing.T) {
 
 	cfg.MetadataCardinalityLimit = cardLimit
 	cfg.MetadataKeys = []string{"key1", "key2"}
-	set := exportertest.NewNopSettings()
-	bg := context.Background()
+	set := exportertest.NewNopSettings(metadata.Type)
+	bg := t.Context()
 	exp, err := factory.CreateTraces(bg, set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	defer func() {
-		assert.NoError(t, exp.Shutdown(context.Background()))
+		assert.NoError(t, exp.Shutdown(t.Context()))
 	}()
 
 	host := componenttest.NewNopHost()
 
-	assert.NoError(t, exp.Start(context.Background(), host))
+	assert.NoError(t, exp.Start(t.Context(), host))
 
 	// Ensure that initially there is no data in the receiver.
 	assert.EqualValues(t, 0, rcv.requestCount.Load())

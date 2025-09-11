@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver/internal/metadata"
 )
@@ -57,9 +58,9 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			if tt.wantErr == nil {
-				assert.NoError(t, component.ValidateConfig(cfg))
+				assert.NoError(t, xconfmap.Validate(cfg))
 			} else {
-				assert.Equal(t, tt.wantErr, component.ValidateConfig(cfg))
+				assert.ErrorContains(t, xconfmap.Validate(cfg), tt.wantErr.Error())
 			}
 			assert.Equal(t, tt.expected, cfg)
 		})

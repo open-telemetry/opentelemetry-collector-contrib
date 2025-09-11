@@ -6,6 +6,7 @@ package azuremonitorexporter // import "github.com/open-telemetry/opentelemetry-
 // Contains code common to both trace and metrics exporters
 
 import (
+	"encoding/json"
 	"errors"
 	"net/url"
 	"strconv"
@@ -15,7 +16,7 @@ import (
 	"github.com/microsoft/ApplicationInsights-Go/appinsights/contracts"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.12.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.12.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
@@ -30,6 +31,7 @@ const (
 	faasSpanType      spanType = 5
 
 	exceptionSpanEventName string = "exception"
+	msLinks                string = "_MS.links"
 )
 
 var (
@@ -40,6 +42,11 @@ var (
 // Used to identify the type of a received Span
 type spanType int8
 
+type msLink struct {
+	OperationID string `json:"operation_Id"`
+	ID          string `json:"id"`
+}
+
 // Transforms a tuple of pcommon.Resource, pcommon.InstrumentationScope, ptrace.Span into one or more of AppInsights contracts.Envelope
 // This is the only method that should be targeted in the unit tests
 func spanToEnvelopes(
@@ -47,8 +54,8 @@ func spanToEnvelopes(
 	instrumentationScope pcommon.InstrumentationScope,
 	span ptrace.Span,
 	spanEventsEnabled bool,
-	logger *zap.Logger) ([]*contracts.Envelope, error) {
-
+	logger *zap.Logger,
+) ([]*contracts.Envelope, error) {
 	spanKind := span.Kind()
 
 	// According to the SpanKind documentation, we can assume it to be INTERNAL
@@ -74,11 +81,12 @@ func spanToEnvelopes(
 
 	data := contracts.NewData()
 
-	if userID, exists := attributeMap.Get(conventions.AttributeEnduserID); exists {
+	if userID, exists := attributeMap.Get(string(conventions.EnduserIDKey)); exists {
 		envelope.Tags[contracts.UserId] = userID.Str()
 	}
 
-	if spanKind == ptrace.SpanKindServer || spanKind == ptrace.SpanKindConsumer {
+	switch spanKind {
+	case ptrace.SpanKindServer, ptrace.SpanKindConsumer:
 		requestData := spanToRequestData(span, incomingSpanType)
 		dataProperties = requestData.Properties
 		dataSanitizeFunc = requestData.Sanitize
@@ -86,7 +94,7 @@ func spanToEnvelopes(
 		envelope.Tags[contracts.OperationName] = requestData.Name
 		data.BaseData = requestData
 		data.BaseType = requestData.BaseType()
-	} else if spanKind == ptrace.SpanKindClient || spanKind == ptrace.SpanKindProducer || spanKind == ptrace.SpanKindInternal {
+	case ptrace.SpanKindClient, ptrace.SpanKindProducer, ptrace.SpanKindInternal:
 		remoteDependencyData := spanToRemoteDependencyData(span, incomingSpanType)
 
 		// Regardless of the detected Span type, if the SpanKind is Internal we need to set data.Type to InProc
@@ -104,7 +112,7 @@ func spanToEnvelopes(
 	// Record the raw Span status values as properties
 	dataProperties[attributeOtelStatusCode] = traceutil.StatusCodeStr(span.Status().Code())
 	statusMessage := span.Status().Message()
-	if len(statusMessage) > 0 {
+	if statusMessage != "" {
 		dataProperties[attributeOtelStatusDescription] = statusMessage
 	}
 
@@ -115,6 +123,7 @@ func spanToEnvelopes(
 	applyInstrumentationScopeValueToDataProperties(dataProperties, instrumentationScope)
 	applyCloudTagsToEnvelope(envelope, resourceAttributes)
 	applyInternalSdkVersionTagToEnvelope(envelope)
+	applyLinksToDataProperties(dataProperties, span.Links(), logger)
 
 	// Sanitize the base data, the envelope and envelope tags
 	sanitize(dataSanitizeFunc, logger)
@@ -171,6 +180,30 @@ func spanToEnvelopes(
 	}
 
 	return envelopes, nil
+}
+
+func applyLinksToDataProperties(dataProperties map[string]string, spanLinkSlice ptrace.SpanLinkSlice, logger *zap.Logger) {
+	if spanLinkSlice.Len() == 0 {
+		return
+	}
+
+	links := make([]msLink, 0, spanLinkSlice.Len())
+
+	for i := 0; i < spanLinkSlice.Len(); i++ {
+		link := spanLinkSlice.At(i)
+		links = append(links, msLink{
+			OperationID: traceutil.TraceIDToHexOrEmptyString(link.TraceID()),
+			ID:          traceutil.SpanIDToHexOrEmptyString(link.SpanID()),
+		})
+	}
+
+	if len(links) > 0 {
+		if jsonBytes, err := json.Marshal(links); err == nil {
+			dataProperties[msLinks] = string(jsonBytes)
+		} else {
+			logger.Warn("Failed to marshal span links to JSON", zap.Error(err))
+		}
+	}
 }
 
 // Creates a new envelope with some basic tags populated
@@ -488,7 +521,7 @@ func fillRemoteDependencyDataRPC(span ptrace.Span, data *contracts.RemoteDepende
 }
 
 // Returns the RPC status code as a string
-func getRPCStatusCodeAsString(rpcAttributes *RPCAttributes) (statusCodeAsString string) {
+func getRPCStatusCodeAsString(rpcAttributes *rpcAttributes) (statusCodeAsString string) {
 	// Honor the attribute rpc.grpc.status_code if there
 	if rpcAttributes.RPCGRPCStatusCode != 0 {
 		return strconv.FormatInt(rpcAttributes.RPCGRPCStatusCode, 10)
@@ -551,31 +584,30 @@ func fillRemoteDependencyDataMessaging(span ptrace.Span, data *contracts.RemoteD
 func copyAndMapAttributes(
 	attributeMap pcommon.Map,
 	properties map[string]string,
-	mappingFunc func(k string, v pcommon.Value)) {
-
-	attributeMap.Range(func(k string, v pcommon.Value) bool {
+	mappingFunc func(k string, v pcommon.Value),
+) {
+	for k, v := range attributeMap.All() {
 		setAttributeValueAsProperty(k, v, properties)
 		if mappingFunc != nil {
 			mappingFunc(k, v)
 		}
-		return true
-	})
+	}
 }
 
 // Copies all attributes to either properties or measurements without any kind of mapping to a known set of attributes
 func copyAttributesWithoutMapping(
 	attributeMap pcommon.Map,
-	properties map[string]string) {
-
+	properties map[string]string,
+) {
 	copyAndMapAttributes(attributeMap, properties, nil)
 }
 
 // Attribute extraction logic for HTTP Span attributes
 func copyAndExtractHTTPAttributes(
 	attributeMap pcommon.Map,
-	properties map[string]string) *HTTPAttributes {
-
-	attrs := &HTTPAttributes{}
+	properties map[string]string,
+) *httpAttributes {
+	attrs := &httpAttributes{}
 	copyAndMapAttributes(
 		attributeMap,
 		properties,
@@ -587,9 +619,9 @@ func copyAndExtractHTTPAttributes(
 // Attribute extraction logic for RPC Span attributes
 func copyAndExtractRPCAttributes(
 	attributeMap pcommon.Map,
-	properties map[string]string) *RPCAttributes {
-
-	attrs := &RPCAttributes{}
+	properties map[string]string,
+) *rpcAttributes {
+	attrs := &rpcAttributes{}
 	copyAndMapAttributes(
 		attributeMap,
 		properties,
@@ -601,9 +633,9 @@ func copyAndExtractRPCAttributes(
 // Attribute extraction logic for Database Span attributes
 func copyAndExtractDatabaseAttributes(
 	attributeMap pcommon.Map,
-	properties map[string]string) *DatabaseAttributes {
-
-	attrs := &DatabaseAttributes{}
+	properties map[string]string,
+) *databaseAttributes {
+	attrs := &databaseAttributes{}
 	copyAndMapAttributes(
 		attributeMap,
 		properties,
@@ -615,9 +647,9 @@ func copyAndExtractDatabaseAttributes(
 // Attribute extraction logic for Messaging Span attributes
 func copyAndExtractMessagingAttributes(
 	attributeMap pcommon.Map,
-	properties map[string]string) *MessagingAttributes {
-
-	attrs := &MessagingAttributes{}
+	properties map[string]string,
+) *messagingAttributes {
+	attrs := &messagingAttributes{}
 	copyAndMapAttributes(
 		attributeMap,
 		properties,
@@ -629,9 +661,9 @@ func copyAndExtractMessagingAttributes(
 // Attribute extraction logic for Span event exception attributes
 func copyAndExtractExceptionAttributes(
 	attributeMap pcommon.Map,
-	properties map[string]string) *ExceptionAttributes {
-
-	attrs := &ExceptionAttributes{}
+	properties map[string]string,
+) *exceptionAttributes {
+	attrs := &exceptionAttributes{}
 	copyAndMapAttributes(
 		attributeMap,
 		properties,
@@ -654,26 +686,26 @@ func mapIncomingSpanToType(attributeMap pcommon.Map) spanType {
 	}
 
 	// RPC
-	if _, exists := attributeMap.Get(conventions.AttributeRPCSystem); exists {
+	if _, exists := attributeMap.Get(string(conventions.RPCSystemKey)); exists {
 		return rpcSpanType
 	}
 
 	// HTTP
-	if _, exists := attributeMap.Get(conventions.AttributeHTTPMethod); exists {
+	if _, exists := attributeMap.Get(string(conventions.HTTPMethodKey)); exists {
 		return httpSpanType
 	}
 
 	// Database
-	if _, exists := attributeMap.Get(conventions.AttributeDBSystem); exists {
+	if _, exists := attributeMap.Get(string(conventions.DBSystemKey)); exists {
 		return databaseSpanType
 	}
 
 	// Messaging
-	if _, exists := attributeMap.Get(conventions.AttributeMessagingSystem); exists {
+	if _, exists := attributeMap.Get(string(conventions.MessagingSystemKey)); exists {
 		return messagingSpanType
 	}
 
-	if _, exists := attributeMap.Get(conventions.AttributeFaaSTrigger); exists {
+	if _, exists := attributeMap.Get(string(conventions.FaaSTriggerKey)); exists {
 		return faasSpanType
 	}
 
@@ -687,7 +719,7 @@ func getDefaultFormattedSpanStatus(spanStatus ptrace.Status) (statusCodeAsString
 	return strconv.FormatInt(int64(code), 10), code != ptrace.StatusCodeError
 }
 
-func writeFormattedPeerAddressFromNetworkAttributes(networkAttributes *NetworkAttributes, sb *strings.Builder) {
+func writeFormattedPeerAddressFromNetworkAttributes(networkAttributes *networkAttributes, sb *strings.Builder) {
 	// Favor name over IP for
 	if networkAttributes.NetPeerName != "" {
 		sb.WriteString(networkAttributes.NetPeerName)
@@ -704,8 +736,8 @@ func writeFormattedPeerAddressFromNetworkAttributes(networkAttributes *NetworkAt
 func setAttributeValueAsProperty(
 	key string,
 	attributeValue pcommon.Value,
-	properties map[string]string) {
-
+	properties map[string]string,
+) {
 	switch attributeValue.Type() {
 	case pcommon.ValueTypeBool:
 		properties[key] = strconv.FormatBool(attributeValue.Bool())
@@ -721,7 +753,7 @@ func setAttributeValueAsProperty(
 	}
 }
 
-func prefixIfNecessary(s string, prefix string) string {
+func prefixIfNecessary(s, prefix string) string {
 	if strings.HasPrefix(s, prefix) {
 		return s
 	}

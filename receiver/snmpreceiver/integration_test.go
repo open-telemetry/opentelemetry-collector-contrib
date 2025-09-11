@@ -6,13 +6,13 @@
 package snmpreceiver
 
 import (
-	"context"
 	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -25,8 +25,8 @@ import (
 )
 
 func TestIntegration(t *testing.T) {
-	// remove nolint when https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/24240 is resolved
-	// nolint:staticcheck
+	t.Skip("Broken test, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36177")
+
 	testCases := []struct {
 		desc                    string
 		configFilename          string
@@ -46,9 +46,9 @@ func TestIntegration(t *testing.T) {
 
 	container := getContainer(t, snmpAgentContainerRequest)
 	defer func() {
-		require.NoError(t, container.Terminate(context.Background()))
+		require.NoError(t, container.Terminate(t.Context()))
 	}()
-	_, err := container.Host(context.Background())
+	_, err := container.Host(t.Context())
 	require.NoError(t, err)
 	factories, err := otelcoltest.NopFactories()
 	require.NoError(t, err)
@@ -59,21 +59,19 @@ func TestIntegration(t *testing.T) {
 			factory := NewFactory()
 			factories.Receivers[metadata.Type] = factory
 			configFile := filepath.Join("testdata", "integration", testCase.configFilename)
-			// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33594
-			// nolint:staticcheck
 			cfg, err := otelcoltest.LoadConfigAndValidate(configFile, factories)
 			require.NoError(t, err)
 			snmpConfig := cfg.Receivers[component.NewID(metadata.Type)].(*Config)
 
 			consumer := new(consumertest.MetricsSink)
-			settings := receivertest.NewNopSettings()
-			rcvr, err := factory.CreateMetrics(context.Background(), settings, snmpConfig, consumer)
+			settings := receivertest.NewNopSettings(metadata.Type)
+			rcvr, err := factory.CreateMetrics(t.Context(), settings, snmpConfig, consumer)
 			require.NoError(t, err, "failed creating metrics receiver")
-			require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
+			require.NoError(t, rcvr.Start(t.Context(), componenttest.NewNopHost()))
 			require.Eventuallyf(t, func() bool {
 				return len(consumer.AllMetrics()) > 0
 			}, 2*time.Minute, 1*time.Second, "failed to receive more than 0 metrics")
-			require.NoError(t, rcvr.Shutdown(context.Background()))
+			require.NoError(t, rcvr.Shutdown(t.Context()))
 
 			actualMetrics := consumer.AllMetrics()[0]
 			expectedFile := filepath.Join("testdata", "integration", testCase.expectedResultsFilename)
@@ -86,20 +84,20 @@ func TestIntegration(t *testing.T) {
 	}
 }
 
-var (
-	snmpAgentContainerRequest = testcontainers.ContainerRequest{
-		FromDockerfile: testcontainers.FromDockerfile{
-			Context:    filepath.Join("testdata", "integration", "docker"),
-			Dockerfile: "snmp_agent.Dockerfile",
-		},
-		ExposedPorts: []string{"1024:1024/udp"},
-	}
-)
+var snmpAgentContainerRequest = testcontainers.ContainerRequest{
+	FromDockerfile: testcontainers.FromDockerfile{
+		Context:    filepath.Join("testdata", "integration", "docker"),
+		Dockerfile: "snmp_agent.Dockerfile",
+	},
+	ExposedPorts: []string{"161/udp"},
+	WaitingFor: wait.ForListeningPort("161/udp").
+		WithStartupTimeout(2 * time.Minute),
+}
 
 func getContainer(t *testing.T, req testcontainers.ContainerRequest) testcontainers.Container {
 	require.NoError(t, req.Validate())
 	container, err := testcontainers.GenericContainer(
-		context.Background(),
+		t.Context(),
 		testcontainers.GenericContainerRequest{
 			ContainerRequest: req,
 			Started:          true,

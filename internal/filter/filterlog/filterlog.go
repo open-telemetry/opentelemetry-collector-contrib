@@ -28,7 +28,6 @@ var useOTTLBridge = featuregate.GlobalRegistry().MustRegister(
 // The logic determining if a log should be processed is based on include and exclude settings.
 // Include properties are checked before exclude settings are checked.
 func NewSkipExpr(mp *filterconfig.MatchConfig) (expr.BoolExpr[ottllog.TransformContext], error) {
-
 	if useOTTLBridge.IsEnabled() {
 		return filterottl.NewLogSkipExprBridge(mp)
 	}
@@ -127,5 +126,5 @@ func (mp *propertiesMatcher) Eval(_ context.Context, tCtx ottllog.TransformConte
 		return false, nil
 	}
 
-	return mp.PropertiesMatcher.Match(lr.Attributes(), tCtx.GetResource(), tCtx.GetInstrumentationScope()), nil
+	return mp.Match(lr.Attributes(), tCtx.GetResource(), tCtx.GetInstrumentationScope()), nil
 }

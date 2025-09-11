@@ -9,6 +9,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
+
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -24,54 +25,59 @@ func TestResourceAttributesConfig(t *testing.T) {
 		{
 			name: "all_set",
 			want: ResourceAttributesConfig{
-				CloudAccountID:          ResourceAttributeConfig{Enabled: true},
-				CloudAvailabilityZone:   ResourceAttributeConfig{Enabled: true},
-				CloudPlatform:           ResourceAttributeConfig{Enabled: true},
-				CloudProvider:           ResourceAttributeConfig{Enabled: true},
-				CloudRegion:             ResourceAttributeConfig{Enabled: true},
-				FaasID:                  ResourceAttributeConfig{Enabled: true},
-				FaasInstance:            ResourceAttributeConfig{Enabled: true},
-				FaasName:                ResourceAttributeConfig{Enabled: true},
-				FaasVersion:             ResourceAttributeConfig{Enabled: true},
-				GcpCloudRunJobExecution: ResourceAttributeConfig{Enabled: true},
-				GcpCloudRunJobTaskIndex: ResourceAttributeConfig{Enabled: true},
-				GcpGceInstanceHostname:  ResourceAttributeConfig{Enabled: true},
-				GcpGceInstanceName:      ResourceAttributeConfig{Enabled: true},
-				HostID:                  ResourceAttributeConfig{Enabled: true},
-				HostName:                ResourceAttributeConfig{Enabled: true},
-				HostType:                ResourceAttributeConfig{Enabled: true},
-				K8sClusterName:          ResourceAttributeConfig{Enabled: true},
+				CloudAccountID:                   ResourceAttributeConfig{Enabled: true},
+				CloudAvailabilityZone:            ResourceAttributeConfig{Enabled: true},
+				CloudPlatform:                    ResourceAttributeConfig{Enabled: true},
+				CloudProvider:                    ResourceAttributeConfig{Enabled: true},
+				CloudRegion:                      ResourceAttributeConfig{Enabled: true},
+				FaasID:                           ResourceAttributeConfig{Enabled: true},
+				FaasInstance:                     ResourceAttributeConfig{Enabled: true},
+				FaasName:                         ResourceAttributeConfig{Enabled: true},
+				FaasVersion:                      ResourceAttributeConfig{Enabled: true},
+				GcpCloudRunJobExecution:          ResourceAttributeConfig{Enabled: true},
+				GcpCloudRunJobTaskIndex:          ResourceAttributeConfig{Enabled: true},
+				GcpGceInstanceHostname:           ResourceAttributeConfig{Enabled: true},
+				GcpGceInstanceName:               ResourceAttributeConfig{Enabled: true},
+				GcpGceInstanceGroupManagerName:   ResourceAttributeConfig{Enabled: true},
+				GcpGceInstanceGroupManagerRegion: ResourceAttributeConfig{Enabled: true},
+				GcpGceInstanceGroupManagerZone:   ResourceAttributeConfig{Enabled: true},
+				HostID:                           ResourceAttributeConfig{Enabled: true},
+				HostName:                         ResourceAttributeConfig{Enabled: true},
+				HostType:                         ResourceAttributeConfig{Enabled: true},
+				K8sClusterName:                   ResourceAttributeConfig{Enabled: true},
 			},
 		},
 		{
 			name: "none_set",
 			want: ResourceAttributesConfig{
-				CloudAccountID:          ResourceAttributeConfig{Enabled: false},
-				CloudAvailabilityZone:   ResourceAttributeConfig{Enabled: false},
-				CloudPlatform:           ResourceAttributeConfig{Enabled: false},
-				CloudProvider:           ResourceAttributeConfig{Enabled: false},
-				CloudRegion:             ResourceAttributeConfig{Enabled: false},
-				FaasID:                  ResourceAttributeConfig{Enabled: false},
-				FaasInstance:            ResourceAttributeConfig{Enabled: false},
-				FaasName:                ResourceAttributeConfig{Enabled: false},
-				FaasVersion:             ResourceAttributeConfig{Enabled: false},
-				GcpCloudRunJobExecution: ResourceAttributeConfig{Enabled: false},
-				GcpCloudRunJobTaskIndex: ResourceAttributeConfig{Enabled: false},
-				GcpGceInstanceHostname:  ResourceAttributeConfig{Enabled: false},
-				GcpGceInstanceName:      ResourceAttributeConfig{Enabled: false},
-				HostID:                  ResourceAttributeConfig{Enabled: false},
-				HostName:                ResourceAttributeConfig{Enabled: false},
-				HostType:                ResourceAttributeConfig{Enabled: false},
-				K8sClusterName:          ResourceAttributeConfig{Enabled: false},
+				CloudAccountID:                   ResourceAttributeConfig{Enabled: false},
+				CloudAvailabilityZone:            ResourceAttributeConfig{Enabled: false},
+				CloudPlatform:                    ResourceAttributeConfig{Enabled: false},
+				CloudProvider:                    ResourceAttributeConfig{Enabled: false},
+				CloudRegion:                      ResourceAttributeConfig{Enabled: false},
+				FaasID:                           ResourceAttributeConfig{Enabled: false},
+				FaasInstance:                     ResourceAttributeConfig{Enabled: false},
+				FaasName:                         ResourceAttributeConfig{Enabled: false},
+				FaasVersion:                      ResourceAttributeConfig{Enabled: false},
+				GcpCloudRunJobExecution:          ResourceAttributeConfig{Enabled: false},
+				GcpCloudRunJobTaskIndex:          ResourceAttributeConfig{Enabled: false},
+				GcpGceInstanceHostname:           ResourceAttributeConfig{Enabled: false},
+				GcpGceInstanceName:               ResourceAttributeConfig{Enabled: false},
+				GcpGceInstanceGroupManagerName:   ResourceAttributeConfig{Enabled: false},
+				GcpGceInstanceGroupManagerRegion: ResourceAttributeConfig{Enabled: false},
+				GcpGceInstanceGroupManagerZone:   ResourceAttributeConfig{Enabled: false},
+				HostID:                           ResourceAttributeConfig{Enabled: false},
+				HostName:                         ResourceAttributeConfig{Enabled: false},
+				HostType:                         ResourceAttributeConfig{Enabled: false},
+				K8sClusterName:                   ResourceAttributeConfig{Enabled: false},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, tt.name)
-			if diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ResourceAttributeConfig{})); diff != "" {
-				t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
-			}
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ResourceAttributeConfig{}))
+			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
 }

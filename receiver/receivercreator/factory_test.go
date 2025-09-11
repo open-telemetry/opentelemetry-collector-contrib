@@ -4,7 +4,6 @@
 package receivercreator
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -13,16 +12,17 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator/internal/metadata"
 )
 
 func TestCreateReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := createDefaultConfig()
 
-	params := receivertest.NewNopSettings()
+	params := receivertest.NewNopSettings(metadata.Type)
 
 	lConsumer := consumertest.NewNop()
-	lReceiver, err := factory.CreateLogs(context.Background(), params, cfg, lConsumer)
+	lReceiver, err := factory.CreateLogs(t.Context(), params, cfg, lConsumer)
 	assert.NoError(t, err, "receiver creation failed")
 	assert.NotNil(t, lReceiver, "receiver creation failed")
 
@@ -34,7 +34,7 @@ func TestCreateReceiver(t *testing.T) {
 	require.Nil(t, lrc.nextTracesConsumer)
 
 	mConsumer := consumertest.NewNop()
-	mReceiver, err := factory.CreateMetrics(context.Background(), params, cfg, mConsumer)
+	mReceiver, err := factory.CreateMetrics(t.Context(), params, cfg, mConsumer)
 	assert.NoError(t, err, "receiver creation failed")
 	assert.NotNil(t, mReceiver, "receiver creation failed")
 
@@ -47,7 +47,7 @@ func TestCreateReceiver(t *testing.T) {
 	require.Nil(t, lrc.nextTracesConsumer)
 
 	tConsumer := consumertest.NewNop()
-	tReceiver, err := factory.CreateTraces(context.Background(), params, cfg, tConsumer)
+	tReceiver, err := factory.CreateTraces(t.Context(), params, cfg, tConsumer)
 	assert.NoError(t, err, "receiver creation failed")
 	assert.NotNil(t, tReceiver, "receiver creation failed")
 

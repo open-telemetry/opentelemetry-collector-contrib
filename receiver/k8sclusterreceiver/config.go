@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"time"
 
+	"go.opentelemetry.io/collector/component"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 )
@@ -39,6 +41,18 @@ type Config struct {
 
 	// MetricsBuilderConfig allows customizing scraped metrics/attributes representation.
 	metadata.MetricsBuilderConfig `mapstructure:",squash"`
+
+	// Deprecated: This field is no longer supported, use cfg.Namespaces instead.
+	Namespace string `mapstructure:"namespace"`
+
+	// Namespaces to fetch resources from. If this is set, certain cluster-wide resources such as Nodes or Namespaces
+	// will not be able to be observed. Setting this option is recommended in environments where due to security restrictions
+	// the collector cannot be granted cluster-wide permissions.
+	Namespaces []string `mapstructure:"namespaces"`
+
+	// K8sLeaderElector defines the reference to the k8s leader elector extension
+	// use this when k8s cluster receiver needs to be deployed in HA mode
+	K8sLeaderElector *component.ID `mapstructure:"k8s_leader_elector"`
 }
 
 func (cfg *Config) Validate() error {
@@ -48,5 +62,6 @@ func (cfg *Config) Validate() error {
 	default:
 		return fmt.Errorf("\"%s\" is not a supported distribution. Must be one of: \"openshift\", \"kubernetes\"", cfg.Distribution)
 	}
+
 	return nil
 }

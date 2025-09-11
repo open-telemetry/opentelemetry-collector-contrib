@@ -4,7 +4,7 @@
 package kube
 
 import (
-	"fmt"
+	"errors"
 	"regexp"
 	"testing"
 	"time"
@@ -12,12 +12,17 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/featuregate"
+	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 	apps_v1 "k8s.io/api/apps/v1"
+	batch_v1 "k8s.io/api/batch/v1"
 	api_v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
@@ -30,7 +35,7 @@ func newFakeAPIClientset(_ k8sconfig.APIConfig) (kubernetes.Interface, error) {
 	return fake.NewSimpleClientset(), nil
 }
 
-func newPodIdentifier(from string, name string, value string) PodIdentifier {
+func newPodIdentifier(from, name, value string) PodIdentifier {
 	if from == "connection" {
 		name = ""
 	}
@@ -62,7 +67,7 @@ func podAddAndUpdateTest(t *testing.T, c *WatchClient, handler func(obj any)) {
 	got := c.Pods[newPodIdentifier("connection", "k8s.pod.ip", "1.1.1.1")]
 	assert.Equal(t, "1.1.1.1", got.Address)
 	assert.Equal(t, "podA", got.Name)
-	assert.Equal(t, "", got.PodUID)
+	assert.Empty(t, got.PodUID)
 
 	pod = &api_v1.Pod{}
 	pod.Name = "podB"
@@ -72,7 +77,7 @@ func podAddAndUpdateTest(t *testing.T, c *WatchClient, handler func(obj any)) {
 	got = c.Pods[newPodIdentifier("connection", "k8s.pod.ip", "1.1.1.1")]
 	assert.Equal(t, "1.1.1.1", got.Address)
 	assert.Equal(t, "podB", got.Name)
-	assert.Equal(t, "", got.PodUID)
+	assert.Empty(t, got.PodUID)
 
 	pod = &api_v1.Pod{}
 	pod.Name = "podC"
@@ -88,7 +93,6 @@ func podAddAndUpdateTest(t *testing.T, c *WatchClient, handler func(obj any)) {
 	assert.Equal(t, "2.2.2.2", got.Address)
 	assert.Equal(t, "podC", got.Name)
 	assert.Equal(t, "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", got.PodUID)
-
 }
 
 func namespaceAddAndUpdateTest(t *testing.T, c *WatchClient, handler func(obj any)) {
@@ -104,7 +108,7 @@ func namespaceAddAndUpdateTest(t *testing.T, c *WatchClient, handler func(obj an
 	assert.Len(t, c.Namespaces, 1)
 	got := c.Namespaces["namespaceA"]
 	assert.Equal(t, "namespaceA", got.Name)
-	assert.Equal(t, "", got.NamespaceUID)
+	assert.Empty(t, got.NamespaceUID)
 
 	namespace = &api_v1.Namespace{}
 	namespace.Name = "namespaceB"
@@ -130,7 +134,7 @@ func nodeAddAndUpdateTest(t *testing.T, c *WatchClient, handler func(obj any)) {
 	got, ok := c.GetNode("nodeA")
 	assert.True(t, ok)
 	assert.Equal(t, "nodeA", got.Name)
-	assert.Equal(t, "", got.NodeUID)
+	assert.Empty(t, got.NodeUID)
 
 	node = &api_v1.Node{}
 	node.Name = "nodeB"
@@ -144,29 +148,22 @@ func nodeAddAndUpdateTest(t *testing.T, c *WatchClient, handler func(obj any)) {
 }
 
 func TestDefaultClientset(t *testing.T) {
-	c, err := New(componenttest.NewNopTelemetrySettings(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{}, []Association{}, Excludes{}, nil, nil, nil, nil)
-	assert.Error(t, err)
-	assert.Equal(t, "invalid authType for kubernetes: ", err.Error())
+	c, err := New(componenttest.NewNopTelemetrySettings(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{}, []Association{}, Excludes{}, nil, InformersFactoryList{}, false, 10*time.Second)
+	require.EqualError(t, err, "invalid authType for kubernetes: ")
 	assert.Nil(t, c)
 
-	c, err = New(componenttest.NewNopTelemetrySettings(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{}, []Association{}, Excludes{}, newFakeAPIClientset, nil, nil, nil)
+	c, err = New(componenttest.NewNopTelemetrySettings(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{}, []Association{}, Excludes{}, newFakeAPIClientset, InformersFactoryList{}, false, 10*time.Second)
 	assert.NoError(t, err)
 	assert.NotNil(t, c)
 }
 
 func TestBadFilters(t *testing.T) {
-	c, err := New(
-		componenttest.NewNopTelemetrySettings(),
-		k8sconfig.APIConfig{},
-		ExtractionRules{},
-		Filters{Fields: []FieldFilter{{Op: selection.Exists}}},
-		[]Association{},
-		Excludes{},
-		newFakeAPIClientset,
-		NewFakeInformer,
-		NewFakeNamespaceInformer,
-		NewFakeReplicaSetInformer,
-	)
+	factory := InformersFactoryList{
+		newInformer:           NewFakeInformer,
+		newNamespaceInformer:  NewFakeNamespaceInformer,
+		newReplicaSetInformer: NewFakeReplicaSetInformer,
+	}
+	c, err := New(componenttest.NewNopTelemetrySettings(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{Fields: []FieldFilter{{Op: selection.Exists}}}, []Association{}, Excludes{}, newFakeAPIClientset, factory, false, 10*time.Second)
 	assert.Error(t, err)
 	assert.Nil(t, c)
 }
@@ -181,7 +178,7 @@ func TestClientStartStop(t *testing.T) {
 	done := make(chan struct{})
 	assert.False(t, fctr.HasStopped())
 	go func() {
-		c.Start()
+		assert.NoError(t, c.Start())
 		close(done)
 	}()
 	c.Stop()
@@ -200,12 +197,15 @@ func TestConstructorErrors(t *testing.T) {
 		}
 		clientProvider := func(c k8sconfig.APIConfig) (kubernetes.Interface, error) {
 			gotAPIConfig = c
-			return nil, fmt.Errorf("error creating k8s client")
+			return nil, errors.New("error creating k8s client")
 		}
-		c, err := New(componenttest.NewNopTelemetrySettings(), apiCfg, er, ff, []Association{}, Excludes{}, clientProvider, NewFakeInformer, NewFakeNamespaceInformer, nil)
+		factory := InformersFactoryList{
+			newInformer:          NewFakeInformer,
+			newNamespaceInformer: NewFakeNamespaceInformer,
+		}
+		c, err := New(componenttest.NewNopTelemetrySettings(), apiCfg, er, ff, []Association{}, Excludes{}, clientProvider, factory, false, 10*time.Second)
 		assert.Nil(t, c)
-		assert.Error(t, err)
-		assert.Equal(t, "error creating k8s client", err.Error())
+		require.EqualError(t, err, "error creating k8s client")
 		assert.Equal(t, apiCfg, gotAPIConfig)
 	})
 }
@@ -290,7 +290,6 @@ func TestReplicaSetHandler(t *testing.T) {
 		Obj: replicaset,
 	})
 	assert.Empty(t, c.ReplicaSets)
-
 }
 
 func TestPodHostNetwork(t *testing.T) {
@@ -332,7 +331,7 @@ func TestPodCreate(t *testing.T) {
 	c.handlePodAdd(pod)
 	assert.Len(t, c.Pods, 1)
 	got := c.Pods[newPodIdentifier("resource_attribute", "k8s.pod.uid", "11111111-2222-3333-4444-555555555555")]
-	assert.Equal(t, "", got.Address)
+	assert.Empty(t, got.Address)
 	assert.Equal(t, "podD", got.Name)
 	assert.Equal(t, "11111111-2222-3333-4444-555555555555", got.PodUID)
 
@@ -343,7 +342,7 @@ func TestPodCreate(t *testing.T) {
 	c.handlePodUpdate(&api_v1.Pod{}, pod)
 	assert.Len(t, c.Pods, 1)
 	got = c.Pods[newPodIdentifier("resource_attribute", "k8s.pod.uid", "11111111-2222-3333-4444-555555555555")]
-	assert.Equal(t, "", got.Address)
+	assert.Empty(t, got.Address)
 	assert.Equal(t, "podD", got.Name)
 	assert.Equal(t, "11111111-2222-3333-4444-555555555555", got.PodUID)
 
@@ -441,7 +440,7 @@ func TestPodDelete(t *testing.T) {
 	// delete empty IP pod
 	c.handlePodDelete(&api_v1.Pod{})
 
-	// delete non-existent IP
+	// delete nonexistent IP
 	c.deleteQueue = c.deleteQueue[:0]
 	pod := &api_v1.Pod{}
 	pod.Status.PodIP = "9.9.9.9"
@@ -507,14 +506,14 @@ func TestNamespaceDelete(t *testing.T) {
 	// delete empty namespace
 	c.handleNamespaceDelete(&api_v1.Namespace{})
 
-	// delete non-existent namespace
+	// delete nonexistent namespace
 	namespace := &api_v1.Namespace{}
 	namespace.Name = "namespaceC"
 	c.handleNamespaceDelete(namespace)
 	assert.Len(t, c.Namespaces, 2)
 	got := c.Namespaces["namespaceA"]
 	assert.Equal(t, "namespaceA", got.Name)
-	// delete non-existent namespace when DeletedFinalStateUnknown
+	// delete nonexistent namespace when DeletedFinalStateUnknown
 	c.handleNamespaceDelete(cache.DeletedFinalStateUnknown{Obj: namespace})
 	assert.Len(t, c.Namespaces, 2)
 	got = c.Namespaces["namespaceA"]
@@ -542,14 +541,14 @@ func TestNodeDelete(t *testing.T) {
 	// delete empty node
 	c.handleNodeDelete(&api_v1.Node{})
 
-	// delete non-existent node
+	// delete nonexistent node
 	node := &api_v1.Node{}
 	node.Name = "nodeC"
 	c.handleNodeDelete(node)
 	assert.Len(t, c.Nodes, 2)
 	got := c.Nodes["nodeA"]
 	assert.Equal(t, "nodeA", got.Name)
-	// delete non-existent namespace when DeletedFinalStateUnknown
+	// delete nonexistent namespace when DeletedFinalStateUnknown
 	c.handleNodeDelete(cache.DeletedFinalStateUnknown{Obj: node})
 	assert.Len(t, c.Nodes, 2)
 	got = c.Nodes["nodeA"]
@@ -715,182 +714,212 @@ func TestExtractionRules(t *testing.T) {
 		},
 	}
 
+	serviceRules := ExtractionRules{
+		ServiceNamespace:  true,
+		ServiceName:       true,
+		ServiceVersion:    true,
+		ServiceInstanceID: true,
+		Annotations:       []FieldExtractionRule{OtelAnnotations()},
+	}
+
 	testCases := []struct {
-		name       string
-		rules      ExtractionRules
-		attributes map[string]string
-	}{{
-		name:       "no-rules",
-		rules:      ExtractionRules{},
-		attributes: nil,
-	}, {
-		name: "deployment",
-		rules: ExtractionRules{
-			DeploymentName: true,
-			DeploymentUID:  true,
+		name                  string
+		rules                 ExtractionRules
+		additionalAnnotations map[string]string
+		additionalLabels      map[string]string
+		attributes            map[string]string
+		singularFeatureGate   bool
+	}{
+		{
+			name:       "no-rules",
+			rules:      ExtractionRules{},
+			attributes: map[string]string{},
 		},
-		attributes: map[string]string{
-			"k8s.deployment.name": "auth-service",
-			"k8s.deployment.uid":  "ffff-gggg-hhhh-iiii-eeeeeeeeeeee",
-		},
-	}, {
-		name: "replicasetId",
-		rules: ExtractionRules{
-			ReplicaSetID: true,
-		},
-		attributes: map[string]string{
-			"k8s.replicaset.uid": "207ea729-c779-401d-8347-008ecbc137e3",
-		},
-	}, {
-		name: "replicasetName",
-		rules: ExtractionRules{
-			ReplicaSetName: true,
-		},
-		attributes: map[string]string{
-			"k8s.replicaset.name": "auth-service-66f5996c7c",
-		},
-	}, {
-		name: "daemonsetUID",
-		rules: ExtractionRules{
-			DaemonSetUID: true,
-		},
-		attributes: map[string]string{
-			"k8s.daemonset.uid": "c94d3814-2253-427a-ab13-2cf609e4dafa",
-		},
-	}, {
-		name: "daemonsetName",
-		rules: ExtractionRules{
-			DaemonSetName: true,
-		},
-		attributes: map[string]string{
-			"k8s.daemonset.name": "auth-daemonset",
-		},
-	}, {
-		name: "jobUID",
-		rules: ExtractionRules{
-			JobUID: true,
-		},
-		attributes: map[string]string{
-			"k8s.job.uid": "59f27ac1-5c71-42e5-abe9-2c499d603706",
-		},
-	}, {
-		name: "jobName",
-		rules: ExtractionRules{
-			JobName: true,
-		},
-		attributes: map[string]string{
-			"k8s.job.name": "auth-cronjob-27667920",
-		},
-	}, {
-		name: "cronJob",
-		rules: ExtractionRules{
-			CronJobName: true,
-		},
-		attributes: map[string]string{
-			"k8s.cronjob.name": "auth-cronjob",
-		},
-	}, {
-		name: "statefulsetUID",
-		rules: ExtractionRules{
-			StatefulSetUID: true,
-		},
-		attributes: map[string]string{
-			"k8s.statefulset.uid": "03755eb1-6175-47d5-afd5-05cfc30244d7",
-		},
-	}, {
-		name: "jobName",
-		rules: ExtractionRules{
-			StatefulSetName: true,
-		},
-		attributes: map[string]string{
-			"k8s.statefulset.name": "pi-statefulset",
-		},
-	}, {
-		name: "metadata",
-		rules: ExtractionRules{
-			DeploymentName: true,
-			DeploymentUID:  true,
-			Namespace:      true,
-			PodName:        true,
-			PodUID:         true,
-			PodHostName:    true,
-			PodIP:          true,
-			Node:           true,
-			StartTime:      true,
-		},
-		attributes: map[string]string{
-			"k8s.deployment.name": "auth-service",
-			"k8s.deployment.uid":  "ffff-gggg-hhhh-iiii-eeeeeeeeeeee",
-			"k8s.namespace.name":  "ns1",
-			"k8s.node.name":       "node1",
-			"k8s.pod.name":        "auth-service-abc12-xyz3",
-			"k8s.pod.hostname":    "host1",
-			"k8s.pod.uid":         "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
-			"k8s.pod.ip":          "1.1.1.1",
-			"k8s.pod.start_time": func() string {
-				b, err := pod.GetCreationTimestamp().MarshalText()
-				require.NoError(t, err)
-				return string(b)
-			}(),
-		},
-	}, {
-		name: "labels",
-		rules: ExtractionRules{
-			Annotations: []FieldExtractionRule{{
-				Name: "a1",
-				Key:  "annotation1",
-				From: MetadataFromPod,
+		{
+			name: "deployment",
+			rules: ExtractionRules{
+				DeploymentName: true,
+				DeploymentUID:  true,
 			},
-			},
-			Labels: []FieldExtractionRule{{
-				Name: "l1",
-				Key:  "label1",
-				From: MetadataFromPod,
-			}, {
-				Name:  "l2",
-				Key:   "label2",
-				Regex: regexp.MustCompile(`k5=(?P<value>[^\s]+)`),
-				From:  MetadataFromPod,
-			},
+			attributes: map[string]string{
+				"k8s.deployment.name": "auth-service",
+				"k8s.deployment.uid":  "ffff-gggg-hhhh-iiii-eeeeeeeeeeee",
 			},
 		},
-		attributes: map[string]string{
-			"l1": "lv1",
-			"l2": "v5",
-			"a1": "av1",
-		},
-	}, {
-		// By default if the From field is not set for labels and annotations we want to extract them from pod
-		name: "labels-annotations-default-pod",
-		rules: ExtractionRules{
-			Annotations: []FieldExtractionRule{{
-				Name: "a1",
-				Key:  "annotation1",
+		{
+			name: "replicasetId",
+			rules: ExtractionRules{
+				ReplicaSetID: true,
 			},
-			},
-			Labels: []FieldExtractionRule{{
-				Name: "l1",
-				Key:  "label1",
-			}, {
-				Name:  "l2",
-				Key:   "label2",
-				Regex: regexp.MustCompile(`k5=(?P<value>[^\s]+)`),
-			},
+			attributes: map[string]string{
+				"k8s.replicaset.uid": "207ea729-c779-401d-8347-008ecbc137e3",
 			},
 		},
-		attributes: map[string]string{
-			"l1": "lv1",
-			"l2": "v5",
-			"a1": "av1",
+		{
+			name: "replicasetName",
+			rules: ExtractionRules{
+				ReplicaSetName: true,
+			},
+			attributes: map[string]string{
+				"k8s.replicaset.name": "auth-service-66f5996c7c",
+			},
 		},
-	},
+		{
+			name: "daemonsetUID",
+			rules: ExtractionRules{
+				DaemonSetUID: true,
+			},
+			attributes: map[string]string{
+				"k8s.daemonset.uid": "c94d3814-2253-427a-ab13-2cf609e4dafa",
+			},
+		},
+		{
+			name: "daemonsetName",
+			rules: ExtractionRules{
+				DaemonSetName: true,
+			},
+			attributes: map[string]string{
+				"k8s.daemonset.name": "auth-daemonset",
+			},
+		},
+		{
+			name: "jobUID",
+			rules: ExtractionRules{
+				JobUID: true,
+			},
+			attributes: map[string]string{
+				"k8s.job.uid": "59f27ac1-5c71-42e5-abe9-2c499d603706",
+			},
+		},
+		{
+			name: "jobName",
+			rules: ExtractionRules{
+				JobName: true,
+			},
+			attributes: map[string]string{
+				"k8s.job.name": "auth-cronjob-27667920",
+			},
+		},
+		{
+			name: "cronJob",
+			rules: ExtractionRules{
+				CronJobName: true,
+			},
+			attributes: map[string]string{
+				"k8s.cronjob.name": "auth-cronjob",
+			},
+		},
+		{
+			name: "statefulsetUID",
+			rules: ExtractionRules{
+				StatefulSetUID: true,
+			},
+			attributes: map[string]string{
+				"k8s.statefulset.uid": "03755eb1-6175-47d5-afd5-05cfc30244d7",
+			},
+		},
+		{
+			name: "jobName",
+			rules: ExtractionRules{
+				StatefulSetName: true,
+			},
+			attributes: map[string]string{
+				"k8s.statefulset.name": "pi-statefulset",
+			},
+		},
+		{
+			name: "metadata",
+			rules: ExtractionRules{
+				DeploymentName: true,
+				DeploymentUID:  true,
+				Namespace:      true,
+				PodName:        true,
+				PodUID:         true,
+				PodHostName:    true,
+				PodIP:          true,
+				Node:           true,
+				StartTime:      true,
+			},
+			attributes: map[string]string{
+				"k8s.deployment.name": "auth-service",
+				"k8s.deployment.uid":  "ffff-gggg-hhhh-iiii-eeeeeeeeeeee",
+				"k8s.namespace.name":  "ns1",
+				"k8s.node.name":       "node1",
+				"k8s.pod.name":        "auth-service-abc12-xyz3",
+				"k8s.pod.hostname":    "host1",
+				"k8s.pod.uid":         "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+				"k8s.pod.ip":          "1.1.1.1",
+				"k8s.pod.start_time": func() string {
+					b, err := pod.GetCreationTimestamp().MarshalText()
+					require.NoError(t, err)
+					return string(b)
+				}(),
+			},
+		},
+		{
+			name: "labels",
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						Name: "a1",
+						Key:  "annotation1",
+						From: MetadataFromPod,
+					},
+				},
+				Labels: []FieldExtractionRule{
+					{
+						Name: "l1",
+						Key:  "label1",
+						From: MetadataFromPod,
+					}, {
+						Name:  "l2",
+						Key:   "label2",
+						Regex: regexp.MustCompile(`k5=(?P<value>\S+)`),
+						From:  MetadataFromPod,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"l1": "lv1",
+				"l2": "v5",
+				"a1": "av1",
+			},
+		},
+		{
+			// By default if the From field is not set for labels and annotations we want to extract them from pod
+			name: "labels-annotations-default-pod",
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						Name: "a1",
+						Key:  "annotation1",
+					},
+				},
+				Labels: []FieldExtractionRule{
+					{
+						Name: "l1",
+						Key:  "label1",
+					}, {
+						Name:  "l2",
+						Key:   "label2",
+						Regex: regexp.MustCompile(`k5=(?P<value>\S+)`),
+					},
+				},
+			},
+			attributes: map[string]string{
+				"l1": "lv1",
+				"l2": "v5",
+				"a1": "av1",
+			},
+		},
 		{
 			name: "all-labels",
 			rules: ExtractionRules{
-				Labels: []FieldExtractionRule{{
-					KeyRegex: regexp.MustCompile("^(?:la.*)$"),
-					From:     MetadataFromPod,
-				},
+				Labels: []FieldExtractionRule{
+					{
+						KeyRegex: regexp.MustCompile("^(?:la.*)$"),
+						From:     MetadataFromPod,
+					},
 				},
 			},
 			attributes: map[string]string{
@@ -899,12 +928,29 @@ func TestExtractionRules(t *testing.T) {
 			},
 		},
 		{
+			name: "all-labels singular",
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						KeyRegex: regexp.MustCompile("^(?:la.*)$"),
+						From:     MetadataFromPod,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.pod.label.label1": "lv1",
+				"k8s.pod.label.label2": "k1=v1 k5=v5 extra!",
+			},
+			singularFeatureGate: true,
+		},
+		{
 			name: "all-annotations",
 			rules: ExtractionRules{
-				Annotations: []FieldExtractionRule{{
-					KeyRegex: regexp.MustCompile("^(?:an.*)$"),
-					From:     MetadataFromPod,
-				},
+				Annotations: []FieldExtractionRule{
+					{
+						KeyRegex: regexp.MustCompile("^(?:an.*)$"),
+						From:     MetadataFromPod,
+					},
 				},
 			},
 			attributes: map[string]string{
@@ -912,12 +958,28 @@ func TestExtractionRules(t *testing.T) {
 			},
 		},
 		{
+			name: "all-annotations singular",
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						KeyRegex: regexp.MustCompile("^(?:an.*)$"),
+						From:     MetadataFromPod,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.pod.annotation.annotation1": "av1",
+			},
+			singularFeatureGate: true,
+		},
+		{
 			name: "all-annotations-not-match",
 			rules: ExtractionRules{
-				Annotations: []FieldExtractionRule{{
-					KeyRegex: regexp.MustCompile("^(?:an*)$"),
-					From:     MetadataFromPod,
-				},
+				Annotations: []FieldExtractionRule{
+					{
+						KeyRegex: regexp.MustCompile("^(?:an*)$"),
+						From:     MetadataFromPod,
+					},
 				},
 			},
 			attributes: map[string]string{},
@@ -925,12 +987,13 @@ func TestExtractionRules(t *testing.T) {
 		{
 			name: "captured-groups",
 			rules: ExtractionRules{
-				Annotations: []FieldExtractionRule{{
-					Name:                 "$1",
-					KeyRegex:             regexp.MustCompile(`^(?:annotation(\d+))$`),
-					HasKeyRegexReference: true,
-					From:                 MetadataFromPod,
-				},
+				Annotations: []FieldExtractionRule{
+					{
+						Name:                 "$1",
+						KeyRegex:             regexp.MustCompile(`^(?:annotation(\d+))$`),
+						HasKeyRegexReference: true,
+						From:                 MetadataFromPod,
+					},
 				},
 			},
 			attributes: map[string]string{
@@ -940,33 +1003,99 @@ func TestExtractionRules(t *testing.T) {
 		{
 			name: "captured-groups-$0",
 			rules: ExtractionRules{
-				Annotations: []FieldExtractionRule{{
-					Name:                 "prefix-$0",
-					KeyRegex:             regexp.MustCompile(`^(?:annotation(\d+))$`),
-					HasKeyRegexReference: true,
-					From:                 MetadataFromPod,
-				},
+				Annotations: []FieldExtractionRule{
+					{
+						Name:                 "prefix-$0",
+						KeyRegex:             regexp.MustCompile(`^(?:annotation(\d+))$`),
+						HasKeyRegexReference: true,
+						From:                 MetadataFromPod,
+					},
 				},
 			},
 			attributes: map[string]string{
 				"prefix-annotation1": "av1",
 			},
 		},
+		{
+			name:  "service-name",
+			rules: serviceRules,
+			attributes: map[string]string{
+				"service.name":      "pi-statefulset",
+				"service.namespace": "ns1",
+			},
+		},
+		{
+			name:  "service-attributes-label-values",
+			rules: serviceRules,
+			additionalLabels: map[string]string{
+				"app.kubernetes.io/name":    "label-service",
+				"app.kubernetes.io/version": "label-version",
+			},
+			attributes: map[string]string{
+				"service.name":      "label-service",
+				"service.version":   "label-version",
+				"service.namespace": "ns1",
+			},
+		},
+		{
+			name:  "service-attributes-label-values-instance",
+			rules: serviceRules,
+			additionalLabels: map[string]string{
+				"app.kubernetes.io/instance": "instance-service",
+				"app.kubernetes.io/name":     "label-service",
+				"app.kubernetes.io/version":  "label-version",
+			},
+			attributes: map[string]string{
+				"service.name":      "instance-service",
+				"service.version":   "label-version",
+				"service.namespace": "ns1",
+			},
+		},
+		{
+			name:  "service-attributes-annotation-override",
+			rules: serviceRules,
+			additionalAnnotations: map[string]string{
+				"resource.opentelemetry.io/service.instance.id": "annotation-id",
+				"resource.opentelemetry.io/service.version":     "annotation-version",
+				"resource.opentelemetry.io/service.name":        "annotation-service",
+				"resource.opentelemetry.io/service.namespace":   "annotation-namespace",
+			},
+			attributes: map[string]string{
+				"service.instance.id": "annotation-id",
+				"service.name":        "annotation-service",
+				"service.version":     "annotation-version",
+				"service.namespace":   "annotation-namespace",
+			},
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			if tc.singularFeatureGate {
+				require.NoError(t, featuregate.GlobalRegistry().Set(allowLabelsAnnotationsSingular.ID(), true))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(allowLabelsAnnotationsSingular.ID(), false))
+				}()
+			}
+
 			c.Rules = tc.rules
 
 			// manually call the data removal functions here
 			// normally the informer does this, but fully emulating the informer in this test is annoying
-			transformedPod := removeUnnecessaryPodData(pod, c.Rules)
+			podCopy := pod.DeepCopy()
+			for k, v := range tc.additionalAnnotations {
+				podCopy.Annotations[k] = v
+			}
+			for k, v := range tc.additionalLabels {
+				podCopy.Labels[k] = v
+			}
+			transformedPod := removeUnnecessaryPodData(podCopy, c.Rules)
 			transformedReplicaset := removeUnnecessaryReplicaSetData(replicaset)
 			c.handleReplicaSetAdd(transformedReplicaset)
 			c.handlePodAdd(transformedPod)
-			p, ok := c.GetPod(newPodIdentifier("connection", "", pod.Status.PodIP))
+			p, ok := c.GetPod(newPodIdentifier("connection", "", podCopy.Status.PodIP))
 			require.True(t, ok)
 
-			assert.Equal(t, len(tc.attributes), len(p.Attributes))
+			assert.Len(t, p.Attributes, len(tc.attributes))
 			for k, v := range tc.attributes {
 				got, ok := p.Attributes[k]
 				assert.True(t, ok)
@@ -1026,86 +1155,87 @@ func TestReplicaSetExtractionRules(t *testing.T) {
 		rules           ExtractionRules
 		ownerReferences []meta_v1.OwnerReference
 		attributes      map[string]string
-	}{{
-		name:       "no-rules",
-		rules:      ExtractionRules{},
-		attributes: nil,
-	}, {
-		name: "one_deployment_is_controller",
-		ownerReferences: []meta_v1.OwnerReference{
-			{
-				Name:       "auth-service",
-				Kind:       "Deployment",
-				UID:        "ffff-gggg-hhhh-iiii-eeeeeeeeeeee",
-				Controller: &isController,
+	}{
+		{
+			name:       "no-rules",
+			rules:      ExtractionRules{},
+			attributes: map[string]string{},
+		}, {
+			name: "one_deployment_is_controller",
+			ownerReferences: []meta_v1.OwnerReference{
+				{
+					Name:       "auth-service",
+					Kind:       "Deployment",
+					UID:        "ffff-gggg-hhhh-iiii-eeeeeeeeeeee",
+					Controller: &isController,
+				},
+			},
+			rules: ExtractionRules{
+				DeploymentName: true,
+				DeploymentUID:  true,
+				ReplicaSetID:   true,
+			},
+			attributes: map[string]string{
+				"k8s.replicaset.uid":  "207ea729-c779-401d-8347-008ecbc137e3",
+				"k8s.deployment.name": "auth-service",
+				"k8s.deployment.uid":  "ffff-gggg-hhhh-iiii-eeeeeeeeeeee",
+			},
+		}, {
+			name: "one_deployment_is_controller_another_deployment_is_not_controller",
+			ownerReferences: []meta_v1.OwnerReference{
+				{
+					Name:       "auth-service",
+					Kind:       "Deployment",
+					UID:        "ffff-gggg-hhhh-iiii-eeeeeeeeeeee",
+					Controller: &isController,
+				},
+				{
+					Name:       "auth-service-not-controller",
+					Kind:       "Deployment",
+					UID:        "kkkk-gggg-hhhh-iiii-eeeeeeeeeeee",
+					Controller: &isNotController,
+				},
+			},
+			rules: ExtractionRules{
+				ReplicaSetID:   true,
+				DeploymentName: true,
+				DeploymentUID:  true,
+			},
+			attributes: map[string]string{
+				"k8s.replicaset.uid":  "207ea729-c779-401d-8347-008ecbc137e3",
+				"k8s.deployment.name": "auth-service",
+				"k8s.deployment.uid":  "ffff-gggg-hhhh-iiii-eeeeeeeeeeee",
+			},
+		}, {
+			name: "one_deployment_is_not_controller",
+			ownerReferences: []meta_v1.OwnerReference{
+				{
+					Name:       "auth-service",
+					Kind:       "Deployment",
+					UID:        "ffff-gggg-hhhh-iiii-eeeeeeeeeeee",
+					Controller: &isNotController,
+				},
+			},
+			rules: ExtractionRules{
+				ReplicaSetID:   true,
+				DeploymentName: true,
+				DeploymentUID:  true,
+			},
+			attributes: map[string]string{
+				"k8s.replicaset.uid": "207ea729-c779-401d-8347-008ecbc137e3",
+			},
+		}, {
+			name:            "no_deployment",
+			ownerReferences: []meta_v1.OwnerReference{},
+			rules: ExtractionRules{
+				ReplicaSetID:   true,
+				DeploymentName: true,
+				DeploymentUID:  true,
+			},
+			attributes: map[string]string{
+				"k8s.replicaset.uid": "207ea729-c779-401d-8347-008ecbc137e3",
 			},
 		},
-		rules: ExtractionRules{
-			DeploymentName: true,
-			DeploymentUID:  true,
-			ReplicaSetID:   true,
-		},
-		attributes: map[string]string{
-			"k8s.replicaset.uid":  "207ea729-c779-401d-8347-008ecbc137e3",
-			"k8s.deployment.name": "auth-service",
-			"k8s.deployment.uid":  "ffff-gggg-hhhh-iiii-eeeeeeeeeeee",
-		},
-	}, {
-		name: "one_deployment_is_controller_another_deployment_is_not_controller",
-		ownerReferences: []meta_v1.OwnerReference{
-			{
-				Name:       "auth-service",
-				Kind:       "Deployment",
-				UID:        "ffff-gggg-hhhh-iiii-eeeeeeeeeeee",
-				Controller: &isController,
-			},
-			{
-				Name:       "auth-service-not-controller",
-				Kind:       "Deployment",
-				UID:        "kkkk-gggg-hhhh-iiii-eeeeeeeeeeee",
-				Controller: &isNotController,
-			},
-		},
-		rules: ExtractionRules{
-			ReplicaSetID:   true,
-			DeploymentName: true,
-			DeploymentUID:  true,
-		},
-		attributes: map[string]string{
-			"k8s.replicaset.uid":  "207ea729-c779-401d-8347-008ecbc137e3",
-			"k8s.deployment.name": "auth-service",
-			"k8s.deployment.uid":  "ffff-gggg-hhhh-iiii-eeeeeeeeeeee",
-		},
-	}, {
-		name: "one_deployment_is_not_controller",
-		ownerReferences: []meta_v1.OwnerReference{
-			{
-				Name:       "auth-service",
-				Kind:       "Deployment",
-				UID:        "ffff-gggg-hhhh-iiii-eeeeeeeeeeee",
-				Controller: &isNotController,
-			},
-		},
-		rules: ExtractionRules{
-			ReplicaSetID:   true,
-			DeploymentName: true,
-			DeploymentUID:  true,
-		},
-		attributes: map[string]string{
-			"k8s.replicaset.uid": "207ea729-c779-401d-8347-008ecbc137e3",
-		},
-	}, {
-		name:            "no_deployment",
-		ownerReferences: []meta_v1.OwnerReference{},
-		rules: ExtractionRules{
-			ReplicaSetID:   true,
-			DeploymentName: true,
-			DeploymentUID:  true,
-		},
-		attributes: map[string]string{
-			"k8s.replicaset.uid": "207ea729-c779-401d-8347-008ecbc137e3",
-		},
-	},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -1121,7 +1251,7 @@ func TestReplicaSetExtractionRules(t *testing.T) {
 			p, ok := c.GetPod(newPodIdentifier("connection", "", pod.Status.PodIP))
 			require.True(t, ok)
 
-			assert.Equal(t, len(tc.attributes), len(p.Attributes))
+			assert.Len(t, p.Attributes, len(tc.attributes))
 			for k, v := range tc.attributes {
 				got, ok := p.Attributes[k]
 				assert.True(t, ok)
@@ -1149,41 +1279,47 @@ func TestNamespaceExtractionRules(t *testing.T) {
 	}
 
 	testCases := []struct {
-		name       string
-		rules      ExtractionRules
-		attributes map[string]string
-	}{{
-		name:       "no-rules",
-		rules:      ExtractionRules{},
-		attributes: nil,
-	}, {
-		name: "labels",
-		rules: ExtractionRules{
-			Annotations: []FieldExtractionRule{{
-				Name: "a1",
-				Key:  "annotation1",
-				From: MetadataFromNamespace,
+		name                string
+		rules               ExtractionRules
+		attributes          map[string]string
+		singularFeatureGate bool
+	}{
+		{
+			name:       "no-rules",
+			rules:      ExtractionRules{},
+			attributes: nil,
+		},
+		{
+			name: "labels",
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						Name: "a1",
+						Key:  "annotation1",
+						From: MetadataFromNamespace,
+					},
+				},
+				Labels: []FieldExtractionRule{
+					{
+						Name: "l1",
+						Key:  "label1",
+						From: MetadataFromNamespace,
+					},
+				},
 			},
-			},
-			Labels: []FieldExtractionRule{{
-				Name: "l1",
-				Key:  "label1",
-				From: MetadataFromNamespace,
-			},
+			attributes: map[string]string{
+				"l1": "lv1",
+				"a1": "av1",
 			},
 		},
-		attributes: map[string]string{
-			"l1": "lv1",
-			"a1": "av1",
-		},
-	},
 		{
 			name: "all-labels",
 			rules: ExtractionRules{
-				Labels: []FieldExtractionRule{{
-					KeyRegex: regexp.MustCompile("^(?:la.*)$"),
-					From:     MetadataFromNamespace,
-				},
+				Labels: []FieldExtractionRule{
+					{
+						KeyRegex: regexp.MustCompile("^(?:la.*)$"),
+						From:     MetadataFromNamespace,
+					},
 				},
 			},
 			attributes: map[string]string{
@@ -1191,27 +1327,65 @@ func TestNamespaceExtractionRules(t *testing.T) {
 			},
 		},
 		{
+			name: "all-labels singular",
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						KeyRegex: regexp.MustCompile("^(?:la.*)$"),
+						From:     MetadataFromNamespace,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.namespace.label.label1": "lv1",
+			},
+			singularFeatureGate: true,
+		},
+		{
 			name: "all-annotations",
 			rules: ExtractionRules{
-				Annotations: []FieldExtractionRule{{
-					KeyRegex: regexp.MustCompile("^(?:an.*)$"),
-					From:     MetadataFromNamespace,
-				},
+				Annotations: []FieldExtractionRule{
+					{
+						KeyRegex: regexp.MustCompile("^(?:an.*)$"),
+						From:     MetadataFromNamespace,
+					},
 				},
 			},
 			attributes: map[string]string{
 				"k8s.namespace.annotations.annotation1": "av1",
 			},
 		},
+		{
+			name: "all-annotations singular",
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						KeyRegex: regexp.MustCompile("^(?:an.*)$"),
+						From:     MetadataFromNamespace,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.namespace.annotation.annotation1": "av1",
+			},
+			singularFeatureGate: true,
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			if tc.singularFeatureGate {
+				require.NoError(t, featuregate.GlobalRegistry().Set(allowLabelsAnnotationsSingular.ID(), true))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(allowLabelsAnnotationsSingular.ID(), false))
+				}()
+			}
+
 			c.Rules = tc.rules
 			c.handleNamespaceAdd(namespace)
 			p, ok := c.GetNamespace(namespace.Name)
 			require.True(t, ok)
 
-			assert.Equal(t, len(tc.attributes), len(p.Attributes))
+			assert.Len(t, p.Attributes, len(tc.attributes))
 			for k, v := range tc.attributes {
 				got, ok := p.Attributes[k]
 				assert.True(t, ok)
@@ -1239,41 +1413,47 @@ func TestNodeExtractionRules(t *testing.T) {
 	}
 
 	testCases := []struct {
-		name       string
-		rules      ExtractionRules
-		attributes map[string]string
-	}{{
-		name:       "no-rules",
-		rules:      ExtractionRules{},
-		attributes: nil,
-	}, {
-		name: "labels",
-		rules: ExtractionRules{
-			Annotations: []FieldExtractionRule{{
-				Name: "a1",
-				Key:  "annotation1",
-				From: MetadataFromNode,
+		name                string
+		rules               ExtractionRules
+		attributes          map[string]string
+		singularFeatureGate bool
+	}{
+		{
+			name:       "no-rules",
+			rules:      ExtractionRules{},
+			attributes: nil,
+		},
+		{
+			name: "labels",
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						Name: "a1",
+						Key:  "annotation1",
+						From: MetadataFromNode,
+					},
+				},
+				Labels: []FieldExtractionRule{
+					{
+						Name: "l1",
+						Key:  "label1",
+						From: MetadataFromNode,
+					},
+				},
 			},
-			},
-			Labels: []FieldExtractionRule{{
-				Name: "l1",
-				Key:  "label1",
-				From: MetadataFromNode,
-			},
+			attributes: map[string]string{
+				"l1": "lv1",
+				"a1": "av1",
 			},
 		},
-		attributes: map[string]string{
-			"l1": "lv1",
-			"a1": "av1",
-		},
-	},
 		{
 			name: "all-labels",
 			rules: ExtractionRules{
-				Labels: []FieldExtractionRule{{
-					KeyRegex: regexp.MustCompile("^(?:la.*)$"),
-					From:     MetadataFromNode,
-				},
+				Labels: []FieldExtractionRule{
+					{
+						KeyRegex: regexp.MustCompile("^(?:la.*)$"),
+						From:     MetadataFromNode,
+					},
 				},
 			},
 			attributes: map[string]string{
@@ -1281,27 +1461,449 @@ func TestNodeExtractionRules(t *testing.T) {
 			},
 		},
 		{
+			name: "all-labels singular",
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						KeyRegex: regexp.MustCompile("^(?:la.*)$"),
+						From:     MetadataFromNode,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.node.label.label1": "lv1",
+			},
+			singularFeatureGate: true,
+		},
+		{
 			name: "all-annotations",
 			rules: ExtractionRules{
-				Annotations: []FieldExtractionRule{{
-					KeyRegex: regexp.MustCompile("^(?:an.*)$"),
-					From:     MetadataFromNode,
-				},
+				Annotations: []FieldExtractionRule{
+					{
+						KeyRegex: regexp.MustCompile("^(?:an.*)$"),
+						From:     MetadataFromNode,
+					},
 				},
 			},
 			attributes: map[string]string{
 				"k8s.node.annotations.annotation1": "av1",
 			},
 		},
+		{
+			name: "all-annotations singular",
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						KeyRegex: regexp.MustCompile("^(?:an.*)$"),
+						From:     MetadataFromNode,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.node.annotation.annotation1": "av1",
+			},
+			singularFeatureGate: true,
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			if tc.singularFeatureGate {
+				require.NoError(t, featuregate.GlobalRegistry().Set(allowLabelsAnnotationsSingular.ID(), true))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(allowLabelsAnnotationsSingular.ID(), false))
+				}()
+			}
+
 			c.Rules = tc.rules
 			c.handleNodeAdd(node)
 			n, ok := c.GetNode(node.Name)
 			require.True(t, ok)
 
-			assert.Equal(t, len(tc.attributes), len(n.Attributes))
+			assert.Len(t, n.Attributes, len(tc.attributes))
+			for k, v := range tc.attributes {
+				got, ok := n.Attributes[k]
+				assert.True(t, ok)
+				assert.Equal(t, v, got)
+			}
+		})
+	}
+}
+
+func TestDeploymentExtractionRules(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+
+	deployment := &apps_v1.Deployment{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:              "k8s-node-example",
+			UID:               "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+			CreationTimestamp: meta_v1.Now(),
+			Labels: map[string]string{
+				"label1": "lv1",
+			},
+			Annotations: map[string]string{
+				"annotation1": "av1",
+			},
+		},
+	}
+
+	testCases := []struct {
+		name       string
+		rules      ExtractionRules
+		attributes map[string]string
+	}{
+		{
+			name:       "no-rules",
+			rules:      ExtractionRules{},
+			attributes: nil,
+		},
+		{
+			name: "labels and annotations",
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						Name: "a1",
+						Key:  "annotation1",
+						From: MetadataFromDeployment,
+					},
+				},
+				Labels: []FieldExtractionRule{
+					{
+						Name: "l1",
+						Key:  "label1",
+						From: MetadataFromDeployment,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"l1": "lv1",
+				"a1": "av1",
+			},
+		},
+		{
+			name: "all-labels",
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						KeyRegex: regexp.MustCompile("^(?:la.*)$"),
+						From:     MetadataFromDeployment,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.deployment.label.label1": "lv1",
+			},
+		},
+		{
+			name: "all-annotations",
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						KeyRegex: regexp.MustCompile("^(?:an.*)$"),
+						From:     MetadataFromDeployment,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.deployment.annotation.annotation1": "av1",
+			},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			c.Rules = tc.rules
+			c.handleDeploymentAdd(deployment)
+			n, ok := c.GetDeployment(string(deployment.UID))
+			require.True(t, ok)
+
+			assert.Len(t, n.Attributes, len(tc.attributes))
+			for k, v := range tc.attributes {
+				got, ok := n.Attributes[k]
+				assert.True(t, ok)
+				assert.Equal(t, v, got)
+			}
+		})
+	}
+}
+
+func TestStatefulSetExtractionRules(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+
+	statefulset := &apps_v1.StatefulSet{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:              "k8s-node-example",
+			UID:               "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+			CreationTimestamp: meta_v1.Now(),
+			Labels: map[string]string{
+				"label1": "lv1",
+			},
+			Annotations: map[string]string{
+				"annotation1": "av1",
+			},
+		},
+	}
+
+	testCases := []struct {
+		name       string
+		rules      ExtractionRules
+		attributes map[string]string
+	}{
+		{
+			name:       "no-rules",
+			rules:      ExtractionRules{},
+			attributes: nil,
+		},
+		{
+			name: "labels and annotations",
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						Name: "a1",
+						Key:  "annotation1",
+						From: MetadataFromStatefulSet,
+					},
+				},
+				Labels: []FieldExtractionRule{
+					{
+						Name: "l1",
+						Key:  "label1",
+						From: MetadataFromStatefulSet,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"l1": "lv1",
+				"a1": "av1",
+			},
+		},
+		{
+			name: "all-labels",
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						KeyRegex: regexp.MustCompile("^(?:la.*)$"),
+						From:     MetadataFromStatefulSet,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.statefulset.label.label1": "lv1",
+			},
+		},
+		{
+			name: "all-annotations",
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						KeyRegex: regexp.MustCompile("^(?:an.*)$"),
+						From:     MetadataFromStatefulSet,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.statefulset.annotation.annotation1": "av1",
+			},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			c.Rules = tc.rules
+			c.handleStatefulSetAdd(statefulset)
+			n, ok := c.GetStatefulSet(string(statefulset.UID))
+			require.True(t, ok)
+
+			assert.Len(t, tc.attributes, len(n.Attributes))
+			for k, v := range tc.attributes {
+				got, ok := n.Attributes[k]
+				assert.True(t, ok)
+				assert.Equal(t, v, got)
+			}
+		})
+	}
+}
+
+func TestDaemonSetExtractionRules(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+
+	daemonset := &apps_v1.DaemonSet{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:              "k8s-node-example",
+			UID:               "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+			CreationTimestamp: meta_v1.Now(),
+			Labels: map[string]string{
+				"label1": "lv1",
+			},
+			Annotations: map[string]string{
+				"annotation1": "av1",
+			},
+		},
+	}
+
+	testCases := []struct {
+		name       string
+		rules      ExtractionRules
+		attributes map[string]string
+	}{
+		{
+			name:       "no-rules",
+			rules:      ExtractionRules{},
+			attributes: nil,
+		},
+		{
+			name: "labels and annotations",
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						Name: "a1",
+						Key:  "annotation1",
+						From: MetadataFromDaemonSet,
+					},
+				},
+				Labels: []FieldExtractionRule{
+					{
+						Name: "l1",
+						Key:  "label1",
+						From: MetadataFromDaemonSet,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"l1": "lv1",
+				"a1": "av1",
+			},
+		},
+		{
+			name: "all-labels",
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						KeyRegex: regexp.MustCompile("^(?:la.*)$"),
+						From:     MetadataFromDaemonSet,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.daemonset.label.label1": "lv1",
+			},
+		},
+		{
+			name: "all-annotations",
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						KeyRegex: regexp.MustCompile("^(?:an.*)$"),
+						From:     MetadataFromDaemonSet,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.daemonset.annotation.annotation1": "av1",
+			},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			c.Rules = tc.rules
+			c.handleDaemonSetAdd(daemonset)
+			n, ok := c.GetDaemonSet(string(daemonset.UID))
+			require.True(t, ok)
+
+			assert.Len(t, tc.attributes, len(n.Attributes))
+			for k, v := range tc.attributes {
+				got, ok := n.Attributes[k]
+				assert.True(t, ok)
+				assert.Equal(t, v, got)
+			}
+		})
+	}
+}
+
+func TestJobExtractionRules(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+
+	job := &batch_v1.Job{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:              "k8s-node-example",
+			UID:               "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+			CreationTimestamp: meta_v1.Now(),
+			Labels: map[string]string{
+				"label1": "lv1",
+			},
+			Annotations: map[string]string{
+				"annotation1": "av1",
+			},
+		},
+	}
+
+	testCases := []struct {
+		name       string
+		rules      ExtractionRules
+		attributes map[string]string
+	}{
+		{
+			name:       "no-rules",
+			rules:      ExtractionRules{},
+			attributes: nil,
+		},
+		{
+			name: "labels and annotations",
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						Name: "a1",
+						Key:  "annotation1",
+						From: MetadataFromJob,
+					},
+				},
+				Labels: []FieldExtractionRule{
+					{
+						Name: "l1",
+						Key:  "label1",
+						From: MetadataFromJob,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"l1": "lv1",
+				"a1": "av1",
+			},
+		},
+		{
+			name: "all-labels",
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						KeyRegex: regexp.MustCompile("^(?:la.*)$"),
+						From:     MetadataFromJob,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.job.label.label1": "lv1",
+			},
+		},
+		{
+			name: "all-annotations",
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						KeyRegex: regexp.MustCompile("^(?:an.*)$"),
+						From:     MetadataFromJob,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.job.annotation.annotation1": "av1",
+			},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			c.Rules = tc.rules
+			c.handleJobAdd(job)
+			n, ok := c.GetJob(string(job.UID))
+			require.True(t, ok)
+
+			assert.Len(t, tc.attributes, len(n.Attributes))
 			for k, v := range tc.attributes {
 				got, ok := n.Attributes[k]
 				assert.True(t, ok)
@@ -1317,51 +1919,52 @@ func TestFilters(t *testing.T) {
 		filters Filters
 		labels  string
 		fields  string
-	}{{
-		name:    "no-filters",
-		filters: Filters{},
-	}, {
-		name: "namespace",
-		filters: Filters{
-			Namespace: "default",
-		},
-	}, {
-		name: "node",
-		filters: Filters{
-			Node: "ec2-test",
-		},
-		fields: "spec.nodeName=ec2-test",
-	}, {
-		name: "labels-and-fields",
-		filters: Filters{
-			Labels: []FieldFilter{
-				{
-					Key:   "k1",
-					Value: "v1",
-					Op:    selection.Equals,
+	}{
+		{
+			name:    "no-filters",
+			filters: Filters{},
+		}, {
+			name: "namespace",
+			filters: Filters{
+				Namespace: "default",
+			},
+		}, {
+			name: "node",
+			filters: Filters{
+				Node: "ec2-test",
+			},
+			fields: "spec.nodeName=ec2-test",
+		}, {
+			name: "labels-and-fields",
+			filters: Filters{
+				Labels: []LabelFilter{
+					{
+						Key:   "k1",
+						Value: "v1",
+						Op:    selection.Equals,
+					},
+					{
+						Key:   "k2",
+						Value: "v2",
+						Op:    selection.NotEquals,
+					},
 				},
-				{
-					Key:   "k2",
-					Value: "v2",
-					Op:    selection.NotEquals,
+				Fields: []FieldFilter{
+					{
+						Key:   "k1",
+						Value: "v1",
+						Op:    selection.Equals,
+					},
+					{
+						Key:   "k2",
+						Value: "v2",
+						Op:    selection.NotEquals,
+					},
 				},
 			},
-			Fields: []FieldFilter{
-				{
-					Key:   "k1",
-					Value: "v1",
-					Op:    selection.Equals,
-				},
-				{
-					Key:   "k2",
-					Value: "v2",
-					Op:    selection.NotEquals,
-				},
-			},
+			labels: "k1=v1,k2!=v2",
+			fields: "k1=v1,k2!=v2",
 		},
-		labels: "k1=v1,k2!=v2",
-		fields: "k1=v1,k2!=v2",
-	},
 	}
 
 	for _, tc := range testCases {
@@ -1373,88 +1976,88 @@ func TestFilters(t *testing.T) {
 			assert.Equal(t, tc.fields, inf.fieldSelector.String())
 		})
 	}
-
 }
 
 func TestPodIgnorePatterns(t *testing.T) {
 	testCases := []struct {
 		ignore bool
 		pod    *api_v1.Pod
-	}{{
-		ignore: false,
-		pod:    &api_v1.Pod{},
-	}, {
-		ignore: false,
-		pod: &api_v1.Pod{
-			Spec: api_v1.PodSpec{
-				HostNetwork: true,
+	}{
+		{
+			ignore: false,
+			pod:    &api_v1.Pod{},
+		}, {
+			ignore: false,
+			pod: &api_v1.Pod{
+				Spec: api_v1.PodSpec{
+					HostNetwork: true,
+				},
 			},
-		},
-	}, {
-		ignore: true,
-		pod: &api_v1.Pod{
-			ObjectMeta: meta_v1.ObjectMeta{
-				Annotations: map[string]string{
-					"opentelemetry.io/k8s-processor/ignore": "True ",
+		}, {
+			ignore: true,
+			pod: &api_v1.Pod{
+				ObjectMeta: meta_v1.ObjectMeta{
+					Annotations: map[string]string{
+						"opentelemetry.io/k8s-processor/ignore": "True ",
+					},
+				},
+			},
+		}, {
+			ignore: true,
+			pod: &api_v1.Pod{
+				ObjectMeta: meta_v1.ObjectMeta{
+					Annotations: map[string]string{
+						"opentelemetry.io/k8s-processor/ignore": "true",
+					},
+				},
+			},
+		}, {
+			ignore: false,
+			pod: &api_v1.Pod{
+				ObjectMeta: meta_v1.ObjectMeta{
+					Annotations: map[string]string{
+						"opentelemetry.io/k8s-processor/ignore": "false",
+					},
+				},
+			},
+		}, {
+			ignore: false,
+			pod: &api_v1.Pod{
+				ObjectMeta: meta_v1.ObjectMeta{
+					Annotations: map[string]string{
+						"opentelemetry.io/k8s-processor/ignore": "",
+					},
+				},
+			},
+		}, {
+			ignore: true,
+			pod: &api_v1.Pod{
+				ObjectMeta: meta_v1.ObjectMeta{
+					Name: "jaeger-agent",
+				},
+			},
+		}, {
+			ignore: true,
+			pod: &api_v1.Pod{
+				ObjectMeta: meta_v1.ObjectMeta{
+					Name: "jaeger-collector",
+				},
+			},
+		}, {
+			ignore: true,
+			pod: &api_v1.Pod{
+				ObjectMeta: meta_v1.ObjectMeta{
+					Name: "jaeger-agent-b2zdv",
+				},
+			},
+		}, {
+			ignore: false,
+			pod: &api_v1.Pod{
+				ObjectMeta: meta_v1.ObjectMeta{
+					Name: "test-pod-name",
 				},
 			},
 		},
-	}, {
-		ignore: true,
-		pod: &api_v1.Pod{
-			ObjectMeta: meta_v1.ObjectMeta{
-				Annotations: map[string]string{
-					"opentelemetry.io/k8s-processor/ignore": "true",
-				},
-			},
-		},
-	}, {
-		ignore: false,
-		pod: &api_v1.Pod{
-			ObjectMeta: meta_v1.ObjectMeta{
-				Annotations: map[string]string{
-					"opentelemetry.io/k8s-processor/ignore": "false",
-				},
-			},
-		},
-	}, {
-		ignore: false,
-		pod: &api_v1.Pod{
-			ObjectMeta: meta_v1.ObjectMeta{
-				Annotations: map[string]string{
-					"opentelemetry.io/k8s-processor/ignore": "",
-				},
-			},
-		},
-	}, {
-		ignore: true,
-		pod: &api_v1.Pod{
-			ObjectMeta: meta_v1.ObjectMeta{
-				Name: "jaeger-agent",
-			},
-		},
-	}, {
-		ignore: true,
-		pod: &api_v1.Pod{
-			ObjectMeta: meta_v1.ObjectMeta{
-				Name: "jaeger-collector",
-			},
-		},
-	}, {
-		ignore: true,
-		pod: &api_v1.Pod{
-			ObjectMeta: meta_v1.ObjectMeta{
-				Name: "jaeger-agent-b2zdv",
-			},
-		},
-	}, {
-		ignore: false,
-		pod: &api_v1.Pod{
-			ObjectMeta: meta_v1.ObjectMeta{
-				Name: "test-pod-name",
-			},
-		},
-	},
 	}
 
 	c, _ := newTestClient(t)
@@ -1465,21 +2068,29 @@ func TestPodIgnorePatterns(t *testing.T) {
 
 func Test_extractPodContainersAttributes(t *testing.T) {
 	pod := api_v1.Pod{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      "test-pod",
+			Namespace: "test-namespace",
+		},
 		Spec: api_v1.PodSpec{
 			Containers: []api_v1.Container{
 				{
 					Name:  "container1",
-					Image: "test/image1:0.1.0",
+					Image: "example.com:5000/test/image1:0.1.0",
 				},
 				{
 					Name:  "container2",
-					Image: "example.com:port1/image2:0.2.0",
+					Image: "example.com:81/image2@sha256:430ac608abaa332de4ce45d68534447c7a206edc5e98aaff9923ecc12f8a80d9",
+				},
+				{
+					Name:  "container3",
+					Image: "example-website.com/image3:1.0@sha256:4b0b1b6f6cdd3e5b9e55f74a1e8d19ed93a3f5a04c6b6c3c57c4e6d19f6b7c4d",
 				},
 			},
 			InitContainers: []api_v1.Container{
 				{
 					Name:  "init_container",
-					Image: "test/init-image:1.0.2",
+					Image: "test/init-image",
 				},
 			},
 		},
@@ -1494,7 +2105,13 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 				{
 					Name:         "container2",
 					ContainerID:  "docker://container2-id-456",
-					ImageID:      "sha256:430ac608abaa332de4ce45d68534447c7a206edc5e98aaff9923ecc12f8a80d9",
+					ImageID:      "sha256:4b0b1b6f6cdd3e5b9e55f74a1e8d19ed93a3f5a04c6b6c3c57c4e6d19f6b7c4d",
+					RestartCount: 2,
+				},
+				{
+					Name:         "container3",
+					ContainerID:  "docker://container3-id-abc",
+					ImageID:      "docker.io/otel/collector:2.0.0@sha256:430ac608abaa332de4ce45d68534447c7a206edc5e98aaff9923ecc12f8a80d9",
 					RestartCount: 2,
 				},
 			},
@@ -1531,6 +2148,30 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 			want:  PodContainers{ByID: map[string]*Container{}, ByName: map[string]*Container{}},
 		},
 		{
+			name: "automatic-container-level-attributes",
+			rules: ExtractionRules{
+				ServiceNamespace:  true,
+				ServiceName:       true,
+				ServiceVersion:    true,
+				ServiceInstanceID: true,
+			},
+			pod: &pod,
+			want: PodContainers{
+				ByID: map[string]*Container{
+					"container1-id-123":     {ServiceInstanceID: "test-namespace.test-pod.container1", ServiceVersion: "0.1.0"},
+					"container2-id-456":     {ServiceInstanceID: "test-namespace.test-pod.container2", ServiceVersion: "sha256:430ac608abaa332de4ce45d68534447c7a206edc5e98aaff9923ecc12f8a80d9"},
+					"container3-id-abc":     {ServiceInstanceID: "test-namespace.test-pod.container3", ServiceVersion: "1.0@sha256:4b0b1b6f6cdd3e5b9e55f74a1e8d19ed93a3f5a04c6b6c3c57c4e6d19f6b7c4d"},
+					"init-container-id-789": {ServiceInstanceID: "test-namespace.test-pod.init_container"},
+				},
+				ByName: map[string]*Container{
+					"container1":     {ServiceInstanceID: "test-namespace.test-pod.container1", ServiceVersion: "0.1.0"},
+					"container2":     {ServiceInstanceID: "test-namespace.test-pod.container2", ServiceVersion: "sha256:430ac608abaa332de4ce45d68534447c7a206edc5e98aaff9923ecc12f8a80d9"},
+					"container3":     {ServiceInstanceID: "test-namespace.test-pod.container3", ServiceVersion: "1.0@sha256:4b0b1b6f6cdd3e5b9e55f74a1e8d19ed93a3f5a04c6b6c3c57c4e6d19f6b7c4d"},
+					"init_container": {ServiceInstanceID: "test-namespace.test-pod.init_container"},
+				},
+			},
+		},
+		{
 			name: "image-name-only",
 			rules: ExtractionRules{
 				ContainerImageName: true,
@@ -1538,13 +2179,15 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 			pod: &pod,
 			want: PodContainers{
 				ByID: map[string]*Container{
-					"container1-id-123":     {ImageName: "test/image1"},
-					"container2-id-456":     {ImageName: "example.com:port1/image2"},
+					"container1-id-123":     {ImageName: "example.com:5000/test/image1"},
+					"container2-id-456":     {ImageName: "example.com:81/image2"},
+					"container3-id-abc":     {ImageName: "example-website.com/image3"},
 					"init-container-id-789": {ImageName: "test/init-image"},
 				},
 				ByName: map[string]*Container{
-					"container1":     {ImageName: "test/image1"},
-					"container2":     {ImageName: "example.com:port1/image2"},
+					"container1":     {ImageName: "example.com:5000/test/image1"},
+					"container2":     {ImageName: "example.com:81/image2"},
+					"container3":     {ImageName: "example-website.com/image3"},
 					"init_container": {ImageName: "test/init-image"},
 				},
 			},
@@ -1589,6 +2232,11 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 							2: {ContainerID: "container2-id-456"},
 						},
 					},
+					"container3-id-abc": {
+						Statuses: map[int]ContainerStatus{
+							2: {ContainerID: "container3-id-abc"},
+						},
+					},
 					"init-container-id-789": {
 						Statuses: map[int]ContainerStatus{
 							0: {ContainerID: "init-container-id-789"},
@@ -1604,6 +2252,11 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 					"container2": {
 						Statuses: map[int]ContainerStatus{
 							2: {ContainerID: "container2-id-456"},
+						},
+					},
+					"container3": {
+						Statuses: map[int]ContainerStatus{
+							2: {ContainerID: "container3-id-abc"},
 						},
 					},
 					"init_container": {
@@ -1632,6 +2285,11 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 							2: {},
 						},
 					},
+					"container3-id-abc": {
+						Statuses: map[int]ContainerStatus{
+							2: {ImageRepoDigest: "docker.io/otel/collector:2.0.0@sha256:430ac608abaa332de4ce45d68534447c7a206edc5e98aaff9923ecc12f8a80d9"},
+						},
+					},
 					"init-container-id-789": {
 						Statuses: map[int]ContainerStatus{
 							0: {ImageRepoDigest: "ghcr.io/initimage1@sha256:42e8ba40f9f70d604684c3a2a0ed321206b7e2e3509fdb2c8836d34f2edfb57b"},
@@ -1647,6 +2305,11 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 					"container2": {
 						Statuses: map[int]ContainerStatus{
 							2: {},
+						},
+					},
+					"container3": {
+						Statuses: map[int]ContainerStatus{
+							2: {ImageRepoDigest: "docker.io/otel/collector:2.0.0@sha256:430ac608abaa332de4ce45d68534447c7a206edc5e98aaff9923ecc12f8a80d9"},
 						},
 					},
 					"init_container": {
@@ -1669,22 +2332,29 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 			want: PodContainers{
 				ByID: map[string]*Container{
 					"container1-id-123": {
-						ImageName: "test/image1",
+						ImageName: "example.com:5000/test/image1",
 						ImageTag:  "0.1.0",
 						Statuses: map[int]ContainerStatus{
 							0: {ContainerID: "container1-id-123", ImageRepoDigest: "docker.io/otel/collector@sha256:55d008bc28344c3178645d40e7d07df30f9d90abe4b53c3fc4e5e9c0295533da"},
 						},
 					},
 					"container2-id-456": {
-						ImageName: "example.com:port1/image2",
-						ImageTag:  "0.2.0",
+						ImageName: "example.com:81/image2",
+						ImageTag:  "latest",
 						Statuses: map[int]ContainerStatus{
 							2: {ContainerID: "container2-id-456"},
 						},
 					},
+					"container3-id-abc": {
+						ImageName: "example-website.com/image3",
+						ImageTag:  "1.0",
+						Statuses: map[int]ContainerStatus{
+							2: {ContainerID: "container3-id-abc", ImageRepoDigest: "docker.io/otel/collector:2.0.0@sha256:430ac608abaa332de4ce45d68534447c7a206edc5e98aaff9923ecc12f8a80d9"},
+						},
+					},
 					"init-container-id-789": {
 						ImageName: "test/init-image",
-						ImageTag:  "1.0.2",
+						ImageTag:  "latest",
 						Statuses: map[int]ContainerStatus{
 							0: {ContainerID: "init-container-id-789", ImageRepoDigest: "ghcr.io/initimage1@sha256:42e8ba40f9f70d604684c3a2a0ed321206b7e2e3509fdb2c8836d34f2edfb57b"},
 						},
@@ -1692,22 +2362,29 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 				},
 				ByName: map[string]*Container{
 					"container1": {
-						ImageName: "test/image1",
+						ImageName: "example.com:5000/test/image1",
 						ImageTag:  "0.1.0",
 						Statuses: map[int]ContainerStatus{
 							0: {ContainerID: "container1-id-123", ImageRepoDigest: "docker.io/otel/collector@sha256:55d008bc28344c3178645d40e7d07df30f9d90abe4b53c3fc4e5e9c0295533da"},
 						},
 					},
 					"container2": {
-						ImageName: "example.com:port1/image2",
-						ImageTag:  "0.2.0",
+						ImageName: "example.com:81/image2",
+						ImageTag:  "latest",
 						Statuses: map[int]ContainerStatus{
 							2: {ContainerID: "container2-id-456"},
 						},
 					},
+					"container3": {
+						ImageName: "example-website.com/image3",
+						ImageTag:  "1.0",
+						Statuses: map[int]ContainerStatus{
+							2: {ContainerID: "container3-id-abc", ImageRepoDigest: "docker.io/otel/collector:2.0.0@sha256:430ac608abaa332de4ce45d68534447c7a206edc5e98aaff9923ecc12f8a80d9"},
+						},
+					},
 					"init_container": {
 						ImageName: "test/init-image",
-						ImageTag:  "1.0.2",
+						ImageTag:  "latest",
 						Statuses: map[int]ContainerStatus{
 							0: {ContainerID: "init-container-id-789", ImageRepoDigest: "ghcr.io/initimage1@sha256:42e8ba40f9f70d604684c3a2a0ed321206b7e2e3509fdb2c8836d34f2edfb57b"},
 						},
@@ -1764,9 +2441,7 @@ func Test_extractField(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.args.r.extractField(tt.args.v); got != tt.want {
-				t.Errorf("extractField() = %v, want %v", got, tt.want)
-			}
+			assert.Equal(t, tt.want, tt.args.r.extractField(tt.args.v), "extractField()")
 		})
 	}
 }
@@ -1775,24 +2450,69 @@ func TestErrorSelectorsFromFilters(t *testing.T) {
 	tests := []struct {
 		name    string
 		filters Filters
+		wantErr bool
 	}{
 		{
 			name: "label/invalid-op",
 			filters: Filters{
-				Labels: []FieldFilter{{Op: "invalid-op"}},
+				Labels: []LabelFilter{{Op: "invalid-op"}},
 			},
+			wantErr: true,
+		},
+		{
+			name: "label/equals",
+			filters: Filters{
+				Labels: []LabelFilter{{Key: "app", Op: selection.Equals, Value: "test"}},
+			},
+		},
+		{
+			name: "label/not-equals",
+			filters: Filters{
+				Labels: []LabelFilter{{Key: "app", Op: selection.NotEquals, Value: "test"}},
+			},
+		},
+		{
+			name: "label/exists",
+			filters: Filters{
+				Labels: []LabelFilter{{Key: "app", Op: selection.Exists}},
+			},
+		},
+		{
+			name: "label/does-not-exist",
+			filters: Filters{
+				Labels: []LabelFilter{{Key: "app", Op: selection.DoesNotExist}},
+			},
+		},
+		{
+			name: "label/in",
+			filters: Filters{
+				Labels: []LabelFilter{{Key: "app", Op: selection.In}},
+			},
+			wantErr: true,
+		},
+		{
+			name: "label/not-in",
+			filters: Filters{
+				Labels: []LabelFilter{{Key: "app", Op: selection.NotIn}},
+			},
+			wantErr: true,
 		},
 		{
 			name: "fields/invalid-op",
 			filters: Filters{
 				Fields: []FieldFilter{{Op: selection.Exists}},
 			},
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, _, err := selectorsFromFilters(tt.filters)
-			assert.Error(t, err)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
 		})
 	}
 }
@@ -1803,55 +2523,316 @@ func TestExtractNamespaceLabelsAnnotations(t *testing.T) {
 		name                   string
 		shouldExtractNamespace bool
 		rules                  ExtractionRules
-	}{{
-		name:                   "empty-rules",
-		shouldExtractNamespace: false,
-		rules:                  ExtractionRules{},
-	}, {
-		name:                   "pod-rules",
-		shouldExtractNamespace: false,
-		rules: ExtractionRules{
-			Annotations: []FieldExtractionRule{{
-				Name: "a1",
-				Key:  "annotation1",
-				From: MetadataFromPod,
+	}{
+		{
+			name:                   "empty-rules",
+			shouldExtractNamespace: false,
+			rules:                  ExtractionRules{},
+		}, {
+			name:                   "pod-rules",
+			shouldExtractNamespace: false,
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						Name: "a1",
+						Key:  "annotation1",
+						From: MetadataFromPod,
+					},
+				},
+				Labels: []FieldExtractionRule{
+					{
+						Name: "l1",
+						Key:  "label1",
+						From: MetadataFromPod,
+					},
+				},
 			},
+		}, {
+			name:                   "namespace-rules-only-annotations",
+			shouldExtractNamespace: true,
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						Name: "a1",
+						Key:  "annotation1",
+						From: MetadataFromNamespace,
+					},
+				},
 			},
-			Labels: []FieldExtractionRule{{
-				Name: "l1",
-				Key:  "label1",
-				From: MetadataFromPod,
-			},
+		}, {
+			name:                   "namespace-rules-only-labels",
+			shouldExtractNamespace: true,
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						Name: "l1",
+						Key:  "label1",
+						From: MetadataFromNamespace,
+					},
+				},
 			},
 		},
-	}, {
-		name:                   "namespace-rules-only-annotations",
-		shouldExtractNamespace: true,
-		rules: ExtractionRules{
-			Annotations: []FieldExtractionRule{{
-				Name: "a1",
-				Key:  "annotation1",
-				From: MetadataFromNamespace,
-			},
-			},
-		},
-	}, {
-		name:                   "namespace-rules-only-labels",
-		shouldExtractNamespace: true,
-		rules: ExtractionRules{
-			Labels: []FieldExtractionRule{{
-				Name: "l1",
-				Key:  "label1",
-				From: MetadataFromNamespace,
-			},
-			},
-		},
-	},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			c.Rules = tc.rules
 			assert.Equal(t, tc.shouldExtractNamespace, c.extractNamespaceLabelsAnnotations())
+		})
+	}
+}
+
+func TestExtractDeploymentLabelsAnnotations(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+	testCases := []struct {
+		name                    string
+		shouldExtractDeployment bool
+		rules                   ExtractionRules
+	}{
+		{
+			name:                    "empty-rules",
+			shouldExtractDeployment: false,
+			rules:                   ExtractionRules{},
+		}, {
+			name:                    "pod-rules",
+			shouldExtractDeployment: false,
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						Name: "a1",
+						Key:  "annotation1",
+						From: MetadataFromPod,
+					},
+				},
+				Labels: []FieldExtractionRule{
+					{
+						Name: "l1",
+						Key:  "label1",
+						From: MetadataFromPod,
+					},
+				},
+			},
+		}, {
+			name:                    "deployment-rules-only-annotations",
+			shouldExtractDeployment: true,
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						Name: "a1",
+						Key:  "annotation1",
+						From: MetadataFromDeployment,
+					},
+				},
+			},
+		}, {
+			name:                    "deployment-rules-only-labels",
+			shouldExtractDeployment: true,
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						Name: "l1",
+						Key:  "label1",
+						From: MetadataFromDeployment,
+					},
+				},
+			},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			c.Rules = tc.rules
+			assert.Equal(t, tc.shouldExtractDeployment, c.extractDeploymentLabelsAnnotations())
+		})
+	}
+}
+
+func TestExtractStatefulSetLabelsAnnotations(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+	testCases := []struct {
+		name                     string
+		shouldExtractStatefulSet bool
+		rules                    ExtractionRules
+	}{
+		{
+			name:                     "empty-rules",
+			shouldExtractStatefulSet: false,
+			rules:                    ExtractionRules{},
+		}, {
+			name:                     "pod-rules",
+			shouldExtractStatefulSet: false,
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						Name: "a1",
+						Key:  "annotation1",
+						From: MetadataFromPod,
+					},
+				},
+				Labels: []FieldExtractionRule{
+					{
+						Name: "l1",
+						Key:  "label1",
+						From: MetadataFromPod,
+					},
+				},
+			},
+		}, {
+			name:                     "statefulset-rules-only-annotations",
+			shouldExtractStatefulSet: true,
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						Name: "a1",
+						Key:  "annotation1",
+						From: MetadataFromStatefulSet,
+					},
+				},
+			},
+		}, {
+			name:                     "statefulset-rules-only-labels",
+			shouldExtractStatefulSet: true,
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						Name: "l1",
+						Key:  "label1",
+						From: MetadataFromStatefulSet,
+					},
+				},
+			},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			c.Rules = tc.rules
+			assert.Equal(t, tc.shouldExtractStatefulSet, c.extractStatefulSetLabelsAnnotations())
+		})
+	}
+}
+
+func TestExtractDaemonSetLabelsAnnotations(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+	testCases := []struct {
+		name                   string
+		shouldExtractDaemonSet bool
+		rules                  ExtractionRules
+	}{
+		{
+			name:                   "empty-rules",
+			shouldExtractDaemonSet: false,
+			rules:                  ExtractionRules{},
+		}, {
+			name:                   "pod-rules",
+			shouldExtractDaemonSet: false,
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						Name: "a1",
+						Key:  "annotation1",
+						From: MetadataFromPod,
+					},
+				},
+				Labels: []FieldExtractionRule{
+					{
+						Name: "l1",
+						Key:  "label1",
+						From: MetadataFromPod,
+					},
+				},
+			},
+		}, {
+			name:                   "daemonset-rules-only-annotations",
+			shouldExtractDaemonSet: true,
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						Name: "a1",
+						Key:  "annotation1",
+						From: MetadataFromDaemonSet,
+					},
+				},
+			},
+		}, {
+			name:                   "daemonset-rules-only-labels",
+			shouldExtractDaemonSet: true,
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						Name: "l1",
+						Key:  "label1",
+						From: MetadataFromDaemonSet,
+					},
+				},
+			},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			c.Rules = tc.rules
+			assert.Equal(t, tc.shouldExtractDaemonSet, c.extractDaemonSetLabelsAnnotations())
+		})
+	}
+}
+
+func TestExtractJobLabelsAnnotations(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+	testCases := []struct {
+		name             string
+		shouldExtractJob bool
+		rules            ExtractionRules
+	}{
+		{
+			name:             "empty-rules",
+			shouldExtractJob: false,
+			rules:            ExtractionRules{},
+		}, {
+			name:             "pod-rules",
+			shouldExtractJob: false,
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						Name: "a1",
+						Key:  "annotation1",
+						From: MetadataFromPod,
+					},
+				},
+				Labels: []FieldExtractionRule{
+					{
+						Name: "l1",
+						Key:  "label1",
+						From: MetadataFromPod,
+					},
+				},
+			},
+		}, {
+			name:             "job-rules-only-annotations",
+			shouldExtractJob: true,
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						Name: "a1",
+						Key:  "annotation1",
+						From: MetadataFromJob,
+					},
+				},
+			},
+		}, {
+			name:             "job-rules-only-labels",
+			shouldExtractJob: true,
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						Name: "l1",
+						Key:  "label1",
+						From: MetadataFromJob,
+					},
+				},
+			},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			c.Rules = tc.rules
+			assert.Equal(t, tc.shouldExtractJob, c.extractJobLabelsAnnotations())
 		})
 	}
 }
@@ -1883,11 +2864,268 @@ func newTestClientWithRulesAndFilters(t *testing.T, f Filters) (*WatchClient, *o
 			},
 		},
 	}
-	c, err := New(set, k8sconfig.APIConfig{}, ExtractionRules{}, f, associations, exclude, newFakeAPIClientset, NewFakeInformer, NewFakeNamespaceInformer, NewFakeReplicaSetInformer)
+	factory := InformersFactoryList{
+		newInformer:           NewFakeInformer,
+		newNamespaceInformer:  NewFakeNamespaceInformer,
+		newReplicaSetInformer: NewFakeReplicaSetInformer,
+	}
+	c, err := New(set, k8sconfig.APIConfig{}, ExtractionRules{}, f, associations, exclude, newFakeAPIClientset, factory, false, 10*time.Second)
 	require.NoError(t, err)
 	return c.(*WatchClient), logs
 }
 
 func newTestClient(t *testing.T) (*WatchClient, *observer.ObservedLogs) {
 	return newTestClientWithRulesAndFilters(t, Filters{})
+}
+
+type neverSyncedFakeClient struct {
+	cache.SharedInformer
+}
+
+type neverSyncedResourceEventHandlerRegistration struct {
+	cache.ResourceEventHandlerRegistration
+}
+
+func (*neverSyncedResourceEventHandlerRegistration) HasSynced() bool {
+	return false
+}
+
+func (n *neverSyncedFakeClient) AddEventHandler(handler cache.ResourceEventHandler) (cache.ResourceEventHandlerRegistration, error) {
+	delegate, err := n.SharedInformer.AddEventHandler(handler)
+	if err != nil {
+		return nil, err
+	}
+	return &neverSyncedResourceEventHandlerRegistration{ResourceEventHandlerRegistration: delegate}, nil
+}
+
+func TestWaitForMetadata(t *testing.T) {
+	testCases := []struct {
+		name             string
+		informerProvider InformerProvider
+		err              bool
+	}{{
+		name:             "no wait",
+		informerProvider: NewFakeInformer,
+		err:              false,
+	}, {
+		name: "wait but never synced",
+		informerProvider: func(client kubernetes.Interface, namespace string, labelSelector labels.Selector, fieldSelector fields.Selector) cache.SharedInformer {
+			return &neverSyncedFakeClient{NewFakeInformer(client, namespace, labelSelector, fieldSelector)}
+		},
+		err: true,
+	}}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			c, err := New(componenttest.NewNopTelemetrySettings(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{}, []Association{}, Excludes{}, newFakeAPIClientset, InformersFactoryList{newInformer: tc.informerProvider}, true, 1*time.Second)
+			require.NoError(t, err)
+
+			err = c.Start()
+			if tc.err {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+func Test_parseServiceVersionFromImage(t *testing.T) {
+	tests := []struct {
+		name  string
+		image string
+		want  string
+	}{
+		{
+			name:  "no version",
+			image: "img",
+		},
+		{
+			name:  "with tag",
+			image: "img:1",
+			want:  "1",
+		},
+		{
+			name:  "with tag and digest",
+			image: "img:1@sha256:232a180dbcbcfa7250917507f3827d88a9ae89bb1cdd8fe3ac4db7b764ebb25a",
+			want:  "1@sha256:232a180dbcbcfa7250917507f3827d88a9ae89bb1cdd8fe3ac4db7b764ebb25a",
+		},
+		{
+			name:  "with digest",
+			image: "img@sha256:232a180dbcbcfa7250917507f3827d88a9ae89bb1cdd8fe3ac4db7b764ebb25a",
+			want:  "sha256:232a180dbcbcfa7250917507f3827d88a9ae89bb1cdd8fe3ac4db7b764ebb25a",
+		},
+		{
+			name:  "with registry",
+			image: "registry.io/img",
+		},
+		{
+			name:  "with port",
+			image: "registry.io:8080/img",
+		},
+		{
+			name:  "latest",
+			image: "img:latest",
+			want:  "latest",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, _ := parseServiceVersionFromImage(tt.image)
+			// error is just for debugging
+			assert.Equalf(t, tt.want, got, "parseServiceVersionFromImage(%v)", tt.image)
+		})
+	}
+}
+
+func TestGetIdentifiersFromAssoc(t *testing.T) {
+	tests := map[string]struct {
+		associations []Association
+		pod          *Pod
+		expected     []PodIdentifier
+	}{
+		"K8SPodUID": {
+			associations: []Association{
+				{
+					Sources: []AssociationSource{
+						{
+							From: ResourceSource,
+							Name: string(conventions.K8SPodUIDKey),
+						},
+					},
+				},
+			},
+			pod: &Pod{
+				PodUID: "myK8sPodUID",
+			},
+			expected: []PodIdentifier{
+				{
+					PodIdentifierAttribute{Source: AssociationSource{From: "resource_attribute", Name: "k8s.pod.uid"}, Value: "myK8sPodUID"},
+					PodIdentifierAttribute{Source: AssociationSource{From: "", Name: ""}, Value: ""},
+					PodIdentifierAttribute{Source: AssociationSource{From: "", Name: ""}, Value: ""},
+					PodIdentifierAttribute{Source: AssociationSource{From: "", Name: ""}, Value: ""},
+				},
+				{
+					PodIdentifierAttribute{Source: AssociationSource{From: "resource_attribute", Name: "k8s.pod.uid"}, Value: "myK8sPodUID"},
+					PodIdentifierAttribute{Source: AssociationSource{From: "", Name: ""}, Value: ""},
+					PodIdentifierAttribute{Source: AssociationSource{From: "", Name: ""}, Value: ""},
+					PodIdentifierAttribute{Source: AssociationSource{From: "", Name: ""}, Value: ""},
+				},
+			},
+		},
+		"ContainerID": {
+			associations: []Association{
+				{
+					Sources: []AssociationSource{
+						{
+							From: ResourceSource,
+							Name: string(conventions.ContainerIDKey),
+						},
+					},
+				},
+			},
+			pod: &Pod{
+				PodUID: "myK8sPodUID",
+				Containers: PodContainers{
+					ByID: map[string]*Container{
+						"id1": {
+							Name: "id1",
+						},
+						"id2": {
+							Name: "id2",
+						},
+					},
+				},
+			},
+			expected: []PodIdentifier{
+				{
+					PodIdentifierAttribute{Source: AssociationSource{From: "resource_attribute", Name: "container.id"}, Value: "id1"},
+					PodIdentifierAttribute{Source: AssociationSource{From: "", Name: ""}, Value: ""},
+					PodIdentifierAttribute{Source: AssociationSource{From: "", Name: ""}, Value: ""},
+					PodIdentifierAttribute{Source: AssociationSource{From: "", Name: ""}, Value: ""},
+				},
+				{
+					PodIdentifierAttribute{Source: AssociationSource{From: "resource_attribute", Name: "container.id"}, Value: "id2"},
+					PodIdentifierAttribute{Source: AssociationSource{From: "", Name: ""}, Value: ""},
+					PodIdentifierAttribute{Source: AssociationSource{From: "", Name: ""}, Value: ""},
+					PodIdentifierAttribute{Source: AssociationSource{From: "", Name: ""}, Value: ""},
+				},
+				{
+					PodIdentifierAttribute{Source: AssociationSource{From: "resource_attribute", Name: "k8s.pod.uid"}, Value: "myK8sPodUID"},
+					PodIdentifierAttribute{Source: AssociationSource{From: "", Name: ""}, Value: ""},
+					PodIdentifierAttribute{Source: AssociationSource{From: "", Name: ""}, Value: ""},
+					PodIdentifierAttribute{Source: AssociationSource{From: "", Name: ""}, Value: ""},
+				},
+			},
+		},
+		"multiple associations": {
+			associations: []Association{
+				{
+					Sources: []AssociationSource{
+						{
+							From: ResourceSource,
+							Name: string(conventions.ContainerIDKey),
+						},
+						{
+							From: ConnectionSource,
+						},
+					},
+				},
+			},
+			pod: &Pod{
+				PodUID:  "myK8sPodUID",
+				Address: "localhost",
+				Containers: PodContainers{
+					ByID: map[string]*Container{
+						"id1": {
+							Name: "id1",
+						},
+						"id2": {
+							Name: "id2",
+						},
+					},
+				},
+			},
+			expected: []PodIdentifier{
+				{
+					PodIdentifierAttribute{Source: AssociationSource{From: "resource_attribute", Name: "container.id"}, Value: "id1"},
+					PodIdentifierAttribute{Source: AssociationSource{From: "connection", Name: ""}, Value: "localhost"},
+					PodIdentifierAttribute{Source: AssociationSource{From: "", Name: ""}, Value: ""},
+					PodIdentifierAttribute{Source: AssociationSource{From: "", Name: ""}, Value: ""},
+				},
+				{
+					PodIdentifierAttribute{Source: AssociationSource{From: "resource_attribute", Name: "container.id"}, Value: "id2"},
+					PodIdentifierAttribute{Source: AssociationSource{From: "connection", Name: ""}, Value: "localhost"},
+					PodIdentifierAttribute{Source: AssociationSource{From: "", Name: ""}, Value: ""},
+					PodIdentifierAttribute{Source: AssociationSource{From: "", Name: ""}, Value: ""},
+				},
+				{
+					PodIdentifierAttribute{Source: AssociationSource{From: "resource_attribute", Name: "k8s.pod.uid"}, Value: "myK8sPodUID"},
+					PodIdentifierAttribute{Source: AssociationSource{From: "", Name: ""}, Value: ""},
+					PodIdentifierAttribute{Source: AssociationSource{From: "", Name: ""}, Value: ""},
+					PodIdentifierAttribute{Source: AssociationSource{From: "", Name: ""}, Value: ""},
+				},
+				{
+					PodIdentifierAttribute{Source: AssociationSource{From: "connection", Name: ""}, Value: "localhost"},
+					PodIdentifierAttribute{Source: AssociationSource{From: "", Name: ""}, Value: ""},
+					PodIdentifierAttribute{Source: AssociationSource{From: "", Name: ""}, Value: ""},
+					PodIdentifierAttribute{Source: AssociationSource{From: "", Name: ""}, Value: ""},
+				},
+				{
+					PodIdentifierAttribute{Source: AssociationSource{From: "resource_attribute", Name: "k8s.pod.ip"}, Value: "localhost"},
+					PodIdentifierAttribute{Source: AssociationSource{From: "", Name: ""}, Value: ""},
+					PodIdentifierAttribute{Source: AssociationSource{From: "", Name: ""}, Value: ""},
+					PodIdentifierAttribute{Source: AssociationSource{From: "", Name: ""}, Value: ""},
+				},
+			},
+		},
+	}
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			wc, _ := newTestClient(t)
+			wc.Associations = tc.associations
+			actual := wc.getIdentifiersFromAssoc(tc.pod)
+			assert.ElementsMatch(t, tc.expected, actual)
+		})
+	}
 }

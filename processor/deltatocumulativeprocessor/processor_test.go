@@ -13,17 +13,21 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"gopkg.in/yaml.v3"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/datatest/compare"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/testar"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/testing/sdktest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/testing/testar"
 )
 
 func TestProcessor(t *testing.T) {
@@ -38,11 +42,14 @@ func TestProcessor(t *testing.T) {
 		type Stage struct {
 			In  pmetric.Metrics `testar:"in,pmetric"`
 			Out pmetric.Metrics `testar:"out,pmetric"`
+
+			Sdk sdktest.Spec `testar:"telemetry,sdk"`
 		}
 
 		read := func(file string, into *Stage) error {
 			return testar.ReadFile(file, into,
 				testar.Parser("pmetric", unmarshalMetrics),
+				testar.Parser("sdk", sdktest.Unmarshal),
 			)
 		}
 
@@ -52,27 +59,26 @@ func TestProcessor(t *testing.T) {
 				return filepath.Join("testdata", dir, f)
 			}
 
-			ctx := context.Background()
+			ctx := t.Context()
 			cfg := config(t, file("config.yaml"))
-			proc, sink := setup(t, cfg)
+
+			sink := new(consumertest.MetricsSink)
+			proc, tel := setup(t, cfg, sink)
 
 			stages, _ := filepath.Glob(file("*.test"))
 			for _, file := range stages {
 				var stage Stage
-				err := read(file, &stage)
-				require.NoError(t, err)
+				require.NoError(t, read(file, &stage))
 
 				sink.Reset()
-				err = proc.ConsumeMetrics(ctx, stage.In)
-				require.NoError(t, err)
+				require.NoError(t, proc.ConsumeMetrics(ctx, stage.In))
 
 				out := []pmetric.Metrics{stage.Out}
-				if diff := compare.Diff(out, sink.AllMetrics()); diff != "" {
-					t.Fatal(diff)
-				}
+				assert.Equal(t, out, sink.AllMetrics())
+
+				require.NoError(t, sdktest.Test(stage.Sdk, tel.reader))
 			}
 		})
-
 	}
 }
 
@@ -89,26 +95,28 @@ func config(t *testing.T, file string) *Config {
 	return cfg
 }
 
-func setup(t *testing.T, cfg *Config) (processor.Metrics, *consumertest.MetricsSink) {
-	t.Helper()
-
-	next := &consumertest.MetricsSink{}
+func setup(tb testing.TB, cfg *Config, next consumer.Metrics) (processor.Metrics, testTelemetry) {
+	tb.Helper()
 	if cfg == nil {
 		cfg = &Config{MaxStale: 0, MaxStreams: math.MaxInt}
 	}
 
+	tt := setupTestTelemetry()
+	tb.Cleanup(func() {
+		assert.NoError(tb, tt.Shutdown(tb.Context()))
+	})
 	proc, err := NewFactory().CreateMetrics(
-		context.Background(),
-		processortest.NewNopSettings(),
+		tb.Context(),
+		tt.newSettings(),
 		cfg,
 		next,
 	)
-	require.NoError(t, err)
+	require.NoError(tb, err)
 
-	return proc, next
+	return proc, tt
 }
 
-func unmarshalMetrics(data []byte, into any) error {
+func unmarshalMetrics(data []byte, into *pmetric.Metrics) error {
 	var tmp any
 	if err := yaml.Unmarshal(data, &tmp); err != nil {
 		return err
@@ -121,7 +129,7 @@ func unmarshalMetrics(data []byte, into any) error {
 	if err != nil {
 		return err
 	}
-	*(into.(*pmetric.Metrics)) = md
+	*into = md
 	return nil
 }
 
@@ -132,15 +140,36 @@ func TestTelemetry(t *testing.T) {
 	cfg := createDefaultConfig()
 
 	_, err := NewFactory().CreateMetrics(
-		context.Background(),
-		tt.NewSettings(),
+		t.Context(),
+		tt.newSettings(),
 		cfg,
 		next,
 	)
 	require.NoError(t, err)
 
 	var rm metricdata.ResourceMetrics
-	if err := tt.reader.Collect(context.Background(), &rm); err != nil {
-		t.Fatal(err)
+	require.NoError(t, tt.reader.Collect(t.Context(), &rm))
+}
+
+type testTelemetry struct {
+	reader        *sdkmetric.ManualReader
+	meterProvider *sdkmetric.MeterProvider
+}
+
+func setupTestTelemetry() testTelemetry {
+	reader := sdkmetric.NewManualReader()
+	return testTelemetry{
+		reader:        reader,
+		meterProvider: sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader)),
 	}
+}
+
+func (tt *testTelemetry) newSettings() processor.Settings {
+	set := processortest.NewNopSettings(metadata.Type)
+	set.MeterProvider = tt.meterProvider
+	return set
+}
+
+func (tt *testTelemetry) Shutdown(ctx context.Context) error {
+	return tt.meterProvider.Shutdown(ctx)
 }

@@ -4,7 +4,6 @@
 package correlation
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,16 +13,18 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/metadata"
 )
 
 func TestTrackerAddSpans(t *testing.T) {
 	tracker := NewTracker(
 		DefaultConfig(),
 		"abcd",
-		exportertest.NewNopSettings(),
+		exportertest.NewNopSettings(metadata.Type),
 	)
 
-	err := tracker.Start(context.Background(), componenttest.NewNopHost())
+	err := tracker.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	assert.NotNil(t, tracker.correlation, "correlation context should be set")
 
@@ -33,18 +34,17 @@ func TestTrackerAddSpans(t *testing.T) {
 	attr.PutStr("host.name", "localhost")
 
 	// Add empty first, should ignore.
-	assert.NoError(t, tracker.ProcessTraces(context.Background(), ptrace.NewTraces()))
+	assert.NoError(t, tracker.ProcessTraces(t.Context(), ptrace.NewTraces()))
 	assert.Nil(t, tracker.traceTracker)
 
-	assert.NoError(t, tracker.ProcessTraces(context.Background(), traces))
+	assert.NoError(t, tracker.ProcessTraces(t.Context(), traces))
 
 	assert.NotNil(t, tracker.traceTracker, "trace tracker should be set")
 
-	assert.NoError(t, tracker.Shutdown(context.Background()))
+	assert.NoError(t, tracker.Shutdown(t.Context()))
 }
 
 func TestTrackerStart(t *testing.T) {
-
 	tests := []struct {
 		name    string
 		config  *Config
@@ -56,7 +56,7 @@ func TestTrackerStart(t *testing.T) {
 			config: &Config{
 				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "localhost:9090",
-					TLSSetting: configtls.ClientConfig{
+					TLS: configtls.ClientConfig{
 						Config: configtls.Config{
 							CAFile: "/non/existent",
 						},
@@ -73,10 +73,10 @@ func TestTrackerStart(t *testing.T) {
 			tracker := NewTracker(
 				tt.config,
 				"abcd",
-				exportertest.NewNopSettings(),
+				exportertest.NewNopSettings(metadata.Type),
 			)
 
-			err := tracker.Start(context.Background(), componenttest.NewNopHost())
+			err := tracker.Start(t.Context(), componenttest.NewNopHost())
 
 			if tt.wantErr {
 				require.Error(t, err)
@@ -87,7 +87,7 @@ func TestTrackerStart(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			assert.NoError(t, tracker.Shutdown(context.Background()))
+			assert.NoError(t, tracker.Shutdown(t.Context()))
 		})
 	}
 }

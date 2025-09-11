@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver/internal/metadata"
@@ -33,7 +33,7 @@ type redisScraper struct {
 
 const redisMaxDbs = 16 // Maximum possible number of redis databases
 
-func newRedisScraper(cfg *Config, settings receiver.Settings) (scraperhelper.Scraper, error) {
+func newRedisScraper(cfg *Config, settings receiver.Settings) (scraper.Metrics, error) {
 	opts := &redis.Options{
 		Addr:     cfg.Endpoint,
 		Username: cfg.Username,
@@ -48,7 +48,7 @@ func newRedisScraper(cfg *Config, settings receiver.Settings) (scraperhelper.Scr
 	return newRedisScraperWithClient(newRedisClient(opts), settings, cfg)
 }
 
-func newRedisScraperWithClient(client client, settings receiver.Settings, cfg *Config) (scraperhelper.Scraper, error) {
+func newRedisScraperWithClient(client client, settings receiver.Settings, cfg *Config) (scraper.Metrics, error) {
 	configInfo, err := newConfigInfo(cfg)
 	if err != nil {
 		return nil, err
@@ -60,10 +60,9 @@ func newRedisScraperWithClient(client client, settings receiver.Settings, cfg *C
 		mb:         metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
 		configInfo: configInfo,
 	}
-	return scraperhelper.NewScraper(
-		metadata.Type,
+	return scraper.NewMetrics(
 		rs.Scrape,
-		scraperhelper.WithShutdown(rs.shutdown),
+		scraper.WithShutdown(rs.shutdown),
 	)
 }
 
@@ -138,11 +137,11 @@ func (rs *redisScraper) recordCommonMetrics(ts pcommon.Timestamp, inf info) {
 // recordKeyspaceMetrics records metrics from 'keyspace' Redis info key-value pairs,
 // e.g. "db0: keys=1,expires=2,avg_ttl=3".
 func (rs *redisScraper) recordKeyspaceMetrics(ts pcommon.Timestamp, inf info) {
-	for db := 0; db < redisMaxDbs; db++ {
+	for db := range redisMaxDbs {
 		key := "db" + strconv.Itoa(db)
 		str, ok := inf[key]
 		if !ok {
-			break
+			continue
 		}
 		keyspace, parsingError := parseKeyspaceString(db, str)
 		if parsingError != nil {
@@ -158,7 +157,7 @@ func (rs *redisScraper) recordKeyspaceMetrics(ts pcommon.Timestamp, inf info) {
 
 // getRedisVersion retrieves version string from 'redis_version' Redis info key-value pairs
 // e.g. "redis_version:5.0.7"
-func (rs *redisScraper) getRedisVersion(inf info) string {
+func (*redisScraper) getRedisVersion(inf info) string {
 	if str, ok := inf["redis_version"]; ok {
 		return str
 	}
@@ -196,7 +195,7 @@ func (rs *redisScraper) recordCmdMetrics(ts pcommon.Timestamp, inf info) {
 	}
 }
 
-// recordCmdStatsMetrics records metrics for a particlar Redis command.
+// recordCmdStatsMetrics records metrics for a particular Redis command.
 // Only 'calls' and 'usec' are recorded at the moment.
 // 'cmd' is the Redis command, 'val' is the values string (e.g. "calls=1685,usec=6032,usec_per_call=3.58,rejected_calls=0,failed_calls=0").
 func (rs *redisScraper) recordCmdStatsMetrics(ts pcommon.Timestamp, cmd, val string) {
@@ -210,9 +209,10 @@ func (rs *redisScraper) recordCmdStatsMetrics(ts pcommon.Timestamp, cmd, val str
 		if err != nil { // skip bad items
 			continue
 		}
-		if subParts[0] == "calls" {
+		switch subParts[0] {
+		case "calls":
 			rs.mb.RecordRedisCmdCallsDataPoint(ts, parsed, cmd)
-		} else if subParts[0] == "usec" {
+		case "usec":
 			rs.mb.RecordRedisCmdUsecDataPoint(ts, parsed, cmd)
 		}
 	}

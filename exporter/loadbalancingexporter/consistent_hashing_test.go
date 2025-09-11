@@ -31,10 +31,10 @@ func TestEndpointFor(t *testing.T) {
 		expected string
 	}{
 		// check that we are indeed alternating endpoints for different inputs
-		{[]byte{1, 2, 0, 0}, "endpoint-1"},
-		{[]byte{128, 128, 0, 0}, "endpoint-2"},
-		{[]byte("ad-service-7"), "endpoint-1"},
-		{[]byte("get-recommendations-1"), "endpoint-2"},
+		{[]byte{1, 2, 0, 0}, "endpoint-2"},
+		{[]byte{128, 128, 0, 0}, "endpoint-1"},
+		{[]byte("ad-service-7"), "endpoint-2"},
+		{[]byte("get-recommendations-1"), "endpoint-1"},
 	} {
 		t.Run(fmt.Sprintf("Endpoint for id %s", string(tt.id)), func(t *testing.T) {
 			// test
@@ -42,7 +42,6 @@ func TestEndpointFor(t *testing.T) {
 
 			// verify
 			assert.Equal(t, tt.expected, endpoint)
-
 		})
 	}
 }
@@ -107,40 +106,47 @@ func TestPositionsForEndpoints(t *testing.T) {
 			[]string{"endpoint-1"},
 			[]ringItem{
 				// this was first calculated by running the algorithm and taking its output
-				{pos: 1401, endpoint: "endpoint-1"},
-				{pos: 4175, endpoint: "endpoint-1"},
-				{pos: 14133, endpoint: "endpoint-1"},
-				{pos: 17836, endpoint: "endpoint-1"},
-				{pos: 21667, endpoint: "endpoint-1"},
+				{pos: 0x21ca, endpoint: "endpoint-1"},
+				{pos: 0x29d3, endpoint: "endpoint-1"},
+				{pos: 0x3984, endpoint: "endpoint-1"},
+				{pos: 0x5eaf, endpoint: "endpoint-1"},
+				{pos: 0x8bc1, endpoint: "endpoint-1"},
 			},
 		},
 		{
 			"Duplicate Endpoint",
 			[]string{"endpoint-1", "endpoint-1"},
 			[]ringItem{
-				// we expect to not have duplicate items
-				{pos: 1401, endpoint: "endpoint-1"},
-				{pos: 4175, endpoint: "endpoint-1"},
-				{pos: 14133, endpoint: "endpoint-1"},
-				{pos: 17836, endpoint: "endpoint-1"},
-				{pos: 21667, endpoint: "endpoint-1"},
+				// We expect to not have duplicate items.
+				// When a clash occurs, the next free positions should be taken. In this case, there will always be
+				// exactly one clash because of duplicate endpoints. So, the pos will always be i and i+1.
+				{pos: 0x21ca, endpoint: "endpoint-1"},
+				{pos: 0x21cb, endpoint: "endpoint-1"},
+				{pos: 0x29d3, endpoint: "endpoint-1"},
+				{pos: 0x29d4, endpoint: "endpoint-1"},
+				{pos: 0x3984, endpoint: "endpoint-1"},
+				{pos: 0x3985, endpoint: "endpoint-1"},
+				{pos: 0x5eaf, endpoint: "endpoint-1"},
+				{pos: 0x5eb0, endpoint: "endpoint-1"},
+				{pos: 0x8bc1, endpoint: "endpoint-1"},
+				{pos: 0x8bc2, endpoint: "endpoint-1"},
 			},
 		},
 		{
 			"Multiple Endpoints",
-			[]string{"endpoint-1", "endpoint-2"},
+			[]string{"endpoint-A", "endpoint-B"},
 			[]ringItem{
 				// we expect to have 5 positions for each endpoint
-				{pos: 1401, endpoint: "endpoint-1"},
-				{pos: 4175, endpoint: "endpoint-1"},
-				{pos: 10240, endpoint: "endpoint-2"},
-				{pos: 14133, endpoint: "endpoint-1"},
-				{pos: 15002, endpoint: "endpoint-2"},
-				{pos: 17836, endpoint: "endpoint-1"},
-				{pos: 21263, endpoint: "endpoint-2"},
-				{pos: 21667, endpoint: "endpoint-1"},
-				{pos: 26806, endpoint: "endpoint-2"},
-				{pos: 27020, endpoint: "endpoint-2"},
+				{pos: 0xdde, endpoint: "endpoint-B"},
+				{pos: 0x162e, endpoint: "endpoint-A"},
+				{pos: 0x21f5, endpoint: "endpoint-B"},
+				{pos: 0x34e5, endpoint: "endpoint-A"},
+				{pos: 0x61fb, endpoint: "endpoint-B"},
+				{pos: 0x6910, endpoint: "endpoint-B"},
+				{pos: 0x76a0, endpoint: "endpoint-A"},
+				{pos: 0x7e2b, endpoint: "endpoint-A"},
+				{pos: 0x7f7c, endpoint: "endpoint-A"},
+				{pos: 0x85ac, endpoint: "endpoint-B"},
 			},
 		},
 	} {

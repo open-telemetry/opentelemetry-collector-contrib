@@ -4,8 +4,7 @@
 package ecsutil
 
 import (
-	"context"
-	"fmt"
+	"errors"
 	"io"
 	"net/http"
 	"net/url"
@@ -32,7 +31,7 @@ func TestClient(t *testing.T) {
 	require.Equal(t, baseURL.String()+"/stats", tr.url)
 	require.Len(t, tr.header, 1)
 	require.Equal(t, "application/json", tr.header["Content-Type"][0])
-	require.Equal(t, "GET", tr.method)
+	require.Equal(t, http.MethodGet, tr.method)
 }
 
 func TestNewClientProvider(t *testing.T) {
@@ -49,7 +48,7 @@ func TestNewClientProvider(t *testing.T) {
 
 func TestDefaultClient(t *testing.T) {
 	endpoint, _ := url.Parse("http://localhost:8080")
-	client, err := defaultClient(context.Background(), *endpoint, confighttp.NewDefaultClientConfig(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
+	client, err := defaultClient(t.Context(), *endpoint, confighttp.NewDefaultClientConfig(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 	require.NotNil(t, client.httpClient.Transport)
 	require.Equal(t, "http://localhost:8080", client.baseURL.String())
@@ -150,7 +149,7 @@ type fakeRoundTripper struct {
 
 func (f *fakeRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	if f.failOnRT {
-		return nil, fmt.Errorf("failOnRT == true")
+		return nil, errors.New("failOnRT == true")
 	}
 	f.header = req.Header
 	f.method = req.Method
@@ -172,7 +171,7 @@ func (f *fakeRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) 
 			onClose: func() error {
 				f.closed = true
 				if f.errOnClose {
-					return fmt.Errorf("error on close")
+					return errors.New("error on close")
 				}
 				return nil
 			},
@@ -184,8 +183,8 @@ var _ io.Reader = (*failingReader)(nil)
 
 type failingReader struct{}
 
-func (f *failingReader) Read([]byte) (n int, err error) {
-	return 0, fmt.Errorf("error on read")
+func (*failingReader) Read([]byte) (n int, err error) {
+	return 0, errors.New("error on read")
 }
 
 var _ io.ReadCloser = (*fakeReadCloser)(nil)

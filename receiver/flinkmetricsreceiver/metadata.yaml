@@ -6,7 +6,7 @@ status:
     alpha: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [JonathanWamsley, djaglowski]
+    active: [JonathanWamsley]
     seeking_new: true
 
 resource_attributes:

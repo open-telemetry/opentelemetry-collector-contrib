@@ -9,7 +9,7 @@
 | container.id | Container ID. Usually a UUID, as for example used to identify Docker containers. The UUID might be abbreviated. Requires k8s.container.restart_count. | Any Str | false |
 | container.image.name | Name of the image the container was built on. Requires container.id or k8s.container.name. | Any Str | true |
 | container.image.repo_digests | Repo digests of the container image as provided by the container runtime. | Any Slice | false |
-| container.image.tag | Container image tag. Requires container.id or k8s.container.name. | Any Str | true |
+| container.image.tag | Container image tag. Defaults to "latest" if not provided (unless digest also in image path) Requires container.id or k8s.container.name. | Any Str | true |
 | k8s.cluster.uid | Gives cluster uid identified with kube-system namespace | Any Str | false |
 | k8s.container.name | The name of the Container in a Pod template. Requires container.id. | Any Str | false |
 | k8s.cronjob.name | The name of the CronJob. | Any Str | false |
@@ -31,6 +31,10 @@
 | k8s.replicaset.uid | The UID of the ReplicaSet. | Any Str | false |
 | k8s.statefulset.name | The name of the StatefulSet. | Any Str | false |
 | k8s.statefulset.uid | The UID of the StatefulSet. | Any Str | false |
+| service.instance.id | The instance ID of the service. | Any Str | false |
+| service.name | The name of the service. | Any Str | false |
+| service.namespace | The namespace of the service. | Any Str | false |
+| service.version | The version of the service. | Any Str | false |
 
 ## Internal Telemetry
 

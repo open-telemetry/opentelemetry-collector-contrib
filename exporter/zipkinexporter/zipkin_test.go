@@ -5,7 +5,6 @@ package zipkinexporter
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -23,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver"
 )
@@ -53,11 +53,11 @@ func TestZipkinExporter_roundtripJSON(t *testing.T) {
 		},
 		Format: "json",
 	}
-	zexp, err := NewFactory().CreateTraces(context.Background(), exportertest.NewNopSettings(), cfg)
+	zexp, err := NewFactory().CreateTraces(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
 	assert.NoError(t, err)
 	require.NotNil(t, zexp)
 
-	require.NoError(t, zexp.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, zexp.Start(t.Context(), componenttest.NewNopHost()))
 
 	// The test requires the spans from zipkinSpansJSONJavaLibrary to be sent in a single batch, use
 	// a mock to ensure that this happens as intended.
@@ -70,12 +70,12 @@ func TestZipkinExporter_roundtripJSON(t *testing.T) {
 			Endpoint: addr,
 		},
 	}
-	zi, err := zipkinreceiver.NewFactory().CreateTraces(context.Background(), receivertest.NewNopSettings(), recvCfg, zexp)
+	zi, err := zipkinreceiver.NewFactory().CreateTraces(t.Context(), receivertest.NewNopSettings(metadata.Type), recvCfg, zexp)
 	assert.NoError(t, err)
 	require.NotNil(t, zi)
 
-	require.NoError(t, zi.Start(context.Background(), componenttest.NewNopHost()))
-	t.Cleanup(func() { require.NoError(t, zi.Shutdown(context.Background())) })
+	require.NoError(t, zi.Start(t.Context(), componenttest.NewNopHost()))
+	t.Cleanup(func() { require.NoError(t, zi.Shutdown(t.Context())) })
 
 	// Let the receiver receive "uploaded Zipkin spans from a Java client application"
 	_, err = http.Post("http://"+addr, "application/json", strings.NewReader(zipkinSpansJSONJavaLibrary))
@@ -150,7 +150,8 @@ var _ zipkinreporter.Reporter = (*mockZipkinReporter)(nil)
 func (r *mockZipkinReporter) Send(span zipkinmodel.SpanModel) {
 	r.batch = append(r.batch, &span)
 }
-func (r *mockZipkinReporter) Close() error {
+
+func (*mockZipkinReporter) Close() error {
 	return nil
 }
 
@@ -175,7 +176,7 @@ func (r *mockZipkinReporter) Flush() error {
 		return err
 	}
 
-	req, err := http.NewRequest("POST", r.url, bytes.NewReader(body))
+	req, err := http.NewRequest(http.MethodPost, r.url, bytes.NewReader(body))
 	if err != nil {
 		return err
 	}
@@ -277,8 +278,8 @@ func TestZipkinExporter_invalidFormat(t *testing.T) {
 		Format: "foobar",
 	}
 	f := NewFactory()
-	set := exportertest.NewNopSettings()
-	_, err := f.CreateTraces(context.Background(), set, config)
+	set := exportertest.NewNopSettings(metadata.Type)
+	_, err := f.CreateTraces(t.Context(), set, config)
 	require.Error(t, err)
 }
 
@@ -300,10 +301,10 @@ func TestZipkinExporter_roundtripProto(t *testing.T) {
 		},
 		Format: "proto",
 	}
-	zexp, err := NewFactory().CreateTraces(context.Background(), exportertest.NewNopSettings(), cfg)
+	zexp, err := NewFactory().CreateTraces(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
 
-	require.NoError(t, zexp.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, zexp.Start(t.Context(), componenttest.NewNopHost()))
 
 	// The test requires the spans from zipkinSpansJSONJavaLibrary to be sent in a single batch, use
 	// a mock to ensure that this happens as intended.
@@ -318,12 +319,12 @@ func TestZipkinExporter_roundtripProto(t *testing.T) {
 			Endpoint: addr,
 		},
 	}
-	zi, err := zipkinreceiver.NewFactory().CreateTraces(context.Background(), receivertest.NewNopSettings(), recvCfg, zexp)
+	zi, err := zipkinreceiver.NewFactory().CreateTraces(t.Context(), receivertest.NewNopSettings(metadata.Type), recvCfg, zexp)
 	require.NoError(t, err)
 
-	err = zi.Start(context.Background(), componenttest.NewNopHost())
+	err = zi.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, zi.Shutdown(context.Background())) })
+	t.Cleanup(func() { require.NoError(t, zi.Shutdown(t.Context())) })
 
 	// Let the receiver receive "uploaded Zipkin spans from a Java client application"
 	_, _ = http.Post("http://"+addr, "", strings.NewReader(zipkinSpansJSONJavaLibrary))

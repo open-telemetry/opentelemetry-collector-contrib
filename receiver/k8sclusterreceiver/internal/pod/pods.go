@@ -4,11 +4,12 @@
 package pod // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/pod"
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 	"go.uber.org/zap"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
@@ -28,8 +29,10 @@ import (
 )
 
 const (
-	// Keys for pod metadata.
+	// Keys for pod metadata and entity attributes. These are NOT used by resource attributes.
 	podCreationTime = "pod.creation_timestamp"
+	podPhase        = "k8s.pod.phase"
+	podStatusReason = "k8s.pod.status_reason"
 )
 
 // Transform transforms the pod to remove the fields that we don't use to reduce RAM utilization.
@@ -43,6 +46,7 @@ func Transform(pod *corev1.Pod) *corev1.Pod {
 		Status: corev1.PodStatus{
 			Phase:    pod.Status.Phase,
 			QOSClass: pod.Status.QOSClass,
+			Reason:   pod.Status.Reason,
 		},
 	}
 	for _, cs := range pod.Status.ContainerStatuses {
@@ -126,6 +130,17 @@ func GetMetadata(pod *corev1.Pod, mc *metadata.Store, logger *zap.Logger) map[ex
 	meta := maps.MergeStringMaps(map[string]string{}, pod.Labels)
 
 	meta[podCreationTime] = pod.CreationTimestamp.Format(time.RFC3339)
+	phase := pod.Status.Phase
+	if phase == "" {
+		phase = corev1.PodUnknown
+	}
+	meta[podPhase] = string(phase)
+	reason := pod.Status.Reason
+	if reason != "" {
+		meta[podStatusReason] = reason
+	}
+
+	meta[string(conventions.K8SNodeNameKey)] = pod.Spec.NodeName
 
 	for _, or := range pod.OwnerReferences {
 		kind := strings.ToLower(or.Kind)
@@ -152,59 +167,78 @@ func GetMetadata(pod *corev1.Pod, mc *metadata.Store, logger *zap.Logger) map[ex
 		meta = maps.MergeStringMaps(meta, collectPodReplicaSetProperties(pod, store, logger))
 	}
 
+	meta[constants.K8sKeyNamespaceName] = pod.Namespace
+	meta[constants.K8sKeyPodName] = pod.Name
+
 	podID := experimentalmetricmetadata.ResourceID(pod.UID)
 	return metadata.MergeKubernetesMetadataMaps(map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{
 		podID: {
 			EntityType:    "k8s.pod",
-			ResourceIDKey: conventions.AttributeK8SPodUID,
+			ResourceIDKey: string(conventions.K8SPodUIDKey),
 			ResourceID:    podID,
 			Metadata:      meta,
 		},
-	}, getPodContainerProperties(pod))
+	}, getPodContainerProperties(pod, logger))
 }
 
 // collectPodJobProperties checks if pod owner of type Job is cached. Check owners reference
 // on Job to see if it was created by a CronJob. Sync metadata accordingly.
-func collectPodJobProperties(pod *corev1.Pod, jobStore cache.Store, logger *zap.Logger) map[string]string {
+func collectPodJobProperties(pod *corev1.Pod, jobStores map[string]cache.Store, logger *zap.Logger) map[string]string {
 	jobRef := utils.FindOwnerWithKind(pod.OwnerReferences, constants.K8sKindJob)
 	if jobRef != nil {
-		job, exists, err := jobStore.GetByKey(utils.GetIDForCache(pod.Namespace, jobRef.Name))
+		var job any
+		var err error
+
+		job, err = utils.GetObjectFromStore(pod.Namespace, jobRef.Name, jobStores)
 		if err != nil {
 			logError(err, jobRef, pod.UID, logger)
 			return nil
-		} else if !exists {
+		} else if job == nil {
 			logDebug(jobRef, pod.UID, logger)
 			return nil
 		}
 
-		jobObj := job.(*batchv1.Job)
-		if cronJobRef := utils.FindOwnerWithKind(jobObj.OwnerReferences, constants.K8sKindCronJob); cronJobRef != nil {
-			return getWorkloadProperties(cronJobRef, conventions.AttributeK8SCronJobName)
+		jobObj, ok := job.(*batchv1.Job)
+		// in practice the conversion should not fail, but checking just to be safe
+		if !ok {
+			logError(fmt.Errorf("cannot cast %T to *batchv1.Job", job), jobRef, pod.UID, logger)
+			return nil
 		}
-		return getWorkloadProperties(jobRef, conventions.AttributeK8SJobName)
+		if cronJobRef := utils.FindOwnerWithKind(jobObj.OwnerReferences, constants.K8sKindCronJob); cronJobRef != nil {
+			return getWorkloadProperties(cronJobRef, string(conventions.K8SCronJobNameKey))
+		}
+		return getWorkloadProperties(jobRef, string(conventions.K8SJobNameKey))
 	}
 	return nil
 }
 
 // collectPodReplicaSetProperties checks if pod owner of type ReplicaSet is cached. Check owners reference
 // on ReplicaSet to see if it was created by a Deployment. Sync metadata accordingly.
-func collectPodReplicaSetProperties(pod *corev1.Pod, replicaSetstore cache.Store, logger *zap.Logger) map[string]string {
+func collectPodReplicaSetProperties(pod *corev1.Pod, replicaSetStores map[string]cache.Store, logger *zap.Logger) map[string]string {
 	rsRef := utils.FindOwnerWithKind(pod.OwnerReferences, constants.K8sKindReplicaSet)
 	if rsRef != nil {
-		replicaSet, exists, err := replicaSetstore.GetByKey(utils.GetIDForCache(pod.Namespace, rsRef.Name))
+		var replicaSet any
+		var err error
+
+		replicaSet, err = utils.GetObjectFromStore(pod.Namespace, rsRef.Name, replicaSetStores)
 		if err != nil {
 			logError(err, rsRef, pod.UID, logger)
 			return nil
-		} else if !exists {
+		} else if replicaSet == nil {
 			logDebug(rsRef, pod.UID, logger)
 			return nil
 		}
 
-		replicaSetObj := replicaSet.(*appsv1.ReplicaSet)
-		if deployRef := utils.FindOwnerWithKind(replicaSetObj.OwnerReferences, constants.K8sKindDeployment); deployRef != nil {
-			return getWorkloadProperties(deployRef, conventions.AttributeK8SDeploymentName)
+		replicaSetObj, ok := replicaSet.(*appsv1.ReplicaSet)
+		// in practice the conversion should not fail, but checking just to be safe
+		if !ok {
+			logError(fmt.Errorf("cannot cast %T to *appsv1.ReplicaSet", replicaSet), rsRef, pod.UID, logger)
+			return nil
 		}
-		return getWorkloadProperties(rsRef, conventions.AttributeK8SReplicaSetName)
+		if deployRef := utils.FindOwnerWithKind(replicaSetObj.OwnerReferences, constants.K8sKindDeployment); deployRef != nil {
+			return getWorkloadProperties(deployRef, string(conventions.K8SDeploymentNameKey))
+		}
+		return getWorkloadProperties(rsRef, string(conventions.K8SReplicaSetNameKey))
 	}
 	return nil
 }
@@ -212,16 +246,16 @@ func collectPodReplicaSetProperties(pod *corev1.Pod, replicaSetstore cache.Store
 func logDebug(ref *v1.OwnerReference, podUID types.UID, logger *zap.Logger) {
 	logger.Debug(
 		"Resource does not exist in store, properties from it will not be synced.",
-		zap.String(conventions.AttributeK8SPodUID, string(podUID)),
-		zap.String(conventions.AttributeK8SJobUID, string(ref.UID)),
+		zap.String(string(conventions.K8SPodUIDKey), string(podUID)),
+		zap.String(string(conventions.K8SJobUIDKey), string(ref.UID)),
 	)
 }
 
 func logError(err error, ref *v1.OwnerReference, podUID types.UID, logger *zap.Logger) {
 	logger.Error(
 		"Failed to get resource from store, properties from it will not be synced.",
-		zap.String(conventions.AttributeK8SPodUID, string(podUID)),
-		zap.String(conventions.AttributeK8SJobUID, string(ref.UID)),
+		zap.String(string(conventions.K8SPodUIDKey), string(podUID)),
+		zap.String(string(conventions.K8SJobUIDKey), string(ref.UID)),
 		zap.Error(err),
 	)
 }
@@ -237,10 +271,10 @@ func getWorkloadProperties(ref *v1.OwnerReference, labelKey string) map[string]s
 	}
 }
 
-func getPodContainerProperties(pod *corev1.Pod) map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata {
+func getPodContainerProperties(pod *corev1.Pod, logger *zap.Logger) map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata {
 	km := map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{}
 	for _, cs := range pod.Status.ContainerStatuses {
-		md := container.GetMetadata(cs)
+		md := container.GetMetadata(pod, cs, logger)
 		km[md.ResourceID] = md
 	}
 	return km

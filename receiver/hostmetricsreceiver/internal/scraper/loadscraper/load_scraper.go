@@ -9,25 +9,27 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/shirou/gopsutil/v4/common"
 	"github.com/shirou/gopsutil/v4/host"
 	"github.com/shirou/gopsutil/v4/load"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/scraper"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/perfcounters"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/loadscraper/internal/metadata"
 )
 
 const metricsLen = 3
 
+// errPreventScrape is used to indicate that skip scrape should be set to true
+// when the sampler fails to start.
+var errPreventScrape = errors.New("cannot scrape load metrics")
+
 // scraper for Load Metrics
-type scraper struct {
-	settings   receiver.Settings
+type loadScraper struct {
+	settings   scraper.Settings
 	config     *Config
 	mb         *metadata.MetricsBuilder
 	skipScrape bool
@@ -38,13 +40,12 @@ type scraper struct {
 }
 
 // newLoadScraper creates a set of Load related metrics
-func newLoadScraper(_ context.Context, settings receiver.Settings, cfg *Config) *scraper {
-	return &scraper{settings: settings, config: cfg, bootTime: host.BootTimeWithContext, load: getSampledLoadAverages}
+func newLoadScraper(_ context.Context, settings scraper.Settings, cfg *Config) *loadScraper {
+	return &loadScraper{settings: settings, config: cfg, bootTime: host.BootTimeWithContext, load: getSampledLoadAverages}
 }
 
 // start
-func (s *scraper) start(ctx context.Context, _ component.Host) error {
-	ctx = context.WithValue(ctx, common.EnvKey, s.config.EnvMap)
+func (s *loadScraper) start(ctx context.Context, _ component.Host) error {
 	bootTime, err := s.bootTime(ctx)
 	if err != nil {
 		return err
@@ -52,24 +53,17 @@ func (s *scraper) start(ctx context.Context, _ component.Host) error {
 
 	s.mb = metadata.NewMetricsBuilder(s.config.MetricsBuilderConfig, s.settings, metadata.WithStartTime(pcommon.Timestamp(bootTime*1e9)))
 	err = startSampling(ctx, s.settings.Logger)
-
-	var initErr *perfcounters.PerfCounterInitError
-	switch {
-	case errors.As(err, &initErr):
-		// This indicates, on Windows, that the performance counters can't be scraped.
-		// In order to prevent crashing in a fragile manner, we simply skip scraping.
-		s.settings.Logger.Error("Failed to init performance counters, load metrics will not be scraped", zap.Error(err))
+	if errors.Is(err, errPreventScrape) {
+		s.settings.Logger.Error("failed to start load scraper sampler", zap.Error(err))
 		s.skipScrape = true
-	case err != nil:
-		// Unknown error; fail to start if this is the case
-		return err
+		err = nil
 	}
 
-	return nil
+	return err
 }
 
 // shutdown
-func (s *scraper) shutdown(ctx context.Context) error {
+func (s *loadScraper) shutdown(ctx context.Context) error {
 	if s.skipScrape {
 		// We skipped scraping because the sampler failed to start,
 		// so it doesn't need to be shut down.
@@ -79,13 +73,12 @@ func (s *scraper) shutdown(ctx context.Context) error {
 }
 
 // scrape
-func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
+func (s *loadScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	if s.skipScrape {
 		return pmetric.NewMetrics(), nil
 	}
 
 	now := pcommon.NewTimestampFromTime(time.Now())
-	ctx = context.WithValue(ctx, common.EnvKey, s.config.EnvMap)
 
 	avgLoadValues, err := s.load(ctx)
 	if err != nil {

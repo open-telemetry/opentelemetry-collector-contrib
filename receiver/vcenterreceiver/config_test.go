@@ -15,7 +15,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver/internal/metadata"
 )
@@ -50,7 +50,7 @@ func TestConfigValidation(t *testing.T) {
 			expectedErr: errors.New("url scheme must be http or https"),
 		},
 		{
-			desc: "unparseable URL",
+			desc: "unparsable URL",
 			cfg: Config{
 				Endpoint:         "h" + string(rune(0x7f)),
 				ClientConfig:     configtls.ClientConfig{},
@@ -104,11 +104,10 @@ func TestLoadConfig(t *testing.T) {
 	expected.Username = "otelu"
 	expected.Password = "${env:VCENTER_PASSWORD}"
 	expected.MetricsBuilderConfig = metadata.DefaultMetricsBuilderConfig()
-	expected.MetricsBuilderConfig.Metrics.VcenterHostCPUUtilization.Enabled = false
+	expected.Metrics.VcenterHostCPUUtilization.Enabled = false
 	expected.CollectionInterval = 5 * time.Minute
 
 	if diff := cmp.Diff(expected, cfg, cmpopts.IgnoreUnexported(metadata.MetricConfig{}), cmpopts.IgnoreUnexported(metadata.ResourceAttributeConfig{})); diff != "" {
 		t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
 	}
-
 }

@@ -15,4 +15,4 @@
 | heroku.release.creation_timestamp | The heroku.release.creation_timestamp | Any Str | true |
 | service.instance.id | The service.instance.id | Any Str | true |
 | service.name | Heroku app name recorded as service.name. | Any Str | true |
-| service.version | Heroku relese version set as service.version. | Any Str | true |
+| service.version | Heroku release version set as service.version. | Any Str | true |

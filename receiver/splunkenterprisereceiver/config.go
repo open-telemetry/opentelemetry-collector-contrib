@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkenterprisereceiver/internal/metadata"
@@ -27,6 +27,7 @@ type Config struct {
 	IdxEndpoint                    confighttp.ClientConfig `mapstructure:"indexer"`
 	SHEndpoint                     confighttp.ClientConfig `mapstructure:"search_head"`
 	CMEndpoint                     confighttp.ClientConfig `mapstructure:"cluster_master"`
+	VersionInfo                    bool                    `mapstructure:"build_version_info"`
 }
 
 func (cfg *Config) Validate() (errors error) {
@@ -41,19 +42,19 @@ func (cfg *Config) Validate() (errors error) {
 		errors = multierr.Append(errors, errBadOrMissingEndpoint)
 	} else {
 		if cfg.IdxEndpoint.Endpoint != "" {
-			if cfg.IdxEndpoint.Auth == nil {
+			if !cfg.IdxEndpoint.Auth.HasValue() {
 				errors = multierr.Append(errors, errMissingAuthExtension)
 			}
 			endpoints = append(endpoints, cfg.IdxEndpoint.Endpoint)
 		}
 		if cfg.SHEndpoint.Endpoint != "" {
-			if cfg.SHEndpoint.Auth == nil {
+			if !cfg.SHEndpoint.Auth.HasValue() {
 				errors = multierr.Append(errors, errMissingAuthExtension)
 			}
 			endpoints = append(endpoints, cfg.SHEndpoint.Endpoint)
 		}
 		if cfg.CMEndpoint.Endpoint != "" {
-			if cfg.CMEndpoint.Auth == nil {
+			if !cfg.CMEndpoint.Auth.HasValue() {
 				errors = multierr.Append(errors, errMissingAuthExtension)
 			}
 			endpoints = append(endpoints, cfg.CMEndpoint.Endpoint)

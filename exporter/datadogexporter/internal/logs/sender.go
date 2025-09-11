@@ -11,7 +11,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/clientutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/clientutil"
 )
 
 // Sender submits logs to Datadog intake
@@ -22,7 +22,7 @@ type Sender struct {
 }
 
 // logsV2 is the key in datadog ServerConfiguration
-// It is being used to customize the endpoint for datdog intake based on exporter configuration
+// It is being used to customize the endpoint for Datadog intake based on exporter configuration
 // https://github.com/DataDog/datadog-api-client-go/blob/be7e034424012c7ee559a2153802a45df73232ea/api/datadog/configuration.go#L308
 const logsV2 = "v2.LogsApi.SubmitLog"
 

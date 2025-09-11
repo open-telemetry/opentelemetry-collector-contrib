@@ -4,13 +4,13 @@
 package jaeger // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 
 import (
-	"github.com/jaegertracing/jaeger/model"
+	"github.com/jaegertracing/jaeger-idl/model/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.16.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.16.0"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/idutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
+	idutils "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils"
 )
 
 // ProtoFromTraces translates internal trace data into the Jaeger Proto for GRPC.
@@ -79,7 +79,7 @@ func resourceToJaegerProtoProcess(resource pcommon.Resource) *model.Process {
 		return process
 	}
 	attrsCount := attrs.Len()
-	if serviceName, ok := attrs.Get(conventions.AttributeServiceName); ok {
+	if serviceName, ok := attrs.Get(string(conventions.ServiceNameKey)); ok {
 		process.ServiceName = serviceName.Str()
 		attrsCount--
 	}
@@ -90,7 +90,6 @@ func resourceToJaegerProtoProcess(resource pcommon.Resource) *model.Process {
 	tags := make([]model.KeyValue, 0, attrsCount)
 	process.Tags = appendTagsFromResourceAttributes(tags, attrs)
 	return process
-
 }
 
 func appendTagsFromResourceAttributes(dest []model.KeyValue, attrs pcommon.Map) []model.KeyValue {
@@ -98,13 +97,12 @@ func appendTagsFromResourceAttributes(dest []model.KeyValue, attrs pcommon.Map) 
 		return dest
 	}
 
-	attrs.Range(func(key string, attr pcommon.Value) bool {
-		if key == conventions.AttributeServiceName {
-			return true
+	for key, attr := range attrs.All() {
+		if key == string(conventions.ServiceNameKey) {
+			continue
 		}
 		dest = append(dest, attributeToJaegerProtoTag(key, attr))
-		return true
-	})
+	}
 	return dest
 }
 
@@ -112,10 +110,9 @@ func appendTagsFromAttributes(dest []model.KeyValue, attrs pcommon.Map) []model.
 	if attrs.Len() == 0 {
 		return dest
 	}
-	attrs.Range(func(key string, attr pcommon.Value) bool {
+	for key, attr := range attrs.All() {
 		dest = append(dest, attributeToJaegerProtoTag(key, attr))
-		return true
-	})
+	}
 	return dest
 }
 
@@ -332,13 +329,13 @@ func getTagFromStatusCode(statusCode ptrace.StatusCode) (model.KeyValue, bool) {
 	switch statusCode {
 	case ptrace.StatusCodeError:
 		return model.KeyValue{
-			Key:   conventions.OtelStatusCode,
+			Key:   string(conventions.OtelStatusCodeKey),
 			VType: model.ValueType_STRING,
 			VStr:  statusError,
 		}, true
 	case ptrace.StatusCodeOk:
 		return model.KeyValue{
-			Key:   conventions.OtelStatusCode,
+			Key:   string(conventions.OtelStatusCodeKey),
 			VType: model.ValueType_STRING,
 			VStr:  statusOk,
 		}, true
@@ -355,7 +352,6 @@ func getErrorTagFromStatusCode(statusCode ptrace.StatusCode) (model.KeyValue, bo
 		}, true
 	}
 	return model.KeyValue{}, false
-
 }
 
 func getTagFromStatusMsg(statusMsg string) (model.KeyValue, bool) {
@@ -363,7 +359,7 @@ func getTagFromStatusMsg(statusMsg string) (model.KeyValue, bool) {
 		return model.KeyValue{}, false
 	}
 	return model.KeyValue{
-		Key:   conventions.OtelStatusDescription,
+		Key:   string(conventions.OtelStatusDescriptionKey),
 		VStr:  statusMsg,
 		VType: model.ValueType_STRING,
 	}, true
@@ -388,7 +384,7 @@ func getTagsFromInstrumentationLibrary(il pcommon.InstrumentationScope) ([]model
 	var keyValues []model.KeyValue
 	if ilName := il.Name(); ilName != "" {
 		kv := model.KeyValue{
-			Key:   conventions.AttributeOtelScopeName,
+			Key:   string(conventions.OtelScopeNameKey),
 			VStr:  ilName,
 			VType: model.ValueType_STRING,
 		}
@@ -396,7 +392,7 @@ func getTagsFromInstrumentationLibrary(il pcommon.InstrumentationScope) ([]model
 	}
 	if ilVersion := il.Version(); ilVersion != "" {
 		kv := model.KeyValue{
-			Key:   conventions.AttributeOtelScopeVersion,
+			Key:   string(conventions.OtelScopeVersionKey),
 			VStr:  ilVersion,
 			VType: model.ValueType_STRING,
 		}
@@ -407,7 +403,7 @@ func getTagsFromInstrumentationLibrary(il pcommon.InstrumentationScope) ([]model
 }
 
 func refTypeFromLink(link ptrace.SpanLink) model.SpanRefType {
-	refTypeAttr, ok := link.Attributes().Get(conventions.AttributeOpentracingRefType)
+	refTypeAttr, ok := link.Attributes().Get(string(conventions.OpentracingRefTypeKey))
 	if !ok {
 		return model.SpanRefType_FOLLOWS_FROM
 	}
@@ -415,7 +411,7 @@ func refTypeFromLink(link ptrace.SpanLink) model.SpanRefType {
 }
 
 func strToJRefType(attr string) model.SpanRefType {
-	if attr == conventions.AttributeOpentracingRefTypeChildOf {
+	if attr == conventions.OpentracingRefTypeChildOf.Value.AsString() {
 		return model.ChildOf
 	}
 	// There are only 2 types of SpanRefType we assume that everything

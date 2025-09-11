@@ -19,6 +19,8 @@ type HtpasswdSettings struct {
 	File string `mapstructure:"file"`
 	// Inline contents of the htpasswd file.
 	Inline string `mapstructure:"inline"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type ClientAuthSettings struct {
@@ -26,14 +28,17 @@ type ClientAuthSettings struct {
 	Username string `mapstructure:"username"`
 	// Password holds the password to use for client authentication.
 	Password configopaque.String `mapstructure:"password"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 type Config struct {
-
 	// Htpasswd settings.
 	Htpasswd *HtpasswdSettings `mapstructure:"htpasswd,omitempty"`
 
 	// ClientAuth settings
 	ClientAuth *ClientAuthSettings `mapstructure:"client_auth,omitempty"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func (cfg *Config) Validate() error {

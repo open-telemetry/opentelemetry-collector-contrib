@@ -25,8 +25,10 @@ const (
 )
 
 // jsonTimestampLayout for the timestamp format in the plog.Logs structure
-const jsonTimestampLayout = "2006-01-02T15:04:05.000-07:00"
-const consoleTimestampLayout = "2006-01-02T15:04:05.000-0700"
+const (
+	jsonTimestampLayout    = "2006-01-02T15:04:05.000-07:00"
+	consoleTimestampLayout = "2006-01-02T15:04:05.000-0700"
+)
 
 // Severity mapping of the mongodb atlas logs
 var severityMap = map[string]plog.SeverityNumber{
@@ -43,7 +45,7 @@ var severityMap = map[string]plog.SeverityNumber{
 }
 
 // mongoAuditEventToLogRecord converts model.AuditLog event to plog.LogRecordSlice and adds the resource attributes.
-func mongodbAuditEventToLogData(logger *zap.Logger, logs []model.AuditLog, pc ProjectContext, hostname, logName string, clusterInfo ClusterInfo) (plog.Logs, error) {
+func mongodbAuditEventToLogData(logger *zap.Logger, logs []model.AuditLog, pc projectContext, hostname, logName string, clusterInfo clusterInfo) (plog.Logs, error) {
 	ld := plog.NewLogs()
 	rl := ld.ResourceLogs().AppendEmpty()
 	sl := rl.ScopeLogs().AppendEmpty()
@@ -145,7 +147,7 @@ func mongodbAuditEventToLogData(logger *zap.Logger, logs []model.AuditLog, pc Pr
 }
 
 // mongoEventToLogRecord converts model.LogEntry event to plog.LogRecordSlice and adds the resource attributes.
-func mongodbEventToLogData(logger *zap.Logger, logs []model.LogEntry, pc ProjectContext, hostname, logName string, clusterInfo ClusterInfo) plog.Logs {
+func mongodbEventToLogData(logger *zap.Logger, logs []model.LogEntry, pc projectContext, hostname, logName string, clusterInfo clusterInfo) plog.Logs {
 	ld := plog.NewLogs()
 	rl := ld.ResourceLogs().AppendEmpty()
 	sl := rl.ScopeLogs().AppendEmpty()

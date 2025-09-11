@@ -4,7 +4,6 @@
 package prometheusreceiver
 
 import (
-	"context"
 	"path/filepath"
 	"testing"
 
@@ -12,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -30,8 +30,8 @@ func TestCreateReceiver(t *testing.T) {
 
 	// The default config does not provide scrape_config so we expect that metrics receiver
 	// creation must also fail.
-	creationSet := receivertest.NewNopSettings()
-	mReceiver, _ := createMetricsReceiver(context.Background(), creationSet, cfg, consumertest.NewNop())
+	creationSet := receivertest.NewNopSettings(metadata.Type)
+	mReceiver, _ := createMetricsReceiver(t.Context(), creationSet, cfg, consumertest.NewNop())
 	assert.NotNil(t, mReceiver)
 	assert.NotNil(t, mReceiver.(*pReceiver).cfg.PrometheusConfig.GlobalConfig)
 }
@@ -47,18 +47,40 @@ func TestFactoryCanParseServiceDiscoveryConfigs(t *testing.T) {
 	assert.NoError(t, sub.Unmarshal(cfg))
 }
 
-func TestMultipleCreate(t *testing.T) {
+func TestMultipleCreateWithAPIServer(t *testing.T) {
 	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
-	set := receivertest.NewNopSettings()
-	firstRcvr, err := factory.CreateMetrics(context.Background(), set, cfg, consumertest.NewNop())
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.APIServer = APIServer{
+		Enabled: true,
+		ServerConfig: confighttp.ServerConfig{
+			Endpoint: "localhost:9090",
+		},
+	}
+	set := receivertest.NewNopSettings(metadata.Type)
+	firstRcvr, err := factory.CreateMetrics(t.Context(), set, cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	host := componenttest.NewNopHost()
 	require.NoError(t, err)
-	require.NoError(t, firstRcvr.Start(context.Background(), host))
-	require.NoError(t, firstRcvr.Shutdown(context.Background()))
-	secondRcvr, err := factory.CreateMetrics(context.Background(), set, cfg, consumertest.NewNop())
+	require.NoError(t, firstRcvr.Start(t.Context(), host))
+	require.NoError(t, firstRcvr.Shutdown(t.Context()))
+	secondRcvr, err := factory.CreateMetrics(t.Context(), set, cfg, consumertest.NewNop())
 	require.NoError(t, err)
-	require.NoError(t, secondRcvr.Start(context.Background(), host))
-	require.NoError(t, secondRcvr.Shutdown(context.Background()))
+	require.NoError(t, secondRcvr.Start(t.Context(), host))
+	require.NoError(t, secondRcvr.Shutdown(t.Context()))
+}
+
+func TestMultipleCreate(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	set := receivertest.NewNopSettings(metadata.Type)
+	firstRcvr, err := factory.CreateMetrics(t.Context(), set, cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	host := componenttest.NewNopHost()
+	require.NoError(t, err)
+	require.NoError(t, firstRcvr.Start(t.Context(), host))
+	require.NoError(t, firstRcvr.Shutdown(t.Context()))
+	secondRcvr, err := factory.CreateMetrics(t.Context(), set, cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	require.NoError(t, secondRcvr.Start(t.Context(), host))
+	require.NoError(t, secondRcvr.Shutdown(t.Context()))
 }

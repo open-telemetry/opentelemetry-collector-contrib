@@ -108,7 +108,7 @@ func (kr *k8seventsReceiver) startWatch(ns string, client k8s.Interface) {
 
 func (kr *k8seventsReceiver) handleEvent(ev *corev1.Event) {
 	if kr.allowEvent(ev) {
-		ld := k8sEventToLogData(kr.settings.Logger, ev)
+		ld := k8sEventToLogData(kr.settings.Logger, ev, kr.settings.BuildInfo.Version)
 
 		ctx := kr.obsrecv.StartLogsOp(kr.ctx)
 		consumerErr := kr.logsConsumer.ConsumeLogs(ctx, ld)
@@ -118,7 +118,7 @@ func (kr *k8seventsReceiver) handleEvent(ev *corev1.Event) {
 
 // startWatchingNamespace creates an informer and starts
 // watching a specific namespace for the events.
-func (kr *k8seventsReceiver) startWatchingNamespace(
+func (*k8seventsReceiver) startWatchingNamespace(
 	clientset k8s.Interface,
 	handlers cache.ResourceEventHandlerFuncs,
 	ns string,

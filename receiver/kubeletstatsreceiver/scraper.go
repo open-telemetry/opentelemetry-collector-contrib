@@ -5,6 +5,7 @@ package kubeletstatsreceiver // import "github.com/open-telemetry/opentelemetry-
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -12,7 +13,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper"
 	"go.uber.org/zap"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -29,15 +30,17 @@ type scraperOptions struct {
 	collectionInterval    time.Duration
 	extraMetadataLabels   []kubelet.MetadataLabel
 	metricGroupsToCollect map[kubelet.MetricGroup]bool
+	allNetworkInterfaces  map[kubelet.MetricGroup]bool
 	k8sAPIClient          kubernetes.Interface
 }
 
-type kubletScraper struct {
+type kubeletScraper struct {
 	statsProvider         *kubelet.StatsProvider
 	metadataProvider      *kubelet.MetadataProvider
 	logger                *zap.Logger
 	extraMetadataLabels   []kubelet.MetadataLabel
 	metricGroupsToCollect map[kubelet.MetricGroup]bool
+	allNetworkInterfaces  map[kubelet.MetricGroup]bool
 	k8sAPIClient          kubernetes.Interface
 	cachedVolumeSource    map[string]v1.PersistentVolumeSource
 	mbs                   *metadata.MetricsBuilders
@@ -46,23 +49,40 @@ type kubletScraper struct {
 	stopCh                chan struct{}
 	m                     sync.RWMutex
 
-	// A struct that keeps Node's resource capacities
-	nodeLimits *kubelet.NodeCapacity
+	// A struct that keeps Node's information
+	nodeInfo *kubelet.NodeInfo
 }
 
-func newKubletScraper(
+func newKubeletScraper(
 	restClient kubelet.RestClient,
 	set receiver.Settings,
 	rOptions *scraperOptions,
 	metricsConfig metadata.MetricsBuilderConfig,
 	nodeName string,
-) (scraperhelper.Scraper, error) {
-	ks := &kubletScraper{
+) (scraper.Metrics, error) {
+	if EnableCPUUsageMetrics.IsEnabled() {
+		if metricsConfig.Metrics.ContainerCPUUtilization.Enabled ||
+			metricsConfig.Metrics.K8sPodCPUUtilization.Enabled ||
+			metricsConfig.Metrics.K8sNodeCPUUtilization.Enabled {
+			return nil, errors.New("container.cpu.utilization, k8s.pod.cpu.utilization and k8s.node.cpu.utilization metrics cannot be enabled when receiver.kubeletstats.enableCPUUsageMetrics feature gate is enabled")
+		}
+	} else {
+		set.Logger.Warn("The default metric container.cpu.utilization is being replaced by the container.cpu.usage metric. Switch now by enabling the receiver.kubeletstats.enableCPUUsageMetrics feature gate.")
+		set.Logger.Warn("The default metric k8s.pod.cpu.utilization is being replaced by the k8s.pod.cpu.usage metric. Switch now by enabling the receiver.kubeletstats.enableCPUUsageMetrics feature gate.")
+		set.Logger.Warn("The default metric k8s.node.cpu.utilization is being replaced by the k8s.node.cpu.usage metric. Switch now by enabling the receiver.kubeletstats.enableCPUUsageMetrics feature gate.")
+
+		metricsConfig.Metrics.ContainerCPUUtilization.Enabled = true
+		metricsConfig.Metrics.K8sPodCPUUtilization.Enabled = true
+		metricsConfig.Metrics.K8sNodeCPUUtilization.Enabled = true
+	}
+
+	ks := &kubeletScraper{
 		statsProvider:         kubelet.NewStatsProvider(restClient),
 		metadataProvider:      kubelet.NewMetadataProvider(restClient),
 		logger:                set.Logger,
 		extraMetadataLabels:   rOptions.extraMetadataLabels,
 		metricGroupsToCollect: rOptions.metricGroupsToCollect,
+		allNetworkInterfaces:  rOptions.allNetworkInterfaces,
 		k8sAPIClient:          rOptions.k8sAPIClient,
 		cachedVolumeSource:    make(map[string]v1.PersistentVolumeSource),
 		mbs: &metadata.MetricsBuilders{
@@ -79,8 +99,8 @@ func newKubletScraper(
 			metricsConfig.Metrics.K8sPodMemoryRequestUtilization.Enabled ||
 			metricsConfig.Metrics.K8sContainerMemoryLimitUtilization.Enabled ||
 			metricsConfig.Metrics.K8sContainerMemoryRequestUtilization.Enabled,
-		stopCh:     make(chan struct{}),
-		nodeLimits: &kubelet.NodeCapacity{},
+		stopCh:   make(chan struct{}),
+		nodeInfo: &kubelet.NodeInfo{},
 	}
 
 	if metricsConfig.Metrics.K8sContainerCPUNodeUtilization.Enabled ||
@@ -90,15 +110,14 @@ func newKubletScraper(
 		ks.nodeInformer = k8sconfig.NewNodeSharedInformer(rOptions.k8sAPIClient, nodeName, 5*time.Minute)
 	}
 
-	return scraperhelper.NewScraper(
-		metadata.Type,
+	return scraper.NewMetrics(
 		ks.scrape,
-		scraperhelper.WithStart(ks.start),
-		scraperhelper.WithShutdown(ks.shutdown),
+		scraper.WithStart(ks.start),
+		scraper.WithShutdown(ks.shutdown),
 	)
 }
 
-func (r *kubletScraper) scrape(context.Context) (pmetric.Metrics, error) {
+func (r *kubeletScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	summary, err := r.statsProvider.StatsSummary()
 	if err != nil {
 		r.logger.Error("call to /stats/summary endpoint failed", zap.Error(err))
@@ -115,14 +134,14 @@ func (r *kubletScraper) scrape(context.Context) (pmetric.Metrics, error) {
 		}
 	}
 
-	var node kubelet.NodeCapacity
+	var nodeInfo kubelet.NodeInfo
 	if r.nodeInformer != nil {
-		node = r.node()
+		nodeInfo = r.node()
 	}
 
-	metaD := kubelet.NewMetadata(r.extraMetadataLabels, podsMetadata, node, r.detailedPVCLabelsSetter())
+	metaD := kubelet.NewMetadata(r.extraMetadataLabels, podsMetadata, nodeInfo, r.detailedPVCLabelsSetter())
 
-	mds := kubelet.MetricsData(r.logger, summary, metaD, r.metricGroupsToCollect, r.mbs)
+	mds := kubelet.MetricsData(r.logger, summary, metaD, r.metricGroupsToCollect, r.allNetworkInterfaces, r.mbs)
 	md := pmetric.NewMetrics()
 	for i := range mds {
 		mds[i].ResourceMetrics().MoveAndAppendTo(md.ResourceMetrics())
@@ -130,7 +149,7 @@ func (r *kubletScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	return md, nil
 }
 
-func (r *kubletScraper) detailedPVCLabelsSetter() func(rb *metadata.ResourceBuilder, volCacheID, volumeClaim, namespace string) error {
+func (r *kubeletScraper) detailedPVCLabelsSetter() func(rb *metadata.ResourceBuilder, volCacheID, volumeClaim, namespace string) error {
 	return func(rb *metadata.ResourceBuilder, volCacheID, volumeClaim, namespace string) error {
 		if r.k8sAPIClient == nil {
 			return nil
@@ -161,13 +180,13 @@ func (r *kubletScraper) detailedPVCLabelsSetter() func(rb *metadata.ResourceBuil
 	}
 }
 
-func (r *kubletScraper) node() kubelet.NodeCapacity {
+func (r *kubeletScraper) node() kubelet.NodeInfo {
 	r.m.RLock()
 	defer r.m.RUnlock()
-	return *r.nodeLimits
+	return *r.nodeInfo
 }
 
-func (r *kubletScraper) start(_ context.Context, _ component.Host) error {
+func (r *kubeletScraper) start(_ context.Context, _ component.Host) error {
 	if r.nodeInformer != nil {
 		_, err := r.nodeInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 			AddFunc:    r.handleNodeAdd,
@@ -181,7 +200,7 @@ func (r *kubletScraper) start(_ context.Context, _ component.Host) error {
 	return nil
 }
 
-func (r *kubletScraper) shutdown(_ context.Context) error {
+func (r *kubeletScraper) shutdown(_ context.Context) error {
 	r.logger.Debug("executing close")
 	if r.stopCh != nil {
 		close(r.stopCh)
@@ -189,7 +208,7 @@ func (r *kubletScraper) shutdown(_ context.Context) error {
 	return nil
 }
 
-func (r *kubletScraper) handleNodeAdd(obj any) {
+func (r *kubeletScraper) handleNodeAdd(obj any) {
 	if node, ok := obj.(*v1.Node); ok {
 		r.addOrUpdateNode(node)
 	} else {
@@ -197,7 +216,7 @@ func (r *kubletScraper) handleNodeAdd(obj any) {
 	}
 }
 
-func (r *kubletScraper) handleNodeUpdate(_, newNode any) {
+func (r *kubeletScraper) handleNodeUpdate(_, newNode any) {
 	if node, ok := newNode.(*v1.Node); ok {
 		r.addOrUpdateNode(node)
 	} else {
@@ -205,19 +224,19 @@ func (r *kubletScraper) handleNodeUpdate(_, newNode any) {
 	}
 }
 
-func (r *kubletScraper) addOrUpdateNode(node *v1.Node) {
+func (r *kubeletScraper) addOrUpdateNode(node *v1.Node) {
 	r.m.Lock()
 	defer r.m.Unlock()
 
 	if cpu, ok := node.Status.Capacity["cpu"]; ok {
 		if q, err := resource.ParseQuantity(cpu.String()); err == nil {
-			r.nodeLimits.CPUCapacity = float64(q.MilliValue()) / 1000
+			r.nodeInfo.CPUCapacity = float64(q.MilliValue()) / 1000
 		}
 	}
 	if memory, ok := node.Status.Capacity["memory"]; ok {
 		// ie: 32564740Ki
 		if q, err := resource.ParseQuantity(memory.String()); err == nil {
-			r.nodeLimits.MemoryCapacity = float64(q.Value())
+			r.nodeInfo.MemoryCapacity = float64(q.Value())
 		}
 	}
 }

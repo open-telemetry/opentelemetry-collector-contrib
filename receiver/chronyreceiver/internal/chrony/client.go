@@ -14,9 +14,7 @@ import (
 	"github.com/jonboulle/clockwork"
 )
 
-var (
-	errBadRequest = errors.New("bad request")
-)
+var errBadRequest = errors.New("bad request")
 
 type Client interface {
 	// GetTrackingData will connection the configured chronyd endpoint
@@ -70,7 +68,8 @@ func (c *client) GetTrackingData(ctx context.Context) (*Tracking, error) {
 	}
 
 	if deadline, ok := ctx.Deadline(); ok {
-		if err = sock.SetDeadline(deadline); err != nil {
+		err = sock.SetDeadline(deadline)
+		if err != nil {
 			return nil, err
 		}
 	}

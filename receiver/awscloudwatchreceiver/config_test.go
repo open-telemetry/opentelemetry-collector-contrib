@@ -9,10 +9,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscloudwatchreceiver/internal/metadata"
 )
@@ -27,7 +28,7 @@ func TestValidate(t *testing.T) {
 			name: "Valid Config",
 			config: Config{
 				Region: "us-west-2",
-				Logs: &LogsConfig{
+				Logs: LogsConfig{
 					MaxEventsPerRequest: defaultEventLimit,
 					PollInterval:        defaultPollInterval,
 					Groups: GroupConfig{
@@ -44,18 +45,10 @@ func TestValidate(t *testing.T) {
 			expectedErr: errNoRegion,
 		},
 		{
-			name: "Nil Logs",
-			config: Config{
-				Region: "us-west-2",
-				Logs:   nil,
-			},
-			expectedErr: errNoLogsConfigured,
-		},
-		{
 			name: "Invalid Event Limit",
 			config: Config{
 				Region: "us-west-2",
-				Logs: &LogsConfig{
+				Logs: LogsConfig{
 					MaxEventsPerRequest: -1,
 					PollInterval:        defaultPollInterval,
 				},
@@ -66,7 +59,7 @@ func TestValidate(t *testing.T) {
 			name: "Invalid Poll Interval",
 			config: Config{
 				Region: "us-west-2",
-				Logs: &LogsConfig{
+				Logs: LogsConfig{
 					MaxEventsPerRequest: defaultEventLimit,
 					PollInterval:        100 * time.Millisecond,
 					Groups: GroupConfig{
@@ -80,23 +73,42 @@ func TestValidate(t *testing.T) {
 			name: "Invalid Log Group Limit",
 			config: Config{
 				Region: "us-east-1",
-				Logs: &LogsConfig{
+				Logs: LogsConfig{
 					MaxEventsPerRequest: defaultEventLimit,
 					PollInterval:        defaultPollInterval,
 					Groups: GroupConfig{
 						AutodiscoverConfig: &AutodiscoverConfig{
 							Limit: -10000,
 						},
-					}},
+					},
+				},
 			},
 			expectedErr: errInvalidAutodiscoverLimit,
+		},
+		{
+			name: "Invalid Log Group Prefix And Pattern",
+			config: Config{
+				Region: "us-east-1",
+				Logs: LogsConfig{
+					MaxEventsPerRequest: defaultEventLimit,
+					PollInterval:        defaultPollInterval,
+					Groups: GroupConfig{
+						AutodiscoverConfig: &AutodiscoverConfig{
+							Limit:   defaultLogGroupLimit,
+							Prefix:  "/aws/eks",
+							Pattern: "eks",
+						},
+					},
+				},
+			},
+			expectedErr: errPrefixAndPatternConfigured,
 		},
 		{
 			name: "Invalid IMDS Endpoint",
 			config: Config{
 				Region:       "us-east-1",
 				IMDSEndpoint: "xyz",
-				Logs: &LogsConfig{
+				Logs: LogsConfig{
 					MaxEventsPerRequest: defaultEventLimit,
 					PollInterval:        defaultPollInterval,
 					Groups: GroupConfig{
@@ -110,7 +122,7 @@ func TestValidate(t *testing.T) {
 			name: "Both Logs Autodiscover and Named Set",
 			config: Config{
 				Region: "us-east-1",
-				Logs: &LogsConfig{
+				Logs: LogsConfig{
 					MaxEventsPerRequest: defaultEventLimit,
 					PollInterval:        defaultPollInterval,
 					Groups: GroupConfig{
@@ -153,7 +165,7 @@ func TestLoadConfig(t *testing.T) {
 			name: "default",
 			expectedConfig: &Config{
 				Region: "us-west-1",
-				Logs: &LogsConfig{
+				Logs: LogsConfig{
 					PollInterval:        time.Minute,
 					MaxEventsPerRequest: defaultEventLimit,
 					Groups: GroupConfig{
@@ -168,7 +180,7 @@ func TestLoadConfig(t *testing.T) {
 			name: "prefix-log-group-autodiscover",
 			expectedConfig: &Config{
 				Region: "us-west-1",
-				Logs: &LogsConfig{
+				Logs: LogsConfig{
 					PollInterval:        time.Minute,
 					MaxEventsPerRequest: defaultEventLimit,
 					Groups: GroupConfig{
@@ -181,10 +193,26 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
+			name: "name-pattern-log-group-autodiscover",
+			expectedConfig: &Config{
+				Region: "us-west-1",
+				Logs: LogsConfig{
+					PollInterval:        time.Minute,
+					MaxEventsPerRequest: defaultEventLimit,
+					Groups: GroupConfig{
+						AutodiscoverConfig: &AutodiscoverConfig{
+							Limit:   100,
+							Pattern: "eks",
+						},
+					},
+				},
+			},
+		},
+		{
 			name: "autodiscover-filter-streams",
 			expectedConfig: &Config{
 				Region: "us-west-1",
-				Logs: &LogsConfig{
+				Logs: LogsConfig{
 					PollInterval:        time.Minute,
 					MaxEventsPerRequest: defaultEventLimit,
 					Groups: GroupConfig{
@@ -202,7 +230,7 @@ func TestLoadConfig(t *testing.T) {
 			name: "autodiscover-filter-streams",
 			expectedConfig: &Config{
 				Region: "us-west-1",
-				Logs: &LogsConfig{
+				Logs: LogsConfig{
 					PollInterval:        time.Minute,
 					MaxEventsPerRequest: defaultEventLimit,
 					Groups: GroupConfig{
@@ -221,7 +249,7 @@ func TestLoadConfig(t *testing.T) {
 			expectedConfig: &Config{
 				Profile: "my-profile",
 				Region:  "us-west-1",
-				Logs: &LogsConfig{
+				Logs: LogsConfig{
 					PollInterval:        5 * time.Minute,
 					MaxEventsPerRequest: defaultEventLimit,
 					Groups: GroupConfig{
@@ -237,7 +265,7 @@ func TestLoadConfig(t *testing.T) {
 			expectedConfig: &Config{
 				Profile: "my-profile",
 				Region:  "us-west-1",
-				Logs: &LogsConfig{
+				Logs: LogsConfig{
 					PollInterval:        5 * time.Minute,
 					MaxEventsPerRequest: defaultEventLimit,
 					Groups: GroupConfig{
@@ -261,7 +289,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, loaded.Unmarshal(cfg))
 			require.Equal(t, tc.expectedConfig, cfg)
-			require.NoError(t, component.ValidateConfig(cfg))
+			require.NoError(t, xconfmap.Validate(cfg))
 		})
 	}
 }

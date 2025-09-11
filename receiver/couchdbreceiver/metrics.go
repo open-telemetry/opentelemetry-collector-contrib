@@ -4,10 +4,10 @@
 package couchdbreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver"
 
 import (
-	"fmt"
+	"errors"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver/internal/metadata"
 )
@@ -65,14 +65,14 @@ func (c *couchdbScraper) recordCouchdbHttpdRequestsDataPoint(now pcommon.Timesta
 func (c *couchdbScraper) recordCouchdbHttpdResponsesDataPoint(now pcommon.Timestamp, stats map[string]any, errs *scrapererror.ScrapeErrors) {
 	codes := []string{"200", "201", "202", "204", "206", "301", "302", "304", "400", "401", "403", "404", "405", "406", "409", "412", "413", "414", "415", "416", "417", "500", "501", "503"}
 	for _, code := range codes {
-		httpdResponsetCodeKey := []string{"httpd_status_codes", code, "value"}
-		httpdResponsetCodeValue, err := getValueFromBody(httpdResponsetCodeKey, stats)
+		httpdResponseCodeKey := []string{"httpd_status_codes", code, "value"}
+		httpdResponseCodeValue, err := getValueFromBody(httpdResponseCodeKey, stats)
 		if err != nil {
 			errs.AddPartial(1, err)
 			continue
 		}
 
-		parsedValue, err := c.parseInt(httpdResponsetCodeValue)
+		parsedValue, err := c.parseInt(httpdResponseCodeValue)
 		if err != nil {
 			errs.AddPartial(1, err)
 			continue
@@ -156,30 +156,30 @@ func getValueFromBody(keys []string, body map[string]any) (any, error) {
 	for _, key := range keys {
 		currentBody, ok := currentValue.(map[string]any)
 		if !ok {
-			return nil, fmt.Errorf("could not find key in body")
+			return nil, errors.New("could not find key in body")
 		}
 
 		currentValue, ok = currentBody[key]
 		if !ok {
-			return nil, fmt.Errorf("could not find key in body")
+			return nil, errors.New("could not find key in body")
 		}
 	}
 	return currentValue, nil
 }
 
-func (c *couchdbScraper) parseInt(value any) (int64, error) {
+func (*couchdbScraper) parseInt(value any) (int64, error) {
 	switch i := value.(type) {
 	case int64:
 		return i, nil
 	case float64:
 		return int64(i), nil
 	}
-	return 0, fmt.Errorf("could not parse value as int")
+	return 0, errors.New("could not parse value as int")
 }
 
-func (c *couchdbScraper) parseFloat(value any) (float64, error) {
+func (*couchdbScraper) parseFloat(value any) (float64, error) {
 	if f, ok := value.(float64); ok {
 		return f, nil
 	}
-	return 0, fmt.Errorf("could not parse value as float")
+	return 0, errors.New("could not parse value as float")
 }

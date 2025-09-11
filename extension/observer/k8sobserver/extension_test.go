@@ -4,7 +4,6 @@
 package k8sobserver
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -12,6 +11,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/extension/extensiontest"
+	"k8s.io/client-go/tools/cache"
 	framework "k8s.io/client-go/tools/cache/testing"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
@@ -24,10 +24,10 @@ const (
 	servicePortEnv = "KUBERNETES_SERVICE_PORT"
 )
 
-func mockServiceHost(t testing.TB, c *Config) {
+func mockServiceHost(tb testing.TB, c *Config) {
 	c.AuthType = k8sconfig.AuthTypeNone
-	t.Setenv(serviceHostEnv, "mock")
-	t.Setenv(servicePortEnv, "12345")
+	tb.Setenv(serviceHostEnv, "mock")
+	tb.Setenv(servicePortEnv, "12345")
 }
 
 func TestNewExtension(t *testing.T) {
@@ -35,7 +35,7 @@ func TestNewExtension(t *testing.T) {
 	config := factory.CreateDefaultConfig().(*Config)
 	mockServiceHost(t, config)
 
-	ext, err := newObserver(config, extensiontest.NewNopSettings())
+	ext, err := newObserver(config, extensiontest.NewNopSettings(factory.Type()))
 	require.NoError(t, err)
 	require.NotNil(t, ext)
 }
@@ -46,7 +46,7 @@ func TestExtensionObserveServices(t *testing.T) {
 	config.ObservePods = false // avoid causing data race when multiple test cases running in the same process using podListerWatcher
 	mockServiceHost(t, config)
 
-	set := extensiontest.NewNopSettings()
+	set := extensiontest.NewNopSettings(factory.Type())
 	set.ID = component.NewID(metadata.Type)
 	ext, err := newObserver(config, set)
 	require.NoError(t, err)
@@ -54,11 +54,11 @@ func TestExtensionObserveServices(t *testing.T) {
 
 	obs := ext.(*k8sObserver)
 	serviceListerWatcher := framework.NewFakeControllerSource()
-	obs.serviceListerWatcher = serviceListerWatcher
+	obs.serviceListerWatchers = []cache.ListerWatcher{serviceListerWatcher}
 
 	serviceListerWatcher.Add(serviceWithClusterIP)
 
-	require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, ext.Start(t.Context(), componenttest.NewNopHost()))
 
 	sink := &endpointSink{}
 	obs.ListAndWatch(sink)
@@ -126,7 +126,7 @@ func TestExtensionObserveServices(t *testing.T) {
 		},
 	}, sink.removed[0])
 
-	require.NoError(t, ext.Shutdown(context.Background()))
+	require.NoError(t, ext.Shutdown(t.Context()))
 	obs.StopListAndWatch()
 }
 
@@ -135,7 +135,7 @@ func TestExtensionObservePods(t *testing.T) {
 	config := factory.CreateDefaultConfig().(*Config)
 	mockServiceHost(t, config)
 
-	set := extensiontest.NewNopSettings()
+	set := extensiontest.NewNopSettings(factory.Type())
 	set.ID = component.NewID(metadata.Type)
 	ext, err := newObserver(config, set)
 	require.NoError(t, err)
@@ -143,11 +143,11 @@ func TestExtensionObservePods(t *testing.T) {
 
 	obs := ext.(*k8sObserver)
 	podListerWatcher := framework.NewFakeControllerSource()
-	obs.podListerWatcher = podListerWatcher
+	obs.podListerWatchers = []cache.ListerWatcher{podListerWatcher}
 
 	podListerWatcher.Add(pod1V1)
 
-	require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, ext.Start(t.Context(), componenttest.NewNopHost()))
 
 	sink := &endpointSink{}
 	obs.ListAndWatch(sink)
@@ -209,8 +209,34 @@ func TestExtensionObservePods(t *testing.T) {
 		},
 	}, sink.removed[0])
 
-	require.NoError(t, ext.Shutdown(context.Background()))
+	require.NoError(t, ext.Shutdown(t.Context()))
 	obs.StopListAndWatch()
+}
+
+func TestExtensionInitNamespacedListWatchers(t *testing.T) {
+	factory := NewFactory()
+	config := factory.CreateDefaultConfig().(*Config)
+
+	config.Namespaces = []string{"my-namespace", "my-other-namespace"}
+	config.ObservePods = true
+	config.ObserveIngresses = true
+	config.ObserveServices = true
+
+	mockServiceHost(t, config)
+
+	set := extensiontest.NewNopSettings(factory.Type())
+	set.ID = component.NewID(metadata.Type)
+	ext, err := newObserver(config, set)
+	require.NoError(t, err)
+	require.NotNil(t, ext)
+
+	obs := ext.(*k8sObserver)
+
+	// as the namespace is an internal attribute of the created list watchers, we cannot verify this here, but
+	// make sure we have the expected number of watchers
+	require.Len(t, obs.podListerWatchers, 2)
+	require.Len(t, obs.ingressListerWatchers, 2)
+	require.Len(t, obs.serviceListerWatchers, 2)
 }
 
 func TestExtensionObserveNodes(t *testing.T) {
@@ -219,7 +245,7 @@ func TestExtensionObserveNodes(t *testing.T) {
 	config.ObservePods = false // avoid causing data race when multiple test cases running in the same process using podListerWatcher
 	mockServiceHost(t, config)
 
-	set := extensiontest.NewNopSettings()
+	set := extensiontest.NewNopSettings(factory.Type())
 	set.ID = component.NewID(metadata.Type)
 	ext, err := newObserver(config, set)
 	require.NoError(t, err)
@@ -231,7 +257,7 @@ func TestExtensionObserveNodes(t *testing.T) {
 
 	nodeListerWatcher.Add(node1V1)
 
-	require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, ext.Start(t.Context(), componenttest.NewNopHost()))
 
 	sink := &endpointSink{}
 	obs.ListAndWatch(sink)
@@ -309,6 +335,92 @@ func TestExtensionObserveNodes(t *testing.T) {
 		},
 	}, sink.removed[0])
 
-	require.NoError(t, ext.Shutdown(context.Background()))
+	require.NoError(t, ext.Shutdown(t.Context()))
+	obs.StopListAndWatch()
+}
+
+func TestExtensionObserveIngresses(t *testing.T) {
+	factory := NewFactory()
+	config := factory.CreateDefaultConfig().(*Config)
+	config.ObservePods = false // avoid causing data race when multiple test cases running in the same process using podListerWatcher
+	config.ObserveIngresses = true
+	mockServiceHost(t, config)
+
+	set := extensiontest.NewNopSettings(factory.Type())
+	set.ID = component.NewID(metadata.Type)
+	ext, err := newObserver(config, set)
+	require.NoError(t, err)
+	require.NotNil(t, ext)
+
+	obs := ext.(*k8sObserver)
+	ingressListerWatcher := framework.NewFakeControllerSource()
+	obs.ingressListerWatchers = []cache.ListerWatcher{ingressListerWatcher}
+
+	ingressListerWatcher.Add(ingress)
+
+	require.NoError(t, ext.Start(t.Context(), componenttest.NewNopHost()))
+
+	sink := &endpointSink{}
+	obs.ListAndWatch(sink)
+
+	requireSink(t, sink, func() bool {
+		return len(sink.added) == 1
+	})
+
+	assert.Equal(t, observer.Endpoint{
+		ID:     "k8s_observer/ingress-1-UID/host-1/",
+		Target: "https://host-1/",
+		Details: &observer.K8sIngress{
+			Name:      "application-ingress",
+			UID:       "k8s_observer/ingress-1-UID/host-1/",
+			Labels:    map[string]string{"env": "prod"},
+			Namespace: "default",
+			Scheme:    "https",
+			Host:      "host-1",
+			Path:      "/",
+		},
+	}, sink.added[0])
+
+	ingressListerWatcher.Modify(ingressV2)
+
+	requireSink(t, sink, func() bool {
+		return len(sink.changed) == 1
+	})
+
+	assert.Equal(t, observer.Endpoint{
+		ID:     "k8s_observer/ingress-1-UID/host-1/",
+		Target: "https://host-1/",
+		Details: &observer.K8sIngress{
+			Name:      "application-ingress",
+			UID:       "k8s_observer/ingress-1-UID/host-1/",
+			Labels:    map[string]string{"env": "hardening"},
+			Namespace: "default",
+			Scheme:    "https",
+			Host:      "host-1",
+			Path:      "/",
+		},
+	}, sink.changed[0])
+
+	ingressListerWatcher.Delete(ingressV2)
+
+	requireSink(t, sink, func() bool {
+		return len(sink.removed) == 1
+	})
+
+	assert.Equal(t, observer.Endpoint{
+		ID:     "k8s_observer/ingress-1-UID/host-1/",
+		Target: "https://host-1/",
+		Details: &observer.K8sIngress{
+			Name:      "application-ingress",
+			UID:       "k8s_observer/ingress-1-UID/host-1/",
+			Labels:    map[string]string{"env": "hardening"},
+			Namespace: "default",
+			Scheme:    "https",
+			Host:      "host-1",
+			Path:      "/",
+		},
+	}, sink.removed[0])
+
+	require.NoError(t, ext.Shutdown(t.Context()))
 	obs.StopListAndWatch()
 }

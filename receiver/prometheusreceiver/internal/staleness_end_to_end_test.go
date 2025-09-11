@@ -46,7 +46,7 @@ func TestStalenessMarkersEndToEnd(t *testing.T) {
 		t.Skip("This test can take a long time")
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 
 	// 1. Setup the server that sends series that intermittently appear and disappear.
 	n := &atomic.Uint64{}
@@ -112,8 +112,6 @@ receivers:
           static_configs:
             - targets: [%q]
 
-processors:
-  batch:
 exporters:
   prometheusremotewrite:
     endpoint: %q
@@ -121,23 +119,25 @@ exporters:
       insecure: true
 
 service:
+  telemetry:
+    metrics:
+      level: "none"
   pipelines:
     metrics:
       receivers: [prometheus]
-      processors: [batch]
       exporters: [prometheusremotewrite]`, serverURL.Host, prweServer.URL)
 
 	confFile, err := os.CreateTemp(os.TempDir(), "conf-")
 	require.NoError(t, err)
 	defer os.Remove(confFile.Name())
-	_, err = confFile.Write([]byte(cfg))
+	_, err = confFile.WriteString(cfg)
 	require.NoError(t, err)
 	// 4. Run the OpenTelemetry Collector.
-	receivers, err := receiver.MakeFactoryMap(prometheusreceiver.NewFactory())
+	receivers, err := otelcol.MakeFactoryMap[receiver.Factory](prometheusreceiver.NewFactory())
 	require.NoError(t, err)
-	exporters, err := exporter.MakeFactoryMap(prometheusremotewriteexporter.NewFactory())
+	exporters, err := otelcol.MakeFactoryMap[exporter.Factory](prometheusremotewriteexporter.NewFactory())
 	require.NoError(t, err)
-	processors, err := processor.MakeFactoryMap(batchprocessor.NewFactory())
+	processors, err := otelcol.MakeFactoryMap[processor.Factory](batchprocessor.NewFactory())
 	require.NoError(t, err)
 
 	factories := otelcol.Factories{
@@ -171,7 +171,7 @@ service:
 	require.NoError(t, err)
 
 	go func() {
-		assert.NoError(t, app.Run(context.Background()))
+		assert.NoError(t, app.Run(t.Context()))
 	}()
 	defer app.Shutdown()
 

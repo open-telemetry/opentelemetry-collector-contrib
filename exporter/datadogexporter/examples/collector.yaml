@@ -125,9 +125,6 @@ processors:
         - k8s.cronjob.name
         - k8s.statefulset.name
         - k8s.statefulset.uid
-        - container.image.name
-        - container.image.tag
-        - container.id
         - k8s.container.name
         - container.image.name
         - container.image.tag
@@ -283,7 +280,7 @@ exporters:
         #
         # mode: distributions
 
-        ## Deprecated [v0.75.0]: use `send_aggreggations` instead.
+        ## Deprecated [v0.75.0]: use `send_aggregations` instead.
         ## @param send_count_sum_metrics - boolean - optional - default: false
         ## Whether to report sum, count, min and max as separate histogram metrics.
         #
@@ -449,10 +446,27 @@ exporters:
       #
       # tags: ["team:infra", "<TAG_KEY>:<TAG_VALUE>"]
 
+      ## @param reporter_period - duration - optional - default: 30m
+      ## The period at which the host metadata reporter sends host metadata to Datadog.
+      ## The default is 30 minutes.
+      # reporter_period: 30m
+
+    ## @param hostname_detection_timeout - duration - optional - default: 25s
+    ## The amount of time in which the exporter will wait for hostname detection to be available.
+    ## Datadog Exporter requires a hostname to send traces to Datadog backend.
+    #
+    # hostname_detection_timeout: 25s
+
     ## @param logs - custom object - optional
     ## Logs exporter specific configuration.
     #
     # logs:
+      ## @param endpoint - string - optional
+      ## The host of the Datadog intake server to send logs to.
+      ## If unset, the value is obtained through the `site` parameter in the `api` section.
+      #
+      # endpoint: https://http-intake.logs.datadoghq.com
+
       ## @param dump_payloads - bool - optional
       ## If set to true, payloads will be dumped when logging level is set to debug. Please note that
       ## This may result in an escaping loop if a filelog receiver is watching the collector log output.

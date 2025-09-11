@@ -5,6 +5,7 @@ package ecsobserver // import "github.com/open-telemetry/opentelemetry-collector
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -29,7 +30,7 @@ type serviceDiscoveryOptions struct {
 
 func newDiscovery(cfg Config, opts serviceDiscoveryOptions) (*serviceDiscovery, error) {
 	if opts.Fetcher == nil {
-		return nil, fmt.Errorf("fetcher is nil")
+		return nil, errors.New("fetcher is nil")
 	}
 	matchers, err := newMatchers(cfg, matcherOptions{Logger: opts.Logger})
 	if err != nil {
@@ -83,7 +84,7 @@ func (s *serviceDiscovery) runAndWriteFile(ctx context.Context) error {
 				return err
 			}
 			// NOTE: We assume the folder already exists and does NOT try to create one.
-			if err := os.WriteFile(s.cfg.ResultFile, b, 0600); err != nil {
+			if err := os.WriteFile(s.cfg.ResultFile, b, 0o600); err != nil {
 				return err
 			}
 		}
