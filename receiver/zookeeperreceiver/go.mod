@@ -8,12 +8,12 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/scraper/zookeeperscraper v0.135.0
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.38.0
-	go.opentelemetry.io/collector/component v1.41.0
+	go.opentelemetry.io/collector/component v1.41.1-0.20250911090542-8b3a08ca2a38
 	go.opentelemetry.io/collector/component/componenttest v0.135.0
-	go.opentelemetry.io/collector/confmap v1.41.0
-	go.opentelemetry.io/collector/consumer v1.41.0
+	go.opentelemetry.io/collector/confmap v1.41.1-0.20250911090542-8b3a08ca2a38
+	go.opentelemetry.io/collector/consumer v1.41.1-0.20250911090542-8b3a08ca2a38
 	go.opentelemetry.io/collector/consumer/consumertest v0.135.0
-	go.opentelemetry.io/collector/receiver v1.41.0
+	go.opentelemetry.io/collector/receiver v1.41.1-0.20250911090542-8b3a08ca2a38
 	go.opentelemetry.io/collector/receiver/receivertest v0.135.0
 	go.opentelemetry.io/collector/scraper/scraperhelper v0.135.0
 	go.uber.org/goleak v1.3.0
@@ -77,15 +77,15 @@ require (
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/config/confignet v1.41.0 // indirect
+	go.opentelemetry.io/collector/config/confignet v1.41.1-0.20250911090542-8b3a08ca2a38 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.135.0 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.135.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.41.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.41.1-0.20250911090542-8b3a08ca2a38 // indirect
 	go.opentelemetry.io/collector/filter v0.135.0 // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.135.0 // indirect
-	go.opentelemetry.io/collector/pdata v1.41.0 // indirect
+	go.opentelemetry.io/collector/pdata v1.41.1-0.20250911090542-8b3a08ca2a38 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.135.0 // indirect
-	go.opentelemetry.io/collector/pipeline v1.41.0 // indirect
+	go.opentelemetry.io/collector/pipeline v1.41.1-0.20250911090542-8b3a08ca2a38 // indirect
 	go.opentelemetry.io/collector/receiver/receiverhelper v0.135.0 // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.135.0 // indirect
 	go.opentelemetry.io/collector/scraper v0.135.0 // indirect
