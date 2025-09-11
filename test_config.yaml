@@ -1,0 +1,18 @@
+receivers:
+  otlpgmi:
+    protocols:
+      http:
+        endpoint: localhost:4318
+    license:
+      validation_url: http://localhost:16686/api/license-keys/validate
+      cache_timeout: 3600
+
+exporters:
+  otlphttp:
+    endpoint: "https://observability.inference-engine-hgxcn25.gmi-dev-serving.com/otel/prod/"
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlpgmi]
+      exporters: [otlphttp]
