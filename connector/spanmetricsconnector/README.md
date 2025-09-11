@@ -277,7 +277,7 @@ connectors:
       - telemetry.sdk.language
       - telemetry.sdk.name
 ```
-* Manually enabled the feature gate: `connector.spanmetrics.includeServiceInstanceID` to produces uniquely identified metrics.
+* Manually enable the feature gate: `connector.spanmetrics.includeServiceInstanceID` to produce uniquely identified metrics.
 * For exporters like Prometheus, which rely on the single writer assumption, use a dedicated pipeline with a single `spanmetricsconnector` instance
 
 More context is available in [GitHub issue #21101](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21101).
