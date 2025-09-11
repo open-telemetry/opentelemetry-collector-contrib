@@ -359,7 +359,7 @@ exporters:
       key_file: client.key
 ```
 
-The available `tls` options are inherited from OpenTelemetry's TLS config structure, more options are available than shown in this example.
+The available `tls` options are inherited from [OpenTelemetry's TLS config structure](https://pkg.go.dev/go.opentelemetry.io/collector/config/configtls#ClientConfig), more options are available than shown in this example.
 
 ## Schema management
 

@@ -210,7 +210,7 @@ func (cfg *Config) buildClickHouseOptions() (*clickhouse.Options, error) {
 		return nil, fmt.Errorf("failed to parse DSN: %w", err)
 	}
 
-	if cfg.TLS.CAFile != "" || cfg.TLS.CertFile != "" || cfg.TLS.KeyFile != "" {
+	if cfg.TLS.CertFile != "" || cfg.TLS.KeyFile != "" {
 		opt.TLS, err = cfg.TLS.LoadTLSConfig(context.Background())
 		if err != nil {
 			return nil, fmt.Errorf("failed to load TLS config: %w", err)
