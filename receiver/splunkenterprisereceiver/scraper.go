@@ -2193,9 +2193,9 @@ func (s *splunkScraper) scrapeLicenses(_ context.Context, now pcommon.Timestamp,
 	s.settings.Logger.Debug(fmt.Sprintf("number of licenses found: %d", len(licenses.Entries)))
 
 	for _, entry := range licenses.Entries {
-		exp_time := time.Unix(entry.Content.ExpirationTime, 0)
-		time_remaining := int64(exp_time.Sub(time.Now().UTC()).Seconds()) // expiry time - current time in seconds converted to int64
+		expTime := time.Unix(entry.Content.ExpirationTime, 0)
+		timeRemaining := int64(expTime.Sub(time.Now().UTC()).Seconds()) // expiry time - current time in seconds converted to int64
 
-		s.mb.RecordSplunkLicenseRemainingDataPoint(now, time_remaining, entry.Content.Status, entry.Content.Label, entry.Content.Type, i.Build, i.Version)
+		s.mb.RecordSplunkLicenseRemainingDataPoint(now, timeRemaining, entry.Content.Status, entry.Content.Label, entry.Content.Type, i.Build, i.Version)
 	}
 }
