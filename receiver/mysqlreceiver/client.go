@@ -832,16 +832,10 @@ func isQueryExplainable(query string) bool {
 		"with",
 	}
 
-	// Trim leading and trailing whitespace from the query
 	trimmedQuery := strings.TrimSpace(query)
-
-	// Convert the trimmed query to lowercase for case-insensitive comparison
 	lowerQuery := strings.ToLower(trimmedQuery)
 
-	// Iterate through the predefined keywords
 	for _, keyword := range sqlStartingKeywords {
-		// Check if the query starts with the current keyword
-		// No need to ToLower(keyword) here because sqlStartingKeywords is already lowercased
 		if strings.HasPrefix(lowerQuery, keyword) {
 			return true
 		}
