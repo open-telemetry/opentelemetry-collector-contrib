@@ -56,7 +56,7 @@ The following settings are optional:
   - `limit` - limit of records, which is maximum number of generated metrics (default=`250`)
 - `query_sample_collection`: Additional configuration for query sample collection(`db.server.query_sample` event):
   - `max_rows_per_query` - maximum number of rows to collect per scrape (default=`100`)
-- `top_query_collection`: Additional configuration for top queries collection(`db.server.top_query` event):
+- `top_query_collection`: Additional configuration for top queries collection (`db.server.top_query` event):
   - `lookback_time` (optional, example = `60`, default = `2 * collection_interval`): The time window (in second) in which to query for top queries.
     - Queries that were finished execution outside the lookback window are not included in the collection. Increasing the lookback window (in seconds) will be useful for capturing long-running queries.
   - `max_query_sample_count` (optional, example = `5000`, default = `1000`): The maximum number of records to fetch in a single run.
