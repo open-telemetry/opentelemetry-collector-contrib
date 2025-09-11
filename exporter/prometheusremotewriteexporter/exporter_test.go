@@ -392,7 +392,6 @@ func runExportPipeline(ts *prompb.TimeSeries, endpoint *url.URL) error {
 
 // Test_PushMetrics checks the number of TimeSeries received by server and the number of metrics dropped is the same as
 // expected
-// This is a comment so that scoped tests are run.
 func Test_PushMetrics(t *testing.T) {
 	invalidTypeBatch := testdata.GenerateMetricsMetricTypeInvalid()
 
