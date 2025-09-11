@@ -4,6 +4,7 @@
 package streamingaggregationprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/streamingaggregationprocessor"
 
 import (
+	"fmt"
 	"sort"
 	"sync"
 	"time"
@@ -242,6 +243,7 @@ type Aggregator struct {
 	counterTotalSum       float64      // Total accumulated sum across all windows
 	hasCounterCumulative  bool         // Whether we've seen a cumulative value
 	isCounterReset        bool         // Flag to track counter resets
+	counterLastTimestamp  pcommon.Timestamp // Last timestamp for gap detection
 	
 	// ===== HISTOGRAM WINDOW-SPECIFIC STATE (reset each window) =====
 	histogramBuckets map[float64]uint64  // Current window bucket counts
@@ -282,9 +284,10 @@ type ExponentialHistogramState struct {
 
 // histogramCumulativeState tracks cumulative state for a specific source
 type histogramCumulativeState struct {
-	lastSum     float64
-	lastCount   uint64
-	lastBuckets map[float64]uint64
+	lastSum       float64
+	lastCount     uint64
+	lastBuckets   map[float64]uint64
+	lastTimestamp pcommon.Timestamp
 }
 
 // NewAggregator creates a new aggregator
@@ -324,6 +327,7 @@ func (a *Aggregator) ComputeDeltaFromCumulative(cumulativeValue float64) float64
 	if !a.hasCounterCumulative {
 		a.counterLastCumulative = cumulativeValue
 		a.hasCounterCumulative = true
+		a.counterLastTimestamp = pcommon.NewTimestampFromTime(time.Now())
 		// Return the cumulative value as initial delta (not 0)
 		// This preserves the initial counter value
 		a.counterWindowDeltaSum = cumulativeValue
@@ -343,10 +347,66 @@ func (a *Aggregator) ComputeDeltaFromCumulative(cumulativeValue float64) float64
 	
 	// Update the last cumulative value, window delta sum, and total sum
 	a.counterLastCumulative = cumulativeValue
+	a.counterLastTimestamp = pcommon.NewTimestampFromTime(time.Now())
 	a.counterWindowDeltaSum += delta
 	a.counterTotalSum += delta // Accumulate to total
 	
 	return delta
+}
+
+// ComputeDeltaFromCumulativeWithGapDetection computes delta with gap detection
+// Returns (deltaValue, wasReset) - wasReset indicates if cumulative state was reset due to gap
+func (a *Aggregator) ComputeDeltaFromCumulativeWithGapDetection(cumulativeValue float64, timestamp pcommon.Timestamp, staleThreshold time.Duration) (float64, bool) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	
+	currentTime := timestamp.AsTime()
+	fmt.Printf("GAP DETECTION: Checking cumulative value %.2f at %v (threshold: %v)\n", cumulativeValue, currentTime, staleThreshold)
+	
+	// Check if we have existing cumulative state and if it's stale
+	if a.hasCounterCumulative {
+		lastTime := a.counterLastTimestamp.AsTime()
+		timeSinceLastData := currentTime.Sub(lastTime)
+		
+		// If data is stale (gap detected), reset cumulative state
+		if timeSinceLastData > staleThreshold {
+			// Reset cumulative state - treat new value as initial value
+			fmt.Printf("GAP DETECTED: Counter reset after %v gap (threshold: %v), old value: %.2f, new value: %.2f\n", timeSinceLastData, staleThreshold, a.counterLastCumulative, cumulativeValue)
+			a.counterLastCumulative = cumulativeValue
+			a.counterLastTimestamp = timestamp
+			a.counterWindowDeltaSum = cumulativeValue
+			a.counterTotalSum = cumulativeValue
+			a.isCounterReset = false
+			return cumulativeValue, true // true indicates reset occurred
+		}
+	}
+	
+	// No gap detected, use normal delta computation
+	if !a.hasCounterCumulative {
+		a.counterLastCumulative = cumulativeValue
+		a.hasCounterCumulative = true
+		a.counterLastTimestamp = timestamp
+		a.counterWindowDeltaSum = cumulativeValue
+		a.counterTotalSum = cumulativeValue
+		return cumulativeValue, false // false indicates no reset
+	}
+	
+	// Compute the delta from the last cumulative value
+	delta := cumulativeValue - a.counterLastCumulative
+	
+	// Handle counter resets (when cumulative value decreases)
+	if delta < 0 {
+		delta = cumulativeValue
+		a.isCounterReset = true
+	}
+	
+	// Update the last cumulative value, window delta sum, and total sum
+	a.counterLastCumulative = cumulativeValue
+	a.counterLastTimestamp = timestamp
+	a.counterWindowDeltaSum += delta
+	a.counterTotalSum += delta
+	
+	return delta, false // false indicates no reset
 }
 
 // UpdateMean updates values for mean calculation
@@ -434,6 +494,11 @@ func (a *Aggregator) MergeHistogram(dp pmetric.HistogramDataPoint) {
 
 // MergeHistogramWithTemporality merges a histogram data point with specified temporality
 func (a *Aggregator) MergeHistogramWithTemporality(dp pmetric.HistogramDataPoint, temporality pmetric.AggregationTemporality) {
+	a.MergeHistogramWithTemporalityAndGapDetection(dp, temporality, 0)
+}
+
+// MergeHistogramWithTemporalityAndGapDetection merges a histogram data point with gap detection
+func (a *Aggregator) MergeHistogramWithTemporalityAndGapDetection(dp pmetric.HistogramDataPoint, temporality pmetric.AggregationTemporality, staleThreshold time.Duration) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	
@@ -481,9 +546,24 @@ func (a *Aggregator) MergeHistogramWithTemporality(dp pmetric.HistogramDataPoint
 		
 		// Get or create the cumulative state for this source
 		sourceState, exists := a.lastHistogramValues[sourceKey]
+		currentTime := time.Now()
+		
+		// Check for stale data if threshold is provided and state exists
+		if exists && staleThreshold > 0 {
+			lastTime := sourceState.lastTimestamp.AsTime()
+			if !lastTime.IsZero() {
+				timeSinceLastData := currentTime.Sub(lastTime)
+				if timeSinceLastData > staleThreshold {
+					// Reset cumulative state - treat as new source
+					exists = false
+				}
+			}
+		}
+		
 		if !exists {
 			sourceState = &histogramCumulativeState{
-				lastBuckets: make(map[float64]uint64),
+				lastBuckets:   make(map[float64]uint64),
+				lastTimestamp: pcommon.NewTimestampFromTime(currentTime),
 			}
 			a.lastHistogramValues[sourceKey] = sourceState
 		}
@@ -543,6 +623,7 @@ func (a *Aggregator) MergeHistogramWithTemporality(dp pmetric.HistogramDataPoint
 		// Update the last seen values for this source
 		sourceState.lastSum = currentSum
 		sourceState.lastCount = currentCount
+		sourceState.lastTimestamp = pcommon.NewTimestampFromTime(currentTime)
 	}
 	
 	// Update min/max if available

@@ -100,19 +100,24 @@ func (p *streamingAggregationProcessor) Start(ctx context.Context, host componen
 		
 		// Start window rotation
 		p.rotateTicker = time.NewTicker(p.windowSize)
+		p.logger.Debug("Starting window rotation ticker",
+			zap.Duration("window_size", p.windowSize),
+			zap.Int("num_windows", p.numWindows),
+		)
 		p.wg.Add(1)
 		go func() {
 			defer p.wg.Done()
+			p.logger.Debug("Window rotation goroutine started")
+			
+			// Trigger initial rotation to align windows properly
+			p.logger.Debug("Triggering initial window rotation")
+			p.rotateWindows()
+			
+			// Then start the regular rotation loop
 			p.runWindowRotation()
 		}()
 		
-		// Start export ticker
-		p.exportTicker = time.NewTicker(p.config.ExportInterval)
-		p.wg.Add(1)
-		go func() {
-			defer p.wg.Done()
-			p.runExporter()
-		}()
+		// No separate export ticker needed - exports happen immediately on rotation
 		
 		// Start memory monitor
 		p.wg.Add(1)
@@ -143,9 +148,7 @@ func (p *streamingAggregationProcessor) Shutdown(ctx context.Context) error {
 		if p.rotateTicker != nil {
 			p.rotateTicker.Stop()
 		}
-		if p.exportTicker != nil {
-			p.exportTicker.Stop()
-		}
+		// No export ticker to stop - exports happen on rotation
 		
 		// Signal all goroutines to stop
 		p.cancel()
@@ -323,10 +326,15 @@ func (p *streamingAggregationProcessor) aggregateSum(sum pmetric.Sum, agg *Aggre
 		} else {
 			// Regular counter (monotonic) - accumulate deltas
 			if sum.AggregationTemporality() == pmetric.AggregationTemporalityCumulative {
-				// For cumulative, compute the delta from the previous value
-				// ComputeDeltaFromCumulative already updates counterWindowDeltaSum internally
-				deltaValue := agg.ComputeDeltaFromCumulative(value)
-				// Don't call UpdateSum here - ComputeDeltaFromCumulative handles the accumulation
+				// For cumulative, compute the delta from the previous value with gap detection
+				// ComputeDeltaFromCumulativeWithGapDetection already updates counterWindowDeltaSum internally
+				deltaValue, wasReset := agg.ComputeDeltaFromCumulativeWithGapDetection(value, dp.Timestamp(), p.config.StaleDataThreshold)
+				// Don't call UpdateSum here - ComputeDeltaFromCumulativeWithGapDetection handles the accumulation
+				
+				// If cumulative state was reset due to gap, trigger immediate export
+				if wasReset {
+					go p.forceExportCurrentWindow() // Export current window immediately in background
+				}
 				
 				p.logger.Debug("Aggregating cumulative counter",
 					zap.Float64("cumulative_value", value),
@@ -390,7 +398,7 @@ func (p *streamingAggregationProcessor) aggregateHistogram(hist pmetric.Histogra
 			zap.String("temporality", temporality.String()),
 		)
 		
-		agg.MergeHistogramWithTemporality(dp, temporality)
+		agg.MergeHistogramWithTemporalityAndGapDetection(dp, temporality, p.config.StaleDataThreshold)
 	}
 	return nil
 }
@@ -435,14 +443,62 @@ func (p *streamingAggregationProcessor) getWindowForTimestamp(timestamp time.Tim
 	return nil
 }
 
-// runWindowRotation handles window rotation
+// runWindowRotation handles window rotation aligned to time boundaries
 func (p *streamingAggregationProcessor) runWindowRotation() {
+	p.logger.Debug("Window rotation loop started, checking every second for window boundaries...")
+	
+	// Check every second for window boundaries
+	checkTicker := time.NewTicker(1 * time.Second)
+	defer checkTicker.Stop()
+	
 	for {
 		select {
-		case <-p.rotateTicker.C:
-			p.rotateWindows()
+		case <-checkTicker.C:
+			p.checkAndRotateWindows()
 		case <-p.ctx.Done():
+			p.logger.Debug("Window rotation stopping due to context cancellation")
 			return
+		}
+	}
+}
+
+// checkAndRotateWindows checks if any window has completed and exports it immediately
+func (p *streamingAggregationProcessor) checkAndRotateWindows() {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	
+	now := time.Now()
+	
+	// Check each window to see if it has completed (end time has passed)
+	for i, window := range p.windows {
+		if window.end.Before(now) || window.end.Equal(now) {
+			// Window has completed - export it immediately
+			if window.HasData() {
+				p.logger.Info("Window completed - exporting immediately",
+					zap.Time("window_start", window.start),
+					zap.Time("window_end", window.end),
+					zap.Time("current_time", now),
+					zap.Duration("export_delay", now.Sub(window.end)),
+				)
+				p.exportWindow(window)
+			}
+			
+			// Create new window aligned to time boundaries
+			windowSizeSeconds := int64(p.windowSize.Seconds())
+			
+			// Calculate the next window start time aligned to boundaries
+			nextWindowStart := time.Unix(now.Unix()/windowSizeSeconds*windowSizeSeconds, 0)
+			if nextWindowStart.Before(now) || nextWindowStart.Equal(now) {
+				nextWindowStart = nextWindowStart.Add(p.windowSize)
+			}
+			
+			// Replace the completed window with a new one
+			p.windows[i] = NewWindow(nextWindowStart, nextWindowStart.Add(p.windowSize))
+			
+			p.logger.Debug("Created new window",
+				zap.Time("new_window_start", nextWindowStart),
+				zap.Time("new_window_end", nextWindowStart.Add(p.windowSize)),
+			)
 		}
 	}
 }
@@ -457,16 +513,14 @@ func (p *streamingAggregationProcessor) rotateWindows() {
 		zap.Int("num_windows", p.numWindows),
 	)
 	
-	// If we only have one window, export it and create a new one
+	// If we only have one window, clear it and create a new one
+	// Note: Export is handled by immediate exporter, no need to export here
 	if p.numWindows == 1 {
 		window := p.windows[0]
-		if window.HasData() {
-			p.logger.Debug("Exporting single window before rotation",
-				zap.Time("window_start", window.start),
-				zap.Time("window_end", window.end),
-			)
-			p.exportWindow(window)
-		}
+		p.logger.Debug("Rotating single window",
+			zap.Time("window_start", window.start),
+			zap.Time("window_end", window.end),
+		)
 		// Clear the window to reset all aggregator state
 		window.Clear()
 		newStart := time.Now()
@@ -474,48 +528,79 @@ func (p *streamingAggregationProcessor) rotateWindows() {
 		return
 	}
 	
-	// For multiple windows, export the oldest completed window
-	// The oldest window (index 0) is the one that just completed
+	// For multiple windows, export the completed window immediately on rotation
 	oldestWindow := p.windows[0]
 	if oldestWindow.HasData() {
-		p.logger.Debug("Exporting oldest window during rotation",
+		p.logger.Debug("Immediately exporting completed window on rotation",
 			zap.Time("window_start", oldestWindow.start),
 			zap.Time("window_end", oldestWindow.end),
+			zap.Time("rotation_time", time.Now()),
 		)
 		p.exportWindow(oldestWindow)
-		// Clear the window to free memory and reset aggregator state
-		oldestWindow.Clear()
 	}
+	// Clear the window to free memory and reset aggregator state
+	oldestWindow.Clear()
 	
 	// Shift windows - move all windows one position to the left
 	for i := 0; i < p.numWindows-1; i++ {
 		p.windows[i] = p.windows[i+1]
 	}
 	
-	// Create new current window at the end
-	lastWindow := p.windows[p.numWindows-2]
-	newStart := lastWindow.end
-	p.windows[p.numWindows-1] = NewWindow(newStart, newStart.Add(p.windowSize))
+	// Create new current window at the end, aligned to real-time boundaries
+	now := time.Now()
+	// Align to window boundaries (e.g., if windowSize is 30s, align to :00, :30 seconds)
+	windowSizeSeconds := int64(p.windowSize.Seconds())
+	alignedStart := time.Unix(now.Unix()/windowSizeSeconds*windowSizeSeconds, 0)
+	
+	// If aligned start is in the past, move to next boundary
+	if alignedStart.Before(now.Add(-p.windowSize/2)) {
+		alignedStart = alignedStart.Add(p.windowSize)
+	}
+	
+	p.windows[p.numWindows-1] = NewWindow(alignedStart, alignedStart.Add(p.windowSize))
 	
 	p.logger.Debug("Windows rotated successfully",
-		zap.Time("new_window_start", newStart),
-		zap.Time("new_window_end", newStart.Add(p.windowSize)),
+		zap.Time("new_window_start", alignedStart),
+		zap.Time("new_window_end", alignedStart.Add(p.windowSize)),
 	)
 }
 
-// runExporter handles periodic export of completed windows
-func (p *streamingAggregationProcessor) runExporter() {
+// runImmediateExporter checks every second for completed windows and exports them immediately
+func (p *streamingAggregationProcessor) runImmediateExporter() {
 	for {
 		select {
 		case <-p.exportTicker.C:
-			p.exportCompletedWindows()
+			p.exportCompletedWindowsImmediately()
 		case <-p.ctx.Done():
 			return
 		}
 	}
 }
 
-// exportCompletedWindows exports windows that are complete
+// exportCompletedWindowsImmediately exports windows immediately when they complete
+func (p *streamingAggregationProcessor) exportCompletedWindowsImmediately() {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	
+	now := time.Now()
+	
+	for _, window := range p.windows {
+		// Export any window that has completed (end time has passed) and has data
+		if window.end.Before(now) && window.HasData() {
+			p.logger.Debug("Immediately exporting completed window",
+				zap.Time("window_start", window.start),
+				zap.Time("window_end", window.end),
+				zap.Time("current_time", now),
+				zap.Duration("delay", now.Sub(window.end)),
+			)
+			p.exportWindow(window)
+			// Clear the window immediately after export to prevent re-export
+			window.Clear()
+		}
+	}
+}
+
+// exportCompletedWindows exports windows that are complete (kept for compatibility)
 func (p *streamingAggregationProcessor) exportCompletedWindows() {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
@@ -579,6 +664,23 @@ func (p *streamingAggregationProcessor) forceExport() {
 	for _, window := range p.windows {
 		if window.HasData() {
 			p.exportWindow(window)
+		}
+	}
+}
+
+// forceExportCurrentWindow forces export of the current window (used after gap detection reset)
+func (p *streamingAggregationProcessor) forceExportCurrentWindow() {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+	
+	if p.currentWindow < len(p.windows) {
+		currentWindow := p.windows[p.currentWindow]
+		if currentWindow.HasData() {
+			p.logger.Info("Force exporting current window after gap detection reset",
+				zap.Time("window_start", currentWindow.start),
+				zap.Time("window_end", currentWindow.end),
+			)
+			p.exportWindow(currentWindow)
 		}
 	}
 }

@@ -9,9 +9,9 @@ receivers:
 processors:
   streamingaggregation:
     window_size: 30s # Aggregate over 30-second windows
-    num_windows: 4 # Keep 4 windows for late data
+    num_windows: 2 # Keep 2 windows for faster exports
     max_memory_mb: 100 # Memory limit
-    export_interval: 30s # Export every 30 seconds
+    stale_data_threshold: 30s # Reset cumulative state after 30 seconds of no data
 
 exporters:
   prometheusremotewrite:
