@@ -64,7 +64,7 @@ The following settings are optional:
   - `collection_interval`: (optional, default = `60s`): The interval at which top queries should be emitted by this receiver.
     - This value can only guarantee that the top queries are collected at most once in this interval.
       - For instance, you have global `collection_interval` as `10s` and `top_query_collection.collection_interval` as `60s`.
-        - In this case, the default receiver scraper will still try to run in every 10 seconds.
+        - In this case, the default receiver scraper will still run every 10 seconds.
         - However, the top queries collection will only run after 60 seconds have passed since the last collection.
       - For instance, you have global `collection_interval` as `10s` and `top_query_collection.collection_interval` as `5s`.
         - In this case, `top_query_collection.collection_internal` will make no effects to the collection
