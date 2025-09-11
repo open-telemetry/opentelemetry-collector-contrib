@@ -698,7 +698,7 @@ func (m *mySQLScraper) scrapeTopQueries(now pcommon.Timestamp, errs *scrapererro
 			if err != nil {
 				m.logger.Error("Failed to obfuscate query", zap.Error(err))
 			}
-			m.queryPlanCache.Add(q.schemaName+"-"+q.digest, obfuscatedPlan)
+			m.queryPlanCache.Add(q.schemaName + "-" + q.digest, obfuscatedPlan)
 		}
 
 		m.lb.RecordDbServerTopQueryEvent(
