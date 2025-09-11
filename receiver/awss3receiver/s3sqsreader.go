@@ -83,13 +83,13 @@ func newS3SQSReader(ctx context.Context, logger *zap.Logger, cfg *Config) (*s3SQ
 
 	// Use configured values or defaults for SQS polling parameters
 	maxMessages := int32(10) // Default to 10 messages
-	if val := cfg.SQS.MaxNumberOfMessages.Get(); val != nil {
-		maxMessages = int32(*val)
+	if cfg.SQS.MaxNumberOfMessages != nil {
+		maxMessages = int32(*cfg.SQS.MaxNumberOfMessages)
 	}
 
 	waitTime := int32(20) // Default to 20 seconds
-	if val := cfg.SQS.WaitTimeSeconds.Get(); val != nil {
-		waitTime = int32(*val)
+	if cfg.SQS.WaitTimeSeconds != nil {
+		waitTime = int32(*cfg.SQS.WaitTimeSeconds)
 	}
 
 	return &s3SQSNotificationReader{

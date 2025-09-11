@@ -19,7 +19,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/config/configoptional"
 	"go.uber.org/zap"
 )
 
@@ -110,8 +109,8 @@ func TestNewS3SQSReader(t *testing.T) {
 			SQS: &SQSConfig{
 				QueueURL:            "https://sqs.us-east-1.amazonaws.com/123456789012/test-queue",
 				Region:              "us-east-1",
-				MaxNumberOfMessages: configoptional.Some(int64(5)),
-				WaitTimeSeconds:     configoptional.Some(int64(10)),
+				MaxNumberOfMessages: aws.Int64(5),
+				WaitTimeSeconds:     aws.Int64(10),
 			},
 		}
 
