@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -758,8 +759,10 @@ func Test_PushMetrics(t *testing.T) {
 					}
 
 					if useWAL {
+						dir, err := os.MkdirTemp("", tt.name)
+						require.NoError(t, err)
 						cfg.WAL = configoptional.Some(WALConfig{
-							Directory: t.TempDir(),
+							Directory: dir,
 						})
 					}
 
