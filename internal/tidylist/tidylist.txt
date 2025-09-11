@@ -297,7 +297,6 @@ receiver/receivercreator
 receiver/redisreceiver
 receiver/riakreceiver
 receiver/saphanareceiver
-receiver/sapmreceiver
 receiver/simpleprometheusreceiver/examples/federation/prom-counter
 receiver/simpleprometheusreceiver
 receiver/skywalkingreceiver

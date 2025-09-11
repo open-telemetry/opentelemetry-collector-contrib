@@ -208,7 +208,6 @@ components:
         - redis
         - riak
         - saphana
-        - sapm
         - signalfx
         - skywalking
         - snmp
