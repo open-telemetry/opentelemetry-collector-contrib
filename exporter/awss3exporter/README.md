@@ -27,6 +27,7 @@ The following exporter configuration parameters are supported.
 | `s3_prefix`               | prefix for the S3 key that can be overridden by `resource_attrs_to_s3` parameter.                                                                                                                                                                      |                                             |
 | `s3_base_prefix`          | root directory inside the bucket that is not overridden by `resource_attrs_to_s3`.                                                                                |                                             |
 | `s3_partition_format`     | filepath formatting for the partition; See [strftime](https://www.man7.org/linux/man-pages/man3/strftime.3.html) for format specification.                                                                                 | "year=%Y/month=%m/day=%d/hour=%H/minute=%M" |
+| `s3_partition_timezone`   | timezone used to format partition                                                                                                                                                                                          | Local                                       |
 | `role_arn`                | the Role ARN to be assumed                                                                                                                                                                                                 |                                             |
 | `file_prefix`             | file prefix defined by user                                                                                                                                                                                                |                                             |
 | `marshaler`               | marshaler used to produce output data                                                                                                                                                                                      | `otlp_json`                                 |
@@ -44,7 +45,7 @@ The following exporter configuration parameters are supported.
 | `retry_mode`              | The retryer implementation, the supported values are "standard", "adaptive" and "nop". "nop" will set the retryer as `aws.NopRetryer`, which effectively disable the retry.                                                | standard                                    |
 | `retry_max_attempts`      | The max number of attempts for retrying a request if the `retry_mode` is set. Setting max attempts to 0 will allow the SDK to retry all retryable errors until the request succeeds, or a non-retryable error is returned. | 3                                           |
 | `retry_max_backoff`       | the max backoff delay that can occur before retrying a request if `retry_mode` is set                                                                                                                                      | 20s                                         |
-| `unique_key_func_name`    | Name of the function to use for generating a unique portion of the key name, defaults to a random integer. Only supported value is `uuidv7`. |  |
+| `unique_key_func_name`    | Name of the function to use for generating a unique portion of the key name, defaults to a random integer. Only supported value is `uuidv7`.                                                                               |                                             |
 
 ### Marshaler
 
@@ -141,6 +142,9 @@ In this case, logs and traces would be stored in the following path format.
 ```console
 metric/YYYY/MM/DD/HH/mm
 ```
+
+Optionally along with `s3_partition_format` you can provide `s3_partition_timezone` as name from IANA Time Zone 
+database to change default local timezone to custom, for example `UTC` or `Europe/London`.
 
 ## Base Path Configuration
 
