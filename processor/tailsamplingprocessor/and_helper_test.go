@@ -27,7 +27,7 @@ func TestAndHelper(t *testing.T) {
 					},
 				},
 			},
-		})
+		}, nil)
 		require.NoError(t, err)
 
 		expected := sampling.NewAnd(zap.NewNop(), []samplingpolicy.Evaluator{
@@ -46,7 +46,7 @@ func TestAndHelper(t *testing.T) {
 					},
 				},
 			},
-		})
+		}, nil)
 		require.EqualError(t, err, "unknown sampling policy type and")
 	})
 }
