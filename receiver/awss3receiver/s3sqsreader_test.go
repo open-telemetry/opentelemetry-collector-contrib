@@ -94,6 +94,31 @@ func TestNewS3SQSReader(t *testing.T) {
 		r, err := newS3SQSReader(t.Context(), logger, cfg)
 		assert.NotNil(t, r)
 		assert.NoError(t, err)
+
+		// check all defaults are set
+		assert.Equal(t, int32(10), r.maxNumberOfMessages)
+		assert.Equal(t, int32(20), r.waitTimeSeconds)
+	})
+
+	t.Run("override non-default config", func(t *testing.T) {
+		cfg := &Config{
+			S3Downloader: S3DownloaderConfig{
+				S3Bucket: "test-bucket",
+				Region:   "us-east-1",
+			},
+			SQS: &SQSConfig{
+				QueueURL:            "https://sqs.us-east-1.amazonaws.com/123456789012/test-queue",
+				Region:              "us-east-1",
+				MaxNumberOfMessages: aws.Int64(5),
+				WaitTimeSeconds:     aws.Int64(10),
+			},
+		}
+
+		r, err := newS3SQSReader(t.Context(), logger, cfg)
+		assert.NotNil(t, r)
+		assert.NoError(t, err)
+		assert.Equal(t, int32(5), r.maxNumberOfMessages)
+		assert.Equal(t, int32(10), r.waitTimeSeconds)
 	})
 }
 
