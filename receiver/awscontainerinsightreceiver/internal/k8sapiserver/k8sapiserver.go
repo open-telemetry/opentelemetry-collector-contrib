@@ -57,6 +57,8 @@ type K8sClient interface {
 	GetDaemonSetClient() k8sclient.DaemonSetClient
 	GetStatefulSetClient() k8sclient.StatefulSetClient
 	GetReplicaSetClient() k8sclient.ReplicaSetClient
+	GetPersistentVolumeClaimClient() k8sclient.PersistentVolumeClaimClient
+	GetPersistentVolumeClient() k8sclient.PersistentVolumeClient
 	ShutdownNodeClient()
 	ShutdownPodClient()
 }
@@ -136,6 +138,8 @@ func (k *K8sAPIServer) GetMetrics() []pmetric.Metrics {
 
 	if k.includeEnhancedMetrics {
 		result = append(result, k.getHyperPodResiliencyMetrics(clusterName, timestampNs)...)
+		result = append(result, k.getPersistentVolumeMetrics(clusterName, timestampNs)...)
+		result = append(result, k.getPersistentVolumeClaimMetrics(clusterName, timestampNs)...)
 	}
 
 	return result
@@ -482,6 +486,77 @@ func (k *K8sAPIServer) getHyperPodResiliencyMetrics(clusterName, timestampNs str
 			}
 		}
 	}
+	return metrics
+}
+
+func (k *K8sAPIServer) getPersistentVolumeClaimMetrics(clusterName, timestampNs string) []pmetric.Metrics {
+	var metrics []pmetric.Metrics
+
+	pvcMetrics := k.leaderElection.persistentVolumeClaimClient.GetPersistentVolumeClaimMetrics()
+
+	for pvcName, phase := range pvcMetrics.PersistentVolumeClaimPhases {
+		parts := strings.Split(pvcName, "/")
+		if len(parts) != 2 {
+			k.logger.Warn("Unexpected PVC name", zap.String("pvcName", pvcName))
+			continue
+		}
+		namespace, pvcName := parts[0], parts[1]
+		pvcFields := map[string]any{
+			ci.MetricName(ci.TypePersistentVolumeClaim, ci.Count):         1,
+			ci.MetricName(ci.TypePersistentVolumeClaim, ci.StatusPending): 0,
+			ci.MetricName(ci.TypePersistentVolumeClaim, ci.StatusBound):   0,
+			ci.MetricName(ci.TypePersistentVolumeClaim, ci.StatusLost):    0,
+		}
+
+		switch phase {
+		case v1.ClaimPending:
+			pvcFields[ci.MetricName(ci.TypePersistentVolumeClaim, ci.StatusPending)] = 1
+		case v1.ClaimBound:
+			pvcFields[ci.MetricName(ci.TypePersistentVolumeClaim, ci.StatusBound)] = 1
+		case v1.ClaimLost:
+			pvcFields[ci.MetricName(ci.TypePersistentVolumeClaim, ci.StatusLost)] = 1
+		default:
+			k.logger.Warn("Unexpected PVC phase", zap.String(ci.PersistentVolumeClaimName, pvcName),
+				zap.String("phase", string(phase)))
+			continue
+		}
+
+		pvcAttributes := map[string]string{
+			ci.ClusterNameKey:            clusterName,
+			ci.MetricType:                ci.TypePersistentVolumeClaim,
+			ci.Timestamp:                 timestampNs,
+			ci.PersistentVolumeClaimName: pvcName,
+			ci.K8sNamespace:              namespace,
+			ci.Version:                   "0",
+			ci.SourcesKey:                "[\"apiserver\"]",
+		}
+
+		md := ci.ConvertToOTLPMetrics(pvcFields, pvcAttributes, k.logger)
+		metrics = append(metrics, md)
+	}
+
+	return metrics
+}
+
+func (k *K8sAPIServer) getPersistentVolumeMetrics(clusterName, timestampNs string) []pmetric.Metrics {
+	var metrics []pmetric.Metrics
+
+	pvMetrics := k.leaderElection.persistentVolumeClient.GetPersistentVolumeMetrics()
+
+	clusterFields := map[string]any{
+		ci.MetricName(ci.TypePersistentVolume, ci.Count): pvMetrics.ClusterCount,
+	}
+
+	clusterAttributes := map[string]string{
+		ci.ClusterNameKey: clusterName,
+		ci.MetricType:     ci.TypePersistentVolume,
+		ci.Timestamp:      timestampNs,
+		ci.Version:        "0",
+		ci.SourcesKey:     "[\"apiserver\"]",
+	}
+	md := ci.ConvertToOTLPMetrics(clusterFields, clusterAttributes, k.logger)
+	metrics = append(metrics, md)
+
 	return metrics
 }
 

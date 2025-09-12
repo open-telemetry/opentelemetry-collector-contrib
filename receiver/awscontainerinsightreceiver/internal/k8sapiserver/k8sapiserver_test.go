@@ -66,6 +66,14 @@ func (m *mockK8sClient) GetReplicaSetClient() k8sclient.ReplicaSetClient {
 	return mockClient
 }
 
+func (m *mockK8sClient) GetPersistentVolumeClaimClient() k8sclient.PersistentVolumeClaimClient {
+	return mockClient
+}
+
+func (m *mockK8sClient) GetPersistentVolumeClient() k8sclient.PersistentVolumeClient {
+	return mockClient
+}
+
 func (m *mockK8sClient) ShutdownNodeClient() {
 }
 
@@ -88,6 +96,8 @@ type MockClient struct {
 	k8sclient.PodClient
 	k8sclient.NodeClient
 	k8sclient.EpClient
+	k8sclient.PersistentVolumeClaimClient
+	k8sclient.PersistentVolumeClient
 
 	mock.Mock
 }
@@ -164,6 +174,18 @@ func (client *MockClient) ServiceToPodNum() map[k8sclient.Service]int {
 func (client *MockClient) PodKeyToServiceNames() map[string][]string {
 	args := client.Called()
 	return args.Get(0).(map[string][]string)
+}
+
+// k8sclient.PersistentVolumeClaimClient
+func (client *MockClient) GetPersistentVolumeClaimMetrics() *k8sclient.PersistentVolumeClaimMetrics {
+	args := client.Called()
+	return args.Get(0).(*k8sclient.PersistentVolumeClaimMetrics)
+}
+
+// k8sclient.PersistentVolumeClient
+func (client *MockClient) GetPersistentVolumeMetrics() *k8sclient.PersistentVolumeMetrics {
+	args := client.Called()
+	return args.Get(0).(*k8sclient.PersistentVolumeMetrics)
 }
 
 type mockEventBroadcaster struct{}
@@ -337,18 +359,36 @@ func TestK8sAPIServer_GetMetrics(t *testing.T) {
 		},
 	})
 
+	mockPersistentVolumeClaimMetrics := &k8sclient.PersistentVolumeClaimMetrics{
+		PersistentVolumeClaimPhases: map[string]v1.PersistentVolumeClaimPhase{
+			"default/pvc-1":     v1.ClaimPending,
+			"default/pvc-2":     v1.ClaimBound,
+			"default/pvc-3":     v1.ClaimBound,
+			"kube-system/pvc-4": v1.ClaimBound,
+			"kube-system/pvc-5": v1.ClaimBound,
+		},
+	}
+	mockClient.On("GetPersistentVolumeClaimMetrics").Return(mockPersistentVolumeClaimMetrics)
+
+	mockPersistentVolumeMetrics := &k8sclient.PersistentVolumeMetrics{
+		ClusterCount: 5,
+	}
+	mockClient.On("GetPersistentVolumeMetrics").Return(mockPersistentVolumeMetrics)
+
 	leaderElection := &LeaderElection{
-		k8sClient:         &mockK8sClient{},
-		nodeClient:        mockClient,
-		epClient:          mockClient,
-		podClient:         mockClient,
-		deploymentClient:  mockClient,
-		daemonSetClient:   mockClient,
-		statefulSetClient: mockClient,
-		replicaSetClient:  mockClient,
-		leading:           true,
-		broadcaster:       &mockEventBroadcaster{},
-		isLeadingC:        make(chan struct{}),
+		k8sClient:                   &mockK8sClient{},
+		nodeClient:                  mockClient,
+		epClient:                    mockClient,
+		podClient:                   mockClient,
+		deploymentClient:            mockClient,
+		daemonSetClient:             mockClient,
+		statefulSetClient:           mockClient,
+		replicaSetClient:            mockClient,
+		persistentVolumeClaimClient: mockClient,
+		persistentVolumeClient:      mockClient,
+		leading:                     true,
+		broadcaster:                 &mockEventBroadcaster{},
+		isLeadingC:                  make(chan struct{}),
 	}
 
 	t.Setenv("HOST_NAME", hostName)
@@ -378,7 +418,6 @@ func TestK8sAPIServer_GetMetrics(t *testing.T) {
 			assertMetricValueEqual(t, metric, "cluster_failed_node_count", int64(1))
 			assertMetricValueEqual(t, metric, "cluster_node_count", int64(1))
 			assertMetricValueEqual(t, metric, "cluster_number_of_running_pods", int64(2))
-
 		case ci.TypeClusterService:
 			assertMetricValueEqual(t, metric, "service_number_of_running_pods", int64(1))
 			assert.Contains(t, []string{"service1", "service2"}, getStringAttrVal(metric, ci.TypeService))
@@ -435,6 +474,26 @@ func TestK8sAPIServer_GetMetrics(t *testing.T) {
 			assertMetricValueEqual(t, metric, "hyperpod_node_health_status_schedulable", int64(1))
 			assertMetricValueEqual(t, metric, "hyperpod_node_health_status_unschedulable", int64(0))
 			assertMetricValueEqual(t, metric, "hyperpod_node_health_status_unschedulable_pending_replacement", int64(0))
+		case ci.TypePersistentVolume:
+			assertMetricValueEqual(t, metric, "persistent_volume_count", int64(5))
+		case ci.TypePersistentVolumeClaim:
+			namespace := getStringAttrVal(metric, ci.K8sNamespace)
+			pvcName := getStringAttrVal(metric, ci.PersistentVolumeClaimName)
+			pvcKey := namespace + "/" + pvcName
+			switch pvcKey {
+			case "default/pvc-1":
+				// This PersistentVolumeClaim is in Pending state
+				assertMetricValueEqual(t, metric, "persistent_volume_claim_status_pending", int64(1))
+				assertMetricValueEqual(t, metric, "persistent_volume_claim_status_bound", int64(0))
+				assertMetricValueEqual(t, metric, "persistent_volume_claim_status_lost", int64(0))
+			case "default/pvc-2", "default/pvc-3", "kube-system/pvc-4", "kube-system/pvc-5":
+				// These PersistentVolumeClaims are in Bound state
+				assertMetricValueEqual(t, metric, "persistent_volume_claim_status_pending", int64(0))
+				assertMetricValueEqual(t, metric, "persistent_volume_claim_status_bound", int64(1))
+				assertMetricValueEqual(t, metric, "persistent_volume_claim_status_lost", int64(0))
+			default:
+				assert.Fail(t, "Unexpected PersistentVolumeClaim: "+namespace+"/"+pvcName)
+			}
 		default:
 			assert.Fail(t, "Unexpected metric type: "+metricType)
 		}

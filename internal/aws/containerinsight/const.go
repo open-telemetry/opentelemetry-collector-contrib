@@ -35,6 +35,8 @@ const (
 	OperatingSystem         = "OperatingSystem"
 	OperatingSystemWindows  = "windows"
 
+	PersistentVolumeClaimName = "PersistentVolumeClaimName"
+
 	// The following constants are used for metric name construction
 	CPUTotal                         = "cpu_usage_total"
 	CPUUser                          = "cpu_usage_user"
@@ -115,9 +117,12 @@ const (
 	StatusUnknown                                          = "status_unknown"
 	StatusReady                                            = "status_ready"
 	StatusScheduled                                        = "status_scheduled"
+	StatusBound                                            = "status_bound"
+	StatusLost                                             = "status_lost"
 	ReplicasDesired                                        = "replicas_desired"
 	ReplicasReady                                          = "replicas_ready"
 
+	Count                 = "count"
 	RunningPodCount       = "number_of_running_pods"
 	RunningContainerCount = "number_of_running_containers"
 	ContainerCount        = "number_of_containers"
@@ -168,7 +173,6 @@ const (
 	HyperPodUnschedulable                   = "unschedulable"
 
 	// kueue metrics
-
 	KueuePendingWorkloads          = "kueue_pending_workloads"
 	KueueEvictedWorkloadsTotal     = "kueue_evicted_workloads_total"
 	KueueAdmittedActiveWorkloads   = "kueue_admitted_active_workloads"
@@ -200,6 +204,10 @@ const (
 
 	// kueue metric types
 	TypeClusterQueue = "ClusterQueue"
+
+	// PVC and PV metric types
+	TypePersistentVolumeClaim = "PersistentVolumeClaim"
+	TypePersistentVolume      = "PersistentVolume"
 
 	// Special type for pause container
 	// because containerd does not set container name pause container name to POD like docker does.
@@ -350,10 +358,13 @@ func init() {
 		StatusUnknown:                                          UnitCount,
 		StatusReady:                                            UnitCount,
 		StatusScheduled:                                        UnitCount,
+		StatusBound:                                            UnitCount,
+		StatusLost:                                             UnitCount,
 
 		// cluster metrics
 		NodeCount:       UnitCount,
 		FailedNodeCount: UnitCount,
+		Count:           UnitCount,
 
 		// kueue metrics
 		KueuePendingWorkloads:          UnitCount,

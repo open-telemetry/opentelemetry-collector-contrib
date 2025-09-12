@@ -218,6 +218,16 @@ type statefulSetClientWithStopper interface {
 	stopper
 }
 
+type persistentVolumeClaimClientWithStopper interface {
+	PersistentVolumeClaimClient
+	stopper
+}
+
+type persistentVolumeClientWithStopper interface {
+	PersistentVolumeClient
+	stopper
+}
+
 type K8sClient struct {
 	kubeConfigPath       string
 	initSyncPollInterval time.Duration
@@ -254,6 +264,12 @@ type K8sClient struct {
 
 	ssMu        sync.Mutex
 	statefulSet statefulSetClientWithStopper
+
+	pvcMu                 sync.Mutex
+	persistentVolumeClaim persistentVolumeClaimClientWithStopper
+
+	pvMu             sync.Mutex
+	persistentVolume persistentVolumeClientWithStopper
 
 	logger *zap.Logger
 }
@@ -459,6 +475,46 @@ func (c *K8sClient) ShutdownStatefulSetClient() {
 	})
 }
 
+func (c *K8sClient) GetPersistentVolumeClaimClient() PersistentVolumeClaimClient {
+	var err error
+	c.pvcMu.Lock()
+	if c.persistentVolumeClaim == nil || reflect.ValueOf(c.persistentVolumeClaim).IsNil() {
+		c.persistentVolumeClaim, err = newPersistentVolumeClaimClient(c.clientSet, c.logger, PersistentVolumeClaimSyncCheckerOption(c.syncChecker))
+		if err != nil {
+			c.logger.Error("use an no-op PersistentVolumeClaim client instead because of error", zap.Error(err))
+			c.persistentVolumeClaim = &noOpPersistentVolumeClaimClient{}
+		}
+	}
+	c.pvcMu.Unlock()
+	return c.persistentVolumeClaim
+}
+
+func (c *K8sClient) ShutdownPersistentVolumeClaimClient() {
+	shutdownClient(c.persistentVolumeClaim, &c.pvcMu, func() {
+		c.persistentVolumeClaim = nil
+	})
+}
+
+func (c *K8sClient) GetPersistentVolumeClient() PersistentVolumeClient {
+	var err error
+	c.pvMu.Lock()
+	if c.persistentVolume == nil || reflect.ValueOf(c.persistentVolume).IsNil() {
+		c.persistentVolume, err = newPersistentVolumeClient(c.clientSet, c.logger, PersistentVolumeSyncCheckerOption(c.syncChecker))
+		if err != nil {
+			c.logger.Error("use an no-op PersistentVolume client instead because of error", zap.Error(err))
+			c.persistentVolume = &noOpPersistentVolumeClient{}
+		}
+	}
+	c.pvMu.Unlock()
+	return c.persistentVolume
+}
+
+func (c *K8sClient) ShutdownPersistentVolumeClient() {
+	shutdownClient(c.persistentVolume, &c.pvMu, func() {
+		c.persistentVolume = nil
+	})
+}
+
 func (c *K8sClient) GetClientSet() kubernetes.Interface {
 	return c.clientSet
 }
@@ -476,6 +532,8 @@ func (c *K8sClient) Shutdown() {
 	c.ShutdownDeploymentClient()
 	c.ShutdownDaemonSetClient()
 	c.ShutdownStatefulSetClient()
+	c.ShutdownPersistentVolumeClaimClient()
+	c.ShutdownPersistentVolumeClient()
 
 	// remove the current instance of k8s client from map
 	for key, val := range optionsToK8sClient {

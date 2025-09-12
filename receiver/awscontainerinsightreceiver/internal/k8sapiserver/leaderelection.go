@@ -34,14 +34,16 @@ type LeaderElection struct {
 	leaderLockName               string
 	leaderLockUsingConfigMapOnly bool
 
-	k8sClient         K8sClient // *k8sclient.K8sClient
-	epClient          k8sclient.EpClient
-	nodeClient        k8sclient.NodeClient
-	podClient         k8sclient.PodClient
-	deploymentClient  k8sclient.DeploymentClient
-	daemonSetClient   k8sclient.DaemonSetClient
-	statefulSetClient k8sclient.StatefulSetClient
-	replicaSetClient  k8sclient.ReplicaSetClient
+	k8sClient                   K8sClient // *k8sclient.K8sClient
+	epClient                    k8sclient.EpClient
+	nodeClient                  k8sclient.NodeClient
+	podClient                   k8sclient.PodClient
+	deploymentClient            k8sclient.DeploymentClient
+	daemonSetClient             k8sclient.DaemonSetClient
+	statefulSetClient           k8sclient.StatefulSetClient
+	replicaSetClient            k8sclient.ReplicaSetClient
+	persistentVolumeClaimClient k8sclient.PersistentVolumeClaimClient
+	persistentVolumeClient      k8sclient.PersistentVolumeClient
 
 	// the following can be set to mocks in testing
 	broadcaster eventBroadcaster
@@ -180,6 +182,8 @@ func (le *LeaderElection) startLeaderElection(ctx context.Context, lock resource
 					le.daemonSetClient = le.k8sClient.GetDaemonSetClient()
 					le.statefulSetClient = le.k8sClient.GetStatefulSetClient()
 					le.replicaSetClient = le.k8sClient.GetReplicaSetClient()
+					le.persistentVolumeClaimClient = le.k8sClient.GetPersistentVolumeClaimClient()
+					le.persistentVolumeClient = le.k8sClient.GetPersistentVolumeClient()
 					le.mu.Unlock()
 
 					if le.isLeadingC != nil {
