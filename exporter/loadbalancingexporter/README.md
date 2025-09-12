@@ -79,7 +79,7 @@ The `loadbalancingexporter` will, irrespective of the chosen resolver (`static`,
 * Resiliency options 1 (`timeout`, `retry_on_failure` and `sending_queue` settings in `loadbalancing` section) - are useful for highly elastic environment (like k8s), where list of resolved endpoints frequently changed due to deployments, scale-up or scale-down events. In case of permanent change of list of resolved exporters this options provide capability to re-route data into new set of healthy backends. Disabled by default.
 * Resiliency options 2 (`timeout`, `retry_on_failure` and `sending_queue` settings in `otlp` section) - are useful for temporary problems with specific backend, like network flukes. Persistent Queue is NOT supported here as all sub-exporter shares the same `sending_queue` configuration, including `storage`. Enabled by default.
 
-Unfortunately, data loss for all resolvers is still possible if all of the exporter's targets remains unavailable once redelivery is exhausted. Due consideration needs to be given to the exporter queue and retry configuration when running in a highly elastic environment.
+Unfortunately, data loss is still possible for any resolver type if all of the exporter's targets remains unavailable once redelivery is exhausted. Due consideration needs to be given to the exporter queue and retry configuration when running in a highly elastic environment.
 
 To avoid a single point of failure, requests can be distributed among multiple Collector instances configured with the `loadbalancingexporter`. The consistent hashing mechanism will ensure a deterministic result between instances sharing the same configuration and resolve an exact list of backend endpoints.
 
