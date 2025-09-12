@@ -20,10 +20,12 @@ var compressionFileExtensions = map[configcompression.Type]string{
 }
 
 type PartitionKeyBuilder struct {
-	// PartitionBasePrefix defines the root S3 directory for the key.
+	// PartitionBasePrefix defines the root S3
+	// directory (key) prefix used to write the file.
 	PartitionBasePrefix string
 	// PartitionPrefix defines the S3 directory (key)
-	// prefix used to write the file. Appended to PartitionBasePrefix if provided.
+	// prefix used to write the file.
+	// Appended to PartitionBasePrefix if provided.
 	PartitionPrefix string
 	// PartitionFormat is used to separate values into
 	// different time buckets.

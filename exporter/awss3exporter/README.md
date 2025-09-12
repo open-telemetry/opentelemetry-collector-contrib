@@ -24,8 +24,8 @@ The following exporter configuration parameters are supported.
 |:--------------------------|:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------|
 | `region`                  | AWS region.                                                                                                                                                                                                                | "us-east-1"                                 |
 | `s3_bucket`               | S3 bucket                                                                                                                                                                                                                  |                                             |
-| `s3_prefix`               | prefix for the S3 key that can be overridden by `resource_attrs_to_s3` parameter.                                                                                                                                                                      |                                             |
-| `s3_base_prefix`          | root directory inside the bucket that is not overridden by `resource_attrs_to_s3`.                                                                                |                                             |
+| `s3_base_prefix`          | root prefix for the S3 key applied to all files.                                                                               |                                             |
+| `s3_prefix`               | prefix for the S3 key that can be overridden dynamically by `resource_attrs_to_s3` parameter.                                                                                                                                                                      |                                             |
 | `s3_partition_format`     | filepath formatting for the partition; See [strftime](https://www.man7.org/linux/man-pages/man3/strftime.3.html) for format specification.                                                                                 | "year=%Y/month=%m/day=%d/hour=%H/minute=%M" |
 | `s3_partition_timezone`   | timezone used to format partition                                                                                                                                                                                          | Local                                       |
 | `role_arn`                | the Role ARN to be assumed                                                                                                                                                                                                 |                                             |
@@ -148,7 +148,7 @@ database to change default local timezone to custom, for example `UTC` or `Europ
 
 ## Base Path Configuration
 
-The `s3_base_prefix` option allows you to specify a root directory inside the bucket that is not overridden by `resource_attrs_to_s3`. If provided, `s3_prefix` will be appended to this base path.
+The `s3_base_prefix` option allows you to specify a root path inside the bucket that is not overridden by `resource_attrs_to_s3`. If provided, `s3_prefix` will be appended to this base path.
 
 ```yaml
 exporters:

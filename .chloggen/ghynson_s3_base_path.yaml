@@ -7,7 +7,7 @@ change_type: enhancement
 component: exporter/awss3exporter
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: adds configuration field 's3_base_prefix' to be able to set a base path for S3 uploads
+note: adds configuration field 's3_base_prefix' to be able to set a base path for all S3 file uploads
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [42661]
