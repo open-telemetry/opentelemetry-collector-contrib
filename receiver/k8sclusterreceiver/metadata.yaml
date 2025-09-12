@@ -229,6 +229,19 @@ attributes:
       - terminated
       - running
       - waiting
+  k8s.container.status.reason:
+    description: The reason of the current container status.
+    type: string
+    enum:
+      - ContainerCreating
+      - CrashLoopBackOff
+      - CreateContainerConfigError
+      - ErrImagePull
+      - ImagePullBackOff
+      - OOMKilled
+      - Completed
+      - Error
+      - ContainerCannotRun
 metrics:
   k8s.container.cpu_request:
     enabled: true
@@ -300,6 +313,16 @@ metrics:
       value_type: int
     attributes:
       - k8s.container.status.state
+  k8s.container.status.reason:
+    enabled: false
+    description: Experimental metric, may experience breaking changes. Describes the number of K8s containers that are currently in a state for a given reason. All possible container state reasons will be reported at each time interval to avoid missing metrics. Only the value corresponding to the current state reason will be non-zero.
+    unit: "{container}"
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: false
+      value_type: int
+    attributes:
+      - k8s.container.status.reason
   k8s.pod.phase:
     enabled: true
     description: Current phase of the pod (1 - Pending, 2 - Running, 3 - Succeeded, 4 - Failed, 5 - Unknown)
