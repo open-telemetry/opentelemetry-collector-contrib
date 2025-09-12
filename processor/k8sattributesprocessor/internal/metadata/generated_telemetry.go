@@ -26,6 +26,9 @@ type TelemetryBuilder struct {
 	meter                        metric.Meter
 	mu                           sync.Mutex
 	registrations                []metric.Registration
+	OtelsvcK8sCronjobAdded       metric.Int64Counter
+	OtelsvcK8sCronjobDeleted     metric.Int64Counter
+	OtelsvcK8sCronjobUpdated     metric.Int64Counter
 	OtelsvcK8sDaemonsetAdded     metric.Int64Counter
 	OtelsvcK8sDaemonsetDeleted   metric.Int64Counter
 	OtelsvcK8sDaemonsetUpdated   metric.Int64Counter
@@ -83,6 +86,24 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	}
 	builder.meter = Meter(settings)
 	var err, errs error
+	builder.OtelsvcK8sCronjobAdded, err = builder.meter.Int64Counter(
+		"otelcol_otelsvc_k8s_cronjob_added",
+		metric.WithDescription("Number of cron job add events received"),
+		metric.WithUnit("1"),
+	)
+	errs = errors.Join(errs, err)
+	builder.OtelsvcK8sCronjobDeleted, err = builder.meter.Int64Counter(
+		"otelcol_otelsvc_k8s_cronjob_deleted",
+		metric.WithDescription("Number of cron job delete events received"),
+		metric.WithUnit("1"),
+	)
+	errs = errors.Join(errs, err)
+	builder.OtelsvcK8sCronjobUpdated, err = builder.meter.Int64Counter(
+		"otelcol_otelsvc_k8s_cronjob_updated",
+		metric.WithDescription("Number of cron job update events received"),
+		metric.WithUnit("1"),
+	)
+	errs = errors.Join(errs, err)
 	builder.OtelsvcK8sDaemonsetAdded, err = builder.meter.Int64Counter(
 		"otelcol_otelsvc_k8s_daemonset_added",
 		metric.WithDescription("Number of daemonset add events received"),

@@ -3126,3 +3126,101 @@ func TestGetIdentifiersFromAssoc(t *testing.T) {
 		})
 	}
 }
+
+func TestCronJobUIDResolutionFromJob(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+	c.Rules = ExtractionRules{
+		CronJobUID: true, // ensures owner refs are kept by removeUnnecessaryPodData
+	}
+
+	// 1) Add a Job that is owned by a CronJob
+	job := &batch_v1.Job{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name: "my-cronjob-27667920",
+			UID:  "job-uid-123",
+			OwnerReferences: []meta_v1.OwnerReference{
+				{
+					APIVersion: "batch/v1",
+					Kind:       "CronJob",
+					Name:       "my-cronjob",
+					UID:        "cron-uid-999",
+				},
+			},
+		},
+	}
+	c.handleJobAdd(job)
+
+	// 2) Pod owned by that Job
+	pod := &api_v1.Pod{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      "my-cronjob-27667920-pod",
+			Namespace: "default",
+			OwnerReferences: []meta_v1.OwnerReference{
+				{
+					APIVersion: "batch/v1",
+					Kind:       "Job",
+					Name:       "my-cronjob-27667920",
+					UID:        "job-uid-123",
+				},
+			},
+		},
+		Status: api_v1.PodStatus{
+			PodIP: "10.0.0.5",
+		},
+	}
+
+	// The informer transform keeps owner refs when CronJobUID rule is enabled.
+	transformed := removeUnnecessaryPodData(pod, c.Rules)
+	c.handlePodAdd(transformed)
+
+	p, ok := c.GetPod(newPodIdentifier("connection", "", "10.0.0.5"))
+	require.True(t, ok)
+
+	// Assert the pod got k8s.cronjob.uid from the cached Job
+	got, exists := p.Attributes[string(conventions.K8SCronJobUIDKey)]
+	require.True(t, exists, "expected k8s.cronjob.uid to be set")
+	assert.Equal(t, "cron-uid-999", got)
+}
+
+func TestCronJobUIDResolution_NoOwner(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+	c.Rules = ExtractionRules{
+		CronJobUID: true,
+	}
+
+	// Job without a CronJob owner
+	job := &batch_v1.Job{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name: "ad-hoc-job",
+			UID:  "job-uid-456",
+		},
+	}
+	c.handleJobAdd(job)
+
+	pod := &api_v1.Pod{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      "ad-hoc-job-pod",
+			Namespace: "default",
+			OwnerReferences: []meta_v1.OwnerReference{
+				{
+					APIVersion: "batch/v1",
+					Kind:       "Job",
+					Name:       "ad-hoc-job",
+					UID:        "job-uid-456",
+				},
+			},
+		},
+		Status: api_v1.PodStatus{
+			PodIP: "10.0.0.6",
+		},
+	}
+
+	transformed := removeUnnecessaryPodData(pod, c.Rules)
+	c.handlePodAdd(transformed)
+
+	p, ok := c.GetPod(newPodIdentifier("connection", "", "10.0.0.6"))
+	require.True(t, ok)
+
+	_, exists := p.Attributes[string(conventions.K8SCronJobUIDKey)]
+	assert.False(t, exists, "did not expect k8s.cronjob.uid when Job has no CronJob owner")
+}

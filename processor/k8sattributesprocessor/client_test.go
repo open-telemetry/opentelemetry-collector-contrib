@@ -31,7 +31,9 @@ type fakeClient struct {
 	Deployments        map[string]*kube.Deployment
 	StatefulSets       map[string]*kube.StatefulSet
 	DaemonSets         map[string]*kube.DaemonSet
+	ReplicaSets        map[string]*kube.ReplicaSet
 	Jobs               map[string]*kube.Job
+	CronJobs           map[string]*kube.CronJob
 	StopCh             chan struct{}
 }
 
@@ -90,9 +92,19 @@ func (f *fakeClient) GetDaemonSet(daemonsetUID string) (*kube.DaemonSet, bool) {
 	return s, ok
 }
 
+func (f *fakeClient) GetReplicaSet(replicaSetUID string) (*kube.ReplicaSet, bool) {
+	rs, ok := f.ReplicaSets[replicaSetUID]
+	return rs, ok
+}
+
 func (f *fakeClient) GetJob(jobUID string) (*kube.Job, bool) {
 	j, ok := f.Jobs[jobUID]
 	return j, ok
+}
+
+func (f *fakeClient) GetCronJob(cronJobUID string) (*kube.CronJob, bool) {
+	cj, ok := f.CronJobs[cronJobUID]
+	return cj, ok
 }
 
 // Start is a noop for FakeClient.

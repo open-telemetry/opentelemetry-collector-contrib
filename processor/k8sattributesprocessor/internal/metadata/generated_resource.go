@@ -70,6 +70,13 @@ func (rb *ResourceBuilder) SetK8sCronjobName(val string) {
 	}
 }
 
+// SetK8sCronjobUID sets provided value as "k8s.cronjob.uid" attribute.
+func (rb *ResourceBuilder) SetK8sCronjobUID(val string) {
+	if rb.config.K8sCronjobUID.Enabled {
+		rb.res.Attributes().PutStr("k8s.cronjob.uid", val)
+	}
+}
+
 // SetK8sDaemonsetName sets provided value as "k8s.daemonset.name" attribute.
 func (rb *ResourceBuilder) SetK8sDaemonsetName(val string) {
 	if rb.config.K8sDaemonsetName.Enabled {
