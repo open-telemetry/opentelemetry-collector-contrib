@@ -60,18 +60,18 @@ func (pki *PartitionKeyBuilder) bucketKeyPrefix(ts time.Time, overridePrefix str
 	if overridePrefix != "" {
 		prefix = overridePrefix
 	}
-	
+
 	var pathParts []string
-	
+
 	if pki.S3BasePrefix != "" {
 		pathParts = append(pathParts, pki.S3BasePrefix)
 	}
-	
+
 	if prefix != "" {
 		pathParts = append(pathParts, prefix)
 	}
-  
-    location := pki.PartitionTimeLocation
+
+	location := pki.PartitionTimeLocation
 	if location == nil {
 		location = time.Local
 	}
