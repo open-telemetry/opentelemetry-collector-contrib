@@ -84,72 +84,6 @@ var MapAttributeRequest = map[string]AttributeRequest{
 	"trace":   AttributeRequestTrace,
 }
 
-var MetricsInfo = metricsInfo{
-	IisApplicationPoolState: metricInfo{
-		Name: "iis.application_pool.state",
-	},
-	IisApplicationPoolUptime: metricInfo{
-		Name: "iis.application_pool.uptime",
-	},
-	IisConnectionActive: metricInfo{
-		Name: "iis.connection.active",
-	},
-	IisConnectionAnonymous: metricInfo{
-		Name: "iis.connection.anonymous",
-	},
-	IisConnectionAttemptCount: metricInfo{
-		Name: "iis.connection.attempt.count",
-	},
-	IisNetworkBlocked: metricInfo{
-		Name: "iis.network.blocked",
-	},
-	IisNetworkFileCount: metricInfo{
-		Name: "iis.network.file.count",
-	},
-	IisNetworkIo: metricInfo{
-		Name: "iis.network.io",
-	},
-	IisRequestCount: metricInfo{
-		Name: "iis.request.count",
-	},
-	IisRequestQueueAgeMax: metricInfo{
-		Name: "iis.request.queue.age.max",
-	},
-	IisRequestQueueCount: metricInfo{
-		Name: "iis.request.queue.count",
-	},
-	IisRequestRejected: metricInfo{
-		Name: "iis.request.rejected",
-	},
-	IisThreadActive: metricInfo{
-		Name: "iis.thread.active",
-	},
-	IisUptime: metricInfo{
-		Name: "iis.uptime",
-	},
-}
-
-type metricsInfo struct {
-	IisApplicationPoolState   metricInfo
-	IisApplicationPoolUptime  metricInfo
-	IisConnectionActive       metricInfo
-	IisConnectionAnonymous    metricInfo
-	IisConnectionAttemptCount metricInfo
-	IisNetworkBlocked         metricInfo
-	IisNetworkFileCount       metricInfo
-	IisNetworkIo              metricInfo
-	IisRequestCount           metricInfo
-	IisRequestQueueAgeMax     metricInfo
-	IisRequestQueueCount      metricInfo
-	IisRequestRejected        metricInfo
-	IisThreadActive           metricInfo
-	IisUptime                 metricInfo
-}
-
-type metricInfo struct {
-	Name string
-}
-
 type metricIisApplicationPoolState struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -159,7 +93,7 @@ type metricIisApplicationPoolState struct {
 // init fills iis.application_pool.state metric with initial data.
 func (m *metricIisApplicationPoolState) init() {
 	m.data.SetName("iis.application_pool.state")
-	m.data.SetDescription("The current state of the application pool. (0 - Starting, 1 - Started, 2 - Stopping, 3 - Stopped, 4 - Unknown)")
+	m.data.SetDescription("The current status of the application pool (1 - Uninitialized, 2 - Initialized, 3 - Running, 4 - Disabling, 5 - Disabled, 6 - Shutdown Pending, 7 - Delete Pending).")
 	m.data.SetUnit("{state}")
 	m.data.SetEmptyGauge()
 }
