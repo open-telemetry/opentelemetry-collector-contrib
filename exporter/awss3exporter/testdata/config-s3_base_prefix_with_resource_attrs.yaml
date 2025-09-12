@@ -10,10 +10,13 @@ exporters:
     s3uploader:
         region: 'us-east-1'
         s3_bucket: 'foo'
-        s3_base_path: 'base/path'
-        s3_prefix: 'bar'
+        s3_base_prefix: 'environment/prod'
+        s3_prefix: 'default-metric'
         s3_partition_format: 'year=%Y/month=%m/day=%d/hour=%H/minute=%M'
         endpoint: "http://endpoint.com"
+    
+    resource_attrs_to_s3:
+        s3_prefix: "com.awss3.prefix"
 
 processors:
   nop:

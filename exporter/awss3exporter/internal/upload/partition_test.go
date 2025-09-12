@@ -105,7 +105,7 @@ func TestPartitionKeyInputsNewPartitionKey(t *testing.T) {
 		{
 			name: "base path only",
 			inputs: &PartitionKeyBuilder{
-				S3BasePath:       "base/path",
+				S3BasePrefix:     "base/path",
 				PartitionFormat:  "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
 				FilePrefix:       "signal-output-",
 				Metadata:         "service-01_pod2",
@@ -120,7 +120,7 @@ func TestPartitionKeyInputsNewPartitionKey(t *testing.T) {
 		{
 			name: "base path with prefix",
 			inputs: &PartitionKeyBuilder{
-				S3BasePath:       "base/path",
+				S3BasePrefix:     "base/path",
 				PartitionPrefix:  "telemetry",
 				PartitionFormat:  "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
 				FilePrefix:       "signal-output-",
@@ -136,7 +136,7 @@ func TestPartitionKeyInputsNewPartitionKey(t *testing.T) {
 		{
 			name: "base path with prefix and override",
 			inputs: &PartitionKeyBuilder{
-				S3BasePath:       "base/path",
+				S3BasePrefix:     "base/path",
 				PartitionPrefix:  "telemetry",
 				PartitionFormat:  "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
 				FilePrefix:       "signal-output-",
@@ -152,7 +152,7 @@ func TestPartitionKeyInputsNewPartitionKey(t *testing.T) {
 		{
 			name: "base path with empty prefix",
 			inputs: &PartitionKeyBuilder{
-				S3BasePath:       "base/path",
+				S3BasePrefix:     "base/path",
 				PartitionPrefix:  "",
 				PartitionFormat:  "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
 				FilePrefix:       "signal-output-",

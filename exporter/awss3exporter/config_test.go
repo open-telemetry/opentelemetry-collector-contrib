@@ -46,7 +46,7 @@ func TestLoadConfig(t *testing.T) {
 			Region:            "us-east-1",
 			S3Bucket:          "foo",
 			S3Prefix:          "",
-			S3BasePath:        "",
+			S3BasePrefix:        "",
 			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
 			StorageClass:      "STANDARD",
 			RetryMode:         DefaultRetryMode,
@@ -90,7 +90,7 @@ func TestConfig(t *testing.T) {
 			Region:            "us-east-1",
 			S3Bucket:          "foo",
 			S3Prefix:          "bar",
-			S3BasePath:        "",
+			S3BasePrefix:        "",
 			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
 			Endpoint:          "http://endpoint.com",
 			StorageClass:      "STANDARD",
@@ -126,7 +126,7 @@ func TestConfigS3StorageClass(t *testing.T) {
 			Region:            "us-east-1",
 			S3Bucket:          "foo",
 			S3Prefix:          "bar",
-			S3BasePath:        "",
+			S3BasePrefix:        "",
 			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
 			Endpoint:          "http://endpoint.com",
 			StorageClass:      "STANDARD_IA",
@@ -164,7 +164,7 @@ func TestConfigS3ACL(t *testing.T) {
 			Region:            "us-east-1",
 			S3Bucket:          "foo",
 			S3Prefix:          "bar",
-			S3BasePath:        "",
+			S3BasePrefix:        "",
 			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
 			Endpoint:          "http://endpoint.com",
 			StorageClass:      "STANDARD",
@@ -203,7 +203,7 @@ func TestConfigS3ACLDefined(t *testing.T) {
 			Region:            "us-east-1",
 			S3Bucket:          "foo",
 			S3Prefix:          "bar",
-			S3BasePath:        "",
+			S3BasePrefix:        "",
 			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
 			Endpoint:          "http://endpoint.com",
 			StorageClass:      "STANDARD",
@@ -244,7 +244,7 @@ func TestConfigForS3CompatibleSystems(t *testing.T) {
 			Region:            "us-east-1",
 			S3Bucket:          "foo",
 			S3Prefix:          "bar",
-			S3BasePath:        "",
+			S3BasePrefix:        "",
 			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
 			Endpoint:          "alternative-s3-system.example.com",
 			S3ForcePathStyle:  true,
@@ -365,7 +365,7 @@ func TestMarshallerName(t *testing.T) {
 			Region:            "us-east-1",
 			S3Bucket:          "foo",
 			S3Prefix:          "",
-			S3BasePath:        "",
+			S3BasePrefix:        "",
 			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
 			StorageClass:      "STANDARD",
 			RetryMode:         DefaultRetryMode,
@@ -385,7 +385,7 @@ func TestMarshallerName(t *testing.T) {
 			Region:            "us-east-1",
 			S3Bucket:          "bar",
 			S3Prefix:          "",
-			S3BasePath:        "",
+			S3BasePrefix:        "",
 			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
 			StorageClass:      "STANDARD",
 			RetryMode:         DefaultRetryMode,
@@ -422,7 +422,7 @@ func TestCompressionName(t *testing.T) {
 			Region:            "us-east-1",
 			S3Bucket:          "foo",
 			S3Prefix:          "",
-			S3BasePath:        "",
+			S3BasePrefix:        "",
 			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
 			Compression:       "gzip",
 			StorageClass:      "STANDARD",
@@ -443,7 +443,7 @@ func TestCompressionName(t *testing.T) {
 			Region:            "us-east-1",
 			S3Bucket:          "bar",
 			S3Prefix:          "",
-			S3BasePath:        "",
+			S3BasePrefix:        "",
 			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
 			Compression:       "none",
 			StorageClass:      "STANDARD",
@@ -481,7 +481,7 @@ func TestResourceAttrsToS3(t *testing.T) {
 			Region:            "us-east-1",
 			S3Bucket:          "foo",
 			S3Prefix:          "bar",
-			S3BasePath:        "",
+			S3BasePrefix:        "",
 			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
 			Endpoint:          "http://endpoint.com",
 			StorageClass:      "STANDARD",
@@ -523,7 +523,7 @@ func TestRetry(t *testing.T) {
 			Region:            "us-east-1",
 			S3Bucket:          "foo",
 			S3Prefix:          "bar",
-			S3BasePath:        "",
+			S3BasePrefix:        "",
 			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
 			Endpoint:          "http://endpoint.com",
 			StorageClass:      "STANDARD_IA",
@@ -559,7 +559,7 @@ func TestConfigS3UniqueKeyFunc(t *testing.T) {
 			Region:            "us-east-1",
 			S3Bucket:          "foo",
 			S3Prefix:          "bar",
-			S3BasePath:        "",
+			S3BasePrefix:        "",
 			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
 			Endpoint:          "http://endpoint.com",
 			RetryMode:         DefaultRetryMode,
@@ -575,14 +575,14 @@ func TestConfigS3UniqueKeyFunc(t *testing.T) {
 	)
 }
 
-func TestConfigS3BasePath(t *testing.T) {
+func TestConfigS3BasePrefix(t *testing.T) {
 	factories, err := otelcoltest.NopFactories()
 	assert.NoError(t, err)
 
 	factory := NewFactory()
 	factories.Exporters[factory.Type()] = factory
 	cfg, err := otelcoltest.LoadConfigAndValidate(
-		filepath.Join("testdata", "config-s3_base_path.yaml"), factories)
+		filepath.Join("testdata", "config-s3_base_prefix.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -599,7 +599,7 @@ func TestConfigS3BasePath(t *testing.T) {
 			Region:            "us-east-1",
 			S3Bucket:          "foo",
 			S3Prefix:          "bar",
-			S3BasePath:        "base/path",
+			S3BasePrefix:      "base/path",
 			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
 			Endpoint:          "http://endpoint.com",
 			StorageClass:      "STANDARD",
@@ -614,14 +614,14 @@ func TestConfigS3BasePath(t *testing.T) {
 	)
 }
 
-func TestConfigS3BasePathWithResourceAttrs(t *testing.T) {
+func TestConfigS3BasePrefixWithResourceAttrs(t *testing.T) {
 	factories, err := otelcoltest.NopFactories()
 	assert.NoError(t, err)
 
 	factory := NewFactory()
 	factories.Exporters[factory.Type()] = factory
 	cfg, err := otelcoltest.LoadConfigAndValidate(
-		filepath.Join("testdata", "config-s3_base_path_with_resource_attrs.yaml"), factories)
+		filepath.Join("testdata", "config-s3_base_prefix_with_resource_attrs.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -638,7 +638,7 @@ func TestConfigS3BasePathWithResourceAttrs(t *testing.T) {
 			Region:            "us-east-1",
 			S3Bucket:          "foo",
 			S3Prefix:          "default-metric",
-			S3BasePath:        "environment/prod",
+			S3BasePrefix:        "environment/prod",
 			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
 			Endpoint:          "http://endpoint.com",
 			StorageClass:      "STANDARD",

@@ -25,7 +25,7 @@ func TestNewUploadManager(t *testing.T) {
 					Region:            "local",
 					S3Bucket:          "my-awesome-bucket",
 					S3Prefix:          "opentelemetry",
-					S3BasePath:        "",
+					S3BasePrefix:        "",
 					S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H",
 					FilePrefix:        "ingested-data-",
 					Endpoint:          "localhost",
