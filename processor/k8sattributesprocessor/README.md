@@ -525,6 +525,17 @@ timestamp value as an RFC3339 compliant timestamp.
 The `k8sattr.fieldExtractConfigRegex.disallow` [feature gate](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) disallows the usage of the `extract.annotations.regex` and `extract.labels.regex` fields.
 The feature gate is in `stable` stage, which means it can no longer be disabled and is therefore enabled by default.
 
+### `k8sattr.deploymentNameFromReplicaSet.enable`
+
+The `k8sattr.deploymentNameFromReplicaSet.enable` [feature gate](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) enables extraction of deployment names from replicaset names by trimming pod template hash when deployment resource is not available through the standard deployment->replicaset relationship. It reduces the traffic to the Kube API Server when you deploy the collector as a daemonset in a large cluster.
+
+The feature gate is in `alpha` stage and is disabled by default.
+
+When enabled, this feature works automatically with the existing deployment name extraction. For example:
+
+- ReplicaSet name: `my-app-deployment-0123456789`
+- Extracted deployment name: `my-app-deployment`
+
 #### Migration
 
 Deprecation of the `extract.annotations.regex` and `extract.labels.regex` fields means that it is recommended to use the `ExtractPatterns` function from the transform processor instead. To convert your current configuration please check the `ExtractPatterns` function [documentation](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/ottlfuncs#extractpatterns). You should use the `pattern` parameter of `ExtractPatterns` instead of using the `extract.annotations.regex` and `extract.labels.regex` fields.
