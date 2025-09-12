@@ -208,8 +208,6 @@ exporters:
       s3_prefix: "com.awss3.prefix"
 ```
 
-**Important:** `resource_attrs_to_s3/s3_prefix` only overrides `s3_prefix`, not `s3_base_prefix`. The base path is always included as the root path.
-
 In this configuration:
 - **Base path**: `environment/prod` (always included)
 - **Prefix**: Dynamically set from resource attribute `com.awss3.prefix` if available, otherwise falls back to `default-metric`
