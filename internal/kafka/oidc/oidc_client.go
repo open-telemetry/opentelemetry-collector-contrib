@@ -146,35 +146,21 @@ func (p *OIDCfileTokenProvider) startBackgroundRefresher() {
 	p.backgroundOnce.Do(func() {
 		go func() {
 			for {
-				sleepDuration := p.refreshCooldown
-
 				p.mu.RLock()
-				if p.cachedToken != nil && p.cachedToken.AccessToken != "" {
-					sleepDuration = time.Until(p.tokenExpiry.Add(-p.refreshAhead))
+				tokenExpiry := p.tokenExpiry
+
+				sleepDuration := time.Until(tokenExpiry.Add(-p.refreshAhead))
+				if sleepDuration <= 0 {
+					sleepDuration = p.refreshCooldown
 				}
 				p.mu.RUnlock()
-
-				if sleepDuration > 0 {
-					select {
-					case <-p.Ctx.Done():
-						return
-					case <-time.After(sleepDuration):
-						continue
-					}
-				}
 
 				select {
 				case <-p.Ctx.Done():
 					return
-				default:
-					// Check if context is done before trying to update token
-					select {
-					case <-p.Ctx.Done():
-						return
-					default:
-						if _, err := p.updateToken(); err != nil {
-							log.Printf("background token refresh failed: %v\n", err)
-						}
+				case <-time.After(sleepDuration):
+					if _, err := p.updateToken(); err != nil {
+						log.Printf("Error: background refresher - token refresh failed: %v", err)
 					}
 				}
 			}
