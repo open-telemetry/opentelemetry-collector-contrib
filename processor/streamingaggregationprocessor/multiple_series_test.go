@@ -20,9 +20,8 @@ import (
 func TestMultipleHistogramSeriesAggregation(t *testing.T) {
 	logger := zap.NewNop()
 	config := &Config{
-		WindowSize:     10 * time.Second,
-		NumWindows:     1,
-		ExportInterval: 10 * time.Second,
+		WindowSize:         10 * time.Second,
+		StaleDataThreshold: 30 * time.Second,
 	}
 	
 	processor, err := newStreamingAggregationProcessor(logger, config)
@@ -125,9 +124,8 @@ func TestMultipleHistogramSeriesAggregation(t *testing.T) {
 func TestMultipleHistogramSeriesCumulative(t *testing.T) {
 	logger := zap.NewNop()
 	config := &Config{
-		WindowSize:     10 * time.Second,
-		NumWindows:     1,
-		ExportInterval: 10 * time.Second,
+		WindowSize:         10 * time.Second,
+		StaleDataThreshold: 30 * time.Second,
 	}
 	
 	processor, err := newStreamingAggregationProcessor(logger, config)
@@ -211,9 +209,8 @@ func TestMultipleHistogramSeriesCumulative(t *testing.T) {
 func TestConcurrentHistogramAggregation(t *testing.T) {
 	logger := zap.NewNop()
 	config := &Config{
-		WindowSize:     10 * time.Second,
-		NumWindows:     1,
-		ExportInterval: 10 * time.Second,
+		WindowSize:         10 * time.Second,
+		StaleDataThreshold: 30 * time.Second,
 	}
 	
 	processor, err := newStreamingAggregationProcessor(logger, config)

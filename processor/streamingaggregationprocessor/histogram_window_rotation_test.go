@@ -17,10 +17,9 @@ import (
 // TestHistogramWindowRotation tests that histogram cumulative state is preserved across window rotations
 func TestHistogramWindowRotation(t *testing.T) {
 	cfg := &Config{
-		WindowSize:     500 * time.Millisecond, // Short window for testing
-		MaxMemoryMB:    10,
-		ExportInterval: 500 * time.Millisecond,
-		NumWindows:     3,
+		WindowSize:         500 * time.Millisecond, // Short window for testing
+		MaxMemoryMB:        10,
+		StaleDataThreshold: 30 * time.Second,
 	}
 
 	logger := zap.NewNop()
@@ -202,7 +201,7 @@ func TestHistogramStatePreservationAcrossWindows(t *testing.T) {
 	metric.SetName("test.histogram")
 	metric.SetEmptyHistogram()
 	
-	agg.ExportTo(metric, window.start, window.end, map[string]string{})
+	agg.ExportTo(metric, window.start, window.end, map[string]string{}, false)
 	
 	hist := metric.Histogram()
 	if hist.DataPoints().Len() == 0 {
@@ -221,10 +220,9 @@ func TestHistogramStatePreservationAcrossWindows(t *testing.T) {
 // TestMultipleHistogramSeriesWindowRotation tests multiple histogram series across rotations
 func TestMultipleHistogramSeriesWindowRotation(t *testing.T) {
 	cfg := &Config{
-		WindowSize:     500 * time.Millisecond,
-		MaxMemoryMB:    10,
-		ExportInterval: 500 * time.Millisecond,
-		NumWindows:     2,
+		WindowSize:         500 * time.Millisecond,
+		MaxMemoryMB:        10,
+		StaleDataThreshold: 30 * time.Second,
 	}
 
 	logger := zap.NewNop()

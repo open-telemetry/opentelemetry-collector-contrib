@@ -19,10 +19,9 @@ import (
 // TestHighVolumeMetrics tests the processor with high volume of metrics
 func TestHighVolumeMetrics(t *testing.T) {
 	cfg := &Config{
-		WindowSize:     1 * time.Second,
-		MaxMemoryMB:    100,
-		ExportInterval: 1 * time.Second,
-		NumWindows:     2,
+		WindowSize:         1 * time.Second,
+		MaxMemoryMB:        100,
+		StaleDataThreshold: 30 * time.Second,
 	}
 
 	logger := zap.NewNop()
@@ -87,8 +86,7 @@ func TestConcurrentProcessing(t *testing.T) {
 	cfg := &Config{
 		WindowSize:     2 * time.Second,
 		MaxMemoryMB:    50,
-		ExportInterval: 2 * time.Second,
-		NumWindows:     2,
+		StaleDataThreshold: 30 * time.Second,
 	}
 
 	logger := zap.NewNop()
@@ -151,8 +149,7 @@ func TestWindowRotation(t *testing.T) {
 	cfg := &Config{
 		WindowSize:     500 * time.Millisecond, // Short window for testing
 		MaxMemoryMB:    10,
-		ExportInterval: 500 * time.Millisecond,
-		NumWindows:     3,
+		StaleDataThreshold: 30 * time.Second,
 	}
 
 	logger := zap.NewNop()
@@ -218,8 +215,7 @@ func TestMemoryPressure(t *testing.T) {
 	cfg := &Config{
 		WindowSize:     1 * time.Second,
 		MaxMemoryMB:    1, // Very low memory limit to trigger eviction
-		ExportInterval: 1 * time.Second,
-		NumWindows:     2,
+		StaleDataThreshold: 30 * time.Second,
 	}
 
 	logger := zap.NewNop()
@@ -265,8 +261,7 @@ func TestMixedMetricTypes(t *testing.T) {
 	cfg := &Config{
 		WindowSize:     1 * time.Second,
 		MaxMemoryMB:    50,
-		ExportInterval: 1 * time.Second,
-		NumWindows:     2,
+		StaleDataThreshold: 30 * time.Second,
 	}
 
 	logger := zap.NewNop()
@@ -360,8 +355,7 @@ func TestLateArrivalHandling(t *testing.T) {
 	cfg := &Config{
 		WindowSize:     1 * time.Second,
 		MaxMemoryMB:    10,
-		ExportInterval: 1 * time.Second,
-		NumWindows:     3,
+		StaleDataThreshold: 30 * time.Second,
 	}
 
 	logger := zap.NewNop()
@@ -418,8 +412,7 @@ func TestAggregationAccuracy(t *testing.T) {
 	cfg := &Config{
 		WindowSize:     2 * time.Second,
 		MaxMemoryMB:    10,
-		ExportInterval: 2 * time.Second,
-		NumWindows:     1,
+		StaleDataThreshold: 30 * time.Second,
 	}
 
 	logger := zap.NewNop()

@@ -18,16 +18,21 @@ import (
 )
 
 // streamingAggregationProcessor implements the streaming aggregation processor
-// Single-instance design: upstream sharding handles distribution
+// Double-buffer design: exactly 2 windows that alternate every windowSize duration
 type streamingAggregationProcessor struct {
 	logger *zap.Logger
 	config *Config
 	
-	// Time windows for aggregation
-	windows       []*Window
-	currentWindow int
-	windowSize    time.Duration
-	numWindows    int
+	// Double-buffer window architecture
+	windowA      *TimeWindow       // First window (time boundaries only)
+	windowB      *TimeWindow       // Second window (time boundaries only)  
+	activeWindow *TimeWindow       // Points to current writable window
+	nextSwapTime time.Time         // When to swap windows
+	windowSize   time.Duration
+	
+	// Aggregators stored at processor level (persistent across window swaps)
+	aggregators   map[string]*Aggregator  // Key: series key
+	aggregatorsMu sync.RWMutex           // Protect aggregator map
 	
 	// Lifecycle management
 	startOnce sync.Once
@@ -46,9 +51,6 @@ type streamingAggregationProcessor struct {
 	maxMemoryBytes int64
 	
 	// Export management
-	exportTicker   *time.Ticker
-	rotateTicker   *time.Ticker
-	lastExportTime time.Time
 	nextConsumer   consumer.Metrics  // Store the next consumer in the pipeline
 	
 	// Mutex for window operations
@@ -62,62 +64,91 @@ func newStreamingAggregationProcessor(logger *zap.Logger, config *Config) (*stre
 	
 	ctx, cancel := context.WithCancel(context.Background())
 	
+	// Initialize double-buffer windows with proper time alignment
+	now := time.Now()
+	alignedStart := now.Truncate(config.WindowSize)
+	
 	p := &streamingAggregationProcessor{
 		logger:         logger,
 		config:         config,
 		ctx:            ctx,
 		cancel:         cancel,
 		windowSize:     config.WindowSize,
-		numWindows:     config.NumWindows,
-		windows:        make([]*Window, config.NumWindows),
 		maxMemoryBytes: int64(config.MaxMemoryMB * 1024 * 1024),
+		aggregators:    make(map[string]*Aggregator),
+		
+		// Initialize double-buffer windows
+		windowA:      NewTimeWindow(alignedStart, alignedStart.Add(config.WindowSize)),
+		windowB:      NewTimeWindow(alignedStart.Add(config.WindowSize), alignedStart.Add(2*config.WindowSize)),
+		nextSwapTime: alignedStart.Add(config.WindowSize),
 	}
 	
-	// Initialize windows starting from current time
-	// This prevents "out of order" errors when restarting the processor
-	now := time.Now()
-	// Align to window boundary for cleaner timestamps
-	alignedStart := now.Truncate(config.WindowSize)
-	for i := 0; i < p.numWindows; i++ {
-		// All windows start empty from the current aligned time
-		// They will be populated as new data arrives
-		windowStart := alignedStart.Add(time.Duration(i) * config.WindowSize)
-		p.windows[i] = NewWindow(windowStart, windowStart.Add(config.WindowSize))
-	}
-	// Start with the first window as current
-	p.currentWindow = 0
+	// Start with window A as the active window
+	p.activeWindow = p.windowA
 	
 	return p, nil
+}
+
+// getOrCreateAggregator gets or creates an aggregator for a series at processor level
+func (p *streamingAggregationProcessor) getOrCreateAggregator(seriesKey string, metricType pmetric.MetricType) *Aggregator {
+	p.aggregatorsMu.RLock()
+	if agg, exists := p.aggregators[seriesKey]; exists {
+		p.aggregatorsMu.RUnlock()
+		return agg
+	}
+	p.aggregatorsMu.RUnlock()
+	
+	// Create new aggregator under write lock
+	p.aggregatorsMu.Lock()
+	defer p.aggregatorsMu.Unlock()
+	
+	// Double-check in case another goroutine created it
+	if agg, exists := p.aggregators[seriesKey]; exists {
+		return agg
+	}
+	
+	// Create new aggregator
+	agg := NewAggregator(metricType)
+	p.aggregators[seriesKey] = agg
+	
+	// Update memory usage estimate
+	p.memoryUsage.Add(agg.EstimateMemoryUsage())
+	
+	return agg
+}
+
+// resetAggregatorsForNewWindow resets window-specific state in all aggregators
+func (p *streamingAggregationProcessor) resetAggregatorsForNewWindow() {
+	p.aggregatorsMu.RLock()
+	defer p.aggregatorsMu.RUnlock()
+	
+	for _, agg := range p.aggregators {
+		agg.ResetForNewWindow()
+	}
+}
+
+// hasActiveWindowData checks if there is data to export from current aggregators
+func (p *streamingAggregationProcessor) hasActiveWindowData() bool {
+	p.aggregatorsMu.RLock()
+	defer p.aggregatorsMu.RUnlock()
+	
+	return len(p.aggregators) > 0
 }
 
 // Start starts the processor
 func (p *streamingAggregationProcessor) Start(ctx context.Context, host component.Host) error {
 	p.startOnce.Do(func() {
-		p.logger.Info("Starting streaming aggregation processor (single-instance mode)",
+		p.logger.Info("Starting streaming aggregation processor (double-buffer mode)",
 			zap.Duration("window_size", p.config.WindowSize),
-			zap.Int("num_windows", p.config.NumWindows),
 		)
 		
-		// Start window rotation
-		p.rotateTicker = time.NewTicker(p.windowSize)
-		p.logger.Debug("Starting window rotation ticker",
-			zap.Duration("window_size", p.windowSize),
-			zap.Int("num_windows", p.numWindows),
-		)
+		// Start window swap checker (checks every second for swap time)
 		p.wg.Add(1)
 		go func() {
 			defer p.wg.Done()
-			p.logger.Debug("Window rotation goroutine started")
-			
-			// Trigger initial rotation to align windows properly
-			p.logger.Debug("Triggering initial window rotation")
-			p.rotateWindows()
-			
-			// Then start the regular rotation loop
-			p.runWindowRotation()
+			p.logger.Debug("Window swap checker started")
+			p.runWindowSwapChecker()
 		}()
-		
-		// No separate export ticker needed - exports happen immediately on rotation
 		
 		// Start memory monitor
 		p.wg.Add(1)
@@ -144,12 +175,6 @@ func (p *streamingAggregationProcessor) Shutdown(ctx context.Context) error {
 	p.stopOnce.Do(func() {
 		p.logger.Info("Shutting down streaming aggregation processor")
 		
-		// Stop tickers
-		if p.rotateTicker != nil {
-			p.rotateTicker.Stop()
-		}
-		// No export ticker to stop - exports happen on rotation
-		
 		// Signal all goroutines to stop
 		p.cancel()
 		
@@ -169,10 +194,80 @@ func (p *streamingAggregationProcessor) Shutdown(ctx context.Context) error {
 		}
 		
 		// Export any remaining aggregated metrics
-		p.forceExport()
+		p.forceExportActiveWindow()
 	})
 	
 	return shutdownErr
+}
+
+// runWindowSwapChecker checks every second for window swap timing
+func (p *streamingAggregationProcessor) runWindowSwapChecker() {
+	ticker := time.NewTicker(1 * time.Second)
+	defer ticker.Stop()
+	
+	for {
+		select {
+		case <-ticker.C:
+			p.checkWindowSwap()
+		case <-p.ctx.Done():
+			p.logger.Debug("Window swap checker stopping due to context cancellation")
+			return
+		}
+	}
+}
+
+// checkWindowSwap checks if it's time to swap windows
+func (p *streamingAggregationProcessor) checkWindowSwap() {
+	now := time.Now()
+	if now.After(p.nextSwapTime) || now.Equal(p.nextSwapTime) {
+		p.swapWindows()
+	}
+}
+
+// swapWindows swaps the active window and exports the previous one
+func (p *streamingAggregationProcessor) swapWindows() {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	
+	p.logger.Info("Swapping windows",
+		zap.Time("current_window_start", p.activeWindow.start),
+		zap.Time("current_window_end", p.activeWindow.end),
+		zap.Time("swap_time", time.Now()),
+	)
+	
+	// Export current active window if it has data
+	if p.hasActiveWindowData() {
+		p.logger.Debug("Exporting active window before swap")
+		p.exportActiveWindow()
+	}
+	
+	// Reset window-specific state in all aggregators for new window
+	p.resetAggregatorsForNewWindow()
+	
+	// Swap to the other window
+	if p.activeWindow == p.windowA {
+		p.activeWindow = p.windowB
+	} else {
+		p.activeWindow = p.windowA
+	}
+	
+	// Set new time boundaries for the now-active window
+	now := time.Now()
+	alignedStart := now.Truncate(p.windowSize)
+	// If we're very close to the boundary, move to next boundary
+	if alignedStart.Add(p.windowSize/2).Before(now) {
+		alignedStart = alignedStart.Add(p.windowSize)
+	}
+	
+	p.activeWindow.start = alignedStart
+	p.activeWindow.end = alignedStart.Add(p.windowSize)
+	p.nextSwapTime = p.activeWindow.end
+	
+	p.logger.Debug("Window swap completed",
+		zap.Time("new_window_start", p.activeWindow.start),
+		zap.Time("new_window_end", p.activeWindow.end),
+		zap.Time("next_swap_time", p.nextSwapTime),
+	)
 }
 
 // ProcessMetrics processes incoming metrics
@@ -226,28 +321,13 @@ func (p *streamingAggregationProcessor) aggregateMetric(
 	resource pcommon.Resource,
 	scope pcommon.InstrumentationScope,
 ) error {
-	// Get timestamp from metric
-	timestamp := getMetricTimestamp(metric)
-	
-	// Find appropriate window
-	p.mu.RLock()
-	window := p.getWindowForTimestamp(timestamp)
-	p.mu.RUnlock()
-	
-	if window == nil {
-		return fmt.Errorf("metric timestamp outside of window range")
-	}
-	
 	// For streaming aggregation, we aggregate all data points together regardless of attributes
 	// This provides true cardinality reduction by dropping all labels
 	// Use just the metric name as the key for all metric types
 	seriesKey := metric.Name() + "|"
 	
-	// Get or create aggregator
-	aggregator := window.GetOrCreateAggregator(seriesKey, metric.Type())
-	
-	// Update memory tracking
-	p.memoryUsage.Add(aggregator.EstimateMemoryUsage())
+	// Get or create aggregator at processor level (persistent across window swaps)
+	aggregator := p.getOrCreateAggregator(seriesKey, metric.Type())
 	
 	// Aggregate based on metric type
 	switch metric.Type() {
@@ -333,7 +413,7 @@ func (p *streamingAggregationProcessor) aggregateSum(sum pmetric.Sum, agg *Aggre
 				
 				// If cumulative state was reset due to gap, trigger immediate export
 				if wasReset {
-					go p.forceExportCurrentWindow() // Export current window immediately in background
+					go p.forceExportActiveWindow() // Export active window immediately in background
 				}
 				
 				p.logger.Debug("Aggregating cumulative counter",
@@ -424,287 +504,78 @@ func (p *streamingAggregationProcessor) aggregateSummary(summary pmetric.Summary
 	return nil
 }
 
-// getWindowForTimestamp returns the appropriate window for a timestamp
-func (p *streamingAggregationProcessor) getWindowForTimestamp(timestamp time.Time) *Window {
-	// Find the appropriate window
-	for _, window := range p.windows {
-		if window.Contains(timestamp) {
-			return window
-		}
-	}
+// exportActiveWindow exports aggregated metrics from processor-level aggregators
+func (p *streamingAggregationProcessor) exportActiveWindow() {
+	metrics := p.exportAggregatedMetrics(p.activeWindow.start, p.activeWindow.end)
 	
-	// Check if within late arrival tolerance (5 seconds default)
-	currentWindow := p.windows[p.currentWindow]
-	lateArrivalTolerance := 5 * time.Second
-	if timestamp.After(currentWindow.start.Add(-lateArrivalTolerance)) {
-		return currentWindow
-	}
-	
-	return nil
-}
-
-// runWindowRotation handles window rotation aligned to time boundaries
-func (p *streamingAggregationProcessor) runWindowRotation() {
-	p.logger.Debug("Window rotation loop started, checking every second for window boundaries...")
-	
-	// Check every second for window boundaries
-	checkTicker := time.NewTicker(1 * time.Second)
-	defer checkTicker.Stop()
-	
-	for {
-		select {
-		case <-checkTicker.C:
-			p.checkAndRotateWindows()
-		case <-p.ctx.Done():
-			p.logger.Debug("Window rotation stopping due to context cancellation")
-			return
-		}
-	}
-}
-
-// checkAndRotateWindows checks if any window has completed and exports it immediately
-func (p *streamingAggregationProcessor) checkAndRotateWindows() {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	
-	now := time.Now()
-	
-	// Check each window to see if it has completed (end time has passed)
-	for i, window := range p.windows {
-		if window.end.Before(now) || window.end.Equal(now) {
-			// Window has completed - export it immediately
-			if window.HasData() {
-				p.logger.Info("Window completed - exporting immediately",
-					zap.Time("window_start", window.start),
-					zap.Time("window_end", window.end),
-					zap.Time("current_time", now),
-					zap.Duration("export_delay", now.Sub(window.end)),
-				)
-				p.exportWindow(window)
-			}
-			
-			// Create new window aligned to time boundaries
-			windowSizeSeconds := int64(p.windowSize.Seconds())
-			
-			// Calculate the next window start time aligned to boundaries
-			nextWindowStart := time.Unix(now.Unix()/windowSizeSeconds*windowSizeSeconds, 0)
-			if nextWindowStart.Before(now) || nextWindowStart.Equal(now) {
-				nextWindowStart = nextWindowStart.Add(p.windowSize)
-			}
-			
-			// Replace the completed window with a new one
-			p.windows[i] = NewWindow(nextWindowStart, nextWindowStart.Add(p.windowSize))
-			
-			p.logger.Debug("Created new window",
-				zap.Time("new_window_start", nextWindowStart),
-				zap.Time("new_window_end", nextWindowStart.Add(p.windowSize)),
+	if metrics.DataPointCount() > 0 && p.nextConsumer != nil {
+		ctx := context.Background()
+		if err := p.nextConsumer.ConsumeMetrics(ctx, metrics); err != nil {
+			p.logger.Error("Failed to export aggregated metrics",
+				zap.Error(err),
+				zap.Time("window_start", p.activeWindow.start),
+				zap.Time("window_end", p.activeWindow.end),
+				zap.Int("data_points", metrics.DataPointCount()),
 			)
-		}
-	}
-}
-
-// rotateWindows rotates the time windows and exports completed windows
-func (p *streamingAggregationProcessor) rotateWindows() {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	
-	p.logger.Debug("Window rotation triggered",
-		zap.Time("rotation_time", time.Now()),
-		zap.Int("num_windows", p.numWindows),
-	)
-	
-	// If we only have one window, clear it and create a new one
-	// Note: Export is handled by immediate exporter, no need to export here
-	if p.numWindows == 1 {
-		window := p.windows[0]
-		p.logger.Debug("Rotating single window",
-			zap.Time("window_start", window.start),
-			zap.Time("window_end", window.end),
-		)
-		// Clear the window to reset all aggregator state
-		window.Clear()
-		newStart := time.Now()
-		p.windows[0] = NewWindow(newStart, newStart.Add(p.windowSize))
-		return
-	}
-	
-	// For multiple windows, export the completed window immediately on rotation
-	oldestWindow := p.windows[0]
-	if oldestWindow.HasData() {
-		p.logger.Debug("Immediately exporting completed window on rotation",
-			zap.Time("window_start", oldestWindow.start),
-			zap.Time("window_end", oldestWindow.end),
-			zap.Time("rotation_time", time.Now()),
-		)
-		p.exportWindow(oldestWindow)
-	}
-	// Clear the window to free memory and reset aggregator state
-	oldestWindow.Clear()
-	
-	// Shift windows - move all windows one position to the left
-	for i := 0; i < p.numWindows-1; i++ {
-		p.windows[i] = p.windows[i+1]
-	}
-	
-	// Create new current window at the end, aligned to real-time boundaries
-	now := time.Now()
-	// Align to window boundaries (e.g., if windowSize is 30s, align to :00, :30 seconds)
-	windowSizeSeconds := int64(p.windowSize.Seconds())
-	alignedStart := time.Unix(now.Unix()/windowSizeSeconds*windowSizeSeconds, 0)
-	
-	// If aligned start is in the past, move to next boundary
-	if alignedStart.Before(now.Add(-p.windowSize/2)) {
-		alignedStart = alignedStart.Add(p.windowSize)
-	}
-	
-	p.windows[p.numWindows-1] = NewWindow(alignedStart, alignedStart.Add(p.windowSize))
-	
-	p.logger.Debug("Windows rotated successfully",
-		zap.Time("new_window_start", alignedStart),
-		zap.Time("new_window_end", alignedStart.Add(p.windowSize)),
-	)
-}
-
-// runImmediateExporter checks every second for completed windows and exports them immediately
-func (p *streamingAggregationProcessor) runImmediateExporter() {
-	for {
-		select {
-		case <-p.exportTicker.C:
-			p.exportCompletedWindowsImmediately()
-		case <-p.ctx.Done():
-			return
-		}
-	}
-}
-
-// exportCompletedWindowsImmediately exports windows immediately when they complete
-func (p *streamingAggregationProcessor) exportCompletedWindowsImmediately() {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	
-	now := time.Now()
-	
-	for _, window := range p.windows {
-		// Export any window that has completed (end time has passed) and has data
-		if window.end.Before(now) && window.HasData() {
-			p.logger.Debug("Immediately exporting completed window",
-				zap.Time("window_start", window.start),
-				zap.Time("window_end", window.end),
-				zap.Time("current_time", now),
-				zap.Duration("delay", now.Sub(window.end)),
-			)
-			p.exportWindow(window)
-			// Clear the window immediately after export to prevent re-export
-			window.Clear()
-		}
-	}
-}
-
-// exportCompletedWindows exports windows that are complete (kept for compatibility)
-func (p *streamingAggregationProcessor) exportCompletedWindows() {
-	p.mu.RLock()
-	defer p.mu.RUnlock()
-	
-	now := time.Now()
-	
-	for i, window := range p.windows {
-		// Skip current window and future windows
-		if i >= p.currentWindow {
-			continue
-		}
-		
-		// Export if window is complete (end time has passed)
-		if window.end.Before(now) && window.HasData() {
-			p.exportWindow(window)
-			// Don't clear here - let rotation handle cleanup
-			// This allows GetAggregatedMetrics to still see the data
-		}
-	}
-}
-
-// exportWindow exports a single window's aggregated metrics
-func (p *streamingAggregationProcessor) exportWindow(window *Window) {
-	metrics := window.Export()
-	if metrics.DataPointCount() > 0 {
-		// Send aggregated metrics to the next consumer in the pipeline
-		if p.nextConsumer != nil {
-			ctx := context.Background()
-			if err := p.nextConsumer.ConsumeMetrics(ctx, metrics); err != nil {
-				p.logger.Error("Failed to export aggregated metrics",
-					zap.Error(err),
-					zap.Time("window_start", window.start),
-					zap.Time("window_end", window.end),
-					zap.Int("data_points", metrics.DataPointCount()),
-				)
-			} else {
-				p.logger.Info("Successfully exported aggregated window",
-					zap.Time("window_start", window.start),
-					zap.Time("window_end", window.end),
-					zap.Int("data_points", metrics.DataPointCount()),
-				)
-			}
 		} else {
-			p.logger.Warn("No next consumer configured, metrics not exported",
-				zap.Time("window_start", window.start),
-				zap.Time("window_end", window.end),
+			p.logger.Info("Successfully exported aggregated window",
+				zap.Time("window_start", p.activeWindow.start),
+				zap.Time("window_end", p.activeWindow.end),
 				zap.Int("data_points", metrics.DataPointCount()),
 			)
 		}
-		
-		// Update memory usage
-		p.memoryUsage.Add(-window.GetMemoryUsage())
 	}
 }
 
-// forceExport forces export of all windows (used during shutdown)
-func (p *streamingAggregationProcessor) forceExport() {
-	p.mu.Lock()
-	defer p.mu.Unlock()
+// exportAggregatedMetrics creates metrics from processor-level aggregators
+func (p *streamingAggregationProcessor) exportAggregatedMetrics(windowStart, windowEnd time.Time) pmetric.Metrics {
+	md := pmetric.NewMetrics()
 	
-	for _, window := range p.windows {
-		if window.HasData() {
-			p.exportWindow(window)
-		}
+	p.aggregatorsMu.RLock()
+	defer p.aggregatorsMu.RUnlock()
+	
+	if len(p.aggregators) == 0 {
+		return md
 	}
+	
+	// Create single resource and scope for all metrics
+	rm := md.ResourceMetrics().AppendEmpty()
+	sm := rm.ScopeMetrics().AppendEmpty()
+	sm.Scope().SetName("streamingaggregation")
+	
+	// Export each aggregator
+	for seriesKey, agg := range p.aggregators {
+		// Parse series key to extract metric name and labels
+		metricName, labels := parseSeriesKey(seriesKey)
+		
+		// Create metric based on aggregator state
+		metric := sm.Metrics().AppendEmpty()
+		metric.SetName(metricName)
+		
+		// Export based on metric type
+		agg.ExportTo(metric, windowStart, windowEnd, labels)
+	}
+	
+	return md
 }
 
-// forceExportCurrentWindow forces export of the current window (used after gap detection reset)
-func (p *streamingAggregationProcessor) forceExportCurrentWindow() {
+// forceExportActiveWindow forces export of current window (used during shutdown)
+func (p *streamingAggregationProcessor) forceExportActiveWindow() {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 	
-	if p.currentWindow < len(p.windows) {
-		currentWindow := p.windows[p.currentWindow]
-		if currentWindow.HasData() {
-			p.logger.Info("Force exporting current window after gap detection reset",
-				zap.Time("window_start", currentWindow.start),
-				zap.Time("window_end", currentWindow.end),
-			)
-			p.exportWindow(currentWindow)
-		}
+	if p.hasActiveWindowData() {
+		p.logger.Info("Force exporting active window during shutdown",
+			zap.Time("window_start", p.activeWindow.start),
+			zap.Time("window_end", p.activeWindow.end),
+		)
+		p.exportActiveWindow()
 	}
 }
 
 // GetAggregatedMetrics returns the current aggregated metrics (for testing)
-// This is not part of the normal flow - metrics are normally exported on schedule
 func (p *streamingAggregationProcessor) GetAggregatedMetrics() pmetric.Metrics {
-	p.mu.RLock()
-	defer p.mu.RUnlock()
-	
-	combined := pmetric.NewMetrics()
-	
-	// Only export metrics from the current window to avoid duplication
-	// The current window is the one actively receiving and aggregating data
-	currentWindow := p.windows[p.currentWindow]
-	if currentWindow.HasData() {
-		windowMetrics := currentWindow.Export()
-		if windowMetrics.DataPointCount() > 0 {
-			// Merge window metrics into combined
-			windowMetrics.ResourceMetrics().MoveAndAppendTo(combined.ResourceMetrics())
-		}
-	}
-	
-	return combined
+	return p.exportAggregatedMetrics(p.activeWindow.start, p.activeWindow.end)
 }
 
 // monitorMemory monitors memory usage and triggers eviction if needed
@@ -739,38 +610,45 @@ func (p *streamingAggregationProcessor) monitorMemory() {
 
 // performEviction performs memory eviction when under pressure
 func (p *streamingAggregationProcessor) performEviction() {
-	p.mu.Lock()
-	defer p.mu.Unlock()
+	p.aggregatorsMu.Lock()
+	defer p.aggregatorsMu.Unlock()
 	
-	// Evict oldest windows first
-	for i := 0; i < p.numWindows-1; i++ {
-		if p.windows[i].HasData() {
-			bytesFreed := p.windows[i].GetMemoryUsage()
-			p.windows[i].Clear()
-			p.memoryUsage.Add(-bytesFreed)
-			
-			p.logger.Debug("Evicted window",
-				zap.Int("window_index", i),
-				zap.Int64("bytes_freed", bytesFreed),
-			)
-			
-			// Check if we've freed enough memory
-			if p.memoryUsage.Load() < p.maxMemoryBytes {
-				return
-			}
+	if len(p.aggregators) == 0 {
+		return
+	}
+	
+	// Evict 20% of least recently used aggregators
+	numToEvict := len(p.aggregators) / 5
+	if numToEvict == 0 && len(p.aggregators) > 0 {
+		numToEvict = 1 // Evict at least one
+	}
+	
+	// Simple eviction: remove the first N aggregators
+	// In a production system, you'd want proper LRU tracking
+	var bytesFreed int64
+	var keysToDelete []string
+	
+	count := 0
+	for key, agg := range p.aggregators {
+		if count >= numToEvict {
+			break
 		}
+		bytesFreed += agg.EstimateMemoryUsage()
+		keysToDelete = append(keysToDelete, key)
+		count++
 	}
 	
-	// If still over limit, evict low-priority series from current window
-	if p.memoryUsage.Load() > p.maxMemoryBytes {
-		currentWindow := p.windows[p.currentWindow]
-		bytesFreed := currentWindow.EvictLowPrioritySeries(0.2) // Evict 20% of series
-		p.memoryUsage.Add(-bytesFreed)
-		
-		p.logger.Debug("Evicted low-priority series",
-			zap.Int64("bytes_freed", bytesFreed),
-		)
+	// Delete the selected aggregators
+	for _, key := range keysToDelete {
+		delete(p.aggregators, key)
 	}
+	
+	p.memoryUsage.Add(-bytesFreed)
+	
+	p.logger.Debug("Evicted aggregators",
+		zap.Int("evicted_count", len(keysToDelete)),
+		zap.Int64("bytes_freed", bytesFreed),
+	)
 }
 
 // reportStatistics reports processor statistics

@@ -13,7 +13,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-// Window represents a time window for aggregation
+// TimeWindow represents a time window boundary (no aggregators stored here)
+type TimeWindow struct {
+	start time.Time
+	end   time.Time
+}
+
+// Window represents a time window for aggregation (deprecated - use TimeWindow for new double-buffer design)
 type Window struct {
 	start time.Time
 	end   time.Time
@@ -31,7 +37,20 @@ type Window struct {
 	mu sync.RWMutex
 }
 
-// NewWindow creates a new time window
+// NewTimeWindow creates a new time window boundary
+func NewTimeWindow(start, end time.Time) *TimeWindow {
+	return &TimeWindow{
+		start: start,
+		end:   end,
+	}
+}
+
+// Contains checks if a timestamp falls within this time window
+func (tw *TimeWindow) Contains(timestamp time.Time) bool {
+	return !timestamp.Before(tw.start) && timestamp.Before(tw.end)
+}
+
+// NewWindow creates a new time window (deprecated - use NewTimeWindow for new double-buffer design)
 func NewWindow(start, end time.Time) *Window {
 	return &Window{
 		start:       start,
@@ -147,7 +166,7 @@ func (w *Window) Export() pmetric.Metrics {
 		metric := sm.Metrics().AppendEmpty()
 		metric.SetName(metricName)
 		
-		// Export based on metric type
+		// Export based on metric type (use cumulative for backward compatibility)
 		agg.ExportTo(metric, w.start, w.end, labels)
 	}
 	
@@ -752,18 +771,12 @@ func (a *Aggregator) exportSum(metric pmetric.Metric, windowStart, windowEnd tim
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	
-	sum := metric.SetEmptySum()
-	
 	// Check if this is an UpDownCounter (non-monotonic sum)
-	// If we have tracked first/last values for UpDownCounter, use the net change
 	if a.hasUpDownFirstValue {
-		// This is an UpDownCounter - use Cumulative temporality for Prometheus compatibility
-		sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-		sum.SetIsMonotonic(false)
-		dp := sum.DataPoints().AppendEmpty()
-		// For cumulative, export the last value seen
+		// UpDownCounters: always export as gauges (they represent current state)
+		gauge := metric.SetEmptyGauge()
+		dp := gauge.DataPoints().AppendEmpty()
 		dp.SetDoubleValue(a.upDownLastValue)
-		dp.SetStartTimestamp(pcommon.NewTimestampFromTime(windowStart))
 		dp.SetTimestamp(pcommon.NewTimestampFromTime(windowEnd))
 		
 		// Set labels
@@ -773,8 +786,8 @@ func (a *Aggregator) exportSum(metric pmetric.Metric, windowStart, windowEnd tim
 		return // Early return for UpDownCounter
 	}
 	
-	// Regular counter (monotonic sum) - use Cumulative temporality for Prometheus compatibility
-	// We need to export the last cumulative value we've seen
+	// Cumulative export: Export as monotonic sum for Prometheus compatibility
+	sum := metric.SetEmptySum()
 	sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	sum.SetIsMonotonic(true)
 	
@@ -802,8 +815,6 @@ func (a *Aggregator) exportSum(metric pmetric.Metric, windowStart, windowEnd tim
 			dp.Attributes().PutStr(k, v)
 		}
 	}
-	// If no data for regular counter, the metric won't have any data points
-	// and won't be exported
 }
 
 // exportHistogram exports as a histogram metric
@@ -811,13 +822,12 @@ func (a *Aggregator) exportHistogram(metric pmetric.Metric, windowStart, windowE
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	
+	// Cumulative export: Export as histogram for Prometheus compatibility
 	hist := metric.SetEmptyHistogram()
-	// Use Cumulative temporality for Prometheus compatibility
 	hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	
 	dp := hist.DataPoints().AppendEmpty()
 	// Export the total cumulative values, not the window-specific values
-	// This ensures we export the correct cumulative count that matches the input
 	dp.SetSum(a.histogramTotalSum)
 	dp.SetCount(a.histogramTotalCount)
 	dp.SetStartTimestamp(pcommon.NewTimestampFromTime(windowStart))

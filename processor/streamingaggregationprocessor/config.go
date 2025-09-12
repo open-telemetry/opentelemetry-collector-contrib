@@ -19,14 +19,12 @@ type Config struct {
 	// Default: 100MB
 	MaxMemoryMB int `mapstructure:"max_memory_mb"`
 
-	// NumWindows defines the number of time windows to maintain
-	// Default: 4 (to handle late arriving data)
-	NumWindows int `mapstructure:"num_windows"`
-	
 	// StaleDataThreshold defines the threshold for detecting stale cumulative state
 	// If no data is received for longer than this duration, cumulative state will be reset
 	// Default: 5 minutes (to handle laptop sleep scenarios)
 	StaleDataThreshold time.Duration `mapstructure:"stale_data_threshold"`
+	
+	// Note: NumWindows removed - double-buffer architecture always uses exactly 2 windows
 }
 
 // Validate checks if the configuration is valid
@@ -41,11 +39,6 @@ func (cfg *Config) Validate() error {
 		return errors.New("max_memory_mb cannot be negative")
 	}
 	
-	
-	if cfg.NumWindows < 0 {
-		return errors.New("num_windows cannot be negative")
-	}
-	
 	if cfg.StaleDataThreshold < 0 {
 		return errors.New("stale_data_threshold cannot be negative")
 	}
@@ -58,7 +51,6 @@ func CreateDefaultConfig() component.Config {
 	return &Config{
 		WindowSize:         30 * time.Second,  // Same as realworld-v2
 		MaxMemoryMB:        100,               // Reasonable default
-		NumWindows:         4,                 // 4 windows for late data handling
 		StaleDataThreshold: 5 * time.Minute,  // Reset state after 5 minutes of no data
 	}
 }
@@ -70,11 +62,6 @@ func (cfg *Config) applyDefaults() {
 	
 	if cfg.MaxMemoryMB == 0 {
 		cfg.MaxMemoryMB = 100
-	}
-	
-	
-	if cfg.NumWindows == 0 {
-		cfg.NumWindows = 4
 	}
 	
 	if cfg.StaleDataThreshold == 0 {

@@ -31,10 +31,9 @@ func (m *mockConsumer) Capabilities() consumer.Capabilities {
 func TestProcessorCreation(t *testing.T) {
 	// Create a test configuration
 	cfg := &Config{
-		WindowSize:     30 * time.Second,
-		MaxMemoryMB:    100,
-		ExportInterval: 30 * time.Second,
-		NumWindows:     4,
+		WindowSize:         30 * time.Second,
+		MaxMemoryMB:        100,
+		StaleDataThreshold: 5 * time.Minute,
 	}
 
 	// Create processor
@@ -49,8 +48,9 @@ func TestProcessorCreation(t *testing.T) {
 		t.Fatal("Processor is nil")
 	}
 
-	if len(proc.windows) != 4 {
-		t.Errorf("Expected 4 windows, got %d", len(proc.windows))
+	// In double-buffer architecture, we have exactly 2 windows
+	if proc.windowA == nil || proc.windowB == nil {
+		t.Error("Both windowA and windowB should be initialized")
 	}
 
 	if proc.windowSize != 30*time.Second {
@@ -60,10 +60,9 @@ func TestProcessorCreation(t *testing.T) {
 
 func TestProcessorStartStop(t *testing.T) {
 	cfg := &Config{
-		WindowSize:     1 * time.Second,
-		MaxMemoryMB:    10,
-		ExportInterval: 1 * time.Second,
-		NumWindows:     2,
+		WindowSize:         1 * time.Second,
+		MaxMemoryMB:        10,
+		StaleDataThreshold: 30 * time.Second,
 	}
 
 	logger := zap.NewNop()
@@ -91,10 +90,9 @@ func TestProcessorStartStop(t *testing.T) {
 
 func TestProcessMetrics(t *testing.T) {
 	cfg := &Config{
-		WindowSize:     1 * time.Second,
-		MaxMemoryMB:    10,
-		ExportInterval: 1 * time.Second,
-		NumWindows:     2,
+		WindowSize:         1 * time.Second,
+		MaxMemoryMB:        10,
+		StaleDataThreshold: 30 * time.Second,
 	}
 
 	logger := zap.NewNop()
@@ -182,10 +180,9 @@ func TestProcessorWithDifferentMetricTypes(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := &Config{
-				WindowSize:     1 * time.Second,
-				MaxMemoryMB:    10,
-				ExportInterval: 1 * time.Second,
-				NumWindows:     1,
+				WindowSize:         1 * time.Second,
+				MaxMemoryMB:        10,
+				StaleDataThreshold: 30 * time.Second,
 			}
 
 			logger := zap.NewNop()
@@ -236,10 +233,9 @@ func TestProcessorWithDifferentMetricTypes(t *testing.T) {
 
 func TestWindowCreation(t *testing.T) {
 	cfg := &Config{
-		WindowSize:     30 * time.Second,
-		MaxMemoryMB:    50,
-		ExportInterval: 30 * time.Second,
-		NumWindows:     8,
+		WindowSize:         30 * time.Second,
+		MaxMemoryMB:        50,
+		StaleDataThreshold: 5 * time.Minute,
 	}
 
 	logger := zap.NewNop()
@@ -248,21 +244,19 @@ func TestWindowCreation(t *testing.T) {
 		t.Fatalf("Failed to create processor: %v", err)
 	}
 
-	// Verify correct number of windows
-	if len(proc.windows) != 8 {
-		t.Errorf("Expected 8 windows, got %d", len(proc.windows))
+	// Verify double-buffer windows are initialized
+	if proc.windowA == nil || proc.windowB == nil {
+		t.Error("Both windowA and windowB should be initialized")
+	}
+	if proc.activeWindow == nil {
+		t.Error("Active window should be set")
 	}
 
-	// Verify each window configuration
-	for i, w := range proc.windows {
-		if w == nil {
-			t.Errorf("Window %d is nil", i)
-			continue
-		}
-
-		// Verify window has proper start and end times
-		if w.end.Sub(w.start) != 30*time.Second {
-			t.Errorf("Window %d has wrong duration: %v", i, w.end.Sub(w.start))
+	// Verify window has proper duration
+	if proc.activeWindow != nil {
+		duration := proc.activeWindow.end.Sub(proc.activeWindow.start)
+		if duration != 30*time.Second {
+			t.Errorf("Active window duration is %v, expected 30s", duration)
 		}
 	}
 }
@@ -365,8 +359,7 @@ func TestHistogramLabelDropping(t *testing.T) {
 	cfg := &Config{
 		WindowSize:     1 * time.Second,
 		MaxMemoryMB:    10,
-		ExportInterval: 1 * time.Second,
-		NumWindows:     1,
+		StaleDataThreshold: 30 * time.Second,
 	}
 
 	logger := zap.NewNop()
@@ -501,8 +494,7 @@ func TestSumLabelDropping(t *testing.T) {
 	cfg := &Config{
 		WindowSize:     1 * time.Second,
 		MaxMemoryMB:    10,
-		ExportInterval: 1 * time.Second,
-		NumWindows:     1,
+		StaleDataThreshold: 30 * time.Second,
 	}
 
 	logger := zap.NewNop()
