@@ -166,9 +166,6 @@ environment/prod/metric/YYYY/MM/DD/HH/mm
 ## Data routing based on resource attributes
 When `resource_attrs_to_s3/s3_bucket` or `resource_attrs_to_s3/s3_prefix` is configured, the S3 bucket and/or prefix are dynamically derived from specified resource attributes in your data.
 If the attribute values are unavailable, the bucket and prefix will fall back to the values defined in `s3uploader/s3_bucket` and `s3uploader/s3_prefix` respectively.
-
-**Note:** `s3_base_prefix` is always preserved and never overridden by resource attributes. It serves as a consistent root path for all uploads.
-
 ```yaml
 exporters:
   awss3:
@@ -193,7 +190,7 @@ databucket/metric/YYYY/MM/DD/HH/mm
 
 ## Base Path with Resource Attributes
 
-When using both `s3_base_prefix` and `resource_attrs_to_s3/s3_prefix`, the base path is always preserved while the prefix can be dynamically overridden by resource attributes.
+When using both `s3_base_prefix` and `resource_attrs_to_s3/s3_prefix`, the `s3_base_prefix` is always used while `s3_prefix` can be dynamically overridden by resource attributes.
 
 ```yaml
 exporters:
@@ -209,7 +206,7 @@ exporters:
 ```
 
 In this configuration:
-- **Base path**: `environment/prod` (always included)
+- **Base Prefix**: `environment/prod` (always included)
 - **Prefix**: Dynamically set from resource attribute `com.awss3.prefix` if available, otherwise falls back to `default-metric`
 
 **Path format examples:**
