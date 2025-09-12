@@ -25,7 +25,7 @@ The following exporter configuration parameters are supported.
 | `region`                  | AWS region.                                                                                                                                                                                                                | "us-east-1"                                 |
 | `s3_bucket`               | S3 bucket                                                                                                                                                                                                                  |                                             |
 | `s3_prefix`               | prefix for the S3 key that can be overridden by `resource_attrs_to_s3` parameter.                                                                                                                                                                      |                                             |
-| `s3_base_prefix`          | base path that is always included as the root path when uploading files to S3.                                                                                |                                             |
+| `s3_base_prefix`          | root directory inside the bucket that is not overridden by `resource_attrs_to_s3`.                                                                                |                                             |
 | `s3_partition_format`     | filepath formatting for the partition; See [strftime](https://www.man7.org/linux/man-pages/man3/strftime.3.html) for format specification.                                                                                 | "year=%Y/month=%m/day=%d/hour=%H/minute=%M" |
 | `role_arn`                | the Role ARN to be assumed                                                                                                                                                                                                 |                                             |
 | `file_prefix`             | file prefix defined by user                                                                                                                                                                                                |                                             |
@@ -144,7 +144,7 @@ metric/YYYY/MM/DD/HH/mm
 
 ## Base Path Configuration
 
-The `s3_base_prefix` option allows you to specify a base path that is always included as the root path when uploading files to S3. If provided, `s3_prefix` will be appended to this base path.
+The `s3_base_prefix` option allows you to specify a root directory inside the bucket that is not overridden by `resource_attrs_to_s3`. If provided, `s3_prefix` will be appended to this base path.
 
 ```yaml
 exporters:

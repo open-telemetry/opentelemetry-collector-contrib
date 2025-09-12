@@ -23,7 +23,7 @@ type PartitionKeyBuilder struct {
 	// PartitionPrefix defines the S3 directory (key)
 	// prefix used to write the file
 	PartitionPrefix string
-	// S3BasePrefix defines the base path that is always included as the root path when uploading files to S3.
+	// S3BasePrefix defines the root directory inside the bucket that is not overridden by `resource_attrs_to_s3`.
 	S3BasePrefix string
 	// PartitionFormat is used to separate values into
 	// different time buckets.

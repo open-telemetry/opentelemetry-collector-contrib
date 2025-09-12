@@ -27,7 +27,7 @@ type S3UploaderConfig struct {
 	S3Bucket string `mapstructure:"s3_bucket"`
 	// S3Prefix is the key (directory) prefix to written to inside the bucket
 	S3Prefix string `mapstructure:"s3_prefix"`
-	// S3BasePrefix is the base path that is always included as the root path when uploading files to S3.
+	// S3BasePrefix is the root directory inside the bucket that is not overridden by `resource_attrs_to_s3`.
 	S3BasePrefix string `mapstructure:"s3_base_prefix"`
 	// S3PartitionFormat is used to provide the rollup on how data is written. Uses [strftime](https://www.man7.org/linux/man-pages/man3/strftime.3.html) formatting.
 	S3PartitionFormat string `mapstructure:"s3_partition_format"`

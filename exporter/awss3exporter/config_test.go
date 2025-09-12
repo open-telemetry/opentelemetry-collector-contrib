@@ -357,7 +357,6 @@ func TestMarshallerName(t *testing.T) {
 		S3Uploader: S3UploaderConfig{
 			Region:            "us-east-1",
 			S3Bucket:          "foo",
-			S3Prefix:          "",
 			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
 			StorageClass:      "STANDARD",
 			RetryMode:         DefaultRetryMode,
@@ -376,7 +375,6 @@ func TestMarshallerName(t *testing.T) {
 		S3Uploader: S3UploaderConfig{
 			Region:            "us-east-1",
 			S3Bucket:          "bar",
-			S3Prefix:          "",
 			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
 			StorageClass:      "STANDARD",
 			RetryMode:         DefaultRetryMode,
@@ -412,7 +410,6 @@ func TestCompressionName(t *testing.T) {
 		S3Uploader: S3UploaderConfig{
 			Region:            "us-east-1",
 			S3Bucket:          "foo",
-			S3Prefix:          "",
 			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
 			Compression:       "gzip",
 			StorageClass:      "STANDARD",
@@ -432,7 +429,6 @@ func TestCompressionName(t *testing.T) {
 		S3Uploader: S3UploaderConfig{
 			Region:            "us-east-1",
 			S3Bucket:          "bar",
-			S3Prefix:          "",
 			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
 			Compression:       "none",
 			StorageClass:      "STANDARD",
