@@ -172,7 +172,8 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 			var merged int
 			var open int
 
-			for _, pr := range prs {
+			for i := range prs {
+				pr := &prs[i]
 				if pr.Merged {
 					merged++
 
