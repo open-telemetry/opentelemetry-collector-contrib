@@ -1,0 +1,28 @@
+resourceLogs:
+  - resource:
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: recordName
+                value:
+                  stringValue: recordA
+            body:
+              arrayValue:
+                values:
+                  - stringValue: value1
+                  - stringValue: value2
+          - attributes:
+              - key: recordName
+                value:
+                  stringValue: recordB
+            body:
+              stringValue: value1
+          - attributes:
+              - key: recordName
+                value:
+                  stringValue: recordC
+            body:
+              arrayValue:
+                values:
+                  - stringValue: value1
+                  - stringValue: value2

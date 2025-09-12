@@ -544,6 +544,10 @@ component_management:
     name: processor_transform
     paths:
     - processor/transformprocessor/**
+  - component_id: processor_unroll
+    name: processor_unroll
+    paths:
+    - processor/unrollprocessor/**
   - component_id: receiver_activedirectoryds
     name: receiver_activedirectoryds
     paths:
