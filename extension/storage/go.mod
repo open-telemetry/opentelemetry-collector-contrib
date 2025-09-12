@@ -4,10 +4,10 @@ go 1.24.0
 
 require (
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/component v1.41.1-0.20250911090542-8b3a08ca2a38
-	go.opentelemetry.io/collector/component/componenttest v0.135.1-0.20250911090542-8b3a08ca2a38
-	go.opentelemetry.io/collector/extension v1.41.1-0.20250911090542-8b3a08ca2a38
-	go.opentelemetry.io/collector/extension/xextension v0.135.1-0.20250911090542-8b3a08ca2a38
+	go.opentelemetry.io/collector/component v1.41.1-0.20250911155607-37a3ace6274c
+	go.opentelemetry.io/collector/component/componenttest v0.135.1-0.20250911155607-37a3ace6274c
+	go.opentelemetry.io/collector/extension v1.41.1-0.20250911155607-37a3ace6274c
+	go.opentelemetry.io/collector/extension/xextension v0.135.1-0.20250911155607-37a3ace6274c
 )
 
 require (
@@ -22,9 +22,9 @@ require (
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.41.1-0.20250911090542-8b3a08ca2a38 // indirect
-	go.opentelemetry.io/collector/internal/telemetry v0.135.1-0.20250911090542-8b3a08ca2a38 // indirect
-	go.opentelemetry.io/collector/pdata v1.41.1-0.20250911090542-8b3a08ca2a38 // indirect
+	go.opentelemetry.io/collector/featuregate v1.41.1-0.20250911155607-37a3ace6274c // indirect
+	go.opentelemetry.io/collector/internal/telemetry v0.135.1-0.20250911155607-37a3ace6274c // indirect
+	go.opentelemetry.io/collector/pdata v1.41.1-0.20250911155607-37a3ace6274c // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.12.0 // indirect
 	go.opentelemetry.io/otel v1.38.0 // indirect
 	go.opentelemetry.io/otel/log v0.14.0 // indirect
