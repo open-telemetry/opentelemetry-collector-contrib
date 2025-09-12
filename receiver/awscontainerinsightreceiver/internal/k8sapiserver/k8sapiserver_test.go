@@ -74,6 +74,10 @@ func (m *mockK8sClient) GetPersistentVolumeClient() k8sclient.PersistentVolumeCl
 	return mockClient
 }
 
+func (m *mockK8sClient) GetIngressClient() k8sclient.IngressClient {
+	return mockClient
+}
+
 func (m *mockK8sClient) ShutdownNodeClient() {
 }
 
@@ -98,6 +102,7 @@ type MockClient struct {
 	k8sclient.EpClient
 	k8sclient.PersistentVolumeClaimClient
 	k8sclient.PersistentVolumeClient
+	k8sclient.IngressClient
 
 	mock.Mock
 }
@@ -186,6 +191,12 @@ func (client *MockClient) GetPersistentVolumeClaimMetrics() *k8sclient.Persisten
 func (client *MockClient) GetPersistentVolumeMetrics() *k8sclient.PersistentVolumeMetrics {
 	args := client.Called()
 	return args.Get(0).(*k8sclient.PersistentVolumeMetrics)
+}
+
+// k8sclient.IngressClient
+func (client *MockClient) GetIngressMetrics() *k8sclient.IngressMetrics {
+	args := client.Called()
+	return args.Get(0).(*k8sclient.IngressMetrics)
 }
 
 type mockEventBroadcaster struct{}
@@ -374,6 +385,12 @@ func TestK8sAPIServer_GetMetrics(t *testing.T) {
 		ClusterCount: 5,
 	}
 	mockClient.On("GetPersistentVolumeMetrics").Return(mockPersistentVolumeMetrics)
+	mockClient.On("GetIngressMetrics").Return(&k8sclient.IngressMetrics{
+		NamespaceCount: map[string]int{
+			"default":     2,
+			"kube-system": 1,
+		},
+	})
 
 	leaderElection := &LeaderElection{
 		k8sClient:                   &mockK8sClient{},
@@ -384,6 +401,7 @@ func TestK8sAPIServer_GetMetrics(t *testing.T) {
 		daemonSetClient:             mockClient,
 		statefulSetClient:           mockClient,
 		replicaSetClient:            mockClient,
+		ingressClient:               mockClient,
 		persistentVolumeClaimClient: mockClient,
 		persistentVolumeClient:      mockClient,
 		leading:                     true,
@@ -425,6 +443,16 @@ func TestK8sAPIServer_GetMetrics(t *testing.T) {
 		case ci.TypeClusterNamespace:
 			assertMetricValueEqual(t, metric, "namespace_number_of_running_pods", int64(2))
 			assert.Equal(t, "default", getStringAttrVal(metric, ci.K8sNamespace))
+			assert.Equal(t, "cluster-name", getStringAttrVal(metric, ci.ClusterNameKey))
+			ns := getStringAttrVal(metric, ci.K8sNamespace)
+			switch ns {
+			case "default":
+				assertMetricValueEqual(t, metric, ci.MetricName(ci.TypeClusterNamespace, ci.IngressCount), int64(2))
+			case "kube-system":
+				assertMetricValueEqual(t, metric, ci.MetricName(ci.TypeClusterNamespace, ci.IngressCount), int64(1))
+			default:
+				assert.Fail(t, "Unexpected namespace in ClusterPersistentVolumeClaim metric: "+ns)
+			}
 		case ci.TypeClusterDeployment:
 			assertMetricValueEqual(t, metric, "replicas_desired", int64(11))
 			assertMetricValueEqual(t, metric, "replicas_ready", int64(10))

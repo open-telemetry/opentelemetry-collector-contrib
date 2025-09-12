@@ -227,6 +227,10 @@ type persistentVolumeClientWithStopper interface {
 	PersistentVolumeClient
 	stopper
 }
+type ingressClientWithStopper interface {
+	IngressClient
+	stopper
+}
 
 type K8sClient struct {
 	kubeConfigPath       string
@@ -270,6 +274,9 @@ type K8sClient struct {
 
 	pvMu             sync.Mutex
 	persistentVolume persistentVolumeClientWithStopper
+
+	ingressMu sync.Mutex
+	ingress   ingressClientWithStopper
 
 	logger *zap.Logger
 }
@@ -515,6 +522,26 @@ func (c *K8sClient) ShutdownPersistentVolumeClient() {
 	})
 }
 
+func (c *K8sClient) GetIngressClient() IngressClient {
+	var err error
+	c.ingressMu.Lock()
+	if c.ingress == nil || reflect.ValueOf(c.ingress).IsNil() {
+		c.ingress, err = newIngressClient(c.clientSet, c.logger, ingressSyncCheckerOption(c.syncChecker))
+		if err != nil {
+			c.logger.Error("use an no-op ingress client instead because of error", zap.Error(err))
+			c.ingress = &noOpIngressClient{}
+		}
+	}
+	c.ingressMu.Unlock()
+	return c.ingress
+}
+
+func (c *K8sClient) ShutdownIngressClient() {
+	shutdownClient(c.ingress, &c.ingressMu, func() {
+		c.ingress = nil
+	})
+}
+
 func (c *K8sClient) GetClientSet() kubernetes.Interface {
 	return c.clientSet
 }
@@ -534,6 +561,7 @@ func (c *K8sClient) Shutdown() {
 	c.ShutdownStatefulSetClient()
 	c.ShutdownPersistentVolumeClaimClient()
 	c.ShutdownPersistentVolumeClient()
+	c.ShutdownIngressClient()
 
 	// remove the current instance of k8s client from map
 	for key, val := range optionsToK8sClient {

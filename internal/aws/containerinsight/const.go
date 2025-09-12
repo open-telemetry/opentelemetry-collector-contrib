@@ -130,6 +130,7 @@ const (
 	FailedNodeCount       = "failed_node_count"
 	ContainerRestartCount = "number_of_container_restarts"
 	RunningTaskCount      = "number_of_running_tasks"
+	IngressCount          = "ingress_count"
 
 	DiskIOServiceBytesPrefix = "diskio_io_service_bytes_"
 	DiskIOServicedPrefix     = "diskio_io_serviced_"
@@ -413,5 +414,7 @@ func init() {
 		HyperPodUnschedulablePendingReboot:      UnitCount,
 		HyperPodSchedulable:                     UnitCount,
 		HyperPodUnschedulable:                   UnitCount,
+
+		IngressCount: UnitCount,
 	}
 }
