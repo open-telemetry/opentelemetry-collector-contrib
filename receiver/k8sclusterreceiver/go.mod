@@ -25,6 +25,7 @@ require (
 	go.opentelemetry.io/collector/confmap/xconfmap v0.135.1-0.20250911090542-8b3a08ca2a38
 	go.opentelemetry.io/collector/consumer v1.41.1-0.20250911090542-8b3a08ca2a38
 	go.opentelemetry.io/collector/consumer/consumertest v0.135.1-0.20250911090542-8b3a08ca2a38
+	go.opentelemetry.io/collector/featuregate v1.41.1-0.20250911090542-8b3a08ca2a38
 	go.opentelemetry.io/collector/filter v0.135.1-0.20250911090542-8b3a08ca2a38
 	go.opentelemetry.io/collector/pdata v1.41.1-0.20250911090542-8b3a08ca2a38
 	go.opentelemetry.io/collector/pipeline v1.41.1-0.20250911090542-8b3a08ca2a38
@@ -111,7 +112,6 @@ require (
 	go.opentelemetry.io/collector/extension v1.41.1-0.20250911090542-8b3a08ca2a38 // indirect
 	go.opentelemetry.io/collector/extension/extensionauth v1.41.1-0.20250911090542-8b3a08ca2a38 // indirect
 	go.opentelemetry.io/collector/extension/extensionmiddleware v0.135.1-0.20250911090542-8b3a08ca2a38 // indirect
-	go.opentelemetry.io/collector/featuregate v1.41.1-0.20250911090542-8b3a08ca2a38 // indirect
 	go.opentelemetry.io/collector/internal/sharedcomponent v0.135.1-0.20250911090542-8b3a08ca2a38 // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.135.1-0.20250911090542-8b3a08ca2a38 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.135.1-0.20250911090542-8b3a08ca2a38 // indirect
