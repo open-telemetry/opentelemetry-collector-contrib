@@ -102,7 +102,7 @@ func newUploadManager(
 		conf.S3Uploader.S3Bucket,
 		&upload.PartitionKeyBuilder{
 			PartitionPrefix:       conf.S3Uploader.S3Prefix,
-			S3BasePrefix:          conf.S3Uploader.S3BasePrefix,
+			PartitionBasePrefix:   conf.S3Uploader.S3BasePrefix,
 			PartitionFormat:       conf.S3Uploader.S3PartitionFormat,
 			PartitionTimeLocation: s3PartitionTimeLocation,
 			FilePrefix:            conf.S3Uploader.FilePrefix,

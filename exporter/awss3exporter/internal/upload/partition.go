@@ -20,11 +20,11 @@ var compressionFileExtensions = map[configcompression.Type]string{
 }
 
 type PartitionKeyBuilder struct {
+	// PartitionBasePrefix defines the root S3 directory for the key.
+	PartitionBasePrefix string
 	// PartitionPrefix defines the S3 directory (key)
-	// prefix used to write the file
+	// prefix used to write the file. Appended to PartitionBasePrefix if provided.
 	PartitionPrefix string
-	// S3BasePrefix defines the root directory inside the bucket that is not overridden by `resource_attrs_to_s3`.
-	S3BasePrefix string
 	// PartitionFormat is used to separate values into
 	// different time buckets.
 	// Uses [strftime](https://www.man7.org/linux/man-pages/man3/strftime.3.html) formatting.
@@ -63,8 +63,8 @@ func (pki *PartitionKeyBuilder) bucketKeyPrefix(ts time.Time, overridePrefix str
 
 	var pathParts []string
 
-	if pki.S3BasePrefix != "" {
-		pathParts = append(pathParts, pki.S3BasePrefix)
+	if pki.PartitionBasePrefix != "" {
+		pathParts = append(pathParts, pki.PartitionBasePrefix)
 	}
 
 	if prefix != "" {

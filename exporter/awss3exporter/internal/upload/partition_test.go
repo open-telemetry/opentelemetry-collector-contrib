@@ -105,11 +105,11 @@ func TestPartitionKeyInputsNewPartitionKey(t *testing.T) {
 		{
 			name: "base path only",
 			inputs: &PartitionKeyBuilder{
-				S3BasePrefix:    "base/path",
-				PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
-				FilePrefix:      "signal-output-",
-				Metadata:        "service-01_pod2",
-				FileFormat:      "metrics",
+				PartitionBasePrefix: "base/path",
+				PartitionFormat:     "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
+				FilePrefix:          "signal-output-",
+				Metadata:            "service-01_pod2",
+				FileFormat:          "metrics",
 				UniqueKeyFunc: func() string {
 					return "fixed"
 				},
@@ -120,12 +120,12 @@ func TestPartitionKeyInputsNewPartitionKey(t *testing.T) {
 		{
 			name: "base path with prefix",
 			inputs: &PartitionKeyBuilder{
-				S3BasePrefix:    "base/path",
-				PartitionPrefix: "telemetry",
-				PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
-				FilePrefix:      "signal-output-",
-				Metadata:        "service-01_pod2",
-				FileFormat:      "metrics",
+				PartitionBasePrefix: "base/path",
+				PartitionPrefix:     "telemetry",
+				PartitionFormat:     "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
+				FilePrefix:          "signal-output-",
+				Metadata:            "service-01_pod2",
+				FileFormat:          "metrics",
 				UniqueKeyFunc: func() string {
 					return "fixed"
 				},
@@ -136,12 +136,12 @@ func TestPartitionKeyInputsNewPartitionKey(t *testing.T) {
 		{
 			name: "base path with prefix and override",
 			inputs: &PartitionKeyBuilder{
-				S3BasePrefix:    "base/path",
-				PartitionPrefix: "telemetry",
-				PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
-				FilePrefix:      "signal-output-",
-				Metadata:        "service-01_pod2",
-				FileFormat:      "metrics",
+				PartitionBasePrefix: "base/path",
+				PartitionPrefix:     "telemetry",
+				PartitionFormat:     "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
+				FilePrefix:          "signal-output-",
+				Metadata:            "service-01_pod2",
+				FileFormat:          "metrics",
 				UniqueKeyFunc: func() string {
 					return "fixed"
 				},
@@ -152,12 +152,12 @@ func TestPartitionKeyInputsNewPartitionKey(t *testing.T) {
 		{
 			name: "base path with empty prefix",
 			inputs: &PartitionKeyBuilder{
-				S3BasePrefix:    "base/path",
-				PartitionPrefix: "",
-				PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
-				FilePrefix:      "signal-output-",
-				Metadata:        "service-01_pod2",
-				FileFormat:      "metrics",
+				PartitionBasePrefix: "base/path",
+				PartitionPrefix:     "",
+				PartitionFormat:     "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
+				FilePrefix:          "signal-output-",
+				Metadata:            "service-01_pod2",
+				FileFormat:          "metrics",
 				UniqueKeyFunc: func() string {
 					return "fixed"
 				},
