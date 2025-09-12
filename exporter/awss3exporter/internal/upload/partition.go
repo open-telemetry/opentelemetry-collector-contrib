@@ -71,7 +71,7 @@ func (pki *PartitionKeyBuilder) bucketKeyPrefix(ts time.Time, overridePrefix str
 		pathParts = append(pathParts, prefix)
 	}
   
-  location := pki.PartitionTimeLocation
+    location := pki.PartitionTimeLocation
 	if location == nil {
 		location = time.Local
 	}
