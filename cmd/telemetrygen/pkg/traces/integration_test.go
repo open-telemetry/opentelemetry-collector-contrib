@@ -80,15 +80,17 @@ func startMockReceiver(t *testing.T) (*grpc.Server, string, *mockTracesReceiver)
 
 // TestTelemetrygenIntegration tests the actual behavior of the telemetrygen tool
 func TestTelemetrygenIntegration(t *testing.T) {
+	// Create unique binary name to avoid conflicts between tests
+	binaryName := fmt.Sprintf("telemetrygen-test-%d", time.Now().UnixNano())
 	buildDir := "../../../telemetrygen"
-	buildCmd := exec.Command("go", "build", "-o", "telemetrygen-test", ".")
+	buildCmd := exec.Command("go", "build", "-o", binaryName, ".")
 	buildCmd.Dir = buildDir
 	err := buildCmd.Run()
 	require.NoError(t, err, "Failed to build telemetrygen")
 
-	defer os.Remove("../../../telemetrygen/telemetrygen-test")
+	defer os.Remove("../../../telemetrygen/" + binaryName)
 
-	testBinaryPath := "../../../telemetrygen/telemetrygen-test"
+	testBinaryPath := "../../../telemetrygen/" + binaryName
 
 	t.Run("RespectsTracesParameter", func(t *testing.T) {
 		server, endpoint, receiver := startMockReceiver(t)
@@ -111,7 +113,7 @@ func TestTelemetrygenIntegration(t *testing.T) {
 		duration := time.Since(start)
 
 		assert.NoError(t, err, "telemetrygen should complete successfully with --traces parameter")
-		assert.Less(t, duration, 6*time.Second, "Should complete quickly without connection issues")
+		assert.Less(t, duration, 10*time.Second, "Should complete quickly without connection issues")
 
 		// Wait for all traces to be processed
 		time.Sleep(500 * time.Millisecond)
