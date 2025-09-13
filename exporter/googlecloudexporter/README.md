@@ -92,7 +92,7 @@ These instructions are to get you up and running quickly with the GCP exporter i
 
 2.  **Create a configuration file `config.yaml`.** The example below shows a minimal recommended configuration that receives OTLP and sends data to GCP, in addition to verbose logging to help understand what is going on. It uses application default credentials (which we will set up in the next step).
 
-    Note that this configuration includes the recommended `memory_limiter` and `batch` plugins, which avoid high latency for reporting telemetry, and ensure that the collector itself will stay stable (not run out of memory) by dropping telemetry if needed.
+    Note that this configuration includes the recommended `memory_limiter` plugins, which avoid high latency for reporting telemetry, and ensure that the collector itself will stay stable (not run out of memory) by dropping telemetry if needed.
 
     ```yaml
     receivers:
@@ -109,7 +109,6 @@ These instructions are to get you up and running quickly with the GCP exporter i
         check_interval: 1s
         limit_percentage: 65
         spike_limit_percentage: 20
-      batch:
       resourcedetection:
         detectors: [gcp]
         timeout: 10s
@@ -117,15 +116,15 @@ These instructions are to get you up and running quickly with the GCP exporter i
       pipelines:
         traces:
           receivers: [otlp]
-          processors: [memory_limiter, batch]
+          processors: [memory_limiter]
           exporters: [googlecloud]
         metrics:
           receivers: [otlp]
-          processors: [memory_limiter, batch]
+          processors: [memory_limiter]
           exporters: [googlecloud]
         logs:
           receivers: [otlp]
-          processors: [memory_limiter, batch]
+          processors: [memory_limiter]
           exporters: [googlecloud]
     ```
 
