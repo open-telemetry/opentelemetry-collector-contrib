@@ -149,7 +149,7 @@ func (e *kafkaExporter[T]) exportData(ctx context.Context, data T) error {
 		topic := e.messenger.getTopic(ctx, data)
 		partitionMessages, err := e.messenger.marshalData(data)
 		if err != nil {
-			err = fmt.Errorf("issue exporting from topic %q: %w", topic, err)
+			err = fmt.Errorf("error exporting to topic %q: %w", topic, err)
 			e.logger.Error("kafka records marshal data failed",
 				zap.String("topic", topic),
 				zap.Error(err),
