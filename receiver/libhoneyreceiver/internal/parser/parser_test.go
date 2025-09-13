@@ -148,7 +148,7 @@ func TestToPdata(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			logs, traces := ToPdata(tt.dataset, tt.events, tt.cfg, *logger)
+			logs, traces, _, _ := ToPdata(tt.dataset, tt.events, tt.cfg, *logger)
 			assert.Equal(t, tt.wantSpans, traces.SpanCount())
 			assert.Equal(t, tt.wantLogs, logs.LogRecordCount())
 		})

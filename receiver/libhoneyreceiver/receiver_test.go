@@ -574,8 +574,6 @@ func TestLibhoneyReceiver_ZstdDecompressionPanic(t *testing.T) {
 		{
 			name: "valid_json_data_nil_pointer_bug",
 			createPayload: func() []byte {
-				// Create valid JSON payload that triggers the nil pointer bug
-				// JSON events don't get MsgPackTimestamp post-processing!
 				events := []libhoneyevent.LibhoneyEvent{
 					{
 						Time:       time.Now().Format(time.RFC3339),
@@ -586,9 +584,9 @@ func TestLibhoneyReceiver_ZstdDecompressionPanic(t *testing.T) {
 				jsonData, _ := json.Marshal(events)
 				return jsonData
 			},
-			expectPanic:     true, // BUG: Line 233 dereferences nil MsgPackTimestamp
-			expectErrorCode: 0,    // Will panic before status code
-			description:     "JSON processing has nil pointer bug in logging code (line 233)",
+			expectPanic:     false,
+			expectErrorCode: 200,
+			description:     "JSON processing handles nil MsgPackTimestamp correctly after fix",
 		},
 		{
 			name: "valid_msgpack_data",
@@ -604,8 +602,8 @@ func TestLibhoneyReceiver_ZstdDecompressionPanic(t *testing.T) {
 				msgpackData, _ := msgpack.Marshal(events)
 				return msgpackData
 			},
-			expectPanic:     false, // Should work - msgpack post-processing fixes timestamps
-			expectErrorCode: 200,   // Should succeed
+			expectPanic:     false,
+			expectErrorCode: 200,
 			description:     "Msgpack should work correctly due to timestamp post-processing",
 		},
 	}
