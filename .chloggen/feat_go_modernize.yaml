@@ -1,21 +1,21 @@
 # Use this changelog template to create an entry for release notes.
 
 # One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
-change_type: "enhancement"
+change_type: 'breaking'
 
 # The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
 component: "internal/tools"
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Add support for modernize in Makefile"
+note: |
+  "Updated the behavior of `splunk.health` to create metrics for all health colors (`green`, `yellow`, and `red`), 
+  but only assign a value of `1` if that is the active color. To avoid a great increase in cardinality, `splunk.health`
+  now defaults to not recursively read the subfeatures, and will only return the highest level features. Recursive
+  reading may be enabled with `enable_health_feature_recursion: true` in the receiver config.
+  `splunk.health` can be enabled on all node types."
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: [42542]
-
-# (Optional) One or more lines of additional information to render under the primary note.
-# These lines will be padded with 2 spaces and then inserted directly into the document.
-# Use pipe (|) for multiline entries.
-subtext:
+issues: [39791]
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
