@@ -272,7 +272,7 @@ func Test_e2e_editors(t *testing.T) {
 				v := pcommon.NewValueEmpty()
 				getProfileAttribute(t, tCtx, "foo").CopyTo(v)
 				v.Map().PutStr("test", "pass")
-				_ = pprofile.PutAttribute(tCtx.GetProfilesDictionary().AttributeTable(), tCtx.GetProfile(), "foo", v)
+				_ = pprofile.PutAttribute(tCtx.GetProfilesDictionary().AttributeTable(), tCtx.GetProfile(), tCtx.GetProfilesDictionary(), "foo", v)
 			},
 		},
 		{
@@ -297,7 +297,7 @@ func Test_e2e_editors(t *testing.T) {
 				mv, _ := v.Map().Get("slice")
 				s := mv.Slice()
 				s.AppendEmpty().SetStr("sample_value")
-				_ = pprofile.PutAttribute(tCtx.GetProfilesDictionary().AttributeTable(), tCtx.GetProfile(), "foo", v)
+				_ = pprofile.PutAttribute(tCtx.GetProfilesDictionary().AttributeTable(), tCtx.GetProfile(), tCtx.GetProfilesDictionary(), "foo", v)
 			},
 		},
 		{
@@ -307,7 +307,7 @@ func Test_e2e_editors(t *testing.T) {
 				getProfileAttribute(t, tCtx, "foo").CopyTo(v)
 				mv, _ := v.Map().Get("flags")
 				_ = mv.FromRaw([]any{"pass", "sample_value"})
-				_ = pprofile.PutAttribute(tCtx.GetProfilesDictionary().AttributeTable(), tCtx.GetProfile(), "foo", v)
+				_ = pprofile.PutAttribute(tCtx.GetProfilesDictionary().AttributeTable(), tCtx.GetProfile(), tCtx.GetProfilesDictionary(), "foo", v)
 			},
 		},
 		{
@@ -317,7 +317,7 @@ func Test_e2e_editors(t *testing.T) {
 				getProfileAttribute(t, tCtx, "foo").CopyTo(v)
 				mv, _ := v.Map().Get("slice")
 				_ = mv.FromRaw([]any{"val", 5, 6})
-				_ = pprofile.PutAttribute(tCtx.GetProfilesDictionary().AttributeTable(), tCtx.GetProfile(), "foo", v)
+				_ = pprofile.PutAttribute(tCtx.GetProfilesDictionary().AttributeTable(), tCtx.GetProfile(), tCtx.GetProfilesDictionary(), "foo", v)
 			},
 		},
 		{
@@ -327,7 +327,7 @@ func Test_e2e_editors(t *testing.T) {
 				getProfileAttribute(t, tCtx, "foo").CopyTo(v)
 				s := v.Map().PutEmptySlice("new_slice")
 				_ = s.FromRaw([]any{5, 6})
-				_ = pprofile.PutAttribute(tCtx.GetProfilesDictionary().AttributeTable(), tCtx.GetProfile(), "foo", v)
+				_ = pprofile.PutAttribute(tCtx.GetProfilesDictionary().AttributeTable(), tCtx.GetProfile(), tCtx.GetProfilesDictionary(), "foo", v)
 			},
 		},
 	}
@@ -379,8 +379,8 @@ func (validator dictionaryValidator) validate() error {
 	if err := compareTables(validator.orig.StringTable(), validator.dic.StringTable()); err != nil {
 		return fmt.Errorf("string table: %w", err)
 	}
-	if err := compareTables(validator.orig.AttributeUnits(), validator.dic.AttributeUnits()); err != nil {
-		return fmt.Errorf("attribute units table: %w", err)
+	if err := compareTables(validator.orig.AttributeTable(), validator.dic.AttributeTable()); err != nil {
+		return fmt.Errorf("attribute table: %w", err)
 	}
 	if err := compareTables(validator.orig.FunctionTable(), validator.dic.FunctionTable()); err != nil {
 		return fmt.Errorf("function table: %w", err)
@@ -1673,21 +1673,21 @@ func putProfileAttribute(t *testing.T, tCtx ottlprofile.TransformContext, key st
 	profile := tCtx.GetProfile()
 	switch v := value.(type) {
 	case string:
-		require.NoError(t, pprofile.PutAttribute(dic.AttributeTable(), profile, key, pcommon.NewValueStr(v)))
+		require.NoError(t, pprofile.PutAttribute(dic.AttributeTable(), profile, dic, key, pcommon.NewValueStr(v)))
 	case float64:
-		require.NoError(t, pprofile.PutAttribute(dic.AttributeTable(), profile, key, pcommon.NewValueDouble(v)))
+		require.NoError(t, pprofile.PutAttribute(dic.AttributeTable(), profile, dic, key, pcommon.NewValueDouble(v)))
 	case int:
-		require.NoError(t, pprofile.PutAttribute(dic.AttributeTable(), profile, key, pcommon.NewValueInt(int64(v))))
+		require.NoError(t, pprofile.PutAttribute(dic.AttributeTable(), profile, dic, key, pcommon.NewValueInt(int64(v))))
 	case bool:
-		require.NoError(t, pprofile.PutAttribute(dic.AttributeTable(), profile, key, pcommon.NewValueBool(v)))
+		require.NoError(t, pprofile.PutAttribute(dic.AttributeTable(), profile, dic, key, pcommon.NewValueBool(v)))
 	case []any:
 		sl := pcommon.NewValueSlice()
 		require.NoError(t, sl.FromRaw(v))
-		require.NoError(t, pprofile.PutAttribute(dic.AttributeTable(), profile, key, sl))
+		require.NoError(t, pprofile.PutAttribute(dic.AttributeTable(), profile, dic, key, sl))
 	case map[string]any:
 		m := pcommon.NewValueMap()
 		require.NoError(t, m.FromRaw(v))
-		require.NoError(t, pprofile.PutAttribute(dic.AttributeTable(), profile, key, m))
+		require.NoError(t, pprofile.PutAttribute(dic.AttributeTable(), profile, dic, key, m))
 	default:
 		t.Fatalf("unsupported value type: %T", v)
 	}
@@ -1697,7 +1697,7 @@ func removeAttribute(t *testing.T, tCtx ottlprofile.TransformContext, key string
 	table := tCtx.GetProfilesDictionary().AttributeTable()
 	indices := tCtx.GetProfile().AttributeIndices().AsRaw()
 
-	idx := findAttributeIndex(table, indices, key)
+	idx := findAttributeIndex(tCtx.GetProfilesDictionary(), table, indices, key)
 	if idx == -1 {
 		t.Fatalf("attribute %s not found", key)
 		return
@@ -1714,7 +1714,7 @@ func getProfileAttribute(t *testing.T, tCtx ottlprofile.TransformContext, key st
 	table := tCtx.GetProfilesDictionary().AttributeTable()
 	indices := tCtx.GetProfile().AttributeIndices().AsRaw()
 
-	idx := findAttributeIndex(table, indices, key)
+	idx := findAttributeIndex(tCtx.GetProfilesDictionary(), table, indices, key)
 	if idx == -1 {
 		t.Fatalf("attribute %s not found", key)
 	}
@@ -1722,10 +1722,10 @@ func getProfileAttribute(t *testing.T, tCtx ottlprofile.TransformContext, key st
 	return table.At(int(indices[idx])).Value()
 }
 
-func findAttributeIndex(table pprofile.AttributeTableSlice, indices []int32, key string) int {
+func findAttributeIndex(dic pprofile.ProfilesDictionary, table pprofile.KeyValueAndUnitSlice, indices []int32, key string) int {
 	for i, tableIndex := range indices {
 		attr := table.At(int(tableIndex))
-		if attr.Key() == key {
+		if dic.StringTable().At(int(attr.KeyStrindex())) == key {
 			return i
 		}
 	}
