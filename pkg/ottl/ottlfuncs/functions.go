@@ -54,6 +54,7 @@ func converters[K any]() []ottl.Factory[K] {
 		NewGetXMLFactory[K](),
 		NewHasPrefixFactory[K](),
 		NewHasSuffixFactory[K](),
+		NewHexToBytesFactory[K](),
 		NewHourFactory[K](),
 		NewHoursFactory[K](),
 		NewIndexFactory[K](),
