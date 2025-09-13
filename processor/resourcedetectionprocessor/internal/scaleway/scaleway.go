@@ -5,6 +5,7 @@ package scaleway // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"context"
+	"strings"
 
 	instance "github.com/scaleway/scaleway-sdk-go/api/instance/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -54,17 +55,15 @@ func (d *Detector) Detect(_ context.Context) (pcommon.Resource, string, error) {
 		return pcommon.NewResource(), "", nil
 	}
 
+	d.rb.SetCloudAccountID(md.Organization)
+	d.rb.SetCloudAvailabilityZone(md.Location.ZoneID)
 	// Cloud provider and platform values will be "scaleway_cloud" and "scaleway_cloud_platform" from conventions when it's merged.
 	// d.rb.SetCloudProvider(conventions.CloudProviderScalewayCloud.Value.AsString())
 	// d.rb.SetCloudPlatform(conventions.CloudPlatformScalewayCloud.Value.AsString())
 	d.rb.SetCloudProvider("scaleway_cloud")
 	d.rb.SetCloudPlatform("scaleway_cloud_compute")
-	d.rb.SetCloudAccountID(md.Organization)
-	if md.Location.ZoneID != "" {
-		d.rb.SetCloudAvailabilityZone(md.Location.ZoneID)
-		if region := zoneToRegion(md.Location.ZoneID); region != "" {
-			d.rb.SetCloudRegion(region)
-		}
+	if region := zoneToRegion(md.Location.ZoneID); region != "" {
+		d.rb.SetCloudRegion(region)
 	}
 	d.rb.SetHostID(md.ID)
 	d.rb.SetHostName(md.Name)
@@ -75,15 +74,8 @@ func (d *Detector) Detect(_ context.Context) (pcommon.Resource, string, error) {
 
 // zoneToRegion extracts the region name from a Scaleway zone like "fr-par-1" -> "fr-par".
 func zoneToRegion(zone string) string {
-	lastDash := -1
-	for i := len(zone) - 1; i >= 0; i-- {
-		if zone[i] == '-' {
-			lastDash = i
-			break
-		}
-	}
-	if lastDash > 0 {
-		return zone[:lastDash]
+	if i := strings.LastIndex(zone, "-"); i > 0 {
+		return zone[:i]
 	}
 	return ""
 }
