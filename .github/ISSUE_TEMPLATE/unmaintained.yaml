@@ -343,7 +343,7 @@ body:
   - type: textarea
     attributes:
       label: Details
-      description: Please provide details
+      description: Please provide details 
       value: |
         Code owners for this component have explicitly stated they will no longer maintain the code
         or have been unresponsive to issues/pull requests.
@@ -354,9 +354,9 @@ body:
         - [ ] On <date 6 months from now>, 6 months from now, the component will be removed
 
         https://github.com/open-telemetry/opentelemetry-collector#unmaintained
-
+        
         ## Pull requests / Issues
-
+        
   - type: dropdown
     attributes:
       label: Tip
