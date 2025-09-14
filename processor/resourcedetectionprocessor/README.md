@@ -701,7 +701,7 @@ processors:
 
 Uses the [Vultr metadata API](https://www.vultr.com/metadata/) to read resource information from the instance metadata service and populate related resource attributes.
 
-The list of the populated resource attributes can be found at [Vultr Detector Resource Attributes](./internal/hetzner/documentation.md).
+The list of the populated resource attributes can be found at [Vultr Detector Resource Attributes](./internal/vultr/documentation.md).
 
 Vultr custom configuration example:
 
