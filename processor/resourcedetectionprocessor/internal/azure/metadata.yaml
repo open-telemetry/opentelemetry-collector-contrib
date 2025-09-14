@@ -22,7 +22,7 @@ resource_attributes:
   cloud.availability_zone:
     description: The cloud availability zone
     type: string
-    enabled: true
+    enabled: false
   host.name:
     description: The hostname
     type: string

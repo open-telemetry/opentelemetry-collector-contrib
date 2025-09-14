@@ -58,7 +58,7 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		CloudAvailabilityZone: ResourceAttributeConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		CloudPlatform: ResourceAttributeConfig{
 			Enabled: true,
