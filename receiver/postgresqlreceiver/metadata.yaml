@@ -215,6 +215,7 @@ events:
       - postgresql.wait_event
       - postgresql.wait_event_type
       - postgresql.query_id
+      - postgresql.total_exec_time
 metrics:
   postgresql.bgwriter.buffers.allocated:
     description: Number of buffers allocated.
