@@ -12,6 +12,7 @@ import (
 	"math/rand/v2"
 	"path/filepath"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
@@ -20,6 +21,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/appendblob"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -28,11 +30,115 @@ import (
 )
 
 type azureBlobExporter struct {
-	config     *Config
-	logger     *zap.Logger
-	client     azblobClient
-	signal     pipeline.Signal
-	marshaller *marshaller
+	config           *Config
+	logger           *zap.Logger
+	client           azblobClient
+	signal           pipeline.Signal
+	marshaller       *marshaller
+	blobNameTemplate *blobNameTemplate
+}
+
+type blobNameTemplate struct {
+	metrics *template.Template
+	logs    *template.Template
+	traces  *template.Template
+}
+
+func getAttrStandalone(attrs pcommon.Map, key string) any {
+	if val, ok := attrs.Get(key); ok {
+		return val.AsRaw()
+	}
+	return nil
+}
+
+var tempFuncs = template.FuncMap{
+	"getResourceSpanAttr": func(traces ptrace.Traces, rmIndex int, key string) any {
+		if traces.ResourceSpans().Len() > 0 {
+			rs := traces.ResourceSpans().At(rmIndex)
+			return getAttrStandalone(rs.Resource().Attributes(), key)
+		}
+		return nil
+	},
+	"getResourceMetricAttr": func(metrics pmetric.Metrics, rmIndex int, key string) any {
+		if metrics.ResourceMetrics().Len() > 0 {
+			rm := metrics.ResourceMetrics().At(rmIndex)
+			return getAttrStandalone(rm.Resource().Attributes(), key)
+		}
+		return nil
+	},
+	"getResourceLogAttr": func(logs plog.Logs, rlIndex int, key string) any {
+		if logs.ResourceLogs().Len() > 0 {
+			rl := logs.ResourceLogs().At(rlIndex)
+			return getAttrStandalone(rl.Resource().Attributes(), key)
+		}
+		return nil
+	},
+	"getScopeSpanAttr": func(traces ptrace.Traces, rmIndex, ilsIndex int, key string) any {
+		if traces.ResourceSpans().Len() > 0 {
+			rs := traces.ResourceSpans().At(rmIndex)
+			if rs.ScopeSpans().Len() > 0 {
+				ils := rs.ScopeSpans().At(ilsIndex)
+				return getAttrStandalone(ils.Scope().Attributes(), key)
+			}
+		}
+		return nil
+	},
+	"getScopeMetricAttr": func(metrics pmetric.Metrics, rmIndex, ilsIndex int, key string) any {
+		if metrics.ResourceMetrics().Len() > 0 {
+			rm := metrics.ResourceMetrics().At(rmIndex)
+			if rm.ScopeMetrics().Len() > 0 {
+				ils := rm.ScopeMetrics().At(ilsIndex)
+				return getAttrStandalone(ils.Scope().Attributes(), key)
+			}
+		}
+		return nil
+	},
+	"getScopeLogAttr": func(logs plog.Logs, rlIndex, ilsIndex int, key string) any {
+		if logs.ResourceLogs().Len() > 0 {
+			rl := logs.ResourceLogs().At(rlIndex)
+			if rl.ScopeLogs().Len() > 0 {
+				ils := rl.ScopeLogs().At(ilsIndex)
+				return getAttrStandalone(ils.Scope().Attributes(), key)
+			}
+		}
+		return nil
+	},
+	"getSpan": func(traces ptrace.Traces, rmIndex, ilsIndex, spanIndex int, key string) any {
+		if traces.ResourceSpans().Len() > 0 {
+			rs := traces.ResourceSpans().At(rmIndex)
+			if rs.ScopeSpans().Len() > 0 {
+				ils := rs.ScopeSpans().At(ilsIndex)
+				if ils.Spans().Len() > 0 {
+					return ils.Spans().At(spanIndex)
+				}
+			}
+		}
+		return ptrace.Span{}
+	},
+	"getMetric": func(metrics pmetric.Metrics, rmIndex, ilsIndex, metricIndex int, key string) any {
+		if metrics.ResourceMetrics().Len() > 0 {
+			rm := metrics.ResourceMetrics().At(rmIndex)
+			if rm.ScopeMetrics().Len() > 0 {
+				ils := rm.ScopeMetrics().At(ilsIndex)
+				if ils.Metrics().Len() > 0 {
+					return ils.Metrics().At(metricIndex)
+				}
+			}
+		}
+		return pmetric.Metric{}
+	},
+	"getLogRecord": func(logs plog.Logs, rlIndex, ilsIndex, logIndex int, key string) any {
+		if logs.ResourceLogs().Len() > 0 {
+			rl := logs.ResourceLogs().At(rlIndex)
+			if rl.ScopeLogs().Len() > 0 {
+				ils := rl.ScopeLogs().At(ilsIndex)
+				if ils.LogRecords().Len() > 0 {
+					return ils.LogRecords().At(logIndex)
+				}
+			}
+		}
+		return plog.LogRecord{}
+	},
 }
 
 type azblobClient interface {
@@ -81,9 +187,10 @@ func (c *azblobClientImpl) AppendBlock(ctx context.Context, containerName, blobN
 
 func newAzureBlobExporter(config *Config, logger *zap.Logger, signal pipeline.Signal) *azureBlobExporter {
 	return &azureBlobExporter{
-		config: config,
-		logger: logger,
-		signal: signal,
+		config:           config,
+		logger:           logger,
+		signal:           signal,
+		blobNameTemplate: &blobNameTemplate{},
 	}
 }
 
@@ -159,25 +266,65 @@ func (e *azureBlobExporter) start(_ context.Context, host component.Host) error 
 	default:
 		return fmt.Errorf("unsupported authentication type: %s", authType)
 	}
+
+	if e.config.BlobNameFormat.TemplateEnabled {
+		// pre-parse templates to catch error early
+		e.blobNameTemplate = &blobNameTemplate{}
+		var err error
+
+		e.blobNameTemplate.metrics, err = template.New("metrics").Funcs(tempFuncs).Parse(e.config.BlobNameFormat.MetricsFormat)
+		if err != nil {
+			return fmt.Errorf("failed to parse metrics blob name template: %w", err)
+		}
+
+		e.blobNameTemplate.logs, err = template.New("logs").Funcs(tempFuncs).Parse(e.config.BlobNameFormat.LogsFormat)
+		if err != nil {
+			return fmt.Errorf("failed to parse logs blob name template: %w", err)
+		}
+
+		e.blobNameTemplate.traces, err = template.New("traces").Funcs(tempFuncs).Parse(e.config.BlobNameFormat.TracesFormat)
+		if err != nil {
+			return fmt.Errorf("failed to parse traces blob name template: %w", err)
+		}
+	}
+
 	return nil
 }
 
-func (e *azureBlobExporter) generateBlobName(signal pipeline.Signal) (string, error) {
+func (e *azureBlobExporter) generateBlobName(signal pipeline.Signal, telemetryData any) (string, error) {
 	// Get current time
 	now := time.Now()
 
 	var format string
+	var tmpl *template.Template
 	switch signal {
 	case pipeline.SignalMetrics:
 		format = e.config.BlobNameFormat.MetricsFormat
+		tmpl = e.blobNameTemplate.metrics
 	case pipeline.SignalLogs:
 		format = e.config.BlobNameFormat.LogsFormat
+		tmpl = e.blobNameTemplate.logs
 	case pipeline.SignalTraces:
 		format = e.config.BlobNameFormat.TracesFormat
+		tmpl = e.blobNameTemplate.traces
 	default:
 		return "", fmt.Errorf("unsupported signal type: %v", signal)
 	}
 	var blobName string
+
+	// if template enabled, parse and apply template. if met error, fallback to default blob name format
+	if e.config.BlobNameFormat.TemplateEnabled {
+		// Parse and apply template with telemetry data
+		var buf bytes.Buffer
+		err := tmpl.Execute(&buf, telemetryData)
+		if err != nil {
+			e.logger.Warn("Failed to execute blob name template, using default blob name format", zap.Error(err))
+		} else {
+			blobName = buf.String()
+			format = blobName
+		}
+	}
+
 	if e.config.BlobNameFormat.SerialNumBeforeExtension {
 		// Append a random number and do so before the file extension if there is one
 		ext := filepath.Ext(format)
@@ -188,7 +335,19 @@ func (e *azureBlobExporter) generateBlobName(signal pipeline.Signal) (string, er
 		// Appends the random number after any potential file extension to minimize performance impact when high throughput
 		blobName = fmt.Sprintf("%s_%d", now.Format(format), randomInRange(0, int(e.config.BlobNameFormat.SerialNumRange)))
 	}
+
 	return blobName, nil
+}
+
+func (e *azureBlobExporter) sanitizeBlobName(blobName string) string {
+	// Replace invalid characters with underscores
+	// Azure blob names cannot contain: \ / : * ? " < > |
+	invalidChars := []string{"\\", "/", ":", "*", "?", "\"", "<", ">", "|"}
+	sanitized := blobName
+	for _, char := range invalidChars {
+		sanitized = strings.ReplaceAll(sanitized, char, "_")
+	}
+	return sanitized
 }
 
 func (*azureBlobExporter) Capabilities() consumer.Capabilities {
@@ -202,7 +361,7 @@ func (e *azureBlobExporter) ConsumeMetrics(ctx context.Context, md pmetric.Metri
 		return fmt.Errorf("failed to marshal metrics: %w", err)
 	}
 
-	return e.consumeData(ctx, data, pipeline.SignalMetrics)
+	return e.consumeData(ctx, md, data, pipeline.SignalMetrics)
 }
 
 func (e *azureBlobExporter) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
@@ -212,7 +371,7 @@ func (e *azureBlobExporter) ConsumeLogs(ctx context.Context, ld plog.Logs) error
 		return fmt.Errorf("failed to marshal logs: %w", err)
 	}
 
-	return e.consumeData(ctx, data, pipeline.SignalLogs)
+	return e.consumeData(ctx, ld, data, pipeline.SignalLogs)
 }
 
 func (e *azureBlobExporter) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
@@ -222,12 +381,12 @@ func (e *azureBlobExporter) ConsumeTraces(ctx context.Context, td ptrace.Traces)
 		return fmt.Errorf("failed to marshal traces: %w", err)
 	}
 
-	return e.consumeData(ctx, data, pipeline.SignalTraces)
+	return e.consumeData(ctx, td, data, pipeline.SignalTraces)
 }
 
-func (e *azureBlobExporter) consumeData(ctx context.Context, data []byte, signal pipeline.Signal) error {
+func (e *azureBlobExporter) consumeData(ctx context.Context, telemetryData any, data []byte, signal pipeline.Signal) error {
 	// Generate a unique blob name
-	blobName, err := e.generateBlobName(signal)
+	blobName, err := e.generateBlobName(signal, telemetryData)
 	if err != nil {
 		return fmt.Errorf("failed to generate blobname: %w", err)
 	}
