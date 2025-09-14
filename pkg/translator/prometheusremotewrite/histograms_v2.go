@@ -67,8 +67,7 @@ func explicitHistogramToCustomBucketsHistogram(p pmetric.HistogramDataPoint) wri
 		// Ref: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/28663#issuecomment-1810577303
 		// Counter reset detection in Prometheus: https://github.com/prometheus/prometheus/blob/f997c72f294c0f18ca13fa06d51889af04135195/tsdb/chunkenc/histogram.go#L232
 		ResetHint: writev2.Histogram_RESET_HINT_UNSPECIFIED,
-		// TODO add
-		Schema: histogram.CustomBucketsSchema,
+		Schema:    histogram.CustomBucketsSchema,
 
 		PositiveSpans:  positiveSpans,
 		PositiveDeltas: positiveDeltas,
