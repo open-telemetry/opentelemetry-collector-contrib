@@ -212,6 +212,14 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 			setResourceAttribute(resource.Attributes(), key, val)
 		}
 	}
+
+	job := getJobUID(pod, resource.Attributes())
+	if job != "" {
+		attrsToAdd := kp.getAttributesForPodsJob(job)
+		for key, val := range attrsToAdd {
+			setResourceAttribute(resource.Attributes(), key, val)
+		}
+	}
 }
 
 func setResourceAttribute(attributes pcommon.Map, key, val string) {
@@ -254,6 +262,13 @@ func getDaemonSetUID(pod *kube.Pod, resAttrs pcommon.Map) string {
 		return pod.DaemonSetUID
 	}
 	return stringAttributeFromMap(resAttrs, string(conventions.K8SDaemonSetUIDKey))
+}
+
+func getJobUID(pod *kube.Pod, resAttrs pcommon.Map) string {
+	if pod != nil && pod.JobUID != "" {
+		return pod.JobUID
+	}
+	return stringAttributeFromMap(resAttrs, string(conventions.K8SJobUIDKey))
 }
 
 // addContainerAttributes looks if pod has any container identifiers and adds additional container attributes
@@ -370,6 +385,14 @@ func (kp *kubernetesprocessor) getAttributesForPodsDaemonSet(daemonsetUID string
 		return nil
 	}
 	return d.Attributes
+}
+
+func (kp *kubernetesprocessor) getAttributesForPodsJob(jobUID string) map[string]string {
+	j, ok := kp.kc.GetJob(jobUID)
+	if !ok {
+		return nil
+	}
+	return j.Attributes
 }
 
 func (kp *kubernetesprocessor) getUIDForPodsNode(nodeName string) string {
