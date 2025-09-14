@@ -5,6 +5,7 @@
 package isolationforestprocessor
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -96,6 +97,12 @@ func Test_newIsolationForestProcessor_Basic(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, p)
 
+	// Add shutdown cleanup
+    defer func() {
+        err := p.Shutdown(context.Background())
+        require.NoError(t, err)
+    }()
+
 	// Sanity: single-model by default unless models configured
 	assert.False(t, cfg.IsMultiModelMode())
 }
@@ -106,6 +113,12 @@ func Test_processFeatures_SaneOutputs(t *testing.T) {
 
 	p, err := newIsolationForestProcessor(cfg, logger)
 	require.NoError(t, err)
+
+	// Add shutdown cleanup
+    defer func() {
+        err := p.Shutdown(context.Background())
+        require.NoError(t, err)
+    }()
 
 	features := map[string][]float64{
 		"duration": {50.0},
@@ -129,6 +142,12 @@ func Test_processTraces_EnrichesAttributes(t *testing.T) {
 	p, err := newIsolationForestProcessor(cfg, logger)
 	require.NoError(t, err)
 
+	// Add shutdown cleanup
+    defer func() {
+        err := p.Shutdown(context.Background())
+        require.NoError(t, err)
+    }()
+
 	tdIn := makeTrace()
 	tdOut, err := p.processTraces(t.Context(), tdIn)
 	require.NoError(t, err)
@@ -150,6 +169,12 @@ func Test_processLogs_EnrichesAttributes(t *testing.T) {
 	p, err := newIsolationForestProcessor(cfg, logger)
 	require.NoError(t, err)
 
+	// Add shutdown cleanup
+    defer func() {
+        err := p.Shutdown(context.Background())
+        require.NoError(t, err)
+    }()
+
 	ldIn := makeLogs()
 	ldOut, err := p.processLogs(t.Context(), ldIn)
 	require.NoError(t, err)
@@ -170,6 +195,12 @@ func Test_processMetrics_EnrichesAttributes(t *testing.T) {
 
 	p, err := newIsolationForestProcessor(cfg, logger)
 	require.NoError(t, err)
+
+	// Add shutdown cleanup
+    defer func() {
+        err := p.Shutdown(context.Background())
+        require.NoError(t, err)
+    }()
 
 	mdIn := makeMetrics()
 	mdOut, err := p.processMetrics(t.Context(), mdIn)
