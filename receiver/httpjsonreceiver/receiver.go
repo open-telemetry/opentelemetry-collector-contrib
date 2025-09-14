@@ -1,4 +1,4 @@
-package httpjsonreceiver
+package httpjsonreceiver // import "httpjsonreceiver"
 
 import (
 	"context"
