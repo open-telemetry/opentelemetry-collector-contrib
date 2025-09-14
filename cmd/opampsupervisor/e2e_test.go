@@ -2116,14 +2116,12 @@ func TestSupervisorRemoteConfigApplyStatus(t *testing.T) {
 				},
 			})
 
-			// TODO: Remove time.Sleep below, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42550
-			time.Sleep(100 * time.Millisecond)
 			// Check that the status is set to APPLYING
-			require.Eventually(t, func() bool {
+			require.EventuallyWithT(t, func(c *assert.CollectT) {
 				status := remoteConfigStatus.Load().(*protobufs.RemoteConfigStatus)
 				t.Log("status", status.Status)
-				return status.Status == protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLYING
-			}, 5*time.Second, 100*time.Millisecond, "Remote config status was not set to APPLYING")
+				assert.Equal(c, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLYING, status.Status)
+			}, 5*time.Second, 100*time.Millisecond)
 
 			// Wait for collector to become healthy
 			require.Eventually(t, func() bool {
