@@ -21,6 +21,10 @@ import (
 	"golang.org/x/net/http2"
 )
 
+type STSClient interface {
+	AssumeRole(ctx context.Context, params *sts.AssumeRoleInput, optFns ...func(*sts.Options)) (*sts.AssumeRoleOutput, error)
+}
+
 // newHTTPClient returns new HTTP client instance with provided configuration.
 func newHTTPClient(logger *zap.Logger, maxIdle, requestTimeout int, noVerify bool,
 	proxyAddress string,
@@ -85,7 +89,7 @@ func getProxyURL(finalProxyAddress string) (*url.URL, error) {
 }
 
 // GetAWSConfig returns AWS config instance.
-func GetAWSConfig(ctx context.Context, logger *zap.Logger, settings *AWSSessionSettings) (aws.Config, error) {
+func GetAWSConfig(ctx context.Context, logger *zap.Logger, settings *AWSSessionSettings, stsClient STSClient) (aws.Config, error) {
 	http, err := newHTTPClient(logger, settings.NumberOfWorkers, settings.RequestTimeoutSeconds, settings.NoVerifySSL, settings.ProxyAddress)
 	if err != nil {
 		logger.Error("unable to obtain proxy URL", zap.Error(err))
@@ -106,8 +110,6 @@ func GetAWSConfig(ctx context.Context, logger *zap.Logger, settings *AWSSessionS
 	}
 
 	if settings.RoleARN != "" {
-		stsClient := sts.NewFromConfig(cfg)
-
 		assumeRoleOpts := func(o *stscreds.AssumeRoleOptions) {
 			if settings.ExternalID != "" {
 				o.ExternalID = &settings.ExternalID
