@@ -98,10 +98,10 @@ func Test_newIsolationForestProcessor_Basic(t *testing.T) {
 	require.NotNil(t, p)
 
 	// Add shutdown cleanup
-    defer func() {
-        err := p.Shutdown(context.Background())
-        require.NoError(t, err)
-    }()
+	defer func() {
+		err := p.Shutdown(context.Background())
+		require.NoError(t, err)
+	}()
 
 	// Sanity: single-model by default unless models configured
 	assert.False(t, cfg.IsMultiModelMode())
@@ -115,10 +115,10 @@ func Test_processFeatures_SaneOutputs(t *testing.T) {
 	require.NoError(t, err)
 
 	// Add shutdown cleanup
-    defer func() {
-        err := p.Shutdown(context.Background())
-        require.NoError(t, err)
-    }()
+	defer func() {
+		err := p.Shutdown(context.Background())
+		require.NoError(t, err)
+	}()
 
 	features := map[string][]float64{
 		"duration": {50.0},
@@ -143,10 +143,10 @@ func Test_processTraces_EnrichesAttributes(t *testing.T) {
 	require.NoError(t, err)
 
 	// Add shutdown cleanup
-    defer func() {
-        err := p.Shutdown(context.Background())
-        require.NoError(t, err)
-    }()
+	defer func() {
+		err := p.Shutdown(context.Background())
+		require.NoError(t, err)
+	}()
 
 	tdIn := makeTrace()
 	tdOut, err := p.processTraces(t.Context(), tdIn)
@@ -170,10 +170,10 @@ func Test_processLogs_EnrichesAttributes(t *testing.T) {
 	require.NoError(t, err)
 
 	// Add shutdown cleanup
-    defer func() {
-        err := p.Shutdown(context.Background())
-        require.NoError(t, err)
-    }()
+	defer func() {
+		err := p.Shutdown(context.Background())
+		require.NoError(t, err)
+	}()
 
 	ldIn := makeLogs()
 	ldOut, err := p.processLogs(t.Context(), ldIn)
@@ -197,10 +197,10 @@ func Test_processMetrics_EnrichesAttributes(t *testing.T) {
 	require.NoError(t, err)
 
 	// Add shutdown cleanup
-    defer func() {
-        err := p.Shutdown(context.Background())
-        require.NoError(t, err)
-    }()
+	defer func() {
+		err := p.Shutdown(context.Background())
+		require.NoError(t, err)
+	}()
 
 	mdIn := makeMetrics()
 	mdOut, err := p.processMetrics(t.Context(), mdIn)

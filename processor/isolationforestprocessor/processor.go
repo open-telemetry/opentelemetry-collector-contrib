@@ -46,7 +46,7 @@ type isolationForestProcessor struct {
 	lastModelUpdate time.Time
 	updateTicker    *time.Ticker
 	stopChan        chan struct{}
-	shutdownWG      sync.WaitGroup 
+	shutdownWG      sync.WaitGroup
 }
 
 // newIsolationForestProcessor creates a new processor instance with the specified configuration.
