@@ -14,7 +14,7 @@ metrics:
 
 ### iis.application_pool.state
 
-The current state of the application pool. (0 - Starting, 1 - Started, 2 - Stopping, 3 - Stopped, 4 - Unknown)
+The current status of the application pool (1 - Uninitialized, 2 - Initialized, 3 - Running, 4 - Disabling, 5 - Disabled, 6 - Shutdown Pending, 7 - Delete Pending).
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
