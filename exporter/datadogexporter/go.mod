@@ -362,7 +362,7 @@ require (
 	github.com/puzpuzpuz/xsync/v3 v3.5.1 // indirect
 	github.com/richardartoul/molecule v1.0.1-0.20240531184615-7ca0df43c0b3 // indirect
 	github.com/rs/cors v1.11.1 // indirect
-	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.33 // indirect
+	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.34 // indirect
 	github.com/secure-systems-lab/go-securesystemslib v0.9.0 // indirect
 	github.com/shirou/gopsutil/v3 v3.24.5 // indirect
 	github.com/shirou/gopsutil/v4 v4.25.8 // indirect

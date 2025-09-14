@@ -19,6 +19,8 @@
 //go:generate mdatagen internal/k8snode/metadata.yaml
 //go:generate mdatagen internal/kubeadm/metadata.yaml
 //go:generate mdatagen internal/dynatrace/metadata.yaml
+//go:generate mdatagen internal/akamai/metadata.yaml
+//go:generate mdatagen internal/scaleway/metadata.yaml
 
 // package resourcedetectionprocessor implements a processor
 // which can be used to detect resource information from the host,
