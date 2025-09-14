@@ -103,7 +103,7 @@ var tempFuncs = template.FuncMap{
 		}
 		return nil
 	},
-	"getSpan": func(traces ptrace.Traces, rmIndex, ilsIndex, spanIndex int, key string) any {
+	"getSpan": func(traces ptrace.Traces, rmIndex, ilsIndex, spanIndex int) any {
 		if traces.ResourceSpans().Len() > 0 {
 			rs := traces.ResourceSpans().At(rmIndex)
 			if rs.ScopeSpans().Len() > 0 {
@@ -115,7 +115,7 @@ var tempFuncs = template.FuncMap{
 		}
 		return ptrace.Span{}
 	},
-	"getMetric": func(metrics pmetric.Metrics, rmIndex, ilsIndex, metricIndex int, key string) any {
+	"getMetric": func(metrics pmetric.Metrics, rmIndex, ilsIndex, metricIndex int) any {
 		if metrics.ResourceMetrics().Len() > 0 {
 			rm := metrics.ResourceMetrics().At(rmIndex)
 			if rm.ScopeMetrics().Len() > 0 {
@@ -127,7 +127,7 @@ var tempFuncs = template.FuncMap{
 		}
 		return pmetric.Metric{}
 	},
-	"getLogRecord": func(logs plog.Logs, rlIndex, ilsIndex, logIndex int, key string) any {
+	"getLogRecord": func(logs plog.Logs, rlIndex, ilsIndex, logIndex int) any {
 		if logs.ResourceLogs().Len() > 0 {
 			rl := logs.ResourceLogs().At(rlIndex)
 			if rl.ScopeLogs().Len() > 0 {

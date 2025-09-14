@@ -150,15 +150,15 @@ func TestGenerateBlobName(t *testing.T) {
 	ae := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalMetrics)
 
 	now := time.Now()
-	metricsBlobName, err := ae.generateBlobName(pipeline.SignalMetrics)
+	metricsBlobName, err := ae.generateBlobName(pipeline.SignalMetrics, nil)
 	assert.NoError(t, err)
 	assert.True(t, strings.HasPrefix(metricsBlobName, now.Format(c.BlobNameFormat.MetricsFormat)))
 
-	logsBlobName, err := ae.generateBlobName(pipeline.SignalLogs)
+	logsBlobName, err := ae.generateBlobName(pipeline.SignalLogs, nil)
 	assert.NoError(t, err)
 	assert.True(t, strings.HasPrefix(logsBlobName, now.Format(c.BlobNameFormat.LogsFormat)))
 
-	tracesBlobName, err := ae.generateBlobName(pipeline.SignalTraces)
+	tracesBlobName, err := ae.generateBlobName(pipeline.SignalTraces, nil)
 	assert.NoError(t, err)
 	assert.True(t, strings.HasPrefix(tracesBlobName, now.Format(c.BlobNameFormat.TracesFormat)))
 }
@@ -187,17 +187,65 @@ func TestGenerateBlobNameSerialNumBefore(t *testing.T) {
 	}
 
 	now := time.Now()
-	metricsBlobName, err := ae.generateBlobName(pipeline.SignalMetrics)
+	metricsBlobName, err := ae.generateBlobName(pipeline.SignalMetrics, nil)
 	assert.NoError(t, err)
 	assertFormat(metricsBlobName, now.Format(c.BlobNameFormat.MetricsFormat))
 
-	logsBlobName, err := ae.generateBlobName(pipeline.SignalLogs)
+	logsBlobName, err := ae.generateBlobName(pipeline.SignalLogs, nil)
 	assert.NoError(t, err)
 	assertFormat(logsBlobName, now.Format(c.BlobNameFormat.LogsFormat))
 
-	tracesBlobName, err := ae.generateBlobName(pipeline.SignalTraces)
+	tracesBlobName, err := ae.generateBlobName(pipeline.SignalTraces, nil)
 	assert.NoError(t, err)
 	assertFormat(tracesBlobName, now.Format(c.BlobNameFormat.TracesFormat))
+}
+
+func TestGenerateBlobNameWithTemplate(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	c := cfg.(*Config)
+	c.BlobNameFormat = BlobNameFormat{
+		TemplateEnabled: true,
+		MetricsFormat:   `{{ getResourceMetricAttr . 0 "service.name" }}/2006/01/02/metrics.json`,
+		LogsFormat:      `{{ getScopeLogAttr . 0 0 "scope.name" }}/2006/01/02/logs.json`,
+		TracesFormat:    `{{ (getSpan . 0 0 0).Name }}/2006/01/02/traces.json`,
+		SerialNumRange:  10000,
+	}
+	c.Auth.ConnectionString = "DefaultEndpointsProtocol=https;AccountName=fakeaccount;AccountKey=ZmFrZWtleQ==;EndpointSuffix=core.windows.net"
+
+	ae := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalMetrics)
+	err := ae.start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	// Test metrics
+	metrics := testdata.GenerateMetricsTwoMetrics()
+	metrics.ResourceMetrics().At(0).Resource().Attributes().PutStr("service.name", "test-metrics-service")
+	metricsBlobName, err := ae.generateBlobName(pipeline.SignalMetrics, metrics)
+	assert.NoError(t, err)
+	assert.Contains(t, metricsBlobName, "test-metrics-service")
+	assert.Contains(t, metricsBlobName, "metrics.json")
+
+	// Test logs
+	logs := testdata.GenerateLogsTwoLogRecordsSameResource()
+	logs.ResourceLogs().At(0).ScopeLogs().At(0).Scope().Attributes().PutStr("scope.name", "test-scope")
+	logsBlobName, err := ae.generateBlobName(pipeline.SignalLogs, logs)
+	assert.NoError(t, err)
+	assert.Contains(t, logsBlobName, "test-scope")
+	assert.Contains(t, logsBlobName, "logs.json")
+
+	// Test traces
+	traces := testdata.GenerateTracesTwoSpansSameResource()
+	traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).SetName("test-span")
+	tracesBlobName, err := ae.generateBlobName(pipeline.SignalTraces, traces)
+	assert.NoError(t, err)
+	assert.Contains(t, tracesBlobName, "test-span")
+	assert.Contains(t, tracesBlobName, "traces.json")
+}
+
+func TestSanitizeBlobName(t *testing.T) {
+	ae := &azureBlobExporter{}
+	assert.Equal(t, "a_b_c", ae.sanitizeBlobName("a/b\\c"))
+	assert.Equal(t, "a_b_c_d_e_f_g_h", ae.sanitizeBlobName("a:b*c?d\"e<f>g|h"))
 }
 
 func getMockAzBlobClient() *mockAzBlobClient {
