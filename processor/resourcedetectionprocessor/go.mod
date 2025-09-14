@@ -18,6 +18,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.135.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.135.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.135.0
+	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.34
 	github.com/shirou/gopsutil/v4 v4.25.8
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.41.1-0.20250911155607-37a3ace6274c
@@ -179,6 +180,7 @@ require (
 	google.golang.org/protobuf v1.36.9 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
+	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/api v0.32.3 // indirect
 	k8s.io/apimachinery v0.32.3 // indirect

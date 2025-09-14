@@ -775,8 +775,8 @@ github.com/rogpeppe/go-internal v1.14.1/go.mod h1:MaRKkUm5W0goXpeCfT7UZI6fk/L7L7
 github.com/rs/cors v1.11.1 h1:eU3gRzXLRK57F5rKMGMZURNdIG4EoAmX8k94r9wXWHA=
 github.com/rs/cors v1.11.1/go.mod h1:XyqrcTp5zjWr1wsJ8PIRZssZ8b/WMcMf71DJnit4EMU=
 github.com/russross/blackfriday/v2 v2.1.0/go.mod h1:+Rmxgy9KzJVeS9/2gXHxylqXiyQDYRxCVz55jmeOWTM=
-github.com/scaleway/scaleway-sdk-go v1.0.0-beta.33 h1:KhF0WejiUTDbL5X55nXowP7zNopwpowa6qaMAWyIE+0=
-github.com/scaleway/scaleway-sdk-go v1.0.0-beta.33/go.mod h1:792k1RTU+5JeMXm35/e2Wgp71qPH/DmDoZrRc+EFZDk=
+github.com/scaleway/scaleway-sdk-go v1.0.0-beta.34 h1:48+VFHsyVcAHIN2v1Ao9v1/RkjJS5AwctFucBrfYNIA=
+github.com/scaleway/scaleway-sdk-go v1.0.0-beta.34/go.mod h1:zFWiHphneiey3s8HOtAEnGrRlWivNaxW5T6d5Xfco7g=
 github.com/secure-systems-lab/go-securesystemslib v0.9.0 h1:rf1HIbL64nUpEIZnjLZ3mcNEL9NBPB0iuVjyxvq3LZc=
 github.com/secure-systems-lab/go-securesystemslib v0.9.0/go.mod h1:DVHKMcZ+V4/woA/peqr+L0joiRXbPpQ042GgJckkFgw=
 github.com/shirou/gopsutil/v3 v3.22.12/go.mod h1:Xd7P1kwZcp5VW52+9XsirIKd/BROzbb2wdX3Kqlz9uI=
