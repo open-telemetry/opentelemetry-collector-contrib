@@ -14,6 +14,7 @@ import (
 	"net/url"
 	"os"
 	"sort"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -39,6 +40,10 @@ type Manager struct {
 	scrapeManager          *scrape.Manager
 	discoveryManager       *discovery.Manager
 	enableNativeHistograms bool
+
+	// configUpdateCount tracks how many times the config has changed, for
+	// testing.
+	configUpdateCount *atomic.Int64
 }
 
 func NewManager(set receiver.Settings, cfg *Config, promCfg *promconfig.Config, enableNativeHistograms bool) *Manager {
@@ -49,6 +54,7 @@ func NewManager(set receiver.Settings, cfg *Config, promCfg *promconfig.Config, 
 		promCfg:                promCfg,
 		initialScrapeConfigs:   promCfg.ScrapeConfigs,
 		enableNativeHistograms: enableNativeHistograms,
+		configUpdateCount:      &atomic.Int64{},
 	}
 }
 
@@ -168,14 +174,6 @@ func (m *Manager) sync(compareHash uint64, httpClient *http.Client) (uint64, err
 			scrapeConfig.ScrapeFallbackProtocol = promconfig.PrometheusText0_0_4
 		}
 
-		// TODO(krajorama): remove once
-		// https://github.com/prometheus/prometheus/issues/16750 is solved
-		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/35459
-		//   is implemented and is default.
-		if m.promCfg.GlobalConfig.MetricNameValidationScheme == "" {
-			m.promCfg.GlobalConfig.MetricNameValidationScheme = promconfig.LegacyValidationConfig
-		}
-
 		// Validate the scrape config and also fill in the defaults from the global config as needed.
 		err = scrapeConfig.Validate(m.promCfg.GlobalConfig)
 		if err != nil {
@@ -192,6 +190,9 @@ func (m *Manager) sync(compareHash uint64, httpClient *http.Client) (uint64, err
 		return 0, err
 	}
 
+	if m.configUpdateCount != nil {
+		m.configUpdateCount.Add(1)
+	}
 	return hash, nil
 }
 

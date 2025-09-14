@@ -22,12 +22,13 @@ import (
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/idbatcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/pkg/samplingpolicy"
 )
 
 const (
@@ -51,10 +52,10 @@ var (
 type TestPolicyEvaluator struct {
 	Started       chan struct{}
 	CouldContinue chan struct{}
-	pe            sampling.PolicyEvaluator
+	pe            samplingpolicy.Evaluator
 }
 
-func (t *TestPolicyEvaluator) Evaluate(ctx context.Context, traceID pcommon.TraceID, trace *sampling.TraceData) (sampling.Decision, error) {
+func (t *TestPolicyEvaluator) Evaluate(ctx context.Context, traceID pcommon.TraceID, trace *samplingpolicy.TraceData) (samplingpolicy.Decision, error) {
 	close(t.Started)
 	<-t.CouldContinue
 	return t.pe.Evaluate(ctx, traceID, trace)
@@ -145,7 +146,7 @@ func TestTraceIntegrity(t *testing.T) {
 		require.NoError(t, p.Shutdown(t.Context()))
 	}()
 
-	mpe1.NextDecision = sampling.Sampled
+	mpe1.NextDecision = samplingpolicy.Sampled
 
 	// Generate and deliver first span
 	require.NoError(t, p.ConsumeTraces(t.Context(), traces))
@@ -210,7 +211,7 @@ func TestSequentialTraceArrival(t *testing.T) {
 	for i := range traceIDs {
 		d, ok := tsp.idToTrace.Load(traceIDs[i])
 		require.True(t, ok, "Missing expected traceId")
-		v := d.(*sampling.TraceData)
+		v := d.(*samplingpolicy.TraceData)
 		require.Equal(t, int64(i+1), v.SpanCount.Load(), "Incorrect number of spans for entry %d", i)
 	}
 }
@@ -265,7 +266,7 @@ func TestConcurrentTraceArrival(t *testing.T) {
 	for i := range traceIDs {
 		d, ok := tsp.idToTrace.Load(traceIDs[i])
 		require.True(t, ok, "Missing expected traceId")
-		v := d.(*sampling.TraceData)
+		v := d.(*samplingpolicy.TraceData)
 		require.Equal(t, int64(i+1)*2, v.SpanCount.Load(), "Incorrect number of spans for entry %d", i)
 	}
 }
@@ -353,6 +354,109 @@ func TestSequentialTraceMapSize(t *testing.T) {
 		_, ok := tsp.idToTrace.Load(traceIDs[i])
 		require.False(t, ok, "Found unexpected traceId[%d] still on map (id: %v)", i, traceIDs[i])
 	}
+}
+
+func TestConsumptionDuringPolicyEvaluation(t *testing.T) {
+	// This test was added to reproduce a specific race condition:
+
+	// Each G is a goroutine
+	// G1: ConsumeTraces
+	// G1: Cache.Get (miss)
+
+	// G2: OnTick
+	// G2: makeDecision
+	// G2: Cache.Put
+	// G2: idToTrace.Delete
+
+	// G1: idToTrace.LoadOrStore
+	// G1: AppendToCurrentBatch
+	// < — At this point, we have a trace id which is in the batcher (G1 added it), the idToTrace map (G1 added it), and the decision cache (G2 added it).
+
+	// G3: ConsumeTraces
+	// G3: Cache.Get (hit)
+	// G3: idToTrace.Delete
+	// < — At this point, G3 has dropped the data added by G1, and orphaned a trace ID in the batcher.
+
+	// G2: CloseCurrentAndTakeFirstBatch
+	// G2: idToTrace.Load (miss) <- this is the droppedTooEarly signal
+
+	// We need a lot of tries to make this happen reliably.
+	numBatches := 100
+	_, batches := generateIDsAndBatches(numBatches)
+
+	// prepare
+	msp := new(consumertest.TracesSink)
+	cfg := Config{
+		DecisionWait: 10 * time.Millisecond,
+		// idToTrace map size is 2x the number of batches, to eliminate "expected"
+		// dropped too early errors.
+		NumTraces:  uint64(numBatches * 2),
+		PolicyCfgs: testPolicy,
+		DecisionCache: DecisionCacheConfig{
+			// Cache large enough to hold all traces, to eliminate "expected"
+			// dropped too early errors.
+			SampledCacheSize: numBatches * 2,
+		},
+	}
+	settings := processortest.NewNopSettings(metadata.Type)
+	reader := sdkmetric.NewManualReader()
+	settings.MeterProvider = sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader))
+	tsp, err := newTracesProcessor(t.Context(), settings, msp, cfg)
+	require.NoError(t, err)
+
+	// speed up the test a bit
+	tsp.(*tailSamplingSpanProcessor).tickerFrequency = 5 * time.Millisecond
+
+	require.NoError(t, tsp.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, tsp.Shutdown(t.Context()))
+	}()
+
+	var expectedSpans atomic.Int64
+	wg := sync.WaitGroup{}
+	var combinedErr error
+	errCh := make(chan error, len(batches))
+	errDone := make(chan struct{})
+
+	go func() {
+		for err := range errCh {
+			combinedErr = errors.Join(combinedErr, err)
+		}
+		close(errDone)
+	}()
+	// For each batch, we consume the same trace repeatedly for at least 2x the decision wait time
+	// this ensures that batches are being consumed concurrently with policy evaluation.
+	for _, batch := range batches {
+		wg.Add(1)
+		go func() {
+			start := time.Now()
+			// The important thing here is that we are writing as close as
+			// possible to the moment when the policy is evaluated. We can't
+			// know exactly when that will happen, so we just write in a loop
+			// until the time must have passed.
+			for time.Since(start) < 2*cfg.DecisionWait {
+				expectedSpans.Add(int64(batch.SpanCount()))
+				err := tsp.ConsumeTraces(t.Context(), batch)
+				if err != nil {
+					errCh <- err
+				}
+			}
+			wg.Done()
+		}()
+	}
+	wg.Wait()
+	close(errCh)
+	<-errDone
+	require.NoError(t, combinedErr)
+
+	// verify
+	// despite all the concurrency above, we should eventually sample all the spans.
+	require.EventuallyWithT(t, func(collect *assert.CollectT) {
+		received := int64(msp.SpanCount())
+		expected := expectedSpans.Load()
+		missing := expected - received
+		require.Equal(collect, expected, received, "expected %d spans, received %d, missing %d", expected, received, missing)
+	}, 1*time.Second, 100*time.Millisecond)
 }
 
 func TestConcurrentTraceMapSize(t *testing.T) {
@@ -656,7 +760,7 @@ func TestDecisionPolicyMetrics(t *testing.T) {
 	metrics := newPolicyMetrics(len(policy))
 
 	for i, id := range traceIDs {
-		sb := &sampling.TraceData{
+		sb := &samplingpolicy.TraceData{
 			ArrivalTime:     time.Now(),
 			ReceivedBatches: batches[i],
 			SpanCount:       &atomic.Int64{},
@@ -771,14 +875,14 @@ func uInt64ToSpanID(id uint64) pcommon.SpanID {
 }
 
 type mockPolicyEvaluator struct {
-	NextDecision    sampling.Decision
+	NextDecision    samplingpolicy.Decision
 	NextError       error
 	EvaluationCount int
 }
 
-var _ sampling.PolicyEvaluator = (*mockPolicyEvaluator)(nil)
+var _ samplingpolicy.Evaluator = (*mockPolicyEvaluator)(nil)
 
-func (m *mockPolicyEvaluator) Evaluate(context.Context, pcommon.TraceID, *sampling.TraceData) (sampling.Decision, error) {
+func (m *mockPolicyEvaluator) Evaluate(context.Context, pcommon.TraceID, *samplingpolicy.TraceData) (samplingpolicy.Decision, error) {
 	m.EvaluationCount++
 	return m.NextDecision, m.NextError
 }
@@ -834,7 +938,7 @@ func TestNumericAttributeCases(t *testing.T) {
 		minValue       int64
 		maxValue       int64
 		testValue      int64
-		expectedResult sampling.Decision
+		expectedResult samplingpolicy.Decision
 		description    string
 	}{
 		{
@@ -842,7 +946,7 @@ func TestNumericAttributeCases(t *testing.T) {
 			minValue:       400,
 			maxValue:       0, // not set (default)
 			testValue:      500,
-			expectedResult: sampling.Sampled,
+			expectedResult: samplingpolicy.Sampled,
 			description:    "Should sample when value >= min_value and max_value not set",
 		},
 		{
@@ -850,7 +954,7 @@ func TestNumericAttributeCases(t *testing.T) {
 			minValue:       -100,
 			maxValue:       0, // not set (default)
 			testValue:      50,
-			expectedResult: sampling.Sampled,
+			expectedResult: samplingpolicy.Sampled,
 			description:    "Should sample when value >= min_value (negative) and max_value not set",
 		},
 		{
@@ -858,7 +962,7 @@ func TestNumericAttributeCases(t *testing.T) {
 			minValue:       0, // not set (default)
 			maxValue:       1000,
 			testValue:      500,
-			expectedResult: sampling.Sampled,
+			expectedResult: samplingpolicy.Sampled,
 			description:    "Should sample when value <= max_value and min_value not set",
 		},
 		{
@@ -866,7 +970,7 @@ func TestNumericAttributeCases(t *testing.T) {
 			minValue:       100,
 			maxValue:       200,
 			testValue:      150,
-			expectedResult: sampling.Sampled,
+			expectedResult: samplingpolicy.Sampled,
 			description:    "Should sample when min_value <= value <= max_value",
 		},
 		{
@@ -874,7 +978,7 @@ func TestNumericAttributeCases(t *testing.T) {
 			minValue:       400,
 			maxValue:       0, // not set (default)
 			testValue:      300,
-			expectedResult: sampling.NotSampled,
+			expectedResult: samplingpolicy.NotSampled,
 			description:    "Should not sample when value < min_value",
 		},
 		{
@@ -882,7 +986,7 @@ func TestNumericAttributeCases(t *testing.T) {
 			minValue:       0, // not set (default)
 			maxValue:       100,
 			testValue:      200,
-			expectedResult: sampling.NotSampled,
+			expectedResult: samplingpolicy.NotSampled,
 			description:    "Should not sample when value > max_value",
 		},
 	}
@@ -906,7 +1010,7 @@ func TestNumericAttributeCases(t *testing.T) {
 			require.NotNil(t, evaluator)
 
 			// Create test trace data
-			trace := &sampling.TraceData{}
+			trace := &samplingpolicy.TraceData{}
 			trace.ReceivedBatches = ptrace.NewTraces()
 
 			rs := trace.ReceivedBatches.ResourceSpans().AppendEmpty()
