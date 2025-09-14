@@ -34,7 +34,7 @@ The following settings can be optionally configured and have default values:
   - logs (default `logs`): container to store logs. default value is `logs`.
   - traces (default `traces`): container to store traces. default value is `traces`.
 - blob_name_format: the final blob name will be blob_name
-  - template_enabled (default `false`): enables Go template parsing for blob name formats.
+  - template_enabled (default `false`): enables Go template parsing for blob name formats. If parsing fails, it will not throw an error but will log a warning and continue formatting the blob name using other rules.
   - metrics_format (default `2006/01/02/metrics_15_04_05.json`): blob name format. The date format follows constants in Golang, refer [here](https://go.dev/src/time/format.go).
   - logs_format (default `2006/01/02/logs_15_04_05.json`): blob name format.
   - traces_format (default `2006/01/02/traces_15_04_05.json`): blob name format.
