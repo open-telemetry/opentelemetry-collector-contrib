@@ -19,8 +19,8 @@ require (
 	go.opentelemetry.io/build-tools/githubgen v0.26.2
 	go.opentelemetry.io/build-tools/issuegenerator v0.26.2
 	go.opentelemetry.io/build-tools/multimod v0.26.2
-	go.opentelemetry.io/collector/cmd/builder v0.135.0
-	go.opentelemetry.io/collector/cmd/mdatagen v0.135.0
+	go.opentelemetry.io/collector/cmd/builder v0.135.1-0.20250911155607-37a3ace6274c
+	go.opentelemetry.io/collector/cmd/mdatagen v0.135.1-0.20250911155607-37a3ace6274c
 	go.uber.org/goleak v1.3.0
 	golang.org/x/tools v0.36.0
 	golang.org/x/tools/gopls v0.20.0
@@ -255,13 +255,13 @@ require (
 	go.augendre.info/fatcontext v0.8.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/build-tools v0.26.2 // indirect
-	go.opentelemetry.io/collector/component v1.41.0 // indirect
-	go.opentelemetry.io/collector/confmap v1.41.0 // indirect
-	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.41.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.41.0 // indirect
-	go.opentelemetry.io/collector/filter v0.135.0 // indirect
-	go.opentelemetry.io/collector/internal/telemetry v0.135.0 // indirect
-	go.opentelemetry.io/collector/pdata v1.41.0 // indirect
+	go.opentelemetry.io/collector/component v1.41.1-0.20250911155607-37a3ace6274c // indirect
+	go.opentelemetry.io/collector/confmap v1.41.1-0.20250911155607-37a3ace6274c // indirect
+	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.41.1-0.20250911155607-37a3ace6274c // indirect
+	go.opentelemetry.io/collector/featuregate v1.41.1-0.20250911155607-37a3ace6274c // indirect
+	go.opentelemetry.io/collector/filter v0.135.1-0.20250911155607-37a3ace6274c // indirect
+	go.opentelemetry.io/collector/internal/telemetry v0.135.1-0.20250911155607-37a3ace6274c // indirect
+	go.opentelemetry.io/collector/pdata v1.41.1-0.20250911155607-37a3ace6274c // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.12.0 // indirect
 	go.opentelemetry.io/otel v1.38.0 // indirect
 	go.opentelemetry.io/otel/log v0.14.0 // indirect
@@ -285,7 +285,7 @@ require (
 	golang.org/x/text v0.28.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250707201910-8d1bb00bc6a7 // indirect
 	google.golang.org/grpc v1.75.0 // indirect
-	google.golang.org/protobuf v1.36.8 // indirect
+	google.golang.org/protobuf v1.36.9 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
