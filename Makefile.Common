@@ -17,7 +17,7 @@ COVER_DIR_ABS?=$(SRC_ROOT)/$(COVER_DIR)
 GO_BUILD_TAGS=""
 # These ldflags allow the build tool to omit the symbol table, debug information, and the DWARF symbol table to downscale binary size.
 GO_BUILD_LDFLAGS="-s -w"
-GOTEST_TIMEOUT?= 600s
+GOTEST_TIMEOUT?= 900s
 GOTEST_OPT?= -race -timeout $(GOTEST_TIMEOUT) -parallel 4 --tags=$(GO_BUILD_TAGS)
 GOTEST_INTEGRATION_OPT?= -race -timeout 360s -parallel 4 -skip Sudo
 GOTEST_INTEGRATION_OPT_SUDO?= -race -timeout 360s -parallel 4 -exec sudo -run Sudo
@@ -79,6 +79,7 @@ GOVULNCHECK         := $(TOOLS_BIN_DIR)/govulncheck
 GCI                 := $(TOOLS_BIN_DIR)/gci
 GOTESTSUM           := $(TOOLS_BIN_DIR)/gotestsum
 CHECKAPI            := $(TOOLS_BIN_DIR)/checkapi
+MODERNIZE           := $(TOOLS_BIN_DIR)/modernize
 
 GOTESTSUM_OPT?= --rerun-fails=1
 
@@ -251,6 +252,10 @@ lint: $(LINT) checklicense misspell
 .PHONY: govulncheck
 govulncheck: $(GOVULNCHECK)
 	$(GOVULNCHECK) ./...
+
+.PHONY: modernize
+modernize: $(MODERNIZE)
+	$(MODERNIZE) -fix -test -v ./...
 
 .PHONY: tidy
 tidy:
