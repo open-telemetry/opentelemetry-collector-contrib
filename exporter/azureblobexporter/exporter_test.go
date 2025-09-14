@@ -214,7 +214,7 @@ func TestGenerateBlobNameWithTemplate(t *testing.T) {
 	c.Auth.ConnectionString = "DefaultEndpointsProtocol=https;AccountName=fakeaccount;AccountKey=ZmFrZWtleQ==;EndpointSuffix=core.windows.net"
 
 	ae := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalMetrics)
-	err := ae.start(context.Background(), componenttest.NewNopHost())
+	err := ae.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	// Test metrics
@@ -240,12 +240,6 @@ func TestGenerateBlobNameWithTemplate(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Contains(t, tracesBlobName, "test-span")
 	assert.Contains(t, tracesBlobName, "traces.json")
-}
-
-func TestSanitizeBlobName(t *testing.T) {
-	ae := &azureBlobExporter{}
-	assert.Equal(t, "a_b_c", ae.sanitizeBlobName("a/b\\c"))
-	assert.Equal(t, "a_b_c_d_e_f_g_h", ae.sanitizeBlobName("a:b*c?d\"e<f>g|h"))
 }
 
 func getMockAzBlobClient() *mockAzBlobClient {

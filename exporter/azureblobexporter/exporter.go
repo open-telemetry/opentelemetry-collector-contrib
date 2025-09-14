@@ -339,17 +339,6 @@ func (e *azureBlobExporter) generateBlobName(signal pipeline.Signal, telemetryDa
 	return blobName, nil
 }
 
-func (e *azureBlobExporter) sanitizeBlobName(blobName string) string {
-	// Replace invalid characters with underscores
-	// Azure blob names cannot contain: \ / : * ? " < > |
-	invalidChars := []string{"\\", "/", ":", "*", "?", "\"", "<", ">", "|"}
-	sanitized := blobName
-	for _, char := range invalidChars {
-		sanitized = strings.ReplaceAll(sanitized, char, "_")
-	}
-	return sanitized
-}
-
 func (*azureBlobExporter) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
