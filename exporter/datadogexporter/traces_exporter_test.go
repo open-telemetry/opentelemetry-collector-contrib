@@ -30,8 +30,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions127 "go.opentelemetry.io/otel/semconv/v1.27.0"
 	semconv "go.opentelemetry.io/otel/semconv/v1.6.1"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zaptest/observer"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
@@ -126,12 +124,7 @@ func testTracesSource(t *testing.T, enableReceiveResourceSpansV2 bool) {
 
 	reqs := make(chan []byte, 1)
 	metricsServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var expectedMetricEndpoint string
-		if isMetricExportV2Enabled() {
-			expectedMetricEndpoint = testutil.MetricV2Endpoint
-		} else {
-			expectedMetricEndpoint = testutil.MetricV1Endpoint
-		}
+		expectedMetricEndpoint := testutil.MetricV2Endpoint
 		if r.URL.Path != expectedMetricEndpoint {
 			// we only want to capture series payloads
 			return
@@ -174,21 +167,6 @@ func testTracesSource(t *testing.T, enableReceiveResourceSpansV2 bool) {
 	exporter, err := f.CreateTraces(ctx, params, &cfg)
 	assert.NoError(err)
 
-	// Payload specifies a sub-set of a Zorkian metrics series payload.
-	type Payload struct {
-		Series []struct {
-			Host string   `json:"host,omitempty"`
-			Tags []string `json:"tags,omitempty"`
-		} `json:"series"`
-	}
-	// getHostTags extracts the host and tags from the Zorkian metrics series payload
-	// body found in data.
-	getHostTags := func(data []byte) (host string, tags []string) {
-		var p Payload
-		assert.NoError(json.Unmarshal(data, &p))
-		assert.Len(p.Series, 1)
-		return p.Series[0].Host, p.Series[0].Tags
-	}
 	// getHostTagsV2 extracts the host and tags from the native DatadogV2 metrics series payload
 	// body found in data.
 	getHostTagsV2 := func(data []byte) (host string, tags []string) {
@@ -241,11 +219,7 @@ func testTracesSource(t *testing.T, enableReceiveResourceSpansV2 bool) {
 			case data := <-reqs:
 				var host string
 				var tags []string
-				if isMetricExportV2Enabled() {
-					host, tags = getHostTagsV2(data)
-				} else {
-					host, tags = getHostTags(data)
-				}
+				host, tags = getHostTagsV2(data)
 				assert.Equal(tt.host, host)
 				assert.Equal(tt.tags, tags)
 			case <-timeout:
@@ -338,33 +312,6 @@ func TestNewTracesExporter(t *testing.T) {
 	exp, err := f.CreateTraces(t.Context(), params, cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)
-}
-
-func TestNewTracesExporter_Zorkian(t *testing.T) {
-	resetZorkianWarningsForTesting()
-	require.NoError(t, enableZorkianMetricExport())
-	require.NoError(t, featuregate.GlobalRegistry().Set(metricExportSerializerClientFeatureGate.ID(), false))
-	t.Cleanup(func() { require.NoError(t, enableMetricExportSerializer()) })
-
-	metricsServer := testutil.DatadogServerMock()
-	defer metricsServer.Close()
-
-	cfg := &datadogconfig.Config{}
-	cfg.API.Key = "ddog_32_characters_long_api_key1"
-	cfg.Metrics.Endpoint = metricsServer.URL
-
-	params := exportertest.NewNopSettings(metadata.Type)
-	f := NewFactory()
-	core, logs := observer.New(zap.WarnLevel)
-	params.Logger = zap.New(core)
-	ctx := t.Context()
-
-	// The client should have been created correctly
-	exp, err := f.CreateTraces(ctx, params, cfg)
-	require.NoError(t, err)
-	assert.NotNil(t, exp)
-
-	assert.GreaterOrEqual(t, logs.FilterMessageSnippet("deprecated Zorkian").Len(), 1)
 }
 
 func TestPushTraceData(t *testing.T) {
