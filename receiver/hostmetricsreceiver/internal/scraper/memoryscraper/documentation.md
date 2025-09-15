@@ -58,7 +58,7 @@ The number of free huge pages. (Linux only)
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | false |
+| 1 | Sum | Int | Cumulative | false |
 
 ### system.linux.memory.huge_pages.page_size
 
@@ -66,7 +66,7 @@ A constant value for the system's configured huge pages page size. (Linux only)
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| By | Gauge | Int |
+| 1 | Gauge | Int |
 
 ### system.linux.memory.huge_pages.reserved
 
@@ -74,7 +74,7 @@ The number of reserved huge pages that are not yet allocated. (Linux only)
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | false |
+| 1 | Sum | Int | Cumulative | false |
 
 ### system.linux.memory.huge_pages.surplus
 
@@ -82,7 +82,7 @@ The number of surplus huge pages. (Linux only)
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | false |
+| 1 | Sum | Int | Cumulative | false |
 
 ### system.linux.memory.huge_pages.total
 
@@ -90,7 +90,7 @@ The total number of allocated huge pages in the system. (Linux only)
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | false |
+| 1 | Sum | Int | Cumulative | false |
 
 ### system.memory.limit
 
