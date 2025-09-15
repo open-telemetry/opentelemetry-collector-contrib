@@ -464,9 +464,9 @@ func TestConfigValidateErrors(t *testing.T) {
 		{
 			name: "Invalid root_path",
 			cfg: &Config{
-				Realm:       "us0",
-				AccessToken: "access_token",
-				RootPath:    "/foobar",
+				Realm:            "us0",
+				AccessToken:      "access_token",
+				RootPath:         "/foobar",
 				SyncHostMetadata: true,
 			},
 		},
