@@ -683,6 +683,20 @@ processors:
     detectors: ["akamai"]
 ```
 
+### Scaleway
+
+Uses the Scaleway metadata API to read resource information from the instance metadata service and populate related resource attributes.
+
+The list of the populated resource attributes can be found at [Scaleway Detector Resource Attributes](./internal/akamai/documentation.md).
+
+Akamai custom configuration example:
+
+```yaml
+processors:
+  resourcedetection/scaleway:
+    detectors: ["scaleway"]
+```
+
 ## Configuration
 
 ```yaml

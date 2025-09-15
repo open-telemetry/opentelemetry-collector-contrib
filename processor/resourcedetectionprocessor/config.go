@@ -23,6 +23,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/k8snode"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/kubeadm"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/openshift"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/scaleway"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/system"
 )
 
@@ -97,6 +98,9 @@ type DetectorConfig struct {
 
 	// AkamaiConfig contains user-specified configurations for the akamai detector
 	AkamaiConfig akamai.Config `mapstructure:"akamai"`
+
+	// ScalewayConfig contains user-specified configurations for the akamai detector
+	ScalewayConfig scaleway.Config `mapstructure:"scaleway"`
 }
 
 func detectorCreateDefaultConfig() DetectorConfig {
@@ -118,6 +122,7 @@ func detectorCreateDefaultConfig() DetectorConfig {
 		K8SNodeConfig:          k8snode.CreateDefaultConfig(),
 		KubeadmConfig:          kubeadm.CreateDefaultConfig(),
 		AkamaiConfig:           akamai.CreateDefaultConfig(),
+		ScalewayConfig:         scaleway.CreateDefaultConfig(),
 	}
 }
 
@@ -157,6 +162,8 @@ func (d *DetectorConfig) GetConfigFromType(detectorType internal.DetectorType) i
 		return d.KubeadmConfig
 	case akamai.TypeStr:
 		return d.AkamaiConfig
+	case scaleway.TypeStr:
+		return d.ScalewayConfig
 	default:
 		return nil
 	}
