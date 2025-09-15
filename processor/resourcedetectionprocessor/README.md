@@ -683,6 +683,43 @@ processors:
     detectors: ["akamai"]
 ```
 
+### Scaleway
+
+Uses the Scaleway metadata API to read resource information from the instance metadata service and populate related resource attributes.
+
+The list of the populated resource attributes can be found at [Scaleway Detector Resource Attributes](./internal/akamai/documentation.md).
+
+Akamai custom configuration example:
+
+```yaml
+processors:
+  resourcedetection/scaleway:
+    detectors: ["scaleway"]
+```
+
+### Vultr
+
+Uses the [Vultr metadata API](https://www.vultr.com/metadata/) to read resource information from the instance metadata service and populate related resource attributes.
+
+The list of the populated resource attributes can be found at [Vultr Detector Resource Attributes](./internal/vultr/documentation.md).
+
+Vultr custom configuration example:
+
+```yaml
+processors:
+  resourcedetection/vultr:
+    detectors: ["vultr"]
+```
+
+The Vultr detector will report an error in logs if the metadata endpoint is unavailable. You can configure the detector to instead fail with this flag:
+
+```yaml
+processors:
+  resourcedetection/vultr:
+    detectors: ["vultr"]
+    vultr:
+      fail_on_missing_metadata: true
+
 ## Configuration
 
 ```yaml
