@@ -138,7 +138,8 @@ func (s *Serializer) SerializeProfile(dic pprofile.ProfilesDictionary, resource 
 	}
 
 	err = s.knownHosts.WithLock(func(hostMetadata lru.LockedLRUSet) error {
-		for _, payload := range data {
+		for i := range data {
+			payload := &data[i]
 			hostID := payload.HostMetadata.HostID
 			if hostID == "" {
 				continue
