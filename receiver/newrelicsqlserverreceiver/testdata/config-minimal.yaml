@@ -1,0 +1,18 @@
+# Minimal configuration for testing
+receivers:
+  newrelicsqlserver:
+    hostname: localhost
+    port: "1433"
+    username: sa
+    password: password
+    collection_interval: 5s
+
+exporters:
+  debug:
+    verbosity: basic
+
+service:
+  pipelines:
+    metrics:
+      receivers: [newrelicsqlserver]
+      exporters: [debug]

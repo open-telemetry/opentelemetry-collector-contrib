@@ -1,0 +1,38 @@
+# OpenTelemetry Collector configuration for Docker testing
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch:
+    timeout: 10s
+    send_batch_size: 1024
+
+exporters:
+  jaeger:
+    endpoint: jaeger:14250
+    tls:
+      insecure: true
+      
+  logging:
+    loglevel: debug
+
+service:
+  telemetry:
+    logs:
+      level: debug
+  
+  pipelines:
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [logging, jaeger]
+    
+    traces:
+      receivers: [otlp]
+      processors: [batch] 
+      exporters: [logging, jaeger]

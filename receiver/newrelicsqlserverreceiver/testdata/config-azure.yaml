@@ -1,0 +1,26 @@
+# Azure SQL Database configuration for testing
+receivers:
+  newrelicsqlserver:
+    hostname: your-server.database.windows.net
+    port: "1433"
+    client_id: ${AZURE_CLIENT_ID}
+    tenant_id: ${AZURE_TENANT_ID}
+    client_secret: ${AZURE_CLIENT_SECRET}
+    enable_ssl: true
+    trust_server_certificate: false
+    collection_interval: 15s
+    timeout: 30s
+    enable_buffer_metrics: true
+    enable_database_reserve_metrics: true
+
+exporters:
+  otlp:
+    endpoint: https://otlp.nr-data.net:4317
+    headers:
+      api-key: ${NEW_RELIC_API_KEY}
+
+service:
+  pipelines:
+    metrics:
+      receivers: [newrelicsqlserver]
+      exporters: [otlp]

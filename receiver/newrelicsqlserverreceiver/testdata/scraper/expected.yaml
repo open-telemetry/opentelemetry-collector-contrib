@@ -1,0 +1,36 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: server.address
+          value:
+            stringValue: localhost
+        - key: server.port
+          value:
+            stringValue: "1433"
+        - key: sqlserver.instance.name
+          value:
+            stringValue: MSSQLSERVER
+        - key: db.system
+          value:
+            stringValue: mssql
+        - key: service.name
+          value:
+            stringValue: sqlserver
+    scopeMetrics:
+      - scope:
+          name: newrelicsqlserverreceiver
+        metrics:
+          - name: sqlserver.stats.connections
+            description: Number of user connections to the SQL Server
+            unit: "{connections}"
+            gauge:
+              dataPoints:
+                - attributes:
+                    - key: metric.type
+                      value:
+                        stringValue: gauge
+                    - key: metric.source
+                      value:
+                        stringValue: sys.dm_os_performance_counters
+                  timeUnixNano: "1694793600000000000"
+                  asInt: "3"

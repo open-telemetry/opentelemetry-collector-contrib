@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: sqlserver-test
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=TestPassword123!
+      - MSSQL_PID=Developer
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+      - ./sql-scripts:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P TestPassword123! -Q "SELECT 1" || exit 1
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    networks:
+      - sqlserver-test
+
+  # OpenTelemetry Collector for testing
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    container_name: otel-collector-test
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    volumes:
+      - ./config.yaml:/etc/otelcol-contrib/config.yaml
+    environment:
+      - SQLSERVER_PASSWORD=TestPassword123!
+    ports:
+      - "4317:4317"   # OTLP gRPC receiver
+      - "4318:4318"   # OTLP HTTP receiver
+      - "8888:8888"   # Prometheus metrics
+      - "8889:8889"   # Prometheus exporter metrics
+    networks:
+      - sqlserver-test
+
+  # OTLP endpoint for testing (Jaeger)
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: jaeger-test
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    ports:
+      - "16686:16686"  # Jaeger UI
+      - "14250:14250"  # gRPC
+    networks:
+      - sqlserver-test
+
+volumes:
+  sqlserver_data:
+
+networks:
+  sqlserver-test:
+    driver: bridge

@@ -1,0 +1,80 @@
+# OpenTelemetry Collector configuration for integration testing with real OTLP endpoint
+receivers:
+  newrelicsqlserver:
+    hostname: localhost
+    port: "1433"
+    username: sa
+    password: ${SQLSERVER_PASSWORD:-TestPassword123!}
+    enable_ssl: false
+    trust_server_certificate: true
+    collection_interval: 10s
+    timeout: 30s
+    enable_buffer_metrics: true
+    enable_database_reserve_metrics: true
+    enable_disk_metrics_in_bytes: true
+    enable_query_monitoring: true
+    query_monitoring_response_time_threshold: 1
+    query_monitoring_count_threshold: 20
+    query_monitoring_fetch_interval: 15
+
+processors:
+  batch:
+    timeout: 10s
+    send_batch_size: 512
+    
+  # Add resource attributes for better identification
+  resource:
+    attributes:
+      - key: service.name
+        value: newrelic-sqlserver-receiver-test
+        action: insert
+      - key: service.version
+        value: 1.0.0
+        action: insert
+      - key: deployment.environment
+        value: test
+        action: insert
+
+exporters:
+  # New Relic OTLP endpoint
+  otlp/newrelic:
+    endpoint: https://otlp.nr-data.net:4317
+    headers:
+      api-key: ${NEW_RELIC_API_KEY}
+    tls:
+      insecure: false
+
+  # Local OTLP endpoint for testing
+  otlp/local:
+    endpoint: http://jaeger:14250
+    tls:
+      insecure: true
+
+  # Debug exporter for troubleshooting
+  debug:
+    verbosity: detailed
+    sampling_initial: 5
+    sampling_thereafter: 1
+
+  # File exporter for analysis
+  file:
+    path: /tmp/metrics.json
+
+service:
+  pipelines:
+    metrics:
+      receivers: [newrelicsqlserver]
+      processors: [resource, batch]
+      exporters: [debug, otlp/local]
+      # Uncomment to send to New Relic:
+      # exporters: [debug, otlp/newrelic, otlp/local]
+
+  telemetry:
+    logs:
+      level: debug
+      development: true
+    metrics:
+      level: detailed
+      address: 0.0.0.0:8888
+
+  extensions: []
