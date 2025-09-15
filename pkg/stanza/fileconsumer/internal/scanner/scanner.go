@@ -11,7 +11,7 @@ import (
 	stanzaerrors "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
 )
 
-const DefaultBufferSize = 16 * 1024
+const DefaultBufferSize = 1 * 1024 * 1024
 
 // Scanner is a scanner that maintains position
 type Scanner struct {

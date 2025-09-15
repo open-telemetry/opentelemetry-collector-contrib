@@ -12,6 +12,9 @@ import (
 	"unsafe"
 )
 
+// errUnknownNextFrame is an error returned when a systemcall indicates the next frame is 0 bytes.
+var errUnknownNextFrame = errors.New("the buffer size needed by the next frame of a render syscall was 0, unable to determine size of next frame")
+
 // systemPropertiesRenderContext stores a custom rendering context to get only the event properties.
 var systemPropertiesRenderContext = uintptr(0)
 var systemPropertiesRenderContextErr error
@@ -96,13 +99,13 @@ func (e *Event) RenderSimple(buffer Buffer) (*EventXML, error) {
 		return nil, fmt.Errorf("failed to read bytes from buffer: %w", err)
 	}
 
-	return unmarshalEventXML(bytes)
+	return UnmarshalEventXML(bytes)
 }
 
 // RenderDeep will render the event as EventXML with all available formatted info.
-func (e *Event) RenderDeep(buffer Buffer, publisher Publisher) (*EventXML, error) {
+func (e *Event) RenderDeep(buffer Buffer, publisher Publisher) (EventXML, error) {
 	if e.handle == 0 {
-		return nil, fmt.Errorf("event handle does not exist")
+		return EventXML{}, fmt.Errorf("event handle does not exist")
 	}
 
 	bufferUsed, err := evtFormatMessage(publisher.handle, e.handle, 0, 0, 0, EvtFormatMessageXML, buffer.SizeWide(), buffer.FirstByte())
@@ -111,15 +114,42 @@ func (e *Event) RenderDeep(buffer Buffer, publisher Publisher) (*EventXML, error
 			buffer.UpdateSizeWide(*bufferUsed)
 			return e.RenderDeep(buffer, publisher)
 		}
-		return nil, fmt.Errorf("syscall to 'EvtFormatMessage' failed: %w", err)
+		return EventXML{}, fmt.Errorf("syscall to 'EvtFormatMessage' failed: %w", err)
 	}
 
 	bytes, err := buffer.ReadWideChars(*bufferUsed)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read bytes from buffer: %w", err)
+		return EventXML{}, fmt.Errorf("failed to read bytes from buffer: %w", err)
 	}
 
-	return unmarshalEventXML(bytes)
+	eventXMLPtr, err := UnmarshalEventXML(bytes)
+	if err != nil {
+		return EventXML{}, err
+	}
+	return *eventXMLPtr, nil
+}
+
+func (e *Event) RenderRaw(buffer Buffer) (EventRaw, error) {
+	if e.handle == 0 {
+		return EventRaw{}, fmt.Errorf("event handle does not exist")
+	}
+
+	bufferUsed, err := evtRender(0, e.handle, EvtRenderEventXML, buffer.SizeBytes(), buffer.FirstByte())
+	if errors.Is(err, ErrorInsufficientBuffer) {
+		// If the bufferUsed is 0 return an error as we don't want to make a recursive call with no buffer
+		if *bufferUsed == 0 {
+			return EventRaw{}, errUnknownNextFrame
+		}
+
+		buffer.UpdateSizeBytes(*bufferUsed)
+		return e.RenderRaw(buffer)
+	}
+	bytes, err := buffer.ReadBytes(*bufferUsed)
+	if err != nil {
+		return EventRaw{}, fmt.Errorf("failed to read bytes from buffer: %w", err)
+	}
+
+	return UnmarshalEventRaw(bytes)
 }
 
 // Close will close the event handle.
@@ -134,4 +164,37 @@ func (e *Event) Close() error {
 
 	e.handle = 0
 	return nil
+}
+
+// RenderFormatted will render the event as EventXML with formatted info.
+func (e *Event) RenderFormatted(buffer Buffer, publisher Publisher) (*EventXML, error) {
+	if e.handle == 0 {
+		return nil, fmt.Errorf("event handle does not exist")
+	}
+
+	bufferUsed, err := evtFormatMessage(publisher.handle, e.handle, 0, 0, 0, EvtFormatMessageXML, buffer.SizeWide(), buffer.FirstByte())
+	if errors.Is(err, ErrorInsufficientBuffer) {
+		// If the bufferUsed is 0 return an error as we don't want to make a recursive call with no buffer
+		if *bufferUsed == 0 {
+			return nil, errUnknownNextFrame
+		}
+
+		buffer.UpdateSizeWide(*bufferUsed)
+		return e.RenderFormatted(buffer, publisher)
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("syscall to 'EvtFormatMessage' failed: %w", err)
+	}
+
+	bytes, err := buffer.ReadWideChars(*bufferUsed)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read bytes from buffer: %w", err)
+	}
+
+	res, err := UnmarshalEventXML(bytes)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal event xml: %w", err)
+	}
+	return res, nil
 }

@@ -9,6 +9,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -40,6 +41,7 @@ type Input struct {
 	remoteSessionHandle windows.Handle
 	startRemoteSession  func() error
 	processEvent        func(context.Context, Event) error
+	ReqOrgAttr          *bool
 }
 
 // newInput creates a new Input operator.
@@ -218,12 +220,48 @@ func (i *Input) read(ctx context.Context) {
 		return
 	}
 
-	for n, event := range events {
-		if err := i.processEvent(ctx, event); err != nil {
-			i.Logger().Error("process event", zap.Error(err))
+	pstartedAtObj := time.Now().Local()
+	pstartedAt := pstartedAtObj.Format("2006-01-02 15:04:05.000")
+
+	for eI, event := range events {
+		simpleEvent, err := event.RenderSimple(i.buffer)
+		if err != nil {
+			i.Logger().Error("Failed to render simple event", zap.Error(err))
+			event.Close()
+			continue
 		}
-		if len(events) == n+1 {
+
+		recordID := simpleEvent.RecordID
+		dedupKey := fmt.Sprintf("dedup_%d", recordID)
+		// Deduplication: check if this record was already processed
+		exists, dCheckErr := i.persister.Get(ctx, dedupKey)
+		if dCheckErr != nil {
+			i.Logger().Error("Failed to check deduplication key", zap.Error(dCheckErr))
+			event.Close()
+			continue
+		}
+		if exists != nil {
+			i.Logger().Debug("Duplicate event, skipping", zap.Uint64("record_id", recordID))
+			event.Close()
+			continue
+		}
+
+		// Skip empty events
+		if recordID == 0 && simpleEvent.Provider.Name == "" {
+			i.Logger().Debug("Skipping empty event")
+			event.Close()
+			continue
+		}
+
+		err1 := i.processEventWithSimple(ctx, event, simpleEvent)
+		if err1 == nil {
 			i.updateBookmarkOffset(ctx, event)
+			// Persist processed RecordID for deduplication
+			if err := i.persister.Set(ctx, dedupKey, []byte("1")); err != nil {
+				i.Logger().Error("Failed to persist deduplication key", zap.Error(err))
+			}
+		} else {
+			i.Logger().Error("Failed to process event", zap.Any("pstartedAt", pstartedAt), zap.Int("current loop id:", eI), zap.Any("process started at ", time.Now().Local().Format("2006-01-02 15:04:05.000")), zap.Uint64("record_id", recordID), zap.Error(err))
 		}
 		event.Close()
 	}
@@ -253,7 +291,7 @@ func (i *Input) renderSimpleAndSend(ctx context.Context, event Event) error {
 func (i *Input) renderDeepAndSend(ctx context.Context, event Event, publisher Publisher) error {
 	deepEvent, err := event.RenderDeep(i.buffer, publisher)
 	if err == nil {
-		return i.sendEvent(ctx, deepEvent)
+		return i.sendEvent(ctx, &deepEvent)
 	}
 	return errors.Join(
 		fmt.Errorf("render deep event: %w", err),
@@ -311,6 +349,21 @@ func (i *Input) sendEvent(ctx context.Context, eventXML *EventXML) error {
 		e.Attributes["server.address"] = i.remote.Server
 	}
 
+	eventData, _ := i.ExtractEventData(eventXML.EventData)
+	if len(eventData) > 0 {
+		for eK, eD := range eventData {
+			eK = strings.ReplaceAll(strings.ToLower(eK), " ", "_")
+			if str, ok := eD.(string); ok {
+				e.AddAttribute(eK, str)
+			} else {
+				e.AddAttribute(eK, fmt.Sprintf("%v", eD))
+			}
+		}
+	}
+	if i.isAdditionalAttrReq() {
+		e.AddAttribute("log_record_original", eventXML.Original)
+	}
+
 	return i.Write(ctx, e)
 }
 
@@ -337,4 +390,86 @@ func (i *Input) updateBookmarkOffset(ctx context.Context, event Event) {
 		i.Logger().Error("failed to set offsets", zap.Error(err))
 		return
 	}
+}
+
+func (i *Input) isAdditionalAttrReq() bool {
+	if i.ReqOrgAttr == nil {
+		return false
+	}
+	return *i.ReqOrgAttr
+}
+
+func (i *Input) ExtractEventData(eventData EventData) (map[string]any, error) {
+	result := make(map[string]any)
+	for _, data := range eventData.Data {
+		switch data.Name {
+		case "LogonType":
+			result["logon_type"] = data.Value
+		case "AccountDomain":
+			result["account_domain"] = data.Value
+		case "AccountName":
+			result["account_name"] = data.Value
+		case "SecurityID", "TargetUserSid", "SubjectUserSid":
+			result["security_id"] = data.Value
+		case "LogonID", "TargetLogonId", "SubjectLogonId":
+			result["logon_id"] = data.Value
+		case "TargetUserName":
+			result["user_name"] = data.Value
+		case "TargetDomainName", "WorkstationName":
+			result["domain_name"] = data.Value
+		}
+	}
+	return result, nil
+}
+
+func (i *Input) processEventWithSimple(ctx context.Context, event Event, simpleEvent *EventXML) error {
+	if i.raw {
+		rawEvent, err := event.RenderRaw(i.buffer)
+		if err != nil {
+			i.Logger().Error("Failed to render raw event", zap.Error(err))
+			return err
+		}
+		i.sendEventRaw(ctx, rawEvent)
+		return nil
+	}
+
+	isExcluded := func(providerName string) bool {
+		for excludeProvider, _ := range i.excludeProviders {
+			if providerName == excludeProvider {
+				return true
+			}
+		}
+		return false
+	}
+
+	if isExcluded(simpleEvent.Provider.Name) {
+		i.Logger().Debug("Event skipped due to excluded provider", zap.String("provider", simpleEvent.Provider.Name))
+		return nil
+	}
+
+	publisher, err := i.publisherCache.get(simpleEvent.Provider.Name)
+	if err != nil || !publisher.Valid() {
+		i.Logger().Warn("Fallback to simple event due to invalid publisher", zap.Error(err))
+		return i.sendEvent(ctx, simpleEvent)
+	}
+
+	formattedEvent, err := event.RenderFormatted(i.buffer, publisher)
+	if err != nil {
+		i.Logger().Error("Failed to render formatted event", zap.Error(err))
+		return i.sendEvent(ctx, simpleEvent)
+	}
+	return i.sendEvent(ctx, formattedEvent)
+}
+
+func (i *Input) sendEventRaw(ctx context.Context, eventRaw EventRaw) {
+	body := eventRaw.parseBody()
+	entry, err := i.NewEntry(body)
+	if err != nil {
+		i.Logger().Error("Failed to create entry", zap.Error(err))
+		return
+	}
+
+	entry.Timestamp = eventRaw.ParseTimestamp()
+	entry.Severity = eventRaw.ParseRenderedSeverity()
+	i.Write(ctx, entry)
 }

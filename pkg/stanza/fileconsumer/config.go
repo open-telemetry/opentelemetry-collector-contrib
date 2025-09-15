@@ -24,7 +24,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/scanner"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
@@ -77,6 +76,7 @@ type Config struct {
 	MaxBatches              int             `mapstructure:"max_batches,omitempty"`
 	StartAt                 string          `mapstructure:"start_at,omitempty"`
 	FingerprintSize         helper.ByteSize `mapstructure:"fingerprint_size,omitempty"`
+	InitialBufferSize       int             `yaml:"initial_buffer_size,omitempty"`
 	MaxLogSize              helper.ByteSize `mapstructure:"max_log_size,omitempty"`
 	Encoding                string          `mapstructure:"encoding,omitempty"`
 	SplitConfig             split.Config    `mapstructure:"multiline,omitempty"`
@@ -159,7 +159,7 @@ func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts 
 		TelemetrySettings:       set,
 		FromBeginning:           startAtBeginning,
 		FingerprintSize:         int(c.FingerprintSize),
-		InitialBufferSize:       scanner.DefaultBufferSize,
+		InitialBufferSize:       c.InitialBufferSize,
 		MaxLogSize:              int(c.MaxLogSize),
 		Encoding:                enc,
 		SplitFunc:               splitFunc,

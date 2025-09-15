@@ -250,12 +250,12 @@ func (e Execution) asMap() map[string]any {
 	return result
 }
 
-// unmarshalEventXML will unmarshal EventXML from xml bytes.
-func unmarshalEventXML(bytes []byte) (*EventXML, error) {
-	var eventXML EventXML
+// UnmarshalEventXML will unmarshal EventXML from xml bytes.
+func UnmarshalEventXML(bytes []byte) (*EventXML, error) {
+	var eventXML *EventXML
 	if err := xml.Unmarshal(bytes, &eventXML); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal xml bytes into event: %w (%s)", err, string(bytes))
 	}
 	eventXML.Original = string(bytes)
-	return &eventXML, nil
+	return eventXML, nil
 }
