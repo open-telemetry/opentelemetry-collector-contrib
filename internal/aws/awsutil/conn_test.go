@@ -29,13 +29,13 @@ type ConfigLoader func(ctx context.Context, optFns ...func(*config.LoadOptions) 
 
 func GetAWSConfigHelper(
 	t *testing.T,
-	ctx context.Context,
 	logger *zap.Logger,
 	settings *AWSSessionSettings,
 	stsClient STSAPI,
 	loadCfg ConfigLoader,
 ) (aws.Config, error) {
 	t.Helper()
+	ctx := t.Context()
 
 	http, err := newHTTPClient(logger, settings.NumberOfWorkers, settings.RequestTimeoutSeconds, settings.NoVerifySSL, settings.ProxyAddress)
 	if err != nil {
@@ -83,7 +83,7 @@ func GetAWSConfigHelper(
 	return cfg, nil
 }
 
-func (m *mockSTS) AssumeRole(ctx context.Context, params *sts.AssumeRoleInput, optFns ...func(*sts.Options)) (*sts.AssumeRoleOutput, error) {
+func (*mockSTS) AssumeRole(ctx context.Context, params *sts.AssumeRoleInput, optFns ...func(*sts.Options)) (*sts.AssumeRoleOutput, error) {
 	return &sts.AssumeRoleOutput{
 		Credentials: &types.Credentials{
 			AccessKeyId:     aws.String("mockAccessKey"),
@@ -93,7 +93,7 @@ func (m *mockSTS) AssumeRole(ctx context.Context, params *sts.AssumeRoleInput, o
 	}, nil
 }
 
-func fakeConfigLoader(ctx context.Context, optFns ...func(*config.LoadOptions) error) (aws.Config, error) {
+func fakeConfigLoader(_ context.Context, optFns ...func(*config.LoadOptions) error) (aws.Config, error) {
 	return aws.Config{
 		Region: "us-mock-1",
 		Credentials: aws.NewCredentialsCache(
@@ -111,7 +111,7 @@ func TestGetAWSConfigHelper_WithRoleARN(t *testing.T) {
 
 	mockSTS := &mockSTS{}
 
-	cfg, err := GetAWSConfigHelper(t, t.Context(), logger, settings, mockSTS, fakeConfigLoader)
+	cfg, err := GetAWSConfigHelper(t, logger, settings, mockSTS, fakeConfigLoader)
 	assert.NoError(t, err)
 	assert.Equal(t, "us-mock-1", cfg.Region)
 }
