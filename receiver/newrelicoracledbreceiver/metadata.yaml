@@ -1,0 +1,548 @@
+type: newrelicoracledb
+
+status:
+  class: receiver
+  stability:
+    alpha: [metrics]
+    development: [logs]
+  distributions: [contrib]
+  codeowners:
+    active: [dmitryax, crobert-1, atoulme]
+
+resource_attributes:
+  oracledb.instance.name:
+    description: The name of the Oracle instance that data is coming from.
+    enabled: true
+    type: string
+  host.name:
+    description: The host name of Oracle Server
+    enabled: true
+    type: string
+  oracledb.log.source:
+    description: The source of the Oracle database log (alert, audit, trace, archive)
+    enabled: true
+    type: string
+  oracledb.log.file.name:
+    description: The name of the Oracle log file
+    enabled: true
+    type: string
+  oracledb.log.file.path:
+    description: The full path to the Oracle log file
+    enabled: true
+    type: string
+  oracledb.database.sid:
+    description: The Oracle database system identifier (SID)
+    enabled: true
+    type: string
+
+attributes:
+  session_status:
+    description: Session status
+    type: string
+  session_type:
+    description: Session type
+    type: string
+  tablespace_name:
+    description: Tablespace name
+    type: string
+
+metrics:
+  # CPU and Execution Metrics
+  oracledb.cpu_time:
+    enabled: true
+    description: Cumulative CPU time, in seconds
+    unit: s
+    sum:
+      value_type: double
+      monotonic: true
+      aggregation_temporality: cumulative
+
+  oracledb.executions:
+    enabled: true
+    description: Total number of calls (user and recursive) that executed SQL statements
+    unit: "{executions}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+
+  oracledb.hard_parses:
+    enabled: true
+    description: Number of hard parses
+    unit: "{parses}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+
+  oracledb.parse_calls:
+    enabled: true
+    description: Total number of parse calls
+    unit: "{calls}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+
+  # Memory Metrics
+  oracledb.pga_memory:
+    enabled: true
+    description: Program Global Area memory usage
+    unit: By
+    gauge:
+      value_type: int
+
+  oracledb.pga_allocated_memory:
+    enabled: false
+    description: PGA memory allocated by process
+    unit: By
+    gauge:
+      value_type: int
+
+  oracledb.pga_used_memory:
+    enabled: false
+    description: PGA memory used by process
+    unit: By
+    gauge:
+      value_type: int
+
+  oracledb.pga_freeable_memory:
+    enabled: false
+    description: PGA freeable memory
+    unit: By
+    gauge:
+      value_type: int
+
+  oracledb.pga_maximum_memory:
+    enabled: false
+    description: Maximum PGA memory ever allocated
+    unit: By
+    gauge:
+      value_type: int
+
+  # SGA Metrics
+  oracledb.sga_fixed_size:
+    enabled: false
+    description: SGA fixed size in bytes
+    unit: By
+    gauge:
+      value_type: int
+
+  oracledb.buffer_cache_hit_ratio:
+    enabled: true
+    description: Buffer cache hit ratio
+    unit: "1"
+    gauge:
+      value_type: double
+
+  oracledb.shared_pool_free:
+    enabled: true
+    description: Shared pool free memory percentage
+    unit: "%"
+    gauge:
+      value_type: double
+
+  # I/O Performance Metrics
+  oracledb.physical_reads:
+    enabled: true
+    description: Physical disk reads
+    unit: "{reads}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+
+  oracledb.physical_writes:
+    enabled: true
+    description: Physical disk writes
+    unit: "{writes}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+
+  oracledb.logical_reads:
+    enabled: true
+    description: Session logical reads
+    unit: "{reads}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+
+  oracledb.physical_reads_direct:
+    enabled: false
+    description: Physical reads direct
+    unit: "{reads}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+
+  oracledb.physical_writes_direct:
+    enabled: false
+    description: Physical writes direct
+    unit: "{writes}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+
+  oracledb.physical_read_bytes:
+    enabled: false
+    description: Physical read bytes
+    unit: By
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+
+  oracledb.physical_write_bytes:
+    enabled: false
+    description: Physical write bytes
+    unit: By
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+
+  oracledb.redo_size:
+    enabled: false
+    description: Redo log size
+    unit: By
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+
+  # Session and Connection Metrics
+  oracledb.sessions:
+    enabled: true
+    description: Active sessions by type and status
+    unit: "{sessions}"
+    gauge:
+      value_type: int
+    attributes: [session_status, session_type]
+
+  oracledb.user_commits:
+    enabled: true
+    description: User transaction commits
+    unit: "{commits}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+
+  oracledb.user_rollbacks:
+    enabled: true
+    description: User transaction rollbacks
+    unit: "{rollbacks}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+
+  # Lock and Concurrency Metrics
+  oracledb.enqueue_deadlocks:
+    enabled: true
+    description: Total number of deadlocks between table or row locks in different sessions
+    unit: "{deadlocks}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+
+  oracledb.exchange_deadlocks:
+    enabled: true
+    description: Number of times that a process detected a potential deadlock when exchanging buffers
+    unit: "{deadlocks}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+
+  oracledb.dml_locks_usage:
+    enabled: true
+    description: Current count of active DML (Data Manipulation Language) locks
+    unit: "{locks}"
+    gauge:
+      value_type: int
+
+  oracledb.dml_locks_limit:
+    enabled: true
+    description: Maximum limit of active DML locks, -1 if unlimited
+    unit: "{locks}"
+    gauge:
+      value_type: int
+
+  oracledb.enqueue_locks_usage:
+    enabled: true
+    description: Current count of active enqueue locks
+    unit: "{locks}"
+    gauge:
+      value_type: int
+
+  oracledb.enqueue_locks_limit:
+    enabled: true
+    description: Maximum limit of active enqueue locks, -1 if unlimited
+    unit: "{locks}"
+    gauge:
+      value_type: int
+
+  # Tablespace Metrics
+  oracledb.tablespace_size_usage:
+    enabled: true
+    description: Tablespace usage in bytes
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [tablespace_name]
+
+  oracledb.tablespace_size_limit:
+    enabled: true
+    description: Tablespace size limit in bytes
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [tablespace_name]
+
+  oracledb.tablespace_usage_percentage:
+    enabled: true
+    description: Tablespace usage percentage
+    unit: "%"
+    gauge:
+      value_type: double
+    attributes: [tablespace_name]
+
+  oracledb.tablespace_offline:
+    enabled: true
+    description: Tablespace offline status (1 if offline, 0 if online)
+    unit: "1"
+    gauge:
+      value_type: int
+    attributes: [tablespace_name]
+
+  # Cache Performance Metrics
+  oracledb.db_block_gets:
+    enabled: true
+    description: Database block gets
+    unit: "{gets}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+
+  oracledb.consistent_gets:
+    enabled: true
+    description: Consistent read gets
+    unit: "{gets}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+
+  oracledb.library_cache_hit_ratio:
+    enabled: false
+    description: Library cache hit ratio
+    unit: "1"
+    gauge:
+      value_type: double
+
+  oracledb.row_cache_hit_ratio:
+    enabled: false
+    description: Row cache hit ratio
+    unit: "1"
+    gauge:
+      value_type: double
+
+  # Wait Event Metrics (Extended)
+  oracledb.wait_events:
+    enabled: false
+    description: Database wait events by type
+    unit: "{events}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+
+  oracledb.wait_time:
+    enabled: false
+    description: Total time waited for events
+    unit: ms
+    sum:
+      value_type: double
+      monotonic: true
+      aggregation_temporality: cumulative
+
+  # Process and Session Limit Metrics
+  oracledb.processes_usage:
+    enabled: true
+    description: Current count of active processes
+    unit: "{processes}"
+    gauge:
+      value_type: int
+
+  oracledb.processes_limit:
+    enabled: true
+    description: Maximum limit of active processes, -1 if unlimited
+    unit: "{processes}"
+    gauge:
+      value_type: int
+
+  oracledb.sessions_limit:
+    enabled: true
+    description: Maximum limit of active sessions, -1 if unlimited
+    unit: "{sessions}"
+    gauge:
+      value_type: int
+
+  oracledb.enqueue_resources_usage:
+    enabled: true
+    description: Current count of active enqueue resources
+    unit: "{resources}"
+    gauge:
+      value_type: int
+
+  oracledb.enqueue_resources_limit:
+    enabled: true
+    description: Maximum limit of active enqueue resources, -1 if unlimited
+    unit: "{resources}"
+    gauge:
+      value_type: int
+
+  oracledb.transactions_usage:
+    enabled: true
+    description: Current count of active transactions
+    unit: "{transactions}"
+    gauge:
+      value_type: int
+
+  oracledb.transactions_limit:
+    enabled: true
+    description: Maximum limit of active transactions, -1 if unlimited
+    unit: "{transactions}"
+    gauge:
+      value_type: int
+
+  # I/O Request Metrics
+  oracledb.physical_read_io_requests:
+    enabled: false
+    description: Number of read requests for application activity
+    unit: "{requests}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+
+  oracledb.physical_write_io_requests:
+    enabled: false
+    description: Number of write requests for application activity
+    unit: "{requests}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+
+  # Authentication Metrics
+  oracledb.logons:
+    enabled: false
+    description: Number of logon operations
+    unit: "{operations}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+
+  # Parallel Operations
+  oracledb.queries_parallelized:
+    enabled: false
+    description: Number of queries executed in parallel
+    unit: "{queries}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+
+  oracledb.ddl_statements_parallelized:
+    enabled: false
+    description: Number of DDL statements executed in parallel
+    unit: "{statements}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+
+  oracledb.dml_statements_parallelized:
+    enabled: false
+    description: Number of DML statements executed in parallel
+    unit: "{statements}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+
+  oracledb.parallel_operations_not_downgraded:
+    enabled: false
+    description: Number of times parallel execution was executed at the requested degree of parallelism
+    unit: "{executions}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+
+  oracledb.parallel_operations_downgraded_to_serial:
+    enabled: false
+    description: Number of times parallel execution was requested but execution was serial because of insufficient parallel execution servers
+    unit: "{executions}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+
+  oracledb.parallel_operations_downgraded_1_to_25_pct:
+    enabled: false
+    description: Number of times parallel execution was requested and the degree of parallelism was reduced down to 1-25% because of insufficient parallel execution servers
+    unit: "{executions}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+
+  oracledb.parallel_operations_downgraded_25_to_50_pct:
+    enabled: false
+    description: Number of times parallel execution was requested and the degree of parallelism was reduced down to 25-50% because of insufficient parallel execution servers
+    unit: "{executions}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+
+  oracledb.parallel_operations_downgraded_50_to_75_pct:
+    enabled: false
+    description: Number of times parallel execution was requested and the degree of parallelism was reduced down to 50-75% because of insufficient parallel execution servers
+    unit: "{executions}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+
+  oracledb.parallel_operations_downgraded_75_to_99_pct:
+    enabled: false
+    description: Number of times parallel execution was requested and the degree of parallelism was reduced down to 75-99% because of insufficient parallel execution servers
+    unit: "{executions}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+
+tests:
+  config:
+    endpoint: localhost:1521
+    username: testuser
+    password: testpass
+    service: testservice
+    logs:
+      enable_logs: true
+      collect_alert_logs: true
+      alert_log_path: "/tmp/alert_test.log"
+      batch_size: 100

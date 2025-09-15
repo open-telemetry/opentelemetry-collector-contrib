@@ -1,0 +1,315 @@
+default:
+all_set:
+  metrics:
+    oracledb.buffer_cache_hit_ratio:
+      enabled: true
+    oracledb.consistent_gets:
+      enabled: true
+    oracledb.cpu_time:
+      enabled: true
+    oracledb.db_block_gets:
+      enabled: true
+    oracledb.ddl_statements_parallelized:
+      enabled: true
+    oracledb.dml_locks_limit:
+      enabled: true
+    oracledb.dml_locks_usage:
+      enabled: true
+    oracledb.dml_statements_parallelized:
+      enabled: true
+    oracledb.enqueue_deadlocks:
+      enabled: true
+    oracledb.enqueue_locks_limit:
+      enabled: true
+    oracledb.enqueue_locks_usage:
+      enabled: true
+    oracledb.enqueue_resources_limit:
+      enabled: true
+    oracledb.enqueue_resources_usage:
+      enabled: true
+    oracledb.exchange_deadlocks:
+      enabled: true
+    oracledb.executions:
+      enabled: true
+    oracledb.hard_parses:
+      enabled: true
+    oracledb.library_cache_hit_ratio:
+      enabled: true
+    oracledb.logical_reads:
+      enabled: true
+    oracledb.logons:
+      enabled: true
+    oracledb.parallel_operations_downgraded_1_to_25_pct:
+      enabled: true
+    oracledb.parallel_operations_downgraded_25_to_50_pct:
+      enabled: true
+    oracledb.parallel_operations_downgraded_50_to_75_pct:
+      enabled: true
+    oracledb.parallel_operations_downgraded_75_to_99_pct:
+      enabled: true
+    oracledb.parallel_operations_downgraded_to_serial:
+      enabled: true
+    oracledb.parallel_operations_not_downgraded:
+      enabled: true
+    oracledb.parse_calls:
+      enabled: true
+    oracledb.pga_allocated_memory:
+      enabled: true
+    oracledb.pga_freeable_memory:
+      enabled: true
+    oracledb.pga_maximum_memory:
+      enabled: true
+    oracledb.pga_memory:
+      enabled: true
+    oracledb.pga_used_memory:
+      enabled: true
+    oracledb.physical_read_bytes:
+      enabled: true
+    oracledb.physical_read_io_requests:
+      enabled: true
+    oracledb.physical_reads:
+      enabled: true
+    oracledb.physical_reads_direct:
+      enabled: true
+    oracledb.physical_write_bytes:
+      enabled: true
+    oracledb.physical_write_io_requests:
+      enabled: true
+    oracledb.physical_writes:
+      enabled: true
+    oracledb.physical_writes_direct:
+      enabled: true
+    oracledb.processes_limit:
+      enabled: true
+    oracledb.processes_usage:
+      enabled: true
+    oracledb.queries_parallelized:
+      enabled: true
+    oracledb.redo_size:
+      enabled: true
+    oracledb.row_cache_hit_ratio:
+      enabled: true
+    oracledb.sessions:
+      enabled: true
+    oracledb.sessions_limit:
+      enabled: true
+    oracledb.sga_fixed_size:
+      enabled: true
+    oracledb.shared_pool_free:
+      enabled: true
+    oracledb.tablespace_offline:
+      enabled: true
+    oracledb.tablespace_size_limit:
+      enabled: true
+    oracledb.tablespace_size_usage:
+      enabled: true
+    oracledb.tablespace_usage_percentage:
+      enabled: true
+    oracledb.transactions_limit:
+      enabled: true
+    oracledb.transactions_usage:
+      enabled: true
+    oracledb.user_commits:
+      enabled: true
+    oracledb.user_rollbacks:
+      enabled: true
+    oracledb.wait_events:
+      enabled: true
+    oracledb.wait_time:
+      enabled: true
+  resource_attributes:
+    host.name:
+      enabled: true
+    oracledb.database.sid:
+      enabled: true
+    oracledb.instance.name:
+      enabled: true
+    oracledb.log.file.name:
+      enabled: true
+    oracledb.log.file.path:
+      enabled: true
+    oracledb.log.source:
+      enabled: true
+none_set:
+  metrics:
+    oracledb.buffer_cache_hit_ratio:
+      enabled: false
+    oracledb.consistent_gets:
+      enabled: false
+    oracledb.cpu_time:
+      enabled: false
+    oracledb.db_block_gets:
+      enabled: false
+    oracledb.ddl_statements_parallelized:
+      enabled: false
+    oracledb.dml_locks_limit:
+      enabled: false
+    oracledb.dml_locks_usage:
+      enabled: false
+    oracledb.dml_statements_parallelized:
+      enabled: false
+    oracledb.enqueue_deadlocks:
+      enabled: false
+    oracledb.enqueue_locks_limit:
+      enabled: false
+    oracledb.enqueue_locks_usage:
+      enabled: false
+    oracledb.enqueue_resources_limit:
+      enabled: false
+    oracledb.enqueue_resources_usage:
+      enabled: false
+    oracledb.exchange_deadlocks:
+      enabled: false
+    oracledb.executions:
+      enabled: false
+    oracledb.hard_parses:
+      enabled: false
+    oracledb.library_cache_hit_ratio:
+      enabled: false
+    oracledb.logical_reads:
+      enabled: false
+    oracledb.logons:
+      enabled: false
+    oracledb.parallel_operations_downgraded_1_to_25_pct:
+      enabled: false
+    oracledb.parallel_operations_downgraded_25_to_50_pct:
+      enabled: false
+    oracledb.parallel_operations_downgraded_50_to_75_pct:
+      enabled: false
+    oracledb.parallel_operations_downgraded_75_to_99_pct:
+      enabled: false
+    oracledb.parallel_operations_downgraded_to_serial:
+      enabled: false
+    oracledb.parallel_operations_not_downgraded:
+      enabled: false
+    oracledb.parse_calls:
+      enabled: false
+    oracledb.pga_allocated_memory:
+      enabled: false
+    oracledb.pga_freeable_memory:
+      enabled: false
+    oracledb.pga_maximum_memory:
+      enabled: false
+    oracledb.pga_memory:
+      enabled: false
+    oracledb.pga_used_memory:
+      enabled: false
+    oracledb.physical_read_bytes:
+      enabled: false
+    oracledb.physical_read_io_requests:
+      enabled: false
+    oracledb.physical_reads:
+      enabled: false
+    oracledb.physical_reads_direct:
+      enabled: false
+    oracledb.physical_write_bytes:
+      enabled: false
+    oracledb.physical_write_io_requests:
+      enabled: false
+    oracledb.physical_writes:
+      enabled: false
+    oracledb.physical_writes_direct:
+      enabled: false
+    oracledb.processes_limit:
+      enabled: false
+    oracledb.processes_usage:
+      enabled: false
+    oracledb.queries_parallelized:
+      enabled: false
+    oracledb.redo_size:
+      enabled: false
+    oracledb.row_cache_hit_ratio:
+      enabled: false
+    oracledb.sessions:
+      enabled: false
+    oracledb.sessions_limit:
+      enabled: false
+    oracledb.sga_fixed_size:
+      enabled: false
+    oracledb.shared_pool_free:
+      enabled: false
+    oracledb.tablespace_offline:
+      enabled: false
+    oracledb.tablespace_size_limit:
+      enabled: false
+    oracledb.tablespace_size_usage:
+      enabled: false
+    oracledb.tablespace_usage_percentage:
+      enabled: false
+    oracledb.transactions_limit:
+      enabled: false
+    oracledb.transactions_usage:
+      enabled: false
+    oracledb.user_commits:
+      enabled: false
+    oracledb.user_rollbacks:
+      enabled: false
+    oracledb.wait_events:
+      enabled: false
+    oracledb.wait_time:
+      enabled: false
+  resource_attributes:
+    host.name:
+      enabled: false
+    oracledb.database.sid:
+      enabled: false
+    oracledb.instance.name:
+      enabled: false
+    oracledb.log.file.name:
+      enabled: false
+    oracledb.log.file.path:
+      enabled: false
+    oracledb.log.source:
+      enabled: false
+filter_set_include:
+  resource_attributes:
+    host.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    oracledb.database.sid:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    oracledb.instance.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    oracledb.log.file.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    oracledb.log.file.path:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    oracledb.log.source:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+filter_set_exclude:
+  resource_attributes:
+    host.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "host.name-val"
+    oracledb.database.sid:
+      enabled: true
+      metrics_exclude:
+        - strict: "oracledb.database.sid-val"
+    oracledb.instance.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "oracledb.instance.name-val"
+    oracledb.log.file.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "oracledb.log.file.name-val"
+    oracledb.log.file.path:
+      enabled: true
+      metrics_exclude:
+        - strict: "oracledb.log.file.path-val"
+    oracledb.log.source:
+      enabled: true
+      metrics_exclude:
+        - strict: "oracledb.log.source-val"

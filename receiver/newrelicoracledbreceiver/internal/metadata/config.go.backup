@@ -1,0 +1,184 @@
+// Code generated for Oracle DB receiver configuration. DO NOT EDIT.
+
+package metadata
+
+import (
+	"go.opentelemetry.io/collector/component"
+)
+
+// Type creates a new Oracle DB receiver
+var Type = component.MustNewType("oracledb")
+
+// MetricsBuilderConfig defines the configuration for metrics builder
+type MetricsBuilderConfig struct {
+	Metrics            MetricsConfig            `mapstructure:"metrics"`
+	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
+}
+
+// MetricsConfig provides configuration for comprehensive Oracle metrics
+type MetricsConfig struct {
+	// Currently implemented metrics (matching metadata.yaml)
+	OracledbCPUTime                               MetricConfig `mapstructure:"oracledb.cpu_time"`
+	OracledbExecutions                            MetricConfig `mapstructure:"oracledb.executions"`
+	OracledbSessions                              MetricConfig `mapstructure:"oracledb.sessions"`
+	OracledbPhysicalReads                         MetricConfig `mapstructure:"oracledb.physical_reads"`
+	OracledbPhysicalWrites                        MetricConfig `mapstructure:"oracledb.physical_writes"`
+	OracledbPgaMemoryUsed                         MetricConfig `mapstructure:"oracledb.pga_memory"`
+	OracledbSharedPoolUsed                        MetricConfig `mapstructure:"oracledb.shared_pool_free"`
+	OracledbTablespaceSizeUsed                    MetricConfig `mapstructure:"oracledb.tablespace_size_usage"`
+	OracledbWaitTime                              MetricConfig `mapstructure:"oracledb.wait_time"`
+	OracledbRedoLogSpace                          MetricConfig `mapstructure:"oracledb.redo_size"`
+	OracledbEnqueueDeadlocks                      MetricConfig `mapstructure:"oracledb.enqueue_deadlocks"`
+	OracledbBufferCacheHitRatio                   MetricConfig `mapstructure:"oracledb.buffer_cache_hit_ratio"`
+	OracledbLibraryCacheHitRatio                  MetricConfig `mapstructure:"oracledb.library_cache_hit_ratio"`
+	OracledbHardParses                            MetricConfig `mapstructure:"oracledb.hard_parses"`
+	OracledbParseCalls                            MetricConfig `mapstructure:"oracledb.parse_calls"`
+	OracledbPhysicalReadBytes                     MetricConfig `mapstructure:"oracledb.physical_read_bytes"`
+	OracledbPhysicalWriteBytes                    MetricConfig `mapstructure:"oracledb.physical_write_bytes"`
+	OracledbDbBlockGets                           MetricConfig `mapstructure:"oracledb.db_block_gets"`
+	OracledbConsistentGets                        MetricConfig `mapstructure:"oracledb.consistent_gets"`
+	OracledbUserCommits                           MetricConfig `mapstructure:"oracledb.user_commits"`
+	OracledbUserRollbacks                         MetricConfig `mapstructure:"oracledb.user_rollbacks"`
+	
+	// Missing metrics from original Oracle DB receiver
+	OracledbProcessesUsage                        MetricConfig `mapstructure:"oracledb.processes_usage"`
+	OracledbProcessesLimit                        MetricConfig `mapstructure:"oracledb.processes_limit"`
+	OracledbSessionsLimit                         MetricConfig `mapstructure:"oracledb.sessions_limit"`
+	OracledbEnqueueResourcesUsage                 MetricConfig `mapstructure:"oracledb.enqueue_resources_usage"`
+	OracledbEnqueueResourcesLimit                 MetricConfig `mapstructure:"oracledb.enqueue_resources_limit"`
+	OracledbTransactionsUsage                     MetricConfig `mapstructure:"oracledb.transactions_usage"`
+	OracledbTransactionsLimit                     MetricConfig `mapstructure:"oracledb.transactions_limit"`
+	OracledbPhysicalReadIORequests                MetricConfig `mapstructure:"oracledb.physical_read_io_requests"`
+	OracledbPhysicalWriteIORequests               MetricConfig `mapstructure:"oracledb.physical_write_io_requests"`
+	OracledbLogons                                MetricConfig `mapstructure:"oracledb.logons"`
+	OracledbQueriesParallelized                   MetricConfig `mapstructure:"oracledb.queries_parallelized"`
+	OracledbDdlStatementsParallelized             MetricConfig `mapstructure:"oracledb.ddl_statements_parallelized"`
+	OracledbDmlStatementsParallelized             MetricConfig `mapstructure:"oracledb.dml_statements_parallelized"`
+	OracledbParallelOperationsNotDowngraded       MetricConfig `mapstructure:"oracledb.parallel_operations_not_downgraded"`
+	OracledbParallelOperationsDowngradedToSerial  MetricConfig `mapstructure:"oracledb.parallel_operations_downgraded_to_serial"`
+	OracledbParallelOperationsDowngraded1To25Pct  MetricConfig `mapstructure:"oracledb.parallel_operations_downgraded_1_to_25_pct"`
+	OracledbParallelOperationsDowngraded25To50Pct MetricConfig `mapstructure:"oracledb.parallel_operations_downgraded_25_to_50_pct"`
+	OracledbParallelOperationsDowngraded50To75Pct MetricConfig `mapstructure:"oracledb.parallel_operations_downgraded_50_to_75_pct"`
+	OracledbParallelOperationsDowngraded75To99Pct MetricConfig `mapstructure:"oracledb.parallel_operations_downgraded_75_to_99_pct"`
+	
+	// Future metrics (for 122+ metrics plan) - disabled by default
+	OracledbCPUUsagePerSecond          MetricConfig `mapstructure:"oracledb.cpu.usage_per_second"`
+	OracledbDatabaseCPUTime            MetricConfig `mapstructure:"oracledb.cpu.database_time"`
+	OracledbBackgroundCPUUsage         MetricConfig `mapstructure:"oracledb.cpu.background_usage"`
+	OracledbHostCPUUtilization         MetricConfig `mapstructure:"oracledb.cpu.host_utilization"`
+	OracledbExecutionsPerSecond        MetricConfig `mapstructure:"oracledb.executions_per_second"`
+	OracledbSoftParseRatio             MetricConfig `mapstructure:"oracledb.soft_parse_ratio"`
+	OracledbParseFailures              MetricConfig `mapstructure:"oracledb.parse_failures"`
+	// ... additional 100+ metrics from full specification
+}
+
+// MetricConfig defines configuration for a single metric
+type MetricConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+}
+
+// ResourceAttributesConfig provides configuration for resource attributes
+type ResourceAttributesConfig struct {
+	OracledbInstanceName ResourceAttributeConfig `mapstructure:"oracledb.instance.name"`
+	HostName             ResourceAttributeConfig `mapstructure:"host.name"`
+	OracledbDatabaseName ResourceAttributeConfig `mapstructure:"oracledb.database.name"`
+}
+
+// ResourceAttributeConfig defines configuration for a single resource attribute
+type ResourceAttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+}
+
+// DefaultMetricsBuilderConfig returns the default config for the metrics builder
+func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+	return MetricsBuilderConfig{
+		Metrics:            DefaultMetricsConfig(),
+		ResourceAttributes: DefaultResourceAttributesConfig(),
+	}
+}
+
+// DefaultMetricsConfig returns default config for Oracle DB metrics
+func DefaultMetricsConfig() MetricsConfig {
+	return MetricsConfig{
+		// Currently implemented metrics - enabled by default (matching metadata.yaml)
+		OracledbCPUTime:                               MetricConfig{Enabled: true},
+		OracledbExecutions:                            MetricConfig{Enabled: true},
+		OracledbSessions:                              MetricConfig{Enabled: true},
+		OracledbPhysicalReads:                         MetricConfig{Enabled: true},
+		OracledbPhysicalWrites:                        MetricConfig{Enabled: true},
+		OracledbPgaMemoryUsed:                         MetricConfig{Enabled: true},
+		OracledbSharedPoolUsed:                        MetricConfig{Enabled: false}, // disabled in metadata.yaml
+		OracledbTablespaceSizeUsed:                    MetricConfig{Enabled: true},
+		OracledbWaitTime:                              MetricConfig{Enabled: false}, // disabled in metadata.yaml
+		OracledbRedoLogSpace:                          MetricConfig{Enabled: false}, // disabled in metadata.yaml
+		OracledbEnqueueDeadlocks:                      MetricConfig{Enabled: true},
+		OracledbBufferCacheHitRatio:                   MetricConfig{Enabled: true},
+		OracledbLibraryCacheHitRatio:                  MetricConfig{Enabled: false}, // disabled in metadata.yaml
+		OracledbHardParses:                            MetricConfig{Enabled: true},
+		OracledbParseCalls:                            MetricConfig{Enabled: true},
+		OracledbPhysicalReadBytes:                     MetricConfig{Enabled: false}, // disabled in metadata.yaml
+		OracledbPhysicalWriteBytes:                    MetricConfig{Enabled: false}, // disabled in metadata.yaml
+		OracledbDbBlockGets:                           MetricConfig{Enabled: true},
+		OracledbConsistentGets:                        MetricConfig{Enabled: true},
+		OracledbUserCommits:                           MetricConfig{Enabled: true},
+		OracledbUserRollbacks:                         MetricConfig{Enabled: true},
+		
+		// Missing metrics from original Oracle DB receiver - enabled by default to match original
+		OracledbProcessesUsage:                        MetricConfig{Enabled: true},
+		OracledbProcessesLimit:                        MetricConfig{Enabled: true},
+		OracledbSessionsLimit:                         MetricConfig{Enabled: true},
+		OracledbEnqueueResourcesUsage:                 MetricConfig{Enabled: true},
+		OracledbEnqueueResourcesLimit:                 MetricConfig{Enabled: true},
+		OracledbTransactionsUsage:                     MetricConfig{Enabled: true},
+		OracledbTransactionsLimit:                     MetricConfig{Enabled: true},
+		OracledbPhysicalReadIORequests:                MetricConfig{Enabled: false}, // disabled in original
+		OracledbPhysicalWriteIORequests:               MetricConfig{Enabled: false}, // disabled in original
+		OracledbLogons:                                MetricConfig{Enabled: false}, // disabled in original
+		OracledbQueriesParallelized:                   MetricConfig{Enabled: false}, // disabled in original
+		OracledbDdlStatementsParallelized:             MetricConfig{Enabled: false}, // disabled in original
+		OracledbDmlStatementsParallelized:             MetricConfig{Enabled: false}, // disabled in original
+		OracledbParallelOperationsNotDowngraded:       MetricConfig{Enabled: false}, // disabled in original
+		OracledbParallelOperationsDowngradedToSerial:  MetricConfig{Enabled: false}, // disabled in original
+		OracledbParallelOperationsDowngraded1To25Pct:  MetricConfig{Enabled: false}, // disabled in original
+		OracledbParallelOperationsDowngraded25To50Pct: MetricConfig{Enabled: false}, // disabled in original
+		OracledbParallelOperationsDowngraded50To75Pct: MetricConfig{Enabled: false}, // disabled in original
+		OracledbParallelOperationsDowngraded75To99Pct: MetricConfig{Enabled: false}, // disabled in original
+		
+		// Future metrics - disabled by default
+		OracledbCPUUsagePerSecond:          MetricConfig{Enabled: false},
+		OracledbDatabaseCPUTime:            MetricConfig{Enabled: false},
+		OracledbBackgroundCPUUsage:         MetricConfig{Enabled: false},
+		OracledbHostCPUUtilization:         MetricConfig{Enabled: false},
+		OracledbExecutionsPerSecond:        MetricConfig{Enabled: false},
+		OracledbSoftParseRatio:             MetricConfig{Enabled: false},
+		OracledbParseFailures:              MetricConfig{Enabled: false},
+		// Additional metrics would be disabled by default
+	}
+}
+
+// DefaultResourceAttributesConfig returns default config for resource attributes
+func DefaultResourceAttributesConfig() ResourceAttributesConfig {
+	return ResourceAttributesConfig{
+		OracledbInstanceName: ResourceAttributeConfig{Enabled: true},
+		HostName:             ResourceAttributeConfig{Enabled: true},
+		OracledbDatabaseName: ResourceAttributeConfig{Enabled: true},
+	}
+}
+
+// Validate validates the metrics builder configuration
+func (mbc *MetricsBuilderConfig) Validate() error {
+	return mbc.Metrics.Validate()
+}
+
+// Validate validates the metrics configuration
+func (mc *MetricsConfig) Validate() error {
+	// Basic validation for metrics configuration
+	// Add more validation rules as needed
+	return nil
+}
+
+// ValidateMetricConfig validates individual metric configuration
+func ValidateMetricConfig(name string, config MetricConfig) error {
+	// Individual metric validation can be added here
+	return nil
+}
