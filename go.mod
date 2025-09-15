@@ -10,7 +10,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib
 
 go 1.22.0
 
-replace github.com/bmatcuk/doublestar/v4 => github.com/opsramp/doublestar/v4 v4.0.0-20240930095449-f20addb8d8a8
+replace github.com/bmatcuk/doublestar/v4 => github.com/opsramp/doublestar/v4 v4.0.0-20250915103945-2523a0640215
 
 // Replace references to modules that are in this repository with their relateive paths
 // so that we always build with current (latest) version of the source code.

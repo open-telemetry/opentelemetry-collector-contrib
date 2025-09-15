@@ -2,7 +2,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza
 
 go 1.22.0
 
-replace github.com/bmatcuk/doublestar/v4 => github.com/opsramp/doublestar/v4 v4.0.0-20250808085904-0db016f9c5d7
+replace github.com/bmatcuk/doublestar/v4 => github.com/opsramp/doublestar/v4 v4.0.0-20250915103945-2523a0640215
 
 require (
 	github.com/bmatcuk/doublestar/v4 v4.7.1
