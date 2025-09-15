@@ -7,19 +7,19 @@
 // Database Metrics Categories (9 total metrics):
 //
 // 1. Database Size Metrics:
-//    - Total database size in MB/GB (sys.database_files)
-//    - Data file size and usage (allocated vs used space)
-//    - Log file size and usage percentage
+//   - Total database size in MB/GB (sys.database_files)
+//   - Data file size and usage (allocated vs used space)
+//   - Log file size and usage percentage
 //
 // 2. Database I/O Metrics:
-//    - Database-specific read/write operations (sys.dm_io_virtual_file_stats)
-//    - I/O stall time per database
-//    - Average I/O response time per database
+//   - Database-specific read/write operations (sys.dm_io_virtual_file_stats)
+//   - I/O stall time per database
+//   - Average I/O response time per database
 //
 // 3. Database Activity Metrics:
-//    - Active sessions per database (sys.dm_exec_sessions)
-//    - Database-specific lock waits and timeouts
-//    - Transaction log usage and growth events
+//   - Active sessions per database (sys.dm_exec_sessions)
+//   - Database-specific lock waits and timeouts
+//   - Transaction log usage and growth events
 //
 // Query Sources:
 // - sys.databases: Database state, collation, and basic properties

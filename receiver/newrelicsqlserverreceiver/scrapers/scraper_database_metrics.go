@@ -1,4 +1,5 @@
 // Copyright The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
 // Package scrapers provides the database-level metrics scraper for SQL Server.
@@ -8,19 +9,19 @@
 // Database-Level Metrics (9 total):
 //
 // 1. Database Size Metrics (3 metrics):
-//    - Database Size (MB): Total size of the database including log files
-//    - Data File Size (MB): Size of all data files in the database
-//    - Log File Size (MB): Size of all transaction log files in the database
+//   - Database Size (MB): Total size of the database including log files
+//   - Data File Size (MB): Size of all data files in the database
+//   - Log File Size (MB): Size of all transaction log files in the database
 //
 // 2. Database I/O Metrics (3 metrics):
-//    - Database Read I/O per Second: Database-specific read operations per second
-//    - Database Write I/O per Second: Database-specific write operations per second
-//    - Database I/O Stall Time (ms): Total I/O stall time for database files
+//   - Database Read I/O per Second: Database-specific read operations per second
+//   - Database Write I/O per Second: Database-specific write operations per second
+//   - Database I/O Stall Time (ms): Total I/O stall time for database files
 //
 // 3. Database Activity Metrics (3 metrics):
-//    - Active Transactions: Number of active transactions in the database
-//    - Database Sessions: Number of sessions connected to the database
-//    - Log Flush Rate per Second: Transaction log flush operations per second
+//   - Active Transactions: Number of active transactions in the database
+//   - Database Sessions: Number of sessions connected to the database
+//   - Log Flush Rate per Second: Transaction log flush operations per second
 //
 // Detailed Metric Descriptions:
 //
@@ -45,7 +46,7 @@
 // - Scope: All read I/O operations for the specific database
 //
 // Database Write I/O per Second:
-// - Query: sys.dm_io_virtual_file_stats() for write operations  
+// - Query: sys.dm_io_virtual_file_stats() for write operations
 // - Metric: num_of_writes per second for database files
 // - Scope: All write I/O operations for the specific database
 //
@@ -70,12 +71,13 @@
 // - Critical for: Transaction throughput monitoring
 //
 // Scraper Structure:
-// type DatabaseScraper struct {
-//     config   *Config
-//     mb       *metadata.MetricsBuilder
-//     queries  *queries.DatabaseQueries  
-//     logger   *zap.Logger
-// }
+//
+//	type DatabaseScraper struct {
+//	    config   *Config
+//	    mb       *metadata.MetricsBuilder
+//	    queries  *queries.DatabaseQueries
+//	    logger   *zap.Logger
+//	}
 //
 // Data Sources:
 // - sys.database_files: Database file information and sizes
