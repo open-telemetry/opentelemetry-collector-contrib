@@ -9,6 +9,7 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/scanner"
 	"runtime"
 	"time"
 
@@ -152,6 +153,11 @@ func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts 
 	fileMatcher, err := matcher.New(c.Criteria)
 	if err != nil {
 		return nil, err
+	}
+
+	// when no values defined, default buffer size take precedence
+	if c.InitialBufferSize <= 0 {
+		c.InitialBufferSize = scanner.DefaultBufferSize
 	}
 
 	set.Logger = set.Logger.With(zap.String("component", "fileconsumer"))
