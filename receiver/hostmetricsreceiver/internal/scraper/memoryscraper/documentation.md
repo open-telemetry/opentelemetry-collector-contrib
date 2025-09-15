@@ -62,11 +62,11 @@ The number of free huge pages. (Linux only)
 
 ### system.linux.memory.huge_pages.page_size
 
-A constant value for the system's configured huge pages page size. (Linux only)
+A constant value in bytes for the system's configured huge pages page size. (Linux only)
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| By | Gauge | Int |
 
 ### system.linux.memory.huge_pages.reserved
 
