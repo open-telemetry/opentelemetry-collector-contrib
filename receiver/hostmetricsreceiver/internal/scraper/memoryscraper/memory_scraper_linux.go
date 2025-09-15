@@ -65,7 +65,7 @@ func (s *memoryScraper) recordLinuxMemoryDirtyMetric(now pcommon.Timestamp, memI
 
 func (s *memoryScraper) recordLinuxHugePagesMetrics(now pcommon.Timestamp, memInfo *mem.VirtualMemoryStat) {
 	s.mb.RecordSystemLinuxMemoryHugePagesFreeDataPoint(now, int64(memInfo.HugePagesFree))
-	s.mb.RecordSystemLinuxMemoryHugePagesPageSizeDataPoint(now, int64(memInfo.HugePageSize))
+	s.mb.RecordSystemLinuxMemoryHugePagesPageSizeDataPoint(now, int64(memInfo.HugePageSize*1024)) // convert from kB to bytes
 	s.mb.RecordSystemLinuxMemoryHugePagesReservedDataPoint(now, int64(memInfo.HugePagesRsvd))
 	s.mb.RecordSystemLinuxMemoryHugePagesSurplusDataPoint(now, int64(memInfo.HugePagesSurp))
 	s.mb.RecordSystemLinuxMemoryHugePagesTotalDataPoint(now, int64(memInfo.HugePagesTotal))

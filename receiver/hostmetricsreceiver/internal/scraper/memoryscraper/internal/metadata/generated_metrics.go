@@ -274,8 +274,8 @@ type metricSystemLinuxMemoryHugePagesPageSize struct {
 // init fills system.linux.memory.huge_pages.page_size metric with initial data.
 func (m *metricSystemLinuxMemoryHugePagesPageSize) init() {
 	m.data.SetName("system.linux.memory.huge_pages.page_size")
-	m.data.SetDescription("A constant value for the system's configured huge pages page size. (Linux only)")
-	m.data.SetUnit("1")
+	m.data.SetDescription("A constant value in bytes for the system's configured huge pages page size. (Linux only)")
+	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 }
 
