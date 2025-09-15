@@ -409,7 +409,7 @@ func Test_processTraces_ContextCanceled(t *testing.T) {
 		require.NoError(t, shutdownErr)
 	})
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	cancel()
 
 	tdIn := makeTrace()
@@ -479,7 +479,7 @@ func Test_processLogs_ContextCanceled(t *testing.T) {
 		require.NoError(t, shutdownErr)
 	})
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	cancel()
 
 	ldIn := makeLogs()
@@ -500,7 +500,7 @@ func Test_processMetrics_ContextCanceled(t *testing.T) {
 		require.NoError(t, shutdownErr)
 	})
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	cancel()
 
 	mdIn := makeMetrics()
@@ -909,14 +909,14 @@ func Test_Start_Shutdown_Lifecycle(t *testing.T) {
 	require.NoError(t, err)
 
 	// Test Start
-	err = p.Start(context.Background(), nil)
+	err = p.Start(t.Context(), nil)
 	assert.NoError(t, err)
 
 	// Give some time for background goroutine to start
 	time.Sleep(10 * time.Millisecond)
 
 	// Test Shutdown
-	err = p.Shutdown(context.Background())
+	err = p.Shutdown(t.Context())
 	assert.NoError(t, err)
 }
 
@@ -928,13 +928,13 @@ func Test_modelUpdateLoop_Coverage(t *testing.T) {
 	p, err := newIsolationForestProcessor(cfg, logger)
 	require.NoError(t, err)
 
-	err = p.Start(context.Background(), nil)
+	err = p.Start(t.Context(), nil)
 	require.NoError(t, err)
 
 	// Wait for at least one update cycle
 	time.Sleep(50 * time.Millisecond)
 
-	err = p.Shutdown(context.Background())
+	err = p.Shutdown(t.Context())
 	assert.NoError(t, err)
 }
 
@@ -1047,7 +1047,7 @@ func Test_Shutdown_WithoutTicker(t *testing.T) {
 	// Manually nil the ticker to test the nil check
 	p.updateTicker = nil
 
-	err = p.Shutdown(context.Background())
+	err = p.Shutdown(t.Context())
 	assert.NoError(t, err)
 }
 
