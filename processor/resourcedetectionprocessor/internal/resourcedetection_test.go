@@ -30,7 +30,7 @@ type mockDetector struct {
 
 func (p *mockDetector) Detect(_ context.Context) (pcommon.Resource, string, error) {
 	args := p.Called()
-	return args.Get(0).(pcommon.Resource), "", args.Error(1)
+	return args.Get(0).(pcommon.Resource), args.String(1), args.Error(2)
 }
 
 type mockDetectorConfig struct{}
@@ -94,7 +94,7 @@ func TestDetect(t *testing.T) {
 				md := &mockDetector{}
 				res := pcommon.NewResource()
 				require.NoError(t, res.Attributes().FromRaw(resAttrs))
-				md.On("Detect").Return(res, nil)
+				md.On("Detect").Return(res, "", nil)
 
 				mockDetectorType := DetectorType(fmt.Sprintf("mockDetector%v", i))
 				mockDetectors[mockDetectorType] = func(processor.Settings, DetectorConfig) (Detector, error) {
@@ -141,10 +141,10 @@ func TestDetectResource_Error_ContextDeadline_WithErrPropagation(t *testing.T) {
 	}()
 
 	md1 := &mockDetector{}
-	md1.On("Detect").Return(pcommon.NewResource(), errors.New("err1"))
+	md1.On("Detect").Return(pcommon.NewResource(), "", errors.New("err1"))
 
 	md2 := &mockDetector{}
-	md2.On("Detect").Return(pcommon.NewResource(), errors.New("err2"))
+	md2.On("Detect").Return(pcommon.NewResource(), "", errors.New("err2"))
 
 	p := NewResourceProvider(zap.NewNop(), time.Second, nil, md1, md2)
 
@@ -160,10 +160,10 @@ func TestDetectResource_Error_ContextDeadline_WithErrPropagation(t *testing.T) {
 
 func TestDetectResource_Error_ContextDeadline_WithoutErrPropagation(t *testing.T) {
 	md1 := &mockDetector{}
-	md1.On("Detect").Return(pcommon.NewResource(), errors.New("err1"))
+	md1.On("Detect").Return(pcommon.NewResource(), "", errors.New("err1"))
 
 	md2 := &mockDetector{}
-	md2.On("Detect").Return(pcommon.NewResource(), errors.New("err2"))
+	md2.On("Detect").Return(pcommon.NewResource(), "", errors.New("err2"))
 
 	p := NewResourceProvider(zap.NewNop(), time.Second, nil, md1, md2)
 
@@ -214,13 +214,13 @@ type mockParallelDetector struct {
 }
 
 func newMockParallelDetector() *mockParallelDetector {
-	return &mockParallelDetector{ch: make(chan struct{})}
+	return &mockParallelDetector{ch: make(chan struct{}, 1)}
 }
 
 func (p *mockParallelDetector) Detect(_ context.Context) (pcommon.Resource, string, error) {
 	<-p.ch
 	args := p.Called()
-	return args.Get(0).(pcommon.Resource), "", args.Error(1)
+	return args.Get(0).(pcommon.Resource), args.String(1), args.Error(2)
 }
 
 // TestDetectResource_Parallel validates that Detect is only called once, even if there
@@ -231,12 +231,12 @@ func TestDetectResource_Parallel(t *testing.T) {
 	md1 := newMockParallelDetector()
 	res1 := pcommon.NewResource()
 	require.NoError(t, res1.Attributes().FromRaw(map[string]any{"a": "1", "b": "2"}))
-	md1.On("Detect").Return(res1, nil)
+	md1.On("Detect").Return(res1, "", nil)
 
 	md2 := newMockParallelDetector()
 	res2 := pcommon.NewResource()
 	require.NoError(t, res2.Attributes().FromRaw(map[string]any{"a": "11", "c": "3"}))
-	md2.On("Detect").Return(res2, nil)
+	md2.On("Detect").Return(res2, "", nil)
 
 	expectedResourceAttrs := map[string]any{"a": "1", "b": "2", "c": "3"}
 
@@ -271,14 +271,14 @@ func TestDetectResource_Reconnect(t *testing.T) {
 	md1 := &mockDetector{}
 	res1 := pcommon.NewResource()
 	require.NoError(t, res1.Attributes().FromRaw(map[string]any{"a": "1", "b": "2"}))
-	md1.On("Detect").Return(pcommon.NewResource(), errors.New("connection error1")).Twice()
-	md1.On("Detect").Return(res1, nil)
+	md1.On("Detect").Return(pcommon.NewResource(), "", errors.New("connection error1")).Twice()
+	md1.On("Detect").Return(res1, "", nil)
 
 	md2 := &mockDetector{}
 	res2 := pcommon.NewResource()
 	require.NoError(t, res2.Attributes().FromRaw(map[string]any{"c": "3"}))
-	md2.On("Detect").Return(pcommon.NewResource(), errors.New("connection error2")).Once()
-	md2.On("Detect").Return(res2, nil)
+	md2.On("Detect").Return(pcommon.NewResource(), "", errors.New("connection error2")).Once()
+	md2.On("Detect").Return(res2, "", nil)
 
 	expectedResourceAttrs := map[string]any{"a": "1", "b": "2", "c": "3"}
 
@@ -290,6 +290,37 @@ func TestDetectResource_Reconnect(t *testing.T) {
 
 	md1.AssertNumberOfCalls(t, "Detect", 3) // 2 errors + 1 success
 	md2.AssertNumberOfCalls(t, "Detect", 2) // 1 error + 1 success
+}
+
+func TestResourceProvider_RefreshInterval(t *testing.T) {
+	md := &mockDetector{}
+	res1 := pcommon.NewResource()
+	require.NoError(t, res1.Attributes().FromRaw(map[string]any{"a": "1"}))
+	res2 := pcommon.NewResource()
+	require.NoError(t, res2.Attributes().FromRaw(map[string]any{"a": "2"}))
+
+	// First call -> res1, second call -> res2
+	md.On("Detect").Return(res1, "", nil).Once()
+	md.On("Detect").Return(res2, "", nil).Once()
+
+	p := NewResourceProvider(zap.NewNop(), 1*time.Second, nil, md)
+
+	// Initial detection (triggers initOnce)
+	got, _, err := p.Get(t.Context(), &http.Client{Timeout: time.Second})
+	require.NoError(t, err)
+	assert.Equal(t, map[string]any{"a": "1"}, got.Attributes().AsRaw())
+
+	// Simulate a single periodic refresh
+	_, _, err = p.Refresh(t.Context(), &http.Client{Timeout: time.Second})
+	require.NoError(t, err)
+
+	// The cached resource should now be updated
+	got, _, err = p.Get(t.Context(), &http.Client{Timeout: time.Second})
+	require.NoError(t, err)
+	assert.Equal(t, map[string]any{"a": "2"}, got.Attributes().AsRaw())
+
+	// Exactly two detections total: one initial + one refresh
+	md.AssertNumberOfCalls(t, "Detect", 2)
 }
 
 func TestFilterAttributes_Match(t *testing.T) {

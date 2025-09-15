@@ -98,7 +98,8 @@ type ResourceProvider struct {
 	timeout          time.Duration
 	detectors        []Detector
 	detectedResource *resourceResult
-	once             sync.Once
+	mu               sync.RWMutex
+	initOnce         sync.Once
 	attributesToKeep map[string]struct{}
 }
 
@@ -117,15 +118,46 @@ func NewResourceProvider(logger *zap.Logger, timeout time.Duration, attributesTo
 	}
 }
 
-func (p *ResourceProvider) Get(ctx context.Context, client *http.Client) (resource pcommon.Resource, schemaURL string, err error) {
-	p.once.Do(func() {
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, client.Timeout)
+func (p *ResourceProvider) Get(ctx context.Context, client *http.Client) (pcommon.Resource, string, error) {
+	// Do the initial detection exactly once. Other concurrent callers wait here.
+	p.initOnce.Do(func() {
+		tout := pickTimeout(p.timeout, client.Timeout)
+		cctx, cancel := context.WithTimeout(ctx, tout)
 		defer cancel()
-		p.detectResource(ctx, client.Timeout)
+		p.detectResource(cctx, tout)
 	})
 
-	return p.detectedResource.resource, p.detectedResource.schemaURL, p.detectedResource.err
+	// Return the cached result (may be updated later by Refresh).
+	p.mu.RLock()
+	dr := p.detectedResource
+	p.mu.RUnlock()
+	return dr.resource, dr.schemaURL, dr.err
+}
+
+// Refresh recomputes the resource, replacing any previous result.
+func (p *ResourceProvider) Refresh(ctx context.Context, client *http.Client) (pcommon.Resource, string, error) {
+	tout := pickTimeout(p.timeout, client.Timeout)
+	ctx, cancel := context.WithTimeout(ctx, tout)
+	defer cancel()
+
+	// recompute in place
+	p.detectResource(ctx, tout) // no return values
+
+	// return the freshly cached result
+	p.mu.RLock()
+	dr := p.detectedResource
+	p.mu.RUnlock()
+	return dr.resource, dr.schemaURL, dr.err
+}
+
+func pickTimeout(provider, client time.Duration) time.Duration {
+	if provider > 0 {
+		return provider
+	}
+	if client > 0 {
+		return client
+	}
+	return 5 * time.Second
 }
 
 func (p *ResourceProvider) detectResource(ctx context.Context, timeout time.Duration) {
@@ -138,37 +170,45 @@ func (p *ResourceProvider) detectResource(ctx context.Context, timeout time.Dura
 
 	resultsChan := make([]chan resourceResult, len(p.detectors))
 	for i, detector := range p.detectors {
-		resultsChan[i] = make(chan resourceResult)
-		go func(detector Detector) {
+		ch := make(chan resourceResult, 1)
+		resultsChan[i] = ch
+
+		go func(detector Detector, ch chan resourceResult) {
 			sleep := backoff.ExponentialBackOff{
-				InitialInterval:     1 * time.Second,
-				RandomizationFactor: 1.5,
-				Multiplier:          2,
+				InitialInterval:     100 * time.Millisecond,
+				RandomizationFactor: 0.5,
+				Multiplier:          1.5,
 				MaxInterval:         timeout,
 			}
 			sleep.Reset()
-			var err error
-			var r pcommon.Resource
-			var schemaURL string
+
 			for {
-				r, schemaURL, err = detector.Detect(ctx)
+				r, schemaURL, err := detector.Detect(ctx)
 				if err == nil {
-					resultsChan[i] <- resourceResult{resource: r, schemaURL: schemaURL, err: nil}
+					ch <- resourceResult{resource: r, schemaURL: schemaURL, err: nil}
 					return
 				}
+
 				p.logger.Warn("failed to detect resource", zap.Error(err))
 
-				timer := time.NewTimer(sleep.NextBackOff())
-				select {
-				case <-timer.C:
-					fmt.Println("Retrying fetching data...")
-				case <-ctx.Done():
-					p.logger.Warn("Context was cancelled: %w", zap.Error(ctx.Err()))
-					resultsChan[i] <- resourceResult{resource: r, schemaURL: schemaURL, err: err}
+				next := sleep.NextBackOff()
+				if next == backoff.Stop {
+					ch <- resourceResult{resource: pcommon.NewResource(), schemaURL: "", err: err}
 					return
 				}
+
+				timer := time.NewTimer(next)
+				select {
+				case <-ctx.Done():
+					p.logger.Warn("context was cancelled", zap.Error(ctx.Err()))
+					timer.Stop()
+					ch <- resourceResult{resource: pcommon.NewResource(), schemaURL: "", err: err}
+					return
+				case <-timer.C:
+					// retry
+				}
 			}
-		}(detector)
+		}(detector, ch)
 	}
 
 	for _, ch := range resultsChan {
