@@ -44,7 +44,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 	"golang.org/x/net/http/httpproxy"
 	"golang.org/x/net/proxy"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
@@ -52,7 +51,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
-	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 var (
@@ -103,10 +101,10 @@ func newExporter(cfg component.Config, set exporter.Settings) (*opsrampOTLPExpor
 		set.BuildInfo.Description, set.BuildInfo.Version, runtime.GOOS, runtime.GOARCH)
 
 	// REMOVE after testing...
-	logger := initLogger()
+	//logger := initLogger()
 
 	return &opsrampOTLPExporter{config: oCfg, settings: set.TelemetrySettings,
-		userAgent: userAgent, accessToken: accessToken, logger: logger}, nil
+		userAgent: userAgent, accessToken: accessToken}, nil
 }
 
 type Creds struct {
@@ -231,12 +229,12 @@ func (e *opsrampOTLPExporter) start(ctx context.Context, host component.Host) (e
 		grpc.WaitForReady(e.config.ClientConfig.WaitForReady),
 	}
 
-	e.logger.Debug(
-		"OTLP Exporter started",
-		zap.String("Calloptions", fmt.Sprintf("%v", e.callOptions)),
-		zap.Int("Calloptions -> grpc.MaxCallSendMsgSize", e.config.Security.OtelExporterSetting.GrpcMaxSendSize),
-		zap.Int("Calloptions -> grpc.MaxCallRecvMsgSize", e.config.Security.OtelExporterSetting.GrpcMaxRecvSize),
-	)
+	//e.logger.Debug(
+	//	"OTLP Exporter started",
+	//	zap.String("Calloptions", fmt.Sprintf("%v", e.callOptions)),
+	//	zap.Int("Calloptions -> grpc.MaxCallSendMsgSize", e.config.Security.OtelExporterSetting.GrpcMaxSendSize),
+	//	zap.Int("Calloptions -> grpc.MaxCallRecvMsgSize", e.config.Security.OtelExporterSetting.GrpcMaxRecvSize),
+	//)
 
 	return
 }
@@ -317,35 +315,35 @@ func (e *opsrampOTLPExporter) pushLogs(_ context.Context, ld plog.Logs) error {
 	}
 
 	req := plogotlp.NewExportRequestFromLogs(ld)
-
-	data, _ := req.MarshalJSON()
-	e.logger.Debug("request details",
-		zap.String("started_at", start.Format(time.RFC3339Nano)),
-		zap.Int("ResourceLogsCount", ld.ResourceLogs().Len()),
-		zap.Int("TotalLogRecordCount", ld.LogRecordCount()),
-		zap.Int("RequestSizeBytes", len(data)),
-	)
-
-	beforePushEndTime := time.Now()
+	//
+	//data, _ := req.MarshalJSON()
+	//e.logger.Debug("request details",
+	//	zap.String("started_at", start.Format(time.RFC3339Nano)),
+	//	zap.Int("ResourceLogsCount", ld.ResourceLogs().Len()),
+	//	zap.Int("TotalLogRecordCount", ld.LogRecordCount()),
+	//	zap.Int("RequestSizeBytes", len(data)),
+	//)
+	//
+	//beforePushEndTime := time.Now()
 
 	_, err := e.logExporter.Export(e.enhanceContext(context.Background()), req, e.callOptions...)
 
-	end := time.Now()
-	e.logger.Debug("Exporter: pushLogs: completed processing logs",
-		zap.String("Stage 1", "before push"),
-		zap.String("ended_at", beforePushEndTime.Format(time.RFC3339Nano)),
-		zap.Float64("duration_seconds", beforePushEndTime.Sub(start).Seconds()),
-		zap.Int64("duration_ms", beforePushEndTime.Sub(start).Milliseconds()),
-		zap.Float64("duration_seconds", beforePushEndTime.Sub(start).Seconds()),
-		zap.String("Stage 1", "before push - end"),
-
-		zap.String("Stage 2", "after push"),
-		zap.String("ended_at", end.Format(time.RFC3339Nano)),
-		zap.Float64("duration_seconds", end.Sub(start).Seconds()),
-		zap.Int64("duration_ms", end.Sub(start).Milliseconds()),
-		zap.Float64("duration_seconds", end.Sub(start).Seconds()),
-		zap.String("Stage 2", "after push - end"),
-	)
+	//end := time.Now()
+	//e.logger.Debug("Exporter: pushLogs: completed processing logs",
+	//	zap.String("Stage 1", "before push"),
+	//	zap.String("ended_at", beforePushEndTime.Format(time.RFC3339Nano)),
+	//	zap.Float64("duration_seconds", beforePushEndTime.Sub(start).Seconds()),
+	//	zap.Int64("duration_ms", beforePushEndTime.Sub(start).Milliseconds()),
+	//	zap.Float64("duration_seconds", beforePushEndTime.Sub(start).Seconds()),
+	//	zap.String("Stage 1", "before push - end"),
+	//
+	//	zap.String("Stage 2", "after push"),
+	//	zap.String("ended_at", end.Format(time.RFC3339Nano)),
+	//	zap.Float64("duration_seconds", end.Sub(start).Seconds()),
+	//	zap.Int64("duration_ms", end.Sub(start).Milliseconds()),
+	//	zap.Float64("duration_seconds", end.Sub(start).Seconds()),
+	//	zap.String("Stage 2", "after push - end"),
+	//)
 
 	// trying to get a new access token in case of expiration
 	if err != nil {
@@ -545,20 +543,20 @@ func getAuthTokenWithTlsDisabled(cfg SecuritySettings) (string, error) {
 	return credentials.AccessToken, nil
 }
 
-func initLogger() *zap.Logger {
-	writer := &lumberjack.Logger{
-		Filename:   "/var/log/opsramp/exporter-info.log", // or any path you prefer
-		MaxSize:    10,                                   // megabytes
-		MaxBackups: 5,                                    // number of old files to keep
-		MaxAge:     30,                                   // days to keep
-		Compress:   true,                                 // gzip
-	}
-
-	core := zapcore.NewCore(
-		zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig()),
-		zapcore.AddSync(writer),
-		zap.DebugLevel,
-	)
-
-	return zap.New(core)
-}
+//func initLogger() *zap.Logger {
+//	writer := &lumberjack.Logger{
+//		Filename:   "/var/log/opsramp/exporter-info.log", // or any path you prefer
+//		MaxSize:    10,                                   // megabytes
+//		MaxBackups: 5,                                    // number of old files to keep
+//		MaxAge:     30,                                   // days to keep
+//		Compress:   true,                                 // gzip
+//	}
+//
+//	core := zapcore.NewCore(
+//		zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig()),
+//		zapcore.AddSync(writer),
+//		zap.DebugLevel,
+//	)
+//
+//	return zap.New(core)
+//}
