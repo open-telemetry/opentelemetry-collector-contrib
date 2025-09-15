@@ -8,8 +8,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/aws/aws-sdk-go-v2/service/xray"
 	"github.com/aws/smithy-go"
 	"go.opentelemetry.io/collector/component"
@@ -32,19 +30,11 @@ const (
 // newTracesExporter creates an exporter.Traces that converts to an X-Ray PutTraceSegments
 // request and then posts the request to the configured region's X-Ray endpoint.
 func newTracesExporter(ctx context.Context, cfg *Config, set exporter.Settings, registry telemetry.Registry) (exporter.Traces, error) {
-	var stsClient *sts.Client
 	typeLog := zap.String("type", set.ID.Type().String())
 	nameLog := zap.String("name", set.ID.String())
 	logger := set.Logger
-	if cfg.RoleARN != "" {
-		baseCfg, err := config.LoadDefaultConfig(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("failed to load AWS base config: %w", err)
-		}
-		stsClient = sts.NewFromConfig(baseCfg)
-	}
 
-	awsConfig, err := awsutil.GetAWSConfig(ctx, logger, &cfg.AWSSessionSettings, stsClient)
+	awsConfig, err := awsutil.GetAWSConfig(ctx, logger, &cfg.AWSSessionSettings)
 	if err != nil {
 		return nil, err
 	}
