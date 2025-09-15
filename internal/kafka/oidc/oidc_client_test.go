@@ -53,7 +53,7 @@ func TestOIDCProvider_GetToken_Success(t *testing.T) {
 	port := <-portCh
 	tokenURL := fmt.Sprintf("http://127.0.0.1:%d/token", port)
 
-	oidcProvider, cancel := NewOIDCfileTokenProvider(context.Background(), testClientID, secretFile, tokenURL,
+	oidcProvider, cancel := NewOIDCfileTokenProvider(t.Context(), testClientID, secretFile, tokenURL,
 		[]string{testScope}, 0, url.Values{}, oauth2.AuthStyleAutoDetect)
 	defer cancel()
 
@@ -100,7 +100,7 @@ func TestOIDCProvider_GetToken_Error(t *testing.T) {
 	port := <-portCh
 	tokenURL := fmt.Sprintf("http://127.0.0.1:%d/token", port)
 
-	oidcProvider, cancel := NewOIDCfileTokenProvider(context.Background(), "wrong-client-id", secretFile,
+	oidcProvider, cancel := NewOIDCfileTokenProvider(t.Context(), "wrong-client-id", secretFile,
 		tokenURL, []string{testScope}, 0, url.Values{}, oauth2.AuthStyleAutoDetect)
 	defer cancel()
 
@@ -131,7 +131,7 @@ func TestOIDCProvider_TokenCaching(t *testing.T) {
 	port := <-portCh
 	tokenURL := fmt.Sprintf("http://127.0.0.1:%d/token", port)
 
-	oidcProvider, cancel := NewOIDCfileTokenProvider(context.Background(), testClientID, secretFile, tokenURL, []string{testScope}, 0, url.Values{}, oauth2.AuthStyleAutoDetect)
+	oidcProvider, cancel := NewOIDCfileTokenProvider(t.Context(), testClientID, secretFile, tokenURL, []string{testScope}, 0, url.Values{}, oauth2.AuthStyleAutoDetect)
 	defer cancel()
 
 	token1, err1 := oidcProvider.Token()
@@ -166,7 +166,7 @@ func TestOIDCProvider_TokenExpired(t *testing.T) {
 	port := <-portCh
 	tokenURL := fmt.Sprintf("http://127.0.0.1:%d/token", port)
 
-	oidcProvider, cancel := NewOIDCfileTokenProvider(context.Background(), testClientID, secretFile, tokenURL, []string{testScope}, 0, url.Values{}, oauth2.AuthStyleAutoDetect)
+	oidcProvider, cancel := NewOIDCfileTokenProvider(t.Context(), testClientID, secretFile, tokenURL, []string{testScope}, 0, url.Values{}, oauth2.AuthStyleAutoDetect)
 	defer cancel()
 
 	token1, err1 := oidcProvider.Token()
@@ -203,7 +203,7 @@ func TestOIDCProvider_RefreshAhead(t *testing.T) {
 	port := <-portCh
 	tokenURL := fmt.Sprintf("http://127.0.0.1:%d/token", port)
 
-	oidcProvider, cancel := NewOIDCfileTokenProvider(context.Background(), testClientID, secretFile, tokenURL,
+	oidcProvider, cancel := NewOIDCfileTokenProvider(t.Context(), testClientID, secretFile, tokenURL,
 		[]string{testScope}, 2*time.Second, url.Values{}, oauth2.AuthStyleAutoDetect)
 	defer cancel()
 
