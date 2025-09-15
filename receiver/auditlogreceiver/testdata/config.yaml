@@ -1,0 +1,13 @@
+receivers:
+  auditlogreceiver:
+    endpoint: 0.0.0.0:8080
+
+exporters:
+  logging:
+    loglevel: debug
+
+service:
+  pipelines:
+    logs:
+      receivers: [auditlogreceiver]
+      exporters: [logging]
