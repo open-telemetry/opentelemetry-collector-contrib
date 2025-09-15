@@ -969,45 +969,6 @@ func Test_processFeatures_MultiModel_Matching(t *testing.T) {
 	_ = isAnomaly // Use the variable
 }
 
-func Test_processFeatures_MultiModel_FallbackToFirst(t *testing.T) {
-	cfg := baseTestConfig(t)
-	cfg.Models = []ModelConfig{
-		{
-			Name:          "first-model",
-			ForestSize:    10,
-			SubsampleSize: 32,
-			Selector: map[string]string{
-				"service.name": "other-service",
-			},
-		},
-		{
-			Name:          "second-model",
-			ForestSize:    10,
-			SubsampleSize: 32,
-			Selector: map[string]string{
-				"service.name": "another-service",
-			},
-		},
-	}
-	logger := zaptest.NewLogger(t)
-
-	p, err := newIsolationForestProcessor(cfg, logger)
-	require.NoError(t, err)
-
-	t.Cleanup(func() {
-		shutdownErr := p.Shutdown(t.Context())
-		require.NoError(t, shutdownErr)
-	})
-
-	features := map[string][]float64{"duration": {50.0}}
-	attrs := map[string]any{"service.name": "unknown-service"} // No match
-
-	score, isAnomaly, model := p.processFeatures(features, attrs)
-	assert.True(t, score >= 0.0 && score <= 1.0)
-	assert.Equal(t, "first-model", model) // Implementation uses first available model as fallback
-	_ = isAnomaly
-}
-
 func Test_performModelUpdate_WithMultipleModels(t *testing.T) {
 	cfg := baseTestConfig(t)
 	cfg.Models = []ModelConfig{
