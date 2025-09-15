@@ -86,7 +86,7 @@ func TestFactory_CreateTraces_InvalidConfig(t *testing.T) {
 
 	// Test with wrong config type
 	invalidCfg := struct{}{}
-	_, err := factory.CreateTraces(context.Background(), settings, invalidCfg, next)
+	_, err := factory.CreateTraces(t.Context(), settings, invalidCfg, next)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "configuration is not of type *Config")
 }
@@ -98,7 +98,7 @@ func TestFactory_CreateMetrics_InvalidConfig(t *testing.T) {
 
 	// Test with wrong config type
 	invalidCfg := struct{}{}
-	_, err := factory.CreateMetrics(context.Background(), settings, invalidCfg, next)
+	_, err := factory.CreateMetrics(t.Context(), settings, invalidCfg, next)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "configuration is not of type *Config")
 }
@@ -110,7 +110,7 @@ func TestFactory_CreateLogs_InvalidConfig(t *testing.T) {
 
 	// Test with wrong config type
 	invalidCfg := struct{}{}
-	_, err := factory.CreateLogs(context.Background(), settings, invalidCfg, next)
+	_, err := factory.CreateLogs(t.Context(), settings, invalidCfg, next)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "configuration is not of type *Config")
 }
@@ -125,7 +125,7 @@ func TestFactory_CreateTraces_ValidationError(t *testing.T) {
 		ForestSize: -1, // Invalid forest size
 	}
 
-	_, err := factory.CreateTraces(context.Background(), settings, cfg, next)
+	_, err := factory.CreateTraces(t.Context(), settings, cfg, next)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid configuration")
 }
@@ -140,7 +140,7 @@ func TestFactory_CreateMetrics_ValidationError(t *testing.T) {
 		ForestSize: -1, // Invalid forest size
 	}
 
-	_, err := factory.CreateMetrics(context.Background(), settings, cfg, next)
+	_, err := factory.CreateMetrics(t.Context(), settings, cfg, next)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid configuration")
 }
@@ -155,7 +155,7 @@ func TestFactory_CreateLogs_ValidationError(t *testing.T) {
 		ForestSize: -1, // Invalid forest size
 	}
 
-	_, err := factory.CreateLogs(context.Background(), settings, cfg, next)
+	_, err := factory.CreateLogs(t.Context(), settings, cfg, next)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid configuration")
 }
@@ -185,7 +185,7 @@ func TestFactory_CreateTraces_ConfigValidationError(t *testing.T) {
 		},
 	}
 
-	_, err := factory.CreateTraces(context.Background(), settings, cfg, next)
+	_, err := factory.CreateTraces(t.Context(), settings, cfg, next)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid configuration")
 }
@@ -213,7 +213,7 @@ func TestFactory_CreateMetrics_ConfigValidationError(t *testing.T) {
 		},
 	}
 
-	_, err := factory.CreateMetrics(context.Background(), settings, cfg, next)
+	_, err := factory.CreateMetrics(t.Context(), settings, cfg, next)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid configuration")
 }
@@ -241,7 +241,7 @@ func TestFactory_CreateLogs_ConfigValidationError(t *testing.T) {
 		},
 	}
 
-	_, err := factory.CreateLogs(context.Background(), settings, cfg, next)
+	_, err := factory.CreateLogs(t.Context(), settings, cfg, next)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid configuration")
 }
@@ -252,11 +252,11 @@ func TestTracesProcessor_ConsumeTraces(t *testing.T) {
 	settings := processortest.NewNopSettings(component.MustNewType("isolationforest"))
 	next := consumertest.NewNop()
 
-	p, err := factory.CreateTraces(context.Background(), settings, rawCfg, next)
+	p, err := factory.CreateTraces(t.Context(), settings, rawCfg, next)
 	require.NoError(t, err)
 	require.NotNil(t, p)
 
-	require.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
 
 	// Test ConsumeTraces
 	traces := ptrace.NewTraces()
@@ -266,10 +266,10 @@ func TestTracesProcessor_ConsumeTraces(t *testing.T) {
 	span := ss.Spans().AppendEmpty()
 	span.SetName("test-span")
 
-	err = p.ConsumeTraces(context.Background(), traces)
+	err = p.ConsumeTraces(t.Context(), traces)
 	assert.NoError(t, err)
 
-	require.NoError(t, p.Shutdown(context.Background()))
+	require.NoError(t, p.Shutdown(t.Context()))
 }
 
 func TestMetricsProcessor_ConsumeMetrics(t *testing.T) {
@@ -278,11 +278,11 @@ func TestMetricsProcessor_ConsumeMetrics(t *testing.T) {
 	settings := processortest.NewNopSettings(component.MustNewType("isolationforest"))
 	next := consumertest.NewNop()
 
-	p, err := factory.CreateMetrics(context.Background(), settings, rawCfg, next)
+	p, err := factory.CreateMetrics(t.Context(), settings, rawCfg, next)
 	require.NoError(t, err)
 	require.NotNil(t, p)
 
-	require.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
 
 	// Test ConsumeMetrics
 	metrics := pmetric.NewMetrics()
@@ -295,10 +295,10 @@ func TestMetricsProcessor_ConsumeMetrics(t *testing.T) {
 	dp := dps.AppendEmpty()
 	dp.SetDoubleValue(42.0)
 
-	err = p.ConsumeMetrics(context.Background(), metrics)
+	err = p.ConsumeMetrics(t.Context(), metrics)
 	assert.NoError(t, err)
 
-	require.NoError(t, p.Shutdown(context.Background()))
+	require.NoError(t, p.Shutdown(t.Context()))
 }
 
 func TestLogsProcessor_ConsumeLogs(t *testing.T) {
@@ -307,11 +307,11 @@ func TestLogsProcessor_ConsumeLogs(t *testing.T) {
 	settings := processortest.NewNopSettings(component.MustNewType("isolationforest"))
 	next := consumertest.NewNop()
 
-	p, err := factory.CreateLogs(context.Background(), settings, rawCfg, next)
+	p, err := factory.CreateLogs(t.Context(), settings, rawCfg, next)
 	require.NoError(t, err)
 	require.NotNil(t, p)
 
-	require.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
 
 	// Test ConsumeLogs
 	logs := plog.NewLogs()
@@ -321,10 +321,10 @@ func TestLogsProcessor_ConsumeLogs(t *testing.T) {
 	lr := sl.LogRecords().AppendEmpty()
 	lr.Body().SetStr("test log message")
 
-	err = p.ConsumeLogs(context.Background(), logs)
+	err = p.ConsumeLogs(t.Context(), logs)
 	assert.NoError(t, err)
 
-	require.NoError(t, p.Shutdown(context.Background()))
+	require.NoError(t, p.Shutdown(t.Context()))
 }
 
 func TestProcessorCapabilities(t *testing.T) {
@@ -334,19 +334,19 @@ func TestProcessorCapabilities(t *testing.T) {
 	next := consumertest.NewNop()
 
 	// Test traces processor capabilities
-	tp, err := factory.CreateTraces(context.Background(), settings, rawCfg, next)
+	tp, err := factory.CreateTraces(t.Context(), settings, rawCfg, next)
 	require.NoError(t, err)
 	caps := tp.Capabilities()
 	assert.True(t, caps.MutatesData, "Traces processor should mutate data")
 
 	// Test metrics processor capabilities
-	mp, err := factory.CreateMetrics(context.Background(), settings, rawCfg, next)
+	mp, err := factory.CreateMetrics(t.Context(), settings, rawCfg, next)
 	require.NoError(t, err)
 	caps = mp.Capabilities()
 	assert.True(t, caps.MutatesData, "Metrics processor should mutate data")
 
 	// Test logs processor capabilities
-	lp, err := factory.CreateLogs(context.Background(), settings, rawCfg, next)
+	lp, err := factory.CreateLogs(t.Context(), settings, rawCfg, next)
 	require.NoError(t, err)
 	caps = lp.Capabilities()
 	assert.True(t, caps.MutatesData, "Logs processor should mutate data")
@@ -359,37 +359,37 @@ func TestProcessorConsumerErrors(t *testing.T) {
 
 	// Test with error consumer for traces
 	errorConsumer := consumertest.NewErr(assert.AnError)
-	tp, err := factory.CreateTraces(context.Background(), settings, rawCfg, errorConsumer)
+	tp, err := factory.CreateTraces(t.Context(), settings, rawCfg, errorConsumer)
 	require.NoError(t, err)
-	require.NoError(t, tp.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, tp.Start(t.Context(), componenttest.NewNopHost()))
 
 	traces := ptrace.NewTraces()
-	err = tp.ConsumeTraces(context.Background(), traces)
+	err = tp.ConsumeTraces(t.Context(), traces)
 	assert.Error(t, err)
 
-	require.NoError(t, tp.Shutdown(context.Background()))
+	require.NoError(t, tp.Shutdown(t.Context()))
 
 	// Test with error consumer for metrics
-	mp, err := factory.CreateMetrics(context.Background(), settings, rawCfg, errorConsumer)
+	mp, err := factory.CreateMetrics(t.Context(), settings, rawCfg, errorConsumer)
 	require.NoError(t, err)
-	require.NoError(t, mp.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, mp.Start(t.Context(), componenttest.NewNopHost()))
 
 	metrics := pmetric.NewMetrics()
-	err = mp.ConsumeMetrics(context.Background(), metrics)
+	err = mp.ConsumeMetrics(t.Context(), metrics)
 	assert.Error(t, err)
 
-	require.NoError(t, mp.Shutdown(context.Background()))
+	require.NoError(t, mp.Shutdown(t.Context()))
 
 	// Test with error consumer for logs
-	lp, err := factory.CreateLogs(context.Background(), settings, rawCfg, errorConsumer)
+	lp, err := factory.CreateLogs(t.Context(), settings, rawCfg, errorConsumer)
 	require.NoError(t, err)
-	require.NoError(t, lp.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, lp.Start(t.Context(), componenttest.NewNopHost()))
 
 	logs := plog.NewLogs()
-	err = lp.ConsumeLogs(context.Background(), logs)
+	err = lp.ConsumeLogs(t.Context(), logs)
 	assert.Error(t, err)
 
-	require.NoError(t, lp.Shutdown(context.Background()))
+	require.NoError(t, lp.Shutdown(t.Context()))
 }
 
 // Additional tests to reach 100% coverage
@@ -400,19 +400,19 @@ func TestProcessorErrorPropagation(t *testing.T) {
 	next := consumertest.NewNop()
 
 	// Create traces processor and test error scenarios
-	tp, err := factory.CreateTraces(context.Background(), settings, rawCfg, next)
+	tp, err := factory.CreateTraces(t.Context(), settings, rawCfg, next)
 	require.NoError(t, err)
-	require.NoError(t, tp.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, tp.Start(t.Context(), componenttest.NewNopHost()))
 
 	// Test with context cancellation
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	cancel()
 
 	traces := ptrace.NewTraces()
 	err = tp.ConsumeTraces(ctx, traces)
 	assert.Error(t, err)
 
-	require.NoError(t, tp.Shutdown(context.Background()))
+	require.NoError(t, tp.Shutdown(t.Context()))
 }
 
 func TestFactoryStability(t *testing.T) {
