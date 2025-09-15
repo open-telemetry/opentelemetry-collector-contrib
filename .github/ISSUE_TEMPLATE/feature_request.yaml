@@ -206,6 +206,8 @@ body:
       - processor/resourcedetection/internal/akamai
       - processor/resourcedetection/internal/dynatrace
       - processor/resourcedetection/internal/hetzner
+      - processor/resourcedetection/internal/scaleway
+      - processor/resourcedetection/internal/vultr
       - processor/schema
       - processor/span
       - processor/sumologic

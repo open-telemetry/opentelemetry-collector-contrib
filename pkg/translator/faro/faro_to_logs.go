@@ -149,9 +149,6 @@ func TranslateToLogs(ctx context.Context, payload faroTypes.Payload) (plog.Logs,
 		}
 		observedTimestamp := pcommon.NewTimestampFromTime(time.Now())
 		logRecord.SetObservedTimestamp(observedTimestamp)
-		if !i.ts.IsZero() {
-			logRecord.SetTimestamp(pcommon.NewTimestampFromTime(i.ts))
-		}
 
 		spanID := i.trace.SpanID
 		if spanID != "" {

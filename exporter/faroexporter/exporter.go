@@ -109,7 +109,7 @@ func (fe *faroExporter) export(ctx context.Context, fp *faro.Payload) error {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode == http.StatusAccepted {
+	if resp.StatusCode >= http.StatusOK && resp.StatusCode < http.StatusMultipleChoices {
 		return nil
 	}
 
