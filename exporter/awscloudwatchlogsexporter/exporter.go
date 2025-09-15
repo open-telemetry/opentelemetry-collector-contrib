@@ -12,9 +12,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs/types"
-	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -49,21 +47,12 @@ type emfMetadata struct {
 }
 
 func newCwLogsPusher(ctx context.Context, expConfig *Config, params exp.Settings) (*cwlExporter, error) {
-	var stsClient *sts.Client
 	if expConfig == nil {
 		return nil, errors.New("awscloudwatchlogs exporter config is nil")
 	}
-	if expConfig.AWSSessionSettings.RoleARN != "" {
-		baseCfg, err := config.LoadDefaultConfig(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("failed to load AWS base config: %w", err)
-		}
-		stsClient = sts.NewFromConfig(baseCfg)
-	}
-
 	expConfig.logger = params.Logger
 
-	awsConfig, err := awsutil.GetAWSConfig(ctx, params.Logger, &expConfig.AWSSessionSettings, stsClient)
+	awsConfig, err := awsutil.GetAWSConfig(ctx, params.Logger, &expConfig.AWSSessionSettings)
 	if err != nil {
 		return nil, err
 	}

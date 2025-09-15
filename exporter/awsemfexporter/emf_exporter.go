@@ -10,8 +10,6 @@ import (
 	"strings"
 	"sync"
 
-	AWSConfig "github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/aws/smithy-go"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -48,22 +46,13 @@ type emfExporter struct {
 
 // newEmfExporter creates a new exporter using exporterhelper
 func newEmfExporter(ctx context.Context, config *Config, set exporter.Settings) (*emfExporter, error) {
-	var stsClient *sts.Client
 	if config == nil {
 		return nil, errors.New("emf exporter config is nil")
-	}
-	if config.AWSSessionSettings.RoleARN != "" {
-		baseCfg, err := AWSConfig.LoadDefaultConfig(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("failed to load AWS base config: %w", err)
-		}
-
-		stsClient = sts.NewFromConfig(baseCfg)
 	}
 
 	config.logger = set.Logger
 
-	awsConfig, err := awsutil.GetAWSConfig(ctx, set.Logger, &config.AWSSessionSettings, stsClient)
+	awsConfig, err := awsutil.GetAWSConfig(ctx, set.Logger, &config.AWSSessionSettings)
 	if err != nil {
 		return nil, err
 	}

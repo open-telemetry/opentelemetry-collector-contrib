@@ -4,35 +4,19 @@
 package awsutil
 
 import (
-	"context"
 	"net/http"
 	"testing"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/sts"
-	"github.com/aws/aws-sdk-go-v2/service/sts/types"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 )
-
-type mockSTS struct{}
-
-func (m *mockSTS) AssumeRole(ctx context.Context, params *sts.AssumeRoleInput, optFns ...func(*sts.Options)) (*sts.AssumeRoleOutput, error) {
-	return &sts.AssumeRoleOutput{
-		Credentials: &types.Credentials{
-			AccessKeyId:     aws.String("mockAccessKey"),
-			SecretAccessKey: aws.String("mockSecret"),
-			SessionToken:    aws.String("mockToken"),
-		},
-	}, nil
-}
 
 func TestGetAWSConfig_WithRoleARN(t *testing.T) {
 	logger := zap.NewNop()
 	sessionCfg := CreateDefaultSessionConfig()
 
-	cfg, err := GetAWSConfig(t.Context(), logger, &sessionCfg, &mockSTS{})
+	cfg, err := GetAWSConfig(t.Context(), logger, &sessionCfg)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -55,7 +39,7 @@ func TestRegionEnv(t *testing.T) {
 	t.Setenv("AWS_REGION", region)
 
 	ctx := t.Context()
-	cfg, err := GetAWSConfig(ctx, logger, &sessionCfg, nil)
+	cfg, err := GetAWSConfig(ctx, logger, &sessionCfg)
 	assert.NoError(t, err)
 	assert.Equal(t, region, cfg.Region, "Region value should be fetched from environment")
 }
@@ -67,7 +51,7 @@ func TestGetAWSConfigWithExplicitRegion(t *testing.T) {
 	sessionCfg.Region = "eu-west-1"
 
 	ctx := t.Context()
-	cfg, err := GetAWSConfig(ctx, logger, &sessionCfg, nil)
+	cfg, err := GetAWSConfig(ctx, logger, &sessionCfg)
 	assert.NoError(t, err)
 	assert.Equal(t, "eu-west-1", cfg.Region, "Region value should match the explicitly set region")
 }
@@ -80,7 +64,7 @@ func TestGetAWSConfigWithCustomEndpoint(t *testing.T) {
 	sessionCfg.Endpoint = "https://custom.endpoint.com"
 
 	ctx := t.Context()
-	cfg, err := GetAWSConfig(ctx, logger, &sessionCfg, nil)
+	cfg, err := GetAWSConfig(ctx, logger, &sessionCfg)
 	assert.NoError(t, err)
 	assert.Equal(t, "us-west-2", cfg.Region)
 	assert.NotNil(t, cfg.BaseEndpoint)
@@ -95,7 +79,7 @@ func TestGetAWSConfigWithRetries(t *testing.T) {
 	sessionCfg.MaxRetries = 5
 
 	ctx := t.Context()
-	cfg, err := GetAWSConfig(ctx, logger, &sessionCfg, nil)
+	cfg, err := GetAWSConfig(ctx, logger, &sessionCfg)
 	assert.NoError(t, err)
 	assert.Equal(t, 5, cfg.RetryMaxAttempts)
 }
