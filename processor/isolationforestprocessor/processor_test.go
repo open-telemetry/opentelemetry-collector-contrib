@@ -995,7 +995,7 @@ func Test_processFeatures_MultiModel_FallbackToFirst(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		shutdownErr := p.Shutdown(context.WithoutCancel(t.Context()))
+		shutdownErr := p.Shutdown(t.Context())
 		require.NoError(t, shutdownErr)
 	})
 
@@ -1004,7 +1004,7 @@ func Test_processFeatures_MultiModel_FallbackToFirst(t *testing.T) {
 
 	score, isAnomaly, model := p.processFeatures(features, attrs)
 	assert.True(t, score >= 0.0 && score <= 1.0)
-	assert.Equal(t, "first-model", model) // Should fallback to first available
+	assert.Equal(t, "first-model", model) // Implementation uses first available model as fallback
 	_ = isAnomaly
 }
 
