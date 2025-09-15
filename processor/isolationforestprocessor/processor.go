@@ -113,7 +113,7 @@ func (p *isolationForestProcessor) Start(_ context.Context, _ component.Host) er
 	p.logger.Info("Starting isolation forest processor")
 	// Any additional initialization logic can go here
 
-	 // Start the background model update loop
+	// Start the background model update loop
 	p.shutdownWG.Add(1)
 	go func() {
 		defer p.shutdownWG.Done()
