@@ -1,0 +1,7 @@
+extensions:
+  nooplookup: {}
+
+processors:
+  lookup:
+    source:
+      extension: nooplookup
