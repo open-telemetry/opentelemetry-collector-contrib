@@ -5,6 +5,7 @@
 package isolationforestprocessor
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -98,7 +99,7 @@ func Test_newIsolationForestProcessor_Basic(t *testing.T) {
 
 	// Add shutdown cleanup
 	t.Cleanup(func() {
-		shutdownErr := p.Shutdown(t.Context())
+		shutdownErr := p.Shutdown(context.WithoutCancel(t.Context()))
 		require.NoError(t, shutdownErr)
 	})
 
@@ -115,7 +116,7 @@ func Test_processFeatures_SaneOutputs(t *testing.T) {
 
 	// Add shutdown cleanup
 	t.Cleanup(func() {
-		shutdownErr := p.Shutdown(t.Context())
+		shutdownErr := p.Shutdown(context.WithoutCancel(t.Context()))
 		require.NoError(t, shutdownErr)
 	})
 
@@ -143,7 +144,7 @@ func Test_processTraces_EnrichesAttributes(t *testing.T) {
 
 	// Add shutdown cleanup
 	t.Cleanup(func() {
-		shutdownErr := p.Shutdown(t.Context())
+		shutdownErr := p.Shutdown(context.WithoutCancel(t.Context()))
 		require.NoError(t, shutdownErr)
 	})
 
@@ -170,7 +171,7 @@ func Test_processLogs_EnrichesAttributes(t *testing.T) {
 
 	// Add shutdown cleanup
 	t.Cleanup(func() {
-		shutdownErr := p.Shutdown(t.Context())
+		shutdownErr := p.Shutdown(context.WithoutCancel(t.Context()))
 		require.NoError(t, shutdownErr)
 	})
 
@@ -197,7 +198,7 @@ func Test_processMetrics_EnrichesAttributes(t *testing.T) {
 
 	// Add shutdown cleanup
 	t.Cleanup(func() {
-		shutdownErr := p.Shutdown(t.Context())
+		shutdownErr := p.Shutdown(context.WithoutCancel(t.Context()))
 		require.NoError(t, shutdownErr)
 	})
 

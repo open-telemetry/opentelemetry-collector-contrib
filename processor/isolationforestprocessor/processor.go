@@ -107,8 +107,10 @@ func newIsolationForestProcessor(config *Config, logger *zap.Logger) (*isolation
 
 	// Properly track the background goroutine with WaitGroup
 	processor.shutdownWG.Add(1)
-
-	go processor.modelUpdateLoop()
+	go func() {
+		defer processor.shutdownWG.Done()
+		processor.modelUpdateLoop()
+	}()
 
 	return processor, nil
 }
@@ -141,8 +143,6 @@ func (p *isolationForestProcessor) Shutdown(_ context.Context) error {
 
 // modelUpdateLoop runs periodic model updates in the background to adapt to changing patterns.
 func (p *isolationForestProcessor) modelUpdateLoop() {
-	defer p.shutdownWG.Done() // Signal completion when goroutine exits
-
 	for {
 		select {
 		case <-p.updateTicker.C:
