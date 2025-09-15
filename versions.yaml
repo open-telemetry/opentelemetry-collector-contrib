@@ -104,6 +104,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer
+      - github.com/open-telemetry/opentelemetry-collector-contrib/extension/lookup/nooplookupextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/cfgardenobserver
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/dockerobserver
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecsobserver
@@ -169,6 +170,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status
+      - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/lookup
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azurelogs
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/faro
@@ -189,6 +191,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/dnslookupprocessor
+      - github.com/open-telemetry/opentelemetry-collector-contrib/processor/lookupprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor
