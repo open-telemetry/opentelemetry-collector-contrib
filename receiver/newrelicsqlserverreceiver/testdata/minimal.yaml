@@ -1,0 +1,6 @@
+# Minimal configuration for testing
+hostname: "localhost"
+port: "1433"
+username: "sa"
+password: "password123"
+collection_interval: 15s

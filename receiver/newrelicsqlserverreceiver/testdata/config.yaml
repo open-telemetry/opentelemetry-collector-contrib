@@ -1,0 +1,25 @@
+receivers:
+  newrelicsqlserverreceiver:
+    hostname: "localhost"
+    port: "1433"
+    username: "test_user"
+    password: "test_password"
+    collection_interval: 30s
+    timeout: 45s
+    enable_buffer_metrics: true
+    enable_database_reserve_metrics: true
+    max_concurrent_workers: 10
+
+processors:
+  batch:
+
+exporters:
+  logging:
+    loglevel: debug
+
+service:
+  pipelines:
+    metrics:
+      receivers: [newrelicsqlserverreceiver]
+      processors: [batch]
+      exporters: [logging]

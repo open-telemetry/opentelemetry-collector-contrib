@@ -1,0 +1,68 @@
+type: newrelicsqlserver
+
+status:
+  class: receiver
+  stability:
+    alpha: [metrics]
+  distributions: [contrib]
+  codeowners:
+    active: [tanushangural]
+
+resource_attributes:
+  server.address:
+    description: SQL Server hostname or IP address
+    type: string
+    enabled: true
+  server.port:
+    description: SQL Server port number
+    type: string
+    enabled: true
+  db.system:
+    description: Database system identifier
+    type: string
+    enabled: true
+    default: mssql
+
+metrics:
+  sqlserver.buffer.cache_hit_ratio:
+    enabled: true
+    description: Buffer cache hit ratio percentage
+    unit: "%"
+    gauge:
+      value_type: double
+  
+  sqlserver.buffer.page_life_expectancy:
+    enabled: true
+    description: Page life expectancy in seconds
+    unit: "s"
+    gauge:
+      value_type: int
+  
+  sqlserver.connections.user:
+    enabled: true
+    description: Number of user connections
+    unit: "{connections}"
+    gauge:
+      value_type: int
+  
+  sqlserver.memory.total:
+    enabled: true
+    description: Total server memory in KB
+    unit: "kBy"
+    gauge:
+      value_type: int
+  
+  sqlserver.memory.target:
+    enabled: true
+    description: Target server memory in KB
+    unit: "kBy"
+    gauge:
+      value_type: int
+
+tests:
+  config:
+    hostname: "localhost"
+    port: "1433"
+    username: "test_user"
+    password: "test_password"
+    collection_interval: 15s

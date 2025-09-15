@@ -5,6 +5,7 @@ package newrelicsqlserverreceiver // import "github.com/open-telemetry/opentelem
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -73,26 +74,71 @@ func (s *sqlServerScraper) shutdown(ctx context.Context) error {
 
 // scrape collects SQL Server instance metrics using structured approach
 func (s *sqlServerScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
-	s.logger.Debug("Scraping SQL Server instance metrics")
+	s.logger.Debug("Starting SQL Server metrics collection",
+		zap.String("hostname", s.config.Hostname),
+		zap.String("port", s.config.Port))
 
 	metrics := pmetric.NewMetrics()
 	resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
 
-	// Set resource attributes
+	// Set resource attributes with error handling
 	attrs := resourceMetrics.Resource().Attributes()
 	attrs.PutStr("server.address", s.config.Hostname)
 	attrs.PutStr("server.port", s.config.Port)
 	attrs.PutStr("db.system", "mssql")
 	attrs.PutStr("service.name", "sql-server-monitoring")
 
+	// Add instance name if configured
+	if s.config.Instance != "" {
+		attrs.PutStr("db.instance", s.config.Instance)
+	}
+
 	scopeMetrics := resourceMetrics.ScopeMetrics().AppendEmpty()
 	scopeMetrics.Scope().SetName("newrelicsqlserverreceiver")
 
-	// Use structured approach to scrape instance buffer metrics
-	if err := s.instanceScraper.ScrapeInstanceBufferMetrics(ctx, scopeMetrics); err != nil {
-		s.logger.Error("Failed to scrape instance buffer metrics", zap.Error(err))
-		return metrics, err
+	// Track scraping errors but continue with partial results
+	var scrapeErrors []error
+
+	// Check if connection is still valid before scraping
+	if s.connection != nil {
+		if err := s.connection.Ping(ctx); err != nil {
+			s.logger.Error("Connection health check failed before scraping", zap.Error(err))
+			scrapeErrors = append(scrapeErrors, fmt.Errorf("connection health check failed: %w", err))
+			// Continue with scraping attempt - connection might recover
+		}
+	} else {
+		s.logger.Error("No database connection available for scraping")
+		return metrics, fmt.Errorf("no database connection available")
 	}
+
+	// Use structured approach to scrape instance buffer metrics with timeout
+	if s.config.EnableBufferMetrics {
+		scrapeCtx, cancel := context.WithTimeout(ctx, s.config.Timeout)
+		defer cancel()
+
+		if err := s.instanceScraper.ScrapeInstanceBufferMetrics(scrapeCtx, scopeMetrics); err != nil {
+			s.logger.Error("Failed to scrape instance buffer metrics",
+				zap.Error(err),
+				zap.Duration("timeout", s.config.Timeout))
+			scrapeErrors = append(scrapeErrors, err)
+			// Don't return here - continue with other metrics if enabled
+		} else {
+			s.logger.Debug("Successfully scraped instance buffer metrics")
+		}
+	}
+
+	// Log summary of scraping results
+	if len(scrapeErrors) > 0 {
+		s.logger.Warn("Completed scraping with errors",
+			zap.Int("error_count", len(scrapeErrors)),
+			zap.Int("metrics_collected", scopeMetrics.Metrics().Len()))
+
+		// Return the first error but with partial metrics
+		return metrics, scrapeErrors[0]
+	}
+
+	s.logger.Debug("Successfully completed SQL Server metrics collection",
+		zap.Int("metrics_collected", scopeMetrics.Metrics().Len()))
 
 	return metrics, nil
 }

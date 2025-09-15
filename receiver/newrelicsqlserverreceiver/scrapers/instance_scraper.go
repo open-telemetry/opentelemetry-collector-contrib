@@ -44,14 +44,38 @@ func (s *InstanceScraper) ScrapeInstanceBufferMetrics(ctx context.Context, scope
 
 	var results []models.InstanceBufferMetrics
 	if err := s.connection.Query(ctx, &results, queries.InstanceBufferPoolQuery); err != nil {
+		s.logger.Error("Failed to execute instance buffer query",
+			zap.Error(err),
+			zap.String("query", queries.InstanceBufferPoolQuery))
 		return fmt.Errorf("failed to execute instance buffer query: %w", err)
 	}
 
-	if len(results) != 1 || results[0].InstanceBufferPoolSize == nil {
-		return fmt.Errorf("unexpected result from instance buffer query: got %d rows", len(results))
+	if len(results) == 0 {
+		s.logger.Warn("No results returned from instance buffer query - SQL Server may not be ready")
+		return fmt.Errorf("no results returned from instance buffer query")
 	}
 
-	return s.processInstanceBufferMetrics(results[0], scopeMetrics)
+	if len(results) > 1 {
+		s.logger.Warn("Multiple results returned from instance buffer query",
+			zap.Int("result_count", len(results)))
+		// Use the first result but log the issue
+	}
+
+	result := results[0]
+	if result.InstanceBufferPoolSize == nil {
+		s.logger.Error("Instance buffer pool size is null - invalid query result")
+		return fmt.Errorf("instance buffer pool size is null in query result")
+	}
+
+	if err := s.processInstanceBufferMetrics(result, scopeMetrics); err != nil {
+		s.logger.Error("Failed to process instance buffer metrics", zap.Error(err))
+		return fmt.Errorf("failed to process instance buffer metrics: %w", err)
+	}
+
+	s.logger.Debug("Successfully scraped instance buffer metrics",
+		zap.Int64("buffer_pool_size", *result.InstanceBufferPoolSize))
+
+	return nil
 }
 
 // processInstanceBufferMetrics processes buffer pool metrics and creates OpenTelemetry metrics

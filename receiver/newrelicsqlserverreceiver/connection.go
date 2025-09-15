@@ -91,6 +91,10 @@ func createConnectionWithAuth(ctx context.Context, cfg *Config, dbName string, l
 
 // determineAuthMethod determines which authentication method to use based on configuration
 func determineAuthMethod(cfg *Config, logger *zap.Logger) (AuthConnector, error) {
+	if cfg == nil {
+		return nil, fmt.Errorf("configuration cannot be nil")
+	}
+
 	switch {
 	case cfg.IsAzureADAuth():
 		logger.Debug("Detected Azure AD Service Principal authentication - using ClientID, TenantID, and ClientSecret")

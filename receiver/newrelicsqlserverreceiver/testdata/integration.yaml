@@ -1,0 +1,42 @@
+receivers:
+  newrelicsqlserverreceiver:
+    hostname: "sql-server.example.com"
+    port: "1434"
+    instance: "NAMED_INSTANCE"
+    username: "monitoring_user"
+    password: "secure_password"
+    client_id: "azure-client-id"
+    tenant_id: "azure-tenant-id"
+    client_secret: "azure-client-secret"
+    enable_ssl: true
+    trust_server_certificate: true
+    certificate_location: "/path/to/cert.pem"
+    enable_buffer_metrics: true
+    enable_database_reserve_metrics: true
+    enable_disk_metrics_in_bytes: true
+    max_concurrent_workers: 15
+    timeout: 60s
+    custom_metrics_query: "SELECT name, value FROM custom_metrics"
+    custom_metrics_config: "/path/to/custom_metrics.yml"
+    extra_connection_url_args: "encrypt=true;trustServerCertificate=false"
+    enable_query_monitoring: true
+    query_monitoring_response_time_threshold: 10
+    query_monitoring_count_threshold: 100
+    query_monitoring_fetch_interval: 60
+    collection_interval: 30s
+
+processors:
+  batch:
+    timeout: 1s
+    send_batch_size: 1024
+
+exporters:
+  logging:
+    loglevel: info
+
+service:
+  pipelines:
+    metrics:
+      receivers: [newrelicsqlserverreceiver]
+      processors: [batch]
+      exporters: [logging]

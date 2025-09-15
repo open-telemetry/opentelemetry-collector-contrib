@@ -100,18 +100,35 @@ func DefaultConfig() component.Config {
 // Based on nri-mssql ArgumentList.Validate() method
 func (cfg *Config) Validate() error {
 	if cfg.Hostname == "" {
-		return errors.New("invalid configuration: must specify a hostname")
+		return errors.New("hostname cannot be empty")
 	}
 
 	if cfg.Port != "" && cfg.Instance != "" {
-		return errors.New("invalid configuration: specify either port or instance but not both")
+		return errors.New("specify either port or instance but not both")
 	} else if cfg.Port == "" && cfg.Instance == "" {
 		// Default to port 1433 if neither is specified (matching nri-mssql behavior)
 		cfg.Port = "1433"
 	}
 
+	if cfg.Timeout <= 0 {
+		return errors.New("timeout must be positive")
+	}
+
+	if cfg.MaxConcurrentWorkers <= 0 {
+		return errors.New("max_concurrent_workers must be positive")
+	}
+
+	if cfg.EnableQueryMonitoring {
+		if cfg.QueryMonitoringResponseTimeThreshold <= 0 {
+			return errors.New("query_monitoring_response_time_threshold must be positive when query monitoring is enabled")
+		}
+		if cfg.QueryMonitoringCountThreshold <= 0 {
+			return errors.New("query_monitoring_count_threshold must be positive when query monitoring is enabled")
+		}
+	}
+
 	if cfg.EnableSSL && (!cfg.TrustServerCertificate && cfg.CertificateLocation == "") {
-		return errors.New("invalid configuration: must specify a certificate file when using SSL and not trusting server certificate")
+		return errors.New("must specify a certificate file when using SSL and not trusting server certificate")
 	}
 
 	if len(cfg.CustomMetricsConfig) > 0 {
@@ -121,14 +138,6 @@ func (cfg *Config) Validate() error {
 		if _, err := os.Stat(cfg.CustomMetricsConfig); err != nil {
 			return fmt.Errorf("custom_metrics_config file error: %w", err)
 		}
-	}
-
-	if cfg.MaxConcurrentWorkers <= 0 {
-		cfg.MaxConcurrentWorkers = 10 // Default from nri-mssql
-	}
-
-	if cfg.Timeout <= 0 {
-		cfg.Timeout = 30 * time.Second
 	}
 
 	return nil
@@ -206,15 +215,12 @@ func (cfg *Config) CreateConnectionURL(dbName string) string {
 // Based on nri-mssql connection.CreateAzureADConnectionURL() method
 func (cfg *Config) CreateAzureADConnectionURL(dbName string) string {
 	connectionString := fmt.Sprintf(
-		"server=%s;port=%s;database=%s;user id=%s@%s;password=%s;fedauth=ActiveDirectoryServicePrincipal;dial timeout=%.0f;connection timeout=%.0f",
+		"server=%s;port=%s;fedauth=ActiveDirectoryServicePrincipal;applicationclientid=%s;clientsecret=%s;database=%s",
 		cfg.Hostname,
 		cfg.Port,
-		dbName,
 		cfg.ClientID,     // Client ID
-		cfg.TenantID,     // Tenant ID
 		cfg.ClientSecret, // Client Secret
-		cfg.Timeout.Seconds(),
-		cfg.Timeout.Seconds(),
+		dbName,           // Database
 	)
 
 	if cfg.ExtraConnectionURLArgs != "" {
