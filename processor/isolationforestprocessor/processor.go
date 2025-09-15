@@ -105,13 +105,6 @@ func newIsolationForestProcessor(config *Config, logger *zap.Logger) (*isolation
 
 	processor.updateTicker = time.NewTicker(updateFreq)
 
-	// Properly track the background goroutine with WaitGroup
-	processor.shutdownWG.Add(1)
-	go func() {
-		defer processor.shutdownWG.Done()
-		processor.modelUpdateLoop()
-	}()
-
 	return processor, nil
 }
 
@@ -119,6 +112,14 @@ func newIsolationForestProcessor(config *Config, logger *zap.Logger) (*isolation
 func (p *isolationForestProcessor) Start(_ context.Context, _ component.Host) error {
 	p.logger.Info("Starting isolation forest processor")
 	// Any additional initialization logic can go here
+
+	 // Start the background model update loop
+	p.shutdownWG.Add(1)
+	go func() {
+		defer p.shutdownWG.Done()
+		p.modelUpdateLoop()
+	}()
+
 	return nil
 }
 
