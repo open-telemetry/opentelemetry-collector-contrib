@@ -479,7 +479,7 @@ type metricSystemLinuxMemoryHugePagesFree struct {
 func (m *metricSystemLinuxMemoryHugePagesFree) init() {
 	m.data.SetName("system.linux.memory.huge_pages.free")
 	m.data.SetDescription("The number of free huge pages. (Linux only)")
-	m.data.SetUnit("By")
+	m.data.SetUnit("1")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -530,7 +530,7 @@ type metricSystemLinuxMemoryHugePagesPageSize struct {
 func (m *metricSystemLinuxMemoryHugePagesPageSize) init() {
 	m.data.SetName("system.linux.memory.huge_pages.page_size")
 	m.data.SetDescription("A constant value for the system's configured huge pages page size. (Linux only)")
-	m.data.SetUnit("By")
+	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 }
 
@@ -579,7 +579,7 @@ type metricSystemLinuxMemoryHugePagesReserved struct {
 func (m *metricSystemLinuxMemoryHugePagesReserved) init() {
 	m.data.SetName("system.linux.memory.huge_pages.reserved")
 	m.data.SetDescription("The number of reserved huge pages that are not yet allocated. (Linux only)")
-	m.data.SetUnit("By")
+	m.data.SetUnit("1")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -630,7 +630,7 @@ type metricSystemLinuxMemoryHugePagesSurplus struct {
 func (m *metricSystemLinuxMemoryHugePagesSurplus) init() {
 	m.data.SetName("system.linux.memory.huge_pages.surplus")
 	m.data.SetDescription("The number of surplus huge pages. (Linux only)")
-	m.data.SetUnit("By")
+	m.data.SetUnit("1")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -681,7 +681,7 @@ type metricSystemLinuxMemoryHugePagesTotal struct {
 func (m *metricSystemLinuxMemoryHugePagesTotal) init() {
 	m.data.SetName("system.linux.memory.huge_pages.total")
 	m.data.SetDescription("The total number of allocated huge pages in the system. (Linux only)")
-	m.data.SetUnit("By")
+	m.data.SetUnit("1")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
