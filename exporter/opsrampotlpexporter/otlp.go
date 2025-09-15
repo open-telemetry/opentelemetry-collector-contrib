@@ -43,7 +43,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
-	"go.uber.org/zap"
 	"golang.org/x/net/http/httpproxy"
 	"golang.org/x/net/proxy"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
@@ -78,7 +77,7 @@ type opsrampOTLPExporter struct {
 	userAgent   string
 	accessToken string
 
-	logger *zap.Logger
+	//logger *zap.Logger
 }
 
 // Crete new exporter and start it. The exporter will begin connecting, but
@@ -293,8 +292,8 @@ func (e *opsrampOTLPExporter) pushLogs(_ context.Context, ld plog.Logs) error {
 		return nil
 	}
 
-	start := time.Now()
-	e.logger.Debug("Exporter: pushLogs Started processing logs", zap.String("start at", start.Format(time.RFC3339)))
+	//start := time.Now()
+	//e.logger.Debug("Exporter: pushLogs Started processing logs", zap.String("start at", start.Format(time.RFC3339)))
 
 	if e.config.Masking != nil {
 		e.applyMasking(ld)
