@@ -15,7 +15,15 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/elasticsearch"
 )
 
-var receiverRegex = regexp.MustCompile(`/receiver/(\w*receiver)`)
+var receiverRegex = regexp.MustCompile(`/receiver/(\w+receiver)`)
+
+var selfTelemetryScopeNames = map[string]bool{
+	"go.opentelemetry.io/collector/receiver/receiverhelper":   true,
+	"go.opentelemetry.io/collector/scraper/scraperhelper":     true,
+	"go.opentelemetry.io/collector/processor/processorhelper": true,
+	"go.opentelemetry.io/collector/exporter/exporterhelper":   true,
+	"go.opentelemetry.io/collector/service":                   true,
+}
 
 const (
 	maxDataStreamBytes       = 100
@@ -187,6 +195,9 @@ func routeRecord(
 		if submatch := receiverRegex.FindStringSubmatch(scope.Name()); len(submatch) > 0 {
 			receiverName := submatch[1]
 			dataset = receiverName
+		} else if selfTelemetryScopeNames[scope.Name()] {
+			// For collector self-telemetry, use a fixed dataset name
+			dataset = collectorSelfTelemetryDataStreamDataset
 		}
 	}
 
