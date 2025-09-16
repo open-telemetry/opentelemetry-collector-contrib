@@ -821,6 +821,8 @@ func (c *mySQLClient) explainQuery(statement, schema string, logger *zap.Logger)
 	return plan
 }
 
+// This function filter out queries that can not work with 'EXPLAIN'
+// ref: https://dev.mysql.com/doc/refman/8.4/en/using-explain.html
 func isQueryExplainable(query string) bool {
 	sqlStartingKeywords := []string{
 		"select",
