@@ -55,3 +55,185 @@
 // - Azure SQL Managed Instance: Most DMVs available, some OS limitations
 // - Standard SQL Server: Full access to all DMVs and system objects
 package queries
+
+import (
+	"fmt"
+)
+
+// Engine edition constants for SQL Server engine identification
+const (
+	// StandardSQLServerEngineEdition represents on-premises SQL Server
+	StandardSQLServerEngineEdition = 0
+	// AzureSQLDatabaseEngineEdition represents Azure SQL Database
+	AzureSQLDatabaseEngineEdition = 5
+	// AzureSQLManagedInstanceEngineEdition represents Azure SQL Managed Instance
+	AzureSQLManagedInstanceEngineEdition = 8
+)
+
+// EngineSet is a generic struct that acts as a "bucket" for holding
+// the default and Azure-specific implementations for a given resource.
+type EngineSet[T any] struct {
+	Default                 T
+	AzureSQLDatabase        T
+	AzureSQLManagedInstance T
+}
+
+// Select returns the correct implementation from the set based on the engine edition.
+func (s EngineSet[T]) Select(engineEdition int) T {
+	switch engineEdition {
+	case AzureSQLDatabaseEngineEdition:
+		return s.AzureSQLDatabase
+	case AzureSQLManagedInstanceEngineEdition:
+		return s.AzureSQLManagedInstance
+	default:
+		return s.Default
+	}
+}
+
+// QueryDefinitionType is a custom type for identifying different query sets.
+type QueryDefinitionType int
+
+// Enum of the different query definition types.
+const (
+	InstanceQueries = iota
+	DatabaseQueries
+	PerformanceQueries
+)
+
+// QueryDefinition represents a SQL query with metadata
+type QueryDefinition struct {
+	Query       string
+	MetricName  string
+	Description string
+}
+
+// DetectEngineEdition queries the SQL Server to determine the engine edition
+func DetectEngineEdition(queryFunc func(string) (int, error)) (int, error) {
+	// Query to detect engine edition
+	// SERVERPROPERTY('EngineEdition') returns:
+	// 1 = Personal or Desktop Engine
+	// 2 = Standard
+	// 3 = Enterprise
+	// 4 = Express
+	// 5 = Azure SQL Database
+	// 6 = Azure SQL Data Warehouse (now Azure Synapse Analytics)
+	// 8 = Azure SQL Managed Instance
+	query := "SELECT CAST(SERVERPROPERTY('EngineEdition') AS INT) AS EngineEdition"
+
+	engineEdition, err := queryFunc(query)
+	if err != nil {
+		// Default to standard SQL Server if detection fails
+		return StandardSQLServerEngineEdition, err
+	}
+
+	return engineEdition, nil
+}
+
+// Query definitions for instance metrics
+var instanceQueriesDefault = []*QueryDefinition{
+	{
+		Query:       InstanceBufferPoolQuery,
+		MetricName:  "sqlserver.instance.buffer_pool_size",
+		Description: "Buffer pool size in bytes",
+	},
+	{
+		Query: `SELECT COUNT(*) as user_connections 
+		FROM sys.dm_exec_sessions 
+		WHERE is_user_process = 1`,
+		MetricName:  "sqlserver.instance.user_connections",
+		Description: "Current number of user connections",
+	},
+	{
+		Query: `SELECT cntr_value as page_life_expectancy
+		FROM sys.dm_os_performance_counters 
+		WHERE counter_name = 'Page life expectancy' 
+		AND object_name LIKE '%Buffer Manager%'`,
+		MetricName:  "sqlserver.instance.page_life_expectancy",
+		Description: "Page life expectancy in seconds",
+	},
+}
+
+var instanceQueriesAzureManagedDatabase = []*QueryDefinition{
+	{
+		Query:       InstanceBufferPoolQuery,
+		MetricName:  "sqlserver.instance.buffer_pool_size",
+		Description: "Buffer pool size in bytes",
+	},
+}
+
+var instanceQueriesAzureManagedInstance = []*QueryDefinition{
+	{
+		Query:       InstanceBufferPoolQuery,
+		MetricName:  "sqlserver.instance.buffer_pool_size",
+		Description: "Buffer pool size in bytes",
+	},
+}
+
+// queryDefinitionSets maps query types to engine-specific query sets
+var queryDefinitionSets = map[QueryDefinitionType]EngineSet[[]*QueryDefinition]{
+	InstanceQueries: {
+		Default:                 instanceQueriesDefault,
+		AzureSQLDatabase:        instanceQueriesAzureManagedDatabase,
+		AzureSQLManagedInstance: instanceQueriesAzureManagedInstance,
+	},
+	DatabaseQueries: {
+		Default:                 nil,
+		AzureSQLDatabase:        nil,
+		AzureSQLManagedInstance: nil,
+	},
+}
+
+// GetQueryDefinitions returns the appropriate query definitions based on query type and engine edition
+func GetQueryDefinitions(defType QueryDefinitionType, engineEdition int) []*QueryDefinition {
+	definitionSet, ok := queryDefinitionSets[defType]
+	if !ok {
+		// Return empty slice if invalid query definition type
+		return []*QueryDefinition{}
+	}
+	return definitionSet.Select(engineEdition)
+}
+
+// GetQueryForMetric retrieves the appropriate query for a metric based on query type and engine edition with Default fallback
+func GetQueryForMetric(defType QueryDefinitionType, metricName string, engineEdition int) (string, bool) {
+	// Strategy 1: Try engine-specific queries first
+	queryDefs := GetQueryDefinitions(defType, engineEdition)
+	for _, queryDef := range queryDefs {
+		if queryDef.MetricName == metricName {
+			return queryDef.Query, true
+		}
+	}
+
+	// Strategy 2: Fallback to Default engine type queries if current engine doesn't have the specific query
+	if engineEdition != StandardSQLServerEngineEdition {
+		defaultQueryDefs := GetQueryDefinitions(defType, StandardSQLServerEngineEdition)
+		for _, queryDef := range defaultQueryDefs {
+			if queryDef.MetricName == metricName {
+				return queryDef.Query, true
+			}
+		}
+	}
+
+	return "", false
+}
+
+// GetEngineTypeName returns a human-readable name for the engine edition
+func GetEngineTypeName(engineEdition int) string {
+	switch engineEdition {
+	case StandardSQLServerEngineEdition:
+		return "Standard SQL Server"
+	case AzureSQLDatabaseEngineEdition:
+		return "Azure SQL Database"
+	case AzureSQLManagedInstanceEngineEdition:
+		return "Azure SQL Managed Instance"
+	default:
+		return fmt.Sprintf("Unknown Engine Edition (%d)", engineEdition)
+	}
+}
+
+// TruncateQuery truncates a query string for logging purposes
+func TruncateQuery(query string, maxLen int) string {
+	if len(query) <= maxLen {
+		return query
+	}
+	return query[:maxLen] + "..."
+}

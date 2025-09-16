@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/newrelicsqlserverreceiver/queries"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/newrelicsqlserverreceiver/scrapers"
 )
 
@@ -25,6 +26,7 @@ type sqlServerScraper struct {
 	startTime       pcommon.Timestamp
 	settings        receiver.Settings
 	instanceScraper *scrapers.InstanceScraper
+	engineEdition   int // SQL Server engine edition (0=Unknown, 5=Azure DB, 8=Azure MI)
 }
 
 // newSqlServerScraper creates a new SQL Server scraper with structured approach
@@ -53,12 +55,26 @@ func (s *sqlServerScraper) start(ctx context.Context, _ component.Host) error {
 		return err
 	}
 
-	// Initialize instance scraper with structured approach
-	s.instanceScraper = scrapers.NewInstanceScraper(s.connection, s.logger)
+	// Get EngineEdition (following nri-mssql pattern)
+	s.engineEdition = 0 // Default to 0 (Unknown)
+	s.engineEdition, err = s.detectEngineEdition(ctx)
+	if err != nil {
+		s.logger.Debug("Failed to get engine edition, using default", zap.Error(err))
+		s.engineEdition = queries.StandardSQLServerEngineEdition
+	} else {
+		s.logger.Info("Detected SQL Server engine edition",
+			zap.Int("engine_edition", s.engineEdition),
+			zap.String("engine_type", queries.GetEngineTypeName(s.engineEdition)))
+	}
+
+	// Initialize instance scraper with engine edition for engine-specific queries
+	s.instanceScraper = scrapers.NewInstanceScraper(s.connection, s.logger, s.engineEdition)
 
 	s.logger.Info("Successfully connected to SQL Server",
 		zap.String("hostname", s.config.Hostname),
-		zap.String("port", s.config.Port))
+		zap.String("port", s.config.Port),
+		zap.Int("engine_edition", s.engineEdition),
+		zap.String("engine_type", queries.GetEngineTypeName(s.engineEdition)))
 
 	return nil
 }
@@ -70,6 +86,30 @@ func (s *sqlServerScraper) shutdown(ctx context.Context) error {
 		s.connection.Close()
 	}
 	return nil
+}
+
+// detectEngineEdition detects the SQL Server engine edition following nri-mssql pattern
+func (s *sqlServerScraper) detectEngineEdition(ctx context.Context) (int, error) {
+	queryFunc := func(query string) (int, error) {
+		var results []struct {
+			EngineEdition int `db:"EngineEdition"`
+		}
+
+		err := s.connection.Query(ctx, &results, query)
+		if err != nil {
+			return 0, err
+		}
+
+		if len(results) == 0 {
+			s.logger.Debug("EngineEdition query returned empty output.")
+			return 0, nil
+		}
+
+		s.logger.Debug("Detected EngineEdition", zap.Int("engine_edition", results[0].EngineEdition))
+		return results[0].EngineEdition, nil
+	}
+
+	return queries.DetectEngineEdition(queryFunc)
 }
 
 // scrape collects SQL Server instance metrics using structured approach
