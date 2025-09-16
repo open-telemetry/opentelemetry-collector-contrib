@@ -504,7 +504,9 @@ func TestK8sAPIServer_GetMetrics(t *testing.T) {
 			assertMetricValueEqual(t, metric, "hyperpod_node_health_status_unschedulable_pending_replacement", int64(0))
 		case ci.TypePersistentVolume:
 			assertMetricValueEqual(t, metric, "persistent_volume_count", int64(5))
+			assert.Equal(t, hostName, getStringAttrVal(metric, ci.NodeNameKey))
 		case ci.TypePersistentVolumeClaim:
+			assert.Equal(t, hostName, getStringAttrVal(metric, ci.NodeNameKey))
 			namespace := getStringAttrVal(metric, ci.K8sNamespace)
 			pvcName := getStringAttrVal(metric, ci.PersistentVolumeClaimName)
 			pvcKey := namespace + "/" + pvcName
