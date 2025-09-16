@@ -10,14 +10,14 @@ require (
 	github.com/testcontainers/testcontainers-go v0.38.0
 	go.opentelemetry.io/collector/component v1.41.1-0.20250911155607-37a3ace6274c
 	go.opentelemetry.io/collector/component/componenttest v0.135.1-0.20250911155607-37a3ace6274c
-	go.opentelemetry.io/collector/config/configopaque v1.41.0
-	go.opentelemetry.io/collector/config/configretry v1.41.0
-	go.opentelemetry.io/collector/config/configtls v1.41.0
-	go.opentelemetry.io/collector/confmap v1.41.0
-	go.opentelemetry.io/collector/confmap/xconfmap v0.135.0
-	go.opentelemetry.io/collector/exporter v0.135.0
-	go.opentelemetry.io/collector/exporter/exporterhelper v0.135.0
-	go.opentelemetry.io/collector/exporter/exportertest v0.135.0
+	go.opentelemetry.io/collector/config/configopaque v1.41.1-0.20250911155607-37a3ace6274c
+	go.opentelemetry.io/collector/config/configretry v1.41.1-0.20250911155607-37a3ace6274c
+	go.opentelemetry.io/collector/config/configtls v1.41.1-0.20250911155607-37a3ace6274c
+	go.opentelemetry.io/collector/confmap v1.41.1-0.20250911155607-37a3ace6274c
+	go.opentelemetry.io/collector/confmap/xconfmap v0.135.1-0.20250911155607-37a3ace6274c
+	go.opentelemetry.io/collector/exporter v0.135.1-0.20250911155607-37a3ace6274c
+	go.opentelemetry.io/collector/exporter/exporterhelper v0.135.1-0.20250911155607-37a3ace6274c
+	go.opentelemetry.io/collector/exporter/exportertest v0.135.1-0.20250911155607-37a3ace6274c
 	go.opentelemetry.io/collector/featuregate v1.41.1-0.20250911155607-37a3ace6274c
 	go.opentelemetry.io/collector/pdata v1.41.1-0.20250911155607-37a3ace6274c
 	go.opentelemetry.io/otel v1.38.0
