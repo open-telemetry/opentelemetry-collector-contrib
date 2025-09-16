@@ -36,7 +36,9 @@ const (
 	// MetadataFromDaemonSet  is used to specify to extract metadata/labels/annotations from daemonset
 	MetadataFromDaemonSet = "daemonset"
 	// MetadataFromJob  is used to specify to extract metadata/labels/annotations from job
-	MetadataFromJob        = "job"
+	MetadataFromJob = "job"
+	// MetadataFromCronJob  is used to specify to extract metadata/labels/annotations from job
+	MetadataFromCronJob    = "cronjob"
 	PodIdentifierMaxLength = 4
 
 	ResourceSource   = "resource_attribute"
@@ -356,6 +358,12 @@ func (r *FieldExtractionRule) extractFromJobMetadata(metadata, tags map[string]s
 	}
 }
 
+func (r *FieldExtractionRule) extractFromCronJobMetadata(metadata, tags map[string]string, formatter string) {
+	if r.From == MetadataFromCronJob {
+		r.extractFromMetadata(metadata, tags, formatter)
+	}
+}
+
 func (r *FieldExtractionRule) extractFromMetadata(metadata, tags map[string]string, formatter string) {
 	if r.KeyRegex != nil {
 		for k, v := range metadata {
@@ -446,6 +454,13 @@ type DaemonSet struct {
 
 // Job represents a kubernetes job.
 type Job struct {
+	Name       string
+	UID        string
+	Attributes map[string]string
+}
+
+// CronJob represents a kubernetes cronjob.
+type CronJob struct {
 	Name       string
 	UID        string
 	Attributes map[string]string
