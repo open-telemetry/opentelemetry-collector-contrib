@@ -68,7 +68,7 @@ The following settings are optional:
         - However, the top queries collection will only run after 60 seconds have passed since the last collection.
       - For instance, you have global `collection_interval` as `10s` and `top_query_collection.collection_interval` as `5s`.
         - In this case, `top_query_collection.collection_internal` will make no effects to the collection. The collection will run every 10s.
-  - `query_plan_cache_size`: (optional, default = `1000`). The query plan cache size. Once we got explain for one query, we will store it in the cache.
+  - `query_plan_cache_size`: (optional, default = `1000`). The query plan cache size. Once we got query plan results from explain queries, we will store them in the cache.
     This defines the cache's size for query plan.
   - `query_plan_cache_ttl`: (optional, default = `1h`). How long will a query plan expire in the cache. The receiver will run a explain query to MySQL to get the query plan after it expires. Example values: `1m`, `1h`.
 
@@ -98,7 +98,7 @@ Details about the metrics produced by this receiver can be found in [metadata.ya
 ## Logs
 Details about the logs produced by this receiver can be found in [documentation.md](./documentation.md)
 
-### MySQL Requirements
+### MySQL Requirements to enable log collection
 
 | Parameter                                | Value              | Description                                         |
 |------------------------------------------|--------------------|-----------------------------------------------------|
