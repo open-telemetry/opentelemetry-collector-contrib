@@ -4,7 +4,7 @@ go 1.24.0
 
 require (
 	github.com/DataDog/agent-payload/v5 v5.0.164
-	github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil v0.71.0-devel.0.20250908112322-c0e8c8158aa2
+	github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil v0.72.0-devel
 	github.com/DataDog/datadog-agent/pkg/proto v0.71.0-devel.0.20250902202452-61c2536752eb
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.135.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter v0.135.0
@@ -92,7 +92,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/metrics v0.71.0-devel.0.20250902202452-61c2536752eb // indirect
 	github.com/DataDog/datadog-agent/pkg/obfuscate v0.71.0-devel.0.20250902202452-61c2536752eb // indirect
 	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/inframetadata v0.71.0-devel.0.20250902202452-61c2536752eb // indirect
-	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.71.0-devel.0.20250902202452-61c2536752eb // indirect
+	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.72.0-devel // indirect
 	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/logs v0.71.0-devel.0.20250820180704-be0d2d237646 // indirect
 	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics v0.71.0-devel.0.20250902202452-61c2536752eb // indirect
 	github.com/DataDog/datadog-agent/pkg/orchestrator/model v0.71.0-devel.0.20250902202452-61c2536752eb // indirect

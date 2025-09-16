@@ -11,12 +11,12 @@ require (
 	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/logsagentexporter v0.71.0-devel.0.20250902202452-61c2536752eb
 	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/serializerexporter v0.71.0-devel.0.20250902202452-61c2536752eb
 	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient v0.71.0-devel.0.20250902202452-61c2536752eb
-	github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil v0.71.0-devel.0.20250902202452-61c2536752eb
+	github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil v0.72.0-devel
 	github.com/DataDog/datadog-agent/comp/serializer/logscompression v0.71.0-devel.0.20250902202452-61c2536752eb
 	github.com/DataDog/datadog-agent/comp/trace/compression/impl-gzip v0.71.0-devel.0.20250902202452-61c2536752eb
 	github.com/DataDog/datadog-agent/pkg/logs/sources v0.71.0-devel.0.20250902202452-61c2536752eb
 	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/inframetadata v0.71.0-devel.0.20250902202452-61c2536752eb
-	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.71.0-devel.0.20250902202452-61c2536752eb
+	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.72.0-devel
 	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics v0.71.0-devel.0.20250902202452-61c2536752eb
 	github.com/DataDog/datadog-agent/pkg/proto v0.71.0-devel.0.20250902202452-61c2536752eb
 	github.com/DataDog/datadog-agent/pkg/trace v0.71.0-devel.0.20250902202452-61c2536752eb
