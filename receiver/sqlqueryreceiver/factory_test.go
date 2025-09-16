@@ -4,7 +4,6 @@
 package sqlqueryreceiver
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -17,14 +16,14 @@ import (
 func TestNewFactory(t *testing.T) {
 	factory := NewFactory()
 	_, err := factory.CreateMetrics(
-		context.Background(),
+		t.Context(),
 		receivertest.NewNopSettings(metadata.Type),
 		factory.CreateDefaultConfig(),
 		consumertest.NewNop(),
 	)
 	require.NoError(t, err)
 	_, err = factory.CreateLogs(
-		context.Background(),
+		t.Context(),
 		receivertest.NewNopSettings(metadata.Type),
 		factory.CreateDefaultConfig(),
 		consumertest.NewNop(),

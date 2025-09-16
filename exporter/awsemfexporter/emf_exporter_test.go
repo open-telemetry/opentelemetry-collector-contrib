@@ -65,7 +65,7 @@ func (m *mockHost) GetExtensions() map[component.ID]component.Component {
 }
 
 func TestConsumeMetrics(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 	factory := NewFactory()
 	expCfg := factory.CreateDefaultConfig().(*Config)
@@ -112,7 +112,7 @@ func TestConsumeMetricsWithNaNValues(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.testName, func(t *testing.T) {
-			ctx, cancel := context.WithCancel(context.Background())
+			ctx, cancel := context.WithCancel(t.Context())
 			defer cancel()
 			factory := NewFactory()
 			expCfg := factory.CreateDefaultConfig().(*Config)
@@ -151,7 +151,7 @@ func TestConsumeMetricsWithInfValues(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.testName, func(t *testing.T) {
-			ctx, cancel := context.WithCancel(context.Background())
+			ctx, cancel := context.WithCancel(t.Context())
 			defer cancel()
 			factory := NewFactory()
 			expCfg := factory.CreateDefaultConfig().(*Config)
@@ -169,7 +169,7 @@ func TestConsumeMetricsWithInfValues(t *testing.T) {
 }
 
 func TestConsumeMetricsWithOutputDestination(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 	factory := NewFactory()
 	expCfg := factory.CreateDefaultConfig().(*Config)
@@ -189,7 +189,7 @@ func TestConsumeMetricsWithOutputDestination(t *testing.T) {
 }
 
 func TestConsumeMetricsWithLogGroupStreamConfig(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 	factory := NewFactory()
 	expCfg := factory.CreateDefaultConfig().(*Config)
@@ -219,7 +219,7 @@ func TestConsumeMetricsWithLogGroupStreamConfig(t *testing.T) {
 }
 
 func TestConsumeMetricsWithLogGroupStreamValidPlaceholder(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 	factory := NewFactory()
 	expCfg := factory.CreateDefaultConfig().(*Config)
@@ -253,7 +253,7 @@ func TestConsumeMetricsWithLogGroupStreamValidPlaceholder(t *testing.T) {
 }
 
 func TestConsumeMetricsWithOnlyLogStreamPlaceholder(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 	factory := NewFactory()
 	expCfg := factory.CreateDefaultConfig().(*Config)
@@ -287,7 +287,7 @@ func TestConsumeMetricsWithOnlyLogStreamPlaceholder(t *testing.T) {
 }
 
 func TestConsumeMetricsWithWrongPlaceholder(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
 	factory := NewFactory()
@@ -337,7 +337,7 @@ func TestConsumeMetricsWithWrongPlaceholder(t *testing.T) {
 }
 
 func TestPushMetricsDataWithErr(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 	factory := NewFactory()
 	expCfg := factory.CreateDefaultConfig().(*Config)
@@ -393,7 +393,7 @@ func TestNewExporterWithoutConfig(t *testing.T) {
 	mockHost := &mockHost{}
 
 	// Check for error in start
-	err = exp.start(context.Background(), mockHost)
+	err = exp.start(t.Context(), mockHost)
 	assert.Error(t, err)
 }
 
@@ -492,7 +492,7 @@ func TestNewEmfExporterWithoutConfig(t *testing.T) {
 	mockHost := &mockHost{}
 
 	// Check for error in start
-	ctx := context.Background()
+	ctx := t.Context()
 	err = exp.start(ctx, mockHost)
 	assert.Error(t, err) // We expect an error here due to the fake AWS_STS_REGIONAL_ENDPOINTS
 
@@ -503,7 +503,7 @@ func TestNewEmfExporterWithoutConfig(t *testing.T) {
 func TestMiddleware(t *testing.T) {
 	testType, _ := component.NewType("test")
 	id := component.NewID(testType)
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 	factory := NewFactory()
 	expCfg := factory.CreateDefaultConfig().(*Config)

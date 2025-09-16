@@ -4,7 +4,6 @@
 package snowflakereceiver
 
 import (
-	"context"
 	"database/sql"
 	"database/sql/driver"
 	"reflect"
@@ -50,7 +49,7 @@ func TestClientReadDB(t *testing.T) {
 		logger: receivertest.NewNopSettings(metadata.Type).Logger,
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	_, err = client.readDB(ctx, q)
 	if err != nil {
@@ -273,7 +272,7 @@ func TestMetricQueries(t *testing.T) {
 				client: db,
 				logger: receivertest.NewNopSettings(metadata.Type).Logger,
 			}
-			ctx := context.Background()
+			ctx := t.Context()
 
 			// iteratively call each client method with the correct db mock
 			clientVal := reflect.ValueOf(&client)

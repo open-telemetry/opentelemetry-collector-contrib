@@ -6,7 +6,6 @@
 package integrationtest // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/integrationtest"
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"runtime"
@@ -84,7 +83,7 @@ func testIntegrationInternalMetrics(t *testing.T, expectedMetrics map[string]str
 	factories := getIntegrationTestComponents(t)
 	app := getIntegrationTestCollector(t, "integration_test_internal_metrics_config.yaml", factories)
 	go func() {
-		assert.NoError(t, app.Run(context.Background()))
+		assert.NoError(t, app.Run(t.Context()))
 	}()
 	defer app.Shutdown()
 

@@ -44,5 +44,5 @@ func getLogExporter(t *testing.T) *s3Exporter {
 func TestLog(t *testing.T) {
 	logs := getTestLogs(t)
 	exporter := getLogExporter(t)
-	assert.NoError(t, exporter.ConsumeLogs(context.Background(), logs))
+	assert.NoError(t, exporter.ConsumeLogs(t.Context(), logs))
 }

@@ -4,7 +4,6 @@
 package kineticaexporter
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -28,11 +27,11 @@ func TestFactory_CreateLogs(t *testing.T) {
 		cfg.Host = defaultHost
 	})
 	params := exportertest.NewNopSettings(metadata.Type)
-	exporter, err := factory.CreateLogs(context.Background(), params, cfg)
+	exporter, err := factory.CreateLogs(t.Context(), params, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exporter)
 
-	require.NoError(t, exporter.Shutdown(context.TODO()))
+	require.NoError(t, exporter.Shutdown(t.Context()))
 }
 
 func TestFactory_CreateTraces(t *testing.T) {
@@ -41,11 +40,11 @@ func TestFactory_CreateTraces(t *testing.T) {
 		cfg.Host = defaultHost
 	})
 	params := exportertest.NewNopSettings(metadata.Type)
-	exporter, err := factory.CreateTraces(context.Background(), params, cfg)
+	exporter, err := factory.CreateTraces(t.Context(), params, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exporter)
 
-	require.NoError(t, exporter.Shutdown(context.TODO()))
+	require.NoError(t, exporter.Shutdown(t.Context()))
 }
 
 func TestFactory_CreateMetrics(t *testing.T) {
@@ -54,9 +53,9 @@ func TestFactory_CreateMetrics(t *testing.T) {
 		cfg.Host = defaultHost
 	})
 	params := exportertest.NewNopSettings(metadata.Type)
-	exporter, err := factory.CreateMetrics(context.Background(), params, cfg)
+	exporter, err := factory.CreateMetrics(t.Context(), params, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exporter)
 
-	require.NoError(t, exporter.Shutdown(context.TODO()))
+	require.NoError(t, exporter.Shutdown(t.Context()))
 }

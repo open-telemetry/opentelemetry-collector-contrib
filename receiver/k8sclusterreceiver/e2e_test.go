@@ -6,7 +6,6 @@
 package k8sclusterreceiver
 
 import (
-	"context"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -265,18 +264,18 @@ func startUpSink(t *testing.T, consumer any) func() {
 
 	switch c := consumer.(type) {
 	case *consumertest.MetricsSink:
-		rcvr, err = f.CreateMetrics(context.Background(), receivertest.NewNopSettings(f.Type()), cfg, c)
+		rcvr, err = f.CreateMetrics(t.Context(), receivertest.NewNopSettings(f.Type()), cfg, c)
 	case *consumertest.LogsSink:
-		rcvr, err = f.CreateLogs(context.Background(), receivertest.NewNopSettings(f.Type()), cfg, c)
+		rcvr, err = f.CreateLogs(t.Context(), receivertest.NewNopSettings(f.Type()), cfg, c)
 	default:
 		t.Fatalf("unsupported consumer type: %T", c)
 	}
 
 	require.NoError(t, err, "failed creating receiver")
-	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, rcvr.Start(t.Context(), componenttest.NewNopHost()))
 
 	return func() {
-		require.NoError(t, rcvr.Shutdown(context.Background()))
+		require.NoError(t, rcvr.Shutdown(t.Context()))
 	}
 }
 

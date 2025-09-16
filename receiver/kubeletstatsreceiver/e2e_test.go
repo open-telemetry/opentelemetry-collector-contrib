@@ -6,7 +6,6 @@
 package kubeletstatsreceiver
 
 import (
-	"context"
 	"path/filepath"
 	"testing"
 	"time"
@@ -71,11 +70,11 @@ func startUpSink(t *testing.T, mc *consumertest.MetricsSink) func() {
 	cfg.HTTP = nil
 	cfg.GRPC.NetAddr.Endpoint = "0.0.0.0:4317"
 
-	rcvr, err := f.CreateMetrics(context.Background(), receivertest.NewNopSettings(f.Type()), cfg, mc)
+	rcvr, err := f.CreateMetrics(t.Context(), receivertest.NewNopSettings(f.Type()), cfg, mc)
 	require.NoError(t, err, "failed creating metrics receiver")
-	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, rcvr.Start(t.Context(), componenttest.NewNopHost()))
 	return func() {
-		assert.NoError(t, rcvr.Shutdown(context.Background()))
+		assert.NoError(t, rcvr.Shutdown(t.Context()))
 	}
 }
 

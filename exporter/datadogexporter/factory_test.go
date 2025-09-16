@@ -83,7 +83,7 @@ func TestCreateAPIMetricsExporter(t *testing.T) {
 	c.Metrics.Endpoint = server.URL
 	c.HostMetadata.Enabled = false
 
-	ctx := context.Background()
+	ctx := t.Context()
 	exp, err := factory.CreateMetrics(
 		ctx,
 		exportertest.NewNopSettings(metadata.Type),
@@ -119,7 +119,7 @@ func TestCreateAPIExporterFailOnInvalidKey_Zorkian(t *testing.T) {
 
 	t.Run("true", func(t *testing.T) {
 		c.API.FailOnInvalidKey = true
-		ctx := context.Background()
+		ctx := t.Context()
 		// metrics exporter
 		mexp, err := factory.CreateMetrics(
 			ctx,
@@ -147,7 +147,7 @@ func TestCreateAPIExporterFailOnInvalidKey_Zorkian(t *testing.T) {
 	})
 	t.Run("false", func(t *testing.T) {
 		c.API.FailOnInvalidKey = false
-		ctx := context.Background()
+		ctx := t.Context()
 		exp, err := factory.CreateMetrics(
 			ctx,
 			exportertest.NewNopSettings(metadata.Type),
@@ -198,7 +198,7 @@ func TestCreateAPIExporterFailOnInvalidKey_Serializer(t *testing.T) {
 
 	t.Run("true", func(t *testing.T) {
 		c.API.FailOnInvalidKey = true
-		ctx := context.Background()
+		ctx := t.Context()
 		// metrics exporter
 		mexp, err := factory.CreateMetrics(
 			ctx,
@@ -226,7 +226,7 @@ func TestCreateAPIExporterFailOnInvalidKey_Serializer(t *testing.T) {
 	})
 	t.Run("false", func(t *testing.T) {
 		c.API.FailOnInvalidKey = false
-		ctx := context.Background()
+		ctx := t.Context()
 		exp, err := factory.CreateMetrics(
 			ctx,
 			exportertest.NewNopSettings(metadata.Type),
@@ -272,7 +272,7 @@ func TestCreateAPILogsExporter(t *testing.T) {
 	c.Metrics.Endpoint = server.URL
 	c.HostMetadata.Enabled = false
 
-	ctx := context.Background()
+	ctx := t.Context()
 	exp, err := factory.CreateLogs(
 		ctx,
 		exportertest.NewNopSettings(metadata.Type),
@@ -288,7 +288,7 @@ func TestOnlyMetadata(t *testing.T) {
 	defer server.Close()
 
 	factory := NewFactory()
-	ctx := context.Background()
+	ctx := t.Context()
 	cfg := &datadogconfig.Config{
 		ClientConfig:  defaultClientConfig(),
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),
@@ -354,7 +354,7 @@ func TestStopExporters(t *testing.T) {
 	c.Metrics.Endpoint = server.URL
 	c.HostMetadata.Enabled = false
 
-	ctx := context.Background()
+	ctx := t.Context()
 	expTraces, err := factory.CreateTraces(
 		ctx,
 		exportertest.NewNopSettings(metadata.Type),

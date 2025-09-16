@@ -4,7 +4,6 @@
 package prometheusscraper
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -32,21 +31,21 @@ func TestSimplePrometheusScraperBadInputs(t *testing.T) {
 
 	tests := []SimplePrometheusScraperOpts{
 		{
-			Ctx:               context.TODO(),
+			Ctx:               t.Context(),
 			TelemetrySettings: settings,
 			Consumer:          nil,
 			Host:              componenttest.NewNopHost(),
 			HostInfoProvider:  mockHostInfoProvider{},
 		},
 		{
-			Ctx:               context.TODO(),
+			Ctx:               t.Context(),
 			TelemetrySettings: settings,
 			Consumer:          MockConsumer{},
 			Host:              nil,
 			HostInfoProvider:  mockHostInfoProvider{},
 		},
 		{
-			Ctx:               context.TODO(),
+			Ctx:               t.Context(),
 			TelemetrySettings: settings,
 			Consumer:          MockConsumer{},
 			Host:              componenttest.NewNopHost(),

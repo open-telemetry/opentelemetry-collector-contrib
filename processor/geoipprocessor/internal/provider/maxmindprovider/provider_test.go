@@ -4,7 +4,6 @@
 package maxmind
 
 import (
-	"context"
 	"net"
 	"os"
 	"runtime"
@@ -105,7 +104,7 @@ func TestProviderLocation(t *testing.T) {
 			assert.NoError(t, err)
 
 			// assert metrics
-			actualAttributes, err := provider.Location(context.Background(), tt.sourceIP)
+			actualAttributes, err := provider.Location(t.Context(), tt.sourceIP)
 			if tt.expectedErrMsg != "" {
 				assert.EqualError(t, err, tt.expectedErrMsg)
 				return

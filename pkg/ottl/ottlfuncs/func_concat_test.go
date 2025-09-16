@@ -234,6 +234,6 @@ func Test_concat_error(t *testing.T) {
 		},
 	}
 	exprFunc := concat[any]([]ottl.StringLikeGetter[any]{target}, "test")
-	_, err := exprFunc(context.Background(), nil)
+	_, err := exprFunc(t.Context(), nil)
 	assert.Error(t, err)
 }

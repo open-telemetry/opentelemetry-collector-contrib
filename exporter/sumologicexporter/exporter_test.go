@@ -4,7 +4,6 @@
 package sumologicexporter
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"sync"
@@ -86,7 +85,7 @@ func prepareExporterTest(t *testing.T, cfg *Config, cb []func(w http.ResponseWri
 	exp, err := initExporter(cfg, exportertest.NewNopSettings(metadata.Type))
 	require.NoError(t, err)
 
-	require.NoError(t, exp.start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, exp.start(t.Context(), componenttest.NewNopHost()))
 
 	return &exporterTest{
 		srv:        testServer,
@@ -107,7 +106,7 @@ func TestAllSuccess(t *testing.T) {
 	logs := logRecordsToLogs(exampleLog())
 	logs.MarkReadOnly()
 
-	err := test.exp.pushLogsData(context.Background(), logs)
+	err := test.exp.pushLogsData(t.Context(), logs)
 	assert.NoError(t, err)
 }
 
@@ -159,7 +158,7 @@ func TestLogsResourceAttributesSentAsFields(t *testing.T) {
 			test := prepareExporterTest(t, cfg, tc.callbacks)
 
 			logs := tc.logsFunc()
-			assert.NoError(t, test.exp.pushLogsData(context.Background(), logs))
+			assert.NoError(t, test.exp.pushLogsData(t.Context(), logs))
 			assert.EqualValues(t, len(tc.callbacks), atomic.LoadInt32(test.reqCounter))
 		})
 	}
@@ -189,7 +188,7 @@ func TestAllFailed(t *testing.T) {
 	logsExpected := plog.NewLogs()
 	logsSlice.CopyTo(logsExpected.ResourceLogs().AppendEmpty())
 
-	err := test.exp.pushLogsData(context.Background(), logs)
+	err := test.exp.pushLogsData(t.Context(), logs)
 	assert.EqualError(t, err, "failed sending data: status: 500 Internal Server Error")
 
 	var partial consumererror.Logs
@@ -228,7 +227,7 @@ func TestPartiallyFailed(t *testing.T) {
 	logsExpected := plog.NewLogs()
 	logsSlice2.CopyTo(logsExpected.ResourceLogs().AppendEmpty())
 
-	err := test.exp.pushLogsData(context.Background(), logs)
+	err := test.exp.pushLogsData(t.Context(), logs)
 	assert.EqualError(t, err, "failed sending data: status: 500 Internal Server Error")
 
 	var partial consumererror.Logs
@@ -250,7 +249,7 @@ func TestInvalidHTTPClient(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.EqualError(t,
-		exp.start(context.Background(), componenttest.NewNopHost()),
+		exp.start(t.Context(), componenttest.NewNopHost()),
 		"failed to create HTTP Client: failed to load TLS config: invalid TLS min_version: unsupported TLS version: \"invalid\"",
 	)
 }
@@ -310,7 +309,7 @@ func TestPushLogs_DontRemoveSourceAttributes(t *testing.T) {
 	config.MaxRequestBodySize = 32
 
 	test := prepareExporterTest(t, config, callbacks)
-	assert.NoError(t, test.exp.pushLogsData(context.Background(), createLogs()))
+	assert.NoError(t, test.exp.pushLogsData(t.Context(), createLogs()))
 }
 
 func TestAllMetricsSuccess(t *testing.T) {
@@ -346,7 +345,7 @@ gauge_metric_name{foo="bar",remote_name="156955",url="http://another_url"} 245 1
 			metric := metricAndAttributesToPdataMetrics(tc.metricFunc())
 			metric.MarkReadOnly()
 
-			err := test.exp.pushMetricsData(context.Background(), metric)
+			err := test.exp.pushMetricsData(t.Context(), metric)
 			assert.NoError(t, err)
 		})
 	}
@@ -382,7 +381,7 @@ func TestAllMetricsOTLP(t *testing.T) {
 		},
 	)
 
-	err := test.exp.pushMetricsData(context.Background(), metrics)
+	err := test.exp.pushMetricsData(t.Context(), metrics)
 	assert.NoError(t, err)
 }
 
@@ -458,7 +457,7 @@ gauge_metric_name{foo="bar",remote_name="156955",url="http://another_url"} 245 1
 			test.exp.config.MetricFormat = PrometheusFormat
 
 			metrics := tc.metricFunc()
-			err := test.exp.pushMetricsData(context.Background(), metrics)
+			err := test.exp.pushMetricsData(t.Context(), metrics)
 
 			assert.EqualError(t, err, tc.expectedError)
 
@@ -489,7 +488,7 @@ func TestMetricsPrometheusFormatMetadataFilter(t *testing.T) {
 
 	metrics.MarkReadOnly()
 
-	err := test.exp.pushMetricsData(context.Background(), metrics)
+	err := test.exp.pushMetricsData(t.Context(), metrics)
 	assert.NoError(t, err)
 }
 
@@ -512,9 +511,9 @@ func Benchmark_ExporterPushLogs(b *testing.B) {
 
 	exp, err := initExporter(cfg, exportertest.NewNopSettings(metadata.Type))
 	require.NoError(b, err)
-	require.NoError(b, exp.start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(b, exp.start(b.Context(), componenttest.NewNopHost()))
 	defer func() {
-		require.NoError(b, exp.shutdown(context.Background()))
+		require.NoError(b, exp.shutdown(b.Context()))
 	}()
 
 	b.ResetTimer()
@@ -525,7 +524,7 @@ func Benchmark_ExporterPushLogs(b *testing.B) {
 			go func() {
 				logs := logRecordsToLogs(exampleNLogs(128))
 				logs.MarkReadOnly()
-				err := exp.pushLogsData(context.Background(), logs)
+				err := exp.pushLogsData(b.Context(), logs)
 				if err != nil {
 					b.Logf("Failed pushing logs: %v", err)
 				}
@@ -545,7 +544,7 @@ func TestSendEmptyLogsOTLP(t *testing.T) {
 	logs := plog.NewLogs()
 	logs.MarkReadOnly()
 
-	err := test.exp.pushLogsData(context.Background(), logs)
+	err := test.exp.pushLogsData(t.Context(), logs)
 	assert.NoError(t, err)
 }
 
@@ -557,7 +556,7 @@ func TestSendEmptyMetricsOTLP(t *testing.T) {
 
 	metrics := metricPairToMetrics()
 
-	err := test.exp.pushMetricsData(context.Background(), metrics)
+	err := test.exp.pushMetricsData(t.Context(), metrics)
 	assert.NoError(t, err)
 }
 
@@ -568,7 +567,7 @@ func TestSendEmptyTraces(t *testing.T) {
 
 	traces := ptrace.NewTraces()
 
-	err := test.exp.pushTracesData(context.Background(), traces)
+	err := test.exp.pushTracesData(t.Context(), traces)
 	assert.NoError(t, err)
 }
 

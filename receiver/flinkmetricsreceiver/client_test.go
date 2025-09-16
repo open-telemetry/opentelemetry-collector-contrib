@@ -4,7 +4,6 @@
 package flinkmetricsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver"
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -92,7 +91,7 @@ func TestNewClient(t *testing.T) {
 
 	for _, tc := range testCase {
 		t.Run(tc.desc, func(t *testing.T) {
-			ac, err := newClient(context.Background(), tc.cfg, tc.host, tc.settings, tc.logger)
+			ac, err := newClient(t.Context(), tc.cfg, tc.host, tc.settings, tc.logger)
 			if tc.expectError != nil {
 				require.Nil(t, ac)
 				require.ErrorContains(t, err, tc.expectError.Error())
@@ -115,7 +114,7 @@ func createTestClient(t *testing.T, baseEndpoint string) client {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = baseEndpoint
 
-	testClient, err := newClient(context.Background(), cfg, componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings(), zap.NewNop())
+	testClient, err := newClient(t.Context(), cfg, componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings(), zap.NewNop())
 	require.NoError(t, err)
 	return testClient
 }
@@ -135,7 +134,7 @@ func TestGetJobmanagerMetrics(t *testing.T) {
 
 				tc := createTestClient(t, ts.URL)
 
-				metrics, err := tc.GetJobmanagerMetrics(context.Background())
+				metrics, err := tc.GetJobmanagerMetrics(t.Context())
 				require.Nil(t, metrics)
 				require.EqualError(t, err, "non 200 code returned 401")
 			},
@@ -151,7 +150,7 @@ func TestGetJobmanagerMetrics(t *testing.T) {
 
 				tc := createTestClient(t, ts.URL)
 
-				metrics, err := tc.GetJobmanagerMetrics(context.Background())
+				metrics, err := tc.GetJobmanagerMetrics(t.Context())
 				require.Nil(t, metrics)
 				require.ErrorContains(t, err, "failed to unmarshal response body")
 			},
@@ -173,7 +172,7 @@ func TestGetJobmanagerMetrics(t *testing.T) {
 				err := json.Unmarshal(jobmanagerMetricValuesData, &expected)
 				require.NoError(t, err)
 
-				actual, err := tc.GetJobmanagerMetrics(context.Background())
+				actual, err := tc.GetJobmanagerMetrics(t.Context())
 				require.NoError(t, err)
 				require.Equal(t, expected, &actual.Metrics)
 
@@ -204,7 +203,7 @@ func TestGetTaskmanagersMetrics(t *testing.T) {
 
 				tc := createTestClient(t, ts.URL)
 
-				metrics, err := tc.GetTaskmanagersMetrics(context.Background())
+				metrics, err := tc.GetTaskmanagersMetrics(t.Context())
 				require.Nil(t, metrics)
 				require.EqualError(t, err, "non 200 code returned 401")
 			},
@@ -220,7 +219,7 @@ func TestGetTaskmanagersMetrics(t *testing.T) {
 
 				tc := createTestClient(t, ts.URL)
 
-				metrics, err := tc.GetTaskmanagersMetrics(context.Background())
+				metrics, err := tc.GetTaskmanagersMetrics(t.Context())
 				require.Nil(t, metrics)
 				require.ErrorContains(t, err, "failed to unmarshal response body:")
 			},
@@ -243,7 +242,7 @@ func TestGetTaskmanagersMetrics(t *testing.T) {
 
 				tc := createTestClient(t, ts.URL)
 
-				metrics, err := tc.GetTaskmanagersMetrics(context.Background())
+				metrics, err := tc.GetTaskmanagersMetrics(t.Context())
 				require.Nil(t, metrics)
 				require.ErrorContains(t, err, "failed to unmarshal response body:")
 			},
@@ -275,7 +274,7 @@ func TestGetTaskmanagersMetrics(t *testing.T) {
 				err := json.Unmarshal(taskmanagerMetricValuesData, &expected)
 				require.NoError(t, err)
 
-				actual, err := tc.GetTaskmanagersMetrics(context.Background())
+				actual, err := tc.GetTaskmanagersMetrics(t.Context())
 				require.NoError(t, err)
 				require.Len(t, actual, 1)
 				require.Equal(t, expected, &actual[0].Metrics)
@@ -305,7 +304,7 @@ func TestGetJobsMetrics(t *testing.T) {
 
 				tc := createTestClient(t, ts.URL)
 
-				metrics, err := tc.GetJobsMetrics(context.Background())
+				metrics, err := tc.GetJobsMetrics(t.Context())
 				require.Nil(t, metrics)
 				require.EqualError(t, err, "non 200 code returned 401")
 			},
@@ -321,7 +320,7 @@ func TestGetJobsMetrics(t *testing.T) {
 
 				tc := createTestClient(t, ts.URL)
 
-				metrics, err := tc.GetJobsMetrics(context.Background())
+				metrics, err := tc.GetJobsMetrics(t.Context())
 				require.Nil(t, metrics)
 				require.ErrorContains(t, err, "failed to unmarshal response body")
 			},
@@ -343,7 +342,7 @@ func TestGetJobsMetrics(t *testing.T) {
 
 				tc := createTestClient(t, ts.URL)
 
-				metrics, err := tc.GetJobsMetrics(context.Background())
+				metrics, err := tc.GetJobsMetrics(t.Context())
 				require.Nil(t, metrics)
 				require.ErrorContains(t, err, "failed to unmarshal response body")
 			},
@@ -374,7 +373,7 @@ func TestGetJobsMetrics(t *testing.T) {
 				err := json.Unmarshal(jobsMetricValuesData, &expected)
 				require.NoError(t, err)
 
-				actual, err := tc.GetJobsMetrics(context.Background())
+				actual, err := tc.GetJobsMetrics(t.Context())
 				require.NoError(t, err)
 				require.Len(t, actual, 1)
 				require.Equal(t, expected, &actual[0].Metrics)
@@ -407,7 +406,7 @@ func TestGetSubtasksMetrics(t *testing.T) {
 
 				tc := createTestClient(t, ts.URL)
 
-				metrics, err := tc.GetSubtasksMetrics(context.Background())
+				metrics, err := tc.GetSubtasksMetrics(t.Context())
 				require.Nil(t, metrics)
 				require.EqualError(t, err, "non 200 code returned 401")
 			},
@@ -423,7 +422,7 @@ func TestGetSubtasksMetrics(t *testing.T) {
 
 				tc := createTestClient(t, ts.URL)
 
-				metrics, err := tc.GetSubtasksMetrics(context.Background())
+				metrics, err := tc.GetSubtasksMetrics(t.Context())
 				require.Nil(t, metrics)
 				require.ErrorContains(t, err, "failed to unmarshal response body")
 			},
@@ -445,7 +444,7 @@ func TestGetSubtasksMetrics(t *testing.T) {
 
 				tc := createTestClient(t, ts.URL)
 
-				metrics, err := tc.GetSubtasksMetrics(context.Background())
+				metrics, err := tc.GetSubtasksMetrics(t.Context())
 				require.Nil(t, metrics)
 				require.ErrorContains(t, err, "failed to unmarshal response body")
 			},
@@ -473,7 +472,7 @@ func TestGetSubtasksMetrics(t *testing.T) {
 
 				tc := createTestClient(t, ts.URL)
 
-				metrics, err := tc.GetSubtasksMetrics(context.Background())
+				metrics, err := tc.GetSubtasksMetrics(t.Context())
 				require.Nil(t, metrics)
 				require.ErrorContains(t, err, "failed to unmarshal response body")
 			},
@@ -507,7 +506,7 @@ func TestGetSubtasksMetrics(t *testing.T) {
 
 				tc := createTestClient(t, ts.URL)
 
-				metrics, err := tc.GetSubtasksMetrics(context.Background())
+				metrics, err := tc.GetSubtasksMetrics(t.Context())
 				require.Nil(t, metrics)
 				require.ErrorContains(t, err, "failed to unmarshal response body")
 			},
@@ -554,7 +553,7 @@ func TestGetSubtasksMetrics(t *testing.T) {
 				err := json.Unmarshal(subtaskMetricValuesData, &expected)
 				require.NoError(t, err)
 
-				actual, err := tc.GetSubtasksMetrics(context.Background())
+				actual, err := tc.GetSubtasksMetrics(t.Context())
 				require.NoError(t, err)
 				require.Len(t, actual, 2)
 				require.Equal(t, expected, &actual[0].Metrics)

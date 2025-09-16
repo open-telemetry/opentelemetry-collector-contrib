@@ -396,7 +396,7 @@ func (mf *mockFactory) CreateMultiStreamPusher() cwlogs.Pusher {
 }
 
 func TestConsumeLogs(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 	factory := NewFactory()
 	expCfg := factory.CreateDefaultConfig().(*Config)
@@ -478,7 +478,7 @@ func TestConsumeLogs(t *testing.T) {
 func TestMiddleware(t *testing.T) {
 	testType, _ := component.NewType("test")
 	id := component.NewID(testType)
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 	factory := NewFactory()
 	expCfg := factory.CreateDefaultConfig().(*Config)
@@ -524,7 +524,7 @@ func TestNewExporterWithoutRegionErr(t *testing.T) {
 	assert.NotNil(t, exp)  // The exporter should be created
 
 	// Now try to start the exporter
-	err = exp.Start(context.Background(), &mockHost{})
+	err = exp.Start(t.Context(), &mockHost{})
 	assert.Error(t, err) // The start should fail due to missing region
 	assert.Contains(t, err.Error(), "NoAwsRegion")
 }

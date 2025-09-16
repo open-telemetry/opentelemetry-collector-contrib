@@ -211,7 +211,7 @@ func TestExporterLogs(t *testing.T) {
 			cfg.Mapping.Mode = "bodymap"
 		})
 
-		err := exporter.ConsumeLogs(context.Background(), logs)
+		err := exporter.ConsumeLogs(t.Context(), logs)
 		assert.NoError(t, err)
 		rec.WaitItems(1)
 	})
@@ -1084,7 +1084,7 @@ func TestExporterMetrics(t *testing.T) {
 		fooDp.ExplicitBounds().FromRaw([]float64{1.0, 2.0, 3.0})
 		fooDp.BucketCounts().FromRaw([]uint64{1, 2, 3, 4})
 
-		err := exporter.ConsumeMetrics(context.Background(), metrics)
+		err := exporter.ConsumeMetrics(t.Context(), metrics)
 		assert.NoError(t, err)
 	})
 
@@ -1115,7 +1115,7 @@ func TestExporterMetrics(t *testing.T) {
 		fooDp.Negative().SetOffset(1)
 		fooDp.Negative().BucketCounts().FromRaw([]uint64{1, 0, 0, 1})
 
-		err := exporter.ConsumeMetrics(context.Background(), metrics)
+		err := exporter.ConsumeMetrics(t.Context(), metrics)
 		assert.NoError(t, err)
 	})
 
@@ -1154,7 +1154,7 @@ func TestExporterMetrics(t *testing.T) {
 		barOtherDp := barDps.AppendEmpty()
 		barOtherDp.SetDoubleValue(1.0)
 
-		err := exporter.ConsumeMetrics(context.Background(), metrics)
+		err := exporter.ConsumeMetrics(t.Context(), metrics)
 		assert.NoError(t, err)
 
 		expected := []itemRequest{
@@ -2150,13 +2150,13 @@ func TestExporterTraces(t *testing.T) {
 }
 
 func TestExporter_MappingModeMetadata(t *testing.T) {
-	otelContext := client.NewContext(context.Background(), client.Info{
+	otelContext := client.NewContext(t.Context(), client.Info{
 		Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"otel"}}),
 	})
-	ecsContext := client.NewContext(context.Background(), client.Info{
+	ecsContext := client.NewContext(t.Context(), client.Info{
 		Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"ecs"}}),
 	})
-	noneContext := client.NewContext(context.Background(), client.Info{
+	noneContext := client.NewContext(t.Context(), client.Info{
 		Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"none"}}),
 	})
 
@@ -2299,7 +2299,7 @@ func TestExporterAuth(t *testing.T) {
 	exporter := newUnstartedTestLogsExporter(t, "http://testing.invalid", func(cfg *Config) {
 		cfg.Auth = &configauth.Authentication{AuthenticatorID: testauthID}
 	})
-	err := exporter.Start(context.Background(), &mockHost{
+	err := exporter.Start(t.Context(), &mockHost{
 		extensions: map[component.ID]component.Component{
 			testauthID: newMockAuthClient(func(*http.Request) (*http.Response, error) {
 				select {
@@ -2312,7 +2312,7 @@ func TestExporterAuth(t *testing.T) {
 	})
 	require.NoError(t, err)
 	defer func() {
-		require.NoError(t, exporter.Shutdown(context.Background()))
+		require.NoError(t, exporter.Shutdown(t.Context()))
 	}()
 
 	mustSendLogRecords(t, exporter, plog.NewLogRecord())
@@ -2333,7 +2333,7 @@ func TestExporterBatcher(t *testing.T) {
 		cfg.Auth = &configauth.Authentication{AuthenticatorID: testauthID}
 		cfg.Retry.Enabled = false
 	})
-	err := exporter.Start(context.Background(), &mockHost{
+	err := exporter.Start(t.Context(), &mockHost{
 		extensions: map[component.ID]component.Component{
 			testauthID: newMockAuthClient(func(req *http.Request) (*http.Response, error) {
 				requests = append(requests, req)
@@ -2343,7 +2343,7 @@ func TestExporterBatcher(t *testing.T) {
 	})
 	require.NoError(t, err)
 	defer func() {
-		require.NoError(t, exporter.Shutdown(context.Background()))
+		require.NoError(t, exporter.Shutdown(t.Context()))
 	}()
 
 	logs := plog.NewLogs()
@@ -2352,8 +2352,8 @@ func TestExporterBatcher(t *testing.T) {
 	scopeLogs.LogRecords().AppendEmpty().Body().SetStr("log record body")
 
 	type key struct{}
-	_ = exporter.ConsumeLogs(context.WithValue(context.Background(), key{}, "value1"), logs)
-	_ = exporter.ConsumeLogs(context.WithValue(context.Background(), key{}, "value2"), logs)
+	_ = exporter.ConsumeLogs(context.WithValue(t.Context(), key{}, "value1"), logs)
+	_ = exporter.ConsumeLogs(context.WithValue(t.Context(), key{}, "value2"), logs)
 	require.Len(t, requests, 2) // flushed immediately by Consume
 
 	assert.Equal(t, "value1", requests[0].Context().Value(key{}))
@@ -2368,13 +2368,13 @@ func newTestTracesExporter(t *testing.T, url string, fns ...func(*Config)) expor
 		cfg.Flush.Interval = 10 * time.Millisecond
 	}}, fns...)...)
 	require.NoError(t, xconfmap.Validate(cfg))
-	exp, err := f.CreateTraces(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
+	exp, err := f.CreateTraces(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
 
-	err = exp.Start(context.Background(), componenttest.NewNopHost())
+	err = exp.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		require.NoError(t, exp.Shutdown(context.Background()))
+		require.NoError(t, exp.Shutdown(context.Background())) //nolint:usetesting
 	})
 	return exp
 }
@@ -2387,13 +2387,13 @@ func newTestProfilesExporter(t *testing.T, url string, fns ...func(*Config)) xex
 		cfg.Flush.Interval = 10 * time.Millisecond
 	}}, fns...)...)
 	require.NoError(t, xconfmap.Validate(cfg))
-	exp, err := f.CreateProfiles(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
+	exp, err := f.CreateProfiles(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
 
-	err = exp.Start(context.Background(), componenttest.NewNopHost())
+	err = exp.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		require.NoError(t, exp.Shutdown(context.Background()))
+		require.NoError(t, exp.Shutdown(context.Background())) //nolint:usetesting
 	})
 	return exp
 }
@@ -2406,23 +2406,23 @@ func newTestMetricsExporter(t *testing.T, url string, fns ...func(*Config)) expo
 		cfg.Flush.Interval = 10 * time.Millisecond
 	}}, fns...)...)
 	require.NoError(t, xconfmap.Validate(cfg))
-	exp, err := f.CreateMetrics(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
+	exp, err := f.CreateMetrics(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
 
-	err = exp.Start(context.Background(), componenttest.NewNopHost())
+	err = exp.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		require.NoError(t, exp.Shutdown(context.Background()))
+		require.NoError(t, exp.Shutdown(context.Background())) //nolint:usetesting
 	})
 	return exp
 }
 
 func newTestLogsExporter(t *testing.T, url string, fns ...func(*Config)) exporter.Logs {
 	exp := newUnstartedTestLogsExporter(t, url, fns...)
-	err := exp.Start(context.Background(), componenttest.NewNopHost())
+	err := exp.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		require.NoError(t, exp.Shutdown(context.Background()))
+		require.NoError(t, exp.Shutdown(context.Background())) //nolint:usetesting
 	})
 	return exp
 }
@@ -2435,7 +2435,7 @@ func newUnstartedTestLogsExporter(t *testing.T, url string, fns ...func(*Config)
 		cfg.Flush.Interval = 10 * time.Millisecond
 	}}, fns...)...)
 	require.NoError(t, xconfmap.Validate(cfg))
-	exp, err := f.CreateLogs(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
+	exp, err := f.CreateLogs(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
 	return exp
 }
@@ -2452,7 +2452,7 @@ func mustSendLogRecords(t *testing.T, exporter exporter.Logs, records ...plog.Lo
 
 func mustSendLogs(t *testing.T, exporter exporter.Logs, logs plog.Logs) {
 	logs.MarkReadOnly()
-	err := exporter.ConsumeLogs(context.Background(), logs)
+	err := exporter.ConsumeLogs(t.Context(), logs)
 	require.NoError(t, err)
 }
 
@@ -2482,7 +2482,7 @@ func mustSendMetricGaugeDataPoints(t *testing.T, exporter exporter.Metrics, data
 
 func mustSendMetrics(t *testing.T, exporter exporter.Metrics, metrics pmetric.Metrics) {
 	metrics.MarkReadOnly()
-	err := exporter.ConsumeMetrics(context.Background(), metrics)
+	err := exporter.ConsumeMetrics(t.Context(), metrics)
 	require.NoError(t, err)
 }
 
@@ -2498,7 +2498,7 @@ func mustSendSpans(t *testing.T, exporter exporter.Traces, spans ...ptrace.Span)
 
 func mustSendTraces(t *testing.T, exporter exporter.Traces, traces ptrace.Traces) {
 	traces.MarkReadOnly()
-	err := exporter.ConsumeTraces(context.Background(), traces)
+	err := exporter.ConsumeTraces(t.Context(), traces)
 	require.NoError(t, err)
 }
 

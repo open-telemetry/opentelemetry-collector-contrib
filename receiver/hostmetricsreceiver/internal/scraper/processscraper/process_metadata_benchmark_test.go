@@ -6,7 +6,6 @@
 package processscraper
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -15,7 +14,7 @@ import (
 )
 
 func BenchmarkGetProcessMetadata(b *testing.B) {
-	ctx := context.Background()
+	ctx := b.Context()
 	config := &Config{}
 
 	scraper, err := newProcessScraper(scraper.Settings{}, config)

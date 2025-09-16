@@ -4,7 +4,6 @@
 package host
 
 import (
-	"context"
 	"errors"
 	"testing"
 	"time"
@@ -38,7 +37,7 @@ func (m *mockMetadataClient) GetMetadata(_ string) (string, error) {
 }
 
 func TestEC2Metadata(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	sess := mock.Session
 	instanceIDReadyC := make(chan bool)
 	instanceIPReadyP := make(chan bool)

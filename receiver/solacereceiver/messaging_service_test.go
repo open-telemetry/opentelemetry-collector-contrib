@@ -200,7 +200,7 @@ func TestAMQPDialFailure(t *testing.T) {
 		},
 		logger: zap.NewNop(),
 	}
-	err := service.dial(context.Background())
+	err := service.dial(t.Context())
 	assert.Equal(t, expectedErr, err)
 }
 
@@ -228,7 +228,7 @@ func TestAMQPDialConfigOptionsWithoutTLS(t *testing.T) {
 		},
 		logger: zap.NewNop(),
 	}
-	err := service.dial(context.Background())
+	err := service.dial(t.Context())
 	assert.Equal(t, expectedErr, err)
 }
 
@@ -260,7 +260,7 @@ func TestAMQPDialConfigOptionsWithTLS(t *testing.T) {
 		},
 		logger: zap.NewNop(),
 	}
-	err := service.dial(context.Background())
+	err := service.dial(t.Context())
 	assert.Equal(t, expectedErr, err)
 }
 
@@ -278,7 +278,7 @@ func TestAMQPNewClientDialAndCloseCtxTimeoutFailure(t *testing.T) {
 		closed = true
 		return nil
 	})
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Millisecond)
 	defer cancel()
 	go func() {
 		<-ctx.Done()
@@ -304,7 +304,7 @@ func TestAMQPNewClientDialAndCloseConnFailure(t *testing.T) {
 		closed = true
 		return errors.New("some error")
 	})
-	service.close(context.Background())
+	service.close(t.Context())
 	// expect conn.Close to have been called
 	assert.True(t, closed)
 }
@@ -312,7 +312,7 @@ func TestAMQPNewClientDialAndCloseConnFailure(t *testing.T) {
 func TestAMQPReceiveMessage(t *testing.T) {
 	service, conn := startMockedService(t)
 	conn.nextData <- []byte(amqpHelloWorldMsg)
-	msg, err := service.receiveMessage(context.Background())
+	msg, err := service.receiveMessage(t.Context())
 	assert.NoError(t, err)
 	assert.Equal(t, msg.GetData(), []byte("Hello world!"))
 	closeMockedAMQPService(t, service, conn)
@@ -321,7 +321,7 @@ func TestAMQPReceiveMessage(t *testing.T) {
 func TestAMQPReceiveMessageError(t *testing.T) {
 	service, conn := startMockedService(t)
 	// assert we are propagating the errors up
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Millisecond)
 	defer cancel()
 	_, err := service.receiveMessage(ctx)
 	assert.Error(t, err)
@@ -331,7 +331,7 @@ func TestAMQPReceiveMessageError(t *testing.T) {
 func TestAMQPAcknowledgeMessage(t *testing.T) {
 	service, conn := startMockedService(t)
 	conn.nextData <- []byte(amqpHelloWorldMsg)
-	msg, err := service.receiveMessage(context.Background())
+	msg, err := service.receiveMessage(t.Context())
 	assert.NoError(t, err)
 	writeCalled := make(chan struct{})
 	// Expected accept from AMQP frame for first received message
@@ -343,7 +343,7 @@ func TestAMQPAcknowledgeMessage(t *testing.T) {
 		close(writeCalled)
 		return len(b), nil
 	})
-	err = service.accept(context.Background(), msg)
+	err = service.accept(t.Context(), msg)
 	assert.NoError(t, err)
 	assertChannelClosed(t, writeCalled)
 	closeMockedAMQPService(t, service, conn)
@@ -352,7 +352,7 @@ func TestAMQPAcknowledgeMessage(t *testing.T) {
 func TestAMQPModifyMessage(t *testing.T) {
 	service, conn := startMockedService(t)
 	conn.nextData <- []byte(amqpHelloWorldMsg)
-	msg, err := service.receiveMessage(context.Background())
+	msg, err := service.receiveMessage(t.Context())
 	assert.NoError(t, err)
 	writeCalled := make(chan struct{})
 	// Expected modify from AMQP frame for first received message
@@ -364,7 +364,7 @@ func TestAMQPModifyMessage(t *testing.T) {
 		close(writeCalled)
 		return len(b), nil
 	})
-	err = service.failed(context.Background(), msg)
+	err = service.failed(t.Context(), msg)
 	assert.NoError(t, err)
 	select {
 	case <-writeCalled:
@@ -395,7 +395,7 @@ func startMockedService(t *testing.T) (*amqpMessagingService, *connMock) {
 		receiverConfig: &amqpReceiverConfig{queue: "q", maxUnacked: 10000, batchMaxAge: 10 * time.Millisecond},
 		logger:         zap.NewNop(),
 	}
-	err := service.dial(context.Background())
+	err := service.dial(t.Context())
 	assert.NoError(t, err)
 
 	select {
@@ -415,7 +415,7 @@ func closeMockedAMQPService(t *testing.T, service *amqpMessagingService, conn *c
 		closed = true
 		return nil
 	})
-	service.close(context.Background())
+	service.close(t.Context())
 	// expect conn.Close to have been called
 	assert.True(t, closed)
 }
@@ -436,7 +436,7 @@ func TestAMQPNewClientDialWithBadSessionResponseExpectingError(t *testing.T) {
 		logger: zap.NewNop(),
 	}
 
-	err := service.dial(context.Background())
+	err := service.dial(t.Context())
 	assert.Error(t, err)
 	assert.NotNil(t, service.client)
 	assert.Nil(t, service.session)
@@ -463,7 +463,7 @@ func TestAMQPNewClientDialWithBadAttachResponseExpectingError(t *testing.T) {
 		logger: zap.NewNop(),
 	}
 
-	err := service.dial(context.Background())
+	err := service.dial(t.Context())
 	assert.Error(t, err)
 	assert.NotNil(t, service.client)
 	assert.NotNil(t, service.session)

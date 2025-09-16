@@ -160,7 +160,7 @@ func TestNewDiscovery(t *testing.T) {
 		sd, err := newDiscovery(cfg, opts)
 		require.NoError(t, err)
 
-		ctx, cancel := context.WithTimeout(context.Background(), cfg.RefreshInterval*2)
+		ctx, cancel := context.WithTimeout(t.Context(), cfg.RefreshInterval*2)
 		defer cancel()
 		err = sd.runAndWriteFile(ctx)
 		require.NoError(t, err)
@@ -180,7 +180,7 @@ func TestNewDiscovery(t *testing.T) {
 		sd, err := newDiscovery(cfg2, opts)
 		require.NoError(t, err)
 
-		ctx, cancel := context.WithTimeout(context.Background(), cfg2.RefreshInterval*2)
+		ctx, cancel := context.WithTimeout(t.Context(), cfg2.RefreshInterval*2)
 		defer cancel()
 		err = sd.runAndWriteFile(ctx)
 		require.NoError(t, err)
@@ -197,7 +197,7 @@ func TestNewDiscovery(t *testing.T) {
 		sd, err := newDiscovery(cfg2, opts)
 		require.NoError(t, err)
 
-		ctx, cancel := context.WithTimeout(context.Background(), cfg2.RefreshInterval*2)
+		ctx, cancel := context.WithTimeout(t.Context(), cfg2.RefreshInterval*2)
 		defer cancel()
 		err = sd.runAndWriteFile(ctx)
 		require.NoError(t, err)
@@ -213,7 +213,7 @@ func TestNewDiscovery(t *testing.T) {
 		cfg2.ResultFile = "testdata/folder/does/not/exists/ut_targets.yaml"
 		sd, err := newDiscovery(cfg2, opts)
 		require.NoError(t, err)
-		require.Error(t, sd.runAndWriteFile(context.TODO()))
+		require.Error(t, sd.runAndWriteFile(t.Context()))
 	})
 
 	t.Run("critical error in discovery", func(t *testing.T) {
@@ -226,7 +226,7 @@ func TestNewDiscovery(t *testing.T) {
 		opts2 := serviceDiscoveryOptions{Logger: logger, Fetcher: fetcher2}
 		sd, err := newDiscovery(cfg2, opts2)
 		require.NoError(t, err)
-		require.Error(t, sd.runAndWriteFile(context.TODO()))
+		require.Error(t, sd.runAndWriteFile(t.Context()))
 	})
 
 	t.Run("invalid fetcher config", func(t *testing.T) {

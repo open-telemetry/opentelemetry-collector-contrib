@@ -1,10 +1,10 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator
 
-go 1.23.0
+go 1.24.6
 
 require (
 	github.com/expr-lang/expr v1.17.2
-	github.com/go-viper/mapstructure/v2 v2.3.0
+	github.com/go-viper/mapstructure/v2 v2.4.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.124.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.124.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.124.1

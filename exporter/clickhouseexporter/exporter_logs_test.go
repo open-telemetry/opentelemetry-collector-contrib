@@ -4,7 +4,6 @@
 package clickhouseexporter
 
 import (
-	"context"
 	"database/sql"
 	"database/sql/driver"
 	"errors"
@@ -59,9 +58,9 @@ func TestLogsExporter_New(t *testing.T) {
 			err = errors.Join(err, err)
 
 			if exporter != nil {
-				err = errors.Join(err, exporter.start(context.TODO(), nil))
+				err = errors.Join(err, exporter.start(t.Context(), nil))
 				defer func() {
-					require.NoError(t, exporter.shutdown(context.TODO()))
+					require.NoError(t, exporter.shutdown(t.Context()))
 				}()
 			}
 
@@ -161,9 +160,9 @@ func TestLogsTableEngineConfig(t *testing.T) {
 func newTestLogsExporter(t *testing.T, dsn string, fns ...func(*Config)) *logsExporter {
 	exporter, err := newLogsExporter(zaptest.NewLogger(t), withTestExporterConfig(fns...)(dsn))
 	require.NoError(t, err)
-	require.NoError(t, exporter.start(context.TODO(), nil))
+	require.NoError(t, exporter.start(t.Context(), nil))
 
-	t.Cleanup(func() { _ = exporter.shutdown(context.TODO()) })
+	t.Cleanup(func() { _ = exporter.shutdown(t.Context()) })
 	return exporter
 }
 
@@ -254,7 +253,7 @@ func multipleLogsWithDifferentServiceName(count int) plog.Logs {
 }
 
 func mustPushLogsData(t *testing.T, exporter *logsExporter, ld plog.Logs) {
-	err := exporter.pushLogsData(context.TODO(), ld)
+	err := exporter.pushLogsData(t.Context(), ld)
 	require.NoError(t, err)
 }
 

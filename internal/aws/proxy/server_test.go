@@ -7,7 +7,6 @@
 package proxy
 
 import (
-	"context"
 	"errors"
 	"net"
 	"net/http"
@@ -50,7 +49,7 @@ func TestHappyCase(t *testing.T) {
 		_ = srv.ListenAndServe()
 	}()
 	defer func() {
-		assert.NoError(t, srv.Shutdown(context.Background()))
+		assert.NoError(t, srv.Shutdown(t.Context()))
 	}()
 
 	assert.Eventuallyf(t, func() bool {

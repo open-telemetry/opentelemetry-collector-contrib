@@ -4,7 +4,6 @@
 package httpcheckreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/httpcheckreceiver"
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
@@ -81,7 +80,7 @@ func TestScraperStart(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.desc, func(t *testing.T) {
-			err := tc.scraper.start(context.Background(), componenttest.NewNopHost())
+			err := tc.scraper.start(t.Context(), componenttest.NewNopHost())
 			if tc.expectError {
 				require.Error(t, err)
 			} else {
@@ -179,9 +178,9 @@ func TestScraperScrape(t *testing.T) {
 				}
 			}
 			scraper := newScraper(cfg, receivertest.NewNopSettings(metadata.Type))
-			require.NoError(t, scraper.start(context.Background(), componenttest.NewNopHost()))
+			require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()))
 
-			actualMetrics, err := scraper.scrape(context.Background())
+			actualMetrics, err := scraper.scrape(t.Context())
 			if tc.expectedErr == nil {
 				require.NoError(t, err)
 			} else {
@@ -197,7 +196,7 @@ func TestScraperScrape(t *testing.T) {
 
 func TestNilClient(t *testing.T) {
 	scraper := newScraper(createDefaultConfig().(*Config), receivertest.NewNopSettings(metadata.Type))
-	actualMetrics, err := scraper.scrape(context.Background())
+	actualMetrics, err := scraper.scrape(t.Context())
 	require.EqualError(t, err, errClientNotInit.Error())
 	require.NoError(t, pmetrictest.CompareMetrics(pmetric.NewMetrics(), actualMetrics))
 }
@@ -221,9 +220,9 @@ func TestScraperMultipleTargets(t *testing.T) {
 	})
 
 	scraper := newScraper(cfg, receivertest.NewNopSettings(metadata.Type))
-	require.NoError(t, scraper.start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()))
 
-	actualMetrics, err := scraper.scrape(context.Background())
+	actualMetrics, err := scraper.scrape(t.Context())
 	require.NoError(t, err)
 
 	goldenPath := filepath.Join("testdata", "expected_metrics", "multiple_targets.yaml")

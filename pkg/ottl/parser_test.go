@@ -2249,7 +2249,7 @@ func Test_parseValueExpression_full(t *testing.T) {
 			parsed, err := p.ParseValueExpression(tt.valueExpression)
 			assert.NoError(t, err)
 
-			v, err := parsed.Eval(context.Background(), tt.tCtx)
+			v, err := parsed.Eval(t.Context(), tt.tCtx)
 			require.NoError(t, err)
 			assert.Equal(t, tt.expected(), v)
 		})
@@ -2551,7 +2551,7 @@ func Test_Statement_Execute(t *testing.T) {
 				telemetrySettings: componenttest.NewNopTelemetrySettings(),
 			}
 
-			result, condition, err := statement.Execute(context.Background(), nil)
+			result, condition, err := statement.Execute(t.Context(), nil)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expectedCondition, condition)
 			assert.Equal(t, tt.expectedResult, result)
@@ -2582,7 +2582,7 @@ func Test_Condition_Eval(t *testing.T) {
 				condition: BoolExpr[any]{tt.condition},
 			}
 
-			result, err := condition.Eval(context.Background(), nil)
+			result, err := condition.Eval(t.Context(), nil)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expectedResult, result)
 		})
@@ -2671,7 +2671,7 @@ func Test_Statements_Execute_Error(t *testing.T) {
 				telemetrySettings: componenttest.NewNopTelemetrySettings(),
 			}
 
-			err := statements.Execute(context.Background(), nil)
+			err := statements.Execute(t.Context(), nil)
 			if tt.errorMode == PropagateError {
 				assert.Error(t, err)
 			} else {
@@ -2813,7 +2813,7 @@ func Test_ConditionSequence_Eval(t *testing.T) {
 				logicOp:           tt.logicOp,
 			}
 
-			result, err := conditions.Eval(context.Background(), nil)
+			result, err := conditions.Eval(t.Context(), nil)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expectedResult, result)
 		})
@@ -2870,7 +2870,7 @@ func Test_ConditionSequence_Eval_Error(t *testing.T) {
 				errorMode:         tt.errorMode,
 			}
 
-			result, err := conditions.Eval(context.Background(), nil)
+			result, err := conditions.Eval(t.Context(), nil)
 			assert.False(t, result)
 			if tt.errorMode == PropagateError {
 				assert.Error(t, err)

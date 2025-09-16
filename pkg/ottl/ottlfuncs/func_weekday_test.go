@@ -102,7 +102,7 @@ func Test_Weekday_Error(t *testing.T) {
 	}
 	exprFunc, err := Weekday(getter)
 	assert.NoError(t, err)
-	result, err := exprFunc(context.Background(), nil)
+	result, err := exprFunc(t.Context(), nil)
 	assert.Nil(t, result)
 	assert.Error(t, err)
 }

@@ -4,7 +4,6 @@
 package googlecloudlogentryencodingextension
 
 import (
-	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -225,7 +224,7 @@ func TestJsonPayload(t *testing.T) {
 	for _, tt := range tests {
 		fn := func(t *testing.T, cfg *Config, want Log) {
 			extension := newConfiguredExtension(t, cfg)
-			defer assert.NoError(t, extension.Shutdown(context.Background()))
+			defer assert.NoError(t, extension.Shutdown(t.Context()))
 
 			var errs error
 			wantRes, wantLr, err := generateLog(t, want)

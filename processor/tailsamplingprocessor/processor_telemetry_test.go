@@ -48,18 +48,18 @@ func TestMetricsAfterOneEvaluation(t *testing.T) {
 	}
 	cs := &consumertest.TracesSink{}
 	ct := s.newSettings()
-	proc, err := newTracesProcessor(context.Background(), ct, cs, cfg)
+	proc, err := newTracesProcessor(t.Context(), ct, cs, cfg)
 	require.NoError(t, err)
 	defer func() {
-		err = proc.Shutdown(context.Background())
+		err = proc.Shutdown(t.Context())
 		require.NoError(t, err)
 	}()
 
-	err = proc.Start(context.Background(), componenttest.NewNopHost())
+	err = proc.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	// test
-	err = proc.ConsumeTraces(context.Background(), simpleTraces())
+	err = proc.ConsumeTraces(t.Context(), simpleTraces())
 	require.NoError(t, err)
 
 	tsp := proc.(*tailSamplingSpanProcessor)
@@ -68,7 +68,7 @@ func TestMetricsAfterOneEvaluation(t *testing.T) {
 
 	// verify
 	var md metricdata.ResourceMetrics
-	require.NoError(t, s.reader.Collect(context.Background(), &md))
+	require.NoError(t, s.reader.Collect(t.Context(), &md))
 	require.Equal(t, 8, s.len(md))
 
 	for _, tt := range []struct {
@@ -245,18 +245,18 @@ func TestMetricsWithComponentID(t *testing.T) {
 	cs := &consumertest.TracesSink{}
 	ct := s.newSettings()
 	ct.ID = component.MustNewIDWithName("tail_sampling", "unique_id") // e.g tail_sampling/unique_id
-	proc, err := newTracesProcessor(context.Background(), ct, cs, cfg)
+	proc, err := newTracesProcessor(t.Context(), ct, cs, cfg)
 	require.NoError(t, err)
 	defer func() {
-		err = proc.Shutdown(context.Background())
+		err = proc.Shutdown(t.Context())
 		require.NoError(t, err)
 	}()
 
-	err = proc.Start(context.Background(), componenttest.NewNopHost())
+	err = proc.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	// test
-	err = proc.ConsumeTraces(context.Background(), simpleTraces())
+	err = proc.ConsumeTraces(t.Context(), simpleTraces())
 	require.NoError(t, err)
 
 	tsp := proc.(*tailSamplingSpanProcessor)
@@ -265,7 +265,7 @@ func TestMetricsWithComponentID(t *testing.T) {
 
 	// verify
 	var md metricdata.ResourceMetrics
-	require.NoError(t, s.reader.Collect(context.Background(), &md))
+	require.NoError(t, s.reader.Collect(t.Context(), &md))
 	require.Equal(t, 8, s.len(md))
 
 	for _, tt := range []struct {
@@ -351,18 +351,18 @@ func TestProcessorTailSamplingCountSpansSampled(t *testing.T) {
 	}
 	cs := &consumertest.TracesSink{}
 	ct := s.newSettings()
-	proc, err := newTracesProcessor(context.Background(), ct, cs, cfg)
+	proc, err := newTracesProcessor(t.Context(), ct, cs, cfg)
 	require.NoError(t, err)
 	defer func() {
-		err = proc.Shutdown(context.Background())
+		err = proc.Shutdown(t.Context())
 		require.NoError(t, err)
 	}()
 
-	err = proc.Start(context.Background(), componenttest.NewNopHost())
+	err = proc.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	// test
-	err = proc.ConsumeTraces(context.Background(), simpleTraces())
+	err = proc.ConsumeTraces(t.Context(), simpleTraces())
 	require.NoError(t, err)
 
 	tsp := proc.(*tailSamplingSpanProcessor)
@@ -371,7 +371,7 @@ func TestProcessorTailSamplingCountSpansSampled(t *testing.T) {
 
 	// verify
 	var md metricdata.ResourceMetrics
-	require.NoError(t, s.reader.Collect(context.Background(), &md))
+	require.NoError(t, s.reader.Collect(t.Context(), &md))
 	require.Equal(t, 9, s.len(md))
 
 	m := metricdata.Metrics{
@@ -419,20 +419,20 @@ func TestProcessorTailSamplingSamplingTraceRemovalAge(t *testing.T) {
 	}
 	cs := &consumertest.TracesSink{}
 	ct := s.newSettings()
-	proc, err := newTracesProcessor(context.Background(), ct, cs, cfg)
+	proc, err := newTracesProcessor(t.Context(), ct, cs, cfg)
 	require.NoError(t, err)
 	defer func() {
-		err = proc.Shutdown(context.Background())
+		err = proc.Shutdown(t.Context())
 		require.NoError(t, err)
 	}()
 
-	err = proc.Start(context.Background(), componenttest.NewNopHost())
+	err = proc.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	// test
 	_, batches := generateIDsAndBatches(3)
 	for _, batch := range batches {
-		err = proc.ConsumeTraces(context.Background(), batch)
+		err = proc.ConsumeTraces(t.Context(), batch)
 		require.NoError(t, err)
 	}
 
@@ -442,7 +442,7 @@ func TestProcessorTailSamplingSamplingTraceRemovalAge(t *testing.T) {
 
 	// verify
 	var md metricdata.ResourceMetrics
-	require.NoError(t, s.reader.Collect(context.Background(), &md))
+	require.NoError(t, s.reader.Collect(t.Context(), &md))
 
 	m := metricdata.Metrics{
 		Name:        "otelcol_processor_tail_sampling_sampling_trace_removal_age",
@@ -483,20 +483,20 @@ func TestProcessorTailSamplingSamplingLateSpanAge(t *testing.T) {
 	}
 	cs := &consumertest.TracesSink{}
 	ct := s.newSettings()
-	proc, err := newTracesProcessor(context.Background(), ct, cs, cfg)
+	proc, err := newTracesProcessor(t.Context(), ct, cs, cfg)
 	require.NoError(t, err)
 	defer func() {
-		err = proc.Shutdown(context.Background())
+		err = proc.Shutdown(t.Context())
 		require.NoError(t, err)
 	}()
 
-	err = proc.Start(context.Background(), componenttest.NewNopHost())
+	err = proc.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	// test
 	traceIDs, batches := generateIDsAndBatches(10)
 	for _, batch := range batches {
-		err = proc.ConsumeTraces(context.Background(), batch)
+		err = proc.ConsumeTraces(t.Context(), batch)
 		require.NoError(t, err)
 	}
 
@@ -508,13 +508,13 @@ func TestProcessorTailSamplingSamplingLateSpanAge(t *testing.T) {
 		lateSpan := ptrace.NewTraces()
 		lateSpan.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID(traceID)
 
-		err = proc.ConsumeTraces(context.Background(), lateSpan)
+		err = proc.ConsumeTraces(t.Context(), lateSpan)
 		require.NoError(t, err)
 	}
 
 	// verify
 	var md metricdata.ResourceMetrics
-	require.NoError(t, s.reader.Collect(context.Background(), &md))
+	require.NoError(t, s.reader.Collect(t.Context(), &md))
 
 	m := metricdata.Metrics{
 		Name:        "otelcol_processor_tail_sampling_sampling_late_span_age",
@@ -563,20 +563,20 @@ func TestProcessorTailSamplingSamplingTraceDroppedTooEarly(t *testing.T) {
 	}
 	cs := &consumertest.TracesSink{}
 	ct := s.newSettings()
-	proc, err := newTracesProcessor(context.Background(), ct, cs, cfg)
+	proc, err := newTracesProcessor(t.Context(), ct, cs, cfg)
 	require.NoError(t, err)
 	defer func() {
-		err = proc.Shutdown(context.Background())
+		err = proc.Shutdown(t.Context())
 		require.NoError(t, err)
 	}()
 
-	err = proc.Start(context.Background(), componenttest.NewNopHost())
+	err = proc.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	// test
 	_, batches := generateIDsAndBatches(3)
 	for _, batch := range batches {
-		err = proc.ConsumeTraces(context.Background(), batch)
+		err = proc.ConsumeTraces(t.Context(), batch)
 		require.NoError(t, err)
 	}
 
@@ -586,7 +586,7 @@ func TestProcessorTailSamplingSamplingTraceDroppedTooEarly(t *testing.T) {
 
 	// verify
 	var md metricdata.ResourceMetrics
-	require.NoError(t, s.reader.Collect(context.Background(), &md))
+	require.NoError(t, s.reader.Collect(t.Context(), &md))
 
 	m := metricdata.Metrics{
 		Name:        "otelcol_processor_tail_sampling_sampling_trace_dropped_too_early",
@@ -634,20 +634,20 @@ func TestProcessorTailSamplingSamplingPolicyEvaluationError(t *testing.T) {
 	}
 	cs := &consumertest.TracesSink{}
 	ct := s.newSettings()
-	proc, err := newTracesProcessor(context.Background(), ct, cs, cfg)
+	proc, err := newTracesProcessor(t.Context(), ct, cs, cfg)
 	require.NoError(t, err)
 	defer func() {
-		err = proc.Shutdown(context.Background())
+		err = proc.Shutdown(t.Context())
 		require.NoError(t, err)
 	}()
 
-	err = proc.Start(context.Background(), componenttest.NewNopHost())
+	err = proc.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	// test
 	_, batches := generateIDsAndBatches(2)
 	for _, batch := range batches {
-		err = proc.ConsumeTraces(context.Background(), batch)
+		err = proc.ConsumeTraces(t.Context(), batch)
 		require.NoError(t, err)
 	}
 
@@ -657,7 +657,7 @@ func TestProcessorTailSamplingSamplingPolicyEvaluationError(t *testing.T) {
 
 	// verify
 	var md metricdata.ResourceMetrics
-	require.NoError(t, s.reader.Collect(context.Background(), &md))
+	require.NoError(t, s.reader.Collect(t.Context(), &md))
 
 	m := metricdata.Metrics{
 		Name:        "otelcol_processor_tail_sampling_sampling_policy_evaluation_error",

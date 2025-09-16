@@ -214,7 +214,7 @@ func Test_Start(t *testing.T) {
 			assert.NoError(t, err)
 			assert.NotNil(t, prwe)
 
-			err = prwe.Start(context.Background(), componenttest.NewNopHost())
+			err = prwe.Start(t.Context(), componenttest.NewNopHost())
 			if tt.returnErrorOnStartUp {
 				assert.Error(t, err)
 				return
@@ -231,14 +231,14 @@ func Test_Shutdown(t *testing.T) {
 		closeChan: make(chan struct{}),
 	}
 	wg := new(sync.WaitGroup)
-	err := prwe.Shutdown(context.Background())
+	err := prwe.Shutdown(t.Context())
 	require.NoError(t, err)
 	errChan := make(chan error, 5)
 	for i := 0; i < 5; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			errChan <- prwe.PushMetrics(context.Background(), pmetric.NewMetrics())
+			errChan <- prwe.PushMetrics(t.Context(), pmetric.NewMetrics())
 		}()
 	}
 	wg.Wait()
@@ -737,7 +737,7 @@ func Test_PushMetrics(t *testing.T) {
 								},
 							))),
 					)
-					t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) })
+					t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) }) //nolint:usetesting
 					set := metadatatest.NewSettings(tel)
 					set.BuildInfo = component.BuildInfo{
 						Description: "OpenTelemetry Collector",
@@ -747,7 +747,7 @@ func Test_PushMetrics(t *testing.T) {
 					prwe, nErr := newPRWExporter(cfg, set)
 
 					require.NoError(t, nErr)
-					ctx, cancel := context.WithCancel(context.Background())
+					ctx, cancel := context.WithCancel(t.Context())
 					defer cancel()
 					require.NoError(t, prwe.Start(ctx, componenttest.NewNopHost()))
 					defer func() {
@@ -951,7 +951,7 @@ func TestWALOnExporterRoundTrip(t *testing.T) {
 	assert.NoError(t, perr)
 
 	nopHost := componenttest.NewNopHost()
-	ctx := context.Background()
+	ctx := t.Context()
 	require.NoError(t, prwe.Start(ctx, nopHost))
 	t.Cleanup(func() {
 		// This should have been shut down during the test
@@ -1080,7 +1080,7 @@ func TestRetries(t *testing.T) {
 			false,
 			assert.NoError,
 			assert.NoError,
-			context.Background(),
+			t.Context(),
 		},
 		{
 			"test 429 should retry",
@@ -1090,7 +1090,7 @@ func TestRetries(t *testing.T) {
 			true,
 			assert.NoError,
 			assert.NoError,
-			context.Background(),
+			t.Context(),
 		},
 		{
 			"test 429 should not retry",
@@ -1100,7 +1100,7 @@ func TestRetries(t *testing.T) {
 			false,
 			assert.Error,
 			assertPermanentConsumerError,
-			context.Background(),
+			t.Context(),
 		},
 		{
 			"test 4xx should not retry",
@@ -1110,7 +1110,7 @@ func TestRetries(t *testing.T) {
 			false,
 			assert.Error,
 			assertPermanentConsumerError,
-			context.Background(),
+			t.Context(),
 		},
 		{
 			"test timeout context should not execute",
@@ -1247,7 +1247,7 @@ func benchmarkExecute(b *testing.B, numSample int) {
 		reqs = append(reqs, req)
 	}
 
-	ctx := context.Background()
+	ctx := b.Context()
 	b.ReportAllocs()
 	b.ResetTimer()
 	for _, req := range reqs {
@@ -1317,7 +1317,7 @@ func benchmarkPushMetrics(b *testing.B, numMetrics, numConsumers int) {
 		metrics = append(metrics, m)
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(b.Context())
 	defer cancel()
 	require.NoError(b, exporter.Start(ctx, componenttest.NewNopHost()))
 	defer func() {

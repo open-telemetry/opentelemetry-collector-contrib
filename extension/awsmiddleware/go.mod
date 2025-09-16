@@ -1,6 +1,6 @@
 module github.com/amazon-contributing/opentelemetry-collector-contrib/extension/awsmiddleware
 
-go 1.23.0
+go 1.24.6
 
 require (
 	github.com/aws/aws-sdk-go v1.47.10

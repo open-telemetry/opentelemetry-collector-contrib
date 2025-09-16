@@ -4,7 +4,6 @@
 package logzioexporter
 
 import (
-	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -98,11 +97,11 @@ func TestSetTimeStamp(t *testing.T) {
 	}
 	var err error
 	params := exportertest.NewNopSettings(metadata.Type)
-	exporter, err := createLogsExporter(context.Background(), params, cfg)
+	exporter, err := createLogsExporter(t.Context(), params, cfg)
 	require.NoError(t, err)
-	err = exporter.Start(context.Background(), componenttest.NewNopHost())
+	err = exporter.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
-	ctx := context.Background()
+	ctx := t.Context()
 	err = exporter.ConsumeLogs(ctx, ld)
 	require.NoError(t, err)
 	err = exporter.Shutdown(ctx)

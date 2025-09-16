@@ -44,7 +44,7 @@ func TestExtensionIntegrityWithPostgres(t *testing.T) {
 	se, ctr, err := newPostgresTestExtension()
 	t.Cleanup(func() {
 		if ctr != nil {
-			require.NoError(t, ctr.Terminate(context.Background()))
+			require.NoError(t, ctr.Terminate(context.Background())) //nolint:usetesting
 		}
 	})
 	require.NoError(t, err)
@@ -53,11 +53,11 @@ func TestExtensionIntegrityWithPostgres(t *testing.T) {
 }
 
 func testExtensionIntegrity(t *testing.T, se storage.Extension) {
-	ctx := context.Background()
-	err := se.Start(context.Background(), componenttest.NewNopHost())
+	ctx := t.Context()
+	err := se.Start(t.Context(), componenttest.NewNopHost())
 	assert.NoError(t, err)
 	defer func() {
-		err = se.Shutdown(context.Background())
+		err = se.Shutdown(t.Context())
 		assert.NoError(t, err)
 	}()
 

@@ -35,7 +35,7 @@ func TestUnsuccessfulScrape(t *testing.T) {
 
 	scraper := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newDefaultClientFactory(cfg))
 
-	actualMetrics, err := scraper.scrape(context.Background())
+	actualMetrics, err := scraper.scrape(t.Context())
 	require.Error(t, err)
 
 	require.NoError(t, pmetrictest.CompareMetrics(pmetric.NewMetrics(), actualMetrics))
@@ -65,7 +65,7 @@ func TestScraper(t *testing.T) {
 
 		scraper := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, factory)
 
-		actualMetrics, err := scraper.scrape(context.Background())
+		actualMetrics, err := scraper.scrape(t.Context())
 		require.NoError(t, err)
 
 		expectedFile := filepath.Join("testdata", "scraper", "otel", file)
@@ -116,7 +116,7 @@ func TestScraperNoDatabaseSingle(t *testing.T) {
 		cfg.Metrics.PostgresqlDatabaseLocks.Enabled = true
 
 		scraper := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, factory)
-		actualMetrics, err := scraper.scrape(context.Background())
+		actualMetrics, err := scraper.scrape(t.Context())
 		require.NoError(t, err)
 
 		expectedFile := filepath.Join("testdata", "scraper", "otel", file)
@@ -140,7 +140,7 @@ func TestScraperNoDatabaseSingle(t *testing.T) {
 		cfg.Metrics.PostgresqlDatabaseLocks.Enabled = false
 
 		scraper = newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, factory)
-		actualMetrics, err = scraper.scrape(context.Background())
+		actualMetrics, err = scraper.scrape(t.Context())
 		require.NoError(t, err)
 
 		expectedFile = filepath.Join("testdata", "scraper", "otel", fileDefault)
@@ -191,7 +191,7 @@ func TestScraperNoDatabaseMultipleWithoutPreciseLag(t *testing.T) {
 		cfg.Metrics.PostgresqlDatabaseLocks.Enabled = true
 		scraper := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, &factory)
 
-		actualMetrics, err := scraper.scrape(context.Background())
+		actualMetrics, err := scraper.scrape(t.Context())
 		require.NoError(t, err)
 
 		expectedFile := filepath.Join("testdata", "scraper", "multiple", file)
@@ -242,7 +242,7 @@ func TestScraperNoDatabaseMultiple(t *testing.T) {
 		cfg.Metrics.PostgresqlDatabaseLocks.Enabled = true
 		scraper := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, &factory)
 
-		actualMetrics, err := scraper.scrape(context.Background())
+		actualMetrics, err := scraper.scrape(t.Context())
 		require.NoError(t, err)
 
 		expectedFile := filepath.Join("testdata", "scraper", "multiple", file)
@@ -294,7 +294,7 @@ func TestScraperWithResourceAttributeFeatureGate(t *testing.T) {
 
 		scraper := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, &factory)
 
-		actualMetrics, err := scraper.scrape(context.Background())
+		actualMetrics, err := scraper.scrape(t.Context())
 		require.NoError(t, err)
 
 		expectedFile := filepath.Join("testdata", "scraper", "multiple", file)
@@ -345,7 +345,7 @@ func TestScraperWithResourceAttributeFeatureGateSingle(t *testing.T) {
 		cfg.Metrics.PostgresqlDatabaseLocks.Enabled = true
 		scraper := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, &factory)
 
-		actualMetrics, err := scraper.scrape(context.Background())
+		actualMetrics, err := scraper.scrape(t.Context())
 		require.NoError(t, err)
 
 		expectedFile := filepath.Join("testdata", "scraper", "otel", file)
@@ -372,7 +372,7 @@ func TestScraperExcludeDatabase(t *testing.T) {
 
 		scraper := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, &factory)
 
-		actualMetrics, err := scraper.scrape(context.Background())
+		actualMetrics, err := scraper.scrape(t.Context())
 		require.NoError(t, err)
 
 		expectedFile := filepath.Join("testdata", "scraper", "multiple", file)
@@ -415,7 +415,7 @@ func TestScrapeQuerySample(t *testing.T) {
 	mock.ExpectQuery(expectedScrapeSampleQuery).WillReturnRows(sqlmock.NewRows(
 		[]string{"datname", "usename", "client_addrs", "client_hostname", "client_port", "query_start", "wait_event_type", "wait_event", "query_id", "pid", "application_name", "state", "query"},
 	).FromCSVString("postgres,otelu,11.4.5.14,otel,114514,2025-02-12T16:37:54.843+08:00,,,123131231231,1450,receiver,idle,select * from pg_stat_activity where id = 32"))
-	actualLogs, err := scraper.scrapeQuerySamples(context.Background(), 30)
+	actualLogs, err := scraper.scrapeQuerySamples(t.Context(), 30)
 	assert.NoError(t, err)
 	expectedFile := filepath.Join("testdata", "scraper", "query-sample", "expected.yaml")
 	expectedLogs, err := golden.ReadLogs(expectedFile)

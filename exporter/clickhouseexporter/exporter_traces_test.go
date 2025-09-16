@@ -4,7 +4,6 @@
 package clickhouseexporter
 
 import (
-	"context"
 	"database/sql/driver"
 	"strings"
 	"testing"
@@ -51,9 +50,9 @@ func TestExporter_pushTracesData(t *testing.T) {
 func newTestTracesExporter(t *testing.T, dsn string, fns ...func(*Config)) *tracesExporter {
 	exporter, err := newTracesExporter(zaptest.NewLogger(t), withTestExporterConfig(fns...)(dsn))
 	require.NoError(t, err)
-	require.NoError(t, exporter.start(context.TODO(), nil))
+	require.NoError(t, exporter.start(t.Context(), nil))
 
-	t.Cleanup(func() { _ = exporter.shutdown(context.TODO()) })
+	t.Cleanup(func() { _ = exporter.shutdown(t.Context()) })
 	return exporter
 }
 
@@ -97,7 +96,7 @@ func simpleTraces(count int) ptrace.Traces {
 }
 
 func mustPushTracesData(t *testing.T, exporter *tracesExporter, td ptrace.Traces) {
-	err := exporter.pushTraceData(context.TODO(), td)
+	err := exporter.pushTraceData(t.Context(), td)
 	require.NoError(t, err)
 }
 

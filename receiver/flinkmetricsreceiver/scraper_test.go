@@ -4,7 +4,6 @@
 package flinkmetricsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver"
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"path/filepath"
@@ -75,7 +74,7 @@ func TestScraperStart(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.desc, func(t *testing.T) {
-			err := tc.scraper.start(context.Background(), componenttest.NewNopHost())
+			err := tc.scraper.start(t.Context(), componenttest.NewNopHost())
 			if tc.expectError {
 				require.Error(t, err)
 			} else {
@@ -250,7 +249,7 @@ func TestScraperScrape(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			scraper := newflinkScraper(createDefaultConfig().(*Config), receivertest.NewNopSettings(metadata.Type))
 			scraper.client = tc.setupMockClient(t)
-			actualMetrics, err := scraper.scrape(context.Background())
+			actualMetrics, err := scraper.scrape(t.Context())
 
 			if tc.expectedErr == nil {
 				require.NoError(t, err)

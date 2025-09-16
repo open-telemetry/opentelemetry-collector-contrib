@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen
 
-go 1.23.0
+go 1.24.6
 
 require (
 	github.com/spf13/cobra v1.9.1

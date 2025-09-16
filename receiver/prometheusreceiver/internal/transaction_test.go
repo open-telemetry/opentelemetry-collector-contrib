@@ -467,7 +467,7 @@ func testTransactionAppendWithEmptyLabelArrayFallbackToTargetLabels(t *testing.T
 		nil)
 
 	ctx := scrape.ContextWithMetricMetadataStore(
-		scrape.ContextWithTarget(context.Background(), scrapeTarget),
+		scrape.ContextWithTarget(t.Context(), scrapeTarget),
 		testMetadataStore(testMetadata))
 
 	tr := newTransaction(ctx, &startTimeAdjuster{startTime: startTimestamp}, sink, labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, enableNativeHistograms)

@@ -4,7 +4,6 @@
 package haproxyreceiver
 
 import (
-	"context"
 	"fmt"
 	"net"
 	"os"
@@ -52,7 +51,7 @@ func Test_scraper_readStats(t *testing.T) {
 	haProxyCfg := newDefaultConfig().(*Config)
 	haProxyCfg.Endpoint = socketAddr
 	s := newScraper(haProxyCfg, receivertest.NewNopSettings(metadata.Type))
-	m, err := s.scrape(context.Background())
+	m, err := s.scrape(t.Context())
 	require.NoError(t, err)
 	require.NotNil(t, m)
 
@@ -98,7 +97,7 @@ func Test_scraper_readStatsWithIncompleteValues(t *testing.T) {
 	haProxyCfg := newDefaultConfig().(*Config)
 	haProxyCfg.Endpoint = socketAddr
 	s := newScraper(haProxyCfg, receivertest.NewNopSettings(metadata.Type))
-	m, err := s.scrape(context.Background())
+	m, err := s.scrape(t.Context())
 	require.NoError(t, err)
 	require.NotNil(t, m)
 
@@ -141,7 +140,7 @@ func Test_scraper_readStatsWithNoValues(t *testing.T) {
 	haProxyCfg := newDefaultConfig().(*Config)
 	haProxyCfg.Endpoint = socketAddr
 	s := newScraper(haProxyCfg, receivertest.NewNopSettings(metadata.Type))
-	m, err := s.scrape(context.Background())
+	m, err := s.scrape(t.Context())
 	require.NoError(t, err)
 	require.NotNil(t, m)
 

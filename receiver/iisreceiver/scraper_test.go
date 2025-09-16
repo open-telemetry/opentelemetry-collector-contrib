@@ -6,7 +6,6 @@
 package iisreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver"
 
 import (
-	"context"
 	"errors"
 	"path/filepath"
 	"strings"
@@ -42,10 +41,10 @@ func TestScrape(t *testing.T) {
 		return []string{strings.Replace(s, "*", "Instance", 1)}, nil
 	}
 
-	err := scraper.start(context.Background(), componenttest.NewNopHost())
+	err := scraper.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
-	actualMetrics, err := scraper.scrape(context.Background())
+	actualMetrics, err := scraper.scrape(t.Context())
 	require.NoError(t, err)
 
 	expectedFile := filepath.Join("testdata", "scraper", "expected.yaml")
@@ -82,7 +81,7 @@ func TestScrapeFailure(t *testing.T) {
 		},
 	}
 
-	_, err = scraper.scrape(context.Background())
+	_, err = scraper.scrape(t.Context())
 	require.NoError(t, err)
 
 	require.Equal(t, 1, obs.Len())
@@ -116,7 +115,7 @@ func TestMaxQueueItemAgeScrapeFailure(t *testing.T) {
 		},
 	}
 
-	_, err = scraper.scrape(context.Background())
+	_, err = scraper.scrape(t.Context())
 	require.NoError(t, err)
 
 	require.Equal(t, 1, obs.Len())
@@ -146,7 +145,7 @@ func TestMaxQueueItemAgeNegativeDenominatorScrapeFailure(t *testing.T) {
 		},
 	}
 
-	actualMetrics, err := scraper.scrape(context.Background())
+	actualMetrics, err := scraper.scrape(t.Context())
 	require.NoError(t, err)
 
 	expectedFile := filepath.Join("testdata", "scraper", "expected_negative_denominator.yaml")

@@ -46,8 +46,8 @@ func TestTracesReceiverStart(t *testing.T) {
 		telemetryBuilder: nopTelemetryBuilder(t),
 	}
 
-	require.NoError(t, c.Start(context.Background(), componenttest.NewNopHost()))
-	require.NoError(t, c.Shutdown(context.Background()))
+	require.NoError(t, c.Start(t.Context(), componenttest.NewNopHost()))
+	require.NoError(t, c.Shutdown(t.Context()))
 }
 
 func TestTracesReceiverStartConsume(t *testing.T) {
@@ -60,9 +60,9 @@ func TestTracesReceiverStartConsume(t *testing.T) {
 		consumerGroup:    &testConsumerGroup{},
 		telemetryBuilder: telemetryBuilder,
 	}
-	ctx, cancelFunc := context.WithCancel(context.Background())
+	ctx, cancelFunc := context.WithCancel(t.Context())
 	c.cancelConsumeLoop = cancelFunc
-	require.NoError(t, c.Shutdown(context.Background()))
+	require.NoError(t, c.Shutdown(t.Context()))
 	c.consumeLoopWG.Add(1)
 	c.consumeLoop(ctx, &tracesConsumerGroupHandler{
 		ready:            make(chan bool),
@@ -86,8 +86,8 @@ func TestTracesReceiver_error(t *testing.T) {
 		telemetryBuilder: nopTelemetryBuilder(t),
 	}
 
-	require.NoError(t, c.Start(context.Background(), componenttest.NewNopHost()))
-	require.NoError(t, c.Shutdown(context.Background()))
+	require.NoError(t, c.Start(t.Context(), componenttest.NewNopHost()))
+	require.NoError(t, c.Shutdown(t.Context()))
 	assert.Eventually(t, func() bool {
 		return logObserver.FilterField(zap.Error(expectedErr)).Len() > 0
 	}, 10*time.Second, time.Millisecond*100)
@@ -95,7 +95,7 @@ func TestTracesReceiver_error(t *testing.T) {
 
 func TestTracesConsumerGroupHandler(t *testing.T) {
 	tel := componenttest.NewTelemetry()
-	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) })
+	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) }) //nolint:usetesting
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewTelemetrySettings())
 	require.NoError(t, err)
 
@@ -122,7 +122,7 @@ func TestTracesConsumerGroupHandler(t *testing.T) {
 		telemetryBuilder: telemetryBuilder,
 	}
 
-	testSession := testConsumerGroupSession{ctx: context.Background()}
+	testSession := testConsumerGroupSession{ctx: t.Context()}
 	require.NoError(t, c.Setup(testSession))
 	_, ok := <-c.ready
 	assert.False(t, ok)
@@ -165,7 +165,7 @@ func TestTracesConsumerGroupHandler(t *testing.T) {
 
 func TestTracesConsumerGroupHandler_session_done(t *testing.T) {
 	tel := componenttest.NewTelemetry()
-	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) })
+	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) }) //nolint:usetesting
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewTelemetrySettings())
 	require.NoError(t, err)
 
@@ -181,7 +181,7 @@ func TestTracesConsumerGroupHandler_session_done(t *testing.T) {
 		telemetryBuilder: telemetryBuilder,
 	}
 
-	ctx, cancelFunc := context.WithCancel(context.Background())
+	ctx, cancelFunc := context.WithCancel(t.Context())
 	testSession := testConsumerGroupSession{ctx: ctx}
 	require.NoError(t, c.Setup(testSession))
 	_, ok := <-c.ready
@@ -212,7 +212,7 @@ func TestTracesConsumerGroupHandler_error_unmarshal(t *testing.T) {
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings(metadata.Type)})
 	require.NoError(t, err)
 	tel := componenttest.NewTelemetry()
-	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) })
+	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) }) //nolint:usetesting
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewTelemetrySettings())
 	require.NoError(t, err)
 	c := tracesConsumerGroupHandler{
@@ -231,7 +231,7 @@ func TestTracesConsumerGroupHandler_error_unmarshal(t *testing.T) {
 		messageChan: make(chan *sarama.ConsumerMessage),
 	}
 	go func() {
-		err := c.ConsumeClaim(testConsumerGroupSession{ctx: context.Background()}, groupClaim)
+		err := c.ConsumeClaim(testConsumerGroupSession{ctx: t.Context()}, groupClaim)
 		assert.Error(t, err)
 		wg.Done()
 	}()
@@ -319,7 +319,7 @@ func TestTracesConsumerGroupHandler_error_nextConsumer(t *testing.T) {
 			}
 			go func() {
 				start := time.Now()
-				e := c.ConsumeClaim(testConsumerGroupSession{ctx: context.Background()}, groupClaim)
+				e := c.ConsumeClaim(testConsumerGroupSession{ctx: t.Context()}, groupClaim)
 				end := time.Now()
 				if tt.expectedError != nil {
 					assert.EqualError(t, e, tt.expectedError.Error())
@@ -352,9 +352,9 @@ func TestMetricsReceiverStartConsume(t *testing.T) {
 		consumerGroup:    &testConsumerGroup{},
 		telemetryBuilder: telemetryBuilder,
 	}
-	ctx, cancelFunc := context.WithCancel(context.Background())
+	ctx, cancelFunc := context.WithCancel(t.Context())
 	c.cancelConsumeLoop = cancelFunc
-	require.NoError(t, c.Shutdown(context.Background()))
+	require.NoError(t, c.Shutdown(t.Context()))
 	c.consumeLoopWG.Add(1)
 	c.consumeLoop(ctx, &logsConsumerGroupHandler{
 		ready:            make(chan bool),
@@ -378,8 +378,8 @@ func TestMetricsReceiver_error(t *testing.T) {
 		telemetryBuilder: nopTelemetryBuilder(t),
 	}
 
-	require.NoError(t, c.Start(context.Background(), componenttest.NewNopHost()))
-	require.NoError(t, c.Shutdown(context.Background()))
+	require.NoError(t, c.Start(t.Context(), componenttest.NewNopHost()))
+	require.NoError(t, c.Shutdown(t.Context()))
 	assert.Eventually(t, func() bool {
 		return logObserver.FilterField(zap.Error(expectedErr)).Len() > 0
 	}, 10*time.Second, time.Millisecond*100)
@@ -387,7 +387,7 @@ func TestMetricsReceiver_error(t *testing.T) {
 
 func TestMetricsConsumerGroupHandler(t *testing.T) {
 	tel := componenttest.NewTelemetry()
-	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) })
+	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) }) //nolint:usetesting
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewTelemetrySettings())
 	require.NoError(t, err)
 
@@ -414,7 +414,7 @@ func TestMetricsConsumerGroupHandler(t *testing.T) {
 		telemetryBuilder: telemetryBuilder,
 	}
 
-	testSession := testConsumerGroupSession{ctx: context.Background()}
+	testSession := testConsumerGroupSession{ctx: t.Context()}
 	require.NoError(t, c.Setup(testSession))
 	_, ok := <-c.ready
 	assert.False(t, ok)
@@ -457,7 +457,7 @@ func TestMetricsConsumerGroupHandler(t *testing.T) {
 
 func TestMetricsConsumerGroupHandler_session_done(t *testing.T) {
 	tel := componenttest.NewTelemetry()
-	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) })
+	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) }) //nolint:usetesting
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewTelemetrySettings())
 	require.NoError(t, err)
 
@@ -473,7 +473,7 @@ func TestMetricsConsumerGroupHandler_session_done(t *testing.T) {
 		telemetryBuilder: telemetryBuilder,
 	}
 
-	ctx, cancelFunc := context.WithCancel(context.Background())
+	ctx, cancelFunc := context.WithCancel(t.Context())
 	testSession := testConsumerGroupSession{ctx: ctx}
 	require.NoError(t, c.Setup(testSession))
 	_, ok := <-c.ready
@@ -503,7 +503,7 @@ func TestMetricsConsumerGroupHandler_error_unmarshal(t *testing.T) {
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings(metadata.Type)})
 	require.NoError(t, err)
 	tel := componenttest.NewTelemetry()
-	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) })
+	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) }) //nolint:usetesting
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewTelemetrySettings())
 	require.NoError(t, err)
 	c := metricsConsumerGroupHandler{
@@ -522,7 +522,7 @@ func TestMetricsConsumerGroupHandler_error_unmarshal(t *testing.T) {
 		messageChan: make(chan *sarama.ConsumerMessage),
 	}
 	go func() {
-		err := c.ConsumeClaim(testConsumerGroupSession{ctx: context.Background()}, groupClaim)
+		err := c.ConsumeClaim(testConsumerGroupSession{ctx: t.Context()}, groupClaim)
 		assert.Error(t, err)
 		wg.Done()
 	}()
@@ -610,7 +610,7 @@ func TestMetricsConsumerGroupHandler_error_nextConsumer(t *testing.T) {
 			}
 			go func() {
 				start := time.Now()
-				e := c.ConsumeClaim(testConsumerGroupSession{ctx: context.Background()}, groupClaim)
+				e := c.ConsumeClaim(testConsumerGroupSession{ctx: t.Context()}, groupClaim)
 				end := time.Now()
 				if tt.expectedError != nil {
 					assert.EqualError(t, e, tt.expectedError.Error())
@@ -642,8 +642,8 @@ func TestLogsReceiverStart(t *testing.T) {
 		telemetryBuilder: nopTelemetryBuilder(t),
 	}
 
-	require.NoError(t, c.Start(context.Background(), componenttest.NewNopHost()))
-	require.NoError(t, c.Shutdown(context.Background()))
+	require.NoError(t, c.Start(t.Context(), componenttest.NewNopHost()))
+	require.NoError(t, c.Shutdown(t.Context()))
 }
 
 func TestLogsReceiverStartConsume(t *testing.T) {
@@ -656,9 +656,9 @@ func TestLogsReceiverStartConsume(t *testing.T) {
 		consumerGroup:    &testConsumerGroup{},
 		telemetryBuilder: telemetryBuilder,
 	}
-	ctx, cancelFunc := context.WithCancel(context.Background())
+	ctx, cancelFunc := context.WithCancel(t.Context())
 	c.cancelConsumeLoop = cancelFunc
-	require.NoError(t, c.Shutdown(context.Background()))
+	require.NoError(t, c.Shutdown(t.Context()))
 	c.consumeLoopWG.Add(1)
 	c.consumeLoop(ctx, &logsConsumerGroupHandler{
 		ready:            make(chan bool),
@@ -682,8 +682,8 @@ func TestLogsReceiver_error(t *testing.T) {
 		telemetryBuilder: nopTelemetryBuilder(t),
 	}
 
-	require.NoError(t, c.Start(context.Background(), componenttest.NewNopHost()))
-	require.NoError(t, c.Shutdown(context.Background()))
+	require.NoError(t, c.Start(t.Context(), componenttest.NewNopHost()))
+	require.NoError(t, c.Shutdown(t.Context()))
 	assert.Eventually(t, func() bool {
 		return logObserver.FilterField(zap.Error(expectedErr)).Len() > 0
 	}, 10*time.Second, time.Millisecond*100)
@@ -691,7 +691,7 @@ func TestLogsReceiver_error(t *testing.T) {
 
 func TestLogsConsumerGroupHandler(t *testing.T) {
 	tel := componenttest.NewTelemetry()
-	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) })
+	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) }) //nolint:usetesting
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewTelemetrySettings())
 	require.NoError(t, err)
 
@@ -718,7 +718,7 @@ func TestLogsConsumerGroupHandler(t *testing.T) {
 		telemetryBuilder: telemetryBuilder,
 	}
 
-	testSession := testConsumerGroupSession{ctx: context.Background()}
+	testSession := testConsumerGroupSession{ctx: t.Context()}
 	require.NoError(t, c.Setup(testSession))
 	_, ok := <-c.ready
 	assert.False(t, ok)
@@ -761,7 +761,7 @@ func TestLogsConsumerGroupHandler(t *testing.T) {
 
 func TestLogsConsumerGroupHandler_session_done(t *testing.T) {
 	tel := componenttest.NewTelemetry()
-	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) })
+	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) }) //nolint:usetesting
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewTelemetrySettings())
 	require.NoError(t, err)
 
@@ -777,7 +777,7 @@ func TestLogsConsumerGroupHandler_session_done(t *testing.T) {
 		telemetryBuilder: telemetryBuilder,
 	}
 
-	ctx, cancelFunc := context.WithCancel(context.Background())
+	ctx, cancelFunc := context.WithCancel(t.Context())
 	testSession := testConsumerGroupSession{ctx: ctx}
 	require.NoError(t, c.Setup(testSession))
 	_, ok := <-c.ready
@@ -807,7 +807,7 @@ func TestLogsConsumerGroupHandler_error_unmarshal(t *testing.T) {
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings(metadata.Type)})
 	require.NoError(t, err)
 	tel := componenttest.NewTelemetry()
-	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) })
+	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) }) //nolint:usetesting
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewTelemetrySettings())
 	require.NoError(t, err)
 	c := logsConsumerGroupHandler{
@@ -826,7 +826,7 @@ func TestLogsConsumerGroupHandler_error_unmarshal(t *testing.T) {
 		messageChan: make(chan *sarama.ConsumerMessage),
 	}
 	go func() {
-		err := c.ConsumeClaim(testConsumerGroupSession{ctx: context.Background()}, groupClaim)
+		err := c.ConsumeClaim(testConsumerGroupSession{ctx: t.Context()}, groupClaim)
 		assert.Error(t, err)
 		wg.Done()
 	}()
@@ -916,7 +916,7 @@ func TestLogsConsumerGroupHandler_error_nextConsumer(t *testing.T) {
 			}
 			go func() {
 				start := time.Now()
-				e := c.ConsumeClaim(testConsumerGroupSession{ctx: context.Background()}, groupClaim)
+				e := c.ConsumeClaim(testConsumerGroupSession{ctx: t.Context()}, groupClaim)
 				end := time.Now()
 				if tt.expectedError != nil {
 					assert.EqualError(t, e, tt.expectedError.Error())
@@ -1078,7 +1078,7 @@ func Test_newContextWithHeaders(t *testing.T) {
 		{
 			name: "no headers",
 			args: args{
-				ctx:     context.Background(),
+				ctx:     t.Context(),
 				headers: []*sarama.RecordHeader{},
 			},
 			want: map[string][]string{},
@@ -1086,7 +1086,7 @@ func Test_newContextWithHeaders(t *testing.T) {
 		{
 			name: "single header",
 			args: args{
-				ctx: context.Background(),
+				ctx: t.Context(),
 				headers: []*sarama.RecordHeader{
 					{Key: []byte("key1"), Value: []byte("value1")},
 				},
@@ -1098,7 +1098,7 @@ func Test_newContextWithHeaders(t *testing.T) {
 		{
 			name: "multiple headers",
 			args: args{
-				ctx: context.Background(),
+				ctx: t.Context(),
 				headers: []*sarama.RecordHeader{
 					{Key: []byte("key1"), Value: []byte("value1")},
 					{Key: []byte("key2"), Value: []byte("value2")},
@@ -1112,7 +1112,7 @@ func Test_newContextWithHeaders(t *testing.T) {
 		{
 			name: "duplicate keys",
 			args: args{
-				ctx: context.Background(),
+				ctx: t.Context(),
 				headers: []*sarama.RecordHeader{
 					{Key: []byte("key1"), Value: []byte("value1")},
 					{Key: []byte("key1"), Value: []byte("value2")},

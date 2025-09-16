@@ -4,7 +4,6 @@
 package syslogexporter
 
 import (
-	"context"
 	"crypto/tls"
 	"errors"
 	"io"
@@ -152,7 +151,7 @@ func TestSyslogExportSuccess(t *testing.T) {
 	go func() {
 		buffer := exampleLog(t)
 		logs := logRecordsToLogs(buffer)
-		err := test.exp.pushLogsData(context.Background(), logs)
+		err := test.exp.pushLogsData(t.Context(), logs)
 		assert.NoError(t, err, "could not send message")
 	}()
 	err := test.srv.SetDeadline(time.Now().Add(time.Second * 1))
@@ -170,7 +169,7 @@ func TestSyslogExportFail(t *testing.T) {
 	defer test.srv.Close()
 	buffer := exampleLog(t)
 	logs := logRecordsToLogs(buffer)
-	consumerErr := test.exp.pushLogsData(context.Background(), logs)
+	consumerErr := test.exp.pushLogsData(t.Context(), logs)
 	var consumerErrorLogs consumererror.Logs
 	ok := errors.As(consumerErr, &consumerErrorLogs)
 	assert.True(t, ok)

@@ -4,7 +4,6 @@
 package traces
 
 import (
-	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -61,7 +60,7 @@ func Test_ProcessTraces_ResourceContext(t *testing.T) {
 			processor, err := NewProcessor([]common.ContextStatements{{Context: "resource", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
 			assert.NoError(t, err)
 
-			_, err = processor.ProcessTraces(context.Background(), td)
+			_, err = processor.ProcessTraces(t.Context(), td)
 			assert.NoError(t, err)
 
 			exTd := constructTraces()
@@ -102,7 +101,7 @@ func Test_ProcessTraces_InferredResourceContext(t *testing.T) {
 			processor, err := NewProcessor([]common.ContextStatements{{Context: "", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
 			assert.NoError(t, err)
 
-			_, err = processor.ProcessTraces(context.Background(), td)
+			_, err = processor.ProcessTraces(t.Context(), td)
 			assert.NoError(t, err)
 
 			exTd := constructTraces()
@@ -143,7 +142,7 @@ func Test_ProcessTraces_ScopeContext(t *testing.T) {
 			processor, err := NewProcessor([]common.ContextStatements{{Context: "scope", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
 			assert.NoError(t, err)
 
-			_, err = processor.ProcessTraces(context.Background(), td)
+			_, err = processor.ProcessTraces(t.Context(), td)
 			assert.NoError(t, err)
 
 			exTd := constructTraces()
@@ -184,7 +183,7 @@ func Test_ProcessTraces_InferredScopeContext(t *testing.T) {
 			processor, err := NewProcessor([]common.ContextStatements{{Context: "", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
 			assert.NoError(t, err)
 
-			_, err = processor.ProcessTraces(context.Background(), td)
+			_, err = processor.ProcessTraces(t.Context(), td)
 			assert.NoError(t, err)
 
 			exTd := constructTraces()
@@ -484,7 +483,7 @@ func Test_ProcessTraces_TraceContext(t *testing.T) {
 			processor, err := NewProcessor([]common.ContextStatements{{Context: "span", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
 			assert.NoError(t, err)
 
-			_, err = processor.ProcessTraces(context.Background(), td)
+			_, err = processor.ProcessTraces(t.Context(), td)
 			assert.NoError(t, err)
 
 			exTd := constructTraces()
@@ -784,7 +783,7 @@ func Test_ProcessTraces_InferredTraceContext(t *testing.T) {
 			processor, err := NewProcessor([]common.ContextStatements{{Context: "", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
 			assert.NoError(t, err)
 
-			_, err = processor.ProcessTraces(context.Background(), td)
+			_, err = processor.ProcessTraces(t.Context(), td)
 			assert.NoError(t, err)
 
 			exTd := constructTraces()
@@ -814,7 +813,7 @@ func Test_ProcessTraces_SpanEventContext(t *testing.T) {
 			processor, err := NewProcessor([]common.ContextStatements{{Context: "spanevent", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
 			assert.NoError(t, err)
 
-			_, err = processor.ProcessTraces(context.Background(), td)
+			_, err = processor.ProcessTraces(t.Context(), td)
 			assert.NoError(t, err)
 
 			exTd := constructTraces()
@@ -844,7 +843,7 @@ func Test_ProcessTraces_InferredSpanEventContext(t *testing.T) {
 			processor, err := NewProcessor([]common.ContextStatements{{Context: "", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
 			assert.NoError(t, err)
 
-			_, err = processor.ProcessTraces(context.Background(), td)
+			_, err = processor.ProcessTraces(t.Context(), td)
 			assert.NoError(t, err)
 
 			exTd := constructTraces()
@@ -961,7 +960,7 @@ func Test_ProcessTraces_MixContext(t *testing.T) {
 			processor, err := NewProcessor(tt.contextStatements, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
 			assert.NoError(t, err)
 
-			_, err = processor.ProcessTraces(context.Background(), td)
+			_, err = processor.ProcessTraces(t.Context(), td)
 			assert.NoError(t, err)
 
 			exTd := constructTraces()
@@ -997,7 +996,7 @@ func Test_ProcessTraces_ErrorMode(t *testing.T) {
 			processor, err := NewProcessor([]common.ContextStatements{{Context: tt.context, Statements: []string{`set(attributes["test"], ParseJSON(1))`}}}, ottl.PropagateError, componenttest.NewNopTelemetrySettings())
 			assert.NoError(t, err)
 
-			_, err = processor.ProcessTraces(context.Background(), td)
+			_, err = processor.ProcessTraces(t.Context(), td)
 			assert.Error(t, err)
 		})
 	}
@@ -1098,7 +1097,7 @@ func Test_ProcessTraces_StatementsErrorMode(t *testing.T) {
 			td := constructTraces()
 			processor, err := NewProcessor(tt.statements, tt.errorMode, componenttest.NewNopTelemetrySettings())
 			assert.NoError(t, err)
-			_, err = processor.ProcessTraces(context.Background(), td)
+			_, err = processor.ProcessTraces(t.Context(), td)
 			if tt.wantErrorWith != "" {
 				if err == nil {
 					t.Errorf("expected error containing '%s', got: <nil>", tt.wantErrorWith)
@@ -1256,7 +1255,7 @@ func Test_ProcessTraces_CacheAccess(t *testing.T) {
 			processor, err := NewProcessor(tt.statements, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
 			assert.NoError(t, err)
 
-			_, err = processor.ProcessTraces(context.Background(), td)
+			_, err = processor.ProcessTraces(t.Context(), td)
 			assert.NoError(t, err)
 
 			exTd := constructTraces()
@@ -1379,7 +1378,7 @@ func BenchmarkTwoSpans(b *testing.B) {
 			b.ResetTimer()
 			for n := 0; n < b.N; n++ {
 				td := constructTraces()
-				_, err = processor.ProcessTraces(context.Background(), td)
+				_, err = processor.ProcessTraces(b.Context(), td)
 				assert.NoError(b, err)
 			}
 		})
@@ -1421,7 +1420,7 @@ func BenchmarkHundredSpans(b *testing.B) {
 			b.ResetTimer()
 			for n := 0; n < b.N; n++ {
 				td := constructTracesNum(100)
-				_, err = processor.ProcessTraces(context.Background(), td)
+				_, err = processor.ProcessTraces(b.Context(), td)
 				assert.NoError(b, err)
 			}
 		})

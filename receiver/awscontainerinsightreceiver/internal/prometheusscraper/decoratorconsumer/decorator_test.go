@@ -4,7 +4,6 @@
 package decoratorconsumer
 
 import (
-	"context"
 	"testing"
 
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -53,7 +52,7 @@ func TestConsumeMetrics(t *testing.T) {
 		MetricToUnitMap:       metricToUnit,
 		Logger:                logger,
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 
 	testcases := map[string]TestCase{
 		"empty": {

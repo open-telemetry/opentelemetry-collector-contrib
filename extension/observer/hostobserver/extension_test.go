@@ -4,7 +4,6 @@
 package hostobserver
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net"
@@ -178,7 +177,7 @@ func startAndStopObserver(
 
 	mn := mockNotifier{map[observer.EndpointID]observer.Endpoint{}}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	require.NoError(t, h.Start(ctx, componenttest.NewNopHost()))
 	h.ListAndWatch(mn)
 

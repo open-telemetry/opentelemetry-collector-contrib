@@ -4,7 +4,6 @@
 package awsxrayexporter
 
 import (
-	"context"
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/binary"
@@ -34,7 +33,7 @@ import (
 
 func TestTraceExport(t *testing.T) {
 	traceExporter := initializeTracesExporter(t, generateConfig(t), telemetrytest.NewNopRegistry())
-	ctx := context.Background()
+	ctx := t.Context()
 	td := constructSpanData()
 	err := traceExporter.ConsumeTraces(ctx, td)
 	assert.Error(t, err)
@@ -50,7 +49,7 @@ func TestXraySpanTraceResourceExtraction(t *testing.T) {
 
 func TestXrayAndW3CSpanTraceExport(t *testing.T) {
 	traceExporter := initializeTracesExporter(t, generateConfig(t), telemetrytest.NewNopRegistry())
-	ctx := context.Background()
+	ctx := t.Context()
 	td := constructXrayAndW3CSpanData()
 	err := traceExporter.ConsumeTraces(ctx, td)
 	assert.Error(t, err)
@@ -84,7 +83,7 @@ func TestTelemetryEnabled(t *testing.T) {
 	cfg.TelemetryConfig.Enabled = true
 	traceExporter, err := newTracesExporter(cfg, set, new(awsutil.Conn), registry)
 	assert.NoError(t, err)
-	ctx := context.Background()
+	ctx := t.Context()
 	assert.NoError(t, traceExporter.Start(ctx, componenttest.NewNopHost()))
 	td := constructSpanData()
 	err = traceExporter.ConsumeTraces(ctx, td)
@@ -114,7 +113,7 @@ func TestMiddleware(t *testing.T) {
 	traceExporter := initializeTracesExporter(t, cfg, telemetrytest.NewNopRegistry())
 	host := new(awsmiddleware.MockExtensionsHost)
 	host.On("GetExtensions").Return(extensions)
-	ctx := context.Background()
+	ctx := t.Context()
 	assert.NoError(t, traceExporter.Start(ctx, host))
 	td := constructSpanData()
 	err := traceExporter.ConsumeTraces(ctx, td)
@@ -128,7 +127,7 @@ func TestTraceExportOtlpFormat(t *testing.T) {
 	config.TransitSpansInOtlpFormat = true
 
 	traceExporter := initializeTracesExporter(t, generateConfig(t), telemetrytest.NewNopRegistry())
-	ctx := context.Background()
+	ctx := t.Context()
 	td := constructSpanData()
 	err := traceExporter.ConsumeTraces(ctx, td)
 	assert.Error(t, err)
@@ -200,7 +199,7 @@ func BenchmarkForTracesExporter(tb *testing.B) {
 	traceExporter := initializeTracesExporter(tb, generateConfig(tb), telemetrytest.NewNopRegistry())
 	for i := 0; i < tb.N; i++ {
 		tb.StopTimer()
-		ctx := context.Background()
+		ctx := tb.Context()
 		td := constructSpanData()
 		tb.StartTimer()
 		err := traceExporter.ConsumeTraces(ctx, td)
@@ -223,7 +222,7 @@ func initializeTracesExporter(tb testing.TB, exporterConfig *Config, registry te
 	if err != nil {
 		panic(err)
 	}
-	err = traceExporter.Start(context.Background(), &mockHost{})
+	err = traceExporter.Start(tb.Context(), &mockHost{})
 	if err != nil {
 		panic(err)
 	}

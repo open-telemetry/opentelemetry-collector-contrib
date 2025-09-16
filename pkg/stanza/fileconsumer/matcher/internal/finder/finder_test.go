@@ -170,16 +170,12 @@ func TestFindFiles(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			cwd, err := os.Getwd()
-			require.NoError(t, err)
-			require.NoError(t, os.Chdir(t.TempDir()))
-			defer func() {
-				require.NoError(t, os.Chdir(cwd))
-			}()
+			t.Chdir(t.TempDir())
 			for _, f := range tc.files {
 				require.NoError(t, os.MkdirAll(filepath.Dir(f), 0o700))
 
 				var file *os.File
+				var err error
 				file, err = os.OpenFile(f, os.O_CREATE|os.O_RDWR, 0o600)
 				require.NoError(t, err)
 
@@ -198,12 +194,7 @@ func TestFindFilesWithIOErrors(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("permissions test not valid on windows")
 	}
-	cwd, err := os.Getwd()
-	require.NoError(t, err)
-	require.NoError(t, os.Chdir(t.TempDir()))
-	defer func() {
-		require.NoError(t, os.Chdir(cwd))
-	}()
+	t.Chdir(t.TempDir())
 
 	for _, f := range []string{
 		"1.log",
@@ -215,6 +206,7 @@ func TestFindFilesWithIOErrors(t *testing.T) {
 	} {
 		require.NoError(t, os.MkdirAll(filepath.Dir(f), 0o700))
 
+		var err error
 		_, err = os.OpenFile(f, os.O_CREATE|os.O_RDWR, 0o600)
 		require.NoError(t, err)
 	}

@@ -6,7 +6,6 @@
 package k8sobjectsreceiver
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -52,11 +51,11 @@ func TestE2E(t *testing.T) {
 	cfg.HTTP = nil
 	cfg.GRPC.NetAddr.Endpoint = "0.0.0.0:4317"
 	logsConsumer := new(consumertest.LogsSink)
-	rcvr, err := f.CreateLogs(context.Background(), receivertest.NewNopSettings(f.Type()), cfg, logsConsumer)
+	rcvr, err := f.CreateLogs(t.Context(), receivertest.NewNopSettings(f.Type()), cfg, logsConsumer)
 	require.NoError(t, err, "failed creating logs receiver")
-	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, rcvr.Start(t.Context(), componenttest.NewNopHost()))
 	defer func() {
-		assert.NoError(t, rcvr.Shutdown(context.Background()))
+		assert.NoError(t, rcvr.Shutdown(t.Context()))
 	}()
 
 	// startup collector in k8s cluster

@@ -59,7 +59,7 @@ func (m *mockEC2TagsClient) DescribeTagsWithContext(_ context.Context, _ *ec2.De
 }
 
 func TestEC2TagsForEKS(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	sess := mock.Session
 	clientOption := func(e *ec2Tags) {
 		e.client = &mockEC2TagsClient{
@@ -88,7 +88,7 @@ func TestEC2TagsForEKS(t *testing.T) {
 }
 
 func TestEC2TagsForECS(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	sess := mock.Session
 	clientOption := func(e *ec2Tags) {
 		e.client = &mockEC2TagsClient{

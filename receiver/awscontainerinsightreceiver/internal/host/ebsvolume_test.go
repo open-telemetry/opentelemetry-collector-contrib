@@ -130,7 +130,7 @@ func (m *mockFileInfo) Sys() any {
 }
 
 func TestEBSVolume(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	sess := mock.Session
 	mockVolumeClient := &mockEBSVolumeClient{
 		success: make(chan bool),

@@ -4,7 +4,6 @@
 package lokiexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter"
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -85,10 +84,10 @@ func TestPushLogData(t *testing.T) {
 			}
 
 			f := NewFactory()
-			exp, err := f.CreateLogs(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
+			exp, err := f.CreateLogs(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
 			require.NoError(t, err)
 
-			err = exp.Start(context.Background(), componenttest.NewNopHost())
+			err = exp.Start(t.Context(), componenttest.NewNopHost())
 			require.NoError(t, err)
 
 			ld := plog.NewLogs()
@@ -111,7 +110,7 @@ func TestPushLogData(t *testing.T) {
 			}
 
 			// test
-			err = exp.ConsumeLogs(context.Background(), ld)
+			err = exp.ConsumeLogs(t.Context(), ld)
 			require.NoError(t, err)
 
 			// actualPushRequest is populated within the test http server, we check it here as assertions are better done at the
@@ -123,7 +122,7 @@ func TestPushLogData(t *testing.T) {
 			assert.Equal(t, tC.expectedLine, actualPushRequest.Streams[0].Entries[0].Line)
 
 			// cleanup
-			err = exp.Shutdown(context.Background())
+			err = exp.Shutdown(t.Context())
 			assert.NoError(t, err)
 		})
 	}
@@ -265,14 +264,14 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 			}
 
 			f := NewFactory()
-			exp, err := f.CreateLogs(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
+			exp, err := f.CreateLogs(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
 			require.NoError(t, err)
 
-			err = exp.Start(context.Background(), componenttest.NewNopHost())
+			err = exp.Start(t.Context(), componenttest.NewNopHost())
 			require.NoError(t, err)
 
 			// test
-			err = exp.ConsumeLogs(context.Background(), tC.logs)
+			err = exp.ConsumeLogs(t.Context(), tC.logs)
 			require.NoError(t, err)
 
 			// actualPushRequest is populated within the test http server, we check it here as assertions are better done at the
@@ -291,7 +290,7 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 				assert.Equal(t, expectedLine, request.Streams[0].Entries[0].Line)
 			}
 			// cleanup
-			err = exp.Shutdown(context.Background())
+			err = exp.Shutdown(t.Context())
 			assert.NoError(t, err)
 		})
 	}

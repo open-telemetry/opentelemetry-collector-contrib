@@ -292,7 +292,7 @@ func Test_ParseXML(t *testing.T) {
 
 			require.NoError(t, err)
 
-			result, err := exprFunc(context.Background(), nil)
+			result, err := exprFunc(t.Context(), nil)
 			if tt.parseError != "" {
 				require.ErrorContains(t, err, tt.parseError)
 				return

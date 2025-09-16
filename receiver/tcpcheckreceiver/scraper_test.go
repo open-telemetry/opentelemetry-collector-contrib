@@ -5,7 +5,6 @@ package tcpcheckreceiver // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"bufio"
-	"context"
 	"fmt"
 	"net"
 	"path/filepath"
@@ -160,7 +159,7 @@ func TestScraper(t *testing.T) {
 			settings := receivertest.NewNopSettings(metadata.Type)
 
 			scraper := newScraper(cfg, settings)
-			actualMetrics, err := scraper.scrape(context.Background())
+			actualMetrics, err := scraper.scrape(t.Context())
 			actualMetrics.ResourceMetrics()
 			require.NoError(t, err, "failed scrape")
 			require.NoError(
@@ -219,7 +218,7 @@ func TestScraper_TCPErrorMetrics(t *testing.T) {
 			settings := receivertest.NewNopSettings(metadata.Type)
 
 			scraper := newScraper(cfg, settings)
-			actualMetrics, err := scraper.scrape(context.Background())
+			actualMetrics, err := scraper.scrape(t.Context())
 			require.NoError(t, err, "failed scrape")
 
 			require.NoError(

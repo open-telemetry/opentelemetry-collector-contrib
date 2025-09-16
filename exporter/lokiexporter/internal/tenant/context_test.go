@@ -4,7 +4,6 @@
 package tenant // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter/internal/tenant"
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -15,9 +14,9 @@ import (
 func TestContextTenantSourceSuccess(t *testing.T) {
 	// prepare
 	ts := &ContextTenantSource{Key: "X-Scope-OrgID"}
-	cl := client.FromContext(context.Background())
+	cl := client.FromContext(t.Context())
 	cl.Metadata = client.NewMetadata(map[string][]string{"X-Scope-OrgID": {"acme"}})
-	ctx := client.NewContext(context.Background(), cl)
+	ctx := client.NewContext(t.Context(), cl)
 
 	// test
 	tenant, err := ts.GetTenant(ctx, plog.NewLogs())
@@ -30,9 +29,9 @@ func TestContextTenantSourceSuccess(t *testing.T) {
 func TestContextTenantSourceNotFound(t *testing.T) {
 	// prepare
 	ts := &ContextTenantSource{Key: "X-Scope-OrgID"}
-	cl := client.FromContext(context.Background())
+	cl := client.FromContext(t.Context())
 	cl.Metadata = client.NewMetadata(map[string][]string{"Not-Scope-OrgID": {"acme"}})
-	ctx := client.NewContext(context.Background(), cl)
+	ctx := client.NewContext(t.Context(), cl)
 
 	// test
 	tenant, err := ts.GetTenant(ctx, plog.NewLogs())
@@ -45,9 +44,9 @@ func TestContextTenantSourceNotFound(t *testing.T) {
 func TestContextTenantSourceMultipleFound(t *testing.T) {
 	// prepare
 	ts := &ContextTenantSource{Key: "X-Scope-OrgID"}
-	cl := client.FromContext(context.Background())
+	cl := client.FromContext(t.Context())
 	cl.Metadata = client.NewMetadata(map[string][]string{"X-Scope-OrgID": {"acme", "globex"}})
-	ctx := client.NewContext(context.Background(), cl)
+	ctx := client.NewContext(t.Context(), cl)
 
 	// test
 	tenant, err := ts.GetTenant(ctx, plog.NewLogs())

@@ -4,7 +4,6 @@
 package coralogixexporter
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -75,14 +74,14 @@ func TestProfilesExporter_Start(t *testing.T) {
 	exp, err := newProfilesExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
 	require.NoError(t, err)
 
-	err = exp.start(context.Background(), componenttest.NewNopHost())
+	err = exp.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	assert.NotNil(t, exp.clientConn)
 	assert.NotNil(t, exp.profilesExporter)
 	assert.Contains(t, exp.config.Profiles.Headers, "Authorization")
 
 	// Test shutdown
-	err = exp.shutdown(context.Background())
+	err = exp.shutdown(t.Context())
 	require.NoError(t, err)
 }
 
@@ -100,7 +99,7 @@ func TestProfilesExporter_EnhanceContext(t *testing.T) {
 	exp, err := newProfilesExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
 	require.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	enhancedCtx := exp.enhanceContext(ctx)
 	assert.NotEqual(t, ctx, enhancedCtx)
 }
@@ -118,10 +117,10 @@ func TestProfilesExporter_PushProfiles(t *testing.T) {
 	require.NoError(t, err)
 
 	// Initialize the exporter by calling start
-	err = exp.start(context.Background(), componenttest.NewNopHost())
+	err = exp.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	defer func() {
-		err = exp.shutdown(context.Background())
+		err = exp.shutdown(t.Context())
 		require.NoError(t, err)
 	}()
 
@@ -133,6 +132,6 @@ func TestProfilesExporter_PushProfiles(t *testing.T) {
 	resource := rp.Resource()
 	resource.Attributes().PutStr("service.name", "test-service")
 
-	err = exp.pushProfiles(context.Background(), profiles)
+	err = exp.pushProfiles(t.Context(), profiles)
 	assert.Error(t, err)
 }

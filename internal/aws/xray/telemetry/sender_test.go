@@ -55,7 +55,7 @@ func TestRotateRace(t *testing.T) {
 	sender := newSender(client, WithInterval(100*time.Millisecond))
 	sender.Start()
 	defer sender.Stop()
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 	go func() {
 		ticker := time.NewTicker(time.Millisecond)

@@ -31,10 +31,10 @@ func TestStart(t *testing.T) {
 	sink := &consumertest.LogsSink{}
 	logsRcvr := newLogsReceiver(cfg, zap.NewNop(), sink)
 
-	err := logsRcvr.Start(context.Background(), componenttest.NewNopHost())
+	err := logsRcvr.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
-	err = logsRcvr.Shutdown(context.Background())
+	err = logsRcvr.Shutdown(t.Context())
 	require.NoError(t, err)
 }
 
@@ -54,14 +54,14 @@ func TestPrefixedConfig(t *testing.T) {
 	alertRcvr := newLogsReceiver(cfg, zap.NewNop(), sink)
 	alertRcvr.client = defaultMockClient()
 
-	err := alertRcvr.Start(context.Background(), componenttest.NewNopHost())
+	err := alertRcvr.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	require.Eventually(t, func() bool {
 		return sink.LogRecordCount() > 0
 	}, 2*time.Second, 10*time.Millisecond)
 
-	err = alertRcvr.Shutdown(context.Background())
+	err = alertRcvr.Shutdown(t.Context())
 	require.NoError(t, err)
 
 	logs := sink.AllLogs()[0]
@@ -86,7 +86,7 @@ func TestPrefixedNamedStreamsConfig(t *testing.T) {
 	alertRcvr := newLogsReceiver(cfg, zap.NewNop(), sink)
 	alertRcvr.client = defaultMockClient()
 
-	err := alertRcvr.Start(context.Background(), componenttest.NewNopHost())
+	err := alertRcvr.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	require.Eventually(t, func() bool {
@@ -97,7 +97,7 @@ func TestPrefixedNamedStreamsConfig(t *testing.T) {
 	require.Len(t, groupRequests, 1)
 	require.Equal(t, "test-log-group-name", groupRequests[0].groupName())
 
-	err = alertRcvr.Shutdown(context.Background())
+	err = alertRcvr.Shutdown(t.Context())
 	require.NoError(t, err)
 
 	logs := sink.AllLogs()[0]
@@ -120,7 +120,7 @@ func TestNamedConfigNoStreamFilter(t *testing.T) {
 	alertRcvr := newLogsReceiver(cfg, zap.NewNop(), sink)
 	alertRcvr.client = defaultMockClient()
 
-	err := alertRcvr.Start(context.Background(), componenttest.NewNopHost())
+	err := alertRcvr.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	require.Eventually(t, func() bool {
@@ -131,7 +131,7 @@ func TestNamedConfigNoStreamFilter(t *testing.T) {
 	require.Len(t, groupRequests, 1)
 	require.Equal(t, "test-log-group-name", groupRequests[0].groupName())
 
-	err = alertRcvr.Shutdown(context.Background())
+	err = alertRcvr.Shutdown(t.Context())
 	require.NoError(t, err)
 
 	logs := sink.AllLogs()[0]
@@ -158,12 +158,12 @@ func TestDiscovery(t *testing.T) {
 	logsRcvr := newLogsReceiver(cfg, zap.NewNop(), sink)
 	logsRcvr.client = defaultMockClient()
 
-	require.NoError(t, logsRcvr.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, logsRcvr.Start(t.Context(), componenttest.NewNopHost()))
 	require.Eventually(t, func() bool {
 		return sink.LogRecordCount() > 0
 	}, 2*time.Second, 10*time.Millisecond)
 	require.Len(t, logsRcvr.groupRequests, 2)
-	require.NoError(t, logsRcvr.Shutdown(context.Background()))
+	require.NoError(t, logsRcvr.Shutdown(t.Context()))
 }
 
 // Test to ensure that mid collection while streaming results we will
@@ -191,7 +191,7 @@ func TestShutdownWhileCollecting(t *testing.T) {
 		WaitUntil(doneChan)
 	alertRcvr.client = mc
 
-	err := alertRcvr.Start(context.Background(), componenttest.NewNopHost())
+	err := alertRcvr.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	require.Never(t, func() bool {
@@ -199,7 +199,7 @@ func TestShutdownWhileCollecting(t *testing.T) {
 	}, 3*time.Second, 10*time.Millisecond)
 
 	close(doneChan)
-	require.NoError(t, alertRcvr.Shutdown(context.Background()))
+	require.NoError(t, alertRcvr.Shutdown(t.Context()))
 }
 
 func TestAutodiscoverLimit(t *testing.T) {
@@ -239,7 +239,7 @@ func TestAutodiscoverLimit(t *testing.T) {
 	alertRcvr := newLogsReceiver(cfg, zap.NewNop(), sink)
 	alertRcvr.client = mc
 
-	grs, err := alertRcvr.discoverGroups(context.Background(), cfg.Logs.Groups.AutodiscoverConfig)
+	grs, err := alertRcvr.discoverGroups(t.Context(), cfg.Logs.Groups.AutodiscoverConfig)
 	require.NoError(t, err)
 	require.Len(t, grs, cfg.Logs.Groups.AutodiscoverConfig.Limit)
 }

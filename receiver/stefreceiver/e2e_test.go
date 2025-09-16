@@ -4,7 +4,6 @@
 package stefreceiver
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -26,26 +25,26 @@ func TestRoundtrip(t *testing.T) {
 	sink := &consumertest.MetricsSink{}
 	settings := receivertest.NewNopSettings(metadata.Type)
 	settings.Logger, _ = zap.NewDevelopment()
-	m, err := NewFactory().CreateMetrics(context.Background(), settings, createDefaultConfig(), sink)
+	m, err := NewFactory().CreateMetrics(t.Context(), settings, createDefaultConfig(), sink)
 	t.Cleanup(func() {
-		err = m.Shutdown(context.Background())
+		err = m.Shutdown(t.Context())
 		require.NoError(t, err)
 	})
-	require.NoError(t, m.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, m.Start(t.Context(), componenttest.NewNopHost()))
 	require.NoError(t, err)
 	cfg := stefexporter.NewFactory().CreateDefaultConfig().(*stefexporter.Config)
 	cfg.Endpoint = "localhost:4320"
 	cfg.TLSSetting.Insecure = true
 	exporterSettings := exportertest.NewNopSettings(metadata.Type)
 	exporterSettings.Logger, _ = zap.NewDevelopment()
-	exporter, err := stefexporter.NewFactory().CreateMetrics(context.Background(), exporterSettings, cfg)
+	exporter, err := stefexporter.NewFactory().CreateMetrics(t.Context(), exporterSettings, cfg)
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		err = exporter.Shutdown(context.Background())
+		err = exporter.Shutdown(t.Context())
 		require.NoError(t, err)
 	})
 
-	require.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, exporter.Start(t.Context(), componenttest.NewNopHost()))
 	data := pmetric.NewMetrics()
 	metricPoint := data.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 	metricPoint.SetName("foo")
@@ -53,7 +52,7 @@ func TestRoundtrip(t *testing.T) {
 	dp := gauge.DataPoints().AppendEmpty()
 	dp.SetIntValue(1)
 	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
-	err = exporter.ConsumeMetrics(context.Background(), data)
+	err = exporter.ConsumeMetrics(t.Context(), data)
 	require.NoError(t, err)
 	assert.EventuallyWithT(t, func(tt *assert.CollectT) {
 		assert.Len(tt, sink.AllMetrics(), 1)

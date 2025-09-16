@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage
 
-go 1.23.0
+go 1.24.6
 
 require (
 	github.com/google/uuid v1.6.0
@@ -17,7 +17,7 @@ require (
 	go.uber.org/zap v1.27.0
 )
 
-require github.com/go-viper/mapstructure/v2 v2.3.0 // indirect
+require github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect

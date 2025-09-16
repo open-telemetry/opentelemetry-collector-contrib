@@ -59,7 +59,7 @@ func TestClusterName(t *testing.T) {
 				configMapName:       tt.CMname,
 				kubeSystemNamespace: tt.CMnamespace,
 			}
-			clusterName, err := kubeadmP.ClusterName(context.Background())
+			clusterName, err := kubeadmP.ClusterName(t.Context())
 			if tt.errMsg != "" {
 				assert.EqualError(t, err, tt.errMsg)
 			} else {
@@ -100,7 +100,7 @@ func TestClusterUID(t *testing.T) {
 				kubeadmClient:       client,
 				kubeSystemNamespace: tt.CMnamespace,
 			}
-			clusterName, err := kubeadmP.ClusterUID(context.Background())
+			clusterName, err := kubeadmP.ClusterUID(t.Context())
 			if tt.errMsg != "" {
 				assert.EqualError(t, err, tt.errMsg)
 			} else {
@@ -121,7 +121,7 @@ func setupConfigMap(client *fake.Clientset) error {
 			"clusterName": "myClusterName",
 		},
 	}
-	_, err := client.CoreV1().ConfigMaps("ns").Create(context.Background(), cm, metav1.CreateOptions{})
+	_, err := client.CoreV1().ConfigMaps("ns").Create(context.TODO(), cm, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}
@@ -135,7 +135,7 @@ func setupNamespace(client *fake.Clientset) error {
 			Name: "ns",
 		},
 	}
-	_, err := client.CoreV1().Namespaces().Create(context.Background(), ns, metav1.CreateOptions{})
+	_, err := client.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}

@@ -4,7 +4,6 @@
 package coralogixexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter"
 
 import (
-	"context"
 	"path/filepath"
 	"testing"
 	"time"
@@ -196,8 +195,8 @@ func TestTraceExporter(t *testing.T) {
 	te, err := newTracesExporter(cfg, params)
 	assert.NoError(t, err)
 	assert.NotNil(t, te, "failed to create trace exporter")
-	assert.NoError(t, te.start(context.Background(), componenttest.NewNopHost()))
-	assert.NoError(t, te.shutdown(context.Background()))
+	assert.NoError(t, te.start(t.Context(), componenttest.NewNopHost()))
+	assert.NoError(t, te.shutdown(t.Context()))
 }
 
 func TestMetricsExporter(t *testing.T) {
@@ -216,8 +215,8 @@ func TestMetricsExporter(t *testing.T) {
 	me, err := newMetricsExporter(cfg, params)
 	require.NoError(t, err)
 	require.NotNil(t, me, "failed to create metrics exporter")
-	require.NoError(t, me.start(context.Background(), componenttest.NewNopHost()))
-	assert.NoError(t, me.shutdown(context.Background()))
+	require.NoError(t, me.start(t.Context(), componenttest.NewNopHost()))
+	assert.NoError(t, me.shutdown(t.Context()))
 }
 
 func TestLogsExporter(t *testing.T) {
@@ -236,8 +235,8 @@ func TestLogsExporter(t *testing.T) {
 	le, err := newLogsExporter(cfg, params)
 	require.NoError(t, err)
 	require.NotNil(t, le, "failed to create logs exporter")
-	require.NoError(t, le.start(context.Background(), componenttest.NewNopHost()))
-	assert.NoError(t, le.shutdown(context.Background()))
+	require.NoError(t, le.start(t.Context(), componenttest.NewNopHost()))
+	assert.NoError(t, le.shutdown(t.Context()))
 }
 
 func TestDomainWithAllExporters(t *testing.T) {
@@ -254,20 +253,20 @@ func TestDomainWithAllExporters(t *testing.T) {
 	te, err := newTracesExporter(cfg, params)
 	assert.NoError(t, err)
 	assert.NotNil(t, te, "failed to create trace exporter")
-	assert.NoError(t, te.start(context.Background(), componenttest.NewNopHost()))
-	assert.NoError(t, te.shutdown(context.Background()))
+	assert.NoError(t, te.start(t.Context(), componenttest.NewNopHost()))
+	assert.NoError(t, te.shutdown(t.Context()))
 
 	me, err := newMetricsExporter(cfg, params)
 	require.NoError(t, err)
 	require.NotNil(t, me, "failed to create metrics exporter")
-	require.NoError(t, me.start(context.Background(), componenttest.NewNopHost()))
-	assert.NoError(t, me.shutdown(context.Background()))
+	require.NoError(t, me.start(t.Context(), componenttest.NewNopHost()))
+	assert.NoError(t, me.shutdown(t.Context()))
 
 	le, err := newLogsExporter(cfg, params)
 	require.NoError(t, err)
 	require.NotNil(t, le, "failed to create logs exporter")
-	require.NoError(t, le.start(context.Background(), componenttest.NewNopHost()))
-	assert.NoError(t, le.shutdown(context.Background()))
+	require.NoError(t, le.start(t.Context(), componenttest.NewNopHost()))
+	assert.NoError(t, le.shutdown(t.Context()))
 }
 
 func TestEndpointsAndDomainWithAllExporters(t *testing.T) {
@@ -284,20 +283,20 @@ func TestEndpointsAndDomainWithAllExporters(t *testing.T) {
 	te, err := newTracesExporter(cfg, params)
 	assert.NoError(t, err)
 	assert.NotNil(t, te, "failed to create trace exporter")
-	assert.NoError(t, te.start(context.Background(), componenttest.NewNopHost()))
-	assert.NoError(t, te.shutdown(context.Background()))
+	assert.NoError(t, te.start(t.Context(), componenttest.NewNopHost()))
+	assert.NoError(t, te.shutdown(t.Context()))
 
 	me, err := newMetricsExporter(cfg, params)
 	require.NoError(t, err)
 	require.NotNil(t, me, "failed to create metrics exporter")
-	require.NoError(t, me.start(context.Background(), componenttest.NewNopHost()))
-	assert.NoError(t, me.shutdown(context.Background()))
+	require.NoError(t, me.start(t.Context(), componenttest.NewNopHost()))
+	assert.NoError(t, me.shutdown(t.Context()))
 
 	le, err := newLogsExporter(cfg, params)
 	require.NoError(t, err)
 	require.NotNil(t, le, "failed to create logs exporter")
-	require.NoError(t, le.start(context.Background(), componenttest.NewNopHost()))
-	assert.NoError(t, le.shutdown(context.Background()))
+	require.NoError(t, le.start(t.Context(), componenttest.NewNopHost()))
+	assert.NoError(t, le.shutdown(t.Context()))
 }
 
 func TestGetMetadataFromResource(t *testing.T) {
@@ -346,7 +345,7 @@ func TestCreateExportersWithBatcher(t *testing.T) {
 	// Test traces exporter
 	t.Run("traces_with_batcher", func(t *testing.T) {
 		set := exportertest.NewNopSettings(metadata.Type)
-		exp, err := factory.CreateTraces(context.Background(), set, cfg)
+		exp, err := factory.CreateTraces(t.Context(), set, cfg)
 		require.NoError(t, err)
 		require.NotNil(t, exp)
 	})
@@ -354,7 +353,7 @@ func TestCreateExportersWithBatcher(t *testing.T) {
 	// Test metrics exporter
 	t.Run("metrics_with_batcher", func(t *testing.T) {
 		set := exportertest.NewNopSettings(metadata.Type)
-		exp, err := factory.CreateMetrics(context.Background(), set, cfg)
+		exp, err := factory.CreateMetrics(t.Context(), set, cfg)
 		require.NoError(t, err)
 		require.NotNil(t, exp)
 	})
@@ -362,7 +361,7 @@ func TestCreateExportersWithBatcher(t *testing.T) {
 	// Test logs exporter
 	t.Run("logs_with_batcher", func(t *testing.T) {
 		set := exportertest.NewNopSettings(metadata.Type)
-		exp, err := factory.CreateLogs(context.Background(), set, cfg)
+		exp, err := factory.CreateLogs(t.Context(), set, cfg)
 		require.NoError(t, err)
 		require.NotNil(t, exp)
 	})

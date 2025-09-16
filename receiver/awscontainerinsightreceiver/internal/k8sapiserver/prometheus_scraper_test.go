@@ -95,7 +95,7 @@ func TestNewPrometheusScraperBadInputs(t *testing.T) {
 
 	tests := []PrometheusScraperOpts{
 		{
-			Ctx:                 context.TODO(),
+			Ctx:                 t.Context(),
 			TelemetrySettings:   settings,
 			Endpoint:            "",
 			Consumer:            mockConsumer{},
@@ -104,7 +104,7 @@ func TestNewPrometheusScraperBadInputs(t *testing.T) {
 			LeaderElection:      nil,
 		},
 		{
-			Ctx:                 context.TODO(),
+			Ctx:                 t.Context(),
 			TelemetrySettings:   settings,
 			Endpoint:            "",
 			Consumer:            nil,
@@ -113,7 +113,7 @@ func TestNewPrometheusScraperBadInputs(t *testing.T) {
 			LeaderElection:      &leaderElection,
 		},
 		{
-			Ctx:                 context.TODO(),
+			Ctx:                 t.Context(),
 			TelemetrySettings:   settings,
 			Endpoint:            "",
 			Consumer:            mockConsumer{},
@@ -122,7 +122,7 @@ func TestNewPrometheusScraperBadInputs(t *testing.T) {
 			LeaderElection:      &leaderElection,
 		},
 		{
-			Ctx:                 context.TODO(),
+			Ctx:                 t.Context(),
 			TelemetrySettings:   settings,
 			Endpoint:            "",
 			Consumer:            mockConsumer{},
@@ -162,7 +162,7 @@ func TestNewPrometheusScraperEndToEnd(t *testing.T) {
 	}
 
 	scraper, err := NewPrometheusScraper(PrometheusScraperOpts{
-		Ctx:                 context.TODO(),
+		Ctx:                 t.Context(),
 		TelemetrySettings:   settings,
 		Endpoint:            "",
 		Consumer:            mockConsumer{},

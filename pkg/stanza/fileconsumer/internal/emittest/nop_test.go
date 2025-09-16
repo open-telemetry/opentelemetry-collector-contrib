@@ -4,12 +4,11 @@
 package emittest
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
 
 func TestNop(t *testing.T) {
-	require.NoError(t, Nop(context.Background(), [][]byte{}, map[string]any{}, int64(0)))
+	require.NoError(t, Nop(t.Context(), [][]byte{}, map[string]any{}, int64(0)))
 }

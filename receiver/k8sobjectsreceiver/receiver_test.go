@@ -4,7 +4,6 @@
 package k8sobjectsreceiver
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -31,8 +30,8 @@ func TestNewReceiver(t *testing.T) {
 
 	require.NoError(t, err)
 	require.NotNil(t, r)
-	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
-	assert.NoError(t, r.Shutdown(context.Background()))
+	require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()))
+	assert.NoError(t, r.Shutdown(t.Context()))
 }
 
 func TestPullObject(t *testing.T) {
@@ -75,11 +74,11 @@ func TestPullObject(t *testing.T) {
 	)
 	require.NoError(t, err)
 	require.NotNil(t, r)
-	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()))
 	time.Sleep(time.Second)
 	assert.Len(t, consumer.Logs(), 1)
 	assert.Equal(t, 2, consumer.Count())
-	assert.NoError(t, r.Shutdown(context.Background()))
+	assert.NoError(t, r.Shutdown(t.Context()))
 }
 
 func TestWatchObject(t *testing.T) {
@@ -115,7 +114,7 @@ func TestWatchObject(t *testing.T) {
 		consumer,
 	)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	require.NoError(t, err)
 	require.NotNil(t, r)
 	require.NoError(t, r.Start(ctx, componenttest.NewNopHost()))
@@ -187,7 +186,7 @@ func TestExcludeDeletedTrue(t *testing.T) {
 		consumer,
 	)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	require.NoError(t, err)
 	require.NotNil(t, r)
 	require.NoError(t, r.Start(ctx, componenttest.NewNopHost()))

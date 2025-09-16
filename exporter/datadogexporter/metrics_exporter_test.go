@@ -6,7 +6,6 @@ package datadogexporter
 import (
 	"bytes"
 	"compress/gzip"
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -72,18 +71,18 @@ func TestNewExporter(t *testing.T) {
 	f := NewFactory()
 
 	// The client should have been created correctly
-	exp, err := f.CreateMetrics(context.Background(), params, cfg)
+	exp, err := f.CreateMetrics(t.Context(), params, cfg)
 	require.NoError(t, err)
 	assert.NotNil(t, exp)
 	testMetrics := pmetric.NewMetrics()
 	testutil.TestMetrics.CopyTo(testMetrics)
-	err = exp.ConsumeMetrics(context.Background(), testMetrics)
+	err = exp.ConsumeMetrics(t.Context(), testMetrics)
 	require.NoError(t, err)
 	assert.Empty(t, server.MetadataChan)
 
 	testMetrics = pmetric.NewMetrics()
 	testutil.TestMetrics.CopyTo(testMetrics)
-	err = exp.ConsumeMetrics(context.Background(), testMetrics)
+	err = exp.ConsumeMetrics(t.Context(), testMetrics)
 	require.NoError(t, err)
 	recvMetadata := <-server.MetadataChan
 	assert.NotEmpty(t, recvMetadata.InternalHostname)
@@ -124,18 +123,18 @@ func TestNewExporter_Serializer(t *testing.T) {
 	f := NewFactory()
 
 	// The client should have been created correctly
-	exp, err := f.CreateMetrics(context.Background(), params, cfg)
+	exp, err := f.CreateMetrics(t.Context(), params, cfg)
 	require.NoError(t, err)
 	assert.NotNil(t, exp)
 	testMetrics := pmetric.NewMetrics()
 	testutil.TestMetrics.CopyTo(testMetrics)
-	err = exp.ConsumeMetrics(context.Background(), testMetrics)
+	err = exp.ConsumeMetrics(t.Context(), testMetrics)
 	require.NoError(t, err)
 	assert.Empty(t, server.MetadataChan)
 
 	testMetrics = pmetric.NewMetrics()
 	testutil.TestMetrics.CopyTo(testMetrics)
-	err = exp.ConsumeMetrics(context.Background(), testMetrics)
+	err = exp.ConsumeMetrics(t.Context(), testMetrics)
 	require.NoError(t, err)
 	recvMetadata := <-server.MetadataChan
 	assert.NotEmpty(t, recvMetadata.InternalHostname)
@@ -444,7 +443,7 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 			require.NoError(t, err)
 			acfg := traceconfig.New()
 			exp, err := newMetricsExporter(
-				context.Background(),
+				t.Context(),
 				exportertest.NewNopSettings(metadata.Type),
 				newTestConfig(t, server.URL, tt.hostTags, tt.histogramMode),
 				acfg,
@@ -461,7 +460,7 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 			}
 			assert.NoError(t, err, "unexpected error")
 			exp.getPushTime = func() uint64 { return 0 }
-			err = exp.PushMetricsData(context.Background(), tt.metrics)
+			err = exp.PushMetricsData(t.Context(), tt.metrics)
 			if tt.expectedErr != nil {
 				assert.Equal(t, tt.expectedErr, err, "expected error doesn't match")
 				return
@@ -531,18 +530,18 @@ func TestNewExporter_Zorkian(t *testing.T) {
 	f := NewFactory()
 
 	// The client should have been created correctly
-	exp, err := f.CreateMetrics(context.Background(), params, cfg)
+	exp, err := f.CreateMetrics(t.Context(), params, cfg)
 	require.NoError(t, err)
 	assert.NotNil(t, exp)
 	testMetrics := pmetric.NewMetrics()
 	testutil.TestMetrics.CopyTo(testMetrics)
-	err = exp.ConsumeMetrics(context.Background(), testMetrics)
+	err = exp.ConsumeMetrics(t.Context(), testMetrics)
 	require.NoError(t, err)
 	assert.Empty(t, server.MetadataChan)
 
 	testMetrics = pmetric.NewMetrics()
 	testutil.TestMetrics.CopyTo(testMetrics)
-	err = exp.ConsumeMetrics(context.Background(), testMetrics)
+	err = exp.ConsumeMetrics(t.Context(), testMetrics)
 	require.NoError(t, err)
 	recvMetadata := <-server.MetadataChan
 	assert.NotEmpty(t, recvMetadata.InternalHostname)
@@ -887,7 +886,7 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 			require.NoError(t, err)
 			acfg := traceconfig.New()
 			exp, err := newMetricsExporter(
-				context.Background(),
+				t.Context(),
 				exportertest.NewNopSettings(metadata.Type),
 				newTestConfig(t, server.URL, tt.hostTags, tt.histogramMode),
 				acfg,
@@ -904,7 +903,7 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 			}
 			assert.NoError(t, err, "unexpected error")
 			exp.getPushTime = func() uint64 { return 0 }
-			err = exp.PushMetricsData(context.Background(), tt.metrics)
+			err = exp.PushMetricsData(t.Context(), tt.metrics)
 			if tt.expectedErr != nil {
 				assert.Equal(t, tt.expectedErr, err, "expected error doesn't match")
 				return

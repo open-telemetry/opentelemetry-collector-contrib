@@ -67,7 +67,7 @@ func (fakeHost) GetExtensions() map[component.ID]component.Component {
 }
 
 func TestStartReceiverNoSubscription(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	srv, receiver := createBaseReceiver()
 	defer func() {
 		assert.NoError(t, srv.Close())
@@ -83,7 +83,7 @@ func TestStartReceiverNoSubscription(t *testing.T) {
 }
 
 func TestReceiver(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	// Start a fake server running locally.
 	srv := pstest.NewServer()
 	defer srv.Close()
@@ -184,7 +184,7 @@ func TestReceiver(t *testing.T) {
 }
 
 func TestEncodingMultipleConsumersForAnEncoding(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	srv, receiver := createBaseReceiver()
 	defer func() {
 		assert.NoError(t, srv.Close())
@@ -199,7 +199,7 @@ func TestEncodingMultipleConsumersForAnEncoding(t *testing.T) {
 }
 
 func TestEncodingBuildInProtoTrace(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	srv, receiver := createBaseReceiver()
 	defer func() {
 		assert.NoError(t, srv.Close())
@@ -216,7 +216,7 @@ func TestEncodingBuildInProtoTrace(t *testing.T) {
 }
 
 func TestEncodingBuildInProtoMetric(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	srv, receiver := createBaseReceiver()
 	defer func() {
 		assert.NoError(t, srv.Close())
@@ -233,7 +233,7 @@ func TestEncodingBuildInProtoMetric(t *testing.T) {
 }
 
 func TestEncodingBuildInProtoLog(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	srv, receiver := createBaseReceiver()
 	defer func() {
 		assert.NoError(t, srv.Close())
@@ -250,7 +250,7 @@ func TestEncodingBuildInProtoLog(t *testing.T) {
 }
 
 func TestEncodingConsumerMismatch(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	srv, receiver := createBaseReceiver()
 	defer func() {
 		assert.NoError(t, srv.Close())
@@ -264,7 +264,7 @@ func TestEncodingConsumerMismatch(t *testing.T) {
 }
 
 func TestEncodingNotFound(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	srv, receiver := createBaseReceiver()
 	defer func() {
 		assert.NoError(t, srv.Close())
@@ -277,7 +277,7 @@ func TestEncodingNotFound(t *testing.T) {
 }
 
 func TestEncodingExtension(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	srv, receiver := createBaseReceiver()
 	defer func() {
 		assert.NoError(t, srv.Close())
@@ -290,7 +290,7 @@ func TestEncodingExtension(t *testing.T) {
 }
 
 func TestEncodingExtensionMismatch(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	srv, receiver := createBaseReceiver()
 	defer func() {
 		assert.NoError(t, srv.Close())

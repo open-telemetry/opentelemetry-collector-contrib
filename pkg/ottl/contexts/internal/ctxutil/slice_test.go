@@ -22,7 +22,7 @@ func Test_GetSliceValue_Valid(t *testing.T) {
 	s := pcommon.NewSlice()
 	s.AppendEmpty().SetStr("val")
 
-	value, err := ctxutil.GetSliceValue[any](context.Background(), nil, s, []ottl.Key[any]{
+	value, err := ctxutil.GetSliceValue[any](t.Context(), nil, s, []ottl.Key[any]{
 		&pathtest.Key[any]{
 			I: ottltest.Intp(0),
 		},
@@ -97,14 +97,14 @@ func Test_GetSliceValue_Invalid(t *testing.T) {
 			s := pcommon.NewSlice()
 			s.AppendEmpty().SetStr("val")
 
-			_, err := ctxutil.GetSliceValue[any](context.Background(), nil, s, tt.keys)
+			_, err := ctxutil.GetSliceValue[any](t.Context(), nil, s, tt.keys)
 			assert.Equal(t, tt.err.Error(), err.Error())
 		})
 	}
 }
 
 func Test_GetSliceValue_NilKey(t *testing.T) {
-	_, err := ctxutil.GetSliceValue[any](context.Background(), nil, pcommon.NewSlice(), nil)
+	_, err := ctxutil.GetSliceValue[any](t.Context(), nil, pcommon.NewSlice(), nil)
 	assert.Error(t, err)
 }
 
@@ -112,7 +112,7 @@ func Test_SetSliceValue_Valid(t *testing.T) {
 	s := pcommon.NewSlice()
 	s.AppendEmpty().SetStr("val")
 
-	err := ctxutil.SetSliceValue[any](context.Background(), nil, s, []ottl.Key[any]{
+	err := ctxutil.SetSliceValue[any](t.Context(), nil, s, []ottl.Key[any]{
 		&pathtest.Key[any]{I: ottltest.Intp(0)},
 	}, "value")
 	assert.NoError(t, err)
@@ -184,14 +184,14 @@ func Test_SetSliceValue_Invalid(t *testing.T) {
 			s := pcommon.NewSlice()
 			s.AppendEmpty().SetStr("val")
 
-			err := ctxutil.SetSliceValue[any](context.Background(), nil, s, tt.keys, "value")
+			err := ctxutil.SetSliceValue[any](t.Context(), nil, s, tt.keys, "value")
 			assert.Equal(t, tt.err.Error(), err.Error())
 		})
 	}
 }
 
 func Test_SetSliceValue_NilKey(t *testing.T) {
-	err := ctxutil.SetSliceValue[any](context.Background(), nil, pcommon.NewSlice(), nil, "value")
+	err := ctxutil.SetSliceValue[any](t.Context(), nil, pcommon.NewSlice(), nil, "value")
 	assert.Error(t, err)
 }
 
@@ -199,7 +199,7 @@ func Test_GetCommonTypedSliceValue_Valid(t *testing.T) {
 	s := pcommon.NewStringSlice()
 	s.Append("one", "two", "three")
 
-	value, err := ctxutil.GetCommonTypedSliceValue[any, string](context.Background(), nil, s, []ottl.Key[any]{
+	value, err := ctxutil.GetCommonTypedSliceValue[any, string](t.Context(), nil, s, []ottl.Key[any]{
 		&pathtest.Key[any]{
 			I: ottltest.Intp(1),
 		},
@@ -279,7 +279,7 @@ func Test_GetCommonTypedSliceValue_Invalid(t *testing.T) {
 			s := pcommon.NewStringSlice()
 			s.Append("val")
 
-			_, err := ctxutil.GetCommonTypedSliceValue[any, string](context.Background(), nil, s, tt.keys)
+			_, err := ctxutil.GetCommonTypedSliceValue[any, string](t.Context(), nil, s, tt.keys)
 			assert.Equal(t, tt.err.Error(), err.Error())
 		})
 	}
@@ -289,7 +289,7 @@ func Test_SetCommonTypedSliceValue_Valid(t *testing.T) {
 	s := pcommon.NewStringSlice()
 	s.Append("1", "2", "3")
 
-	err := ctxutil.SetCommonTypedSliceValue[any, string](context.Background(), nil, s, []ottl.Key[any]{
+	err := ctxutil.SetCommonTypedSliceValue[any, string](t.Context(), nil, s, []ottl.Key[any]{
 		&pathtest.Key[any]{I: ottltest.Intp(1)},
 	}, "two")
 	assert.NoError(t, err)
@@ -384,7 +384,7 @@ func Test_SetCommonTypedSliceValue_Invalid(t *testing.T) {
 				val = 1
 			}
 
-			err := ctxutil.SetCommonTypedSliceValue[any, string](context.Background(), nil, s, tt.keys, val)
+			err := ctxutil.SetCommonTypedSliceValue[any, string](t.Context(), nil, s, tt.keys, val)
 			assert.Equal(t, tt.err.Error(), err.Error())
 		})
 	}
@@ -463,7 +463,7 @@ func Test_GetCommonIntSliceValue_Valid(t *testing.T) {
 	s := pcommon.NewIntSlice()
 	s.Append(1, 2, 3)
 
-	value, err := ctxutil.GetCommonIntSliceValue[any, int](context.Background(), nil, s, []ottl.Key[any]{
+	value, err := ctxutil.GetCommonIntSliceValue[any, int](t.Context(), nil, s, []ottl.Key[any]{
 		&pathtest.Key[any]{
 			I: ottltest.Intp(1),
 		},
@@ -543,7 +543,7 @@ func Test_GetCommonIntSliceValue_Invalid(t *testing.T) {
 			s := pcommon.NewIntSlice()
 			s.Append(1)
 
-			_, err := ctxutil.GetCommonIntSliceValue[any, int](context.Background(), nil, s, tt.keys)
+			_, err := ctxutil.GetCommonIntSliceValue[any, int](t.Context(), nil, s, tt.keys)
 			assert.Equal(t, tt.err.Error(), err.Error())
 		})
 	}
@@ -557,7 +557,7 @@ func Test_SetCommonIntSliceValue_Valid(t *testing.T) {
 		1, int8(1), int16(1), int32(1), int64(1), uint(1), uint8(1), uint16(1), uint32(1), uint64(1),
 	} {
 		t.Run(fmt.Sprintf("from %T", val), func(t *testing.T) {
-			err := ctxutil.SetCommonIntSliceValue[any, int32](context.Background(), nil, s, []ottl.Key[any]{
+			err := ctxutil.SetCommonIntSliceValue[any, int32](t.Context(), nil, s, []ottl.Key[any]{
 				&pathtest.Key[any]{I: ottltest.Intp(1)},
 			}, val)
 			assert.NoError(t, err)
@@ -654,7 +654,7 @@ func Test_SetCommonIntSliceValue_Invalid(t *testing.T) {
 				val = 1
 			}
 
-			err := ctxutil.SetCommonIntSliceValue[any, int32](context.Background(), nil, s, tt.keys, val)
+			err := ctxutil.SetCommonIntSliceValue[any, int32](t.Context(), nil, s, tt.keys, val)
 			assert.Equal(t, tt.err.Error(), err.Error())
 		})
 	}

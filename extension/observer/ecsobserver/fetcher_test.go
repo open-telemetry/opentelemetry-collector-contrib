@@ -4,7 +4,6 @@
 package ecsobserver
 
 import (
-	"context"
 	"fmt"
 	"testing"
 
@@ -62,7 +61,7 @@ func TestFetcher_FetchAndDecorate(t *testing.T) {
 		}
 	}))
 
-	ctx := context.Background()
+	ctx := t.Context()
 	tasks, err := f.fetchAndDecorate(ctx)
 	require.NoError(t, err)
 	assert.Len(t, tasks, nTasks)
@@ -75,7 +74,7 @@ func TestFetcher_GetDiscoverableTasks(t *testing.T) {
 		f := newTestTaskFetcher(t, c)
 		const nTasks = 203
 		c.SetTasks(ecsmock.GenTasks("p", nTasks, nil))
-		ctx := context.Background()
+		ctx := t.Context()
 		tasks, err := f.getDiscoverableTasks(ctx)
 		require.NoError(t, err)
 		assert.Len(t, tasks, nTasks)
@@ -101,7 +100,7 @@ func TestFetcher_GetDiscoverableTasks(t *testing.T) {
 			}
 		}))
 
-		ctx := context.Background()
+		ctx := t.Context()
 		tasks, err := f.getDiscoverableTasks(ctx)
 		require.NoError(t, err)
 
@@ -117,7 +116,7 @@ func TestFetcher_AttachTaskDefinitions(t *testing.T) {
 	f := newTestTaskFetcher(t, c)
 
 	const nTasks = 5
-	ctx := context.Background()
+	ctx := t.Context()
 	// one task per def
 	c.SetTasks(ecsmock.GenTasks("p", nTasks, func(i int, task *ecs.Task) {
 		task.TaskDefinitionArn = aws.String(fmt.Sprintf("pdef%d:1", i))
@@ -175,7 +174,7 @@ func TestFetcher_AttachContainerInstance(t *testing.T) {
 		}))
 		c.SetEc2Instances(ecsmock.GenEc2Instances("i-", nInstances, nil))
 
-		ctx := context.Background()
+		ctx := t.Context()
 		rawTasks, err := f.getDiscoverableTasks(ctx)
 		require.NoError(t, err)
 		assert.Len(t, rawTasks, nTasks)
@@ -213,7 +212,7 @@ func TestFetcher_AttachContainerInstance(t *testing.T) {
 		}))
 		c.SetEc2Instances(ecsmock.GenEc2Instances("i-", nInstances, nil))
 
-		ctx := context.Background()
+		ctx := t.Context()
 		rawTasks, err := f.getDiscoverableTasks(ctx)
 		require.NoError(t, err)
 		assert.Len(t, rawTasks, nTasks)
@@ -235,7 +234,7 @@ func TestFetcher_GetAllServices(t *testing.T) {
 	f := newTestTaskFetcher(t, c)
 	const nServices = 101
 	c.SetServices(ecsmock.GenServices("s", nServices, nil))
-	ctx := context.Background()
+	ctx := t.Context()
 	services, err := f.getAllServices(ctx)
 	require.NoError(t, err)
 	assert.Len(t, services, nServices)
@@ -265,7 +264,7 @@ func TestFetcher_AttachService(t *testing.T) {
 		task.StartedBy = aws.String(fmt.Sprintf("deploy%d", deployID))
 	}))
 
-	ctx := context.Background()
+	ctx := t.Context()
 	rawTasks, err := f.getDiscoverableTasks(ctx)
 	require.NoError(t, err)
 	tasks, err := f.attachTaskDefinition(ctx, rawTasks)

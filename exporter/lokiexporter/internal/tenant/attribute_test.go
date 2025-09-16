@@ -4,7 +4,6 @@
 package tenant // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter/internal/tenant"
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -21,7 +20,7 @@ func TestAttributeTenantSourceSuccess(t *testing.T) {
 	logs.ResourceLogs().At(0).Resource().Attributes().PutStr("tenant.id", "acme")
 
 	// test
-	tenant, err := ts.GetTenant(context.Background(), logs)
+	tenant, err := ts.GetTenant(t.Context(), logs)
 
 	// verify
 	assert.NoError(t, err)
@@ -38,7 +37,7 @@ func TestAttributeTenantSourceNotFound(t *testing.T) {
 	logs.ResourceLogs().At(0).Resource().Attributes().PutStr("not.tenant.id", "acme")
 
 	// test
-	tenant, err := ts.GetTenant(context.Background(), logs)
+	tenant, err := ts.GetTenant(t.Context(), logs)
 
 	// verify
 	assert.NoError(t, err)

@@ -4,7 +4,6 @@
 package coralogixexporter
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -41,10 +40,10 @@ func TestCreateMetrics(t *testing.T) {
 	cfg.Metrics.Endpoint = testutil.GetAvailableLocalAddress(t)
 
 	set := exportertest.NewNopSettings(metadata.Type)
-	oexp, err := factory.CreateMetrics(context.Background(), set, cfg)
+	oexp, err := factory.CreateMetrics(t.Context(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, oexp)
-	require.NoError(t, oexp.Shutdown(context.Background()))
+	require.NoError(t, oexp.Shutdown(t.Context()))
 }
 
 func TestCreateMetricsWithDomain(t *testing.T) {
@@ -53,7 +52,7 @@ func TestCreateMetricsWithDomain(t *testing.T) {
 	cfg.Domain = "localhost"
 
 	set := exportertest.NewNopSettings(metadata.Type)
-	oexp, err := factory.CreateMetrics(context.Background(), set, cfg)
+	oexp, err := factory.CreateMetrics(t.Context(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, oexp)
 }
@@ -64,10 +63,10 @@ func TestCreateLogs(t *testing.T) {
 	cfg.Logs.Endpoint = testutil.GetAvailableLocalAddress(t)
 
 	set := exportertest.NewNopSettings(metadata.Type)
-	oexp, err := factory.CreateLogs(context.Background(), set, cfg)
+	oexp, err := factory.CreateLogs(t.Context(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, oexp)
-	require.NoError(t, oexp.Shutdown(context.Background()))
+	require.NoError(t, oexp.Shutdown(t.Context()))
 }
 
 func TestCreateLogsWithDomain(t *testing.T) {
@@ -75,7 +74,7 @@ func TestCreateLogsWithDomain(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Domain = "localhost"
 	set := exportertest.NewNopSettings(metadata.Type)
-	oexp, err := factory.CreateLogs(context.Background(), set, cfg)
+	oexp, err := factory.CreateLogs(t.Context(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, oexp)
 }
@@ -199,20 +198,20 @@ func TestCreateTraces(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			factory := NewFactory()
 			set := exportertest.NewNopSettings(metadata.Type)
-			consumer, err := factory.CreateTraces(context.Background(), set, tt.config)
+			consumer, err := factory.CreateTraces(t.Context(), set, tt.config)
 			if tt.mustFailOnCreate {
 				assert.Error(t, err)
 				return
 			}
 			assert.NoError(t, err)
 			assert.NotNil(t, consumer)
-			err = consumer.Start(context.Background(), componenttest.NewNopHost())
+			err = consumer.Start(t.Context(), componenttest.NewNopHost())
 			if tt.mustFailOnStart {
 				assert.Error(t, err)
 				return
 			}
 			assert.NoError(t, err)
-			err = consumer.Shutdown(context.Background())
+			err = consumer.Shutdown(t.Context())
 			if err != nil {
 				// Since the endpoint of OTLP exporter doesn't actually exist,
 				// exporter may already stop because it cannot connect.
@@ -230,14 +229,14 @@ func TestCreateLogsWithDomainAndEndpoint(t *testing.T) {
 	cfg.Logs.Endpoint = testutil.GetAvailableLocalAddress(t)
 
 	set := exportertest.NewNopSettings(metadata.Type)
-	consumer, err := factory.CreateLogs(context.Background(), set, cfg)
+	consumer, err := factory.CreateLogs(t.Context(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, consumer)
 
-	err = consumer.Start(context.Background(), componenttest.NewNopHost())
+	err = consumer.Start(t.Context(), componenttest.NewNopHost())
 	assert.NoError(t, err)
 
-	err = consumer.Shutdown(context.Background())
+	err = consumer.Shutdown(t.Context())
 	if err != nil {
 		// Since the endpoint of OTLP exporter doesn't actually exist,
 		// exporter may already stop because it cannot connect.

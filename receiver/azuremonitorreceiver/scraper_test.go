@@ -79,7 +79,7 @@ func TestAzureScraperStart(t *testing.T) {
 					azIDWorkloadFunc:    azIDWorkloadFuncMock,
 				}
 
-				if err := s.start(context.Background(), componenttest.NewNopHost()); err != nil {
+				if err := s.start(t.Context(), componenttest.NewNopHost()); err != nil {
 					t.Errorf("azureScraper.start() error = %v", err)
 				}
 				require.NotNil(t, s.cred)
@@ -98,7 +98,7 @@ func TestAzureScraperStart(t *testing.T) {
 					azIDWorkloadFunc:    azIDWorkloadFuncMock,
 				}
 
-				if err := s.start(context.Background(), componenttest.NewNopHost()); err != nil {
+				if err := s.start(t.Context(), componenttest.NewNopHost()); err != nil {
 					t.Errorf("azureScraper.start() error = %v", err)
 				}
 				require.NotNil(t, s.cred)
@@ -117,7 +117,7 @@ func TestAzureScraperStart(t *testing.T) {
 					azIDWorkloadFunc:    azIDWorkloadFuncMock,
 				}
 
-				if err := s.start(context.Background(), componenttest.NewNopHost()); err != nil {
+				if err := s.start(t.Context(), componenttest.NewNopHost()); err != nil {
 					t.Errorf("azureScraper.start() error = %v", err)
 				}
 				require.NotNil(t, s.cred)
@@ -136,7 +136,7 @@ func TestAzureScraperStart(t *testing.T) {
 					azManagedIdentityFunc: azManagedIdentityFuncMock,
 				}
 
-				if err := s.start(context.Background(), componenttest.NewNopHost()); err != nil {
+				if err := s.start(t.Context(), componenttest.NewNopHost()); err != nil {
 					t.Errorf("azureScraper.start() error = %v", err)
 				}
 				require.NotNil(t, s.cred)
@@ -155,7 +155,7 @@ func TestAzureScraperStart(t *testing.T) {
 					azDefaultCredentialsFunc: azDefaultCredentialsFuncMock,
 				}
 
-				if err := s.start(context.Background(), componenttest.NewNopHost()); err != nil {
+				if err := s.start(t.Context(), componenttest.NewNopHost()); err != nil {
 					t.Errorf("azureScraper.start() error = %v", err)
 				}
 				require.NotNil(t, s.cred)
@@ -243,7 +243,7 @@ func TestAzureScraperScrape(t *testing.T) {
 				cfg: cfg,
 			},
 			args: args{
-				ctx: context.Background(),
+				ctx: t.Context(),
 			},
 		},
 		{
@@ -252,7 +252,7 @@ func TestAzureScraperScrape(t *testing.T) {
 				cfg: cfgTagsEnabled,
 			},
 			args: args{
-				ctx: context.Background(),
+				ctx: t.Context(),
 			},
 		},
 		{
@@ -261,7 +261,7 @@ func TestAzureScraperScrape(t *testing.T) {
 				cfg: cfgSubNameAttr,
 			},
 			args: args{
-				ctx: context.Background(),
+				ctx: t.Context(),
 			},
 		},
 	}
@@ -525,7 +525,7 @@ func TestAzureScraperScrapeFilterMetrics(t *testing.T) {
 			resources:     map[string]map[string]*azureResource{},
 		}
 
-		metrics, err := s.scrape(context.Background())
+		metrics, err := s.scrape(t.Context())
 
 		require.NoError(t, err)
 		expectedFile := filepath.Join("testdata", "expected_metrics", "metrics_filtered.yaml")
@@ -613,7 +613,7 @@ func TestAzureScraperGetResources(t *testing.T) {
 	s.resources["subscriptionId1"] = map[string]*azureResource{}
 	s.subscriptions["subscriptionId1"] = &azureSubscription{}
 	s.cfg.CacheResources = 0
-	s.getResources(context.Background(), "subscriptionId1")
+	s.getResources(t.Context(), "subscriptionId1")
 	assert.Contains(t, s.resources, "subscriptionId1")
 	assert.Len(t, s.resources["subscriptionId1"], 3)
 
@@ -631,13 +631,13 @@ func TestAzureScraperGetResources(t *testing.T) {
 		getMetricsValuesMockData(),
 		nil,
 	)
-	s.getResources(context.Background(), "subscriptionId1")
+	s.getResources(t.Context(), "subscriptionId1")
 	assert.Contains(t, s.resources, "subscriptionId1")
 	assert.Empty(t, s.resources["subscriptionId1"])
 }
 
 func TestAzureScraperScrapeHonorTimeGrain(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	t.Run("do_not_fetch_in_same_interval", func(t *testing.T) {
 		s := getNominalTestScraper()

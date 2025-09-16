@@ -132,7 +132,7 @@ func TestWAL_persist(t *testing.T) {
 		},
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	require.NoError(t, pwal.retrieveWALIndices())
 	t.Cleanup(func() {
 		assert.NoError(t, pwal.stop())
@@ -200,7 +200,7 @@ func TestExportWithWALEnabled(t *testing.T) {
 	prwe, err := newPRWExporter(cfg, set)
 	assert.NoError(t, err)
 	assert.NotNil(t, prwe)
-	err = prwe.Start(context.Background(), componenttest.NewNopHost())
+	err = prwe.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	assert.NotNil(t, prwe.client)
 
@@ -210,11 +210,11 @@ func TestExportWithWALEnabled(t *testing.T) {
 			Samples: []prompb.Sample{{Value: 1, Timestamp: 100}},
 		},
 	}
-	err = prwe.handleExport(context.Background(), metrics, nil)
+	err = prwe.handleExport(t.Context(), metrics, nil)
 	assert.NoError(t, err)
 
 	// While on Unix systems, t.TempDir() would easily close the WAL files,
 	// on Windows, it doesn't. So we need to close it manually to avoid flaky tests.
-	err = prwe.Shutdown(context.Background())
+	err = prwe.Shutdown(t.Context())
 	assert.NoError(t, err)
 }

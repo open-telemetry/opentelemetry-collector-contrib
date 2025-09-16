@@ -6,7 +6,6 @@
 package jmxreceiver
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -154,9 +153,9 @@ func TestJMXReceiverInvalidOTLPEndpointIntegration(t *testing.T) {
 	receiver := newJMXMetricReceiver(params, cfg, consumertest.NewNop())
 	require.NotNil(t, receiver)
 	defer func() {
-		require.EqualError(t, receiver.Shutdown(context.Background()), "no subprocess.cancel().  Has it been started properly?")
+		require.EqualError(t, receiver.Shutdown(t.Context()), "no subprocess.cancel().  Has it been started properly?")
 	}()
 
-	err := receiver.Start(context.Background(), componenttest.NewNopHost())
+	err := receiver.Start(t.Context(), componenttest.NewNopHost())
 	require.ErrorContains(t, err, "listen tcp: lookup <invalid>:")
 }

@@ -4,7 +4,6 @@
 package ottlspanevent
 
 import (
-	"context"
 	"fmt"
 	"slices"
 	"testing"
@@ -447,11 +446,11 @@ func Test_newPathGetSetter(t *testing.T) {
 
 			tCtx := NewTransformContext(spanEvent, span, il, resource, ptrace.NewScopeSpans(), ptrace.NewResourceSpans(), WithEventIndex(1))
 
-			got, err := accessor.Get(context.Background(), tCtx)
+			got, err := accessor.Get(t.Context(), tCtx)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
-			err = accessor.Set(context.Background(), tCtx, tt.newVal)
+			err = accessor.Set(t.Context(), tCtx, tt.newVal)
 			if tt.expectSetterError {
 				assert.Error(t, err)
 				return
@@ -535,7 +534,7 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 			accessor, err := pathExpressionParser(getCache)(tt.path)
 			require.NoError(t, err)
 
-			got, err := accessor.Get(context.Background(), ctx)
+			got, err := accessor.Get(t.Context(), ctx)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, got)
 		})
@@ -585,7 +584,7 @@ func Test_setAndGetEventIndex(t *testing.T) {
 			})
 			assert.NoError(t, err)
 
-			got, err := accessor.Get(context.Background(), tCtx)
+			got, err := accessor.Get(t.Context(), tCtx)
 			if tt.expectedErrorMsg != "" {
 				assert.Error(t, err)
 				assert.ErrorContains(t, err, tt.expectedErrorMsg)

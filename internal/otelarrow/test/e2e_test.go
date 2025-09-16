@@ -121,7 +121,7 @@ func testLoggerSettings(_ *testing.T) (component.TelemetrySettings, *observer.Ob
 }
 
 func basicTestConfig(t *testing.T, tp testParams, cfgF CfgFunc) (*testConsumer, exporter.Traces, receiver.Traces) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	efact := otelarrowexporter.NewFactory()
 	rfact := otelarrowreceiver.NewFactory()
@@ -460,7 +460,7 @@ func consumerFailure(t *testing.T, err error) {
 func TestIntegrationTracesSimple(t *testing.T) {
 	for _, n := range []int{1, 2, 4, 8} {
 		t.Run(fmt.Sprint(n), func(t *testing.T) {
-			ctx, cancel := context.WithCancel(context.Background())
+			ctx, cancel := context.WithCancel(t.Context())
 			defer cancel()
 
 			// until 10 threads can write 1000 spans
@@ -481,7 +481,7 @@ func TestIntegrationTracesSimple(t *testing.T) {
 func TestIntegrationDeadlinePropagation(t *testing.T) {
 	for _, hasDeadline := range []bool{false, true} {
 		t.Run(fmt.Sprint("deadline=", hasDeadline), func(t *testing.T) {
-			ctx, cancel := context.WithCancel(context.Background())
+			ctx, cancel := context.WithCancel(t.Context())
 			defer cancel()
 
 			// Until at least one span is written.
@@ -506,7 +506,7 @@ func TestIntegrationDeadlinePropagation(t *testing.T) {
 }
 
 func TestIntegrationMemoryLimited(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
 	// until exporter and receiver finish at least one ArrowTraces span.
@@ -594,7 +594,7 @@ func multiStreamEnding(t *testing.T, p testParams, testCon *testConsumer, td [][
 }
 
 func TestIntegrationSelfTracing(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
 	// until 2 Arrow stream spans are received from self instrumentation
@@ -675,7 +675,7 @@ func TestIntegrationAdmissionLimited(t *testing.T) {
 		},
 	} {
 		t.Run(fmt.Sprint("bounded=", test.bounded, ",allow_wait=", test.allowWait), func(t *testing.T) {
-			ctx, cancel := context.WithCancel(context.Background())
+			ctx, cancel := context.WithCancel(t.Context())
 			defer cancel()
 
 			// until exporter and receiver finish at least one ArrowTraces span.

@@ -13,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/containerd/errdefs"
 	dtypes "github.com/docker/docker/api/types"
 	ctypes "github.com/docker/docker/api/types/container"
 	etypes "github.com/docker/docker/api/types/events"
@@ -160,7 +161,7 @@ func (dc *Client) FetchContainerStats(
 	containerStats, err := dc.client.ContainerStats(statsCtx, container.ID, false)
 	defer cancel()
 	if err != nil {
-		if docker.IsErrNotFound(err) {
+		if errdefs.IsNotFound(err) {
 			dc.logger.Debug(
 				"Daemon reported container doesn't exist. Will no longer monitor.",
 				zap.String("id", container.ID),

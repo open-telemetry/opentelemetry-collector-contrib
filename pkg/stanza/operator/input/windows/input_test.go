@@ -6,7 +6,6 @@
 package windows // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/windows"
 
 import (
-	"context"
 	"errors"
 	"testing"
 	"time"
@@ -196,7 +195,7 @@ func TestInputRead_RPCInvalidBound(t *testing.T) {
 	}
 
 	// Call the method under test
-	ctx := context.Background()
+	ctx := t.Context()
 	input.read(ctx)
 
 	// Verify the correct number of calls to each mock

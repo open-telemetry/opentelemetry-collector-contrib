@@ -6,7 +6,6 @@ package splunkhecexporter
 import (
 	"bytes"
 	"compress/gzip"
-	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -236,14 +235,14 @@ func runMetricsExport(t *testing.T, cfg *Config, metrics pmetric.Metrics, expect
 	}()
 
 	params := exportertest.NewNopSettings(metadata.Type)
-	exporter, err := factory.CreateMetrics(context.Background(), params, cfg)
+	exporter, err := factory.CreateMetrics(t.Context(), params, cfg)
 	assert.NoError(t, err)
-	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, exporter.Start(t.Context(), componenttest.NewNopHost()))
 	defer func() {
-		assert.NoError(t, exporter.Shutdown(context.Background()))
+		assert.NoError(t, exporter.Shutdown(t.Context()))
 	}()
 
-	err = exporter.ConsumeMetrics(context.Background(), metrics)
+	err = exporter.ConsumeMetrics(t.Context(), metrics)
 	assert.NoError(t, err)
 	var requests []receivedRequest
 	for {
@@ -289,14 +288,14 @@ func runTraceExport(t *testing.T, testConfig *Config, traces ptrace.Traces, expe
 	}()
 
 	params := exportertest.NewNopSettings(metadata.Type)
-	exporter, err := factory.CreateTraces(context.Background(), params, cfg)
+	exporter, err := factory.CreateTraces(t.Context(), params, cfg)
 	assert.NoError(t, err)
-	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, exporter.Start(t.Context(), componenttest.NewNopHost()))
 	defer func() {
-		assert.NoError(t, exporter.Shutdown(context.Background()))
+		assert.NoError(t, exporter.Shutdown(t.Context()))
 	}()
 
-	err = exporter.ConsumeTraces(context.Background(), traces)
+	err = exporter.ConsumeTraces(t.Context(), traces)
 	assert.NoError(t, err)
 	var requests []receivedRequest
 	for {
@@ -349,14 +348,14 @@ func runLogExport(t *testing.T, cfg *Config, ld plog.Logs, expectedBatchesNum in
 	}()
 
 	params := exportertest.NewNopSettings(metadata.Type)
-	exporter, err := NewFactory().CreateLogs(context.Background(), params, cfg)
+	exporter, err := NewFactory().CreateLogs(t.Context(), params, cfg)
 	assert.NoError(t, err)
-	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, exporter.Start(t.Context(), componenttest.NewNopHost()))
 	defer func() {
-		assert.NoError(t, exporter.Shutdown(context.Background()))
+		assert.NoError(t, exporter.Shutdown(t.Context()))
 	}()
 
-	err = exporter.ConsumeLogs(context.Background(), ld)
+	err = exporter.ConsumeLogs(t.Context(), ld)
 	assert.NoError(t, err)
 
 	var requests []receivedRequest
@@ -1226,7 +1225,7 @@ func Test_PushMetricsData_Histogram_NaN_Sum(t *testing.T) {
 	c := newMetricsClient(exportertest.NewNopSettings(metadata.Type), NewFactory().CreateDefaultConfig().(*Config))
 	c.hecWorker = &mockHecWorker{}
 
-	permanentErrors := c.pushMetricsDataInBatches(context.Background(), metrics, map[string]string{})
+	permanentErrors := c.pushMetricsDataInBatches(t.Context(), metrics, map[string]string{})
 	assert.NoError(t, permanentErrors)
 }
 
@@ -1243,7 +1242,7 @@ func Test_PushMetricsData_Histogram_NaN_Sum_MultiMetric(t *testing.T) {
 	c := newMetricsClient(exportertest.NewNopSettings(metadata.Type), cfg)
 	c.hecWorker = &mockHecWorker{}
 
-	permanentErrors := c.pushMetricsDataInBatches(context.Background(), metrics, map[string]string{})
+	permanentErrors := c.pushMetricsDataInBatches(t.Context(), metrics, map[string]string{})
 	assert.NoError(t, permanentErrors)
 }
 
@@ -1259,7 +1258,7 @@ func Test_PushMetricsData_Summary_NaN_Sum(t *testing.T) {
 	c := newMetricsClient(exportertest.NewNopSettings(metadata.Type), NewFactory().CreateDefaultConfig().(*Config))
 	c.hecWorker = &mockHecWorker{}
 
-	permanentErrors := c.pushMetricsDataInBatches(context.Background(), metrics, map[string]string{})
+	permanentErrors := c.pushMetricsDataInBatches(t.Context(), metrics, map[string]string{})
 	assert.NoError(t, permanentErrors)
 }
 
@@ -1302,16 +1301,16 @@ func TestErrorReceived(t *testing.T) {
 	cfg.Token = "1234-1234"
 
 	params := exportertest.NewNopSettings(metadata.Type)
-	exporter, err := factory.CreateTraces(context.Background(), params, cfg)
+	exporter, err := factory.CreateTraces(t.Context(), params, cfg)
 	assert.NoError(t, err)
-	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, exporter.Start(t.Context(), componenttest.NewNopHost()))
 	defer func() {
-		assert.NoError(t, exporter.Shutdown(context.Background()))
+		assert.NoError(t, exporter.Shutdown(t.Context()))
 	}()
 
 	td := createTraceData(1, 3)
 
-	err = exporter.ConsumeTraces(context.Background(), td)
+	err = exporter.ConsumeTraces(t.Context(), td)
 	select {
 	case <-rr:
 	case <-time.After(5 * time.Second):
@@ -1354,15 +1353,15 @@ func TestInvalidURL(t *testing.T) {
 	cfg.Endpoint = "ftp://example.com:134"
 	cfg.Token = "1234-1234"
 	params := exportertest.NewNopSettings(metadata.Type)
-	exporter, err := factory.CreateTraces(context.Background(), params, cfg)
+	exporter, err := factory.CreateTraces(t.Context(), params, cfg)
 	assert.NoError(t, err)
-	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, exporter.Start(t.Context(), componenttest.NewNopHost()))
 	defer func() {
-		assert.NoError(t, exporter.Shutdown(context.Background()))
+		assert.NoError(t, exporter.Shutdown(t.Context()))
 	}()
 	td := createTraceData(1, 2)
 
-	err = exporter.ConsumeTraces(context.Background(), td)
+	err = exporter.ConsumeTraces(t.Context(), td)
 	assert.EqualError(t, err, "Post \"ftp://example.com:134/services/collector\": unsupported protocol scheme \"ftp\"")
 }
 
@@ -1395,15 +1394,15 @@ func TestHeartbeatStartupFailed(t *testing.T) {
 	cfg.Heartbeat.Startup = true
 
 	params := exportertest.NewNopSettings(metadata.Type)
-	exporter, err := factory.CreateTraces(context.Background(), params, cfg)
+	exporter, err := factory.CreateTraces(t.Context(), params, cfg)
 	assert.NoError(t, err)
 	assert.EqualError(t,
-		exporter.Start(context.Background(), componenttest.NewNopHost()),
+		exporter.Start(t.Context(), componenttest.NewNopHost()),
 		fmt.Sprintf("%s: heartbeat on startup failed: HTTP \"/services/collector\" 403 \"Forbidden\"",
 			params.ID.String(),
 		),
 	)
-	assert.NoError(t, exporter.Shutdown(context.Background()))
+	assert.NoError(t, exporter.Shutdown(t.Context()))
 }
 
 func TestHeartbeatStartupPass_Disabled(t *testing.T) {
@@ -1436,10 +1435,10 @@ func TestHeartbeatStartupPass_Disabled(t *testing.T) {
 	cfg.Heartbeat.Startup = false
 
 	params := exportertest.NewNopSettings(metadata.Type)
-	exporter, err := factory.CreateTraces(context.Background(), params, cfg)
+	exporter, err := factory.CreateTraces(t.Context(), params, cfg)
 	assert.NoError(t, err)
-	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
-	assert.NoError(t, exporter.Shutdown(context.Background()))
+	assert.NoError(t, exporter.Start(t.Context(), componenttest.NewNopHost()))
+	assert.NoError(t, exporter.Shutdown(t.Context()))
 }
 
 func TestHeartbeatStartupPass(t *testing.T) {
@@ -1471,10 +1470,10 @@ func TestHeartbeatStartupPass(t *testing.T) {
 	cfg.Heartbeat.Startup = true
 
 	params := exportertest.NewNopSettings(metadata.Type)
-	exporter, err := factory.CreateTraces(context.Background(), params, cfg)
+	exporter, err := factory.CreateTraces(t.Context(), params, cfg)
 	assert.NoError(t, err)
-	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
-	assert.NoError(t, exporter.Shutdown(context.Background()))
+	assert.NoError(t, exporter.Start(t.Context(), componenttest.NewNopHost()))
+	assert.NoError(t, exporter.Shutdown(t.Context()))
 }
 
 type badJSON struct {
@@ -1541,7 +1540,7 @@ func Test_pushLogData_nil_Logs(t *testing.T) {
 		for _, disabled := range []bool{true, false} {
 			t.Run(test.name(disabled), func(t *testing.T) {
 				test.requires(t, test.logs)
-				err := c.pushLogData(context.Background(), test.logs)
+				err := c.pushLogData(t.Context(), test.logs)
 				assert.NoError(t, err)
 			})
 		}
@@ -1556,7 +1555,7 @@ func Test_pushLogData_InvalidLog(t *testing.T) {
 	// Invalid log value
 	log.Body().SetDouble(math.Inf(1))
 
-	err := c.pushLogData(context.Background(), logs)
+	err := c.pushLogData(t.Context(), logs)
 
 	assert.Error(t, err, "Permanent error: dropped log event: &{<nil> unknown    +Inf map[]}, error: splunk.Event.Event: unsupported value: +Inf")
 }
@@ -1570,7 +1569,7 @@ func Test_pushLogData_PostError(t *testing.T) {
 
 	// 0 -> unlimited size batch, true -> compression disabled.
 	c.config.MaxContentLengthLogs, c.config.DisableCompression = 0, true
-	err := c.pushLogData(context.Background(), logs)
+	err := c.pushLogData(t.Context(), logs)
 	require.Error(t, err)
 	var logsErr consumererror.Logs
 	assert.ErrorAs(t, err, &logsErr)
@@ -1578,21 +1577,21 @@ func Test_pushLogData_PostError(t *testing.T) {
 
 	// 0 -> unlimited size batch, false -> compression enabled.
 	c.config.MaxContentLengthLogs, c.config.DisableCompression = 0, false
-	err = c.pushLogData(context.Background(), logs)
+	err = c.pushLogData(t.Context(), logs)
 	require.Error(t, err)
 	assert.ErrorAs(t, err, &logsErr)
 	assert.Equal(t, logs, logsErr.Data())
 
 	// 200000 < 371888 -> multiple batches, true -> compression disabled.
 	c.config.MaxContentLengthLogs, c.config.DisableCompression = 200000, true
-	err = c.pushLogData(context.Background(), logs)
+	err = c.pushLogData(t.Context(), logs)
 	require.Error(t, err)
 	assert.ErrorAs(t, err, &logsErr)
 	assert.Equal(t, logs, logsErr.Data())
 
 	// 200000 < 371888 -> multiple batches, false -> compression enabled.
 	c.config.MaxContentLengthLogs, c.config.DisableCompression = 200000, false
-	err = c.pushLogData(context.Background(), logs)
+	err = c.pushLogData(t.Context(), logs)
 	require.Error(t, err)
 	assert.ErrorAs(t, err, &logsErr)
 	assert.Equal(t, logs, logsErr.Data())
@@ -1610,7 +1609,7 @@ func Test_pushLogData_ShouldAddResponseTo400Error(t *testing.T) {
 	httpClient, _ := newTestClient(400, responseBody)
 	splunkClient.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
 	// Sending logs using the client.
-	err := splunkClient.pushLogData(context.Background(), logs)
+	err := splunkClient.pushLogData(t.Context(), logs)
 	require.True(t, consumererror.IsPermanent(err), "Expecting permanent error")
 	require.EqualError(t, err, "Permanent error: HTTP \"/v1/endpoint\" 400 \"Bad Request\"")
 	// The returned error should contain the response body responseBody.
@@ -1619,7 +1618,7 @@ func Test_pushLogData_ShouldAddResponseTo400Error(t *testing.T) {
 	httpClient, _ = newTestClient(500, responseBody)
 	splunkClient.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
 	// Sending logs using the client.
-	err = splunkClient.pushLogData(context.Background(), logs)
+	err = splunkClient.pushLogData(t.Context(), logs)
 	require.False(t, consumererror.IsPermanent(err), "Expecting non-permanent error")
 	require.EqualError(t, err, "HTTP \"/v1/endpoint\" 500 \"Internal Server Error\"")
 	// The returned error should not contain the response body responseBody.
@@ -1642,7 +1641,7 @@ func Test_pushLogData_ShouldReturnUnsentLogsOnly(t *testing.T) {
 	httpClient, _ := newTestClientWithPresetResponses([]int{200, 400}, []string{"OK", "NOK"})
 	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
 
-	err := c.pushLogData(context.Background(), logs)
+	err := c.pushLogData(t.Context(), logs)
 	require.Error(t, err)
 	assert.IsType(t, consumererror.Logs{}, err)
 
@@ -1669,9 +1668,9 @@ func Test_pushLogData_ShouldAddHeadersForProfilingData(t *testing.T) {
 	url := &url.URL{Scheme: "http", Host: "splunk"}
 	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
 
-	err := c.pushLogData(context.Background(), logs)
+	err := c.pushLogData(t.Context(), logs)
 	require.NoError(t, err)
-	err = c.pushLogData(context.Background(), profilingData)
+	err = c.pushLogData(t.Context(), profilingData)
 	require.NoError(t, err)
 	assert.Len(t, *headers, 30)
 
@@ -1754,7 +1753,7 @@ func benchPushLogData(b *testing.B, numResources int, numRecords int, bufSize ui
 	config.DisableCompression = !compressionEnabled
 	c := newLogsClient(exportertest.NewNopSettings(metadata.Type), config)
 	c.hecWorker = &mockHecWorker{}
-	exp, err := exporterhelper.NewLogs(context.Background(), exportertest.NewNopSettings(metadata.Type), config,
+	exp, err := exporterhelper.NewLogs(b.Context(), exportertest.NewNopSettings(metadata.Type), config,
 		c.pushLogData)
 	require.NoError(b, err)
 	exp = &baseLogsExporter{
@@ -1772,7 +1771,7 @@ func benchPushLogData(b *testing.B, numResources int, numRecords int, bufSize ui
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		err := exp.ConsumeLogs(context.Background(), logs)
+		err := exp.ConsumeLogs(b.Context(), logs)
 		require.NoError(b, err)
 	}
 }
@@ -1904,7 +1903,7 @@ func benchPushMetricData(b *testing.B, numResources int, numRecords int, bufSize
 	config.UseMultiMetricFormat = useMultiMetricFormat
 	c := newLogsClient(exportertest.NewNopSettings(metadata.Type), config)
 	c.hecWorker = &mockHecWorker{}
-	exp, err := exporterhelper.NewMetrics(context.Background(), exportertest.NewNopSettings(metadata.Type), config,
+	exp, err := exporterhelper.NewMetrics(b.Context(), exportertest.NewNopSettings(metadata.Type), config,
 		c.pushMetricsData)
 	require.NoError(b, err)
 
@@ -1914,7 +1913,7 @@ func benchPushMetricData(b *testing.B, numResources int, numRecords int, bufSize
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		err := exp.ConsumeMetrics(context.Background(), metrics)
+		err := exp.ConsumeMetrics(b.Context(), metrics)
 		require.NoError(b, err)
 	}
 }
@@ -1925,7 +1924,7 @@ func BenchmarkConsumeLogsRejected(b *testing.B) {
 	c := newLogsClient(exportertest.NewNopSettings(metadata.Type), config)
 	c.hecWorker = &mockHecWorker{failSend: true}
 
-	exp, err := exporterhelper.NewLogs(context.Background(), exportertest.NewNopSettings(metadata.Type), config,
+	exp, err := exporterhelper.NewLogs(b.Context(), exportertest.NewNopSettings(metadata.Type), config,
 		c.pushLogData)
 	require.NoError(b, err)
 
@@ -1935,7 +1934,7 @@ func BenchmarkConsumeLogsRejected(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		err := exp.ConsumeLogs(context.Background(), logs)
+		err := exp.ConsumeLogs(b.Context(), logs)
 		require.Error(b, err)
 	}
 }
@@ -1952,7 +1951,7 @@ func Test_pushLogData_Small_MaxContentLength(t *testing.T) {
 		c := newLogsClient(exportertest.NewNopSettings(metadata.Type), config)
 		c.hecWorker = &defaultHecWorker{&url.URL{Scheme: "http", Host: "splunk"}, http.DefaultClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
 
-		err := c.pushLogData(context.Background(), logs)
+		err := c.pushLogData(t.Context(), logs)
 		require.Error(t, err)
 
 		assert.True(t, consumererror.IsPermanent(err))
@@ -2070,7 +2069,7 @@ func TestPushLogsPartialSuccess(t *testing.T) {
 	logRecords.AppendEmpty().Body().SetStr("log-2-too-big") // should be permanently rejected as it's too big
 	logRecords.AppendEmpty().Body().SetStr("log-3")         // should be rejected and returned to for retry
 
-	err := c.pushLogData(context.Background(), logs)
+	err := c.pushLogData(t.Context(), logs)
 	expectedErr := consumererror.Logs{}
 	require.ErrorContains(t, err, "503")
 	require.ErrorAs(t, err, &expectedErr)
@@ -2090,7 +2089,7 @@ func TestPushLogsRetryableFailureMultipleResources(t *testing.T) {
 	logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log-2")
 	logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log-3")
 
-	err := c.pushLogData(context.Background(), logs)
+	err := c.pushLogData(t.Context(), logs)
 	expectedErr := consumererror.Logs{}
 	require.ErrorContains(t, err, "503")
 	require.ErrorAs(t, err, &expectedErr)

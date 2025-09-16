@@ -57,7 +57,7 @@ func setupMetricsReceiver(t *testing.T) *prometheusRemoteWriteReceiver {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	prwReceiver, err := factory.CreateMetrics(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	prwReceiver, err := factory.CreateMetrics(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, prwReceiver, "metrics receiver creation failed")
 
@@ -127,7 +127,7 @@ func TestHandlePRWContentTypeNegotiation(t *testing.T) {
 
 func TestTranslateV2(t *testing.T) {
 	prwReceiver := setupMetricsReceiver(t)
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	t.Cleanup(cancel)
 
 	for _, tc := range []struct {

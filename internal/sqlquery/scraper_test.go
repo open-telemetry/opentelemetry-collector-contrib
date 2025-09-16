@@ -4,7 +4,6 @@
 package sqlquery // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
 
 import (
-	"context"
 	"database/sql"
 	"errors"
 	"testing"
@@ -25,7 +24,7 @@ func TestScraper_ErrorOnStart(t *testing.T) {
 			return nil, errors.New("oops")
 		},
 	}
-	err := scrpr.Start(context.Background(), componenttest.NewNopHost())
+	err := scrpr.Start(t.Context(), componenttest.NewNopHost())
 	require.Error(t, err)
 }
 
@@ -37,7 +36,7 @@ func TestScraper_ClientErrorOnScrape(t *testing.T) {
 		InstrumentationScope: pcommon.NewInstrumentationScope(),
 		Client:               client,
 	}
-	_, err := scrpr.ScrapeMetrics(context.Background())
+	_, err := scrpr.ScrapeMetrics(t.Context())
 	require.Error(t, err)
 }
 
@@ -60,7 +59,7 @@ func TestScraper_RowToMetricErrorOnScrape_Float(t *testing.T) {
 			}},
 		},
 	}
-	_, err := scrpr.ScrapeMetrics(context.Background())
+	_, err := scrpr.ScrapeMetrics(t.Context())
 	assert.Error(t, err)
 }
 
@@ -83,7 +82,7 @@ func TestScraper_RowToMetricErrorOnScrape_Int(t *testing.T) {
 			}},
 		},
 	}
-	_, err := scrpr.ScrapeMetrics(context.Background())
+	_, err := scrpr.ScrapeMetrics(t.Context())
 	assert.Error(t, err)
 }
 
@@ -107,7 +106,7 @@ func TestScraper_RowToMetricMultiErrorsOnScrape(t *testing.T) {
 			}},
 		},
 	}
-	_, err := scrpr.ScrapeMetrics(context.Background())
+	_, err := scrpr.ScrapeMetrics(t.Context())
 	assert.Error(t, err)
 }
 
@@ -141,7 +140,7 @@ func TestScraper_SingleRow_MultiMetrics(t *testing.T) {
 			},
 		},
 	}
-	metrics, err := scrpr.ScrapeMetrics(context.Background())
+	metrics, err := scrpr.ScrapeMetrics(t.Context())
 	require.NoError(t, err)
 	rms := metrics.ResourceMetrics()
 	assert.Equal(t, 1, rms.Len())
@@ -211,7 +210,7 @@ func TestScraper_MultiRow(t *testing.T) {
 			},
 		},
 	}
-	metrics, err := scrpr.ScrapeMetrics(context.Background())
+	metrics, err := scrpr.ScrapeMetrics(t.Context())
 	require.NoError(t, err)
 	ms := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 	{
@@ -279,7 +278,7 @@ func TestScraper_MultiResults_DeltaSum(t *testing.T) {
 }
 
 func assertTransactionCount(t *testing.T, scrpr Scraper, expected int, agg pmetric.AggregationTemporality) {
-	metrics, err := scrpr.ScrapeMetrics(context.Background())
+	metrics, err := scrpr.ScrapeMetrics(t.Context())
 	require.NoError(t, err)
 	metric := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
 	assert.Equal(t, "transaction.count", metric.Name())
@@ -311,7 +310,7 @@ func TestScraper_Float(t *testing.T) {
 			}},
 		},
 	}
-	metrics, err := scrpr.ScrapeMetrics(context.Background())
+	metrics, err := scrpr.ScrapeMetrics(t.Context())
 	require.NoError(t, err)
 	metric := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
 	assert.Equal(t, 123.4, metric.Gauge().DataPoints().At(0).DoubleValue())
@@ -335,7 +334,7 @@ func TestScraper_DescriptionAndUnit(t *testing.T) {
 			}},
 		},
 	}
-	metrics, err := scrpr.ScrapeMetrics(context.Background())
+	metrics, err := scrpr.ScrapeMetrics(t.Context())
 	require.NoError(t, err)
 	z := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
 	assert.Equal(t, "my-unit", z.Unit())
@@ -358,7 +357,7 @@ func TestScraper_FakeDB_Warnings(t *testing.T) {
 			}},
 		},
 	}
-	_, err := scrpr.ScrapeMetrics(context.Background())
+	_, err := scrpr.ScrapeMetrics(t.Context())
 	require.NoError(t, err)
 }
 
@@ -378,7 +377,7 @@ func TestScraper_FakeDB_MultiRows_Warnings(t *testing.T) {
 			}},
 		},
 	}
-	_, err := scrpr.ScrapeMetrics(context.Background())
+	_, err := scrpr.ScrapeMetrics(t.Context())
 	// No error is expected because we're not actually asking for metrics from the
 	// NULL column. Instead the errors from the NULL reads should just log warnings.
 	assert.NoError(t, err)
@@ -407,7 +406,7 @@ func TestScraper_FakeDB_MultiRows_Error(t *testing.T) {
 			},
 		},
 	}
-	_, err := scrpr.ScrapeMetrics(context.Background())
+	_, err := scrpr.ScrapeMetrics(t.Context())
 	// We expect an error here not directly because of the NULL values but because
 	// the column was also requested in Query.Metrics[1] but wasn't found. It's just
 	// a partial scrape error though so it shouldn't cause a Scraper shutdown.
@@ -439,7 +438,7 @@ func TestScraper_StartAndTSColumn(t *testing.T) {
 			}},
 		},
 	}
-	metrics, err := scrpr.ScrapeMetrics(context.Background())
+	metrics, err := scrpr.ScrapeMetrics(t.Context())
 	require.NoError(t, err)
 	metric := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
 	assert.Equal(t, pcommon.Timestamp(1682417791), metric.Sum().DataPoints().At(0).StartTimestamp())
@@ -469,7 +468,7 @@ func TestScraper_StartAndTS_ErrorOnColumnNotFound(t *testing.T) {
 			}},
 		},
 	}
-	_, err := scrpr.ScrapeMetrics(context.Background())
+	_, err := scrpr.ScrapeMetrics(t.Context())
 	assert.Error(t, err)
 }
 
@@ -496,7 +495,7 @@ func TestScraper_CollectRowToMetricsErrors(t *testing.T) {
 			}},
 		},
 	}
-	_, err := scrpr.ScrapeMetrics(context.Background())
+	_, err := scrpr.ScrapeMetrics(t.Context())
 	assert.ErrorContains(t, err, "rowToMetric: start_ts_column not found")
 	assert.ErrorContains(t, err, "rowToMetric: ts_column not found")
 	assert.ErrorContains(t, err, "rowToMetric: value_column 'mycol_na' not found in result set")
@@ -525,6 +524,6 @@ func TestScraper_StartAndTS_ErrorOnParse(t *testing.T) {
 			}},
 		},
 	}
-	_, err := scrpr.ScrapeMetrics(context.Background())
+	_, err := scrpr.ScrapeMetrics(t.Context())
 	assert.Error(t, err)
 }

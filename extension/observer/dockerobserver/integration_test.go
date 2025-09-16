@@ -26,7 +26,7 @@ func TestObserverEmitsEndpointsIntegration(t *testing.T) {
 	image := "docker.io/library/nginx"
 	tag := "1.17"
 
-	ctx := context.Background()
+	ctx := t.Context()
 	req := testcontainers.ContainerRequest{
 		Image:        fmt.Sprintf("%s:%s", image, tag),
 		ExposedPorts: []string{"80/tcp"},
@@ -71,7 +71,7 @@ func TestObserverUpdatesEndpointsIntegration(t *testing.T) {
 	image := "docker.io/library/nginx"
 	tag := "1.17"
 
-	ctx := context.Background()
+	ctx := t.Context()
 	req := testcontainers.ContainerRequest{
 		Image:        fmt.Sprintf("%s:%s", image, tag),
 		ExposedPorts: []string{"80/tcp"},
@@ -108,7 +108,7 @@ func TestObserverUpdatesEndpointsIntegration(t *testing.T) {
 	tcDockerClient, err := testcontainers.NewDockerClientWithOpts(ctx)
 	require.NoError(t, err)
 
-	require.NoError(t, tcDockerClient.ContainerRename(context.Background(), container.GetContainerID(), "nginx-updated"))
+	require.NoError(t, tcDockerClient.ContainerRename(t.Context(), container.GetContainerID(), "nginx-updated"))
 
 	require.Eventually(t, func() bool { return mn.ChangeCount() == 1 }, 3*time.Second, 10*time.Millisecond)
 	require.Equal(t, 1, mn.AddCount())
@@ -131,7 +131,7 @@ func TestObserverRemovesEndpointsIntegration(t *testing.T) {
 	image := "docker.io/library/nginx"
 	tag := "1.17"
 
-	ctx := context.Background()
+	ctx := t.Context()
 	req := testcontainers.ContainerRequest{
 		Image:        fmt.Sprintf("%s:%s", image, tag),
 		ExposedPorts: []string{"80/tcp"},
@@ -168,7 +168,7 @@ func TestObserverRemovesEndpointsIntegration(t *testing.T) {
 }
 
 func TestObserverExcludesImagesIntegration(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	req := testcontainers.ContainerRequest{
 		Image:        "docker.io/library/nginx:1.17",
 		ExposedPorts: []string{"80/tcp"},
@@ -204,7 +204,7 @@ func startObserver(t *testing.T, listener observer.Notify) *dockerObserver {
 }
 
 func startObserverWithConfig(t *testing.T, listener observer.Notify, c *Config) *dockerObserver {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
 	ext, err := newObserver(zap.NewNop(), c)
@@ -221,7 +221,7 @@ func startObserverWithConfig(t *testing.T, listener observer.Notify, c *Config) 
 }
 
 func stopObserver(t *testing.T, obvs *dockerObserver) {
-	assert.NoError(t, obvs.Shutdown(context.Background()))
+	assert.NoError(t, obvs.Shutdown(t.Context()))
 }
 
 var _ observer.Notify = (*mockNotifier)(nil)

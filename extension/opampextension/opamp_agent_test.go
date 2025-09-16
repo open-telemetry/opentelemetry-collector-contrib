@@ -45,7 +45,7 @@ func TestNewOpampAgent(t *testing.T) {
 	assert.True(t, o.capabilities.ReportsHealth)
 	assert.Empty(t, o.effectiveConfig)
 	assert.Nil(t, o.agentDescription)
-	assert.NoError(t, o.Shutdown(context.Background()))
+	assert.NoError(t, o.Shutdown(t.Context()))
 }
 
 func TestNewOpampAgentAttributes(t *testing.T) {
@@ -60,7 +60,7 @@ func TestNewOpampAgentAttributes(t *testing.T) {
 	assert.Equal(t, "otelcol-distro", o.agentType)
 	assert.Equal(t, "distro.0", o.agentVersion)
 	assert.Equal(t, "f8999bc1-4c9b-4619-9bae-7f009d2411ec", o.instanceID.String())
-	assert.NoError(t, o.Shutdown(context.Background()))
+	assert.NoError(t, o.Shutdown(t.Context()))
 }
 
 func TestCreateAgentDescription(t *testing.T) {
@@ -159,7 +159,7 @@ func TestCreateAgentDescription(t *testing.T) {
 			err = o.createAgentDescription()
 			assert.NoError(t, err)
 			require.Equal(t, tc.expected, o.agentDescription)
-			assert.NoError(t, o.Shutdown(context.Background()))
+			assert.NoError(t, o.Shutdown(t.Context()))
 		})
 	}
 }
@@ -178,7 +178,7 @@ func TestUpdateAgentIdentity(t *testing.T) {
 
 	o.updateAgentIdentity(uid)
 	assert.Equal(t, o.instanceID, uid)
-	assert.NoError(t, o.Shutdown(context.Background()))
+	assert.NoError(t, o.Shutdown(t.Context()))
 }
 
 func TestComposeEffectiveConfig(t *testing.T) {
@@ -203,7 +203,7 @@ func TestComposeEffectiveConfig(t *testing.T) {
 	assert.YAMLEq(t, string(expected), string(ec.ConfigMap.ConfigMap[""].Body))
 	assert.Equal(t, "text/yaml", ec.ConfigMap.ConfigMap[""].ContentType)
 
-	assert.NoError(t, o.Shutdown(context.Background()))
+	assert.NoError(t, o.Shutdown(t.Context()))
 }
 
 func TestShutdown(t *testing.T) {
@@ -213,7 +213,7 @@ func TestShutdown(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Shutdown with no OpAMP client
-	assert.NoError(t, o.Shutdown(context.Background()))
+	assert.NoError(t, o.Shutdown(t.Context()))
 }
 
 func TestStart(t *testing.T) {
@@ -222,8 +222,8 @@ func TestStart(t *testing.T) {
 	o, err := newOpampAgent(cfg.(*Config), set)
 	assert.NoError(t, err)
 
-	assert.NoError(t, o.Start(context.Background(), componenttest.NewNopHost()))
-	assert.NoError(t, o.Shutdown(context.Background()))
+	assert.NoError(t, o.Start(t.Context(), componenttest.NewNopHost()))
+	assert.NoError(t, o.Shutdown(t.Context()))
 }
 
 func TestStartAvailableComponents(t *testing.T) {
@@ -235,9 +235,9 @@ func TestStartAvailableComponents(t *testing.T) {
 	o.opampClient = mockOpAMPClient{}
 	assert.NoError(t, err)
 
-	assert.NoError(t, o.Start(context.Background(), newAvailableComponentsHost(t)))
+	assert.NoError(t, o.Start(t.Context(), newAvailableComponentsHost(t)))
 	assert.Equal(t, generateTestAvailableComponents(), o.availableComponents)
-	assert.NoError(t, o.Shutdown(context.Background()))
+	assert.NoError(t, o.Shutdown(t.Context()))
 }
 
 // availableComponentsHost mocks a receiver.ReceiverHost for test purposes.
@@ -451,7 +451,7 @@ func TestHealthReportingReceiveUpdateFromAggregator(t *testing.T) {
 
 	o.initHealthReporting()
 
-	assert.NoError(t, o.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, o.Start(t.Context(), componenttest.NewNopHost()))
 
 	statusUpdateChannel <- nil
 	statusUpdateChannel <- &status.AggregateStatus{
@@ -495,7 +495,7 @@ func TestHealthReportingReceiveUpdateFromAggregator(t *testing.T) {
 		return receivedHealthUpdates == len(expectedHealthUpdates)
 	}, 1*time.Second, 100*time.Millisecond)
 
-	assert.NoError(t, o.Shutdown(context.Background()))
+	assert.NoError(t, o.Shutdown(t.Context()))
 	require.True(t, sa.unsubscribed)
 }
 
@@ -520,7 +520,7 @@ func TestHealthReportingForwardComponentHealthToAggregator(t *testing.T) {
 
 	o.initHealthReporting()
 
-	assert.NoError(t, o.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, o.Start(t.Context(), componenttest.NewNopHost()))
 
 	traces := testhelpers.NewPipelineMetadata("traces")
 
@@ -580,7 +580,7 @@ func TestHealthReportingForwardComponentHealthToAggregator(t *testing.T) {
 		require.Equal(t, componentstatus.NewEvent(componentstatus.StatusStopping).Status(), event.event.Status())
 	}
 
-	assert.NoError(t, o.Shutdown(context.Background()))
+	assert.NoError(t, o.Shutdown(t.Context()))
 	require.True(t, sa.unsubscribed)
 }
 
@@ -629,7 +629,7 @@ func TestHealthReportingExitsOnClosedContext(t *testing.T) {
 
 	o.initHealthReporting()
 
-	assert.NoError(t, o.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, o.Start(t.Context(), componenttest.NewNopHost()))
 
 	statusUpdateChannel <- nil
 	statusUpdateChannel <- &status.AggregateStatus{
@@ -656,7 +656,7 @@ func TestHealthReportingExitsOnClosedContext(t *testing.T) {
 	}, 1*time.Second, 100*time.Millisecond)
 
 	// invoke Shutdown before health update channel has been closed
-	assert.NoError(t, o.Shutdown(context.Background()))
+	assert.NoError(t, o.Shutdown(t.Context()))
 	require.True(t, sa.unsubscribed)
 }
 
@@ -674,8 +674,8 @@ func TestHealthReportingDisabled(t *testing.T) {
 		},
 	}
 
-	assert.NoError(t, o.Start(context.Background(), componenttest.NewNopHost()))
-	assert.NoError(t, o.Shutdown(context.Background()))
+	assert.NoError(t, o.Start(t.Context(), componenttest.NewNopHost()))
+	assert.NoError(t, o.Shutdown(t.Context()))
 }
 
 func TestParseInstanceIDString(t *testing.T) {

@@ -133,7 +133,7 @@ func setup(t *testing.T) (CorrelationClient, *httptest.Server, chan *request, *a
 	var forcedRespPayload atomic.Value
 	server := httptest.NewServer(makeHandler(t, serverCh, &forcedRespCode, &forcedRespPayload))
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 
 	serverURL, err := url.Parse(server.URL)
 	if err != nil {

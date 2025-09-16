@@ -47,7 +47,7 @@ func Test_extractPatterns(t *testing.T) {
 			exprFunc, err := extractPatterns(tt.target, tt.pattern)
 			assert.NoError(t, err)
 
-			result, err := exprFunc(context.Background(), nil)
+			result, err := exprFunc(t.Context(), nil)
 			assert.NoError(t, err)
 
 			resultMap, ok := result.(pcommon.Map)

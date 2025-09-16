@@ -4,7 +4,6 @@
 package kineticaexporter
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -47,7 +46,7 @@ func Benchmark_pushMetricsData(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		err := exporter.pushMetricsData(context.TODO(), pm)
+		err := exporter.pushMetricsData(b.Context(), pm)
 		require.NoError(b, err)
 	}
 }
@@ -389,15 +388,15 @@ func simpleMetrics(count int) pmetric.Metrics {
 }
 
 func mustPushMetricsData(t *testing.T, exporter *kineticaMetricsExporter, md pmetric.Metrics) {
-	err := exporter.pushMetricsData(context.TODO(), md)
+	err := exporter.pushMetricsData(t.Context(), md)
 	require.NoError(t, err)
 }
 
 func newTestMetricsExporter(t *testing.T) *kineticaMetricsExporter {
 	exporter := newMetricsExporter(zaptest.NewLogger(t), withTestExporterConfig()(baseURL))
-	require.NoError(t, exporter.start(context.TODO(), nil))
+	require.NoError(t, exporter.start(t.Context(), nil))
 
-	t.Cleanup(func() { _ = exporter.shutdown(context.TODO()) })
+	t.Cleanup(func() { _ = exporter.shutdown(t.Context()) })
 	return exporter
 }
 

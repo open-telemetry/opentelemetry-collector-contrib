@@ -4,7 +4,6 @@
 package neuron
 
 import (
-	"context"
 	"strings"
 	"testing"
 
@@ -128,7 +127,7 @@ func TestNewNeuronScraperEndToEnd(t *testing.T) {
 	}
 
 	mockedScraperOpts := prometheusscraper.SimplePrometheusScraperOpts{
-		Ctx:               context.TODO(),
+		Ctx:               t.Context(),
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 		Consumer:          consumer,
 		Host:              componenttest.NewNopHost(),
@@ -242,7 +241,7 @@ func TestNewNeuronScraperWithUltraServersEndToEnd(t *testing.T) {
 	}
 
 	mockedScraperOpts := prometheusscraper.SimplePrometheusScraperOpts{
-		Ctx:               context.TODO(),
+		Ctx:               t.Context(),
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 		Consumer:          consumer,
 		Host:              componenttest.NewNopHost(),

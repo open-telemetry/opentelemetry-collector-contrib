@@ -114,7 +114,7 @@ loop:
 
 func (suite *SubprocessIntegrationSuite) TestHappyPath() {
 	t := suite.T()
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
 	subprocess, procInfo, findProcessInfo := suite.prepareSubprocess(&Config{})
@@ -133,7 +133,7 @@ func (suite *SubprocessIntegrationSuite) TestHappyPath() {
 
 func (suite *SubprocessIntegrationSuite) TestWithArgs() {
 	t := suite.T()
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
 	subprocess, procInfo, findProcessInfo := suite.prepareSubprocess(&Config{Args: []string{"myArgs"}})
@@ -152,7 +152,7 @@ func (suite *SubprocessIntegrationSuite) TestWithArgs() {
 
 func (suite *SubprocessIntegrationSuite) TestWithEnvVars() {
 	t := suite.T()
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
 	config := &Config{
@@ -178,7 +178,7 @@ func (suite *SubprocessIntegrationSuite) TestWithEnvVars() {
 
 func (suite *SubprocessIntegrationSuite) TestWithAutoRestart() {
 	t := suite.T()
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
 	restartDelay := 100 * time.Millisecond
@@ -207,7 +207,7 @@ func (suite *SubprocessIntegrationSuite) TestWithAutoRestart() {
 
 func (suite *SubprocessIntegrationSuite) TestSendingStdin() {
 	t := suite.T()
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
 	subprocess, procInfo, findProcessInfo := suite.prepareSubprocess(&Config{StdInContents: "mystdincontents"})
@@ -224,7 +224,7 @@ func (suite *SubprocessIntegrationSuite) TestSendingStdin() {
 
 func (suite *SubprocessIntegrationSuite) TestSendingStdinFails() {
 	t := suite.T()
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
 	logCore, logObserver := observer.New(zap.DebugLevel)
@@ -253,7 +253,7 @@ func (suite *SubprocessIntegrationSuite) TestSendingStdinFails() {
 
 func (suite *SubprocessIntegrationSuite) TestSubprocessBadExec() {
 	t := suite.T()
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
 	logCore, logObserver := observer.New(zap.DebugLevel)
@@ -274,7 +274,7 @@ func (suite *SubprocessIntegrationSuite) TestSubprocessBadExec() {
 
 func (suite *SubprocessIntegrationSuite) TestSubprocessSuccessfullyReturns() {
 	t := suite.T()
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
 	// There is a race condition between writing from the stdout scanner and the closing of the stdout channel on
@@ -298,5 +298,5 @@ func (suite *SubprocessIntegrationSuite) TestSubprocessSuccessfullyReturns() {
 func TestShutdownBeforeStartIntegration(t *testing.T) {
 	t.Parallel()
 	subprocess := NewSubprocess(&Config{ExecutablePath: "sh", Args: []string{}}, zap.NewNop())
-	require.EqualError(t, subprocess.Shutdown(context.Background()), "no subprocess.cancel().  Has it been started properly?")
+	require.EqualError(t, subprocess.Shutdown(t.Context()), "no subprocess.cancel().  Has it been started properly?")
 }

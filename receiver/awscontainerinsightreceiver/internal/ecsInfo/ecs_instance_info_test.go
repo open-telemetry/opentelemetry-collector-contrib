@@ -29,7 +29,7 @@ func (mi *MockHostInfo) GetInstanceIPReadyC() chan bool {
 }
 
 func TestECSInstanceInfo(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 	instanceReadyC := make(chan bool)
 	hostIPProvider := &MockHostInfo{}

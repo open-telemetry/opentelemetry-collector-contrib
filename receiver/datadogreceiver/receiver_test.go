@@ -34,13 +34,13 @@ func TestDatadogTracesReceiver_Lifecycle(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	cfg.(*Config).Endpoint = "localhost:0"
-	ddr, err := factory.CreateTraces(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	ddr, err := factory.CreateTraces(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	assert.NoError(t, err, "Traces receiver should be created")
 
-	err = ddr.Start(context.Background(), componenttest.NewNopHost())
+	err = ddr.Start(t.Context(), componenttest.NewNopHost())
 	assert.NoError(t, err, "Server should start")
 
-	err = ddr.Shutdown(context.Background())
+	err = ddr.Shutdown(t.Context())
 	assert.NoError(t, err, "Server should stop")
 }
 
@@ -48,13 +48,13 @@ func TestDatadogMetricsReceiver_Lifecycle(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	cfg.(*Config).Endpoint = "localhost:0"
-	ddr, err := factory.CreateMetrics(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	ddr, err := factory.CreateMetrics(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	assert.NoError(t, err, "Metrics receiver should be created")
 
-	err = ddr.Start(context.Background(), componenttest.NewNopHost())
+	err = ddr.Start(t.Context(), componenttest.NewNopHost())
 	assert.NoError(t, err, "Server should start")
 
-	err = ddr.Shutdown(context.Background())
+	err = ddr.Shutdown(t.Context())
 	assert.NoError(t, err, "Server should stop")
 }
 
@@ -68,7 +68,7 @@ func TestDatadogServer(t *testing.T) {
 	dd.(*datadogReceiver).nextTracesConsumer = consumertest.NewNop()
 	require.NoError(t, err, "Must not error when creating receiver")
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	t.Cleanup(cancel)
 
 	require.NoError(t, dd.Start(ctx, componenttest.NewNopHost()))
@@ -163,7 +163,7 @@ func TestDatadogResponse(t *testing.T) {
 			require.NoError(t, err, "Must not error when creating receiver")
 			dd.(*datadogReceiver).nextTracesConsumer = consumertest.NewErr(tc.err)
 
-			ctx, cancel := context.WithCancel(context.Background())
+			ctx, cancel := context.WithCancel(t.Context())
 			t.Cleanup(cancel)
 
 			require.NoError(t, dd.Start(ctx, componenttest.NewNopHost()))
@@ -291,7 +291,7 @@ func TestDatadogInfoEndpoint(t *testing.T) {
 			dd.(*datadogReceiver).nextTracesConsumer = tc.tracesConsumer
 			dd.(*datadogReceiver).nextMetricsConsumer = tc.metricsConsumer
 
-			ctx, cancel := context.WithCancel(context.Background())
+			ctx, cancel := context.WithCancel(t.Context())
 			t.Cleanup(cancel)
 
 			require.NoError(t, dd.Start(ctx, componenttest.NewNopHost()))
@@ -329,9 +329,9 @@ func TestDatadogMetricsV1_EndToEnd(t *testing.T) {
 	require.NoError(t, err, "Must not error when creating receiver")
 	dd.(*datadogReceiver).nextMetricsConsumer = sink
 
-	require.NoError(t, dd.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, dd.Start(t.Context(), componenttest.NewNopHost()))
 	defer func() {
-		require.NoError(t, dd.Shutdown(context.Background()))
+		require.NoError(t, dd.Shutdown(t.Context()))
 	}()
 
 	metricsPayloadV1 := []byte(`{
@@ -391,9 +391,9 @@ func TestDatadogMetricsV2_EndToEnd(t *testing.T) {
 	require.NoError(t, err, "Must not error when creating receiver")
 	dd.(*datadogReceiver).nextMetricsConsumer = sink
 
-	require.NoError(t, dd.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, dd.Start(t.Context(), componenttest.NewNopHost()))
 	defer func() {
-		require.NoError(t, dd.Shutdown(context.Background()))
+		require.NoError(t, dd.Shutdown(t.Context()))
 	}()
 
 	metricsPayloadV2 := gogen.MetricPayload{
@@ -471,9 +471,9 @@ func TestDatadogMetricsV2_EndToEndJSON(t *testing.T) {
 	require.NoError(t, err, "Must not error when creating receiver")
 	dd.(*datadogReceiver).nextMetricsConsumer = sink
 
-	require.NoError(t, dd.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, dd.Start(t.Context(), componenttest.NewNopHost()))
 	defer func() {
-		require.NoError(t, dd.Shutdown(context.Background()))
+		require.NoError(t, dd.Shutdown(t.Context()))
 	}()
 
 	metricsPayloadV2 := []byte(`{
@@ -550,9 +550,9 @@ func TestDatadogSketches_EndToEnd(t *testing.T) {
 	require.NoError(t, err, "Must not error when creating receiver")
 	dd.(*datadogReceiver).nextMetricsConsumer = sink
 
-	require.NoError(t, dd.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, dd.Start(t.Context(), componenttest.NewNopHost()))
 	defer func() {
-		require.NoError(t, dd.Shutdown(context.Background()))
+		require.NoError(t, dd.Shutdown(t.Context()))
 	}()
 
 	sketchPayload := gogen.SketchPayload{
@@ -637,9 +637,9 @@ func TestStats_EndToEnd(t *testing.T) {
 	require.NoError(t, err, "Must not error when creating receiver")
 	dd.(*datadogReceiver).nextMetricsConsumer = sink
 
-	require.NoError(t, dd.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, dd.Start(t.Context(), componenttest.NewNopHost()))
 	defer func() {
-		require.NoError(t, dd.Shutdown(context.Background()))
+		require.NoError(t, dd.Shutdown(t.Context()))
 	}()
 
 	clientStatsPayload := pb.ClientStatsPayload{
@@ -728,9 +728,9 @@ func TestDatadogServices_EndToEnd(t *testing.T) {
 	require.NoError(t, err, "Must not error when creating receiver")
 	dd.(*datadogReceiver).nextMetricsConsumer = sink
 
-	require.NoError(t, dd.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, dd.Start(t.Context(), componenttest.NewNopHost()))
 	defer func() {
-		require.NoError(t, dd.Shutdown(context.Background()))
+		require.NoError(t, dd.Shutdown(t.Context()))
 	}()
 
 	servicesPayload := []byte(`[

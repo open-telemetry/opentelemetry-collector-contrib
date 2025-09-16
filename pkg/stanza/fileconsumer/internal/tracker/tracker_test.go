@@ -29,7 +29,7 @@ func TestFindFilesOrder(t *testing.T) {
 	persister := testutil.NewUnscopedMockPersister()
 	fpInStorage := populatedPersisterData(persister, fps)
 
-	tracker := NewFileTracker(context.Background(), componenttest.NewNopTelemetrySettings(), 0, 100, persister)
+	tracker := NewFileTracker(t.Context(), componenttest.NewNopTelemetrySettings(), 0, 100, persister)
 	matchables := tracker.FindFiles(fps)
 
 	require.Len(t, matchables, len(fps), "return slice should be of same length as input slice")
@@ -49,7 +49,7 @@ func TestFindFilesOrder(t *testing.T) {
 func TestIndexInBounds(t *testing.T) {
 	persister := testutil.NewUnscopedMockPersister()
 	pollsToArchive := 100
-	tracker := NewFileTracker(context.Background(), componenttest.NewNopTelemetrySettings(), 0, pollsToArchive, persister).(*fileTracker)
+	tracker := NewFileTracker(t.Context(), componenttest.NewNopTelemetrySettings(), 0, pollsToArchive, persister).(*fileTracker)
 
 	// no index exists. archiveIndex should be 0
 	require.Equal(t, 0, tracker.archiveIndex)
@@ -63,14 +63,14 @@ func TestIndexInBounds(t *testing.T) {
 	oldIndex := tracker.archiveIndex
 
 	// re-create archive
-	tracker = NewFileTracker(context.Background(), componenttest.NewNopTelemetrySettings(), 0, pollsToArchive, persister).(*fileTracker)
+	tracker = NewFileTracker(t.Context(), componenttest.NewNopTelemetrySettings(), 0, pollsToArchive, persister).(*fileTracker)
 
 	// index should exist and new archiveIndex should be equal to oldIndex
 	require.Equalf(t, oldIndex, tracker.archiveIndex, "New index should %d, but was %d", oldIndex, tracker.archiveIndex)
 
 	// re-create archive, with reduced pollsToArchive
 	pollsToArchive = 70
-	tracker = NewFileTracker(context.Background(), componenttest.NewNopTelemetrySettings(), 0, pollsToArchive, persister).(*fileTracker)
+	tracker = NewFileTracker(t.Context(), componenttest.NewNopTelemetrySettings(), 0, pollsToArchive, persister).(*fileTracker)
 
 	// index should exist but it is out of bounds. So it should reset to 0
 	require.Equalf(t, 0, tracker.archiveIndex, "Index should be reset to 0 but was %d", tracker.archiveIndex)
@@ -94,7 +94,7 @@ func testArchiveRestoration(t *testing.T, pollsToArchive int, newPollsToArchive 
 	pctFilled := []float32{0.25, 0.5, 0.75, 1, 1.25, 1.50, 1.75, 2.00}
 	for _, pct := range pctFilled {
 		persister := testutil.NewUnscopedMockPersister()
-		tracker := NewFileTracker(context.Background(), componenttest.NewNopTelemetrySettings(), 0, pollsToArchive, persister).(*fileTracker)
+		tracker := NewFileTracker(t.Context(), componenttest.NewNopTelemetrySettings(), 0, pollsToArchive, persister).(*fileTracker)
 		iterations := int(pct * float32(pollsToArchive))
 		for i := 0; i < iterations; i++ {
 			fileset := &fileset.Fileset[*reader.Metadata]{}
@@ -108,21 +108,21 @@ func testArchiveRestoration(t *testing.T, pollsToArchive int, newPollsToArchive 
 		// make sure all keys are present in persister
 		for i := 0; i < iterations; i++ {
 			archiveIndex := i % pollsToArchive
-			val, err := persister.Get(context.Background(), archiveKey(archiveIndex))
+			val, err := persister.Get(t.Context(), archiveKey(archiveIndex))
 			require.NoError(t, err)
 			require.NotNil(t, val)
 		}
 		// also, make sure we have not written "extra" stuff (for partially filled archive)
 		count := 0
 		for i := 0; i < pollsToArchive; i++ {
-			val, err := persister.Get(context.Background(), archiveKey(i))
+			val, err := persister.Get(t.Context(), archiveKey(i))
 			require.NoError(t, err)
 			if val != nil {
 				count++
 			}
 		}
 		require.Equal(t, min(iterations, pollsToArchive), count)
-		tracker = NewFileTracker(context.Background(), componenttest.NewNopTelemetrySettings(), 0, newPollsToArchive, persister).(*fileTracker)
+		tracker = NewFileTracker(t.Context(), componenttest.NewNopTelemetrySettings(), 0, newPollsToArchive, persister).(*fileTracker)
 		if pollsToArchive > newPollsToArchive {
 			// if archive has shrunk, new archive should contain most recent elements
 			// start from most recent element
@@ -143,7 +143,7 @@ func testArchiveRestoration(t *testing.T, pollsToArchive int, newPollsToArchive 
 
 			// make sure we've removed all extra keys
 			for i := newPollsToArchive; i < pollsToArchive; i++ {
-				val, err := persister.Get(context.Background(), archiveKey(newPollsToArchive))
+				val, err := persister.Get(t.Context(), archiveKey(newPollsToArchive))
 				require.NoError(t, err)
 				require.Nil(t, val)
 			}

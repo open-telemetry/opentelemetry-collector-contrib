@@ -181,7 +181,7 @@ func TestDetector_Detect(t *testing.T) {
 				retHostname: "example-hostname",
 				isAvailable: true,
 			}},
-			args: args{ctx: context.Background()},
+			args: args{ctx: t.Context()},
 			want: func() pcommon.Resource {
 				res := pcommon.NewResource()
 				attr := res.Attributes()
@@ -212,7 +212,7 @@ func TestDetector_Detect(t *testing.T) {
 				isAvailable: true,
 			}},
 			tagKeyRegexes: []*regexp.Regexp{regexp.MustCompile("^tag1$"), regexp.MustCompile("^tag2$")},
-			args:          args{ctx: context.Background()},
+			args:          args{ctx: t.Context()},
 			want: func() pcommon.Resource {
 				res := pcommon.NewResource()
 				attr := res.Attributes()
@@ -245,7 +245,7 @@ func TestDetector_Detect(t *testing.T) {
 				retHostname: "example-hostname",
 				isAvailable: true,
 			}},
-			args: args{ctx: context.Background()},
+			args: args{ctx: t.Context()},
 			want: func() pcommon.Resource {
 				res := pcommon.NewResource()
 				attr := res.Attributes()
@@ -269,7 +269,7 @@ func TestDetector_Detect(t *testing.T) {
 				retErrIDDoc: errors.New("should not be called"),
 				isAvailable: false,
 			}},
-			args:    args{ctx: context.Background()},
+			args:    args{ctx: t.Context()},
 			want:    pcommon.NewResource(),
 			wantErr: false,
 		},
@@ -280,7 +280,7 @@ func TestDetector_Detect(t *testing.T) {
 				retErrIDDoc: errors.New("should not be called"),
 				isAvailable: false,
 			}},
-			args:                  args{ctx: context.Background()},
+			args:                  args{ctx: t.Context()},
 			want:                  pcommon.NewResource(),
 			wantErr:               true,
 			failOnMissingMetadata: true,
@@ -292,7 +292,7 @@ func TestDetector_Detect(t *testing.T) {
 				retErrIDDoc: errors.New("get failed"),
 				isAvailable: true,
 			}},
-			args:    args{ctx: context.Background()},
+			args:    args{ctx: t.Context()},
 			want:    pcommon.NewResource(),
 			wantErr: true,
 		},
@@ -304,7 +304,7 @@ func TestDetector_Detect(t *testing.T) {
 				retErrHostname: errors.New("hostname failed"),
 				isAvailable:    true,
 			}},
-			args:    args{ctx: context.Background()},
+			args:    args{ctx: t.Context()},
 			want:    pcommon.NewResource(),
 			wantErr: true,
 		},
@@ -373,7 +373,7 @@ func TestEC2Tags(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := &mockEC2Client{}
-			output, err := fetchEC2Tags(context.Background(), m, tt.resourceID, tt.tagKeyRegexes)
+			output, err := fetchEC2Tags(t.Context(), m, tt.resourceID, tt.tagKeyRegexes)
 			if tt.shouldError {
 				assert.Error(t, err)
 				return

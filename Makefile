@@ -136,7 +136,7 @@ gotidy:
 	@find . -name 'go.mod' | while read modfile; do \
 		dir=$$(dirname $$modfile); \
 		echo "Tidying $$dir"; \
-		(cd $$dir && rm -f go.sum && $(GOCMD) mod tidy -compat=1.22.0) || exit $$?; \
+		(cd $$dir && rm -f go.sum && $(GOCMD) mod tidy -compat=1.24.6) || exit $$?; \
 	done
 
 .PHONY: remove-toolchain

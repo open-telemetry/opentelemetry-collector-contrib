@@ -4,7 +4,6 @@
 package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefbreceiver/internal"
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -27,7 +26,7 @@ func TestToPrometheusConfig(t *testing.T) {
 	baCfg := baFactory.CreateDefaultConfig().(*bearertokenauthextension.Config)
 	baCfg.BearerToken = "the-token"
 
-	baExt, err := baFactory.Create(context.Background(), extensiontest.NewNopSettings(baFactory.Type()), baCfg)
+	baExt, err := baFactory.Create(t.Context(), extensiontest.NewNopSettings(baFactory.Type()), baCfg)
 	require.NoError(t, err)
 
 	host := &mockHost{
@@ -47,7 +46,7 @@ func TestToPrometheusConfig(t *testing.T) {
 		},
 	}
 
-	scraper := NewScraper(context.Background(), "hosts", endpoint, cfgs, interval, model.LabelSet{})
+	scraper := NewScraper(t.Context(), "hosts", endpoint, cfgs, interval, model.LabelSet{})
 
 	// test
 	scCfgs, err := scraper.ToPrometheusReceiverConfig(host, prFactory)

@@ -4,7 +4,6 @@
 package solarwindsapmsettingsextension
 
 import (
-	"context"
 	"os"
 	"testing"
 	"time"
@@ -52,7 +51,7 @@ func TestCreate(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ex := createAnExtension(t, tt.cfg)
-			require.NoError(t, ex.Shutdown(context.TODO()))
+			require.NoError(t, ex.Shutdown(t.Context()))
 		})
 	}
 }
@@ -70,7 +69,7 @@ func newNopSettings() extension.Settings {
 func createAnExtension(t *testing.T, c *Config) extension.Extension {
 	ex, err := newSolarwindsApmSettingsExtension(c, newNopSettings())
 	require.NoError(t, err)
-	require.NoError(t, ex.Start(context.TODO(), nil))
+	require.NoError(t, ex.Start(t.Context(), nil))
 	return ex
 }
 

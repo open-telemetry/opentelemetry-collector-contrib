@@ -4,7 +4,6 @@
 package trace
 
 import (
-	"context"
 	"encoding/hex"
 	"testing"
 
@@ -160,7 +159,7 @@ func TestProcess(t *testing.T) {
 			op, err := tc.op()
 			require.NoError(t, err, "did not expect operator function to return an error, this is a bug with the test case")
 
-			err = op.Process(context.Background(), tc.input)
+			err = op.Process(t.Context(), tc.input)
 			require.NoError(t, err)
 			require.Equal(t, tc.expect, tc.input)
 		})

@@ -4,7 +4,6 @@
 package helper
 
 import (
-	"context"
 	"errors"
 	"testing"
 	"time"
@@ -91,7 +90,7 @@ func TestTransformerDropOnError(t *testing.T) {
 			OutputIDs:       []string{"test-output"},
 		},
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 	testEntry := entry.New()
 	now := time.Now()
 	testEntry.Timestamp = now
@@ -141,7 +140,7 @@ func TestTransformerDropOnErrorQuiet(t *testing.T) {
 			OutputIDs:       []string{"test-output"},
 		},
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 	testEntry := entry.New()
 	now := time.Now()
 	testEntry.Timestamp = now
@@ -191,7 +190,7 @@ func TestTransformerSendOnError(t *testing.T) {
 			OutputIDs:       []string{"test-output"},
 		},
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 	testEntry := entry.New()
 	now := time.Now()
 	testEntry.Timestamp = now
@@ -241,7 +240,7 @@ func TestTransformerSendOnErrorQuiet(t *testing.T) {
 			OutputIDs:       []string{"test-output"},
 		},
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 	testEntry := entry.New()
 	now := time.Now()
 	testEntry.Timestamp = now
@@ -288,7 +287,7 @@ func TestTransformerProcessWithValid(t *testing.T) {
 			OutputIDs:       []string{"test-output"},
 		},
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 	testEntry := entry.New()
 	transform := func(_ *entry.Entry) error {
 		return nil
@@ -360,7 +359,7 @@ func TestTransformerIf(t *testing.T) {
 
 			e := entry.New()
 			e.Body = tc.inputBody
-			err = transformer.ProcessWith(context.Background(), e, func(e *entry.Entry) error {
+			err = transformer.ProcessWith(t.Context(), e, func(e *entry.Entry) error {
 				e.Body = "parsed"
 				return nil
 			})

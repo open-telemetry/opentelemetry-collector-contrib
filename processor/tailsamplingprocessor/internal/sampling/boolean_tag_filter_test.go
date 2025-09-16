@@ -4,7 +4,6 @@
 package sampling
 
 import (
-	"context"
 	"testing"
 
 	"github.com/google/uuid"
@@ -46,7 +45,7 @@ func TestBooleanTagFilter(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.Desc, func(t *testing.T) {
 			u, _ := uuid.NewRandom()
-			decision, err := filter.Evaluate(context.Background(), pcommon.TraceID(u), c.Trace)
+			decision, err := filter.Evaluate(t.Context(), pcommon.TraceID(u), c.Trace)
 			assert.NoError(t, err)
 			assert.Equal(t, decision, c.Decision)
 		})
@@ -85,7 +84,7 @@ func TestBooleanTagFilterInverted(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.Desc, func(t *testing.T) {
 			u, _ := uuid.NewRandom()
-			decision, err := filter.Evaluate(context.Background(), pcommon.TraceID(u), c.Trace)
+			decision, err := filter.Evaluate(t.Context(), pcommon.TraceID(u), c.Trace)
 			assert.NoError(t, err)
 			assert.Equal(t, decision, c.Decision)
 		})

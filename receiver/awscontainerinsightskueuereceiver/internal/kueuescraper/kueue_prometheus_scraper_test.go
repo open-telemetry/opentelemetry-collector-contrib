@@ -70,21 +70,21 @@ func TestNewKueuePrometheusScraperBadInputs(t *testing.T) {
 
 	tests := []KueuePrometheusScraperOpts{
 		{ // case: no consumer
-			Ctx:               context.TODO(),
+			Ctx:               t.Context(),
 			TelemetrySettings: settings,
 			Consumer:          nil,
 			Host:              componenttest.NewNopHost(),
 			ClusterName:       "DummyCluster",
 		},
 		{ // case: no host
-			Ctx:               context.TODO(),
+			Ctx:               t.Context(),
 			TelemetrySettings: settings,
 			Consumer:          mockKueueConsumer{},
 			Host:              nil,
 			ClusterName:       "DummyCluster",
 		},
 		{ // case: no cluster name
-			Ctx:               context.TODO(),
+			Ctx:               t.Context(),
 			TelemetrySettings: settings,
 			Consumer:          mockKueueConsumer{},
 			Host:              componenttest.NewNopHost(),
@@ -116,7 +116,7 @@ func TestNewKueuePrometheusScraperEndToEnd(t *testing.T) {
 
 	scraper, err := NewKueuePrometheusScraper(
 		KueuePrometheusScraperOpts{
-			Ctx:               context.TODO(),
+			Ctx:               t.Context(),
 			TelemetrySettings: settings,
 			Consumer:          mConsumer,
 			Host:              componenttest.NewNopHost(),
@@ -171,7 +171,7 @@ func TestNewKueuePrometheusScraperEndToEnd(t *testing.T) {
 		TelemetrySettings: settings,
 		ID:                component.NewIDWithName(component.MustNewType("prometheus"), ""),
 	}
-	promReceiver, err := promFactory.CreateMetrics(context.TODO(), params, &promConfig, mConsumer)
+	promReceiver, err := promFactory.CreateMetrics(t.Context(), params, &promConfig, mConsumer)
 	assert.NoError(t, err)
 
 	// attach test receiver to scraper (replaces existing one)

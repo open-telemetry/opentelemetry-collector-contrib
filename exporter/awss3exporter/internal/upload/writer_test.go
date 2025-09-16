@@ -5,7 +5,6 @@ package upload
 
 import (
 	"compress/gzip"
-	"context"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -164,7 +163,7 @@ func TestS3ManagerUpload(t *testing.T) {
 			mc := clock.NewMock(time.Date(2024, 0o1, 10, 10, 30, 40, 100, time.Local))
 
 			err := sm.Upload(
-				clock.Context(context.Background(), mc),
+				clock.Context(t.Context(), mc),
 				tc.data,
 			)
 			if tc.errVal != "" {

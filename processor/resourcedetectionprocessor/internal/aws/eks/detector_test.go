@@ -52,7 +52,7 @@ func TestNewDetector(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, detector)
 	// no-op
-	gotResource, gotSchema, gotErr := detector.Detect(context.Background())
+	gotResource, gotSchema, gotErr := detector.Detect(t.Context())
 	assert.NoError(t, gotErr)
 	assert.Equal(t, pcommon.NewResource(), gotResource)
 	assert.Empty(t, gotSchema)
@@ -61,7 +61,7 @@ func TestNewDetector(t *testing.T) {
 // Tests EKS resource detector running in EKS environment
 func TestEKS(t *testing.T) {
 	detectorUtils := new(MockDetectorUtils)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	t.Setenv("KUBERNETES_SERVICE_HOST", "localhost")
 	detectorUtils.On("getConfigMap", authConfigmapNS, authConfigmapName).Return(map[string]string{conventions.AttributeK8SClusterName: clusterName}, nil)
@@ -79,7 +79,7 @@ func TestEKS(t *testing.T) {
 // Tests EKS resource detector not running in EKS environment by verifying resource is not running on k8s
 func TestNotEKS(t *testing.T) {
 	eksResourceDetector := detector{logger: zap.NewNop()}
-	r, _, err := eksResourceDetector.Detect(context.Background())
+	r, _, err := eksResourceDetector.Detect(t.Context())
 	require.NoError(t, err)
 	assert.Equal(t, 0, r.Attributes().Len(), "Resource object should be empty")
 }
@@ -114,7 +114,7 @@ func TestEKSResourceDetection_ForCloudAccountID(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			detectorUtils := new(MockDetectorUtils)
-			ctx := context.Background()
+			ctx := t.Context()
 
 			t.Setenv("KUBERNETES_SERVICE_HOST", "localhost")
 			detectorUtils.On("getConfigMap", authConfigmapNS, authConfigmapName).Return(map[string]string{conventions.AttributeK8SClusterName: clusterName}, nil)

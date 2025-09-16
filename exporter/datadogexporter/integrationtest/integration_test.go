@@ -7,7 +7,6 @@ import (
 	"bytes"
 	"compress/gzip"
 	"compress/zlib"
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -110,7 +109,7 @@ func testIntegration(t *testing.T) {
 	factories := getIntegrationTestComponents(t)
 	app := getIntegrationTestCollector(t, "integration_test_config.yaml", factories)
 	go func() {
-		assert.NoError(t, app.Run(context.Background()))
+		assert.NoError(t, app.Run(t.Context()))
 	}()
 	defer app.Shutdown()
 
@@ -236,7 +235,7 @@ func waitForReadiness(app *otelcol.Collector) {
 }
 
 func sendTraces(t *testing.T, endpoint string) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Set up OTel-Go SDK and exporter
 	traceExporter, err := otlptracegrpc.New(ctx, otlptracegrpc.WithInsecure(), otlptracegrpc.WithEndpoint(endpoint))
@@ -307,7 +306,7 @@ func TestIntegrationComputeTopLevelBySpanKind(t *testing.T) {
 	factories := getIntegrationTestComponents(t)
 	app := getIntegrationTestCollector(t, "integration_test_toplevel_config.yaml", factories)
 	go func() {
-		assert.NoError(t, app.Run(context.Background()))
+		assert.NoError(t, app.Run(t.Context()))
 	}()
 	defer app.Shutdown()
 
@@ -403,7 +402,7 @@ func TestIntegrationComputeTopLevelBySpanKind(t *testing.T) {
 }
 
 func sendTracesComputeTopLevelBySpanKind(t *testing.T, endpoint string) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Set up OTel-Go SDK and exporter
 	traceExporter, err := otlptracegrpc.New(ctx, otlptracegrpc.WithInsecure(), otlptracegrpc.WithEndpoint(endpoint))
@@ -498,7 +497,7 @@ func TestIntegrationLogs(t *testing.T) {
 	factories := getIntegrationTestComponents(t)
 	app := getIntegrationTestCollector(t, "integration_test_logs_config.yaml", factories)
 	go func() {
-		assert.NoError(t, app.Run(context.Background()))
+		assert.NoError(t, app.Run(t.Context()))
 	}()
 	defer app.Shutdown()
 
@@ -550,7 +549,7 @@ func TestIntegrationLogs(t *testing.T) {
 }
 
 func sendLogs(t *testing.T, numLogs int, endpoint string) {
-	ctx := context.Background()
+	ctx := t.Context()
 	logExporter, err := otlploggrpc.New(ctx, otlploggrpc.WithInsecure(), otlploggrpc.WithEndpoint(endpoint))
 	assert.NoError(t, err)
 	lr := make([]log.Record, numLogs)
@@ -649,7 +648,7 @@ func testIntegrationHostMetrics(t *testing.T, expectedMetrics map[string]struct{
 	factories := getIntegrationTestComponents(t)
 	app := getIntegrationTestCollector(t, "integration_test_host_metrics_config.yaml", factories)
 	go func() {
-		assert.NoError(t, app.Run(context.Background()))
+		assert.NoError(t, app.Run(t.Context()))
 	}()
 	defer app.Shutdown()
 

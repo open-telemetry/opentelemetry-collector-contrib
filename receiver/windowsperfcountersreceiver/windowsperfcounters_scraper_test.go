@@ -6,7 +6,6 @@
 package windowsperfcountersreceiver
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"path/filepath"
@@ -212,7 +211,7 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 			settings.Logger = logger
 			scraper := newScraper(cfg, settings)
 
-			err := scraper.start(context.Background(), componenttest.NewNopHost())
+			err := scraper.start(t.Context(), componenttest.NewNopHost())
 			if test.startErr != "" {
 				require.Equal(t, 1, obs.Len())
 				log := obs.All()[0]
@@ -225,10 +224,10 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 			require.Equal(t, 0, obs.Len())
 			require.NoError(t, err)
 
-			actualMetrics, err := scraper.scrape(context.Background())
+			actualMetrics, err := scraper.scrape(t.Context())
 			require.NoError(t, err)
 
-			err = scraper.shutdown(context.Background())
+			err = scraper.shutdown(t.Context())
 
 			require.NoError(t, err)
 			expectedMetrics, err := golden.ReadMetrics(test.expectedMetricPath)
@@ -371,10 +370,10 @@ func TestWatcherResetFailure(t *testing.T) {
 	settings.Logger = logger
 
 	s := &windowsPerfCountersScraper{cfg: &cfg, settings: settings, newWatcher: mockPerfCounterFactoryInvocations(mpc)}
-	errs := s.start(context.Background(), componenttest.NewNopHost())
+	errs := s.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, errs)
 
-	vals, err := s.scrape(context.Background())
+	vals, err := s.scrape(t.Context())
 
 	if assert.Error(t, err) {
 		assert.Equal(t, errMsg, err.Error())
@@ -497,7 +496,7 @@ func TestScrape(t *testing.T) {
 			mpcs := test.mockPerfCounters
 			testConfig := test.cfg
 			s := &windowsPerfCountersScraper{cfg: &testConfig, newWatcher: mockPerfCounterFactoryInvocations(mpcs...)}
-			errs := s.start(context.Background(), componenttest.NewNopHost())
+			errs := s.start(t.Context(), componenttest.NewNopHost())
 			require.NoError(t, errs)
 
 			var expectedErrors []error
@@ -507,7 +506,7 @@ func TestScrape(t *testing.T) {
 				}
 			}
 
-			m, err := s.scrape(context.Background())
+			m, err := s.scrape(t.Context())
 			if len(expectedErrors) != 0 {
 				var partialErr scrapererror.PartialScrapeError
 				require.ErrorAs(t, err, &partialErr)

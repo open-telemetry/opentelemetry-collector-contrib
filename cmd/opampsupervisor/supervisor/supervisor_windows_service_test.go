@@ -6,7 +6,6 @@
 package supervisor
 
 import (
-	"context"
 	"encoding/xml"
 	"os/exec"
 	"testing"
@@ -87,7 +86,7 @@ func TestSupervisorAsService(t *testing.T) {
 
 	// verify the collector is running healthy
 	hc := healthchecker.NewHTTPHealthChecker("http://127.0.0.1:12345")
-	err = hc.Check(context.Background())
+	err = hc.Check(t.Context())
 	require.NoError(t, err)
 }
 

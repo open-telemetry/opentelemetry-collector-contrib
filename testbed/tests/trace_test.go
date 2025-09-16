@@ -10,7 +10,6 @@ package tests
 // coded in this file or use scenarios from perf_scenarios.go.
 
 import (
-	"context"
 	"path/filepath"
 	"testing"
 
@@ -291,7 +290,7 @@ func verifySingleSpan(
 	span.SetName(spanName)
 
 	sender := tc.LoadGenerator.(*testbed.ProviderSender).Sender.(testbed.TraceDataSender)
-	require.NoError(t, sender.ConsumeTraces(context.Background(), td))
+	require.NoError(t, sender.ConsumeTraces(t.Context(), td))
 
 	// We bypass the load generator in this test, but make sure to increment the
 	// counter since it is used in final reports.

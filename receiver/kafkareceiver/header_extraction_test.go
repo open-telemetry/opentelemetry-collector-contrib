@@ -48,7 +48,7 @@ func TestHeaderExtractionTraces(t *testing.T) {
 	groupClaim := &testConsumerGroupClaim{
 		messageChan: make(chan *sarama.ConsumerMessage),
 	}
-	ctx, cancelFunc := context.WithCancel(context.Background())
+	ctx, cancelFunc := context.WithCancel(t.Context())
 	defer close(groupClaim.messageChan)
 	testSession := testConsumerGroupSession{ctx: ctx}
 	require.NoError(t, c.Setup(testSession))
@@ -114,7 +114,7 @@ func TestHeaderExtractionLogs(t *testing.T) {
 	groupClaim := &testConsumerGroupClaim{
 		messageChan: make(chan *sarama.ConsumerMessage),
 	}
-	ctx, cancelFunc := context.WithCancel(context.Background())
+	ctx, cancelFunc := context.WithCancel(t.Context())
 	defer close(groupClaim.messageChan)
 	testSession := testConsumerGroupSession{ctx: ctx}
 	require.NoError(t, c.Setup(testSession))
@@ -173,7 +173,7 @@ func TestHeaderExtractionMetrics(t *testing.T) {
 	groupClaim := &testConsumerGroupClaim{
 		messageChan: make(chan *sarama.ConsumerMessage),
 	}
-	ctx, cancelFunc := context.WithCancel(context.Background())
+	ctx, cancelFunc := context.WithCancel(t.Context())
 	defer close(groupClaim.messageChan)
 	testSession := testConsumerGroupSession{ctx: ctx}
 	require.NoError(t, c.Setup(testSession))

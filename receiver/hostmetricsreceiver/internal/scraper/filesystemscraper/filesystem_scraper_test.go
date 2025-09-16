@@ -393,7 +393,7 @@ func TestScrape(t *testing.T) {
 			for k, v := range test.osEnv {
 				envMap[k] = v
 			}
-			ctx := context.WithValue(context.Background(), common.EnvKey, envMap)
+			ctx := context.WithValue(t.Context(), common.EnvKey, envMap)
 			test.config.SetRootPath(test.rootPath)
 			scraper, err := newFileSystemScraper(ctx, scrapertest.NewNopSettings(metadata.Type), &test.config)
 			if test.newErrRegex != "" {

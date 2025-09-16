@@ -160,7 +160,7 @@ func TestNewDcgmScraperEndToEnd(t *testing.T) {
 	settings.Logger, _ = zap.NewDevelopment()
 
 	scraper, err := prometheusscraper.NewSimplePrometheusScraper(prometheusscraper.SimplePrometheusScraperOpts{
-		Ctx:               context.TODO(),
+		Ctx:               t.Context(),
 		TelemetrySettings: settings,
 		Consumer:          mConsumer,
 		Host:              componenttest.NewNopHost(),

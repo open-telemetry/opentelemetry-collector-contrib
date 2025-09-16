@@ -168,7 +168,7 @@ func TestDetectFQDNAvailable(t *testing.T) {
 	md.On("HostMACs").Return(testMACsAddresses, nil)
 
 	detector := newTestDetector(md, []string{"dns"}, allEnabledConfig())
-	res, schemaURL, err := detector.Detect(context.Background())
+	res, schemaURL, err := detector.Detect(t.Context())
 	require.NoError(t, err)
 	assert.Equal(t, conventions.SchemaURL, schemaURL)
 	md.AssertExpectations(t)
@@ -198,7 +198,7 @@ func TestFallbackHostname(t *testing.T) {
 	mdHostname.On("HostArch").Return("amd64", nil)
 
 	detector := newTestDetector(mdHostname, []string{"dns", "os"}, metadata.DefaultResourceAttributesConfig())
-	res, schemaURL, err := detector.Detect(context.Background())
+	res, schemaURL, err := detector.Detect(t.Context())
 	require.NoError(t, err)
 	assert.Equal(t, conventions.SchemaURL, schemaURL)
 	mdHostname.AssertExpectations(t)
@@ -226,7 +226,7 @@ func TestEnableHostID(t *testing.T) {
 	mdHostname.On("HostMACs").Return(testMACsAddresses, nil)
 
 	detector := newTestDetector(mdHostname, []string{"dns", "os"}, allEnabledConfig())
-	res, schemaURL, err := detector.Detect(context.Background())
+	res, schemaURL, err := detector.Detect(t.Context())
 	require.NoError(t, err)
 	assert.Equal(t, conventions.SchemaURL, schemaURL)
 	mdHostname.AssertExpectations(t)
@@ -257,7 +257,7 @@ func TestUseHostname(t *testing.T) {
 	mdHostname.On("HostMACs").Return(testMACsAddresses, nil)
 
 	detector := newTestDetector(mdHostname, []string{"os"}, allEnabledConfig())
-	res, schemaURL, err := detector.Detect(context.Background())
+	res, schemaURL, err := detector.Detect(t.Context())
 	require.NoError(t, err)
 	assert.Equal(t, conventions.SchemaURL, schemaURL)
 	mdHostname.AssertExpectations(t)
@@ -290,7 +290,7 @@ func TestDetectError(t *testing.T) {
 	mdFQDN.On("HostMACs").Return(testMACsAddresses, nil)
 
 	detector := newTestDetector(mdFQDN, []string{"dns"}, allEnabledConfig())
-	res, schemaURL, err := detector.Detect(context.Background())
+	res, schemaURL, err := detector.Detect(t.Context())
 	assert.Error(t, err)
 	assert.Empty(t, schemaURL)
 	assert.True(t, internal.IsEmptyResource(res))
@@ -307,7 +307,7 @@ func TestDetectError(t *testing.T) {
 	mdHostname.On("HostMACs").Return(testMACsAddresses, nil)
 
 	detector = newTestDetector(mdHostname, []string{"os"}, allEnabledConfig())
-	res, schemaURL, err = detector.Detect(context.Background())
+	res, schemaURL, err = detector.Detect(t.Context())
 	assert.Error(t, err)
 	assert.Empty(t, schemaURL)
 	assert.True(t, internal.IsEmptyResource(res))
@@ -323,7 +323,7 @@ func TestDetectError(t *testing.T) {
 	mdOSType.On("HostIPs").Return(testIPsAddresses, nil)
 
 	detector = newTestDetector(mdOSType, []string{"os"}, allEnabledConfig())
-	res, schemaURL, err = detector.Detect(context.Background())
+	res, schemaURL, err = detector.Detect(t.Context())
 	assert.Error(t, err)
 	assert.Empty(t, schemaURL)
 	assert.True(t, internal.IsEmptyResource(res))
@@ -339,7 +339,7 @@ func TestDetectError(t *testing.T) {
 	mdOSVersion.On("HostIPs").Return(testIPsAddresses, nil)
 
 	detector = newTestDetector(mdOSVersion, []string{"os"}, allEnabledConfig())
-	res, schemaURL, err = detector.Detect(context.Background())
+	res, schemaURL, err = detector.Detect(t.Context())
 	assert.Error(t, err)
 	assert.Empty(t, schemaURL)
 	assert.True(t, internal.IsEmptyResource(res))
@@ -356,7 +356,7 @@ func TestDetectError(t *testing.T) {
 	mdHostID.On("HostMACs").Return(testMACsAddresses, nil)
 
 	detector = newTestDetector(mdHostID, []string{"os"}, allEnabledConfig())
-	res, schemaURL, err = detector.Detect(context.Background())
+	res, schemaURL, err = detector.Detect(t.Context())
 	assert.NoError(t, err)
 	assert.Equal(t, conventions.SchemaURL, schemaURL)
 	assert.Equal(t, map[string]any{
@@ -385,7 +385,7 @@ func TestDetectCPUInfo(t *testing.T) {
 	cfg := allEnabledConfig()
 	cfg.HostCPUFamily.Enabled = true
 	detector := newTestDetector(md, []string{"dns"}, cfg)
-	res, schemaURL, err := detector.Detect(context.Background())
+	res, schemaURL, err := detector.Detect(t.Context())
 	require.NoError(t, err)
 	assert.Equal(t, conventions.SchemaURL, schemaURL)
 	md.AssertExpectations(t)

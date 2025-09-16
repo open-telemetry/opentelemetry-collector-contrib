@@ -4,7 +4,6 @@
 package googlecloudlogentryencodingextension
 
 import (
-	"context"
 	stdjson "encoding/json"
 	"testing"
 
@@ -96,7 +95,7 @@ func TestProtoPayload(t *testing.T) {
 	for _, tt := range tests {
 		fn := func(t *testing.T, want Log) {
 			extension := newConfiguredExtension(t, &tt.config)
-			defer assert.NoError(t, extension.Shutdown(context.Background()))
+			defer assert.NoError(t, extension.Shutdown(t.Context()))
 
 			var errs error
 			wantRes, wantLr, err := generateLog(t, want)
@@ -177,7 +176,7 @@ func TestProtoFieldTypes(t *testing.T) {
 	for _, tt := range tests {
 		fn := func(t *testing.T, want Log) {
 			extension := newConfiguredExtension(t, &config)
-			defer assert.NoError(t, extension.Shutdown(context.Background()))
+			defer assert.NoError(t, extension.Shutdown(t.Context()))
 
 			var errs error
 			wantRes, wantLr, err := generateLog(t, want)
@@ -236,7 +235,7 @@ func TestProtoErrors(t *testing.T) {
 	for _, tt := range tests {
 		fn := func(t *testing.T, want Log) {
 			extension := newConfiguredExtension(t, &config)
-			defer assert.NoError(t, extension.Shutdown(context.Background()))
+			defer assert.NoError(t, extension.Shutdown(t.Context()))
 
 			var errs error
 			wantRes, wantLr, err := generateLog(t, want)

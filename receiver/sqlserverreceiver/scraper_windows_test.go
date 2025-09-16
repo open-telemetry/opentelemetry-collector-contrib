@@ -6,7 +6,6 @@
 package sqlserverreceiver
 
 import (
-	"context"
 	"path/filepath"
 	"testing"
 
@@ -89,7 +88,7 @@ func TestSqlServerScraper(t *testing.T) {
 	settings.Logger = zap.New(logger)
 	s := newSQLServerPCScraper(settings, cfg)
 
-	assert.NoError(t, s.start(context.Background(), nil))
+	assert.NoError(t, s.start(t.Context(), nil))
 	assert.Empty(t, s.watcherRecorders)
 	assert.Equal(t, 21, obsLogs.Len())
 	assert.Equal(t, 21, obsLogs.FilterMessageSnippet("failed to create perf counter with path \\SQLServer:").Len())
@@ -101,11 +100,11 @@ func TestSqlServerScraper(t *testing.T) {
 	assert.Equal(t, 1, obsLogs.FilterMessageSnippet("\\SQLServer:Access Methods(_Total)\\").Len())
 	assert.Equal(t, 8, obsLogs.FilterMessageSnippet("\\SQLServer:Databases(*)\\").Len())
 
-	metrics, err := s.scrape(context.Background())
+	metrics, err := s.scrape(t.Context())
 	require.NoError(t, err)
 	assert.Equal(t, 0, metrics.ResourceMetrics().Len())
 
-	err = s.shutdown(context.Background())
+	err = s.shutdown(t.Context())
 	require.NoError(t, err)
 }
 
@@ -133,7 +132,7 @@ func TestScrape(t *testing.T) {
 			}
 		}
 
-		scrapeData, err := scraper.scrape(context.Background())
+		scrapeData, err := scraper.scrape(t.Context())
 		require.NoError(t, err)
 
 		expectedMetrics, err := golden.ReadMetrics(goldenScrapePath)
@@ -177,7 +176,7 @@ func TestScrape(t *testing.T) {
 			}
 		}
 
-		scrapeData, err := scraper.scrape(context.Background())
+		scrapeData, err := scraper.scrape(t.Context())
 		require.NoError(t, err)
 
 		expectedMetrics, err := golden.ReadMetrics(goldenNamedInstanceScrapePath)

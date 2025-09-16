@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/faroreceiver
 
-go 1.23.3
+go 1.24.6
 
 require (
 	github.com/stretchr/testify v1.10.0
@@ -14,7 +14,7 @@ require go.opentelemetry.io/collector/extension/extensionauth v1.30.0 // indirec
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/go-viper/mapstructure/v2 v2.3.0 // indirect
+	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/go-version v1.7.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect

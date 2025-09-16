@@ -37,7 +37,7 @@ func TestNewFactoryWithLogs(t *testing.T) {
 
 				factory := NewFactory()
 				c, err := factory.CreateTracesToMetrics(
-					context.Background(),
+					t.Context(),
 					connectortest.NewNopSettings(metadata.Type),
 					factory.CreateDefaultConfig(),
 					mc,
@@ -56,7 +56,7 @@ func TestNewFactoryWithLogs(t *testing.T) {
 
 				factory := NewFactory()
 				c, err := factory.CreateLogsToMetrics(
-					context.Background(),
+					t.Context(),
 					connectortest.NewNopSettings(metadata.Type),
 					factory.CreateDefaultConfig(),
 					mc,
@@ -75,7 +75,7 @@ func TestNewFactoryWithLogs(t *testing.T) {
 
 				factory := NewFactory()
 				c, err := factory.CreateMetricsToMetrics(
-					context.Background(),
+					t.Context(),
 					connectortest.NewNopSettings(metadata.Type),
 					factory.CreateDefaultConfig(),
 					mc,

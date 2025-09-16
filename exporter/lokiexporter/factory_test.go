@@ -4,7 +4,6 @@
 package lokiexporter
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -41,7 +40,7 @@ func TestExporter_startReturnsNillWhenValidConfig(t *testing.T) {
 	exp, err := newExporter(config, componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 	require.NotNil(t, exp)
-	require.NoError(t, exp.start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, exp.start(t.Context(), componenttest.NewNopHost()))
 }
 
 func TestExporter_startReturnsErrorWhenInvalidHttpClientSettings(t *testing.T) {
@@ -59,7 +58,7 @@ func TestExporter_startReturnsErrorWhenInvalidHttpClientSettings(t *testing.T) {
 	exp, err := newExporter(config, componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 	require.NotNil(t, exp)
-	require.Error(t, exp.start(context.Background(), componenttest.NewNopHost()))
+	require.Error(t, exp.start(t.Context(), componenttest.NewNopHost()))
 }
 
 func TestExporter_stopAlwaysReturnsNil(t *testing.T) {
@@ -72,5 +71,5 @@ func TestExporter_stopAlwaysReturnsNil(t *testing.T) {
 	exp, err := newExporter(config, componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 	require.NotNil(t, exp)
-	require.NoError(t, exp.stop(context.Background()))
+	require.NoError(t, exp.stop(t.Context()))
 }

@@ -48,7 +48,7 @@ func Test_Year_Error(t *testing.T) {
 	}
 	exprFunc, err := Year(getter)
 	assert.NoError(t, err)
-	result, err := exprFunc(context.Background(), nil)
+	result, err := exprFunc(t.Context(), nil)
 	assert.Nil(t, result)
 	assert.Error(t, err)
 }

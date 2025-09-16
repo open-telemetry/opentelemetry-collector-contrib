@@ -7,7 +7,6 @@
 package clickhouseexporter
 
 import (
-	"context"
 	"fmt"
 	"math/rand/v2"
 	"strconv"
@@ -52,11 +51,11 @@ func TestIntegration(t *testing.T) {
 			}
 			c := getContainer(t, req)
 			defer func() {
-				err := c.Terminate(context.Background())
+				err := c.Terminate(t.Context())
 				require.NoError(t, err)
 			}()
 
-			host, err := c.Host(context.Background())
+			host, err := c.Host(t.Context())
 			require.NoError(t, err)
 			endpoint := fmt.Sprintf("tcp://%s:%s", host, port)
 
@@ -77,14 +76,14 @@ func TestIntegration(t *testing.T) {
 func getContainer(t *testing.T, req testcontainers.ContainerRequest) testcontainers.Container {
 	require.NoError(t, req.Validate())
 	container, err := testcontainers.GenericContainer(
-		context.Background(),
+		t.Context(),
 		testcontainers.GenericContainerRequest{
 			ContainerRequest: req,
 			Started:          true,
 		})
 	require.NoError(t, err)
 
-	err = container.Start(context.Background())
+	err = container.Start(t.Context())
 	require.NoError(t, err)
 	return container
 }

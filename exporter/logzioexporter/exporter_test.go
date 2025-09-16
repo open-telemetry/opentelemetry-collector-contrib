@@ -6,7 +6,6 @@ package logzioexporter
 import (
 	"bytes"
 	"compress/gzip"
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -102,16 +101,16 @@ func generateLogsOneEmptyTimestamp() plog.Logs {
 func testLogsExporter(t *testing.T, ld plog.Logs, cfg *Config) error {
 	var err error
 	params := exportertest.NewNopSettings(metadata.Type)
-	exporter, err := createLogsExporter(context.Background(), params, cfg)
+	exporter, err := createLogsExporter(t.Context(), params, cfg)
 	if err != nil {
 		return err
 	}
-	err = exporter.Start(context.Background(), componenttest.NewNopHost())
+	err = exporter.Start(t.Context(), componenttest.NewNopHost())
 	if err != nil {
 		return err
 	}
 	require.NoError(t, err)
-	ctx := context.Background()
+	ctx := t.Context()
 	err = exporter.ConsumeLogs(ctx, ld)
 	if err != nil {
 		return err
@@ -150,16 +149,16 @@ func newTestTraces() ptrace.Traces {
 
 func testTracesExporter(t *testing.T, td ptrace.Traces, cfg *Config) error {
 	params := exportertest.NewNopSettings(metadata.Type)
-	exporter, err := createTracesExporter(context.Background(), params, cfg)
+	exporter, err := createTracesExporter(t.Context(), params, cfg)
 	if err != nil {
 		return err
 	}
-	err = exporter.Start(context.Background(), componenttest.NewNopHost())
+	err = exporter.Start(t.Context(), componenttest.NewNopHost())
 	if err != nil {
 		return err
 	}
 	require.NoError(t, err)
-	ctx := context.Background()
+	ctx := t.Context()
 	err = exporter.ConsumeTraces(ctx, td)
 	if err != nil {
 		return err

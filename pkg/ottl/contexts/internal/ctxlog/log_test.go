@@ -4,7 +4,6 @@
 package ctxlog_test
 
 import (
-	"context"
 	"encoding/hex"
 	"testing"
 	"time"
@@ -350,11 +349,11 @@ func TestPathGetSetter(t *testing.T) {
 
 			log := createTelemetry(tt.bodyType)
 
-			got, err := accessor.Get(context.Background(), newTestContext(log))
+			got, err := accessor.Get(t.Context(), newTestContext(log))
 			assert.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
-			err = accessor.Set(context.Background(), newTestContext(log), tt.newVal)
+			err = accessor.Set(t.Context(), newTestContext(log), tt.newVal)
 			assert.NoError(t, err)
 
 			expectedLog := createTelemetry(tt.bodyType)

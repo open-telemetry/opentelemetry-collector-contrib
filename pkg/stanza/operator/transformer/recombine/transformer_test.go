@@ -4,7 +4,6 @@
 package recombine
 
 import (
-	"context"
 	"fmt"
 	"strings"
 	"testing"
@@ -672,7 +671,7 @@ func TestTransformer(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			ctx := context.Background()
+			ctx := t.Context()
 			set := componenttest.NewNopTelemetrySettings()
 			op, err := tc.config.Build(set)
 			require.NoError(t, err)
@@ -711,7 +710,7 @@ func TestTransformer(t *testing.T) {
 		require.NoError(t, err)
 
 		// Send an entry that isn't the last in a multiline
-		require.NoError(t, op.ProcessBatch(context.Background(), []*entry.Entry{entry.New()}))
+		require.NoError(t, op.ProcessBatch(t.Context(), []*entry.Entry{entry.New()}))
 
 		// Ensure that the entry isn't immediately sent
 		select {
@@ -764,12 +763,12 @@ func BenchmarkRecombine(b *testing.B) {
 		}
 	}
 
-	ctx := context.Background()
+	ctx := b.Context()
 	b.ResetTimer()
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
 		for _, e := range entries {
-			require.NoError(b, op.ProcessBatch(context.Background(), []*entry.Entry{e}))
+			require.NoError(b, op.ProcessBatch(b.Context(), []*entry.Entry{e}))
 		}
 		op.(*Transformer).flushAllSources(ctx)
 	}
@@ -803,7 +802,7 @@ func BenchmarkRecombineLimitTrigger(b *testing.B) {
 	next.Timestamp = time.Now()
 	next.Body = "next"
 
-	ctx := context.Background()
+	ctx := b.Context()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		require.NoError(b, op.ProcessBatch(ctx, []*entry.Entry{start, next}))
@@ -832,7 +831,7 @@ func TestTimeout(t *testing.T) {
 	e.Timestamp = time.Now()
 	e.Body = "body"
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	require.NoError(t, recombine.Start(nil))
 	require.NoError(t, recombine.ProcessBatch(ctx, []*entry.Entry{e}))
@@ -875,7 +874,7 @@ func TestTimeoutWhenAggregationKeepHappen(t *testing.T) {
 	e.Timestamp = time.Now()
 	e.Body = "start"
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	require.NoError(t, op.Start(nil))
 	require.NoError(t, op.ProcessBatch(ctx, []*entry.Entry{e}))
@@ -940,7 +939,7 @@ func TestSourceBatchDelete(t *testing.T) {
 	expect.AddAttribute(attrs.LogFilePath, "file1")
 	expect.Body = "start\nnext"
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	require.NoError(t, op.ProcessBatch(ctx, []*entry.Entry{start}))
 	require.Len(t, recombine.batchMap, 1)

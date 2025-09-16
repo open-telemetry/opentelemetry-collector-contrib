@@ -4,7 +4,6 @@
 package gitlabreceiver
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -25,9 +24,9 @@ func TestHealthCheck(t *testing.T) {
 	require.NoError(t, err, "failed to create receiver")
 
 	r := receiver
-	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()), "failed to start receiver")
+	require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()), "failed to start receiver")
 	defer func() {
-		require.NoError(t, r.Shutdown(context.Background()), "failed to shutdown revceiver")
+		require.NoError(t, r.Shutdown(t.Context()), "failed to shutdown revceiver")
 	}()
 
 	w := httptest.NewRecorder()

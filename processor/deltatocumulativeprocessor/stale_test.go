@@ -6,7 +6,6 @@
 package deltatocumulativeprocessor
 
 import (
-	"context"
 	"fmt"
 	"testing"
 	"testing/synctest"
@@ -19,7 +18,7 @@ import (
 
 func TestStaleness(t *testing.T) {
 	synctest.Run(func() {
-		ctx := context.Background()
+		ctx := t.Context()
 		iface, _ := setup(t, &Config{MaxStale: 5 * time.Minute, MaxStreams: 50}, &CountingSink{})
 		proc := iface.(*Processor)
 		err := proc.Start(ctx, nil)

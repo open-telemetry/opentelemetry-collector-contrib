@@ -215,7 +215,7 @@ func TestAppendOrder(t *testing.T) {
 			s3v2Client := s3v2.NewFromConfig(cfg, func(options *s3v2.Options) {
 				options.BaseEndpoint = awsv2.String(server.URL)
 			})
-			_, err = s3v2Client.ListBuckets(context.Background(), &s3v2.ListBucketsInput{})
+			_, err = s3v2Client.ListBuckets(t.Context(), &s3v2.ListBucketsInput{})
 			require.NoError(t, err)
 			assert.Equal(t, testCase.wantOrder, recorder.order)
 		})
@@ -255,7 +255,7 @@ func TestRoundTripSDKv2(t *testing.T) {
 	s3Client := s3v2.NewFromConfig(cfg, func(options *s3v2.Options) {
 		options.BaseEndpoint = awsv2.String(server.URL)
 	})
-	output, err := s3Client.ListBuckets(context.Background(), &s3v2.ListBucketsInput{})
+	output, err := s3Client.ListBuckets(t.Context(), &s3v2.ListBucketsInput{})
 	require.NoError(t, err)
 	assert.NotNil(t, output)
 	assert.GreaterOrEqual(t, recorder.Latency(), testLatency)

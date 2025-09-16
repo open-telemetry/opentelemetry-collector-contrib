@@ -4,7 +4,6 @@
 package tenant // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter/internal/tenant"
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -13,7 +12,7 @@ import (
 
 func TestStaticTenantSource(t *testing.T) {
 	ts := &StaticTenantSource{Value: "acme"}
-	tenant, err := ts.GetTenant(context.Background(), plog.NewLogs())
+	tenant, err := ts.GetTenant(t.Context(), plog.NewLogs())
 	assert.NoError(t, err)
 	assert.Equal(t, "acme", tenant)
 }

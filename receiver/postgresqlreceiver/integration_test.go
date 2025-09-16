@@ -6,7 +6,6 @@
 package postgresqlreceiver
 
 import (
-	"context"
 	"database/sql"
 	"fmt"
 	"net"
@@ -120,7 +119,7 @@ func integrationTest(name string, databases []string, pgVersion string) func(*te
 
 func TestScrapeLogsFromContainer(t *testing.T) {
 	ci, err := testcontainers.GenericContainer(
-		context.Background(),
+		t.Context(),
 		testcontainers.GenericContainerRequest{
 			ProviderType: testcontainers.ProviderPodman,
 			ContainerRequest: testcontainers.ContainerRequest{
@@ -142,10 +141,10 @@ func TestScrapeLogsFromContainer(t *testing.T) {
 		})
 	assert.NoError(t, err)
 
-	err = ci.Start(context.Background())
+	err = ci.Start(t.Context())
 	assert.NoError(t, err)
 	defer testcontainers.CleanupContainer(t, ci)
-	p, err := ci.MappedPort(context.Background(), postgresqlPort)
+	p, err := ci.MappedPort(t.Context(), postgresqlPort)
 	assert.NoError(t, err)
 	connStr := fmt.Sprintf("postgres://root:otel@localhost:%s/otel2?sslmode=disable", p.Port())
 	db, err := sql.Open("postgres", connStr)
@@ -179,7 +178,7 @@ func TestScrapeLogsFromContainer(t *testing.T) {
 			Logger: zap.Must(zap.NewProduction()),
 		},
 	}, &cfg, clientFactory)
-	plogs, err := ns.scrapeQuerySamples(context.Background(), 30)
+	plogs, err := ns.scrapeQuerySamples(t.Context(), 30)
 	assert.NoError(t, err)
 	logRecords := plogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
 	found := false

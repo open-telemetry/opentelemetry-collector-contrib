@@ -6,7 +6,6 @@ package webhookeventreceiver
 import (
 	"bytes"
 	"compress/gzip"
-	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -200,13 +199,13 @@ func TestHandleReq(t *testing.T) {
 			require.NoError(t, err, "Failed to create receiver")
 
 			r := receiver.(*eventReceiver)
-			require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()), "Failed to start receiver")
+			require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()), "Failed to start receiver")
 			defer func() {
-				require.NoError(t, r.Shutdown(context.Background()), "Failed to shutdown receiver")
+				require.NoError(t, r.Shutdown(t.Context()), "Failed to shutdown receiver")
 			}()
 
 			w := httptest.NewRecorder()
-			r.handleReq(w, test.req, httprouter.ParamsFromContext(context.Background()))
+			r.handleReq(w, test.req, httprouter.ParamsFromContext(t.Context()))
 
 			response := w.Result()
 			_, err = io.ReadAll(response.Body)
@@ -282,13 +281,13 @@ func TestFailedReq(t *testing.T) {
 			require.NoError(t, err, "Failed to create receiver")
 
 			r := receiver.(*eventReceiver)
-			require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()), "Failed to start receiver")
+			require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()), "Failed to start receiver")
 			defer func() {
-				require.NoError(t, r.Shutdown(context.Background()), "Failed to shutdown receiver")
+				require.NoError(t, r.Shutdown(t.Context()), "Failed to shutdown receiver")
 			}()
 
 			w := httptest.NewRecorder()
-			r.handleReq(w, test.req, httprouter.ParamsFromContext(context.Background()))
+			r.handleReq(w, test.req, httprouter.ParamsFromContext(t.Context()))
 
 			response := w.Result()
 			require.Equal(t, test.status, response.StatusCode)
@@ -304,13 +303,13 @@ func TestHealthCheck(t *testing.T) {
 	require.NoError(t, err, "failed to create receiver")
 
 	r := receiver.(*eventReceiver)
-	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()), "failed to start receiver")
+	require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()), "failed to start receiver")
 	defer func() {
-		require.NoError(t, r.Shutdown(context.Background()), "failed to shutdown receiver")
+		require.NoError(t, r.Shutdown(t.Context()), "failed to shutdown receiver")
 	}()
 
 	w := httptest.NewRecorder()
-	r.handleHealthCheck(w, httptest.NewRequest(http.MethodGet, "http://localhost/health", nil), httprouter.ParamsFromContext(context.Background()))
+	r.handleHealthCheck(w, httptest.NewRequest(http.MethodGet, "http://localhost/health", nil), httprouter.ParamsFromContext(t.Context()))
 
 	response := w.Result()
 	require.Equal(t, http.StatusOK, response.StatusCode)

@@ -4,7 +4,6 @@
 package heroku
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -25,7 +24,7 @@ func TestDetectTrue(t *testing.T) {
 
 	detector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig())
 	require.NoError(t, err)
-	res, schemaURL, err := detector.Detect(context.Background())
+	res, schemaURL, err := detector.Detect(t.Context())
 	assert.Equal(t, conventions.SchemaURL, schemaURL)
 	require.NoError(t, err)
 	assert.Equal(t, map[string]any{
@@ -48,7 +47,7 @@ func TestDetectTruePartial(t *testing.T) {
 
 	detector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig())
 	require.NoError(t, err)
-	res, schemaURL, err := detector.Detect(context.Background())
+	res, schemaURL, err := detector.Detect(t.Context())
 	assert.Equal(t, conventions.SchemaURL, schemaURL)
 	require.NoError(t, err)
 	assert.Equal(t, map[string]any{
@@ -68,7 +67,7 @@ func TestDetectTruePartialMissingDynoId(t *testing.T) {
 
 	detector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig())
 	require.NoError(t, err)
-	res, schemaURL, err := detector.Detect(context.Background())
+	res, schemaURL, err := detector.Detect(t.Context())
 	assert.Equal(t, conventions.SchemaURL, schemaURL)
 	require.NoError(t, err)
 	assert.Equal(t, map[string]any{
@@ -83,7 +82,7 @@ func TestDetectTruePartialMissingDynoId(t *testing.T) {
 func TestDetectFalse(t *testing.T) {
 	detector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig())
 	require.NoError(t, err)
-	res, schemaURL, err := detector.Detect(context.Background())
+	res, schemaURL, err := detector.Detect(t.Context())
 	require.NoError(t, err)
 	assert.Equal(t, "https://opentelemetry.io/schemas/1.6.1", schemaURL)
 	assert.True(t, internal.IsEmptyResource(res))

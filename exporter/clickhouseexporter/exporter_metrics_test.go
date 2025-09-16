@@ -4,7 +4,6 @@
 package clickhouseexporter
 
 import (
-	"context"
 	"database/sql/driver"
 	"errors"
 	"fmt"
@@ -79,7 +78,7 @@ func TestExporter_pushMetricsData(t *testing.T) {
 			return nil
 		})
 		exporter := newTestMetricsExporter(t, defaultEndpoint)
-		err := exporter.pushMetricsData(context.TODO(), simpleMetrics(2))
+		err := exporter.pushMetricsData(t.Context(), simpleMetrics(2))
 		require.Error(t, err)
 	})
 	t.Run("check Resource metadata and scope metadata (2nd resource contain 2 different scope metrics)", func(t *testing.T) {
@@ -166,7 +165,7 @@ func Benchmark_pushMetricsData(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		err := exporter.pushMetricsData(context.TODO(), pm)
+		err := exporter.pushMetricsData(b.Context(), pm)
 		require.NoError(b, err)
 	}
 }
@@ -515,15 +514,15 @@ func simpleMetrics(count int) pmetric.Metrics {
 }
 
 func mustPushMetricsData(t *testing.T, exporter *metricsExporter, md pmetric.Metrics) {
-	err := exporter.pushMetricsData(context.TODO(), md)
+	err := exporter.pushMetricsData(t.Context(), md)
 	require.NoError(t, err)
 }
 
 func newTestMetricsExporter(t *testing.T, dsn string, fns ...func(*Config)) *metricsExporter {
 	exporter, err := newMetricsExporter(zaptest.NewLogger(t), withTestExporterConfig(fns...)(dsn))
 	require.NoError(t, err)
-	require.NoError(t, exporter.start(context.TODO(), nil))
+	require.NoError(t, exporter.start(t.Context(), nil))
 
-	t.Cleanup(func() { _ = exporter.shutdown(context.TODO()) })
+	t.Cleanup(func() { _ = exporter.shutdown(t.Context()) })
 	return exporter
 }

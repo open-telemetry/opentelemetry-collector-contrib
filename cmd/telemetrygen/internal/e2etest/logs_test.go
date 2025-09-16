@@ -4,7 +4,6 @@
 package e2etest
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -26,12 +25,12 @@ func TestGenerateLogs(t *testing.T) {
 	endpoint := testutil.GetAvailableLocalAddress(t)
 	rCfg.(*otlpreceiver.Config).GRPC.NetAddr.Endpoint = endpoint
 	rCfg.(*otlpreceiver.Config).HTTP = nil
-	r, err := f.CreateLogs(context.Background(), receivertest.NewNopSettings(f.Type()), rCfg, sink)
+	r, err := f.CreateLogs(t.Context(), receivertest.NewNopSettings(f.Type()), rCfg, sink)
 	require.NoError(t, err)
-	err = r.Start(context.Background(), componenttest.NewNopHost())
+	err = r.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	defer func() {
-		require.NoError(t, r.Shutdown(context.Background()))
+		require.NoError(t, r.Shutdown(t.Context()))
 	}()
 	cfg := logs.NewConfig()
 	cfg.WorkerCount = 10

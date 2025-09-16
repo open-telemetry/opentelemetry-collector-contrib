@@ -59,7 +59,7 @@ func TestProjectReader_Shutdown(t *testing.T) {
 }
 
 func TestProjectReader_Read(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	logger := zaptest.NewLogger(t)
 	testCases := map[string]struct {
 		expectedError error

@@ -4,7 +4,6 @@
 package neuron
 
 import (
-	"context"
 	"testing"
 
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -53,7 +52,7 @@ func TestConsumeMetricsForPodAttributeDecorator(t *testing.T) {
 		PodResourcesStore: mockPodResourcesStore{},
 		Logger:            logger,
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 
 	testcases1 := map[string]decoratorconsumer.TestCase{
 		"empty": {

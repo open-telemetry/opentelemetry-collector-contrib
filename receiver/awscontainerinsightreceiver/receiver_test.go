@@ -55,7 +55,7 @@ func TestReceiver(t *testing.T) {
 	require.NotNil(t, metricsReceiver)
 
 	r := metricsReceiver.(*awsContainerInsightReceiver)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	err = r.Start(ctx, componenttest.NewNopHost())
 	require.Error(t, err)
@@ -76,8 +76,8 @@ func TestCollectData(t *testing.T) {
 	require.NotNil(t, metricsReceiver)
 
 	r := metricsReceiver.(*awsContainerInsightReceiver)
-	_ = r.Start(context.Background(), nil)
-	ctx := context.Background()
+	_ = r.Start(t.Context(), nil)
+	ctx := t.Context()
 	r.k8sapiserver = &mockK8sAPIServer{}
 	r.containerMetricsProvider = &mockCadvisor{}
 	err = r.collectData(ctx)
@@ -102,10 +102,10 @@ func TestCollectDataWithErrConsumer(t *testing.T) {
 	require.NotNil(t, metricsReceiver)
 
 	r := metricsReceiver.(*awsContainerInsightReceiver)
-	_ = r.Start(context.Background(), nil)
+	_ = r.Start(t.Context(), nil)
 	r.containerMetricsProvider = &mockCadvisor{}
 	r.k8sapiserver = &mockK8sAPIServer{}
-	ctx := context.Background()
+	ctx := t.Context()
 
 	err = r.collectData(ctx)
 	require.Error(t, err)
@@ -124,8 +124,8 @@ func TestCollectDataWithECS(t *testing.T) {
 	require.NotNil(t, metricsReceiver)
 
 	r := metricsReceiver.(*awsContainerInsightReceiver)
-	_ = r.Start(context.Background(), nil)
-	ctx := context.Background()
+	_ = r.Start(t.Context(), nil)
+	ctx := t.Context()
 
 	r.containerMetricsProvider = &mockCadvisor{}
 	err = r.collectData(ctx)
@@ -152,8 +152,8 @@ func TestCollectDataWithSystemd(t *testing.T) {
 	require.NotNil(t, metricsReceiver)
 
 	r := metricsReceiver.(*awsContainerInsightReceiver)
-	_ = r.Start(context.Background(), nil)
-	ctx := context.Background()
+	_ = r.Start(t.Context(), nil)
+	ctx := t.Context()
 
 	r.containerMetricsProvider = &mockCadvisor{}
 	err = r.collectData(ctx)
@@ -211,7 +211,7 @@ func TestAWSContainerInsightReceiverStart(t *testing.T) {
 	consumer := consumertest.NewNop()
 	receiver, err := newAWSContainerInsightReceiver(component.TelemetrySettings{}, config, consumer)
 	assert.NoError(t, err)
-	err = receiver.Start(context.Background(), mockHost)
+	err = receiver.Start(t.Context(), mockHost)
 	assert.Error(t, err)
 
 	mockHost.AssertCalled(t, "GetExtensions")

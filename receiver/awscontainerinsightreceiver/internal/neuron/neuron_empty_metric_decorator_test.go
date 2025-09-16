@@ -4,7 +4,6 @@
 package neuron
 
 import (
-	"context"
 	"testing"
 
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -20,7 +19,7 @@ func TestConsumeMetricsForNeuronEmptyMetricsDecorator(t *testing.T) {
 		NextConsumer: consumertest.NewNop(),
 		Logger:       logger,
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 	testcases := map[string]decoratorconsumer.TestCase{
 		"empty": {
 			Metrics:     pmetric.NewMetrics(),

@@ -138,9 +138,9 @@ func TestMetricsExporterStart(t *testing.T) {
 			p := tt.te
 
 			// test
-			res := p.Start(context.Background(), componenttest.NewNopHost())
+			res := p.Start(t.Context(), componenttest.NewNopHost())
 			defer func() {
-				require.NoError(t, p.Shutdown(context.Background()))
+				require.NoError(t, p.Shutdown(t.Context()))
 			}()
 
 			// verify
@@ -156,7 +156,7 @@ func TestMetricsExporterShutdown(t *testing.T) {
 	require.NoError(t, err)
 
 	// test
-	res := p.Shutdown(context.Background())
+	res := p.Shutdown(t.Context())
 
 	// verify
 	assert.NoError(t, res)
@@ -358,7 +358,7 @@ func TestConsumeMetrics_SingleEndpoint(t *testing.T) {
 			require.NoError(t, err)
 			require.NotNil(t, lb)
 
-			lb.addMissingExporters(context.Background(), []string{"endpoint-1"})
+			lb.addMissingExporters(t.Context(), []string{"endpoint-1"})
 			lb.res = &mockResolver{
 				triggerCallbacks: true,
 				onResolve: func(_ context.Context) ([]string, error) {
@@ -368,10 +368,10 @@ func TestConsumeMetrics_SingleEndpoint(t *testing.T) {
 			p.loadBalancer = lb
 
 			// Start everything up
-			err = p.Start(context.Background(), componenttest.NewNopHost())
+			err = p.Start(t.Context(), componenttest.NewNopHost())
 			require.NoError(t, err)
 			defer func() {
-				require.NoError(t, p.Shutdown(context.Background()))
+				require.NoError(t, p.Shutdown(t.Context()))
 			}()
 
 			// Test
@@ -380,7 +380,7 @@ func TestConsumeMetrics_SingleEndpoint(t *testing.T) {
 			input, err := golden.ReadMetrics(filepath.Join(dir, "input.yaml"))
 			require.NoError(t, err)
 
-			err = p.ConsumeMetrics(context.Background(), input)
+			err = p.ConsumeMetrics(t.Context(), input)
 			require.NoError(t, err)
 
 			expectedOutput, err := golden.ReadMetrics(filepath.Join(dir, "output.yaml"))
@@ -477,7 +477,7 @@ func TestConsumeMetrics_TripleEndpoint(t *testing.T) {
 			require.NoError(t, err)
 			require.NotNil(t, lb)
 
-			lb.addMissingExporters(context.Background(), []string{"endpoint-1", "endpoint-2", "endpoint-3"})
+			lb.addMissingExporters(t.Context(), []string{"endpoint-1", "endpoint-2", "endpoint-3"})
 			lb.res = &mockResolver{
 				triggerCallbacks: true,
 				onResolve: func(_ context.Context) ([]string, error) {
@@ -487,10 +487,10 @@ func TestConsumeMetrics_TripleEndpoint(t *testing.T) {
 			p.loadBalancer = lb
 
 			// Start everything up
-			err = p.Start(context.Background(), componenttest.NewNopHost())
+			err = p.Start(t.Context(), componenttest.NewNopHost())
 			require.NoError(t, err)
 			defer func() {
-				require.NoError(t, p.Shutdown(context.Background()))
+				require.NoError(t, p.Shutdown(t.Context()))
 			}()
 
 			// Test
@@ -499,7 +499,7 @@ func TestConsumeMetrics_TripleEndpoint(t *testing.T) {
 			input, err := golden.ReadMetrics(filepath.Join(dir, "input.yaml"))
 			require.NoError(t, err)
 
-			err = p.ConsumeMetrics(context.Background(), input)
+			err = p.ConsumeMetrics(t.Context(), input)
 			require.NoError(t, err)
 
 			expectedOutput := loadMetricsMap(t, filepath.Join(dir, "output.yaml"))
@@ -568,21 +568,21 @@ func TestConsumeMetrics_ConcurrentResolverChange(t *testing.T) {
 	}
 	p.loadBalancer = lb
 
-	err = p.Start(context.Background(), componenttest.NewNopHost())
+	err = p.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	defer func() {
-		require.NoError(t, p.Shutdown(context.Background()))
+		require.NoError(t, p.Shutdown(t.Context()))
 	}()
 
 	go func() {
-		assert.NoError(t, p.ConsumeMetrics(context.Background(), simpleMetricsWithResource()))
+		assert.NoError(t, p.ConsumeMetrics(t.Context(), simpleMetricsWithResource()))
 		close(consumeDone)
 	}()
 
 	// update endpoint while consuming logs
 	<-consumeStarted
 	endpoints = []string{"endpoint-2"}
-	endpoint, err := lb.res.resolve(context.Background())
+	endpoint, err := lb.res.resolve(t.Context())
 	require.NoError(t, err)
 	require.Equal(t, endpoints, endpoint)
 	<-consumeDone
@@ -609,14 +609,14 @@ func TestConsumeMetricsExporterNoEndpoint(t *testing.T) {
 	}
 	p.loadBalancer = lb
 
-	err = p.Start(context.Background(), componenttest.NewNopHost())
+	err = p.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	defer func() {
-		require.NoError(t, p.Shutdown(context.Background()))
+		require.NoError(t, p.Shutdown(t.Context()))
 	}()
 
 	// test
-	res := p.ConsumeMetrics(context.Background(), simpleMetricsWithServiceName())
+	res := p.ConsumeMetrics(t.Context(), simpleMetricsWithServiceName())
 
 	// verify
 	assert.Error(t, res)
@@ -637,8 +637,8 @@ func TestConsumeMetricsUnexpectedExporterType(t *testing.T) {
 	require.NoError(t, err)
 
 	// pre-load an exporter here, so that we don't use the actual OTLP exporter
-	lb.addMissingExporters(context.Background(), []string{"endpoint-1"})
-	lb.addMissingExporters(context.Background(), []string{"endpoint-2"})
+	lb.addMissingExporters(t.Context(), []string{"endpoint-1"})
+	lb.addMissingExporters(t.Context(), []string{"endpoint-2"})
 	lb.res = &mockResolver{
 		triggerCallbacks: true,
 		onResolve: func(_ context.Context) ([]string, error) {
@@ -647,14 +647,14 @@ func TestConsumeMetricsUnexpectedExporterType(t *testing.T) {
 	}
 	p.loadBalancer = lb
 
-	err = p.Start(context.Background(), componenttest.NewNopHost())
+	err = p.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	defer func() {
-		require.NoError(t, p.Shutdown(context.Background()))
+		require.NoError(t, p.Shutdown(t.Context()))
 	}()
 
 	// test
-	res := p.ConsumeMetrics(context.Background(), simpleMetricsWithServiceName())
+	res := p.ConsumeMetrics(t.Context(), simpleMetricsWithServiceName())
 
 	// verify
 	assert.Error(t, res)
@@ -676,15 +676,15 @@ func TestBatchWithTwoMetrics(t *testing.T) {
 	require.NoError(t, err)
 
 	p.loadBalancer = lb
-	err = p.Start(context.Background(), componenttest.NewNopHost())
+	err = p.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
-	lb.addMissingExporters(context.Background(), []string{"endpoint-1"})
+	lb.addMissingExporters(t.Context(), []string{"endpoint-1"})
 
 	td := twoServicesWithSameMetricName()
 
 	// test
-	err = p.ConsumeMetrics(context.Background(), td)
+	err = p.ConsumeMetrics(t.Context(), td)
 
 	// verify
 	assert.NoError(t, err)
@@ -779,10 +779,10 @@ func TestRollingUpdatesWhenConsumeMetrics(t *testing.T) {
 	}
 
 	// test
-	err = p.Start(context.Background(), componenttest.NewNopHost())
+	err = p.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	defer func() {
-		require.NoError(t, p.Shutdown(context.Background()))
+		require.NoError(t, p.Shutdown(t.Context()))
 	}()
 	// ensure using default exporters
 	lb.updateLock.Lock()
@@ -794,7 +794,7 @@ func TestRollingUpdatesWhenConsumeMetrics(t *testing.T) {
 		lb.updateLock.Unlock()
 	})
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	// keep consuming metrics every 2ms
 	consumeCh := make(chan struct{})
 	go func(ctx context.Context) {
@@ -914,7 +914,7 @@ func benchConsumeMetrics(b *testing.B, routingKey string, endpointsCount int, rm
 
 	p.loadBalancer = lb
 
-	err = p.Start(context.Background(), componenttest.NewNopHost())
+	err = p.Start(b.Context(), componenttest.NewNopHost())
 	require.NoError(b, err)
 
 	md := randomMetrics(b, rmCount, smCount, mCount, dpCount)
@@ -922,12 +922,12 @@ func benchConsumeMetrics(b *testing.B, routingKey string, endpointsCount int, rm
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		err = p.ConsumeMetrics(context.Background(), md)
+		err = p.ConsumeMetrics(b.Context(), md)
 		require.NoError(b, err)
 	}
 
 	b.StopTimer()
-	err = p.Shutdown(context.Background())
+	err = p.Shutdown(b.Context())
 	require.NoError(b, err)
 }
 

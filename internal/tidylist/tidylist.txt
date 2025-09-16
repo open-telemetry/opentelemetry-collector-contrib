@@ -228,6 +228,7 @@ receiver/apachesparkreceiver
 receiver/awscloudwatchmetricsreceiver
 receiver/awscloudwatchreceiver
 receiver/awscontainerinsightreceiver
+receiver/awscontainerinsightskueuereceiver
 receiver/awsecscontainermetricsreceiver
 receiver/awsfirehosereceiver
 receiver/awss3receiver

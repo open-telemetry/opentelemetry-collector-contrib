@@ -88,7 +88,7 @@ func TestZipkinReceiverPortAlreadyInUse(t *testing.T) {
 	}
 	traceReceiver, err := newReceiver(cfg, consumertest.NewNop(), receivertest.NewNopSettings(metadata.Type))
 	require.NoError(t, err, "Failed to create receiver: %v", err)
-	err = traceReceiver.Start(context.Background(), componenttest.NewNopHost())
+	err = traceReceiver.Start(t.Context(), componenttest.NewNopHost())
 	require.Error(t, err)
 }
 
@@ -138,10 +138,10 @@ func TestStartTraceReception(t *testing.T) {
 			require.NoError(t, err)
 			require.NotNil(t, zr)
 
-			err = zr.Start(context.Background(), tt.host)
+			err = zr.Start(t.Context(), tt.host)
 			assert.Equal(t, tt.wantErr, err != nil)
 			if !tt.wantErr {
-				require.NoError(t, zr.Shutdown(context.Background()))
+				require.NoError(t, zr.Shutdown(t.Context()))
 			}
 		})
 	}

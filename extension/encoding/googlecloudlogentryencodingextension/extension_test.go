@@ -4,7 +4,6 @@
 package googlecloudlogentryencodingextension
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -17,13 +16,13 @@ import (
 func newInitialisedExtension(t *testing.T) *ext {
 	factory := NewFactory()
 	extension := newExtension(factory.CreateDefaultConfig().(*Config))
-	assert.NoError(t, extension.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, extension.Start(t.Context(), componenttest.NewNopHost()))
 	return extension
 }
 
 func newConfiguredExtension(t *testing.T, config *Config) *ext {
 	extension := newExtension(config)
-	assert.NoError(t, extension.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, extension.Start(t.Context(), componenttest.NewNopHost()))
 	return extension
 }
 
@@ -232,7 +231,7 @@ func TestUnmarshalErrors(t *testing.T) {
 	for _, tt := range tests {
 		fn := func(t *testing.T) {
 			extension := newConfiguredExtension(t, &config)
-			defer assert.NoError(t, extension.Shutdown(context.Background()))
+			defer assert.NoError(t, extension.Shutdown(t.Context()))
 
 			var errs error
 			_, _, translateError := extension.translateLogEntry([]byte(tt.input))

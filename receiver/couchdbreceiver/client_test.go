@@ -4,7 +4,6 @@
 package couchdbreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver"
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -23,7 +22,7 @@ func defaultClient(t *testing.T, endpoint string) client {
 	cfg.Endpoint = endpoint
 
 	couchdbClient, err := newCouchDBClient(
-		context.Background(),
+		t.Context(),
 		cfg,
 		componenttest.NewNopHost(),
 		componenttest.NewNopTelemetrySettings())
@@ -42,7 +41,7 @@ func TestNewCouchDBClient(t *testing.T) {
 	}
 	t.Run("Invalid config", func(t *testing.T) {
 		couchdbClient, err := newCouchDBClient(
-			context.Background(),
+			t.Context(),
 			&Config{
 				ClientConfig: clientConfig,
 			},
@@ -112,7 +111,7 @@ func TestGet(t *testing.T) {
 		clientConfig.Endpoint = url
 
 		couchdbClient, err := newCouchDBClient(
-			context.Background(),
+			t.Context(),
 			&Config{
 				ClientConfig: clientConfig,
 				Username:     "unauthorized",

@@ -4,7 +4,6 @@
 package healthcheckv2extension
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"net"
@@ -31,14 +30,14 @@ func TestComponentStatus(t *testing.T) {
 	cfg.HTTPConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
 	cfg.GRPCConfig.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
 	cfg.UseV2 = true
-	ext := newExtension(context.Background(), *cfg, extensiontest.NewNopSettings(extensiontest.NopType))
+	ext := newExtension(t.Context(), *cfg, extensiontest.NewNopSettings(extensiontest.NopType))
 
 	// Status before Start will be StatusNone
 	st, ok := ext.aggregator.AggregateStatus(status.ScopeAll, status.Concise)
 	require.True(t, ok)
 	assert.Equal(t, componentstatus.StatusNone, st.Status())
 
-	require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, ext.Start(t.Context(), componenttest.NewNopHost()))
 
 	traces := testhelpers.NewPipelineMetadata("traces")
 
@@ -80,7 +79,7 @@ func TestComponentStatus(t *testing.T) {
 	}, time.Second, 10*time.Millisecond)
 
 	require.NoError(t, ext.NotReady())
-	require.NoError(t, ext.Shutdown(context.Background()))
+	require.NoError(t, ext.Shutdown(t.Context()))
 
 	// Events sent after shutdown will be discarded
 	for _, id := range traces.InstanceIDs() {
@@ -110,10 +109,10 @@ func TestNotifyConfig(t *testing.T) {
 	cfg.HTTPConfig.Config.Enabled = true
 	cfg.HTTPConfig.Config.Path = "/config"
 
-	ext := newExtension(context.Background(), *cfg, extensiontest.NewNopSettings(extensiontest.NopType))
+	ext := newExtension(t.Context(), *cfg, extensiontest.NewNopSettings(extensiontest.NopType))
 
-	require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
-	t.Cleanup(func() { require.NoError(t, ext.Shutdown(context.Background())) })
+	require.NoError(t, ext.Start(t.Context(), componenttest.NewNopHost()))
+	t.Cleanup(func() { require.NoError(t, ext.Shutdown(t.Context())) })
 
 	client := &http.Client{}
 	url := fmt.Sprintf("http://%s/config", endpoint)
@@ -124,7 +123,7 @@ func TestNotifyConfig(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)
 
-	require.NoError(t, ext.NotifyConfig(context.Background(), confMap))
+	require.NoError(t, ext.NotifyConfig(t.Context(), confMap))
 
 	resp, err = client.Get(url)
 	require.NoError(t, err)
@@ -147,10 +146,10 @@ func TestShutdown(t *testing.T) {
 		cfg.UseV2 = true
 		cfg.HTTPConfig.Endpoint = endpoint
 
-		ext := newExtension(context.Background(), *cfg, extensiontest.NewNopSettings(extensiontest.NopType))
+		ext := newExtension(t.Context(), *cfg, extensiontest.NewNopSettings(extensiontest.NopType))
 		// Get address already in use here
-		require.Error(t, ext.Start(context.Background(), componenttest.NewNopHost()))
+		require.Error(t, ext.Start(t.Context(), componenttest.NewNopHost()))
 
-		require.NoError(t, ext.Shutdown(context.Background()))
+		require.NoError(t, ext.Shutdown(t.Context()))
 	})
 }

@@ -4,7 +4,6 @@
 package http
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -2946,8 +2945,8 @@ func TestStatus(t *testing.T) {
 				status.NewAggregator(internalhelpers.ErrPriority(tc.componentHealthConfig)),
 			)
 
-			require.NoError(t, server.Start(context.Background(), componenttest.NewNopHost()))
-			defer func() { require.NoError(t, server.Shutdown(context.Background())) }()
+			require.NoError(t, server.Start(t.Context(), componenttest.NewNopHost()))
+			defer func() { require.NoError(t, server.Shutdown(t.Context())) }()
 
 			var url string
 			if tc.legacyConfig.UseV2 {
@@ -3093,7 +3092,7 @@ func TestConfig(t *testing.T) {
 				},
 			},
 			setup: func() {
-				require.NoError(t, server.NotifyConfig(context.Background(), confMap))
+				require.NoError(t, server.NotifyConfig(t.Context(), confMap))
 			},
 			expectedStatusCode: http.StatusOK,
 			expectedBody:       confJSON,
@@ -3124,8 +3123,8 @@ func TestConfig(t *testing.T) {
 				status.NewAggregator(status.PriorityPermanent),
 			)
 
-			require.NoError(t, server.Start(context.Background(), componenttest.NewNopHost()))
-			defer func() { require.NoError(t, server.Shutdown(context.Background())) }()
+			require.NoError(t, server.Start(t.Context(), componenttest.NewNopHost()))
+			defer func() { require.NoError(t, server.Shutdown(t.Context())) }()
 
 			client := &http.Client{}
 			url := fmt.Sprintf("http://%s%s", tc.config.Endpoint, tc.config.Config.Path)

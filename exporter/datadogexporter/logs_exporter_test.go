@@ -4,7 +4,6 @@
 package datadogexporter
 
 import (
-	"context"
 	"encoding/binary"
 	"fmt"
 	"net/http"
@@ -236,7 +235,7 @@ func TestLogsExporter(t *testing.T) {
 
 			params := exportertest.NewNopSettings(metadata.Type)
 			f := NewFactory()
-			ctx := context.Background()
+			ctx := t.Context()
 			exp, err := f.CreateLogs(ctx, params, cfg)
 			require.NoError(t, err)
 			require.NoError(t, exp.ConsumeLogs(ctx, tt.args.ld))
@@ -600,7 +599,7 @@ func TestLogsAgentExporter(t *testing.T) {
 			}
 			params := exportertest.NewNopSettings(metadata.Type)
 			f := NewFactory()
-			ctx := context.Background()
+			ctx := t.Context()
 			exp, err := f.CreateLogs(ctx, params, cfg)
 			require.NoError(t, err)
 			require.NoError(t, exp.ConsumeLogs(ctx, tt.args.ld))

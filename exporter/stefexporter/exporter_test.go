@@ -151,16 +151,16 @@ func runTest(
 	set := exportertest.NewNopSettings(metadata.Type)
 	set.Logger = logger
 
-	exp, err := factory.CreateMetrics(context.Background(), set, cfg)
+	exp, err := factory.CreateMetrics(t.Context(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 
 	defer func() {
-		assert.NoError(t, exp.Shutdown(context.Background()))
+		assert.NoError(t, exp.Shutdown(t.Context()))
 	}()
 
 	host := componenttest.NewNopHost()
-	require.NoError(t, exp.Start(context.Background(), host))
+	require.NoError(t, exp.Start(t.Context(), host))
 
 	f(cfg, mockSrv, exp)
 }
@@ -188,7 +188,7 @@ func TestExport(t *testing.T) {
 						for i := 0; i < 2*cfg.QueueConfig.NumConsumers; i++ {
 							md := testdata.GenerateMetrics(1)
 							pointCount += int64(md.DataPointCount())
-							err := exp.ConsumeMetrics(context.Background(), md)
+							err := exp.ConsumeMetrics(t.Context(), md)
 							require.NoError(t, err)
 						}
 
@@ -222,7 +222,7 @@ func TestReconnect(t *testing.T) {
 
 			md := testdata.GenerateMetrics(1)
 			pointCount := int64(md.DataPointCount())
-			err := exp.ConsumeMetrics(context.Background(), md)
+			err := exp.ConsumeMetrics(t.Context(), md)
 			require.NoError(t, err)
 
 			// Wait for data to be received.
@@ -243,7 +243,7 @@ func TestReconnect(t *testing.T) {
 			// Send more data
 			md = testdata.GenerateMetrics(1)
 			pointCount += int64(md.DataPointCount())
-			err = exp.ConsumeMetrics(context.Background(), md)
+			err = exp.ConsumeMetrics(t.Context(), md)
 			require.NoError(t, err)
 
 			// Wait for data to be received.
@@ -273,7 +273,7 @@ func TestAckTimeout(t *testing.T) {
 			// Fail to ack the first pointCount records. We want acks to succeed on the second try only.
 			mockSrv.failAckCount.Store(pointCount)
 
-			err := exp.ConsumeMetrics(context.Background(), md)
+			err := exp.ConsumeMetrics(t.Context(), md)
 			require.NoError(t, err)
 
 			// Wait for data to be received.
@@ -322,16 +322,16 @@ func TestStartServerAfterClient(t *testing.T) {
 	require.NotNil(t, exp)
 
 	defer func() {
-		assert.NoError(t, exp.Shutdown(context.Background()))
+		assert.NoError(t, exp.Shutdown(t.Context()))
 	}()
 
 	host := componenttest.NewNopHost()
-	require.NoError(t, exp.Start(context.Background(), host))
+	require.NoError(t, exp.Start(t.Context(), host))
 
 	// Trying sending with server down.
 	md := testdata.GenerateMetrics(1)
 	pointCount := int64(md.DataPointCount())
-	err := exp.exportMetrics(context.Background(), md)
+	err := exp.exportMetrics(t.Context(), md)
 
 	// Sending must fail.
 	require.Error(t, err)
@@ -343,7 +343,7 @@ func TestStartServerAfterClient(t *testing.T) {
 	// Try sending until it succeeds. The gRPC connection may not succeed immediately.
 	assert.Eventually(
 		t, func() bool {
-			err = exp.exportMetrics(context.Background(), md)
+			err = exp.exportMetrics(t.Context(), md)
 			return err == nil
 		}, 5*time.Second, 200*time.Millisecond,
 	)
@@ -378,11 +378,11 @@ func TestCancelBlockedExport(t *testing.T) {
 	require.NotNil(t, exp)
 
 	defer func() {
-		assert.NoError(t, exp.Shutdown(context.Background()))
+		assert.NoError(t, exp.Shutdown(t.Context()))
 	}()
 
 	host := componenttest.NewNopHost()
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	require.NoError(t, exp.Start(ctx, host))
 
 	// Cancel after Start() returns.
@@ -397,7 +397,7 @@ func TestCancelBlockedExport(t *testing.T) {
 		// because listener does not accept connections. However exportMetrics()
 		// will return almost immediately because connection attempt
 		// context is cancelled.
-		ctx, cancel := context.WithCancel(context.Background())
+		ctx, cancel := context.WithCancel(t.Context())
 		go func() { cancel() }()
 		err = exp.exportMetrics(ctx, md)
 
@@ -432,7 +432,7 @@ func TestCancelAfterExport(t *testing.T) {
 	require.NotNil(t, exp)
 
 	defer func() {
-		assert.NoError(t, exp.Shutdown(context.Background()))
+		assert.NoError(t, exp.Shutdown(t.Context()))
 	}()
 
 	// Start the server.
@@ -440,7 +440,7 @@ func TestCancelAfterExport(t *testing.T) {
 	defer mockSrv.stop()
 
 	host := componenttest.NewNopHost()
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	// Cancel the context to cause connection attempt in Start() to fail.
 	cancel()
 	require.NoError(t, exp.Start(ctx, host))
@@ -449,7 +449,7 @@ func TestCancelAfterExport(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		md := testdata.GenerateMetrics(1)
 		pointCount += int64(md.DataPointCount())
-		ctx, cancel = context.WithCancel(context.Background())
+		ctx, cancel = context.WithCancel(t.Context())
 
 		err := exp.exportMetrics(ctx, md)
 		require.NoError(t, err)

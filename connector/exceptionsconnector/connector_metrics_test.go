@@ -5,7 +5,6 @@ package exceptionsconnector
 
 import (
 	"bytes"
-	"context"
 	"testing"
 	"time"
 
@@ -72,7 +71,7 @@ func TestConnectorConsumeTraces(t *testing.T) {
 
 			p := newTestMetricsConnector(msink, stringp("defaultNullValue"), zaptest.NewLogger(t))
 
-			ctx := metadata.NewIncomingContext(context.Background(), nil)
+			ctx := metadata.NewIncomingContext(t.Context(), nil)
 			err := p.Start(ctx, componenttest.NewNopHost())
 			defer func() { sdErr := p.Shutdown(ctx); require.NoError(t, sdErr) }()
 			require.NoError(t, err)
@@ -93,7 +92,7 @@ func TestConnectorConsumeTraces(t *testing.T) {
 		p := newTestMetricsConnector(msink, stringp("defaultNullValue"), zaptest.NewLogger(t))
 		p.config.Exemplars.Enabled = false
 
-		ctx := metadata.NewIncomingContext(context.Background(), nil)
+		ctx := metadata.NewIncomingContext(t.Context(), nil)
 		err := p.Start(ctx, componenttest.NewNopHost())
 		defer func() { sdErr := p.Shutdown(ctx); require.NoError(t, sdErr) }()
 		require.NoError(t, err)
@@ -114,7 +113,7 @@ func BenchmarkConnectorConsumeTraces(b *testing.B) {
 	traces := buildSampleTrace()
 
 	// Test
-	ctx := metadata.NewIncomingContext(context.Background(), nil)
+	ctx := metadata.NewIncomingContext(b.Context(), nil)
 	for n := 0; n < b.N; n++ {
 		assert.NoError(b, conn.ConsumeTraces(ctx, traces))
 	}

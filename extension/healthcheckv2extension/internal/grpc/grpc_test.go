@@ -4,7 +4,6 @@
 package grpc
 
 import (
-	"context"
 	"sync"
 	"testing"
 	"time"
@@ -698,8 +697,8 @@ func TestCheck(t *testing.T) {
 				componenttest.NewNopTelemetrySettings(),
 				status.NewAggregator(internalhelpers.ErrPriority(tc.componentHealthSettings)),
 			)
-			require.NoError(t, server.Start(context.Background(), componenttest.NewNopHost()))
-			t.Cleanup(func() { require.NoError(t, server.Shutdown(context.Background())) })
+			require.NoError(t, server.Start(t.Context(), componenttest.NewNopHost()))
+			t.Cleanup(func() { require.NoError(t, server.Shutdown(t.Context())) })
 
 			cc, err := grpc.NewClient(
 				addr,
@@ -720,7 +719,7 @@ func TestCheck(t *testing.T) {
 				if ts.eventually {
 					assert.Eventually(t, func() bool {
 						resp, err := client.Check(
-							context.Background(),
+							t.Context(),
 							&healthpb.HealthCheckRequest{Service: ts.service},
 						)
 						require.NoError(t, err)
@@ -730,7 +729,7 @@ func TestCheck(t *testing.T) {
 				}
 
 				resp, err := client.Check(
-					context.Background(),
+					t.Context(),
 					&healthpb.HealthCheckRequest{Service: ts.service},
 				)
 				require.Equal(t, ts.expectedErr, err)
@@ -1534,8 +1533,8 @@ func TestWatch(t *testing.T) {
 				componenttest.NewNopTelemetrySettings(),
 				status.NewAggregator(internalhelpers.ErrPriority(tc.componentHealthSettings)),
 			)
-			require.NoError(t, server.Start(context.Background(), componenttest.NewNopHost()))
-			t.Cleanup(func() { require.NoError(t, server.Shutdown(context.Background())) })
+			require.NoError(t, server.Start(t.Context(), componenttest.NewNopHost()))
+			t.Cleanup(func() { require.NoError(t, server.Shutdown(t.Context())) })
 
 			cc, err := grpc.NewClient(
 				addr,
@@ -1561,7 +1560,7 @@ func TestWatch(t *testing.T) {
 				watcher, ok := watchers[ts.service]
 				if !ok {
 					watcher, err = client.Watch(
-						context.Background(),
+						t.Context(),
 						&healthpb.HealthCheckRequest{Service: ts.service},
 					)
 					require.NoError(t, err)

@@ -280,14 +280,14 @@ func TestAccessLogsRetrieval(t *testing.T) {
 			rcvr := newAccessLogsReceiver(receivertest.NewNopSettings(metadata.Type), tc.config(), logSink)
 			tc.setup(rcvr)
 
-			err := rcvr.Start(context.Background(), componenttest.NewNopHost(), storage.NewNopClient())
+			err := rcvr.Start(t.Context(), componenttest.NewNopHost(), storage.NewNopClient())
 			require.NoError(t, err)
 
 			require.Eventually(t, func() bool {
 				return logSink.LogRecordCount() >= tc.expectedLogCount
 			}, 10*time.Second, 10*time.Millisecond)
 
-			require.NoError(t, rcvr.Shutdown(context.Background()))
+			require.NoError(t, rcvr.Shutdown(t.Context()))
 			tc.validateEntries(t, logSink.AllLogs())
 		})
 	}
@@ -320,7 +320,7 @@ func TestCheckpointing(t *testing.T) {
 	// First cluster checkpoint should be nil
 	clusterCheckpoint := rcvr.getClusterCheckpoint(testProjectID, testClusterName)
 	require.Nil(t, clusterCheckpoint)
-	err := rcvr.pollAccessLogs(context.Background(), pc)
+	err := rcvr.pollAccessLogs(t.Context(), pc)
 	require.NoError(t, err)
 
 	// Second cluster checkpoint should have the last timestamp date +100ms

@@ -4,7 +4,6 @@
 package ctxmetric_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -116,11 +115,11 @@ func TestPathGetSetter(t *testing.T) {
 
 			metric := createTelemetry()
 
-			got, err := accessor.Get(context.Background(), newTestContext(metric))
+			got, err := accessor.Get(t.Context(), newTestContext(metric))
 			assert.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
-			err = accessor.Set(context.Background(), newTestContext(metric), tt.newVal)
+			err = accessor.Set(t.Context(), newTestContext(metric), tt.newVal)
 			assert.NoError(t, err)
 
 			expectedMetric := createTelemetry()
