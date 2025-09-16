@@ -105,6 +105,7 @@ type Client interface {
 	GetStatefulSet(string) (*StatefulSet, bool)
 	GetDaemonSet(string) (*DaemonSet, bool)
 	GetJob(string) (*Job, bool)
+	GetCronJob(string) (*CronJob, bool)
 	Start() error
 	Stop()
 }
@@ -304,7 +305,7 @@ type FieldExtractionRule struct {
 	// Full value is extracted when no regexp is provided.
 	Regex *regexp.Regexp
 	// From determines the kubernetes object the field should be retrieved from.
-	// Currently only three values are supported,
+	// Currently only the values below are supported,
 	//  - pod
 	//  - namespace
 	//  - node
@@ -312,6 +313,7 @@ type FieldExtractionRule struct {
 	//  - statefulset
 	//  - daemonset
 	//  - job
+	//  - cronjob
 	From string
 }
 

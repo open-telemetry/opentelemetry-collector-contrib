@@ -3,8 +3,6 @@ kind: CronJob
 metadata:
   name: {{ .Name }}-{{ .DataType}}-cronjob
   namespace: e2ek8sattribute-clusterrbac
-  labels:
-    app: {{ .Name }}-{{ .DataType }}-cronjob
   annotations:
     workload: cronjob-annotation
 spec:
