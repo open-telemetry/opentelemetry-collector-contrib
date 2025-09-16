@@ -228,10 +228,11 @@ func (cfg *Config) Validate() error {
 		return errors.New(`cannot have a negative "timeout"`)
 	}
 
-	if err := gopsutilenv.ValidateRootPath(cfg.RootPath); err != nil {
-		return fmt.Errorf("invalid root_path: %w", err)
+	if cfg.SyncHostMetadata {
+		if err := gopsutilenv.ValidateRootPath(cfg.RootPath); err != nil {
+			return fmt.Errorf("invalid root_path: %w", err)
+		}
 	}
-
 	return nil
 }
 
