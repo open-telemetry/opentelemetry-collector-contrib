@@ -4,7 +4,7 @@ go 1.24.0
 
 require (
 	github.com/cespare/xxhash/v2 v2.3.0
-	github.com/elastic/go-docappender/v2 v2.11.0
+	github.com/elastic/go-docappender/v2 v2.11.2
 	github.com/elastic/go-elasticsearch/v8 v8.19.0
 	github.com/elastic/go-freelru v0.16.0
 	github.com/elastic/go-structform v0.0.12
