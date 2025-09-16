@@ -7,7 +7,7 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.37.0
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.18.0
 	github.com/aws/aws-sdk-go-v2/service/ec2 v1.237.0
-	github.com/docker/docker v28.3.3+incompatible
+	github.com/docker/docker v28.4.0+incompatible
 	github.com/hashicorp/consul/api v1.32.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.135.0
 	github.com/shirou/gopsutil/v4 v4.25.8
