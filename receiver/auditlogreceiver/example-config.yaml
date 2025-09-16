@@ -1,0 +1,29 @@
+extensions:
+  file_storage:
+    directory: ./storage
+    create_directory: true
+    timeout: 1s
+    compaction:
+      on_start: true
+      directory: ./storage/compaction
+      max_transaction_size: 1000
+
+receivers:
+  auditlogreceiver:
+    endpoint: 0.0.0.0:4310
+    storage: file_storage
+    # How often to process stored logs (default: 60s)
+    process_interval: 30s
+    # How old logs must be before processing (default: 60s)
+    process_age_threshold: 30s
+
+exporters:
+  logging:
+    loglevel: debug
+
+service:
+  extensions: [file_storage]
+  pipelines:
+    logs:
+      receivers: [auditlogreceiver]
+      exporters: [logging]

@@ -32,5 +32,5 @@ func createLogsReceiver(
 	cfg component.Config,
 	consumer consumer.Logs,
 ) (receiver.Logs, error) {
-	return newReceiver(cfg.(*Config), set, consumer)
+	return NewReceiver(cfg.(*Config), set, consumer)
 }
