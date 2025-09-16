@@ -83,7 +83,7 @@ func GetAWSConfigHelper(
 	return cfg, nil
 }
 
-func (*mockSTS) AssumeRole(ctx context.Context, params *sts.AssumeRoleInput, optFns ...func(*sts.Options)) (*sts.AssumeRoleOutput, error) {
+func (*mockSTS) AssumeRole(_ context.Context, _ *sts.AssumeRoleInput, _ ...func(*sts.Options)) (*sts.AssumeRoleOutput, error) {
 	return &sts.AssumeRoleOutput{
 		Credentials: &types.Credentials{
 			AccessKeyId:     aws.String("mockAccessKey"),
@@ -93,7 +93,7 @@ func (*mockSTS) AssumeRole(ctx context.Context, params *sts.AssumeRoleInput, opt
 	}, nil
 }
 
-func fakeConfigLoader(_ context.Context, optFns ...func(*config.LoadOptions) error) (aws.Config, error) {
+func fakeConfigLoader(_ context.Context, _ ...func(*config.LoadOptions) error) (aws.Config, error) {
 	return aws.Config{
 		Region: "us-mock-1",
 		Credentials: aws.NewCredentialsCache(
