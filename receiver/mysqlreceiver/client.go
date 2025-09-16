@@ -212,12 +212,12 @@ type querySample struct {
 }
 
 type topQuery struct {
-	schemaName      string
-	digest          string
-	digestText      string
-	countStar       int64
-	sumTimerWaitInPicoSeconds    int64
-	querySampleText string
+	schemaName                string
+	digest                    string
+	digestText                string
+	countStar                 int64
+	sumTimerWaitInPicoSeconds int64
+	querySampleText           string
 }
 
 var _ client = (*mySQLClient)(nil)

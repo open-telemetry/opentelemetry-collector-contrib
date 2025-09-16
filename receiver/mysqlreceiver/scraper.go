@@ -699,7 +699,7 @@ func (m *mySQLScraper) scrapeTopQueries(ctx context.Context, now pcommon.Timesta
 			if err != nil {
 				m.logger.Error("Failed to obfuscate query", zap.Error(err))
 			}
-			m.queryPlanCache.Add(q.schemaName + "-" + q.digest, obfuscatedPlan)
+			m.queryPlanCache.Add(q.schemaName+"-"+q.digest, obfuscatedPlan)
 		}
 
 		m.lb.RecordDbServerTopQueryEvent(
@@ -852,7 +852,7 @@ func sortTopQueries(queries []topQuery, values []int64, maximum uint64) []topQue
 	for i, q := range queries {
 		value := values[i]
 		pq[i] = &priorityqueue.QueueItem[topQuery, int64]{
-			Value:       q,
+			Value:    q,
 			Priority: value,
 			Index:    i,
 		}
