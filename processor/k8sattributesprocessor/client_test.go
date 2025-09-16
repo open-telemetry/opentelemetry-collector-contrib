@@ -33,7 +33,6 @@ type fakeClient struct {
 	DaemonSets         map[string]*kube.DaemonSet
 	ReplicaSets        map[string]*kube.ReplicaSet
 	Jobs               map[string]*kube.Job
-	CronJobs           map[string]*kube.CronJob
 	StopCh             chan struct{}
 }
 
