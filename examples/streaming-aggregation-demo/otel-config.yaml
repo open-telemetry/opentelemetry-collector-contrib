@@ -10,7 +10,7 @@ processors:
   streamingaggregation:
     window_size: 30s # Aggregate over 30-second windows
     max_memory_mb: 100 # Memory limit
-    stale_data_threshold: 30s # Reset cumulative state after 30 seconds of no data
+    stale_data_threshold: 2m # Reset cumulative state after 2 minutes of no data
 
   metricstransform:
     transforms:

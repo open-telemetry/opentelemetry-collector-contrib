@@ -312,12 +312,13 @@ type histogramCumulativeState struct {
 // NewAggregator creates a new aggregator
 func NewAggregator(metricType pmetric.MetricType) *Aggregator {
 	return &Aggregator{
-		metricType:          metricType,
-		min:                 1e308,  // Max float64
-		max:                 -1e308, // Min float64
-		histogramBuckets:    make(map[float64]uint64),
-		reservoir:           make([]float64, 0, 1000), // Reservoir sampling with 1000 samples
-		lastHistogramValues: make(map[string]*histogramCumulativeState),
+		metricType:            metricType,
+		min:                   1e308,  // Max float64
+		max:                   -1e308, // Min float64
+		histogramBuckets:      make(map[float64]uint64),
+		histogramTotalBuckets: make(map[float64]uint64),
+		reservoir:             make([]float64, 0, 1000), // Reservoir sampling with 1000 samples
+		lastHistogramValues:   make(map[string]*histogramCumulativeState),
 	}
 }
 
@@ -559,24 +560,36 @@ func (a *Aggregator) MergeHistogramWithTemporalityAndGapDetection(dp pmetric.His
 		}
 	} else {
 		// For cumulative temporality in streaming aggregation:
-		// We need to track per-source state even though labels are dropped.
-		// Use the attributes to create a source key for tracking.
+		// Track per-endpoint cumulative state but aggregate the deltas
 		sourceKey := getSourceKey(dp.Attributes())
 		
-		// Get or create the cumulative state for this source
+		// Get or create the cumulative state for this specific source (endpoint)
 		sourceState, exists := a.lastHistogramValues[sourceKey]
 		currentTime := time.Now()
 		
 		// Check for stale data if threshold is provided and state exists
+		gapDetected := false
 		if exists && staleThreshold > 0 {
 			lastTime := sourceState.lastTimestamp.AsTime()
 			if !lastTime.IsZero() {
 				timeSinceLastData := currentTime.Sub(lastTime)
 				if timeSinceLastData > staleThreshold {
-					// Reset cumulative state - treat as new source
+					// Gap detected for this source - check if we need to reset everything
+					fmt.Printf("GAP DETECTED: Source %s has %v gap (threshold: %v)\\n", sourceKey, timeSinceLastData, staleThreshold)
+					gapDetected = true
 					exists = false
 				}
 			}
+		}
+		
+		// If any gap was detected, reset all histogram totals once
+		if gapDetected {
+			fmt.Printf("GAP DETECTED: Resetting all histogram totals due to stale data\\n")
+			a.histogramTotalSum = 0
+			a.histogramTotalCount = 0
+			a.histogramTotalBuckets = make(map[float64]uint64)
+			// Clear all source states - start completely fresh
+			a.lastHistogramValues = make(map[string]*histogramCumulativeState)
 		}
 		
 		if !exists {
@@ -587,7 +600,7 @@ func (a *Aggregator) MergeHistogramWithTemporalityAndGapDetection(dp pmetric.His
 			a.lastHistogramValues[sourceKey] = sourceState
 		}
 		
-		// Compute deltas from the last seen values for this source
+		// Compute deltas from the last seen values for this specific source
 		deltaSum := currentSum - sourceState.lastSum
 		deltaCount := currentCount - sourceState.lastCount
 		
@@ -602,7 +615,7 @@ func (a *Aggregator) MergeHistogramWithTemporalityAndGapDetection(dp pmetric.His
 			deltaCount = currentCount
 		}
 		
-		// Update window and total values with the deltas
+		// Update window values with the deltas (this aggregates across all endpoints)
 		a.histogramSum += deltaSum
 		a.histogramCount += deltaCount
 		a.histogramTotalSum += deltaSum
@@ -827,7 +840,7 @@ func (a *Aggregator) exportHistogram(metric pmetric.Metric, windowStart, windowE
 	hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	
 	dp := hist.DataPoints().AppendEmpty()
-	// Export the total cumulative values, not the window-specific values
+	// Export the total cumulative values (for Prometheus compatibility)
 	dp.SetSum(a.histogramTotalSum)
 	dp.SetCount(a.histogramTotalCount)
 	dp.SetStartTimestamp(pcommon.NewTimestampFromTime(windowStart))
@@ -963,15 +976,15 @@ func (a *Aggregator) ResetForNewWindow() {
 	a.min = 1e308  // Max float64
 	a.max = -1e308 // Min float64
 	
-	// For histograms, reset the aggregated buckets for the new window
-	// but keep the last seen cumulative values for delta computation
+	// For histograms, reset the window-specific values for the new window
+	// but keep both the total accumulated values and per-source cumulative state
 	if a.metricType == pmetric.MetricTypeHistogram {
-		// Reset the aggregated bucket counts for the new window
+		// Reset the window-specific bucket counts for the new window
 		a.histogramBuckets = make(map[float64]uint64)
 		a.histogramSum = 0
 		a.histogramCount = 0
-		// Preserve: lastHistogramValues (per-source cumulative state)
-		// These are needed to compute deltas from cumulative values
+		// Preserve: histogramTotalBuckets, histogramTotalSum, histogramTotalCount (for cumulative export)
+		// Preserve: lastHistogramValues (per-source cumulative state for delta computation)
 	}
 	
 	// For gauges, keep the last value as it represents the current state
