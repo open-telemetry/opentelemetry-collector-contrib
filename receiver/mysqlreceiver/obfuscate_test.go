@@ -25,7 +25,7 @@ func TestObfuscateSQL(t *testing.T) {
 	assert.Equal(t, expectedSQL, result)
 }
 
-func TestObfuscateSqlPlan(t *testing.T) {
+func TestObfuscateSQLPlan(t *testing.T) {
 	expected, err := os.ReadFile(filepath.Join("testdata", "obfuscate", "expectedQueryPlan.json"))
 	assert.NoError(t, err)
 	expectedSQL := strings.TrimSpace(string(expected))
