@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/priorityqueue"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver/internal/metadata"
 )
 
@@ -835,44 +836,6 @@ func (m *mySQLScraper) cacheAndDiff(schemaName, digest, column string, val int64
 	return true, 0
 }
 
-type item struct {
-	tq       topQuery
-	priority int64
-	index    int
-}
-
-// reference: https://pkg.go.dev/container/heap#example-package-priorityQueue
-type priorityQueue []*item
-
-func (pq priorityQueue) Len() int { return len(pq) }
-
-func (pq priorityQueue) Less(i, j int) bool {
-	return pq[i].priority > pq[j].priority
-}
-
-func (pq priorityQueue) Swap(i, j int) {
-	pq[i], pq[j] = pq[j], pq[i]
-	pq[i].index = i
-	pq[j].index = j
-}
-
-func (pq *priorityQueue) Push(x any) {
-	n := len(*pq)
-	item := x.(*item)
-	item.index = n
-	*pq = append(*pq, item)
-}
-
-func (pq *priorityQueue) Pop() any {
-	old := *pq
-	n := len(old)
-	item := old[n-1]
-	old[n-1] = nil  // don't stop the GC from reclaiming the item eventually
-	item.index = -1 // for safety
-	*pq = old[0 : n-1]
-	return item
-}
-
 // sortTopQueries sorts the top queries based on the `values` slice in descending order and returns the first M(M=maximum) queries
 // Input: (row: [query1, query2, query3], values: [100, 10, 1000], maximum: 2
 // Expected Output: (row: [query3, query1])
@@ -885,20 +848,20 @@ func sortTopQueries(queries []topQuery, values []int64, maximum uint64) []topQue
 		maximum <= 0 {
 		return []topQuery{}
 	}
-	pq := make(priorityQueue, len(queries))
+	pq := make(priorityqueue.PriorityQueue[topQuery, int64], len(queries))
 	for i, q := range queries {
 		value := values[i]
-		pq[i] = &item{
-			tq:       q,
-			priority: value,
-			index:    i,
+		pq[i] = &priorityqueue.QueueItem[topQuery, int64]{
+			Value:       q,
+			Priority: value,
+			Index:    i,
 		}
 	}
 	heap.Init(&pq)
 
 	for pq.Len() > 0 && len(results) < int(maximum) {
-		item := heap.Pop(&pq).(*item)
-		results = append(results, item.tq)
+		item := heap.Pop(&pq).(*priorityqueue.QueueItem[topQuery, int64])
+		results = append(results, item.Value)
 	}
 	return results
 }
