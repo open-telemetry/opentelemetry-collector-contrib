@@ -216,7 +216,7 @@ type topQuery struct {
 	digest          string
 	digestText      string
 	countStar       int64
-	sumTimerWait    int64
+	sumTimerWaitInPicoSeconds    int64
 	querySampleText string
 }
 
@@ -730,7 +730,7 @@ func (c *mySQLClient) getTopQueries(topNValue, lookbackTime uint64) ([]topQuery,
 			&tq.digest,
 			&tq.digestText,
 			&tq.countStar,
-			&tq.sumTimerWait,
+			&tq.sumTimerWaitInPicoSeconds,
 			&tq.querySampleText,
 		)
 		if err != nil {

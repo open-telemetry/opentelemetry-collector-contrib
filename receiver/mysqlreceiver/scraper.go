@@ -655,29 +655,29 @@ func (m *mySQLScraper) scrapeTopQueries(ctx context.Context, now pcommon.Timesta
 		return
 	}
 
-	sumTimerWaitDiff := make([]int64, len(queries))
+	sumTimerWaitInPicoSecondsDiff := make([]int64, len(queries))
 	for i, q := range queries {
-		if cached, diff := m.cacheAndDiff(q.schemaName, q.digest, "sum_timer_wait", q.sumTimerWait); cached && diff > 0 {
-			sumTimerWaitDiff[i] = diff
+		if cached, diff := m.cacheAndDiff(q.schemaName, q.digest, "sum_timer_wait", q.sumTimerWaitInPicoSeconds); cached && diff > 0 {
+			sumTimerWaitInPicoSecondsDiff[i] = diff
 		}
 	}
 
 	// sort the rows based on the totalElapsedTimeDiffs in descending order,
 	// only report first T(T=topQueryCount) rows.
-	queries = sortTopQueries(queries, sumTimerWaitDiff, m.config.TopQueryCollection.TopQueryCount)
+	queries = sortTopQueries(queries, sumTimerWaitInPicoSecondsDiff, m.config.TopQueryCollection.TopQueryCount)
 
 	// sort the totalElapsedTimeDiffs in descending order as well
-	sort.Slice(sumTimerWaitDiff, func(i, j int) bool { return sumTimerWaitDiff[i] > sumTimerWaitDiff[j] })
+	sort.Slice(sumTimerWaitInPicoSecondsDiff, func(i, j int) bool { return sumTimerWaitInPicoSecondsDiff[i] > sumTimerWaitInPicoSecondsDiff[j] })
 
 	m.lastExecutionTimestamp = now.AsTime()
 
 	for i, q := range queries {
 		// skip the rest queries due to desc order
-		if sumTimerWaitDiff[i] == 0 {
+		if sumTimerWaitInPicoSecondsDiff[i] == 0 {
 			break
 		}
 
-		sumTimerWaitVal := float64(sumTimerWaitDiff[i]) / 1_000_000_000_000.0 // convert to seconds
+		sumTimerWaitVal := float64(sumTimerWaitInPicoSecondsDiff[i]) / 1_000_000_000_000.0 // convert to seconds
 
 		cached, countStarVal := m.cacheAndDiff(q.schemaName, q.digest, "count_star", q.countStar)
 		if !cached {

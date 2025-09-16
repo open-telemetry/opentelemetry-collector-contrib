@@ -126,7 +126,7 @@ func createLogsReceiver(
 			scraper.NewFactory(metadata.Type, nil,
 				scraper.WithLogs(func(context.Context, scraper.Settings, component.Config) (scraper.Logs, error) {
 					return s, nil
-				}, component.StabilityLevelAlpha)), nil)
+				}, component.StabilityLevelDevelopment)), nil)
 		opts = append(opts, opt)
 	}
 

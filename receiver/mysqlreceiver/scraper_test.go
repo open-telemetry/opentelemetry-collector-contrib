@@ -525,7 +525,7 @@ func (c *mockClient) getTopQueries(uint64, uint64) ([]topQuery, error) {
 		q.digest = text[1]
 		q.digestText = text[2]
 		q.countStar, _ = parseInt(text[3])
-		q.sumTimerWait, _ = parseInt(text[4])
+		q.sumTimerWaitInPicoSeconds, _ = parseInt(text[4])
 		q.querySampleText = text[5]
 
 		queries = append(queries, q)
