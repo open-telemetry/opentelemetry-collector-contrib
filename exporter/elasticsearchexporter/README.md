@@ -64,11 +64,9 @@ service:
   pipelines:
     logs:
       receivers: [otlp]
-      processors: [batch]
       exporters: [elasticsearch]
     traces:
       receivers: [otlp]
-      processors: [batch]
       exporters: [elasticsearch]
 ```
 

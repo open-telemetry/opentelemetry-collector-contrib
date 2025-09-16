@@ -367,10 +367,6 @@ The data is stored for 72 hours (3 days).
 ```yaml
 receivers:
   examplereceiver:
-processors:
-  batch:
-    timeout: 5s
-    send_batch_size: 100000
 exporters:
   clickhouse:
     endpoint: tcp://127.0.0.1:9000?dial_timeout=10s
@@ -406,7 +402,6 @@ service:
   pipelines:
     logs:
       receivers: [ examplereceiver ]
-      processors: [ batch ]
       exporters: [ clickhouse ]
 ```
 
