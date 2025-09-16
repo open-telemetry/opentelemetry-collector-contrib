@@ -17,7 +17,6 @@ import (
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configoptional"
-	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper"
@@ -41,8 +40,18 @@ func NewFactory() exporter.Factory {
 }
 
 func createDefaultConfig() component.Config {
+	// TODO(lahsivjar): This is deviating from the original defaults:
+	// - block_on_overflow: by default this is set to `false` i.e. clients will get
+	//   retryable error when queue is full. However, the original behaviour is
+	//   that we will block until a consumer is free ([ref](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/58308d77fa47e74bd8ed402ef4cd944cc2a4126a/exporter/elasticsearchexporter/bulkindexer.go#L325-L329))
 	qs := exporterhelper.NewDefaultQueueConfig()
-	qs.Enabled = false
+	qs.QueueSize = 10
+	qs.Batch = configoptional.Some(exporterhelper.BatchConfig{
+		FlushTimeout: 10 * time.Second,
+		MinSize:      5e+6,
+		MaxSize:      10e+6,
+		Sizer:        exporterhelper.RequestSizerTypeBytes,
+	})
 
 	httpClientConfig := confighttp.NewDefaultClientConfig()
 	httpClientConfig.Timeout = 90 * time.Second
@@ -83,15 +92,6 @@ func createDefaultConfig() component.Config {
 			LogFailedDocsInputRateLimit: time.Second,
 		},
 		IncludeSourceOnError: nil,
-		Batcher: BatcherConfig{
-			FlushTimeout: 10 * time.Second,
-			Sizer:        exporterhelper.RequestSizerTypeItems,
-			MinSize:      defaultBatcherMinSizeItems,
-		},
-		Flush: FlushSettings{
-			Bytes:    5e+6,
-			Interval: 10 * time.Second,
-		},
 	}
 }
 
@@ -220,53 +220,21 @@ func exporterhelperOptions(
 	shutdown component.ShutdownFunc,
 	qbs exporterhelper.QueueBatchSettings,
 ) []exporterhelper.Option {
+	// not setting capabilities as they will default to non-mutating but will be updated
+	// by the base-exporter to mutating if batching is enabled.
 	opts := []exporterhelper.Option{
-		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithStart(start),
 		exporterhelper.WithShutdown(shutdown),
+		exporterhelper.WithQueueBatch(cfg.QueueBatchConfig, qbs),
 	}
-	qbc := cfg.QueueBatchConfig
-	switch {
-	case qbc.Batch.HasValue():
-		// Latest queue batch settings are used, prioritize them even if sending queue is disabled
-		opts = append(opts, exporterhelper.WithQueueBatch(qbc, qbs))
 
-		// Effectively disable timeout_sender because timeout is enforced in bulk indexer.
-		//
-		// We keep timeout_sender enabled in the async mode (sending_queue not enabled OR sending
-		// queue enabled but batching not enabled OR based on the deprecated batcher setting), to
-		// ensure sending data to the background workers will not block indefinitely.
-		if qbc.Enabled {
-			opts = append(opts, exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}))
-		}
-	case cfg.Batcher.enabledSet:
-		if cfg.Batcher.Enabled {
-			qbc.Batch = configoptional.Some(exporterhelper.BatchConfig{
-				FlushTimeout: cfg.Batcher.FlushTimeout,
-				MinSize:      cfg.Batcher.MinSize,
-				MaxSize:      cfg.Batcher.MaxSize,
-				Sizer:        cfg.Batcher.Sizer,
-			})
-
-			// If the deprecated batcher is enabled without a queue, enable blocking queue to replicate the
-			// behavior of the deprecated batcher.
-			if !qbc.Enabled {
-				qbc.Enabled = true
-				qbc.WaitForResult = true
-			}
-		}
-
-		opts = append(
-			opts,
-			// Effectively disable timeout_sender because timeout is enforced in bulk indexer.
-			//
-			// We keep timeout_sender enabled in the async mode (Batcher.Enabled == nil),
-			// to ensure sending data to the background workers will not block indefinitely.
-			exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
-			exporterhelper.WithQueue(qbc),
-		)
-	default:
-		opts = append(opts, exporterhelper.WithQueue(qbc))
+	// Effectively disable timeout_sender because timeout is enforced in bulk indexer.
+	//
+	// We keep timeout_sender enabled in the async mode (sending_queue not enabled OR sending
+	// queue enabled but batching not enabled OR based on the deprecated batcher setting), to
+	// ensure sending data to the background workers will not block indefinitely.
+	if cfg.QueueBatchConfig.Enabled {
+		opts = append(opts, exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}))
 	}
 	return opts
 }

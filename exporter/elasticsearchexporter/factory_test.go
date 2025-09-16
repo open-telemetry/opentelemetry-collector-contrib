@@ -117,52 +117,12 @@ var signalTestCases = []struct {
 		},
 	},
 	{
-		name: "with_deprecated_batcher",
-		cfg: map[string]any{
-			"batcher": map[string]any{
-				"enabled": true,
-			},
-		},
-		expectedLogs: []string{
-			"batcher has been deprecated",
-		},
-	},
-	{
 		name: "with_sending_queue",
 		cfg: map[string]any{
 			"sending_queue": map[string]any{
 				"enabled": true,
 				"batch":   map[string]any{},
 			},
-		},
-	},
-	{
-		name: "with_sending_queue_disabled_and_deprecated_batcher",
-		cfg: map[string]any{
-			"sending_queue": map[string]any{
-				"batch": map[string]any{},
-			},
-			"batcher": map[string]any{
-				"enabled": true,
-			},
-		},
-		expectedLogs: []string{
-			"sending_queue::batch will take preference",
-		},
-	},
-	{
-		name: "with_sending_queue_enabled_and_deprecated_batcher",
-		cfg: map[string]any{
-			"sending_queue": map[string]any{
-				"enabled": true,
-				"batch":   map[string]any{},
-			},
-			"batcher": map[string]any{
-				"enabled": true,
-			},
-		},
-		expectedLogs: []string{
-			"sending_queue::batch will take preference",
 		},
 	},
 }

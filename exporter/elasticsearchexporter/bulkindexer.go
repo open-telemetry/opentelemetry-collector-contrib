@@ -71,10 +71,7 @@ func newBulkIndexer(
 	tb *metadata.TelemetryBuilder,
 	logger *zap.Logger,
 ) (bulkIndexer, error) {
-	if config.Batcher.enabledSet || (config.QueueBatchConfig.Enabled && config.QueueBatchConfig.Batch.HasValue()) {
-		return newSyncBulkIndexer(client, config, requireDataStream, tb, logger), nil
-	}
-	return newAsyncBulkIndexer(client, config, requireDataStream, tb, logger)
+	return newSyncBulkIndexer(client, config, requireDataStream, tb, logger), nil
 }
 
 func bulkIndexerConfig(client esapi.Transport, config *Config, requireDataStream bool) docappender.BulkIndexerConfig {
@@ -121,7 +118,6 @@ func newSyncBulkIndexer(
 	return &syncBulkIndexer{
 		config:                bulkIndexerConfig(client, config, requireDataStream),
 		flushTimeout:          config.Timeout,
-		flushBytes:            config.Flush.Bytes,
 		retryConfig:           config.Retry,
 		metadataKeys:          config.MetadataKeys,
 		telemetryBuilder:      tb,
@@ -133,7 +129,6 @@ func newSyncBulkIndexer(
 type syncBulkIndexer struct {
 	config                docappender.BulkIndexerConfig
 	flushTimeout          time.Duration
-	flushBytes            int
 	retryConfig           RetrySettings
 	metadataKeys          []string
 	telemetryBuilder      *metadata.TelemetryBuilder
@@ -185,11 +180,6 @@ func (s *syncBulkIndexerSession) Add(ctx context.Context, index, docID, pipeline
 			getAttributesFromMetadataKeys(ctx, s.s.metadataKeys)...),
 		),
 	)
-	// flush bytes should operate on uncompressed length
-	// as Elasticsearch http.max_content_length measures uncompressed length.
-	if s.bi.UncompressedLen() >= s.s.flushBytes {
-		return s.Flush(ctx)
-	}
 	return nil
 }
 
@@ -235,166 +225,6 @@ func (s *syncBulkIndexerSession) Flush(ctx context.Context) error {
 		case <-timer.C:
 		}
 	}
-}
-
-func newAsyncBulkIndexer(
-	client esapi.Transport,
-	config *Config,
-	requireDataStream bool,
-	tb *metadata.TelemetryBuilder,
-	logger *zap.Logger,
-) (*asyncBulkIndexer, error) {
-	numWorkers := config.NumWorkers
-	if numWorkers == 0 {
-		numWorkers = runtime.NumCPU()
-	}
-
-	pool := &asyncBulkIndexer{
-		wg:               sync.WaitGroup{},
-		items:            make(chan docappender.BulkIndexerItem, config.NumWorkers),
-		telemetryBuilder: tb,
-	}
-	pool.wg.Add(numWorkers)
-
-	for i := 0; i < numWorkers; i++ {
-		bi, err := docappender.NewBulkIndexer(bulkIndexerConfig(client, config, requireDataStream))
-		if err != nil {
-			return nil, err
-		}
-		w := asyncBulkIndexerWorker{
-			indexer:               bi,
-			items:                 pool.items,
-			flushInterval:         config.Flush.Interval,
-			flushTimeout:          config.Timeout,
-			flushBytes:            config.Flush.Bytes,
-			telemetryBuilder:      tb,
-			logger:                logger,
-			failedDocsInputLogger: newFailedDocsInputLogger(logger, config),
-		}
-		go func() {
-			defer pool.wg.Done()
-			w.run()
-		}()
-	}
-	return pool, nil
-}
-
-type asyncBulkIndexer struct {
-	items            chan docappender.BulkIndexerItem
-	wg               sync.WaitGroup
-	telemetryBuilder *metadata.TelemetryBuilder
-}
-
-type asyncBulkIndexerSession struct {
-	*asyncBulkIndexer
-}
-
-// StartSession returns a new asyncBulkIndexerSession.
-func (a *asyncBulkIndexer) StartSession(context.Context) bulkIndexerSession {
-	return asyncBulkIndexerSession{a}
-}
-
-// Close closes the asyncBulkIndexer and any active sessions.
-func (a *asyncBulkIndexer) Close(ctx context.Context) error {
-	close(a.items)
-	doneCh := make(chan struct{})
-	go func() {
-		a.wg.Wait()
-		close(doneCh)
-	}()
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case <-doneCh:
-		return nil
-	}
-}
-
-// Add adds an item to the async bulk indexer session.
-//
-// Adding an item after a call to Close() will panic.
-func (s asyncBulkIndexerSession) Add(ctx context.Context, index, docID, pipeline string, document io.WriterTo, dynamicTemplates map[string]string, action string) error {
-	item := docappender.BulkIndexerItem{
-		Index:            index,
-		Body:             document,
-		DocumentID:       docID,
-		DynamicTemplates: dynamicTemplates,
-		Action:           action,
-		Pipeline:         pipeline,
-	}
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case s.items <- item:
-	}
-	s.telemetryBuilder.ElasticsearchDocsReceived.Add(ctx, 1)
-	return nil
-}
-
-// End is a no-op.
-func (asyncBulkIndexerSession) End() {
-}
-
-// Flush is a no-op.
-func (asyncBulkIndexerSession) Flush(context.Context) error {
-	return nil
-}
-
-type asyncBulkIndexerWorker struct {
-	indexer       *docappender.BulkIndexer
-	items         <-chan docappender.BulkIndexerItem
-	flushInterval time.Duration
-	flushTimeout  time.Duration
-	flushBytes    int
-
-	logger                *zap.Logger
-	failedDocsInputLogger *zap.Logger
-	telemetryBuilder      *metadata.TelemetryBuilder
-}
-
-func (w *asyncBulkIndexerWorker) run() {
-	flushTick := time.NewTicker(w.flushInterval)
-	defer flushTick.Stop()
-	for {
-		select {
-		case item, ok := <-w.items:
-			// if channel is closed, flush and return
-			if !ok {
-				w.flush()
-				return
-			}
-
-			if err := w.indexer.Add(item); err != nil {
-				w.logger.Error("error adding item to bulk indexer", zap.Error(err))
-			}
-
-			// flush bytes should operate on uncompressed length
-			// as Elasticsearch http.max_content_length measures uncompressed length.
-			if w.indexer.UncompressedLen() >= w.flushBytes {
-				w.flush()
-				flushTick.Reset(w.flushInterval)
-			}
-		case <-flushTick.C:
-			// bulk indexer needs to be flushed every flush interval because
-			// there may be pending bytes in bulk indexer buffer due to e.g. document level 429
-			w.flush()
-		}
-	}
-}
-
-func (w *asyncBulkIndexerWorker) flush() {
-	// TODO (lahsivjar): Should use proper context else client metadata will not be accessible
-	ctx := context.Background()
-	// ignore error as we they should be already logged and for async we don't propagate errors
-	_ = flushBulkIndexer(
-		ctx,
-		w.indexer,
-		w.flushTimeout,
-		nil, // async bulk indexer cannot propagate client context/metadata
-		w.telemetryBuilder,
-		w.logger,
-		w.failedDocsInputLogger,
-	)
 }
 
 func flushBulkIndexer(
