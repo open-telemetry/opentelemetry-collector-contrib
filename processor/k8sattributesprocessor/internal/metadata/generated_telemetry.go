@@ -26,10 +26,16 @@ type TelemetryBuilder struct {
 	meter                        metric.Meter
 	mu                           sync.Mutex
 	registrations                []metric.Registration
+	OtelsvcK8sDaemonsetAdded     metric.Int64Counter
+	OtelsvcK8sDaemonsetDeleted   metric.Int64Counter
+	OtelsvcK8sDaemonsetUpdated   metric.Int64Counter
 	OtelsvcK8sDeploymentAdded    metric.Int64Counter
 	OtelsvcK8sDeploymentDeleted  metric.Int64Counter
 	OtelsvcK8sDeploymentUpdated  metric.Int64Counter
 	OtelsvcK8sIPLookupMiss       metric.Int64Counter
+	OtelsvcK8sJobAdded           metric.Int64Counter
+	OtelsvcK8sJobDeleted         metric.Int64Counter
+	OtelsvcK8sJobUpdated         metric.Int64Counter
 	OtelsvcK8sNamespaceAdded     metric.Int64Counter
 	OtelsvcK8sNamespaceDeleted   metric.Int64Counter
 	OtelsvcK8sNamespaceUpdated   metric.Int64Counter
@@ -77,6 +83,24 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	}
 	builder.meter = Meter(settings)
 	var err, errs error
+	builder.OtelsvcK8sDaemonsetAdded, err = builder.meter.Int64Counter(
+		"otelcol_otelsvc_k8s_daemonset_added",
+		metric.WithDescription("Number of daemonset add events received"),
+		metric.WithUnit("1"),
+	)
+	errs = errors.Join(errs, err)
+	builder.OtelsvcK8sDaemonsetDeleted, err = builder.meter.Int64Counter(
+		"otelcol_otelsvc_k8s_daemonset_deleted",
+		metric.WithDescription("Number of daemonset delete events received"),
+		metric.WithUnit("1"),
+	)
+	errs = errors.Join(errs, err)
+	builder.OtelsvcK8sDaemonsetUpdated, err = builder.meter.Int64Counter(
+		"otelcol_otelsvc_k8s_daemonset_updated",
+		metric.WithDescription("Number of daemonset update events received"),
+		metric.WithUnit("1"),
+	)
+	errs = errors.Join(errs, err)
 	builder.OtelsvcK8sDeploymentAdded, err = builder.meter.Int64Counter(
 		"otelcol_otelsvc_k8s_deployment_added",
 		metric.WithDescription("Number of deployment add events received"),
@@ -98,6 +122,24 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	builder.OtelsvcK8sIPLookupMiss, err = builder.meter.Int64Counter(
 		"otelcol_otelsvc_k8s_ip_lookup_miss",
 		metric.WithDescription("Number of times pod by IP lookup failed."),
+		metric.WithUnit("1"),
+	)
+	errs = errors.Join(errs, err)
+	builder.OtelsvcK8sJobAdded, err = builder.meter.Int64Counter(
+		"otelcol_otelsvc_k8s_job_added",
+		metric.WithDescription("Number of job add events received"),
+		metric.WithUnit("1"),
+	)
+	errs = errors.Join(errs, err)
+	builder.OtelsvcK8sJobDeleted, err = builder.meter.Int64Counter(
+		"otelcol_otelsvc_k8s_job_deleted",
+		metric.WithDescription("Number of job delete events received"),
+		metric.WithUnit("1"),
+	)
+	errs = errors.Join(errs, err)
+	builder.OtelsvcK8sJobUpdated, err = builder.meter.Int64Counter(
+		"otelcol_otelsvc_k8s_job_updated",
+		metric.WithDescription("Number of job update events received"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)

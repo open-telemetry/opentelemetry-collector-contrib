@@ -7,9 +7,6 @@ receivers:
           cert_file: /etc/otel-collector.crt
           key_file: /etc/otel-collector.key
 
-processors:
-  batch:
-
 exporters:
   debug:
     verbosity: detailed
@@ -18,6 +15,5 @@ service:
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [batch]
       exporters: [debug]
 
