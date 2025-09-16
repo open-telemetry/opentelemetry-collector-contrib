@@ -131,7 +131,7 @@ func (m *mySQLScraper) scrape(context.Context) (pmetric.Metrics, error) {
 }
 
 // scrape scrapes the mysql db query stats, transforms them and labels them into an event slices.
-func (m *mySQLScraper) scrapeTopQueryFunc(context.Context) (plog.Logs, error) {
+func (m *mySQLScraper) scrapeTopQueryFunc(ctx context.Context) (plog.Logs, error) {
 	if m.sqlclient == nil {
 		return plog.NewLogs(), errors.New("failed to connect to http client")
 	}
@@ -143,13 +143,13 @@ func (m *mySQLScraper) scrapeTopQueryFunc(context.Context) (plog.Logs, error) {
 	if m.lastExecutionTimestamp.Add(m.config.TopQueryCollection.CollectionInterval).After(now.AsTime()) {
 		m.logger.Debug("Skipping top queries scrape, not enough time has passed since last execution")
 	} else {
-		m.scrapeTopQueries(now, errs)
+		m.scrapeTopQueries(ctx, now, errs)
 	}
 	return m.lb.Emit(), errs.Combine()
 }
 
 // scrape scrapes the mysql db query stats, transforms them and labels them into an event slices.
-func (m *mySQLScraper) scrapeQuerySampleFunc(context.Context) (plog.Logs, error) {
+func (m *mySQLScraper) scrapeQuerySampleFunc(ctx context.Context) (plog.Logs, error) {
 	if m.sqlclient == nil {
 		return plog.NewLogs(), errors.New("failed to connect to http client")
 	}
@@ -158,7 +158,7 @@ func (m *mySQLScraper) scrapeQuerySampleFunc(context.Context) (plog.Logs, error)
 
 	now := pcommon.NewTimestampFromTime(time.Now())
 
-	m.scrapeQuerySamples(now, errs)
+	m.scrapeQuerySamples(ctx, now, errs)
 
 	return m.lb.Emit(), errs.Combine()
 }
@@ -647,7 +647,7 @@ func (m *mySQLScraper) scrapeReplicaStatusStats(now pcommon.Timestamp) {
 	}
 }
 
-func (m *mySQLScraper) scrapeTopQueries(now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+func (m *mySQLScraper) scrapeTopQueries(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
 	queries, err := m.sqlclient.getTopQueries(m.config.TopQueryCollection.MaxQuerySampleCount, m.config.TopQueryCollection.LookbackTime)
 	if err != nil {
 		m.logger.Error("Failed to fetch top queries", zap.Error(err))
@@ -702,7 +702,7 @@ func (m *mySQLScraper) scrapeTopQueries(now pcommon.Timestamp, errs *scrapererro
 		}
 
 		m.lb.RecordDbServerTopQueryEvent(
-			context.Background(),
+			ctx,
 			now,
 			metadata.AttributeDbSystemNameMysql,
 			obfuscatedQuery,
@@ -714,7 +714,7 @@ func (m *mySQLScraper) scrapeTopQueries(now pcommon.Timestamp, errs *scrapererro
 	}
 }
 
-func (m *mySQLScraper) scrapeQuerySamples(now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+func (m *mySQLScraper) scrapeQuerySamples(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
 	samples, err := m.sqlclient.getQuerySamples(m.config.QuerySampleCollection.MaxRowsPerQuery)
 	if err != nil {
 		m.logger.Error("Failed to fetch query samples", zap.Error(err))
@@ -747,7 +747,7 @@ func (m *mySQLScraper) scrapeQuerySamples(now pcommon.Timestamp, errs *scraperer
 		}
 
 		m.lb.RecordDbServerQuerySampleEvent(
-			context.Background(),
+			ctx,
 			now,
 			metadata.AttributeDbSystemNameMysql,
 			sample.threadID,
