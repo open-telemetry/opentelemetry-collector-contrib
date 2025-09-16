@@ -113,6 +113,10 @@ func (c Config) buildArgs() ([]string, error) {
 		args = append(args, "--all")
 	}
 
+	if c.Merge {
+		args = append(args, "--merge")
+	}
+
 	return args, nil
 }
 
