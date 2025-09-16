@@ -221,6 +221,13 @@ func TestBuildConfig(t *testing.T) {
 			},
 			Expected: []string{"--utc", "--output=json", "--follow", "--priority", "info", "--all"},
 		},
+		{
+			Name: "merge",
+			Config: func(cfg *Config) {
+				cfg.Merge = true
+			},
+			Expected: []string{"--utc", "--output=json", "--follow", "--priority", "info", "--merge"},
+		},
 	}
 
 	for _, tt := range testCases {
