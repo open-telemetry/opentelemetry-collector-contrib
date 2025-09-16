@@ -229,8 +229,8 @@ github.com/DataDog/datadog-agent/pkg/util/winutil v0.71.0-devel.0.20250902202452
 github.com/DataDog/datadog-agent/pkg/util/winutil v0.71.0-devel.0.20250902202452-61c2536752eb/go.mod h1:X8gUH1fdE09W75BmaRzXv9/BTxTe7q7jES5jTaSyYP0=
 github.com/DataDog/datadog-agent/pkg/version v0.71.0-devel.0.20250902202452-61c2536752eb h1:JE6H4oF0NYHGok9DN40xZ6kvjuzawRRQ8lJmbUZw9oo=
 github.com/DataDog/datadog-agent/pkg/version v0.71.0-devel.0.20250902202452-61c2536752eb/go.mod h1:FYj51C1ib86rpr5tlLEep9jitqvljIJ5Uz2rrimGTeY=
-github.com/DataDog/datadog-api-client-go/v2 v2.45.0 h1:8eQyPseeiOYn/yhxL/h1EqFQLWx2U2NwDtHmjGV0vCs=
-github.com/DataDog/datadog-api-client-go/v2 v2.45.0/go.mod h1:d3tOEgUd2kfsr9uuHQdY+nXrWp4uikgTgVCPdKNK30U=
+github.com/DataDog/datadog-api-client-go/v2 v2.46.0 h1:sq5GXX//FVtbgd4oNU3NSJX2F1vmhqONHUPrQ8HWwNc=
+github.com/DataDog/datadog-api-client-go/v2 v2.46.0/go.mod h1:d3tOEgUd2kfsr9uuHQdY+nXrWp4uikgTgVCPdKNK30U=
 github.com/DataDog/datadog-go/v5 v5.7.1 h1:dNhEwKaO3LJhGYKajl2DjobArfa5R9YF72z3Dy+PH3k=
 github.com/DataDog/datadog-go/v5 v5.7.1/go.mod h1:CA9Ih6tb3jtxk+ps1xvTnxmhjr7ldE8TiwrZyrm31ss=
 github.com/DataDog/go-sqllexer v0.1.6 h1:skEXpWEVCpeZFIiydoIa2f2rf+ymNpjiIMqpW4w3YAk=
@@ -372,8 +372,8 @@ github.com/digitalocean/godo v1.152.0 h1:WRgkPMogZSXEJK70IkZKTB/PsMn16hMQ+NI3wCI
 github.com/digitalocean/godo v1.152.0/go.mod h1:tYeiWY5ZXVpU48YaFv0M5irUFHXGorZpDNm7zzdWMzM=
 github.com/distribution/reference v0.6.0 h1:0IXCQ5g4/QMHHkarYzh5l+u8T3t73zM5QvfrDyIgxBk=
 github.com/distribution/reference v0.6.0/go.mod h1:BbU0aIcezP1/5jX/8MP0YiH4SdvB5Y4f/wlDRiLyi3E=
-github.com/docker/docker v28.3.3+incompatible h1:Dypm25kh4rmk49v1eiVbsAtpAsYURjYkaKubwuBdxEI=
-github.com/docker/docker v28.3.3+incompatible/go.mod h1:eEKB0N0r5NX/I1kEveEz05bcu8tLC/8azJZsviup8Sk=
+github.com/docker/docker v28.4.0+incompatible h1:KVC7bz5zJY/4AZe/78BIvCnPsLaC9T/zh72xnlrTTOk=
+github.com/docker/docker v28.4.0+incompatible/go.mod h1:eEKB0N0r5NX/I1kEveEz05bcu8tLC/8azJZsviup8Sk=
 github.com/docker/go-connections v0.6.0 h1:LlMG9azAe1TqfR7sO+NJttz1gy6KO7VJBh+pMmjSD94=
 github.com/docker/go-connections v0.6.0/go.mod h1:AahvXYshr6JgfUJGdDCs2b5EZG/vmaMAntpSFH5BFKE=
 github.com/docker/go-units v0.5.0 h1:69rxXcBk27SvSaaxTtLh/8llcHD8vYHT7WSdRZ/jvr4=
@@ -579,8 +579,8 @@ github.com/hashicorp/serf v0.10.1 h1:Z1H2J60yRKvfDYAOZLd2MU0ND4AH/WDz7xYHDWQsIPY
 github.com/hashicorp/serf v0.10.1/go.mod h1:yL2t6BqATOLGc5HF7qbFkTfXoPIY0WZdWHfEvMqbG+4=
 github.com/hectane/go-acl v0.0.0-20230122075934-ca0b05cb1adb h1:PGufWXXDq9yaev6xX1YQauaO1MV90e6Mpoq1I7Lz/VM=
 github.com/hectane/go-acl v0.0.0-20230122075934-ca0b05cb1adb/go.mod h1:QiyDdbZLaJ/mZP4Zwc9g2QsfaEA4o7XvvgZegSci5/E=
-github.com/hetznercloud/hcloud-go/v2 v2.22.0 h1:RwcOkgB5y7kvi9Nxt40lHej8HjaS/P+9Yjfs4Glcds0=
-github.com/hetznercloud/hcloud-go/v2 v2.22.0/go.mod h1:t14Logj+iLXyS03DGwEyrN+y7/C9243CJt3IArTHbyM=
+github.com/hetznercloud/hcloud-go/v2 v2.23.0 h1:cx4t0loUz/Xo70N4IvMX5se0WvHoUrHGibyHkreEvws=
+github.com/hetznercloud/hcloud-go/v2 v2.23.0/go.mod h1:ERaDt5CFz2Y5J0oimN3XfMe98cJIggqfG6pmo2BlPv4=
 github.com/hexops/gotextdiff v1.0.3 h1:gitA9+qJrrTCsiCl7+kh75nPqQt1cx4ZkudSTLoUqJM=
 github.com/hexops/gotextdiff v1.0.3/go.mod h1:pSWU5MAI3yDq+fZBTazCSJysOMbxWL1BSow5/V2vxeg=
 github.com/iancoleman/strcase v0.3.0 h1:nTXanmYxhfFAMjZL34Ov6gkzEsSJZ5DbhxWjvSASxEI=
@@ -799,8 +799,8 @@ github.com/rogpeppe/go-internal v1.14.1/go.mod h1:MaRKkUm5W0goXpeCfT7UZI6fk/L7L7
 github.com/rs/cors v1.11.1 h1:eU3gRzXLRK57F5rKMGMZURNdIG4EoAmX8k94r9wXWHA=
 github.com/rs/cors v1.11.1/go.mod h1:XyqrcTp5zjWr1wsJ8PIRZssZ8b/WMcMf71DJnit4EMU=
 github.com/russross/blackfriday/v2 v2.1.0/go.mod h1:+Rmxgy9KzJVeS9/2gXHxylqXiyQDYRxCVz55jmeOWTM=
-github.com/scaleway/scaleway-sdk-go v1.0.0-beta.34 h1:48+VFHsyVcAHIN2v1Ao9v1/RkjJS5AwctFucBrfYNIA=
-github.com/scaleway/scaleway-sdk-go v1.0.0-beta.34/go.mod h1:zFWiHphneiey3s8HOtAEnGrRlWivNaxW5T6d5Xfco7g=
+github.com/scaleway/scaleway-sdk-go v1.0.0-beta.35 h1:8xfn1RzeI9yoCUuEwDy08F+No6PcKZGEDOQ6hrRyLts=
+github.com/scaleway/scaleway-sdk-go v1.0.0-beta.35/go.mod h1:47B1d/YXmSAxlJxUJxClzHR6b3T4M1WyCvwENPQNBWc=
 github.com/secure-systems-lab/go-securesystemslib v0.9.0 h1:rf1HIbL64nUpEIZnjLZ3mcNEL9NBPB0iuVjyxvq3LZc=
 github.com/secure-systems-lab/go-securesystemslib v0.9.0/go.mod h1:DVHKMcZ+V4/woA/peqr+L0joiRXbPpQ042GgJckkFgw=
 github.com/shirou/gopsutil/v3 v3.22.12/go.mod h1:Xd7P1kwZcp5VW52+9XsirIKd/BROzbb2wdX3Kqlz9uI=

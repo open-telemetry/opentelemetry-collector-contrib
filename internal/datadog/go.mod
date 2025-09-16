@@ -7,7 +7,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/inframetadata v0.71.0-devel.0.20250902202452-61c2536752eb
 	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.71.0-devel.0.20250902202452-61c2536752eb
 	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.71.0-devel.0.20250902202452-61c2536752eb
-	github.com/DataDog/datadog-api-client-go/v2 v2.45.0
+	github.com/DataDog/datadog-api-client-go/v2 v2.46.0
 	github.com/DataDog/gohai v0.0.0-20230524154621-4316413895ee
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.29.0
 	github.com/aws/aws-sdk-go-v2 v1.37.0
