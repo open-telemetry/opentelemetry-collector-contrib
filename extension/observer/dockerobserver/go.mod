@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/obser
 go 1.24.0
 
 require (
-	github.com/docker/docker v28.3.3+incompatible
+	github.com/docker/docker v28.4.0+incompatible
 	github.com/docker/go-connections v0.6.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.135.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.135.0
