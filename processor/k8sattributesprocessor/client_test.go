@@ -102,11 +102,6 @@ func (f *fakeClient) GetJob(jobUID string) (*kube.Job, bool) {
 	return j, ok
 }
 
-func (f *fakeClient) GetCronJob(cronJobUID string) (*kube.CronJob, bool) {
-	cj, ok := f.CronJobs[cronJobUID]
-	return cj, ok
-}
-
 // Start is a noop for FakeClient.
 func (f *fakeClient) Start() error {
 	if f.Informer != nil {

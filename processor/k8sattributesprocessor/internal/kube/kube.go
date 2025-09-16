@@ -262,9 +262,8 @@ type ExtractionRules struct {
 	ServiceVersion            bool
 	ServiceInstanceID         bool
 
-	Annotations    []FieldExtractionRule
-	Labels         []FieldExtractionRule
-	CronJobFromJob bool
+	Annotations []FieldExtractionRule
+	Labels      []FieldExtractionRule
 }
 
 // IncludesOwnerMetadata determines whether the ExtractionRules include metadata about Pod Owners

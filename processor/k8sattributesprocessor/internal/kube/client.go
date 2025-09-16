@@ -125,10 +125,6 @@ type WatchClient struct {
 	// Key is job uid
 	Jobs map[string]*Job
 
-	// A map containing cron job related data, used to associate them with resources.
-	// Key is cron job uid
-	CronJobs map[string]*CronJob
-
 	// A map containing ReplicaSets related data, used to associate them with resources.
 	// Key is replicaset uid
 	ReplicaSets map[string]*ReplicaSet
@@ -192,7 +188,6 @@ func New(
 	c.StatefulSets = map[string]*StatefulSet{}
 	c.DaemonSets = map[string]*DaemonSet{}
 	c.Jobs = map[string]*Job{}
-	c.CronJobs = map[string]*CronJob{}
 	if newClientSet == nil {
 		newClientSet = k8sconfig.MakeClient
 	}
@@ -284,7 +279,7 @@ func New(
 		c.daemonsetInformer = newDaemonSetSharedInformer(c.kc, c.Filters.Namespace)
 	}
 
-	if c.extractJobLabelsAnnotations() || rules.CronJobUID {
+	if c.extractJobLabelsAnnotations() {
 		c.jobInformer = newJobSharedInformer(c.kc, c.Filters.Namespace)
 	}
 

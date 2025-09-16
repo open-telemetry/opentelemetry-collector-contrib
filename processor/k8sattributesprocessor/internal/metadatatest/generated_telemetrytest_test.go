@@ -20,9 +20,6 @@ func TestSetupTelemetry(t *testing.T) {
 	tb, err := metadata.NewTelemetryBuilder(testTel.NewTelemetrySettings())
 	require.NoError(t, err)
 	defer tb.Shutdown()
-	tb.OtelsvcK8sCronjobAdded.Add(context.Background(), 1)
-	tb.OtelsvcK8sCronjobDeleted.Add(context.Background(), 1)
-	tb.OtelsvcK8sCronjobUpdated.Add(context.Background(), 1)
 	tb.OtelsvcK8sDaemonsetAdded.Add(context.Background(), 1)
 	tb.OtelsvcK8sDaemonsetDeleted.Add(context.Background(), 1)
 	tb.OtelsvcK8sDaemonsetUpdated.Add(context.Background(), 1)
@@ -49,15 +46,6 @@ func TestSetupTelemetry(t *testing.T) {
 	tb.OtelsvcK8sStatefulsetAdded.Add(context.Background(), 1)
 	tb.OtelsvcK8sStatefulsetDeleted.Add(context.Background(), 1)
 	tb.OtelsvcK8sStatefulsetUpdated.Add(context.Background(), 1)
-	AssertEqualOtelsvcK8sCronjobAdded(t, testTel,
-		[]metricdata.DataPoint[int64]{{Value: 1}},
-		metricdatatest.IgnoreTimestamp())
-	AssertEqualOtelsvcK8sCronjobDeleted(t, testTel,
-		[]metricdata.DataPoint[int64]{{Value: 1}},
-		metricdatatest.IgnoreTimestamp())
-	AssertEqualOtelsvcK8sCronjobUpdated(t, testTel,
-		[]metricdata.DataPoint[int64]{{Value: 1}},
-		metricdatatest.IgnoreTimestamp())
 	AssertEqualOtelsvcK8sDaemonsetAdded(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
