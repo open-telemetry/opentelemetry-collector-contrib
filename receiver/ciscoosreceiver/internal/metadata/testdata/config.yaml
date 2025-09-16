@@ -1,0 +1,125 @@
+default:
+all_set:
+  metrics:
+    cisco_bgp_session_messages_input_count:
+      enabled: true
+    cisco_bgp_session_messages_output_count:
+      enabled: true
+    cisco_bgp_session_prefixes_received_count:
+      enabled: true
+    cisco_bgp_session_up:
+      enabled: true
+    cisco_collect_duration_seconds:
+      enabled: true
+    cisco_collector_duration_seconds:
+      enabled: true
+    cisco_environment_power_up:
+      enabled: true
+    cisco_environment_sensor_temp:
+      enabled: true
+    cisco_facts_cpu_five_minutes_percent:
+      enabled: true
+    cisco_facts_cpu_five_seconds_percent:
+      enabled: true
+    cisco_facts_cpu_interrupt_percent:
+      enabled: true
+    cisco_facts_cpu_one_minute_percent:
+      enabled: true
+    cisco_facts_memory_free:
+      enabled: true
+    cisco_facts_memory_total:
+      enabled: true
+    cisco_facts_memory_used:
+      enabled: true
+    cisco_facts_version:
+      enabled: true
+    cisco_interface_admin_up:
+      enabled: true
+    cisco_interface_error_status:
+      enabled: true
+    cisco_interface_receive_broadcast:
+      enabled: true
+    cisco_interface_receive_bytes:
+      enabled: true
+    cisco_interface_receive_drops:
+      enabled: true
+    cisco_interface_receive_errors:
+      enabled: true
+    cisco_interface_receive_multicast:
+      enabled: true
+    cisco_interface_transmit_bytes:
+      enabled: true
+    cisco_interface_transmit_drops:
+      enabled: true
+    cisco_interface_transmit_errors:
+      enabled: true
+    cisco_interface_up:
+      enabled: true
+    cisco_optics_rx:
+      enabled: true
+    cisco_optics_tx:
+      enabled: true
+    cisco_up:
+      enabled: true
+none_set:
+  metrics:
+    cisco_bgp_session_messages_input_count:
+      enabled: false
+    cisco_bgp_session_messages_output_count:
+      enabled: false
+    cisco_bgp_session_prefixes_received_count:
+      enabled: false
+    cisco_bgp_session_up:
+      enabled: false
+    cisco_collect_duration_seconds:
+      enabled: false
+    cisco_collector_duration_seconds:
+      enabled: false
+    cisco_environment_power_up:
+      enabled: false
+    cisco_environment_sensor_temp:
+      enabled: false
+    cisco_facts_cpu_five_minutes_percent:
+      enabled: false
+    cisco_facts_cpu_five_seconds_percent:
+      enabled: false
+    cisco_facts_cpu_interrupt_percent:
+      enabled: false
+    cisco_facts_cpu_one_minute_percent:
+      enabled: false
+    cisco_facts_memory_free:
+      enabled: false
+    cisco_facts_memory_total:
+      enabled: false
+    cisco_facts_memory_used:
+      enabled: false
+    cisco_facts_version:
+      enabled: false
+    cisco_interface_admin_up:
+      enabled: false
+    cisco_interface_error_status:
+      enabled: false
+    cisco_interface_receive_broadcast:
+      enabled: false
+    cisco_interface_receive_bytes:
+      enabled: false
+    cisco_interface_receive_drops:
+      enabled: false
+    cisco_interface_receive_errors:
+      enabled: false
+    cisco_interface_receive_multicast:
+      enabled: false
+    cisco_interface_transmit_bytes:
+      enabled: false
+    cisco_interface_transmit_drops:
+      enabled: false
+    cisco_interface_transmit_errors:
+      enabled: false
+    cisco_interface_up:
+      enabled: false
+    cisco_optics_rx:
+      enabled: false
+    cisco_optics_tx:
+      enabled: false
+    cisco_up:
+      enabled: false

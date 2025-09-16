@@ -1,0 +1,309 @@
+type: ciscoosreceiver
+
+status:
+  class: receiver
+  stability:
+    development: [metrics]
+  distributions: []
+  codeowners:
+    active: [dmitryax, etserend, k-shaikh]
+
+resource_attributes:
+
+attributes:
+  target:
+    description: The target Cisco device hostname or IP address
+    type: string
+    enabled: true
+  asn:
+    description: BGP Autonomous System Number
+    type: string
+  ip:
+    description: BGP neighbor IP address
+    type: string
+  item:
+    description: Environment sensor item name
+    type: string
+  status:
+    description: Environment sensor status
+    type: string
+  name:
+    description: Interface name
+    type: string
+  description:
+    description: Interface description
+    type: string
+  mac:
+    description: Interface MAC address
+    type: string
+  speed:
+    description: Interface speed
+    type: string
+  version:
+    description: System version information
+    type: string
+  type:
+    description: Memory type (total, used, free)
+    type: string
+  interface:
+    description: Optical interface name
+    type: string
+  collector:
+    description: Collector module name
+    type: string
+
+metrics:
+  cisco_up:
+    enabled: true
+    description: Device connectivity status (1=connected, 0=disconnected)
+    unit: "1"
+    gauge:
+      value_type: int
+    attributes: [target]
+  
+  cisco_collector_duration_seconds:
+    enabled: true
+    description: Total scrape duration per device
+    unit: s
+    gauge:
+      value_type: double
+    attributes: [target]
+  
+  cisco_collect_duration_seconds:
+    enabled: true
+    description: Individual collector performance timing
+    unit: s
+    gauge:
+      value_type: double
+    attributes: [target, collector]
+  
+  cisco_bgp_session_up:
+    enabled: true
+    description: BGP session establishment status (1=up, 0=down)
+    unit: "1"
+    gauge:
+      value_type: int
+    attributes: [target, asn, ip]
+  
+  cisco_bgp_session_prefixes_received_count:
+    enabled: true
+    description: Number of received BGP prefixes
+    unit: "1"
+    gauge:
+      value_type: int
+    attributes: [target, asn, ip]
+  
+  cisco_bgp_session_messages_input_count:
+    enabled: true
+    description: Number of received BGP messages
+    unit: "1"
+    gauge:
+      value_type: int
+    attributes: [target, asn, ip]
+  
+  cisco_bgp_session_messages_output_count:
+    enabled: true
+    description: Number of transmitted BGP messages
+    unit: "1"
+    gauge:
+      value_type: int
+    attributes: [target, asn, ip]
+  
+  cisco_environment_sensor_temp:
+    enabled: true
+    description: Environment sensor temperature reading
+    unit: "Cel"
+    gauge:
+      value_type: double
+    attributes: [target, item, status]
+  
+  cisco_environment_power_up:
+    enabled: true
+    description: Power supply operational status (1=up, 0=down)
+    unit: "1"
+    gauge:
+      value_type: int
+    attributes: [target, item, status]
+  
+  cisco_facts_version:
+    enabled: true
+    description: Running OS version (binary indicator with version attribute)
+    unit: "1"
+    gauge:
+      value_type: int
+    attributes: [target, version]
+  
+  cisco_facts_memory_total:
+    enabled: true
+    description: Total memory in bytes
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [target, type]
+  
+  cisco_facts_memory_used:
+    enabled: true
+    description: Used memory in bytes
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [target, type]
+  
+  cisco_facts_memory_free:
+    enabled: true
+    description: Free memory in bytes
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [target, type]
+  
+  cisco_facts_cpu_five_seconds_percent:
+    enabled: true
+    description: CPU utilization for five seconds
+    unit: "%"
+    gauge:
+      value_type: double
+    attributes: [target]
+  
+  cisco_facts_cpu_one_minute_percent:
+    enabled: true
+    description: CPU utilization for one minute
+    unit: "%"
+    gauge:
+      value_type: double
+    attributes: [target]
+  
+  cisco_facts_cpu_five_minutes_percent:
+    enabled: true
+    description: CPU utilization for five minutes
+    unit: "%"
+    gauge:
+      value_type: double
+    attributes: [target]
+  
+  cisco_facts_cpu_interrupt_percent:
+    enabled: true
+    description: Interrupt percentage
+    unit: "%"
+    gauge:
+      value_type: double
+    attributes: [target]
+  
+  cisco_interface_admin_up:
+    enabled: true
+    description: Interface admin operational status (1=up, 0=down)
+    unit: "1"
+    gauge:
+      value_type: int
+    attributes: [target, name, description, mac, speed]
+  
+  cisco_interface_up:
+    enabled: true
+    description: Interface operational status (1=up, 0=down)
+    unit: "1"
+    gauge:
+      value_type: int
+    attributes: [target, name, description, mac, speed]
+  
+  cisco_interface_error_status:
+    enabled: true
+    description: Admin and operational status differ (1=error, 0=no error)
+    unit: "1"
+    gauge:
+      value_type: int
+    attributes: [target, name, description, mac, speed]
+  
+  cisco_interface_receive_bytes:
+    enabled: true
+    description: Received data in bytes
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [target, name, description, mac, speed]
+  
+  cisco_interface_transmit_bytes:
+    enabled: true
+    description: Transmitted data in bytes
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [target, name, description, mac, speed]
+  
+  cisco_interface_receive_errors:
+    enabled: true
+    description: Number of errors caused by incoming packets
+    unit: "1"
+    gauge:
+      value_type: int
+    attributes: [target, name, description, mac, speed]
+  
+  cisco_interface_transmit_errors:
+    enabled: true
+    description: Number of errors caused by outgoing packets
+    unit: "1"
+    gauge:
+      value_type: int
+    attributes: [target, name, description, mac, speed]
+  
+  cisco_interface_receive_drops:
+    enabled: true
+    description: Number of dropped incoming packets
+    unit: "1"
+    gauge:
+      value_type: int
+    attributes: [target, name, description, mac, speed]
+  
+  cisco_interface_transmit_drops:
+    enabled: true
+    description: Number of dropped outgoing packets
+    unit: "1"
+    gauge:
+      value_type: int
+    attributes: [target, name, description, mac, speed]
+  
+  cisco_interface_receive_broadcast:
+    enabled: true
+    description: Received broadcast packets
+    unit: "1"
+    gauge:
+      value_type: int
+    attributes: [target, name, description, mac, speed]
+  
+  cisco_interface_receive_multicast:
+    enabled: true
+    description: Received multicast packets
+    unit: "1"
+    gauge:
+      value_type: int
+    attributes: [target, name, description, mac, speed]
+  
+  cisco_optics_tx:
+    enabled: true
+    description: Optical transmit power
+    unit: dBm
+    gauge:
+      value_type: double
+    attributes: [target, interface]
+  
+  cisco_optics_rx:
+    enabled: true
+    description: Optical receive power
+    unit: dBm
+    gauge:
+      value_type: double
+    attributes: [target, interface]
+
+tests:
+  config:
+    collection_interval: 60s
+    timeout: 30s
+    collectors:
+      bgp: true
+      environment: true
+      facts: true
+      interfaces: true
+      optics: true
+    devices:
+      - host: "localhost:2222"
+        username: "admin"
+        password: "admin"

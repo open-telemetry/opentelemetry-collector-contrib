@@ -1,0 +1,81 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package ciscoosreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/ciscoosreceiver"
+
+import (
+	"errors"
+	"fmt"
+	"time"
+)
+
+// Config represents the receiver configuration
+type Config struct {
+	CollectionInterval time.Duration    `mapstructure:"collection_interval"`
+	Devices            []DeviceConfig   `mapstructure:"devices"`
+	Timeout            time.Duration    `mapstructure:"timeout"`
+	Collectors         CollectorsConfig `mapstructure:"collectors"`
+}
+
+// DeviceConfig represents configuration for a single Cisco device
+type DeviceConfig struct {
+	Host     string `mapstructure:"host"`
+	KeyFile  string `mapstructure:"key_file"`
+	Username string `mapstructure:"username"`
+	Password string `mapstructure:"password"`
+}
+
+// CollectorsConfig represents which collectors are enabled
+type CollectorsConfig struct {
+	BGP         bool `mapstructure:"bgp"`
+	Environment bool `mapstructure:"environment"`
+	Facts       bool `mapstructure:"facts"`
+	Interfaces  bool `mapstructure:"interfaces"`
+	Optics      bool `mapstructure:"optics"`
+}
+
+// Validate checks if the receiver configuration is valid
+func (cfg *Config) Validate() error {
+	if len(cfg.Devices) == 0 {
+		return errors.New("at least one device must be configured")
+	}
+
+	for _, device := range cfg.Devices {
+		if device.Host == "" {
+			return fmt.Errorf("device host cannot be empty")
+		}
+
+		// Authentication validation logic:
+		// 1. If using key file: username + key_file (password optional)
+		// 2. If not using key file: username + password required
+		if device.KeyFile != "" {
+			// Key file authentication: requires username
+			if device.Username == "" {
+				return fmt.Errorf("device username cannot be empty")
+			}
+		} else {
+			// Password authentication: requires both username and password
+			if device.Username == "" {
+				return fmt.Errorf("device username cannot be empty")
+			}
+			if device.Password == "" {
+				return fmt.Errorf("device password cannot be empty")
+			}
+		}
+	}
+
+	if cfg.Timeout <= 0 {
+		return errors.New("timeout must be greater than 0")
+	}
+
+	if cfg.CollectionInterval <= 0 {
+		return errors.New("collection_interval must be greater than 0")
+	}
+
+	// Check if at least one collector is enabled
+	if !cfg.Collectors.BGP && !cfg.Collectors.Environment && !cfg.Collectors.Facts && !cfg.Collectors.Interfaces && !cfg.Collectors.Optics {
+		return errors.New("at least one collector must be enabled")
+	}
+
+	return nil
+}
