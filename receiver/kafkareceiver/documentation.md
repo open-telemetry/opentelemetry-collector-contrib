@@ -45,9 +45,9 @@ The throttling duration in ms imposed by the broker when receiving messages. [de
 
 Only produced when franz-go is enabled. Deprecated in favor of kafka_broker_throttling_latency.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| ms | Histogram | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| ms | Histogram | Int | deprecated |
 
 #### Attributes
 
@@ -128,9 +128,9 @@ The time it took in ms to receive a batch of messages. [deprecated]
 
 Only produced when franz-go is enabled. Deprecated in favor of kafka_receiver_read_latency.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| ms | Histogram | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| ms | Histogram | Int | deprecated |
 
 #### Attributes
 
@@ -147,9 +147,9 @@ The number of received messages. [deprecated]
 
 Deprecated in favor of kafka_receiver_records.
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | deprecated |
 
 #### Attributes
 
