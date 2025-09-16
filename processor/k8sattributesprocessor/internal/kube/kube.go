@@ -36,9 +36,7 @@ const (
 	// MetadataFromDaemonSet  is used to specify to extract metadata/labels/annotations from daemonset
 	MetadataFromDaemonSet = "daemonset"
 	// MetadataFromJob  is used to specify to extract metadata/labels/annotations from job
-	MetadataFromJob = "job"
-	// MetadataFromCronJob  is used to specify to extract metadata/labels/annotations from job
-	MetadataFromCronJob    = "cronjob"
+	MetadataFromJob        = "job"
 	PodIdentifierMaxLength = 4
 
 	ResourceSource   = "resource_attribute"
@@ -264,8 +262,9 @@ type ExtractionRules struct {
 	ServiceVersion            bool
 	ServiceInstanceID         bool
 
-	Annotations []FieldExtractionRule
-	Labels      []FieldExtractionRule
+	Annotations    []FieldExtractionRule
+	Labels         []FieldExtractionRule
+	CronJobFromJob bool
 }
 
 // IncludesOwnerMetadata determines whether the ExtractionRules include metadata about Pod Owners
@@ -356,12 +355,6 @@ func (r *FieldExtractionRule) extractFromDaemonSetMetadata(metadata, tags map[st
 
 func (r *FieldExtractionRule) extractFromJobMetadata(metadata, tags map[string]string, formatter string) {
 	if r.From == MetadataFromJob {
-		r.extractFromMetadata(metadata, tags, formatter)
-	}
-}
-
-func (r *FieldExtractionRule) extractFromCronJobMetadata(metadata, tags map[string]string, formatter string) {
-	if r.From == MetadataFromCronJob {
 		r.extractFromMetadata(metadata, tags, formatter)
 	}
 }
@@ -459,6 +452,7 @@ type Job struct {
 	Name       string
 	UID        string
 	Attributes map[string]string
+	CronJob    CronJob
 }
 
 // CronJob represents a kubernetes cronjob.

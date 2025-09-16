@@ -400,7 +400,7 @@ rules:
   resources: ["replicasets", "deployments", "statefulsets", "daemonsets"]
   verbs: ["get", "list", "watch"]
 - apiGroups: ["batch"]
-  resources: ["cronjobs","jobs"]
+  resources: ["jobs"]
   verbs: ["get", "list", "watch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1

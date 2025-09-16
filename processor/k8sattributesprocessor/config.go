@@ -75,7 +75,7 @@ func (cfg *Config) Validate() error {
 		}
 
 		switch f.From {
-		case "", kube.MetadataFromPod, kube.MetadataFromNamespace, kube.MetadataFromNode, kube.MetadataFromDeployment, kube.MetadataFromStatefulSet, kube.MetadataFromDaemonSet, kube.MetadataFromJob, kube.MetadataFromCronJob:
+		case "", kube.MetadataFromPod, kube.MetadataFromNamespace, kube.MetadataFromNode, kube.MetadataFromDeployment, kube.MetadataFromStatefulSet, kube.MetadataFromDaemonSet, kube.MetadataFromJob:
 		default:
 			return fmt.Errorf("%s is not a valid choice for From. Must be one of: pod, namespace, deployment, statefulset, daemonset, job, node", f.From)
 		}
