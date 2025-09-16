@@ -73,7 +73,7 @@ following examples will omit it for simplicity.
 ```yaml
 receivers:
   journald:
-  storage: file_storage/journald
+    storage: file_storage/journald
 
 extensions:
   file_storage/journald:
