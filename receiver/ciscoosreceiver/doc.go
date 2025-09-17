@@ -3,5 +3,5 @@
 
 //go:generate mdatagen metadata.yaml
 
-// Package ciscoosreceiver implements a receiver for Cisco network devices.
+// Package ciscoosreceiver provides a receiver for collecting metrics from Cisco network devices via SSH.
 package ciscoosreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/ciscoosreceiver"

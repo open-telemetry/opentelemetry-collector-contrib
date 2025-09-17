@@ -7,14 +7,21 @@ import (
 	"errors"
 	"fmt"
 	"time"
+
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/ciscoosreceiver/internal/metadata"
 )
 
 // Config represents the receiver configuration
 type Config struct {
-	CollectionInterval time.Duration    `mapstructure:"collection_interval"`
-	Devices            []DeviceConfig   `mapstructure:"devices"`
-	Timeout            time.Duration    `mapstructure:"timeout"`
-	Collectors         CollectorsConfig `mapstructure:"collectors"`
+	scraperhelper.ControllerConfig `mapstructure:",squash"`
+	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
+
+	CollectionInterval time.Duration  `mapstructure:"collection_interval"`
+	Devices            []DeviceConfig `mapstructure:"devices"`
+	Timeout            time.Duration  `mapstructure:"timeout"`
+	Scrapers           ScrapersConfig `mapstructure:"scrapers"`
 }
 
 // DeviceConfig represents configuration for a single Cisco device
@@ -25,8 +32,8 @@ type DeviceConfig struct {
 	Password string `mapstructure:"password"`
 }
 
-// CollectorsConfig represents which collectors are enabled
-type CollectorsConfig struct {
+// ScrapersConfig represents which scrapers are enabled
+type ScrapersConfig struct {
 	BGP         bool `mapstructure:"bgp"`
 	Environment bool `mapstructure:"environment"`
 	Facts       bool `mapstructure:"facts"`
@@ -72,9 +79,9 @@ func (cfg *Config) Validate() error {
 		return errors.New("collection_interval must be greater than 0")
 	}
 
-	// Check if at least one collector is enabled
-	if !cfg.Collectors.BGP && !cfg.Collectors.Environment && !cfg.Collectors.Facts && !cfg.Collectors.Interfaces && !cfg.Collectors.Optics {
-		return errors.New("at least one collector must be enabled")
+	// Check if at least one scraper is enabled
+	if !cfg.Scrapers.BGP && !cfg.Scrapers.Environment && !cfg.Scrapers.Facts && !cfg.Scrapers.Interfaces && !cfg.Scrapers.Optics {
+		return errors.New("at least one scraper must be enabled")
 	}
 
 	return nil

@@ -10,31 +10,36 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/ciscoosreceiver/internal/metadata"
 )
 
 const (
-	stability                 = component.StabilityLevelBeta
-	defaultCollectionInterval = 30 * time.Second
+	defaultCollectionInterval = 60 * time.Second
 	defaultTimeout            = 30 * time.Second
 )
 
-var typeStr = component.MustNewType("ciscoosreceiver")
-
-// NewFactory creates a factory for Cisco receiver.
+// NewFactory creates a factory for Cisco OS receiver.
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, stability),
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
 	)
 }
 
 func createDefaultConfig() component.Config {
+	cfg := scraperhelper.NewDefaultControllerConfig()
+	cfg.CollectionInterval = defaultCollectionInterval
+
 	return &Config{
-		CollectionInterval: 60 * time.Second,
-		Devices:            []DeviceConfig{},
-		Timeout:            30 * time.Second,
-		Collectors: CollectorsConfig{
+		ControllerConfig:     cfg,
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		CollectionInterval:   defaultCollectionInterval,
+		Devices:              []DeviceConfig{},
+		Timeout:              defaultTimeout,
+		Scrapers: ScrapersConfig{
 			BGP:         true,
 			Environment: true,
 			Facts:       true,
@@ -51,5 +56,17 @@ func createMetricsReceiver(
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	conf := cfg.(*Config)
-	return newModularCiscoReceiver(conf, set, consumer)
+
+	// TODO: Replace with actual scraper implementation in second PR
+	// For skeleton, we'll return a placeholder
+	_ = conf
+	_ = set
+	_ = consumer
+	return &nopMetricsReceiver{}, nil
 }
+
+// nopMetricsReceiver is a minimal receiver to satisfy component lifecycle tests.
+type nopMetricsReceiver struct{}
+
+func (n *nopMetricsReceiver) Start(ctx context.Context, host component.Host) error { return nil }
+func (n *nopMetricsReceiver) Shutdown(ctx context.Context) error                   { return nil }

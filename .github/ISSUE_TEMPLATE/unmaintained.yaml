@@ -234,6 +234,7 @@ body:
       - receiver/bigip
       - receiver/carbon
       - receiver/chrony
+      - receiver/ciscoos
       - receiver/cloudflare
       - receiver/cloudfoundry
       - receiver/collectd

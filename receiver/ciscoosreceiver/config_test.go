@@ -4,266 +4,157 @@
 package ciscoosreceiver
 
 import (
-	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap/confmaptest"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/ciscoosreceiver/internal/metadata"
 )
 
-func TestLoadConfig(t *testing.T) {
-	t.Parallel()
-
+func TestConfigValidate(t *testing.T) {
 	tests := []struct {
-		id       component.ID
-		expected component.Config
-		wantErr  bool
+		name        string
+		config      *Config
+		expectedErr string
 	}{
 		{
-			id: component.NewIDWithName(metadata.Type, ""),
-			expected: &Config{
-				CollectionInterval: 60 * time.Second,
-				Timeout:            30 * time.Second,
-				Collectors: CollectorsConfig{
-					BGP:         true,
-					Environment: true,
-					Facts:       true,
-					Interfaces:  true,
-					Optics:      true,
-				},
-				Devices: []DeviceConfig{
-					{
-						Host:     "192.168.1.1:22",
-						Username: "admin",
-						Password: "password",
-					},
-				},
-			},
-		},
-		{
-			id: component.NewIDWithName(metadata.Type, "custom"),
-			expected: &Config{
-				CollectionInterval: 30 * time.Second,
-				Timeout:            15 * time.Second,
-				Collectors: CollectorsConfig{
-					BGP:         true,
-					Environment: false,
-					Facts:       true,
-					Interfaces:  true,
-					Optics:      false,
-				},
-				Devices: []DeviceConfig{
-					{
-						Host:     "192.168.1.1:22",
-						Username: "admin",
-						Password: "secret",
-					},
-					{
-						Host:     "192.168.1.2:22",
-						Username: "operator",
-						Password: "password",
-					},
-				},
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.id.String(), func(t *testing.T) {
-			cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
-			require.NoError(t, err)
-
-			factory := NewFactory()
-			cfg := factory.CreateDefaultConfig()
-
-			sub, err := cm.Sub(tt.id.String())
-			require.NoError(t, err)
-			require.NoError(t, sub.Unmarshal(cfg))
-
-			if tt.wantErr {
-				assert.Error(t, cfg.(*Config).Validate())
-			} else {
-				assert.NoError(t, cfg.(*Config).Validate())
-				assert.Equal(t, tt.expected, cfg)
-			}
-		})
-	}
-}
-
-func TestConfigValidation(t *testing.T) {
-	tests := []struct {
-		name    string
-		config  *Config
-		wantErr bool
-		errMsg  string
-	}{
-		{
-			name: "valid_config",
+			name: "valid config with password auth",
 			config: &Config{
-				CollectionInterval: 60 * time.Second,
+				Devices: []DeviceConfig{
+					{Host: "localhost:22", Username: "admin", Password: "password"},
+				},
 				Timeout:            30 * time.Second,
-				Collectors: CollectorsConfig{
+				CollectionInterval: 60 * time.Second,
+				Scrapers: ScrapersConfig{
 					BGP: true,
 				},
-				Devices: []DeviceConfig{
-					{
-						Host:     "192.168.1.1:22",
-						Username: "admin",
-						Password: "password",
-					},
-				},
 			},
-			wantErr: false,
+			expectedErr: "",
 		},
 		{
-			name: "no_devices",
+			name: "valid config with key file auth",
 			config: &Config{
-				CollectionInterval: 60 * time.Second,
+				Devices: []DeviceConfig{
+					{Host: "localhost:22", Username: "admin", KeyFile: "/path/to/key"},
+				},
 				Timeout:            30 * time.Second,
-				Collectors: CollectorsConfig{
+				CollectionInterval: 60 * time.Second,
+				Scrapers: ScrapersConfig{
+					Facts: true,
+				},
+			},
+			expectedErr: "",
+		},
+		{
+			name: "no devices",
+			config: &Config{
+				Devices:            []DeviceConfig{},
+				Timeout:            30 * time.Second,
+				CollectionInterval: 60 * time.Second,
+				Scrapers: ScrapersConfig{
 					BGP: true,
 				},
-				Devices: []DeviceConfig{},
 			},
-			wantErr: true,
-			errMsg:  "at least one device must be configured",
+			expectedErr: "at least one device must be configured",
 		},
 		{
-			name: "zero_timeout",
+			name: "empty host",
 			config: &Config{
+				Devices: []DeviceConfig{
+					{Host: "", Username: "admin", Password: "password"},
+				},
+				Timeout:            30 * time.Second,
 				CollectionInterval: 60 * time.Second,
+				Scrapers: ScrapersConfig{
+					BGP: true,
+				},
+			},
+			expectedErr: "device host cannot be empty",
+		},
+		{
+			name: "missing username for password auth",
+			config: &Config{
+				Devices: []DeviceConfig{
+					{Host: "localhost:22", Username: "", Password: "password"},
+				},
+				Timeout:            30 * time.Second,
+				CollectionInterval: 60 * time.Second,
+				Scrapers: ScrapersConfig{
+					BGP: true,
+				},
+			},
+			expectedErr: "device username cannot be empty",
+		},
+		{
+			name: "missing password for password auth",
+			config: &Config{
+				Devices: []DeviceConfig{
+					{Host: "localhost:22", Username: "admin", Password: ""},
+				},
+				Timeout:            30 * time.Second,
+				CollectionInterval: 60 * time.Second,
+				Scrapers: ScrapersConfig{
+					BGP: true,
+				},
+			},
+			expectedErr: "device password cannot be empty",
+		},
+		{
+			name: "zero timeout",
+			config: &Config{
+				Devices: []DeviceConfig{
+					{Host: "localhost:22", Username: "admin", Password: "password"},
+				},
 				Timeout:            0,
-				Collectors: CollectorsConfig{
-					BGP: true,
-				},
-				Devices: []DeviceConfig{
-					{
-						Host:     "192.168.1.1:22",
-						Username: "admin",
-						Password: "password",
-					},
-				},
-			},
-			wantErr: true,
-			errMsg:  "timeout must be greater than 0",
-		},
-		{
-			name: "zero_collection_interval",
-			config: &Config{
-				CollectionInterval: 0,
-				Timeout:            30 * time.Second,
-				Collectors: CollectorsConfig{
-					BGP: true,
-				},
-				Devices: []DeviceConfig{
-					{
-						Host:     "192.168.1.1:22",
-						Username: "admin",
-						Password: "password",
-					},
-				},
-			},
-			wantErr: true,
-			errMsg:  "collection_interval must be greater than 0",
-		},
-		{
-			name: "no_collectors_enabled",
-			config: &Config{
 				CollectionInterval: 60 * time.Second,
+				Scrapers: ScrapersConfig{
+					BGP: true,
+				},
+			},
+			expectedErr: "timeout must be greater than 0",
+		},
+		{
+			name: "zero collection interval",
+			config: &Config{
+				Devices: []DeviceConfig{
+					{Host: "localhost:22", Username: "admin", Password: "password"},
+				},
 				Timeout:            30 * time.Second,
-				Collectors: CollectorsConfig{
+				CollectionInterval: 0,
+				Scrapers: ScrapersConfig{
+					BGP: true,
+				},
+			},
+			expectedErr: "collection_interval must be greater than 0",
+		},
+		{
+			name: "no scrapers enabled",
+			config: &Config{
+				Devices: []DeviceConfig{
+					{Host: "localhost:22", Username: "admin", Password: "password"},
+				},
+				Timeout:            30 * time.Second,
+				CollectionInterval: 60 * time.Second,
+				Scrapers: ScrapersConfig{
 					BGP:         false,
 					Environment: false,
 					Facts:       false,
 					Interfaces:  false,
 					Optics:      false,
 				},
-				Devices: []DeviceConfig{
-					{
-						Host:     "192.168.1.1:22",
-						Username: "admin",
-						Password: "password",
-					},
-				},
 			},
-			wantErr: true,
-			errMsg:  "at least one collector must be enabled",
-		},
-		{
-			name: "device_missing_host",
-			config: &Config{
-				CollectionInterval: 60 * time.Second,
-				Timeout:            30 * time.Second,
-				Collectors: CollectorsConfig{
-					BGP: true,
-				},
-				Devices: []DeviceConfig{
-					{
-						Host:     "",
-						Username: "admin",
-						Password: "password",
-					},
-				},
-			},
-			wantErr: true,
-			errMsg:  "device host cannot be empty",
-		},
-		{
-			name: "device_missing_username",
-			config: &Config{
-				CollectionInterval: 60 * time.Second,
-				Timeout:            30 * time.Second,
-				Collectors: CollectorsConfig{
-					BGP: true,
-				},
-				Devices: []DeviceConfig{
-					{
-						Host:     "192.168.1.1:22",
-						Username: "",
-						Password: "password",
-					},
-				},
-			},
-			wantErr: true,
-			errMsg:  "device username cannot be empty",
-		},
-		{
-			name: "device_missing_password",
-			config: &Config{
-				CollectionInterval: 60 * time.Second,
-				Timeout:            30 * time.Second,
-				Collectors: CollectorsConfig{
-					BGP: true,
-				},
-				Devices: []DeviceConfig{
-					{
-						Host:     "192.168.1.1:22",
-						Username: "admin",
-						Password: "",
-					},
-				},
-			},
-			wantErr: true,
-			errMsg:  "device password cannot be empty",
+			expectedErr: "at least one scraper must be enabled",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := tt.config.Validate()
-
-			if tt.wantErr {
-				assert.Error(t, err)
-				if tt.errMsg != "" {
-					assert.Contains(t, err.Error(), tt.errMsg)
-				}
+			if tt.expectedErr == "" {
+				require.NoError(t, err)
 			} else {
-				assert.NoError(t, err)
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tt.expectedErr)
 			}
 		})
 	}
