@@ -170,8 +170,11 @@ Telemetry ───▶ │  • Score calculator & anomaly decision            �
 ```
 
 
-*Training cost*: **O(window\_size × forest\_size × log subsample\_size)** every `training_interval`
-*Scoring cost*: **O(forest\_size × log subsample\_size)** per item
+*Training cost*: **O(current_window_size × forest_size × log subsample_size)** every `training_interval`
+*Scoring cost*: **O(forest_size × log subsample_size)** per item
+
+**Note:** With adaptive window sizing enabled, `current_window_size` dynamically adjusts between `min_window_size` and `max_window_size` based on traffic patterns and memory constraints, making training costs adaptive to workload conditions.
+
 
 ---
 
