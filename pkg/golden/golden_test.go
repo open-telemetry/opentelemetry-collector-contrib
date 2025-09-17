@@ -352,7 +352,7 @@ func TestWriteProfiles(t *testing.T) {
 		expectedBytes = bytes.ReplaceAll(expectedBytes, []byte("\r\n"), []byte("\n"))
 	}
 
-	require.Equal(t, expectedBytes, actualBytes)
+	require.Equal(t, string(expectedBytes), string(actualBytes))
 }
 
 func TestProfilesRoundTrip(t *testing.T) {
@@ -374,7 +374,7 @@ func CreateTestProfiles() pprofile.Profiles {
 	profile := scope.Profiles().AppendEmpty()
 
 	dic.StringTable().Append("samples", "count", "cpu", "nanoseconds")
-	st := profile.SampleType().AppendEmpty()
+	st := profile.SampleType()
 	st.SetTypeStrindex(0)
 	st.SetUnitStrindex(1)
 	pt := profile.PeriodType()
@@ -382,20 +382,25 @@ func CreateTestProfiles() pprofile.Profiles {
 	pt.SetUnitStrindex(3)
 
 	a := dic.AttributeTable().AppendEmpty()
-	a.SetKey("process.executable.build_id.htlhash")
+	a.SetKeyStrindex(4)
+	dic.StringTable().Append("process.executable.build_id.htlhash")
 	a.Value().SetStr("600DCAFE4A110000F2BF38C493F5FB92")
 	a = dic.AttributeTable().AppendEmpty()
-	a.SetKey("profile.frame.type")
+	a.SetKeyStrindex(5)
+	dic.StringTable().Append("profile.frame.type")
 	a.Value().SetStr("native")
 	a = dic.AttributeTable().AppendEmpty()
-	a.SetKey("host.id")
+	a.SetKeyStrindex(6)
+	dic.StringTable().Append("host.id")
 	a.Value().SetStr("localhost")
 
 	profile.AttributeIndices().Append(2)
 
 	sample := profile.Sample().AppendEmpty()
 	sample.TimestampsUnixNano().Append(0)
-	sample.SetLocationsLength(1)
+
+	stack := dic.StackTable().AppendEmpty()
+	stack.LocationIndices().Append(0)
 
 	m := dic.MappingTable().AppendEmpty()
 	m.AttributeIndices().Append(0)

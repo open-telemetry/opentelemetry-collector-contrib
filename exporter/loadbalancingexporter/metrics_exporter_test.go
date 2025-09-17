@@ -237,8 +237,8 @@ func TestSplitMetricsByResourceServiceName(t *testing.T) {
 
 			expectedOutput := loadMetricsMap(t, filepath.Join(dir, "output.yaml"))
 
-			output, err := splitMetricsByResourceServiceName(input)
-			require.NoError(t, err)
+			output, errs := splitMetricsByResourceServiceName(input)
+			require.Nil(t, errs)
 			compareMetricsMaps(t, expectedOutput, output)
 		})
 	}
@@ -250,8 +250,8 @@ func TestSplitMetricsByResourceServiceNameFailsIfMissingServiceNameAttribute(t *
 	input, err := golden.ReadMetrics(filepath.Join("testdata", "metrics", "split_metrics", "missing_service_name", "input.yaml"))
 	require.NoError(t, err)
 
-	_, err = splitMetricsByResourceServiceName(input)
-	require.Error(t, err)
+	_, errs := splitMetricsByResourceServiceName(input)
+	require.NotNil(t, errs)
 }
 
 func TestSplitMetrics(t *testing.T) {
@@ -403,6 +403,77 @@ func TestConsumeMetrics_SingleEndpoint(t *testing.T) {
 			))
 		})
 	}
+}
+
+func TestConsumeMetrics_SingleEndpointNoServiceName(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+
+	createSettings := ts
+	config := &Config{
+		Resolver: ResolverSettings{
+			Static: configoptional.Some(StaticResolver{Hostnames: []string{"endpoint-1"}}),
+		},
+		RoutingKey: svcRoutingStr,
+	}
+
+	p, err := newMetricsExporter(createSettings, config)
+	require.NoError(t, err)
+	require.NotNil(t, p)
+
+	// newMetricsExporter will internally create a loadBalancer instance which is
+	// hardcoded to use OTLP exporters
+	// We manually override that to use our testing sink
+	sink := consumertest.MetricsSink{}
+	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
+		return newMockMetricsExporter(sink.ConsumeMetrics), nil
+	}
+
+	lb, err := newLoadBalancer(ts.Logger, config, componentFactory, tb)
+	require.NoError(t, err)
+	require.NotNil(t, lb)
+
+	lb.addMissingExporters(t.Context(), []string{"endpoint-1"})
+	lb.res = &mockResolver{
+		triggerCallbacks: true,
+		onResolve: func(_ context.Context) ([]string, error) {
+			return []string{"endpoint-1"}, nil
+		},
+	}
+	p.loadBalancer = lb
+
+	// Start everything up
+	err = p.Start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}()
+
+	// Test
+	dir := filepath.Join("testdata", "metrics", "consume_metrics", "single_endpoint", "resource_no_service_name")
+
+	input, err := golden.ReadMetrics(filepath.Join(dir, "input.yaml"))
+	require.NoError(t, err)
+
+	err = p.ConsumeMetrics(t.Context(), input)
+	require.NoError(t, err)
+
+	expectedOutput, err := golden.ReadMetrics(filepath.Join(dir, "output.yaml"))
+	require.NoError(t, err)
+
+	allOutputs := sink.AllMetrics()
+	require.Len(t, allOutputs, 1)
+
+	actualOutput := allOutputs[0]
+	require.NoError(t, pmetrictest.CompareMetrics(
+		expectedOutput, actualOutput,
+		// We have to ignore ordering, because we do MergeMetrics() inside a map
+		// iteration. And golang map iteration order is random. This means the
+		// order of the merges is random
+		pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreScopeMetricsOrder(),
+		pmetrictest.IgnoreMetricsOrder(),
+		pmetrictest.IgnoreMetricDataPointsOrder(),
+	))
 }
 
 func TestConsumeMetrics_TripleEndpoint(t *testing.T) {
