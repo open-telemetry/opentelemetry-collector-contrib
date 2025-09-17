@@ -4,7 +4,6 @@
 package oraclecloud
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -32,7 +31,7 @@ func TestQueryEndpointFailed(t *testing.T) {
 		client:   &http.Client{},
 	}
 
-	_, err := provider.Metadata(context.Background())
+	_, err := provider.Metadata(t.Context())
 	assert.Error(t, err)
 }
 
@@ -50,7 +49,7 @@ func TestQueryEndpointMalformed(t *testing.T) {
 		client:   &http.Client{},
 	}
 
-	_, err := provider.Metadata(context.Background())
+	_, err := provider.Metadata(t.Context())
 	assert.Error(t, err)
 }
 
@@ -58,7 +57,7 @@ func TestQueryEndpointMalformed(t *testing.T) {
 // and parses the metadata from a well-formed IMDS endpoint.
 func TestQueryEndpointCorrect(t *testing.T) {
 	sentMetadata := &ComputeMetadata{
-		HostId:             "ocid1.instance.oc1..aaaaaaa",
+		HostID:             "ocid1.instance.oc1..aaaaaaa",
 		HostDisplayName:    "my-instance",
 		HostType:           "VM.Standard.E4.Flex",
 		RegionID:           "us-ashburn-1",
@@ -81,7 +80,7 @@ func TestQueryEndpointCorrect(t *testing.T) {
 		client:   &http.Client{},
 	}
 
-	recvMetadata, err := provider.Metadata(context.Background())
+	recvMetadata, err := provider.Metadata(t.Context())
 
 	require.NoError(t, err)
 	assert.Equal(t, *sentMetadata, *recvMetadata)

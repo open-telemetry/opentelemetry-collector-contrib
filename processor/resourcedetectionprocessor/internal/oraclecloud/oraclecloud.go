@@ -55,7 +55,7 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 
 	d.rb.SetCloudRegion(compute.RegionID)
 	d.rb.SetCloudAvailabilityZone(compute.AvailabilityDomain)
-	d.rb.SetHostID(compute.HostId)
+	d.rb.SetHostID(compute.HostID)
 	d.rb.SetHostName(compute.HostDisplayName)
 	d.rb.SetHostType(compute.HostType)
 

@@ -41,7 +41,7 @@ type ComputeTagsListMetadata struct {
 
 // ComputeMetadata is the OracleCloud IMDS compute metadata response format
 type ComputeMetadata struct {
-	HostId             string `json:"id"`
+	HostID             string `json:"id"`
 	HostDisplayName    string `json:"displayName"`
 	HostType           string `json:"shape"`
 	RegionID           string `json:"canonicalRegionName"`
@@ -56,7 +56,7 @@ type InstanceMetadata struct {
 
 // Metadata queries a given endpoint and parses the output to the OracleCloud IMDS format
 func (p *oraclecloudProviderImpl) Metadata(ctx context.Context) (*ComputeMetadata, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, p.endpoint, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, p.endpoint, http.NoBody)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}

@@ -30,7 +30,7 @@ func (m *mockMetadata) Metadata(_ context.Context) (*oraclecloud.ComputeMetadata
 func TestDetect(t *testing.T) {
 	md := &mockMetadata{
 		out: &oraclecloud.ComputeMetadata{
-			HostId:             "ocid1.instance.oc1..aaaaaaa",
+			HostID:             "ocid1.instance.oc1..aaaaaaa",
 			HostDisplayName:    "my-instance",
 			HostType:           "VM.Standard.E4.Flex",
 			RegionID:           "us-ashburn-1",
@@ -69,7 +69,7 @@ func TestDetect(t *testing.T) {
 func TestDetectDisabledResourceAttributes(t *testing.T) {
 	md := &mockMetadata{
 		out: &oraclecloud.ComputeMetadata{
-			HostId:             "ocid1.instance.oc1..aaaaaaa",
+			HostID:             "ocid1.instance.oc1..aaaaaaa",
 			HostDisplayName:    "my-instance",
 			HostType:           "VM.Standard.E4.Flex",
 			RegionID:           "us-ashburn-1",
