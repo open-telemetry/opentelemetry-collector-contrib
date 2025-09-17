@@ -178,6 +178,12 @@ func NewLogsBuilder(lbc LogsBuilderConfig, settings receiver.Settings) *LogsBuil
 	if lbc.ResourceAttributes.ServerPort.EventsExclude != nil {
 		lb.resourceAttributeExcludeFilter["server.port"] = filter.CreateFilter(lbc.ResourceAttributes.ServerPort.EventsExclude)
 	}
+	if lbc.ResourceAttributes.ServiceInstanceID.EventsInclude != nil {
+		lb.resourceAttributeIncludeFilter["service.instance.id"] = filter.CreateFilter(lbc.ResourceAttributes.ServiceInstanceID.EventsInclude)
+	}
+	if lbc.ResourceAttributes.ServiceInstanceID.EventsExclude != nil {
+		lb.resourceAttributeExcludeFilter["service.instance.id"] = filter.CreateFilter(lbc.ResourceAttributes.ServiceInstanceID.EventsExclude)
+	}
 	if lbc.ResourceAttributes.SqlserverComputerName.EventsInclude != nil {
 		lb.resourceAttributeIncludeFilter["sqlserver.computer.name"] = filter.CreateFilter(lbc.ResourceAttributes.SqlserverComputerName.EventsInclude)
 	}

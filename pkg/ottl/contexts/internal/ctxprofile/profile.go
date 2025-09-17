@@ -28,8 +28,6 @@ func PathGetSetter[K Context](path ottl.Path[K]) (ottl.GetSetter[K], error) {
 		return accessSampleType[K](), nil
 	case "sample":
 		return accessSample[K](), nil
-	case "location_indices":
-		return accessLocationIndices[K](), nil
 	case "time_unix_nano":
 		return accessTimeUnixNano[K](), nil
 	case "time":
@@ -44,8 +42,6 @@ func PathGetSetter[K Context](path ottl.Path[K]) (ottl.GetSetter[K], error) {
 		return accessPeriod[K](), nil
 	case "comment_string_indices":
 		return accessCommentStringIndices[K](), nil
-	case "default_sample_type_index":
-		return accessDefaultSampleTypeIndex[K](), nil
 	case "profile_id":
 		nextPath := path.Next()
 		if nextPath != nil {
@@ -76,20 +72,6 @@ func PathGetSetter[K Context](path ottl.Path[K]) (ottl.GetSetter[K], error) {
 	}
 }
 
-func accessSampleType[K Context]() ottl.StandardGetSetter[K] {
-	return ottl.StandardGetSetter[K]{
-		Getter: func(_ context.Context, tCtx K) (any, error) {
-			return tCtx.GetProfile().SampleType(), nil
-		},
-		Setter: func(_ context.Context, tCtx K, val any) error {
-			if v, ok := val.(pprofile.ValueTypeSlice); ok {
-				v.CopyTo(tCtx.GetProfile().SampleType())
-			}
-			return nil
-		},
-	}
-}
-
 func accessSample[K Context]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
@@ -100,17 +82,6 @@ func accessSample[K Context]() ottl.StandardGetSetter[K] {
 				v.CopyTo(tCtx.GetProfile().Sample())
 			}
 			return nil
-		},
-	}
-}
-
-func accessLocationIndices[K Context]() ottl.StandardGetSetter[K] {
-	return ottl.StandardGetSetter[K]{
-		Getter: func(_ context.Context, tCtx K) (any, error) {
-			return ctxutil.GetCommonIntSliceValues[int32](tCtx.GetProfile().LocationIndices()), nil
-		},
-		Setter: func(_ context.Context, tCtx K, val any) error {
-			return ctxutil.SetCommonIntSliceValues[int32](tCtx.GetProfile().LocationIndices(), val)
 		},
 	}
 }
@@ -210,14 +181,14 @@ func accessCommentStringIndices[K Context]() ottl.StandardGetSetter[K] {
 	}
 }
 
-func accessDefaultSampleTypeIndex[K Context]() ottl.StandardGetSetter[K] {
+func accessSampleType[K Context]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
-			return int64(tCtx.GetProfile().DefaultSampleTypeIndex()), nil
+			return tCtx.GetProfile().SampleType(), nil
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
-			if i, ok := val.(int64); ok {
-				tCtx.GetProfile().SetDefaultSampleTypeIndex(int32(i))
+			if v, ok := val.(pprofile.ValueType); ok {
+				v.CopyTo(tCtx.GetProfile().SampleType())
 			}
 			return nil
 		},

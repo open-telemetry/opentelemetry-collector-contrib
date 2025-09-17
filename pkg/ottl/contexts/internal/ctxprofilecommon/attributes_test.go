@@ -37,11 +37,17 @@ func mockAttributeSource(ctx *mockAttributeContext) (pprofile.ProfilesDictionary
 func TestAccessAttributes_Getter(t *testing.T) {
 	dict := pprofile.NewProfilesDictionary()
 	attrTable := dict.AttributeTable()
+	strTable := dict.StringTable()
+	for i := 0; i < 3; i++ {
+		strTable.Append("")
+	}
+	strTable.SetAt(1, "foo")
+	strTable.SetAt(2, "baz")
 	attr1 := attrTable.AppendEmpty()
-	attr1.SetKey("foo")
+	attr1.SetKeyStrindex(1)
 	attr1.Value().SetStr("bar")
 	attr2 := attrTable.AppendEmpty()
-	attr2.SetKey("baz")
+	attr2.SetKeyStrindex(2)
 	attr2.Value().SetInt(42)
 
 	indices := pcommon.NewInt32Slice()
@@ -95,11 +101,12 @@ func TestAccessAttributes_Setter(t *testing.T) {
 	foundNum := false
 	for i := 0; i < attrTable.Len(); i++ {
 		attr := attrTable.At(i)
-		if attr.Key() == "alpha" {
+		attrKey := dict.StringTable().At(int(attr.KeyStrindex()))
+		if attrKey == "alpha" {
 			foundAlpha = true
 			assert.Equal(t, "beta", attr.Value().Str())
 		}
-		if attr.Key() == "num" {
+		if attrKey == "num" {
 			foundNum = true
 			assert.Equal(t, int64(123), attr.Value().Int())
 		}
@@ -127,8 +134,13 @@ func TestAccessAttributes_Setter_InvalidValue(t *testing.T) {
 func TestAccessAttributesKey_Getter(t *testing.T) {
 	dict := pprofile.NewProfilesDictionary()
 	attrTable := dict.AttributeTable()
+	strTable := dict.StringTable()
+	for i := 0; i < 2; i++ {
+		strTable.Append("")
+	}
+	strTable.SetAt(1, "foo")
 	attr := attrTable.AppendEmpty()
-	attr.SetKey("foo")
+	attr.SetKeyStrindex(1)
 	attr.Value().SetStr("bar")
 	indices := pcommon.NewInt32Slice()
 	indices.Append(0)
@@ -170,8 +182,13 @@ func TestAccessAttributesKey_Getter(t *testing.T) {
 func TestAccessAttributesKey_Setter(t *testing.T) {
 	dict := pprofile.NewProfilesDictionary()
 	attrTable := dict.AttributeTable()
+	strTable := dict.StringTable()
+	for i := 0; i < 2; i++ {
+		strTable.Append("")
+	}
+	strTable.SetAt(1, "foo")
 	attr := attrTable.AppendEmpty()
-	attr.SetKey("foo")
+	attr.SetKeyStrindex(1)
 	attr.Value().SetStr("bar")
 	indices := pcommon.NewInt32Slice()
 	indices.Append(0)

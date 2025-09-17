@@ -27,10 +27,6 @@ func PathGetSetter[K Context](path ottl.Path[K]) (ottl.GetSetter[K], error) {
 		return nil, ctxerror.New("nil", "nil", Name, DocRef)
 	}
 	switch path.Name() {
-	case "locations_start_index":
-		return accessLocationsStartIndex[K](), nil
-	case "locations_length":
-		return accessLocationsLength[K](), nil
 	case "values":
 		return accessValues[K](), nil
 	case "attribute_indices":
@@ -54,49 +50,13 @@ func PathGetSetter[K Context](path ottl.Path[K]) (ottl.GetSetter[K], error) {
 	}
 }
 
-func accessLocationsStartIndex[K Context]() ottl.StandardGetSetter[K] {
-	return ottl.StandardGetSetter[K]{
-		Getter: func(_ context.Context, tCtx K) (any, error) {
-			return int64(tCtx.GetProfileSample().LocationsStartIndex()), nil
-		},
-		Setter: func(_ context.Context, tCtx K, val any) error {
-			if v, ok := val.(int64); ok {
-				if v >= math.MaxInt32 {
-					return errMaxValueExceed
-				}
-				tCtx.GetProfileSample().SetLocationsStartIndex(int32(v))
-				return nil
-			}
-			return errInvalidValueType
-		},
-	}
-}
-
-func accessLocationsLength[K Context]() ottl.StandardGetSetter[K] {
-	return ottl.StandardGetSetter[K]{
-		Getter: func(_ context.Context, tCtx K) (any, error) {
-			return int64(tCtx.GetProfileSample().LocationsLength()), nil
-		},
-		Setter: func(_ context.Context, tCtx K, val any) error {
-			if v, ok := val.(int64); ok {
-				if v >= math.MaxInt32 {
-					return errMaxValueExceed
-				}
-				tCtx.GetProfileSample().SetLocationsLength(int32(v))
-				return nil
-			}
-			return errInvalidValueType
-		},
-	}
-}
-
 func accessValues[K Context]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
-			return ctxutil.GetCommonIntSliceValues[int64](tCtx.GetProfileSample().Value()), nil
+			return ctxutil.GetCommonIntSliceValues[int64](tCtx.GetProfileSample().Values()), nil
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
-			return ctxutil.SetCommonIntSliceValues[int64](tCtx.GetProfileSample().Value(), val)
+			return ctxutil.SetCommonIntSliceValues[int64](tCtx.GetProfileSample().Values(), val)
 		},
 	}
 }
