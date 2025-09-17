@@ -139,3 +139,9 @@ package models
 type InstanceBufferMetrics struct {
 	InstanceBufferPoolSize *int64 `db:"instance_buffer_pool_size" metric_name:"sqlserver.buffer_pool.size_bytes" source_type:"gauge"`
 }
+
+type InstanceMemoryDefinitionsModel struct {
+	TotalPhysicalMemory     *float64 `db:"total_physical_memory" metric_name:"sqlserver.instance.memory_total" source_type:"gauge" description:"Total physical memory available to SQL Server" unit:"By"`
+	AvailablePhysicalMemory *float64 `db:"available_physical_memory" metric_name:"sqlserver.instance.memory_available" source_type:"gauge" description:"Available physical memory" unit:"By"`
+	MemoryUtilization       *float64 `db:"memory_utilization" metric_name:"sqlserver.instance.memory_utilization" source_type:"gauge" description:"Memory utilization percentage" unit:"Percent"`
+}

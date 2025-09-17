@@ -11,6 +11,26 @@ The New Relic SQL Server Receiver is an OpenTelemetry receiver that collects met
 - Deadlock detection and user errors
 - Transaction and checkpoint activity
 
+### Comprehensive Host & System Information
+**🆕 NEW FEATURE**: All metrics automatically include comprehensive host and SQL Server system information as resource attributes:
+
+#### Host Information
+- Physical machine name and hardware specs (CPU count, memory)
+- Host uptime and availability status
+- Operating system platform detection
+
+#### SQL Server Instance Details
+- Instance name, type, and service configuration
+- Edition, version, and engine type (Standard, Enterprise, Express, Azure variants)
+- High availability configuration (Clustering, AlwaysOn)
+- Port configuration and encryption settings
+
+#### Database Environment Status
+- Database counts by status (online, offline, recovering, etc.)
+- Instance uptime and configuration state
+
+This information is automatically collected and attached to every metric, providing rich context for troubleshooting, compliance, and inventory management without additional configuration.
+
 ### Query Performance Analytics
 - Blocking session detection and analysis
 - Slow query identification
@@ -106,14 +126,46 @@ receivers:
 
 ## Resource Attributes
 
-| Attribute | Description |
-|-----------|-------------|
-| `server.address` | SQL Server hostname or IP address |
-| `server.port` | SQL Server port number |
-| `sqlserver.instance.name` | SQL Server instance name |
-| `sqlserver.database.name` | Database name (for database-specific metrics) |
-| `db.system` | Database system identifier (`mssql`) |
-| `service.name` | Service name (`sqlserver`) |
+**🆕 Enhanced Resource Attributes**: All metrics now include comprehensive host and SQL Server system information:
+
+### Basic Connection Attributes
+| Attribute | Description | Example |
+|-----------|-------------|---------|
+| `server.address` | SQL Server hostname or IP address | `sql-server.example.com` |
+| `server.port` | SQL Server port number | `1433` |
+| `db.system` | Database system identifier | `mssql` |
+| `service.name` | Service name | `sql-server-monitoring` |
+
+### Host & System Information (Automatically Collected)
+| Attribute | Description | Example |
+|-----------|-------------|---------|
+| `host.name` | Physical machine/computer name | `WIN-SQL-SERVER-01` |
+| `host.cpu.count` | Number of logical processors | `8` |
+| `host.memory.total_kb` | Total physical memory (KB) | `16777216` |
+| `host.memory.available_kb` | Available physical memory (KB) | `8388608` |
+| `host.uptime_seconds` | Host computer uptime in seconds | `86400` |
+
+### SQL Server Instance Information (Automatically Collected)
+| Attribute | Description | Example |
+|-----------|-------------|---------|
+| `sql.instance_name` | SQL Server instance name | `WIN-SQL-SERVER-01\SQLEXPRESS` |
+| `sql.service_name` | SQL Server service name | `MSSQL$SQLEXPRESS` |
+| `sql.edition` | SQL Server edition | `Express Edition (64-bit)` |
+| `sql.engine_edition` | Engine edition ID (2=Standard, 3=Enterprise, 4=Express, 5=Azure DB, 8=Azure MI) | `4` |
+| `sql.version` | SQL Server product version | `15.0.2000.5` |
+| `sql.version_description` | Version description from @@VERSION | `Microsoft SQL Server 2019 (RTM)` |
+| `sql.uptime_minutes` | SQL Server uptime in minutes | `1440` |
+| `sql.port` | SQL Server port number | `1433` |
+| `sql.port_type` | Port type (Static or Dynamic) | `Static` |
+| `sql.force_encryption` | Whether connection encryption is forced | `false` |
+
+### High Availability Configuration (Automatically Collected)
+| Attribute | Description | Example |
+|-----------|-------------|---------|
+| `sql.is_clustered` | Whether instance is part of a cluster | `false` |
+| `sql.is_hadr_enabled` | Whether AlwaysOn Availability Groups is enabled | `false` |
+
+> **Note**: All host and SQL Server system information is automatically collected and requires no additional configuration. This provides rich context for every metric, enabling advanced filtering, correlation, and troubleshooting capabilities.
 
 ## Authentication Methods
 

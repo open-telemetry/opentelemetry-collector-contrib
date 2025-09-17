@@ -40,56 +40,6 @@ func NewInstanceScraper(conn SQLConnectionInterface, logger *zap.Logger, engineE
 	}
 }
 
-// ScrapeInstanceBufferMetrics collects instance-level buffer pool metrics using engine-specific queries
-func (s *InstanceScraper) ScrapeInstanceBufferMetrics(ctx context.Context, scopeMetrics pmetric.ScopeMetrics) error {
-	s.logger.Debug("Scraping SQL Server instance buffer metrics")
-
-	// Get the appropriate query for this engine edition
-	query, found := s.getQueryForMetric("sqlserver.instance.buffer_pool_size")
-	if !found {
-		return fmt.Errorf("no buffer pool query available for engine edition %d", s.engineEdition)
-	}
-
-	s.logger.Debug("Executing buffer pool query",
-		zap.String("query", queries.TruncateQuery(query, 100)),
-		zap.String("engine_type", queries.GetEngineTypeName(s.engineEdition)))
-
-	var results []models.InstanceBufferMetrics
-	if err := s.connection.Query(ctx, &results, query); err != nil {
-		s.logger.Error("Failed to execute instance buffer query",
-			zap.Error(err),
-			zap.String("query", queries.TruncateQuery(query, 100)),
-			zap.Int("engine_edition", s.engineEdition))
-		return fmt.Errorf("failed to execute instance buffer query: %w", err)
-	}
-
-	if len(results) == 0 {
-		s.logger.Warn("No results returned from instance buffer query - SQL Server may not be ready")
-		return fmt.Errorf("no results returned from instance buffer query")
-	}
-
-	if len(results) > 1 {
-		s.logger.Warn("Multiple results returned from instance buffer query",
-			zap.Int("result_count", len(results)))
-	}
-
-	result := results[0]
-	if result.InstanceBufferPoolSize == nil {
-		s.logger.Error("Instance buffer pool size is null - invalid query result")
-		return fmt.Errorf("instance buffer pool size is null in query result")
-	}
-
-	if err := s.processInstanceBufferMetrics(result, scopeMetrics); err != nil {
-		s.logger.Error("Failed to process instance buffer metrics", zap.Error(err))
-		return fmt.Errorf("failed to process instance buffer metrics: %w", err)
-	}
-
-	s.logger.Debug("Successfully scraped instance buffer metrics",
-		zap.Int64("buffer_pool_size", *result.InstanceBufferPoolSize))
-
-	return nil
-}
-
 // getQueryForMetric retrieves the appropriate query for a metric based on engine edition with Default fallback
 func (s *InstanceScraper) getQueryForMetric(metricName string) (string, bool) {
 	query, found := queries.GetQueryForMetric(queries.InstanceQueries, metricName, s.engineEdition)
@@ -101,8 +51,55 @@ func (s *InstanceScraper) getQueryForMetric(metricName string) (string, bool) {
 	return query, found
 }
 
-// processInstanceBufferMetrics processes buffer pool metrics and creates OpenTelemetry metrics
-func (s *InstanceScraper) processInstanceBufferMetrics(result models.InstanceBufferMetrics, scopeMetrics pmetric.ScopeMetrics) error {
+func (s *InstanceScraper) ScrapeInstanceMemoryMetrics(ctx context.Context, scopeMetrics pmetric.ScopeMetrics) error {
+	s.logger.Debug("Scraping SQL Server instance memory metrics")
+
+	// Get the appropriate query for this engine edition
+	query, found := s.getQueryForMetric("sqlserver.instance.memory_metrics")
+	if !found {
+		return fmt.Errorf("no memory query available for engine edition %d", s.engineEdition)
+	}
+
+	s.logger.Debug("Executing memory query",
+		zap.String("query", queries.TruncateQuery(query, 100)),
+		zap.String("engine_type", queries.GetEngineTypeName(s.engineEdition)))
+
+	var results []models.InstanceMemoryDefinitionsModel
+	if err := s.connection.Query(ctx, &results, query); err != nil {
+		s.logger.Error("Failed to execute instance memory query",
+			zap.Error(err),
+			zap.String("query", queries.TruncateQuery(query, 100)),
+			zap.Int("engine_edition", s.engineEdition))
+		return fmt.Errorf("failed to execute instance memory query: %w", err)
+	}
+
+	if len(results) == 0 {
+		s.logger.Warn("No results returned from instance memory query - SQL Server may not be ready")
+		return fmt.Errorf("no results returned from instance memory query")
+	}
+
+	if len(results) > 1 {
+		s.logger.Warn("Multiple results returned from instance memory query",
+			zap.Int("result_count", len(results)))
+	}
+
+	result := results[0]
+	if result.TotalPhysicalMemory == nil && result.AvailablePhysicalMemory == nil && result.MemoryUtilization == nil {
+		s.logger.Error("All memory metrics are null - invalid query result")
+		return fmt.Errorf("all memory metrics are null in query result")
+	}
+
+	if err := s.processInstanceMemoryMetrics(result, scopeMetrics); err != nil {
+		s.logger.Error("Failed to process instance memory metrics", zap.Error(err))
+		return fmt.Errorf("failed to process instance memory metrics: %w", err)
+	}
+
+	s.logger.Debug("Successfully scraped instance memory metrics")
+	return nil
+}
+
+// processInstanceMemoryMetrics processes memory metrics and creates OpenTelemetry metrics
+func (s *InstanceScraper) processInstanceMemoryMetrics(result models.InstanceMemoryDefinitionsModel, scopeMetrics pmetric.ScopeMetrics) error {
 	// Use reflection to process the struct fields with metric tags
 	resultValue := reflect.ValueOf(result)
 	resultType := reflect.TypeOf(result)
@@ -119,22 +116,44 @@ func (s *InstanceScraper) processInstanceBufferMetrics(result models.InstanceBuf
 		// Get metric metadata from struct tags
 		metricName := fieldType.Tag.Get("metric_name")
 		sourceType := fieldType.Tag.Get("source_type")
+		description := fieldType.Tag.Get("description")
+		unit := fieldType.Tag.Get("unit")
 
 		if metricName == "" {
 			continue
 		}
 
-		// Create the metric
+		// Create the metric using the metric_name from struct tag
 		metric := scopeMetrics.Metrics().AppendEmpty()
 		metric.SetName(metricName)
-		metric.SetUnit("By")
 
-		// Set description based on metric name
-		switch metricName {
-		case "sqlserver.buffer_pool.size_bytes":
-			metric.SetDescription("Size of the SQL Server buffer pool in bytes")
-		default:
-			metric.SetDescription(fmt.Sprintf("SQL Server %s metric", metricName))
+		// Set description from tag or generate default
+		if description != "" {
+			metric.SetDescription(description)
+		} else {
+			// Generate default description based on metric name
+			switch metricName {
+			case "memoryTotal":
+				metric.SetDescription("Total physical memory available to SQL Server")
+			case "memoryAvailable":
+				metric.SetDescription("Available physical memory")
+			case "memoryUtilization":
+				metric.SetDescription("Memory utilization percentage")
+			default:
+				metric.SetDescription(fmt.Sprintf("SQL Server %s metric", metricName))
+			}
+		}
+
+		// Set unit from tag or generate default
+		if unit != "" {
+			metric.SetUnit(unit)
+		} else {
+			// Generate default unit based on metric name
+			if metricName == "memoryUtilization" {
+				metric.SetUnit("Percent")
+			} else {
+				metric.SetUnit("By")
+			}
 		}
 
 		// Create gauge metric (for instance metrics)
@@ -157,17 +176,20 @@ func (s *InstanceScraper) processInstanceBufferMetrics(result models.InstanceBuf
 		case reflect.Int64:
 			value := fieldValue.Int()
 			dataPoint.SetIntValue(value)
-			s.logger.Info("Successfully scraped SQL Server instance buffer metric",
-				zap.Int64("buffer_pool_size_bytes", value))
+			s.logger.Info("Successfully scraped SQL Server instance memory metric",
+				zap.String("metric_name", metricName),
+				zap.Int64("value", value))
 		case reflect.Float64:
 			value := fieldValue.Float()
 			dataPoint.SetDoubleValue(value)
-			s.logger.Info("Successfully scraped SQL Server instance buffer metric",
+			s.logger.Info("Successfully scraped SQL Server instance memory metric",
+				zap.String("metric_name", metricName),
 				zap.Float64("value", value))
 		case reflect.Int, reflect.Int32:
 			value := fieldValue.Int()
 			dataPoint.SetIntValue(value)
-			s.logger.Info("Successfully scraped SQL Server instance buffer metric",
+			s.logger.Info("Successfully scraped SQL Server instance memory metric",
+				zap.String("metric_name", metricName),
 				zap.Int64("value", value))
 		default:
 			return fmt.Errorf("unsupported field type %s for metric %s", fieldValue.Kind(), metricName)
@@ -175,9 +197,6 @@ func (s *InstanceScraper) processInstanceBufferMetrics(result models.InstanceBuf
 
 		// Set attributes
 		dataPoint.Attributes().PutStr("metric.type", sourceType)
-		dataPoint.Attributes().PutStr("metric.source", "sys.dm_os_buffer_descriptors")
-		dataPoint.Attributes().PutStr("engine_edition", queries.GetEngineTypeName(s.engineEdition))
-		dataPoint.Attributes().PutInt("engine_edition_id", int64(s.engineEdition))
 	}
 
 	return nil

@@ -54,3 +54,11 @@ const InstanceBufferPoolQuery = `SELECT
 	Count_big(*) * (8*1024) AS instance_buffer_pool_size
 	FROM sys.dm_os_buffer_descriptors WITH (nolock)
 	WHERE database_id <> 32767 -- ResourceDB`
+
+const instanceMemoryDefinitions = `SELECT
+		Max(sys_mem.total_physical_memory_kb * 1024.0) AS total_physical_memory,
+		Max(sys_mem.available_physical_memory_kb * 1024.0) AS available_physical_memory,
+		(Max(proc_mem.physical_memory_in_use_kb) / (Max(sys_mem.total_physical_memory_kb) * 1.0)) * 100 AS memory_utilization
+		FROM sys.dm_os_process_memory proc_mem,
+		  sys.dm_os_sys_memory sys_mem,
+		  sys.dm_os_performance_counters perf_count WHERE object_name = 'SQLServer:Memory Manager'`
