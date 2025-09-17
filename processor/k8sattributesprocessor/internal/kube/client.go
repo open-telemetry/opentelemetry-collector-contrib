@@ -146,6 +146,7 @@ type InformersFactoryList struct {
 	newInformer           InformerProvider
 	newNamespaceInformer  InformerProviderNamespace
 	newReplicaSetInformer InformerProviderWorkload
+	newJobInformer        InformerProviderWorkload
 }
 
 // New initializes a new k8s Client.
@@ -280,7 +281,23 @@ func New(
 	}
 
 	if c.extractJobLabelsAnnotations() || rules.CronJobUID {
-		c.jobInformer = newJobSharedInformer(c.kc, c.Filters.Namespace)
+		if informersFactory.newJobInformer == nil {
+			informersFactory.newJobInformer = newJobSharedInformer
+		}
+		c.jobInformer = informersFactory.newJobInformer(c.kc, c.Filters.Namespace)
+		err = c.jobInformer.SetTransform(
+			func(object any) (any, error) {
+				originalJob, success := object.(*batch_v1.Job)
+				if !success { // means this is a cache.DeletedFinalStateUnknown, in which case we do nothing
+					return object, nil
+				}
+
+				return removeUnnecessaryJobData(originalJob), nil
+			},
+		)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return c, err
