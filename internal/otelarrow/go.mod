@@ -10,8 +10,6 @@ require (
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.41.1-0.20250911155607-37a3ace6274c
 	go.opentelemetry.io/collector/component/componenttest v0.135.1-0.20250911155607-37a3ace6274c
-	go.opentelemetry.io/collector/config/configgrpc v0.135.1-0.20250911155607-37a3ace6274c
-	go.opentelemetry.io/collector/config/configoptional v0.135.1-0.20250911155607-37a3ace6274c
 	go.opentelemetry.io/collector/config/configtelemetry v0.135.1-0.20250911155607-37a3ace6274c
 	go.opentelemetry.io/collector/consumer v1.41.1-0.20250911155607-37a3ace6274c
 	go.opentelemetry.io/collector/consumer/consumererror v0.135.1-0.20250911155607-37a3ace6274c
@@ -28,7 +26,7 @@ require (
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
-	google.golang.org/grpc v1.75.0
+	google.golang.org/grpc v1.75.1
 )
 
 require (
@@ -74,9 +72,11 @@ require (
 	go.opentelemetry.io/collector/component/componentstatus v0.135.1-0.20250911155607-37a3ace6274c // indirect
 	go.opentelemetry.io/collector/config/configauth v0.135.1-0.20250911155607-37a3ace6274c // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.41.1-0.20250911155607-37a3ace6274c // indirect
+	go.opentelemetry.io/collector/config/configgrpc v0.135.1-0.20250911155607-37a3ace6274c // indirect
 	go.opentelemetry.io/collector/config/configmiddleware v1.41.1-0.20250911155607-37a3ace6274c // indirect
 	go.opentelemetry.io/collector/config/confignet v1.41.1-0.20250911155607-37a3ace6274c // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.41.1-0.20250911155607-37a3ace6274c // indirect
+	go.opentelemetry.io/collector/config/configoptional v0.135.1-0.20250911155607-37a3ace6274c // indirect
 	go.opentelemetry.io/collector/config/configretry v1.41.1-0.20250911155607-37a3ace6274c // indirect
 	go.opentelemetry.io/collector/config/configtls v1.41.1-0.20250911155607-37a3ace6274c // indirect
 	go.opentelemetry.io/collector/confmap v1.41.1-0.20250911155607-37a3ace6274c // indirect
