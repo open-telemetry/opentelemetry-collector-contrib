@@ -12,9 +12,8 @@ import (
 	"go.opentelemetry.io/collector/processor/processortest"
 	conventions "go.opentelemetry.io/otel/semconv/v1.30.0"
 
-	rdpmetadata "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/metadata"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/oraclecloud"
+	rdpmetadata "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/metadata"
 )
 
 var _ oraclecloud.Provider = (*mockMetadata)(nil)
@@ -47,7 +46,7 @@ func TestDetect(t *testing.T) {
 	require.NoError(t, err)
 	det.(*Detector).provider = md
 
-	res, schemaURL, err := det.Detect(context.Background())
+	res, schemaURL, err := det.Detect(t.Context())
 	require.NoError(t, err)
 	assert.Equal(t, conventions.SchemaURL, schemaURL)
 
@@ -87,7 +86,7 @@ func TestDetectDisabledResourceAttributes(t *testing.T) {
 	require.NoError(t, err)
 	det.(*Detector).provider = md
 
-	res, schemaURL, err := det.Detect(context.Background())
+	res, schemaURL, err := det.Detect(t.Context())
 	require.NoError(t, err)
 	assert.Equal(t, conventions.SchemaURL, schemaURL)
 
