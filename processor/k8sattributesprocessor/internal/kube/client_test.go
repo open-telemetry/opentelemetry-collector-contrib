@@ -3241,7 +3241,9 @@ func TestCronJobExtractionRules_FromJobOwner(t *testing.T) {
 					Controller: &isNotController,
 				},
 			},
-			want: map[string]string{},
+			want: map[string]string{
+				"k8s.cronjob.name": "my-cronjob",
+			},
 		},
 		{
 			name: "multiple_owners_only_controller_counts",
@@ -3266,7 +3268,7 @@ func TestCronJobExtractionRules_FromJobOwner(t *testing.T) {
 				},
 			},
 			want: map[string]string{
-				"k8s.cronjob.name": "cj-controller",
+				"k8s.cronjob.name": "my-cronjob",
 				"k8s.cronjob.uid":  "cron-uid-222",
 			},
 		},
@@ -3285,7 +3287,9 @@ func TestCronJobExtractionRules_FromJobOwner(t *testing.T) {
 					Controller: &isController,
 				},
 			},
-			want: map[string]string{},
+			want: map[string]string{
+				"k8s.cronjob.name": "my-cronjob",
+			},
 		},
 	}
 

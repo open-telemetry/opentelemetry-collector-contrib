@@ -146,6 +146,7 @@ type InformersFactoryList struct {
 	newInformer           InformerProvider
 	newNamespaceInformer  InformerProviderNamespace
 	newReplicaSetInformer InformerProviderWorkload
+	newJobInformer        InformerProviderWorkload
 }
 
 // New initializes a new k8s Client.
@@ -279,8 +280,23 @@ func New(
 		c.daemonsetInformer = newDaemonSetSharedInformer(c.kc, c.Filters.Namespace)
 	}
 
-	if c.extractJobLabelsAnnotations() {
-		c.jobInformer = newJobSharedInformer(c.kc, c.Filters.Namespace)
+	if c.extractJobLabelsAnnotations() || rules.CronJobUID {
+		if informersFactory.newJobInformer == nil {
+			informersFactory.newJobInformer = newJobSharedInformer
+		}
+		c.jobInformer = informersFactory.newJobInformer(c.kc, c.Filters.Namespace)
+		err = c.jobInformer.SetTransform(
+			func(object any) (any, error) {
+				originalJob, success := object.(*batch_v1.Job)
+				if !success { // means this is a cache.DeletedFinalStateUnknown, in which case we do nothing
+					return object, nil
+				}
+				return removeUnnecessaryJobData(originalJob), nil
+			},
+		)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return c, err
@@ -875,25 +891,15 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 					tags[string(conventions.ServiceNameKey)] = ref.Name
 				}
 				if c.Rules.CronJobName || c.Rules.ServiceName {
-					if job, ok := c.GetJob(string(ref.UID)); ok {
-						if job.CronJob.Name != "" {
-							if c.Rules.CronJobName {
-								tags[string(conventions.K8SCronJobNameKey)] = job.CronJob.Name
-							}
-							if c.Rules.ServiceName {
-								tags[string(conventions.ServiceNameKey)] = job.CronJob.Name
-							}
+					parts := c.cronJobRegex.FindStringSubmatch(ref.Name)
+					if len(parts) == 2 {
+						name := parts[1]
+						if c.Rules.CronJobName {
+							tags[string(conventions.K8SCronJobNameKey)] = name
 						}
-					} else {
-						parts := c.cronJobRegex.FindStringSubmatch(ref.Name)
-						if len(parts) == 2 {
-							name := parts[1]
-							if c.Rules.CronJobName {
-								tags[string(conventions.K8SCronJobNameKey)] = name
-							}
-							if c.Rules.ServiceName {
-								tags[string(conventions.ServiceNameKey)] = name
-							}
+						if c.Rules.ServiceName {
+							// cronjob name wins over job name
+							tags[string(conventions.ServiceNameKey)] = name
 						}
 					}
 				}
@@ -1812,7 +1818,7 @@ func removeUnnecessaryReplicaSetData(replicaset *apps_v1.ReplicaSet) *apps_v1.Re
 
 // This function removes all data from the Job except what is required by extraction rules
 func removeUnnecessaryJobData(job *batch_v1.Job) *batch_v1.Job {
-	transformedJob := &batch_v1.Job{
+	transformedJob := batch_v1.Job{
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name:      job.GetName(),
 			Namespace: job.GetNamespace(),
@@ -1820,16 +1826,8 @@ func removeUnnecessaryJobData(job *batch_v1.Job) *batch_v1.Job {
 		},
 	}
 
-	// Keep only controller owners
-	var filtered []meta_v1.OwnerReference
-	for _, or := range job.GetOwnerReferences() {
-		if or.Controller != nil && *or.Controller {
-			filtered = append(filtered, or)
-		}
-	}
-	transformedJob.SetOwnerReferences(filtered)
-
-	return transformedJob
+	transformedJob.SetOwnerReferences(job.GetOwnerReferences())
+	return &transformedJob
 }
 
 // runInformerWithDependencies starts the given informer. The second argument is a list of other informers that should complete
