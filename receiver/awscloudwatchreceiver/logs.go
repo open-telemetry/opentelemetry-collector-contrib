@@ -215,9 +215,12 @@ func (l *logsReceiver) startPolling(ctx context.Context) {
 
 func (l *logsReceiver) poll(ctx context.Context) error {
 	var errs error
+	currentGroups := make(map[string]bool)
 	endTime := time.Now()
 	for _, r := range l.groupRequests {
-		startTime, ok := l.groupNextStartTimes[r.groupName()]
+		groupName := r.groupName()
+		currentGroups[groupName] = true
+		startTime, ok := l.groupNextStartTimes[groupName]
 		if !ok {
 			startTime = l.initialStartTime
 		}
@@ -258,6 +261,7 @@ func (l *logsReceiver) poll(ctx context.Context) error {
 		if l.cloudwatchCheckpointPersister != nil {
 			logGroup := r.groupName()
 			newCheckpoint := endTime.Format(time.RFC3339)
+			err := l.cloudwatchCheckpointPersister.SetCheckpoint(ctx, logGroup, newCheckpoint)
 			if err != nil {
 				l.settings.Logger.Error("failed to persist timestamp checkpoint",
 					zap.String("logGroup", logGroup),
@@ -267,7 +271,15 @@ func (l *logsReceiver) poll(ctx context.Context) error {
 		}
 
 		// Update the receiver's nextStartTime for the next poll cycle
-		l.groupNextStartTimes[r.groupName()] = nextStartTime
+		l.groupNextStartTimes[groupName] = nextStartTime
+	}
+
+	// Clean up stale entries from groupNextStartTimes map
+	for groupName := range l.groupNextStartTimes {
+		if !currentGroups[groupName] {
+			delete(l.groupNextStartTimes, groupName)
+			l.settings.Logger.Debug("Cleaned up stale timestamp for removed log group", zap.String("logGroup", groupName))
+		}
 	}
 	return errs
 }
