@@ -16,6 +16,7 @@ import (
 
 type tracesRouter struct {
 	*baseFailoverRouter[consumer.Traces]
+	strategy TracesFailoverStrategy
 }
 
 func newTracesRouter(provider consumerProvider[consumer.Traces], cfg *Config) (*tracesRouter, error) {
@@ -23,51 +24,20 @@ func newTracesRouter(provider consumerProvider[consumer.Traces], cfg *Config) (*
 	if err != nil {
 		return nil, err
 	}
-	return &tracesRouter{baseFailoverRouter: failover}, nil
+	
+	// Create the appropriate strategy based on the failover mode
+	factory := GetFailoverStrategyFactory(cfg.FailoverMode)
+	strategy := factory.CreateTracesStrategy(failover)
+	
+	return &tracesRouter{
+		baseFailoverRouter: failover,
+		strategy:          strategy,
+	}, nil
 }
 
 // Consume is the traces-specific consumption method
 func (f *tracesRouter) Consume(ctx context.Context, td ptrace.Traces) error {
-	select {
-	case <-f.notifyRetry:
-		if !f.sampleRetryConsumers(ctx, td) {
-			return f.consumeByHealthyPipeline(ctx, td)
-		}
-		return nil
-	default:
-		return f.consumeByHealthyPipeline(ctx, td)
-	}
-}
-
-// consumeByHealthyPipeline will consume the traces by the current healthy level
-func (f *tracesRouter) consumeByHealthyPipeline(ctx context.Context, td ptrace.Traces) error {
-	for {
-		tc, idx := f.getCurrentConsumer()
-		if idx >= len(f.cfg.PipelinePriority) {
-			return errNoValidPipeline
-		}
-
-		if err := tc.ConsumeTraces(ctx, td); err != nil {
-			f.reportConsumerError(idx)
-			continue
-		}
-
-		return nil
-	}
-}
-
-// sampleRetryConsumers iterates through all unhealthy consumers to re-establish a healthy connection
-func (f *tracesRouter) sampleRetryConsumers(ctx context.Context, td ptrace.Traces) bool {
-	stableIndex := f.pS.CurrentPipeline()
-	for i := 0; i < stableIndex; i++ {
-		consumer := f.getConsumerAtIndex(i)
-		err := consumer.ConsumeTraces(ctx, td)
-		if err == nil {
-			f.pS.ResetHealthyPipeline(i)
-			return true
-		}
-	}
-	return false
+	return f.strategy.ConsumeTraces(ctx, td)
 }
 
 type tracesFailover struct {
@@ -91,6 +61,9 @@ func (f *tracesFailover) ConsumeTraces(ctx context.Context, td ptrace.Traces) er
 func (f *tracesFailover) Shutdown(context.Context) error {
 	if f.failover != nil {
 		f.failover.Shutdown()
+		if f.failover.strategy != nil {
+			f.failover.strategy.Shutdown()
+		}
 	}
 	return nil
 }

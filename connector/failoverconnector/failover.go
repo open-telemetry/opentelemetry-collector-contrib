@@ -29,6 +29,11 @@ type baseFailoverRouter[C any] struct {
 	done        chan struct{}
 }
 
+// getNotifyRetryChannel returns the retry notification channel for strategies to use
+func (f *baseFailoverRouter[C]) getNotifyRetryChannel() <-chan struct{} {
+	return f.notifyRetry
+}
+
 // getCurrentConsumer returns the consumer for the current healthy level
 func (f *baseFailoverRouter[C]) getCurrentConsumer() (C, int) {
 	var nilConsumer C

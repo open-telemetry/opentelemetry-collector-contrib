@@ -15,6 +15,7 @@ import (
 
 type metricsRouter struct {
 	*baseFailoverRouter[consumer.Metrics]
+	strategy MetricsFailoverStrategy
 }
 
 func newMetricsRouter(provider consumerProvider[consumer.Metrics], cfg *Config) (*metricsRouter, error) {
@@ -22,51 +23,20 @@ func newMetricsRouter(provider consumerProvider[consumer.Metrics], cfg *Config) 
 	if err != nil {
 		return nil, err
 	}
-	return &metricsRouter{baseFailoverRouter: failover}, nil
+	
+	// Create the appropriate strategy based on the failover mode
+	factory := GetFailoverStrategyFactory(cfg.FailoverMode)
+	strategy := factory.CreateMetricsStrategy(failover)
+	
+	return &metricsRouter{
+		baseFailoverRouter: failover,
+		strategy:          strategy,
+	}, nil
 }
 
 // Consume is the metrics-specific consumption method
 func (f *metricsRouter) Consume(ctx context.Context, md pmetric.Metrics) error {
-	select {
-	case <-f.notifyRetry:
-		if !f.sampleRetryConsumers(ctx, md) {
-			return f.consumeByHealthyPipeline(ctx, md)
-		}
-		return nil
-	default:
-		return f.consumeByHealthyPipeline(ctx, md)
-	}
-}
-
-// consumeByHealthyPipeline will consume the metrics by the current healthy level
-func (f *metricsRouter) consumeByHealthyPipeline(ctx context.Context, md pmetric.Metrics) error {
-	for {
-		tc, idx := f.getCurrentConsumer()
-		if idx >= len(f.cfg.PipelinePriority) {
-			return errNoValidPipeline
-		}
-
-		if err := tc.ConsumeMetrics(ctx, md); err != nil {
-			f.reportConsumerError(idx)
-			continue
-		}
-
-		return nil
-	}
-}
-
-// sampleRetryConsumers iterates through all unhealthy consumers to re-establish a healthy connection
-func (f *metricsRouter) sampleRetryConsumers(ctx context.Context, md pmetric.Metrics) bool {
-	stableIndex := f.pS.CurrentPipeline()
-	for i := 0; i < stableIndex; i++ {
-		consumer := f.getConsumerAtIndex(i)
-		err := consumer.ConsumeMetrics(ctx, md)
-		if err == nil {
-			f.pS.ResetHealthyPipeline(i)
-			return true
-		}
-	}
-	return false
+	return f.strategy.ConsumeMetrics(ctx, md)
 }
 
 type metricsFailover struct {
@@ -90,6 +60,9 @@ func (f *metricsFailover) ConsumeMetrics(ctx context.Context, md pmetric.Metrics
 func (f *metricsFailover) Shutdown(context.Context) error {
 	if f.failover != nil {
 		f.failover.Shutdown()
+		if f.failover.strategy != nil {
+			f.failover.strategy.Shutdown()
+		}
 	}
 	return nil
 }

@@ -29,6 +29,7 @@ func NewFactory() connector.Factory {
 func createDefaultConfig() component.Config {
 	return &Config{
 		QueueSettings: exporterhelper.NewDefaultQueueConfig(),
+		FailoverMode:  FailoverModeStandard,
 		RetryInterval: 10 * time.Minute,
 		RetryGap:      0,
 		MaxRetries:    0,
