@@ -5,6 +5,7 @@ package kube
 
 import (
 	"errors"
+	"maps"
 	"regexp"
 	"testing"
 	"time"
@@ -1082,12 +1083,8 @@ func TestExtractionRules(t *testing.T) {
 			// manually call the data removal functions here
 			// normally the informer does this, but fully emulating the informer in this test is annoying
 			podCopy := pod.DeepCopy()
-			for k, v := range tc.additionalAnnotations {
-				podCopy.Annotations[k] = v
-			}
-			for k, v := range tc.additionalLabels {
-				podCopy.Labels[k] = v
-			}
+			maps.Copy(podCopy.Annotations, tc.additionalAnnotations)
+			maps.Copy(podCopy.Labels, tc.additionalLabels)
 			transformedPod := removeUnnecessaryPodData(podCopy, c.Rules)
 			transformedReplicaset := removeUnnecessaryReplicaSetData(replicaset)
 			c.handleReplicaSetAdd(transformedReplicaset)
