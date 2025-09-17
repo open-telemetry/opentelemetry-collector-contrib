@@ -19,8 +19,8 @@ The **Isolation Forest processor** adds inline, unsupervised anomaly detection t
 
 ## ✨ Key Features
 
-| Capability                     | Description                                                                                                                                         |
-| ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Capability                    | Description                                                                                                                                         |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Realtime Isolation Forest** | Builds an ensemble of random trees over a sliding window of recent data and assigns a 0–1 anomaly score on ingestion (≈ *O(log n)* per point).      |
 | **Multi‑signal support**      | Can be inserted into **traces**, **metrics**, **logs** pipelines – one config powers all three.                                                     |
 | **Per‑entity modelling**      | `features` config lets you maintain a separate model per unique combination of resource / attribute keys (e.g. per‑pod, per‑service).               |
@@ -137,7 +137,7 @@ service:
  
 ### What the example does
 
-| Signal      | What's scored                                              | Feature grouping               | Output                                    | Notes                                                                                            |
+| Signal      | What’s scored                                              | Feature grouping               | Output                                    | Notes                                                                                          |
 | ----------- | ---------------------------------------------------------- | ------------------------------ | ----------------------------------------- | ------------------------------------------------------------------------------------------------ |
 | **Traces**  | Span **duration** (ns)                                     | `service.name`, `k8s.pod.name` | `iforest.is_anomaly` attr + optional drop | Use a span/trace exporter to route anomalies.                                                    |
 | **Metrics** | Only `system.cpu.utilization`, `system.memory.utilization` | Same                           | Attribute + score metric                  | The score appears as `iforest.anomaly_score` gauge.                                              |
@@ -149,7 +149,7 @@ service:
 
 * **Tune `forest_size` vs. latency** – start with 100 trees; raise to 200–300 if scores look noisy.
 * **Use per‑entity models** – add `features` (service, pod, host) to avoid global comparisons across very different series.
-* **Let contamination drive threshold** – set `contamination_rate` to the % of traffic you're comfortable labelling outlier; avoid hand‑tuning `anomaly_threshold`.
+* **Let contamination drive threshold** – set `contamination_rate` to the % of traffic you’re comfortable labelling outlier; avoid hand‑tuning `anomaly_threshold`.
 * **Use adaptive window sizing** – enable for dynamic workloads; the processor will automatically grow windows during high traffic and shrink under memory pressure.
 * **Route anomalies** – keep `drop_anomalous_data=false` and add a simple \[routing‑processor] downstream to ship anomalies to a dedicated exporter or topic.
 * **Monitor model health** – the emitted `iforest.anomaly_score` metric is perfect for a Grafana panel; watch its distribution and adapt window / contamination accordingly.
@@ -170,8 +170,8 @@ Telemetry ───▶ │  • Score calculator & anomaly decision            �
 ```
 
 
-*Training cost*: **O(window\_size × forest\_size × log subsample\_size)** every `training_interval`
-*Scoring cost*: **O(forest\_size × log subsample\_size)** per item
+*Training cost*: **O(window\_size × forest\_size × log subsample\_size)** every `training_interval`
+*Scoring cost*: **O(forest\_size × log subsample\_size)** per item
 
 ---
 
