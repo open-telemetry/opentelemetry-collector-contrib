@@ -61,7 +61,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordCiscoUpDataPoint(ts, 1, "target-val")
+			mb.RecordCiscoDeviceConnectedDataPoint(ts, 1, "host-val")
 
 			res := pcommon.NewResource()
 			metrics := mb.Emit(WithResource(res))
@@ -85,9 +85,9 @@ func TestMetricsBuilder(t *testing.T) {
 			validatedMetrics := make(map[string]bool)
 			for i := 0; i < ms.Len(); i++ {
 				switch ms.At(i).Name() {
-				case "cisco_up":
-					assert.False(t, validatedMetrics["cisco_up"], "Found a duplicate in the metrics slice: cisco_up")
-					validatedMetrics["cisco_up"] = true
+				case "cisco.device.connected":
+					assert.False(t, validatedMetrics["cisco.device.connected"], "Found a duplicate in the metrics slice: cisco.device.connected")
+					validatedMetrics["cisco.device.connected"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "Device connectivity status (1=connected, 0=disconnected)", ms.At(i).Description())
@@ -97,9 +97,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("target")
+					attrVal, ok := dp.Attributes().Get("host")
 					assert.True(t, ok)
-					assert.Equal(t, "target-val", attrVal.Str())
+					assert.Equal(t, "host-val", attrVal.Str())
 				}
 			}
 		})

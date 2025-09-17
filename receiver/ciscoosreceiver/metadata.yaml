@@ -11,19 +11,19 @@ status:
 resource_attributes:
 
 attributes:
-  target:
-    description: The target Cisco device hostname or IP address
+  host:
+    description: The Cisco device hostname or IP address
     type: string
     enabled: true
 
 metrics:
-  cisco_up:
+  cisco.device.connected:
     enabled: true
     description: Device connectivity status (1=connected, 0=disconnected)
     unit: "1"
     gauge:
       value_type: int
-    attributes: [target]
+    attributes: [host]
 
 tests:
   config:

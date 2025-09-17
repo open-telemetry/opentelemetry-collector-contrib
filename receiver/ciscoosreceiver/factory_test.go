@@ -30,7 +30,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	config, ok := cfg.(*Config)
 	require.True(t, ok)
 	assert.Equal(t, 60*time.Second, config.CollectionInterval)
-	assert.Equal(t, 30*time.Second, config.Timeout)
+	assert.Equal(t, 10*time.Second, config.Timeout)
 	assert.Empty(t, config.Devices)
 	assert.True(t, config.Scrapers.BGP)
 	assert.True(t, config.Scrapers.Environment)

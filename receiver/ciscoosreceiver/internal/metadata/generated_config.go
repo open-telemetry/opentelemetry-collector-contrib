@@ -27,12 +27,12 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for ciscoosreceiver metrics.
 type MetricsConfig struct {
-	CiscoUp MetricConfig `mapstructure:"cisco_up"`
+	CiscoDeviceConnected MetricConfig `mapstructure:"cisco.device.connected"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		CiscoUp: MetricConfig{
+		CiscoDeviceConnected: MetricConfig{
 			Enabled: true,
 		},
 	}

@@ -27,7 +27,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					CiscoUp: MetricConfig{Enabled: true},
+					CiscoDeviceConnected: MetricConfig{Enabled: true},
 				},
 			},
 		},
@@ -35,7 +35,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					CiscoUp: MetricConfig{Enabled: false},
+					CiscoDeviceConnected: MetricConfig{Enabled: false},
 				},
 			},
 		},

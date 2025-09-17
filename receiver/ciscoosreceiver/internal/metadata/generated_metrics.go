@@ -12,35 +12,35 @@ import (
 )
 
 var MetricsInfo = metricsInfo{
-	CiscoUp: metricInfo{
-		Name: "cisco_up",
+	CiscoDeviceConnected: metricInfo{
+		Name: "cisco.device.connected",
 	},
 }
 
 type metricsInfo struct {
-	CiscoUp metricInfo
+	CiscoDeviceConnected metricInfo
 }
 
 type metricInfo struct {
 	Name string
 }
 
-type metricCiscoUp struct {
+type metricCiscoDeviceConnected struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills cisco_up metric with initial data.
-func (m *metricCiscoUp) init() {
-	m.data.SetName("cisco_up")
+// init fills cisco.device.connected metric with initial data.
+func (m *metricCiscoDeviceConnected) init() {
+	m.data.SetName("cisco.device.connected")
 	m.data.SetDescription("Device connectivity status (1=connected, 0=disconnected)")
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricCiscoUp) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, targetAttributeValue string) {
+func (m *metricCiscoDeviceConnected) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, hostAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -48,18 +48,18 @@ func (m *metricCiscoUp) recordDataPoint(start pcommon.Timestamp, ts pcommon.Time
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("target", targetAttributeValue)
+	dp.Attributes().PutStr("host", hostAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricCiscoUp) updateCapacity() {
+func (m *metricCiscoDeviceConnected) updateCapacity() {
 	if m.data.Gauge().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricCiscoUp) emit(metrics pmetric.MetricSlice) {
+func (m *metricCiscoDeviceConnected) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -67,8 +67,8 @@ func (m *metricCiscoUp) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricCiscoUp(cfg MetricConfig) metricCiscoUp {
-	m := metricCiscoUp{config: cfg}
+func newMetricCiscoDeviceConnected(cfg MetricConfig) metricCiscoDeviceConnected {
+	m := metricCiscoDeviceConnected{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -79,12 +79,12 @@ func newMetricCiscoUp(cfg MetricConfig) metricCiscoUp {
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	config          MetricsBuilderConfig // config of the metrics builder.
-	startTime       pcommon.Timestamp    // start time that will be applied to all recorded data points.
-	metricsCapacity int                  // maximum observed number of metrics per resource.
-	metricsBuffer   pmetric.Metrics      // accumulates metrics data before emitting.
-	buildInfo       component.BuildInfo  // contains version information.
-	metricCiscoUp   metricCiscoUp
+	config                     MetricsBuilderConfig // config of the metrics builder.
+	startTime                  pcommon.Timestamp    // start time that will be applied to all recorded data points.
+	metricsCapacity            int                  // maximum observed number of metrics per resource.
+	metricsBuffer              pmetric.Metrics      // accumulates metrics data before emitting.
+	buildInfo                  component.BuildInfo  // contains version information.
+	metricCiscoDeviceConnected metricCiscoDeviceConnected
 }
 
 // MetricBuilderOption applies changes to default metrics builder.
@@ -106,11 +106,11 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 }
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		config:        mbc,
-		startTime:     pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer: pmetric.NewMetrics(),
-		buildInfo:     settings.BuildInfo,
-		metricCiscoUp: newMetricCiscoUp(mbc.Metrics.CiscoUp),
+		config:                     mbc,
+		startTime:                  pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:              pmetric.NewMetrics(),
+		buildInfo:                  settings.BuildInfo,
+		metricCiscoDeviceConnected: newMetricCiscoDeviceConnected(mbc.Metrics.CiscoDeviceConnected),
 	}
 
 	for _, op := range options {
@@ -176,7 +176,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
-	mb.metricCiscoUp.emit(ils.Metrics())
+	mb.metricCiscoDeviceConnected.emit(ils.Metrics())
 
 	for _, op := range options {
 		op.apply(rm)
@@ -198,9 +198,9 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 	return metrics
 }
 
-// RecordCiscoUpDataPoint adds a data point to cisco_up metric.
-func (mb *MetricsBuilder) RecordCiscoUpDataPoint(ts pcommon.Timestamp, val int64, targetAttributeValue string) {
-	mb.metricCiscoUp.recordDataPoint(mb.startTime, ts, val, targetAttributeValue)
+// RecordCiscoDeviceConnectedDataPoint adds a data point to cisco.device.connected metric.
+func (mb *MetricsBuilder) RecordCiscoDeviceConnectedDataPoint(ts pcommon.Timestamp, val int64, hostAttributeValue string) {
+	mb.metricCiscoDeviceConnected.recordDataPoint(mb.startTime, ts, val, hostAttributeValue)
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

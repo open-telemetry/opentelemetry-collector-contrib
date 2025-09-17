@@ -17,7 +17,7 @@ import (
 
 const (
 	defaultCollectionInterval = 60 * time.Second
-	defaultTimeout            = 30 * time.Second
+	defaultTimeout            = 10 * time.Second
 )
 
 // NewFactory creates a factory for Cisco OS receiver.

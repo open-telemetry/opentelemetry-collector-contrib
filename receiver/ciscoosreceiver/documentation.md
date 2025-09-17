@@ -12,7 +12,7 @@ metrics:
     enabled: false
 ```
 
-### cisco_up
+### cisco.device.connected
 
 Device connectivity status (1=connected, 0=disconnected)
 
@@ -24,4 +24,4 @@ Device connectivity status (1=connected, 0=disconnected)
 
 | Name | Description | Values | Optional |
 | ---- | ----------- | ------ | -------- |
-| target | The target Cisco device hostname or IP address | Any Str | false |
+| host | The Cisco device hostname or IP address | Any Str | false |
