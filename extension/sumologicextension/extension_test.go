@@ -464,7 +464,6 @@ func TestStoreCredentials_V2CredentialsAreUsed(t *testing.T) {
 		},
 	}, se.collectorCredentials)
 	require.FileExists(t, credsPath)
-
 }
 
 func TestLocalFSCredentialsStore_WorkCorrectlyForMultipleExtensions(t *testing.T) {
