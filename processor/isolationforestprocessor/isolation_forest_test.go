@@ -372,11 +372,11 @@ func TestResizeDataWindow(t *testing.T) {
 
 	// Test growing window
 	forest.resizeDataWindow(8)
-	assert.Equal(t, 8, len(forest.dataWindow), "Should grow window size")
+	assert.Len(t, forest.dataWindow, 8, "Should grow window size")
 
 	// Test shrinking window
 	forest.resizeDataWindow(3)
-	assert.Equal(t, 3, len(forest.dataWindow), "Should shrink window size")
+	assert.Len(t, forest.dataWindow, 3, "Should shrink window size")
 }
 
 func TestTreePathLength(t *testing.T) {

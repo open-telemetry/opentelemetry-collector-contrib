@@ -56,7 +56,6 @@ type onlineIsolationForest struct {
 // velocityTracker monitors data ingestion rate for adaptive window growth
 type velocityTracker struct {
 	sampleTimes []time.Time // Recent sample timestamps
-	windowStart int         // Start index in circular buffer
 	mutex       sync.RWMutex
 	maxSamples  int // Maximum samples to track
 }
@@ -223,8 +222,8 @@ func (oif *onlineIsolationForest) ProcessSample(sample []float64) (float64, bool
 		oif.updateStabilityChecker(anomalyScore, isAnomaly)
 	}
 
-	// Update the forest with this new sample (asynchronous to avoid blocking)
-	go oif.updateForest(sample, anomalyScore)
+	// FIX: Remove 'go' keyword to prevent race condition
+	oif.updateForest(sample, anomalyScore) // Synchronous call
 
 	return anomalyScore, isAnomaly
 }
@@ -318,8 +317,17 @@ func (oif *onlineIsolationForest) updateAdaptiveThreshold(score float64) {
 	// Add score to history
 	oif.scoreHistory = append(oif.scoreHistory, score)
 
+	// Get current window size WITHOUT locking adaptiveMutex (to avoid deadlock)
+	var currentSize int
+	if oif.adaptiveConfig != nil && oif.adaptiveConfig.Enabled {
+		oif.adaptiveMutex.RLock()
+		currentSize = oif.currentWindowSize
+		oif.adaptiveMutex.RUnlock()
+	} else {
+		currentSize = oif.windowSize
+	}
+
 	// Maintain bounded history size
-	currentSize := oif.getCurrentWindowSize()
 	if len(oif.scoreHistory) > currentSize {
 		oif.scoreHistory = oif.scoreHistory[1:]
 	}
@@ -662,7 +670,7 @@ func (oif *onlineIsolationForest) getCurrentVelocity() float64 {
 }
 
 // updateStabilityChecker updates the stability checker with recent predictions
-func (oif *onlineIsolationForest) updateStabilityChecker(score float64, isAnomaly bool) {
+func (oif *onlineIsolationForest) updateStabilityChecker(score float64, _ bool) {
 	if oif.stabilityChecker == nil {
 		return
 	}
@@ -687,10 +695,14 @@ func (oif *onlineIsolationForest) getCurrentMemoryUsage() float64 {
 	oif.memoryMonitor.mutex.Lock()
 	defer oif.memoryMonitor.mutex.Unlock()
 
+	// Get scoreHistory length safely
+	oif.thresholdMutex.RLock()
+	scoreHistorySize := float64(len(oif.scoreHistory)) * 8
+	oif.thresholdMutex.RUnlock()
+
 	// Simple estimation based on data structures
 	windowDataSize := float64(len(oif.dataWindow)) * float64(10) * 8 // Assume 10 features, 8 bytes per float64
-	scoreHistorySize := float64(len(oif.scoreHistory)) * 8
-	treeMemory := float64(oif.numTrees) * 1024 // Rough estimate per tree in bytes
+	treeMemory := float64(oif.numTrees) * 1024                       // Rough estimate per tree in bytes
 
 	totalBytes := windowDataSize + scoreHistorySize + treeMemory
 	oif.memoryMonitor.currentMemoryMB = totalBytes / (1024 * 1024) // Convert to MB
