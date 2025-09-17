@@ -9,10 +9,8 @@ import (
 	"go.uber.org/goleak"
 )
 
-//
 // TestMain is the entry point for tests in this package. It enables
 // automatic goroutine leak detection after tests complete.
-//
 func TestMain(m *testing.M) {
 	goleak.VerifyTestMain(m)
 }

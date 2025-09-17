@@ -15,18 +15,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-//
 // TestNewProvider verifies that NewProvider returns a non-nil provider.
-//
 func TestNewProvider(t *testing.T) {
 	provider := NewProvider()
 	assert.NotNil(t, provider)
 }
 
-//
 // TestQueryEndpointFailed ensures that the provider returns an error
 // when the OracleCloud IMDS endpoint replies with a non-OK status.
-//
 func TestQueryEndpointFailed(t *testing.T) {
 	ts := httptest.NewServer(http.NotFoundHandler())
 	defer ts.Close()
@@ -40,10 +36,8 @@ func TestQueryEndpointFailed(t *testing.T) {
 	assert.Error(t, err)
 }
 
-//
 // TestQueryEndpointMalformed ensures the provider returns an error
 // when the OracleCloud IMDS endpoint returns malformed JSON.
-//
 func TestQueryEndpointMalformed(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		_, err := fmt.Fprintln(w, "{")
@@ -60,10 +54,8 @@ func TestQueryEndpointMalformed(t *testing.T) {
 	assert.Error(t, err)
 }
 
-//
 // TestQueryEndpointCorrect validates that the provider correctly retrieves
 // and parses the metadata from a well-formed IMDS endpoint.
-//
 func TestQueryEndpointCorrect(t *testing.T) {
 	sentMetadata := &ComputeMetadata{
 		HostId:             "ocid1.instance.oc1..aaaaaaa",

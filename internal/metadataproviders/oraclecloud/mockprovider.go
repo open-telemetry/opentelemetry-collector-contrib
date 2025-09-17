@@ -9,9 +9,7 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-//
 // MockProvider implements the Provider interface for test purposes.
-//
 type MockProvider struct {
 	mock.Mock
 }
