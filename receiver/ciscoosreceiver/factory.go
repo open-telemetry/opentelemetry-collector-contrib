@@ -68,5 +68,12 @@ func createMetricsReceiver(
 // nopMetricsReceiver is a minimal receiver to satisfy component lifecycle tests.
 type nopMetricsReceiver struct{}
 
-func (n *nopMetricsReceiver) Start(ctx context.Context, host component.Host) error { return nil }
-func (n *nopMetricsReceiver) Shutdown(ctx context.Context) error                   { return nil }
+func (r *nopMetricsReceiver) Start(_ context.Context, _ component.Host) error {
+	_ = r
+	return nil
+}
+
+func (r *nopMetricsReceiver) Shutdown(_ context.Context) error {
+	_ = r
+	return nil
+}

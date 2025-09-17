@@ -5,7 +5,6 @@ package ciscoosreceiver // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"errors"
-	"fmt"
 	"time"
 
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
@@ -49,7 +48,7 @@ func (cfg *Config) Validate() error {
 
 	for _, device := range cfg.Devices {
 		if device.Host == "" {
-			return fmt.Errorf("device host cannot be empty")
+			return errors.New("device host cannot be empty")
 		}
 
 		// Authentication validation logic:
@@ -58,15 +57,15 @@ func (cfg *Config) Validate() error {
 		if device.KeyFile != "" {
 			// Key file authentication: requires username
 			if device.Username == "" {
-				return fmt.Errorf("device username cannot be empty")
+				return errors.New("device username cannot be empty")
 			}
 		} else {
 			// Password authentication: requires both username and password
 			if device.Username == "" {
-				return fmt.Errorf("device username cannot be empty")
+				return errors.New("device username cannot be empty")
 			}
 			if device.Password == "" {
-				return fmt.Errorf("device password cannot be empty")
+				return errors.New("device password cannot be empty")
 			}
 		}
 	}

@@ -4,7 +4,6 @@
 package ciscoosreceiver
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -54,7 +53,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 	consumer := consumertest.NewNop()
 
 	// For skeleton, we expect a no-op receiver and no error
-	receiver, err := factory.CreateMetrics(context.Background(), set, cfg, consumer)
+	receiver, err := factory.CreateMetrics(t.Context(), set, cfg, consumer)
 	assert.NotNil(t, receiver)
 	assert.NoError(t, err)
 }
