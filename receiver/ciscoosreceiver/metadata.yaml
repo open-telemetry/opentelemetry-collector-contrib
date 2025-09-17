@@ -6,7 +6,7 @@ status:
     development: [metrics]
   distributions: []
   codeowners:
-    active: [dmitryax, etserend, k-shaikh]
+    active: [dmitryax]
 
 resource_attributes:
 
