@@ -12,6 +12,7 @@ require (
 	go.opentelemetry.io/collector/component/componenttest v0.135.1-0.20250911155607-37a3ace6274c
 	go.opentelemetry.io/collector/config/configopaque v1.41.1-0.20250911155607-37a3ace6274c
 	go.opentelemetry.io/collector/config/configretry v1.41.1-0.20250911155607-37a3ace6274c
+	go.opentelemetry.io/collector/config/configtls v1.41.1-0.20250911155607-37a3ace6274c
 	go.opentelemetry.io/collector/confmap v1.41.1-0.20250911155607-37a3ace6274c
 	go.opentelemetry.io/collector/confmap/xconfmap v0.135.1-0.20250911155607-37a3ace6274c
 	go.opentelemetry.io/collector/exporter v0.135.1-0.20250911155607-37a3ace6274c
@@ -43,6 +44,8 @@ require (
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/ebitengine/purego v0.8.4 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
+	github.com/foxboron/go-tpm-keyfiles v0.0.0-20250323135004-b31fac66206e // indirect
+	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/go-faster/city v1.0.1 // indirect
 	github.com/go-faster/errors v0.7.1 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
@@ -51,6 +54,7 @@ require (
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
+	github.com/google/go-tpm v0.9.5 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/go-version v1.7.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
