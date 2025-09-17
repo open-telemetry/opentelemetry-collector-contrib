@@ -473,33 +473,66 @@ func TestStaleSeriesCleanup(t *testing.T) {
 			TTL:      time.Second,
 		},
 	}
-
-	mockMetricsExporter := newMockMetricsExporter()
-
 	set := componenttest.NewNopTelemetrySettings()
 	set.Logger = zaptest.NewLogger(t)
-	p, err := newConnector(set, cfg, mockMetricsExporter)
-	require.NoError(t, err)
-	assert.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+	mockMetricsExporter := newMockMetricsExporter()
 
-	// ConsumeTraces
-	td := buildSampleTrace(t, "first")
-	assert.NoError(t, p.ConsumeTraces(t.Context(), td))
-
-	// Make series stale and force a cache cleanup
-	for key, metric := range p.keyToMetric {
-		metric.lastUpdated = 0
-		p.keyToMetric[key] = metric
+	verifyCacheEmpty := func(t *testing.T, p *serviceGraphConnector) {
+		assert.Empty(t, p.keyToMetric)
+		assert.Empty(t, p.reqTotal)
+		assert.Empty(t, p.reqFailedTotal)
+		assert.Empty(t, p.reqClientDurationSecondsCount)
+		assert.Empty(t, p.reqClientDurationSecondsSum)
+		assert.Empty(t, p.reqClientDurationSecondsBucketCounts)
+		assert.Empty(t, p.reqServerDurationSecondsCount)
+		assert.Empty(t, p.reqServerDurationSecondsBucketCounts)
+		assert.Empty(t, p.reqServerDurationSecondsSum)
+		assert.Empty(t, p.reqServerDurationExpHistogram)
+		assert.Empty(t, p.reqClientDurationExpHistogram)
 	}
-	p.cleanCache()
-	assert.Empty(t, p.keyToMetric)
 
-	// ConsumeTraces with a trace with different attribute value
-	td = buildSampleTrace(t, "second")
-	assert.NoError(t, p.ConsumeTraces(t.Context(), td))
+	t.Run("use explicit histogram", func(t *testing.T) {
+		p, err := newConnector(set, cfg, mockMetricsExporter)
+		require.NoError(t, err)
+		assert.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
 
-	// Shutdown the connector
-	assert.NoError(t, p.Shutdown(t.Context()))
+		// ConsumeTraces
+		td := buildSampleTrace(t, "first")
+		assert.NoError(t, p.ConsumeTraces(t.Context(), td))
+
+		// Make series stale and force a cache cleanup
+		for key, metric := range p.keyToMetric {
+			metric.lastUpdated = 0
+			p.keyToMetric[key] = metric
+		}
+		p.cleanCache()
+		verifyCacheEmpty(t, p)
+
+		// Shutdown the connector
+		assert.NoError(t, p.Shutdown(t.Context()))
+	})
+	t.Run("use exponential histogram", func(t *testing.T) {
+		cfg2 := cfg
+		cfg.ExponentialHistogramMaxSize = 160
+		p, err := newConnector(set, cfg2, mockMetricsExporter)
+		require.NoError(t, err)
+		assert.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+
+		// ConsumeTraces
+		td := buildSampleTrace(t, "first")
+		assert.NoError(t, p.ConsumeTraces(t.Context(), td))
+
+		// Make series stale and force a cache cleanup
+		for key, metric := range p.keyToMetric {
+			metric.lastUpdated = 0
+			p.keyToMetric[key] = metric
+		}
+		p.cleanCache()
+		verifyCacheEmpty(t, p)
+
+		// Shutdown the connector
+		assert.NoError(t, p.Shutdown(t.Context()))
+	})
 }
 
 func TestMapsAreConsistentDuringCleanup(t *testing.T) {
