@@ -63,6 +63,20 @@ func (rb *ResourceBuilder) SetHostID(val string) {
 	}
 }
 
+// SetHostImageID sets provided value as "host.image.id" attribute.
+func (rb *ResourceBuilder) SetHostImageID(val string) {
+	if rb.config.HostImageID.Enabled {
+		rb.res.Attributes().PutStr("host.image.id", val)
+	}
+}
+
+// SetHostImageName sets provided value as "host.image.name" attribute.
+func (rb *ResourceBuilder) SetHostImageName(val string) {
+	if rb.config.HostImageName.Enabled {
+		rb.res.Attributes().PutStr("host.image.name", val)
+	}
+}
+
 // SetHostName sets provided value as "host.name" attribute.
 func (rb *ResourceBuilder) SetHostName(val string) {
 	if rb.config.HostName.Enabled {
