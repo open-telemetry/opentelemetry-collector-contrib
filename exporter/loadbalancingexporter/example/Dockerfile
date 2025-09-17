@@ -1,4 +1,4 @@
-FROM golang:1.25@sha256:b773c94fd926723a415b28e615016a49793764e270566a82c6a47afb4c52f7de AS build
+FROM golang:1.25@sha256:8305f5fa8ea63c7b5bc85bd223ccc62941f852318ebfbd22f53bbd0b358c07e1 AS build
 
 WORKDIR /src
 ADD . /src

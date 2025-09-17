@@ -54,15 +54,21 @@ by the cluster. Currently supported versions are `kubernetes` and `openshift`. S
 the value to `openshift` enables OpenShift specific metrics in addition to standard
 kubernetes ones.
 - `allocatable_types_to_report` (default = `[]`): An array of allocatable resource types this receiver should report.
-The following allocatable resource types are available.
+The following allocatable resource types are available (see Node Allocatable in [Kubernetes docs](https://kubernetes.io/docs/tasks/administer-cluster/reserve-compute-resources/#node-allocatable)):
   - cpu
   - memory
   - ephemeral-storage
-  - storage
   - pods
-  Note that with the introduction of the [receiver.k8scluster.allocatableNamespace.enabled](#receiverk8sclusterallocatablenamespaceenabled) feature gate, the metrics for the allocatable resource types
-  (`k8s.node.allocatable.cpu`, `k8s.node.allocatable.ephemeral_storage`, `k8s.node.allocatable.memory`, `k8s.node.allocatable.pods`) are enabled/disabled via the metrics section, and are represented by up/down counters, rather than gauges.
-  To activate the feature flag, start the collector with `--feature-gates receiver.k8scluster.allocatableNamespace.enabled`.
+
+When enabled, this setting produces the following node-level metrics (one per selected type):
+
+| allocatable type | metric name                      | unit     | type  | value type |
+| ---------------- | -------------------------------- | -------- | ----- | ---------- |
+| cpu              | k8s.node.allocatable_cpu         | {cpu}    | Gauge | Double     |
+| memory           | k8s.node.allocatable_memory      | By       | Gauge | Double     |
+| ephemeral-storage| k8s.node.allocatable_ephemeral_storage | By | Gauge | Double     |
+| pods             | k8s.node.allocatable_pods        | {pod}    | Gauge | Int        |
+
 - `metrics`: Allows to enable/disable metrics.
 - `resource_attributes`: Allows to enable/disable resource attributes.
 - `namespace` (deprecated, use `namespaces` instead): Allows to observe resources for a particular namespace only. If this option is set to a non-empty string, `Nodes`, `Namespaces` and `ClusterResourceQuotas` will not be observed.
@@ -86,6 +92,10 @@ Example:
 
 The full list of settings exposed for this receiver are documented in [config.go](./config.go)
 with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).
+
+**Note** that with the introduction of the [receiver.k8scluster.allocatableNamespace.enabled](#receiverk8sclusterallocatablenamespaceenabled) feature gate, the metrics for the allocatable resource types
+(`k8s.node.allocatable.cpu`, `k8s.node.allocatable.ephemeral_storage`, `k8s.node.allocatable.memory`, `k8s.node.allocatable.pods`) are enabled/disabled via the metrics section, and are represented by up/down counters, rather than gauges.
+To activate the feature flag, start the collector with `--feature-gates receiver.k8scluster.allocatableNamespace.enabled`.
 
 ### k8s_leader_elector
 Provide name of the k8s leader elector extension defined in config. This allows multiple instances of k8s cluster

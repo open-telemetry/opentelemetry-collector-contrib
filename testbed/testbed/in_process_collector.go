@@ -5,13 +5,16 @@ package testbed // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
+	"runtime"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/shirou/gopsutil/v4/process"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
@@ -102,7 +105,17 @@ func (ipp *inProcessCollector) Stop() (stopped bool, err error) {
 	if !ipp.stopped {
 		ipp.stopped = true
 		ipp.svc.Shutdown()
-		os.Remove(ipp.configFile)
+		// Retry deleting files on windows because in windows several processes read file handles.
+		if runtime.GOOS == "windows" {
+			require.Eventually(ipp.t, func() bool {
+				err = os.Remove(ipp.configFile)
+				if errors.Is(err, os.ErrNotExist) {
+					err = nil
+					return true
+				}
+				return false
+			}, 5*time.Second, 100*time.Millisecond)
+		}
 	}
 	ipp.wg.Wait()
 	stopped = ipp.stopped

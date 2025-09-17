@@ -120,6 +120,8 @@ func (s *redaction) processResourceSpan(ctx context.Context, rs ptrace.ResourceS
 
 	for j := 0; j < rs.ScopeSpans().Len(); j++ {
 		ils := rs.ScopeSpans().At(j)
+		scopeAttrs := ils.Scope().Attributes()
+		s.processAttrs(ctx, scopeAttrs)
 		for k := 0; k < ils.Spans().Len(); k++ {
 			span := ils.Spans().At(k)
 			spanAttrs := span.Attributes()
@@ -148,6 +150,8 @@ func (s *redaction) processResourceLog(ctx context.Context, rl plog.ResourceLogs
 
 	for j := 0; j < rl.ScopeLogs().Len(); j++ {
 		ils := rl.ScopeLogs().At(j)
+		scopeAttrs := ils.Scope().Attributes()
+		s.processAttrs(ctx, scopeAttrs)
 		for k := 0; k < ils.LogRecords().Len(); k++ {
 			log := ils.LogRecords().At(k)
 			s.processAttrs(ctx, log.Attributes())
@@ -259,6 +263,8 @@ func (s *redaction) processResourceMetric(ctx context.Context, rm pmetric.Resour
 
 	for j := 0; j < rm.ScopeMetrics().Len(); j++ {
 		ils := rm.ScopeMetrics().At(j)
+		scopeAttrs := ils.Scope().Attributes()
+		s.processAttrs(ctx, scopeAttrs)
 		for k := 0; k < ils.Metrics().Len(); k++ {
 			metric := ils.Metrics().At(k)
 			switch metric.Type() {

@@ -39,6 +39,7 @@ type Config struct {
 	All                 bool          `mapstructure:"all,omitempty"`
 	Namespace           string        `mapstructure:"namespace,omitempty"`
 	ConvertMessageBytes bool          `mapstructure:"convert_message_bytes,omitempty"`
+	Merge               bool          `mapstructure:"merge,omitempty"`
 }
 
 type MatchConfig map[string]string
