@@ -71,8 +71,7 @@ jobs:
             exit 1
           fi
 
-          version="${VERSION//-alpha/}"
-          hash=$(curl -L "https://github.com/open-telemetry/opentelemetry-java-contrib/releases/download/v$version/opentelemetry-jmx-metrics.jar" \
+          hash=$(curl -L "https://github.com/open-telemetry/opentelemetry-java-contrib/releases/download/v${VERSION//-alpha/}/opentelemetry-jmx-metrics.jar" \
                          | sha256sum \
                          | cut -d ' ' -f 1)
 
@@ -85,7 +84,7 @@ jobs:
           git config user.name otelbot
           git config user.email 197425009+otelbot@users.noreply.github.com
 
-      - uses: actions/create-github-app-token@a8d616148505b5069dccd32f177bb87d7f39123b # v2.1.1
+      - uses: actions/create-github-app-token@67018539274d69449ef7c02e8e71183d1719ab42 # v2.1.4
         id: otelbot-token
         with:
           app-id: ${{ vars.OTELBOT_APP_ID }}
@@ -180,14 +179,14 @@ jobs:
 
       - name: Update version
         env:
-          version: ${{ needs.check-jmx-scraper-version.outputs.latest-version }}
+          VERSION: ${{ needs.check-jmx-scraper-version.outputs.latest-version }}
         run: |
-          if [[ ! "$version" =~ -alpha$ ]]; then
+          if [[ ! "$VERSION" =~ -alpha$ ]]; then
             echo currently expecting jmx scraper version to end with "-alpha"
             exit 1
           fi
 
-          hash=$(curl -L "https://repo1.maven.org/maven2/io/opentelemetry/contrib/opentelemetry-jmx-scraper/$version/opentelemetry-jmx-scraper-$version.jar" \
+          hash=$(curl -L "https://repo1.maven.org/maven2/io/opentelemetry/contrib/opentelemetry-jmx-scraper/${VERSION//-alpha/}/opentelemetry-jmx-scraper-$VERSION.jar" \
                          | sha256sum \
                          | cut -d ' ' -f 1)
 
@@ -201,7 +200,7 @@ jobs:
           git config user.name otelbot
           git config user.email 197425009+otelbot@users.noreply.github.com
 
-      - uses: actions/create-github-app-token@a8d616148505b5069dccd32f177bb87d7f39123b # v2.1.1
+      - uses: actions/create-github-app-token@67018539274d69449ef7c02e8e71183d1719ab42 # v2.1.4
         id: otelbot-token
         with:
           app-id: ${{ vars.OTELBOT_APP_ID }}

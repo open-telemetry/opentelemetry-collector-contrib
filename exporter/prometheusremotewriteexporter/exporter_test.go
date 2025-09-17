@@ -11,6 +11,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -757,8 +759,18 @@ func Test_PushMetrics(t *testing.T) {
 					}
 
 					if useWAL {
+						var dir string
+						if runtime.GOOS == "windows" {
+							// On Windows, use os.MkdirTemp to create directory since t.TempDir results in an error during cleanup in scoped-tests.
+							// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42639
+							var err error
+							dir, err = os.MkdirTemp("", tt.name) //nolint:usetesting
+							require.NoError(t, err)
+						} else {
+							dir = t.TempDir()
+						}
 						cfg.WAL = configoptional.Some(WALConfig{
-							Directory: t.TempDir(),
+							Directory: dir,
 						})
 					}
 
@@ -1195,16 +1207,15 @@ func TestRetries(t *testing.T) {
 				telemetry: telemetry,
 			}
 			buf := bufferPool.Get().(*buffer)
-			buf.protobuf.Reset()
 			defer bufferPool.Put(buf)
 
-			errMarshal := buf.protobuf.Marshal(&prompb.WriteRequest{})
+			reqBuf, errMarshal := buf.MarshalAndEncode(&prompb.WriteRequest{})
 			if errMarshal != nil {
 				require.NoError(t, errMarshal)
 				return
 			}
 
-			err = exporter.execute(tt.ctx, buf)
+			err = exporter.execute(tt.ctx, reqBuf)
 			tt.assertError(t, err)
 			tt.assertErrorType(t, err)
 			assert.Equal(t, tt.expectedAttempts, totalAttempts)
@@ -1228,10 +1239,17 @@ func benchmarkExecute(b *testing.B, numSample int) {
 	endpointURL, err := url.Parse(mockServer.URL)
 	require.NoError(b, err)
 
+	// Create the telemetry
+	testTel := componenttest.NewTelemetry()
+	telemetry, err := newPRWTelemetry(exporter.Settings{TelemetrySettings: testTel.NewTelemetrySettings()}, endpointURL)
+	require.NoError(b, err)
+
 	// Create the prwExporter
 	exporter := &prwExporter{
 		endpointURL: endpointURL,
 		client:      http.DefaultClient,
+		settings:    testTel.NewTelemetrySettings(),
+		telemetry:   telemetry,
 	}
 
 	generateSamples := func(n int) []prompb.Sample {
@@ -1297,18 +1315,18 @@ func benchmarkExecute(b *testing.B, numSample int) {
 	ctx := b.Context()
 	b.ReportAllocs()
 	b.ResetTimer()
+
 	for _, req := range reqs {
 		buf := bufferPool.Get().(*buffer)
-		buf.protobuf.Reset()
-		defer bufferPool.Put(buf)
-
-		errMarshal := buf.protobuf.Marshal(req)
+		reqBuf, errMarshal := buf.MarshalAndEncode(req)
 		if errMarshal != nil {
 			require.NoError(b, errMarshal)
 			return
 		}
-		err := exporter.execute(ctx, buf)
-		require.NoError(b, err)
+		if err = exporter.execute(ctx, reqBuf); err != nil {
+			b.Fatal(err)
+		}
+		bufferPool.Put(buf)
 	}
 }
 
