@@ -57,10 +57,11 @@ const (
 
 // metricID represents the minimum attributes that uniquely identifies a metric in our tests.
 type metricID struct {
-	service    string
-	name       string
-	kind       string
-	statusCode string
+	service        string
+	name           string
+	kind           string
+	statusCode     string
+	otelStatusCode string
 }
 
 type metricDataPoint interface {
@@ -131,6 +132,66 @@ func verifyConsumeMetricsInputCumulative(tb testing.TB, input pmetric.Metrics) b
 
 func verifyBadMetricsOkay(testing.TB, pmetric.Metrics) bool {
 	return true // Validating no exception
+}
+
+func verifyOtelStatusCode(tb testing.TB, input pmetric.Metrics) bool {
+	require.Equal(tb, 8, input.DataPointCount(),
+		"Should be 4 for each of call count and latency split into three resource scopes defined by: "+
+			"service-a: service-a (server kind) -> service-a (client kind), "+
+			"service-b: service-b (server kind), and"+
+			"service-c: service-c (server kind)",
+	)
+
+	require.Equal(tb, 3, input.ResourceMetrics().Len())
+
+	for i := 0; i < input.ResourceMetrics().Len(); i++ {
+		rm := input.ResourceMetrics().At(i)
+
+		var expectedStatusCode string
+		val, ok := rm.Resource().Attributes().Get(serviceNameKey)
+		require.True(tb, ok)
+		serviceName := val.AsString()
+		switch serviceName {
+		case "service-a":
+			expectedStatusCode = "OK"
+		case "service-b":
+			expectedStatusCode = "ERROR"
+		case "service-c":
+			expectedStatusCode = ""
+		default:
+			require.Fail(tb, "Unexpected service name: %s", serviceName)
+		}
+
+		ilm := rm.ScopeMetrics()
+		require.Equal(tb, 1, ilm.Len())
+		assert.Equal(tb, "spanmetricsconnector", ilm.At(0).Scope().Name())
+
+		m := ilm.At(0).Metrics()
+		require.Equal(tb, 2, m.Len(), "only sum and histogram metric types generated")
+
+		metric := m.At(0)
+		// validate the sum metrics for simplicity
+		assert.Equal(tb, pmetric.MetricTypeSum, metric.Type())
+		seenMetricIDs := make(map[metricID]bool)
+
+		dataPoints := metric.Sum().DataPoints()
+		for dpi := 0; dpi < dataPoints.Len(); dpi++ {
+			dp := dataPoints.At(dpi)
+			statusCode, ok := dp.Attributes().Get(otelStatusCodeKey)
+			if expectedStatusCode == "" {
+				require.False(tb, ok)
+			} else {
+				require.True(tb, ok)
+				assert.Equal(tb, expectedStatusCode, statusCode.AsString())
+			}
+			verifyMetricLabels(tb, dp, seenMetricIDs)
+		}
+		for id := range seenMetricIDs {
+			assert.Equal(tb, expectedStatusCode, id.otelStatusCode)
+			assert.Equal(tb, "", id.statusCode)
+		}
+	}
+	return true
 }
 
 // verifyConsumeMetricsInputDelta expects one accumulation of metrics, and marked as delta
@@ -304,6 +365,8 @@ func verifyMetricLabels(tb testing.TB, dp metricDataPoint, seenMetricIDs map[met
 			mID.kind = v.Str()
 		case statusCodeKey:
 			mID.statusCode = v.Str()
+		case otelStatusCodeKey:
+			mID.otelStatusCode = v.Str()
 		case notInSpanAttrName1:
 			assert.Fail(tb, notInSpanAttrName1+" should not be in this metric")
 		default:
@@ -371,6 +434,26 @@ func buildSampleTrace() ptrace.Traces {
 			},
 		}, traces.ResourceSpans().AppendEmpty())
 	initServiceSpans(serviceSpans{}, traces.ResourceSpans().AppendEmpty())
+	return traces
+}
+
+// buildTraceWithUnsetStatusCode builds the following trace:
+//
+//	service-c/ping (server)
+func appendTraceWithUnsetStatusCode(traces ptrace.Traces) ptrace.Traces {
+	initServiceSpans(
+		serviceSpans{
+			serviceName: "service-c",
+			spans: []span{
+				{
+					name:       "/ping",
+					kind:       ptrace.SpanKindServer,
+					statusCode: ptrace.StatusCodeUnset,
+					traceID:    [16]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x20},
+					spanID:     [8]byte{0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28},
+				},
+			},
+		}, traces.ResourceSpans().AppendEmpty())
 	return traces
 }
 
@@ -774,6 +857,7 @@ func TestConsumeTraces(t *testing.T) {
 		exemplarConfig         func() ExemplarsConfig
 		verifier               func(tb testing.TB, input pmetric.Metrics) bool
 		traces                 []ptrace.Traces
+		statusCodeFeatureGate  bool
 	}{
 		// disabling histogram
 		{
@@ -827,6 +911,16 @@ func TestConsumeTraces(t *testing.T) {
 			exemplarConfig:         disabledExemplarsConfig,
 			verifier:               verifyBadMetricsOkay,
 			traces:                 []ptrace.Traces{buildBadSampleTrace()},
+		},
+		{
+			// Test that the status code is set properly
+			name:                   "Test using new status code attribute",
+			aggregationTemporality: delta,
+			histogramConfig:        exponentialHistogramsConfig,
+			exemplarConfig:         disabledExemplarsConfig,
+			verifier:               verifyOtelStatusCode,
+			traces:                 []ptrace.Traces{appendTraceWithUnsetStatusCode(buildSampleTrace())},
+			statusCodeFeatureGate:  true,
 		},
 
 		// explicit buckets histogram
@@ -894,6 +988,12 @@ func TestConsumeTraces(t *testing.T) {
 			require.NoError(t, err)
 			// Override the default no-op consumer with metrics sink for testing.
 			p.metricsConsumer = mcon
+			if tc.statusCodeFeatureGate {
+				require.NoError(t, featuregate.GlobalRegistry().Set(useOtelStatusCodeAttribute.ID(), true))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(useOtelStatusCodeAttribute.ID(), false))
+				}()
+			}
 
 			ctx := metadata.NewIncomingContext(t.Context(), nil)
 			err = p.Start(ctx, componenttest.NewNopHost())
