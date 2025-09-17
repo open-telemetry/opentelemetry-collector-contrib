@@ -146,7 +146,6 @@ type InformersFactoryList struct {
 	newInformer           InformerProvider
 	newNamespaceInformer  InformerProviderNamespace
 	newReplicaSetInformer InformerProviderWorkload
-	newJobInformer        InformerProviderWorkload
 }
 
 // New initializes a new k8s Client.
@@ -281,23 +280,7 @@ func New(
 	}
 
 	if c.extractJobLabelsAnnotations() || rules.CronJobUID {
-		if informersFactory.newJobInformer == nil {
-			informersFactory.newJobInformer = newJobSharedInformer
-		}
-		c.jobInformer = informersFactory.newJobInformer(c.kc, c.Filters.Namespace)
-		err = c.jobInformer.SetTransform(
-			func(object any) (any, error) {
-				originalJob, success := object.(*batch_v1.Job)
-				if !success { // means this is a cache.DeletedFinalStateUnknown, in which case we do nothing
-					return object, nil
-				}
-
-				return removeUnnecessaryJobData(originalJob), nil
-			},
-		)
-		if err != nil {
-			return nil, err
-		}
+		c.jobInformer = newJobSharedInformer(c.kc, c.Filters.Namespace)
 	}
 
 	return c, err
@@ -1815,20 +1798,6 @@ func removeUnnecessaryReplicaSetData(replicaset *apps_v1.ReplicaSet) *apps_v1.Re
 	}
 	transformedReplicaset.SetOwnerReferences(replicaset.GetOwnerReferences())
 	return &transformedReplicaset
-}
-
-// This function removes all data from the Job except what is required by extraction rules
-func removeUnnecessaryJobData(job *batch_v1.Job) *batch_v1.Job {
-	transformedJob := batch_v1.Job{
-		ObjectMeta: meta_v1.ObjectMeta{
-			Name:      job.GetName(),
-			Namespace: job.GetNamespace(),
-			UID:       job.GetUID(),
-		},
-	}
-
-	transformedJob.SetOwnerReferences(job.GetOwnerReferences())
-	return &transformedJob
 }
 
 // runInformerWithDependencies starts the given informer. The second argument is a list of other informers that should complete

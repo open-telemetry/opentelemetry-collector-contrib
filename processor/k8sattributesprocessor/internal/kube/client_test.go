@@ -3302,10 +3302,9 @@ func TestCronJobExtractionRules_FromJobOwner(t *testing.T) {
 
 			// Emulate informer transforms (like other tests do)
 			transformedPod := removeUnnecessaryPodData(pod, c.Rules)
-			transformedJob := removeUnnecessaryJobData(job)
 
 			// Feed caches
-			c.handleJobAdd(transformedJob)
+			c.handleJobAdd(job)
 			c.handlePodAdd(transformedPod)
 
 			// Fetch enriched pod by connection id
