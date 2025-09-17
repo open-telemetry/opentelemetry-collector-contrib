@@ -18,8 +18,15 @@ data:
       kubeletstats:
         auth_type: "serviceAccount"
         endpoint: "https://${env:K8S_NODE_NAME}:10250"
+        k8s_api_config:
+          auth_type: kubeConfig
         metric_groups:
         - node
+        resource_attributes:
+          k8s.node.labels:
+            enabled: true
+          k8s.node.annotations:
+            enabled: true
     service:
       telemetry:
         logs:
