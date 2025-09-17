@@ -5,6 +5,7 @@ package metrics
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -33,7 +34,12 @@ type worker struct {
 	logger                 *zap.Logger                  // logger
 	index                  int                          // worker index
 	clock                  Clock                        // clock
+	loadSize               int                          // desired minimum size in MB of string data for each generated metric
 }
+
+const (
+	charactersPerMB = 1024 * 1024 // One character takes up one byte of space, so this number comes from the number of bytes in a megabyte
+)
 
 // We use a 15-element bounds slice for histograms below, so there must be 16 buckets here.
 // From metrics.proto:
@@ -95,6 +101,14 @@ func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Expor
 		if w.enforceUnique {
 			signalAttrs = append(signalAttrs, tb.getAttribute())
 		}
+
+		// Add load size attributes if specified
+		loadAttrs := signalAttrs
+		if w.loadSize > 0 {
+			for j := 0; j < w.loadSize; j++ {
+				loadAttrs = append(loadAttrs, attribute.String(fmt.Sprintf("load-%v", j), string(make([]byte, charactersPerMB))))
+			}
+		}
 		var metrics []metricdata.Metrics
 		now := w.clock.Now()
 		if w.aggregationTemporality.AsTemporality() == metricdata.DeltaTemporality {
@@ -109,7 +123,7 @@ func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Expor
 						{
 							Time:       now,
 							Value:      i,
-							Attributes: attribute.NewSet(signalAttrs...),
+							Attributes: attribute.NewSet(loadAttrs...),
 							Exemplars:  w.exemplars,
 						},
 					},
@@ -126,7 +140,7 @@ func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Expor
 							StartTime:  startTime,
 							Time:       now,
 							Value:      i,
-							Attributes: attribute.NewSet(signalAttrs...),
+							Attributes: attribute.NewSet(loadAttrs...),
 							Exemplars:  w.exemplars,
 						},
 					},
@@ -148,7 +162,7 @@ func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Expor
 						{
 							StartTime:  startTime,
 							Time:       now,
-							Attributes: attribute.NewSet(signalAttrs...),
+							Attributes: attribute.NewSet(loadAttrs...),
 							Exemplars:  w.exemplars,
 							Count:      totalCount,
 							Sum:        sum,

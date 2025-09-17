@@ -6,6 +6,7 @@ package logs
 import (
 	"context"
 	"encoding/hex"
+	"fmt"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -35,7 +36,12 @@ type worker struct {
 	index          int                   // worker index
 	traceID        string                // traceID string
 	spanID         string                // spanID string
+	loadSize       int                   // desired minimum size in MB of string data for each generated log
 }
+
+const (
+	charactersPerMB = 1024 * 1024 // One character takes up one byte of space, so this number comes from the number of bytes in a megabyte
+)
 
 func (w worker) simulateLogs(res *resource.Resource, exporter sdklog.Exporter, telemetryAttributes []attribute.KeyValue) {
 	limiter := rate.NewLimiter(w.limitPerSecond, 1)
@@ -59,6 +65,13 @@ func (w worker) simulateLogs(res *resource.Resource, exporter sdklog.Exporter, t
 		attrs := []log.KeyValue{log.String("app", "server")}
 		for i, attr := range telemetryAttributes {
 			attrs = append(attrs, log.String(string(attr.Key), telemetryAttributes[i].Value.AsString()))
+		}
+
+		// Add load size attributes if specified
+		if w.loadSize > 0 {
+			for j := 0; j < w.loadSize; j++ {
+				attrs = append(attrs, log.String(fmt.Sprintf("load-%v", j), string(make([]byte, charactersPerMB))))
+			}
 		}
 
 		rf := logtest.RecordFactory{

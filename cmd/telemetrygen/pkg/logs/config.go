@@ -21,6 +21,7 @@ type Config struct {
 	SeverityNumber int32
 	TraceID        string
 	SpanID         string
+	LoadSize       int
 }
 
 func NewConfig() *Config {
@@ -41,6 +42,7 @@ func (c *Config) Flags(fs *pflag.FlagSet) {
 	fs.Int32Var(&c.SeverityNumber, "severity-number", c.SeverityNumber, "Severity number of the log, range from 1 to 24 (inclusive)")
 	fs.StringVar(&c.TraceID, "trace-id", c.TraceID, "TraceID of the log")
 	fs.StringVar(&c.SpanID, "span-id", c.SpanID, "SpanID of the log")
+	fs.IntVar(&c.LoadSize, "size", c.LoadSize, "Desired minimum size in MB")
 }
 
 // SetDefaults sets the default values for the configuration
@@ -54,6 +56,7 @@ func (c *Config) SetDefaults() {
 	c.Body = "the message"
 	c.SeverityText = "Info"
 	c.SeverityNumber = 9
+	c.LoadSize = 0
 	c.TraceID = ""
 	c.SpanID = ""
 }
@@ -62,6 +65,10 @@ func (c *Config) SetDefaults() {
 func (c *Config) Validate() error {
 	if c.TotalDuration.Duration() <= 0 && c.NumLogs <= 0 && !c.TotalDuration.IsInf() {
 		return errors.New("either `logs` or `duration` must be greater than 0")
+	}
+
+	if c.LoadSize < 0 {
+		return errors.New("load size must be non-negative")
 	}
 
 	if c.TraceID != "" {

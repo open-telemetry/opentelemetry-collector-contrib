@@ -25,6 +25,7 @@ type Config struct {
 	TraceID                 string
 	EnforceUniqueTimeseries bool
 	UniqueTimelimit         time.Duration
+	LoadSize                int
 }
 
 // NewConfig creates a new Config with default values.
@@ -50,6 +51,7 @@ func (c *Config) Flags(fs *pflag.FlagSet) {
 	fs.Var(&c.AggregationTemporality, "aggregation-temporality", "aggregation-temporality for metrics. Must be one of 'delta' or 'cumulative'")
 	fs.BoolVar(&c.EnforceUniqueTimeseries, "unique-timeseries", c.EnforceUniqueTimeseries, "Enforce unique timeseries within unique-timeseries-timelimit, performance impacting")
 	fs.DurationVar(&c.UniqueTimelimit, "unique-timeseries-duration", c.UniqueTimelimit, "Time limit for unique timeseries generation, timeseries generated within this time will be unique")
+	fs.IntVar(&c.LoadSize, "size", c.LoadSize, "Desired minimum size in MB")
 }
 
 // SetDefaults sets the default values for the configuration
@@ -69,6 +71,7 @@ func (c *Config) SetDefaults() {
 
 	c.EnforceUniqueTimeseries = false
 	c.UniqueTimelimit = time.Second
+	c.LoadSize = 0
 
 	c.TraceID = ""
 	c.SpanID = ""
@@ -78,6 +81,10 @@ func (c *Config) SetDefaults() {
 func (c *Config) Validate() error {
 	if !c.TotalDuration.IsInf() && c.TotalDuration.Duration() <= 0 && c.NumMetrics <= 0 {
 		return errors.New("either `metrics` or `duration` must be greater than 0")
+	}
+
+	if c.LoadSize < 0 {
+		return errors.New("load size must be non-negative")
 	}
 
 	if c.TraceID != "" {
