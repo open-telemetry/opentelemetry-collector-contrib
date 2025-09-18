@@ -279,6 +279,8 @@ func (lmp LogSeverityNumberMatchProperties) validate() error {
 
 // ProfileFilters filters by OTTL conditions
 type ProfileFilters struct {
+	_ struct{} // prevent unkeyed literals
+
 	// ProfileConditions is a list of OTTL conditions for an ottlprofile context.
 	// If any condition resolves to true, the profile will be dropped.
 	// Supports `and`, `or`, and `()`
