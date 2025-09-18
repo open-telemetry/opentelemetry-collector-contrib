@@ -117,8 +117,22 @@ func (cp *childProcessCollector) PrepareConfig(t *testing.T, configStr string) (
 	configCleanup = func() {
 		// NoOp
 	}
+
+	var dir string
+	if runtime.GOOS == "windows" {
+		// On Windows, use os.MkdirTemp to create directory since t.TempDir results in an error during cleanup in scoped-tests.
+		// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42639
+		var err error
+		dir, err = os.MkdirTemp("", t.Name()) //nolint:usetesting
+		if err != nil {
+			return configCleanup, fmt.Errorf("failed to create temporary directory: %w", err)
+		}
+	} else {
+		dir = t.TempDir()
+	}
+
 	var file *os.File
-	file, err = os.CreateTemp(t.TempDir(), "agent*.yaml")
+	file, err = os.CreateTemp(dir, "agent*.yaml")
 	if err != nil {
 		log.Printf("%s", err)
 		return configCleanup, err
