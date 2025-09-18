@@ -96,7 +96,7 @@ The following settings can be optionally configured:
 - `histogram` (default: `explicit`): Use to configure the type of histogram to record
   calculated from spans duration measurements. Must be either `explicit` or `exponential`.
   - `disable` (default: `false`): Disable all histogram metrics.
-  - `unit` (default: `ms`): The time unit for recording duration measurements.
+  - `unit` (default: `s`): The time unit for recording duration measurements.
   calculated from spans duration measurements. One of either: `ms` or `s`.
   - `dimensions`: additional attributes to add as dimensions to the `traces.span.metrics.duration` metric, 
   which will be included _on top of_ the common and configured `dimensions` for span attributes and resource attributes.
