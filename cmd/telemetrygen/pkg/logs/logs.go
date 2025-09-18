@@ -84,7 +84,12 @@ func run(c *Config, expF exporterFunc, logger *zap.Logger) error {
 			index:          i,
 			traceID:        c.TraceID,
 			spanID:         c.SpanID,
+			batch:          c.Batch,
+			batchBuffer:    make([]sdklog.Record, 0),
+			bufferMutex:    sync.Mutex{},
+			batchSize:      c.BatchSize,
 		}
+
 		exp, err := expF()
 		if err != nil {
 			w.logger.Error("failed to create the exporter", zap.Error(err))
