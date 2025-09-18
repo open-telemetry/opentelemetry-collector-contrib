@@ -26,6 +26,7 @@ type sqlServerScraper struct {
 	startTime       pcommon.Timestamp
 	settings        receiver.Settings
 	instanceScraper *scrapers.InstanceScraper
+	databaseScraper *scrapers.DatabaseScraper
 	engineEdition   int // SQL Server engine edition (0=Unknown, 5=Azure DB, 8=Azure MI)
 }
 
@@ -68,7 +69,11 @@ func (s *sqlServerScraper) start(ctx context.Context, _ component.Host) error {
 	}
 
 	// Initialize instance scraper with engine edition for engine-specific queries
+	// Create instance scraper for instance-level metrics
 	s.instanceScraper = scrapers.NewInstanceScraper(s.connection, s.logger, s.engineEdition)
+	
+	// Create database scraper for database-level metrics
+	s.databaseScraper = scrapers.NewDatabaseScraper(s.connection, s.logger, s.engineEdition)
 
 	s.logger.Info("Successfully connected to SQL Server",
 		zap.String("hostname", s.config.Hostname),
@@ -165,6 +170,139 @@ func (s *sqlServerScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 		} else {
 			s.logger.Debug("Successfully scraped instance buffer metrics")
 		}
+	}
+
+	// Scrape database-level buffer pool metrics (bufferpool.sizePerDatabaseInBytes)
+	if s.config.EnableBufferMetrics {
+		scrapeCtx, cancel := context.WithTimeout(ctx, s.config.Timeout)
+		defer cancel()
+
+		if err := s.databaseScraper.ScrapeDatabaseBufferMetrics(scrapeCtx, scopeMetrics); err != nil {
+			s.logger.Error("Failed to scrape database buffer metrics",
+				zap.Error(err),
+				zap.Duration("timeout", s.config.Timeout))
+			scrapeErrors = append(scrapeErrors, err)
+			// Don't return here - continue with other metrics
+		} else {
+			s.logger.Debug("Successfully scraped database buffer metrics")
+		}
+	}
+
+	// Scrape database-level disk metrics (maxDiskSizeInBytes)
+	s.logger.Debug("Checking disk metrics configuration",
+		zap.Bool("enable_disk_metrics_in_bytes", s.config.EnableDiskMetricsInBytes))
+	
+	if s.config.EnableDiskMetricsInBytes {
+		s.logger.Debug("Starting database disk metrics scraping")
+		scrapeCtx, cancel := context.WithTimeout(ctx, s.config.Timeout)
+		defer cancel()
+
+		if err := s.databaseScraper.ScrapeDatabaseDiskMetrics(scrapeCtx, scopeMetrics); err != nil {
+			s.logger.Error("Failed to scrape database disk metrics",
+				zap.Error(err),
+				zap.Duration("timeout", s.config.Timeout))
+			scrapeErrors = append(scrapeErrors, err)
+			// Don't return here - continue with other metrics
+		} else {
+			s.logger.Debug("Successfully scraped database disk metrics")
+		}
+	} else {
+		s.logger.Debug("Database disk metrics disabled in configuration")
+	}
+
+	// Scrape database-level IO metrics (io.stallInMilliseconds)
+	if s.config.EnableIOMetrics {
+		s.logger.Debug("Starting database IO metrics scraping")
+		scrapeCtx, cancel := context.WithTimeout(ctx, s.config.Timeout)
+		defer cancel()
+
+		if err := s.databaseScraper.ScrapeDatabaseIOMetrics(scrapeCtx, scopeMetrics); err != nil {
+			s.logger.Error("Failed to scrape database IO metrics",
+				zap.Error(err),
+				zap.Duration("timeout", s.config.Timeout))
+			scrapeErrors = append(scrapeErrors, err)
+			// Don't return here - continue with other metrics
+		} else {
+			s.logger.Debug("Successfully scraped database IO metrics")
+		}
+	} else {
+		s.logger.Debug("Database IO metrics disabled in configuration")
+	}
+
+	// Scrape database-level log growth metrics (log.transactionGrowth)
+	if s.config.EnableLogGrowthMetrics {
+		s.logger.Debug("Starting database log growth metrics scraping")
+		scrapeCtx, cancel := context.WithTimeout(ctx, s.config.Timeout)
+		defer cancel()
+
+		if err := s.databaseScraper.ScrapeDatabaseLogGrowthMetrics(scrapeCtx, scopeMetrics); err != nil {
+			s.logger.Error("Failed to scrape database log growth metrics",
+				zap.Error(err),
+				zap.Duration("timeout", s.config.Timeout))
+			scrapeErrors = append(scrapeErrors, err)
+			// Don't return here - continue with other metrics
+		} else {
+			s.logger.Debug("Successfully scraped database log growth metrics")
+		}
+	} else {
+		s.logger.Debug("Database log growth metrics disabled in configuration")
+	}
+
+	// Scrape database-level page file metrics (pageFileAvailable)
+	if s.config.EnablePageFileMetrics {
+		s.logger.Debug("Starting database page file metrics scraping")
+		scrapeCtx, cancel := context.WithTimeout(ctx, s.config.Timeout)
+		defer cancel()
+
+		if err := s.databaseScraper.ScrapeDatabasePageFileMetrics(scrapeCtx, scopeMetrics); err != nil {
+			s.logger.Error("Failed to scrape database page file metrics",
+				zap.Error(err),
+				zap.Duration("timeout", s.config.Timeout))
+			scrapeErrors = append(scrapeErrors, err)
+			// Don't return here - continue with other metrics
+		} else {
+			s.logger.Debug("Successfully scraped database page file metrics")
+		}
+	} else {
+		s.logger.Debug("Database page file metrics disabled in configuration")
+	}
+
+	// Scrape database-level page file total metrics (pageFileTotal)
+	if s.config.EnablePageFileTotalMetrics {
+		s.logger.Debug("Starting database page file total metrics scraping")
+		scrapeCtx, cancel := context.WithTimeout(ctx, s.config.Timeout)
+		defer cancel()
+
+		if err := s.databaseScraper.ScrapeDatabasePageFileTotalMetrics(scrapeCtx, scopeMetrics); err != nil {
+			s.logger.Error("Failed to scrape database page file total metrics",
+				zap.Error(err),
+				zap.Duration("timeout", s.config.Timeout))
+			scrapeErrors = append(scrapeErrors, err)
+			// Don't return here - continue with other metrics
+		} else {
+			s.logger.Debug("Successfully scraped database page file total metrics")
+		}
+	} else {
+		s.logger.Debug("Database page file total metrics disabled in configuration")
+	}
+
+	// Scrape instance-level memory metrics (memoryTotal, memoryAvailable, memoryUtilization)
+	if s.config.EnableMemoryMetrics || s.config.EnableMemoryTotalMetrics || s.config.EnableMemoryAvailableMetrics || s.config.EnableMemoryUtilizationMetrics {
+		s.logger.Debug("Starting database memory metrics scraping")
+		scrapeCtx, cancel := context.WithTimeout(ctx, s.config.Timeout)
+		defer cancel()
+
+		if err := s.databaseScraper.ScrapeDatabaseMemoryMetrics(scrapeCtx, scopeMetrics); err != nil {
+			s.logger.Error("Failed to scrape database memory metrics",
+				zap.Error(err),
+				zap.Duration("timeout", s.config.Timeout))
+			scrapeErrors = append(scrapeErrors, err)
+			// Don't return here - continue with other metrics
+		} else {
+			s.logger.Debug("Successfully scraped database memory metrics")
+		}
+	} else {
+		s.logger.Debug("Database memory metrics disabled in configuration")
 	}
 
 	// Log summary of scraping results

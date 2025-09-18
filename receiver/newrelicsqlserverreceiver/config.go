@@ -42,6 +42,14 @@ type Config struct {
 	EnableBufferMetrics          bool `mapstructure:"enable_buffer_metrics"`
 	EnableDatabaseReserveMetrics bool `mapstructure:"enable_database_reserve_metrics"`
 	EnableDiskMetricsInBytes     bool `mapstructure:"enable_disk_metrics_in_bytes"`
+	EnableIOMetrics              bool `mapstructure:"enable_io_metrics"`
+	EnableLogGrowthMetrics       bool `mapstructure:"enable_log_growth_metrics"`
+	EnablePageFileMetrics        bool `mapstructure:"enable_page_file_metrics"`
+	EnablePageFileTotalMetrics   bool `mapstructure:"enable_page_file_total_metrics"`
+	EnableMemoryMetrics          bool `mapstructure:"enable_memory_metrics"`
+	EnableMemoryTotalMetrics     bool `mapstructure:"enable_memory_total_metrics"`
+	EnableMemoryAvailableMetrics bool `mapstructure:"enable_memory_available_metrics"`
+	EnableMemoryUtilizationMetrics bool `mapstructure:"enable_memory_utilization_metrics"`
 
 	// Concurrency and timeouts
 	MaxConcurrentWorkers int           `mapstructure:"max_concurrent_workers"`
@@ -74,6 +82,14 @@ func DefaultConfig() component.Config {
 		EnableBufferMetrics:          true,
 		EnableDatabaseReserveMetrics: true,
 		EnableDiskMetricsInBytes:     true,
+		EnableIOMetrics:              true,
+		EnableLogGrowthMetrics:       true,
+		EnablePageFileMetrics:        true,
+		EnablePageFileTotalMetrics:   true,
+		EnableMemoryMetrics:          true,
+		EnableMemoryTotalMetrics:     true,
+		EnableMemoryAvailableMetrics: true,
+		EnableMemoryUtilizationMetrics: true,
 
 		// Default concurrency and timeout
 		MaxConcurrentWorkers: 10,
