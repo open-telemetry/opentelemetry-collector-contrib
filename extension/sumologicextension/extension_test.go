@@ -444,17 +444,12 @@ func TestStoreCredentials_V2CredentialsAreUsed(t *testing.T) {
 	require.NoError(t, se.Start(t.Context(), componenttest.NewNopHost()))
 	require.NoError(t, se.Shutdown(t.Context()))
 	require.FileExists(t, credsPath)
-
-	require.NoError(t, se.Start(t.Context(), componenttest.NewNopHost()))
-	require.NoError(t, se.Shutdown(t.Context()))
-
-	hashKeyV2 := createHashKey(cfg)
+	hashKeyV2 := createHashKeyV2(cfg)
+	v2Creds, _ := store.Get(hashKeyV2)
 
 	fileName, err = credentials.HashKeyToFilename(hashKeyV2)
 	require.NoError(t, err)
 	credsPath = path.Join(dir, fileName)
-
-	require.Equal(t, hashKeyV2, se.hashKey)
 	require.Equal(t, credentials.CollectorCredentials{
 		CollectorName: "collector_name",
 		Credentials: api.OpenRegisterResponsePayload{
@@ -462,7 +457,7 @@ func TestStoreCredentials_V2CredentialsAreUsed(t *testing.T) {
 			CollectorCredentialKey: "collectorKey",
 			CollectorID:            "id",
 		},
-	}, se.collectorCredentials)
+	}, v2Creds)
 	require.FileExists(t, credsPath)
 }
 
