@@ -13,15 +13,15 @@ import (
 	"github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline"
 	"github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/serializerexporter"
 	"github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient"
+	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/inframetadata"
+	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes"
+	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes/source"
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	"github.com/DataDog/datadog-agent/pkg/trace/agent"
 	"github.com/DataDog/datadog-agent/pkg/trace/telemetry"
 	"github.com/DataDog/datadog-agent/pkg/trace/timing"
 	"github.com/DataDog/datadog-agent/pkg/trace/writer"
 	"github.com/DataDog/datadog-agent/pkg/util/log"
-	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata"
-	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
-	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configretry"
@@ -51,9 +51,10 @@ var _ = featuregate.GlobalRegistry().MustRegister(
 	featuregate.WithRegisterToVersion("v0.129.0"),
 )
 
-var metricExportNativeClientFeatureGate = featuregate.GlobalRegistry().MustRegister(
+var _ = featuregate.GlobalRegistry().MustRegister(
 	"exporter.datadogexporter.metricexportnativeclient",
-	featuregate.StageBeta,
+	featuregate.StageStable,
+	featuregate.WithRegisterToVersion("v0.135.0"),
 	featuregate.WithRegisterDescription("When enabled, metric export in datadogexporter uses native Datadog client APIs instead of Zorkian APIs."),
 )
 
@@ -70,43 +71,24 @@ var metricExportSerializerClientFeatureGate = featuregate.GlobalRegistry().MustR
 	featuregate.WithRegisterDescription("When enabled, metric export in datadogexporter uses the serializer exporter from the Datadog Agent."),
 )
 
+var inferIntervalDeltaFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"exporter.datadogexporter.InferIntervalForDeltaMetrics",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, the exporter will infer the metrics interval for OTLP delta sums using a heuristic."),
+)
+
 func init() {
 	log.SetupLogger(log.Disabled(), "off")
-}
-
-// isMetricExportV2Enabled returns true if metric export in datadogexporter uses native Datadog client APIs, false if it uses Zorkian APIs
-func isMetricExportV2Enabled() bool {
-	return metricExportNativeClientFeatureGate.IsEnabled()
 }
 
 func isMetricExportSerializerEnabled() bool {
 	return metricExportSerializerClientFeatureGate.IsEnabled()
 }
 
-// enableNativeMetricExport switches metric export to call native Datadog APIs instead of Zorkian APIs.
-func enableNativeMetricExport() error {
-	if err := featuregate.GlobalRegistry().Set(metricExportSerializerClientFeatureGate.ID(), false); err != nil {
-		return err
-	}
-	return featuregate.GlobalRegistry().Set(metricExportNativeClientFeatureGate.ID(), true)
-}
-
-// enableZorkianMetricExport switches metric export to call Zorkian APIs instead of native Datadog APIs.
-func enableZorkianMetricExport() error {
-	if err := featuregate.GlobalRegistry().Set(metricExportSerializerClientFeatureGate.ID(), false); err != nil {
-		return err
-	}
-	return featuregate.GlobalRegistry().Set(metricExportNativeClientFeatureGate.ID(), false)
-}
-
 func consumeResource(metadataReporter *inframetadata.Reporter, res pcommon.Resource, logger *zap.Logger) {
 	if err := metadataReporter.ConsumeResource(res); err != nil {
 		logger.Warn("failed to consume resource for host metadata", zap.Error(err), zap.Any("resource", res))
 	}
-}
-
-func enableMetricExportSerializer() error {
-	return featuregate.GlobalRegistry().Set(metricExportSerializerClientFeatureGate.ID(), true)
 }
 
 type factory struct {

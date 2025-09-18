@@ -7,6 +7,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/akamai"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ec2"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ecs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/eks"
@@ -18,10 +19,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/docker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/heroku"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/hetzner"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/k8snode"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/kubeadm"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/openshift"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/scaleway"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/system"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/vultr"
 )
 
 // Config defines configuration for Resource processor.
@@ -78,6 +82,9 @@ type DetectorConfig struct {
 	// HerokuConfig contains user-specified configurations for the heroku detector
 	HerokuConfig heroku.Config `mapstructure:"heroku"`
 
+	// HetznerConfig contains user-specified configurations for the hetzner detector
+	HetznerConfig hetzner.Config `mapstructure:"hetzner"`
+
 	// SystemConfig contains user-specified configurations for the System detector
 	SystemConfig system.Config `mapstructure:"system"`
 
@@ -89,6 +96,15 @@ type DetectorConfig struct {
 
 	// Kubeadm contains user-specified configurations for the Kubeadm detector
 	KubeadmConfig kubeadm.Config `mapstructure:"kubeadm"`
+
+	// AkamaiConfig contains user-specified configurations for the akamai detector
+	AkamaiConfig akamai.Config `mapstructure:"akamai"`
+
+	// ScalewayConfig contains user-specified configurations for the akamai detector
+	ScalewayConfig scaleway.Config `mapstructure:"scaleway"`
+
+	// VultrConfig contains user-specified configurations for the vultr detector
+	VultrConfig vultr.Config `mapstructure:"vultr"`
 }
 
 func detectorCreateDefaultConfig() DetectorConfig {
@@ -104,10 +120,14 @@ func detectorCreateDefaultConfig() DetectorConfig {
 		DockerConfig:           docker.CreateDefaultConfig(),
 		GcpConfig:              gcp.CreateDefaultConfig(),
 		HerokuConfig:           heroku.CreateDefaultConfig(),
+		HetznerConfig:          hetzner.CreateDefaultConfig(),
 		SystemConfig:           system.CreateDefaultConfig(),
 		OpenShiftConfig:        openshift.CreateDefaultConfig(),
 		K8SNodeConfig:          k8snode.CreateDefaultConfig(),
 		KubeadmConfig:          kubeadm.CreateDefaultConfig(),
+		AkamaiConfig:           akamai.CreateDefaultConfig(),
+		ScalewayConfig:         scaleway.CreateDefaultConfig(),
+		VultrConfig:            vultr.CreateDefaultConfig(),
 	}
 }
 
@@ -135,6 +155,8 @@ func (d *DetectorConfig) GetConfigFromType(detectorType internal.DetectorType) i
 		return d.GcpConfig
 	case heroku.TypeStr:
 		return d.HerokuConfig
+	case hetzner.TypeStr:
+		return d.HetznerConfig
 	case system.TypeStr:
 		return d.SystemConfig
 	case openshift.TypeStr:
@@ -143,6 +165,12 @@ func (d *DetectorConfig) GetConfigFromType(detectorType internal.DetectorType) i
 		return d.K8SNodeConfig
 	case kubeadm.TypeStr:
 		return d.KubeadmConfig
+	case akamai.TypeStr:
+		return d.AkamaiConfig
+	case scaleway.TypeStr:
+		return d.ScalewayConfig
+	case vultr.TypeStr:
+		return d.VultrConfig
 	default:
 		return nil
 	}

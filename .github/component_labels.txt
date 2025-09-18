@@ -50,7 +50,6 @@ exporter/loadbalancingexporter exporter/loadbalancing
 exporter/logicmonitorexporter exporter/logicmonitor
 exporter/logzioexporter exporter/logzio
 exporter/mezmoexporter exporter/mezmo
-exporter/opencensusexporter exporter/opencensus
 exporter/opensearchexporter exporter/opensearch
 exporter/otelarrowexporter exporter/otelarrow
 exporter/prometheusexporter exporter/prometheus
@@ -122,6 +121,7 @@ internal/docker internal/docker
 internal/exp/metrics internal/exp/metrics
 internal/filter internal/filter
 internal/grpcutil internal/grpcutil
+internal/healthcheck internal/healthcheck
 internal/k8sconfig internal/k8sconfig
 internal/kafka internal/kafka
 internal/kubelet internal/kubelet
@@ -185,7 +185,11 @@ processor/probabilisticsamplerprocessor processor/probabilisticsampler
 processor/redactionprocessor processor/redaction
 processor/remotetapprocessor processor/remotetap
 processor/resourcedetectionprocessor processor/resourcedetection
+processor/resourcedetectionprocessor/internal/akamai processor/resourcedetection/internal/akamai
 processor/resourcedetectionprocessor/internal/dynatrace processor/resourcedetection/internal/dynatrace
+processor/resourcedetectionprocessor/internal/hetzner processor/resourcedetection/internal/hetzner
+processor/resourcedetectionprocessor/internal/scaleway processor/resourcedetection/internal/scaleway
+processor/resourcedetectionprocessor/internal/vultr processor/resourcedetection/internal/vultr
 processor/resourceprocessor processor/resource
 processor/schemaprocessor processor/schema
 processor/spanprocessor processor/span
@@ -263,7 +267,6 @@ receiver/netflowreceiver receiver/netflow
 receiver/nginxreceiver receiver/nginx
 receiver/nsxtreceiver receiver/nsxt
 receiver/ntpreceiver receiver/ntp
-receiver/opencensusreceiver receiver/opencensus
 receiver/oracledbreceiver receiver/oracledb
 receiver/osqueryreceiver receiver/osquery
 receiver/otelarrowreceiver receiver/otelarrow
@@ -281,7 +284,6 @@ receiver/receivercreator receiver/receivercreator
 receiver/redisreceiver receiver/redis
 receiver/riakreceiver receiver/riak
 receiver/saphanareceiver receiver/saphana
-receiver/sapmreceiver receiver/sapm
 receiver/signalfxreceiver receiver/signalfx
 receiver/simpleprometheusreceiver receiver/simpleprometheus
 receiver/skywalkingreceiver receiver/skywalking

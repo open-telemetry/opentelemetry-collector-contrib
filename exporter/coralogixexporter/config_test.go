@@ -73,7 +73,7 @@ func TestLoadConfig(t *testing.T) {
 					BalancerName:    "",
 				},
 				RateLimiter: RateLimiterConfig{
-					Enabled:   false,
+					Enabled:   true,
 					Threshold: 10,
 					Duration:  time.Minute,
 				},
@@ -118,7 +118,7 @@ func TestLoadConfig(t *testing.T) {
 				AppNameAttributes:   []string{"service.namespace", "k8s.namespace.name"},
 				SubSystemAttributes: []string{"service.name", "k8s.deployment.name", "k8s.statefulset.name", "k8s.daemonset.name", "k8s.cronjob.name", "k8s.job.name", "k8s.container.name"},
 				RateLimiter: RateLimiterConfig{
-					Enabled:   false,
+					Enabled:   true,
 					Threshold: 10,
 					Duration:  time.Minute,
 				},

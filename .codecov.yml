@@ -216,10 +216,6 @@ component_management:
     name: exporter_mezmo
     paths:
     - exporter/mezmoexporter/**
-  - component_id: exporter_opencensus
-    name: exporter_opencensus
-    paths:
-    - exporter/opencensusexporter/**
   - component_id: exporter_opensearch
     name: exporter_opensearch
     paths:
@@ -796,10 +792,6 @@ component_management:
     name: receiver_ntp
     paths:
     - receiver/ntpreceiver/**
-  - component_id: receiver_opencensus
-    name: receiver_opencensus
-    paths:
-    - receiver/opencensusreceiver/**
   - component_id: receiver_oracledb
     name: receiver_oracledb
     paths:
@@ -868,10 +860,6 @@ component_management:
     name: receiver_saphana
     paths:
     - receiver/saphanareceiver/**
-  - component_id: receiver_sapm
-    name: receiver_sapm
-    paths:
-    - receiver/sapmreceiver/**
   - component_id: receiver_signalfx
     name: receiver_signalfx
     paths:
