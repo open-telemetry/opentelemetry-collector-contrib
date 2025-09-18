@@ -68,3 +68,7 @@ func TestNewConnector(t *testing.T) {
 		})
 	}
 }
+
+func TestCreateDefaultConfig(t *testing.T) {
+
+}

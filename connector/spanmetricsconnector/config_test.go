@@ -87,7 +87,7 @@ func TestLoadConfig(t *testing.T) {
 					MaxPerDataPoint: defaultMaxPerDatapoint,
 				},
 				Histogram: HistogramConfig{
-					Unit: metrics.Milliseconds,
+					Unit: metrics.Seconds,
 					Exponential: configoptional.Some(ExponentialHistogramConfig{
 						MaxSize: 10,
 					}),
