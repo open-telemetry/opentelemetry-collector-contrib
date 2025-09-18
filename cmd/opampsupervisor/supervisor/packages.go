@@ -4,9 +4,7 @@
 package supervisor
 
 import (
-	"archive/tar"
 	"bytes"
-	"compress/gzip"
 	"context"
 	"crypto/sha256"
 	"encoding/base64"
@@ -36,10 +34,6 @@ var (
 	lastPackageStatusFileName = "last-reported-package-statuses.binpb"
 )
 
-// maxAgentBytes is the max size of an agent package that will be accepted.
-// It is 1 gibibyte.
-const maxAgentBytes = 1024 * 1024 * 1024
-
 // packageManager manages the persistent state of downloadable packages.
 // It persists the packages to the file system.
 // Currently, it only allows for a single top-level package containing the agent
@@ -54,9 +48,13 @@ type packageManager struct {
 
 	storageDir   string
 	agentExePath string
+	installFunc  InstallFunc
+	agentBinary  string
 	checkOpts    *cosign.CheckOpts
 	am           agentManager
 }
+
+var _ types.PackagesStateProvider = &packageManager{}
 
 type agentManager interface {
 	// stopAgentProcess stops the agent process.
@@ -69,22 +67,29 @@ func newPackageManager(
 	storageDir,
 	agentVersion string,
 	persistentState *persistentState,
-	signatureOpts config.AgentSignature,
+	packageOpts config.AgentPackage,
 	am agentManager,
 ) (*packageManager, error) {
-	// Read actual hash of the on-disk agent
+	// Calculate actual hash of the on-disk agent
 	f, err := os.Open(agentPath)
 	if err != nil {
 		return nil, fmt.Errorf("open agent: %w", err)
 	}
-
+	defer f.Close()
 	h := sha256.New()
 	if _, err = io.Copy(h, f); err != nil {
 		return nil, fmt.Errorf("compute agent hash: %w", err)
 	}
 	agentHash := h.Sum(nil)
 
-	checkOpts, err := createCosignCheckOpts(signatureOpts)
+	// Create archive installer
+	installer, err := NewInstallFunc(packageOpts.Archive)
+	if err != nil {
+		return nil, fmt.Errorf("create archive installer: %w", err)
+	}
+
+	// Create signature verification options
+	checkOpts, err := createCosignCheckOpts(packageOpts.Signature)
 	if err != nil {
 		return nil, fmt.Errorf("create signature verification options: %w", err)
 	}
@@ -95,6 +100,8 @@ func newPackageManager(
 		topLevelVersion: agentVersion,
 		storageDir:      storageDir,
 		agentExePath:    agentPath,
+		installFunc:     installer,
+		agentBinary:     packageOpts.AgentBinary,
 		checkOpts:       checkOpts,
 		am:              am,
 	}, nil
@@ -170,7 +177,7 @@ func (p *packageManager) FileContentHash(packageName string) ([]byte, error) {
 // The order of operations is as follows:
 // 1. Download data from the data stream.
 // 2. Verify the package integrity and signature.
-// 3. Verify the tarball contains the otelcol-contrib binary.
+// 3. Verify the tarball contains the collector binary.
 // 4. Extract data from tarball to a temporary file.
 // 5. Stop the agent process.
 // 6. Backup the existing agent file.
@@ -178,6 +185,7 @@ func (p *packageManager) FileContentHash(packageName string) ([]byte, error) {
 // 8. Delete the backup after a successful update.
 // Agent process is restarted when this function returns.
 func (p *packageManager) UpdateContent(ctx context.Context, packageName string, data io.Reader, contentHash, signature []byte) error {
+	// Only the agent package is supported.
 	if packageName != agentPackageKey {
 		return errors.New("package does not exist")
 	}
@@ -200,38 +208,10 @@ func (p *packageManager) UpdateContent(ctx context.Context, packageName string, 
 		return fmt.Errorf("could not verify package signature: %w", err)
 	}
 
-	// 3. Create reader for new agent & verify the tarball contains the otelcol-contrib binary.
-	gzipReader, err := gzip.NewReader(bytes.NewBuffer(by))
-	if err != nil {
-		return fmt.Errorf("create gzip reader: %w", err)
-	}
-	defer gzipReader.Close()
-
-	tar := tar.NewReader(gzipReader)
-	h, err := tar.Next()
-	if err != nil {
-		return fmt.Errorf("first tarball read for collector: %w", err)
-	}
-
-	for h.Name != "otelcol-contrib" {
-		h, err = tar.Next()
-		if err != nil {
-			return fmt.Errorf("read tarball for collector: %w", err)
-		}
-	}
-
-	// 4. Extract data from tarball to a temporary file.
+	// 3, 4: Verify and install the agent binary to a temporary file.
 	tmpFilePath := filepath.Join(p.storageDir, "collector.tmp")
-	tmpAgentFile, err := os.OpenFile(tmpFilePath, os.O_RDWR|os.O_CREATE, 0o700)
-	if err != nil {
-		return fmt.Errorf("open tmp file: %w", err)
-	}
-	defer tmpAgentFile.Close()
-
-	if _, err = io.CopyN(tmpAgentFile, tar, maxAgentBytes); err != nil {
-		if !errors.Is(err, io.EOF) {
-			return fmt.Errorf("write collector to tmp file: %w", err)
-		}
+	if err = p.installFunc(ctx, by, p.agentBinary, tmpFilePath); err != nil {
+		return fmt.Errorf("install func: %w", err)
 	}
 
 	// 5. Stop the agent process.

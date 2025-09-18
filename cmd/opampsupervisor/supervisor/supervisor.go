@@ -359,7 +359,7 @@ func (s *Supervisor) Start(ctx context.Context) error {
 			s.config.Storage.Directory,
 			agentVersion,
 			s.persistentState,
-			s.config.Agent.Signature,
+			s.config.Agent.Package,
 			s,
 		)
 		if err != nil {
@@ -730,6 +730,7 @@ func (s *Supervisor) startOpAMPClient() error {
 				return s.createEffectiveConfigMsg(), nil
 			},
 		},
+		Capabilities: s.config.Capabilities.SupportedCapabilities(),
 	}
 	ad := s.agentDescription.Load().(*protobufs.AgentDescription)
 	if err := s.opampClient.SetAgentDescription(ad); err != nil {
@@ -746,10 +747,13 @@ func (s *Supervisor) startOpAMPClient() error {
 		}
 	}
 
-	supportedCapabilities := s.config.Capabilities.SupportedCapabilities()
-	if err := s.opampClient.SetCapabilities(&supportedCapabilities); err != nil {
-		return err
-	}
+	// TODO: Commenting out and setting capabilities in the settings object above
+	// to avoid the issue where the capabilities are not set correctly.
+	// https://github.com/open-telemetry/opamp-go/issues/448
+	// supportedCapabilities := s.config.Capabilities.SupportedCapabilities()
+	// if err := s.opampClient.SetCapabilities(&supportedCapabilities); err != nil {
+	// 	return err
+	// }
 
 	// Set heartbeat interval if the agent supports it
 	if s.config.Capabilities.ReportsHeartbeat {

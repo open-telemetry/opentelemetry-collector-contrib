@@ -2470,7 +2470,7 @@ func TestSupervisorUpgradesAgent(t *testing.T) {
 		"agent_path":  agentFileCopyPath,
 	})
 
-	require.NoError(t, s.Start())
+	require.NoError(t, s.Start(t.Context()))
 	defer s.Shutdown()
 
 	waitForSupervisorConnection(server.supervisorConnected, true)
@@ -2757,34 +2757,6 @@ func isHeartbeatMessage(message *protobufs.AgentToServer) bool {
 	empty = empty && message.Flags == 0
 
 	return empty
-}
-
-func getFileContents(t *testing.T, url string) []byte {
-	// #nosec G107 -- The URL is not user-controlled
-	r, err := http.Get(url)
-	require.NoError(t, err)
-	defer r.Body.Close()
-
-	by, err := io.ReadAll(r.Body)
-	require.NoError(t, err)
-
-	return by
-}
-
-func copyFile(t *testing.T, from, to string) {
-	fromFile, err := os.Open(from)
-	require.NoError(t, err)
-	defer fromFile.Close()
-
-	fi, err := fromFile.Stat()
-	require.NoError(t, err)
-
-	toFile, err := os.OpenFile(to, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, fi.Mode())
-	require.NoError(t, err)
-	defer toFile.Close()
-
-	_, err = io.Copy(toFile, fromFile)
-	require.NoError(t, err)
 }
 
 func getFileContents(t *testing.T, url string) []byte {

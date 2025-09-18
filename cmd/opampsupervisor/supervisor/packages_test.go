@@ -36,12 +36,12 @@ func TestNewPackageManager(t *testing.T) {
 		tmpDir := t.TempDir()
 		agentFile := filepath.Join(tmpDir, "agent")
 		storageDir := filepath.Join(tmpDir, "storage")
-		defaultSigOpts := config.DefaultSupervisor().Agent.Signature
+		defaultPackageOpts := config.DefaultSupervisor().Agent.Package
 
 		require.NoError(t, os.MkdirAll(storageDir, 0o700))
 		require.NoError(t, os.WriteFile(agentFile, []byte(testAgentFileContents), 0o600))
 
-		pm, err := newPackageManager(agentFile, storageDir, "v0.110.0", &persistentState{}, defaultSigOpts, nil)
+		pm, err := newPackageManager(agentFile, storageDir, "v0.110.0", &persistentState{}, defaultPackageOpts, nil)
 		require.NoError(t, err)
 
 		assert.Equal(t, "v0.110.0", pm.topLevelVersion)
@@ -52,11 +52,11 @@ func TestNewPackageManager(t *testing.T) {
 		tmpDir := t.TempDir()
 		agentFile := filepath.Join(tmpDir, "agent")
 		storageDir := filepath.Join(tmpDir, "storage")
-		defaultSigOpts := config.DefaultSupervisor().Agent.Signature
+		defaultPackageOpts := config.DefaultSupervisor().Agent.Package
 
 		require.NoError(t, os.MkdirAll(storageDir, 0o700))
 
-		_, err := newPackageManager(agentFile, storageDir, "v0.110.0", &persistentState{}, defaultSigOpts, nil)
+		_, err := newPackageManager(agentFile, storageDir, "v0.110.0", &persistentState{}, defaultPackageOpts, nil)
 		require.ErrorContains(t, err, "open agent:")
 	})
 }
@@ -278,14 +278,14 @@ func TestPackageManager_UpdateContent(t *testing.T) {
 func initPackageManager(t *testing.T, tmpDir string) *packageManager {
 	agentFile := filepath.Join(tmpDir, "agent")
 	storageDir := filepath.Join(tmpDir, "storage")
-	defaultSigOpts := config.DefaultSupervisor().Agent.Signature
+	defaultPackageOpts := config.DefaultSupervisor().Agent.Package
 
 	require.NoError(t, os.MkdirAll(storageDir, 0o700))
 	require.NoError(t, os.WriteFile(agentFile, []byte(testAgentFileContents), 0o600))
 	ps, err := loadOrCreatePersistentState(filepath.Join(tmpDir, "persistent_state.yaml"), zap.NewNop())
 	require.NoError(t, err)
 
-	pm, err := newPackageManager(agentFile, storageDir, "v0.110.0", ps, defaultSigOpts, nil)
+	pm, err := newPackageManager(agentFile, storageDir, "v0.110.0", ps, defaultPackageOpts, nil)
 	require.NoError(t, err)
 
 	return pm
