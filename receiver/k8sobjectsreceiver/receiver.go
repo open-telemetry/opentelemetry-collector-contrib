@@ -7,6 +7,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/observer"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"net/http"
 	"sync"
 	"time"
@@ -38,6 +40,9 @@ type k8sobjectsreceiver struct {
 	obsrecv         *receiverhelper.ObsReport
 	mu              sync.Mutex
 	cancel          context.CancelFunc
+
+	// TODO interface
+	observer *observer.Observer
 }
 
 func newReceiver(params receiver.Settings, config *Config, consumer consumer.Logs) (receiver.Logs, error) {
@@ -60,7 +65,7 @@ func newReceiver(params receiver.Settings, config *Config, consumer consumer.Log
 			objects[i].exclude[item] = true
 		}
 		// Set default interval if in PullMode and interval is 0
-		if objects[i].Mode == PullMode && objects[i].Interval == 0 {
+		if objects[i].Mode == observer.PullMode && objects[i].Interval == 0 {
 			objects[i].Interval = defaultPullInterval
 		}
 	}
@@ -152,7 +157,9 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, host component.Host) er
 		cctx, cancel := context.WithCancel(ctx)
 		kr.cancel = cancel
 		for _, object := range validConfigs {
-			kr.start(cctx, object)
+			if err := kr.start(cctx, object); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -173,32 +180,46 @@ func (kr *k8sobjectsreceiver) Shutdown(context.Context) error {
 	return nil
 }
 
-func (kr *k8sobjectsreceiver) start(ctx context.Context, object *K8sObjectsConfig) {
-	resource := kr.client.Resource(*object.gvr)
-	kr.setting.Logger.Info("Started collecting",
-		zap.Any("gvr", object.gvr),
-		zap.Any("mode", object.Mode),
-		zap.Any("namespaces", object.Namespaces))
+func (kr *k8sobjectsreceiver) start(ctx context.Context, object *K8sObjectsConfig) error {
+	obs, err := observer.New(
+		kr.client,
+		observer.Config{
+			ApiConfig:           kr.config.APIConfig,
+			Gvr:                 *object.gvr,
+			Mode:                object.Mode,
+			Namespaces:          object.Namespaces,
+			Interval:            object.Interval,
+			LabelSelector:       object.LabelSelector,
+			FieldSelector:       object.FieldSelector,
+			ResourceVersion:     object.ResourceVersion,
+			IncludeInitialState: kr.config.IncludeInitialState,
+			Exclude:             object.exclude,
+			HandleWatchEventFunc: func(data *apiWatch.Event) {
+				logs, err := watchObjectsToLogData(data, time.Now(), object, kr.setting.BuildInfo.Version)
+				if err != nil {
+					kr.setting.Logger.Error("error converting objects to log data", zap.Error(err))
+				} else {
+					obsCtx := kr.obsrecv.StartLogsOp(ctx)
+					err := kr.consumer.ConsumeLogs(obsCtx, logs)
+					kr.obsrecv.EndLogsOp(obsCtx, metadata.Type.String(), 1, err)
+				}
+			},
+			HandlePullObjectsFunc: func(objects *unstructured.UnstructuredList) {
+				logs := pullObjectsToLogData(objects, time.Now(), object, kr.setting.BuildInfo.Version)
+				obsCtx := kr.obsrecv.StartLogsOp(ctx)
+				logRecordCount := logs.LogRecordCount()
+				err := kr.consumer.ConsumeLogs(obsCtx, logs)
+				kr.obsrecv.EndLogsOp(obsCtx, metadata.Type.String(), logRecordCount, err)
+			},
+		}, kr.setting.Logger)
 
-	switch object.Mode {
-	case PullMode:
-		if len(object.Namespaces) == 0 {
-			go kr.startPull(ctx, object, resource)
-		} else {
-			for _, ns := range object.Namespaces {
-				go kr.startPull(ctx, object, resource.Namespace(ns))
-			}
-		}
-
-	case WatchMode:
-		if len(object.Namespaces) == 0 {
-			go kr.startWatch(ctx, object, resource)
-		} else {
-			for _, ns := range object.Namespaces {
-				go kr.startWatch(ctx, object, resource.Namespace(ns))
-			}
-		}
+	if err != nil {
+		return err
 	}
+
+	go obs.Start(ctx)
+
+	return nil
 }
 
 func (kr *k8sobjectsreceiver) startPull(ctx context.Context, config *K8sObjectsConfig, resource dynamic.ResourceInterface) {

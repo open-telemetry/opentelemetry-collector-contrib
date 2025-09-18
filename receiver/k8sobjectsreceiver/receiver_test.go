@@ -4,6 +4,7 @@
 package k8sobjectsreceiver
 
 import (
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/observer"
 	"testing"
 	"time"
 
@@ -76,7 +77,7 @@ func TestErrorModes(t *testing.T) {
 			rCfg.Objects = []*K8sObjectsConfig{
 				{
 					Name: tt.objectName,
-					Mode: PullMode,
+					Mode: observer.PullMode,
 				},
 			}
 
@@ -117,7 +118,7 @@ func TestNewReceiver(t *testing.T) {
 	rCfg.Objects = []*K8sObjectsConfig{
 		{
 			Name: "pods",
-			Mode: PullMode,
+			Mode: observer.PullMode,
 		},
 	}
 
@@ -156,7 +157,7 @@ func TestPullObject(t *testing.T) {
 	rCfg.Objects = []*K8sObjectsConfig{
 		{
 			Name:          "pods",
-			Mode:          PullMode,
+			Mode:          observer.PullMode,
 			Interval:      time.Second * 30,
 			LabelSelector: "environment=production",
 		},
@@ -194,7 +195,7 @@ func TestWatchObject(t *testing.T) {
 	rCfg.Objects = []*K8sObjectsConfig{
 		{
 			Name:       "pods",
-			Mode:       WatchMode,
+			Mode:       observer.WatchMode,
 			Namespaces: []string{"default"},
 		},
 	}
@@ -295,7 +296,7 @@ func TestIncludeInitialState(t *testing.T) {
 			rCfg.Objects = []*K8sObjectsConfig{
 				{
 					Name:       "pods",
-					Mode:       WatchMode,
+					Mode:       observer.WatchMode,
 					Namespaces: []string{"default"},
 				},
 			}
@@ -372,7 +373,7 @@ func TestIncludeInitialStateWithPullMode(t *testing.T) {
 	rCfg.Objects = []*K8sObjectsConfig{
 		{
 			Name: "pods",
-			Mode: PullMode,
+			Mode: observer.PullMode,
 		},
 	}
 
@@ -405,7 +406,7 @@ func TestExcludeDeletedTrue(t *testing.T) {
 	rCfg.Objects = []*K8sObjectsConfig{
 		{
 			Name:       "pods",
-			Mode:       WatchMode,
+			Mode:       observer.WatchMode,
 			Namespaces: []string{"default"},
 			ExcludeWatchType: []apiWatch.EventType{
 				apiWatch.Deleted,
@@ -456,7 +457,7 @@ func TestReceiverWithLeaderElection(t *testing.T) {
 	rCfg.Objects = []*K8sObjectsConfig{
 		{
 			Name: "pods",
-			Mode: PullMode,
+			Mode: observer.PullMode,
 		},
 	}
 	rCfg.K8sLeaderElector = &leaderElectorID
