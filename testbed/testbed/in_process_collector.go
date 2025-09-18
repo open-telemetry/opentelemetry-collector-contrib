@@ -56,8 +56,7 @@ func (ipp *inProcessCollector) Start(StartParams) error {
 	if runtime.GOOS == "windows" {
 		// On Windows, use os.MkdirTemp to create directory since t.TempDir results in an error during cleanup in scoped-tests.
 		// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42639
-		var err error
-		dir, err = os.MkdirTemp("", ipp.t.Name()) //nolint:usetesting
+		dir, err = os.MkdirTemp("", ipp.t.Name())
 		if err != nil {
 			return fmt.Errorf("failed to create temporary directory: %w", err)
 		}
