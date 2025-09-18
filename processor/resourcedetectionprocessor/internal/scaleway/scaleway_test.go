@@ -189,6 +189,8 @@ func TestScalewayDetector_Detect_OK(t *testing.T) {
 		string(conventions.CloudAvailabilityZoneKey): "nl-ams-1",
 		string(conventions.CloudRegionKey):           "nl-ams",
 		string(conventions.HostIDKey):                "daa2ea5a-0ee6-4cdc-9f1a-e0d1cb4e6d86",
+		string(conventions.HostImageIDKey):           "01fe25a9-2e95-41e2-9f3f-f7d3a00604be",
+		string(conventions.HostImageNameKey):         "Ubuntu 24.04 Noble Numbat",
 		string(conventions.HostNameKey):              "scw-interesting-bassi",
 		string(conventions.HostTypeKey):              "STARDUST1-S",
 	}
