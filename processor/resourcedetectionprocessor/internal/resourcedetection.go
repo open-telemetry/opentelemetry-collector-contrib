@@ -119,52 +119,42 @@ func NewResourceProvider(logger *zap.Logger, timeout time.Duration, attributesTo
 }
 
 func (p *ResourceProvider) Get(ctx context.Context, client *http.Client) (pcommon.Resource, string, error) {
-	// Do the initial detection exactly once. Other concurrent callers wait here.
-	p.initOnce.Do(func() {
-		tout := pickTimeout(p.timeout, client.Timeout)
-		cctx, cancel := context.WithTimeout(ctx, tout)
-		defer cancel()
-		p.detectResource(cctx, tout)
-	})
-
-	// Return the cached result (may be updated later by Refresh).
 	p.mu.RLock()
-	dr := p.detectedResource
+	res := p.detectedResource
 	p.mu.RUnlock()
-	return dr.resource, dr.schemaURL, dr.err
+
+	if res != nil {
+		return res.resource, res.schemaURL, res.err
+	}
+
+	// First access: ensure only one goroutine computes.
+	p.initOnce.Do(func() { _, _, _ = p.Refresh(ctx, client) })
+
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+	res = p.detectedResource
+	if res == nil {
+		return pcommon.NewResource(), "", nil
+	}
+	return res.resource, res.schemaURL, res.err
 }
 
 // Refresh recomputes the resource, replacing any previous result.
 func (p *ResourceProvider) Refresh(ctx context.Context, client *http.Client) (pcommon.Resource, string, error) {
-	tout := pickTimeout(p.timeout, client.Timeout)
-	ctx, cancel := context.WithTimeout(ctx, tout)
+	ctx, cancel := context.WithTimeout(ctx, client.Timeout)
 	defer cancel()
 
-	// recompute in place
-	p.detectResource(ctx, tout) // no return values
-
-	// return the freshly cached result
-	p.mu.RLock()
-	dr := p.detectedResource
-	p.mu.RUnlock()
-	return dr.resource, dr.schemaURL, dr.err
+	res, schemaURL, err := p.detectResource(ctx, client.Timeout)
+	p.mu.Lock()
+	p.detectedResource = &resourceResult{resource: res, schemaURL: schemaURL, err: err}
+	p.mu.Unlock()
+	return res, schemaURL, err
 }
 
-func pickTimeout(provider, client time.Duration) time.Duration {
-	if provider > 0 {
-		return provider
-	}
-	if client > 0 {
-		return client
-	}
-	return 5 * time.Second
-}
-
-func (p *ResourceProvider) detectResource(ctx context.Context, timeout time.Duration) {
-	p.detectedResource = &resourceResult{}
-
+func (p *ResourceProvider) detectResource(ctx context.Context, timeout time.Duration) (pcommon.Resource, string, error) {
 	res := pcommon.NewResource()
 	mergedSchemaURL := ""
+	var joinedErr error
 
 	p.logger.Info("began detecting resource information")
 
@@ -175,9 +165,9 @@ func (p *ResourceProvider) detectResource(ctx context.Context, timeout time.Dura
 
 		go func(detector Detector, ch chan resourceResult) {
 			sleep := backoff.ExponentialBackOff{
-				InitialInterval:     100 * time.Millisecond,
-				RandomizationFactor: 0.5,
-				Multiplier:          1.5,
+				InitialInterval:     1 * time.Second,
+				RandomizationFactor: 1.5,
+				Multiplier:          2,
 				MaxInterval:         timeout,
 			}
 			sleep.Reset()
@@ -215,7 +205,7 @@ func (p *ResourceProvider) detectResource(ctx context.Context, timeout time.Dura
 		result := <-ch
 		if result.err != nil {
 			if allowErrorPropagationFeatureGate.IsEnabled() {
-				p.detectedResource.err = errors.Join(p.detectedResource.err, result.err)
+				joinedErr = errors.Join(joinedErr, result.err)
 			}
 		} else {
 			mergedSchemaURL = MergeSchemaURL(mergedSchemaURL, result.schemaURL)
@@ -230,8 +220,7 @@ func (p *ResourceProvider) detectResource(ctx context.Context, timeout time.Dura
 		p.logger.Info("dropped resource information", zap.Strings("resource keys", droppedAttributes))
 	}
 
-	p.detectedResource.resource = res
-	p.detectedResource.schemaURL = mergedSchemaURL
+	return res, mergedSchemaURL, joinedErr
 }
 
 func MergeSchemaURL(currentSchemaURL, newSchemaURL string) string {
