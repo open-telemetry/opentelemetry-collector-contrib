@@ -18,3 +18,6 @@ storage:
 
 agent:
   executable: '{{.agent_path}}'
+  package:
+    archive: tar.gz
+    agent_binary: otelcol-contrib
