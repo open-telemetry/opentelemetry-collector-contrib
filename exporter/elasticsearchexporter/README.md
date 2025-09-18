@@ -82,52 +82,24 @@ All other defaults are as defined by [confighttp].
 
 ### Queuing and batching
 
-The exporter is transitioning from its own internal batching to OpenTelemetry's standard
-queueing and batching. The below sections describe the current default and the latest
-configuration option for queueing and batching available via the `sending_queue` configuration.
-
-#### Internal batching by Elasticsearch exporter
-
-By default, the exporter will perform its own buffering and batching, as configured through the
-`flush` config. In this case both `sending_queue` and `batcher` will be unused. The exporter
-will perform its own buffering and batching and will issue async requests to Elasticsearch in
-all cases other than if any of the following conditions are met:
-
-- `sending_queue::batch` is defined (irrespective of `sending_queue` being enabled or not)
-- `batcher::enabled` is defined (set to `true` or `false`)
-
-In a future release when the `sending_queue` config is stable, and has feature parity
-with the exporter's existing `flush` config, it will be enabled by default.
-
-Using the `sending_queue` functionality provides several benefits over the default behavior:
- - With a persistent queue, or no queue at all, `sending_queue` enables at least once delivery.
-   On the other hand, with the default behavior, the exporter will accept data and process it
-   asynchronously, which interacts poorly with queueing.
- - By ensuring the exporter makes requests to Elasticsearch synchronously (batching disabled),
-   client metadata can be passed through to Elasticsearch requests,
-   e.g. by using the [`headers_setter` extension](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/extension/headerssetterextension/README.md).
-
-#### Queueing and batching using sending queue
-
 The Elasticsearch exporter supports the common [`sending_queue` settings][exporterhelper] which
-supports both queueing and batching. However, the sending queue is currently disabled by
-default. Sending queue can be enabled by setting `sending_queue::enabled` to `true`. The batching support in sending queue is also disabled by default. Batching can be enabled by defining `sending_queue::batch`.
+supports both queueing and batching. The default sending queue is configured to do async batching
+with the following configuration:
 
-The [`exporterhelper` documentation][exporterhelper] provides more details on the `sending_queue` settings.
+```yaml
+sending_queue:
+  enabled: true
+  sizer: requests
+  num_consumers: 10
+  queue_size: 10
+  batch:
+    flush_timeout: 10s
+    min_size: 5e+6 // 5MB
+    max_size: 10e+6 // 10MB
+    sizer: bytes
+```
 
-#### Deprecated batcher config
-
-> [!WARNING]
-> The `batcher` config is now deprecated and will be removed in an upcoming version. Check the [queueing and batching](#queueing-and-batching) section for using the `sending_queue` setting that supersedes `batcher`. In the interim, `batcher` configurations are still valid, however, they will be ignored if `sending_queue::batch` is defined even if `sending_queue` is not enabled.
-
-The Elasticsearch exporter supports the [common `batcher` settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/internal/queue_sender.go).
-
-- `batcher`:
-  - `enabled` (default=unset): Enable batching of requests into 1 or more bulk requests. On a batcher flush, it is possible for a batched request to be translated to more than 1 bulk request due to `flush::bytes`.
-  - `sizer` (default=items): Unit of `min_size` and `max_size`. Currently supports only "items", in the future will also support "bytes".
-  - `min_size` (default=5000): Minimum batch size to be exported to Elasticsearch, measured in units according to `batcher::sizer`.
-  - `max_size` (default=0): Maximum batch size to be exported to Elasticsearch, measured in units according to `batcher::sizer`. To limit bulk request size, configure `flush::bytes` instead. :warning: It is recommended to keep `max_size` as 0 as a non-zero value may lead to broken metrics grouping and indexing rejections.
-  - `flush_timeout` (default=10s): Maximum time of the oldest item spent inside the batcher buffer, aka "max age of batcher buffer". A batcher flush will happen regardless of the size of content in batcher buffer.
+The default configurations are chosen to be closer to the previous defaults with the exporter's inbuilt batching. The [`exporterhelper` documentation][exporterhelper] provides more details on the `sending_queue` settings.
 
 ### Elasticsearch document routing
 
