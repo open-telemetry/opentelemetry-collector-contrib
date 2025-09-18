@@ -162,16 +162,8 @@ func verifyConsumeMetricsInput(tb testing.TB, input pmetric.Metrics, expectedTem
 	for i := 0; i < input.ResourceMetrics().Len(); i++ {
 		rm := input.ResourceMetrics().At(i)
 
-		var numDataPoints int
-		val, ok := rm.Resource().Attributes().Get(serviceNameKey)
-		require.True(tb, ok)
-		serviceName := val.AsString()
-		switch serviceName {
-		case "service-a":
-			numDataPoints = 2
-		case "service-b":
-			numDataPoints = 1
-		}
+		// validate no Resource
+		assert.Empty(tb, rm.Resource().Attributes().Len())
 
 		ilm := rm.ScopeMetrics()
 		require.Equal(tb, 1, ilm.Len())
@@ -188,6 +180,16 @@ func verifyConsumeMetricsInput(tb testing.TB, input pmetric.Metrics, expectedTem
 
 		seenMetricIDs := make(map[metricID]bool)
 		callsDps := metric.Sum().DataPoints()
+		var numDataPoints int
+		val, _ := callsDps.At(0).Attributes().Get(serviceNameKey)
+		serviceName := val.AsString()
+		switch serviceName {
+		case "service-a":
+			numDataPoints = 2
+		case "service-b":
+			numDataPoints = 1
+		}
+
 		require.Equal(tb, numDataPoints, callsDps.Len())
 		for dpi := 0; dpi < numDataPoints; dpi++ {
 			dp := callsDps.At(dpi)
@@ -1757,7 +1759,7 @@ func verifyAndCollectCommonTimestamps(t *testing.T, m pmetric.Metrics) (start, t
 	for i := 0; i < m.ResourceMetrics().Len(); i++ {
 		rm := m.ResourceMetrics().At(i)
 
-		serviceName, _ := rm.Resource().Attributes().Get("service.name")
+		serviceName, _ := rm.ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().Get("service.name")
 		if serviceName.Str() == "unrelated-service" {
 			continue
 		}
