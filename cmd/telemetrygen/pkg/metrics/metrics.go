@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"math/rand/v2"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -73,6 +74,7 @@ func run(c *Config, expF exporterFunc, logger *zap.Logger) error {
 			enforceUnique:          c.EnforceUniqueTimeseries,
 			metricName:             c.MetricName,
 			metricType:             c.MetricType,
+			mixedMetrics:           c.MixedMetrics,
 			aggregationTemporality: c.AggregationTemporality,
 			exemplars:              exemplarsFromConfig(c),
 			limitPerSecond:         limit,
@@ -82,6 +84,7 @@ func run(c *Config, expF exporterFunc, logger *zap.Logger) error {
 			logger:                 logger.With(zap.Int("worker", i)),
 			index:                  i,
 			clock:                  &realClock{},
+			rand:                   rand.New(rand.NewPCG(uint64(time.Now().UnixNano()+int64(i)), 0)),
 		}
 		exp, err := expF()
 		if err != nil {

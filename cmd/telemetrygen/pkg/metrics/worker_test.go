@@ -617,3 +617,100 @@ func TestUniqueSumTimeseries(t *testing.T) {
 		assert.LessOrEqual(t, actualValue.AsInt64(), int64(4), "it should be between 0 and 4")
 	}
 }
+
+// TestExponentialHistogramMetricGeneration tests ExponentialHistogram metric generation
+func TestExponentialHistogramMetricGeneration(t *testing.T) {
+	// arrange
+	m := &mockExporter{}
+	cfg := Config{
+		Config: common.Config{
+			WorkerCount: 1,
+		},
+		NumMetrics: 1,
+		MetricName: "test_exp_hist",
+		MetricType: MetricTypeExponentialHistogram,
+	}
+	logger := zap.NewNop()
+
+	// act
+	expFunc := func() (sdkmetric.Exporter, error) {
+		return m, nil
+	}
+	require.NoError(t, run(&cfg, expFunc, logger))
+
+	time.Sleep(100 * time.Millisecond)
+
+	// assert
+	require.Len(t, m.rms, 1)
+	ms := m.rms[0].ScopeMetrics[0].Metrics[0]
+
+	// Verify it's an ExponentialHistogram
+	expHist, ok := ms.Data.(metricdata.ExponentialHistogram[int64])
+	require.True(t, ok, "Expected ExponentialHistogram metric type")
+
+	// Verify data point structure
+	require.Len(t, expHist.DataPoints, 1)
+	dp := expHist.DataPoints[0]
+	assert.Equal(t, "test_exp_hist", ms.Name)
+	assert.Positive(t, dp.Count)
+	assert.Positive(t, dp.Sum)
+	assert.Equal(t, int32(0), dp.Scale)
+	assert.Equal(t, uint64(0), dp.ZeroCount)
+	assert.Equal(t, 0.0, dp.ZeroThreshold)
+
+	// Verify buckets exist
+	assert.NotNil(t, dp.PositiveBucket)
+	assert.NotNil(t, dp.NegativeBucket)
+}
+
+// TestMixedMetricsGeneration tests mixed metrics functionality
+func TestMixedMetricsGeneration(t *testing.T) {
+	// arrange
+	m := &mockExporter{}
+	cfg := Config{
+		Config: common.Config{
+			WorkerCount: 1,
+		},
+		NumMetrics:   10, // Generate 10 metrics to test randomness
+		MetricName:   "test_mixed",
+		MixedMetrics: true,
+	}
+	logger := zap.NewNop()
+
+	// act
+	expFunc := func() (sdkmetric.Exporter, error) {
+		return m, nil
+	}
+	require.NoError(t, run(&cfg, expFunc, logger))
+
+	time.Sleep(100 * time.Millisecond)
+
+	// assert
+	require.Len(t, m.rms, 10)
+
+	// Track which metric types we've seen
+	seenTypes := make(map[string]bool)
+
+	for i := 0; i < 10; i++ {
+		ms := m.rms[i].ScopeMetrics[0].Metrics[0]
+		assert.Equal(t, "test_mixed", ms.Name)
+
+		// Determine metric type based on the data structure
+		switch ms.Data.(type) {
+		case metricdata.Gauge[int64]:
+			seenTypes["Gauge"] = true
+		case metricdata.Sum[int64]:
+			seenTypes["Sum"] = true
+		case metricdata.Histogram[int64]:
+			seenTypes["Histogram"] = true
+		case metricdata.ExponentialHistogram[int64]:
+			seenTypes["ExponentialHistogram"] = true
+		default:
+			t.Errorf("Unexpected metric type: %T", ms.Data)
+		}
+	}
+
+	// With 10 random selections, we should see at least 2 different types
+	// (though it's theoretically possible to get all the same type, it's very unlikely)
+	assert.GreaterOrEqual(t, len(seenTypes), 2, "Expected to see multiple metric types with mixed metrics")
+}

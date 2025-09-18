@@ -300,3 +300,70 @@ func Test_exemplarsFromConfig(t *testing.T) {
 		})
 	}
 }
+
+func TestNewMetricTypes(t *testing.T) {
+	tests := []struct {
+		name         string
+		metricType   MetricType
+		validateFunc func(t *testing.T, config Config)
+	}{
+		{
+			name:       "ExponentialHistogram metric type",
+			metricType: MetricTypeExponentialHistogram,
+			validateFunc: func(t *testing.T, config Config) {
+				assert.Equal(t, MetricTypeExponentialHistogram, config.MetricType)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			config := Config{
+				MetricType: tt.metricType,
+			}
+			tt.validateFunc(t, config)
+		})
+	}
+}
+
+// TestMixedMetricsFlag tests the mixed metrics functionality
+func TestMixedMetricsFlag(t *testing.T) {
+	tests := []struct {
+		name           string
+		mixedMetrics   bool
+		expectedResult bool
+	}{
+		{
+			name:           "mixed metrics enabled",
+			mixedMetrics:   true,
+			expectedResult: true,
+		},
+		{
+			name:           "mixed metrics disabled",
+			mixedMetrics:   false,
+			expectedResult: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			config := Config{
+				MixedMetrics: tt.mixedMetrics,
+			}
+			assert.Equal(t, tt.expectedResult, config.MixedMetrics)
+		})
+	}
+}
+
+// TestAvailableMetricTypes tests that all metric types are available for random selection
+func TestAvailableMetricTypes(t *testing.T) {
+	expectedTypes := []MetricType{
+		MetricTypeGauge,
+		MetricTypeSum,
+		MetricTypeHistogram,
+		MetricTypeExponentialHistogram,
+	}
+
+	assert.ElementsMatch(t, expectedTypes, availableMetricTypes)
+	assert.Len(t, availableMetricTypes, 4)
+}
