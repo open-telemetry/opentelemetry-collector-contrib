@@ -165,7 +165,7 @@ func EndpointForPort(port int) string {
 func TempDir(tb testing.TB) string {
 	if runtime.GOOS == "windows" {
 		name := sanitizePattern(tb.Name())
-		dir, err := os.MkdirTemp("", name)
+		dir, err := os.MkdirTemp("", name) //nolint:usetesting
 		require.NoError(tb, err)
 		return dir
 	}
