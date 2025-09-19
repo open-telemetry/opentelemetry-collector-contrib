@@ -153,7 +153,8 @@ func matchContainers(tasks []*taskAnnotated, matcher targetMatcher, matcherIndex
 	tpe := matcher.matcherType()
 	for tIndex, t := range tasks {
 		var matched []matchedContainer
-		for cIndex, c := range t.Definition.ContainerDefinitions {
+		for cIndex := range t.Definition.ContainerDefinitions {
+			c := t.Definition.ContainerDefinitions[cIndex]
 			targets, err := matcher.matchTargets(t, c)
 			// NOTE: we don't stop when there is an error because it could be one task having invalid docker label.
 			if err != nil {

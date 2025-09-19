@@ -251,7 +251,8 @@ func stackTraceEvent(dic pprofile.ProfilesDictionary, traceID string, sample ppr
 
 func stackTrace(stackTraceID string, frames []StackFrame, frameTypes []libpf.FrameType) StackTrace {
 	frameIDs := make([]string, 0, len(frames))
-	for _, f := range frames {
+	for i := range frames {
+		f := &frames[i]
 		frameIDs = append(frameIDs, f.DocID)
 	}
 
