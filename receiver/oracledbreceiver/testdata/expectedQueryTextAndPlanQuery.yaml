@@ -7,6 +7,9 @@ resourceLogs:
         - key: host.name
           value:
             stringValue: oracle-host-sample-1
+        - key: service.instance.id
+          value:
+            stringValue: ""
     scopeLogs:
       - logRecords:
           - attributes:
@@ -81,9 +84,7 @@ resourceLogs:
                   doubleValue: 2e-05
             body: {}
             eventName: db.server.top_query
-            spanId: ""
-            timeUnixNano: "1752581882636677000"
-            traceId: ""
+            timeUnixNano: "1756763669220332000"
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver
           version: latest
