@@ -53,6 +53,13 @@ type ClientConfig struct {
 	// replica selection when supported by the brokers. This maps to Kafka's
 	// standard "client.rack" setting. By default, this is empty.
 	RackID string `mapstructure:"rack_id"`
+
+   // DisableLeaderEpoch forces the collector to clear the leader epoch from
+   // all fetched offsets when using the franz-go consumer. This effectively
+   // disables KIP-320 (truncation detection via leader epoch) without
+   // downgrading protocol versions or patching franz-go.
+   // Default: false (leader epoch is used when supported by the broker).
+   DisableLeaderEpoch bool `mapstructure:"disable_leader_epoch"`
 }
 
 func NewDefaultClientConfig() ClientConfig {
