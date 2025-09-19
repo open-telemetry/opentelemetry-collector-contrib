@@ -151,7 +151,10 @@ func LogToLokiEntry(lr plog.LogRecord, rl pcommon.Resource, scope pcommon.Instru
 	for label := range mergedLabels {
 		// Loki doesn't support dots in label names
 		// labelName is normalized label name to follow Prometheus label names standard
-		labelName := namer.Build(string(label))
+		labelName, err := namer.Build(string(label))
+		if err != nil {
+			return nil, err
+		}
 		labels[model.LabelName(labelName)] = mergedLabels[label]
 	}
 
