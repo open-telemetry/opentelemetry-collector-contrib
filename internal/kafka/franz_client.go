@@ -185,9 +185,13 @@ func commonOpts(ctx context.Context, clientCfg configkafka.ClientConfig,
 		kgo.WithLogger(kzap.New(logger.Named("franz"))),
 		kgo.SeedBrokers(clientCfg.Brokers...),
 	)
+	tlsConfig := clientCfg.TLS
+	if tlsConfig == nil {
+		tlsConfig = clientCfg.Authentication.TLS
+	}
 	// Configure TLS if needed
-	if clientCfg.TLS != nil {
-		tlsCfg, err := clientCfg.TLS.LoadTLSConfig(ctx)
+	if tlsConfig != nil {
+		tlsCfg, err := tlsConfig.LoadTLSConfig(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("failed to load TLS config: %w", err)
 		}
