@@ -23,8 +23,9 @@ import (
 )
 
 const (
-	fileFormatPlainText = "plain-text"
-	fileFormatParquet   = "parquet"
+	fileFormatPlainText      = "plain-text"
+	fileFormatParquet        = "parquet"
+	encodingVpcFlowLogFormat = "vpcflow"
 )
 
 var supportedVPCFlowLogFileFormat = []string{fileFormatPlainText, fileFormatParquet}
@@ -121,6 +122,7 @@ func (v *vpcFlowLogUnmarshaler) createLogs() (plog.Logs, plog.ResourceLogs, plog
 	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
 	scopeLogs.Scope().SetName(metadata.ScopeName)
 	scopeLogs.Scope().SetVersion(v.buildInfo.Version)
+	scopeLogs.Scope().Attributes().PutStr("awslogs_encoding.format", encodingVpcFlowLogFormat)
 	return logs, resourceLogs, scopeLogs
 }
 

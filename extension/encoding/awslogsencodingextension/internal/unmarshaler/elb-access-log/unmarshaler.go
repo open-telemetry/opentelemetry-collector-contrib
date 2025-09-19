@@ -20,6 +20,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler"
 )
 
+const (
+	encodingELBAccessLogFormat = "elbaccess"
+)
+
 type elbAccessLogUnmarshaler struct {
 	buildInfo component.BuildInfo
 	logger    *zap.Logger
@@ -124,6 +128,7 @@ func (f *elbAccessLogUnmarshaler) createLogs() (plog.Logs, plog.ResourceLogs, pl
 	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
 	scopeLogs.Scope().SetName(metadata.ScopeName)
 	scopeLogs.Scope().SetVersion(f.buildInfo.Version)
+	scopeLogs.Scope().Attributes().PutStr("awslogs_encoding.format", encodingELBAccessLogFormat)
 	return logs, resourceLogs, scopeLogs
 }
 
