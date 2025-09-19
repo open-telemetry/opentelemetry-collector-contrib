@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 
 	gojson "github.com/goccy/go-json"
 	"go.opentelemetry.io/collector/component"
@@ -16,10 +17,38 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 )
 
-var _ encoding.LogsUnmarshalerExtension = (*ext)(nil)
+var (
+	_ encoding.LogsUnmarshalerExtension          = (*ext)(nil)
+	_ encoding.StreamingLogsUnmarshalerExtension = (*ext)(nil)
+)
 
 type ext struct {
 	config Config
+}
+
+type logsDecoder struct {
+	scanner *bufio.Scanner
+	ext     *ext
+}
+
+var _ encoding.LogsDecoder = (*logsDecoder)(nil)
+
+func (ld *logsDecoder) DecodeLogs(to plog.Logs) error {
+	if !ld.scanner.Scan() {
+		if err := ld.scanner.Err(); err != nil {
+			return fmt.Errorf("error reading log: %w", err)
+		}
+		return io.EOF
+	}
+	line := ld.scanner.Bytes()
+	return ld.ext.handleLogLine(to, line)
+}
+
+func (ex *ext) NewLogsDecoder(r io.Reader) (encoding.LogsDecoder, error) {
+	return &logsDecoder{
+		scanner: bufio.NewScanner(r),
+		ext:     ex,
+	}, nil
 }
 
 func newExtension(cfg *Config) *ext {

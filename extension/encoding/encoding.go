@@ -4,6 +4,8 @@
 package encoding // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 
 import (
+	"io"
+
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -15,6 +17,19 @@ import (
 type LogsMarshalerExtension interface {
 	extension.Extension
 	plog.Marshaler
+}
+
+// StreamingLogsUnmarshalerExtension is an extension that decodes logs from a stream.
+type StreamingLogsUnmarshalerExtension interface {
+	extension.Extension
+	NewLogsDecoder(io.Reader) (LogsDecoder, error)
+}
+
+type LogsDecoder interface {
+	// DecodeLogs decodes logs and appends them to the given plog.Logs.
+	//
+	// DecodeLogs returns io.EOF if there are no more logs to be decoded.
+	DecodeLogs(to plog.Logs) error
 }
 
 // LogsUnmarshalerExtension is an extension that unmarshals logs.

@@ -5,6 +5,8 @@ package googlecloudlogentryencodingextension
 
 import (
 	"bytes"
+	"errors"
+	"io"
 	"os"
 	"testing"
 
@@ -95,15 +97,15 @@ func TestUnmarshalLogs(t *testing.T) {
 	extension := newTestExtension(t, Config{})
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Create payload with as many logs as defined in nLogs.
-			// Each log takes up one line. A new line means a new log.
-			buff := bytes.NewBuffer([]byte{})
-			for i := 0; i < tt.nLogs; i++ {
-				buff.Write(compacted.Bytes())
-				buff.Write([]byte{'\n'})
-			}
+		// Create payload with as many logs as defined in nLogs.
+		// Each log takes up one line. A new line means a new log.
+		buff := bytes.NewBuffer([]byte{})
+		for i := 0; i < tt.nLogs; i++ {
+			buff.Write(compacted.Bytes())
+			buff.Write([]byte{'\n'})
+		}
 
+		t.Run("unmarshal "+tt.name, func(t *testing.T) {
 			logs, err := extension.UnmarshalLogs(buff.Bytes())
 			require.NoError(t, err)
 
@@ -113,7 +115,38 @@ func TestUnmarshalLogs(t *testing.T) {
 			require.Equal(t, 1, expected.ResourceLogs().At(0).ScopeLogs().Len())
 
 			// expected logs is only for one log entry, so multiply by as
-			// mine as input logs
+			// many as input logs
+			expectedLogs := plog.NewLogs()
+			for i := 0; i < tt.nLogs; i++ {
+				rl := expectedLogs.ResourceLogs().AppendEmpty()
+				expected.ResourceLogs().At(0).Resource().CopyTo(rl.Resource())
+				sl := rl.ScopeLogs()
+				expected.ResourceLogs().At(0).ScopeLogs().CopyTo(sl)
+			}
+
+			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs))
+		})
+
+		t.Run("decode "+tt.name, func(t *testing.T) {
+			decoder, err := extension.NewLogsDecoder(bytes.NewReader(buff.Bytes()))
+			require.NoError(t, err)
+
+			logs := plog.NewLogs()
+			for {
+				err = decoder.DecodeLogs(logs)
+				if errors.Is(err, io.EOF) {
+					break
+				}
+				require.NoError(t, err)
+			}
+
+			expected, err := golden.ReadLogs("testdata/log_entry_expected.yaml")
+			require.NoError(t, err)
+			require.Equal(t, 1, expected.ResourceLogs().Len())
+			require.Equal(t, 1, expected.ResourceLogs().At(0).ScopeLogs().Len())
+
+			// expected logs is only for one log entry, so multiply by as
+			// many as input logs
 			expectedLogs := plog.NewLogs()
 			for i := 0; i < tt.nLogs; i++ {
 				rl := expectedLogs.ResourceLogs().AppendEmpty()
@@ -160,21 +193,40 @@ func TestPayloads(t *testing.T) {
 
 	extension := newTestExtension(t, Config{})
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		data, err := os.ReadFile(tt.logFilename)
+		require.NoError(t, err)
+
+		content := bytes.NewBuffer([]byte{})
+		err = gojson.Compact(content, data)
+		require.NoError(t, err)
+
+		t.Run("unmarshal "+tt.name, func(t *testing.T) {
 			t.Parallel()
-
-			data, err := os.ReadFile(tt.logFilename)
-			require.NoError(t, err)
-
-			content := bytes.NewBuffer([]byte{})
-			err = gojson.Compact(content, data)
-			require.NoError(t, err)
 
 			logs, err := extension.UnmarshalLogs(content.Bytes())
 			require.NoError(t, err)
 
 			// write expected log with:
 			// golden.WriteLogs(t, tt.expectedFilename, logs)
+
+			expectedLogs, err := golden.ReadLogs(tt.expectedFilename)
+			require.NoError(t, err)
+			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs))
+		})
+		t.Run("decode "+tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			decoder, err := extension.NewLogsDecoder(bytes.NewReader(content.Bytes()))
+			require.NoError(t, err)
+
+			logs := plog.NewLogs()
+			for {
+				errD := decoder.DecodeLogs(logs)
+				if errors.Is(errD, io.EOF) {
+					break
+				}
+				require.NoError(t, errD)
+			}
 
 			expectedLogs, err := golden.ReadLogs(tt.expectedFilename)
 			require.NoError(t, err)
