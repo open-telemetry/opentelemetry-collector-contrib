@@ -22,6 +22,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/shirou/gopsutil/v4/cpu"
 	"github.com/shirou/gopsutil/v4/process"
 )
@@ -118,20 +119,8 @@ func (cp *childProcessCollector) PrepareConfig(t *testing.T, configStr string) (
 		// NoOp
 	}
 
-	var dir string
-	if runtime.GOOS == "windows" {
-		// On Windows, use os.MkdirTemp to create directory since t.TempDir results in an error during cleanup in scoped-tests.
-		// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42639
-		dir, err = os.MkdirTemp("", t.Name()) //nolint:usetesting
-		if err != nil {
-			return configCleanup, fmt.Errorf("failed to create temporary directory: %w", err)
-		}
-	} else {
-		dir = t.TempDir()
-	}
-
 	var file *os.File
-	file, err = os.CreateTemp(dir, "agent*.yaml")
+	file, err = os.CreateTemp(testutil.TempDir(t), "agent*.yaml")
 	if err != nil {
 		log.Printf("%s", err)
 		return configCleanup, err
