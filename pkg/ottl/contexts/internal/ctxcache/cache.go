@@ -14,6 +14,24 @@ import (
 
 const Name = "cache"
 
+type LazyCache struct {
+	cache pcommon.Map
+	init  bool
+}
+
+func (c *LazyCache) IsInit() bool {
+	return c.init
+}
+
+func (c *LazyCache) GetCache() pcommon.Map {
+	if c.init {
+		return c.cache
+	}
+	c.init = true
+	c.cache = pcommon.NewMap()
+	return c.cache
+}
+
 type Getter[K any] func(K) pcommon.Map
 
 func PathExpressionParser[K any](cacheGetter Getter[K]) ottl.PathExpressionParser[K] {
