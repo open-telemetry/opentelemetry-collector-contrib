@@ -330,7 +330,7 @@ func TestFranzConsumer_DisableLeaderEpoch_Smoke(t *testing.T) {
 
 	topic := "otlp_spans"
 	kafkaClient, cfg := mustNewFakeCluster(t, kfake.SeedTopics(1, topic))
-	cfg.ClientConfig.DisableLeaderEpoch = true // <-- exercise the option
+	cfg.DisableLeaderEpoch = true // <-- exercise the option
 	cfg.ConsumerConfig = configkafka.ConsumerConfig{
 		GroupID:    t.Name(),
 		AutoCommit: configkafka.AutoCommitConfig{Enable: true, Interval: 100 * time.Millisecond},
@@ -339,7 +339,7 @@ func TestFranzConsumer_DisableLeaderEpoch_Smoke(t *testing.T) {
 	var called atomic.Int64
 	settings, _, _ := mustNewSettings(t)
 	consumeFn := func(component.Host, *receiverhelper.ObsReport, *metadata.TelemetryBuilder) (consumeMessageFunc, error) {
-		return func(ctx context.Context, _ kafkaMessage, _ attribute.Set) error {
+		return func(_ context.Context, _ kafkaMessage, _ attribute.Set) error {
 			called.Add(1)
 			return nil
 		}, nil
@@ -381,7 +381,7 @@ func TestMakeDisableLeaderEpochAdjuster_ClearsEpoch(t *testing.T) {
 			1: kgo.NewOffset().At(100), // no epoch set
 		},
 	}
-	out, err := adj(context.Background(), input)
+	out, err := adj(t.Context(), input)
 	require.NoError(t, err)
 
 	require.Equal(t, kgo.NewOffset().At(42).WithEpoch(-1), out["t"][0])

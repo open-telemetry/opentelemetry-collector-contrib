@@ -139,7 +139,7 @@ func TestClientConfig(t *testing.T) {
 						Backoff: 5 * time.Second,
 					},
 				},
-				RackID: "rack1",
+				RackID:             "rack1",
 				DisableLeaderEpoch: true,
 			},
 		},
