@@ -1,0 +1,47 @@
+type: httpjson
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+  distributions: [contrib]
+  codeowners:
+    active: [yourusername]
+
+resource_attributes:
+  http.url:
+    description: The HTTP URL being scraped
+    type: string
+    enabled: true
+  http.method:
+    description: The HTTP method used
+    type: string  
+    enabled: true
+
+attributes:
+  endpoint.name:
+    description: Friendly name for the endpoint
+    type: string
+  json.path:
+    description: The JSON path used to extract the value
+    type: string
+
+metrics:
+  httpjson.request.duration:
+    enabled: true
+    description: Duration of HTTP requests
+    unit: ms
+    gauge:
+      value_type: double
+  httpjson.scrape.duration:
+    enabled: true
+    description: Time spent scraping metrics
+    unit: ms
+    gauge:
+      value_type: double
+  httpjson.scrape.errors:
+    enabled: true
+    description: Number of scrape errors
+    unit: "1"
+    sum:
+      value_type: int
+      monotonic: true
