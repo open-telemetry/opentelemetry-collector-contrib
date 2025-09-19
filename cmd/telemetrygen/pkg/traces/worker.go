@@ -35,6 +35,7 @@ type worker struct {
 	loadSize         int                   // desired minimum size in MB of string data for each generated trace
 	spanDuration     time.Duration         // duration of generated spans
 	logger           *zap.Logger
+	allowFailures    bool // whether to continue on export failures
 }
 
 const (
