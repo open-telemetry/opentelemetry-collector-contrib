@@ -134,6 +134,16 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
+			id: component.NewIDWithName(metadata.Type, "refresh"),
+			expected: &Config{
+				Detectors:       []string{"system"},
+				ClientConfig:    cfg,
+				Override:        false,
+				DetectorConfig:  detectorCreateDefaultConfig(),
+				RefreshInterval: 5 * time.Second,
+			},
+		},
+		{
 			id:           component.NewIDWithName(metadata.Type, "invalid"),
 			errorMessage: "hostname_sources contains invalid value: \"invalid_source\"",
 		},
