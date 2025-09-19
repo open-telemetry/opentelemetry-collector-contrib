@@ -1,5 +1,11 @@
 # Health Check
 
+> ℹ️ **Migration Notice** ℹ️
+>
+> This extension has been migrated to use the shared healthcheck implementation from `internal/healthcheck`
+> while maintaining full backward compatibility. See the [Backward Compatibility](#backward-compatibility)
+> section for details about feature gates and migration options.
+
 > ⚠️⚠️⚠️ **Warning** ⚠️⚠️⚠️
 >
 > The `check_collector_pipeline` feature of this extension is not working as expected. It
@@ -55,3 +61,43 @@ extensions:
 
 The full list of settings exposed for this exporter is documented in [config.go](./config.go)
 with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).
+
+## Backward Compatibility
+
+[Linked issue](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42256).
+
+This extension maintains full backward compatibility with the original Ready/NotReady behavior through a compatibility wrapper controlled by a feature gate.
+
+### Feature Gate: `extension.healthcheck.useCompatibilityWrapper`
+
+- **Default**: Enabled (true)
+- **Purpose**: Preserves v1 Ready/NotReady behavior when using the shared healthcheck implementation
+- **When enabled**: Ready/NotReady calls directly control health endpoint status (original behavior)
+- **When disabled**: Health status is determined by component status events (v2 behavior)
+
+#### Usage
+
+To disable the compatibility wrapper and use the new event-driven behavior:
+
+```bash
+# Set the feature gate to false
+--feature-gates=extension.healthcheck.useCompatibilityWrapper=false
+```
+
+#### Migration Timeline
+
+1. **Current**: Compatibility wrapper enabled by default - no breaking changes.
+2. **Future**: Feature gate will be removed, compatibility wrapper will be permanently disabled.
+3. **Recommended**: Test your setup with the feature gate disabled to prepare for future versions.
+
+#### Ready/NotReady Behavior
+
+**With Compatibility Wrapper (Default)**
+- `Ready()` → Health endpoint returns 200 OK
+- `NotReady()` → Health endpoint returns 503 Service Unavailable
+- Behavior identical to original extension
+
+**Without Compatibility Wrapper**
+- `Ready()`/`NotReady()` → Used for pipeline lifecycle only
+- Health status determined by component status events
+- Behavior similar to healthcheckv2extension

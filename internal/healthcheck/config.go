@@ -27,6 +27,7 @@ type (
 	GRPCConfig                   = grpc.Config
 	ComponentHealthConfig        = common.ComponentHealthConfig
 	CheckCollectorPipelineConfig = http.CheckCollectorPipelineConfig
+	ResponseBodyConfig           = http.ResponseBodyConfig
 )
 
 const (

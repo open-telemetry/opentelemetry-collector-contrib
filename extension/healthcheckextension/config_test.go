@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/healthcheck"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -33,39 +34,58 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "1"),
-			expected: &Config{
-				ServerConfig: confighttp.ServerConfig{
-					Endpoint: "localhost:13",
-					TLS: configoptional.Some(configtls.ServerConfig{
-						Config: configtls.Config{
-							CAFile:   "/path/to/ca",
-							CertFile: "/path/to/cert",
-							KeyFile:  "/path/to/key",
-						},
-					}),
+			expected: &healthcheck.Config{
+				LegacyConfig: healthcheck.HTTPLegacyConfig{
+					ServerConfig: confighttp.ServerConfig{
+						Endpoint: "localhost:13",
+						TLS: configoptional.Some(configtls.ServerConfig{
+							Config: configtls.Config{
+								CAFile:   "/path/to/ca",
+								CertFile: "/path/to/cert",
+								KeyFile:  "/path/to/key",
+							},
+						}),
+					},
+					Path: "/",
+					CheckCollectorPipeline: &healthcheck.CheckCollectorPipelineConfig{
+						Enabled:                  false,
+						Interval:                 "5m",
+						ExporterFailureThreshold: 5,
+					},
+					UseV2: false,
 				},
-				CheckCollectorPipeline: defaultCheckCollectorPipelineSettings(),
-				Path:                   "/",
-				ResponseBody:           nil,
 			},
 		},
 		{
 			id:          component.NewIDWithName(metadata.Type, "missingendpoint"),
-			expectedErr: errNoEndpointProvided,
+			expectedErr: healthcheck.ErrHTTPEndpointRequired,
 		},
 		{
-			id:          component.NewIDWithName(metadata.Type, "invalidthreshold"),
-			expectedErr: errInvalidExporterFailureThresholdProvided,
+			id: component.NewIDWithName(metadata.Type, "invalidthreshold"),
+			expected: &healthcheck.Config{
+				LegacyConfig: healthcheck.HTTPLegacyConfig{
+					ServerConfig: confighttp.ServerConfig{
+						Endpoint: "localhost:13",
+					},
+					Path: "/",
+					CheckCollectorPipeline: &healthcheck.CheckCollectorPipelineConfig{
+						Enabled:                  false,
+						Interval:                 "5m",
+						ExporterFailureThreshold: -1,
+					},
+					UseV2: false,
+				},
+			},
 		},
 		{
 			id:          component.NewIDWithName(metadata.Type, "invalidpath"),
-			expectedErr: errInvalidPath,
+			expectedErr: healthcheck.ErrInvalidPath,
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "response-body"),
 			expected: func() component.Config {
-				cfg := NewFactory().CreateDefaultConfig().(*Config)
-				cfg.ResponseBody = &ResponseBodySettings{
+				cfg := NewFactory().CreateDefaultConfig().(*healthcheck.Config)
+				cfg.ResponseBody = &healthcheck.ResponseBodyConfig{
 					Healthy:   "I'm OK",
 					Unhealthy: "I'm not well",
 				}

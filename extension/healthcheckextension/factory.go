@@ -9,12 +9,24 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/healthcheck"
 )
 
 const defaultPort = 13133
+
+// Feature gate to enable the compatibility wrapper that preserves v1 Ready/NotReady behavior
+var useCompatibilityWrapperGate = featuregate.GlobalRegistry().MustRegister(
+	"extension.healthcheck.useCompatibilityWrapper",
+	featuregate.StageBeta,
+	featuregate.WithRegisterDescription("Use compatibility wrapper to preserve v1 Ready/NotReady behavior when using shared healthcheck implementation"),
+	featuregate.WithRegisterFromVersion("v0.135.0"),
+	featuregate.WithRegisterToVersion("v0.140.0"),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42256"),
+)
 
 // NewFactory creates a factory for HealthCheck extension.
 func NewFactory() extension.Factory {
@@ -27,26 +39,34 @@ func NewFactory() extension.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	return &Config{
-		ServerConfig: confighttp.ServerConfig{
-			Endpoint: testutil.EndpointForPort(defaultPort),
+	return &healthcheck.Config{
+		LegacyConfig: healthcheck.HTTPLegacyConfig{
+			ServerConfig: confighttp.ServerConfig{
+				Endpoint: testutil.EndpointForPort(defaultPort),
+			},
+			Path: "/",
+			CheckCollectorPipeline: &healthcheck.CheckCollectorPipelineConfig{
+				Enabled:                  false,
+				Interval:                 "5m",
+				ExporterFailureThreshold: 5,
+			},
+			UseV2: false,
 		},
-		CheckCollectorPipeline: defaultCheckCollectorPipelineSettings(),
-		Path:                   "/",
 	}
 }
 
-func createExtension(_ context.Context, set extension.Settings, cfg component.Config) (extension.Extension, error) {
-	config := cfg.(*Config)
+func createExtension(ctx context.Context, set extension.Settings, cfg component.Config) (extension.Extension, error) {
+	config := cfg.(*healthcheck.Config)
 
-	return newServer(*config, set.TelemetrySettings), nil
-}
+	// Create the shared health check extension
+	sharedExt := healthcheck.NewHealthCheckExtension(ctx, *config, set)
 
-// defaultCheckCollectorPipelineSettings returns the default settings for CheckCollectorPipeline.
-func defaultCheckCollectorPipelineSettings() checkCollectorPipelineSettings {
-	return checkCollectorPipelineSettings{
-		Enabled:                  false,
-		Interval:                 "5m",
-		ExporterFailureThreshold: 5,
+	// Conditionally wrap with compatibility layer based on feature gate
+	if useCompatibilityWrapperGate.IsEnabled() {
+		// Use compatibility wrapper to preserve v1 Ready/NotReady behavior
+		return newCompatibilityWrapper(sharedExt), nil
 	}
+
+	// Use shared implementation directly (new behavior)
+	return sharedExt, nil
 }
