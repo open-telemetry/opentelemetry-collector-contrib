@@ -5,17 +5,22 @@ package testbed // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
+	"runtime"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/shirou/gopsutil/v4/process"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	"go.opentelemetry.io/collector/otelcol"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 )
 
 // inProcessCollector implements the OtelcolRunner interfaces running a single otelcol as a go routine within the
@@ -48,8 +53,7 @@ func (ipp *inProcessCollector) PrepareConfig(t *testing.T, configStr string) (co
 
 func (ipp *inProcessCollector) Start(StartParams) error {
 	var err error
-
-	confFile, err := os.CreateTemp(ipp.t.TempDir(), "conf-")
+	confFile, err := os.CreateTemp(testutil.TempDir(ipp.t), "conf-")
 	if err != nil {
 		return err
 	}
@@ -102,7 +106,17 @@ func (ipp *inProcessCollector) Stop() (stopped bool, err error) {
 	if !ipp.stopped {
 		ipp.stopped = true
 		ipp.svc.Shutdown()
-		os.Remove(ipp.configFile)
+		// Retry deleting files on windows because in windows several processes read file handles.
+		if runtime.GOOS == "windows" {
+			require.Eventually(ipp.t, func() bool {
+				err = os.Remove(ipp.configFile)
+				if errors.Is(err, os.ErrNotExist) {
+					err = nil
+					return true
+				}
+				return false
+			}, 5*time.Second, 100*time.Millisecond)
+		}
 	}
 	ipp.wg.Wait()
 	stopped = ipp.stopped
