@@ -1988,6 +1988,7 @@ func TestConcurrentRequestsforSameResourceAttributes(t *testing.T) {
 			}
 		}
 	}
+}
 
 func buildMetaDataMapByID(ms pmetric.Metrics) map[string]map[string]any {
 	result := make(map[string]map[string]any)
