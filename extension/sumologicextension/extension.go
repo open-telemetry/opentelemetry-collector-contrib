@@ -135,9 +135,9 @@ func newSumologicExtension(conf *Config, logger *zap.Logger, id component.ID, bu
 
 	_, err = credentialsStore.Get(hashKeyV2)
 	if err != nil {
-		logger.Info("using v1 key as v2 credentials not found", zap.String("hashKeyV2", hashKeyV2), zap.Error(err))
+		logger.Info("credentials not found, trying legacy credentials", zap.Error(err))
 	} else {
-		logger.Info("v2 credentials found for key", zap.String("hashKeyV2", hashKeyV2))
+		logger.Debug("v2 credentials found")
 		hashKey = hashKeyV2
 	}
 	if conf.CollectorName == "" {
@@ -239,12 +239,12 @@ func (se *SumologicExtension) Start(ctx context.Context, host component.Host) er
 func (se *SumologicExtension) Shutdown(ctx context.Context) error {
 	hashKeyV2 := createHashKeyV2(se.conf)
 	_, err := se.credentialsStore.Get(hashKeyV2)
-	se.logger.Info("Shutting down Sumo Logic extension hashkeyV2 ", zap.String("hashKeyV2", hashKeyV2))
+	se.logger.Debug("Shutting down Sumo Logic extension migrating to hashkeyV2 ")
 	if err != nil {
-		se.logger.Error("Failed to get collector v2 credentials on shutdown, migrating to v2", zap.Error(err))
+		se.logger.Warn("Failed to get collector v2 credentials on shutdown, migrating to v2", zap.Error(err))
 		err := se.credentialsStore.Store(hashKeyV2, se.collectorCredentials)
 		if err != nil {
-			se.logger.Error("Failed to migrate collector credentials to v2 on shutdown", zap.Error(err))
+			se.logger.Warn("Failed to migrate collector credentials to v2 on shutdown", zap.Error(err))
 		}
 	}
 
