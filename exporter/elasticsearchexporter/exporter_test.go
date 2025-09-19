@@ -2614,7 +2614,7 @@ func newTestTracesExporter(t *testing.T, url string, fns ...func(*Config)) expor
 	cfg := withDefaultConfig(append([]func(*Config){func(cfg *Config) {
 		cfg.Endpoints = []string{url}
 		cfg.QueueBatchConfig.NumConsumers = 1
-		// Batch is configured by default so we can directy edit flush timeout
+		// Batch is configured by default so we can directly edit flush timeout
 		cfg.QueueBatchConfig.Batch.Get().FlushTimeout = 10 * time.Millisecond
 	}}, fns...)...)
 	require.NoError(t, xconfmap.Validate(cfg))
@@ -2634,7 +2634,7 @@ func newTestProfilesExporter(t *testing.T, url string, fns ...func(*Config)) xex
 	cfg := withDefaultConfig(append([]func(*Config){func(cfg *Config) {
 		cfg.Endpoints = []string{url}
 		cfg.QueueBatchConfig.NumConsumers = 1
-		// Batch is configured by default so we can directy edit flush timeout
+		// Batch is configured by default so we can directly edit flush timeout
 		cfg.QueueBatchConfig.Batch.Get().FlushTimeout = 10 * time.Millisecond
 	}}, fns...)...)
 	require.NoError(t, xconfmap.Validate(cfg))
@@ -2654,7 +2654,7 @@ func newTestMetricsExporter(t *testing.T, url string, fns ...func(*Config)) expo
 	cfg := withDefaultConfig(append([]func(*Config){func(cfg *Config) {
 		cfg.Endpoints = []string{url}
 		cfg.QueueBatchConfig.NumConsumers = 1
-		// Batch is configured by default so we can directy edit flush timeout
+		// Batch is configured by default so we can directly edit flush timeout
 		cfg.QueueBatchConfig.Batch.Get().FlushTimeout = 10 * time.Millisecond
 	}}, fns...)...)
 	require.NoError(t, xconfmap.Validate(cfg))

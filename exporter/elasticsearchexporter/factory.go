@@ -25,8 +25,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/metadata"
 )
 
-var defaultBatcherMinSizeItems = int64(5000)
-
 // NewFactory creates a factory for Elastic exporter.
 func NewFactory() exporter.Factory {
 	return xexporter.NewFactory(
@@ -42,7 +40,7 @@ func NewFactory() exporter.Factory {
 func createDefaultConfig() component.Config {
 	// TODO(lahsivjar): This is deviating from the original defaults:
 	// - block_on_overflow: by default this is set to `false` i.e. clients will get
-	//   retryable error when queue is full. However, the original behaviour is
+	//   retryable error when queue is full. However, the original behavior is
 	//   that we will block until a consumer is free ([ref](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/58308d77fa47e74bd8ed402ef4cd944cc2a4126a/exporter/elasticsearchexporter/bulkindexer.go#L325-L329))
 	qs := exporterhelper.NewDefaultQueueConfig()
 	qs.QueueSize = 10

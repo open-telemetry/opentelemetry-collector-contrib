@@ -191,7 +191,6 @@ func TestNewBulkIndexer(t *testing.T) {
 	require.NoError(t, err)
 	cfg := createDefaultConfig()
 
-	bi, err := newBulkIndexer(client, cfg.(*Config), true, nil, nil)
-	require.NoError(t, err)
+	bi := newBulkIndexer(client, cfg.(*Config), true, nil, nil)
 	t.Cleanup(func() { bi.Close(t.Context()) })
 }
