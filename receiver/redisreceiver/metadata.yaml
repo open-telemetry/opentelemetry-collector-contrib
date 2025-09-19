@@ -60,6 +60,12 @@ attributes:
       - p50
       - p99
       - p99.9
+  cluster_state:
+    description: State of the cluster
+    type: string
+    enum:
+      - ok
+      - fail
 
 metrics:
   redis.maxmemory:
@@ -351,6 +357,97 @@ metrics:
     unit: "By"
     gauge:
       value_type: int
+
+  redis.clusterInfo.cluster_state:
+    enabled: false
+    description: "State of the cluster"
+    unit: "{state}"
+    gauge:
+      value_type: int
+    attributes: [cluster_state]
+
+  redis.clusterInfo.cluster_slots_assigned:
+    enabled: false
+    description: "Number of slots assigned in the cluster"
+    unit: "{slot}"
+    gauge:
+      value_type: int
+
+  redis.clusterInfo.cluster_slots_ok:
+    enabled: false
+    description: "Number of slots in the cluster that are ok"
+    unit: "{slot}"
+    gauge:
+      value_type: int
+
+  redis.clusterInfo.cluster_slots_pfail:
+    enabled: false
+    description: "Number of slots in the cluster that are in a 'potentially failing' state"
+    unit: "{slot}"
+    gauge:
+      value_type: int
+
+  redis.clusterInfo.cluster_slots_fail:
+    enabled: false
+    description: "Number of slots in the cluster that are in a failing state"
+    unit: "{slot}"
+    gauge:
+      value_type: int
+
+  redis.clusterInfo.cluster_known_nodes:
+    enabled: false
+    description: "Number of known nodes in the cluster"
+    unit: "{node}"
+    gauge:
+      value_type: int
+
+  redis.clusterInfo.cluster_size:
+    enabled: false
+    description: "Number of master nodes in the cluster"
+    unit: "{master}"
+    gauge:
+      value_type: int
+
+  redis.clusterInfo.cluster_current_epoch:
+    enabled: false
+    description: "Current epoch of the cluster"
+    unit: "{epoch}"
+    gauge:
+      value_type: int
+
+  redis.clusterInfo.cluster_my_epoch:
+    enabled: false
+    description: "The node's current epoch"
+    unit: "{epoch}"
+    gauge:
+      value_type: int
+
+  redis.clusterInfo.cluster_stats_messages_sent:
+    enabled: false
+    description: "Total number of messages sent by the cluster"
+    unit: "{message}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+
+  redis.clusterInfo.cluster_stats_messages_received:
+    enabled: false
+    description: "Total number of messages received by the cluster"
+    unit: "{message}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+
+  redis.clusterInfo.total_cluster_links_buffer_limit_exceeded:
+    enabled: false
+    description: "Total number of times the cluster links buffer limit was exceeded"
+    unit: "{exceed}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
 
 tests:
   config:
