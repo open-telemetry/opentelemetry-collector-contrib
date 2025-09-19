@@ -19,6 +19,8 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	"go.opentelemetry.io/collector/otelcol"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 )
 
 // inProcessCollector implements the OtelcolRunner interfaces running a single otelcol as a go routine within the
@@ -51,8 +53,7 @@ func (ipp *inProcessCollector) PrepareConfig(t *testing.T, configStr string) (co
 
 func (ipp *inProcessCollector) Start(StartParams) error {
 	var err error
-
-	confFile, err := os.CreateTemp(ipp.t.TempDir(), "conf-")
+	confFile, err := os.CreateTemp(testutil.TempDir(ipp.t), "conf-")
 	if err != nil {
 		return err
 	}
