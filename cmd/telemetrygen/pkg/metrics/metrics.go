@@ -85,6 +85,7 @@ func run(c *Config, expF exporterFunc, logger *zap.Logger) error {
 			index:                  i,
 			clock:                  &realClock{},
 			rand:                   rand.New(rand.NewPCG(uint64(time.Now().UnixNano()+int64(i)), 0)),
+			allowFailures:          c.AllowExportFailures,
 		}
 		exp, err := expF()
 		if err != nil {
