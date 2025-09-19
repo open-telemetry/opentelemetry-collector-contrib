@@ -20,6 +20,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler"
 )
 
+const (
+	encodingWAFLogFormat = "waf"
+)
+
 type wafLogUnmarshaler struct {
 	buildInfo component.BuildInfo
 }
@@ -72,6 +76,7 @@ func (w *wafLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs, error
 	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
 	scopeLogs.Scope().SetName(metadata.ScopeName)
 	scopeLogs.Scope().SetVersion(w.buildInfo.Version)
+	scopeLogs.Scope().Attributes().PutStr("awslogs_encoding.format", encodingWAFLogFormat)
 
 	scanner := bufio.NewScanner(reader)
 	webACLID := ""

@@ -20,6 +20,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler"
 )
 
+const (
+	encodingCloudWatchLogFormat = "cloudwatch"
+)
+
 var (
 	errEmptyOwner     = errors.New("cloudwatch log with message type 'DATA_MESSAGE' has empty owner field")
 	errEmptyLogGroup  = errors.New("cloudwatch log with message type 'DATA_MESSAGE' has empty log group field")
@@ -94,6 +98,7 @@ func (f *subscriptionFilterUnmarshaler) createLogs(
 	sl := rl.ScopeLogs().AppendEmpty()
 	sl.Scope().SetName(metadata.ScopeName)
 	sl.Scope().SetVersion(f.buildInfo.Version)
+	sl.Scope().Attributes().PutStr("awslogs_encoding.format", encodingCloudWatchLogFormat)
 	for _, event := range cwLog.LogEvents {
 		logRecord := sl.LogRecords().AppendEmpty()
 		// pcommon.Timestamp is a time specified as UNIX Epoch time in nanoseconds

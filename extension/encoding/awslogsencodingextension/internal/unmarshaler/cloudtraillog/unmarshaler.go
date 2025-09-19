@@ -18,6 +18,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler"
 )
 
+const (
+	encodingCloudTrailLogFormat = "cloudtrail"
+)
+
 type CloudTrailLogUnmarshaler struct {
 	buildInfo component.BuildInfo
 }
@@ -116,6 +120,7 @@ func (u *CloudTrailLogUnmarshaler) processRecords(records []CloudTrailRecord) (p
 	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
 	scopeLogs.Scope().SetName(metadata.ScopeName)
 	scopeLogs.Scope().SetVersion(u.buildInfo.Version)
+	scopeLogs.Scope().Attributes().PutStr("awslogs_encoding.format", encodingCloudTrailLogFormat)
 
 	// Set resource attributes based on the first record
 	// (all records have the same account ID and region)

@@ -27,7 +27,8 @@ const (
 	// or unavailable, or that the field was not applicable to this request.
 	//
 	// See https://docs.aws.amazon.com/AmazonS3/latest/userguide/LogFormat.html.
-	unknownField = "-"
+	unknownField              = "-"
+	encodingS3AccessLogFormat = "s3access"
 )
 
 type s3AccessLogUnmarshaler struct {
@@ -72,6 +73,7 @@ func (s *s3AccessLogUnmarshaler) createLogs() (plog.Logs, plog.ResourceLogs, plo
 	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
 	scopeLogs.Scope().SetName(metadata.ScopeName)
 	scopeLogs.Scope().SetVersion(s.buildInfo.Version)
+	scopeLogs.Scope().Attributes().PutStr("awslogs_encoding.format", encodingS3AccessLogFormat)
 	return logs, resourceLogs, scopeLogs
 }
 
