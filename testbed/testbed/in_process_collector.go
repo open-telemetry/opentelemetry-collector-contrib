@@ -5,7 +5,6 @@ package testbed // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"runtime"
@@ -106,16 +105,10 @@ func (ipp *inProcessCollector) Stop() (stopped bool, err error) {
 	if !ipp.stopped {
 		ipp.stopped = true
 		ipp.svc.Shutdown()
-		// Retry deleting files on windows because in windows several processes read file handles.
-		if runtime.GOOS == "windows" {
-			require.Eventually(ipp.t, func() bool {
-				err = os.Remove(ipp.configFile)
-				if errors.Is(err, os.ErrNotExist) {
-					err = nil
-					return true
-				}
-				return false
-			}, 5*time.Second, 100*time.Millisecond)
+		// Do not delete temporary files on Windows because it fails too much on scoped tests.
+		// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42639
+		if runtime.GOOS != "windows" {
+			require.NoError(ipp.t, os.Remove(ipp.configFile))
 		}
 	}
 	ipp.wg.Wait()
