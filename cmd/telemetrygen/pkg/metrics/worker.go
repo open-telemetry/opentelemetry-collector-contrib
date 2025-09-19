@@ -5,12 +5,12 @@ package metrics
 
 import (
 	"context"
-	"math"
 	"math/rand/v2"
 	"sync"
 	"sync/atomic"
 	"time"
 
+	"github.com/lightstep/go-expohisto/structure"
 	"go.opentelemetry.io/otel/attribute"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
@@ -18,6 +18,7 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/time/rate"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/util"
 	types "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/pkg"
 )
 
@@ -165,60 +166,31 @@ func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Expor
 				},
 			})
 		case MetricTypeExponentialHistogram:
-			// Generate realistic exponential histogram data
-			iteration := uint64(i) % 10
-			sum := histogramBucketSamples[iteration].sum
-			count := uint64(10 + w.rand.IntN(20)) // Random count between 10-30
+			// Generate realistic exponential histogram data using go-expohisto
+			cfg := structure.NewConfig(structure.WithMaxSize(8))
+			hist := structure.NewFloat64(cfg)
 
-			// Create exponential histogram with base-2 buckets
-			maxBuckets := 8
-			positiveBuckets := make([]uint64, maxBuckets)
-			negativeBuckets := make([]uint64, maxBuckets)
-
-			// Distribute counts across buckets using exponential distribution
-			for j := 0; j < int(count); j++ {
-				// Generate values with exponential distribution
+			// Add random values to the histogram
+			count := 10 + w.rand.IntN(20) // Random count between 10-30
+			for j := 0; j < count; j++ {
 				value := float64(w.rand.IntN(1000))
-				if value > 0 {
-					// Calculate bucket index for positive values
-					bucket := int(math.Log2(value)) + 1
-					if bucket >= 0 && bucket < maxBuckets {
-						positiveBuckets[bucket]++
-					}
-				} else if value < 0 {
-					// Calculate bucket index for negative values
-					bucket := int(math.Log2(-value)) + 1
-					if bucket >= 0 && bucket < maxBuckets {
-						negativeBuckets[bucket]++
-					}
-				}
+				hist.Update(value)
 			}
+
+			// Create the data point and convert using utility function
+			dp := &metricdata.ExponentialHistogramDataPoint[int64]{
+				StartTime:  startTime,
+				Time:       now,
+				Attributes: attribute.NewSet(signalAttrs...),
+				Exemplars:  w.exemplars,
+			}
+			util.ExpoHistToSDKExponentialDataPoint(hist, dp)
 
 			metrics = append(metrics, metricdata.Metrics{
 				Name: w.metricName,
 				Data: metricdata.ExponentialHistogram[int64]{
 					Temporality: w.aggregationTemporality.AsTemporality(),
-					DataPoints: []metricdata.ExponentialHistogramDataPoint[int64]{
-						{
-							StartTime:     startTime,
-							Time:          now,
-							Attributes:    attribute.NewSet(signalAttrs...),
-							Exemplars:     w.exemplars,
-							Count:         count,
-							Sum:           sum,
-							Scale:         0,
-							ZeroCount:     0,
-							ZeroThreshold: 0.0,
-							PositiveBucket: metricdata.ExponentialBucket{
-								Offset: 0,
-								Counts: positiveBuckets,
-							},
-							NegativeBucket: metricdata.ExponentialBucket{
-								Offset: 0,
-								Counts: negativeBuckets,
-							},
-						},
-					},
+					DataPoints:  []metricdata.ExponentialHistogramDataPoint[int64]{*dp},
 				},
 			})
 		default:

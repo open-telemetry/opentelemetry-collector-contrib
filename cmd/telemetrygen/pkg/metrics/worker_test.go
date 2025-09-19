@@ -654,7 +654,7 @@ func TestExponentialHistogramMetricGeneration(t *testing.T) {
 	assert.Equal(t, "test_exp_hist", ms.Name)
 	assert.Positive(t, dp.Count)
 	assert.Positive(t, dp.Sum)
-	assert.Equal(t, int32(0), dp.Scale)
+	assert.GreaterOrEqual(t, dp.Scale, int32(0)) // Scale should be non-negative
 	assert.Equal(t, uint64(0), dp.ZeroCount)
 	assert.Equal(t, 0.0, dp.ZeroThreshold)
 
