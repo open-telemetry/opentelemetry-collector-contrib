@@ -20,7 +20,6 @@ type Config struct {
 	NumMetrics              int
 	MetricName              string
 	MetricType              MetricType
-	MixedMetrics            bool
 	AggregationTemporality  AggregationTemporality
 	SpanID                  string
 	TraceID                 string
@@ -48,7 +47,6 @@ func (c *Config) Flags(fs *pflag.FlagSet) {
 	fs.StringVar(&c.SpanID, "span-id", c.SpanID, "SpanID to use as exemplar")
 
 	fs.Var(&c.MetricType, "metric-type", "Metric type enum. must be one of 'Gauge', 'Sum', 'Histogram', or 'ExponentialHistogram'")
-	fs.BoolVar(&c.MixedMetrics, "mixed-metrics", c.MixedMetrics, "Randomly select metric type for each generated metric")
 	fs.Var(&c.AggregationTemporality, "aggregation-temporality", "aggregation-temporality for metrics. Must be one of 'delta' or 'cumulative'")
 	fs.BoolVar(&c.EnforceUniqueTimeseries, "unique-timeseries", c.EnforceUniqueTimeseries, "Enforce unique timeseries within unique-timeseries-timelimit, performance impacting")
 	fs.DurationVar(&c.UniqueTimelimit, "unique-timeseries-duration", c.UniqueTimelimit, "Time limit for unique timeseries generation, timeseries generated within this time will be unique")

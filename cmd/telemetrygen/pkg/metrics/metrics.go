@@ -74,7 +74,6 @@ func run(c *Config, expF exporterFunc, logger *zap.Logger) error {
 			enforceUnique:          c.EnforceUniqueTimeseries,
 			metricName:             c.MetricName,
 			metricType:             c.MetricType,
-			mixedMetrics:           c.MixedMetrics,
 			aggregationTemporality: c.AggregationTemporality,
 			exemplars:              exemplarsFromConfig(c),
 			limitPerSecond:         limit,

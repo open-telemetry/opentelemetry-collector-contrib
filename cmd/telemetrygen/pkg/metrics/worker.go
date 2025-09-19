@@ -25,7 +25,6 @@ type worker struct {
 	running                *atomic.Bool                 // pointer to shared flag that indicates it's time to stop the test
 	metricName             string                       // name of metric to generate
 	metricType             MetricType                   // type of metric to generate
-	mixedMetrics           bool                         // if true, randomly select metric type
 	aggregationTemporality AggregationTemporality       // Temporality type to use
 	exemplars              []metricdata.Exemplar[int64] // exemplars to attach to the metric
 	numMetrics             int                          // how many metrics the worker has to generate (only when duration==0)
@@ -36,16 +35,8 @@ type worker struct {
 	logger                 *zap.Logger                  // logger
 	index                  int                          // worker index
 	clock                  Clock                        // clock
-  allowFailures          bool                         // whether to continue on export failures
-	rand                   *rand.Rand                   // random number generator for mixed metrics
-}
-
-// Available metric types for random selection
-var availableMetricTypes = []MetricType{
-	MetricTypeGauge,
-	MetricTypeSum,
-	MetricTypeHistogram,
-	MetricTypeExponentialHistogram,
+	allowFailures          bool                         // whether to continue on export failures
+	rand                   *rand.Rand                   // random number generator for exponential histogram generation
 }
 
 // We use a 15-element bounds slice for histograms below, so there must be 16 buckets here.
@@ -114,13 +105,7 @@ func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Expor
 			startTime = now.Add(-1 * time.Second)
 		}
 
-		// Select metric type - either fixed or random
-		metricType := w.metricType
-		if w.mixedMetrics {
-			metricType = availableMetricTypes[w.rand.IntN(len(availableMetricTypes))]
-		}
-
-		switch metricType {
+		switch w.metricType {
 		case MetricTypeGauge:
 			metrics = append(metrics, metricdata.Metrics{
 				Name: w.metricName,
