@@ -34,7 +34,7 @@ import (
 )
 
 func newRemoteWriteReceiver(settings receiver.Settings, cfg *Config, nextConsumer consumer.Metrics) (receiver.Metrics, error) {
-	cache, err := lru.New[uint64, pmetric.ResourceMetrics](1000)
+	cache, err := lru.New[uint64, pcommon.Map](1000)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create LRU cache: %w", err)
 	}
@@ -58,8 +58,10 @@ type prometheusRemoteWriteReceiver struct {
 	server *http.Server
 	wg     sync.WaitGroup
 
-	rmCache *lru.Cache[uint64, pmetric.ResourceMetrics]
+	rmCache *lru.Cache[uint64, pcommon.Map]
 	obsrecv *receiverhelper.ObsReport
+
+	cacheMutex sync.Mutex
 }
 
 // metricIdentity contains all the components that uniquely identify a metric
@@ -244,7 +246,8 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 			Confirmed: true,
 		}
 		// The key is composed by: resource_hash:scope_name:scope_version:metric_name:unit:type
-		metricCache = make(map[uint64]pmetric.Metric)
+		metricCache        = make(map[uint64]pmetric.Metric)
+		resourceMetricsMap = make(map[uint64]pmetric.ResourceMetrics)
 	)
 
 	for _, ts := range req.Timeseries {
@@ -260,17 +263,24 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		// If the metric name is equal to target_info, we use its labels as attributes of the resource
 		// Ref: https://opentelemetry.io/docs/specs/otel/compatibility/prometheus_and_openmetrics/#resource-attributes-1
 		if ls.Get(labels.MetricName) == "target_info" {
-			var rm pmetric.ResourceMetrics
 			hashedLabels := xxhash.Sum64String(ls.Get("job") + string([]byte{'\xff'}) + ls.Get("instance"))
 
-			if existingRM, ok := prw.rmCache.Get(hashedLabels); ok {
+			prw.cacheMutex.Lock()
+			var rm pmetric.ResourceMetrics
+			if existingRM, ok := resourceMetricsMap[hashedLabels]; ok {
 				rm = existingRM
 			} else {
 				rm = otelMetrics.ResourceMetrics().AppendEmpty()
+				resourceMetricsMap[hashedLabels] = rm
+
+				if cachedAttrs, ok := prw.rmCache.Get(hashedLabels); ok {
+					cachedAttrs.CopyTo(rm.Resource().Attributes())
+				} else {
+					parseJobAndInstance(rm.Resource().Attributes(), ls.Get("job"), ls.Get("instance"))
+				}
 			}
 
 			attrs := rm.Resource().Attributes()
-			parseJobAndInstance(attrs, ls.Get("job"), ls.Get("instance"))
 
 			// Add the remaining labels as resource attributes
 			for labelName, labelValue := range ls.Map() {
@@ -278,7 +288,10 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 					attrs.PutStr(labelName, labelValue)
 				}
 			}
-			prw.rmCache.Add(hashedLabels, rm)
+			cachedAttrs := pcommon.NewMap()
+			attrs.CopyTo(cachedAttrs)
+			prw.rmCache.Add(hashedLabels, cachedAttrs)
+			prw.cacheMutex.Unlock()
 			continue
 		}
 
@@ -299,20 +312,27 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 
 		// Handle histograms separately due to their complex mixed-schema processing
 		if ts.Metadata.Type == writev2.Metadata_METRIC_TYPE_HISTOGRAM {
-			prw.processHistogramTimeSeries(otelMetrics, ls, ts, scopeName, scopeVersion, metricName, unit, description, metricCache, &stats)
+			prw.processHistogramTimeSeries(otelMetrics, ls, ts, scopeName, scopeVersion, metricName, unit, description, metricCache, &stats, resourceMetricsMap)
 			continue
 		}
 
 		// Handle regular metrics (gauge, counter, summary)
 		hashedLabels := xxhash.Sum64String(ls.Get("job") + string([]byte{'\xff'}) + ls.Get("instance"))
-		existingRM, ok := prw.rmCache.Get(hashedLabels)
+		prw.cacheMutex.Lock()
 		var rm pmetric.ResourceMetrics
-		if ok {
+		if existingRM, ok := resourceMetricsMap[hashedLabels]; ok {
 			rm = existingRM
 		} else {
 			rm = otelMetrics.ResourceMetrics().AppendEmpty()
-			parseJobAndInstance(rm.Resource().Attributes(), ls.Get("job"), ls.Get("instance"))
-			prw.rmCache.Add(hashedLabels, rm)
+			resourceMetricsMap[hashedLabels] = rm
+			if cachedAttrs, ok := prw.rmCache.Get(hashedLabels); ok {
+				cachedAttrs.CopyTo(rm.Resource().Attributes())
+			} else {
+				parseJobAndInstance(rm.Resource().Attributes(), ls.Get("job"), ls.Get("instance"))
+				cachedAttrs := pcommon.NewMap()
+				rm.Resource().Attributes().CopyTo(cachedAttrs)
+				prw.rmCache.Add(hashedLabels, cachedAttrs)
+			}
 		}
 
 		resourceID := identity.OfResource(rm.Resource())
@@ -363,10 +383,12 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 				sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 				metric.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "counter")
 			case writev2.Metadata_METRIC_TYPE_SUMMARY:
+				prw.cacheMutex.Unlock()
 				// Drop summary series as we will not handle them.
 				continue
 			default:
 				badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("unsupported metric type %q for metric %q", ts.Metadata.Type, metricName))
+				prw.cacheMutex.Unlock()
 				continue
 			}
 			metricCache[metricKey] = metric
@@ -387,6 +409,7 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		default:
 			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("unsupported metric type %q for metric %q", ts.Metadata.Type, metricName))
 		}
+		prw.cacheMutex.Unlock()
 	}
 
 	return otelMetrics, stats, badRequestErrors
@@ -400,6 +423,7 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 	scopeName, scopeVersion, metricName, unit, description string,
 	metricCache map[uint64]pmetric.Metric,
 	stats *promremote.WriteResponseStats,
+	resourceMetricsMap map[uint64]pmetric.ResourceMetrics,
 ) {
 	// Drop classic histogram series (those with samples)
 	if len(ts.Samples) != 0 {
@@ -434,18 +458,32 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 		// Create resource if needed (only for the first valid histogram)
 		if hashedLabels == 0 {
 			hashedLabels = xxhash.Sum64String(ls.Get("job") + string([]byte{'\xff'}) + ls.Get("instance"))
-			existingRM, ok := prw.rmCache.Get(hashedLabels)
-			if ok {
+			prw.cacheMutex.Lock()
+			// Get or create ResourceMetrics for this request
+			if existingRM, ok := resourceMetricsMap[hashedLabels]; ok {
 				rm = existingRM
 			} else {
 				rm = otelMetrics.ResourceMetrics().AppendEmpty()
-				parseJobAndInstance(rm.Resource().Attributes(), ls.Get("job"), ls.Get("instance"))
-				prw.rmCache.Add(hashedLabels, rm)
+				resourceMetricsMap[hashedLabels] = rm
+
+				// Set resource attributes (from cache or parse new)
+				if cachedAttrs, ok := prw.rmCache.Get(hashedLabels); ok {
+					cachedAttrs.CopyTo(rm.Resource().Attributes())
+				} else {
+					parseJobAndInstance(rm.Resource().Attributes(), ls.Get("job"), ls.Get("instance"))
+
+					// Cache the attributes
+					cachedAttrs := pcommon.NewMap()
+					rm.Resource().Attributes().CopyTo(cachedAttrs)
+					prw.rmCache.Add(hashedLabels, cachedAttrs)
+				}
 			}
 			resourceID = identity.OfResource(rm.Resource())
+			prw.cacheMutex.Unlock()
 		}
 
 		// Find or create scope (search each time since different histograms might need different scopes)
+		prw.cacheMutex.Lock()
 		var foundScope bool
 		for i := 0; i < rm.ScopeMetrics().Len(); i++ {
 			s := rm.ScopeMetrics().At(i)
@@ -495,6 +533,7 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 		} else {
 			prw.addExponentialHistogramDatapoint(histMetric.ExponentialHistogram().DataPoints(), histogram, ls, ts.CreatedTimestamp, stats)
 		}
+		prw.cacheMutex.Unlock()
 	}
 }
 
