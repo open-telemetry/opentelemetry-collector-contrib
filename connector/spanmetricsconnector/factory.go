@@ -18,17 +18,20 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/metrics"
 )
 
 const (
 	DefaultNamespace                        = "traces.span.metrics"
 	legacyMetricNamesFeatureGateID          = "connector.spanmetrics.legacyMetricNames"
 	includeCollectorInstanceIDFeatureGateID = "connector.spanmetrics.includeCollectorInstanceID"
+	legacyDefaultMetricsUnitFeatureGateID   = "connector.spanmetrics.legacyDefaultMetricsUnit"
 )
 
 var (
 	legacyMetricNamesFeatureGate *featuregate.Gate
 	includeCollectorInstanceID   *featuregate.Gate
+	legacyDefaultMetricsUnit     *featuregate.Gate
 )
 
 func init() {
@@ -45,6 +48,12 @@ func init() {
 		featuregate.WithRegisterDescription("When enabled, connector add collector.instance.id to default dimensions."),
 		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/40400"),
 	)
+	legacyDefaultMetricsUnit = featuregate.GlobalRegistry().MustRegister(
+		legacyDefaultMetricsUnitFeatureGateID,
+		featuregate.StageBeta, // current enabled by default and disable it in the feature release
+		featuregate.WithRegisterDescription("enabled by default, connector use ms unit for duration metrics."),
+		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42103"),
+	)
 }
 
 // NewFactory creates a factory for the spanmetrics connector.
@@ -58,10 +67,16 @@ func NewFactory() connector.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		AggregationTemporality:      "AGGREGATION_TEMPORALITY_CUMULATIVE",
-		ResourceMetricsCacheSize:    defaultResourceMetricsCacheSize,
-		MetricsFlushInterval:        60 * time.Second,
-		Histogram:                   HistogramConfig{Disable: false, Unit: defaultUnit},
+		AggregationTemporality:   "AGGREGATION_TEMPORALITY_CUMULATIVE",
+		ResourceMetricsCacheSize: defaultResourceMetricsCacheSize,
+		MetricsFlushInterval:     60 * time.Second,
+		Histogram: HistogramConfig{Disable: false, Unit: func() metrics.Unit {
+			if legacyDefaultMetricsUnit.IsEnabled() {
+				return metrics.Milliseconds
+			}
+
+			return metrics.Seconds
+		}()},
 		Namespace:                   DefaultNamespace,
 		AggregationCardinalityLimit: 0,
 		Exemplars: ExemplarsConfig{
