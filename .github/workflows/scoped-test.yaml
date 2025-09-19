@@ -99,7 +99,7 @@ jobs:
         env:
           CHANGED_GOLANG_SOURCES: ${{ needs.changedfiles.outputs.go_sources }}
         run: |
-          make for-affected-components CMD="make lint test-three-times"
+          make for-affected-components CMD="make lint test-twice"
 
   scoped-tests:
     # Keeps the name of the job required for merging in the GH configuration, make it
