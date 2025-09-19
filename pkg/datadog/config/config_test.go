@@ -47,13 +47,6 @@ func TestValidate(t *testing.T) {
 			err: ErrUnsetAPIKey.Error(),
 		},
 		{
-			name: "invalid format api::key",
-			cfg: &Config{
-				API: APIConfig{Key: "'aaaaaaa"},
-			},
-			err: ErrAPIKeyFormat.Error(),
-		},
-		{
 			name: "invalid hostname",
 			cfg: &Config{
 				API:          APIConfig{Key: "aaaaaaa"},

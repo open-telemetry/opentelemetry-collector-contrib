@@ -28,8 +28,6 @@ var (
 	ErrNoMetadata = errors.New("only_metadata can't be enabled when host_metadata::enabled = false or host_metadata::hostname_source != first_resource")
 	// ErrInvalidHostname is returned when the hostname is invalid.
 	ErrEmptyEndpoint = errors.New("endpoint cannot be empty")
-	// ErrAPIKeyFormat is returned if API key contains invalid characters
-	ErrAPIKeyFormat = errors.New("api::key contains invalid characters")
 	// NonHexRegex is a regex of characters that are always invalid in a Datadog API key
 	NonHexRegex = regexp.MustCompile(NonHexChars)
 )
@@ -135,8 +133,8 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("hostname field is invalid: %w", err)
 	}
 
-	if err := StaticAPIKeyCheck(string(c.API.Key)); err != nil {
-		return err
+	if c.API.Key == "" {
+		return ErrUnsetAPIKey
 	}
 
 	if err := c.Traces.Validate(); err != nil {
@@ -157,14 +155,12 @@ func (c *Config) Validate() error {
 
 // StaticAPIKey Check checks if api::key is either empty or contains invalid (non-hex) characters
 // It does not validate online; this is handled on startup.
+// Deprecated: [v0.136.0] Do not use, will be removed on the next minor version
 func StaticAPIKeyCheck(key string) error {
 	if key == "" {
 		return ErrUnsetAPIKey
 	}
-	invalidAPIKeyChars := NonHexRegex.FindAllString(key, -1)
-	if len(invalidAPIKeyChars) > 0 {
-		return fmt.Errorf("%w: invalid characters: %s", ErrAPIKeyFormat, strings.Join(invalidAPIKeyChars, ", "))
-	}
+
 	return nil
 }
 
