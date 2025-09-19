@@ -1,0 +1,16 @@
+name: sync-fork
+on:
+  schedule:
+    - cron: '4 2 * * 4,2'
+  workflow_dispatch:
+jobs:
+  sync-fork:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - run: gh repo sync $REPOSITORY -b $BRANCH_NAME
+        env:
+          GITHUB_TOKEN: ${{ secrets.SYNC_FORK_TOKEN }}
+          REPOSITORY: ${{ github.repository }}
+          BRANCH_NAME: ${{ github.ref_name }}
