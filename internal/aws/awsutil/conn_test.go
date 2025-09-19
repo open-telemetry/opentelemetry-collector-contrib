@@ -4,13 +4,117 @@
 package awsutil
 
 import (
+	"context"
+	"errors"
 	"net/http"
 	"testing"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
+	"github.com/aws/aws-sdk-go-v2/service/sts/types"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 )
+
+type STSAPI interface {
+	AssumeRole(ctx context.Context, params *sts.AssumeRoleInput, optFns ...func(*sts.Options)) (*sts.AssumeRoleOutput, error)
+}
+
+type mockSTS struct{}
+
+type ConfigLoader func(ctx context.Context, optFns ...func(*config.LoadOptions) error) (aws.Config, error)
+
+func GetAWSConfigHelper(
+	t *testing.T,
+	logger *zap.Logger,
+	settings *AWSSessionSettings,
+	stsClient STSAPI,
+	loadCfg ConfigLoader,
+) (aws.Config, error) {
+	t.Helper()
+	ctx := t.Context()
+
+	http, err := newHTTPClient(logger, settings.NumberOfWorkers, settings.RequestTimeoutSeconds, settings.NoVerifySSL, settings.ProxyAddress)
+	if err != nil {
+		logger.Error("unable to obtain proxy URL", zap.Error(err))
+		return aws.Config{}, err
+	}
+
+	var options []func(*config.LoadOptions) error
+	options = append(options, config.WithEC2IMDSRegion())
+
+	if settings.Region != "" {
+		options = append(options, config.WithRegion(settings.Region))
+		logger.Debug("Fetch region from commandline/config file", zap.String("region", settings.Region))
+	}
+
+	cfg, err := loadCfg(ctx, options...)
+	if err != nil {
+		return aws.Config{}, err
+	}
+
+	if settings.RoleARN != "" {
+		assumeRoleOpts := func(o *stscreds.AssumeRoleOptions) {
+			if settings.ExternalID != "" {
+				o.ExternalID = &settings.ExternalID
+			}
+		}
+
+		cfg.Credentials = aws.NewCredentialsCache(
+			stscreds.NewAssumeRoleProvider(stsClient, settings.RoleARN, assumeRoleOpts),
+		)
+		logger.Debug("Using AssumeRole", zap.String("role_arn", settings.RoleARN))
+	}
+
+	if cfg.Region == "" {
+		logger.Error("cannot fetch region variable from config file, environment variables and ec2 metadata")
+		return aws.Config{}, errors.New("cannot fetch region variable from config file, environment variables and ec2 metadata")
+	}
+
+	cfg.HTTPClient = http
+	cfg.RetryMaxAttempts = settings.MaxRetries
+	if settings.Endpoint != "" {
+		cfg.BaseEndpoint = aws.String(settings.Endpoint)
+	}
+
+	return cfg, nil
+}
+
+func (*mockSTS) AssumeRole(_ context.Context, _ *sts.AssumeRoleInput, _ ...func(*sts.Options)) (*sts.AssumeRoleOutput, error) {
+	return &sts.AssumeRoleOutput{
+		Credentials: &types.Credentials{
+			AccessKeyId:     aws.String("mockAccessKey"),
+			SecretAccessKey: aws.String("mockSecret"),
+			SessionToken:    aws.String("mockToken"),
+		},
+	}, nil
+}
+
+func fakeConfigLoader(_ context.Context, _ ...func(*config.LoadOptions) error) (aws.Config, error) {
+	return aws.Config{
+		Region: "us-mock-1",
+		Credentials: aws.NewCredentialsCache(
+			aws.AnonymousCredentials{}),
+	}, nil
+}
+
+func TestGetAWSConfigHelper_WithRoleARN(t *testing.T) {
+	logger := zap.NewNop()
+	settings := &AWSSessionSettings{
+		Region:   "us-mock-1",
+		RoleARN:  "arn:aws:iam::123456789012:role/TestRole",
+		Endpoint: "http://localhost:4566",
+	}
+
+	mockSTS := &mockSTS{}
+
+	cfg, err := GetAWSConfigHelper(t, logger, settings, mockSTS, fakeConfigLoader)
+	assert.NoError(t, err)
+	assert.Equal(t, "us-mock-1", cfg.Region)
+}
 
 // Test fetching region value from environment variable
 func TestRegionEnv(t *testing.T) {

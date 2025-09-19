@@ -15,6 +15,8 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"go.uber.org/zap"
 	"golang.org/x/net/http2"
 )
@@ -101,6 +103,21 @@ func GetAWSConfig(ctx context.Context, logger *zap.Logger, settings *AWSSessionS
 	cfg, err := config.LoadDefaultConfig(ctx, options...)
 	if err != nil {
 		return aws.Config{}, err
+	}
+
+	if settings.RoleARN != "" {
+		stsClient := sts.NewFromConfig(cfg)
+
+		assumeRoleOpts := func(o *stscreds.AssumeRoleOptions) {
+			if settings.ExternalID != "" {
+				o.ExternalID = &settings.ExternalID
+			}
+		}
+
+		cfg.Credentials = aws.NewCredentialsCache(
+			stscreds.NewAssumeRoleProvider(stsClient, settings.RoleARN, assumeRoleOpts),
+		)
+		logger.Debug("Using AssumeRole", zap.String("role_arn", settings.RoleARN))
 	}
 
 	if cfg.Region == "" {
