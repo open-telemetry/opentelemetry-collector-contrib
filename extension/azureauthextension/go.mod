@@ -3,24 +3,24 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/azure
 go 1.24.0
 
 require (
-	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.19.0
-	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.11.0
+	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.19.1
+	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.12.0
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/component v1.41.1-0.20250911090542-8b3a08ca2a38
-	go.opentelemetry.io/collector/component/componenttest v0.135.1-0.20250911090542-8b3a08ca2a38
-	go.opentelemetry.io/collector/config/configoptional v0.135.1-0.20250911090542-8b3a08ca2a38
-	go.opentelemetry.io/collector/confmap v1.41.1-0.20250911090542-8b3a08ca2a38
-	go.opentelemetry.io/collector/confmap/xconfmap v0.135.1-0.20250911090542-8b3a08ca2a38
-	go.opentelemetry.io/collector/extension v1.41.1-0.20250911090542-8b3a08ca2a38
-	go.opentelemetry.io/collector/extension/extensionauth v1.41.1-0.20250911090542-8b3a08ca2a38
-	go.opentelemetry.io/collector/extension/extensiontest v0.135.1-0.20250911090542-8b3a08ca2a38
+	go.opentelemetry.io/collector/component v1.41.1-0.20250918163459-ba0b327d5fe9
+	go.opentelemetry.io/collector/component/componenttest v0.135.1-0.20250918163459-ba0b327d5fe9
+	go.opentelemetry.io/collector/config/configoptional v0.135.1-0.20250918163459-ba0b327d5fe9
+	go.opentelemetry.io/collector/confmap v1.41.1-0.20250918163459-ba0b327d5fe9
+	go.opentelemetry.io/collector/confmap/xconfmap v0.135.1-0.20250918163459-ba0b327d5fe9
+	go.opentelemetry.io/collector/extension v1.41.1-0.20250918163459-ba0b327d5fe9
+	go.opentelemetry.io/collector/extension/extensionauth v1.41.1-0.20250918163459-ba0b327d5fe9
+	go.opentelemetry.io/collector/extension/extensiontest v0.135.1-0.20250918163459-ba0b327d5fe9
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 )
 
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.11.2 // indirect
-	github.com/AzureAD/microsoft-authentication-library-for-go v1.4.2 // indirect
+	github.com/AzureAD/microsoft-authentication-library-for-go v1.5.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
@@ -33,7 +33,7 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/knadh/koanf/maps v0.1.2 // indirect
 	github.com/knadh/koanf/providers/confmap v1.0.0 // indirect
-	github.com/knadh/koanf/v2 v2.2.2 // indirect
+	github.com/knadh/koanf/v2 v2.3.0 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
@@ -43,9 +43,9 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.41.1-0.20250911090542-8b3a08ca2a38 // indirect
-	go.opentelemetry.io/collector/internal/telemetry v0.135.1-0.20250911090542-8b3a08ca2a38 // indirect
-	go.opentelemetry.io/collector/pdata v1.41.1-0.20250911090542-8b3a08ca2a38 // indirect
+	go.opentelemetry.io/collector/featuregate v1.41.1-0.20250918163459-ba0b327d5fe9 // indirect
+	go.opentelemetry.io/collector/internal/telemetry v0.135.1-0.20250918163459-ba0b327d5fe9 // indirect
+	go.opentelemetry.io/collector/pdata v1.41.1-0.20250918163459-ba0b327d5fe9 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.12.0 // indirect
 	go.opentelemetry.io/otel v1.38.0 // indirect
 	go.opentelemetry.io/otel/log v0.14.0 // indirect
@@ -55,12 +55,12 @@ require (
 	go.opentelemetry.io/otel/trace v1.38.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	golang.org/x/crypto v0.40.0 // indirect
-	golang.org/x/net v0.42.0 // indirect
+	golang.org/x/crypto v0.41.0 // indirect
+	golang.org/x/net v0.43.0 // indirect
 	golang.org/x/sys v0.35.0 // indirect
-	golang.org/x/text v0.27.0 // indirect
+	golang.org/x/text v0.28.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250707201910-8d1bb00bc6a7 // indirect
-	google.golang.org/grpc v1.75.0 // indirect
+	google.golang.org/grpc v1.75.1 // indirect
 	google.golang.org/protobuf v1.36.9 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

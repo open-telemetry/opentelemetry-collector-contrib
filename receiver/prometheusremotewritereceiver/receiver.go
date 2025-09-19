@@ -30,6 +30,7 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/identity"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
 func newRemoteWriteReceiver(settings receiver.Settings, cfg *Config, nextConsumer consumer.Metrics) (receiver.Metrics, error) {
@@ -367,14 +368,20 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		metric, exists := metricCache[metricKey]
 		if !exists {
 			switch ts.Metadata.Type {
-			case writev2.Metadata_METRIC_TYPE_GAUGE:
+			case writev2.Metadata_METRIC_TYPE_GAUGE, writev2.Metadata_METRIC_TYPE_UNSPECIFIED:
 				metric = setMetric(scope, metricName, unit, description)
 				metric.SetEmptyGauge()
+				if ts.Metadata.Type == writev2.Metadata_METRIC_TYPE_UNSPECIFIED {
+					metric.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "unknown")
+				} else {
+					metric.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "gauge")
+				}
 			case writev2.Metadata_METRIC_TYPE_COUNTER:
 				metric = setMetric(scope, metricName, unit, description)
 				sum := metric.SetEmptySum()
 				sum.SetIsMonotonic(true)
 				sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				metric.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "counter")
 			case writev2.Metadata_METRIC_TYPE_SUMMARY:
 				prw.cacheMutex.Unlock()
 				// Drop summary series as we will not handle them.
@@ -392,7 +399,7 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		}
 
 		switch ts.Metadata.Type {
-		case writev2.Metadata_METRIC_TYPE_GAUGE:
+		case writev2.Metadata_METRIC_TYPE_GAUGE, writev2.Metadata_METRIC_TYPE_UNSPECIFIED:
 			addNumberDatapoints(metric.Gauge().DataPoints(), ls, ts, &stats)
 		case writev2.Metadata_METRIC_TYPE_COUNTER:
 			addNumberDatapoints(metric.Sum().DataPoints(), ls, ts, &stats)
