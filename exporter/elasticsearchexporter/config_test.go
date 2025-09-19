@@ -54,16 +54,24 @@ func TestConfig(t *testing.T) {
 			expected:   defaultCfg,
 		},
 		{
-			id:         component.NewIDWithName(metadata.Type, "trace"),
 			configFile: "config.yaml",
+			id:         component.NewIDWithName(metadata.Type, "trace"),
 			expected: &Config{
 				QueueBatchConfig: exporterhelper.QueueBatchConfig{
-					Enabled:      false,
-					NumConsumers: exporterhelper.NewDefaultQueueConfig().NumConsumers,
-					QueueSize:    exporterhelper.NewDefaultQueueConfig().QueueSize,
+					Enabled:      true,
+					NumConsumers: 10,
+					QueueSize:    10,
 					Sizer:        exporterhelper.RequestSizerTypeRequests,
+					Batch: configoptional.Some(exporterhelper.BatchConfig{
+						FlushTimeout: 10 * time.Second,
+						Sizer:        exporterhelper.RequestSizerTypeBytes,
+						MinSize:      5000000,
+						MaxSize:      10000000,
+					}),
 				},
-				Endpoints: []string{"https://elastic.example.com:9200"},
+				Endpoints: []string{
+					"https://elastic.example.com:9200",
+				},
 				LogsDynamicIndex: DynamicIndexSetting{
 					Enabled: false,
 				},
@@ -85,12 +93,11 @@ func TestConfig(t *testing.T) {
 					cfg.Timeout = 2 * time.Minute
 					cfg.MaxIdleConns = defaultMaxIdleConns
 					cfg.IdleConnTimeout = defaultIdleConnTimeout
-					cfg.Headers = map[string]configopaque.String{
-						"myheader": "test",
-					}
+					cfg.Headers = map[string]configopaque.String{"myheader": "test"}
 					cfg.Compression = defaultCompression
 					cfg.CompressionParams.Level = gzip.BestSpeed
-				}),
+				},
+				),
 				Authentication: AuthenticationSettings{
 					User:     "elastic",
 					Password: "search",
@@ -99,30 +106,30 @@ func TestConfig(t *testing.T) {
 				Discovery: DiscoverySettings{
 					OnStart: true,
 				},
-				Flush: FlushSettings{
-					Bytes:    10485760,
-					Interval: 10 * time.Second,
-				},
 				Retry: RetrySettings{
 					Enabled:         true,
 					MaxRetries:      5,
 					InitialInterval: 100 * time.Millisecond,
 					MaxInterval:     1 * time.Minute,
-					RetryOnStatus:   []int{http.StatusTooManyRequests, http.StatusInternalServerError},
+					RetryOnStatus: []int{
+						http.StatusTooManyRequests,
+						http.StatusInternalServerError,
+					},
 				},
 				Mapping: MappingsSettings{
-					Mode:         "otel",
-					AllowedModes: []string{"bodymap", "ecs", "none", "otel", "raw"},
+					Mode: "otel",
+					AllowedModes: []string{
+						"bodymap",
+						"ecs",
+						"none",
+						"otel",
+						"raw",
+					},
 				},
 				LogstashFormat: LogstashFormatSettings{
 					Enabled:         false,
 					PrefixSeparator: "-",
 					DateFormat:      "%Y.%m.%d",
-				},
-				Batcher: BatcherConfig{
-					FlushTimeout: 10 * time.Second,
-					Sizer:        exporterhelper.RequestSizerTypeItems,
-					MinSize:      defaultBatcherMinSizeItems,
 				},
 				TelemetrySettings: TelemetrySettings{
 					LogFailedDocsInputRateLimit: time.Second,
@@ -135,9 +142,15 @@ func TestConfig(t *testing.T) {
 			expected: &Config{
 				QueueBatchConfig: exporterhelper.QueueBatchConfig{
 					Enabled:      true,
-					NumConsumers: exporterhelper.NewDefaultQueueConfig().NumConsumers,
-					QueueSize:    exporterhelper.NewDefaultQueueConfig().QueueSize,
+					NumConsumers: 10,
+					QueueSize:    10,
 					Sizer:        exporterhelper.RequestSizerTypeRequests,
+					Batch: configoptional.Some(exporterhelper.BatchConfig{
+						FlushTimeout: 10 * time.Second,
+						Sizer:        exporterhelper.RequestSizerTypeBytes,
+						MinSize:      5000000,
+						MaxSize:      10000000,
+					}),
 				},
 				Endpoints: []string{"http://localhost:9200"},
 				LogsIndex: "my_log_index",
@@ -175,10 +188,6 @@ func TestConfig(t *testing.T) {
 				Discovery: DiscoverySettings{
 					OnStart: true,
 				},
-				Flush: FlushSettings{
-					Bytes:    10485760,
-					Interval: 10 * time.Second,
-				},
 				Retry: RetrySettings{
 					Enabled:         true,
 					MaxRetries:      5,
@@ -195,11 +204,6 @@ func TestConfig(t *testing.T) {
 					PrefixSeparator: "-",
 					DateFormat:      "%Y.%m.%d",
 				},
-				Batcher: BatcherConfig{
-					FlushTimeout: 10 * time.Second,
-					Sizer:        exporterhelper.RequestSizerTypeItems,
-					MinSize:      defaultBatcherMinSizeItems,
-				},
 				TelemetrySettings: TelemetrySettings{
 					LogFailedDocsInputRateLimit: time.Second,
 				},
@@ -211,9 +215,15 @@ func TestConfig(t *testing.T) {
 			expected: &Config{
 				QueueBatchConfig: exporterhelper.QueueBatchConfig{
 					Enabled:      true,
-					NumConsumers: exporterhelper.NewDefaultQueueConfig().NumConsumers,
-					QueueSize:    exporterhelper.NewDefaultQueueConfig().QueueSize,
+					NumConsumers: 10,
+					QueueSize:    10,
 					Sizer:        exporterhelper.RequestSizerTypeRequests,
+					Batch: configoptional.Some(exporterhelper.BatchConfig{
+						FlushTimeout: 10 * time.Second,
+						Sizer:        exporterhelper.RequestSizerTypeBytes,
+						MinSize:      5000000,
+						MaxSize:      10000000,
+					}),
 				},
 				Endpoints: []string{"http://localhost:9200"},
 				LogsDynamicIndex: DynamicIndexSetting{
@@ -251,10 +261,6 @@ func TestConfig(t *testing.T) {
 				Discovery: DiscoverySettings{
 					OnStart: true,
 				},
-				Flush: FlushSettings{
-					Bytes:    10485760,
-					Interval: 10 * time.Second,
-				},
 				Retry: RetrySettings{
 					Enabled:         true,
 					MaxRetries:      5,
@@ -270,11 +276,6 @@ func TestConfig(t *testing.T) {
 					Enabled:         false,
 					PrefixSeparator: "-",
 					DateFormat:      "%Y.%m.%d",
-				},
-				Batcher: BatcherConfig{
-					FlushTimeout: 10 * time.Second,
-					Sizer:        exporterhelper.RequestSizerTypeItems,
-					MinSize:      defaultBatcherMinSizeItems,
 				},
 				TelemetrySettings: TelemetrySettings{
 					LogFailedDocsInputRateLimit: time.Second,
@@ -306,16 +307,6 @@ func TestConfig(t *testing.T) {
 			}),
 		},
 		{
-			id:         component.NewIDWithName(metadata.Type, "batcher_disabled"),
-			configFile: "config.yaml",
-			expected: withDefaultConfig(func(cfg *Config) {
-				cfg.Endpoint = "https://elastic.example.com:9200"
-
-				cfg.Batcher.Enabled = false
-				cfg.Batcher.enabledSet = true
-			}),
-		},
-		{
 			id:         component.NewIDWithName(metadata.Type, "compression_none"),
 			configFile: "config.yaml",
 			expected: withDefaultConfig(func(cfg *Config) {
@@ -331,16 +322,6 @@ func TestConfig(t *testing.T) {
 				cfg.Endpoint = "https://elastic.example.com:9200"
 
 				cfg.Compression = "gzip"
-			}),
-		},
-		{
-			id:         component.NewIDWithName(metadata.Type, "batcher_minmax_size"),
-			configFile: "config.yaml",
-			expected: withDefaultConfig(func(cfg *Config) {
-				cfg.Endpoint = "https://elastic.example.com:9200"
-
-				cfg.Batcher.MinSize = 100
-				cfg.Batcher.MaxSize = 200
 			}),
 		},
 		{
@@ -362,18 +343,27 @@ func TestConfig(t *testing.T) {
 			}),
 		},
 		{
-			id:         component.NewIDWithName(metadata.Type, "queuebatch_enabled"),
+			id:         component.NewIDWithName(metadata.Type, "sendingqueue_disabled"),
 			configFile: "config.yaml",
 			expected: withDefaultConfig(func(cfg *Config) {
 				cfg.Endpoint = "https://elastic.example.com:9200"
 
-				cfg.QueueBatchConfig.Enabled = true
+				cfg.QueueBatchConfig.Enabled = false
+			}),
+		},
+		{
+			id:         component.NewIDWithName(metadata.Type, "sendingqueue_enabled"),
+			configFile: "config.yaml",
+			expected: withDefaultConfig(func(cfg *Config) {
+				cfg.Endpoint = "https://elastic.example.com:9200"
+
 				cfg.QueueBatchConfig.NumConsumers = 100
-				cfg.QueueBatchConfig.Sizer = exporterhelper.RequestSizerTypeItems
 				cfg.QueueBatchConfig.Batch = configoptional.Some(
 					exporterhelper.BatchConfig{
 						Sizer:        exporterhelper.RequestSizerTypeItems,
-						FlushTimeout: 10 * time.Second,
+						FlushTimeout: time.Second,
+						MinSize:      1000,
+						MaxSize:      5000,
 					},
 				)
 			}),
