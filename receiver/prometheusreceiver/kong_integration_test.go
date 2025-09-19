@@ -6,12 +6,15 @@
 package prometheusreceiver // Copyright The OpenTelemetry Authors
 
 import (
+	"net"
+	"net/http"
+	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
@@ -22,18 +25,11 @@ import (
 const kongPort = "18001"
 
 func TestKongIntegration(t *testing.T) {
+	mockServer := setupMockKongServer(t)
+	defer mockServer.Close()
+
 	scraperinttest.NewIntegrationTest(
 		NewFactory(),
-		scraperinttest.WithContainerRequest(
-			testcontainers.ContainerRequest{
-				FromDockerfile: testcontainers.FromDockerfile{
-					Context:    filepath.Join("testdata", "kong"),
-					Dockerfile: "Dockerfile",
-				},
-				ExposedPorts: []string{kongPort + ":" + "8001"},
-				WaitingFor:   wait.ForLog(".*connected to events broker.*").AsRegexp(),
-			}),
-		scraperinttest.AllowHardcodedHostPort(),
 		scraperinttest.WithCustomConfig(
 			func(t *testing.T, cfg component.Config, _ *scraperinttest.ContainerInfo) {
 				cm, err := confmaptest.LoadConf(filepath.Join("testdata", "kong", "config.yaml"))
@@ -57,4 +53,21 @@ func TestKongIntegration(t *testing.T) {
 			pmetrictest.IgnoreMetricAttributeValue("version", "kong_node_info"),
 		),
 	).Run(t)
+}
+
+func setupMockKongServer(t *testing.T) *httptest.Server {
+	fullPath := filepath.Join("testdata", "kong", "scraped-kong-data.txt")
+	data, err := os.ReadFile(fullPath)
+	require.NoError(t, err)
+
+	server := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, err = w.Write(data)
+		assert.NoError(t, err)
+	}))
+
+	l, _ := net.Listen("tcp", "localhost:"+kongPort)
+	server.Listener = l
+	server.Start()
+
+	return server
 }

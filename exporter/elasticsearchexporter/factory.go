@@ -218,7 +218,7 @@ func exporterhelperOptions(
 	cfg *Config,
 	start component.StartFunc,
 	shutdown component.ShutdownFunc,
-	qbs exporterhelper.QueueBatchSettings,
+	qbs xexporterhelper.QueueBatchSettings,
 ) []exporterhelper.Option {
 	opts := []exporterhelper.Option{
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
@@ -229,7 +229,7 @@ func exporterhelperOptions(
 	switch {
 	case qbc.Batch.HasValue():
 		// Latest queue batch settings are used, prioritize them even if sending queue is disabled
-		opts = append(opts, exporterhelper.WithQueueBatch(qbc, qbs))
+		opts = append(opts, xexporterhelper.WithQueueBatch(qbc, qbs))
 
 		// Effectively disable timeout_sender because timeout is enforced in bulk indexer.
 		//

@@ -11,8 +11,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"os"
-	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -759,18 +757,8 @@ func Test_PushMetrics(t *testing.T) {
 					}
 
 					if useWAL {
-						var dir string
-						if runtime.GOOS == "windows" {
-							// On Windows, use os.MkdirTemp to create directory since t.TempDir results in an error during cleanup in scoped-tests.
-							// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42639
-							var err error
-							dir, err = os.MkdirTemp("", tt.name) //nolint:usetesting
-							require.NoError(t, err)
-						} else {
-							dir = t.TempDir()
-						}
 						cfg.WAL = configoptional.Some(WALConfig{
-							Directory: dir,
+							Directory: testutil.TempDir(t),
 						})
 					}
 
