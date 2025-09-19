@@ -25,9 +25,6 @@ The New Relic SQL Server Receiver is an OpenTelemetry receiver that collects met
 - High availability configuration (Clustering, AlwaysOn)
 - Port configuration and encryption settings
 
-#### Database Environment Status
-- Database counts by status (online, offline, recovering, etc.)
-- Instance uptime and configuration state
 
 This information is automatically collected and attached to every metric, providing rich context for troubleshooting, compliance, and inventory management without additional configuration.
 
