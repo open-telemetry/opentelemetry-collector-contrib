@@ -4,11 +4,15 @@
 package kafka
 
 import (
+	"net/url"
 	"testing"
+	"time"
 
 	"github.com/IBM/sarama"
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/oauth2"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/oidc"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 )
 
@@ -50,6 +54,16 @@ func TestAuthentication(t *testing.T) {
 		ctx:    t.Context(),
 		region: "region",
 	}
+
+	saramaSASLOIDCFILEConfig := &sarama.Config{}
+	saramaSASLOIDCFILEConfig.Net.SASL.Enable = true
+	saramaSASLOIDCFILEConfig.Net.SASL.Mechanism = sarama.SASLTypeOAuth
+	// Specify 0 seconds for the RefreshAhead, as we don't want to have it launch
+	// the background refresher goroutine - we are just verifying authentication
+	// configuration setup here.
+	saramaSASLOIDCFILEConfig.Net.SASL.TokenProvider, _ = oidc.NewOIDCfileTokenProvider(
+		t.Context(), saramaSASLOIDCFILEConfig.ClientID, "/etc/hosts", "http://127.0.0.1:3000/oidc",
+		[]string{"mock-scope"}, time.Duration(0)*time.Second, url.Values{}, oauth2.AuthStyleAutoDetect)
 
 	saramaKerberosCfg := &sarama.Config{}
 	saramaKerberosCfg.Net.SASL.Mechanism = sarama.SASLTypeGSSAPI
@@ -138,6 +152,22 @@ func TestAuthentication(t *testing.T) {
 			},
 			saramaConfig: saramaSASLAWSIAMOAUTHConfig,
 		},
+		{
+			auth: configkafka.AuthenticationConfig{
+				SASL: &configkafka.SASLConfig{
+					Mechanism: "OIDCFILE",
+					OIDCFILE: configkafka.OIDCFileConfig{
+						ClientSecretFilePath: "/etc/hosts",
+						TokenURL:             "http://127.0.0.1:3000/oidc",
+						Scopes:               []string{"mock-scope"},
+						RefreshAheadSecs:     0,
+						EndPointParams:       url.Values{},
+						AuthStyle:            oauth2.AuthStyleAutoDetect,
+					},
+				},
+			},
+			saramaConfig: saramaSASLOIDCFILEConfig,
+		},
 	}
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
@@ -146,6 +176,14 @@ func TestAuthentication(t *testing.T) {
 
 			// equalizes SCRAMClientGeneratorFunc to do assertion with the same reference.
 			config.Net.SASL.SCRAMClientGeneratorFunc = test.saramaConfig.Net.SASL.SCRAMClientGeneratorFunc
+
+			// For OIDC token provider, we need to compare fields individually since the context
+			// contains non-deterministic channels that will cause the comparison to fail
+			if config.Net.SASL.TokenProvider != nil && test.saramaConfig.Net.SASL.TokenProvider != nil {
+				// Set them to the same reference for comparison
+				config.Net.SASL.TokenProvider = test.saramaConfig.Net.SASL.TokenProvider
+			}
+
 			assert.Equal(t, test.saramaConfig, config)
 		})
 	}
