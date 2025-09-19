@@ -68,7 +68,7 @@ func (c *Config) Validate() error {
 	}
 
 	if c.LoadSize < 0 {
-		return errors.New("load size must be non-negative")
+		return fmt.
 	}
 
 	if c.TraceID != "" {
