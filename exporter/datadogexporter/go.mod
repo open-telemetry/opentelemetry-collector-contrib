@@ -22,7 +22,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/trace v0.71.0-devel.0.20250902202452-61c2536752eb
 	github.com/DataDog/datadog-agent/pkg/util/log v0.71.0-devel.0.20250902202452-61c2536752eb
 	github.com/DataDog/datadog-agent/pkg/util/quantile v0.71.0-devel.0.20250902202452-61c2536752eb
-	github.com/DataDog/datadog-api-client-go/v2 v2.45.0
+	github.com/DataDog/datadog-api-client-go/v2 v2.46.0
 	github.com/DataDog/datadog-go/v5 v5.7.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.135.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.135.0
@@ -199,7 +199,7 @@ require (
 	github.com/dennwc/varint v1.0.0 // indirect
 	github.com/digitalocean/godo v1.152.0 // indirect
 	github.com/distribution/reference v0.6.0 // indirect
-	github.com/docker/docker v28.3.3+incompatible // indirect
+	github.com/docker/docker v28.4.0+incompatible // indirect
 	github.com/docker/go-connections v0.6.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
@@ -274,7 +274,7 @@ require (
 	github.com/hashicorp/nomad/api v0.0.0-20241218080744-e3ac00f30eec // indirect
 	github.com/hashicorp/serf v0.10.1 // indirect
 	github.com/hectane/go-acl v0.0.0-20230122075934-ca0b05cb1adb // indirect
-	github.com/hetznercloud/hcloud-go/v2 v2.22.0 // indirect
+	github.com/hetznercloud/hcloud-go/v2 v2.23.0 // indirect
 	github.com/iancoleman/strcase v0.3.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/ionos-cloud/sdk-go/v6 v6.3.4 // indirect
@@ -362,7 +362,7 @@ require (
 	github.com/puzpuzpuz/xsync/v3 v3.5.1 // indirect
 	github.com/richardartoul/molecule v1.0.1-0.20240531184615-7ca0df43c0b3 // indirect
 	github.com/rs/cors v1.11.1 // indirect
-	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.33 // indirect
+	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.35 // indirect
 	github.com/secure-systems-lab/go-securesystemslib v0.9.0 // indirect
 	github.com/shirou/gopsutil/v3 v3.24.5 // indirect
 	github.com/shirou/gopsutil/v4 v4.25.8 // indirect
@@ -482,7 +482,7 @@ require (
 	google.golang.org/api v0.238.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250707201910-8d1bb00bc6a7 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250721164621-a45f3dfb1074 // indirect
-	google.golang.org/grpc v1.75.0 // indirect
+	google.golang.org/grpc v1.75.1 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
