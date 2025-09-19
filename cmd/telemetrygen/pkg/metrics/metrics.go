@@ -83,6 +83,7 @@ func run(c *Config, expF exporterFunc, logger *zap.Logger) error {
 			index:                  i,
 			clock:                  &realClock{},
 			loadSize:               c.LoadSize,
+			allowFailures:          c.AllowExportFailures,
 		}
 		exp, err := expF()
 		if err != nil {

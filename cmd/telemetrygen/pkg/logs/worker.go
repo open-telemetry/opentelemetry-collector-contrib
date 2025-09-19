@@ -37,6 +37,7 @@ type worker struct {
 	traceID        string                // traceID string
 	spanID         string                // spanID string
 	loadSize       int                   // desired minimum size in MB of string data for each generated log
+	allowFailures  bool                  // whether to continue on export failures
 }
 
 const (
@@ -93,7 +94,11 @@ func (w worker) simulateLogs(res *resource.Resource, exporter sdklog.Exporter, t
 		}
 
 		if err := exporter.Export(context.Background(), logs); err != nil {
-			w.logger.Fatal("exporter failed", zap.Error(err))
+			if w.allowFailures {
+				w.logger.Error("exporter failed, continuing due to --allow-export-failures", zap.Error(err))
+			} else {
+				w.logger.Fatal("exporter failed", zap.Error(err))
+			}
 		}
 
 		i++

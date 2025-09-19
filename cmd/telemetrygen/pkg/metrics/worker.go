@@ -35,6 +35,7 @@ type worker struct {
 	index                  int                          // worker index
 	clock                  Clock                        // clock
 	loadSize               int                          // desired minimum size in MB of string data for each generated metric
+	allowFailures          bool                         // whether to continue on export failures
 }
 
 const (
@@ -187,7 +188,11 @@ func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Expor
 		}
 
 		if err := exporter.Export(context.Background(), &rm); err != nil {
-			w.logger.Fatal("exporter failed", zap.Error(err))
+			if w.allowFailures {
+				w.logger.Error("exporter failed, continuing due to --allow-export-failures", zap.Error(err))
+			} else {
+				w.logger.Fatal("exporter failed", zap.Error(err))
+			}
 		}
 
 		i++
