@@ -758,7 +758,7 @@ func Test_PushMetrics(t *testing.T) {
 
 					if useWAL {
 						cfg.WAL = configoptional.Some(WALConfig{
-							Directory: t.TempDir(),
+							Directory: testutil.TempDir(t),
 						})
 					}
 

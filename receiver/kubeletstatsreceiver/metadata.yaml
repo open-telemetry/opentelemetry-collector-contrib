@@ -88,13 +88,6 @@ metrics:
     gauge:
       value_type: double
     attributes: []
-  k8s.node.cpu.utilization:
-    enabled: false
-    description: "Node CPU utilization"
-    unit: "1"
-    gauge:
-      value_type: double
-    attributes: []
   k8s.node.cpu.time:
     enabled: true
     description: "Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation"
@@ -198,13 +191,6 @@ metrics:
     enabled: true
     description: "Total CPU usage (sum of all cores per second) averaged over the sample window"
     unit: "{cpu}"
-    gauge:
-      value_type: double
-    attributes: [ ]
-  k8s.pod.cpu.utilization:
-    enabled: false
-    description: "Pod CPU utilization"
-    unit: "1"
     gauge:
       value_type: double
     attributes: [ ]
@@ -356,13 +342,6 @@ metrics:
     gauge:
       value_type: double
     attributes: [ ]
-  container.cpu.utilization:
-    enabled: false
-    description: "Container CPU utilization"
-    unit: "1"
-    gauge:
-      value_type: double
-    attributes: [ ]
   container.cpu.time:
     enabled: true
     description: "Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation"
@@ -499,6 +478,15 @@ metrics:
     unit: By
     gauge:
       value_type: int
+    attributes: []
+  k8s.pod.volume.usage:
+    enabled: false
+    description: "The number of used bytes in the pod volume."
+    unit: By
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative 
+      monotonic: false 
     attributes: []
   k8s.volume.inodes:
     enabled: true

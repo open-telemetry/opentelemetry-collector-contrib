@@ -67,10 +67,10 @@ func (bq *bqTest) startWaiter(ctx context.Context, size uint64, relp *ReleaseFun
 }
 
 func (bq *bqTest) waitForPending(admitted, waiting uint64) {
-	require.Eventually(bq.t, func() bool {
+	require.EventuallyWithT(bq.t, func(c *assert.CollectT) {
 		bq.lock.Lock()
 		defer bq.lock.Unlock()
-		return bq.currentAdmitted == admitted && bq.currentWaiting == waiting
+		assert.True(c, bq.currentAdmitted == admitted && bq.currentWaiting == waiting)
 	}, 10*time.Second, 20*time.Millisecond)
 }
 
