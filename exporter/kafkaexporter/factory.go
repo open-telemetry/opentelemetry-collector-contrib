@@ -169,7 +169,7 @@ func exporterhelperOptions(
 		// and will rely on the sarama Producer Timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 		exporterhelper.WithRetry(cfg.BackOffConfig),
-		exporterhelper.WithQueueBatch(cfg.QueueBatchConfig, qbs),
+		xexporterhelper.WithQueueBatch(cfg.QueueBatchConfig, qbs),
 		exporterhelper.WithStart(startFunc),
 		exporterhelper.WithShutdown(shutdownFunc),
 	}
