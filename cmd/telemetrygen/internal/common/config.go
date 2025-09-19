@@ -226,3 +226,12 @@ func (c *Config) SetDefaults() {
 	c.ClientAuth.ClientKeyFile = ""
 	c.AllowExportFailures = false
 }
+
+// CharactersPerMB is the number of characters needed to create a 1MB string attribute
+const CharactersPerMB = 1024 * 1024
+
+// CreateLoadAttribute creates a string attribute with the specified size in MB
+// This is commonly used across different signal types (metrics, traces, logs) for load testing
+func CreateLoadAttribute(key string, sizeMB int) attribute.KeyValue {
+	return attribute.String(key, string(make([]byte, CharactersPerMB*sizeMB)))
+}
