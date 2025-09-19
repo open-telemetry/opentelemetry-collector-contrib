@@ -38,6 +38,9 @@ func assertConfigContainsDefaultFunctions(t *testing.T, config Config) {
 	for _, f := range DefaultSpanEventFunctions() {
 		assert.Contains(t, config.spanEventFunctions, f.Name(), "missing span event function %v", f.Name())
 	}
+	for _, f := range DefaultProfileFunctions() {
+		assert.Contains(t, config.profileFunctions, f.Name(), "missing profile function %v", f.Name())
+	}
 }
 
 // TestLoadingConfigRegexp tests loading testdata/config_strict.yaml
@@ -888,6 +891,11 @@ func TestLoadingConfigOTTL(t *testing.T) {
 				},
 				Logs: LogFilters{
 					LogConditions: []string{
+						`attributes["test"] == "pass"`,
+					},
+				},
+				Profiles: ProfileFilters{
+					ProfileConditions: []string{
 						`attributes["test"] == "pass"`,
 					},
 				},
