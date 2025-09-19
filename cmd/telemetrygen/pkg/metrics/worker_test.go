@@ -454,7 +454,7 @@ func TestValidate(t *testing.T) {
 				MetricType: MetricTypeSum,
 				LoadSize:   -1,
 			},
-			wantErrMessage: "load size must be non-negative",
+			wantErrMessage: "load size must be non-negative, found -1",
 		},
 	}
 	for _, tt := range tests {
@@ -663,11 +663,11 @@ func TestMetricsWithLoadSize(t *testing.T) {
 	// Check that load attributes exist and have the expected size
 	load0Value, exists := attr.Value("load-0")
 	assert.True(t, exists, "should have load-0 attribute")
-	assert.Len(t, load0Value.AsString(), charactersPerMB, "load-0 should have 1MB of data")
+	assert.Len(t, load0Value.AsString(), common.CharactersPerMB, "load-0 should have 1MB of data")
 
 	load1Value, exists := attr.Value("load-1")
 	assert.True(t, exists, "should have load-1 attribute")
-	assert.Len(t, load1Value.AsString(), charactersPerMB, "load-1 should have 1MB of data")
+	assert.Len(t, load1Value.AsString(), common.CharactersPerMB, "load-1 should have 1MB of data")
 }
 
 func TestMetricsWithDefaultLoadSize(t *testing.T) {

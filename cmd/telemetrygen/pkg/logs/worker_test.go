@@ -295,7 +295,7 @@ func TestValidate(t *testing.T) {
 				NumLogs:  5,
 				LoadSize: -1,
 			},
-			wantErrMessage: "load size must be non-negative",
+			wantErrMessage: "load size must be non-negative, found -1",
 		},
 	}
 	for _, tt := range tests {
@@ -385,11 +385,11 @@ func TestLogsWithLoadSize(t *testing.T) {
 	logRecord.WalkAttributes(func(attr log.KeyValue) bool {
 		if attr.Key == "load-0" {
 			load0Found = true
-			assert.Len(t, attr.Value.AsString(), charactersPerMB, "load-0 should have 1MB of data")
+			assert.Len(t, attr.Value.AsString(), common.CharactersPerMB, "load-0 should have 1MB of data")
 		}
 		if attr.Key == "load-1" {
 			load1Found = true
-			assert.Len(t, attr.Value.AsString(), charactersPerMB, "load-1 should have 1MB of data")
+			assert.Len(t, attr.Value.AsString(), common.CharactersPerMB, "load-1 should have 1MB of data")
 		}
 		return true
 	})

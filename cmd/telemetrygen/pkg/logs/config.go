@@ -5,6 +5,7 @@ package logs
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/spf13/pflag"
 
@@ -68,7 +69,7 @@ func (c *Config) Validate() error {
 	}
 
 	if c.LoadSize < 0 {
-		return fmt.
+		return fmt.Errorf("load size must be non-negative, found %d", c.LoadSize)
 	}
 
 	if c.TraceID != "" {

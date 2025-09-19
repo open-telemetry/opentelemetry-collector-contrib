@@ -20,6 +20,7 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/time/rate"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
 	types "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/pkg"
 )
 
@@ -39,10 +40,6 @@ type worker struct {
 	loadSize       int                   // desired minimum size in MB of string data for each generated log
 	allowFailures  bool                  // whether to continue on export failures
 }
-
-const (
-	charactersPerMB = 1024 * 1024 // One character takes up one byte of space, so this number comes from the number of bytes in a megabyte
-)
 
 func (w worker) simulateLogs(res *resource.Resource, exporter sdklog.Exporter, telemetryAttributes []attribute.KeyValue) {
 	limiter := rate.NewLimiter(w.limitPerSecond, 1)
@@ -71,7 +68,7 @@ func (w worker) simulateLogs(res *resource.Resource, exporter sdklog.Exporter, t
 		// Add load size attributes if specified
 		if w.loadSize > 0 {
 			for j := 0; j < w.loadSize; j++ {
-				attrs = append(attrs, log.String(fmt.Sprintf("load-%v", j), string(make([]byte, charactersPerMB))))
+				attrs = append(attrs, log.String(fmt.Sprintf("load-%v", j), string(make([]byte, common.CharactersPerMB))))
 			}
 		}
 

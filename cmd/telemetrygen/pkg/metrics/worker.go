@@ -17,6 +17,7 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/time/rate"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
 	types "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/pkg"
 )
 
@@ -37,10 +38,6 @@ type worker struct {
 	loadSize               int                          // desired minimum size in MB of string data for each generated metric
 	allowFailures          bool                         // whether to continue on export failures
 }
-
-const (
-	charactersPerMB = 1024 * 1024 // One character takes up one byte of space, so this number comes from the number of bytes in a megabyte
-)
 
 // We use a 15-element bounds slice for histograms below, so there must be 16 buckets here.
 // From metrics.proto:
@@ -107,7 +104,7 @@ func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Expor
 		loadAttrs := signalAttrs
 		if w.loadSize > 0 {
 			for j := 0; j < w.loadSize; j++ {
-				loadAttrs = append(loadAttrs, attribute.String(fmt.Sprintf("load-%v", j), string(make([]byte, charactersPerMB))))
+				loadAttrs = append(loadAttrs, common.CreateLoadAttribute(fmt.Sprintf("load-%v", j), 1))
 			}
 		}
 		var metrics []metricdata.Metrics
