@@ -15,7 +15,15 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/elasticsearch"
 )
 
-var receiverRegex = regexp.MustCompile(`/receiver/(\w*receiver)`)
+var receiverRegex = regexp.MustCompile(`/receiver/(\w+receiver)`)
+
+var selfTelemetryScopeNames = map[string]bool{
+	"go.opentelemetry.io/collector/receiver/receiverhelper":   true,
+	"go.opentelemetry.io/collector/scraper/scraperhelper":     true,
+	"go.opentelemetry.io/collector/processor/processorhelper": true,
+	"go.opentelemetry.io/collector/exporter/exporterhelper":   true,
+	"go.opentelemetry.io/collector/service":                   true,
+}
 
 const (
 	maxDataStreamBytes       = 100
@@ -180,11 +188,14 @@ func routeRecord(
 
 	// Only use receiver-based routing if dataset is not specified.
 	if !datasetExists {
-		// Receiver-based routing
-		// For example, hostmetricsreceiver (or hostmetricsreceiver.otel in the OTel output mode)
-		// for the scope name
-		// github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper
-		if submatch := receiverRegex.FindStringSubmatch(scope.Name()); len(submatch) > 0 {
+		if selfTelemetryScopeNames[scope.Name()] {
+			// For collector self-telemetry, use a fixed dataset name
+			dataset = collectorSelfTelemetryDataStreamDataset
+		} else if submatch := receiverRegex.FindStringSubmatch(scope.Name()); len(submatch) > 0 {
+			// Receiver-based routing
+			// For example, hostmetricsreceiver (or hostmetricsreceiver.otel in the OTel output mode)
+			// for the scope name
+			// github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper
 			receiverName := submatch[1]
 			dataset = receiverName
 		}
