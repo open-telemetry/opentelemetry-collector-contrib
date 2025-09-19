@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/metadata"
@@ -24,6 +25,9 @@ import (
 
 func TestLoadConfig(t *testing.T) {
 	t.Parallel()
+
+	// disable legacyDefaultMetricsUnit featuregate
+	require.NoError(t, featuregate.GlobalRegistry().Set(legacyDefaultMetricsUnit.ID(), false))
 
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)

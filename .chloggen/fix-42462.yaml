@@ -16,9 +16,14 @@ issues: [42462]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  This change will result in a breaking change:
-  - There is no breaking change if the user has manually set the `unit` configuration.
-  - A breaking change will occur if the user relies on the default `unit` setting; in this case, please manually revert it to the desired `unit`.
+  This change introduces a breaking change, which is now guarded by the feature gate `connector.spanmetrics.legacyDefaultMetricsUnit`.
+  Currently, the feature gate is enabled by default, so the unit will remain `ms`. After one or two release cycles, the unit will switch to `s` and the feature gate will also be disabled by default.
+  To revert this change manually, users can either enable the feature gate or modify the configuration as follows:
+  ```
+  spanmetrics:
+  histogram:
+    unit: "ms"
+  ```
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
