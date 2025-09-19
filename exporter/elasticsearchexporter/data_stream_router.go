@@ -188,16 +188,16 @@ func routeRecord(
 
 	// Only use receiver-based routing if dataset is not specified.
 	if !datasetExists {
-		// Receiver-based routing
-		// For example, hostmetricsreceiver (or hostmetricsreceiver.otel in the OTel output mode)
-		// for the scope name
-		// github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper
-		if submatch := receiverRegex.FindStringSubmatch(scope.Name()); len(submatch) > 0 {
-			receiverName := submatch[1]
-			dataset = receiverName
-		} else if selfTelemetryScopeNames[scope.Name()] {
+		if selfTelemetryScopeNames[scope.Name()] {
 			// For collector self-telemetry, use a fixed dataset name
 			dataset = collectorSelfTelemetryDataStreamDataset
+		} else if submatch := receiverRegex.FindStringSubmatch(scope.Name()); len(submatch) > 0 {
+			// Receiver-based routing
+			// For example, hostmetricsreceiver (or hostmetricsreceiver.otel in the OTel output mode)
+			// for the scope name
+			// github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper
+			receiverName := submatch[1]
+			dataset = receiverName
 		}
 	}
 
