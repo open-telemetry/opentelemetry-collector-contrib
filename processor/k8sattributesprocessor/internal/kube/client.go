@@ -12,6 +12,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode"
 
 	"github.com/distribution/reference"
 	"go.opentelemetry.io/collector/component"
@@ -291,7 +292,9 @@ func (c *WatchClient) Start() error {
 	synced := make([]cache.InformerSynced, 0)
 	// start the replicaSet informer first, as the replica sets need to be
 	// present at the time the pods are handled, to correctly establish the connection between pods and deployments
-	if c.Rules.DeploymentName || c.Rules.DeploymentUID {
+	// The replicaset informer is needed to get the deployment UID.
+	// It is also needed to get the deployment name if the feature gate is not enabled.
+	if c.Rules.DeploymentUID || (c.Rules.DeploymentName && !c.Rules.DeploymentNameFromReplicaSet) {
 		reg, err := c.replicasetInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 			AddFunc:    c.handleReplicaSetAdd,
 			UpdateFunc: c.handleReplicaSetUpdate,
@@ -823,22 +826,25 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 					tags[string(conventions.ServiceNameKey)] = ref.Name
 				}
 				if c.Rules.DeploymentName || c.Rules.ServiceName {
-					if replicaset, ok := c.GetReplicaSet(string(ref.UID)); ok {
-						name := replicaset.Deployment.Name
-						if name != "" {
-							if c.Rules.DeploymentName {
-								tags[string(conventions.K8SDeploymentNameKey)] = name
-							}
-							if c.Rules.ServiceName {
-								// deployment name wins over replicaset name
-								tags[string(conventions.ServiceNameKey)] = name
-							}
+					var deploymentName string
+					if c.Rules.DeploymentNameFromReplicaSet {
+						deploymentName = extractDeploymentNameFromReplicaSet(ref.Name)
+					} else if replicaset, ok := c.GetReplicaSet(string(ref.UID)); ok {
+						deploymentName = replicaset.Deployment.Name
+					}
+					if deploymentName != "" {
+						if c.Rules.DeploymentName {
+							tags[string(conventions.K8SDeploymentNameKey)] = deploymentName
+						}
+						if c.Rules.ServiceName {
+							// deployment name wins over replicaset name
+							tags[string(conventions.ServiceNameKey)] = deploymentName
 						}
 					}
 				}
 				if c.Rules.DeploymentUID {
 					if replicaset, ok := c.GetReplicaSet(string(ref.UID)); ok {
-						if replicaset.Deployment.Name != "" {
+						if replicaset.Deployment.UID != "" {
 							tags[string(conventions.K8SDeploymentUIDKey)] = replicaset.Deployment.UID
 						}
 					}
@@ -1811,4 +1817,37 @@ func ignoreDeletedFinalStateUnknown(obj any) any {
 func automaticServiceInstanceID(pod *api_v1.Pod, containerName string) string {
 	resNames := []string{pod.Namespace, pod.Name, containerName}
 	return strings.Join(resNames, ".")
+}
+
+// extractDeploymentNameFromReplicaSet attempts to extract deployment name from replicaset name
+// by trimming the pod template hash suffix. ReplicaSets created by Deployments follow the pattern:
+// <deployment-name>-<pod-template-hash> where pod-template-hash is a 10-character alphanumeric string.
+func extractDeploymentNameFromReplicaSet(replicasetName string) string {
+	if replicasetName == "" {
+		return ""
+	}
+
+	parts := strings.Split(replicasetName, "-")
+	if len(parts) < 2 {
+		return ""
+	}
+
+	// Check if the last part looks like a pod template hash (10 characters, alphanumeric)
+	lastPart := parts[len(parts)-1]
+	if len(lastPart) == 10 && isAlphanumeric(lastPart) {
+		// Return everything except the last part (the hash)
+		return strings.Join(parts[:len(parts)-1], "-")
+	}
+
+	return ""
+}
+
+// isAlphanumeric checks if a string contains only lowercase alphanumeric characters
+func isAlphanumeric(s string) bool {
+	for _, r := range s {
+		if !unicode.IsDigit(r) && !unicode.IsLower(r) {
+			return false
+		}
+	}
+	return true
 }
