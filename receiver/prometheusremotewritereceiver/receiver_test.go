@@ -1763,12 +1763,59 @@ func TestLRUCacheResourceMetrics(t *testing.T) {
 		assert.Equal(t, http.StatusNoContent, resp.StatusCode, string(body))
 	}
 
-	// As target_info and metric1 have the same job/instance, they generate the same end metric: mockConsumer.metrics[0].
-	assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics1, mockConsumer.metrics[0]))
-	// As metric2 have different job/instance, it generates a different end metric: mockConsumer.metrics[2]. At this point, the cache is full it should evict the target_info metric to store the metric2.
-	assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics2, mockConsumer.metrics[2]))
+	// Find the first non-empty metric (target_info creates no scopes, so find the first actual metric)
+	var firstMetricWithData pmetric.Metrics
+	for _, metrics := range mockConsumer.metrics {
+		if metrics.ResourceMetrics().Len() > 0 {
+			rm := metrics.ResourceMetrics().At(0)
+			if rm.ScopeMetrics().Len() > 0 {
+				firstMetricWithData = metrics
+				break
+			}
+		}
+	}
+	// As target_info and metric1 have the same job/instance, they generate the same end metric.
+	assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics1, firstMetricWithData))
+
+	// Find the metric corresponding to metric2 (different job/instance)
+	var metric2Data pmetric.Metrics
+	for _, metrics := range mockConsumer.metrics {
+		if metrics.ResourceMetrics().Len() > 0 {
+			rm := metrics.ResourceMetrics().At(0)
+			if rm.ScopeMetrics().Len() > 0 {
+				sm := rm.ScopeMetrics().At(0)
+				if sm.Metrics().Len() > 0 {
+					metric := sm.Metrics().At(0)
+					if metric.Name() == "different_metric" {
+						metric2Data = metrics
+						break
+					}
+				}
+			}
+		}
+	}
+	// As metric2 have different job/instance, it generates a different end metric. At this point, the cache is full it should evict the target_info metric to store the metric2.
+	assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics2, metric2Data))
+
+	// Find the metric corresponding to metric1_1 (same job/instance as metric1 but after cache eviction)
+	var metric1_1Data pmetric.Metrics
+	for _, metrics := range mockConsumer.metrics {
+		if metrics.ResourceMetrics().Len() > 0 {
+			rm := metrics.ResourceMetrics().At(0)
+			if rm.ScopeMetrics().Len() > 0 {
+				sm := rm.ScopeMetrics().At(0)
+				if sm.Metrics().Len() > 0 {
+					metric := sm.Metrics().At(0)
+					if metric.Name() == "normal_metric2" {
+						metric1_1Data = metrics
+						break
+					}
+				}
+			}
+		}
+	}
 	// As just have 1 slot in the cache, but the cache for metric1 was evicted, this metric1_1 should generate a new resource metric, even having the same job/instance than the metric1.
-	assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics1_1, mockConsumer.metrics[3]))
+	assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics1_1, metric1_1Data))
 }
 
 // TestConcurrentRequestsforSameResourceAttributes reproduces the concurrency bug where subsequent requests
@@ -1886,7 +1933,6 @@ func TestConcurrentRequestsforSameResourceAttributes(t *testing.T) {
 	}
 
 	// Verify thread safety: Check that metrics are properly consolidated without corruption
-	// With the mutex fix, we should see clean consolidation where all metrics are grouped properly
 	for i, metrics := range mockConsumer.metrics {
 		if metrics.DataPointCount() > 0 {
 			resourceMetrics := metrics.ResourceMetrics()
