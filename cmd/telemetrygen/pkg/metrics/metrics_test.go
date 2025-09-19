@@ -325,5 +325,3 @@ func TestNewMetricTypes(t *testing.T) {
 		})
 	}
 }
-
-

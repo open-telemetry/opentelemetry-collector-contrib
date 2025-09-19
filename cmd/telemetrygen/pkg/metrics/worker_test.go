@@ -662,4 +662,3 @@ func TestExponentialHistogramMetricGeneration(t *testing.T) {
 	assert.NotNil(t, dp.PositiveBucket)
 	assert.NotNil(t, dp.NegativeBucket)
 }
-
