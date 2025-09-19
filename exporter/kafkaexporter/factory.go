@@ -156,7 +156,7 @@ func createProfilesExporter(
 
 func exporterhelperOptions(
 	cfg Config,
-	qbs exporterhelper.QueueBatchSettings,
+	qbs xexporterhelper.QueueBatchSettings,
 	startFunc component.StartFunc,
 	shutdownFunc component.ShutdownFunc,
 ) []exporterhelper.Option {
