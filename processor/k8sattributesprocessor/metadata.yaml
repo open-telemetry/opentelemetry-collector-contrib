@@ -276,6 +276,27 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
+    otelsvc_k8s_cronjob_updated:
+      enabled: false
+      description: Number of cron job update events received
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    otelsvc_k8s_cronjob_added:
+      enabled: false
+      description: Number of cron job add events received
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    otelsvc_k8s_cronjob_deleted:
+      enabled: false
+      description: Number of cron job delete events received
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
     otelsvc_k8s_daemonset_updated:
       enabled: false
       description: Number of daemonset update events received

@@ -32,6 +32,9 @@ data:
           - from: job
             key: workload
             tag_name: simple-job-workload-annotation
+          - from: cronjob
+            key: workload
+            tag_name: simple-cronjob-workload-annotation
           labels:
           - from: pod
             key: app

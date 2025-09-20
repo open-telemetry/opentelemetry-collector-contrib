@@ -36,7 +36,9 @@ const (
 	// MetadataFromDaemonSet  is used to specify to extract metadata/labels/annotations from daemonset
 	MetadataFromDaemonSet = "daemonset"
 	// MetadataFromJob  is used to specify to extract metadata/labels/annotations from job
-	MetadataFromJob        = "job"
+	MetadataFromJob = "job"
+	// MetadataFromCronJob  is used to specify to extract metadata/labels/annotations from job
+	MetadataFromCronJob    = "cronjob"
 	PodIdentifierMaxLength = 4
 
 	ResourceSource   = "resource_attribute"
@@ -103,6 +105,7 @@ type Client interface {
 	GetStatefulSet(string) (*StatefulSet, bool)
 	GetDaemonSet(string) (*DaemonSet, bool)
 	GetJob(string) (*Job, bool)
+	GetCronJob(string) (*CronJob, bool)
 	Start() error
 	Stop()
 }
@@ -302,7 +305,7 @@ type FieldExtractionRule struct {
 	// Full value is extracted when no regexp is provided.
 	Regex *regexp.Regexp
 	// From determines the kubernetes object the field should be retrieved from.
-	// Currently only three values are supported,
+	// Currently only the values below are supported,
 	//  - pod
 	//  - namespace
 	//  - node
@@ -310,6 +313,7 @@ type FieldExtractionRule struct {
 	//  - statefulset
 	//  - daemonset
 	//  - job
+	//  - cronjob
 	From string
 }
 
@@ -352,6 +356,12 @@ func (r *FieldExtractionRule) extractFromDaemonSetMetadata(metadata, tags map[st
 
 func (r *FieldExtractionRule) extractFromJobMetadata(metadata, tags map[string]string, formatter string) {
 	if r.From == MetadataFromJob {
+		r.extractFromMetadata(metadata, tags, formatter)
+	}
+}
+
+func (r *FieldExtractionRule) extractFromCronJobMetadata(metadata, tags map[string]string, formatter string) {
+	if r.From == MetadataFromCronJob {
 		r.extractFromMetadata(metadata, tags, formatter)
 	}
 }
@@ -446,6 +456,13 @@ type DaemonSet struct {
 
 // Job represents a kubernetes job.
 type Job struct {
+	Name       string
+	UID        string
+	Attributes map[string]string
+}
+
+// CronJob represents a kubernetes cronjob.
+type CronJob struct {
 	Name       string
 	UID        string
 	Attributes map[string]string

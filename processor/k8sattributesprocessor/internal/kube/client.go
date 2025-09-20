@@ -63,6 +63,9 @@ const (
 	// Semconv attributes https://github.com/open-telemetry/semantic-conventions/blob/main/docs/resource/k8s.md#job
 	K8sJobLabel      = "k8s.job.label.%s"
 	K8sJobAnnotation = "k8s.job.annotation.%s"
+	// Semconv attributes https://github.com/open-telemetry/semantic-conventions/blob/main/docs/resource/k8s.md#cronjob
+	K8sCronJobLabel      = "k8s.cronjob.label.%s"
+	K8sCronJobAnnotation = "k8s.cronjob.annotation.%s"
 )
 
 var allowLabelsAnnotationsSingular = featuregate.GlobalRegistry().MustRegister(
@@ -86,6 +89,7 @@ type WatchClient struct {
 	daemonsetInformer      cache.SharedInformer
 	jobInformer            cache.SharedInformer
 	replicasetInformer     cache.SharedInformer
+	cronJobInformer        cache.SharedInformer
 	replicasetRegex        *regexp.Regexp
 	cronJobRegex           *regexp.Regexp
 	deleteQueue            []deleteRequest
@@ -124,6 +128,10 @@ type WatchClient struct {
 	// A map containing job related data, used to associate them with resources.
 	// Key is job uid
 	Jobs map[string]*Job
+
+	// A map containing cron job related data, used to associate them with resources.
+	// Key is cron job uid
+	CronJobs map[string]*CronJob
 
 	// A map containing ReplicaSets related data, used to associate them with resources.
 	// Key is replicaset uid
@@ -188,6 +196,7 @@ func New(
 	c.StatefulSets = map[string]*StatefulSet{}
 	c.DaemonSets = map[string]*DaemonSet{}
 	c.Jobs = map[string]*Job{}
+	c.CronJobs = map[string]*CronJob{}
 	if newClientSet == nil {
 		newClientSet = k8sconfig.MakeClient
 	}
@@ -281,6 +290,10 @@ func New(
 
 	if c.extractJobLabelsAnnotations() {
 		c.jobInformer = newJobSharedInformer(c.kc, c.Filters.Namespace)
+	}
+
+	if c.extractCronJobLabelsAnnotations() {
+		c.cronJobInformer = newCronJobSharedInformer(c.kc, c.Filters.Namespace)
 	}
 
 	return c, err
@@ -378,6 +391,19 @@ func (c *WatchClient) Start() error {
 		}
 		synced = append(synced, reg.HasSynced)
 		go c.jobInformer.Run(c.stopCh)
+	}
+
+	if c.cronJobInformer != nil {
+		reg, err = c.cronJobInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+			AddFunc:    c.handleCronJobAdd,
+			UpdateFunc: c.handleCronJobUpdate,
+			DeleteFunc: c.handleCronJobDelete,
+		})
+		if err != nil {
+			return err
+		}
+		synced = append(synced, reg.HasSynced)
+		go c.cronJobInformer.Run(c.stopCh)
 	}
 
 	reg, err = c.informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
@@ -636,6 +662,37 @@ func (c *WatchClient) handleJobDelete(obj any) {
 	}
 }
 
+func (c *WatchClient) handleCronJobAdd(obj any) {
+	c.telemetryBuilder.OtelsvcK8sCronjobAdded.Add(context.Background(), 1)
+	if cronJob, ok := obj.(*batch_v1.CronJob); ok {
+		c.addOrUpdateCronJob(cronJob)
+	} else {
+		c.logger.Error("object received was not of type batch_v1.CronJob", zap.Any("received", obj))
+	}
+}
+
+func (c *WatchClient) handleCronJobUpdate(_, newCJ any) {
+	c.telemetryBuilder.OtelsvcK8sCronjobUpdated.Add(context.Background(), 1)
+	if cronJob, ok := newCJ.(*batch_v1.CronJob); ok {
+		c.addOrUpdateCronJob(cronJob)
+	} else {
+		c.logger.Error("object received was not of type batch_v1.CronJob", zap.Any("received", newCJ))
+	}
+}
+
+func (c *WatchClient) handleCronJobDelete(obj any) {
+	c.telemetryBuilder.OtelsvcK8sCronjobDeleted.Add(context.Background(), 1)
+	if cronJob, ok := ignoreDeletedFinalStateUnknown(obj).(*batch_v1.CronJob); ok {
+		c.m.Lock()
+		if n, ok := c.CronJobs[string(cronJob.UID)]; ok {
+			delete(c.CronJobs, n.UID)
+		}
+		c.m.Unlock()
+	} else {
+		c.logger.Error("object received was not of type batch_v1.CronJob", zap.Any("received", obj))
+	}
+}
+
 func (c *WatchClient) deleteLoop(interval, gracePeriod time.Duration) {
 	// This loop runs after N seconds and deletes pods from cache.
 	// It iterates over the delete queue and deletes all that aren't
@@ -759,6 +816,16 @@ func (c *WatchClient) GetJob(jobUID string) (*Job, bool) {
 	c.m.RUnlock()
 	if ok {
 		return job, ok
+	}
+	return nil, false
+}
+
+func (c *WatchClient) GetCronJob(cronJobUID string) (*CronJob, bool) {
+	c.m.RLock()
+	cronJob, ok := c.CronJobs[cronJobUID]
+	c.m.RUnlock()
+	if ok {
+		return cronJob, ok
 	}
 	return nil, false
 }
@@ -1239,6 +1306,20 @@ func (c *WatchClient) extractJobAttributes(d *batch_v1.Job) map[string]string {
 	return tags
 }
 
+func (c *WatchClient) extractCronJobAttributes(d *batch_v1.CronJob) map[string]string {
+	tags := map[string]string{}
+
+	for _, r := range c.Rules.Labels {
+		r.extractFromCronJobMetadata(d.Labels, tags, K8sCronJobLabel)
+	}
+
+	for _, r := range c.Rules.Annotations {
+		r.extractFromCronJobMetadata(d.Annotations, tags, K8sCronJobAnnotation)
+	}
+
+	return tags
+}
+
 func (c *WatchClient) podFromAPI(pod *api_v1.Pod) *Pod {
 	newPod := &Pod{
 		Name:           pod.Name,
@@ -1615,6 +1696,22 @@ func (c *WatchClient) extractJobLabelsAnnotations() bool {
 	return false
 }
 
+func (c *WatchClient) extractCronJobLabelsAnnotations() bool {
+	for _, r := range c.Rules.Labels {
+		if r.From == MetadataFromCronJob {
+			return true
+		}
+	}
+
+	for _, r := range c.Rules.Annotations {
+		if r.From == MetadataFromCronJob {
+			return true
+		}
+	}
+
+	return false
+}
+
 func (c *WatchClient) extractNodeLabelsAnnotations() bool {
 	for _, r := range c.Rules.Labels {
 		if r.From == MetadataFromNode {
@@ -1701,6 +1798,20 @@ func (c *WatchClient) addOrUpdateJob(job *batch_v1.Job) {
 	c.m.Lock()
 	if job.UID != "" {
 		c.Jobs[string(job.UID)] = newJob
+	}
+	c.m.Unlock()
+}
+
+func (c *WatchClient) addOrUpdateCronJob(cronJob *batch_v1.CronJob) {
+	newCronJob := &CronJob{
+		Name: cronJob.Name,
+		UID:  string(cronJob.UID),
+	}
+	newCronJob.Attributes = c.extractCronJobAttributes(cronJob)
+
+	c.m.Lock()
+	if cronJob.UID != "" {
+		c.CronJobs[string(cronJob.UID)] = newCronJob
 	}
 	c.m.Unlock()
 }

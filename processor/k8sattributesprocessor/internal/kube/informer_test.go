@@ -61,6 +61,13 @@ func Test_newSharedJobInformer(t *testing.T) {
 	assert.NotNil(t, informer)
 }
 
+func Test_newSharedCronJobInformer(t *testing.T) {
+	client, err := newFakeAPIClientset(k8sconfig.APIConfig{})
+	require.NoError(t, err)
+	informer := newCronJobSharedInformer(client, "ns")
+	assert.NotNil(t, informer)
+}
+
 func Test_newKubeSystemSharedInformer(t *testing.T) {
 	client, err := newFakeAPIClientset(k8sconfig.APIConfig{})
 	require.NoError(t, err)
