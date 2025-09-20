@@ -160,9 +160,9 @@ func (s *sqlServerScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 	}
 
 	// ScrapeInstanceMemoryMetrics
-	scrapeCtx, cancel := context.WithTimeout(ctx, s.config.Timeout)
-	defer cancel()
-	if err := s.instanceScraper.ScrapeInstanceMemoryMetrics(scrapeCtx, scopeMetrics); err != nil {
+	memoryCtx, cancelMemory := context.WithTimeout(ctx, s.config.Timeout)
+	defer cancelMemory()
+	if err := s.instanceScraper.ScrapeInstanceMemoryMetrics(memoryCtx, scopeMetrics); err != nil {
 		s.logger.Error("Failed to scrape instance memory metrics",
 			zap.Error(err),
 			zap.Duration("timeout", s.config.Timeout))
@@ -170,6 +170,19 @@ func (s *sqlServerScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 		// Don't return here - continue with other metrics if enabled
 	} else {
 		s.logger.Debug("Successfully scraped instance memory metrics")
+	}
+
+	// ScrapeInstanceStats - comprehensive instance statistics
+	statsCtx, cancelStats := context.WithTimeout(ctx, s.config.Timeout)
+	defer cancelStats()
+	if err := s.instanceScraper.ScrapeInstanceStats(statsCtx, scopeMetrics); err != nil {
+		s.logger.Error("Failed to scrape comprehensive instance statistics",
+			zap.Error(err),
+			zap.Duration("timeout", s.config.Timeout))
+		scrapeErrors = append(scrapeErrors, err)
+		// Don't return here - continue with other metrics if enabled
+	} else {
+		s.logger.Debug("Successfully scraped comprehensive instance statistics")
 	}
 
 	// Log summary of scraping results

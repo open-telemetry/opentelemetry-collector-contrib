@@ -145,3 +145,22 @@ type InstanceMemoryDefinitionsModel struct {
 	AvailablePhysicalMemory *float64 `db:"available_physical_memory" metric_name:"sqlserver.instance.memory_available" source_type:"gauge" description:"Available physical memory" unit:"By"`
 	MemoryUtilization       *float64 `db:"memory_utilization" metric_name:"sqlserver.instance.memory_utilization" source_type:"gauge" description:"Memory utilization percentage" unit:"Percent"`
 }
+
+// InstanceStatsModel represents comprehensive instance statistics
+// Note: SQL Server performance counters with "/sec" suffix are PERF_COUNTER_BULK_COUNT (272696576)
+// which are cumulative counters. We calculate the delta/rate ourselves like nri-mssql does.
+type InstanceStatsModel struct {
+	SQLCompilations            *int64   `db:"sql_compilations" metric_name:"sqlserver.stats.sql_compilations_per_sec" source_type:"rate" description:"SQL compilations per second" unit:"1/s"`
+	SQLRecompilations          *int64   `db:"sql_recompilations" metric_name:"sqlserver.stats.sql_recompilations_per_sec" source_type:"rate" description:"SQL recompilations per second" unit:"1/s"`
+	UserConnections            *int64   `db:"user_connections" metric_name:"sqlserver.stats.connections" source_type:"gauge" description:"Current user connections" unit:"1"`
+	LockWaitTimeMs             *int64   `db:"lock_wait_time_ms" metric_name:"sqlserver.stats.lock_waits_per_sec" source_type:"rate" description:"Lock waits per second" unit:"1/s"`
+	PageSplitsSec              *int64   `db:"page_splits_sec" metric_name:"sqlserver.access.page_splits_per_sec" source_type:"rate" description:"Page splits per second" unit:"1/s"`
+	CheckpointPagesSec         *int64   `db:"checkpoint_pages_sec" metric_name:"sqlserver.buffer.checkpoint_pages_per_sec" source_type:"rate" description:"Checkpoint pages per second" unit:"1/s"`
+	DeadlocksSec               *int64   `db:"deadlocks_sec" metric_name:"sqlserver.stats.deadlocks_per_sec" source_type:"rate" description:"Deadlocks per second" unit:"1/s"`
+	UserErrors                 *int64   `db:"user_errors" metric_name:"sqlserver.stats.user_errors_per_sec" source_type:"rate" description:"User errors per second" unit:"1/s"`
+	KillConnectionErrors       *int64   `db:"kill_connection_errors" metric_name:"sqlserver.stats.kill_connection_errors_per_sec" source_type:"rate" description:"Kill connection errors per second" unit:"1/s"`
+	BatchRequestSec            *int64   `db:"batch_request_sec" metric_name:"sqlserver.bufferpool.batch_requests_per_sec" source_type:"rate" description:"Batch requests per second" unit:"1/s"`
+	PageLifeExpectancySec      *float64 `db:"page_life_expectancy_ms" metric_name:"sqlserver.bufferpool.page_life_expectancy_ms" source_type:"gauge" description:"Page life expectancy in milliseconds" unit:"ms"`
+	TransactionsSec            *int64   `db:"transactions_sec" metric_name:"sqlserver.instance.transactions_per_sec" source_type:"rate" description:"Transactions per second" unit:"1/s"`
+	ForcedParameterizationsSec *int64   `db:"forced_parameterizations_sec" metric_name:"sqlserver.instance.forced_parameterizations_per_sec" source_type:"rate" description:"Forced parameterizations per second" unit:"1/s"`
+}
