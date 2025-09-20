@@ -53,6 +53,7 @@ type MetricsConfig struct {
 	SplunkKvstoreReplicationStatus              MetricConfig `mapstructure:"splunk.kvstore.replication.status"`
 	SplunkKvstoreStatus                         MetricConfig `mapstructure:"splunk.kvstore.status"`
 	SplunkLicenseIndexUsage                     MetricConfig `mapstructure:"splunk.license.index.usage"`
+	SplunkLicenseRemaining                      MetricConfig `mapstructure:"splunk.license.remaining"`
 	SplunkParseQueueRatio                       MetricConfig `mapstructure:"splunk.parse.queue.ratio"`
 	SplunkPipelineSetCount                      MetricConfig `mapstructure:"splunk.pipeline.set.count"`
 	SplunkSchedulerAvgExecutionLatency          MetricConfig `mapstructure:"splunk.scheduler.avg.execution.latency"`
@@ -157,6 +158,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		SplunkLicenseIndexUsage: MetricConfig{
+			Enabled: false,
+		},
+		SplunkLicenseRemaining: MetricConfig{
 			Enabled: false,
 		},
 		SplunkParseQueueRatio: MetricConfig{
