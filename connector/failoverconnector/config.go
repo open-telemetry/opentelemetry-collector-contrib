@@ -26,6 +26,9 @@ type Config struct {
 	// level is considered unhealthy
 	PipelinePriority [][]pipeline.ID `mapstructure:"priority_levels"`
 
+	// FailoverMode determines the failover strategy to use. Options: "standard", "progressive"
+	FailoverMode FailoverMode `mapstructure:"failover_mode"`
+
 	// RetryInterval is the frequency at which the pipeline levels will attempt to recover by going over
 	// all levels below the current
 	RetryInterval time.Duration `mapstructure:"retry_interval"`
