@@ -1,0 +1,5 @@
+hostname,system_id,location,environment,build_info,os_version,manufacturer,instance_type
+web-server-01,SYS-001,us-east-1a,production,AMI-12345678,Ubuntu 20.04.4 LTS,AWS,m5.large
+web-server-02,SYS-002,us-east-1b,production,AMI-12345678,Ubuntu 20.04.4 LTS,AWS,m5.large
+db-server-01,SYS-003,us-east-1a,production,AMI-87654321,Ubuntu 20.04.4 LTS,AWS,r5.xlarge
+mq-server-01,SYS-004,us-west-2a,production,AMI-11223344,CentOS 8,AWS,m5.medium

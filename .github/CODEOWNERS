@@ -188,6 +188,7 @@ processor/datadogsemanticsprocessor/                             @open-telemetry
 processor/deltatocumulativeprocessor/                            @open-telemetry/collector-contrib-approvers @RichieSams @tombrk
 processor/deltatorateprocessor/                                  @open-telemetry/collector-contrib-approvers @Aneurysm9
 processor/dnslookupprocessor/                                    @open-telemetry/collector-contrib-approvers @andrzej-stencel @kaisecheng @edmocosta
+processor/enrichmentprocessor/                                   @open-telemetry/collector-contrib-approvers @sokoide
 processor/filterprocessor/                                       @open-telemetry/collector-contrib-approvers @TylerHelmuth @boostchicken @evan-bradley @edmocosta
 processor/geoipprocessor/                                        @open-telemetry/collector-contrib-approvers @andrzej-stencel @michalpristas @rogercoll
 processor/groupbyattrsprocessor/                                 @open-telemetry/collector-contrib-approvers @rnishtala-sumo @echlebek @amdprophet
