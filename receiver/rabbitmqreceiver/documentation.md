@@ -66,16 +66,6 @@ The number of messages published to a queue.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {messages} | Sum | Int | Cumulative | true |
 
-## Optional Metrics
-
-The following metrics are not emitted by default. Each of them can be enabled by applying the following configuration:
-
-```yaml
-metrics:
-  <metric_name>:
-    enabled: true
-```
-
 ### rabbitmq.node.channel_closed
 
 Number of channels closed.
