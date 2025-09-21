@@ -79,6 +79,9 @@ func enabledAttributes() (attributes []string) {
 	if defaultConfig.K8sCronjobName.Enabled {
 		attributes = append(attributes, string(conventions.K8SCronJobNameKey))
 	}
+	if defaultConfig.K8sCronjobUID.Enabled {
+		attributes = append(attributes, string(conventions.K8SCronJobUIDKey))
+	}
 	if defaultConfig.K8sDaemonsetName.Enabled {
 		attributes = append(attributes, string(conventions.K8SDaemonSetNameKey))
 	}
@@ -190,6 +193,8 @@ func withExtractMetadata(fields ...string) option {
 				p.rules.JobUID = true
 			case string(conventions.K8SCronJobNameKey):
 				p.rules.CronJobName = true
+			case string(conventions.K8SCronJobUIDKey):
+				p.rules.CronJobUID = true
 			case string(conventions.K8SNodeNameKey):
 				p.rules.Node = true
 			case string(conventions.K8SNodeUIDKey):

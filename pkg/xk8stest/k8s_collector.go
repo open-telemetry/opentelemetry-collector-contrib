@@ -5,6 +5,7 @@ package xk8stest // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"bytes"
+	"maps"
 	"os"
 	"path/filepath"
 	"testing"
@@ -39,9 +40,7 @@ func CreateCollectorObjects(t *testing.T, client *K8sClient, testID, manifestsDi
 			"HostEndpoint": host,
 			"TestID":       testID,
 		}
-		for key, value := range templateValues {
-			defaultTemplateValues[key] = value
-		}
+		maps.Copy(defaultTemplateValues, templateValues)
 		require.NoError(t, tmpl.Execute(manifest, defaultTemplateValues))
 		obj, err := CreateObject(client, manifest.Bytes())
 		require.NoErrorf(t, err, "failed to create collector object from manifest %s", manifestFile.Name())

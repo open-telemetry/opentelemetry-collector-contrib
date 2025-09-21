@@ -88,6 +88,10 @@ resource_attributes:
     description: The name of the CronJob.
     type: string
     enabled: false
+  k8s.cronjob.uid:
+    description: The uid of the CronJob.
+    type: string
+    enabled: false
   k8s.node.name:
     description: The name of the Node.
     type: string

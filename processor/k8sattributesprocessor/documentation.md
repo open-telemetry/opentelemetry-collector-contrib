@@ -13,6 +13,7 @@
 | k8s.cluster.uid | Gives cluster uid identified with kube-system namespace | Any Str | false |
 | k8s.container.name | The name of the Container in a Pod template. Requires container.id. | Any Str | false |
 | k8s.cronjob.name | The name of the CronJob. | Any Str | false |
+| k8s.cronjob.uid | The uid of the CronJob. | Any Str | false |
 | k8s.daemonset.name | The name of the DaemonSet. | Any Str | false |
 | k8s.daemonset.uid | The UID of the DaemonSet. | Any Str | false |
 | k8s.deployment.name | The name of the Deployment. | Any Str | true |
