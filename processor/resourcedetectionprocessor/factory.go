@@ -40,6 +40,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/openshift"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/scaleway"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/system"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/upcloud"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/vultr"
 )
 
@@ -77,6 +78,7 @@ func NewFactory() processor.Factory {
 		k8snode.TypeStr:          k8snode.NewDetector,
 		kubeadm.TypeStr:          kubeadm.NewDetector,
 		dynatrace.TypeStr:        dynatrace.NewDetector,
+		upcloud.TypeStr:          upcloud.NewDetector,
 		vultr.TypeStr:            vultr.NewDetector,
 	})
 
