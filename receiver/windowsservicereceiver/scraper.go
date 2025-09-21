@@ -2,20 +2,28 @@
 // SPDX-License-Identifier: Apache-2.0
 //go:build windows
 
-package windowsservicereceiver
+package windowsservicereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsservicereceiver"
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"runtime"
 	"time"
+
+	"golang.org/x/sync/errgroup"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsservicereceiver/internal/metadata"
 )
+
+const hardCapWorkers = 64
 
 type windowsServiceScraper struct {
 	logger     *zap.Logger
@@ -48,28 +56,7 @@ func newWindowsServiceScraper(settings receiver.Settings, cfg *Config, mb *metad
 	return ws
 }
 
-func mapStateToMetricValue(st State) int {
-	switch st {
-	case StateStopped:
-		return 1
-	case StateStartPending:
-		return 2
-	case StateStopPending:
-		return 3
-	case StateRunning:
-		return 4
-	case StateContinuePending:
-		return 5
-	case StatePausePending:
-		return 6
-	case StatePaused:
-		return 7
-	default:
-		return 1
-	}
-}
-
-func mapStartTypeToAttr(st StartType, _ bool) metadata.AttributeStartupMode {
+func mapStartTypeToAttr(st StartType) metadata.AttributeStartupMode {
 	switch st {
 	case StartBoot:
 		return metadata.AttributeStartupModeBootStart
@@ -106,7 +93,18 @@ func (ws *windowsServiceScraper) allowed(name string) bool {
 	return true
 }
 
-func (ws *windowsServiceScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
+func workerLimit() int {
+	n := runtime.GOMAXPROCS(0) * 2
+	if n < 4 {
+		n = 4
+	}
+	if n > hardCapWorkers {
+		n = hardCapWorkers
+	}
+	return n
+}
+
+func (ws *windowsServiceScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	ts := pcommon.NewTimestampFromTime(time.Now())
 
 	names, err := ws.mgr.listServices()
@@ -114,32 +112,106 @@ func (ws *windowsServiceScraper) scrape(_ context.Context) (pmetric.Metrics, err
 		return ws.mb.Emit(), err
 	}
 
-	for _, name := range names {
-		if !ws.allowed(name) {
-			continue
+	filtered := make([]string, 0, len(names))
+	for _, n := range names {
+		if ws.allowed(n) {
+			filtered = append(filtered, n)
 		}
-
-		svc, err := getService(&ws.mgr, name)
-		if err != nil {
-			continue
-		}
-
-		if err := svc.getStatus(); err != nil {
-			_ = svc.close()
-			continue
-		}
-		if err := svc.getConfig(); err != nil {
-			_ = svc.close()
-			continue
-		}
-
-		val := int64(mapStateToMetricValue(State(svc.status.State)))
-		startAttr := mapStartTypeToAttr(svc.config.StartType, svc.config.DelayedAutoStart)
-
-		ws.mb.RecordWindowsServiceStatusDataPoint(ts, val, name, startAttr)
-
-		_ = svc.close()
+	}
+	if len(filtered) == 0 {
+		return ws.mb.Emit(), nil
 	}
 
-	return ws.mb.Emit(), nil
+	sem := make(chan struct{}, workerLimit())
+
+	type svcResult struct {
+		name      string
+		val       int64
+		startAttr metadata.AttributeStartupMode
+	}
+	type svcError struct {
+		name string
+		err  error
+	}
+
+	results := make(chan svcResult, len(filtered))
+	errsCh := make(chan svcError, len(filtered))
+
+	g, gctx := errgroup.WithContext(ctx)
+
+	for _, name := range filtered {
+		n := name
+		g.Go(func() error {
+			select {
+			case sem <- struct{}{}:
+			case <-gctx.Done():
+				return gctx.Err()
+			}
+			defer func() { <-sem }()
+
+			svc, err := updateService(&ws.mgr, n)
+			if err != nil {
+				select {
+				case errsCh <- svcError{n, err}:
+				default:
+					ws.logger.Debug("updateService failed", zap.String("service", n), zap.Error(err))
+				}
+				return nil
+			}
+			defer func() { _ = svc.close() }()
+
+			if err := svc.updateStatus(); err != nil {
+				select {
+				case errsCh <- svcError{n, err}:
+				default:
+					ws.logger.Debug("updateStatus failed", zap.String("service", n), zap.Error(err))
+				}
+				return nil
+			}
+			if err := svc.updateConfig(); err != nil {
+				select {
+				case errsCh <- svcError{n, err}:
+				default:
+					ws.logger.Debug("updateConfig failed", zap.String("service", n), zap.Error(err))
+				}
+				return nil
+			}
+
+			val := int64(svc.status.State)
+			if val < 1 || val > 7 {
+				val = 0
+			}
+
+			select {
+			case results <- svcResult{
+				name:      n,
+				val:       val,
+				startAttr: mapStartTypeToAttr(svc.config.StartType),
+			}:
+				return nil
+			case <-gctx.Done():
+				return gctx.Err()
+			}
+		})
+	}
+
+	go func() {
+		_ = g.Wait()
+		close(results)
+		close(errsCh)
+	}()
+
+	for r := range results {
+		ws.mb.RecordWindowsServiceStatusDataPoint(ts, r.val, r.name, r.startAttr)
+	}
+
+	var aggErr error
+	for e := range errsCh {
+		aggErr = multierr.Append(aggErr, fmt.Errorf("%s: %w", e.name, e.err))
+	}
+	if err := g.Wait(); err != nil && !errors.Is(err, context.Canceled) {
+		aggErr = multierr.Append(aggErr, err)
+	}
+
+	return ws.mb.Emit(), aggErr
 }
