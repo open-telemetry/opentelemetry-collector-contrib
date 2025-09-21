@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //go:build windows
 
-package windowsservicereceiver
+package windowsservicereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsservicereceiver"
 
 import (
 	"golang.org/x/sys/windows/svc"
@@ -18,7 +18,7 @@ type winService struct {
 	config ConfigEx
 }
 
-func getService(m *serviceManager, sname string) (*winService, error) {
+func updateService(m *serviceManager, sname string) (*winService, error) {
 	m.targetService = sname
 	s, err := m.openService()
 	if err != nil {
@@ -31,7 +31,7 @@ func getService(m *serviceManager, sname string) (*winService, error) {
 	}, nil
 }
 
-func (ws *winService) getStatus() error {
+func (ws *winService) updateStatus() error {
 	if ws.handle == nil {
 		return nil
 	}
@@ -43,7 +43,7 @@ func (ws *winService) getStatus() error {
 	return nil
 }
 
-func (ws *winService) getConfig() error {
+func (ws *winService) updateConfig() error {
 	if ws.handle == nil {
 		return nil
 	}
