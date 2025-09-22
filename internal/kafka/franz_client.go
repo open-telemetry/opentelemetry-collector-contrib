@@ -184,6 +184,10 @@ func commonOpts(ctx context.Context, clientCfg configkafka.ClientConfig,
 	opts = append(opts,
 		kgo.WithLogger(kzap.New(logger.Named("franz"))),
 		kgo.SeedBrokers(clientCfg.Brokers...),
+		// Disable client metrics, since some brokers may falsely indicate
+		// that they support them when they don't, causing errors to be
+		// logged. We may want to make this configurable in the future.
+		kgo.DisableClientMetrics(),
 	)
 	// Configure TLS if needed
 	if clientCfg.TLS != nil {
