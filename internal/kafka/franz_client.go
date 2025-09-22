@@ -189,9 +189,13 @@ func commonOpts(ctx context.Context, clientCfg configkafka.ClientConfig,
 		// logged. We may want to make this configurable in the future.
 		kgo.DisableClientMetrics(),
 	)
+	tlsConfig := clientCfg.TLS
+	if tlsConfig == nil {
+		tlsConfig = clientCfg.Authentication.TLS
+	}
 	// Configure TLS if needed
-	if clientCfg.TLS != nil {
-		tlsCfg, err := clientCfg.TLS.LoadTLSConfig(ctx)
+	if tlsConfig != nil {
+		tlsCfg, err := tlsConfig.LoadTLSConfig(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("failed to load TLS config: %w", err)
 		}
