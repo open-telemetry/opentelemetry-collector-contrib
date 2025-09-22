@@ -6,12 +6,8 @@ package windowsservicereceiver // import "github.com/open-telemetry/opentelemetr
 
 import (
 	"context"
-	"errors"
-	"fmt"
-	"runtime"
+	"sync"
 	"time"
-
-	"golang.org/x/sync/errgroup"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -23,8 +19,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsservicereceiver/internal/metadata"
 )
 
-const hardCapWorkers = 64
-
 type windowsServiceScraper struct {
 	logger     *zap.Logger
 	cfg        *Config
@@ -33,6 +27,8 @@ type windowsServiceScraper struct {
 	includeSet map[string]struct{}
 	excludeSet map[string]struct{}
 }
+
+const defaultScrapeConcurrency = 32
 
 func newWindowsServiceScraper(settings receiver.Settings, cfg *Config, mb *metadata.MetricsBuilder) *windowsServiceScraper {
 	ws := &windowsServiceScraper{
@@ -93,18 +89,7 @@ func (ws *windowsServiceScraper) allowed(name string) bool {
 	return true
 }
 
-func workerLimit() int {
-	n := runtime.GOMAXPROCS(0) * 2
-	if n < 4 {
-		n = 4
-	}
-	if n > hardCapWorkers {
-		n = hardCapWorkers
-	}
-	return n
-}
-
-func (ws *windowsServiceScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
+func (ws *windowsServiceScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 	ts := pcommon.NewTimestampFromTime(time.Now())
 
 	names, err := ws.mgr.listServices()
@@ -112,106 +97,63 @@ func (ws *windowsServiceScraper) scrape(ctx context.Context) (pmetric.Metrics, e
 		return ws.mb.Emit(), err
 	}
 
-	filtered := make([]string, 0, len(names))
-	for _, n := range names {
-		if ws.allowed(n) {
-			filtered = append(filtered, n)
-		}
-	}
-	if len(filtered) == 0 {
-		return ws.mb.Emit(), nil
-	}
-
-	sem := make(chan struct{}, workerLimit())
-
-	type svcResult struct {
+	type result struct {
 		name      string
 		val       int64
 		startAttr metadata.AttributeStartupMode
-	}
-	type svcError struct {
-		name string
-		err  error
+		err       error
 	}
 
-	results := make(chan svcResult, len(filtered))
-	errsCh := make(chan svcError, len(filtered))
+	results := make(chan result, len(names))
+	sem := make(chan struct{}, defaultScrapeConcurrency)
+	var wg sync.WaitGroup
 
-	g, gctx := errgroup.WithContext(ctx)
-
-	for _, name := range filtered {
-		n := name
-		g.Go(func() error {
-			select {
-			case sem <- struct{}{}:
-			case <-gctx.Done():
-				return gctx.Err()
-			}
+	for _, name := range names {
+		if !ws.allowed(name) {
+			continue
+		}
+		wg.Add(1)
+		sem <- struct{}{}
+		go func(n string) {
+			defer wg.Done()
 			defer func() { <-sem }()
 
-			svc, err := updateService(&ws.mgr, n)
+			svc, err := getService(&ws.mgr, n)
 			if err != nil {
-				select {
-				case errsCh <- svcError{n, err}:
-				default:
-					ws.logger.Debug("updateService failed", zap.String("service", n), zap.Error(err))
-				}
-				return nil
+				results <- result{err: err}
+				return
 			}
 			defer func() { _ = svc.close() }()
 
 			if err := svc.updateStatus(); err != nil {
-				select {
-				case errsCh <- svcError{n, err}:
-				default:
-					ws.logger.Debug("updateStatus failed", zap.String("service", n), zap.Error(err))
-				}
-				return nil
+				results <- result{err: err}
+				return
 			}
 			if err := svc.updateConfig(); err != nil {
-				select {
-				case errsCh <- svcError{n, err}:
-				default:
-					ws.logger.Debug("updateConfig failed", zap.String("service", n), zap.Error(err))
-				}
-				return nil
+				results <- result{err: err}
+				return
 			}
 
 			val := int64(svc.status.State)
-			if val < 1 || val > 7 {
-				val = 0
-			}
+			startAttr := mapStartTypeToAttr(svc.config.StartType)
 
-			select {
-			case results <- svcResult{
-				name:      n,
-				val:       val,
-				startAttr: mapStartTypeToAttr(svc.config.StartType),
-			}:
-				return nil
-			case <-gctx.Done():
-				return gctx.Err()
-			}
-		})
+			results <- result{name: n, val: val, startAttr: startAttr}
+		}(name)
 	}
 
 	go func() {
-		_ = g.Wait()
+		wg.Wait()
 		close(results)
-		close(errsCh)
 	}()
 
+	var scrapeErr error
 	for r := range results {
+		if r.err != nil {
+			scrapeErr = multierr.Append(scrapeErr, r.err)
+			continue
+		}
 		ws.mb.RecordWindowsServiceStatusDataPoint(ts, r.val, r.name, r.startAttr)
 	}
 
-	var aggErr error
-	for e := range errsCh {
-		aggErr = multierr.Append(aggErr, fmt.Errorf("%s: %w", e.name, e.err))
-	}
-	if err := g.Wait(); err != nil && !errors.Is(err, context.Canceled) {
-		aggErr = multierr.Append(aggErr, err)
-	}
-
-	return ws.mb.Emit(), aggErr
+	return ws.mb.Emit(), scrapeErr
 }
