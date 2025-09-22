@@ -58,7 +58,7 @@ type ClientConfig struct {
 	// all fetched offsets when using the franz-go consumer. This effectively
 	// disables KIP-320 (truncation detection via leader epoch) without
 	// downgrading protocol versions or patching franz-go.
-	// Default: false (leader epoch is used when supported by the broker).
+	// Default: true (leader epoch is used when supported by the broker).
 	//
 	// NOTE: this is experimental and may be removed in a future release.
 	UseLeaderEpoch bool `mapstructure:"use_leader_epoch"`
@@ -66,9 +66,10 @@ type ClientConfig struct {
 
 func NewDefaultClientConfig() ClientConfig {
 	return ClientConfig{
-		Brokers:  []string{"localhost:9092"},
-		ClientID: "otel-collector",
-		Metadata: NewDefaultMetadataConfig(),
+		Brokers:        []string{"localhost:9092"},
+		ClientID:       "otel-collector",
+		Metadata:       NewDefaultMetadataConfig(),
+		UseLeaderEpoch: true,
 	}
 }
 

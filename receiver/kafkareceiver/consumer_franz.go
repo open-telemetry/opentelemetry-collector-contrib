@@ -175,7 +175,8 @@ func (c *franzConsumer) Start(ctx context.Context, host component.Host) error {
 		}),
 		kgo.WithHooks(hooks),
 	}
-	if c.config.UseLeaderEpoch {
+
+	if !c.config.UseLeaderEpoch {
 		opts = append(opts, kgo.AdjustFetchOffsetsFn(makeUseLeaderEpochAdjuster()))
 	}
 

@@ -330,7 +330,7 @@ func TestFranzConsumer_UseLeaderEpoch_Smoke(t *testing.T) {
 
 	topic := "otlp_spans"
 	kafkaClient, cfg := mustNewFakeCluster(t, kfake.SeedTopics(1, topic))
-	cfg.UseLeaderEpoch = true // <-- exercise the option
+	cfg.UseLeaderEpoch = false // <-- exercise the option
 	cfg.ConsumerConfig = configkafka.ConsumerConfig{
 		GroupID:    t.Name(),
 		AutoCommit: configkafka.AutoCommitConfig{Enable: true, Interval: 100 * time.Millisecond},
