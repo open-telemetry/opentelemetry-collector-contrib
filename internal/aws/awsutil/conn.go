@@ -84,9 +84,19 @@ func getProxyURL(finalProxyAddress string) (*url.URL, error) {
 	return proxyURL, err
 }
 
-// GetAWSConfig returns AWS config instance.
 func GetAWSConfig(ctx context.Context, logger *zap.Logger, settings *AWSSessionSettings) (aws.Config, error) {
+	getSTSClient := func(cfg aws.Config) stscreds.AssumeRoleAPIClient {
+		return sts.NewFromConfig(cfg)
+	}
+
+	return getAWSConfig(ctx, logger, settings, getSTSClient)
+}
+
+// getAWSConfig returns AWS config instance. This is separated from GetAWSConfig to allow
+// easier testing with mocked AssumeRoleAPIClient.
+func getAWSConfig(ctx context.Context, logger *zap.Logger, settings *AWSSessionSettings, GetAssumeRoleAPIClient func(getAssumeRoleAPIClient aws.Config) stscreds.AssumeRoleAPIClient) (aws.Config, error) {
 	http, err := newHTTPClient(logger, settings.NumberOfWorkers, settings.RequestTimeoutSeconds, settings.NoVerifySSL, settings.ProxyAddress)
+
 	if err != nil {
 		logger.Error("unable to obtain proxy URL", zap.Error(err))
 		return aws.Config{}, err
@@ -106,7 +116,7 @@ func GetAWSConfig(ctx context.Context, logger *zap.Logger, settings *AWSSessionS
 	}
 
 	if settings.RoleARN != "" {
-		stsClient := sts.NewFromConfig(cfg)
+		stsClient := GetAssumeRoleAPIClient(cfg)
 
 		assumeRoleOpts := func(o *stscreds.AssumeRoleOptions) {
 			if settings.ExternalID != "" {
@@ -117,7 +127,6 @@ func GetAWSConfig(ctx context.Context, logger *zap.Logger, settings *AWSSessionS
 		cfg.Credentials = aws.NewCredentialsCache(
 			stscreds.NewAssumeRoleProvider(stsClient, settings.RoleARN, assumeRoleOpts),
 		)
-		logger.Debug("Using AssumeRole", zap.String("role_arn", settings.RoleARN))
 	}
 
 	if cfg.Region == "" {
