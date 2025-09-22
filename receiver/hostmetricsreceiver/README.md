@@ -23,8 +23,8 @@ used when the collector is deployed as an agent.
 
 ## Getting Started
 
-The collection interval, root path, and the categories of metrics to be scraped can be
-configured:
+The collection interval, root path, the categories of metrics, and individual
+metrics to be scraped can be configured:
 
 ```yaml
 hostmetrics:
@@ -33,6 +33,12 @@ hostmetrics:
   root_path: <string>
   scrapers:
     <scraper1>:
+      metrics:
+        <metric1>:
+          enabled: true
+        <metric2>:
+          enabled: false
+        ...
     <scraper2>:
     ...
 ```
