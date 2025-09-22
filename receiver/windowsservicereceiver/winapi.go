@@ -4,7 +4,7 @@
 //revive:disable:unused-parameter
 //go:build windows
 
-package windowsservicereceiver
+package windowsservicereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsservicereceiver"
 
 import (
 	"golang.org/x/sys/windows"
@@ -39,8 +39,7 @@ type ConfigEx struct {
 }
 
 type serviceManager struct {
-	h             *mgr.Mgr
-	targetService string
+	h *mgr.Mgr
 }
 
 func (sm *serviceManager) connect() error {
@@ -66,12 +65,12 @@ func (sm *serviceManager) listServices() ([]string, error) {
 	return sm.h.ListServices()
 }
 
-func (sm *serviceManager) openService() (*mgr.Service, error) {
+func (sm *serviceManager) openService(name string) (*mgr.Service, error) {
 	if sm.h == nil {
 		return nil, windows.ERROR_INVALID_HANDLE
 	}
-	if sm.targetService == "" {
+	if name == "" {
 		return nil, windows.ERROR_INVALID_PARAMETER
 	}
-	return sm.h.OpenService(sm.targetService)
+	return sm.h.OpenService(name)
 }
