@@ -129,7 +129,6 @@ linters:
         - hugeParam
         - importShadow
         - ptrToRefParam
-        - rangeValCopy
         - returnAfterHttpError
         - todoCommentWithoutDetail
         - tooManyResultsChecker
