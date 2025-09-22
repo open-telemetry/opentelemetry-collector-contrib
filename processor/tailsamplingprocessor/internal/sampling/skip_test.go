@@ -10,6 +10,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/pkg/samplingpolicy"
 )
 
 func TestSkipEvaluatorContinued(t *testing.T) {
@@ -18,7 +20,7 @@ func TestSkipEvaluatorContinued(t *testing.T) {
 	n2, err := NewStatusCodeFilter(componenttest.NewNopTelemetrySettings(), []string{"ERROR"})
 	require.NoError(t, err)
 
-	skip := NewSkip([]PolicyEvaluator{n1, n2})
+	skip := NewSkip([]samplingpolicy.Evaluator{n1, n2})
 
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
@@ -38,21 +40,21 @@ func TestSkipEvaluatorContinued(t *testing.T) {
 	span2.SetTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 	span2.SetSpanID([8]byte{2, 3, 4, 5, 6, 7, 8, 9})
 
-	trace := &TraceData{
+	trace := &samplingpolicy.TraceData{
 		ReceivedBatches: traces,
 	}
 	decision, err := skip.Evaluate(t.Context(), traceID, trace)
 	require.NoError(t, err, "Failed to evaluate skip policy: %v", err)
-	assert.Equal(t, Continued, decision)
+	assert.Equal(t, samplingpolicy.Continued, decision)
 }
 
 func TestSkipEvaluatorSkipped(t *testing.T) {
-	// Test case where one span matches all sub-policies - should return Skipped
+	// Test case where one span matches all sub-policies - should returnsamplingpolicy.Skipped
 	n1 := NewStringAttributeFilter(componenttest.NewNopTelemetrySettings(), "service", []string{"important-service"}, false, 0, false)
 	n2, err := NewStatusCodeFilter(componenttest.NewNopTelemetrySettings(), []string{"ERROR"})
 	require.NoError(t, err)
 
-	skip := NewSkip([]PolicyEvaluator{n1, n2})
+	skip := NewSkip([]samplingpolicy.Evaluator{n1, n2})
 
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
@@ -72,12 +74,12 @@ func TestSkipEvaluatorSkipped(t *testing.T) {
 	span2.SetTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 	span2.SetSpanID([8]byte{2, 3, 4, 5, 6, 7, 8, 9})
 
-	trace := &TraceData{
+	trace := &samplingpolicy.TraceData{
 		ReceivedBatches: traces,
 	}
 	decision, err := skip.Evaluate(t.Context(), traceID, trace)
 	require.NoError(t, err, "Failed to evaluate skip policy: %v", err)
-	assert.Equal(t, Skipped, decision)
+	assert.Equal(t, samplingpolicy.Skipped, decision)
 }
 
 func TestSkipEvaluatorStringInvertMatch(t *testing.T) {
@@ -85,7 +87,7 @@ func TestSkipEvaluatorStringInvertMatch(t *testing.T) {
 	n2, err := NewStatusCodeFilter(componenttest.NewNopTelemetrySettings(), []string{"ERROR"})
 	require.NoError(t, err)
 
-	skip := NewSkip([]PolicyEvaluator{n1, n2})
+	skip := NewSkip([]samplingpolicy.Evaluator{n1, n2})
 
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
@@ -97,12 +99,12 @@ func TestSkipEvaluatorStringInvertMatch(t *testing.T) {
 	span.SetTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 	span.SetSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
 
-	trace := &TraceData{
+	trace := &samplingpolicy.TraceData{
 		ReceivedBatches: traces,
 	}
 	decision, err := skip.Evaluate(t.Context(), traceID, trace)
 	require.NoError(t, err, "Failed to evaluate skip policy: %v", err)
-	assert.Equal(t, Skipped, decision)
+	assert.Equal(t, samplingpolicy.Skipped, decision)
 }
 
 func TestSkipEvaluatorStringInvertNotMatch(t *testing.T) {
@@ -110,7 +112,7 @@ func TestSkipEvaluatorStringInvertNotMatch(t *testing.T) {
 	n2, err := NewStatusCodeFilter(componenttest.NewNopTelemetrySettings(), []string{"ERROR"})
 	require.NoError(t, err)
 
-	skip := NewSkip([]PolicyEvaluator{n1, n2})
+	skip := NewSkip([]samplingpolicy.Evaluator{n1, n2})
 
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
@@ -122,12 +124,12 @@ func TestSkipEvaluatorStringInvertNotMatch(t *testing.T) {
 	span.SetTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 	span.SetSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
 
-	trace := &TraceData{
+	trace := &samplingpolicy.TraceData{
 		ReceivedBatches: traces,
 	}
 	decision, err := skip.Evaluate(t.Context(), traceID, trace)
 	require.NoError(t, err, "Failed to evaluate skip policy: %v", err)
-	assert.Equal(t, Continued, decision)
+	assert.Equal(t, samplingpolicy.Continued, decision)
 }
 
 func TestSkipEvaluatorOneSubPolicyNotSampled(t *testing.T) {
@@ -137,7 +139,7 @@ func TestSkipEvaluatorOneSubPolicyNotSampled(t *testing.T) {
 	n2, err := NewStatusCodeFilter(componenttest.NewNopTelemetrySettings(), []string{"ERROR"})
 	require.NoError(t, err)
 
-	skip := NewSkip([]PolicyEvaluator{n1, n2})
+	skip := NewSkip([]samplingpolicy.Evaluator{n1, n2})
 
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
@@ -148,17 +150,17 @@ func TestSkipEvaluatorOneSubPolicyNotSampled(t *testing.T) {
 	span.SetTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 	span.SetSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
 
-	trace := &TraceData{
+	trace := &samplingpolicy.TraceData{
 		ReceivedBatches: traces,
 	}
 	decision, err := skip.Evaluate(t.Context(), traceID, trace)
 	require.NoError(t, err, "Failed to evaluate skip policy: %v", err)
-	assert.Equal(t, Continued, decision)
+	assert.Equal(t, samplingpolicy.Continued, decision)
 }
 
 func TestSkipEvaluatorEmptySubPolicies(t *testing.T) {
 	// Test case with no sub-policies - should return Continued (no conditions to match)
-	skip := NewSkip([]PolicyEvaluator{})
+	skip := NewSkip([]samplingpolicy.Evaluator{})
 
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
@@ -168,12 +170,12 @@ func TestSkipEvaluatorEmptySubPolicies(t *testing.T) {
 	span.SetTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 	span.SetSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
 
-	trace := &TraceData{
+	trace := &samplingpolicy.TraceData{
 		ReceivedBatches: traces,
 	}
 	decision, err := skip.Evaluate(t.Context(), traceID, trace)
 	require.NoError(t, err, "Failed to evaluate skip policy: %v", err)
-	assert.Equal(t, Continued, decision)
+	assert.Equal(t, samplingpolicy.Continued, decision)
 }
 
 func TestSkipEvaluatorSpanLevelEvaluation(t *testing.T) {
@@ -183,7 +185,7 @@ func TestSkipEvaluatorSpanLevelEvaluation(t *testing.T) {
 	n2, err := NewStatusCodeFilter(componenttest.NewNopTelemetrySettings(), []string{"ERROR"})
 	require.NoError(t, err)
 
-	skip := NewSkip([]PolicyEvaluator{n1, n2})
+	skip := NewSkip([]samplingpolicy.Evaluator{n1, n2})
 
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
@@ -210,21 +212,21 @@ func TestSkipEvaluatorSpanLevelEvaluation(t *testing.T) {
 	span3.SetTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 	span3.SetSpanID([8]byte{3, 4, 5, 6, 7, 8, 9, 10})
 
-	trace := &TraceData{
+	trace := &samplingpolicy.TraceData{
 		ReceivedBatches: traces,
 	}
 	decision, err := skip.Evaluate(t.Context(), traceID, trace)
 	require.NoError(t, err, "Failed to evaluate skip policy: %v", err)
-	// Should return Skipped because span2 matches all conditions (service.name AND status)
-	assert.Equal(t, Skipped, decision)
+	// Should returnsamplingpolicy.Skipped because span2 matches all conditions (service.name AND status)
+	assert.Equal(t, samplingpolicy.Skipped, decision)
 }
 
 func TestSkipEvaluatorAllSubPoliciesSampled(t *testing.T) {
-	// Test case where all sub-policies return Sampled - should return Skipped
+	// Test case where all sub-policies return Sampled - should returnsamplingpolicy.Skipped
 	n1 := NewStringAttributeFilter(componenttest.NewNopTelemetrySettings(), "attribute_name", []string{"attribute_value"}, false, 0, false)
 	n2 := NewStringAttributeFilter(componenttest.NewNopTelemetrySettings(), "another_attribute", []string{"another_value"}, false, 0, false)
 
-	skip := NewSkip([]PolicyEvaluator{n1, n2})
+	skip := NewSkip([]samplingpolicy.Evaluator{n1, n2})
 
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
@@ -236,10 +238,10 @@ func TestSkipEvaluatorAllSubPoliciesSampled(t *testing.T) {
 	span.SetTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 	span.SetSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
 
-	trace := &TraceData{
+	trace := &samplingpolicy.TraceData{
 		ReceivedBatches: traces,
 	}
 	decision, err := skip.Evaluate(t.Context(), traceID, trace)
 	require.NoError(t, err, "Failed to evaluate skip policy: %v", err)
-	assert.Equal(t, Skipped, decision)
+	assert.Equal(t, samplingpolicy.Skipped, decision)
 }

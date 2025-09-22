@@ -15,7 +15,7 @@ import (
 	"go.opentelemetry.io/otel/metric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/pkg/samplingpolicy"
 )
 
 func TestSkipPolicyIsFirstInPolicyList(t *testing.T) {
@@ -77,7 +77,7 @@ func TestSkipPolicyEvaluatorSkippedDecision(t *testing.T) {
 		require.NoError(t, p.Shutdown(t.Context()))
 	}()
 
-	mpe1.NextDecision = sampling.Skipped
+	mpe1.NextDecision = samplingpolicy.Skipped
 
 	// Generate and deliver first span
 	require.NoError(t, p.ConsumeTraces(t.Context(), simpleTraces()))
@@ -123,7 +123,7 @@ func TestSkipPolicyEvaluatorContinuedDecision(t *testing.T) {
 		require.NoError(t, p.Shutdown(t.Context()))
 	}()
 
-	mpe1.NextDecision = sampling.Continued
+	mpe1.NextDecision = samplingpolicy.Continued
 
 	// Generate and deliver first span
 	require.NoError(t, p.ConsumeTraces(t.Context(), simpleTraces()))
@@ -172,8 +172,8 @@ func TestSkipPolicyWithSubsequentPolicies(t *testing.T) {
 	}()
 
 	// Skip policy returns Skipped, regular policy returns Sampled
-	mpe1.NextDecision = sampling.Skipped
-	mpe2.NextDecision = sampling.Sampled
+	mpe1.NextDecision = samplingpolicy.Skipped
+	mpe2.NextDecision = samplingpolicy.Sampled
 
 	// Generate and deliver first span
 	require.NoError(t, p.ConsumeTraces(t.Context(), simpleTraces()))
@@ -224,8 +224,8 @@ func TestSkipPolicyWithContinuedAndSampledPolicies(t *testing.T) {
 	}()
 
 	// Skip policy returns Continued, regular policy returns Sampled
-	mpe1.NextDecision = sampling.Continued
-	mpe2.NextDecision = sampling.Sampled
+	mpe1.NextDecision = samplingpolicy.Continued
+	mpe2.NextDecision = samplingpolicy.Sampled
 
 	// Generate and deliver first span
 	require.NoError(t, p.ConsumeTraces(t.Context(), simpleTraces()))
@@ -276,8 +276,8 @@ func TestSkipPolicyWithDroppedDecision(t *testing.T) {
 	}()
 
 	// Skip policy returns Skipped, drop policy returns Dropped
-	mpe1.NextDecision = sampling.Skipped
-	mpe2.NextDecision = sampling.Dropped
+	mpe1.NextDecision = samplingpolicy.Skipped
+	mpe2.NextDecision = samplingpolicy.Dropped
 
 	// Generate and deliver first span
 	require.NoError(t, p.ConsumeTraces(t.Context(), simpleTraces()))
@@ -330,9 +330,9 @@ func TestMultipleSkipPoliciesAllSkipped(t *testing.T) {
 	}()
 
 	// All policies return Skipped
-	mpe1.NextDecision = sampling.Skipped
-	mpe2.NextDecision = sampling.Skipped
-	mpe3.NextDecision = sampling.Skipped
+	mpe1.NextDecision = samplingpolicy.Skipped
+	mpe2.NextDecision = samplingpolicy.Skipped
+	mpe3.NextDecision = samplingpolicy.Skipped
 
 	// Generate and deliver first span
 	require.NoError(t, p.ConsumeTraces(t.Context(), simpleTraces()))
@@ -387,9 +387,9 @@ func TestSkipPolicyMixedDecisions(t *testing.T) {
 	}()
 
 	// Mixed decisions: Skipped, Continued, NotSampled
-	mpe1.NextDecision = sampling.Skipped
-	mpe2.NextDecision = sampling.Continued
-	mpe3.NextDecision = sampling.NotSampled
+	mpe1.NextDecision = samplingpolicy.Skipped
+	mpe2.NextDecision = samplingpolicy.Continued
+	mpe3.NextDecision = samplingpolicy.NotSampled
 
 	// Generate and deliver first span
 	require.NoError(t, p.ConsumeTraces(t.Context(), simpleTraces()))

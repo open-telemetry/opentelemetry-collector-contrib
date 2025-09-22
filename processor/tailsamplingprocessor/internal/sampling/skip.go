@@ -8,16 +8,18 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/pkg/samplingpolicy"
 )
 
 type Skip struct {
 	// the subpolicy evaluators
-	subpolicies []PolicyEvaluator
+	subpolicies []samplingpolicy.Evaluator
 }
 
 func NewSkip(
-	subpolicies []PolicyEvaluator,
-) PolicyEvaluator {
+	subpolicies []samplingpolicy.Evaluator,
+) samplingpolicy.Evaluator {
 	return &Skip{
 		subpolicies: subpolicies,
 	}
@@ -27,10 +29,10 @@ func NewSkip(
 // Evaluates each span individually with the sub-policies.
 // If ANY span matches ALL sub-policies (all return Sampled/InvertSampled), it returns Skipped.
 // If NO span matches all sub-policies, it returns Continued.
-func (c *Skip) Evaluate(ctx context.Context, traceID pcommon.TraceID, trace *TraceData) (Decision, error) {
+func (c *Skip) Evaluate(ctx context.Context, traceID pcommon.TraceID, trace *samplingpolicy.TraceData) (samplingpolicy.Decision, error) {
 	// If no sub-policies are defined, return Continued (no conditions to match)
 	if len(c.subpolicies) == 0 {
-		return Continued, nil
+		return samplingpolicy.Continued, nil
 	}
 
 	trace.Lock()
@@ -39,7 +41,7 @@ func (c *Skip) Evaluate(ctx context.Context, traceID pcommon.TraceID, trace *Tra
 
 	// Create a reusable single-span trace structure for efficiency
 	singleSpanTrace := ptrace.NewTraces()
-	spanTraceData := &TraceData{
+	spanTraceData := &samplingpolicy.TraceData{
 		ReceivedBatches: singleSpanTrace,
 	}
 
@@ -58,19 +60,19 @@ func (c *Skip) Evaluate(ctx context.Context, traceID pcommon.TraceID, trace *Tra
 				// Check if this span matches all sub-policies using reusable structures
 				spanMatches, err := c.evaluateSpanAgainstSubPolicies(ctx, traceID, span, scope, resource, singleSpanTrace, spanTraceData)
 				if err != nil {
-					return Unspecified, err
+					return samplingpolicy.Unspecified, err
 				}
 
 				// If any span matches all sub-policies, return Skipped
 				if spanMatches {
-					return Skipped, nil
+					return samplingpolicy.Skipped, nil
 				}
 			}
 		}
 	}
 
 	// No span matched all sub-policies, return Continued
-	return Continued, nil
+	return samplingpolicy.Continued, nil
 }
 
 // evaluateSpanAgainstSubPolicies efficiently evaluates a single span using reusable trace structures
@@ -81,7 +83,7 @@ func (c *Skip) evaluateSpanAgainstSubPolicies(
 	scope pcommon.InstrumentationScope,
 	resource pcommon.Resource,
 	singleSpanTrace ptrace.Traces,
-	spanTraceData *TraceData,
+	spanTraceData *samplingpolicy.TraceData,
 ) (bool, error) {
 	// Clear and reuse the trace structure for efficiency
 	singleSpanTrace.ResourceSpans().RemoveIf(func(ptrace.ResourceSpans) bool { return true })
@@ -103,7 +105,7 @@ func (c *Skip) evaluateSpanAgainstSubPolicies(
 			return false, err
 		}
 		// If any sub-policy returns NotSampled or InvertNotSampled, this span doesn't match
-		if decision == NotSampled || decision == InvertNotSampled {
+		if decision == samplingpolicy.NotSampled || decision == samplingpolicy.InvertNotSampled {
 			return false, nil
 		}
 	}

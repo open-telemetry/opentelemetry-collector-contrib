@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/pkg/samplingpolicy"
 )
 
 func TestSkipHelper(t *testing.T) {
@@ -28,7 +29,7 @@ func TestSkipHelper(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		expected := sampling.NewSkip([]sampling.PolicyEvaluator{
+		expected := sampling.NewSkip([]samplingpolicy.Evaluator{
 			sampling.NewLatency(componenttest.NewNopTelemetrySettings(), 100, 0),
 		})
 		assert.Equal(t, expected, actual)
@@ -94,7 +95,7 @@ func TestSkipHelper(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		expected := sampling.NewSkip([]sampling.PolicyEvaluator{})
+		expected := sampling.NewSkip([]samplingpolicy.Evaluator{})
 		assert.Equal(t, expected, actual)
 	})
 
@@ -114,7 +115,7 @@ func TestSkipHelper(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		expected := sampling.NewSkip([]sampling.PolicyEvaluator{
+		expected := sampling.NewSkip([]samplingpolicy.Evaluator{
 			sampling.NewProbabilisticSampler(componenttest.NewNopTelemetrySettings(), "", 50.0),
 		})
 		assert.Equal(t, expected, actual)
