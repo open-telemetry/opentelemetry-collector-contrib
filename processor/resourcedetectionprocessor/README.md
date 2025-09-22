@@ -687,7 +687,7 @@ processors:
 
 Uses the Scaleway metadata API to read resource information from the instance metadata service and populate related resource attributes.
 
-The list of the populated resource attributes can be found at [Scaleway Detector Resource Attributes](./internal/akamai/documentation.md).
+The list of the populated resource attributes can be found at [Scaleway Detector Resource Attributes](./internal/scaleway/documentation.md).
 
 Scaleway custom configuration example:
 
