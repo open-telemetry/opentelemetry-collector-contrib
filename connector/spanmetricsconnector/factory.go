@@ -50,7 +50,7 @@ func init() {
 	)
 	legacyDefaultMetricsUnit = featuregate.GlobalRegistry().MustRegister(
 		legacyDefaultMetricsUnitFeatureGateID,
-		featuregate.StageBeta, // current enabled by default and disable it in the feature release
+		featuregate.StageBeta, // current enabled by default and disable it in the next release
 		featuregate.WithRegisterDescription("enabled by default, connector use ms unit for duration metrics."),
 		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42103"),
 	)
