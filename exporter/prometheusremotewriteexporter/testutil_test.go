@@ -97,18 +97,20 @@ var (
 	emptySummary   = "emptySummary"
 
 	// Category 2: invalid type and temporality combination
-	emptyCumulativeSum       = "emptyCumulativeSum"
-	emptyCumulativeHistogram = "emptyCumulativeHistogram"
+	emptyCumulativeSum              = "emptyCumulativeSum"
+	emptyCumulativeHistogram        = "emptyCumulativeHistogram"
+	metricWithInvalidTranslatedName = "metricWithInvalidTranslatedName"
 
 	// different metrics that will not pass validate metrics and will cause the exporter to return an error
 	invalidMetrics = map[string]pmetric.Metric{
-		empty:                    pmetric.NewMetric(),
-		emptyGauge:               getEmptyGaugeMetric(emptyGauge),
-		emptySum:                 getEmptySumMetric(emptySum),
-		emptyHistogram:           getEmptyHistogramMetric(emptyHistogram),
-		emptySummary:             getEmptySummaryMetric(emptySummary),
-		emptyCumulativeSum:       getEmptyCumulativeSumMetric(emptyCumulativeSum),
-		emptyCumulativeHistogram: getEmptyCumulativeHistogramMetric(emptyCumulativeHistogram),
+		empty:                           pmetric.NewMetric(),
+		emptyGauge:                      getEmptyGaugeMetric(emptyGauge),
+		emptySum:                        getEmptySumMetric(emptySum),
+		emptyHistogram:                  getEmptyHistogramMetric(emptyHistogram),
+		emptySummary:                    getEmptySummaryMetric(emptySummary),
+		emptyCumulativeSum:              getEmptyCumulativeSumMetric(emptyCumulativeSum),
+		emptyCumulativeHistogram:        getEmptyCumulativeHistogramMetric(emptyCumulativeHistogram),
+		metricWithInvalidTranslatedName: getMetricWithInvalidTranslatedName(),
 	}
 	staleNaNIntGauge       = "staleNaNIntGauge"
 	staleNaNDoubleGauge    = "staleNaNDoubleGauge"
@@ -318,6 +320,19 @@ func getHistogramMetricEmptyDataPoint(name string, attributes pcommon.Map, ts ui
 	dp := metric.Histogram().DataPoints().AppendEmpty()
 	attributes.CopyTo(dp.Attributes())
 	dp.SetTimestamp(pcommon.Timestamp(ts))
+	return metric
+}
+
+func getMetricWithInvalidTranslatedName() pmetric.Metric {
+	metric := pmetric.NewMetric()
+	metric.SetName("!@#$%^&*()")
+	dp := metric.SetEmptyGauge().DataPoints().AppendEmpty()
+	dp.SetIntValue(10)
+	dp.Attributes().PutStr("label1", "value1")
+	dp.Attributes().PutStr("label2", "value2")
+
+	dp.SetStartTimestamp(pcommon.Timestamp(0))
+	dp.SetTimestamp(pcommon.Timestamp(1000))
 	return metric
 }
 

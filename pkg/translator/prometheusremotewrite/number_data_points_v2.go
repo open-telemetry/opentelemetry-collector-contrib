@@ -12,25 +12,21 @@ import (
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.uber.org/multierr"
 )
 
 func (c *prometheusConverterV2) addGaugeNumberDataPoints(dataPoints pmetric.NumberDataPointSlice,
 	resource pcommon.Resource, settings Settings, name string, metadata metadata,
-) {
+) error {
+	var errs error
 	for x := 0; x < dataPoints.Len(); x++ {
 		pt := dataPoints.At(x)
 
-		labels := createAttributes(
-			resource,
-			pt.Attributes(),
-			settings.ExternalLabels,
-			nil,
-			true,
-			c.labelNamer,
-			model.MetricNameLabel,
-			name,
-		)
-
+		labels, err := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nil, true, c.labelNamer, model.MetricNameLabel, name)
+		if err != nil {
+			errs = multierr.Append(errs, err)
+			continue
+		}
 		sample := &writev2.Sample{
 			// convert ns to ms
 			Timestamp: convertTimeStamp(pt.Timestamp()),
@@ -46,23 +42,20 @@ func (c *prometheusConverterV2) addGaugeNumberDataPoints(dataPoints pmetric.Numb
 		}
 		c.addSample(sample, labels, metadata)
 	}
+	return errs
 }
 
 func (c *prometheusConverterV2) addSumNumberDataPoints(dataPoints pmetric.NumberDataPointSlice,
 	resource pcommon.Resource, _ pmetric.Metric, settings Settings, name string, metadata metadata,
-) {
+) error {
+	var errs error
 	for x := 0; x < dataPoints.Len(); x++ {
 		pt := dataPoints.At(x)
-		lbls := createAttributes(
-			resource,
-			pt.Attributes(),
-			settings.ExternalLabels,
-			nil,
-			true,
-			c.labelNamer,
-			model.MetricNameLabel,
-			name,
-		)
+		lbls, err := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nil, true, c.labelNamer, model.MetricNameLabel, name)
+		if err != nil {
+			errs = multierr.Append(errs, err)
+			continue
+		}
 
 		sample := &writev2.Sample{
 			// convert ns to ms
@@ -80,6 +73,7 @@ func (c *prometheusConverterV2) addSumNumberDataPoints(dataPoints pmetric.Number
 		// TODO: properly add exemplars to the TimeSeries
 		c.addSample(sample, lbls, metadata)
 	}
+	return errs
 }
 
 // getPromExemplarsV2 returns a slice of writev2.Exemplar from pdata exemplars.
