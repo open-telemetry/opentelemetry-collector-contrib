@@ -3,7 +3,7 @@
 
 module-sets:
   contrib-base:
-    version: v0.135.0
+    version: v0.136.0
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/golden
