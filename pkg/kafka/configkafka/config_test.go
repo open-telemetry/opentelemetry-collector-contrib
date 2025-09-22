@@ -52,7 +52,8 @@ func TestClientConfig(t *testing.T) {
 						Backoff: 5 * time.Second,
 					},
 				},
-				RackID: "rack1",
+				RackID:         "rack1",
+				UseLeaderEpoch: true,
 			},
 		},
 		"sasl_aws_msk_iam_oauthbearer": {
