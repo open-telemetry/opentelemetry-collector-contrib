@@ -2144,7 +2144,7 @@ func (s *splunkScraper) scrapeIndexerClusterManagerStatus(_ context.Context, now
 
 // Scrape License Endpoint
 func (s *splunkScraper) scrapeLicenses(_ context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
-	if !s.conf.Metrics.SplunkLicenseRemaining.Enabled {
+	if !s.conf.Metrics.SplunkLicenseExpirationSecondsRemaining.Enabled {
 		return
 	}
 
@@ -2203,6 +2203,6 @@ func (s *splunkScraper) scrapeLicenses(_ context.Context, now pcommon.Timestamp,
 		expTime := time.Unix(entry.Content.ExpirationTime, 0)
 		timeRemaining := int64(expTime.Sub(time.Now().UTC()).Seconds()) // expiry time - current time in seconds converted to int64
 
-		s.mb.RecordSplunkLicenseRemainingDataPoint(now, timeRemaining, entry.Content.Status, entry.Content.Label, entry.Content.Type, i.Build, i.Version)
+		s.mb.RecordSplunkLicenseExpirationSecondsRemainingDataPoint(now, timeRemaining, entry.Content.Status, entry.Content.Label, entry.Content.Type, i.Build, i.Version)
 	}
 }
