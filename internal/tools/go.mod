@@ -12,7 +12,7 @@ require (
 	github.com/jstemmer/go-junit-report v1.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/cmd/codecovgen v0.135.0
 	github.com/rhysd/actionlint v1.7.7
-	go.opentelemetry.io/build-tools/checkapi v0.28.0
+	go.opentelemetry.io/build-tools/checkapi v0.26.2
 	go.opentelemetry.io/build-tools/checkfile v0.28.0
 	go.opentelemetry.io/build-tools/chloggen v0.28.0
 	go.opentelemetry.io/build-tools/crosslink v0.28.0
@@ -98,7 +98,6 @@ require (
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
 	github.com/go-git/go-billy/v5 v5.6.2 // indirect
 	github.com/go-git/go-git/v5 v5.16.2 // indirect
-	github.com/go-json-experiment/json v0.0.0-20250813233538-9b1f9ea2e11b // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-toolsmith/astcast v1.1.0 // indirect
@@ -111,8 +110,6 @@ require (
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
 	github.com/go-xmlfmt/xmlfmt v1.1.3 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
-	github.com/goccy/go-json v0.10.5 // indirect
-	github.com/goccy/go-yaml v1.18.0 // indirect
 	github.com/gofrs/flock v0.12.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 // indirect
@@ -149,9 +146,6 @@ require (
 	github.com/joshdk/go-junit v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/julz/importas v0.2.0 // indirect
-	github.com/kaptinlin/go-i18n v0.1.6 // indirect
-	github.com/kaptinlin/jsonschema v0.4.12 // indirect
-	github.com/kaptinlin/messageformat-go v0.4.0 // indirect
 	github.com/karamaru-alpha/copyloopvar v1.2.1 // indirect
 	github.com/kevinburke/ssh_config v1.4.0 // indirect
 	github.com/kisielk/errcheck v1.9.0 // indirect
