@@ -435,6 +435,8 @@ func Test_PushMetrics(t *testing.T) {
 
 	emptySummaryBatch := getMetricsFromMetricList(invalidMetrics[emptySummary])
 
+	metricWithInvalidTranslatedNameBatch := getMetricsFromMetricList(invalidMetrics[metricWithInvalidTranslatedName])
+
 	// partial success (or partial failure) cases
 
 	partialSuccess1 := getMetricsFromMetricList(validMetrics1[validSum], validMetrics2[validSum],
@@ -633,6 +635,13 @@ func Test_PushMetrics(t *testing.T) {
 		{
 			name:                       "emptySummary_case",
 			metrics:                    emptySummaryBatch,
+			reqTestFunc:                checkFunc,
+			httpResponseCode:           http.StatusAccepted,
+			expectedFailedTranslations: 1,
+		},
+		{
+			name:                       "emptyMetricWithInvalidTranslatedName_case",
+			metrics:                    metricWithInvalidTranslatedNameBatch,
 			reqTestFunc:                checkFunc,
 			httpResponseCode:           http.StatusAccepted,
 			expectedFailedTranslations: 1,

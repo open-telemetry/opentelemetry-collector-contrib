@@ -31,6 +31,7 @@ type fakeClient struct {
 	Deployments        map[string]*kube.Deployment
 	StatefulSets       map[string]*kube.StatefulSet
 	DaemonSets         map[string]*kube.DaemonSet
+	ReplicaSets        map[string]*kube.ReplicaSet
 	Jobs               map[string]*kube.Job
 	StopCh             chan struct{}
 }
@@ -88,6 +89,11 @@ func (f *fakeClient) GetStatefulSet(statefulsetUID string) (*kube.StatefulSet, b
 func (f *fakeClient) GetDaemonSet(daemonsetUID string) (*kube.DaemonSet, bool) {
 	s, ok := f.DaemonSets[daemonsetUID]
 	return s, ok
+}
+
+func (f *fakeClient) GetReplicaSet(replicaSetUID string) (*kube.ReplicaSet, bool) {
+	rs, ok := f.ReplicaSets[replicaSetUID]
+	return rs, ok
 }
 
 func (f *fakeClient) GetJob(jobUID string) (*kube.Job, bool) {

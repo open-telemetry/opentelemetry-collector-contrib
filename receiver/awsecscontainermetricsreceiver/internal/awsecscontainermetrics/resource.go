@@ -14,7 +14,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/docker"
 )
 
-func containerResource(cm ecsutil.ContainerMetadata, logger *zap.Logger) pcommon.Resource {
+func containerResource(cm *ecsutil.ContainerMetadata, logger *zap.Logger) pcommon.Resource {
 	resource := pcommon.NewResource()
 
 	image, err := docker.ParseImageName(cm.Image)
