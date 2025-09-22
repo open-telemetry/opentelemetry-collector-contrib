@@ -689,7 +689,7 @@ Uses the Scaleway metadata API to read resource information from the instance me
 
 The list of the populated resource attributes can be found at [Scaleway Detector Resource Attributes](./internal/akamai/documentation.md).
 
-Akamai custom configuration example:
+Scaleway custom configuration example:
 
 ```yaml
 processors:
@@ -719,11 +719,12 @@ processors:
     detectors: ["vultr"]
     vultr:
       fail_on_missing_metadata: true
+```
 
 ## Configuration
 
 ```yaml
-# a list of resource detectors to run, valid options are: "env", "system", "gcp", "ec2", "ecs", "elastic_beanstalk", "eks", "lambda", "azure", "heroku", "openshift", "dynatrace"
+# a list of resource detectors to run, valid options are: "env", "system", "gcp", "ec2", "ecs", "elastic_beanstalk", "eks", "lambda", "azure", "heroku", "openshift", "dynatrace", "hetzner", "akamai", "scaleway", "vultr",
 detectors: [ <string> ]
 # determines if existing resource attributes should be overridden or preserved, defaults to true
 override: <bool>
