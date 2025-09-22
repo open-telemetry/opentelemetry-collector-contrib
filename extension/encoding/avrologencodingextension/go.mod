@@ -4,7 +4,7 @@ go 1.24.0
 
 require (
 	github.com/linkedin/goavro/v2 v2.14.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.135.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.136.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.42.0
 	go.opentelemetry.io/collector/component/componenttest v0.136.0

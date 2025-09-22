@@ -5,8 +5,8 @@ go 1.24.0
 require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/klauspost/compress v1.18.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.135.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.135.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.136.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.136.0
 	github.com/stretchr/testify v1.11.1
 	github.com/vmihailenco/msgpack/v5 v5.4.1
 	go.opentelemetry.io/collector/client v1.42.0

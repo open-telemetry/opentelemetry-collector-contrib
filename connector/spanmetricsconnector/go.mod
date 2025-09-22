@@ -7,9 +7,9 @@ require (
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/jonboulle/clockwork v0.5.0
 	github.com/lightstep/go-expohisto v1.0.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.135.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil v0.135.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.135.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.136.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil v0.136.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.136.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.42.0
 	go.opentelemetry.io/collector/component/componenttest v0.136.0
