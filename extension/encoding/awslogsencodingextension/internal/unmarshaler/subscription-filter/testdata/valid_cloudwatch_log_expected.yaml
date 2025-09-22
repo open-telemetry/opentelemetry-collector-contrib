@@ -28,5 +28,5 @@ resourceLogs:
           attributes:
             - key: awslogs_encoding.format
               value:
-                stringValue: cloudwatch
+                stringValue: cloudwatch_logs_subscription_filter
           name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension

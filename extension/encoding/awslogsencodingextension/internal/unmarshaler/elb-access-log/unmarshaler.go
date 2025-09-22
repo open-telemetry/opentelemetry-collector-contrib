@@ -16,12 +16,9 @@ import (
 	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler"
-)
-
-const (
-	encodingELBAccessLogFormat = "elbaccess"
 )
 
 type elbAccessLogUnmarshaler struct {
@@ -128,7 +125,7 @@ func (f *elbAccessLogUnmarshaler) createLogs() (plog.Logs, plog.ResourceLogs, pl
 	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
 	scopeLogs.Scope().SetName(metadata.ScopeName)
 	scopeLogs.Scope().SetVersion(f.buildInfo.Version)
-	scopeLogs.Scope().Attributes().PutStr("awslogs_encoding.format", encodingELBAccessLogFormat)
+	scopeLogs.Scope().Attributes().PutStr(constants.FormatIdentificationTag, constants.FormatELBAccessLog)
 	return logs, resourceLogs, scopeLogs
 }
 

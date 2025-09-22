@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler"
 )
@@ -27,8 +28,7 @@ const (
 	// or unavailable, or that the field was not applicable to this request.
 	//
 	// See https://docs.aws.amazon.com/AmazonS3/latest/userguide/LogFormat.html.
-	unknownField              = "-"
-	encodingS3AccessLogFormat = "s3access"
+	unknownField = "-"
 )
 
 type s3AccessLogUnmarshaler struct {
@@ -73,7 +73,7 @@ func (s *s3AccessLogUnmarshaler) createLogs() (plog.Logs, plog.ResourceLogs, plo
 	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
 	scopeLogs.Scope().SetName(metadata.ScopeName)
 	scopeLogs.Scope().SetVersion(s.buildInfo.Version)
-	scopeLogs.Scope().Attributes().PutStr("awslogs_encoding.format", encodingS3AccessLogFormat)
+	scopeLogs.Scope().Attributes().PutStr(constants.FormatIdentificationTag, constants.FormatS3AccessLog)
 	return logs, resourceLogs, scopeLogs
 }
 

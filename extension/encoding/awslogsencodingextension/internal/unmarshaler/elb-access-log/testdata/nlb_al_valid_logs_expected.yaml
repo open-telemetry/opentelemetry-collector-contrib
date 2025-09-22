@@ -43,5 +43,5 @@ resourceLogs:
           attributes:
             - key: awslogs_encoding.format
               value:
-                stringValue: elbaccess
+                stringValue: elb_access_log
           name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension

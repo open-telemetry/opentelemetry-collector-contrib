@@ -71,18 +71,7 @@ extensions:
 
 ## Log Format Identification
 
-All logs processed by this extension are automatically tagged with an `awslogs_encoding.format` attribute at the scope level to identify the source format. The following format values are used:
-
-| **AWS Log Type** | **Format Value** | **Description** |
-|------------------|------------------|-----------------|
-| VPC Flow Logs | `vpcflow` | Virtual Private Cloud flow log records |
-| ELB Access Logs | `elbaccess` | Elastic Load Balancer access logs (ALB, NLB, CLB) |
-| S3 Access Logs | `s3access` | Amazon S3 server access logs |
-| CloudTrail Logs | `cloudtrail` | AWS CloudTrail API call logs |
-| WAF Logs | `waf` | AWS Web Application Firewall logs |
-| CloudWatch Logs | `cloudwatch` | CloudWatch Logs Subscription Filter events |
-
-This scope attribute allows to easily identify and route logs based on the AWS service.
+All logs processed by this extension are automatically tagged with an `awslogs_encoding.format` attribute at the scope level to identify the source format.
 
 #### VPC flow log record fields
 

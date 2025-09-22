@@ -16,12 +16,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	conventions "go.opentelemetry.io/otel/semconv/v1.28.0"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler"
-)
-
-const (
-	encodingWAFLogFormat = "waf"
 )
 
 type wafLogUnmarshaler struct {
@@ -76,7 +73,7 @@ func (w *wafLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs, error
 	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
 	scopeLogs.Scope().SetName(metadata.ScopeName)
 	scopeLogs.Scope().SetVersion(w.buildInfo.Version)
-	scopeLogs.Scope().Attributes().PutStr("awslogs_encoding.format", encodingWAFLogFormat)
+	scopeLogs.Scope().Attributes().PutStr(constants.FormatIdentificationTag, constants.FormatWAFLog)
 
 	scanner := bufio.NewScanner(reader)
 	webACLID := ""
