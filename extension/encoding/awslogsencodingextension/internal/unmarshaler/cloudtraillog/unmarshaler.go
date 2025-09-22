@@ -123,7 +123,8 @@ func (u *CloudTrailLogUnmarshaler) processRecords(records []CloudTrailRecord) (p
 	// (all records have the same account ID and region)
 	u.setResourceAttributes(resourceLogs.Resource().Attributes(), records[0])
 
-	for _, record := range records {
+	for i := range records {
+		record := &records[i]
 		logRecord := scopeLogs.LogRecords().AppendEmpty()
 		if err := u.setLogRecord(logRecord, record); err != nil {
 			return plog.Logs{}, err
@@ -139,7 +140,7 @@ func (*CloudTrailLogUnmarshaler) setResourceAttributes(attrs pcommon.Map, record
 	attrs.PutStr(string(conventions.CloudAccountIDKey), record.RecipientAccountID)
 }
 
-func (u *CloudTrailLogUnmarshaler) setLogRecord(logRecord plog.LogRecord, record CloudTrailRecord) error {
+func (u *CloudTrailLogUnmarshaler) setLogRecord(logRecord plog.LogRecord, record *CloudTrailRecord) error {
 	t, err := time.Parse(time.RFC3339, record.EventTime)
 	if err != nil {
 		return fmt.Errorf("failed to parse timestamp of log: %w", err)
@@ -149,7 +150,7 @@ func (u *CloudTrailLogUnmarshaler) setLogRecord(logRecord plog.LogRecord, record
 	return nil
 }
 
-func (*CloudTrailLogUnmarshaler) setLogAttributes(attrs pcommon.Map, record CloudTrailRecord) {
+func (*CloudTrailLogUnmarshaler) setLogAttributes(attrs pcommon.Map, record *CloudTrailRecord) {
 	attrs.PutStr("aws.cloudtrail.event_version", record.EventVersion)
 
 	attrs.PutStr("aws.cloudtrail.event_id", record.EventID)
