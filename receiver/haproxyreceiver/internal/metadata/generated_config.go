@@ -29,6 +29,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 // MetricsConfig provides config for haproxy metrics.
 type MetricsConfig struct {
 	HaproxyActive                 MetricConfig `mapstructure:"haproxy.active"`
+	HaproxyBackup                 MetricConfig `mapstructure:"haproxy.backup"`
 	HaproxyBytesInput             MetricConfig `mapstructure:"haproxy.bytes.input"`
 	HaproxyBytesOutput            MetricConfig `mapstructure:"haproxy.bytes.output"`
 	HaproxyClientsCanceled        MetricConfig `mapstructure:"haproxy.clients.canceled"`
@@ -64,6 +65,9 @@ type MetricsConfig struct {
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
 		HaproxyActive: MetricConfig{
+			Enabled: false,
+		},
+		HaproxyBackup: MetricConfig{
 			Enabled: false,
 		},
 		HaproxyBytesInput: MetricConfig{

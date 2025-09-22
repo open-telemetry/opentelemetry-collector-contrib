@@ -43,6 +43,13 @@ metrics:
       value_type: int
       input_type: string
     unit: "{servers}"
+  haproxy.backup:
+    description: Number of backup servers (backend) or server is backup (server). Corresponds to HAProxy's `bck` metric.
+    enabled: false
+    gauge:
+      value_type: int
+      input_type: string
+    unit: "{servers}"
   haproxy.connections.rate:
     description: Number of connections over the last elapsed second (frontend). Corresponds to HAProxy's `conn_rate` metric.
     enabled: true

@@ -60,6 +60,9 @@ var MetricsInfo = metricsInfo{
 	HaproxyActive: metricInfo{
 		Name: "haproxy.active",
 	},
+	HaproxyBackup: metricInfo{
+		Name: "haproxy.backup",
+	},
 	HaproxyBytesInput: metricInfo{
 		Name: "haproxy.bytes.input",
 	},
@@ -154,6 +157,7 @@ var MetricsInfo = metricsInfo{
 
 type metricsInfo struct {
 	HaproxyActive                 metricInfo
+	HaproxyBackup                 metricInfo
 	HaproxyBytesInput             metricInfo
 	HaproxyBytesOutput            metricInfo
 	HaproxyClientsCanceled        metricInfo
@@ -232,6 +236,55 @@ func (m *metricHaproxyActive) emit(metrics pmetric.MetricSlice) {
 
 func newMetricHaproxyActive(cfg MetricConfig) metricHaproxyActive {
 	m := metricHaproxyActive{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricHaproxyBackup struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills haproxy.backup metric with initial data.
+func (m *metricHaproxyBackup) init() {
+	m.data.SetName("haproxy.backup")
+	m.data.SetDescription("Number of backup servers (backend) or server is backup (server). Corresponds to HAProxy's `bck` metric.")
+	m.data.SetUnit("{servers}")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricHaproxyBackup) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricHaproxyBackup) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricHaproxyBackup) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricHaproxyBackup(cfg MetricConfig) metricHaproxyBackup {
+	m := metricHaproxyBackup{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1764,6 +1817,7 @@ type MetricsBuilder struct {
 	resourceAttributeIncludeFilter      map[string]filter.Filter
 	resourceAttributeExcludeFilter      map[string]filter.Filter
 	metricHaproxyActive                 metricHaproxyActive
+	metricHaproxyBackup                 metricHaproxyBackup
 	metricHaproxyBytesInput             metricHaproxyBytesInput
 	metricHaproxyBytesOutput            metricHaproxyBytesOutput
 	metricHaproxyClientsCanceled        metricHaproxyClientsCanceled
@@ -1820,6 +1874,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricsBuffer:                       pmetric.NewMetrics(),
 		buildInfo:                           settings.BuildInfo,
 		metricHaproxyActive:                 newMetricHaproxyActive(mbc.Metrics.HaproxyActive),
+		metricHaproxyBackup:                 newMetricHaproxyBackup(mbc.Metrics.HaproxyBackup),
 		metricHaproxyBytesInput:             newMetricHaproxyBytesInput(mbc.Metrics.HaproxyBytesInput),
 		metricHaproxyBytesOutput:            newMetricHaproxyBytesOutput(mbc.Metrics.HaproxyBytesOutput),
 		metricHaproxyClientsCanceled:        newMetricHaproxyClientsCanceled(mbc.Metrics.HaproxyClientsCanceled),
@@ -1941,6 +1996,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricHaproxyActive.emit(ils.Metrics())
+	mb.metricHaproxyBackup.emit(ils.Metrics())
 	mb.metricHaproxyBytesInput.emit(ils.Metrics())
 	mb.metricHaproxyBytesOutput.emit(ils.Metrics())
 	mb.metricHaproxyClientsCanceled.emit(ils.Metrics())
@@ -2009,6 +2065,16 @@ func (mb *MetricsBuilder) RecordHaproxyActiveDataPoint(ts pcommon.Timestamp, inp
 		return fmt.Errorf("failed to parse int64 for HaproxyActive, value was %s: %w", inputVal, err)
 	}
 	mb.metricHaproxyActive.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordHaproxyBackupDataPoint adds a data point to haproxy.backup metric.
+func (mb *MetricsBuilder) RecordHaproxyBackupDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for HaproxyBackup, value was %s: %w", inputVal, err)
+	}
+	mb.metricHaproxyBackup.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 

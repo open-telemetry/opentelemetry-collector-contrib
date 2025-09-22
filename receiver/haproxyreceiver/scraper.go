@@ -85,6 +85,11 @@ func (s *haproxyScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 				scrapeErrors = append(scrapeErrors, err)
 			}
 		}
+		if record["bck"] != "" {
+			if err := s.mb.RecordHaproxyBackupDataPoint(now, record["bck"]); err != nil {
+				scrapeErrors = append(scrapeErrors, err)
+			}
+		}
 		if record["scur"] != "" {
 			if err := s.mb.RecordHaproxySessionsCountDataPoint(now, record["scur"]); err != nil {
 				scrapeErrors = append(scrapeErrors, err)

@@ -3,6 +3,8 @@ all_set:
   metrics:
     haproxy.active:
       enabled: true
+    haproxy.backup:
+      enabled: true
     haproxy.bytes.input:
       enabled: true
     haproxy.bytes.output:
@@ -73,6 +75,8 @@ all_set:
 none_set:
   metrics:
     haproxy.active:
+      enabled: false
+    haproxy.backup:
       enabled: false
     haproxy.bytes.input:
       enabled: false

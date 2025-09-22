@@ -71,6 +71,9 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordHaproxyActiveDataPoint(ts, "1")
 
+			allMetricsCount++
+			mb.RecordHaproxyBackupDataPoint(ts, "1")
+
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordHaproxyBytesInputDataPoint(ts, "1")
@@ -210,6 +213,18 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "Number of active servers (backend) or server is active (server). Corresponds to HAProxy's `act` metric.", ms.At(i).Description())
+					assert.Equal(t, "{servers}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "haproxy.backup":
+					assert.False(t, validatedMetrics["haproxy.backup"], "Found a duplicate in the metrics slice: haproxy.backup")
+					validatedMetrics["haproxy.backup"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of backup servers (backend) or server is backup (server). Corresponds to HAProxy's `bck` metric.", ms.At(i).Description())
 					assert.Equal(t, "{servers}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())

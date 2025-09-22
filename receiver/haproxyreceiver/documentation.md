@@ -172,6 +172,14 @@ Number of active servers (backend) or server is active (server). Corresponds to 
 | ---- | ----------- | ---------- |
 | {servers} | Gauge | Int |
 
+### haproxy.backup
+
+Number of backup servers (backend) or server is backup (server). Corresponds to HAProxy's `bck` metric.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {servers} | Gauge | Int |
+
 ### haproxy.clients.canceled
 
 Number of data transfers aborted by the client. Corresponds to HAProxy's `cli_abrt` metric

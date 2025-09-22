@@ -28,6 +28,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
 					HaproxyActive:                 MetricConfig{Enabled: true},
+					HaproxyBackup:                 MetricConfig{Enabled: true},
 					HaproxyBytesInput:             MetricConfig{Enabled: true},
 					HaproxyBytesOutput:            MetricConfig{Enabled: true},
 					HaproxyClientsCanceled:        MetricConfig{Enabled: true},
@@ -71,6 +72,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
 					HaproxyActive:                 MetricConfig{Enabled: false},
+					HaproxyBackup:                 MetricConfig{Enabled: false},
 					HaproxyBytesInput:             MetricConfig{Enabled: false},
 					HaproxyBytesOutput:            MetricConfig{Enabled: false},
 					HaproxyClientsCanceled:        MetricConfig{Enabled: false},
