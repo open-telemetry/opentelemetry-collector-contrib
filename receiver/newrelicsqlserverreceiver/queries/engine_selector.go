@@ -201,21 +201,6 @@ var databaseQueriesDefault = []*QueryDefinition{
 		MetricName:  "sqlserver.database.page_file_total",
 		Description: "Total page file space (total reserved space) for the database in bytes",
 	},
-	{
-		Query:       DatabaseMemoryQuery,
-		MetricName:  "sqlserver.instance.memory_available",
-		Description: "Available physical memory on the system in bytes",
-	},
-	{
-		Query:       DatabaseMemoryQuery,
-		MetricName:  "sqlserver.instance.memory_total",
-		Description: "Total physical memory on the system in bytes",
-	},
-	{
-		Query:       DatabaseMemoryQuery,
-		MetricName:  "sqlserver.instance.memory_utilization",
-		Description: "Percentage of memory utilization on the system",
-	},
 }
 
 // Database-level query definitions for Azure SQL Database
@@ -251,19 +236,9 @@ var databaseQueriesAzureManagedDatabase = []*QueryDefinition{
 		Description: "Total page file space (total reserved space) for the database in bytes (Azure SQL Database)",
 	},
 	{
-		Query:       DatabaseMemoryQueryAzureSQL,
-		MetricName:  "sqlserver.instance.memory_available",
+		Query:       DatabaseMemoryQuery,
+		MetricName:  "sqlserver.database_memory_metrics",
 		Description: "Available physical memory on the system in bytes (Azure SQL Database)",
-	},
-	{
-		Query:       DatabaseMemoryQueryAzureSQL,
-		MetricName:  "sqlserver.instance.memory_total",
-		Description: "Total physical memory on the system in bytes (Azure SQL Database)",
-	},
-	{
-		Query:       DatabaseMemoryQueryAzureSQL,
-		MetricName:  "sqlserver.instance.memory_utilization",
-		Description: "Percentage of memory utilization on the system (Azure SQL Database)",
 	},
 }
 
@@ -298,21 +273,6 @@ var databaseQueriesAzureManagedInstance = []*QueryDefinition{
 		Query:       DatabasePageFileTotalQueryAzureMI,
 		MetricName:  "sqlserver.database.page_file_total",
 		Description: "Total page file space (total reserved space) for the database in bytes (Azure Managed Instance)",
-	},
-	{
-		Query:       DatabaseMemoryQueryAzureMI,
-		MetricName:  "sqlserver.instance.memory_available",
-		Description: "Available physical memory on the system in bytes (Azure Managed Instance)",
-	},
-	{
-		Query:       DatabaseMemoryQueryAzureMI,
-		MetricName:  "sqlserver.instance.memory_total",
-		Description: "Total physical memory on the system in bytes (Azure Managed Instance)",
-	},
-	{
-		Query:       DatabaseMemoryQueryAzureMI,
-		MetricName:  "sqlserver.instance.memory_utilization",
-		Description: "Percentage of memory utilization on the system (Azure Managed Instance)",
 	},
 }
 

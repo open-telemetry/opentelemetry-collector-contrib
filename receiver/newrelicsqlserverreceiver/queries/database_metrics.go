@@ -202,6 +202,7 @@ LEFT JOIN sys.internal_tables it WITH (NOLOCK) ON p.object_id = it.object_id`
 
 // DatabaseMemoryQuery returns the SQL query for memory metrics (total, available, utilization)
 // This is an instance-level metric that provides comprehensive system memory information
+// This query works for all SQL Server engine types (Standard, Azure SQL Database, Azure Managed Instance)
 // Source: https://github.com/newrelic/nri-mssql/blob/main/src/metrics/instance_metric_definitions.go
 const DatabaseMemoryQuery = `SELECT 
 	MAX(sys_mem.total_physical_memory_kb * 1024.0) AS total_physical_memory,
@@ -212,22 +213,4 @@ FROM sys.dm_os_process_memory proc_mem,
 	sys.dm_os_performance_counters perf_count 
 WHERE object_name = 'SQLServer:Memory Manager'`
 
-// DatabaseMemoryQueryAzureSQL returns the Azure SQL Database specific memory query
-const DatabaseMemoryQueryAzureSQL = `SELECT 
-	MAX(sys_mem.total_physical_memory_kb * 1024.0) AS total_physical_memory,
-	MAX(sys_mem.available_physical_memory_kb * 1024.0) AS available_physical_memory,
-	(MAX(proc_mem.physical_memory_in_use_kb) / (MAX(sys_mem.total_physical_memory_kb) * 1.0)) * 100 AS memory_utilization
-FROM sys.dm_os_process_memory proc_mem,
-	sys.dm_os_sys_memory sys_mem,
-	sys.dm_os_performance_counters perf_count 
-WHERE object_name = 'SQLServer:Memory Manager'`
 
-// DatabaseMemoryQueryAzureMI returns the Azure SQL Managed Instance specific memory query
-const DatabaseMemoryQueryAzureMI = `SELECT 
-	MAX(sys_mem.total_physical_memory_kb * 1024.0) AS total_physical_memory,
-	MAX(sys_mem.available_physical_memory_kb * 1024.0) AS available_physical_memory,
-	(MAX(proc_mem.physical_memory_in_use_kb) / (MAX(sys_mem.total_physical_memory_kb) * 1.0)) * 100 AS memory_utilization
-FROM sys.dm_os_process_memory proc_mem,
-	sys.dm_os_sys_memory sys_mem,
-	sys.dm_os_performance_counters perf_count 
-WHERE object_name LIKE '%:Memory Manager%'`

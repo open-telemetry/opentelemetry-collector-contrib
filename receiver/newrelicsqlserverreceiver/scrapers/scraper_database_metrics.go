@@ -96,6 +96,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -666,6 +667,52 @@ func (s *DatabaseScraper) processDatabaseLogGrowthMetrics(result models.Database
 func (s *DatabaseScraper) ScrapeDatabasePageFileMetrics(ctx context.Context, scopeMetrics pmetric.ScopeMetrics) error {
 	s.logger.Debug("Scraping SQL Server database page file metrics")
 
+	// Get the appropriate query for this engine edition
+	query, found := s.getQueryForMetric("sqlserver.database.page_file_available")
+	if !found {
+		return fmt.Errorf("no database page file query available for engine edition %d", s.engineEdition)
+	}
+
+	s.logger.Debug("Executing database page file query",
+		zap.String("query", queries.TruncateQuery(query, 100)),
+		zap.String("engine_type", queries.GetEngineTypeName(s.engineEdition)))
+
+	// Check if this is a database-specific query that needs database iteration
+	if strings.Contains(query, "%DATABASE%") {
+		return s.scrapeDatabasePageFileWithIteration(ctx, scopeMetrics, query)
+	}
+
+	// For Azure SQL Database, execute the query directly
+	var results []models.DatabasePageFileMetrics
+	if err := s.connection.Query(ctx, &results, query); err != nil {
+		s.logger.Error("Failed to execute page file query",
+			zap.Error(err),
+			zap.String("query", queries.TruncateQuery(query, 100)))
+		return fmt.Errorf("failed to execute page file query: %w", err)
+	}
+
+	// Process results
+	for _, result := range results {
+		if result.PageFileAvailableBytes != nil {
+			s.logger.Info("Successfully scraped SQL Server database page file metric",
+				zap.String("database_name", result.DatabaseName),
+				zap.Float64("page_file_available_bytes", *result.PageFileAvailableBytes))
+
+			if err := s.processDatabasePageFileMetrics(result, scopeMetrics); err != nil {
+				s.logger.Error("Failed to process database page file metrics",
+					zap.String("database_name", result.DatabaseName),
+					zap.Error(err))
+				continue
+			}
+		}
+	}
+
+	s.logger.Debug("Successfully completed database page file metrics scraping")
+	return nil
+}
+
+// scrapeDatabasePageFileWithIteration handles page file metrics for engines that require database iteration
+func (s *DatabaseScraper) scrapeDatabasePageFileWithIteration(ctx context.Context, scopeMetrics pmetric.ScopeMetrics, queryTemplate string) error {
 	// First, get the list of databases to iterate through
 	databasesQuery := `SELECT name FROM sys.databases 
 		WHERE name NOT IN ('master', 'tempdb', 'msdb', 'model', 'rdsadmin', 'distribution', 'model_msdb', 'model_replicatedmaster')
@@ -687,14 +734,8 @@ func (s *DatabaseScraper) ScrapeDatabasePageFileMetrics(ctx context.Context, sco
 		s.logger.Debug("Processing page file metrics for database",
 			zap.String("database_name", db.Name))
 
-		// Create database-specific query
-		query := fmt.Sprintf(`SELECT 
-			'%s' AS db_name,
-			(SUM(a.total_pages) * 8.0 - SUM(a.used_pages) * 8.0) * 1024 AS reserved_space_not_used
-		FROM [%s].sys.partitions p WITH (NOLOCK)
-		INNER JOIN [%s].sys.allocation_units a WITH (NOLOCK) ON p.partition_id = a.container_id
-		LEFT JOIN [%s].sys.internal_tables it WITH (NOLOCK) ON p.object_id = it.object_id`, 
-			db.Name, db.Name, db.Name, db.Name)
+		// Replace the %DATABASE% placeholder with actual database name
+		query := strings.ReplaceAll(queryTemplate, "%DATABASE%", db.Name)
 
 		var results []models.DatabasePageFileMetrics
 		if err := s.connection.Query(ctx, &results, query); err != nil {
@@ -717,15 +758,10 @@ func (s *DatabaseScraper) ScrapeDatabasePageFileMetrics(ctx context.Context, sco
 						zap.Error(err))
 					continue
 				}
-
-				s.logger.Debug("Successfully processed database page file metrics",
-					zap.String("database_name", result.DatabaseName),
-					zap.Float64("page_file_available_bytes", *result.PageFileAvailableBytes))
 			}
 		}
 	}
 
-	s.logger.Debug("Successfully completed database page file metrics scraping")
 	return nil
 }
 
@@ -733,6 +769,52 @@ func (s *DatabaseScraper) ScrapeDatabasePageFileMetrics(ctx context.Context, sco
 func (s *DatabaseScraper) ScrapeDatabasePageFileTotalMetrics(ctx context.Context, scopeMetrics pmetric.ScopeMetrics) error {
 	s.logger.Debug("Scraping SQL Server database page file total metrics")
 
+	// Get the appropriate query for this engine edition
+	query, found := s.getQueryForMetric("sqlserver.database.page_file_total")
+	if !found {
+		return fmt.Errorf("no database page file total query available for engine edition %d", s.engineEdition)
+	}
+
+	s.logger.Debug("Executing database page file total query",
+		zap.String("query", queries.TruncateQuery(query, 100)),
+		zap.String("engine_type", queries.GetEngineTypeName(s.engineEdition)))
+
+	// Check if this is a database-specific query that needs database iteration
+	if strings.Contains(query, "%DATABASE%") {
+		return s.scrapeDatabasePageFileTotalWithIteration(ctx, scopeMetrics, query)
+	}
+
+	// For Azure SQL Database, execute the query directly
+	var results []models.DatabasePageFileTotalMetrics
+	if err := s.connection.Query(ctx, &results, query); err != nil {
+		s.logger.Error("Failed to execute page file total query",
+			zap.Error(err),
+			zap.String("query", queries.TruncateQuery(query, 100)))
+		return fmt.Errorf("failed to execute page file total query: %w", err)
+	}
+
+	// Process results
+	for _, result := range results {
+		if result.PageFileTotalBytes != nil {
+			s.logger.Info("Successfully scraped SQL Server database page file total metric",
+				zap.String("database_name", result.DatabaseName),
+				zap.Float64("page_file_total_bytes", *result.PageFileTotalBytes))
+
+			if err := s.processDatabasePageFileTotalMetrics(result, scopeMetrics); err != nil {
+				s.logger.Error("Failed to process database page file total metrics",
+					zap.String("database_name", result.DatabaseName),
+					zap.Error(err))
+				continue
+			}
+		}
+	}
+
+	s.logger.Debug("Successfully completed database page file total metrics scraping")
+	return nil
+}
+
+// scrapeDatabasePageFileTotalWithIteration handles page file total metrics for engines that require database iteration
+func (s *DatabaseScraper) scrapeDatabasePageFileTotalWithIteration(ctx context.Context, scopeMetrics pmetric.ScopeMetrics, queryTemplate string) error {
 	// First, get the list of databases to iterate through
 	databasesQuery := `SELECT name FROM sys.databases 
 		WHERE name NOT IN ('master', 'tempdb', 'msdb', 'model', 'rdsadmin', 'distribution', 'model_msdb', 'model_replicatedmaster')
@@ -754,14 +836,8 @@ func (s *DatabaseScraper) ScrapeDatabasePageFileTotalMetrics(ctx context.Context
 		s.logger.Debug("Processing page file total metrics for database",
 			zap.String("database_name", db.Name))
 
-		// Create database-specific query
-		query := fmt.Sprintf(`SELECT 
-			'%s' AS db_name,
-			SUM(a.total_pages) * 8.0 * 1024 AS reserved_space
-		FROM [%s].sys.partitions p WITH (NOLOCK)
-		INNER JOIN [%s].sys.allocation_units a WITH (NOLOCK) ON p.partition_id = a.container_id
-		LEFT JOIN [%s].sys.internal_tables it WITH (NOLOCK) ON p.object_id = it.object_id`, 
-			db.Name, db.Name, db.Name, db.Name)
+		// Replace the %DATABASE% placeholder with actual database name
+		query := strings.ReplaceAll(queryTemplate, "%DATABASE%", db.Name)
 
 		var results []models.DatabasePageFileTotalMetrics
 		if err := s.connection.Query(ctx, &results, query); err != nil {
@@ -784,15 +860,10 @@ func (s *DatabaseScraper) ScrapeDatabasePageFileTotalMetrics(ctx context.Context
 						zap.Error(err))
 					continue
 				}
-
-				s.logger.Debug("Successfully processed database page file total metrics",
-					zap.String("database_name", result.DatabaseName),
-					zap.Float64("page_file_total_bytes", *result.PageFileTotalBytes))
 			}
 		}
 	}
 
-	s.logger.Debug("Successfully completed database page file total metrics scraping")
 	return nil
 }
 
@@ -928,17 +999,27 @@ func (s *DatabaseScraper) processDatabasePageFileTotalMetrics(result models.Data
 
 // ScrapeDatabaseMemoryMetrics scrapes available physical memory metrics
 // This is an instance-level metric that provides system memory information
+// Note: Memory metrics are only available for Azure SQL Database (engine edition 5)
 func (s *DatabaseScraper) ScrapeDatabaseMemoryMetrics(ctx context.Context, scopeMetrics pmetric.ScopeMetrics) error {
 	s.logger.Debug("Starting ScrapeDatabaseMemoryMetrics")
 
+	// Memory metrics are only supported for Azure SQL Database (engine edition 5)
+	if s.engineEdition != queries.AzureSQLDatabaseEngineEdition {
+		s.logger.Debug("Memory metrics are only available for Azure SQL Database, skipping",
+			zap.String("current_engine", queries.GetEngineTypeName(s.engineEdition)),
+			zap.Int("engine_edition", s.engineEdition))
+		return nil
+	}
+
 	// Get the appropriate query based on the engine edition
-	query, found := queries.GetQueryForMetric(queries.DatabaseQueries, "sqlserver.instance.memory_available", s.engineEdition)
+	query, found := s.getQueryForMetric("sqlserver.database_memory_metrics")
 	if !found {
-		s.logger.Error("Memory query not found for engine edition", zap.Int("engine_edition", s.engineEdition))
 		return fmt.Errorf("memory query not found for engine edition %d", s.engineEdition)
 	}
 
-	s.logger.Debug("Executing memory query", zap.String("query", queries.TruncateQuery(query, 100)))
+	s.logger.Debug("Executing memory query", 
+		zap.String("query", queries.TruncateQuery(query, 100)),
+		zap.String("engine_type", queries.GetEngineTypeName(s.engineEdition)))
 
 	// Query the database for memory metrics
 	var results []models.DatabaseMemoryMetrics
@@ -962,10 +1043,10 @@ func (s *DatabaseScraper) processDatabaseMemoryResults(scopeMetrics pmetric.Scop
 
 	// Use reflection to iterate through the struct fields and create metrics
 	structType := reflect.TypeOf(models.DatabaseMemoryMetrics{})
-	
+
 	for i := 0; i < structType.NumField(); i++ {
 		field := structType.Field(i)
-		
+
 		// Skip fields that don't have metric_name tag
 		metricNameTag := field.Tag.Get("metric_name")
 		if metricNameTag == "" {
@@ -980,7 +1061,7 @@ func (s *DatabaseScraper) processDatabaseMemoryResults(scopeMetrics pmetric.Scop
 		// Create metric for this field
 		metric := scopeMetrics.Metrics().AppendEmpty()
 		metric.SetName(metricNameTag)
-		metric.SetDescription("Available physical memory on the system")
+		metric.SetDescription("SQL Server memory on the system")
 		metric.SetUnit("bytes")
 
 		// Set the appropriate metric type based on source_type
