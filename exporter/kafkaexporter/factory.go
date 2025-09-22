@@ -88,7 +88,7 @@ func createTracesExporter(
 		exp.exportData,
 		exporterhelperOptions(
 			oCfg,
-			exporterhelper.NewTracesQueueBatchSettings(),
+			xexporterhelper.NewTracesQueueBatchSettings(),
 			exp.Start, exp.Close,
 		)...,
 	)
@@ -108,7 +108,7 @@ func createMetricsExporter(
 		exp.exportData,
 		exporterhelperOptions(
 			oCfg,
-			exporterhelper.NewMetricsQueueBatchSettings(),
+			xexporterhelper.NewMetricsQueueBatchSettings(),
 			exp.Start, exp.Close,
 		)...,
 	)
@@ -128,7 +128,7 @@ func createLogsExporter(
 		exp.exportData,
 		exporterhelperOptions(
 			oCfg,
-			exporterhelper.NewLogsQueueBatchSettings(),
+			xexporterhelper.NewLogsQueueBatchSettings(),
 			exp.Start, exp.Close,
 		)...,
 	)
