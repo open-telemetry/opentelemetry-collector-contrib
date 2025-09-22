@@ -68,6 +68,9 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount := 0
 			allMetricsCount := 0
 
+			allMetricsCount++
+			mb.RecordHaproxyActiveDataPoint(ts, "1")
+
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordHaproxyBytesInputDataPoint(ts, "1")
@@ -189,6 +192,18 @@ func TestMetricsBuilder(t *testing.T) {
 			validatedMetrics := make(map[string]bool)
 			for i := 0; i < ms.Len(); i++ {
 				switch ms.At(i).Name() {
+				case "haproxy.active":
+					assert.False(t, validatedMetrics["haproxy.active"], "Found a duplicate in the metrics slice: haproxy.active")
+					validatedMetrics["haproxy.active"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of active servers (backend) or server is active (server). Corresponds to HAProxy's `act` metric.", ms.At(i).Description())
+					assert.Equal(t, "{servers}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "haproxy.bytes.input":
 					assert.False(t, validatedMetrics["haproxy.bytes.input"], "Found a duplicate in the metrics slice: haproxy.bytes.input")
 					validatedMetrics["haproxy.bytes.input"] = true

@@ -36,6 +36,13 @@ attributes:
 
 
 metrics:
+  haproxy.active:
+    description: Number of active servers (backend) or server is active (server). Corresponds to HAProxy's `act` metric.
+    enabled: false
+    gauge:
+      value_type: int
+      input_type: string
+    unit: "{servers}"
   haproxy.connections.rate:
     description: Number of connections over the last elapsed second (frontend). Corresponds to HAProxy's `conn_rate` metric.
     enabled: true

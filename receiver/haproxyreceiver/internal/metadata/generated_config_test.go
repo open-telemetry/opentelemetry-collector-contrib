@@ -27,6 +27,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
+					HaproxyActive:               MetricConfig{Enabled: true},
 					HaproxyBytesInput:           MetricConfig{Enabled: true},
 					HaproxyBytesOutput:          MetricConfig{Enabled: true},
 					HaproxyClientsCanceled:      MetricConfig{Enabled: true},
@@ -65,6 +66,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
+					HaproxyActive:               MetricConfig{Enabled: false},
 					HaproxyBytesInput:           MetricConfig{Enabled: false},
 					HaproxyBytesOutput:          MetricConfig{Enabled: false},
 					HaproxyClientsCanceled:      MetricConfig{Enabled: false},

@@ -80,6 +80,11 @@ func (s *haproxyScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 
 	now := pcommon.NewTimestampFromTime(time.Now())
 	for _, record := range records {
+		if record["act"] != "" {
+			if err := s.mb.RecordHaproxyActiveDataPoint(now, record["act"]); err != nil {
+				scrapeErrors = append(scrapeErrors, err)
+			}
+		}
 		if record["scur"] != "" {
 			if err := s.mb.RecordHaproxySessionsCountDataPoint(now, record["scur"]); err != nil {
 				scrapeErrors = append(scrapeErrors, err)
