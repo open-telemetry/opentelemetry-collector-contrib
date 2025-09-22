@@ -17,6 +17,8 @@ all_set:
       enabled: true
     haproxy.compression.output:
       enabled: true
+    haproxy.connections.average_time:
+      enabled: true
     haproxy.connections.errors:
       enabled: true
     haproxy.connections.rate:
@@ -29,6 +31,8 @@ all_set:
       enabled: true
     haproxy.failed_checks:
       enabled: true
+    haproxy.requests.average_time:
+      enabled: true
     haproxy.requests.denied:
       enabled: true
     haproxy.requests.errors:
@@ -40,6 +44,8 @@ all_set:
     haproxy.requests.redispatched:
       enabled: true
     haproxy.requests.total:
+      enabled: true
+    haproxy.responses.average_time:
       enabled: true
     haproxy.responses.denied:
       enabled: true
@@ -82,6 +88,8 @@ none_set:
       enabled: false
     haproxy.compression.output:
       enabled: false
+    haproxy.connections.average_time:
+      enabled: false
     haproxy.connections.errors:
       enabled: false
     haproxy.connections.rate:
@@ -94,6 +102,8 @@ none_set:
       enabled: false
     haproxy.failed_checks:
       enabled: false
+    haproxy.requests.average_time:
+      enabled: false
     haproxy.requests.denied:
       enabled: false
     haproxy.requests.errors:
@@ -105,6 +115,8 @@ none_set:
     haproxy.requests.redispatched:
       enabled: false
     haproxy.requests.total:
+      enabled: false
+    haproxy.responses.average_time:
       enabled: false
     haproxy.responses.denied:
       enabled: false

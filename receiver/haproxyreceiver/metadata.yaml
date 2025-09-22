@@ -275,3 +275,24 @@ metrics:
       value_type: int
       input_type: string
     unit: "1"
+  haproxy.connections.average_time:
+    description: Average connect time in ms over the 1024 last requests. Corresponds to HAProxy's `ctime` metric.
+    enabled: false
+    gauge:
+      value_type: double
+      input_type: string
+    unit: ms
+  haproxy.requests.average_time:
+    description: Average queue time in ms over the 1024 last requests. Corresponds to HAProxy's `qtime` metric.
+    enabled: false
+    gauge:
+      value_type: double
+      input_type: string
+    unit: ms
+  haproxy.responses.average_time:
+    description: Average response time in ms over the 1024 last requests. Corresponds to HAProxy's `rtime` metric.
+    enabled: false
+    gauge:
+      value_type: double
+      input_type: string
+    unit: ms

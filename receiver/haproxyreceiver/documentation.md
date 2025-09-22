@@ -212,6 +212,14 @@ Number of HTTP response bytes emitted by the compressor. Corresponds to HAProxy'
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | by | Sum | Int | Cumulative | true |
 
+### haproxy.connections.average_time
+
+Average connect time in ms over the 1024 last requests. Corresponds to HAProxy's `ctime` metric.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| ms | Gauge | Double |
+
 ### haproxy.connections.total
 
 Cumulative number of connections (frontend). Corresponds to HAProxy's `conn_tot` metric.
@@ -235,6 +243,22 @@ Number of failed checks. (Only counts checks failed when the server is up). Corr
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {checks} | Sum | Int | Cumulative | true |
+
+### haproxy.requests.average_time
+
+Average queue time in ms over the 1024 last requests. Corresponds to HAProxy's `qtime` metric.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| ms | Gauge | Double |
+
+### haproxy.responses.average_time
+
+Average response time in ms over the 1024 last requests. Corresponds to HAProxy's `rtime` metric.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| ms | Gauge | Double |
 
 ### haproxy.sessions.total
 

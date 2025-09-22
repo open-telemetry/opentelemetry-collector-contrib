@@ -253,6 +253,21 @@ func (s *haproxyScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 				scrapeErrors = append(scrapeErrors, err)
 			}
 		}
+		if record["ctime"] != "" {
+			if err := s.mb.RecordHaproxyConnectionsAverageTimeDataPoint(now, record["ctime"]); err != nil {
+				scrapeErrors = append(scrapeErrors, err)
+			}
+		}
+		if record["qtime"] != "" {
+			if err := s.mb.RecordHaproxyRequestsAverageTimeDataPoint(now, record["qtime"]); err != nil {
+				scrapeErrors = append(scrapeErrors, err)
+			}
+		}
+		if record["rtime"] != "" {
+			if err := s.mb.RecordHaproxyResponsesAverageTimeDataPoint(now, record["rtime"]); err != nil {
+				scrapeErrors = append(scrapeErrors, err)
+			}
+		}
 		rb := s.mb.NewResourceBuilder()
 		rb.SetHaproxyProxyName(record["pxname"])
 		rb.SetHaproxyServiceName(record["svname"])
