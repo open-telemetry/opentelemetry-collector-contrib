@@ -111,7 +111,7 @@ func TestClientConfig(t *testing.T) {
 				return cfg
 			}(),
 		},
-		"disable_leader_epoch": {
+		"use_leader_epoch": {
 			expected: ClientConfig{
 				Brokers:                              []string{"foo:123", "bar:456"},
 				ResolveCanonicalBootstrapServersOnly: true,
@@ -139,8 +139,8 @@ func TestClientConfig(t *testing.T) {
 						Backoff: 5 * time.Second,
 					},
 				},
-				RackID:             "rack1",
-				DisableLeaderEpoch: true,
+				RackID:         "rack1",
+				UseLeaderEpoch: true,
 			},
 		},
 

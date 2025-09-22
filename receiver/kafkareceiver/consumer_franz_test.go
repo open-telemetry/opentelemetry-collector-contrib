@@ -325,12 +325,12 @@ func TestLost(t *testing.T) {
 	c.lost(t.Context(), nil, map[string][]int32{"404": {0}}, true)
 }
 
-func TestFranzConsumer_DisableLeaderEpoch_Smoke(t *testing.T) {
+func TestFranzConsumer_UseLeaderEpoch_Smoke(t *testing.T) {
 	setFranzGo(t, true)
 
 	topic := "otlp_spans"
 	kafkaClient, cfg := mustNewFakeCluster(t, kfake.SeedTopics(1, topic))
-	cfg.DisableLeaderEpoch = true // <-- exercise the option
+	cfg.UseLeaderEpoch = true // <-- exercise the option
 	cfg.ConsumerConfig = configkafka.ConsumerConfig{
 		GroupID:    t.Name(),
 		AutoCommit: configkafka.AutoCommitConfig{Enable: true, Interval: 100 * time.Millisecond},
@@ -372,8 +372,8 @@ func TestFranzConsumer_DisableLeaderEpoch_Smoke(t *testing.T) {
 	require.NoError(t, c.Shutdown(t.Context()))
 }
 
-func TestMakeDisableLeaderEpochAdjuster_ClearsEpoch(t *testing.T) {
-	adj := makeDisableLeaderEpochAdjuster()
+func TestMakeUseLeaderEpochAdjuster_ClearsEpoch(t *testing.T) {
+	adj := makeUseLeaderEpochAdjuster()
 
 	input := map[string]map[int32]kgo.Offset{
 		"t": {

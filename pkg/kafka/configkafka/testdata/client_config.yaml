@@ -96,13 +96,13 @@ kafka/foo:
       max: 10
       backoff: 5s
 
-kafka/disable_leader_epoch:
+kafka/use_leader_epoch:
   brokers: ["foo:123", "bar:456"]
   resolve_canonical_bootstrap_servers_only: true
   client_id: vip
   protocol_version: 1.2.3
   rack_id: rack1
-  disable_leader_epoch: true
+  use_leader_epoch: true
   tls:
     ca_file: ca.pem
     cert_file: cert.pem
