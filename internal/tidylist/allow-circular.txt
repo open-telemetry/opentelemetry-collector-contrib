@@ -2,10 +2,6 @@
 # The `make tidylist` command will check against this list and error out if circular dependencies
 # are accidentally added or removed.
 
-# exporter/datadog <-> connector/datadog
-exporter/datadogexporter
-connector/datadogconnector
-
 # receiver/otelarrow <-> internal/otelarrow <-> exporter/otelarrow
 receiver/otelarrowreceiver
 exporter/otelarrowexporter
