@@ -51,9 +51,9 @@ all_set:
       enabled: true
     splunk.kvstore.status:
       enabled: true
-    splunk.license.index.usage:
+    splunk.license.expiration.seconds_remaining:
       enabled: true
-    splunk.license.remaining:
+    splunk.license.index.usage:
       enabled: true
     splunk.parse.queue.ratio:
       enabled: true
@@ -155,9 +155,9 @@ none_set:
       enabled: false
     splunk.kvstore.status:
       enabled: false
-    splunk.license.index.usage:
+    splunk.license.expiration.seconds_remaining:
       enabled: false
-    splunk.license.remaining:
+    splunk.license.index.usage:
       enabled: false
     splunk.parse.queue.ratio:
       enabled: false

@@ -430,23 +430,7 @@ This is the overall status of the kvstore for the given deployment.
 | splunk.splunkd.build | The build number for this Splunk instance version | Any Str | false |
 | splunk.splunkd.version | The splunkd version number | Any Str | false |
 
-### splunk.license.index.usage
-
-Gauge tracking the indexed license usage per index
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| By | Gauge | Int |
-
-#### Attributes
-
-| Name | Description | Values | Optional |
-| ---- | ----------- | ------ | -------- |
-| splunk.index.name | The name of the index reporting a specific KPI | Any Str | false |
-| splunk.splunkd.build | The build number for this Splunk instance version | Any Str | false |
-| splunk.splunkd.version | The splunkd version number | Any Str | false |
-
-### splunk.license.remaining
+### splunk.license.expiration.seconds_remaining
 
 Gauge tracking the seconds remaining on any given Splunk License found via Splunk API.
 
@@ -461,6 +445,22 @@ Gauge tracking the seconds remaining on any given Splunk License found via Splun
 | splunk.license.status | The status of the license. | Any Str | false |
 | splunk.license.label | The label of the license. | Any Str | false |
 | splunk.license.type | The type of license. | Any Str | false |
+| splunk.splunkd.build | The build number for this Splunk instance version | Any Str | false |
+| splunk.splunkd.version | The splunkd version number | Any Str | false |
+
+### splunk.license.index.usage
+
+Gauge tracking the indexed license usage per index
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| splunk.index.name | The name of the index reporting a specific KPI | Any Str | false |
 | splunk.splunkd.build | The build number for this Splunk instance version | Any Str | false |
 | splunk.splunkd.version | The splunkd version number | Any Str | false |
 

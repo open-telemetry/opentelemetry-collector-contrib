@@ -457,7 +457,7 @@ metrics:
     gauge:
       value_type: int
     attributes: [splunk.splunkd.build, splunk.splunkd.version]
-  splunk.license.remaining:
+  splunk.license.expiration.seconds_remaining:
     enabled: false
     description: Gauge tracking the seconds remaining on any given Splunk License found via Splunk API.
     unit: "{seconds}"

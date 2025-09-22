@@ -136,10 +136,10 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSplunkKvstoreStatusDataPoint(ts, 1, "splunk.kvstore.storage.engine-val", "splunk.kvstore.external-val", "splunk.kvstore.status.value-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 
 			allMetricsCount++
-			mb.RecordSplunkLicenseIndexUsageDataPoint(ts, 1, "splunk.index.name-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
+			mb.RecordSplunkLicenseExpirationSecondsRemainingDataPoint(ts, 1, "splunk.license.status-val", "splunk.license.label-val", "splunk.license.type-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 
 			allMetricsCount++
-			mb.RecordSplunkLicenseRemainingDataPoint(ts, 1, "splunk.license.status-val", "splunk.license.label-val", "splunk.license.type-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
+			mb.RecordSplunkLicenseIndexUsageDataPoint(ts, 1, "splunk.index.name-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 
 			allMetricsCount++
 			mb.RecordSplunkParseQueueRatioDataPoint(ts, 1, "splunk.host-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
@@ -784,30 +784,9 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
 					assert.True(t, ok)
 					assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
-				case "splunk.license.index.usage":
-					assert.False(t, validatedMetrics["splunk.license.index.usage"], "Found a duplicate in the metrics slice: splunk.license.index.usage")
-					validatedMetrics["splunk.license.index.usage"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Gauge tracking the indexed license usage per index", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("splunk.index.name")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.index.name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
-					assert.True(t, ok)
-					assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
-				case "splunk.license.remaining":
-					assert.False(t, validatedMetrics["splunk.license.remaining"], "Found a duplicate in the metrics slice: splunk.license.remaining")
-					validatedMetrics["splunk.license.remaining"] = true
+				case "splunk.license.expiration.seconds_remaining":
+					assert.False(t, validatedMetrics["splunk.license.expiration.seconds_remaining"], "Found a duplicate in the metrics slice: splunk.license.expiration.seconds_remaining")
+					validatedMetrics["splunk.license.expiration.seconds_remaining"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "Gauge tracking the seconds remaining on any given Splunk License found via Splunk API.", ms.At(i).Description())
@@ -826,6 +805,27 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("splunk.license.type")
 					assert.True(t, ok)
 					assert.Equal(t, "splunk.license.type-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+					assert.True(t, ok)
+					assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+					assert.True(t, ok)
+					assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+				case "splunk.license.index.usage":
+					assert.False(t, validatedMetrics["splunk.license.index.usage"], "Found a duplicate in the metrics slice: splunk.license.index.usage")
+					validatedMetrics["splunk.license.index.usage"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Gauge tracking the indexed license usage per index", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("splunk.index.name")
+					assert.True(t, ok)
+					assert.Equal(t, "splunk.index.name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
 					assert.True(t, ok)
 					assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
