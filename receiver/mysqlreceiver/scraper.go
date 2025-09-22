@@ -623,7 +623,8 @@ func (m *mySQLScraper) scrapeQuerySamples(now pcommon.Timestamp, errs *scraperer
 		return
 	}
 
-	for _, sample := range samples {
+	for i := range samples {
+		sample := &samples[i]
 		clientAddress := ""
 		clientPort := int64(0)
 		networkPeerAddress := ""

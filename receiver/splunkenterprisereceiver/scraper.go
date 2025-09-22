@@ -1151,7 +1151,7 @@ func (s *splunkScraper) scrapeIndexesTotalSize(_ context.Context, now pcommon.Ti
 	if !s.conf.Metrics.SplunkDataIndexesExtendedTotalSize.Enabled || !s.splunkClient.isConfigured(typeIdx) {
 		return
 	}
-	i := info[typeIdx].Entries[0].Content
+	infoContent := info[typeIdx].Entries[0].Content
 
 	var it indexesExtended
 	ept := apiDict[`SplunkDataIndexesExtended`]
@@ -1183,7 +1183,8 @@ func (s *splunkScraper) scrapeIndexesTotalSize(_ context.Context, now pcommon.Ti
 
 	var name string
 	var totalSize int64
-	for _, f := range it.Entries {
+	for i := range it.Entries {
+		f := &it.Entries[i]
 		if f.Name != "" {
 			name = f.Name
 		}
@@ -1195,7 +1196,7 @@ func (s *splunkScraper) scrapeIndexesTotalSize(_ context.Context, now pcommon.Ti
 			}
 		}
 
-		s.mb.RecordSplunkDataIndexesExtendedTotalSizeDataPoint(now, totalSize, name, i.Build, i.Version)
+		s.mb.RecordSplunkDataIndexesExtendedTotalSizeDataPoint(now, totalSize, name, infoContent.Build, infoContent.Version)
 	}
 }
 
@@ -1204,7 +1205,7 @@ func (s *splunkScraper) scrapeIndexesEventCount(_ context.Context, now pcommon.T
 	if !s.conf.Metrics.SplunkDataIndexesExtendedEventCount.Enabled || !s.splunkClient.isConfigured(typeIdx) {
 		return
 	}
-	i := info[typeIdx].Entries[0].Content
+	infoContent := info[typeIdx].Entries[0].Content
 
 	var it indexesExtended
 
@@ -1236,13 +1237,14 @@ func (s *splunkScraper) scrapeIndexesEventCount(_ context.Context, now pcommon.T
 	}
 
 	var name string
-	for _, f := range it.Entries {
+	for i := range it.Entries {
+		f := &it.Entries[i]
 		if f.Name != "" {
 			name = f.Name
 		}
 		totalEventCount := int64(f.Content.TotalEventCount)
 
-		s.mb.RecordSplunkDataIndexesExtendedEventCountDataPoint(now, totalEventCount, name, i.Build, i.Version)
+		s.mb.RecordSplunkDataIndexesExtendedEventCountDataPoint(now, totalEventCount, name, infoContent.Build, infoContent.Version)
 	}
 }
 
@@ -1251,7 +1253,7 @@ func (s *splunkScraper) scrapeIndexesBucketCount(_ context.Context, now pcommon.
 	if !s.conf.Metrics.SplunkDataIndexesExtendedBucketCount.Enabled || !s.splunkClient.isConfigured(typeIdx) {
 		return
 	}
-	i := info[typeIdx].Entries[0].Content
+	infoContent := info[typeIdx].Entries[0].Content
 
 	var it indexesExtended
 
@@ -1284,7 +1286,8 @@ func (s *splunkScraper) scrapeIndexesBucketCount(_ context.Context, now pcommon.
 
 	var name string
 	var totalBucketCount int64
-	for _, f := range it.Entries {
+	for i := range it.Entries {
+		f := &it.Entries[i]
 		if f.Name != "" {
 			name = f.Name
 		}
@@ -1295,7 +1298,7 @@ func (s *splunkScraper) scrapeIndexesBucketCount(_ context.Context, now pcommon.
 			}
 		}
 
-		s.mb.RecordSplunkDataIndexesExtendedBucketCountDataPoint(now, totalBucketCount, name, i.Build, i.Version)
+		s.mb.RecordSplunkDataIndexesExtendedBucketCountDataPoint(now, totalBucketCount, name, infoContent.Build, infoContent.Version)
 	}
 }
 
@@ -1304,7 +1307,7 @@ func (s *splunkScraper) scrapeIndexesRawSize(_ context.Context, now pcommon.Time
 	if !s.conf.Metrics.SplunkDataIndexesExtendedRawSize.Enabled || !s.splunkClient.isConfigured(typeIdx) {
 		return
 	}
-	i := info[typeIdx].Entries[0].Content
+	infoContent := info[typeIdx].Entries[0].Content
 
 	var it indexesExtended
 
@@ -1337,7 +1340,8 @@ func (s *splunkScraper) scrapeIndexesRawSize(_ context.Context, now pcommon.Time
 
 	var name string
 	var totalRawSize int64
-	for _, f := range it.Entries {
+	for i := range it.Entries {
+		f := &it.Entries[i]
 		if f.Name != "" {
 			name = f.Name
 		}
@@ -1348,7 +1352,7 @@ func (s *splunkScraper) scrapeIndexesRawSize(_ context.Context, now pcommon.Time
 				errs <- err
 			}
 		}
-		s.mb.RecordSplunkDataIndexesExtendedRawSizeDataPoint(now, totalRawSize, name, i.Build, i.Version)
+		s.mb.RecordSplunkDataIndexesExtendedRawSizeDataPoint(now, totalRawSize, name, infoContent.Build, infoContent.Version)
 	}
 }
 
@@ -1357,7 +1361,7 @@ func (s *splunkScraper) scrapeIndexesBucketEventCount(_ context.Context, now pco
 	if !s.conf.Metrics.SplunkDataIndexesExtendedBucketEventCount.Enabled || !s.splunkClient.isConfigured(typeIdx) {
 		return
 	}
-	i := info[typeIdx].Entries[0].Content
+	infoContent := info[typeIdx].Entries[0].Content
 
 	var it indexesExtended
 
@@ -1391,7 +1395,8 @@ func (s *splunkScraper) scrapeIndexesBucketEventCount(_ context.Context, now pco
 	var name string
 	var bucketDir string
 	var bucketEventCount int64
-	for _, f := range it.Entries {
+	for i := range it.Entries {
+		f := &it.Entries[i]
 		if f.Name != "" {
 			name = f.Name
 		}
@@ -1401,7 +1406,7 @@ func (s *splunkScraper) scrapeIndexesBucketEventCount(_ context.Context, now pco
 			if err != nil {
 				errs <- err
 			}
-			s.mb.RecordSplunkDataIndexesExtendedBucketEventCountDataPoint(now, bucketEventCount, name, bucketDir, i.Build, i.Version)
+			s.mb.RecordSplunkDataIndexesExtendedBucketEventCountDataPoint(now, bucketEventCount, name, bucketDir, infoContent.Build, infoContent.Version)
 		}
 		if f.Content.BucketDirs.Home.EventCount != "" {
 			bucketDir = "home"
@@ -1409,7 +1414,7 @@ func (s *splunkScraper) scrapeIndexesBucketEventCount(_ context.Context, now pco
 			if err != nil {
 				errs <- err
 			}
-			s.mb.RecordSplunkDataIndexesExtendedBucketEventCountDataPoint(now, bucketEventCount, name, bucketDir, i.Build, i.Version)
+			s.mb.RecordSplunkDataIndexesExtendedBucketEventCountDataPoint(now, bucketEventCount, name, bucketDir, infoContent.Build, infoContent.Version)
 		}
 		if f.Content.BucketDirs.Thawed.EventCount != "" {
 			bucketDir = "thawed"
@@ -1417,7 +1422,7 @@ func (s *splunkScraper) scrapeIndexesBucketEventCount(_ context.Context, now pco
 			if err != nil {
 				errs <- err
 			}
-			s.mb.RecordSplunkDataIndexesExtendedBucketEventCountDataPoint(now, bucketEventCount, name, bucketDir, i.Build, i.Version)
+			s.mb.RecordSplunkDataIndexesExtendedBucketEventCountDataPoint(now, bucketEventCount, name, bucketDir, infoContent.Build, infoContent.Version)
 		}
 	}
 }
@@ -1427,7 +1432,7 @@ func (s *splunkScraper) scrapeIndexesBucketHotWarmCount(_ context.Context, now p
 	if !s.conf.Metrics.SplunkDataIndexesExtendedBucketHotCount.Enabled || !s.splunkClient.isConfigured(typeIdx) {
 		return
 	}
-	i := info[typeIdx].Entries[0].Content
+	infoContent := info[typeIdx].Entries[0].Content
 
 	var it indexesExtended
 
@@ -1462,7 +1467,8 @@ func (s *splunkScraper) scrapeIndexesBucketHotWarmCount(_ context.Context, now p
 	var bucketDir string
 	var bucketHotCount int64
 	var bucketWarmCount int64
-	for _, f := range it.Entries {
+	for i := range it.Entries {
+		f := &it.Entries[i]
 		if f.Name != "" {
 			name = f.Name
 		}
@@ -1472,7 +1478,7 @@ func (s *splunkScraper) scrapeIndexesBucketHotWarmCount(_ context.Context, now p
 			if err != nil {
 				errs <- err
 			}
-			s.mb.RecordSplunkDataIndexesExtendedBucketHotCountDataPoint(now, bucketHotCount, name, bucketDir, i.Build, i.Version)
+			s.mb.RecordSplunkDataIndexesExtendedBucketHotCountDataPoint(now, bucketHotCount, name, bucketDir, infoContent.Build, infoContent.Version)
 		}
 		if f.Content.BucketDirs.Home.WarmBucketCount != "" {
 			bucketWarmCount, err = strconv.ParseInt(f.Content.BucketDirs.Home.WarmBucketCount, 10, 64)
@@ -1480,7 +1486,7 @@ func (s *splunkScraper) scrapeIndexesBucketHotWarmCount(_ context.Context, now p
 			if err != nil {
 				errs <- err
 			}
-			s.mb.RecordSplunkDataIndexesExtendedBucketWarmCountDataPoint(now, bucketWarmCount, name, bucketDir, i.Build, i.Version)
+			s.mb.RecordSplunkDataIndexesExtendedBucketWarmCountDataPoint(now, bucketWarmCount, name, bucketDir, infoContent.Build, infoContent.Version)
 		}
 	}
 }
@@ -1656,7 +1662,7 @@ func (s *splunkScraper) scrapeSearchArtifacts(_ context.Context, now pcommon.Tim
 	if !s.splunkClient.isConfigured(typeSh) {
 		return
 	}
-	i := info[typeSh].Entries[0].Content
+	infoContent := info[typeSh].Entries[0].Content
 
 	var da dispatchArtifacts
 
@@ -1686,13 +1692,14 @@ func (s *splunkScraper) scrapeSearchArtifacts(_ context.Context, now pcommon.Tim
 		return
 	}
 
-	for _, f := range da.Entries {
+	for i := range da.Entries {
+		f := &da.Entries[i]
 		if s.conf.Metrics.SplunkServerSearchartifactsAdhoc.Enabled && f.Content.AdhocCount != "" {
 			adhocCount, err := strconv.ParseInt(f.Content.AdhocCount, 10, 64)
 			if err != nil {
 				errs <- err
 			}
-			s.mb.RecordSplunkServerSearchartifactsAdhocDataPoint(now, adhocCount, s.conf.SHEndpoint.Endpoint, i.Build, i.Version)
+			s.mb.RecordSplunkServerSearchartifactsAdhocDataPoint(now, adhocCount, s.conf.SHEndpoint.Endpoint, infoContent.Build, infoContent.Version)
 		}
 
 		if s.conf.Metrics.SplunkServerSearchartifactsScheduled.Enabled && f.Content.ScheduledCount != "" {
@@ -1700,7 +1707,7 @@ func (s *splunkScraper) scrapeSearchArtifacts(_ context.Context, now pcommon.Tim
 			if err != nil {
 				errs <- err
 			}
-			s.mb.RecordSplunkServerSearchartifactsScheduledDataPoint(now, scheduledCount, s.conf.SHEndpoint.Endpoint, i.Build, i.Version)
+			s.mb.RecordSplunkServerSearchartifactsScheduledDataPoint(now, scheduledCount, s.conf.SHEndpoint.Endpoint, infoContent.Build, infoContent.Version)
 		}
 
 		if s.conf.Metrics.SplunkServerSearchartifactsCompleted.Enabled && f.Content.CompletedCount != "" {
@@ -1708,7 +1715,7 @@ func (s *splunkScraper) scrapeSearchArtifacts(_ context.Context, now pcommon.Tim
 			if err != nil {
 				errs <- err
 			}
-			s.mb.RecordSplunkServerSearchartifactsCompletedDataPoint(now, completedCount, s.conf.SHEndpoint.Endpoint, i.Build, i.Version)
+			s.mb.RecordSplunkServerSearchartifactsCompletedDataPoint(now, completedCount, s.conf.SHEndpoint.Endpoint, infoContent.Build, infoContent.Version)
 		}
 
 		if s.conf.Metrics.SplunkServerSearchartifactsIncomplete.Enabled && f.Content.IncompleteCount != "" {
@@ -1716,7 +1723,7 @@ func (s *splunkScraper) scrapeSearchArtifacts(_ context.Context, now pcommon.Tim
 			if err != nil {
 				errs <- err
 			}
-			s.mb.RecordSplunkServerSearchartifactsIncompleteDataPoint(now, incompleteCount, s.conf.SHEndpoint.Endpoint, i.Build, i.Version)
+			s.mb.RecordSplunkServerSearchartifactsIncompleteDataPoint(now, incompleteCount, s.conf.SHEndpoint.Endpoint, infoContent.Build, infoContent.Version)
 		}
 
 		if s.conf.Metrics.SplunkServerSearchartifactsInvalid.Enabled && f.Content.InvalidCount != "" {
@@ -1724,7 +1731,7 @@ func (s *splunkScraper) scrapeSearchArtifacts(_ context.Context, now pcommon.Tim
 			if err != nil {
 				errs <- err
 			}
-			s.mb.RecordSplunkServerSearchartifactsInvalidDataPoint(now, invalidCount, s.conf.SHEndpoint.Endpoint, i.Build, i.Version)
+			s.mb.RecordSplunkServerSearchartifactsInvalidDataPoint(now, invalidCount, s.conf.SHEndpoint.Endpoint, infoContent.Build, infoContent.Version)
 		}
 
 		if s.conf.Metrics.SplunkServerSearchartifactsSavedsearches.Enabled && f.Content.SavedSearchesCount != "" {
@@ -1732,7 +1739,7 @@ func (s *splunkScraper) scrapeSearchArtifacts(_ context.Context, now pcommon.Tim
 			if err != nil {
 				errs <- err
 			}
-			s.mb.RecordSplunkServerSearchartifactsSavedsearchesDataPoint(now, savedSearchesCount, s.conf.SHEndpoint.Endpoint, i.Build, i.Version)
+			s.mb.RecordSplunkServerSearchartifactsSavedsearchesDataPoint(now, savedSearchesCount, s.conf.SHEndpoint.Endpoint, infoContent.Build, infoContent.Version)
 		}
 
 		if s.conf.Metrics.SplunkServerSearchartifactsJobCacheSize.Enabled && f.Content.InfoCacheSize != "" {
@@ -1740,7 +1747,7 @@ func (s *splunkScraper) scrapeSearchArtifacts(_ context.Context, now pcommon.Tim
 			if err != nil {
 				errs <- err
 			}
-			s.mb.RecordSplunkServerSearchartifactsJobCacheSizeDataPoint(now, infoCacheSize, s.conf.SHEndpoint.Endpoint, "info", i.Build, i.Version)
+			s.mb.RecordSplunkServerSearchartifactsJobCacheSizeDataPoint(now, infoCacheSize, s.conf.SHEndpoint.Endpoint, "info", infoContent.Build, infoContent.Version)
 		}
 
 		if s.conf.Metrics.SplunkServerSearchartifactsJobCacheSize.Enabled && f.Content.StatusCacheSize != "" {
@@ -1748,7 +1755,7 @@ func (s *splunkScraper) scrapeSearchArtifacts(_ context.Context, now pcommon.Tim
 			if err != nil {
 				errs <- err
 			}
-			s.mb.RecordSplunkServerSearchartifactsJobCacheSizeDataPoint(now, statusCacheSize, s.conf.SHEndpoint.Endpoint, "status", i.Build, i.Version)
+			s.mb.RecordSplunkServerSearchartifactsJobCacheSizeDataPoint(now, statusCacheSize, s.conf.SHEndpoint.Endpoint, "status", infoContent.Build, infoContent.Version)
 		}
 
 		if s.conf.Metrics.SplunkServerSearchartifactsJobCacheCount.Enabled && f.Content.CacheTotalEntries != "" {
@@ -1756,7 +1763,7 @@ func (s *splunkScraper) scrapeSearchArtifacts(_ context.Context, now pcommon.Tim
 			if err != nil {
 				errs <- err
 			}
-			s.mb.RecordSplunkServerSearchartifactsJobCacheCountDataPoint(now, cacheTotalEntries, s.conf.SHEndpoint.Endpoint, i.Build, i.Version)
+			s.mb.RecordSplunkServerSearchartifactsJobCacheCountDataPoint(now, cacheTotalEntries, s.conf.SHEndpoint.Endpoint, infoContent.Build, infoContent.Version)
 		}
 
 		if s.conf.Metrics.SplunkServerSearchartifactsAdhocSize.Enabled && f.Content.AdhocSize != "" {
@@ -1764,7 +1771,7 @@ func (s *splunkScraper) scrapeSearchArtifacts(_ context.Context, now pcommon.Tim
 			if err != nil {
 				errs <- err
 			}
-			s.mb.RecordSplunkServerSearchartifactsAdhocSizeDataPoint(now, adhocSize, s.conf.SHEndpoint.Endpoint, i.Build, i.Version)
+			s.mb.RecordSplunkServerSearchartifactsAdhocSizeDataPoint(now, adhocSize, s.conf.SHEndpoint.Endpoint, infoContent.Build, infoContent.Version)
 		}
 
 		if s.conf.Metrics.SplunkServerSearchartifactsScheduledSize.Enabled && f.Content.ScheduledSize != "" {
@@ -1772,7 +1779,7 @@ func (s *splunkScraper) scrapeSearchArtifacts(_ context.Context, now pcommon.Tim
 			if err != nil {
 				errs <- err
 			}
-			s.mb.RecordSplunkServerSearchartifactsScheduledSizeDataPoint(now, scheduledSize, s.conf.SHEndpoint.Endpoint, i.Build, i.Version)
+			s.mb.RecordSplunkServerSearchartifactsScheduledSizeDataPoint(now, scheduledSize, s.conf.SHEndpoint.Endpoint, infoContent.Build, infoContent.Version)
 		}
 
 		if s.conf.Metrics.SplunkServerSearchartifactsCompletedSize.Enabled && f.Content.CompletedSize != "" {
@@ -1780,7 +1787,7 @@ func (s *splunkScraper) scrapeSearchArtifacts(_ context.Context, now pcommon.Tim
 			if err != nil {
 				errs <- err
 			}
-			s.mb.RecordSplunkServerSearchartifactsCompletedSizeDataPoint(now, completedSize, s.conf.SHEndpoint.Endpoint, i.Build, i.Version)
+			s.mb.RecordSplunkServerSearchartifactsCompletedSizeDataPoint(now, completedSize, s.conf.SHEndpoint.Endpoint, infoContent.Build, infoContent.Version)
 		}
 
 		if s.conf.Metrics.SplunkServerSearchartifactsIncompleteSize.Enabled && f.Content.IncompleteSize != "" {
@@ -1788,7 +1795,7 @@ func (s *splunkScraper) scrapeSearchArtifacts(_ context.Context, now pcommon.Tim
 			if err != nil {
 				errs <- err
 			}
-			s.mb.RecordSplunkServerSearchartifactsIncompleteSizeDataPoint(now, incompleteSize, s.conf.SHEndpoint.Endpoint, i.Build, i.Version)
+			s.mb.RecordSplunkServerSearchartifactsIncompleteSizeDataPoint(now, incompleteSize, s.conf.SHEndpoint.Endpoint, infoContent.Build, infoContent.Version)
 		}
 	}
 }

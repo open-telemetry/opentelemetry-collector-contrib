@@ -67,7 +67,8 @@ func orderByLabelValue(wreq *prompb.WriteRequest) {
 		sample *prompb.Sample
 	}
 
-	for _, timeSeries := range wreq.Timeseries {
+	for i := range wreq.Timeseries {
+		timeSeries := wreq.Timeseries[i]
 		bMsgs := make([]*byLabelMessage, 0, len(wreq.Timeseries)*10)
 		for i := range timeSeries.Labels {
 			bMsgs = append(bMsgs, &byLabelMessage{

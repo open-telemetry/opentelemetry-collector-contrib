@@ -29,7 +29,7 @@ func (t *deltaTranslator) start() {
 	}
 }
 
-func (t *deltaTranslator) translate(pts []*sfxpb.DataPoint, tr Rule) []*sfxpb.DataPoint {
+func (t *deltaTranslator) translate(pts []*sfxpb.DataPoint, tr *Rule) []*sfxpb.DataPoint {
 	for _, currPt := range pts {
 		deltaMetricName, ok := tr.Mapping[currPt.Metric]
 		if !ok {

@@ -324,7 +324,9 @@ func standardEnding(t *testing.T, params testParams, testCon *testConsumer, expe
 	rops = map[string]int{}
 	eops = map[string]int{}
 
-	for _, span := range testCon.expSpans.GetSpans() {
+	expSpans := testCon.expSpans.GetSpans()
+	for i := range expSpans {
+		span := &expSpans[i]
 		eops[fmt.Sprintf("%v/%v", span.Name, span.Status.Code)]++
 
 		// This span has a recognized span error which we can't easily fix. See
@@ -336,7 +338,9 @@ func standardEnding(t *testing.T, params testParams, testCon *testConsumer, expe
 		require.NotEqual(t, otelcodes.Error, span.Status.Code,
 			"Exporter span has error: %v: %v", span.Name, span.Status.Description)
 	}
-	for _, span := range testCon.recvSpans.GetSpans() {
+	recvSpans := testCon.recvSpans.GetSpans()
+	for i := range recvSpans {
+		span := &recvSpans[i]
 		rops[fmt.Sprintf("%v/%v", span.Name, span.Status.Code)]++
 		// This span occasionally has a "transport is closing error"
 		if span.Name == "opentelemetry.proto.experimental.arrow.v1.ArrowTracesService/ArrowTraces" {
@@ -358,7 +362,9 @@ func standardEnding(t *testing.T, params testParams, testCon *testConsumer, expe
 func logSigs(obs *observer.ObservedLogs) (map[string]int, []string) {
 	counts := map[string]int{}
 	var msgs []string
-	for _, rl := range obs.All() {
+	obsAll := obs.All()
+	for i := range obsAll {
+		rl := &obsAll[i]
 		var attrs []string
 		for _, f := range rl.Context {
 			attrs = append(attrs, f.Key)

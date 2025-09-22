@@ -52,7 +52,8 @@ type ScopeProfile struct {
 
 func (sp ScopeProfile) Transform(dic pprofile.ProfilesDictionary, prp pprofile.ResourceProfiles) pprofile.ScopeProfiles {
 	psp := prp.ScopeProfiles().AppendEmpty()
-	for _, p := range sp.Profile {
+	for i := range sp.Profile {
+		p := &sp.Profile[i]
 		p.Transform(dic, psp)
 	}
 	sp.Scope.Transform(psp)

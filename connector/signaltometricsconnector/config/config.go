@@ -67,7 +67,8 @@ func (c *Config) Validate() error {
 		if err != nil {
 			return fmt.Errorf("failed to create parser for OTTL spans: %w", err)
 		}
-		for _, span := range c.Spans {
+		for i := range c.Spans {
+			span := &c.Spans[i]
 			if err := validateMetricInfo(span, parser); err != nil {
 				multiError = errors.Join(multiError, fmt.Errorf("failed to validate spans configuration: %w", err))
 			}
@@ -81,7 +82,8 @@ func (c *Config) Validate() error {
 		if err != nil {
 			return fmt.Errorf("failed to create parser for OTTL datapoints: %w", err)
 		}
-		for _, dp := range c.Datapoints {
+		for i := range c.Datapoints {
+			dp := &c.Datapoints[i]
 			if err := validateMetricInfo(dp, parser); err != nil {
 				multiError = errors.Join(multiError, fmt.Errorf("failed to validate datapoints configuration: %w", err))
 			}
@@ -95,7 +97,8 @@ func (c *Config) Validate() error {
 		if err != nil {
 			return fmt.Errorf("failed to create parser for OTTL logs: %w", err)
 		}
-		for _, log := range c.Logs {
+		for i := range c.Logs {
+			log := &c.Logs[i]
 			if err := validateMetricInfo(log, parser); err != nil {
 				multiError = errors.Join(multiError, fmt.Errorf("failed to validate logs configuration: %w", err))
 			}
@@ -109,7 +112,8 @@ func (c *Config) Validate() error {
 		if err != nil {
 			return fmt.Errorf("failed to create parser for OTTL profiles: %w", err)
 		}
-		for _, profile := range c.Profiles {
+		for i := range c.Profiles {
+			profile := &c.Profiles[i]
 			if err := validateMetricInfo(profile, parser); err != nil {
 				multiError = errors.Join(multiError, fmt.Errorf("failed to validate profiles configuration: %w", err))
 			}
@@ -128,19 +132,23 @@ func (c *Config) Unmarshal(collectorCfg *confmap.Conf) error {
 	if err := collectorCfg.Unmarshal(c); err != nil {
 		return err
 	}
-	for i, info := range c.Spans {
+	for i := range c.Spans {
+		info := c.Spans[i]
 		info.ensureDefaults()
 		c.Spans[i] = info
 	}
-	for i, info := range c.Datapoints {
+	for i := range c.Datapoints {
+		info := c.Datapoints[i]
 		info.ensureDefaults()
 		c.Datapoints[i] = info
 	}
-	for i, info := range c.Logs {
+	for i := range c.Logs {
+		info := c.Logs[i]
 		info.ensureDefaults()
 		c.Logs[i] = info
 	}
-	for i, info := range c.Profiles {
+	for i := range c.Profiles {
+		info := c.Profiles[i]
 		info.ensureDefaults()
 		c.Profiles[i] = info
 	}
@@ -275,7 +283,7 @@ func (mi *MetricInfo) validateGauge() error {
 
 // validateMetricInfo is an utility method validate all supported metric
 // types defined for the metric info including any ottl expressions.
-func validateMetricInfo[K any](mi MetricInfo, parser ottl.Parser[K]) error {
+func validateMetricInfo[K any](mi *MetricInfo, parser ottl.Parser[K]) error {
 	if mi.Name == "" {
 		return errors.New("missing required metric name configuration")
 	}

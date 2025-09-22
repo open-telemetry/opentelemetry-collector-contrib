@@ -151,7 +151,7 @@ func TestDetailedPVCLabels(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			podStats := stats.PodStats{
+			podStats := &stats.PodStats{
 				PodRef: stats.PodReference{
 					UID:       tt.pod.uid,
 					Name:      tt.pod.name,
@@ -180,7 +180,7 @@ func TestDetailedPVCLabels(t *testing.T) {
 			}, NodeInfo{}, nil)
 			metadata.DetailedPVCResourceSetter = tt.detailedPVCLabelsSetterOverride
 
-			res, err := getVolumeResourceOptions(rb, podStats, stats.VolumeStats{Name: tt.volumeName}, metadata)
+			res, err := getVolumeResourceOptions(rb, podStats, &stats.VolumeStats{Name: tt.volumeName}, metadata)
 			require.NoError(t, err)
 
 			require.Equal(t, tt.want, res.Attributes().AsRaw())
