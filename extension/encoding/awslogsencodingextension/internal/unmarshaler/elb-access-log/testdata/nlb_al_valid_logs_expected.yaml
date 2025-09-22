@@ -38,8 +38,10 @@ resourceLogs:
                 value:
                   stringValue: ECDHE-RSA-AES128-SHA
             body: {}
-            spanId: ""
             timeUnixNano: "1585731102000000000"
-            traceId: ""
         scope:
+          attributes:
+            - key: awslogs_encoding.format
+              value:
+                stringValue: elb_access_log
           name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension

@@ -104,8 +104,10 @@ resourceLogs:
                 value:
                   stringValue: t13d1717h2_5b57614c22b0_3cbfd9057e0d
             body: {}
-            spanId: ""
             timeUnixNano: "1748208718574000000"
-            traceId: ""
         scope:
+          attributes:
+            - key: awslogs_encoding.format
+              value:
+                stringValue: waf_log
           name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension

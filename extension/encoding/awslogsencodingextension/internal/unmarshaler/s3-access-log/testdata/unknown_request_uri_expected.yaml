@@ -62,8 +62,10 @@ resourceLogs:
                 value:
                   boolValue: true
             body: {}
-            spanId: ""
             timeUnixNano: "1549411238000000000"
-            traceId: ""
         scope:
+          attributes:
+            - key: awslogs_encoding.format
+              value:
+                stringValue: s3_access_log
           name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension

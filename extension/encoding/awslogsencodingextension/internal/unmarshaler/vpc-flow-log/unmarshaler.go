@@ -18,16 +18,12 @@ import (
 	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler"
 )
 
-const (
-	fileFormatPlainText = "plain-text"
-	fileFormatParquet   = "parquet"
-)
-
-var supportedVPCFlowLogFileFormat = []string{fileFormatPlainText, fileFormatParquet}
+var supportedVPCFlowLogFileFormat = []string{constants.FileFormatPlainText, constants.FileFormatParquet}
 
 type vpcFlowLogUnmarshaler struct {
 	// VPC flow logs can be sent in plain text
@@ -46,10 +42,10 @@ func NewVPCFlowLogUnmarshaler(
 	logger *zap.Logger,
 ) (unmarshaler.AWSUnmarshaler, error) {
 	switch format {
-	case fileFormatParquet:
+	case constants.FileFormatParquet:
 		// TODO
 		return nil, errors.New("still needs to be implemented")
-	case fileFormatPlainText: // valid
+	case constants.FileFormatPlainText: // valid
 	default:
 		return nil, fmt.Errorf(
 			"unsupported file fileFormat %q for VPC flow log, expected one of %q",
@@ -66,9 +62,9 @@ func NewVPCFlowLogUnmarshaler(
 
 func (v *vpcFlowLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs, error) {
 	switch v.fileFormat {
-	case fileFormatPlainText:
+	case constants.FileFormatPlainText:
 		return v.unmarshalPlainTextLogs(reader)
-	case fileFormatParquet:
+	case constants.FileFormatParquet:
 		// TODO
 		return plog.Logs{}, errors.New("still needs to be implemented")
 	default:
@@ -121,6 +117,7 @@ func (v *vpcFlowLogUnmarshaler) createLogs() (plog.Logs, plog.ResourceLogs, plog
 	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
 	scopeLogs.Scope().SetName(metadata.ScopeName)
 	scopeLogs.Scope().SetVersion(v.buildInfo.Version)
+	scopeLogs.Scope().Attributes().PutStr(constants.FormatIdentificationTag, constants.FormatVPCFlowLog)
 	return logs, resourceLogs, scopeLogs
 }
 

@@ -17,18 +17,16 @@ resourceLogs:
       - logRecords:
           - body:
               stringValue: '{"eventVersion":"1.03","userIdentity":{"type":"Root"}'
-            spanId: ""
             timeUnixNano: "1432826855000000000"
-            traceId: ""
           - body:
               stringValue: '{"eventVersion":"1.03","userIdentity":{"type":"Root"}'
-            spanId: ""
             timeUnixNano: "1432826855000000000"
-            traceId: ""
           - body:
               stringValue: '{"eventVersion":"1.03","userIdentity":{"type":"Root"}'
-            spanId: ""
             timeUnixNano: "1432826855000000000"
-            traceId: ""
         scope:
+          attributes:
+            - key: awslogs_encoding.format
+              value:
+                stringValue: cloudwatch_logs_subscription_filter
           name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension

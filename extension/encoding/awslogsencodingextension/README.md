@@ -69,6 +69,10 @@ extensions:
     format: elb_access_log
 ```
 
+## Log Format Identification
+
+All logs processed by this extension are automatically tagged with an `awslogs_encoding.format` attribute at the scope level to identify the source format.
+
 #### VPC flow log record fields
 
 [VPC flow log record fields](https://docs.aws.amazon.com/vpc/latest/userguide/flow-log-records.html#flow-logs-fields) are mapped this way in the resulting OpenTelemetry log:
