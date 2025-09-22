@@ -59,6 +59,8 @@ type ClientConfig struct {
 	// disables KIP-320 (truncation detection via leader epoch) without
 	// downgrading protocol versions or patching franz-go.
 	// Default: false (leader epoch is used when supported by the broker).
+	//
+	// NOTE: this is experimental and may be removed in a future release.
 	UseLeaderEpoch bool `mapstructure:"use_leader_epoch"`
 }
 
