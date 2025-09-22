@@ -16,17 +16,20 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/newrelicsqlserverreceiver/queries"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/newrelicsqlserverreceiver/scrapers"
+	
 )
 
 // sqlServerScraper handles SQL Server metrics collection following nri-mssql patterns
 type sqlServerScraper struct {
-	connection      *SQLConnection
-	config          *Config
-	logger          *zap.Logger
-	startTime       pcommon.Timestamp
-	settings        receiver.Settings
-	instanceScraper *scrapers.InstanceScraper
-	engineEdition   int // SQL Server engine edition (0=Unknown, 5=Azure DB, 8=Azure MI)
+	connection               *SQLConnection
+	config                   *Config
+	logger                   *zap.Logger
+	startTime                pcommon.Timestamp
+	settings                 receiver.Settings
+	instanceScraper          *scrapers.InstanceScraper
+	queryPerformanceScraper  *scrapers.QueryPerformanceScraper
+	//slowQueryScraper  *scrapers.SlowQueryScraper
+	engineEdition            int // SQL Server engine edition (0=Unknown, 5=Azure DB, 8=Azure MI)
 }
 
 // newSqlServerScraper creates a new SQL Server scraper with structured approach
@@ -69,6 +72,11 @@ func (s *sqlServerScraper) start(ctx context.Context, _ component.Host) error {
 
 	// Initialize instance scraper with engine edition for engine-specific queries
 	s.instanceScraper = scrapers.NewInstanceScraper(s.connection, s.logger, s.engineEdition)
+	
+	// Initialize query performance scraper for blocking sessions and performance monitoring
+	s.queryPerformanceScraper = scrapers.NewQueryPerformanceScraper(s.connection, s.logger, s.engineEdition)
+	//s.slowQueryScraper = scrapers.NewSlowQueryScraper(s.logger, s.connection)
+	
 
 	s.logger.Info("Successfully connected to SQL Server",
 		zap.String("hostname", s.config.Hostname),
@@ -78,6 +86,9 @@ func (s *sqlServerScraper) start(ctx context.Context, _ component.Host) error {
 
 	return nil
 }
+
+	
+	
 
 // shutdown closes the database connection
 func (s *sqlServerScraper) shutdown(ctx context.Context) error {
@@ -166,6 +177,36 @@ func (s *sqlServerScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 			s.logger.Debug("Successfully scraped instance buffer metrics")
 		}
 	}
+
+	// Scrape blocking session metrics if query monitoring is enabled
+	if s.config.EnableQueryMonitoring {
+		scrapeCtx, cancel := context.WithTimeout(ctx, s.config.Timeout)
+		defer cancel()
+
+		if err := s.queryPerformanceScraper.ScrapeBlockingSessionMetrics(scrapeCtx, scopeMetrics); err != nil {
+			s.logger.Error("Failed to scrape blocking session metrics",
+				zap.Error(err),
+				zap.Duration("timeout", s.config.Timeout))
+			scrapeErrors = append(scrapeErrors, err)
+			// Don't return here - continue with other metrics if enabled
+		} else {
+			s.logger.Debug("Successfully scraped blocking session metrics")
+		}
+	}
+
+// 	if s.config.EnableQueryMonitoring {
+//     scrapeCtx, cancel := context.WithTimeout(ctx, s.config.Timeout)
+//     defer cancel()
+
+//     if err := s.slowQueryScraper.ScrapeSlowQueryMetrics(scrapeCtx, scopeMetrics); err != nil {
+//         s.logger.Error("Failed to scrape slow query metrics",
+//             zap.Error(err),
+//             zap.Duration("timeout", s.config.Timeout))
+//         scrapeErrors = append(scrapeErrors, err)
+//     } else {
+//         s.logger.Debug("Successfully scraped slow query metrics")
+//     }
+// }
 
 	// Log summary of scraping results
 	if len(scrapeErrors) > 0 {

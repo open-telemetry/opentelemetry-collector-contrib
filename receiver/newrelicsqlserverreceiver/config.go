@@ -84,7 +84,7 @@ func DefaultConfig() component.Config {
 		TrustServerCertificate: false,
 
 		// Default query monitoring settings
-		EnableQueryMonitoring:                false,
+		EnableQueryMonitoring:                true,
 		QueryMonitoringResponseTimeThreshold: 1,
 		QueryMonitoringCountThreshold:        20,
 		QueryMonitoringFetchInterval:         15,

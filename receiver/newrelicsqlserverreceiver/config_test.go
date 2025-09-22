@@ -171,7 +171,7 @@ func TestConfigValidation(t *testing.T) {
 				MaxConcurrentWorkers:                 5,
 				EnableQueryMonitoring:                true,
 				QueryMonitoringResponseTimeThreshold: 5,
-				QueryMonitoringCountThreshold:        -1,
+				QueryMonitoringCountThreshold:        1,
 			},
 			wantErr: true,
 			errMsg:  "query_monitoring_count_threshold must be positive when query monitoring is enabled",

@@ -111,3 +111,42 @@
 // - Provides type safety and clear data contracts
 // - Enables consistent data handling across different engines
 package models
+
+import (
+	"time"
+)
+
+// SlowQuery represents a slow query execution statistics
+type SlowQuery struct {
+	QueryHash          string    `db:"query_hash"`
+	QueryPlanHash      string    `db:"query_plan_hash"`
+	ExecutionCount     int64     `db:"execution_count"`
+	TotalElapsedTime   int64     `db:"total_elapsed_time"`
+	AvgElapsedTime     int64     `db:"avg_elapsed_time"`
+	TotalCpuTime       int64     `db:"total_cpu_time"`
+	AvgCpuTime         int64     `db:"avg_cpu_time"`
+	TotalLogicalReads  int64     `db:"total_logical_reads"`
+	AvgLogicalReads    int64     `db:"avg_logical_reads"`
+	TotalPhysicalReads int64     `db:"total_physical_reads"`
+	AvgPhysicalReads   int64     `db:"avg_physical_reads"`
+	TotalWrites        int64     `db:"total_writes"`
+	AvgWrites          int64     `db:"avg_writes"`
+	QueryTextTruncated string    `db:"query_text_truncated"`
+	LastExecutionTime  time.Time `db:"last_execution_time"`
+	CreationTime       time.Time `db:"creation_time"`
+}
+
+// BlockingSession represents blocking session information
+type BlockingSession struct {
+	BlockingSPID          *int64   `db:"blocking_spid" metric_name:"sqlserver.blocking.spid" source_type:"gauge"`
+	BlockingStatus        *string  `db:"blocking_status" metric_name:"sqlserver.blocking.status" source_type:"attribute"`
+	BlockedSPID           *int64   `db:"blocked_spid" metric_name:"sqlserver.blocked.spid" source_type:"gauge"`
+	BlockedStatus         *string  `db:"blocked_status" metric_name:"sqlserver.blocked.status" source_type:"attribute"`
+	WaitType              *string  `db:"wait_type" metric_name:"sqlserver.wait.type" source_type:"attribute"`
+	WaitTimeInSeconds     *float64 `db:"wait_time_in_seconds" metric_name:"sqlserver.wait.time_seconds" source_type:"gauge"`
+	CommandType           *string  `db:"command_type" metric_name:"sqlserver.command.type" source_type:"attribute"`
+	DatabaseName          *string  `db:"database_name" metric_name:"sqlserver.database.name" source_type:"attribute"`
+	BlockingQueryText     *string  `db:"blocking_query_text" metric_name:"sqlserver.blocking.query_text" source_type:"attribute"`
+	BlockedQueryText      *string  `db:"blocked_query_text" metric_name:"sqlserver.blocked.query_text" source_type:"attribute"`
+	BlockedQueryStartTime *string  `db:"blocked_query_start_time" metric_name:"sqlserver.blocked.query_start_time" source_type:"attribute"`
+}
