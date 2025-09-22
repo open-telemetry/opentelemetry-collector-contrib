@@ -8,21 +8,22 @@ import (
 	"database/sql"
 
 	"go.uber.org/zap"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/newrelicoraclereceiver/models"
 )
 
 // fakeDbClient is a mock database client for testing
 type fakeDbClient struct {
-	rows []metricRow
+	rows []models.MetricRow
 }
 
-func newFakeDbClient(db *sql.DB, sql string, logger *zap.Logger) dbClient {
+func newFakeDbClient(db *sql.DB, sql string, logger *zap.Logger) models.DbClient {
 	// Return predefined test data for session count
-	rows := []metricRow{
+	rows := []models.MetricRow{
 		{"SESSION_COUNT": "15"},
 	}
 	return &fakeDbClient{rows: rows}
 }
 
-func (c *fakeDbClient) metricRows(ctx context.Context, args ...any) ([]metricRow, error) {
+func (c *fakeDbClient) MetricRows(ctx context.Context, args ...any) ([]models.MetricRow, error) {
 	return c.rows, nil
 }

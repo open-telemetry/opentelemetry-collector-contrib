@@ -32,7 +32,7 @@ func newDbClient(db *sql.DB, sql string, logger *zap.Logger) models.DbClient {
 	}
 }
 
-func (c *dbSqlClient) metricRows(ctx context.Context, args ...any) ([]models.MetricRow, error) {
+func (c *dbSqlClient) MetricRows(ctx context.Context, args ...any) ([]models.MetricRow, error) {
 	stmt, err := c.db.PrepareContext(ctx, c.sql)
 	if err != nil {
 		return nil, err

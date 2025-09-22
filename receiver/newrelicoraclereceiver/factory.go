@@ -6,12 +6,14 @@ package newrelicoraclereceiver // import "github.com/open-telemetry/opentelemetr
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"net"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
-	go_ora "github.com/sijms/go-ora/v2"
+	_ "github.com/godror/godror"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
@@ -27,7 +29,7 @@ func NewFactory() receiver.Factory {
 		metadata.Type,
 		createDefaultConfig,
 		receiver.WithMetrics(createReceiverFunc(func(dataSourceName string) (*sql.DB, error) {
-			return sql.Open("oracle", dataSourceName)
+			return sql.Open("godror", dataSourceName)
 		}, newDbClient), metadata.MetricsStability))
 }
 
@@ -84,14 +86,22 @@ func getDataSource(cfg Config) string {
 		return cfg.DataSource
 	}
 
-	// Don't need to worry about errors here as config validation already checked.
+	// Build godror connection string format
+	// Format: user/password@host:port/service_name
 	host, portStr, _ := net.SplitHostPort(cfg.Endpoint)
 	port, _ := strconv.ParseInt(portStr, 10, 32)
 
-	return go_ora.BuildUrl(host, int(port), cfg.Service, cfg.Username, cfg.Password, nil)
+	return fmt.Sprintf("%s/%s@%s:%d/%s", cfg.Username, cfg.Password, host, port, cfg.Service)
 }
 
 func getInstanceName(datasource string) (string, error) {
+	// For godror format: user/password@host:port/service_name
+	// Extract the part after @
+	if atIndex := strings.Index(datasource, "@"); atIndex != -1 {
+		return datasource[atIndex+1:], nil
+	}
+	
+	// Fallback to URL parsing for oracle:// format
 	datasourceURL, err := url.Parse(datasource)
 	if err != nil {
 		return "", err
@@ -102,6 +112,17 @@ func getInstanceName(datasource string) (string, error) {
 }
 
 func getHostName(datasource string) (string, error) {
+	// For godror format: user/password@host:port/service_name
+	// Extract the host:port part
+	if atIndex := strings.Index(datasource, "@"); atIndex != -1 {
+		hostPart := datasource[atIndex+1:]
+		if slashIndex := strings.Index(hostPart, "/"); slashIndex != -1 {
+			return hostPart[:slashIndex], nil
+		}
+		return hostPart, nil
+	}
+	
+	// Fallback to URL parsing for oracle:// format
 	datasourceURL, err := url.Parse(datasource)
 	if err != nil {
 		return "", err
