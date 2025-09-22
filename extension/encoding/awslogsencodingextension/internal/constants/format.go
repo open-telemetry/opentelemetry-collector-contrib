@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package constants
+package constants // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/constants"
 
 const (
 	FormatCloudWatchLogsSubscriptionFilter = "cloudwatch_logs_subscription_filter"
