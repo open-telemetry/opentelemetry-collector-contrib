@@ -33,7 +33,7 @@ func TestFilter(t *testing.T) {
 	})
 
 	emptyTask := &taskAnnotated{
-		Task: types.Task{TaskDefinitionArn: aws.String("arn:that:never:matches")},
+		Task: &types.Task{TaskDefinitionArn: aws.String("arn:that:never:matches")},
 		Definition: &types.TaskDefinition{
 			TaskDefinitionArn: aws.String("arn:that:never:matches"),
 			ContainerDefinitions: []types.ContainerDefinition{
@@ -47,7 +47,7 @@ func TestFilter(t *testing.T) {
 	genTasks := func() []*taskAnnotated {
 		return []*taskAnnotated{
 			{
-				Task: types.Task{
+				Task: &types.Task{
 					TaskDefinitionArn: aws.String("arn:alike:nginx-latest"),
 				},
 				Service: &types.Service{ServiceName: aws.String("nginx-service")},
@@ -76,7 +76,7 @@ func TestFilter(t *testing.T) {
 				},
 			},
 			{
-				Task: types.Task{
+				Task: &types.Task{
 					TaskDefinitionArn: aws.String("not used"),
 				},
 				Definition: &types.TaskDefinition{

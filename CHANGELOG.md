@@ -112,6 +112,7 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 - `opampsupervisor`: Emit spans for handling OpAMP messages (#38724)
 - `pkg/ottl`: Add an `Index(target, value)` OTTL function which returns the index of the first occurrence of `value` in `target`. (#40351)
 - `pkg/stanza`: add `sanitize_utf8` operator to replace invalid UTF-8 characters. (#42028)
+- `internal/coreinternal`: Better error messages for attributes processing.
 
 ### 🧰 Bug fixes 🧰
 
