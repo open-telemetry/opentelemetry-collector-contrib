@@ -291,9 +291,9 @@ func TestValidate(t *testing.T) {
 			cfg: &Config{
 				Config: common.Config{
 					WorkerCount: 1,
+					LoadSize:    -1,
 				},
-				NumLogs:  5,
-				LoadSize: -1,
+				NumLogs: 5,
 			},
 			wantErrMessage: "load size must be non-negative, found -1",
 		},
@@ -355,10 +355,10 @@ func TestLogsWithLoadSize(t *testing.T) {
 	cfg := &Config{
 		Config: common.Config{
 			WorkerCount: 1,
+			LoadSize:    2, // 2MB of load data
 		},
 		NumLogs:        1,
 		Body:           "test log",
-		LoadSize:       2, // 2MB of load data
 		SeverityText:   "Info",
 		SeverityNumber: 9,
 	}
@@ -429,10 +429,10 @@ func TestLogsWithZeroLoadSize(t *testing.T) {
 	cfg := &Config{
 		Config: common.Config{
 			WorkerCount: 1,
+			LoadSize:    0, // Disable load size
 		},
 		NumLogs:        1,
 		Body:           "test log",
-		LoadSize:       0, // Disable load size
 		SeverityText:   "Info",
 		SeverityNumber: 9,
 	}

@@ -449,10 +449,10 @@ func TestValidate(t *testing.T) {
 			cfg: &Config{
 				Config: common.Config{
 					WorkerCount: 1,
+					LoadSize:    -1,
 				},
 				NumMetrics: 5,
 				MetricType: MetricTypeSum,
-				LoadSize:   -1,
 			},
 			wantErrMessage: "load size must be non-negative, found -1",
 		},
@@ -635,11 +635,11 @@ func TestMetricsWithLoadSize(t *testing.T) {
 	cfg := &Config{
 		Config: common.Config{
 			WorkerCount: 1,
+			LoadSize:    2, // 2MB of load data
 		},
 		NumMetrics: 1,
 		MetricName: "test",
 		MetricType: MetricTypeSum,
-		LoadSize:   2, // 2MB of load data
 	}
 	m := &mockExporter{}
 	expFunc := func() (sdkmetric.Exporter, error) {
