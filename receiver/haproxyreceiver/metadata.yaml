@@ -268,3 +268,10 @@ metrics:
       value_type: double
       input_type: string
     unit: "{sessions}"
+  haproxy.weight:
+    description: Total effective weight (backend) or effective weight (server). Corresponds to HAProxy's `weight` metric.
+    enabled: false
+    gauge:
+      value_type: int
+      input_type: string
+    unit: "1"

@@ -54,6 +54,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					HaproxySessionsCount:        MetricConfig{Enabled: true},
 					HaproxySessionsRate:         MetricConfig{Enabled: true},
 					HaproxySessionsTotal:        MetricConfig{Enabled: true},
+					HaproxyWeight:               MetricConfig{Enabled: true},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					HaproxyAddr:        ResourceAttributeConfig{Enabled: true},
@@ -93,6 +94,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					HaproxySessionsCount:        MetricConfig{Enabled: false},
 					HaproxySessionsRate:         MetricConfig{Enabled: false},
 					HaproxySessionsTotal:        MetricConfig{Enabled: false},
+					HaproxyWeight:               MetricConfig{Enabled: false},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					HaproxyAddr:        ResourceAttributeConfig{Enabled: false},

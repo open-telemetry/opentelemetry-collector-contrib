@@ -55,6 +55,8 @@ all_set:
       enabled: true
     haproxy.sessions.total:
       enabled: true
+    haproxy.weight:
+      enabled: true
   resource_attributes:
     haproxy.addr:
       enabled: true
@@ -117,6 +119,8 @@ none_set:
     haproxy.sessions.rate:
       enabled: false
     haproxy.sessions.total:
+      enabled: false
+    haproxy.weight:
       enabled: false
   resource_attributes:
     haproxy.addr:

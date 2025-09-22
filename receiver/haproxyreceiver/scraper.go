@@ -248,6 +248,11 @@ func (s *haproxyScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 				scrapeErrors = append(scrapeErrors, err)
 			}
 		}
+		if record["weight"] != "" {
+			if err := s.mb.RecordHaproxyWeightDataPoint(now, record["weight"]); err != nil {
+				scrapeErrors = append(scrapeErrors, err)
+			}
+		}
 		rb := s.mb.NewResourceBuilder()
 		rb.SetHaproxyProxyName(record["pxname"])
 		rb.SetHaproxyServiceName(record["svname"])

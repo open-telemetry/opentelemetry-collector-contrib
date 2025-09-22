@@ -166,6 +166,9 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordHaproxySessionsTotalDataPoint(ts, "1")
 
+			allMetricsCount++
+			mb.RecordHaproxyWeightDataPoint(ts, "1")
+
 			rb := mb.NewResourceBuilder()
 			rb.SetHaproxyAddr("haproxy.addr-val")
 			rb.SetHaproxyProxyName("haproxy.proxy_name-val")
@@ -557,6 +560,18 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.True(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "haproxy.weight":
+					assert.False(t, validatedMetrics["haproxy.weight"], "Found a duplicate in the metrics slice: haproxy.weight")
+					validatedMetrics["haproxy.weight"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Total effective weight (backend) or effective weight (server). Corresponds to HAProxy's `weight` metric.", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())

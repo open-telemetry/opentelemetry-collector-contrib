@@ -138,6 +138,9 @@ var MetricsInfo = metricsInfo{
 	HaproxySessionsTotal: metricInfo{
 		Name: "haproxy.sessions.total",
 	},
+	HaproxyWeight: metricInfo{
+		Name: "haproxy.weight",
+	},
 }
 
 type metricsInfo struct {
@@ -168,6 +171,7 @@ type metricsInfo struct {
 	HaproxySessionsCount        metricInfo
 	HaproxySessionsRate         metricInfo
 	HaproxySessionsTotal        metricInfo
+	HaproxyWeight               metricInfo
 }
 
 type metricInfo struct {
@@ -1541,6 +1545,55 @@ func newMetricHaproxySessionsTotal(cfg MetricConfig) metricHaproxySessionsTotal 
 	return m
 }
 
+type metricHaproxyWeight struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills haproxy.weight metric with initial data.
+func (m *metricHaproxyWeight) init() {
+	m.data.SetName("haproxy.weight")
+	m.data.SetDescription("Total effective weight (backend) or effective weight (server). Corresponds to HAProxy's `weight` metric.")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricHaproxyWeight) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricHaproxyWeight) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricHaproxyWeight) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricHaproxyWeight(cfg MetricConfig) metricHaproxyWeight {
+	m := metricHaproxyWeight{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
@@ -1578,6 +1631,7 @@ type MetricsBuilder struct {
 	metricHaproxySessionsCount        metricHaproxySessionsCount
 	metricHaproxySessionsRate         metricHaproxySessionsRate
 	metricHaproxySessionsTotal        metricHaproxySessionsTotal
+	metricHaproxyWeight               metricHaproxyWeight
 }
 
 // MetricBuilderOption applies changes to default metrics builder.
@@ -1630,6 +1684,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricHaproxySessionsCount:        newMetricHaproxySessionsCount(mbc.Metrics.HaproxySessionsCount),
 		metricHaproxySessionsRate:         newMetricHaproxySessionsRate(mbc.Metrics.HaproxySessionsRate),
 		metricHaproxySessionsTotal:        newMetricHaproxySessionsTotal(mbc.Metrics.HaproxySessionsTotal),
+		metricHaproxyWeight:               newMetricHaproxyWeight(mbc.Metrics.HaproxyWeight),
 		resourceAttributeIncludeFilter:    make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter:    make(map[string]filter.Filter),
 	}
@@ -1747,6 +1802,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricHaproxySessionsCount.emit(ils.Metrics())
 	mb.metricHaproxySessionsRate.emit(ils.Metrics())
 	mb.metricHaproxySessionsTotal.emit(ils.Metrics())
+	mb.metricHaproxyWeight.emit(ils.Metrics())
 
 	for _, op := range options {
 		op.apply(rm)
@@ -2040,6 +2096,16 @@ func (mb *MetricsBuilder) RecordHaproxySessionsTotalDataPoint(ts pcommon.Timesta
 		return fmt.Errorf("failed to parse int64 for HaproxySessionsTotal, value was %s: %w", inputVal, err)
 	}
 	mb.metricHaproxySessionsTotal.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordHaproxyWeightDataPoint adds a data point to haproxy.weight metric.
+func (mb *MetricsBuilder) RecordHaproxyWeightDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for HaproxyWeight, value was %s: %w", inputVal, err)
+	}
+	mb.metricHaproxyWeight.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 

@@ -244,6 +244,14 @@ Cumulative number of sessions. Corresponds to HAProxy's `stot` metric.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {sessions} | Sum | Int | Cumulative | true |
 
+### haproxy.weight
+
+Total effective weight (backend) or effective weight (server). Corresponds to HAProxy's `weight` metric.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
 ## Resource Attributes
 
 | Name | Description | Values | Enabled |

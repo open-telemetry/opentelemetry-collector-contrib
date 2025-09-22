@@ -55,6 +55,7 @@ type MetricsConfig struct {
 	HaproxySessionsCount        MetricConfig `mapstructure:"haproxy.sessions.count"`
 	HaproxySessionsRate         MetricConfig `mapstructure:"haproxy.sessions.rate"`
 	HaproxySessionsTotal        MetricConfig `mapstructure:"haproxy.sessions.total"`
+	HaproxyWeight               MetricConfig `mapstructure:"haproxy.weight"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -138,6 +139,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		HaproxySessionsTotal: MetricConfig{
+			Enabled: false,
+		},
+		HaproxyWeight: MetricConfig{
 			Enabled: false,
 		},
 	}
