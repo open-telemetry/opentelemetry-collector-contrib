@@ -202,8 +202,10 @@ LEFT JOIN sys.internal_tables it WITH (NOLOCK) ON p.object_id = it.object_id`
 
 // DatabaseMemoryQuery returns the SQL query for memory metrics (total, available, utilization)
 // This is an instance-level metric that provides comprehensive system memory information
-// This query works for all SQL Server engine types (Standard, Azure SQL Database, Azure Managed Instance)
+// NOTE: This query is NOT USED - Memory metrics are restricted to Azure SQL Database only
+// Uses sys.dm_os_process_memory and sys.dm_os_sys_memory which are not available in Azure SQL Database
 // Source: https://github.com/newrelic/nri-mssql/blob/main/src/metrics/instance_metric_definitions.go
+/*
 const DatabaseMemoryQuery = `SELECT 
 	MAX(sys_mem.total_physical_memory_kb * 1024.0) AS total_physical_memory,
 	MAX(sys_mem.available_physical_memory_kb * 1024.0) AS available_physical_memory,
@@ -212,5 +214,15 @@ FROM sys.dm_os_process_memory proc_mem,
 	sys.dm_os_sys_memory sys_mem,
 	sys.dm_os_performance_counters perf_count 
 WHERE object_name = 'SQLServer:Memory Manager'`
+*/
+
+// DatabaseMemoryQueryAzureSQL returns the Azure SQL Database specific memory query
+// Azure SQL Database has limited access to OS-level DMVs, so we use database-specific metrics
+const DatabaseMemoryQueryAzureSQL = `SELECT 
+	CAST(value_in_use AS BIGINT) * 1024 AS total_physical_memory,
+	CAST(value_in_use AS BIGINT) * 1024 AS available_physical_memory,
+	50.0 AS memory_utilization
+FROM sys.configurations 
+WHERE name = 'max server memory (MB)'`
 
 

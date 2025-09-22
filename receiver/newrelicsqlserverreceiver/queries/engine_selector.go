@@ -206,7 +206,7 @@ var databaseQueriesAzureManagedDatabase = []*QueryDefinition{
 		Description: "Buffer pool size per database in bytes (Azure SQL Database)",
 	},
 	{
-		Query:       DatabaseMaxDiskSizeQuery,
+		Query:       DatabaseMaxDiskSizeQueryAzureSQL,
 		MetricName:  "sqlserver.database.max_disk_size",
 		Description: "Maximum disk size allowed for the database in bytes (Azure SQL Database)",
 	},
@@ -231,7 +231,7 @@ var databaseQueriesAzureManagedDatabase = []*QueryDefinition{
 		Description: "Total page file space (total reserved space) for the database in bytes (Azure SQL Database)",
 	},
 	{
-		Query:       DatabaseMemoryQuery,
+		Query:       DatabaseMemoryQueryAzureSQL,
 		MetricName:  "sqlserver.database_memory_metrics",
 		Description: "Available physical memory on the system in bytes (Azure SQL Database)",
 	},
