@@ -280,8 +280,17 @@ func (s *DatabaseScraper) processDatabaseBufferMetrics(result models.DatabaseBuf
 }
 
 // ScrapeDatabaseDiskMetrics collects database-level disk metrics using engine-specific queries
+// Only available for Azure SQL Database (engine edition 5)
 func (s *DatabaseScraper) ScrapeDatabaseDiskMetrics(ctx context.Context, scopeMetrics pmetric.ScopeMetrics) error {
 	s.logger.Debug("Scraping SQL Server database disk metrics")
+
+	// Only collect disk metrics for Azure SQL Database
+	if s.engineEdition != queries.AzureSQLDatabaseEngineEdition {
+		s.logger.Debug("Skipping database disk metrics - not supported for this engine edition",
+			zap.Int("engine_edition", s.engineEdition),
+			zap.String("engine_type", queries.GetEngineTypeName(s.engineEdition)))
+		return nil
+	}
 
 	// Get the appropriate query for this engine edition
 	query, found := s.getQueryForMetric("sqlserver.database.max_disk_size")

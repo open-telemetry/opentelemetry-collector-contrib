@@ -177,11 +177,6 @@ var databaseQueriesDefault = []*QueryDefinition{
 		Description: "Buffer pool size per database in bytes",
 	},
 	{
-		Query:       DatabaseMaxDiskSizeQuery,
-		MetricName:  "sqlserver.database.max_disk_size",
-		Description: "Maximum disk size allowed for the database in bytes",
-	},
-	{
 		Query:       DatabaseIOStallQuery,
 		MetricName:  "sqlserver.database.io_stall",
 		Description: "Total IO stall time for the database in milliseconds",
@@ -248,11 +243,6 @@ var databaseQueriesAzureManagedInstance = []*QueryDefinition{
 		Query:       DatabaseBufferPoolQuery,
 		MetricName:  "sqlserver.database.buffer_pool_size",
 		Description: "Buffer pool size per database in bytes (Azure SQL Managed Instance)",
-	},
-	{
-		Query:       DatabaseMaxDiskSizeQuery,
-		MetricName:  "sqlserver.database.max_disk_size",
-		Description: "Maximum disk size allowed for the database in bytes (Azure SQL Managed Instance)",
 	},
 	{
 		Query:       DatabaseIOStallQueryAzureMI,
