@@ -59,6 +59,8 @@ all_set:
       enabled: true
     haproxy.sessions.count:
       enabled: true
+    haproxy.sessions.limit:
+      enabled: true
     haproxy.sessions.rate:
       enabled: true
     haproxy.sessions.total:
@@ -131,6 +133,8 @@ none_set:
     haproxy.sessions.average:
       enabled: false
     haproxy.sessions.count:
+      enabled: false
+    haproxy.sessions.limit:
       enabled: false
     haproxy.sessions.rate:
       enabled: false

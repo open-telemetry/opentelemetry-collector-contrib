@@ -171,6 +171,9 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordHaproxySessionsCountDataPoint(ts, "1")
 
+			allMetricsCount++
+			mb.RecordHaproxySessionsLimitDataPoint(ts, "1")
+
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordHaproxySessionsRateDataPoint(ts, "1")
@@ -592,6 +595,18 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "Current sessions. Corresponds to HAProxy's `scur` metric.", ms.At(i).Description())
+					assert.Equal(t, "{sessions}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "haproxy.sessions.limit":
+					assert.False(t, validatedMetrics["haproxy.sessions.limit"], "Found a duplicate in the metrics slice: haproxy.sessions.limit")
+					validatedMetrics["haproxy.sessions.limit"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Configured session limit. Corresponds to HAProxy's `slim` metric.", ms.At(i).Description())
 					assert.Equal(t, "{sessions}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())

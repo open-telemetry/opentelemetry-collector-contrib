@@ -144,6 +144,9 @@ var MetricsInfo = metricsInfo{
 	HaproxySessionsCount: metricInfo{
 		Name: "haproxy.sessions.count",
 	},
+	HaproxySessionsLimit: metricInfo{
+		Name: "haproxy.sessions.limit",
+	},
 	HaproxySessionsRate: metricInfo{
 		Name: "haproxy.sessions.rate",
 	},
@@ -185,6 +188,7 @@ type metricsInfo struct {
 	HaproxyServerSelectedTotal    metricInfo
 	HaproxySessionsAverage        metricInfo
 	HaproxySessionsCount          metricInfo
+	HaproxySessionsLimit          metricInfo
 	HaproxySessionsRate           metricInfo
 	HaproxySessionsTotal          metricInfo
 	HaproxyWeight                 metricInfo
@@ -1657,6 +1661,55 @@ func newMetricHaproxySessionsCount(cfg MetricConfig) metricHaproxySessionsCount 
 	return m
 }
 
+type metricHaproxySessionsLimit struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills haproxy.sessions.limit metric with initial data.
+func (m *metricHaproxySessionsLimit) init() {
+	m.data.SetName("haproxy.sessions.limit")
+	m.data.SetDescription("Configured session limit. Corresponds to HAProxy's `slim` metric.")
+	m.data.SetUnit("{sessions}")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricHaproxySessionsLimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricHaproxySessionsLimit) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricHaproxySessionsLimit) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricHaproxySessionsLimit(cfg MetricConfig) metricHaproxySessionsLimit {
+	m := metricHaproxySessionsLimit{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricHaproxySessionsRate struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -1845,6 +1898,7 @@ type MetricsBuilder struct {
 	metricHaproxyServerSelectedTotal    metricHaproxyServerSelectedTotal
 	metricHaproxySessionsAverage        metricHaproxySessionsAverage
 	metricHaproxySessionsCount          metricHaproxySessionsCount
+	metricHaproxySessionsLimit          metricHaproxySessionsLimit
 	metricHaproxySessionsRate           metricHaproxySessionsRate
 	metricHaproxySessionsTotal          metricHaproxySessionsTotal
 	metricHaproxyWeight                 metricHaproxyWeight
@@ -1902,6 +1956,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricHaproxyServerSelectedTotal:    newMetricHaproxyServerSelectedTotal(mbc.Metrics.HaproxyServerSelectedTotal),
 		metricHaproxySessionsAverage:        newMetricHaproxySessionsAverage(mbc.Metrics.HaproxySessionsAverage),
 		metricHaproxySessionsCount:          newMetricHaproxySessionsCount(mbc.Metrics.HaproxySessionsCount),
+		metricHaproxySessionsLimit:          newMetricHaproxySessionsLimit(mbc.Metrics.HaproxySessionsLimit),
 		metricHaproxySessionsRate:           newMetricHaproxySessionsRate(mbc.Metrics.HaproxySessionsRate),
 		metricHaproxySessionsTotal:          newMetricHaproxySessionsTotal(mbc.Metrics.HaproxySessionsTotal),
 		metricHaproxyWeight:                 newMetricHaproxyWeight(mbc.Metrics.HaproxyWeight),
@@ -2024,6 +2079,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricHaproxyServerSelectedTotal.emit(ils.Metrics())
 	mb.metricHaproxySessionsAverage.emit(ils.Metrics())
 	mb.metricHaproxySessionsCount.emit(ils.Metrics())
+	mb.metricHaproxySessionsLimit.emit(ils.Metrics())
 	mb.metricHaproxySessionsRate.emit(ils.Metrics())
 	mb.metricHaproxySessionsTotal.emit(ils.Metrics())
 	mb.metricHaproxyWeight.emit(ils.Metrics())
@@ -2340,6 +2396,16 @@ func (mb *MetricsBuilder) RecordHaproxySessionsCountDataPoint(ts pcommon.Timesta
 		return fmt.Errorf("failed to parse int64 for HaproxySessionsCount, value was %s: %w", inputVal, err)
 	}
 	mb.metricHaproxySessionsCount.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordHaproxySessionsLimitDataPoint adds a data point to haproxy.sessions.limit metric.
+func (mb *MetricsBuilder) RecordHaproxySessionsLimitDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for HaproxySessionsLimit, value was %s: %w", inputVal, err)
+	}
+	mb.metricHaproxySessionsLimit.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 

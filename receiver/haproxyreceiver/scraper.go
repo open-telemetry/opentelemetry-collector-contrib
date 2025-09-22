@@ -273,6 +273,11 @@ func (s *haproxyScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 				scrapeErrors = append(scrapeErrors, err)
 			}
 		}
+		if record["slim"] != "" {
+			if err := s.mb.RecordHaproxySessionsLimitDataPoint(now, record["slim"]); err != nil {
+				scrapeErrors = append(scrapeErrors, err)
+			}
+		}
 		rb := s.mb.NewResourceBuilder()
 		rb.SetHaproxyProxyName(record["pxname"])
 		rb.SetHaproxyServiceName(record["svname"])

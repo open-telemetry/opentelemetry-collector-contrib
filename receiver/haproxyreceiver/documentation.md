@@ -268,6 +268,14 @@ Average response time in ms over the 1024 last requests. Corresponds to HAProxy'
 | ---- | ----------- | ---------- |
 | ms | Gauge | Double |
 
+### haproxy.sessions.limit
+
+Configured session limit. Corresponds to HAProxy's `slim` metric.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {sessions} | Gauge | Int |
+
 ### haproxy.sessions.total
 
 Cumulative number of sessions. Corresponds to HAProxy's `stot` metric.
