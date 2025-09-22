@@ -39,6 +39,7 @@ type Config struct {
 	CertificateLocation    string `mapstructure:"certificate_location"`
 
 	// Performance and feature toggles
+	EnableDatabaseSampleMetrics  bool `mapstructure:"enable_database_sample_metrics"`
 	EnableBufferMetrics          bool `mapstructure:"enable_buffer_metrics"`
 	EnableDatabaseReserveMetrics bool `mapstructure:"enable_database_reserve_metrics"`
 	EnableDiskMetricsInBytes     bool `mapstructure:"enable_disk_metrics_in_bytes"`
@@ -79,6 +80,7 @@ func DefaultConfig() component.Config {
 		Port:     "1433",
 
 		// Default feature toggles (matching nri-mssql defaults)
+		EnableDatabaseSampleMetrics:  false, // Master toggle - when true, enables all database metrics
 		EnableBufferMetrics:          true,
 		EnableDatabaseReserveMetrics: true,
 		EnableDiskMetricsInBytes:     true,
@@ -261,4 +263,61 @@ func (cfg *Config) CreateAzureADConnectionURL(dbName string) string {
 	}
 
 	return connectionString
+}
+
+// Helper methods to check if metrics are enabled (either individually or via master toggle)
+
+// IsBufferMetricsEnabled checks if buffer metrics should be collected
+func (cfg *Config) IsBufferMetricsEnabled() bool {
+	return cfg.EnableDatabaseSampleMetrics || cfg.EnableBufferMetrics
+}
+
+// IsDatabaseReserveMetricsEnabled checks if database reserve metrics should be collected
+func (cfg *Config) IsDatabaseReserveMetricsEnabled() bool {
+	return cfg.EnableDatabaseSampleMetrics || cfg.EnableDatabaseReserveMetrics
+}
+
+// IsDiskMetricsInBytesEnabled checks if disk metrics in bytes should be collected
+func (cfg *Config) IsDiskMetricsInBytesEnabled() bool {
+	return cfg.EnableDatabaseSampleMetrics || cfg.EnableDiskMetricsInBytes
+}
+
+// IsIOMetricsEnabled checks if IO metrics should be collected
+func (cfg *Config) IsIOMetricsEnabled() bool {
+	return cfg.EnableDatabaseSampleMetrics || cfg.EnableIOMetrics
+}
+
+// IsLogGrowthMetricsEnabled checks if log growth metrics should be collected
+func (cfg *Config) IsLogGrowthMetricsEnabled() bool {
+	return cfg.EnableDatabaseSampleMetrics || cfg.EnableLogGrowthMetrics
+}
+
+// IsPageFileMetricsEnabled checks if page file metrics should be collected
+func (cfg *Config) IsPageFileMetricsEnabled() bool {
+	return cfg.EnableDatabaseSampleMetrics || cfg.EnablePageFileMetrics
+}
+
+// IsPageFileTotalMetricsEnabled checks if page file total metrics should be collected
+func (cfg *Config) IsPageFileTotalMetricsEnabled() bool {
+	return cfg.EnableDatabaseSampleMetrics || cfg.EnablePageFileTotalMetrics
+}
+
+// IsMemoryMetricsEnabled checks if memory metrics should be collected
+func (cfg *Config) IsMemoryMetricsEnabled() bool {
+	return cfg.EnableDatabaseSampleMetrics || cfg.EnableMemoryMetrics
+}
+
+// IsMemoryTotalMetricsEnabled checks if memory total metrics should be collected
+func (cfg *Config) IsMemoryTotalMetricsEnabled() bool {
+	return cfg.EnableDatabaseSampleMetrics || cfg.EnableMemoryTotalMetrics
+}
+
+// IsMemoryAvailableMetricsEnabled checks if memory available metrics should be collected
+func (cfg *Config) IsMemoryAvailableMetricsEnabled() bool {
+	return cfg.EnableDatabaseSampleMetrics || cfg.EnableMemoryAvailableMetrics
+}
+
+// IsMemoryUtilizationMetricsEnabled checks if memory utilization metrics should be collected
+func (cfg *Config) IsMemoryUtilizationMetricsEnabled() bool {
+	return cfg.EnableDatabaseSampleMetrics || cfg.EnableMemoryUtilizationMetrics
 }

@@ -157,7 +157,7 @@ func (s *sqlServerScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 	}
 
 	// Use structured approach to scrape instance buffer metrics with timeout
-	if s.config.EnableBufferMetrics {
+	if s.config.IsBufferMetricsEnabled() {
 		scrapeCtx, cancel := context.WithTimeout(ctx, s.config.Timeout)
 		defer cancel()
 
@@ -173,7 +173,7 @@ func (s *sqlServerScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 	}
 
 	// Scrape database-level buffer pool metrics (bufferpool.sizePerDatabaseInBytes)
-	if s.config.EnableBufferMetrics {
+	if s.config.IsBufferMetricsEnabled() {
 		scrapeCtx, cancel := context.WithTimeout(ctx, s.config.Timeout)
 		defer cancel()
 
@@ -192,7 +192,7 @@ func (s *sqlServerScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 	s.logger.Debug("Checking disk metrics configuration",
 		zap.Bool("enable_disk_metrics_in_bytes", s.config.EnableDiskMetricsInBytes))
 	
-	if s.config.EnableDiskMetricsInBytes {
+	if s.config.IsDiskMetricsInBytesEnabled() {
 		s.logger.Debug("Starting database disk metrics scraping")
 		scrapeCtx, cancel := context.WithTimeout(ctx, s.config.Timeout)
 		defer cancel()
@@ -211,7 +211,7 @@ func (s *sqlServerScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 	}
 
 	// Scrape database-level IO metrics (io.stallInMilliseconds)
-	if s.config.EnableIOMetrics {
+	if s.config.IsIOMetricsEnabled() {
 		s.logger.Debug("Starting database IO metrics scraping")
 		scrapeCtx, cancel := context.WithTimeout(ctx, s.config.Timeout)
 		defer cancel()
@@ -230,7 +230,7 @@ func (s *sqlServerScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 	}
 
 	// Scrape database-level log growth metrics (log.transactionGrowth)
-	if s.config.EnableLogGrowthMetrics {
+	if s.config.IsLogGrowthMetricsEnabled() {
 		s.logger.Debug("Starting database log growth metrics scraping")
 		scrapeCtx, cancel := context.WithTimeout(ctx, s.config.Timeout)
 		defer cancel()
@@ -249,7 +249,7 @@ func (s *sqlServerScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 	}
 
 	// Scrape database-level page file metrics (pageFileAvailable)
-	if s.config.EnablePageFileMetrics {
+	if s.config.IsPageFileMetricsEnabled() {
 		s.logger.Debug("Starting database page file metrics scraping")
 		scrapeCtx, cancel := context.WithTimeout(ctx, s.config.Timeout)
 		defer cancel()
@@ -268,7 +268,7 @@ func (s *sqlServerScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 	}
 
 	// Scrape database-level page file total metrics (pageFileTotal)
-	if s.config.EnablePageFileTotalMetrics {
+	if s.config.IsPageFileTotalMetricsEnabled() {
 		s.logger.Debug("Starting database page file total metrics scraping")
 		scrapeCtx, cancel := context.WithTimeout(ctx, s.config.Timeout)
 		defer cancel()
@@ -287,7 +287,7 @@ func (s *sqlServerScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 	}
 
 	// Scrape instance-level memory metrics (memoryTotal, memoryAvailable, memoryUtilization)
-	if s.config.EnableMemoryMetrics || s.config.EnableMemoryTotalMetrics || s.config.EnableMemoryAvailableMetrics || s.config.EnableMemoryUtilizationMetrics {
+	if s.config.IsMemoryMetricsEnabled() || s.config.IsMemoryTotalMetricsEnabled() || s.config.IsMemoryAvailableMetricsEnabled() || s.config.IsMemoryUtilizationMetricsEnabled() {
 		s.logger.Debug("Starting database memory metrics scraping")
 		scrapeCtx, cancel := context.WithTimeout(ctx, s.config.Timeout)
 		defer cancel()
