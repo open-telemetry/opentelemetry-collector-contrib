@@ -29,7 +29,7 @@ func TestGetAWSConfig(t *testing.T) {
 
 	mockSTS := &mockSTS{}
 
-	cfg, err := getAWSConfig(t.Context(), logger, settings, func(cfg aws.Config) stscreds.AssumeRoleAPIClient {
+	cfg, err := getAWSConfig(t.Context(), logger, settings, func(_ aws.Config) stscreds.AssumeRoleAPIClient {
 		return mockSTS
 	})
 
