@@ -25,10 +25,14 @@ type S3UploaderConfig struct {
 	Region string `mapstructure:"region"`
 	// S3Bucket is the bucket name to be uploaded to.
 	S3Bucket string `mapstructure:"s3_bucket"`
-	// S3Prefix is the key (directory) prefix to written to inside the bucket
+	// S3BasePrefix is the root key (directory) prefix used to write the file.
+	S3BasePrefix string `mapstructure:"s3_base_prefix"`
+	// S3Prefix is the key (directory) prefix to write to inside the bucket. Appended to S3BasePrefix if provided.
 	S3Prefix string `mapstructure:"s3_prefix"`
 	// S3PartitionFormat is used to provide the rollup on how data is written. Uses [strftime](https://www.man7.org/linux/man-pages/man3/strftime.3.html) formatting.
 	S3PartitionFormat string `mapstructure:"s3_partition_format"`
+	// S3PartitionTimezone is used to provide timezone for partition time. Defaults to Local timezone.
+	S3PartitionTimezone string `mapstructure:"s3_partition_timezone"`
 	// FilePrefix is the filename prefix used for the file to avoid any potential collisions.
 	FilePrefix string `mapstructure:"file_prefix"`
 	// Endpoint is the URL used for communicated with S3.

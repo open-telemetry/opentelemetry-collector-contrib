@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"math/rand/v2"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -16,7 +17,7 @@ import (
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/resource"
-	semconv "go.opentelemetry.io/otel/semconv/v1.13.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 	"go.uber.org/zap"
 	"golang.org/x/time/rate"
 
@@ -82,6 +83,8 @@ func run(c *Config, expF exporterFunc, logger *zap.Logger) error {
 			logger:                 logger.With(zap.Int("worker", i)),
 			index:                  i,
 			clock:                  &realClock{},
+			rand:                   rand.New(rand.NewPCG(uint64(time.Now().UnixNano()+int64(i)), 0)),
+			allowFailures:          c.AllowExportFailures,
 		}
 		exp, err := expF()
 		if err != nil {

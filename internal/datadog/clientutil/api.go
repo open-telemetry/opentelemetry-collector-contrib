@@ -14,7 +14,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.uber.org/zap"
-	zorkian "gopkg.in/zorkian/go-datadog-api.v2"
 )
 
 // GZipSubmitMetricsOptionalParameters is used to enable gzip compression for metric payloads submitted by native datadog client
@@ -68,30 +67,4 @@ func GetRequestContext(ctx context.Context, apiKey string) context.Context {
 	)
 }
 
-// CreateZorkianClient creates a new Zorkian Datadog client
-// Deprecated: CreateZorkianClient returns a Zorkian Datadog client and Zorkian is deprecated. Use CreateAPIClient instead.
-func CreateZorkianClient(apiKey, endpoint string) *zorkian.Client {
-	client := zorkian.NewClient(apiKey, "")
-	client.SetBaseUrl(endpoint)
-
-	return client
-}
-
 var ErrInvalidAPI = errors.New("API Key validation failed")
-
-// ValidateAPIKeyZorkian checks that the provided client was given a correct API key.
-// Deprecated: ValidateAPIKeyZorkian uses the deprecated Zorkian client. Use ValidateAPIKey instead.
-func ValidateAPIKeyZorkian(logger *zap.Logger, client *zorkian.Client) error {
-	logger.Info("Validating API key.")
-	valid, err := client.Validate()
-	if err == nil && valid {
-		logger.Info("API key validation successful.")
-		return nil
-	}
-	if err != nil {
-		logger.Warn("Error while validating API key", zap.Error(err))
-		return nil
-	}
-	logger.Warn(ErrInvalidAPI.Error())
-	return ErrInvalidAPI
-}
