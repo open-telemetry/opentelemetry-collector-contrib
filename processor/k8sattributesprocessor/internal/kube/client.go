@@ -279,7 +279,7 @@ func New(
 		c.daemonsetInformer = newDaemonSetSharedInformer(c.kc, c.Filters.Namespace)
 	}
 
-	if c.extractJobLabelsAnnotations() {
+	if c.extractJobLabelsAnnotations() || rules.CronJobUID {
 		c.jobInformer = newJobSharedInformer(c.kc, c.Filters.Namespace)
 	}
 
@@ -811,7 +811,8 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 		c.Rules.JobUID || c.Rules.JobName ||
 		c.Rules.StatefulSetUID || c.Rules.StatefulSetName ||
 		c.Rules.DeploymentName || c.Rules.DeploymentUID ||
-		c.Rules.CronJobName || c.Rules.ServiceName {
+		c.Rules.CronJobUID || c.Rules.CronJobName ||
+		c.Rules.ServiceName {
 		for _, ref := range pod.OwnerReferences {
 			switch ref.Kind {
 			case "ReplicaSet":
@@ -885,6 +886,13 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 						if c.Rules.ServiceName {
 							// cronjob name wins over job name
 							tags[string(conventions.ServiceNameKey)] = name
+						}
+					}
+				}
+				if c.Rules.CronJobUID {
+					if job, ok := c.GetJob(string(ref.UID)); ok {
+						if job.CronJob.UID != "" {
+							tags[string(conventions.K8SCronJobUIDKey)] = job.CronJob.UID
 						}
 					}
 				}
@@ -1711,6 +1719,16 @@ func (c *WatchClient) addOrUpdateJob(job *batch_v1.Job) {
 		UID:  string(job.UID),
 	}
 	newJob.Attributes = c.extractJobAttributes(job)
+
+	for _, ownerReference := range job.OwnerReferences {
+		if ownerReference.Kind == "CronJob" && ownerReference.Controller != nil && *ownerReference.Controller {
+			newJob.CronJob = CronJob{
+				Name: ownerReference.Name,
+				UID:  string(ownerReference.UID),
+			}
+			break
+		}
+	}
 
 	c.m.Lock()
 	if job.UID != "" {

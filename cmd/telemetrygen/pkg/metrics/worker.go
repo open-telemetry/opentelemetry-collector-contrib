@@ -33,6 +33,7 @@ type worker struct {
 	logger                 *zap.Logger                  // logger
 	index                  int                          // worker index
 	clock                  Clock                        // clock
+	allowFailures          bool                         // whether to continue on export failures
 }
 
 // We use a 15-element bounds slice for histograms below, so there must be 16 buckets here.
@@ -173,7 +174,11 @@ func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Expor
 		}
 
 		if err := exporter.Export(context.Background(), &rm); err != nil {
-			w.logger.Fatal("exporter failed", zap.Error(err))
+			if w.allowFailures {
+				w.logger.Error("exporter failed, continuing due to --allow-export-failures", zap.Error(err))
+			} else {
+				w.logger.Fatal("exporter failed", zap.Error(err))
+			}
 		}
 
 		i++
