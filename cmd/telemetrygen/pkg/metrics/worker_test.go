@@ -697,3 +697,47 @@ func TestMetricsWithDefaultLoadSize(t *testing.T) {
 	// Should have no load attributes by default (LoadSize = 0)
 	assert.Equal(t, 0, attr.Len(), "should have no load attributes by default")
 }
+
+// TestExponentialHistogramMetricGeneration tests ExponentialHistogram metric generation
+func TestExponentialHistogramMetricGeneration(t *testing.T) {
+	// arrange
+	m := &mockExporter{}
+	cfg := Config{
+		Config: common.Config{
+			WorkerCount: 1,
+		},
+		NumMetrics: 1,
+		MetricName: "test_exp_hist",
+		MetricType: MetricTypeExponentialHistogram,
+	}
+	logger := zap.NewNop()
+
+	// act
+	expFunc := func() (sdkmetric.Exporter, error) {
+		return m, nil
+	}
+	require.NoError(t, run(&cfg, expFunc, logger))
+
+	time.Sleep(100 * time.Millisecond)
+
+	// assert
+	require.Len(t, m.rms, 1)
+	ms := m.rms[0].ScopeMetrics[0].Metrics[0]
+
+	// Verify it's an ExponentialHistogram
+	expHist, ok := ms.Data.(metricdata.ExponentialHistogram[int64])
+	require.True(t, ok, "Expected ExponentialHistogram metric type")
+
+	// Verify data point structure
+	require.Len(t, expHist.DataPoints, 1)
+	dp := expHist.DataPoints[0]
+	assert.Equal(t, "test_exp_hist", ms.Name)
+	assert.Positive(t, dp.Count)
+	assert.Positive(t, dp.Sum)
+	assert.Equal(t, uint64(0), dp.ZeroCount)
+	assert.Equal(t, 0.0, dp.ZeroThreshold)
+
+	// Verify buckets exist
+	assert.NotNil(t, dp.PositiveBucket)
+	assert.NotNil(t, dp.NegativeBucket)
+}

@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"math/rand/v2"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -83,6 +84,7 @@ func run(c *Config, expF exporterFunc, logger *zap.Logger) error {
 			index:                  i,
 			clock:                  &realClock{},
 			loadSize:               c.LoadSize,
+			rand:                   rand.New(rand.NewPCG(uint64(time.Now().UnixNano()+int64(i)), 0)),
 			allowFailures:          c.AllowExportFailures,
 		}
 		exp, err := expF()
