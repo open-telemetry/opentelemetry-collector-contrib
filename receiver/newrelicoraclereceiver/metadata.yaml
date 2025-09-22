@@ -1,0 +1,41 @@
+type: newrelicoracledb
+
+status:
+  class: receiver
+  stability:
+    alpha: [metrics]
+  distributions: [contrib]
+  codeowners:
+    active: [newrelic-team]
+
+resource_attributes:
+  newrelicoracledb.instance.name:
+    description: The name of the Oracle instance that data is coming from.
+    enabled: true
+    type: string
+  host.name:
+    description: The host name of Oracle Server
+    enabled: true
+    type: string
+
+attributes:
+  newrelic.entity_name:
+    description: New Relic entity name for the metric
+    type: string
+
+metrics:
+  newrelicoracledb.sessions.count:
+    description: Total number of active Oracle database sessions
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "{sessions}"
+    attributes:
+      - newrelic.entity_name
+
+tests:
+  config:
+  goleak:
+    ignore:
+      any:
+      - "github.com/cihub/seelog.(*asyncLoopLogger).processQueue" # see https://github.com/cihub/seelog/issues/182
