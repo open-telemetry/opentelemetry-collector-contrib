@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/newrelicoraclereceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/newrelicoraclereceiver/models"
 )
 
 // NewFactory creates a new New Relic Oracle receiver factory.
@@ -42,7 +43,7 @@ func createDefaultConfig() component.Config {
 
 type sqlOpenerFunc func(dataSourceName string) (*sql.DB, error)
 
-func createReceiverFunc(sqlOpenerFunc sqlOpenerFunc, clientProviderFunc clientProviderFunc) receiver.CreateMetricsFunc {
+func createReceiverFunc(sqlOpenerFunc sqlOpenerFunc, clientProviderFunc models.ClientProviderFunc) receiver.CreateMetricsFunc {
 	return func(
 		_ context.Context,
 		settings receiver.Settings,

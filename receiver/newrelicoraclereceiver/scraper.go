@@ -7,7 +7,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"strconv"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -20,24 +19,24 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/newrelicoraclereceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/newrelicoraclereceiver/models"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/newrelicoraclereceiver/queries"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/newrelicoraclereceiver/scrapers"
 )
 
 const (
 	// Main session count SQL - keeping for backward compatibility
-	sessionCountSQL = "SELECT COUNT(*) as SESSION_COUNT FROM v$session WHERE type = 'USER'"
+	sessionCountSQL = queries.SessionCountSQL
 )
 
 type dbProviderFunc func() (*sql.DB, error)
 
 type newRelicOracleScraper struct {
-	// Multiple clients for different metrics
-	sessionCountClient   dbClient
-	tablespaceClient     dbClient
-	cpuUsageClient       dbClient
-	memoryClient         dbClient
+	// Only keep session scraper for simplicity
+	sessionScraper     *scrapers.SessionScraper
 	
 	db                   *sql.DB
-	clientProviderFunc   clientProviderFunc
+	clientProviderFunc   models.ClientProviderFunc
 	mb                   *metadata.MetricsBuilder
 	dbProviderFunc       dbProviderFunc
 	logger               *zap.Logger
@@ -48,7 +47,7 @@ type newRelicOracleScraper struct {
 	metricsBuilderConfig metadata.MetricsBuilderConfig
 }
 
-func newScraper(metricsBuilder *metadata.MetricsBuilder, metricsBuilderConfig metadata.MetricsBuilderConfig, scrapeCfg scraperhelper.ControllerConfig, logger *zap.Logger, providerFunc dbProviderFunc, clientProviderFunc clientProviderFunc, instanceName, hostName string) (scraper.Metrics, error) {
+func newScraper(metricsBuilder *metadata.MetricsBuilder, metricsBuilderConfig metadata.MetricsBuilderConfig, scrapeCfg scraperhelper.ControllerConfig, logger *zap.Logger, providerFunc dbProviderFunc, clientProviderFunc models.ClientProviderFunc, instanceName, hostName string) (scraper.Metrics, error) {
 	s := &newRelicOracleScraper{
 		mb:                   metricsBuilder,
 		metricsBuilderConfig: metricsBuilderConfig,
@@ -70,14 +69,11 @@ func (s *newRelicOracleScraper) start(context.Context, component.Host) error {
 		return fmt.Errorf("failed to open db connection: %w", err)
 	}
 	
-	// Initialize the main session count client
-	s.sessionCountClient = s.clientProviderFunc(s.db, sessionCountSQL, s.logger)
+	// Create a client for the session scraper to use
+	client := s.clientProviderFunc(s.db, sessionCountSQL, s.logger)
 	
-	// Initialize clients for different metric categories using their respective SQL queries
-	// Note: These will be initialized with generic queries, specific queries are handled in individual scrapers
-	s.tablespaceClient = s.clientProviderFunc(s.db, "SELECT 1 FROM DUAL", s.logger) // Placeholder
-	s.cpuUsageClient = s.clientProviderFunc(s.db, "SELECT 1 FROM DUAL", s.logger)   // Placeholder
-	s.memoryClient = s.clientProviderFunc(s.db, "SELECT 1 FROM DUAL", s.logger)     // Placeholder
+	// Initialize only the session scraper
+	s.sessionScraper = scrapers.NewSessionScraper(client, s.mb, s.logger, s.instanceName, s.metricsBuilderConfig)
 	
 	return nil
 }
@@ -87,32 +83,8 @@ func (s *newRelicOracleScraper) scrape(ctx context.Context) (pmetric.Metrics, er
 
 	var scrapeErrors []error
 
-	// Call individual scrape functions organized by category
-	
-	// Session-related metrics
-	scrapeErrors = append(scrapeErrors, s.scrapeSessionCount(ctx)...)
-	scrapeErrors = append(scrapeErrors, s.scrapeActiveSessionCount(ctx)...)
-	scrapeErrors = append(scrapeErrors, s.scrapeInactiveSessionCount(ctx)...)
-	scrapeErrors = append(scrapeErrors, s.scrapeBlockedSessionCount(ctx)...)
-	
-	// Tablespace-related metrics
-	scrapeErrors = append(scrapeErrors, s.scrapeTablespaceMetrics(ctx)...)
-	scrapeErrors = append(scrapeErrors, s.scrapeTablespaceUsageMetrics(ctx)...)
-	scrapeErrors = append(scrapeErrors, s.scrapeTempTablespaceMetrics(ctx)...)
-	
-	// Performance-related metrics
-	scrapeErrors = append(scrapeErrors, s.scrapeCpuUsage(ctx)...)
-	scrapeErrors = append(scrapeErrors, s.scrapeMemoryMetrics(ctx)...)
-	scrapeErrors = append(scrapeErrors, s.scrapeWaitEvents(ctx)...)
-	scrapeErrors = append(scrapeErrors, s.scrapeProcessCount(ctx)...)
-	scrapeErrors = append(scrapeErrors, s.scrapeRedoLogSwitches(ctx)...)
-	
-	// Database-related metrics
-	scrapeErrors = append(scrapeErrors, s.scrapeDatabaseSize(ctx)...)
-	scrapeErrors = append(scrapeErrors, s.scrapeUserCount(ctx)...)
-	scrapeErrors = append(scrapeErrors, s.scrapeLockCount(ctx)...)
-	scrapeErrors = append(scrapeErrors, s.scrapeArchiveLogCount(ctx)...)
-	scrapeErrors = append(scrapeErrors, s.scrapeInvalidObjectsCount(ctx)...)
+	// Only scrape session count metric - keeping it simple
+	scrapeErrors = append(scrapeErrors, s.sessionScraper.ScrapeSessionCount(ctx)...)
 
 	// Build the resource with instance and host information
 	rb := s.mb.NewResourceBuilder()

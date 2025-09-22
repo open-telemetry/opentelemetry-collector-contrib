@@ -9,15 +9,14 @@ import (
 	"strconv"
 
 	"go.uber.org/zap"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/newrelicoraclereceiver/models"
 )
 
-type metricRow map[string]string
+type metricRow = models.MetricRow
 
-type dbClient interface {
-	metricRows(ctx context.Context, args ...any) ([]metricRow, error)
-}
+type dbClient = models.DbClient
 
-type clientProviderFunc func(*sql.DB, string, *zap.Logger) dbClient
+type clientProviderFunc = models.ClientProviderFunc
 
 type dbSqlClient struct {
 	db     *sql.DB
@@ -25,7 +24,7 @@ type dbSqlClient struct {
 	logger *zap.Logger
 }
 
-func newDbClient(db *sql.DB, sql string, logger *zap.Logger) dbClient {
+func newDbClient(db *sql.DB, sql string, logger *zap.Logger) models.DbClient {
 	return &dbSqlClient{
 		db:     db,
 		sql:    sql,
@@ -33,7 +32,7 @@ func newDbClient(db *sql.DB, sql string, logger *zap.Logger) dbClient {
 	}
 }
 
-func (c *dbSqlClient) metricRows(ctx context.Context, args ...any) ([]metricRow, error) {
+func (c *dbSqlClient) metricRows(ctx context.Context, args ...any) ([]models.MetricRow, error) {
 	stmt, err := c.db.PrepareContext(ctx, c.sql)
 	if err != nil {
 		return nil, err
@@ -46,7 +45,7 @@ func (c *dbSqlClient) metricRows(ctx context.Context, args ...any) ([]metricRow,
 	}
 	defer rows.Close()
 
-	var metricRows []metricRow
+	var metricRows []models.MetricRow
 
 	columnNames, err := rows.Columns()
 	if err != nil {
@@ -64,7 +63,7 @@ func (c *dbSqlClient) metricRows(ctx context.Context, args ...any) ([]metricRow,
 			return nil, err
 		}
 
-		row := make(metricRow)
+		row := make(models.MetricRow)
 		for i, colName := range columnNames {
 			if values[i] == nil {
 				row[colName] = ""
