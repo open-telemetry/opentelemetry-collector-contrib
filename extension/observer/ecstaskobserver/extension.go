@@ -55,7 +55,8 @@ func (e *ecsTaskObserver) endpointsFromTaskMetadata(taskMetadata *ecsutil.TaskMe
 		return
 	}
 
-	for _, container := range taskMetadata.Containers {
+	for i := range taskMetadata.Containers {
+		container := &taskMetadata.Containers[i]
 		if container.KnownStatus != runningStatus {
 			continue
 		}
