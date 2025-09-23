@@ -286,3 +286,149 @@ func TestConfigCreation(t *testing.T) {
 	assert.Equal(t, 100, config.QueryMonitoringCountThreshold)
 	assert.Equal(t, 60, config.QueryMonitoringFetchInterval)
 }
+
+func TestMasterToggleFunctionality(t *testing.T) {
+	tests := []struct {
+		name           string
+		masterToggle   bool
+		individualFlag bool
+		expectedResult bool
+		description    string
+	}{
+		{
+			name:           "Master toggle enabled, individual disabled",
+			masterToggle:   true,
+			individualFlag: false,
+			expectedResult: true,
+			description:    "When master toggle is true, individual flags should be ignored",
+		},
+		{
+			name:           "Master toggle enabled, individual enabled",
+			masterToggle:   true,
+			individualFlag: true,
+			expectedResult: true,
+			description:    "When master toggle is true, result should be true regardless of individual flag",
+		},
+		{
+			name:           "Master toggle disabled, individual enabled",
+			masterToggle:   false,
+			individualFlag: true,
+			expectedResult: true,
+			description:    "When master toggle is false, individual flag should determine result",
+		},
+		{
+			name:           "Master toggle disabled, individual disabled",
+			masterToggle:   false,
+			individualFlag: false,
+			expectedResult: false,
+			description:    "When both master toggle and individual flag are false, result should be false",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			config := &Config{
+				ControllerConfig: scraperhelper.ControllerConfig{
+					CollectionInterval: time.Minute,
+				},
+				EnableDatabaseSampleMetrics: tt.masterToggle,
+				EnableBufferMetrics:         tt.individualFlag,
+				Timeout:                     30 * time.Second,
+			}
+
+			result := config.IsBufferMetricsEnabled()
+			assert.Equal(t, tt.expectedResult, result, tt.description)
+		})
+	}
+}
+
+func TestAllHelperMethods(t *testing.T) {
+	// Test that all helper methods work with master toggle
+	config := &Config{
+		ControllerConfig: scraperhelper.ControllerConfig{
+			CollectionInterval: time.Minute,
+		},
+		EnableDatabaseSampleMetrics: true,
+		// All individual flags are false, but master toggle should enable everything
+		EnableBufferMetrics:            false,
+		EnableDatabaseReserveMetrics:   false,
+		EnableDiskMetricsInBytes:       false,
+		EnableIOMetrics:                false,
+		EnableLogGrowthMetrics:         false,
+		EnablePageFileMetrics:          false,
+		EnablePageFileTotalMetrics:     false,
+		EnableMemoryMetrics:            false,
+		EnableMemoryTotalMetrics:       false,
+		EnableMemoryAvailableMetrics:   false,
+		EnableMemoryUtilizationMetrics: false,
+		Timeout:                        30 * time.Second,
+	}
+
+	tests := []struct {
+		name     string
+		method   func() bool
+		expected bool
+	}{
+		{"IsBufferMetricsEnabled", config.IsBufferMetricsEnabled, true},
+		{"IsDatabaseReserveMetricsEnabled", config.IsDatabaseReserveMetricsEnabled, true},
+		{"IsDiskMetricsInBytesEnabled", config.IsDiskMetricsInBytesEnabled, true},
+		{"IsIOMetricsEnabled", config.IsIOMetricsEnabled, true},
+		{"IsLogGrowthMetricsEnabled", config.IsLogGrowthMetricsEnabled, true},
+		{"IsPageFileMetricsEnabled", config.IsPageFileMetricsEnabled, true},
+		{"IsPageFileTotalMetricsEnabled", config.IsPageFileTotalMetricsEnabled, true},
+		{"IsMemoryMetricsEnabled", config.IsMemoryMetricsEnabled, true},
+		{"IsMemoryTotalMetricsEnabled", config.IsMemoryTotalMetricsEnabled, true},
+		{"IsMemoryAvailableMetricsEnabled", config.IsMemoryAvailableMetricsEnabled, true},
+		{"IsMemoryUtilizationMetricsEnabled", config.IsMemoryUtilizationMetricsEnabled, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := tt.method()
+			assert.Equal(t, tt.expected, result, "%s should return %v when master toggle is enabled", tt.name, tt.expected)
+		})
+	}
+}
+
+func TestIndividualControlWhenMasterDisabled(t *testing.T) {
+	// Test that individual flags work when master toggle is disabled
+	config := &Config{
+		ControllerConfig: scraperhelper.ControllerConfig{
+			CollectionInterval: time.Minute,
+		},
+		EnableDatabaseSampleMetrics: false,
+		// Enable only specific metrics
+		EnableBufferMetrics: true,
+		EnableMemoryMetrics: true,
+		// All others disabled
+		EnableDatabaseReserveMetrics:   false,
+		EnableDiskMetricsInBytes:       false,
+		EnableIOMetrics:                false,
+		EnableLogGrowthMetrics:         false,
+		EnablePageFileMetrics:          false,
+		EnablePageFileTotalMetrics:     false,
+		EnableMemoryTotalMetrics:       false,
+		EnableMemoryAvailableMetrics:   false,
+		EnableMemoryUtilizationMetrics: false,
+		Timeout:                        30 * time.Second,
+	}
+
+	tests := []struct {
+		name     string
+		method   func() bool
+		expected bool
+	}{
+		{"IsBufferMetricsEnabled", config.IsBufferMetricsEnabled, true},
+		{"IsMemoryMetricsEnabled", config.IsMemoryMetricsEnabled, true},
+		{"IsDiskMetricsInBytesEnabled", config.IsDiskMetricsInBytesEnabled, false},
+		{"IsIOMetricsEnabled", config.IsIOMetricsEnabled, false},
+		{"IsLogGrowthMetricsEnabled", config.IsLogGrowthMetricsEnabled, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := tt.method()
+			assert.Equal(t, tt.expected, result, "%s should return %v when individual flag is %v and master toggle is disabled", tt.name, tt.expected, tt.expected)
+		})
+	}
+}

@@ -168,3 +168,95 @@
 // - Supports per-database metric collection for multi-database instances
 // - Enables consistent data handling across different SQL Server editions
 package models
+
+// DatabaseBufferMetrics represents buffer pool metrics for a specific database
+// This model captures the buffer pool size per database as defined in New Relic's MSSQL integration
+type DatabaseBufferMetrics struct {
+	// DatabaseName is the name of the database
+	DatabaseName string `db:"db_name"`
+	
+	// BufferPoolSizeBytes represents the size of buffer pool allocated for this database in bytes
+	// This metric corresponds to bufferpool.sizePerDatabaseInBytes from New Relic
+	// Query source: sys.dm_os_buffer_descriptors with database-specific filtering
+	BufferPoolSizeBytes *int64 `db:"buffer_pool_size" metric_name:"sqlserver.database.bufferpool.sizePerDatabaseInBytes" source_type:"gauge"`
+}
+
+// DatabaseDiskMetrics represents disk-related metrics for a specific database
+// This model captures the maximum disk size metrics as defined in New Relic's MSSQL integration
+type DatabaseDiskMetrics struct {
+	// DatabaseName is the name of the database
+	DatabaseName string `db:"db_name"`
+	
+	// MaxDiskSizeBytes represents the maximum size allowed for the database in bytes
+	// This metric corresponds to maxDiskSizeInBytes from New Relic
+	// Query source: DATABASEPROPERTYEX function for Azure SQL Database compatibility
+	MaxDiskSizeBytes *int64 `db:"max_disk_space" metric_name:"sqlserver.database.maxDiskSizeInBytes" source_type:"gauge"`
+}
+
+// DatabaseIOMetrics represents IO stall metrics for a specific database
+// This model captures the IO stall time metrics as defined in New Relic's MSSQL integration
+type DatabaseIOMetrics struct {
+	// DatabaseName is the name of the database
+	DatabaseName string `db:"db_name"`
+	
+	// IOStallTimeMs represents the total IO stall time for the database in milliseconds
+	// This metric corresponds to io.stallInMilliseconds from New Relic
+	// Query source: sys.dm_io_virtual_file_stats for database-specific IO statistics
+	IOStallTimeMs *int64 `db:"io_stalls" metric_name:"sqlserver.database.io.stallInMilliseconds" source_type:"gauge"`
+}
+
+// DatabaseLogGrowthMetrics represents log growth metrics for a specific database
+// This model captures the log growth events as defined in New Relic's MSSQL integration
+type DatabaseLogGrowthMetrics struct {
+	// DatabaseName is the name of the database
+	DatabaseName string `db:"db_name"`
+	
+	// LogGrowthCount represents the number of log growth events for the database
+	// This metric corresponds to log.transactionGrowth from New Relic
+	// Query source: sys.dm_os_performance_counters for 'Log Growths' counter
+	LogGrowthCount *int64 `db:"log_growth" metric_name:"sqlserver.database.log.transactionGrowth" source_type:"gauge"`
+}
+
+// DatabasePageFileMetrics represents page file metrics for a specific database
+// This model captures the available page file space as defined in New Relic's MSSQL integration
+type DatabasePageFileMetrics struct {
+	// DatabaseName is the name of the database
+	DatabaseName string `db:"db_name"`
+	
+	// PageFileAvailableBytes represents the reserved space not used (available page file) in bytes
+	// This metric corresponds to pageFileAvailable from New Relic
+	// Query source: sys.partitions and sys.allocation_units for space allocation statistics
+	PageFileAvailableBytes *float64 `db:"reserved_space_not_used" metric_name:"sqlserver.database.pageFileAvailable" source_type:"gauge"`
+}
+
+// DatabasePageFileTotalMetrics represents page file total metrics for a specific database
+// This model captures the total reserved space (page file total) as defined in New Relic's MSSQL integration
+type DatabasePageFileTotalMetrics struct {
+	// DatabaseName is the name of the database
+	DatabaseName string `db:"db_name"`
+	
+	// PageFileTotalBytes represents the total reserved space (page file total) in bytes
+	// This metric corresponds to pageFileTotal from New Relic
+	// Query source: sys.partitions and sys.allocation_units for total space allocation statistics
+	PageFileTotalBytes *float64 `db:"reserved_space" metric_name:"sqlserver.database.pageFileTotal" source_type:"gauge"`
+}
+
+// DatabaseMemoryMetrics represents comprehensive memory metrics
+// This model captures the total memory, available memory, and memory utilization as defined in New Relic's MSSQL integration
+// Note: These are instance-level metrics (not per-database) that provide system memory information
+type DatabaseMemoryMetrics struct {
+	// TotalPhysicalMemoryBytes represents the total physical memory on the system in bytes
+	// This metric corresponds to memoryTotal from New Relic
+	// Query source: sys.dm_os_sys_memory for system memory statistics
+	TotalPhysicalMemoryBytes *float64 `db:"total_physical_memory" metric_name:"sqlserver.instance.memoryTotal" source_type:"gauge"`
+
+	// AvailablePhysicalMemoryBytes represents the available physical memory on the system in bytes
+	// This metric corresponds to memoryAvailable from New Relic
+	// Query source: sys.dm_os_sys_memory for system memory statistics
+	AvailablePhysicalMemoryBytes *float64 `db:"available_physical_memory" metric_name:"sqlserver.instance.memoryAvailable" source_type:"gauge"`
+
+	// MemoryUtilizationPercent represents the percentage of memory utilization
+	// This metric corresponds to memoryUtilization from New Relic
+	// Query source: calculated from sys.dm_os_process_memory and sys.dm_os_sys_memory
+	MemoryUtilizationPercent *float64 `db:"memory_utilization" metric_name:"sqlserver.instance.memoryUtilization" source_type:"gauge"`
+}

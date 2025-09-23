@@ -189,6 +189,118 @@ var instanceQueriesAzureManagedInstance = []*QueryDefinition{
 	},
 }
 
+// Database-level query definitions for Default SQL Server
+var databaseQueriesDefault = []*QueryDefinition{
+	{
+		Query:       DatabaseBufferPoolQuery,
+		MetricName:  "sqlserver.database.buffer_pool_size",
+		Description: "Buffer pool size per database in bytes",
+	},
+	{
+		Query:       DatabaseIOStallQuery,
+		MetricName:  "sqlserver.database.io_stall",
+		Description: "Total IO stall time for the database in milliseconds",
+	},
+	{
+		Query:       DatabaseLogGrowthQuery,
+		MetricName:  "sqlserver.database.log_growth",
+		Description: "Number of log growth events for the database",
+	},
+	{
+		Query:       DatabasePageFileQuery,
+		MetricName:  "sqlserver.database.page_file_available",
+		Description: "Available page file space (reserved space not used) for the database in bytes",
+	},
+	{
+		Query:       DatabasePageFileTotalQuery,
+		MetricName:  "sqlserver.database.page_file_total",
+		Description: "Total page file space (total reserved space) for the database in bytes",
+	},
+	{
+		Query:       DatabaseListQuery,
+		MetricName:  "sqlserver.database.list",
+		Description: "List of user databases for metric collection",
+	},
+}
+
+// Database-level query definitions for Azure SQL Database
+var databaseQueriesAzureManagedDatabase = []*QueryDefinition{
+	{
+		Query:       DatabaseBufferPoolQuery,
+		MetricName:  "sqlserver.database.buffer_pool_size",
+		Description: "Buffer pool size per database in bytes (Azure SQL Database)",
+	},
+	{
+		Query:       DatabaseMaxDiskSizeQueryAzureSQL,
+		MetricName:  "sqlserver.database.max_disk_size",
+		Description: "Maximum disk size allowed for the database in bytes (Azure SQL Database)",
+	},
+	{
+		Query:       DatabaseIOStallQueryAzureSQL,
+		MetricName:  "sqlserver.database.io_stall",
+		Description: "Total IO stall time for the database in milliseconds (Azure SQL Database)",
+	},
+	{
+		Query:       DatabaseLogGrowthQueryAzureSQL,
+		MetricName:  "sqlserver.database.log_growth",
+		Description: "Number of log growth events for the database (Azure SQL Database)",
+	},
+	{
+		Query:       DatabasePageFileQueryAzureSQL,
+		MetricName:  "sqlserver.database.page_file_available",
+		Description: "Available page file space (reserved space not used) for the database in bytes (Azure SQL Database)",
+	},
+	{
+		Query:       DatabasePageFileTotalQueryAzureSQL,
+		MetricName:  "sqlserver.database.page_file_total",
+		Description: "Total page file space (total reserved space) for the database in bytes (Azure SQL Database)",
+	},
+	{
+		Query:       DatabaseMemoryQueryAzureSQL,
+		MetricName:  "sqlserver.database_memory_metrics",
+		Description: "Available physical memory on the system in bytes (Azure SQL Database)",
+	},
+	{
+		Query:       DatabaseListQueryAzureSQL,
+		MetricName:  "sqlserver.database.list",
+		Description: "List of user databases for metric collection (Azure SQL Database)",
+	},
+}
+
+// Database-level query definitions for Azure SQL Managed Instance
+var databaseQueriesAzureManagedInstance = []*QueryDefinition{
+	{
+		Query:       DatabaseBufferPoolQuery,
+		MetricName:  "sqlserver.database.buffer_pool_size",
+		Description: "Buffer pool size per database in bytes (Azure SQL Managed Instance)",
+	},
+	{
+		Query:       DatabaseIOStallQueryAzureMI,
+		MetricName:  "sqlserver.database.io_stall",
+		Description: "Total IO stall time for the database in milliseconds (Azure Managed Instance)",
+	},
+	{
+		Query:       DatabaseLogGrowthQueryAzureMI,
+		MetricName:  "sqlserver.database.log_growth",
+		Description: "Number of log growth events for the database (Azure Managed Instance)",
+	},
+	{
+		Query:       DatabasePageFileQueryAzureMI,
+		MetricName:  "sqlserver.database.page_file_available",
+		Description: "Available page file space (reserved space not used) for the database in bytes (Azure Managed Instance)",
+	},
+	{
+		Query:       DatabasePageFileTotalQueryAzureMI,
+		MetricName:  "sqlserver.database.page_file_total",
+		Description: "Total page file space (total reserved space) for the database in bytes (Azure Managed Instance)",
+	},
+	{
+		Query:       DatabaseListQueryAzureMI,
+		MetricName:  "sqlserver.database.list",
+		Description: "List of user databases for metric collection (Azure SQL Managed Instance)",
+	},
+}
+
 // queryDefinitionSets maps query types to engine-specific query sets
 var queryDefinitionSets = map[QueryDefinitionType]EngineSet[[]*QueryDefinition]{
 	InstanceQueries: {
@@ -197,9 +309,9 @@ var queryDefinitionSets = map[QueryDefinitionType]EngineSet[[]*QueryDefinition]{
 		AzureSQLManagedInstance: instanceQueriesAzureManagedInstance,
 	},
 	DatabaseQueries: {
-		Default:                 nil,
-		AzureSQLDatabase:        nil,
-		AzureSQLManagedInstance: nil,
+		Default:                 databaseQueriesDefault,
+		AzureSQLDatabase:        databaseQueriesAzureManagedDatabase,
+		AzureSQLManagedInstance: databaseQueriesAzureManagedInstance,
 	},
 }
 
