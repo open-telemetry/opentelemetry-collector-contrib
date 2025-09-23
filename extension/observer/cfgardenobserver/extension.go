@@ -74,7 +74,8 @@ func (g *cfGardenObserver) SyncApps() error {
 	g.appMu.Lock()
 	defer g.appMu.Unlock()
 	g.apps = make(map[string]*resource.App)
-	for _, info := range containers {
+	for i := range containers {
+		info := containers[i]
 		appID, ok := info.Properties[propertiesAppIDKey]
 		if !ok {
 			return fmt.Errorf("container properties do not have a `%s` field, required to fetch application labels", propertiesAppIDKey)
