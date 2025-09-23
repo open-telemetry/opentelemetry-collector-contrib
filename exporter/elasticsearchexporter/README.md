@@ -99,7 +99,7 @@ sending_queue:
     sizer: bytes
 ```
 
-The default configurations are chosen to be closer to the previous defaults with the exporter's inbuilt batching. The [`exporterhelper` documentation][exporterhelper] provides more details on the `sending_queue` settings.
+The default configurations are chosen to be closer to the defaults with the exporter's previous inbuilt batching feature. The [`exporterhelper` documentation][exporterhelper] provides more details on the `sending_queue` settings.
 
 ### Elasticsearch document routing
 
