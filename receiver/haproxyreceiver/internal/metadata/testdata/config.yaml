@@ -1,6 +1,10 @@
 default:
 all_set:
   metrics:
+    haproxy.active:
+      enabled: true
+    haproxy.backup:
+      enabled: true
     haproxy.bytes.input:
       enabled: true
     haproxy.bytes.output:
@@ -15,6 +19,8 @@ all_set:
       enabled: true
     haproxy.compression.output:
       enabled: true
+    haproxy.connections.average_time:
+      enabled: true
     haproxy.connections.errors:
       enabled: true
     haproxy.connections.rate:
@@ -26,6 +32,8 @@ all_set:
     haproxy.downtime:
       enabled: true
     haproxy.failed_checks:
+      enabled: true
+    haproxy.requests.average_time:
       enabled: true
     haproxy.requests.denied:
       enabled: true
@@ -39,6 +47,8 @@ all_set:
       enabled: true
     haproxy.requests.total:
       enabled: true
+    haproxy.responses.average_time:
+      enabled: true
     haproxy.responses.denied:
       enabled: true
     haproxy.responses.errors:
@@ -49,9 +59,13 @@ all_set:
       enabled: true
     haproxy.sessions.count:
       enabled: true
+    haproxy.sessions.limit:
+      enabled: true
     haproxy.sessions.rate:
       enabled: true
     haproxy.sessions.total:
+      enabled: true
+    haproxy.weight:
       enabled: true
   resource_attributes:
     haproxy.addr:
@@ -62,6 +76,10 @@ all_set:
       enabled: true
 none_set:
   metrics:
+    haproxy.active:
+      enabled: false
+    haproxy.backup:
+      enabled: false
     haproxy.bytes.input:
       enabled: false
     haproxy.bytes.output:
@@ -76,6 +94,8 @@ none_set:
       enabled: false
     haproxy.compression.output:
       enabled: false
+    haproxy.connections.average_time:
+      enabled: false
     haproxy.connections.errors:
       enabled: false
     haproxy.connections.rate:
@@ -87,6 +107,8 @@ none_set:
     haproxy.downtime:
       enabled: false
     haproxy.failed_checks:
+      enabled: false
+    haproxy.requests.average_time:
       enabled: false
     haproxy.requests.denied:
       enabled: false
@@ -100,6 +122,8 @@ none_set:
       enabled: false
     haproxy.requests.total:
       enabled: false
+    haproxy.responses.average_time:
+      enabled: false
     haproxy.responses.denied:
       enabled: false
     haproxy.responses.errors:
@@ -110,9 +134,13 @@ none_set:
       enabled: false
     haproxy.sessions.count:
       enabled: false
+    haproxy.sessions.limit:
+      enabled: false
     haproxy.sessions.rate:
       enabled: false
     haproxy.sessions.total:
+      enabled: false
+    haproxy.weight:
       enabled: false
   resource_attributes:
     haproxy.addr:

@@ -68,6 +68,12 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount := 0
 			allMetricsCount := 0
 
+			allMetricsCount++
+			mb.RecordHaproxyActiveDataPoint(ts, "1")
+
+			allMetricsCount++
+			mb.RecordHaproxyBackupDataPoint(ts, "1")
+
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordHaproxyBytesInputDataPoint(ts, "1")
@@ -91,6 +97,9 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordHaproxyCompressionOutputDataPoint(ts, "1")
 
+			allMetricsCount++
+			mb.RecordHaproxyConnectionsAverageTimeDataPoint(ts, "1")
+
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordHaproxyConnectionsErrorsDataPoint(ts, "1")
@@ -111,6 +120,9 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordHaproxyFailedChecksDataPoint(ts, "1")
+
+			allMetricsCount++
+			mb.RecordHaproxyRequestsAverageTimeDataPoint(ts, "1")
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -136,6 +148,9 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordHaproxyRequestsTotalDataPoint(ts, "1", AttributeStatusCode1xx)
 
+			allMetricsCount++
+			mb.RecordHaproxyResponsesAverageTimeDataPoint(ts, "1")
+
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordHaproxyResponsesDeniedDataPoint(ts, "1")
@@ -156,12 +171,18 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordHaproxySessionsCountDataPoint(ts, "1")
 
+			allMetricsCount++
+			mb.RecordHaproxySessionsLimitDataPoint(ts, "1")
+
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordHaproxySessionsRateDataPoint(ts, "1")
 
 			allMetricsCount++
 			mb.RecordHaproxySessionsTotalDataPoint(ts, "1")
+
+			allMetricsCount++
+			mb.RecordHaproxyWeightDataPoint(ts, "1")
 
 			rb := mb.NewResourceBuilder()
 			rb.SetHaproxyAddr("haproxy.addr-val")
@@ -189,6 +210,30 @@ func TestMetricsBuilder(t *testing.T) {
 			validatedMetrics := make(map[string]bool)
 			for i := 0; i < ms.Len(); i++ {
 				switch ms.At(i).Name() {
+				case "haproxy.active":
+					assert.False(t, validatedMetrics["haproxy.active"], "Found a duplicate in the metrics slice: haproxy.active")
+					validatedMetrics["haproxy.active"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of active servers (backend) or server is active (server). Corresponds to HAProxy's `act` metric.", ms.At(i).Description())
+					assert.Equal(t, "{servers}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "haproxy.backup":
+					assert.False(t, validatedMetrics["haproxy.backup"], "Found a duplicate in the metrics slice: haproxy.backup")
+					validatedMetrics["haproxy.backup"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of backup servers (backend) or server is backup (server). Corresponds to HAProxy's `bck` metric.", ms.At(i).Description())
+					assert.Equal(t, "{servers}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "haproxy.bytes.input":
 					assert.False(t, validatedMetrics["haproxy.bytes.input"], "Found a duplicate in the metrics slice: haproxy.bytes.input")
 					validatedMetrics["haproxy.bytes.input"] = true
@@ -287,6 +332,18 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "haproxy.connections.average_time":
+					assert.False(t, validatedMetrics["haproxy.connections.average_time"], "Found a duplicate in the metrics slice: haproxy.connections.average_time")
+					validatedMetrics["haproxy.connections.average_time"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Average connect time in ms over the 1024 last requests. Corresponds to HAProxy's `ctime` metric.", ms.At(i).Description())
+					assert.Equal(t, "ms", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "haproxy.connections.errors":
 					assert.False(t, validatedMetrics["haproxy.connections.errors"], "Found a duplicate in the metrics slice: haproxy.connections.errors")
 					validatedMetrics["haproxy.connections.errors"] = true
@@ -369,6 +426,18 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "haproxy.requests.average_time":
+					assert.False(t, validatedMetrics["haproxy.requests.average_time"], "Found a duplicate in the metrics slice: haproxy.requests.average_time")
+					validatedMetrics["haproxy.requests.average_time"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Average queue time in ms over the 1024 last requests. Corresponds to HAProxy's `qtime` metric.", ms.At(i).Description())
+					assert.Equal(t, "ms", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "haproxy.requests.denied":
 					assert.False(t, validatedMetrics["haproxy.requests.denied"], "Found a duplicate in the metrics slice: haproxy.requests.denied")
 					validatedMetrics["haproxy.requests.denied"] = true
@@ -454,6 +523,18 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("status_code")
 					assert.True(t, ok)
 					assert.Equal(t, "1xx", attrVal.Str())
+				case "haproxy.responses.average_time":
+					assert.False(t, validatedMetrics["haproxy.responses.average_time"], "Found a duplicate in the metrics slice: haproxy.responses.average_time")
+					validatedMetrics["haproxy.responses.average_time"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Average response time in ms over the 1024 last requests. Corresponds to HAProxy's `rtime` metric.", ms.At(i).Description())
+					assert.Equal(t, "ms", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "haproxy.responses.denied":
 					assert.False(t, validatedMetrics["haproxy.responses.denied"], "Found a duplicate in the metrics slice: haproxy.responses.denied")
 					validatedMetrics["haproxy.responses.denied"] = true
@@ -520,6 +601,18 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "haproxy.sessions.limit":
+					assert.False(t, validatedMetrics["haproxy.sessions.limit"], "Found a duplicate in the metrics slice: haproxy.sessions.limit")
+					validatedMetrics["haproxy.sessions.limit"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Configured session limit. Corresponds to HAProxy's `slim` metric.", ms.At(i).Description())
+					assert.Equal(t, "{sessions}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "haproxy.sessions.rate":
 					assert.False(t, validatedMetrics["haproxy.sessions.rate"], "Found a duplicate in the metrics slice: haproxy.sessions.rate")
 					validatedMetrics["haproxy.sessions.rate"] = true
@@ -542,6 +635,18 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.True(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "haproxy.weight":
+					assert.False(t, validatedMetrics["haproxy.weight"], "Found a duplicate in the metrics slice: haproxy.weight")
+					validatedMetrics["haproxy.weight"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Total effective weight (backend) or effective weight (server). Corresponds to HAProxy's `weight` metric.", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
