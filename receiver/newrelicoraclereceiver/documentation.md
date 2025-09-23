@@ -12,6 +12,22 @@ metrics:
     enabled: false
 ```
 
+### newrelicoracledb.db_id
+
+Oracle database ID information
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+| instance.id | Oracle database instance ID | Any Str | false |
+| db.id | Oracle database ID | Any Str | false |
+
 ### newrelicoracledb.disk.blocks_read
 
 Number of physical blocks read from disk

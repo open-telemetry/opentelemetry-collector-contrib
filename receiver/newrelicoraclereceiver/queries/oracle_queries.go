@@ -102,4 +102,11 @@ const (
 		FROM
 			(SELECT INST_ID FROM gv$instance) t1,
 			(SELECT GLOBAL_NAME FROM global_name) t2`
+
+	DBIDInstanceSQL = `
+		SELECT
+			t1.INST_ID,
+			t2.DBID
+		FROM (SELECT INST_ID FROM gv$instance) t1,
+		(SELECT DBID FROM v$database) t2`
 )

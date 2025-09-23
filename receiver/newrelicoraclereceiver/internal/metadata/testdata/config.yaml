@@ -1,6 +1,8 @@
 default:
 all_set:
   metrics:
+    newrelicoracledb.db_id:
+      enabled: true
     newrelicoracledb.disk.blocks_read:
       enabled: true
     newrelicoracledb.disk.blocks_written:
@@ -52,6 +54,8 @@ all_set:
       enabled: true
 none_set:
   metrics:
+    newrelicoracledb.db_id:
+      enabled: false
     newrelicoracledb.disk.blocks_read:
       enabled: false
     newrelicoracledb.disk.blocks_written:

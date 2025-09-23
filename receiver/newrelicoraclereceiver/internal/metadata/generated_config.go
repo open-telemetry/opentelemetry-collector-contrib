@@ -28,6 +28,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for newrelicoracledb metrics.
 type MetricsConfig struct {
+	NewrelicoracledbDbID                          MetricConfig `mapstructure:"newrelicoracledb.db_id"`
 	NewrelicoracledbDiskBlocksRead                MetricConfig `mapstructure:"newrelicoracledb.disk.blocks_read"`
 	NewrelicoracledbDiskBlocksWritten             MetricConfig `mapstructure:"newrelicoracledb.disk.blocks_written"`
 	NewrelicoracledbDiskReadTimeMilliseconds      MetricConfig `mapstructure:"newrelicoracledb.disk.read_time_milliseconds"`
@@ -54,6 +55,9 @@ type MetricsConfig struct {
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
+		NewrelicoracledbDbID: MetricConfig{
+			Enabled: true,
+		},
 		NewrelicoracledbDiskBlocksRead: MetricConfig{
 			Enabled: true,
 		},
