@@ -4,7 +4,7 @@ go 1.24.0
 
 require (
 	github.com/DataDog/agent-payload/v5 v5.0.164
-	github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil v0.71.0-devel.0.20250908112322-c0e8c8158aa2
+	github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil v0.72.0-devel.0.20250908112322-c0e8c8158aa2
 	github.com/DataDog/datadog-agent/pkg/proto v0.71.0-devel.0.20250902202452-61c2536752eb
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.136.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter v0.136.0
