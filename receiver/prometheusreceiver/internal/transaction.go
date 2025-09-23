@@ -24,6 +24,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
@@ -67,8 +69,11 @@ type transaction struct {
 	buildInfo              component.BuildInfo
 	metricAdjuster         MetricsAdjuster
 	obsrecv                *receiverhelper.ObsReport
+	telemetryBuilder       *mdata.TelemetryBuilder
 	// Used as buffer to calculate series ref hash.
 	bufBytes []byte
+	// Track metric points per target
+	targetMetricPoints map[resourceKey]int
 }
 
 var emptyScopeID scopeID
@@ -86,6 +91,7 @@ func newTransaction(
 	externalLabels labels.Labels,
 	settings receiver.Settings,
 	obsrecv *receiverhelper.ObsReport,
+	telemetryBuilder *mdata.TelemetryBuilder,
 	trimSuffixes bool,
 	enableNativeHistograms bool,
 ) *transaction {
@@ -101,9 +107,11 @@ func newTransaction(
 		logger:                 settings.Logger,
 		buildInfo:              settings.BuildInfo,
 		obsrecv:                obsrecv,
+		telemetryBuilder:       telemetryBuilder,
 		bufBytes:               make([]byte, 0, 1024),
 		scopeAttributes:        make(map[resourceKey]map[scopeID]pcommon.Map),
 		nodeResources:          map[resourceKey]pcommon.Resource{},
+		targetMetricPoints:     make(map[resourceKey]int),
 	}
 }
 
@@ -185,6 +193,9 @@ func (t *transaction) Append(_ storage.SeriesRef, ls labels.Labels, atMs int64, 
 	err = curMF.addSeries(seriesRef, metricName, ls, atMs, val)
 	if err != nil {
 		t.logger.Warn("failed to add datapoint", zap.Error(err), zap.String("metric_name", metricName), zap.Any("labels", ls))
+	} else {
+		// Track successful metric point addition per target
+		t.targetMetricPoints[*rKey]++
 	}
 
 	return 0, nil // never return errors, as that fails the whole scrape
@@ -335,6 +346,9 @@ func (t *transaction) AppendHistogram(_ storage.SeriesRef, ls labels.Labels, atM
 	err = curMF.addExponentialHistogramSeries(t.getSeriesRef(ls, curMF.mtype), metricName, ls, atMs, h, fh)
 	if err != nil {
 		t.logger.Warn("failed to add histogram datapoint", zap.Error(err), zap.String("metric_name", metricName), zap.Any("labels", ls))
+	} else {
+		// Track successful metric point addition per target
+		t.targetMetricPoints[*rKey]++
 	}
 
 	return 0, nil // never return errors, as that fails the whole scrape
@@ -563,7 +577,27 @@ func (t *transaction) Commit() error {
 
 	err = t.sink.ConsumeMetrics(ctx, md)
 	t.obsrecv.EndMetricsOp(ctx, dataformat, numPoints, err)
+
+	// Report per-target metrics if consumption was successful
+	if err == nil {
+		t.reportTargetMetrics()
+	}
+
 	return err
+}
+
+// reportTargetMetrics reports the per-target metric points using the telemetry builder
+func (t *transaction) reportTargetMetrics() {
+	for rKey, count := range t.targetMetricPoints {
+		if count > 0 {
+			t.telemetryBuilder.ReceiverTargetAcceptedMetricPoints.Record(t.ctx, int64(count),
+				metric.WithAttributes(
+					attribute.String("job", rKey.job),
+					attribute.String("instance", rKey.instance),
+				),
+			)
+		}
+	}
 }
 
 func (*transaction) Rollback() error {
