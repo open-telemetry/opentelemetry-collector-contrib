@@ -117,6 +117,66 @@ Count of locked user accounts in the database
 | newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
 | instance.id | Oracle database instance ID | Any Str | false |
 
+### newrelicoracledb.memory.pga_allocated_bytes
+
+Total PGA memory allocated in bytes
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+| instance.id | Oracle database instance ID | Any Str | false |
+
+### newrelicoracledb.memory.pga_freeable_bytes
+
+Total freeable PGA memory in bytes
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+| instance.id | Oracle database instance ID | Any Str | false |
+
+### newrelicoracledb.memory.pga_in_use_bytes
+
+Total PGA memory currently in use in bytes
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+| instance.id | Oracle database instance ID | Any Str | false |
+
+### newrelicoracledb.memory.pga_max_size_bytes
+
+Global memory bound for PGA in bytes
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+| instance.id | Oracle database instance ID | Any Str | false |
+
 ### newrelicoracledb.sessions.count
 
 Total number of active Oracle database sessions

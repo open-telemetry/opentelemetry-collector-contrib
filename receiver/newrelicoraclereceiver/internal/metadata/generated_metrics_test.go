@@ -98,6 +98,22 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
+			mb.RecordNewrelicoracledbMemoryPgaAllocatedBytesDataPoint(ts, 1, "newrelic.entity_name-val", "instance.id-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordNewrelicoracledbMemoryPgaFreeableBytesDataPoint(ts, 1, "newrelic.entity_name-val", "instance.id-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordNewrelicoracledbMemoryPgaInUseBytesDataPoint(ts, 1, "newrelic.entity_name-val", "instance.id-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordNewrelicoracledbMemoryPgaMaxSizeBytesDataPoint(ts, 1, "newrelic.entity_name-val", "instance.id-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
 			mb.RecordNewrelicoracledbSessionsCountDataPoint(ts, 1, "newrelic.entity_name-val")
 
 			defaultMetricsCount++
@@ -276,6 +292,78 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "Count of locked user accounts in the database", ms.At(i).Description())
 					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("newrelic.entity_name")
+					assert.True(t, ok)
+					assert.Equal(t, "newrelic.entity_name-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("instance.id")
+					assert.True(t, ok)
+					assert.Equal(t, "instance.id-val", attrVal.Str())
+				case "newrelicoracledb.memory.pga_allocated_bytes":
+					assert.False(t, validatedMetrics["newrelicoracledb.memory.pga_allocated_bytes"], "Found a duplicate in the metrics slice: newrelicoracledb.memory.pga_allocated_bytes")
+					validatedMetrics["newrelicoracledb.memory.pga_allocated_bytes"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Total PGA memory allocated in bytes", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("newrelic.entity_name")
+					assert.True(t, ok)
+					assert.Equal(t, "newrelic.entity_name-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("instance.id")
+					assert.True(t, ok)
+					assert.Equal(t, "instance.id-val", attrVal.Str())
+				case "newrelicoracledb.memory.pga_freeable_bytes":
+					assert.False(t, validatedMetrics["newrelicoracledb.memory.pga_freeable_bytes"], "Found a duplicate in the metrics slice: newrelicoracledb.memory.pga_freeable_bytes")
+					validatedMetrics["newrelicoracledb.memory.pga_freeable_bytes"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Total freeable PGA memory in bytes", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("newrelic.entity_name")
+					assert.True(t, ok)
+					assert.Equal(t, "newrelic.entity_name-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("instance.id")
+					assert.True(t, ok)
+					assert.Equal(t, "instance.id-val", attrVal.Str())
+				case "newrelicoracledb.memory.pga_in_use_bytes":
+					assert.False(t, validatedMetrics["newrelicoracledb.memory.pga_in_use_bytes"], "Found a duplicate in the metrics slice: newrelicoracledb.memory.pga_in_use_bytes")
+					validatedMetrics["newrelicoracledb.memory.pga_in_use_bytes"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Total PGA memory currently in use in bytes", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("newrelic.entity_name")
+					assert.True(t, ok)
+					assert.Equal(t, "newrelic.entity_name-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("instance.id")
+					assert.True(t, ok)
+					assert.Equal(t, "instance.id-val", attrVal.Str())
+				case "newrelicoracledb.memory.pga_max_size_bytes":
+					assert.False(t, validatedMetrics["newrelicoracledb.memory.pga_max_size_bytes"], "Found a duplicate in the metrics slice: newrelicoracledb.memory.pga_max_size_bytes")
+					validatedMetrics["newrelicoracledb.memory.pga_max_size_bytes"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Global memory bound for PGA in bytes", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())

@@ -199,6 +199,46 @@ metrics:
       - newrelic.entity_name
       - instance.id
 
+  newrelicoracledb.memory.pga_in_use_bytes:
+    description: Total PGA memory currently in use in bytes
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "By"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.memory.pga_allocated_bytes:
+    description: Total PGA memory allocated in bytes
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "By"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.memory.pga_freeable_bytes:
+    description: Total freeable PGA memory in bytes
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "By"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.memory.pga_max_size_bytes:
+    description: Global memory bound for PGA in bytes
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "By"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
 tests:
   config:
   goleak:

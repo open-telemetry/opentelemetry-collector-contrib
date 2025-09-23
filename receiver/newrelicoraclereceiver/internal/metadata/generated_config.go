@@ -35,6 +35,10 @@ type MetricsConfig struct {
 	NewrelicoracledbDiskWriteTimeMilliseconds     MetricConfig `mapstructure:"newrelicoracledb.disk.write_time_milliseconds"`
 	NewrelicoracledbDiskWrites                    MetricConfig `mapstructure:"newrelicoracledb.disk.writes"`
 	NewrelicoracledbLockedAccounts                MetricConfig `mapstructure:"newrelicoracledb.locked_accounts"`
+	NewrelicoracledbMemoryPgaAllocatedBytes       MetricConfig `mapstructure:"newrelicoracledb.memory.pga_allocated_bytes"`
+	NewrelicoracledbMemoryPgaFreeableBytes        MetricConfig `mapstructure:"newrelicoracledb.memory.pga_freeable_bytes"`
+	NewrelicoracledbMemoryPgaInUseBytes           MetricConfig `mapstructure:"newrelicoracledb.memory.pga_in_use_bytes"`
+	NewrelicoracledbMemoryPgaMaxSizeBytes         MetricConfig `mapstructure:"newrelicoracledb.memory.pga_max_size_bytes"`
 	NewrelicoracledbSessionsCount                 MetricConfig `mapstructure:"newrelicoracledb.sessions.count"`
 	NewrelicoracledbTablespaceDbID                MetricConfig `mapstructure:"newrelicoracledb.tablespace.db_id"`
 	NewrelicoracledbTablespaceGlobalName          MetricConfig `mapstructure:"newrelicoracledb.tablespace.global_name"`
@@ -68,6 +72,18 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		NewrelicoracledbLockedAccounts: MetricConfig{
+			Enabled: true,
+		},
+		NewrelicoracledbMemoryPgaAllocatedBytes: MetricConfig{
+			Enabled: true,
+		},
+		NewrelicoracledbMemoryPgaFreeableBytes: MetricConfig{
+			Enabled: true,
+		},
+		NewrelicoracledbMemoryPgaInUseBytes: MetricConfig{
+			Enabled: true,
+		},
+		NewrelicoracledbMemoryPgaMaxSizeBytes: MetricConfig{
 			Enabled: true,
 		},
 		NewrelicoracledbSessionsCount: MetricConfig{

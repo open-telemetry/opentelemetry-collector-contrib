@@ -89,4 +89,9 @@ const (
 			SUM(WRITETIM) * 10 AS WriteTime
 		FROM gv$filestat
 		GROUP BY INST_ID`
+
+	PGAMetricsSQL = `
+		SELECT INST_ID, NAME, VALUE 
+		FROM gv$pgastat 
+		WHERE NAME IN ('total PGA inuse', 'total PGA allocated', 'total freeable PGA memory', 'global memory bound')`
 )

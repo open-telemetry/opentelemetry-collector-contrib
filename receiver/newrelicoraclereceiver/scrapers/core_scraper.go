@@ -50,6 +50,9 @@ func (s *CoreScraper) ScrapeCoreMetrics(ctx context.Context) []error {
 	// Scrape read/write disk I/O metrics
 	errors = append(errors, s.scrapeReadWriteMetrics(ctx, now)...)
 
+	// Scrape PGA memory metrics
+	errors = append(errors, s.scrapePGAMetrics(ctx, now)...)
+
 	return errors
 }
 
@@ -161,6 +164,86 @@ func (s *CoreScraper) scrapeReadWriteMetrics(ctx context.Context, now pcommon.Ti
 	}
 
 	s.logger.Debug("Collected Oracle disk I/O metrics", zap.Int("metric_count", metricCount), zap.String("instance", s.instanceName))
+
+	return errors
+}
+
+// scrapePGAMetrics handles the PGA memory metrics
+func (s *CoreScraper) scrapePGAMetrics(ctx context.Context, now pcommon.Timestamp) []error {
+	var errors []error
+
+	// Execute PGA metrics query
+	s.logger.Debug("Executing PGA metrics query", zap.String("sql", queries.PGAMetricsSQL))
+
+	rows, err := s.db.QueryContext(ctx, queries.PGAMetricsSQL)
+	if err != nil {
+		errors = append(errors, fmt.Errorf("error executing PGA metrics query: %w", err))
+		return errors
+	}
+	defer rows.Close()
+
+	// Track metrics by instance ID to collect all PGA metrics for each instance
+	instanceMetrics := make(map[string]map[string]int64)
+
+	// Process each row and collect metrics
+	for rows.Next() {
+		var instID interface{}
+		var name string
+		var value float64
+
+		err := rows.Scan(&instID, &name, &value)
+		if err != nil {
+			errors = append(errors, fmt.Errorf("error scanning PGA metrics row: %w", err))
+			continue
+		}
+
+		// Convert instance ID to string
+		instanceID := getInstanceIDString(instID)
+
+		// Initialize the instance metrics map if needed
+		if instanceMetrics[instanceID] == nil {
+			instanceMetrics[instanceID] = make(map[string]int64)
+		}
+
+		// Store the metric value
+		instanceMetrics[instanceID][name] = int64(value)
+	}
+
+	if err = rows.Err(); err != nil {
+		errors = append(errors, fmt.Errorf("error iterating PGA metrics rows: %w", err))
+	}
+
+	// Record metrics for each instance
+	metricCount := 0
+	for instanceID, metrics := range instanceMetrics {
+		// Record PGA memory metrics
+		s.logger.Info("PGA memory metrics collected",
+			zap.String("instance_id", instanceID),
+			zap.Int64("pga_in_use", metrics["total PGA inuse"]),
+			zap.Int64("pga_allocated", metrics["total PGA allocated"]),
+			zap.Int64("pga_freeable", metrics["total freeable PGA memory"]),
+			zap.Int64("pga_max_size", metrics["global memory bound"]),
+			zap.String("instance", s.instanceName),
+		)
+
+		// Record each PGA metric if it exists
+		if val, exists := metrics["total PGA inuse"]; exists {
+			s.mb.RecordNewrelicoracledbMemoryPgaInUseBytesDataPoint(now, val, s.instanceName, instanceID)
+		}
+		if val, exists := metrics["total PGA allocated"]; exists {
+			s.mb.RecordNewrelicoracledbMemoryPgaAllocatedBytesDataPoint(now, val, s.instanceName, instanceID)
+		}
+		if val, exists := metrics["total freeable PGA memory"]; exists {
+			s.mb.RecordNewrelicoracledbMemoryPgaFreeableBytesDataPoint(now, val, s.instanceName, instanceID)
+		}
+		if val, exists := metrics["global memory bound"]; exists {
+			s.mb.RecordNewrelicoracledbMemoryPgaMaxSizeBytesDataPoint(now, val, s.instanceName, instanceID)
+		}
+
+		metricCount++
+	}
+
+	s.logger.Debug("Collected Oracle PGA memory metrics", zap.Int("metric_count", metricCount), zap.String("instance", s.instanceName))
 
 	return errors
 }
