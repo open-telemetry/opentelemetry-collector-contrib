@@ -164,22 +164,6 @@ func (s *sqlServerScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 		return metrics, fmt.Errorf("no database connection available")
 	}
 
-	// Use structured approach to scrape instance buffer metrics with timeout
-	if s.config.IsBufferMetricsEnabled() {
-		scrapeCtx, cancel := context.WithTimeout(ctx, s.config.Timeout)
-		defer cancel()
-
-		if err := s.instanceScraper.ScrapeInstanceBufferMetrics(scrapeCtx, scopeMetrics); err != nil {
-			s.logger.Error("Failed to scrape instance buffer metrics",
-				zap.Error(err),
-				zap.Duration("timeout", s.config.Timeout))
-			scrapeErrors = append(scrapeErrors, err)
-			// Don't return here - continue with other metrics if enabled
-		} else {
-			s.logger.Debug("Successfully scraped instance buffer metrics")
-		}
-	}
-
 	// Scrape database-level buffer pool metrics (bufferpool.sizePerDatabaseInBytes)
 	if s.config.IsBufferMetricsEnabled() {
 		scrapeCtx, cancel := context.WithTimeout(ctx, s.config.Timeout)
