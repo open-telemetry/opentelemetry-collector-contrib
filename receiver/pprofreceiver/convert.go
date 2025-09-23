@@ -41,7 +41,7 @@ type cache struct {
 
 func convertPprofToPprofile(src *profile.Profile) (*pprofile.Profiles, error) {
 	if err := src.CheckValid(); err != nil {
-		return nil, fmt.Errorf("%s: %w", err, errInvalPprof)
+		return nil, fmt.Errorf("%w: %w", err, errInvalPprof)
 	}
 	dst := pprofile.NewProfiles()
 
@@ -85,12 +85,12 @@ func convertPprofToPprofile(src *profile.Profile) (*pprofile.Profiles, error) {
 
 			// pprof.Sample.location_id
 			// TODO: deduplicate inserts to pprofile.ProfilesDictionary.
-			var locTableIds []int32
+			var locTableIDs []int32
 			for _, loc := range sample.Location {
 				l := dst.Dictionary().LocationTable().AppendEmpty()
 				lastLocationTableIdx++
 
-				locTableIds = append(locTableIds, lastLocationTableIdx)
+				locTableIDs = append(locTableIDs, lastLocationTableIdx)
 
 				// pprof.Location.id
 				// TODO
@@ -194,7 +194,7 @@ func convertPprofToPprofile(src *profile.Profile) (*pprofile.Profiles, error) {
 
 			st := dst.Dictionary().StackTable().AppendEmpty()
 			lastStackTableIdx++
-			st.LocationIndices().FromRaw(locTableIds)
+			st.LocationIndices().FromRaw(locTableIDs)
 
 			// pprof.Sample.value
 			if len(sample.Value) != len(src.SampleType) {
@@ -234,7 +234,6 @@ func convertPprofToPprofile(src *profile.Profile) (*pprofile.Profiles, error) {
 				}
 				s.AttributeIndices().Append(idx)
 			}
-
 		}
 
 		// pprof.Profile.mapping
@@ -284,11 +283,13 @@ func convertPprofToPprofile(src *profile.Profile) (*pprofile.Profiles, error) {
 		// As OTel pprofile uses a single Sample Type, it is implicit its default type.
 
 		// pprof.Profile.doc_url
-		docUrlIdx := getIdxForAttribute(transformCache, "doc_url", src.DocURL)
-		p.AttributeIndices().Append(docUrlIdx)
+		docURLIdx := getIdxForAttribute(transformCache, "doc_url", src.DocURL)
+		p.AttributeIndices().Append(docURLIdx)
 	}
 
-	dumpTransformCache(dst.Dictionary(), transformCache)
+	if err := dumpTransformCache(dst.Dictionary(), transformCache); err != nil {
+		return nil, err
+	}
 	return &dst, nil
 }
 
@@ -365,7 +366,7 @@ func initCache() cache {
 
 // dumpTransformCache fills pprofile.ProfilesDictionary with the content of
 // the supporting cache.
-func dumpTransformCache(dic pprofile.ProfilesDictionary, c cache) {
+func dumpTransformCache(dic pprofile.ProfilesDictionary, c cache) error {
 	for i := 0; i < len(c.stringTable); i++ {
 		dic.StringTable().Append("")
 	}
@@ -378,9 +379,12 @@ func dumpTransformCache(dic pprofile.ProfilesDictionary, c cache) {
 	}
 	for a, id := range c.attributeTable {
 		dic.AttributeTable().At(int(id)).SetKeyStrindex(a.keyStrIdx)
-		dic.AttributeTable().At(int(id)).Value().FromRaw(a.value)
+		if err := dic.AttributeTable().At(int(id)).Value().FromRaw(a.value); err != nil {
+			return err
+		}
 		if a.unitStrIdx != noAttrUnit {
 			dic.AttributeTable().At(int(id)).SetUnitStrindex(a.unitStrIdx)
 		}
 	}
+	return nil
 }
