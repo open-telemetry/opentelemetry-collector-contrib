@@ -58,6 +58,9 @@ var MetricsInfo = metricsInfo{
 	NewrelicoracledbMemorySgaSharedPoolLibraryCacheSharableBytes: metricInfo{
 		Name: "newrelicoracledb.memory.sga_shared_pool_library_cache_sharable_bytes",
 	},
+	NewrelicoracledbMemorySgaSharedPoolLibraryCacheUserBytes: metricInfo{
+		Name: "newrelicoracledb.memory.sga_shared_pool_library_cache_user_bytes",
+	},
 	NewrelicoracledbMemorySgaUgaTotalBytes: metricInfo{
 		Name: "newrelicoracledb.memory.sga_uga_total_bytes",
 	},
@@ -109,6 +112,7 @@ type metricsInfo struct {
 	NewrelicoracledbMemoryPgaInUseBytes                          metricInfo
 	NewrelicoracledbMemoryPgaMaxSizeBytes                        metricInfo
 	NewrelicoracledbMemorySgaSharedPoolLibraryCacheSharableBytes metricInfo
+	NewrelicoracledbMemorySgaSharedPoolLibraryCacheUserBytes     metricInfo
 	NewrelicoracledbMemorySgaUgaTotalBytes                       metricInfo
 	NewrelicoracledbSessionsCount                                metricInfo
 	NewrelicoracledbTablespaceDbID                               metricInfo
@@ -908,6 +912,58 @@ func newMetricNewrelicoracledbMemorySgaSharedPoolLibraryCacheSharableBytes(cfg M
 	return m
 }
 
+type metricNewrelicoracledbMemorySgaSharedPoolLibraryCacheUserBytes struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.memory.sga_shared_pool_library_cache_user_bytes metric with initial data.
+func (m *metricNewrelicoracledbMemorySgaSharedPoolLibraryCacheUserBytes) init() {
+	m.data.SetName("newrelicoracledb.memory.sga_shared_pool_library_cache_user_bytes")
+	m.data.SetDescription("SGA shared pool library cache shareable memory per user in bytes (250 * users_opening)")
+	m.data.SetUnit("By")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbMemorySgaSharedPoolLibraryCacheUserBytes) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbMemorySgaSharedPoolLibraryCacheUserBytes) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbMemorySgaSharedPoolLibraryCacheUserBytes) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbMemorySgaSharedPoolLibraryCacheUserBytes(cfg MetricConfig) metricNewrelicoracledbMemorySgaSharedPoolLibraryCacheUserBytes {
+	m := metricNewrelicoracledbMemorySgaSharedPoolLibraryCacheUserBytes{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricNewrelicoracledbMemorySgaUgaTotalBytes struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -1504,6 +1560,7 @@ type MetricsBuilder struct {
 	metricNewrelicoracledbMemoryPgaInUseBytes                          metricNewrelicoracledbMemoryPgaInUseBytes
 	metricNewrelicoracledbMemoryPgaMaxSizeBytes                        metricNewrelicoracledbMemoryPgaMaxSizeBytes
 	metricNewrelicoracledbMemorySgaSharedPoolLibraryCacheSharableBytes metricNewrelicoracledbMemorySgaSharedPoolLibraryCacheSharableBytes
+	metricNewrelicoracledbMemorySgaSharedPoolLibraryCacheUserBytes     metricNewrelicoracledbMemorySgaSharedPoolLibraryCacheUserBytes
 	metricNewrelicoracledbMemorySgaUgaTotalBytes                       metricNewrelicoracledbMemorySgaUgaTotalBytes
 	metricNewrelicoracledbSessionsCount                                metricNewrelicoracledbSessionsCount
 	metricNewrelicoracledbTablespaceDbID                               metricNewrelicoracledbTablespaceDbID
@@ -1555,6 +1612,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricNewrelicoracledbMemoryPgaInUseBytes:                          newMetricNewrelicoracledbMemoryPgaInUseBytes(mbc.Metrics.NewrelicoracledbMemoryPgaInUseBytes),
 		metricNewrelicoracledbMemoryPgaMaxSizeBytes:                        newMetricNewrelicoracledbMemoryPgaMaxSizeBytes(mbc.Metrics.NewrelicoracledbMemoryPgaMaxSizeBytes),
 		metricNewrelicoracledbMemorySgaSharedPoolLibraryCacheSharableBytes: newMetricNewrelicoracledbMemorySgaSharedPoolLibraryCacheSharableBytes(mbc.Metrics.NewrelicoracledbMemorySgaSharedPoolLibraryCacheSharableBytes),
+		metricNewrelicoracledbMemorySgaSharedPoolLibraryCacheUserBytes:     newMetricNewrelicoracledbMemorySgaSharedPoolLibraryCacheUserBytes(mbc.Metrics.NewrelicoracledbMemorySgaSharedPoolLibraryCacheUserBytes),
 		metricNewrelicoracledbMemorySgaUgaTotalBytes:                       newMetricNewrelicoracledbMemorySgaUgaTotalBytes(mbc.Metrics.NewrelicoracledbMemorySgaUgaTotalBytes),
 		metricNewrelicoracledbSessionsCount:                                newMetricNewrelicoracledbSessionsCount(mbc.Metrics.NewrelicoracledbSessionsCount),
 		metricNewrelicoracledbTablespaceDbID:                               newMetricNewrelicoracledbTablespaceDbID(mbc.Metrics.NewrelicoracledbTablespaceDbID),
@@ -1665,6 +1723,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricNewrelicoracledbMemoryPgaInUseBytes.emit(ils.Metrics())
 	mb.metricNewrelicoracledbMemoryPgaMaxSizeBytes.emit(ils.Metrics())
 	mb.metricNewrelicoracledbMemorySgaSharedPoolLibraryCacheSharableBytes.emit(ils.Metrics())
+	mb.metricNewrelicoracledbMemorySgaSharedPoolLibraryCacheUserBytes.emit(ils.Metrics())
 	mb.metricNewrelicoracledbMemorySgaUgaTotalBytes.emit(ils.Metrics())
 	mb.metricNewrelicoracledbSessionsCount.emit(ils.Metrics())
 	mb.metricNewrelicoracledbTablespaceDbID.emit(ils.Metrics())
@@ -1780,6 +1839,11 @@ func (mb *MetricsBuilder) RecordNewrelicoracledbMemoryPgaMaxSizeBytesDataPoint(t
 // RecordNewrelicoracledbMemorySgaSharedPoolLibraryCacheSharableBytesDataPoint adds a data point to newrelicoracledb.memory.sga_shared_pool_library_cache_sharable_bytes metric.
 func (mb *MetricsBuilder) RecordNewrelicoracledbMemorySgaSharedPoolLibraryCacheSharableBytesDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
 	mb.metricNewrelicoracledbMemorySgaSharedPoolLibraryCacheSharableBytes.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbMemorySgaSharedPoolLibraryCacheUserBytesDataPoint adds a data point to newrelicoracledb.memory.sga_shared_pool_library_cache_user_bytes metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbMemorySgaSharedPoolLibraryCacheUserBytesDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbMemorySgaSharedPoolLibraryCacheUserBytes.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
 }
 
 // RecordNewrelicoracledbMemorySgaUgaTotalBytesDataPoint adds a data point to newrelicoracledb.memory.sga_uga_total_bytes metric.

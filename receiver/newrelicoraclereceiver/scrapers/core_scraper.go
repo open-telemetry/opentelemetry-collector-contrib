@@ -68,6 +68,9 @@ func (s *CoreScraper) ScrapeCoreMetrics(ctx context.Context) []error {
 	// Scrape SGA shared pool library cache metrics
 	errors = append(errors, s.scrapeSGASharedPoolLibraryCacheMetrics(ctx, now)...)
 
+	// Scrape SGA shared pool library cache user metrics
+	errors = append(errors, s.scrapeSGASharedPoolLibraryCacheUserMetrics(ctx, now)...)
+
 	return errors
 }
 
@@ -514,6 +517,57 @@ func (s *CoreScraper) scrapeSGASharedPoolLibraryCacheMetrics(ctx context.Context
 	}
 
 	s.logger.Debug("Collected Oracle SGA shared pool library cache metrics", zap.Int("metric_count", metricCount), zap.String("instance", s.instanceName))
+
+	return errors
+}
+
+// scrapeSGASharedPoolLibraryCacheUserMetrics handles the SGA shared pool library cache shareable user memory metrics
+func (s *CoreScraper) scrapeSGASharedPoolLibraryCacheUserMetrics(ctx context.Context, now pcommon.Timestamp) []error {
+	var errors []error
+
+	// Execute SGA shared pool library cache user metrics query
+	s.logger.Debug("Executing SGA shared pool library cache user metrics query", zap.String("sql", queries.SGASharedPoolLibraryCacheShareableUserSQL))
+
+	rows, err := s.db.QueryContext(ctx, queries.SGASharedPoolLibraryCacheShareableUserSQL)
+	if err != nil {
+		errors = append(errors, fmt.Errorf("error executing SGA shared pool library cache user metrics query: %w", err))
+		return errors
+	}
+	defer rows.Close()
+
+	// Process each row and record metrics
+	metricCount := 0
+	for rows.Next() {
+		var sum int64
+		var instID interface{}
+
+		err := rows.Scan(&sum, &instID)
+		if err != nil {
+			errors = append(errors, fmt.Errorf("error scanning SGA shared pool library cache user metrics row: %w", err))
+			continue
+		}
+
+		// Convert instance ID to string
+		instanceID := getInstanceIDString(instID)
+
+		// Record SGA shared pool library cache user metrics
+		s.logger.Info("SGA shared pool library cache user metrics collected",
+			zap.String("instance_id", instanceID),
+			zap.Int64("sga_shared_pool_library_cache_user_bytes", sum),
+			zap.String("instance", s.instanceName),
+		)
+
+		// Record the SGA shared pool library cache user metric
+		s.mb.RecordNewrelicoracledbMemorySgaSharedPoolLibraryCacheUserBytesDataPoint(now, sum, s.instanceName, instanceID)
+
+		metricCount++
+	}
+
+	if err = rows.Err(); err != nil {
+		errors = append(errors, fmt.Errorf("error iterating SGA shared pool library cache user metrics rows: %w", err))
+	}
+
+	s.logger.Debug("Collected Oracle SGA shared pool library cache user metrics", zap.Int("metric_count", metricCount), zap.String("instance", s.instanceName))
 
 	return errors
 }

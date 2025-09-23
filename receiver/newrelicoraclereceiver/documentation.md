@@ -239,6 +239,21 @@ SGA shared pool library cache sharable memory in bytes for statements with more 
 | newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
 | instance.id | Oracle database instance ID | Any Str | false |
 
+### newrelicoracledb.memory.sga_shared_pool_library_cache_user_bytes
+
+SGA shared pool library cache shareable memory per user in bytes (250 * users_opening)
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+| instance.id | Oracle database instance ID | Any Str | false |
+
 ### newrelicoracledb.memory.sga_uga_total_bytes
 
 Total SGA UGA memory in bytes (session uga memory max)

@@ -141,4 +141,10 @@ const (
 		WHERE sqlarea.executions > 5
 		AND inst.inst_id=sqlarea.inst_id
 		GROUP BY inst.inst_id`
+
+	SGASharedPoolLibraryCacheShareableUserSQL = `
+		SELECT SUM(250 * sqlarea.users_opening) AS sum, inst.inst_id
+		FROM GV$sqlarea sqlarea, GV$INSTANCE inst
+		WHERE inst.inst_id=sqlarea.inst_id
+		GROUP BY inst.inst_id`
 )

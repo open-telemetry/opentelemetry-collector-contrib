@@ -297,6 +297,16 @@ metrics:
       - newrelic.entity_name
       - instance.id
 
+  newrelicoracledb.memory.sga_shared_pool_library_cache_user_bytes:
+    description: SGA shared pool library cache shareable memory per user in bytes (250 * users_opening)
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "By"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
 tests:
   config:
   goleak:
