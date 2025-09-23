@@ -1,4 +1,7 @@
-package pprofreceiver
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package pprofreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pprofreceiver"
 
 import (
 	"errors"
@@ -16,7 +19,7 @@ var errInvalPprof = errors.New("invalid pprof data")
 
 const (
 	// noAttrUnit is a helper to indicate that no
-	// unit is asociated to this Attribute.
+	// unit is associated to this Attribute.
 	noAttrUnit = int32(-1)
 )
 
