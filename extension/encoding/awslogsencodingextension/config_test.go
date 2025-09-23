@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/metadata"
 )
 
@@ -36,27 +37,27 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "cloudwatch_logs_subscription_filter"),
 			expected: &Config{
-				Format: formatCloudWatchLogsSubscriptionFilter,
+				Format: constants.FormatCloudWatchLogsSubscriptionFilter,
 				VPCFlowLogConfig: VPCFlowLogConfig{
-					FileFormat: fileFormatPlainText,
+					FileFormat: constants.FileFormatPlainText,
 				},
 			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "text_vpc_flow_log"),
 			expected: &Config{
-				Format: formatVPCFlowLog,
+				Format: constants.FormatVPCFlowLog,
 				VPCFlowLogConfig: VPCFlowLogConfig{
-					FileFormat: fileFormatPlainText,
+					FileFormat: constants.FileFormatPlainText,
 				},
 			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "parquet_vpc_flow_log"),
 			expected: &Config{
-				Format: formatVPCFlowLog,
+				Format: constants.FormatVPCFlowLog,
 				VPCFlowLogConfig: VPCFlowLogConfig{
-					FileFormat: fileFormatParquet,
+					FileFormat: constants.FileFormatParquet,
 				},
 			},
 		},
@@ -70,36 +71,36 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "s3_access_log"),
 			expected: &Config{
-				Format: formatS3AccessLog,
+				Format: constants.FormatS3AccessLog,
 				VPCFlowLogConfig: VPCFlowLogConfig{
-					FileFormat: fileFormatPlainText,
+					FileFormat: constants.FileFormatPlainText,
 				},
 			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "waf_log"),
 			expected: &Config{
-				Format: formatWAFLog,
+				Format: constants.FormatWAFLog,
 				VPCFlowLogConfig: VPCFlowLogConfig{
-					FileFormat: fileFormatPlainText,
+					FileFormat: constants.FileFormatPlainText,
 				},
 			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "cloudtrail_log"),
 			expected: &Config{
-				Format: formatCloudTrailLog,
+				Format: constants.FormatCloudTrailLog,
 				VPCFlowLogConfig: VPCFlowLogConfig{
-					FileFormat: fileFormatPlainText,
+					FileFormat: constants.FileFormatPlainText,
 				},
 			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "elb_access_log"),
 			expected: &Config{
-				Format: formatELBAccessLog,
+				Format: constants.FormatELBAccessLog,
 				VPCFlowLogConfig: VPCFlowLogConfig{
-					FileFormat: fileFormatPlainText,
+					FileFormat: constants.FileFormatPlainText,
 				},
 			},
 		},
