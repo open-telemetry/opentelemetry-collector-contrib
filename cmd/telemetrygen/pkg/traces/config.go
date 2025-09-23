@@ -21,7 +21,6 @@ type Config struct {
 	PropagateContext bool
 	StatusCode       string
 	Batch            bool
-	LoadSize         int
 
 	SpanDuration time.Duration
 }
@@ -43,7 +42,6 @@ func (c *Config) Flags(fs *pflag.FlagSet) {
 	fs.BoolVar(&c.PropagateContext, "marshal", c.PropagateContext, "Whether to marshal trace context via HTTP headers")
 	fs.StringVar(&c.StatusCode, "status-code", c.StatusCode, "Status code to use for the spans, one of (Unset, Error, Ok) or the equivalent integer (0,1,2)")
 	fs.BoolVar(&c.Batch, "batch", c.Batch, "Whether to batch traces")
-	fs.IntVar(&c.LoadSize, "size", c.LoadSize, "Desired minimum size in MB of string data for each trace generated. This can be used to test traces with large payloads, i.e. when testing the OTLP receiver endpoint max receive size.")
 	fs.DurationVar(&c.SpanDuration, "span-duration", c.SpanDuration, "The duration of each generated span.")
 }
 
@@ -59,7 +57,6 @@ func (c *Config) SetDefaults() {
 	c.PropagateContext = false
 	c.StatusCode = "0"
 	c.Batch = true
-	c.LoadSize = 0
 	c.SpanDuration = 123 * time.Microsecond
 }
 

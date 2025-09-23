@@ -6,6 +6,7 @@ package logs
 import (
 	"context"
 	"encoding/hex"
+	"fmt"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -19,6 +20,7 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/time/rate"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
 	types "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/pkg"
 )
 
@@ -35,6 +37,7 @@ type worker struct {
 	index          int                   // worker index
 	traceID        string                // traceID string
 	spanID         string                // spanID string
+	loadSize       int                   // desired minimum size in MB of string data for each generated log
 	allowFailures  bool                  // whether to continue on export failures
 }
 
@@ -60,6 +63,13 @@ func (w worker) simulateLogs(res *resource.Resource, exporter sdklog.Exporter, t
 		attrs := []log.KeyValue{log.String("app", "server")}
 		for i, attr := range telemetryAttributes {
 			attrs = append(attrs, log.String(string(attr.Key), telemetryAttributes[i].Value.AsString()))
+		}
+
+		// Add load size attributes if specified
+		if w.loadSize > 0 {
+			for j := 0; j < w.loadSize; j++ {
+				attrs = append(attrs, log.String(fmt.Sprintf("load-%v", j), string(make([]byte, common.CharactersPerMB))))
+			}
 		}
 
 		rf := logtest.RecordFactory{
