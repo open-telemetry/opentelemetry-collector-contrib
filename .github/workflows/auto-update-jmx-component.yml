@@ -47,7 +47,11 @@ jobs:
             already_opened=true
           fi
 
-          echo "latest-version=$latest_version"; echo "already-added=$already_added"; echo "already-opened=$already_opened" >> "$GITHUB_OUTPUT"
+          {
+            echo "latest-version=$latest_version"
+            echo "already-added=$already_added"
+            echo "already-opened=$already_opened"
+          } >> "$GITHUB_OUTPUT"
 
   update-jmx-metrics-component:
     permissions:
@@ -162,7 +166,11 @@ jobs:
             already_opened=true
           fi
 
-          echo "latest-version=$latest_version"; echo "already-added=$already_added"; echo "already-opened=$already_opened" >> "$GITHUB_OUTPUT"
+          {
+            echo "latest-version=$latest_version"
+            echo "already-added=$already_added"
+            echo "already-opened=$already_opened"
+          } >> "$GITHUB_OUTPUT"
 
   update-jmx-scraper-component:
     permissions:
