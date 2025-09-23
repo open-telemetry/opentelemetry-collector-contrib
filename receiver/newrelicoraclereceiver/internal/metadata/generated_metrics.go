@@ -31,6 +31,9 @@ var MetricsInfo = metricsInfo{
 	NewrelicoracledbTablespaceOfflinePdbDatafiles: metricInfo{
 		Name: "newrelicoracledb.tablespace.offline_pdb_datafiles",
 	},
+	NewrelicoracledbTablespacePdbNonWriteMode: metricInfo{
+		Name: "newrelicoracledb.tablespace.pdb_non_write_mode",
+	},
 	NewrelicoracledbTablespaceSpaceConsumedBytes: metricInfo{
 		Name: "newrelicoracledb.tablespace.space_consumed_bytes",
 	},
@@ -49,6 +52,7 @@ type metricsInfo struct {
 	NewrelicoracledbTablespaceIsOffline           metricInfo
 	NewrelicoracledbTablespaceOfflineCdbDatafiles metricInfo
 	NewrelicoracledbTablespaceOfflinePdbDatafiles metricInfo
+	NewrelicoracledbTablespacePdbNonWriteMode     metricInfo
 	NewrelicoracledbTablespaceSpaceConsumedBytes  metricInfo
 	NewrelicoracledbTablespaceSpaceReservedBytes  metricInfo
 	NewrelicoracledbTablespaceSpaceUsedPercentage metricInfo
@@ -369,6 +373,58 @@ func newMetricNewrelicoracledbTablespaceOfflinePdbDatafiles(cfg MetricConfig) me
 	return m
 }
 
+type metricNewrelicoracledbTablespacePdbNonWriteMode struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.tablespace.pdb_non_write_mode metric with initial data.
+func (m *metricNewrelicoracledbTablespacePdbNonWriteMode) init() {
+	m.data.SetName("newrelicoracledb.tablespace.pdb_non_write_mode")
+	m.data.SetDescription("Count of PDB datafiles in non-write mode by tablespace")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbTablespacePdbNonWriteMode) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, tablespaceNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("tablespace.name", tablespaceNameAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbTablespacePdbNonWriteMode) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbTablespacePdbNonWriteMode) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbTablespacePdbNonWriteMode(cfg MetricConfig) metricNewrelicoracledbTablespacePdbNonWriteMode {
+	m := metricNewrelicoracledbTablespacePdbNonWriteMode{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricNewrelicoracledbTablespaceSpaceConsumedBytes struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -541,6 +597,7 @@ type MetricsBuilder struct {
 	metricNewrelicoracledbTablespaceIsOffline           metricNewrelicoracledbTablespaceIsOffline
 	metricNewrelicoracledbTablespaceOfflineCdbDatafiles metricNewrelicoracledbTablespaceOfflineCdbDatafiles
 	metricNewrelicoracledbTablespaceOfflinePdbDatafiles metricNewrelicoracledbTablespaceOfflinePdbDatafiles
+	metricNewrelicoracledbTablespacePdbNonWriteMode     metricNewrelicoracledbTablespacePdbNonWriteMode
 	metricNewrelicoracledbTablespaceSpaceConsumedBytes  metricNewrelicoracledbTablespaceSpaceConsumedBytes
 	metricNewrelicoracledbTablespaceSpaceReservedBytes  metricNewrelicoracledbTablespaceSpaceReservedBytes
 	metricNewrelicoracledbTablespaceSpaceUsedPercentage metricNewrelicoracledbTablespaceSpaceUsedPercentage
@@ -575,6 +632,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricNewrelicoracledbTablespaceIsOffline:           newMetricNewrelicoracledbTablespaceIsOffline(mbc.Metrics.NewrelicoracledbTablespaceIsOffline),
 		metricNewrelicoracledbTablespaceOfflineCdbDatafiles: newMetricNewrelicoracledbTablespaceOfflineCdbDatafiles(mbc.Metrics.NewrelicoracledbTablespaceOfflineCdbDatafiles),
 		metricNewrelicoracledbTablespaceOfflinePdbDatafiles: newMetricNewrelicoracledbTablespaceOfflinePdbDatafiles(mbc.Metrics.NewrelicoracledbTablespaceOfflinePdbDatafiles),
+		metricNewrelicoracledbTablespacePdbNonWriteMode:     newMetricNewrelicoracledbTablespacePdbNonWriteMode(mbc.Metrics.NewrelicoracledbTablespacePdbNonWriteMode),
 		metricNewrelicoracledbTablespaceSpaceConsumedBytes:  newMetricNewrelicoracledbTablespaceSpaceConsumedBytes(mbc.Metrics.NewrelicoracledbTablespaceSpaceConsumedBytes),
 		metricNewrelicoracledbTablespaceSpaceReservedBytes:  newMetricNewrelicoracledbTablespaceSpaceReservedBytes(mbc.Metrics.NewrelicoracledbTablespaceSpaceReservedBytes),
 		metricNewrelicoracledbTablespaceSpaceUsedPercentage: newMetricNewrelicoracledbTablespaceSpaceUsedPercentage(mbc.Metrics.NewrelicoracledbTablespaceSpaceUsedPercentage),
@@ -668,6 +726,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricNewrelicoracledbTablespaceIsOffline.emit(ils.Metrics())
 	mb.metricNewrelicoracledbTablespaceOfflineCdbDatafiles.emit(ils.Metrics())
 	mb.metricNewrelicoracledbTablespaceOfflinePdbDatafiles.emit(ils.Metrics())
+	mb.metricNewrelicoracledbTablespacePdbNonWriteMode.emit(ils.Metrics())
 	mb.metricNewrelicoracledbTablespaceSpaceConsumedBytes.emit(ils.Metrics())
 	mb.metricNewrelicoracledbTablespaceSpaceReservedBytes.emit(ils.Metrics())
 	mb.metricNewrelicoracledbTablespaceSpaceUsedPercentage.emit(ils.Metrics())
@@ -730,6 +789,11 @@ func (mb *MetricsBuilder) RecordNewrelicoracledbTablespaceOfflineCdbDatafilesDat
 // RecordNewrelicoracledbTablespaceOfflinePdbDatafilesDataPoint adds a data point to newrelicoracledb.tablespace.offline_pdb_datafiles metric.
 func (mb *MetricsBuilder) RecordNewrelicoracledbTablespaceOfflinePdbDatafilesDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, tablespaceNameAttributeValue string) {
 	mb.metricNewrelicoracledbTablespaceOfflinePdbDatafiles.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, tablespaceNameAttributeValue)
+}
+
+// RecordNewrelicoracledbTablespacePdbNonWriteModeDataPoint adds a data point to newrelicoracledb.tablespace.pdb_non_write_mode metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbTablespacePdbNonWriteModeDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, tablespaceNameAttributeValue string) {
+	mb.metricNewrelicoracledbTablespacePdbNonWriteMode.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, tablespaceNameAttributeValue)
 }
 
 // RecordNewrelicoracledbTablespaceSpaceConsumedBytesDataPoint adds a data point to newrelicoracledb.tablespace.space_consumed_bytes metric.

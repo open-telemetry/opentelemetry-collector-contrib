@@ -58,6 +58,9 @@ func (s *TablespaceScraper) ScrapeTablespaceMetrics(ctx context.Context) []error
 	// Scrape PDB datafiles offline tablespace metrics
 	errors = append(errors, s.scrapePDBDatafilesOfflineTablespaceMetrics(ctx, now)...)
 
+	// Scrape PDB non-write mode tablespace metrics
+	errors = append(errors, s.scrapePDBNonWriteTablespaceMetrics(ctx, now)...)
+
 	return errors
 }
 
@@ -302,6 +305,54 @@ func (s *TablespaceScraper) scrapePDBDatafilesOfflineTablespaceMetrics(ctx conte
 	}
 
 	s.logger.Debug("Collected Oracle PDB datafiles offline tablespace metrics", zap.Int("metric_count", metricCount), zap.String("instance", s.instanceName))
+
+	return errors
+}
+
+// scrapePDBNonWriteTablespaceMetrics handles the PDB non-write mode tablespace metrics
+func (s *TablespaceScraper) scrapePDBNonWriteTablespaceMetrics(ctx context.Context, now pcommon.Timestamp) []error {
+	var errors []error
+
+	// Execute PDB non-write mode tablespace query
+	s.logger.Debug("Executing PDB non-write mode tablespace query", zap.String("sql", queries.PDBNonWriteTablespaceSQL))
+
+	rows, err := s.db.QueryContext(ctx, queries.PDBNonWriteTablespaceSQL)
+	if err != nil {
+		errors = append(errors, fmt.Errorf("error executing PDB non-write mode tablespace query: %w", err))
+		return errors
+	}
+	defer rows.Close()
+
+	// Process each row and record metrics
+	metricCount := 0
+	for rows.Next() {
+		var tablespaceName string
+		var nonWriteCount int64
+
+		err := rows.Scan(&tablespaceName, &nonWriteCount)
+		if err != nil {
+			errors = append(errors, fmt.Errorf("error scanning PDB non-write mode tablespace row: %w", err))
+			continue
+		}
+
+		// Record PDB non-write mode metrics
+		s.logger.Info("PDB non-write mode tablespace metrics collected",
+			zap.String("tablespace", tablespaceName),
+			zap.Int64("non_write_count", nonWriteCount),
+			zap.String("instance", s.instanceName),
+		)
+
+		// Record the PDB non-write mode metric
+		s.mb.RecordNewrelicoracledbTablespacePdbNonWriteModeDataPoint(now, nonWriteCount, s.instanceName, tablespaceName)
+
+		metricCount++
+	}
+
+	if err = rows.Err(); err != nil {
+		errors = append(errors, fmt.Errorf("error iterating PDB non-write mode tablespace rows: %w", err))
+	}
+
+	s.logger.Debug("Collected Oracle PDB non-write mode tablespace metrics", zap.Int("metric_count", metricCount), zap.String("instance", s.instanceName))
 
 	return errors
 }

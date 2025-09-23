@@ -55,4 +55,12 @@ const (
 		FROM cdb_data_files a, cdb_pdbs b
 		WHERE a.con_id = b.con_id
 		GROUP BY a.TABLESPACE_NAME`
+
+	PDBNonWriteTablespaceSQL = `
+		SELECT 
+			TABLESPACE_NAME, 
+			sum(CASE WHEN ONLINE_STATUS IN ('ONLINE','SYSTEM','RECOVER') THEN 0 ELSE 1 END) AS PDB_NON_WRITE_MODE
+		FROM cdb_data_files a, cdb_pdbs b
+		WHERE a.con_id = b.con_id
+		GROUP BY TABLESPACE_NAME`
 )
