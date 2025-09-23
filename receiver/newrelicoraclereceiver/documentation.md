@@ -283,6 +283,21 @@ Total number of active Oracle database sessions
 | ---- | ----------- | ------ | -------- |
 | newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
 
+### newrelicoracledb.sga_shared_pool_library_cache_hit_ratio
+
+SGA shared pool library cache hit ratio for SQL AREA namespace
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+| instance.id | Oracle database instance ID | Any Str | false |
+
 ### newrelicoracledb.sga_shared_pool_library_cache_reload_ratio
 
 SGA shared pool library cache reload ratio (reloads/pins)

@@ -46,6 +46,7 @@ type MetricsConfig struct {
 	NewrelicoracledbMemorySgaSharedPoolLibraryCacheUserBytes     MetricConfig `mapstructure:"newrelicoracledb.memory.sga_shared_pool_library_cache_user_bytes"`
 	NewrelicoracledbMemorySgaUgaTotalBytes                       MetricConfig `mapstructure:"newrelicoracledb.memory.sga_uga_total_bytes"`
 	NewrelicoracledbSessionsCount                                MetricConfig `mapstructure:"newrelicoracledb.sessions.count"`
+	NewrelicoracledbSgaSharedPoolLibraryCacheHitRatio            MetricConfig `mapstructure:"newrelicoracledb.sga_shared_pool_library_cache_hit_ratio"`
 	NewrelicoracledbSgaSharedPoolLibraryCacheReloadRatio         MetricConfig `mapstructure:"newrelicoracledb.sga_shared_pool_library_cache_reload_ratio"`
 	NewrelicoracledbTablespaceDbID                               MetricConfig `mapstructure:"newrelicoracledb.tablespace.db_id"`
 	NewrelicoracledbTablespaceGlobalName                         MetricConfig `mapstructure:"newrelicoracledb.tablespace.global_name"`
@@ -112,6 +113,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		NewrelicoracledbSessionsCount: MetricConfig{
+			Enabled: true,
+		},
+		NewrelicoracledbSgaSharedPoolLibraryCacheHitRatio: MetricConfig{
 			Enabled: true,
 		},
 		NewrelicoracledbSgaSharedPoolLibraryCacheReloadRatio: MetricConfig{

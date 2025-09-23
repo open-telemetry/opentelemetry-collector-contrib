@@ -153,4 +153,10 @@ const (
 		FROM GV$librarycache libcache, GV$INSTANCE inst
 		WHERE inst.inst_id=libcache.inst_id
 		GROUP BY inst.inst_id`
+
+	SGASharedPoolLibraryCacheHitRatioSQL = `
+		SELECT libcache.gethitratio as ratio, inst.inst_id
+		FROM GV$librarycache libcache, GV$INSTANCE inst
+		WHERE namespace='SQL AREA'
+		AND inst.inst_id=libcache.inst_id`
 )

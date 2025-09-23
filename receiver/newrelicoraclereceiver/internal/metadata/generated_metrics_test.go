@@ -142,6 +142,10 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
+			mb.RecordNewrelicoracledbSgaSharedPoolLibraryCacheHitRatioDataPoint(ts, 1, "newrelic.entity_name-val", "instance.id-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
 			mb.RecordNewrelicoracledbSgaSharedPoolLibraryCacheReloadRatioDataPoint(ts, 1, "newrelic.entity_name-val", "instance.id-val")
 
 			defaultMetricsCount++
@@ -532,6 +536,24 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("newrelic.entity_name")
 					assert.True(t, ok)
 					assert.Equal(t, "newrelic.entity_name-val", attrVal.Str())
+				case "newrelicoracledb.sga_shared_pool_library_cache_hit_ratio":
+					assert.False(t, validatedMetrics["newrelicoracledb.sga_shared_pool_library_cache_hit_ratio"], "Found a duplicate in the metrics slice: newrelicoracledb.sga_shared_pool_library_cache_hit_ratio")
+					validatedMetrics["newrelicoracledb.sga_shared_pool_library_cache_hit_ratio"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "SGA shared pool library cache hit ratio for SQL AREA namespace", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					attrVal, ok := dp.Attributes().Get("newrelic.entity_name")
+					assert.True(t, ok)
+					assert.Equal(t, "newrelic.entity_name-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("instance.id")
+					assert.True(t, ok)
+					assert.Equal(t, "instance.id-val", attrVal.Str())
 				case "newrelicoracledb.sga_shared_pool_library_cache_reload_ratio":
 					assert.False(t, validatedMetrics["newrelicoracledb.sga_shared_pool_library_cache_reload_ratio"], "Found a duplicate in the metrics slice: newrelicoracledb.sga_shared_pool_library_cache_reload_ratio")
 					validatedMetrics["newrelicoracledb.sga_shared_pool_library_cache_reload_ratio"] = true
