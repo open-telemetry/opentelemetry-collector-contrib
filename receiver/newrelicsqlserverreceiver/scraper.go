@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/newrelicsqlserverreceiver/models"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/newrelicsqlserverreceiver/queries"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/newrelicsqlserverreceiver/scrapers"
 	
@@ -29,6 +30,7 @@ type sqlServerScraper struct {
 	instanceScraper          *scrapers.InstanceScraper
 	queryPerformanceScraper  *scrapers.QueryPerformanceScraper
 	//slowQueryScraper  *scrapers.SlowQueryScraper
+	databaseScraper *scrapers.DatabaseScraper
 	engineEdition            int // SQL Server engine edition (0=Unknown, 5=Azure DB, 8=Azure MI)
 }
 
@@ -71,7 +73,11 @@ func (s *sqlServerScraper) start(ctx context.Context, _ component.Host) error {
 	}
 
 	// Initialize instance scraper with engine edition for engine-specific queries
+	// Create instance scraper for instance-level metrics
 	s.instanceScraper = scrapers.NewInstanceScraper(s.connection, s.logger, s.engineEdition)
+
+	// Create database scraper for database-level metrics
+	s.databaseScraper = scrapers.NewDatabaseScraper(s.connection, s.logger, s.engineEdition)
 	
 	// Initialize query performance scraper for blocking sessions and performance monitoring
 	s.queryPerformanceScraper = scrapers.NewQueryPerformanceScraper(s.connection, s.logger, s.engineEdition)
@@ -132,7 +138,7 @@ func (s *sqlServerScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 	metrics := pmetric.NewMetrics()
 	resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
 
-	// Set resource attributes with error handling
+	// Set basic resource attributes
 	attrs := resourceMetrics.Resource().Attributes()
 	attrs.PutStr("server.address", s.config.Hostname)
 	attrs.PutStr("server.port", s.config.Port)
@@ -142,6 +148,13 @@ func (s *sqlServerScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 	// Add instance name if configured
 	if s.config.Instance != "" {
 		attrs.PutStr("db.instance", s.config.Instance)
+	}
+
+	// Collect and add comprehensive system/host information as resource attributes
+	if err := s.addSystemInformationAsResourceAttributes(ctx, attrs); err != nil {
+		s.logger.Warn("Failed to collect system information, continuing with basic attributes",
+			zap.Error(err))
+		// Continue with scraping - system info is supplementary
 	}
 
 	scopeMetrics := resourceMetrics.ScopeMetrics().AppendEmpty()
@@ -163,7 +176,7 @@ func (s *sqlServerScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 	}
 
 	// Use structured approach to scrape instance buffer metrics with timeout
-	if s.config.EnableBufferMetrics {
+	if s.config.IsBufferMetricsEnabled() {
 		scrapeCtx, cancel := context.WithTimeout(ctx, s.config.Timeout)
 		defer cancel()
 
@@ -176,6 +189,139 @@ func (s *sqlServerScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 		} else {
 			s.logger.Debug("Successfully scraped instance buffer metrics")
 		}
+	}
+
+	// Scrape database-level buffer pool metrics (bufferpool.sizePerDatabaseInBytes)
+	if s.config.IsBufferMetricsEnabled() {
+		scrapeCtx, cancel := context.WithTimeout(ctx, s.config.Timeout)
+		defer cancel()
+
+		if err := s.databaseScraper.ScrapeDatabaseBufferMetrics(scrapeCtx, scopeMetrics); err != nil {
+			s.logger.Error("Failed to scrape database buffer metrics",
+				zap.Error(err),
+				zap.Duration("timeout", s.config.Timeout))
+			scrapeErrors = append(scrapeErrors, err)
+			// Don't return here - continue with other metrics
+		} else {
+			s.logger.Debug("Successfully scraped database buffer metrics")
+		}
+	}
+
+	// Scrape database-level disk metrics (maxDiskSizeInBytes)
+	s.logger.Debug("Checking disk metrics configuration",
+		zap.Bool("enable_disk_metrics_in_bytes", s.config.EnableDiskMetricsInBytes))
+
+	if s.config.IsDiskMetricsInBytesEnabled() {
+		s.logger.Debug("Starting database disk metrics scraping")
+		scrapeCtx, cancel := context.WithTimeout(ctx, s.config.Timeout)
+		defer cancel()
+
+		if err := s.databaseScraper.ScrapeDatabaseDiskMetrics(scrapeCtx, scopeMetrics); err != nil {
+			s.logger.Error("Failed to scrape database disk metrics",
+				zap.Error(err),
+				zap.Duration("timeout", s.config.Timeout))
+			scrapeErrors = append(scrapeErrors, err)
+			// Don't return here - continue with other metrics
+		} else {
+			s.logger.Debug("Successfully scraped database disk metrics")
+		}
+	} else {
+		s.logger.Debug("Database disk metrics disabled in configuration")
+	}
+
+	// Scrape database-level IO metrics (io.stallInMilliseconds)
+	if s.config.IsIOMetricsEnabled() {
+		s.logger.Debug("Starting database IO metrics scraping")
+		scrapeCtx, cancel := context.WithTimeout(ctx, s.config.Timeout)
+		defer cancel()
+
+		if err := s.databaseScraper.ScrapeDatabaseIOMetrics(scrapeCtx, scopeMetrics); err != nil {
+			s.logger.Error("Failed to scrape database IO metrics",
+				zap.Error(err),
+				zap.Duration("timeout", s.config.Timeout))
+			scrapeErrors = append(scrapeErrors, err)
+			// Don't return here - continue with other metrics
+		} else {
+			s.logger.Debug("Successfully scraped database IO metrics")
+		}
+	} else {
+		s.logger.Debug("Database IO metrics disabled in configuration")
+	}
+
+	// Scrape database-level log growth metrics (log.transactionGrowth)
+	if s.config.IsLogGrowthMetricsEnabled() {
+		s.logger.Debug("Starting database log growth metrics scraping")
+		scrapeCtx, cancel := context.WithTimeout(ctx, s.config.Timeout)
+		defer cancel()
+
+		if err := s.databaseScraper.ScrapeDatabaseLogGrowthMetrics(scrapeCtx, scopeMetrics); err != nil {
+			s.logger.Error("Failed to scrape database log growth metrics",
+				zap.Error(err),
+				zap.Duration("timeout", s.config.Timeout))
+			scrapeErrors = append(scrapeErrors, err)
+			// Don't return here - continue with other metrics
+		} else {
+			s.logger.Debug("Successfully scraped database log growth metrics")
+		}
+	} else {
+		s.logger.Debug("Database log growth metrics disabled in configuration")
+	}
+
+	// Scrape database-level page file metrics (pageFileAvailable)
+	if s.config.IsPageFileMetricsEnabled() {
+		s.logger.Debug("Starting database page file metrics scraping")
+		scrapeCtx, cancel := context.WithTimeout(ctx, s.config.Timeout)
+		defer cancel()
+
+		if err := s.databaseScraper.ScrapeDatabasePageFileMetrics(scrapeCtx, scopeMetrics); err != nil {
+			s.logger.Error("Failed to scrape database page file metrics",
+				zap.Error(err),
+				zap.Duration("timeout", s.config.Timeout))
+			scrapeErrors = append(scrapeErrors, err)
+			// Don't return here - continue with other metrics
+		} else {
+			s.logger.Debug("Successfully scraped database page file metrics")
+		}
+	} else {
+		s.logger.Debug("Database page file metrics disabled in configuration")
+	}
+
+	// Scrape database-level page file total metrics (pageFileTotal)
+	if s.config.IsPageFileTotalMetricsEnabled() {
+		s.logger.Debug("Starting database page file total metrics scraping")
+		scrapeCtx, cancel := context.WithTimeout(ctx, s.config.Timeout)
+		defer cancel()
+
+		if err := s.databaseScraper.ScrapeDatabasePageFileTotalMetrics(scrapeCtx, scopeMetrics); err != nil {
+			s.logger.Error("Failed to scrape database page file total metrics",
+				zap.Error(err),
+				zap.Duration("timeout", s.config.Timeout))
+			scrapeErrors = append(scrapeErrors, err)
+			// Don't return here - continue with other metrics
+		} else {
+			s.logger.Debug("Successfully scraped database page file total metrics")
+		}
+	} else {
+		s.logger.Debug("Database page file total metrics disabled in configuration")
+	}
+
+	// Scrape instance-level memory metrics (memoryTotal, memoryAvailable, memoryUtilization)
+	if s.config.IsMemoryMetricsEnabled() || s.config.IsMemoryTotalMetricsEnabled() || s.config.IsMemoryAvailableMetricsEnabled() || s.config.IsMemoryUtilizationMetricsEnabled() {
+		s.logger.Debug("Starting database memory metrics scraping")
+		scrapeCtx, cancel := context.WithTimeout(ctx, s.config.Timeout)
+		defer cancel()
+
+		if err := s.databaseScraper.ScrapeDatabaseMemoryMetrics(scrapeCtx, scopeMetrics); err != nil {
+			s.logger.Error("Failed to scrape database memory metrics",
+				zap.Error(err),
+				zap.Duration("timeout", s.config.Timeout))
+			scrapeErrors = append(scrapeErrors, err)
+			// Don't return here - continue with other metrics
+		} else {
+			s.logger.Debug("Successfully scraped database memory metrics")
+		}
+	} else {
+		s.logger.Debug("Database memory metrics disabled in configuration")
 	}
 
 	// Scrape blocking session metrics if query monitoring is enabled
@@ -252,4 +398,154 @@ func (s *sqlServerScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 		zap.Int("metrics_collected", scopeMetrics.Metrics().Len()))
 
 	return metrics, nil
+}
+
+// addSystemInformationAsResourceAttributes collects system/host information and adds it as resource attributes
+// This ensures that all metrics sent by the scraper include comprehensive host context
+func (s *sqlServerScraper) addSystemInformationAsResourceAttributes(ctx context.Context, attrs pcommon.Map) error {
+	// Collect system information using the main scraper
+	systemInfo, err := s.CollectSystemInformation(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to collect system information: %w", err)
+	}
+
+	// Add SQL Server instance information
+	if systemInfo.ServerName != nil && *systemInfo.ServerName != "" {
+		attrs.PutStr("sql.instance_name", *systemInfo.ServerName)
+	}
+	if systemInfo.ComputerName != nil && *systemInfo.ComputerName != "" {
+		attrs.PutStr("host.name", *systemInfo.ComputerName)
+	}
+	if systemInfo.ServiceName != nil && *systemInfo.ServiceName != "" {
+		attrs.PutStr("sql.service_name", *systemInfo.ServiceName)
+	}
+
+	// Add SQL Server edition and version information
+	if systemInfo.Edition != nil && *systemInfo.Edition != "" {
+		attrs.PutStr("sql.edition", *systemInfo.Edition)
+	}
+	if systemInfo.EngineEdition != nil {
+		attrs.PutInt("sql.engine_edition", int64(*systemInfo.EngineEdition))
+	}
+	if systemInfo.ProductVersion != nil && *systemInfo.ProductVersion != "" {
+		attrs.PutStr("sql.version", *systemInfo.ProductVersion)
+	}
+	if systemInfo.VersionDesc != nil && *systemInfo.VersionDesc != "" {
+		attrs.PutStr("sql.version_description", *systemInfo.VersionDesc)
+	}
+
+	// Add hardware information
+	if systemInfo.CPUCount != nil {
+		attrs.PutInt("host.cpu.count", int64(*systemInfo.CPUCount))
+	}
+	if systemInfo.ServerMemoryKB != nil {
+		attrs.PutInt("host.memory.total_kb", *systemInfo.ServerMemoryKB)
+	}
+	if systemInfo.AvailableMemoryKB != nil {
+		attrs.PutInt("host.memory.available_kb", *systemInfo.AvailableMemoryKB)
+	}
+
+	// Add instance configuration
+	if systemInfo.IsClustered != nil {
+		attrs.PutBool("sql.is_clustered", *systemInfo.IsClustered)
+	}
+	if systemInfo.IsHadrEnabled != nil {
+		attrs.PutBool("sql.is_hadr_enabled", *systemInfo.IsHadrEnabled)
+	}
+	if systemInfo.Uptime != nil {
+		attrs.PutInt("sql.uptime_minutes", int64(*systemInfo.Uptime))
+	}
+	if systemInfo.ComputerUptime != nil {
+		attrs.PutInt("host.uptime_seconds", int64(*systemInfo.ComputerUptime))
+	}
+
+	// Add network configuration
+	if systemInfo.Port != nil && *systemInfo.Port != "" {
+		attrs.PutStr("sql.port", *systemInfo.Port)
+	}
+	if systemInfo.PortType != nil && *systemInfo.PortType != "" {
+		attrs.PutStr("sql.port_type", *systemInfo.PortType)
+	}
+	if systemInfo.ForceEncryption != nil {
+		attrs.PutBool("sql.force_encryption", *systemInfo.ForceEncryption != 0)
+	}
+
+	s.logger.Debug("Successfully added system information as resource attributes",
+		zap.String("host_name", getStringValueFromMap(systemInfo.ComputerName)),
+		zap.String("sql_instance", getStringValueFromMap(systemInfo.ServerName)),
+		zap.String("sql_edition", getStringValueFromMap(systemInfo.Edition)),
+		zap.Int("cpu_count", getIntValueFromMap(systemInfo.CPUCount)),
+		zap.Bool("is_clustered", getBoolValueFromMap(systemInfo.IsClustered)))
+
+	return nil
+}
+
+// Helper functions to safely extract values from pointers for logging
+func getStringValueFromMap(ptr *string) string {
+	if ptr != nil {
+		return *ptr
+	}
+	return ""
+}
+
+func getIntValueFromMap(ptr *int) int {
+	if ptr != nil {
+		return *ptr
+	}
+	return 0
+}
+
+func getInt64ValueFromMap(ptr *int64) int64 {
+	if ptr != nil {
+		return *ptr
+	}
+	return 0
+}
+
+func getBoolValueFromMap(ptr *bool) bool {
+	if ptr != nil {
+		return *ptr
+	}
+	return false
+}
+
+// CollectSystemInformation retrieves comprehensive system and host information
+// This information should be included as resource attributes with all metrics
+func (s *sqlServerScraper) CollectSystemInformation(ctx context.Context) (*models.SystemInformation, error) {
+	s.logger.Debug("Collecting SQL Server system and host information")
+
+	var results []models.SystemInformation
+	if err := s.connection.Query(ctx, &results, queries.SystemInformationQuery); err != nil {
+		s.logger.Error("Failed to execute system information query",
+			zap.Error(err),
+			zap.String("query", queries.TruncateQuery(queries.SystemInformationQuery, 100)),
+			zap.Int("engine_edition", s.engineEdition))
+		return nil, fmt.Errorf("failed to execute system information query: %w", err)
+	}
+
+	if len(results) == 0 {
+		s.logger.Warn("No results returned from system information query - SQL Server may not be ready")
+		return nil, fmt.Errorf("no results returned from system information query")
+	}
+
+	if len(results) > 1 {
+		s.logger.Warn("Multiple results returned from system information query",
+			zap.Int("result_count", len(results)))
+	}
+
+	result := results[0]
+
+	// Log collected system information for debugging
+	s.logger.Info("Successfully collected system information",
+		zap.String("server_name", getStringValueFromMap(result.ServerName)),
+		zap.String("computer_name", getStringValueFromMap(result.ComputerName)),
+		zap.String("edition", getStringValueFromMap(result.Edition)),
+		zap.Int("engine_edition", getIntValueFromMap(result.EngineEdition)),
+		zap.String("product_version", getStringValueFromMap(result.ProductVersion)),
+		zap.Int("cpu_count", getIntValueFromMap(result.CPUCount)),
+		zap.Int64("server_memory_kb", getInt64ValueFromMap(result.ServerMemoryKB)),
+		zap.Bool("is_clustered", getBoolValueFromMap(result.IsClustered)),
+		zap.Bool("is_hadr_enabled", getBoolValueFromMap(result.IsHadrEnabled)))
+
+	return &result, nil
 }
