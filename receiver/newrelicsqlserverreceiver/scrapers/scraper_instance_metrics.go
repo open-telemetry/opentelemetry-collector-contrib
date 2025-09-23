@@ -460,3 +460,283 @@ func (s *InstanceScraper) processInstanceStatsMetrics(result models.InstanceStat
 
 	return nil
 }
+
+// ScrapeInstanceDiskMetrics scrapes SQL Server disk space metrics
+func (s *InstanceScraper) ScrapeInstanceDiskMetrics(ctx context.Context, scopeMetrics pmetric.ScopeMetrics) error {
+	query, found := s.getQueryForMetric("sqlserver.instance.disk_metrics")
+	if !found {
+		return fmt.Errorf("no disk metrics query available for engine edition %d", s.engineEdition)
+	}
+	var results []models.InstanceDiskMetricsModel
+	if err := s.connection.Query(ctx, &results, query); err != nil {
+		return fmt.Errorf("failed to execute disk metrics query: %w", err)
+	}
+	if len(results) == 0 {
+		return fmt.Errorf("no results returned from disk metrics query")
+	}
+	return s.processInstanceDiskMetrics(results[0], scopeMetrics)
+}
+
+func (s *InstanceScraper) processInstanceDiskMetrics(result models.InstanceDiskMetricsModel, scopeMetrics pmetric.ScopeMetrics) error {
+	resultValue := reflect.ValueOf(result)
+	resultType := reflect.TypeOf(result)
+	for i := 0; i < resultValue.NumField(); i++ {
+		field := resultValue.Field(i)
+		fieldType := resultType.Field(i)
+		if field.Kind() == reflect.Ptr && field.IsNil() {
+			continue
+		}
+		metricName := fieldType.Tag.Get("metric_name")
+		sourceType := fieldType.Tag.Get("source_type")
+		description := fieldType.Tag.Get("description")
+		unit := fieldType.Tag.Get("unit")
+		if metricName == "" {
+			continue
+		}
+		metric := scopeMetrics.Metrics().AppendEmpty()
+		metric.SetName(metricName)
+		if description != "" {
+			metric.SetDescription(description)
+		}
+		if unit != "" {
+			metric.SetUnit(unit)
+		}
+		gauge := metric.SetEmptyGauge()
+		dataPoint := gauge.DataPoints().AppendEmpty()
+		dataPoint.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+		dataPoint.SetStartTimestamp(s.startTime)
+		fieldValue := field
+		if field.Kind() == reflect.Ptr {
+			fieldValue = field.Elem()
+		}
+		if fieldValue.Kind() == reflect.Int64 {
+			dataPoint.SetIntValue(fieldValue.Int())
+		}
+		dataPoint.Attributes().PutStr("metric.type", sourceType)
+	}
+	return nil
+}
+
+// ScrapeInstanceBufferPoolSize scrapes buffer pool size
+func (s *InstanceScraper) ScrapeInstanceBufferPoolSize(ctx context.Context, scopeMetrics pmetric.ScopeMetrics) error {
+	query, found := s.getQueryForMetric("sqlserver.instance.buffer_pool_size")
+	if !found {
+		return fmt.Errorf("no buffer pool size query available for engine edition %d", s.engineEdition)
+	}
+	var results []models.InstanceBufferMetrics
+	if err := s.connection.Query(ctx, &results, query); err != nil {
+		return fmt.Errorf("failed to execute buffer pool size query: %w", err)
+	}
+	if len(results) == 0 {
+		return fmt.Errorf("no results returned from buffer pool size query")
+	}
+	return s.processInstanceBufferPoolSize(results[0], scopeMetrics)
+}
+
+func (s *InstanceScraper) processInstanceBufferPoolSize(result models.InstanceBufferMetrics, scopeMetrics pmetric.ScopeMetrics) error {
+	resultValue := reflect.ValueOf(result)
+	resultType := reflect.TypeOf(result)
+	for i := 0; i < resultValue.NumField(); i++ {
+		field := resultValue.Field(i)
+		fieldType := resultType.Field(i)
+		if field.Kind() == reflect.Ptr && field.IsNil() {
+			continue
+		}
+		metricName := fieldType.Tag.Get("metric_name")
+		sourceType := fieldType.Tag.Get("source_type")
+		description := fieldType.Tag.Get("description")
+		unit := fieldType.Tag.Get("unit")
+		if metricName == "" {
+			continue
+		}
+		metric := scopeMetrics.Metrics().AppendEmpty()
+		metric.SetName(metricName)
+		if description != "" {
+			metric.SetDescription(description)
+		}
+		if unit != "" {
+			metric.SetUnit(unit)
+		}
+		gauge := metric.SetEmptyGauge()
+		dataPoint := gauge.DataPoints().AppendEmpty()
+		dataPoint.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+		dataPoint.SetStartTimestamp(s.startTime)
+		fieldValue := field
+		if field.Kind() == reflect.Ptr {
+			fieldValue = field.Elem()
+		}
+		if fieldValue.Kind() == reflect.Int64 {
+			dataPoint.SetIntValue(fieldValue.Int())
+		}
+		dataPoint.Attributes().PutStr("metric.type", sourceType)
+	}
+	return nil
+}
+
+// ScrapeInstanceProcessCounts scrapes process counts
+func (s *InstanceScraper) ScrapeInstanceProcessCounts(ctx context.Context, scopeMetrics pmetric.ScopeMetrics) error {
+	query, found := s.getQueryForMetric("sqlserver.instance.process_counts")
+	if !found {
+		return fmt.Errorf("no process counts query available for engine edition %d", s.engineEdition)
+	}
+	var results []models.InstanceProcessCountsModel
+	if err := s.connection.Query(ctx, &results, query); err != nil {
+		return fmt.Errorf("failed to execute process counts query: %w", err)
+	}
+	if len(results) == 0 {
+		return fmt.Errorf("no results returned from process counts query")
+	}
+	return s.processInstanceProcessCounts(results[0], scopeMetrics)
+}
+
+func (s *InstanceScraper) processInstanceProcessCounts(result models.InstanceProcessCountsModel, scopeMetrics pmetric.ScopeMetrics) error {
+	resultValue := reflect.ValueOf(result)
+	resultType := reflect.TypeOf(result)
+	for i := 0; i < resultValue.NumField(); i++ {
+		field := resultValue.Field(i)
+		fieldType := resultType.Field(i)
+		if field.Kind() == reflect.Ptr && field.IsNil() {
+			continue
+		}
+		metricName := fieldType.Tag.Get("metric_name")
+		sourceType := fieldType.Tag.Get("source_type")
+		description := fieldType.Tag.Get("description")
+		unit := fieldType.Tag.Get("unit")
+		if metricName == "" {
+			continue
+		}
+		metric := scopeMetrics.Metrics().AppendEmpty()
+		metric.SetName(metricName)
+		if description != "" {
+			metric.SetDescription(description)
+		}
+		if unit != "" {
+			metric.SetUnit(unit)
+		}
+		gauge := metric.SetEmptyGauge()
+		dataPoint := gauge.DataPoints().AppendEmpty()
+		dataPoint.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+		dataPoint.SetStartTimestamp(s.startTime)
+		fieldValue := field
+		if field.Kind() == reflect.Ptr {
+			fieldValue = field.Elem()
+		}
+		if fieldValue.Kind() == reflect.Int64 {
+			dataPoint.SetIntValue(fieldValue.Int())
+		}
+		dataPoint.Attributes().PutStr("metric.type", sourceType)
+	}
+	return nil
+}
+
+// ScrapeInstanceRunnableTasks scrapes runnable tasks
+func (s *InstanceScraper) ScrapeInstanceRunnableTasks(ctx context.Context, scopeMetrics pmetric.ScopeMetrics) error {
+	query, found := s.getQueryForMetric("sqlserver.instance.runnable_tasks")
+	if !found {
+		return fmt.Errorf("no runnable tasks query available for engine edition %d", s.engineEdition)
+	}
+	var results []models.InstanceRunnableTasksModel
+	if err := s.connection.Query(ctx, &results, query); err != nil {
+		return fmt.Errorf("failed to execute runnable tasks query: %w", err)
+	}
+	if len(results) == 0 {
+		return fmt.Errorf("no results returned from runnable tasks query")
+	}
+	return s.processInstanceRunnableTasks(results[0], scopeMetrics)
+}
+
+func (s *InstanceScraper) processInstanceRunnableTasks(result models.InstanceRunnableTasksModel, scopeMetrics pmetric.ScopeMetrics) error {
+	resultValue := reflect.ValueOf(result)
+	resultType := reflect.TypeOf(result)
+	for i := 0; i < resultValue.NumField(); i++ {
+		field := resultValue.Field(i)
+		fieldType := resultType.Field(i)
+		if field.Kind() == reflect.Ptr && field.IsNil() {
+			continue
+		}
+		metricName := fieldType.Tag.Get("metric_name")
+		sourceType := fieldType.Tag.Get("source_type")
+		description := fieldType.Tag.Get("description")
+		unit := fieldType.Tag.Get("unit")
+		if metricName == "" {
+			continue
+		}
+		metric := scopeMetrics.Metrics().AppendEmpty()
+		metric.SetName(metricName)
+		if description != "" {
+			metric.SetDescription(description)
+		}
+		if unit != "" {
+			metric.SetUnit(unit)
+		}
+		gauge := metric.SetEmptyGauge()
+		dataPoint := gauge.DataPoints().AppendEmpty()
+		dataPoint.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+		dataPoint.SetStartTimestamp(s.startTime)
+		fieldValue := field
+		if field.Kind() == reflect.Ptr {
+			fieldValue = field.Elem()
+		}
+		if fieldValue.Kind() == reflect.Int64 {
+			dataPoint.SetIntValue(fieldValue.Int())
+		}
+		dataPoint.Attributes().PutStr("metric.type", sourceType)
+	}
+	return nil
+}
+
+// ScrapeInstanceActiveConnections scrapes active connections
+func (s *InstanceScraper) ScrapeInstanceActiveConnections(ctx context.Context, scopeMetrics pmetric.ScopeMetrics) error {
+	query, found := s.getQueryForMetric("sqlserver.instance.active_connections")
+	if !found {
+		return fmt.Errorf("no active connections query available for engine edition %d", s.engineEdition)
+	}
+	var results []models.InstanceActiveConnectionsModel
+	if err := s.connection.Query(ctx, &results, query); err != nil {
+		return fmt.Errorf("failed to execute active connections query: %w", err)
+	}
+	if len(results) == 0 {
+		return fmt.Errorf("no results returned from active connections query")
+	}
+	return s.processInstanceActiveConnections(results[0], scopeMetrics)
+}
+
+func (s *InstanceScraper) processInstanceActiveConnections(result models.InstanceActiveConnectionsModel, scopeMetrics pmetric.ScopeMetrics) error {
+	resultValue := reflect.ValueOf(result)
+	resultType := reflect.TypeOf(result)
+	for i := 0; i < resultValue.NumField(); i++ {
+		field := resultValue.Field(i)
+		fieldType := resultType.Field(i)
+		if field.Kind() == reflect.Ptr && field.IsNil() {
+			continue
+		}
+		metricName := fieldType.Tag.Get("metric_name")
+		sourceType := fieldType.Tag.Get("source_type")
+		description := fieldType.Tag.Get("description")
+		unit := fieldType.Tag.Get("unit")
+		if metricName == "" {
+			continue
+		}
+		metric := scopeMetrics.Metrics().AppendEmpty()
+		metric.SetName(metricName)
+		if description != "" {
+			metric.SetDescription(description)
+		}
+		if unit != "" {
+			metric.SetUnit(unit)
+		}
+		gauge := metric.SetEmptyGauge()
+		dataPoint := gauge.DataPoints().AppendEmpty()
+		dataPoint.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+		dataPoint.SetStartTimestamp(s.startTime)
+		fieldValue := field
+		if field.Kind() == reflect.Ptr {
+			fieldValue = field.Elem()
+		}
+		if fieldValue.Kind() == reflect.Int64 {
+			dataPoint.SetIntValue(fieldValue.Int())
+		}
+		dataPoint.Attributes().PutStr("metric.type", sourceType)
+	}
+	return nil
+}

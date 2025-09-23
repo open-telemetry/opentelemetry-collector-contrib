@@ -1,6 +1,55 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+package queries
+
+// InstanceDiskMetricsQuery returns total disk space in bytes
+const InstanceDiskMetricsQuery = `SELECT Sum(total_bytes) AS total_disk_space FROM (
+            SELECT DISTINCT
+            dovs.volume_mount_point,
+            dovs.available_bytes available_bytes,
+            dovs.total_bytes total_bytes
+            FROM sys.master_files mf WITH (nolock)
+            CROSS apply sys.dm_os_volume_stats(mf.database_id, mf.file_id) dovs
+            ) drives`
+
+// InstanceBufferPoolSizeQuery returns buffer pool size in bytes
+const InstanceBufferPoolSizeQuery = `SELECT
+      Count_big(*) * (8*1024) AS instance_buffer_pool_size
+      FROM sys.dm_os_buffer_descriptors WITH (nolock)
+      WHERE database_id <> 32767 -- ResourceDB `
+
+// InstanceProcessCountsQuery returns process counts by status
+const InstanceProcessCountsQuery = `SELECT
+        Max(CASE WHEN sessions.status = 'preconnect' THEN counts ELSE 0 END) AS preconnect,
+        Max(CASE WHEN sessions.status = 'background' THEN counts ELSE 0 END) AS background,
+        Max(CASE WHEN sessions.status = 'dormant' THEN counts ELSE 0 END) AS dormant,
+        Max(CASE WHEN sessions.status = 'runnable' THEN counts ELSE 0 END) AS runnable,
+        Max(CASE WHEN sessions.status = 'suspended' THEN counts ELSE 0 END) AS suspended,
+        Max(CASE WHEN sessions.status = 'running' THEN counts ELSE 0 END) AS running,
+        Max(CASE WHEN sessions.status = 'blocked' THEN counts ELSE 0 END) AS blocked,
+        Max(CASE WHEN sessions.status = 'sleeping' THEN counts ELSE 0 END) AS sleeping
+        FROM (SELECT status, Count(*) counts FROM (
+            SELECT CASE WHEN req.status IS NOT NULL THEN
+                CASE WHEN req.blocking_session_id <> 0 THEN 'blocked' ELSE req.status END
+              ELSE sess.status END status, req.blocking_session_id
+            FROM sys.dm_exec_sessions sess
+            LEFT JOIN sys.dm_exec_requests req
+            ON sess.session_id = req.session_id
+            WHERE sess.session_id > 50 ) statuses
+          GROUP BY status) sessions`
+
+// InstanceRunnableTasksQuery returns runnable tasks count
+const InstanceRunnableTasksQuery = `SELECT Sum(runnable_tasks_count) AS runnable_tasks_count
+        FROM sys.dm_os_schedulers
+        WHERE   scheduler_id < 255 AND [status] = 'VISIBLE ONLINE'`
+
+// InstanceActiveConnectionsQuery returns active connections count
+const InstanceActiveConnectionsQuery = `SELECT Count(dbid) AS instance_active_connections FROM sys.sysprocesses WITH (nolock) WHERE dbid > 0`
+
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 // Package queries provides SQL query definitions for instance-level metrics.
 // This file contains all SQL queries for collecting 32 instance-level SQL Server metrics.
 //
@@ -45,9 +94,6 @@
 //
 // Engine Support:
 // - Default: Full instance metrics from all DMVs
-// - AzureSQLDatabase: Limited metrics (no OS-level DMVs)
-// - AzureSQLManagedInstance: Most metrics available with some limitations
-package queries
 
 // InstanceBufferPoolQuery returns the SQL query for buffer pool size metrics
 const InstanceBufferPoolQuery = `SELECT

@@ -132,6 +132,31 @@ func DetectEngineEdition(queryFunc func(string) (int, error)) (int, error) {
 // Query definitions for instance metrics
 var instanceQueriesDefault = []*QueryDefinition{
 	{
+		Query:       InstanceDiskMetricsQuery,
+		MetricName:  "sqlserver.instance.disk_metrics",
+		Description: "SQL Server disk space metrics",
+	},
+	{
+		Query:       InstanceBufferPoolSizeQuery,
+		MetricName:  "sqlserver.instance.buffer_pool_size",
+		Description: "Buffer pool size in bytes",
+	},
+	{
+		Query:       InstanceProcessCountsQuery,
+		MetricName:  "sqlserver.instance.process_counts",
+		Description: "SQL Server process counts by status",
+	},
+	{
+		Query:       InstanceRunnableTasksQuery,
+		MetricName:  "sqlserver.instance.runnable_tasks",
+		Description: "SQL Server runnable tasks count",
+	},
+	{
+		Query:       InstanceActiveConnectionsQuery,
+		MetricName:  "sqlserver.instance.active_connections",
+		Description: "SQL Server active connections count",
+	},
+	{
 		Query:       InstanceBufferPoolQuery,
 		MetricName:  "sqlserver.instance.buffer_pool_size",
 		Description: "Buffer pool size in bytes",
@@ -165,6 +190,31 @@ var instanceQueriesDefault = []*QueryDefinition{
 
 var instanceQueriesAzureManagedDatabase = []*QueryDefinition{
 	{
+		Query:       InstanceDiskMetricsQuery,
+		MetricName:  "sqlserver.instance.disk_metrics",
+		Description: "SQL Server disk space metrics",
+	},
+	{
+		Query:       InstanceBufferPoolSizeQuery,
+		MetricName:  "sqlserver.instance.buffer_pool_size",
+		Description: "Buffer pool size in bytes",
+	},
+	{
+		Query:       InstanceProcessCountsQuery,
+		MetricName:  "sqlserver.instance.process_counts",
+		Description: "SQL Server process counts by status",
+	},
+	{
+		Query:       InstanceRunnableTasksQuery,
+		MetricName:  "sqlserver.instance.runnable_tasks",
+		Description: "SQL Server runnable tasks count",
+	},
+	{
+		Query:       InstanceActiveConnectionsQuery,
+		MetricName:  "sqlserver.instance.active_connections",
+		Description: "SQL Server active connections count",
+	},
+	{
 		Query:       InstanceBufferPoolQuery,
 		MetricName:  "sqlserver.instance.buffer_pool_size",
 		Description: "Buffer pool size in bytes",
@@ -172,6 +222,31 @@ var instanceQueriesAzureManagedDatabase = []*QueryDefinition{
 }
 
 var instanceQueriesAzureManagedInstance = []*QueryDefinition{
+	{
+		Query:       InstanceDiskMetricsQuery,
+		MetricName:  "sqlserver.instance.disk_metrics",
+		Description: "SQL Server disk space metrics",
+	},
+	{
+		Query:       InstanceBufferPoolSizeQuery,
+		MetricName:  "sqlserver.instance.buffer_pool_size",
+		Description: "Buffer pool size in bytes",
+	},
+	{
+		Query:       InstanceProcessCountsQuery,
+		MetricName:  "sqlserver.instance.process_counts",
+		Description: "SQL Server process counts by status",
+	},
+	{
+		Query:       InstanceRunnableTasksQuery,
+		MetricName:  "sqlserver.instance.runnable_tasks",
+		Description: "SQL Server runnable tasks count",
+	},
+	{
+		Query:       InstanceActiveConnectionsQuery,
+		MetricName:  "sqlserver.instance.active_connections",
+		Description: "SQL Server active connections count",
+	},
 	{
 		Query:       InstanceBufferPoolQuery,
 		MetricName:  "sqlserver.instance.buffer_pool_size",

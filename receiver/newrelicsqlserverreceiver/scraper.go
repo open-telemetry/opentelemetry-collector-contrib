@@ -185,6 +185,66 @@ func (s *sqlServerScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 		s.logger.Debug("Successfully scraped comprehensive instance statistics")
 	}
 
+	// ScrapeInstanceDiskMetrics
+	diskCtx, cancelDisk := context.WithTimeout(ctx, s.config.Timeout)
+	defer cancelDisk()
+	if err := s.instanceScraper.ScrapeInstanceDiskMetrics(diskCtx, scopeMetrics); err != nil {
+		s.logger.Error("Failed to scrape disk metrics",
+			zap.Error(err),
+			zap.Duration("timeout", s.config.Timeout))
+		scrapeErrors = append(scrapeErrors, err)
+	} else {
+		s.logger.Debug("Successfully scraped disk metrics")
+	}
+
+	// ScrapeInstanceBufferPoolSize
+	bufferCtx, cancelBuffer := context.WithTimeout(ctx, s.config.Timeout)
+	defer cancelBuffer()
+	if err := s.instanceScraper.ScrapeInstanceBufferPoolSize(bufferCtx, scopeMetrics); err != nil {
+		s.logger.Error("Failed to scrape buffer pool size",
+			zap.Error(err),
+			zap.Duration("timeout", s.config.Timeout))
+		scrapeErrors = append(scrapeErrors, err)
+	} else {
+		s.logger.Debug("Successfully scraped buffer pool size")
+	}
+
+	// ScrapeInstanceProcessCounts
+	processCtx, cancelProcess := context.WithTimeout(ctx, s.config.Timeout)
+	defer cancelProcess()
+	if err := s.instanceScraper.ScrapeInstanceProcessCounts(processCtx, scopeMetrics); err != nil {
+		s.logger.Error("Failed to scrape process counts",
+			zap.Error(err),
+			zap.Duration("timeout", s.config.Timeout))
+		scrapeErrors = append(scrapeErrors, err)
+	} else {
+		s.logger.Debug("Successfully scraped process counts")
+	}
+
+	// ScrapeInstanceRunnableTasks
+	runnableCtx, cancelRunnable := context.WithTimeout(ctx, s.config.Timeout)
+	defer cancelRunnable()
+	if err := s.instanceScraper.ScrapeInstanceRunnableTasks(runnableCtx, scopeMetrics); err != nil {
+		s.logger.Error("Failed to scrape runnable tasks",
+			zap.Error(err),
+			zap.Duration("timeout", s.config.Timeout))
+		scrapeErrors = append(scrapeErrors, err)
+	} else {
+		s.logger.Debug("Successfully scraped runnable tasks")
+	}
+
+	// ScrapeInstanceActiveConnections
+	activeConnCtx, cancelActiveConn := context.WithTimeout(ctx, s.config.Timeout)
+	defer cancelActiveConn()
+	if err := s.instanceScraper.ScrapeInstanceActiveConnections(activeConnCtx, scopeMetrics); err != nil {
+		s.logger.Error("Failed to scrape active connections",
+			zap.Error(err),
+			zap.Duration("timeout", s.config.Timeout))
+		scrapeErrors = append(scrapeErrors, err)
+	} else {
+		s.logger.Debug("Successfully scraped active connections")
+	}
+
 	// Log summary of scraping results
 	if len(scrapeErrors) > 0 {
 		s.logger.Warn("Completed scraping with errors",
