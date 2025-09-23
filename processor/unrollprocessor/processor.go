@@ -5,6 +5,7 @@ package unrollprocessor // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -43,10 +44,12 @@ func (p *unrollProcessor) ProcessLogs(_ context.Context, ld plog.Logs) (plog.Log
 				if lr.Body().Type() != pcommon.ValueTypeSlice {
 					continue
 				}
-				for l := 0; l < lr.Body().Slice().Len(); l++ {
+				for _, l := range lr.Body().Slice().All() {
 					newRecord := sls.LogRecords().AppendEmpty()
 					lr.CopyTo(newRecord)
-					setBody(newRecord, lr.Body().Slice().At(l))
+					if err := setBody(newRecord, l); err != nil {
+						errs = errors.Join(errs, fmt.Errorf("error setting body: %w", err))
+					}
 				}
 			}
 			sls.LogRecords().RemoveIf(func(lr plog.LogRecord) bool {
@@ -65,7 +68,7 @@ func (p *unrollProcessor) ProcessLogs(_ context.Context, ld plog.Logs) (plog.Log
 }
 
 // setBody will set the body of the log record to the provided value
-func setBody(newLogRecord plog.LogRecord, expansion pcommon.Value) {
+func setBody(newLogRecord plog.LogRecord, expansion pcommon.Value) error {
 	switch expansion.Type() {
 	case pcommon.ValueTypeStr:
 		newLogRecord.Body().SetStr(expansion.Str())
@@ -82,6 +85,7 @@ func setBody(newLogRecord plog.LogRecord, expansion pcommon.Value) {
 	case pcommon.ValueTypeBytes:
 		expansion.Bytes().CopyTo(newLogRecord.Body().SetEmptyBytes())
 	case pcommon.ValueTypeEmpty:
-		newLogRecord.Body().FromRaw(nil)
+		return newLogRecord.Body().FromRaw(nil)
 	}
+	return nil
 }
