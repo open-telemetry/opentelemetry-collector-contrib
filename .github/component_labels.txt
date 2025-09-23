@@ -185,7 +185,12 @@ processor/probabilisticsamplerprocessor processor/probabilisticsampler
 processor/redactionprocessor processor/redaction
 processor/remotetapprocessor processor/remotetap
 processor/resourcedetectionprocessor processor/resourcedetection
+processor/resourcedetectionprocessor/internal/akamai processor/resourcedetection/internal/akamai
 processor/resourcedetectionprocessor/internal/dynatrace processor/resourcedetection/internal/dynatrace
+processor/resourcedetectionprocessor/internal/hetzner processor/resourcedetection/internal/hetzner
+processor/resourcedetectionprocessor/internal/oraclecloud processor/resourcedetection/internal/oraclecloud
+processor/resourcedetectionprocessor/internal/scaleway processor/resourcedetection/internal/scaleway
+processor/resourcedetectionprocessor/internal/vultr processor/resourcedetection/internal/vultr
 processor/resourceprocessor processor/resource
 processor/schemaprocessor processor/schema
 processor/spanprocessor processor/span
@@ -280,7 +285,6 @@ receiver/receivercreator receiver/receivercreator
 receiver/redisreceiver receiver/redis
 receiver/riakreceiver receiver/riak
 receiver/saphanareceiver receiver/saphana
-receiver/sapmreceiver receiver/sapm
 receiver/signalfxreceiver receiver/signalfx
 receiver/simpleprometheusreceiver receiver/simpleprometheus
 receiver/skywalkingreceiver receiver/skywalking

@@ -146,7 +146,8 @@ func addValidLogData(containers []ecsutil.ContainerMetadata, self *ecsutil.Conta
 	logStreamArns := make([]any, 0, len(containers))
 	containerFound := false
 
-	for _, container := range containers {
+	for i := range containers {
+		container := &containers[i]
 		logData := container.LogOptions
 		if container.Type == "NORMAL" &&
 			container.KnownStatus == "RUNNING" &&

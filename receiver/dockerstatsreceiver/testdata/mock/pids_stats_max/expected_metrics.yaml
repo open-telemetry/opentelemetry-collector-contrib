@@ -262,7 +262,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: By
-          - description: Percentage of memory used.
+          - description: Percentage of memory used. Not supported on Windows.
             gauge:
               dataPoints:
                 - asDouble: 0.016875995187363255
@@ -299,7 +299,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: By
-          - description: Memory limit of the container.
+          - description: Memory limit of the container. Not supported on Windows.
             name: container.memory.usage.limit
             sum:
               aggregationTemporality: 2
@@ -354,7 +354,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: '{packets}'
-          - description: Received errors.
+          - description: Received errors. Not supported on Windows.
             name: container.network.io.usage.rx_errors
             sum:
               aggregationTemporality: 2
@@ -410,7 +410,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: '{packets}'
-          - description: Sent errors.
+          - description: Sent errors. Not supported on Windows.
             name: container.network.io.usage.tx_errors
             sum:
               aggregationTemporality: 2
