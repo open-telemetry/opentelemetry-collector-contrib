@@ -159,4 +159,10 @@ const (
 		FROM GV$librarycache libcache, GV$INSTANCE inst
 		WHERE namespace='SQL AREA'
 		AND inst.inst_id=libcache.inst_id`
+
+	SGASharedPoolDictCacheMissRatioSQL = `
+		SELECT (SUM(rcache.getmisses)/SUM(rcache.gets)) as ratio, inst.inst_id
+		FROM GV$rowcache rcache, GV$INSTANCE inst
+		WHERE inst.inst_id=rcache.inst_id
+		GROUP BY inst.inst_id`
 )

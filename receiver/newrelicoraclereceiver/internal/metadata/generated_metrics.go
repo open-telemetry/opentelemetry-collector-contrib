@@ -67,6 +67,9 @@ var MetricsInfo = metricsInfo{
 	NewrelicoracledbSessionsCount: metricInfo{
 		Name: "newrelicoracledb.sessions.count",
 	},
+	NewrelicoracledbSgaSharedPoolDictCacheMissRatio: metricInfo{
+		Name: "newrelicoracledb.sga_shared_pool_dict_cache_miss_ratio",
+	},
 	NewrelicoracledbSgaSharedPoolLibraryCacheHitRatio: metricInfo{
 		Name: "newrelicoracledb.sga_shared_pool_library_cache_hit_ratio",
 	},
@@ -121,6 +124,7 @@ type metricsInfo struct {
 	NewrelicoracledbMemorySgaSharedPoolLibraryCacheUserBytes     metricInfo
 	NewrelicoracledbMemorySgaUgaTotalBytes                       metricInfo
 	NewrelicoracledbSessionsCount                                metricInfo
+	NewrelicoracledbSgaSharedPoolDictCacheMissRatio              metricInfo
 	NewrelicoracledbSgaSharedPoolLibraryCacheHitRatio            metricInfo
 	NewrelicoracledbSgaSharedPoolLibraryCacheReloadRatio         metricInfo
 	NewrelicoracledbTablespaceDbID                               metricInfo
@@ -1075,6 +1079,58 @@ func newMetricNewrelicoracledbSessionsCount(cfg MetricConfig) metricNewrelicorac
 	return m
 }
 
+type metricNewrelicoracledbSgaSharedPoolDictCacheMissRatio struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.sga_shared_pool_dict_cache_miss_ratio metric with initial data.
+func (m *metricNewrelicoracledbSgaSharedPoolDictCacheMissRatio) init() {
+	m.data.SetName("newrelicoracledb.sga_shared_pool_dict_cache_miss_ratio")
+	m.data.SetDescription("SGA shared pool dictionary cache miss ratio (getmisses/gets)")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSgaSharedPoolDictCacheMissRatio) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSgaSharedPoolDictCacheMissRatio) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSgaSharedPoolDictCacheMissRatio) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSgaSharedPoolDictCacheMissRatio(cfg MetricConfig) metricNewrelicoracledbSgaSharedPoolDictCacheMissRatio {
+	m := metricNewrelicoracledbSgaSharedPoolDictCacheMissRatio{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricNewrelicoracledbSgaSharedPoolLibraryCacheHitRatio struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -1675,6 +1731,7 @@ type MetricsBuilder struct {
 	metricNewrelicoracledbMemorySgaSharedPoolLibraryCacheUserBytes     metricNewrelicoracledbMemorySgaSharedPoolLibraryCacheUserBytes
 	metricNewrelicoracledbMemorySgaUgaTotalBytes                       metricNewrelicoracledbMemorySgaUgaTotalBytes
 	metricNewrelicoracledbSessionsCount                                metricNewrelicoracledbSessionsCount
+	metricNewrelicoracledbSgaSharedPoolDictCacheMissRatio              metricNewrelicoracledbSgaSharedPoolDictCacheMissRatio
 	metricNewrelicoracledbSgaSharedPoolLibraryCacheHitRatio            metricNewrelicoracledbSgaSharedPoolLibraryCacheHitRatio
 	metricNewrelicoracledbSgaSharedPoolLibraryCacheReloadRatio         metricNewrelicoracledbSgaSharedPoolLibraryCacheReloadRatio
 	metricNewrelicoracledbTablespaceDbID                               metricNewrelicoracledbTablespaceDbID
@@ -1729,6 +1786,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricNewrelicoracledbMemorySgaSharedPoolLibraryCacheUserBytes:     newMetricNewrelicoracledbMemorySgaSharedPoolLibraryCacheUserBytes(mbc.Metrics.NewrelicoracledbMemorySgaSharedPoolLibraryCacheUserBytes),
 		metricNewrelicoracledbMemorySgaUgaTotalBytes:                       newMetricNewrelicoracledbMemorySgaUgaTotalBytes(mbc.Metrics.NewrelicoracledbMemorySgaUgaTotalBytes),
 		metricNewrelicoracledbSessionsCount:                                newMetricNewrelicoracledbSessionsCount(mbc.Metrics.NewrelicoracledbSessionsCount),
+		metricNewrelicoracledbSgaSharedPoolDictCacheMissRatio:              newMetricNewrelicoracledbSgaSharedPoolDictCacheMissRatio(mbc.Metrics.NewrelicoracledbSgaSharedPoolDictCacheMissRatio),
 		metricNewrelicoracledbSgaSharedPoolLibraryCacheHitRatio:            newMetricNewrelicoracledbSgaSharedPoolLibraryCacheHitRatio(mbc.Metrics.NewrelicoracledbSgaSharedPoolLibraryCacheHitRatio),
 		metricNewrelicoracledbSgaSharedPoolLibraryCacheReloadRatio:         newMetricNewrelicoracledbSgaSharedPoolLibraryCacheReloadRatio(mbc.Metrics.NewrelicoracledbSgaSharedPoolLibraryCacheReloadRatio),
 		metricNewrelicoracledbTablespaceDbID:                               newMetricNewrelicoracledbTablespaceDbID(mbc.Metrics.NewrelicoracledbTablespaceDbID),
@@ -1842,6 +1900,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricNewrelicoracledbMemorySgaSharedPoolLibraryCacheUserBytes.emit(ils.Metrics())
 	mb.metricNewrelicoracledbMemorySgaUgaTotalBytes.emit(ils.Metrics())
 	mb.metricNewrelicoracledbSessionsCount.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSgaSharedPoolDictCacheMissRatio.emit(ils.Metrics())
 	mb.metricNewrelicoracledbSgaSharedPoolLibraryCacheHitRatio.emit(ils.Metrics())
 	mb.metricNewrelicoracledbSgaSharedPoolLibraryCacheReloadRatio.emit(ils.Metrics())
 	mb.metricNewrelicoracledbTablespaceDbID.emit(ils.Metrics())
@@ -1972,6 +2031,11 @@ func (mb *MetricsBuilder) RecordNewrelicoracledbMemorySgaUgaTotalBytesDataPoint(
 // RecordNewrelicoracledbSessionsCountDataPoint adds a data point to newrelicoracledb.sessions.count metric.
 func (mb *MetricsBuilder) RecordNewrelicoracledbSessionsCountDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string) {
 	mb.metricNewrelicoracledbSessionsCount.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue)
+}
+
+// RecordNewrelicoracledbSgaSharedPoolDictCacheMissRatioDataPoint adds a data point to newrelicoracledb.sga_shared_pool_dict_cache_miss_ratio metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSgaSharedPoolDictCacheMissRatioDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSgaSharedPoolDictCacheMissRatio.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
 }
 
 // RecordNewrelicoracledbSgaSharedPoolLibraryCacheHitRatioDataPoint adds a data point to newrelicoracledb.sga_shared_pool_library_cache_hit_ratio metric.

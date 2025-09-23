@@ -77,6 +77,9 @@ func (s *CoreScraper) ScrapeCoreMetrics(ctx context.Context) []error {
 	// Scrape SGA shared pool library cache hit ratio metrics
 	errors = append(errors, s.scrapeSGASharedPoolLibraryCacheHitRatioMetrics(ctx, now)...)
 
+	// Scrape SGA shared pool dictionary cache miss ratio metrics
+	errors = append(errors, s.scrapeSGASharedPoolDictCacheMissRatioMetrics(ctx, now)...)
+
 	return errors
 }
 
@@ -676,6 +679,57 @@ func (s *CoreScraper) scrapeSGASharedPoolLibraryCacheHitRatioMetrics(ctx context
 	}
 
 	s.logger.Debug("Collected Oracle SGA shared pool library cache hit ratio metrics", zap.Int("metric_count", metricCount), zap.String("instance", s.instanceName))
+
+	return errors
+}
+
+// scrapeSGASharedPoolDictCacheMissRatioMetrics handles the SGA shared pool dictionary cache miss ratio metrics
+func (s *CoreScraper) scrapeSGASharedPoolDictCacheMissRatioMetrics(ctx context.Context, now pcommon.Timestamp) []error {
+	var errors []error
+
+	// Execute SGA shared pool dictionary cache miss ratio metrics query
+	s.logger.Debug("Executing SGA shared pool dictionary cache miss ratio metrics query", zap.String("sql", queries.SGASharedPoolDictCacheMissRatioSQL))
+
+	rows, err := s.db.QueryContext(ctx, queries.SGASharedPoolDictCacheMissRatioSQL)
+	if err != nil {
+		errors = append(errors, fmt.Errorf("error executing SGA shared pool dictionary cache miss ratio metrics query: %w", err))
+		return errors
+	}
+	defer rows.Close()
+
+	// Process each row and record metrics
+	metricCount := 0
+	for rows.Next() {
+		var ratio float64
+		var instID interface{}
+
+		err := rows.Scan(&ratio, &instID)
+		if err != nil {
+			errors = append(errors, fmt.Errorf("error scanning SGA shared pool dictionary cache miss ratio metrics row: %w", err))
+			continue
+		}
+
+		// Convert instance ID to string
+		instanceID := getInstanceIDString(instID)
+
+		// Record SGA shared pool dictionary cache miss ratio metrics
+		s.logger.Info("SGA shared pool dictionary cache miss ratio metrics collected",
+			zap.String("instance_id", instanceID),
+			zap.Float64("sga_shared_pool_dict_cache_miss_ratio", ratio),
+			zap.String("instance", s.instanceName),
+		)
+
+		// Record the SGA shared pool dictionary cache miss ratio metric
+		s.mb.RecordNewrelicoracledbSgaSharedPoolDictCacheMissRatioDataPoint(now, ratio, s.instanceName, instanceID)
+
+		metricCount++
+	}
+
+	if err = rows.Err(); err != nil {
+		errors = append(errors, fmt.Errorf("error iterating SGA shared pool dictionary cache miss ratio metrics rows: %w", err))
+	}
+
+	s.logger.Debug("Collected Oracle SGA shared pool dictionary cache miss ratio metrics", zap.Int("metric_count", metricCount), zap.String("instance", s.instanceName))
 
 	return errors
 }
