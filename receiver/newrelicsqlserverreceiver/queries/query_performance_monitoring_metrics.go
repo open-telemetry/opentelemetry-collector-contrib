@@ -307,50 +307,123 @@
 
 package queries
 
-const SlowQueriesQuery = `
-SELECT TOP 50
-    CONVERT(varchar(100), qs.query_hash, 1) AS query_hash,
-    CONVERT(varchar(100), qs.query_plan_hash, 1) AS query_plan_hash,
-    qs.execution_count,
-    qs.total_elapsed_time,
-    CASE 
-        WHEN qs.execution_count > 0 
-        THEN qs.total_elapsed_time / qs.execution_count 
-        ELSE 0 
-    END AS avg_elapsed_time,
-    qs.total_worker_time AS total_cpu_time,
-    CASE 
-        WHEN qs.execution_count > 0 
-        THEN qs.total_worker_time / qs.execution_count 
-        ELSE 0 
-    END AS avg_cpu_time,
-    qs.total_logical_reads,
-    CASE 
-        WHEN qs.execution_count > 0 
-        THEN qs.total_logical_reads / qs.execution_count 
-        ELSE 0 
-    END AS avg_logical_reads,
-    qs.total_physical_reads,
-    CASE 
-        WHEN qs.execution_count > 0 
-        THEN qs.total_physical_reads / qs.execution_count 
-        ELSE 0 
-    END AS avg_physical_reads,
-    qs.total_logical_writes AS total_writes,
-    CASE 
-        WHEN qs.execution_count > 0 
-        THEN qs.total_logical_writes / qs.execution_count 
-        ELSE 0 
-    END AS avg_writes,
-    SUBSTRING(qt.text, 1, 100) AS query_text_truncated
-FROM sys.dm_exec_query_stats qs
-CROSS APPLY sys.dm_exec_sql_text(qs.sql_handle) qt
-WHERE qs.execution_count > 0
-ORDER BY qs.total_elapsed_time DESC;`
+const SlowQuery = `DECLARE @IntervalSeconds INT = %d; 		-- Define the interval in seconds
+				DECLARE @TopN INT = %d; 				-- Number of top queries to retrieve
+				DECLARE @ElapsedTimeThreshold INT = %d; -- Elapsed time threshold in milliseconds
+				DECLARE @TextTruncateLimit INT = %d; 	-- Truncate limit for query_text
+				
+				WITH RecentQueryIds AS (
+					SELECT  
+						qs.query_hash as query_id
+					FROM 
+						sys.dm_exec_query_stats qs
+					WHERE 
+						qs.execution_count > 0
+						AND qs.last_execution_time >= DATEADD(SECOND, -@IntervalSeconds, GETUTCDATE())
+						AND qs.sql_handle IS NOT NULL
+				),
+				QueryStats AS (
+					SELECT
+						qs.plan_handle,
+						qs.sql_handle,
+						LEFT(SUBSTRING(
+							qt.text,
+							(qs.statement_start_offset / 2) + 1,
+							(
+								CASE
+									qs.statement_end_offset
+									WHEN -1 THEN DATALENGTH(qt.text)
+									ELSE qs.statement_end_offset
+								END - qs.statement_start_offset
+							) / 2 + 1
+						), @TextTruncateLimit) AS query_text, 
+						qs.query_hash AS query_id,
+						qs.last_execution_time,
+						qs.execution_count,
+						(qs.total_worker_time / qs.execution_count) / 1000.0 AS avg_cpu_time_ms,
+						(qs.total_elapsed_time / qs.execution_count) / 1000.0 AS avg_elapsed_time_ms,
+						(qs.total_logical_reads / qs.execution_count) AS avg_disk_reads,
+						(qs.total_logical_writes / qs.execution_count) AS avg_disk_writes,
+						CASE
+							WHEN UPPER(
+								LTRIM(
+									SUBSTRING(qt.text, (qs.statement_start_offset / 2) + 1, 6)
+								)
+							) LIKE 'SELECT' THEN 'SELECT'
+							WHEN UPPER(
+								LTRIM(
+									SUBSTRING(qt.text, (qs.statement_start_offset / 2) + 1, 6)
+								)
+							) LIKE 'INSERT' THEN 'INSERT'
+							WHEN UPPER(
+								LTRIM(
+									SUBSTRING(qt.text, (qs.statement_start_offset / 2) + 1, 6)
+								)
+							) LIKE 'UPDATE' THEN 'UPDATE'
+							WHEN UPPER(
+								LTRIM(
+									SUBSTRING(qt.text, (qs.statement_start_offset / 2) + 1, 6)
+								)
+							) LIKE 'DELETE' THEN 'DELETE'
+							ELSE 'OTHER'
+						END AS statement_type,
+						CONVERT(INT, pa.value) AS database_id,
+						qt.objectid
+					FROM
+						sys.dm_exec_query_stats qs
+						CROSS APPLY sys.dm_exec_sql_text(qs.sql_handle) AS qt
+						JOIN sys.dm_exec_cached_plans cp ON qs.plan_handle = cp.plan_handle
+						CROSS APPLY sys.dm_exec_plan_attributes(cp.plan_handle) AS pa
+					WHERE
+						qs.query_hash IN (SELECT DISTINCT(query_id) FROM RecentQueryIds)
+						AND qs.execution_count > 0
+						AND pa.attribute = 'dbid'
+						AND DB_NAME(CONVERT(INT, pa.value)) NOT IN ('master', 'model', 'msdb', 'tempdb')
+						AND qt.text NOT LIKE '%%sys.%%'
+						AND qt.text NOT LIKE '%%INFORMATION_SCHEMA%%'
+						AND qt.text NOT LIKE '%%schema_name()%%'
+						AND qt.text IS NOT NULL
+						AND LTRIM(RTRIM(qt.text)) <> ''
+						AND EXISTS (
+							SELECT 1
+							FROM sys.databases d
+							WHERE d.database_id = CONVERT(INT, pa.value) AND d.is_query_store_on = 1
+						)
+				)
+				SELECT
+					TOP (@TopN) qs.query_id,
+					MIN(qs.query_text) AS query_text,
+					DB_NAME(MIN(qs.database_id)) AS database_name,
+					COALESCE(
+						OBJECT_SCHEMA_NAME(MIN(qs.objectid), MIN(qs.database_id)),
+						'N/A'
+					) AS schema_name,
+					FORMAT(
+						MAX(qs.last_execution_time) AT TIME ZONE 'UTC',
+						'yyyy-MM-ddTHH:mm:ssZ'
+					) AS last_execution_timestamp,
+					SUM(qs.execution_count) AS execution_count,
+					AVG(qs.avg_cpu_time_ms) AS avg_cpu_time_ms,
+					AVG(qs.avg_elapsed_time_ms) AS avg_elapsed_time_ms,
+					AVG(qs.avg_disk_reads) AS avg_disk_reads,
+					AVG(qs.avg_disk_writes) AS avg_disk_writes,
+					 MAX(qs.statement_type) AS statement_type,
+					FORMAT(
+						SYSDATETIMEOFFSET() AT TIME ZONE 'UTC',
+						'yyyy-MM-ddTHH:mm:ssZ'
+					) AS collection_timestamp
+				FROM
+					QueryStats qs
+				GROUP BY
+					qs.query_id
+				HAVING
+					AVG(qs.avg_elapsed_time_ms) > @ElapsedTimeThreshold
+				ORDER BY
+					avg_elapsed_time_ms DESC;`
 
 const BlockingSessionsQuery = `
-DECLARE @Limit INT = 50; -- Define the limit for the number of rows returned
-DECLARE @TextTruncateLimit INT = 1000; -- Define the truncate limit for the query text
+DECLARE @Limit INT = %d; -- Define the limit for the number of rows returned
+DECLARE @TextTruncateLimit INT = %d; -- Define the truncate limit for the query text
 WITH blocking_info AS (
     SELECT
         req.blocking_session_id AS blocking_spid,

@@ -93,16 +93,23 @@ func NewQueryPerformanceScraper(conn SQLConnectionInterface, logger *zap.Logger,
 func (s *QueryPerformanceScraper) ScrapeBlockingSessionMetrics(ctx context.Context, scopeMetrics pmetric.ScopeMetrics) error {
     s.logger.Debug("Scraping SQL Server blocking session metrics")
 
+    // Format the blocking sessions query with parameters
+    limit := 50          // Default limit for blocking sessions
+    textTruncateLimit := 1000 // Default text truncate limit
+    formattedQuery := fmt.Sprintf(queries.BlockingSessionsQuery, limit, textTruncateLimit)
+
     // Execute blocking sessions query
     s.logger.Debug("Executing blocking sessions query",
-        zap.String("query", queries.TruncateQuery(queries.BlockingSessionsQuery, 100)),
-        zap.String("engine_type", queries.GetEngineTypeName(s.engineEdition)))
+        zap.String("query", queries.TruncateQuery(formattedQuery, 100)),
+        zap.String("engine_type", queries.GetEngineTypeName(s.engineEdition)),
+        zap.Int("limit", limit),
+        zap.Int("text_truncate_limit", textTruncateLimit))
 
     var results []models.BlockingSession
-    if err := s.connection.Query(ctx, &results, queries.BlockingSessionsQuery); err != nil {
+    if err := s.connection.Query(ctx, &results, formattedQuery); err != nil {
         s.logger.Error("Failed to execute blocking sessions query",
             zap.Error(err),
-            zap.String("query", queries.TruncateQuery(queries.BlockingSessionsQuery, 100)),
+            zap.String("query", queries.TruncateQuery(formattedQuery, 100)),
             zap.Int("engine_edition", s.engineEdition))
         return fmt.Errorf("failed to execute blocking sessions query: %w", err)
     }
@@ -121,6 +128,118 @@ func (s *QueryPerformanceScraper) ScrapeBlockingSessionMetrics(ctx context.Conte
 
     s.logger.Debug("Successfully scraped blocking session metrics",
         zap.Int("blocking_session_count", len(results)))
+
+    return nil
+}
+
+// ScrapeSlowQueryMetrics collects slow query metrics using engine-specific queries
+func (s *QueryPerformanceScraper) ScrapeSlowQueryMetrics(ctx context.Context, scopeMetrics pmetric.ScopeMetrics, intervalSeconds, topN, elapsedTimeThreshold, textTruncateLimit int) error {
+    s.logger.Debug("Scraping SQL Server slow query metrics")
+
+    // Format the slow query with parameters
+    formattedQuery := fmt.Sprintf(queries.SlowQuery, intervalSeconds, topN, elapsedTimeThreshold, textTruncateLimit)
+
+    // Execute slow query
+    s.logger.Debug("Executing slow query",
+        zap.String("query", queries.TruncateQuery(formattedQuery, 100)),
+        zap.String("engine_type", queries.GetEngineTypeName(s.engineEdition)),
+        zap.Int("interval_seconds", intervalSeconds),
+        zap.Int("top_n", topN),
+        zap.Int("elapsed_time_threshold", elapsedTimeThreshold),
+        zap.Int("text_truncate_limit", textTruncateLimit))
+
+    var results []models.SlowQuery
+    if err := s.connection.Query(ctx, &results, formattedQuery); err != nil {
+        s.logger.Error("Failed to execute slow query",
+            zap.Error(err),
+            zap.String("query", queries.TruncateQuery(formattedQuery, 100)),
+            zap.Int("engine_edition", s.engineEdition))
+        return fmt.Errorf("failed to execute slow query: %w", err)
+    }
+
+    s.logger.Debug("Query executed successfully", zap.Int("result_count", len(results)))
+
+    // Process each slow query result
+    for i, result := range results {
+        if err := s.processSlowQueryMetrics(result, scopeMetrics, i); err != nil {
+            s.logger.Error("Failed to process slow query metrics", 
+                zap.Error(err), 
+                zap.Int("result_index", i))
+            continue // Continue processing other results
+        }
+    }
+
+    s.logger.Debug("Successfully scraped slow query metrics",
+        zap.Int("slow_query_count", len(results)))
+
+    return nil
+}
+
+// processSlowQueryMetrics processes slow query metrics and creates OpenTelemetry metrics
+func (s *QueryPerformanceScraper) processSlowQueryMetrics(result models.SlowQuery, scopeMetrics pmetric.ScopeMetrics, index int) error {
+    // Create a single gauge metric for the slow query event
+    metric := scopeMetrics.Metrics().AppendEmpty()
+    metric.SetName("MSSQLTopSlowQueries")
+    metric.SetDescription("SQL Server top slow query details")
+    metric.SetUnit("1")
+
+    // Create gauge metric
+    gauge := metric.SetEmptyGauge()
+    dataPoint := gauge.DataPoints().AppendEmpty()
+    dataPoint.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+    dataPoint.SetStartTimestamp(s.startTime)
+    
+    // Set a dummy value for the gauge (1 = presence of slow query)
+    dataPoint.SetIntValue(1)
+
+    // Set all slow query attributes in nri-mssql format
+    attrs := dataPoint.Attributes()
+    
+    // Core slow query data
+    if result.QueryID != nil {
+        attrs.PutStr("query_id", fmt.Sprintf("%x", *result.QueryID))
+    }
+    if result.QueryText != nil {
+        attrs.PutStr("query_text", *result.QueryText)
+    }
+    if result.DatabaseName != nil {
+        attrs.PutStr("database_name", *result.DatabaseName)
+    }
+    if result.LastExecutionTimestamp != nil {
+        attrs.PutStr("last_execution_timestamp", *result.LastExecutionTimestamp)
+    }
+    if result.ExecutionCount != nil {
+        attrs.PutInt("execution_count", *result.ExecutionCount)
+    }
+    if result.AvgCPUTimeMS != nil {
+        attrs.PutDouble("avg_cpu_time_ms", *result.AvgCPUTimeMS)
+    }
+    if result.AvgElapsedTimeMS != nil {
+        attrs.PutDouble("avg_elapsed_time_ms", *result.AvgElapsedTimeMS)
+    }
+    if result.AvgDiskReads != nil {
+        attrs.PutDouble("avg_disk_reads", *result.AvgDiskReads)
+    }
+    if result.AvgDiskWrites != nil {
+        attrs.PutDouble("avg_disk_writes", *result.AvgDiskWrites)
+    }
+    if result.StatementType != nil {
+        attrs.PutStr("statement_type", *result.StatementType)
+    }
+    if result.CollectionTimestamp != nil {
+        attrs.PutStr("collection_timestamp", *result.CollectionTimestamp)
+    }
+
+    // Set the event type to match nri-mssql format
+    attrs.PutStr("event_type", "MSSQLTopSlowQueries")
+    
+
+    s.logger.Debug("Processed slow query event",
+        zap.String("event_type", "MSSQLTopSlowQueries"),
+        zap.Any("query_id", result.QueryID),
+        zap.Any("database_name", result.DatabaseName),
+        zap.Any("avg_elapsed_time_ms", result.AvgElapsedTimeMS),
+        zap.Any("execution_count", result.ExecutionCount))
 
     return nil
 }

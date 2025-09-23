@@ -194,6 +194,36 @@ func (s *sqlServerScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 		}
 	}
 
+	// Scrape slow query metrics if query monitoring is enabled
+	if s.config.EnableQueryMonitoring {
+		scrapeCtx, cancel := context.WithTimeout(ctx, s.config.Timeout)
+		defer cancel()
+
+		// Use config values for slow query parameters
+		intervalSeconds := s.config.QueryMonitoringFetchInterval
+		topN := s.config.QueryMonitoringCountThreshold
+		elapsedTimeThreshold := s.config.QueryMonitoringResponseTimeThreshold
+		textTruncateLimit := 4094 // Default text truncate limit from nri-mssql
+
+		if err := s.queryPerformanceScraper.ScrapeSlowQueryMetrics(scrapeCtx, scopeMetrics, intervalSeconds, topN, elapsedTimeThreshold, textTruncateLimit); err != nil {
+			s.logger.Error("Failed to scrape slow query metrics",
+				zap.Error(err),
+				zap.Duration("timeout", s.config.Timeout),
+				zap.Int("interval_seconds", intervalSeconds),
+				zap.Int("top_n", topN),
+				zap.Int("elapsed_time_threshold", elapsedTimeThreshold),
+				zap.Int("text_truncate_limit", textTruncateLimit))
+			scrapeErrors = append(scrapeErrors, err)
+			// Don't return here - continue with other metrics if enabled
+		} else {
+			s.logger.Debug("Successfully scraped slow query metrics",
+				zap.Int("interval_seconds", intervalSeconds),
+				zap.Int("top_n", topN),
+				zap.Int("elapsed_time_threshold", elapsedTimeThreshold),
+				zap.Int("text_truncate_limit", textTruncateLimit))
+		}
+	}
+
 // 	if s.config.EnableQueryMonitoring {
 //     scrapeCtx, cancel := context.WithTimeout(ctx, s.config.Timeout)
 //     defer cancel()

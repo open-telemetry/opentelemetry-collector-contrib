@@ -112,33 +112,26 @@
 // - Enables consistent data handling across different engines
 package models
 
-import (
-	"time"
-)
-
-// SlowQuery represents a slow query execution statistics
+// SlowQuery represents slow query performance data collected from SQL Server
+// This struct is modeled after nri-mssql's TopNSlowQueryDetails for compatibility
 type SlowQuery struct {
-	QueryHash          string    `db:"query_hash"`
-	QueryPlanHash      string    `db:"query_plan_hash"`
-	ExecutionCount     int64     `db:"execution_count"`
-	TotalElapsedTime   int64     `db:"total_elapsed_time"`
-	AvgElapsedTime     int64     `db:"avg_elapsed_time"`
-	TotalCpuTime       int64     `db:"total_cpu_time"`
-	AvgCpuTime         int64     `db:"avg_cpu_time"`
-	TotalLogicalReads  int64     `db:"total_logical_reads"`
-	AvgLogicalReads    int64     `db:"avg_logical_reads"`
-	TotalPhysicalReads int64     `db:"total_physical_reads"`
-	AvgPhysicalReads   int64     `db:"avg_physical_reads"`
-	TotalWrites        int64     `db:"total_writes"`
-	AvgWrites          int64     `db:"avg_writes"`
-	QueryTextTruncated string    `db:"query_text_truncated"`
-	LastExecutionTime  time.Time `db:"last_execution_time"`
-	CreationTime       time.Time `db:"creation_time"`
+	QueryID                *string  `db:"query_id" metric_name:"query_id" source_type:"attribute"`
+	QueryText              *string  `db:"query_text" metric_name:"query_text" source_type:"attribute"`
+	DatabaseName           *string  `db:"database_name" metric_name:"database_name" source_type:"attribute"`
+	SchemaName             *string  `db:"schema_name" metric_name:"schema_name" source_type:"attribute"`
+	LastExecutionTimestamp *string  `db:"last_execution_timestamp" metric_name:"last_execution_timestamp" source_type:"attribute"`
+	ExecutionCount         *int64   `db:"execution_count" metric_name:"execution_count" source_type:"gauge"`
+	AvgCPUTimeMS           *float64 `db:"avg_cpu_time_ms" metric_name:"avg_cpu_time_ms" source_type:"gauge"`
+	AvgElapsedTimeMS       *float64 `db:"avg_elapsed_time_ms" metric_name:"avg_elapsed_time_ms" source_type:"gauge"`
+	AvgDiskReads           *float64 `db:"avg_disk_reads" metric_name:"avg_disk_reads" source_type:"gauge"`
+	AvgDiskWrites          *float64 `db:"avg_disk_writes" metric_name:"avg_disk_writes" source_type:"gauge"`
+	StatementType          *string  `db:"statement_type" metric_name:"statement_type" source_type:"attribute"`
+	CollectionTimestamp    *string  `db:"collection_timestamp" metric_name:"collection_timestamp" source_type:"attribute"`
 }
 
 // BlockingSession represents blocking session information
 type BlockingSession struct {
-	BlockingSPID          *int64   `db:"blocking_spid" metric_name:"sqlserver.blocking.spid" source_type:"gauge"`
+BlockingSPID          *int64   `db:"blocking_spid" metric_name:"sqlserver.blocking.spid" source_type:"gauge"`
 	BlockingStatus        *string  `db:"blocking_status" metric_name:"sqlserver.blocking.status" source_type:"attribute"`
 	BlockedSPID           *int64   `db:"blocked_spid" metric_name:"sqlserver.blocked.spid" source_type:"gauge"`
 	BlockedStatus         *string  `db:"blocked_status" metric_name:"sqlserver.blocked.status" source_type:"attribute"`
