@@ -75,8 +75,8 @@ github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient v0.7
 github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient v0.71.0-devel.0.20250902202452-61c2536752eb/go.mod h1:0pJ8unHLvA+BbDPvVyF7+61C6OeRTIWBgv5Zu4HOIIc=
 github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/statsprocessor v0.71.0-devel.0.20250902202452-61c2536752eb h1:4n+aTSBv3Dbu1W34cgnB9u8moMTXbhAjpjXpOLhPDYk=
 github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/statsprocessor v0.71.0-devel.0.20250902202452-61c2536752eb/go.mod h1:nhBRk46zMJrrGdRRPT/tv7ggV5DOsmBM8ArecelDmDA=
-github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil v0.71.0-devel.0.20250908112322-c0e8c8158aa2 h1:STWAt2pChFf7RkhaAa2q9OoTZ5uvksP+hhVxLA4u13g=
-github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil v0.71.0-devel.0.20250908112322-c0e8c8158aa2/go.mod h1:jwfF9oUgkMl0a5qHWBqqMi/uG2kEY2ScZ0UPRd+8uDA=
+github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil v0.72.0-devel.0.20250908112322-c0e8c8158aa2 h1:N8N8iAW9yjMcU6kJsqtYkv/gdbs/Z+CPEQWTGIY2KOU=
+github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil v0.72.0-devel.0.20250908112322-c0e8c8158aa2/go.mod h1:jwfF9oUgkMl0a5qHWBqqMi/uG2kEY2ScZ0UPRd+8uDA=
 github.com/DataDog/datadog-agent/comp/serializer/logscompression v0.71.0-devel.0.20250902202452-61c2536752eb h1:p6eccVfbHADnkJeIL4fRl03nMbztbkw5ZABPYbvGPrQ=
 github.com/DataDog/datadog-agent/comp/serializer/logscompression v0.71.0-devel.0.20250902202452-61c2536752eb/go.mod h1:/n2ahiZCYFpdex/heAynM/boLq6zuFpbbqGmlJV1Db8=
 github.com/DataDog/datadog-agent/comp/serializer/metricscompression v0.71.0-devel.0.20250902202452-61c2536752eb h1:sRK1nNFmr7CKxIdaPNv+8DjrUd+1c5oVISSsEJ4/0Qc=
@@ -579,8 +579,8 @@ github.com/hashicorp/serf v0.10.1 h1:Z1H2J60yRKvfDYAOZLd2MU0ND4AH/WDz7xYHDWQsIPY
 github.com/hashicorp/serf v0.10.1/go.mod h1:yL2t6BqATOLGc5HF7qbFkTfXoPIY0WZdWHfEvMqbG+4=
 github.com/hectane/go-acl v0.0.0-20230122075934-ca0b05cb1adb h1:PGufWXXDq9yaev6xX1YQauaO1MV90e6Mpoq1I7Lz/VM=
 github.com/hectane/go-acl v0.0.0-20230122075934-ca0b05cb1adb/go.mod h1:QiyDdbZLaJ/mZP4Zwc9g2QsfaEA4o7XvvgZegSci5/E=
-github.com/hetznercloud/hcloud-go/v2 v2.23.0 h1:cx4t0loUz/Xo70N4IvMX5se0WvHoUrHGibyHkreEvws=
-github.com/hetznercloud/hcloud-go/v2 v2.23.0/go.mod h1:ERaDt5CFz2Y5J0oimN3XfMe98cJIggqfG6pmo2BlPv4=
+github.com/hetznercloud/hcloud-go/v2 v2.24.0 h1:57YlEQOc9QperCGck+iX4MqCrwEsznEdK7bPrsdAgOQ=
+github.com/hetznercloud/hcloud-go/v2 v2.24.0/go.mod h1:uQdAWaW3d9TimiyOjQWY8HKShs0Nd6S4wNYqo0HjvIY=
 github.com/hexops/gotextdiff v1.0.3 h1:gitA9+qJrrTCsiCl7+kh75nPqQt1cx4ZkudSTLoUqJM=
 github.com/hexops/gotextdiff v1.0.3/go.mod h1:pSWU5MAI3yDq+fZBTazCSJysOMbxWL1BSow5/V2vxeg=
 github.com/iancoleman/strcase v0.3.0 h1:nTXanmYxhfFAMjZL34Ov6gkzEsSJZ5DbhxWjvSASxEI=

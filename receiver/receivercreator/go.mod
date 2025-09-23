@@ -8,7 +8,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.136.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.136.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.136.0
-	github.com/spf13/cast v1.9.2
+	github.com/spf13/cast v1.10.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.42.0
 	go.opentelemetry.io/collector/component/componentstatus v0.136.0

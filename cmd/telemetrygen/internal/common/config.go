@@ -90,6 +90,9 @@ type Config struct {
 
 	// Export behavior configuration
 	AllowExportFailures bool
+
+	// Load testing configuration
+	LoadSize int
 }
 
 type ClientAuth struct {
@@ -201,6 +204,9 @@ func (c *Config) CommonFlags(fs *pflag.FlagSet) {
 
 	// Export behavior configuration
 	fs.BoolVar(&c.AllowExportFailures, "allow-export-failures", c.AllowExportFailures, "Whether to continue running when export operations fail (instead of terminating)")
+
+	// Load testing configuration
+	fs.IntVar(&c.LoadSize, "size", c.LoadSize, "Desired minimum size in MB of string data for each generated telemetry record")
 }
 
 // SetDefaults is here to mirror the defaults for flags above,
@@ -225,4 +231,14 @@ func (c *Config) SetDefaults() {
 	c.ClientAuth.ClientCertFile = ""
 	c.ClientAuth.ClientKeyFile = ""
 	c.AllowExportFailures = false
+	c.LoadSize = 0
+}
+
+// CharactersPerMB is the number of characters needed to create a 1MB string attribute
+const CharactersPerMB = 1024 * 1024
+
+// CreateLoadAttribute creates a string attribute with the specified size in MB
+// This is commonly used across different signal types (metrics, traces, logs) for load testing
+func CreateLoadAttribute(key string, sizeMB int) attribute.KeyValue {
+	return attribute.String(key, string(make([]byte, CharactersPerMB*sizeMB)))
 }
