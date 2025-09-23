@@ -164,39 +164,3 @@ type InstanceStatsModel struct {
 	TransactionsSec            *int64   `db:"transactions_sec" metric_name:"sqlserver.instance.transactions_per_sec" source_type:"rate" description:"Transactions per second" unit:"1/s"`
 	ForcedParameterizationsSec *int64   `db:"forced_parameterizations_sec" metric_name:"sqlserver.instance.forced_parameterizations_per_sec" source_type:"rate" description:"Forced parameterizations per second" unit:"1/s"`
 }
-
-// InstanceDiskMetricsModel represents disk space metrics for the instance
-// Add fields as needed for your disk metrics query result mapping
-// Example fields:
-type InstanceDiskMetricsModel struct {
-	TotalDiskSpace *int64 `db:"total_disk_space" metric_name:"sqlserver.disk.total_disk_space" source_type:"gauge" description:"Total disk space in bytes" unit:"By"`
-}
-
-// InstanceProcessCountsModel represents process status/counts metrics
-// Example fields:
-type InstanceProcessCountsModel struct {
-	ProcessCount *int64 `db:"process_count" metric_name:"sqlserver.instance.process_count" source_type:"gauge" description:"Number of SQL Server processes" unit:"1"`
-}
-
-// InstanceRunnableTasksModel represents runnable tasks metrics
-// Example fields:
-type InstanceRunnableTasksModel struct {
-	RunnableTasks *int64 `db:"runnable_tasks" metric_name:"sqlserver.instance.runnable_tasks" source_type:"gauge" description:"Number of runnable tasks" unit:"1"`
-}
-
-// InstanceActiveConnectionsModel represents active connections metrics
-// Example fields:
-type InstanceActiveConnectionsModel struct {
-	ActiveConnections *int64 `db:"active_connections" metric_name:"sqlserver.instance.active_connections" source_type:"gauge" description:"Number of active connections" unit:"1"`
-}
-
-type InstanceSessionStatusCountsModel struct {
-	Preconnect *int64 `db:"preconnect" metric_name:"instance.preconnectProcessesCount" source_type:"gauge"`
-	Background *int64 `db:"background" metric_name:"instance.backgroundProcessesCount" source_type:"gauge"`
-	Dormant    *int64 `db:"dormant" metric_name:"instance.dormantProcessesCount" source_type:"gauge"`
-	Runnable   *int64 `db:"runnable" metric_name:"instance.runnableProcessesCount" source_type:"gauge"`
-	Suspended  *int64 `db:"suspended" metric_name:"instance.suspendedProcessesCount" source_type:"gauge"`
-	Running    *int64 `db:"running" metric_name:"instance.runningProcessesCount" source_type:"gauge"`
-	Blocked    *int64 `db:"blocked" metric_name:"instance.blockedProcessesCount" source_type:"gauge"`
-	Sleeping   *int64 `db:"sleeping" metric_name:"instance.sleepingProcessesCount" source_type:"gauge"`
-}

@@ -59,10 +59,10 @@ receivers:
   newrelicsqlserver:
     # SQL Server connection configuration
     # ⚠️  REPLACE THESE WITH YOUR ACTUAL VALUES ⚠️
-    hostname: "20.235.181.93"                    # e.g., "your-sql-server.com" or "192.168.1.100"
+    hostname: "20.235.136.68"                    # e.g., "your-sql-server.com" or "192.168.1.100"
     port: "1433"                # Default SQL Server port
-    username: "newrelic3"              # e.g., "monitoring_user"
-    password: "Tanush@123"              # Your SQL Server password
+    username: ""              # e.g., "monitoring_user"
+    password: ""              # Your SQL Server password
 
     # Optional: Named instance (if using SQL Server named instances)
     # instance: "${SQLSERVER_INSTANCE}"            # e.g., "SQLEXPRESS" 
@@ -71,7 +71,7 @@ receivers:
     # connection_timeout: 30s
     
     # Collection interval (how often to collect metrics)
-    collection_interval: 15s
+    collection_interval: 60s
     
     # Optional: Initial delay before starting collection
     # initial_delay: 10s
@@ -86,7 +86,7 @@ exporters:
     # Headers for authentication
     headers:
       # ⚠️  REPLACE WITH YOUR ACTUAL NEW RELIC LICENSE KEY ⚠️
-      api-key: "a242255948a2fa7ee573da4d8b56354dFFFFNRAL"
+      api-key: ""
     
     # TLS configuration
     tls:
@@ -139,5 +139,3 @@ exporters:
 #
 # Then run:
 # ./bin/otelcol-newrelic --config=config.yaml
-
-
