@@ -5,7 +5,7 @@ status:
   stability:
     alpha: [traces, metrics, logs, profiles]
   codeowners:
-    active: [Aneurysm9, dashpole, paulojmdias]
+    active: [dashpole, paulojmdias]
 
 resource_attributes:
   cloud.provider:
