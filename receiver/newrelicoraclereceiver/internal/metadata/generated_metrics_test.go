@@ -140,24 +140,31 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordNewrelicoracledbPdbActiveParallelSessionsDataPoint(ts, 1, "newrelic.entity_name-val", "instance.id-val")
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNewrelicoracledbPdbActiveSerialSessionsDataPoint(ts, 1, "newrelic.entity_name-val", "instance.id-val")
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNewrelicoracledbPdbAverageActiveSessionsDataPoint(ts, 1, "newrelic.entity_name-val", "instance.id-val")
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNewrelicoracledbPdbBackgroundCPUUsagePerSecondDataPoint(ts, 1, "newrelic.entity_name-val", "instance.id-val")
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNewrelicoracledbPdbBackgroundTimePerSecondDataPoint(ts, 1, "newrelic.entity_name-val", "instance.id-val")
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNewrelicoracledbPdbBlockChangesPerSecondDataPoint(ts, 1, "newrelic.entity_name-val", "instance.id-val")
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNewrelicoracledbPdbBlockChangesPerTransactionDataPoint(ts, 1, "newrelic.entity_name-val", "instance.id-val")
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNewrelicoracledbPdbCPUTimeRatioDataPoint(ts, 1, "newrelic.entity_name-val", "instance.id-val")
 
@@ -165,27 +172,35 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordNewrelicoracledbPdbCPUUsagePerSecondDataPoint(ts, 1, "newrelic.entity_name-val", "instance.id-val")
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNewrelicoracledbPdbCPUUsagePerTransactionDataPoint(ts, 1, "newrelic.entity_name-val", "instance.id-val")
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNewrelicoracledbPdbCurrentLogonsDataPoint(ts, 1, "newrelic.entity_name-val", "instance.id-val")
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNewrelicoracledbPdbCurrentOpenCursorsDataPoint(ts, 1, "newrelic.entity_name-val", "instance.id-val")
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNewrelicoracledbPdbDbPhysicalReadBytesPerSecondDataPoint(ts, 1, "newrelic.entity_name-val", "instance.id-val")
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNewrelicoracledbPdbDbPhysicalReadsPerSecondDataPoint(ts, 1, "newrelic.entity_name-val", "instance.id-val")
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNewrelicoracledbPdbDbPhysicalWriteBytesPerSecondDataPoint(ts, 1, "newrelic.entity_name-val", "instance.id-val")
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNewrelicoracledbPdbDbPhysicalWritesPerSecondDataPoint(ts, 1, "newrelic.entity_name-val", "instance.id-val")
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNewrelicoracledbPdbExecuteWithoutParseRatioDataPoint(ts, 1, "newrelic.entity_name-val", "instance.id-val")
 
@@ -193,24 +208,31 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordNewrelicoracledbPdbExecutionsPerSecondDataPoint(ts, 1, "newrelic.entity_name-val", "instance.id-val")
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNewrelicoracledbPdbExecutionsPerTransactionDataPoint(ts, 1, "newrelic.entity_name-val", "instance.id-val")
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNewrelicoracledbPdbHardParseCountPerSecondDataPoint(ts, 1, "newrelic.entity_name-val", "instance.id-val")
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNewrelicoracledbPdbHardParseCountPerTransactionDataPoint(ts, 1, "newrelic.entity_name-val", "instance.id-val")
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNewrelicoracledbPdbLogicalReadsPerSecondDataPoint(ts, 1, "newrelic.entity_name-val", "instance.id-val")
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNewrelicoracledbPdbLogicalReadsPerTransactionDataPoint(ts, 1, "newrelic.entity_name-val", "instance.id-val")
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNewrelicoracledbPdbLogonsPerSecondDataPoint(ts, 1, "newrelic.entity_name-val", "instance.id-val")
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNewrelicoracledbPdbLogonsPerTransactionDataPoint(ts, 1, "newrelic.entity_name-val", "instance.id-val")
 
@@ -218,12 +240,15 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordNewrelicoracledbPdbNetworkTrafficBytePerSecondDataPoint(ts, 1, "newrelic.entity_name-val", "instance.id-val")
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNewrelicoracledbPdbOpenCursorsPerSecondDataPoint(ts, 1, "newrelic.entity_name-val", "instance.id-val")
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNewrelicoracledbPdbOpenCursorsPerTransactionDataPoint(ts, 1, "newrelic.entity_name-val", "instance.id-val")
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNewrelicoracledbPdbParseFailureCountPerSecondDataPoint(ts, 1, "newrelic.entity_name-val", "instance.id-val")
 
@@ -231,21 +256,27 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordNewrelicoracledbPdbPhysicalReadBytesPerSecondDataPoint(ts, 1, "newrelic.entity_name-val", "instance.id-val")
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNewrelicoracledbPdbPhysicalReadsPerTransactionDataPoint(ts, 1, "newrelic.entity_name-val", "instance.id-val")
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNewrelicoracledbPdbPhysicalWriteBytesPerSecondDataPoint(ts, 1, "newrelic.entity_name-val", "instance.id-val")
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNewrelicoracledbPdbPhysicalWritesPerTransactionDataPoint(ts, 1, "newrelic.entity_name-val", "instance.id-val")
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNewrelicoracledbPdbRedoGeneratedBytesPerSecondDataPoint(ts, 1, "newrelic.entity_name-val", "instance.id-val")
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNewrelicoracledbPdbRedoGeneratedBytesPerTransactionDataPoint(ts, 1, "newrelic.entity_name-val", "instance.id-val")
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNewrelicoracledbPdbResponseTimePerTransactionDataPoint(ts, 1, "newrelic.entity_name-val", "instance.id-val")
 
@@ -253,6 +284,7 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordNewrelicoracledbPdbSessionCountDataPoint(ts, 1, "newrelic.entity_name-val", "instance.id-val")
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNewrelicoracledbPdbSoftParseRatioDataPoint(ts, 1, "newrelic.entity_name-val", "instance.id-val")
 
@@ -260,9 +292,11 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordNewrelicoracledbPdbSQLServiceResponseTimeDataPoint(ts, 1, "newrelic.entity_name-val", "instance.id-val")
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNewrelicoracledbPdbTotalParseCountPerSecondDataPoint(ts, 1, "newrelic.entity_name-val", "instance.id-val")
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNewrelicoracledbPdbTotalParseCountPerTransactionDataPoint(ts, 1, "newrelic.entity_name-val", "instance.id-val")
 
@@ -270,24 +304,31 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordNewrelicoracledbPdbTransactionsPerSecondDataPoint(ts, 1, "newrelic.entity_name-val", "instance.id-val")
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNewrelicoracledbPdbUserCallsPerSecondDataPoint(ts, 1, "newrelic.entity_name-val", "instance.id-val")
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNewrelicoracledbPdbUserCallsPerTransactionDataPoint(ts, 1, "newrelic.entity_name-val", "instance.id-val")
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNewrelicoracledbPdbUserCommitsPerSecondDataPoint(ts, 1, "newrelic.entity_name-val", "instance.id-val")
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNewrelicoracledbPdbUserCommitsPercentageDataPoint(ts, 1, "newrelic.entity_name-val", "instance.id-val")
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNewrelicoracledbPdbUserRollbacksPerSecondDataPoint(ts, 1, "newrelic.entity_name-val", "instance.id-val")
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNewrelicoracledbPdbUserRollbacksPercentageDataPoint(ts, 1, "newrelic.entity_name-val", "instance.id-val")
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNewrelicoracledbPdbWaitTimeRatioDataPoint(ts, 1, "newrelic.entity_name-val", "instance.id-val")
 
