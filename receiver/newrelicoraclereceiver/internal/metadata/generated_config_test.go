@@ -28,6 +28,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
 					NewrelicoracledbSessionsCount:                 MetricConfig{Enabled: true},
+					NewrelicoracledbTablespaceDbID:                MetricConfig{Enabled: true},
 					NewrelicoracledbTablespaceGlobalName:          MetricConfig{Enabled: true},
 					NewrelicoracledbTablespaceIsOffline:           MetricConfig{Enabled: true},
 					NewrelicoracledbTablespaceSpaceConsumedBytes:  MetricConfig{Enabled: true},
@@ -45,6 +46,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
 					NewrelicoracledbSessionsCount:                 MetricConfig{Enabled: false},
+					NewrelicoracledbTablespaceDbID:                MetricConfig{Enabled: false},
 					NewrelicoracledbTablespaceGlobalName:          MetricConfig{Enabled: false},
 					NewrelicoracledbTablespaceIsOffline:           MetricConfig{Enabled: false},
 					NewrelicoracledbTablespaceSpaceConsumedBytes:  MetricConfig{Enabled: false},

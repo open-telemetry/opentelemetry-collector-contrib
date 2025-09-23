@@ -3,6 +3,8 @@ all_set:
   metrics:
     newrelicoracledb.sessions.count:
       enabled: true
+    newrelicoracledb.tablespace.db_id:
+      enabled: true
     newrelicoracledb.tablespace.global_name:
       enabled: true
     newrelicoracledb.tablespace.is_offline:
@@ -21,6 +23,8 @@ all_set:
 none_set:
   metrics:
     newrelicoracledb.sessions.count:
+      enabled: false
+    newrelicoracledb.tablespace.db_id:
       enabled: false
     newrelicoracledb.tablespace.global_name:
       enabled: false

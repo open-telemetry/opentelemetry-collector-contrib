@@ -49,6 +49,9 @@ func (s *TablespaceScraper) ScrapeTablespaceMetrics(ctx context.Context) []error
 	// Scrape global name tablespace metrics
 	errors = append(errors, s.scrapeGlobalNameTablespaceMetrics(ctx, now)...)
 
+	// Scrape DB ID tablespace metrics
+	errors = append(errors, s.scrapeDBIDTablespaceMetrics(ctx, now)...)
+
 	return errors
 }
 
@@ -149,6 +152,54 @@ func (s *TablespaceScraper) scrapeGlobalNameTablespaceMetrics(ctx context.Contex
 	}
 
 	s.logger.Debug("Collected Oracle global name tablespace metrics", zap.Int("metric_count", metricCount), zap.String("instance", s.instanceName))
+
+	return errors
+}
+
+// scrapeDBIDTablespaceMetrics handles the DB ID tablespace metrics
+func (s *TablespaceScraper) scrapeDBIDTablespaceMetrics(ctx context.Context, now pcommon.Timestamp) []error {
+	var errors []error
+
+	// Execute DB ID tablespace query
+	s.logger.Debug("Executing DB ID tablespace query", zap.String("sql", queries.DBIDTablespaceSQL))
+
+	rows, err := s.db.QueryContext(ctx, queries.DBIDTablespaceSQL)
+	if err != nil {
+		errors = append(errors, fmt.Errorf("error executing DB ID tablespace query: %w", err))
+		return errors
+	}
+	defer rows.Close()
+
+	// Process each row and record metrics
+	metricCount := 0
+	for rows.Next() {
+		var tablespaceName string
+		var dbID int64
+
+		err := rows.Scan(&tablespaceName, &dbID)
+		if err != nil {
+			errors = append(errors, fmt.Errorf("error scanning DB ID tablespace row: %w", err))
+			continue
+		}
+
+		// Record DB ID metrics
+		s.logger.Info("DB ID tablespace metrics collected",
+			zap.String("tablespace", tablespaceName),
+			zap.Int64("db_id", dbID),
+			zap.String("instance", s.instanceName),
+		)
+
+		// Record the DB ID metric
+		s.mb.RecordNewrelicoracledbTablespaceDbIDDataPoint(now, dbID, s.instanceName, tablespaceName)
+
+		metricCount++
+	}
+
+	if err = rows.Err(); err != nil {
+		errors = append(errors, fmt.Errorf("error iterating DB ID tablespace rows: %w", err))
+	}
+
+	s.logger.Debug("Collected Oracle DB ID tablespace metrics", zap.Int("metric_count", metricCount), zap.String("instance", s.instanceName))
 
 	return errors
 }

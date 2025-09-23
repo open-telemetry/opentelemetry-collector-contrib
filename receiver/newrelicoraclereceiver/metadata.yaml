@@ -86,6 +86,16 @@ metrics:
       - newrelic.entity_name
       - tablespace.name
 
+  newrelicoracledb.tablespace.db_id:
+    description: Database ID information for tablespace
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - tablespace.name
+
 tests:
   config:
   goleak:

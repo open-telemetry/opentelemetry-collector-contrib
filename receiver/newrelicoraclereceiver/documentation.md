@@ -26,6 +26,21 @@ Total number of active Oracle database sessions
 | ---- | ----------- | ------ | -------- |
 | newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
 
+### newrelicoracledb.tablespace.db_id
+
+Database ID information for tablespace
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+| tablespace.name | Name of the Oracle tablespace | Any Str | false |
+
 ### newrelicoracledb.tablespace.global_name
 
 Global name information for tablespace
