@@ -609,8 +609,6 @@ go.opentelemetry.io/auto/sdk v1.1.0 h1:cH53jehLUN6UFLY71z+NDOiNJqDdPRaXzTel0sJyS
 go.opentelemetry.io/auto/sdk v1.1.0/go.mod h1:3wSPjt5PWp2RhlCcmmOial7AvC4DQqZb7a7wCow3W8A=
 go.opentelemetry.io/build-tools v0.28.0 h1:a6bDjCySU2YIeL8bxu4wvEc5Kdo1TheAQxzHIEeOIOc=
 go.opentelemetry.io/build-tools v0.28.0/go.mod h1:3hSt/hRgbNM6phYzQ/CeGsTbfSKBkvXg8WtSZLNkxeQ=
-go.opentelemetry.io/build-tools/checkapi v0.26.2 h1:YdwnuJd0L/4TSmeHwYe5Mdgt+TQumI6X7TLU3pg2dFI=
-go.opentelemetry.io/build-tools/checkapi v0.26.2/go.mod h1:J7KC/+bPtDVUhRWk7eGd61Uxhn3UvuOQuynJ5W6dW5c=
 go.opentelemetry.io/build-tools/checkapi v0.28.0 h1:stChoeyj3LFK2OlrQ+D+CGvro18qwQ5pkqZBAsF1O7I=
 go.opentelemetry.io/build-tools/checkapi v0.28.0/go.mod h1:FdXsJ00Ab6YoZJz0yEZvUYyB5RzKYWkZ71SuFa+9NTQ=
 go.opentelemetry.io/build-tools/checkfile v0.28.0 h1:P+DIn9p/+Aguhz2xbWc2O0nKqDUErVtWw3tI2I/buMg=
