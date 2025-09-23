@@ -147,4 +147,10 @@ const (
 		FROM GV$sqlarea sqlarea, GV$INSTANCE inst
 		WHERE inst.inst_id=sqlarea.inst_id
 		GROUP BY inst.inst_id`
+
+	SGASharedPoolLibraryCacheReloadRatioSQL = `
+		SELECT (sum(libcache.reloads)/sum(libcache.pins)) AS ratio, inst.inst_id
+		FROM GV$librarycache libcache, GV$INSTANCE inst
+		WHERE inst.inst_id=libcache.inst_id
+		GROUP BY inst.inst_id`
 )

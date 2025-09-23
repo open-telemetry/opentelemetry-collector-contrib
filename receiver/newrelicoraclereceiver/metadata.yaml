@@ -307,6 +307,16 @@ metrics:
       - newrelic.entity_name
       - instance.id
 
+  newrelicoracledb.sga_shared_pool_library_cache_reload_ratio:
+    description: SGA shared pool library cache reload ratio (reloads/pins)
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
 tests:
   config:
   goleak:

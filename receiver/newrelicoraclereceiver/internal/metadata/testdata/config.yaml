@@ -37,6 +37,8 @@ all_set:
       enabled: true
     newrelicoracledb.sessions.count:
       enabled: true
+    newrelicoracledb.sga_shared_pool_library_cache_reload_ratio:
+      enabled: true
     newrelicoracledb.tablespace.db_id:
       enabled: true
     newrelicoracledb.tablespace.global_name:
@@ -97,6 +99,8 @@ none_set:
     newrelicoracledb.memory.sga_uga_total_bytes:
       enabled: false
     newrelicoracledb.sessions.count:
+      enabled: false
+    newrelicoracledb.sga_shared_pool_library_cache_reload_ratio:
       enabled: false
     newrelicoracledb.tablespace.db_id:
       enabled: false
