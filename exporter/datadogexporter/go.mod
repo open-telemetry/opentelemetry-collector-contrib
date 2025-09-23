@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datado
 go 1.24.0
 
 require (
-	github.com/DataDog/agent-payload/v5 v5.0.164
+	github.com/DataDog/agent-payload/v5 v5.0.165
 	github.com/DataDog/datadog-agent/comp/core/hostname/hostnameinterface v0.71.0-devel.0.20250902202452-61c2536752eb
 	github.com/DataDog/datadog-agent/comp/logs/agent/config v0.71.0-devel.0.20250902202452-61c2536752eb
 	github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline v0.71.0-devel.0.20250902202452-61c2536752eb
