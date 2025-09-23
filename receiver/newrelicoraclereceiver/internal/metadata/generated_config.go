@@ -45,11 +45,18 @@ type MetricsConfig struct {
 	NewrelicoracledbMemorySgaSharedPoolLibraryCacheSharableBytes MetricConfig `mapstructure:"newrelicoracledb.memory.sga_shared_pool_library_cache_sharable_bytes"`
 	NewrelicoracledbMemorySgaSharedPoolLibraryCacheUserBytes     MetricConfig `mapstructure:"newrelicoracledb.memory.sga_shared_pool_library_cache_user_bytes"`
 	NewrelicoracledbMemorySgaUgaTotalBytes                       MetricConfig `mapstructure:"newrelicoracledb.memory.sga_uga_total_bytes"`
+	NewrelicoracledbRedoLogParallelWriteWaits                    MetricConfig `mapstructure:"newrelicoracledb.redo_log_parallel_write_waits"`
+	NewrelicoracledbRedoLogSwitchArchivingNeededWaits            MetricConfig `mapstructure:"newrelicoracledb.redo_log_switch_archiving_needed_waits"`
+	NewrelicoracledbRedoLogSwitchCheckpointIncompleteWaits       MetricConfig `mapstructure:"newrelicoracledb.redo_log_switch_checkpoint_incomplete_waits"`
+	NewrelicoracledbRedoLogSwitchCompletionWaits                 MetricConfig `mapstructure:"newrelicoracledb.redo_log_switch_completion_waits"`
 	NewrelicoracledbRollbackSegmentsGets                         MetricConfig `mapstructure:"newrelicoracledb.rollback_segments_gets"`
 	NewrelicoracledbRollbackSegmentsWaitRatio                    MetricConfig `mapstructure:"newrelicoracledb.rollback_segments_wait_ratio"`
 	NewrelicoracledbRollbackSegmentsWaits                        MetricConfig `mapstructure:"newrelicoracledb.rollback_segments_waits"`
 	NewrelicoracledbSessionsCount                                MetricConfig `mapstructure:"newrelicoracledb.sessions.count"`
+	NewrelicoracledbSgaBufferBusyWaits                           MetricConfig `mapstructure:"newrelicoracledb.sga_buffer_busy_waits"`
 	NewrelicoracledbSgaFixedSizeBytes                            MetricConfig `mapstructure:"newrelicoracledb.sga_fixed_size_bytes"`
+	NewrelicoracledbSgaFreeBufferInspectedWaits                  MetricConfig `mapstructure:"newrelicoracledb.sga_free_buffer_inspected_waits"`
+	NewrelicoracledbSgaFreeBufferWaits                           MetricConfig `mapstructure:"newrelicoracledb.sga_free_buffer_waits"`
 	NewrelicoracledbSgaHitRatio                                  MetricConfig `mapstructure:"newrelicoracledb.sga_hit_ratio"`
 	NewrelicoracledbSgaLogAllocationRetriesRatio                 MetricConfig `mapstructure:"newrelicoracledb.sga_log_allocation_retries_ratio"`
 	NewrelicoracledbSgaLogBufferRedoAllocationRetries            MetricConfig `mapstructure:"newrelicoracledb.sga_log_buffer_redo_allocation_retries"`
@@ -125,6 +132,18 @@ func DefaultMetricsConfig() MetricsConfig {
 		NewrelicoracledbMemorySgaUgaTotalBytes: MetricConfig{
 			Enabled: true,
 		},
+		NewrelicoracledbRedoLogParallelWriteWaits: MetricConfig{
+			Enabled: true,
+		},
+		NewrelicoracledbRedoLogSwitchArchivingNeededWaits: MetricConfig{
+			Enabled: true,
+		},
+		NewrelicoracledbRedoLogSwitchCheckpointIncompleteWaits: MetricConfig{
+			Enabled: true,
+		},
+		NewrelicoracledbRedoLogSwitchCompletionWaits: MetricConfig{
+			Enabled: true,
+		},
 		NewrelicoracledbRollbackSegmentsGets: MetricConfig{
 			Enabled: true,
 		},
@@ -137,7 +156,16 @@ func DefaultMetricsConfig() MetricsConfig {
 		NewrelicoracledbSessionsCount: MetricConfig{
 			Enabled: true,
 		},
+		NewrelicoracledbSgaBufferBusyWaits: MetricConfig{
+			Enabled: true,
+		},
 		NewrelicoracledbSgaFixedSizeBytes: MetricConfig{
+			Enabled: true,
+		},
+		NewrelicoracledbSgaFreeBufferInspectedWaits: MetricConfig{
+			Enabled: true,
+		},
+		NewrelicoracledbSgaFreeBufferWaits: MetricConfig{
 			Enabled: true,
 		},
 		NewrelicoracledbSgaHitRatio: MetricConfig{

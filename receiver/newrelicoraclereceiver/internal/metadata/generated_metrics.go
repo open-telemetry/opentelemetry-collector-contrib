@@ -64,6 +64,18 @@ var MetricsInfo = metricsInfo{
 	NewrelicoracledbMemorySgaUgaTotalBytes: metricInfo{
 		Name: "newrelicoracledb.memory.sga_uga_total_bytes",
 	},
+	NewrelicoracledbRedoLogParallelWriteWaits: metricInfo{
+		Name: "newrelicoracledb.redo_log_parallel_write_waits",
+	},
+	NewrelicoracledbRedoLogSwitchArchivingNeededWaits: metricInfo{
+		Name: "newrelicoracledb.redo_log_switch_archiving_needed_waits",
+	},
+	NewrelicoracledbRedoLogSwitchCheckpointIncompleteWaits: metricInfo{
+		Name: "newrelicoracledb.redo_log_switch_checkpoint_incomplete_waits",
+	},
+	NewrelicoracledbRedoLogSwitchCompletionWaits: metricInfo{
+		Name: "newrelicoracledb.redo_log_switch_completion_waits",
+	},
 	NewrelicoracledbRollbackSegmentsGets: metricInfo{
 		Name: "newrelicoracledb.rollback_segments_gets",
 	},
@@ -76,8 +88,17 @@ var MetricsInfo = metricsInfo{
 	NewrelicoracledbSessionsCount: metricInfo{
 		Name: "newrelicoracledb.sessions.count",
 	},
+	NewrelicoracledbSgaBufferBusyWaits: metricInfo{
+		Name: "newrelicoracledb.sga_buffer_busy_waits",
+	},
 	NewrelicoracledbSgaFixedSizeBytes: metricInfo{
 		Name: "newrelicoracledb.sga_fixed_size_bytes",
+	},
+	NewrelicoracledbSgaFreeBufferInspectedWaits: metricInfo{
+		Name: "newrelicoracledb.sga_free_buffer_inspected_waits",
+	},
+	NewrelicoracledbSgaFreeBufferWaits: metricInfo{
+		Name: "newrelicoracledb.sga_free_buffer_waits",
 	},
 	NewrelicoracledbSgaHitRatio: metricInfo{
 		Name: "newrelicoracledb.sga_hit_ratio",
@@ -159,11 +180,18 @@ type metricsInfo struct {
 	NewrelicoracledbMemorySgaSharedPoolLibraryCacheSharableBytes metricInfo
 	NewrelicoracledbMemorySgaSharedPoolLibraryCacheUserBytes     metricInfo
 	NewrelicoracledbMemorySgaUgaTotalBytes                       metricInfo
+	NewrelicoracledbRedoLogParallelWriteWaits                    metricInfo
+	NewrelicoracledbRedoLogSwitchArchivingNeededWaits            metricInfo
+	NewrelicoracledbRedoLogSwitchCheckpointIncompleteWaits       metricInfo
+	NewrelicoracledbRedoLogSwitchCompletionWaits                 metricInfo
 	NewrelicoracledbRollbackSegmentsGets                         metricInfo
 	NewrelicoracledbRollbackSegmentsWaitRatio                    metricInfo
 	NewrelicoracledbRollbackSegmentsWaits                        metricInfo
 	NewrelicoracledbSessionsCount                                metricInfo
+	NewrelicoracledbSgaBufferBusyWaits                           metricInfo
 	NewrelicoracledbSgaFixedSizeBytes                            metricInfo
+	NewrelicoracledbSgaFreeBufferInspectedWaits                  metricInfo
+	NewrelicoracledbSgaFreeBufferWaits                           metricInfo
 	NewrelicoracledbSgaHitRatio                                  metricInfo
 	NewrelicoracledbSgaLogAllocationRetriesRatio                 metricInfo
 	NewrelicoracledbSgaLogBufferRedoAllocationRetries            metricInfo
@@ -1076,6 +1104,214 @@ func newMetricNewrelicoracledbMemorySgaUgaTotalBytes(cfg MetricConfig) metricNew
 	return m
 }
 
+type metricNewrelicoracledbRedoLogParallelWriteWaits struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.redo_log_parallel_write_waits metric with initial data.
+func (m *metricNewrelicoracledbRedoLogParallelWriteWaits) init() {
+	m.data.SetName("newrelicoracledb.redo_log_parallel_write_waits")
+	m.data.SetDescription("Number of waits for log file parallel write events")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbRedoLogParallelWriteWaits) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbRedoLogParallelWriteWaits) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbRedoLogParallelWriteWaits) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbRedoLogParallelWriteWaits(cfg MetricConfig) metricNewrelicoracledbRedoLogParallelWriteWaits {
+	m := metricNewrelicoracledbRedoLogParallelWriteWaits{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbRedoLogSwitchArchivingNeededWaits struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.redo_log_switch_archiving_needed_waits metric with initial data.
+func (m *metricNewrelicoracledbRedoLogSwitchArchivingNeededWaits) init() {
+	m.data.SetName("newrelicoracledb.redo_log_switch_archiving_needed_waits")
+	m.data.SetDescription("Number of waits for log file switch (archiving needed) events")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbRedoLogSwitchArchivingNeededWaits) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbRedoLogSwitchArchivingNeededWaits) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbRedoLogSwitchArchivingNeededWaits) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbRedoLogSwitchArchivingNeededWaits(cfg MetricConfig) metricNewrelicoracledbRedoLogSwitchArchivingNeededWaits {
+	m := metricNewrelicoracledbRedoLogSwitchArchivingNeededWaits{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbRedoLogSwitchCheckpointIncompleteWaits struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.redo_log_switch_checkpoint_incomplete_waits metric with initial data.
+func (m *metricNewrelicoracledbRedoLogSwitchCheckpointIncompleteWaits) init() {
+	m.data.SetName("newrelicoracledb.redo_log_switch_checkpoint_incomplete_waits")
+	m.data.SetDescription("Number of waits for log file switch (checkpoint incomplete) events")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbRedoLogSwitchCheckpointIncompleteWaits) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbRedoLogSwitchCheckpointIncompleteWaits) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbRedoLogSwitchCheckpointIncompleteWaits) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbRedoLogSwitchCheckpointIncompleteWaits(cfg MetricConfig) metricNewrelicoracledbRedoLogSwitchCheckpointIncompleteWaits {
+	m := metricNewrelicoracledbRedoLogSwitchCheckpointIncompleteWaits{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbRedoLogSwitchCompletionWaits struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.redo_log_switch_completion_waits metric with initial data.
+func (m *metricNewrelicoracledbRedoLogSwitchCompletionWaits) init() {
+	m.data.SetName("newrelicoracledb.redo_log_switch_completion_waits")
+	m.data.SetDescription("Number of waits for log file switch completion events")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbRedoLogSwitchCompletionWaits) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbRedoLogSwitchCompletionWaits) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbRedoLogSwitchCompletionWaits) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbRedoLogSwitchCompletionWaits(cfg MetricConfig) metricNewrelicoracledbRedoLogSwitchCompletionWaits {
+	m := metricNewrelicoracledbRedoLogSwitchCompletionWaits{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricNewrelicoracledbRollbackSegmentsGets struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -1283,6 +1519,58 @@ func newMetricNewrelicoracledbSessionsCount(cfg MetricConfig) metricNewrelicorac
 	return m
 }
 
+type metricNewrelicoracledbSgaBufferBusyWaits struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.sga_buffer_busy_waits metric with initial data.
+func (m *metricNewrelicoracledbSgaBufferBusyWaits) init() {
+	m.data.SetName("newrelicoracledb.sga_buffer_busy_waits")
+	m.data.SetDescription("Number of buffer busy waits events")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSgaBufferBusyWaits) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSgaBufferBusyWaits) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSgaBufferBusyWaits) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSgaBufferBusyWaits(cfg MetricConfig) metricNewrelicoracledbSgaBufferBusyWaits {
+	m := metricNewrelicoracledbSgaBufferBusyWaits{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricNewrelicoracledbSgaFixedSizeBytes struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -1328,6 +1616,110 @@ func (m *metricNewrelicoracledbSgaFixedSizeBytes) emit(metrics pmetric.MetricSli
 
 func newMetricNewrelicoracledbSgaFixedSizeBytes(cfg MetricConfig) metricNewrelicoracledbSgaFixedSizeBytes {
 	m := metricNewrelicoracledbSgaFixedSizeBytes{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSgaFreeBufferInspectedWaits struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.sga_free_buffer_inspected_waits metric with initial data.
+func (m *metricNewrelicoracledbSgaFreeBufferInspectedWaits) init() {
+	m.data.SetName("newrelicoracledb.sga_free_buffer_inspected_waits")
+	m.data.SetDescription("Number of free buffer inspected waits events")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSgaFreeBufferInspectedWaits) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSgaFreeBufferInspectedWaits) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSgaFreeBufferInspectedWaits) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSgaFreeBufferInspectedWaits(cfg MetricConfig) metricNewrelicoracledbSgaFreeBufferInspectedWaits {
+	m := metricNewrelicoracledbSgaFreeBufferInspectedWaits{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSgaFreeBufferWaits struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.sga_free_buffer_waits metric with initial data.
+func (m *metricNewrelicoracledbSgaFreeBufferWaits) init() {
+	m.data.SetName("newrelicoracledb.sga_free_buffer_waits")
+	m.data.SetDescription("Number of free buffer waits events")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSgaFreeBufferWaits) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSgaFreeBufferWaits) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSgaFreeBufferWaits) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSgaFreeBufferWaits(cfg MetricConfig) metricNewrelicoracledbSgaFreeBufferWaits {
+	m := metricNewrelicoracledbSgaFreeBufferWaits{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2402,11 +2794,18 @@ type MetricsBuilder struct {
 	metricNewrelicoracledbMemorySgaSharedPoolLibraryCacheSharableBytes metricNewrelicoracledbMemorySgaSharedPoolLibraryCacheSharableBytes
 	metricNewrelicoracledbMemorySgaSharedPoolLibraryCacheUserBytes     metricNewrelicoracledbMemorySgaSharedPoolLibraryCacheUserBytes
 	metricNewrelicoracledbMemorySgaUgaTotalBytes                       metricNewrelicoracledbMemorySgaUgaTotalBytes
+	metricNewrelicoracledbRedoLogParallelWriteWaits                    metricNewrelicoracledbRedoLogParallelWriteWaits
+	metricNewrelicoracledbRedoLogSwitchArchivingNeededWaits            metricNewrelicoracledbRedoLogSwitchArchivingNeededWaits
+	metricNewrelicoracledbRedoLogSwitchCheckpointIncompleteWaits       metricNewrelicoracledbRedoLogSwitchCheckpointIncompleteWaits
+	metricNewrelicoracledbRedoLogSwitchCompletionWaits                 metricNewrelicoracledbRedoLogSwitchCompletionWaits
 	metricNewrelicoracledbRollbackSegmentsGets                         metricNewrelicoracledbRollbackSegmentsGets
 	metricNewrelicoracledbRollbackSegmentsWaitRatio                    metricNewrelicoracledbRollbackSegmentsWaitRatio
 	metricNewrelicoracledbRollbackSegmentsWaits                        metricNewrelicoracledbRollbackSegmentsWaits
 	metricNewrelicoracledbSessionsCount                                metricNewrelicoracledbSessionsCount
+	metricNewrelicoracledbSgaBufferBusyWaits                           metricNewrelicoracledbSgaBufferBusyWaits
 	metricNewrelicoracledbSgaFixedSizeBytes                            metricNewrelicoracledbSgaFixedSizeBytes
+	metricNewrelicoracledbSgaFreeBufferInspectedWaits                  metricNewrelicoracledbSgaFreeBufferInspectedWaits
+	metricNewrelicoracledbSgaFreeBufferWaits                           metricNewrelicoracledbSgaFreeBufferWaits
 	metricNewrelicoracledbSgaHitRatio                                  metricNewrelicoracledbSgaHitRatio
 	metricNewrelicoracledbSgaLogAllocationRetriesRatio                 metricNewrelicoracledbSgaLogAllocationRetriesRatio
 	metricNewrelicoracledbSgaLogBufferRedoAllocationRetries            metricNewrelicoracledbSgaLogBufferRedoAllocationRetries
@@ -2469,11 +2868,18 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricNewrelicoracledbMemorySgaSharedPoolLibraryCacheSharableBytes: newMetricNewrelicoracledbMemorySgaSharedPoolLibraryCacheSharableBytes(mbc.Metrics.NewrelicoracledbMemorySgaSharedPoolLibraryCacheSharableBytes),
 		metricNewrelicoracledbMemorySgaSharedPoolLibraryCacheUserBytes:     newMetricNewrelicoracledbMemorySgaSharedPoolLibraryCacheUserBytes(mbc.Metrics.NewrelicoracledbMemorySgaSharedPoolLibraryCacheUserBytes),
 		metricNewrelicoracledbMemorySgaUgaTotalBytes:                       newMetricNewrelicoracledbMemorySgaUgaTotalBytes(mbc.Metrics.NewrelicoracledbMemorySgaUgaTotalBytes),
+		metricNewrelicoracledbRedoLogParallelWriteWaits:                    newMetricNewrelicoracledbRedoLogParallelWriteWaits(mbc.Metrics.NewrelicoracledbRedoLogParallelWriteWaits),
+		metricNewrelicoracledbRedoLogSwitchArchivingNeededWaits:            newMetricNewrelicoracledbRedoLogSwitchArchivingNeededWaits(mbc.Metrics.NewrelicoracledbRedoLogSwitchArchivingNeededWaits),
+		metricNewrelicoracledbRedoLogSwitchCheckpointIncompleteWaits:       newMetricNewrelicoracledbRedoLogSwitchCheckpointIncompleteWaits(mbc.Metrics.NewrelicoracledbRedoLogSwitchCheckpointIncompleteWaits),
+		metricNewrelicoracledbRedoLogSwitchCompletionWaits:                 newMetricNewrelicoracledbRedoLogSwitchCompletionWaits(mbc.Metrics.NewrelicoracledbRedoLogSwitchCompletionWaits),
 		metricNewrelicoracledbRollbackSegmentsGets:                         newMetricNewrelicoracledbRollbackSegmentsGets(mbc.Metrics.NewrelicoracledbRollbackSegmentsGets),
 		metricNewrelicoracledbRollbackSegmentsWaitRatio:                    newMetricNewrelicoracledbRollbackSegmentsWaitRatio(mbc.Metrics.NewrelicoracledbRollbackSegmentsWaitRatio),
 		metricNewrelicoracledbRollbackSegmentsWaits:                        newMetricNewrelicoracledbRollbackSegmentsWaits(mbc.Metrics.NewrelicoracledbRollbackSegmentsWaits),
 		metricNewrelicoracledbSessionsCount:                                newMetricNewrelicoracledbSessionsCount(mbc.Metrics.NewrelicoracledbSessionsCount),
+		metricNewrelicoracledbSgaBufferBusyWaits:                           newMetricNewrelicoracledbSgaBufferBusyWaits(mbc.Metrics.NewrelicoracledbSgaBufferBusyWaits),
 		metricNewrelicoracledbSgaFixedSizeBytes:                            newMetricNewrelicoracledbSgaFixedSizeBytes(mbc.Metrics.NewrelicoracledbSgaFixedSizeBytes),
+		metricNewrelicoracledbSgaFreeBufferInspectedWaits:                  newMetricNewrelicoracledbSgaFreeBufferInspectedWaits(mbc.Metrics.NewrelicoracledbSgaFreeBufferInspectedWaits),
+		metricNewrelicoracledbSgaFreeBufferWaits:                           newMetricNewrelicoracledbSgaFreeBufferWaits(mbc.Metrics.NewrelicoracledbSgaFreeBufferWaits),
 		metricNewrelicoracledbSgaHitRatio:                                  newMetricNewrelicoracledbSgaHitRatio(mbc.Metrics.NewrelicoracledbSgaHitRatio),
 		metricNewrelicoracledbSgaLogAllocationRetriesRatio:                 newMetricNewrelicoracledbSgaLogAllocationRetriesRatio(mbc.Metrics.NewrelicoracledbSgaLogAllocationRetriesRatio),
 		metricNewrelicoracledbSgaLogBufferRedoAllocationRetries:            newMetricNewrelicoracledbSgaLogBufferRedoAllocationRetries(mbc.Metrics.NewrelicoracledbSgaLogBufferRedoAllocationRetries),
@@ -2595,11 +3001,18 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricNewrelicoracledbMemorySgaSharedPoolLibraryCacheSharableBytes.emit(ils.Metrics())
 	mb.metricNewrelicoracledbMemorySgaSharedPoolLibraryCacheUserBytes.emit(ils.Metrics())
 	mb.metricNewrelicoracledbMemorySgaUgaTotalBytes.emit(ils.Metrics())
+	mb.metricNewrelicoracledbRedoLogParallelWriteWaits.emit(ils.Metrics())
+	mb.metricNewrelicoracledbRedoLogSwitchArchivingNeededWaits.emit(ils.Metrics())
+	mb.metricNewrelicoracledbRedoLogSwitchCheckpointIncompleteWaits.emit(ils.Metrics())
+	mb.metricNewrelicoracledbRedoLogSwitchCompletionWaits.emit(ils.Metrics())
 	mb.metricNewrelicoracledbRollbackSegmentsGets.emit(ils.Metrics())
 	mb.metricNewrelicoracledbRollbackSegmentsWaitRatio.emit(ils.Metrics())
 	mb.metricNewrelicoracledbRollbackSegmentsWaits.emit(ils.Metrics())
 	mb.metricNewrelicoracledbSessionsCount.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSgaBufferBusyWaits.emit(ils.Metrics())
 	mb.metricNewrelicoracledbSgaFixedSizeBytes.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSgaFreeBufferInspectedWaits.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSgaFreeBufferWaits.emit(ils.Metrics())
 	mb.metricNewrelicoracledbSgaHitRatio.emit(ils.Metrics())
 	mb.metricNewrelicoracledbSgaLogAllocationRetriesRatio.emit(ils.Metrics())
 	mb.metricNewrelicoracledbSgaLogBufferRedoAllocationRetries.emit(ils.Metrics())
@@ -2736,6 +3149,26 @@ func (mb *MetricsBuilder) RecordNewrelicoracledbMemorySgaUgaTotalBytesDataPoint(
 	mb.metricNewrelicoracledbMemorySgaUgaTotalBytes.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
 }
 
+// RecordNewrelicoracledbRedoLogParallelWriteWaitsDataPoint adds a data point to newrelicoracledb.redo_log_parallel_write_waits metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbRedoLogParallelWriteWaitsDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbRedoLogParallelWriteWaits.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbRedoLogSwitchArchivingNeededWaitsDataPoint adds a data point to newrelicoracledb.redo_log_switch_archiving_needed_waits metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbRedoLogSwitchArchivingNeededWaitsDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbRedoLogSwitchArchivingNeededWaits.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbRedoLogSwitchCheckpointIncompleteWaitsDataPoint adds a data point to newrelicoracledb.redo_log_switch_checkpoint_incomplete_waits metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbRedoLogSwitchCheckpointIncompleteWaitsDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbRedoLogSwitchCheckpointIncompleteWaits.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbRedoLogSwitchCompletionWaitsDataPoint adds a data point to newrelicoracledb.redo_log_switch_completion_waits metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbRedoLogSwitchCompletionWaitsDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbRedoLogSwitchCompletionWaits.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
 // RecordNewrelicoracledbRollbackSegmentsGetsDataPoint adds a data point to newrelicoracledb.rollback_segments_gets metric.
 func (mb *MetricsBuilder) RecordNewrelicoracledbRollbackSegmentsGetsDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
 	mb.metricNewrelicoracledbRollbackSegmentsGets.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
@@ -2756,9 +3189,24 @@ func (mb *MetricsBuilder) RecordNewrelicoracledbSessionsCountDataPoint(ts pcommo
 	mb.metricNewrelicoracledbSessionsCount.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue)
 }
 
+// RecordNewrelicoracledbSgaBufferBusyWaitsDataPoint adds a data point to newrelicoracledb.sga_buffer_busy_waits metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSgaBufferBusyWaitsDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSgaBufferBusyWaits.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
 // RecordNewrelicoracledbSgaFixedSizeBytesDataPoint adds a data point to newrelicoracledb.sga_fixed_size_bytes metric.
 func (mb *MetricsBuilder) RecordNewrelicoracledbSgaFixedSizeBytesDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
 	mb.metricNewrelicoracledbSgaFixedSizeBytes.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSgaFreeBufferInspectedWaitsDataPoint adds a data point to newrelicoracledb.sga_free_buffer_inspected_waits metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSgaFreeBufferInspectedWaitsDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSgaFreeBufferInspectedWaits.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSgaFreeBufferWaitsDataPoint adds a data point to newrelicoracledb.sga_free_buffer_waits metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSgaFreeBufferWaitsDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSgaFreeBufferWaits.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
 }
 
 // RecordNewrelicoracledbSgaHitRatioDataPoint adds a data point to newrelicoracledb.sga_hit_ratio metric.

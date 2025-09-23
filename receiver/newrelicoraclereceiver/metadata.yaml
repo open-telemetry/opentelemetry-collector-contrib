@@ -457,6 +457,76 @@ metrics:
       - newrelic.entity_name
       - instance.id
 
+  newrelicoracledb.redo_log_parallel_write_waits:
+    description: Number of waits for log file parallel write events
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.redo_log_switch_completion_waits:
+    description: Number of waits for log file switch completion events
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.redo_log_switch_checkpoint_incomplete_waits:
+    description: Number of waits for log file switch (checkpoint incomplete) events
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.redo_log_switch_archiving_needed_waits:
+    description: Number of waits for log file switch (archiving needed) events
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.sga_buffer_busy_waits:
+    description: Number of buffer busy waits events
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.sga_free_buffer_waits:
+    description: Number of free buffer waits events
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.sga_free_buffer_inspected_waits:
+    description: Number of free buffer inspected waits events
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
 tests:
   config:
   goleak:

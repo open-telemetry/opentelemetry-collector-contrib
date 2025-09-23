@@ -35,6 +35,14 @@ all_set:
       enabled: true
     newrelicoracledb.memory.sga_uga_total_bytes:
       enabled: true
+    newrelicoracledb.redo_log_parallel_write_waits:
+      enabled: true
+    newrelicoracledb.redo_log_switch_archiving_needed_waits:
+      enabled: true
+    newrelicoracledb.redo_log_switch_checkpoint_incomplete_waits:
+      enabled: true
+    newrelicoracledb.redo_log_switch_completion_waits:
+      enabled: true
     newrelicoracledb.rollback_segments_gets:
       enabled: true
     newrelicoracledb.rollback_segments_wait_ratio:
@@ -43,7 +51,13 @@ all_set:
       enabled: true
     newrelicoracledb.sessions.count:
       enabled: true
+    newrelicoracledb.sga_buffer_busy_waits:
+      enabled: true
     newrelicoracledb.sga_fixed_size_bytes:
+      enabled: true
+    newrelicoracledb.sga_free_buffer_inspected_waits:
+      enabled: true
+    newrelicoracledb.sga_free_buffer_waits:
       enabled: true
     newrelicoracledb.sga_hit_ratio:
       enabled: true
@@ -126,6 +140,14 @@ none_set:
       enabled: false
     newrelicoracledb.memory.sga_uga_total_bytes:
       enabled: false
+    newrelicoracledb.redo_log_parallel_write_waits:
+      enabled: false
+    newrelicoracledb.redo_log_switch_archiving_needed_waits:
+      enabled: false
+    newrelicoracledb.redo_log_switch_checkpoint_incomplete_waits:
+      enabled: false
+    newrelicoracledb.redo_log_switch_completion_waits:
+      enabled: false
     newrelicoracledb.rollback_segments_gets:
       enabled: false
     newrelicoracledb.rollback_segments_wait_ratio:
@@ -134,7 +156,13 @@ none_set:
       enabled: false
     newrelicoracledb.sessions.count:
       enabled: false
+    newrelicoracledb.sga_buffer_busy_waits:
+      enabled: false
     newrelicoracledb.sga_fixed_size_bytes:
+      enabled: false
+    newrelicoracledb.sga_free_buffer_inspected_waits:
+      enabled: false
+    newrelicoracledb.sga_free_buffer_waits:
       enabled: false
     newrelicoracledb.sga_hit_ratio:
       enabled: false

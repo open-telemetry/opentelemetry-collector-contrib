@@ -213,4 +213,21 @@ const (
 		FROM GV$ROLLSTAT stat, GV$INSTANCE inst
 		WHERE stat.inst_id=inst.inst_id
 		GROUP BY inst.inst_id`
+
+	RedoLogWaitsSQL = `
+		SELECT
+			sysevent.total_waits,
+			inst.inst_id,
+			sysevent.event
+		FROM
+			GV$SYSTEM_EVENT sysevent,
+			GV$INSTANCE inst
+		WHERE sysevent.inst_id=inst.inst_id
+		AND (sysevent.event LIKE '%log file parallel write%'
+		OR sysevent.event LIKE '%log file switch completion%'
+		OR sysevent.event LIKE '%log file switch (check%'
+		OR sysevent.event LIKE '%log file switch (arch%'
+		OR sysevent.event LIKE '%buffer busy waits%'
+		OR sysevent.event LIKE '%freeBufferWaits%'
+		OR sysevent.event LIKE '%free buffer inspected%')`
 )
