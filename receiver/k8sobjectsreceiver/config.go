@@ -142,7 +142,8 @@ func (c *Config) getValidObjects() (map[string][]*schema.GroupVersionResource, e
 		if len(split) == 1 && group.GroupVersion == "v1" {
 			split = []string{"", "v1"}
 		}
-		for _, resource := range group.APIResources {
+		for i := range group.APIResources {
+			resource := &group.APIResources[i]
 			validObjects[resource.Name] = append(validObjects[resource.Name], &schema.GroupVersionResource{
 				Group:    split[0],
 				Version:  split[1],
