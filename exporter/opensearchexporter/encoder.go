@@ -19,7 +19,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter/internal/serializer"
 )
 
-var ErrInvalidTypeForBodyMapMode = errors.New("invalid log record body type for 'bodymap' mapping mode")
+var errInvalidTypeForBodyMapMode = errors.New("invalid log record body type for 'bodymap' mapping mode")
 
 type mappingModel interface {
 	encodeLog(resource pcommon.Resource,
@@ -53,7 +53,7 @@ func (m *bodyMapMappingModel) encodeLog(
 ) ([]byte, error) {
 	body := record.Body()
 	if body.Type() != pcommon.ValueTypeMap {
-		return nil, fmt.Errorf("%w: %q", ErrInvalidTypeForBodyMapMode, body.Type().String())
+		return nil, fmt.Errorf("%w: %q", errInvalidTypeForBodyMapMode, body.Type().String())
 	}
 	pooledBuf := m.bufferPool.NewPooledBuffer()
 	defer pooledBuf.Recycle()

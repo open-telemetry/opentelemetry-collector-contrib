@@ -264,7 +264,7 @@ func TestBodyMapMappingModel_EncodeLog_Errors(t *testing.T) {
 
 			assert.Error(t, err)
 			assert.Nil(t, result)
-			assert.ErrorIs(t, err, ErrInvalidTypeForBodyMapMode)
+			assert.ErrorIs(t, err, errInvalidTypeForBodyMapMode)
 			assert.Contains(t, err.Error(), tc.expectedError)
 		})
 	}
