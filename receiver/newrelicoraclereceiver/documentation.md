@@ -149,6 +149,21 @@ Count of locked user accounts in the database
 | newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
 | instance.id | Oracle database instance ID | Any Str | false |
 
+### newrelicoracledb.long_running_queries
+
+Number of long running queries (active sessions running for more than 60 seconds)
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+| instance.id | Oracle database instance ID | Any Str | false |
+
 ### newrelicoracledb.memory.pga_allocated_bytes
 
 Total PGA memory allocated in bytes

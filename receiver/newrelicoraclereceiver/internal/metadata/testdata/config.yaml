@@ -19,6 +19,8 @@ all_set:
       enabled: true
     newrelicoracledb.locked_accounts:
       enabled: true
+    newrelicoracledb.long_running_queries:
+      enabled: true
     newrelicoracledb.memory.pga_allocated_bytes:
       enabled: true
     newrelicoracledb.memory.pga_freeable_bytes:
@@ -71,6 +73,8 @@ none_set:
     newrelicoracledb.global_name:
       enabled: false
     newrelicoracledb.locked_accounts:
+      enabled: false
+    newrelicoracledb.long_running_queries:
       enabled: false
     newrelicoracledb.memory.pga_allocated_bytes:
       enabled: false

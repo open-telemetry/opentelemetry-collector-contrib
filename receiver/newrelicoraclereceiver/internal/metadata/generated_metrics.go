@@ -40,6 +40,9 @@ var MetricsInfo = metricsInfo{
 	NewrelicoracledbLockedAccounts: metricInfo{
 		Name: "newrelicoracledb.locked_accounts",
 	},
+	NewrelicoracledbLongRunningQueries: metricInfo{
+		Name: "newrelicoracledb.long_running_queries",
+	},
 	NewrelicoracledbMemoryPgaAllocatedBytes: metricInfo{
 		Name: "newrelicoracledb.memory.pga_allocated_bytes",
 	},
@@ -94,6 +97,7 @@ type metricsInfo struct {
 	NewrelicoracledbDiskWrites                    metricInfo
 	NewrelicoracledbGlobalName                    metricInfo
 	NewrelicoracledbLockedAccounts                metricInfo
+	NewrelicoracledbLongRunningQueries            metricInfo
 	NewrelicoracledbMemoryPgaAllocatedBytes       metricInfo
 	NewrelicoracledbMemoryPgaFreeableBytes        metricInfo
 	NewrelicoracledbMemoryPgaInUseBytes           metricInfo
@@ -577,6 +581,58 @@ func (m *metricNewrelicoracledbLockedAccounts) emit(metrics pmetric.MetricSlice)
 
 func newMetricNewrelicoracledbLockedAccounts(cfg MetricConfig) metricNewrelicoracledbLockedAccounts {
 	m := metricNewrelicoracledbLockedAccounts{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbLongRunningQueries struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.long_running_queries metric with initial data.
+func (m *metricNewrelicoracledbLongRunningQueries) init() {
+	m.data.SetName("newrelicoracledb.long_running_queries")
+	m.data.SetDescription("Number of long running queries (active sessions running for more than 60 seconds)")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbLongRunningQueries) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbLongRunningQueries) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbLongRunningQueries) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbLongRunningQueries(cfg MetricConfig) metricNewrelicoracledbLongRunningQueries {
+	m := metricNewrelicoracledbLongRunningQueries{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1330,6 +1386,7 @@ type MetricsBuilder struct {
 	metricNewrelicoracledbDiskWrites                    metricNewrelicoracledbDiskWrites
 	metricNewrelicoracledbGlobalName                    metricNewrelicoracledbGlobalName
 	metricNewrelicoracledbLockedAccounts                metricNewrelicoracledbLockedAccounts
+	metricNewrelicoracledbLongRunningQueries            metricNewrelicoracledbLongRunningQueries
 	metricNewrelicoracledbMemoryPgaAllocatedBytes       metricNewrelicoracledbMemoryPgaAllocatedBytes
 	metricNewrelicoracledbMemoryPgaFreeableBytes        metricNewrelicoracledbMemoryPgaFreeableBytes
 	metricNewrelicoracledbMemoryPgaInUseBytes           metricNewrelicoracledbMemoryPgaInUseBytes
@@ -1378,6 +1435,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricNewrelicoracledbDiskWrites:                    newMetricNewrelicoracledbDiskWrites(mbc.Metrics.NewrelicoracledbDiskWrites),
 		metricNewrelicoracledbGlobalName:                    newMetricNewrelicoracledbGlobalName(mbc.Metrics.NewrelicoracledbGlobalName),
 		metricNewrelicoracledbLockedAccounts:                newMetricNewrelicoracledbLockedAccounts(mbc.Metrics.NewrelicoracledbLockedAccounts),
+		metricNewrelicoracledbLongRunningQueries:            newMetricNewrelicoracledbLongRunningQueries(mbc.Metrics.NewrelicoracledbLongRunningQueries),
 		metricNewrelicoracledbMemoryPgaAllocatedBytes:       newMetricNewrelicoracledbMemoryPgaAllocatedBytes(mbc.Metrics.NewrelicoracledbMemoryPgaAllocatedBytes),
 		metricNewrelicoracledbMemoryPgaFreeableBytes:        newMetricNewrelicoracledbMemoryPgaFreeableBytes(mbc.Metrics.NewrelicoracledbMemoryPgaFreeableBytes),
 		metricNewrelicoracledbMemoryPgaInUseBytes:           newMetricNewrelicoracledbMemoryPgaInUseBytes(mbc.Metrics.NewrelicoracledbMemoryPgaInUseBytes),
@@ -1485,6 +1543,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricNewrelicoracledbDiskWrites.emit(ils.Metrics())
 	mb.metricNewrelicoracledbGlobalName.emit(ils.Metrics())
 	mb.metricNewrelicoracledbLockedAccounts.emit(ils.Metrics())
+	mb.metricNewrelicoracledbLongRunningQueries.emit(ils.Metrics())
 	mb.metricNewrelicoracledbMemoryPgaAllocatedBytes.emit(ils.Metrics())
 	mb.metricNewrelicoracledbMemoryPgaFreeableBytes.emit(ils.Metrics())
 	mb.metricNewrelicoracledbMemoryPgaInUseBytes.emit(ils.Metrics())
@@ -1573,6 +1632,11 @@ func (mb *MetricsBuilder) RecordNewrelicoracledbGlobalNameDataPoint(ts pcommon.T
 // RecordNewrelicoracledbLockedAccountsDataPoint adds a data point to newrelicoracledb.locked_accounts metric.
 func (mb *MetricsBuilder) RecordNewrelicoracledbLockedAccountsDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
 	mb.metricNewrelicoracledbLockedAccounts.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbLongRunningQueriesDataPoint adds a data point to newrelicoracledb.long_running_queries metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbLongRunningQueriesDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbLongRunningQueries.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
 }
 
 // RecordNewrelicoracledbMemoryPgaAllocatedBytesDataPoint adds a data point to newrelicoracledb.memory.pga_allocated_bytes metric.

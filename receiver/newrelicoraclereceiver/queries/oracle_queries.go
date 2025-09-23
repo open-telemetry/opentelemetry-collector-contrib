@@ -109,4 +109,20 @@ const (
 			t2.DBID
 		FROM (SELECT INST_ID FROM gv$instance) t1,
 		(SELECT DBID FROM v$database) t2`
+
+	LongRunningQueriesSQL = `
+		SELECT inst_id, sum(num) AS total FROM ((
+			SELECT i.inst_id, 1 AS num
+			FROM gv$session s, gv$instance i
+			WHERE i.inst_id=s.inst_id
+			AND s.status='ACTIVE'
+			AND s.type <>'BACKGROUND'
+			AND s.last_call_et > 60
+			GROUP BY i.inst_id
+		) UNION (
+			SELECT i.inst_id, 0 AS num
+			FROM gv$session s, gv$instance i
+			WHERE i.inst_id=s.inst_id
+		))
+		GROUP BY inst_id`
 )

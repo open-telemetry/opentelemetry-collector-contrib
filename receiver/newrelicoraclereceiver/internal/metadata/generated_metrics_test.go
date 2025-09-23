@@ -106,6 +106,10 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
+			mb.RecordNewrelicoracledbLongRunningQueriesDataPoint(ts, 1, "newrelic.entity_name-val", "instance.id-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
 			mb.RecordNewrelicoracledbMemoryPgaAllocatedBytesDataPoint(ts, 1, "newrelic.entity_name-val", "instance.id-val")
 
 			defaultMetricsCount++
@@ -341,6 +345,24 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "Count of locked user accounts in the database", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("newrelic.entity_name")
+					assert.True(t, ok)
+					assert.Equal(t, "newrelic.entity_name-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("instance.id")
+					assert.True(t, ok)
+					assert.Equal(t, "instance.id-val", attrVal.Str())
+				case "newrelicoracledb.long_running_queries":
+					assert.False(t, validatedMetrics["newrelicoracledb.long_running_queries"], "Found a duplicate in the metrics slice: newrelicoracledb.long_running_queries")
+					validatedMetrics["newrelicoracledb.long_running_queries"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of long running queries (active sessions running for more than 60 seconds)", ms.At(i).Description())
 					assert.Equal(t, "1", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())

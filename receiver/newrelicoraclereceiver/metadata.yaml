@@ -267,6 +267,16 @@ metrics:
       - instance.id
       - db.id
 
+  newrelicoracledb.long_running_queries:
+    description: Number of long running queries (active sessions running for more than 60 seconds)
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
 tests:
   config:
   goleak:

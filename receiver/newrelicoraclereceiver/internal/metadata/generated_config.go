@@ -37,6 +37,7 @@ type MetricsConfig struct {
 	NewrelicoracledbDiskWrites                    MetricConfig `mapstructure:"newrelicoracledb.disk.writes"`
 	NewrelicoracledbGlobalName                    MetricConfig `mapstructure:"newrelicoracledb.global_name"`
 	NewrelicoracledbLockedAccounts                MetricConfig `mapstructure:"newrelicoracledb.locked_accounts"`
+	NewrelicoracledbLongRunningQueries            MetricConfig `mapstructure:"newrelicoracledb.long_running_queries"`
 	NewrelicoracledbMemoryPgaAllocatedBytes       MetricConfig `mapstructure:"newrelicoracledb.memory.pga_allocated_bytes"`
 	NewrelicoracledbMemoryPgaFreeableBytes        MetricConfig `mapstructure:"newrelicoracledb.memory.pga_freeable_bytes"`
 	NewrelicoracledbMemoryPgaInUseBytes           MetricConfig `mapstructure:"newrelicoracledb.memory.pga_in_use_bytes"`
@@ -80,6 +81,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		NewrelicoracledbLockedAccounts: MetricConfig{
+			Enabled: true,
+		},
+		NewrelicoracledbLongRunningQueries: MetricConfig{
 			Enabled: true,
 		},
 		NewrelicoracledbMemoryPgaAllocatedBytes: MetricConfig{

@@ -59,6 +59,9 @@ func (s *CoreScraper) ScrapeCoreMetrics(ctx context.Context) []error {
 	// Scrape database ID instance metrics
 	errors = append(errors, s.scrapeDBIDInstanceMetrics(ctx, now)...)
 
+	// Scrape long running queries metrics
+	errors = append(errors, s.scrapeLongRunningQueriesMetrics(ctx, now)...)
+
 	return errors
 }
 
@@ -352,6 +355,57 @@ func (s *CoreScraper) scrapeDBIDInstanceMetrics(ctx context.Context, now pcommon
 	}
 
 	s.logger.Debug("Collected Oracle database ID instance metrics", zap.Int("metric_count", metricCount), zap.String("instance", s.instanceName))
+
+	return errors
+}
+
+// scrapeLongRunningQueriesMetrics handles the long running queries metrics
+func (s *CoreScraper) scrapeLongRunningQueriesMetrics(ctx context.Context, now pcommon.Timestamp) []error {
+	var errors []error
+
+	// Execute long running queries metrics query
+	s.logger.Debug("Executing long running queries metrics query", zap.String("sql", queries.LongRunningQueriesSQL))
+
+	rows, err := s.db.QueryContext(ctx, queries.LongRunningQueriesSQL)
+	if err != nil {
+		errors = append(errors, fmt.Errorf("error executing long running queries metrics query: %w", err))
+		return errors
+	}
+	defer rows.Close()
+
+	// Process each row and record metrics
+	metricCount := 0
+	for rows.Next() {
+		var instID interface{}
+		var total int64
+
+		err := rows.Scan(&instID, &total)
+		if err != nil {
+			errors = append(errors, fmt.Errorf("error scanning long running queries metrics row: %w", err))
+			continue
+		}
+
+		// Convert instance ID to string
+		instanceID := getInstanceIDString(instID)
+
+		// Record long running queries metrics
+		s.logger.Info("Long running queries metrics collected",
+			zap.String("instance_id", instanceID),
+			zap.Int64("long_running_queries", total),
+			zap.String("instance", s.instanceName),
+		)
+
+		// Record the long running queries metric
+		s.mb.RecordNewrelicoracledbLongRunningQueriesDataPoint(now, total, s.instanceName, instanceID)
+
+		metricCount++
+	}
+
+	if err = rows.Err(); err != nil {
+		errors = append(errors, fmt.Errorf("error iterating long running queries metrics rows: %w", err))
+	}
+
+	s.logger.Debug("Collected Oracle long running queries metrics", zap.Int("metric_count", metricCount), zap.String("instance", s.instanceName))
 
 	return errors
 }
