@@ -498,6 +498,39 @@ Queries the K8S API server to retrieve kubeadm resource attributes:
 
 The list of the populated resource attributes can be found at [kubeadm Detector Resource Attributes](./internal/kubeadm/documentation.md).
 
+---
+
+### Oracle Cloud Infrastructure (OCI) metadata
+
+Queries the [Oracle Cloud Infrastructure (OCI) metadata service](https://docs.oracle.com/en-us/iaas/Content/Compute/Tasks/gettingmetadata.htm)
+to retrieve resource attributes related to the OCI instance environment.
+
+The list of the populated resource attributes can be found at [OracleCloud Detector Resource Attributes](./internal/oraclecloud/documentation.md).
+
+Example:
+
+```yaml
+processors:
+  resourcedetection/oraclecloud:
+    detectors: [env, oraclecloud]
+    timeout: 2s
+    override: false
+```
+
+**Populated resource attributes:**
+- `cloud.provider`
+- `cloud.platform`
+- `cloud.region`
+- `cloud.availability_zone`
+- `host.id`
+- `host.name`
+- `host.type`
+- `k8s.cluster.name`
+
+See [internal/oraclecloud/documentation.md](./internal/oraclecloud/documentation.md) for detailed attribute definitions.
+
+---
+
 The following permissions are required:
 ```yaml
 apiVersion: rbac.authorization.k8s.io/v1

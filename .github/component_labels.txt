@@ -188,6 +188,7 @@ processor/resourcedetectionprocessor processor/resourcedetection
 processor/resourcedetectionprocessor/internal/akamai processor/resourcedetection/internal/akamai
 processor/resourcedetectionprocessor/internal/dynatrace processor/resourcedetection/internal/dynatrace
 processor/resourcedetectionprocessor/internal/hetzner processor/resourcedetection/internal/hetzner
+processor/resourcedetectionprocessor/internal/oraclecloud processor/resourcedetection/internal/oraclecloud
 processor/resourcedetectionprocessor/internal/scaleway processor/resourcedetection/internal/scaleway
 processor/resourcedetectionprocessor/internal/vultr processor/resourcedetection/internal/vultr
 processor/resourceprocessor processor/resource
