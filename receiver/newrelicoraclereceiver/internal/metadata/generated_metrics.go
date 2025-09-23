@@ -13,17 +13,109 @@ import (
 )
 
 var MetricsInfo = metricsInfo{
+	NewrelicoracledbLockedAccounts: metricInfo{
+		Name: "newrelicoracledb.locked_accounts",
+	},
 	NewrelicoracledbSessionsCount: metricInfo{
 		Name: "newrelicoracledb.sessions.count",
+	},
+	NewrelicoracledbTablespaceDbID: metricInfo{
+		Name: "newrelicoracledb.tablespace.db_id",
+	},
+	NewrelicoracledbTablespaceGlobalName: metricInfo{
+		Name: "newrelicoracledb.tablespace.global_name",
+	},
+	NewrelicoracledbTablespaceIsOffline: metricInfo{
+		Name: "newrelicoracledb.tablespace.is_offline",
+	},
+	NewrelicoracledbTablespaceOfflineCdbDatafiles: metricInfo{
+		Name: "newrelicoracledb.tablespace.offline_cdb_datafiles",
+	},
+	NewrelicoracledbTablespaceOfflinePdbDatafiles: metricInfo{
+		Name: "newrelicoracledb.tablespace.offline_pdb_datafiles",
+	},
+	NewrelicoracledbTablespacePdbNonWriteMode: metricInfo{
+		Name: "newrelicoracledb.tablespace.pdb_non_write_mode",
+	},
+	NewrelicoracledbTablespaceSpaceConsumedBytes: metricInfo{
+		Name: "newrelicoracledb.tablespace.space_consumed_bytes",
+	},
+	NewrelicoracledbTablespaceSpaceReservedBytes: metricInfo{
+		Name: "newrelicoracledb.tablespace.space_reserved_bytes",
+	},
+	NewrelicoracledbTablespaceSpaceUsedPercentage: metricInfo{
+		Name: "newrelicoracledb.tablespace.space_used_percentage",
 	},
 }
 
 type metricsInfo struct {
-	NewrelicoracledbSessionsCount metricInfo
+	NewrelicoracledbLockedAccounts                metricInfo
+	NewrelicoracledbSessionsCount                 metricInfo
+	NewrelicoracledbTablespaceDbID                metricInfo
+	NewrelicoracledbTablespaceGlobalName          metricInfo
+	NewrelicoracledbTablespaceIsOffline           metricInfo
+	NewrelicoracledbTablespaceOfflineCdbDatafiles metricInfo
+	NewrelicoracledbTablespaceOfflinePdbDatafiles metricInfo
+	NewrelicoracledbTablespacePdbNonWriteMode     metricInfo
+	NewrelicoracledbTablespaceSpaceConsumedBytes  metricInfo
+	NewrelicoracledbTablespaceSpaceReservedBytes  metricInfo
+	NewrelicoracledbTablespaceSpaceUsedPercentage metricInfo
 }
 
 type metricInfo struct {
 	Name string
+}
+
+type metricNewrelicoracledbLockedAccounts struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.locked_accounts metric with initial data.
+func (m *metricNewrelicoracledbLockedAccounts) init() {
+	m.data.SetName("newrelicoracledb.locked_accounts")
+	m.data.SetDescription("Count of locked user accounts in the database")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbLockedAccounts) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbLockedAccounts) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbLockedAccounts) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbLockedAccounts(cfg MetricConfig) metricNewrelicoracledbLockedAccounts {
+	m := metricNewrelicoracledbLockedAccounts{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
 }
 
 type metricNewrelicoracledbSessionsCount struct {
@@ -77,17 +169,495 @@ func newMetricNewrelicoracledbSessionsCount(cfg MetricConfig) metricNewrelicorac
 	return m
 }
 
+type metricNewrelicoracledbTablespaceDbID struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.tablespace.db_id metric with initial data.
+func (m *metricNewrelicoracledbTablespaceDbID) init() {
+	m.data.SetName("newrelicoracledb.tablespace.db_id")
+	m.data.SetDescription("Database ID information for tablespace")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbTablespaceDbID) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, tablespaceNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("tablespace.name", tablespaceNameAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbTablespaceDbID) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbTablespaceDbID) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbTablespaceDbID(cfg MetricConfig) metricNewrelicoracledbTablespaceDbID {
+	m := metricNewrelicoracledbTablespaceDbID{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbTablespaceGlobalName struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.tablespace.global_name metric with initial data.
+func (m *metricNewrelicoracledbTablespaceGlobalName) init() {
+	m.data.SetName("newrelicoracledb.tablespace.global_name")
+	m.data.SetDescription("Global name information for tablespace")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbTablespaceGlobalName) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, tablespaceNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("tablespace.name", tablespaceNameAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbTablespaceGlobalName) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbTablespaceGlobalName) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbTablespaceGlobalName(cfg MetricConfig) metricNewrelicoracledbTablespaceGlobalName {
+	m := metricNewrelicoracledbTablespaceGlobalName{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbTablespaceIsOffline struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.tablespace.is_offline metric with initial data.
+func (m *metricNewrelicoracledbTablespaceIsOffline) init() {
+	m.data.SetName("newrelicoracledb.tablespace.is_offline")
+	m.data.SetDescription("Whether the tablespace is offline (1) or online (0)")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbTablespaceIsOffline) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, tablespaceNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("tablespace.name", tablespaceNameAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbTablespaceIsOffline) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbTablespaceIsOffline) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbTablespaceIsOffline(cfg MetricConfig) metricNewrelicoracledbTablespaceIsOffline {
+	m := metricNewrelicoracledbTablespaceIsOffline{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbTablespaceOfflineCdbDatafiles struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.tablespace.offline_cdb_datafiles metric with initial data.
+func (m *metricNewrelicoracledbTablespaceOfflineCdbDatafiles) init() {
+	m.data.SetName("newrelicoracledb.tablespace.offline_cdb_datafiles")
+	m.data.SetDescription("Count of offline CDB datafiles by tablespace")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbTablespaceOfflineCdbDatafiles) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, tablespaceNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("tablespace.name", tablespaceNameAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbTablespaceOfflineCdbDatafiles) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbTablespaceOfflineCdbDatafiles) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbTablespaceOfflineCdbDatafiles(cfg MetricConfig) metricNewrelicoracledbTablespaceOfflineCdbDatafiles {
+	m := metricNewrelicoracledbTablespaceOfflineCdbDatafiles{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbTablespaceOfflinePdbDatafiles struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.tablespace.offline_pdb_datafiles metric with initial data.
+func (m *metricNewrelicoracledbTablespaceOfflinePdbDatafiles) init() {
+	m.data.SetName("newrelicoracledb.tablespace.offline_pdb_datafiles")
+	m.data.SetDescription("Count of offline PDB datafiles by tablespace")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbTablespaceOfflinePdbDatafiles) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, tablespaceNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("tablespace.name", tablespaceNameAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbTablespaceOfflinePdbDatafiles) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbTablespaceOfflinePdbDatafiles) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbTablespaceOfflinePdbDatafiles(cfg MetricConfig) metricNewrelicoracledbTablespaceOfflinePdbDatafiles {
+	m := metricNewrelicoracledbTablespaceOfflinePdbDatafiles{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbTablespacePdbNonWriteMode struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.tablespace.pdb_non_write_mode metric with initial data.
+func (m *metricNewrelicoracledbTablespacePdbNonWriteMode) init() {
+	m.data.SetName("newrelicoracledb.tablespace.pdb_non_write_mode")
+	m.data.SetDescription("Count of PDB datafiles in non-write mode by tablespace")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbTablespacePdbNonWriteMode) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, tablespaceNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("tablespace.name", tablespaceNameAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbTablespacePdbNonWriteMode) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbTablespacePdbNonWriteMode) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbTablespacePdbNonWriteMode(cfg MetricConfig) metricNewrelicoracledbTablespacePdbNonWriteMode {
+	m := metricNewrelicoracledbTablespacePdbNonWriteMode{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbTablespaceSpaceConsumedBytes struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.tablespace.space_consumed_bytes metric with initial data.
+func (m *metricNewrelicoracledbTablespaceSpaceConsumedBytes) init() {
+	m.data.SetName("newrelicoracledb.tablespace.space_consumed_bytes")
+	m.data.SetDescription("Total bytes consumed by the tablespace")
+	m.data.SetUnit("By")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbTablespaceSpaceConsumedBytes) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, tablespaceNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("tablespace.name", tablespaceNameAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbTablespaceSpaceConsumedBytes) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbTablespaceSpaceConsumedBytes) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbTablespaceSpaceConsumedBytes(cfg MetricConfig) metricNewrelicoracledbTablespaceSpaceConsumedBytes {
+	m := metricNewrelicoracledbTablespaceSpaceConsumedBytes{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbTablespaceSpaceReservedBytes struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.tablespace.space_reserved_bytes metric with initial data.
+func (m *metricNewrelicoracledbTablespaceSpaceReservedBytes) init() {
+	m.data.SetName("newrelicoracledb.tablespace.space_reserved_bytes")
+	m.data.SetDescription("Total bytes reserved by the tablespace")
+	m.data.SetUnit("By")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbTablespaceSpaceReservedBytes) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, tablespaceNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("tablespace.name", tablespaceNameAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbTablespaceSpaceReservedBytes) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbTablespaceSpaceReservedBytes) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbTablespaceSpaceReservedBytes(cfg MetricConfig) metricNewrelicoracledbTablespaceSpaceReservedBytes {
+	m := metricNewrelicoracledbTablespaceSpaceReservedBytes{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbTablespaceSpaceUsedPercentage struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.tablespace.space_used_percentage metric with initial data.
+func (m *metricNewrelicoracledbTablespaceSpaceUsedPercentage) init() {
+	m.data.SetName("newrelicoracledb.tablespace.space_used_percentage")
+	m.data.SetDescription("Percentage of tablespace space currently used")
+	m.data.SetUnit("%")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbTablespaceSpaceUsedPercentage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, tablespaceNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("tablespace.name", tablespaceNameAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbTablespaceSpaceUsedPercentage) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbTablespaceSpaceUsedPercentage) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbTablespaceSpaceUsedPercentage(cfg MetricConfig) metricNewrelicoracledbTablespaceSpaceUsedPercentage {
+	m := metricNewrelicoracledbTablespaceSpaceUsedPercentage{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	config                              MetricsBuilderConfig // config of the metrics builder.
-	startTime                           pcommon.Timestamp    // start time that will be applied to all recorded data points.
-	metricsCapacity                     int                  // maximum observed number of metrics per resource.
-	metricsBuffer                       pmetric.Metrics      // accumulates metrics data before emitting.
-	buildInfo                           component.BuildInfo  // contains version information.
-	resourceAttributeIncludeFilter      map[string]filter.Filter
-	resourceAttributeExcludeFilter      map[string]filter.Filter
-	metricNewrelicoracledbSessionsCount metricNewrelicoracledbSessionsCount
+	config                                              MetricsBuilderConfig // config of the metrics builder.
+	startTime                                           pcommon.Timestamp    // start time that will be applied to all recorded data points.
+	metricsCapacity                                     int                  // maximum observed number of metrics per resource.
+	metricsBuffer                                       pmetric.Metrics      // accumulates metrics data before emitting.
+	buildInfo                                           component.BuildInfo  // contains version information.
+	resourceAttributeIncludeFilter                      map[string]filter.Filter
+	resourceAttributeExcludeFilter                      map[string]filter.Filter
+	metricNewrelicoracledbLockedAccounts                metricNewrelicoracledbLockedAccounts
+	metricNewrelicoracledbSessionsCount                 metricNewrelicoracledbSessionsCount
+	metricNewrelicoracledbTablespaceDbID                metricNewrelicoracledbTablespaceDbID
+	metricNewrelicoracledbTablespaceGlobalName          metricNewrelicoracledbTablespaceGlobalName
+	metricNewrelicoracledbTablespaceIsOffline           metricNewrelicoracledbTablespaceIsOffline
+	metricNewrelicoracledbTablespaceOfflineCdbDatafiles metricNewrelicoracledbTablespaceOfflineCdbDatafiles
+	metricNewrelicoracledbTablespaceOfflinePdbDatafiles metricNewrelicoracledbTablespaceOfflinePdbDatafiles
+	metricNewrelicoracledbTablespacePdbNonWriteMode     metricNewrelicoracledbTablespacePdbNonWriteMode
+	metricNewrelicoracledbTablespaceSpaceConsumedBytes  metricNewrelicoracledbTablespaceSpaceConsumedBytes
+	metricNewrelicoracledbTablespaceSpaceReservedBytes  metricNewrelicoracledbTablespaceSpaceReservedBytes
+	metricNewrelicoracledbTablespaceSpaceUsedPercentage metricNewrelicoracledbTablespaceSpaceUsedPercentage
 }
 
 // MetricBuilderOption applies changes to default metrics builder.
@@ -109,13 +679,23 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 }
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		config:                              mbc,
-		startTime:                           pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:                       pmetric.NewMetrics(),
-		buildInfo:                           settings.BuildInfo,
-		metricNewrelicoracledbSessionsCount: newMetricNewrelicoracledbSessionsCount(mbc.Metrics.NewrelicoracledbSessionsCount),
-		resourceAttributeIncludeFilter:      make(map[string]filter.Filter),
-		resourceAttributeExcludeFilter:      make(map[string]filter.Filter),
+		config:                               mbc,
+		startTime:                            pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:                        pmetric.NewMetrics(),
+		buildInfo:                            settings.BuildInfo,
+		metricNewrelicoracledbLockedAccounts: newMetricNewrelicoracledbLockedAccounts(mbc.Metrics.NewrelicoracledbLockedAccounts),
+		metricNewrelicoracledbSessionsCount:  newMetricNewrelicoracledbSessionsCount(mbc.Metrics.NewrelicoracledbSessionsCount),
+		metricNewrelicoracledbTablespaceDbID: newMetricNewrelicoracledbTablespaceDbID(mbc.Metrics.NewrelicoracledbTablespaceDbID),
+		metricNewrelicoracledbTablespaceGlobalName:          newMetricNewrelicoracledbTablespaceGlobalName(mbc.Metrics.NewrelicoracledbTablespaceGlobalName),
+		metricNewrelicoracledbTablespaceIsOffline:           newMetricNewrelicoracledbTablespaceIsOffline(mbc.Metrics.NewrelicoracledbTablespaceIsOffline),
+		metricNewrelicoracledbTablespaceOfflineCdbDatafiles: newMetricNewrelicoracledbTablespaceOfflineCdbDatafiles(mbc.Metrics.NewrelicoracledbTablespaceOfflineCdbDatafiles),
+		metricNewrelicoracledbTablespaceOfflinePdbDatafiles: newMetricNewrelicoracledbTablespaceOfflinePdbDatafiles(mbc.Metrics.NewrelicoracledbTablespaceOfflinePdbDatafiles),
+		metricNewrelicoracledbTablespacePdbNonWriteMode:     newMetricNewrelicoracledbTablespacePdbNonWriteMode(mbc.Metrics.NewrelicoracledbTablespacePdbNonWriteMode),
+		metricNewrelicoracledbTablespaceSpaceConsumedBytes:  newMetricNewrelicoracledbTablespaceSpaceConsumedBytes(mbc.Metrics.NewrelicoracledbTablespaceSpaceConsumedBytes),
+		metricNewrelicoracledbTablespaceSpaceReservedBytes:  newMetricNewrelicoracledbTablespaceSpaceReservedBytes(mbc.Metrics.NewrelicoracledbTablespaceSpaceReservedBytes),
+		metricNewrelicoracledbTablespaceSpaceUsedPercentage: newMetricNewrelicoracledbTablespaceSpaceUsedPercentage(mbc.Metrics.NewrelicoracledbTablespaceSpaceUsedPercentage),
+		resourceAttributeIncludeFilter:                      make(map[string]filter.Filter),
+		resourceAttributeExcludeFilter:                      make(map[string]filter.Filter),
 	}
 	if mbc.ResourceAttributes.HostName.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["host.name"] = filter.CreateFilter(mbc.ResourceAttributes.HostName.MetricsInclude)
@@ -198,7 +778,17 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
+	mb.metricNewrelicoracledbLockedAccounts.emit(ils.Metrics())
 	mb.metricNewrelicoracledbSessionsCount.emit(ils.Metrics())
+	mb.metricNewrelicoracledbTablespaceDbID.emit(ils.Metrics())
+	mb.metricNewrelicoracledbTablespaceGlobalName.emit(ils.Metrics())
+	mb.metricNewrelicoracledbTablespaceIsOffline.emit(ils.Metrics())
+	mb.metricNewrelicoracledbTablespaceOfflineCdbDatafiles.emit(ils.Metrics())
+	mb.metricNewrelicoracledbTablespaceOfflinePdbDatafiles.emit(ils.Metrics())
+	mb.metricNewrelicoracledbTablespacePdbNonWriteMode.emit(ils.Metrics())
+	mb.metricNewrelicoracledbTablespaceSpaceConsumedBytes.emit(ils.Metrics())
+	mb.metricNewrelicoracledbTablespaceSpaceReservedBytes.emit(ils.Metrics())
+	mb.metricNewrelicoracledbTablespaceSpaceUsedPercentage.emit(ils.Metrics())
 
 	for _, op := range options {
 		op.apply(rm)
@@ -230,9 +820,59 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 	return metrics
 }
 
+// RecordNewrelicoracledbLockedAccountsDataPoint adds a data point to newrelicoracledb.locked_accounts metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbLockedAccountsDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbLockedAccounts.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
 // RecordNewrelicoracledbSessionsCountDataPoint adds a data point to newrelicoracledb.sessions.count metric.
 func (mb *MetricsBuilder) RecordNewrelicoracledbSessionsCountDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string) {
 	mb.metricNewrelicoracledbSessionsCount.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue)
+}
+
+// RecordNewrelicoracledbTablespaceDbIDDataPoint adds a data point to newrelicoracledb.tablespace.db_id metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbTablespaceDbIDDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, tablespaceNameAttributeValue string) {
+	mb.metricNewrelicoracledbTablespaceDbID.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, tablespaceNameAttributeValue)
+}
+
+// RecordNewrelicoracledbTablespaceGlobalNameDataPoint adds a data point to newrelicoracledb.tablespace.global_name metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbTablespaceGlobalNameDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, tablespaceNameAttributeValue string) {
+	mb.metricNewrelicoracledbTablespaceGlobalName.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, tablespaceNameAttributeValue)
+}
+
+// RecordNewrelicoracledbTablespaceIsOfflineDataPoint adds a data point to newrelicoracledb.tablespace.is_offline metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbTablespaceIsOfflineDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, tablespaceNameAttributeValue string) {
+	mb.metricNewrelicoracledbTablespaceIsOffline.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, tablespaceNameAttributeValue)
+}
+
+// RecordNewrelicoracledbTablespaceOfflineCdbDatafilesDataPoint adds a data point to newrelicoracledb.tablespace.offline_cdb_datafiles metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbTablespaceOfflineCdbDatafilesDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, tablespaceNameAttributeValue string) {
+	mb.metricNewrelicoracledbTablespaceOfflineCdbDatafiles.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, tablespaceNameAttributeValue)
+}
+
+// RecordNewrelicoracledbTablespaceOfflinePdbDatafilesDataPoint adds a data point to newrelicoracledb.tablespace.offline_pdb_datafiles metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbTablespaceOfflinePdbDatafilesDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, tablespaceNameAttributeValue string) {
+	mb.metricNewrelicoracledbTablespaceOfflinePdbDatafiles.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, tablespaceNameAttributeValue)
+}
+
+// RecordNewrelicoracledbTablespacePdbNonWriteModeDataPoint adds a data point to newrelicoracledb.tablespace.pdb_non_write_mode metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbTablespacePdbNonWriteModeDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, tablespaceNameAttributeValue string) {
+	mb.metricNewrelicoracledbTablespacePdbNonWriteMode.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, tablespaceNameAttributeValue)
+}
+
+// RecordNewrelicoracledbTablespaceSpaceConsumedBytesDataPoint adds a data point to newrelicoracledb.tablespace.space_consumed_bytes metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbTablespaceSpaceConsumedBytesDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, tablespaceNameAttributeValue string) {
+	mb.metricNewrelicoracledbTablespaceSpaceConsumedBytes.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, tablespaceNameAttributeValue)
+}
+
+// RecordNewrelicoracledbTablespaceSpaceReservedBytesDataPoint adds a data point to newrelicoracledb.tablespace.space_reserved_bytes metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbTablespaceSpaceReservedBytesDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, tablespaceNameAttributeValue string) {
+	mb.metricNewrelicoracledbTablespaceSpaceReservedBytes.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, tablespaceNameAttributeValue)
+}
+
+// RecordNewrelicoracledbTablespaceSpaceUsedPercentageDataPoint adds a data point to newrelicoracledb.tablespace.space_used_percentage metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbTablespaceSpaceUsedPercentageDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, tablespaceNameAttributeValue string) {
+	mb.metricNewrelicoracledbTablespaceSpaceUsedPercentage.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, tablespaceNameAttributeValue)
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

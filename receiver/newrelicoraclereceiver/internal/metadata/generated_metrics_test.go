@@ -70,7 +70,47 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
+			mb.RecordNewrelicoracledbLockedAccountsDataPoint(ts, 1, "newrelic.entity_name-val", "instance.id-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
 			mb.RecordNewrelicoracledbSessionsCountDataPoint(ts, 1, "newrelic.entity_name-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordNewrelicoracledbTablespaceDbIDDataPoint(ts, 1, "newrelic.entity_name-val", "tablespace.name-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordNewrelicoracledbTablespaceGlobalNameDataPoint(ts, 1, "newrelic.entity_name-val", "tablespace.name-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordNewrelicoracledbTablespaceIsOfflineDataPoint(ts, 1, "newrelic.entity_name-val", "tablespace.name-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordNewrelicoracledbTablespaceOfflineCdbDatafilesDataPoint(ts, 1, "newrelic.entity_name-val", "tablespace.name-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordNewrelicoracledbTablespaceOfflinePdbDatafilesDataPoint(ts, 1, "newrelic.entity_name-val", "tablespace.name-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordNewrelicoracledbTablespacePdbNonWriteModeDataPoint(ts, 1, "newrelic.entity_name-val", "tablespace.name-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordNewrelicoracledbTablespaceSpaceConsumedBytesDataPoint(ts, 1, "newrelic.entity_name-val", "tablespace.name-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordNewrelicoracledbTablespaceSpaceReservedBytesDataPoint(ts, 1, "newrelic.entity_name-val", "tablespace.name-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordNewrelicoracledbTablespaceSpaceUsedPercentageDataPoint(ts, 1, "newrelic.entity_name-val", "tablespace.name-val")
 
 			rb := mb.NewResourceBuilder()
 			rb.SetHostName("host.name-val")
@@ -97,6 +137,24 @@ func TestMetricsBuilder(t *testing.T) {
 			validatedMetrics := make(map[string]bool)
 			for i := 0; i < ms.Len(); i++ {
 				switch ms.At(i).Name() {
+				case "newrelicoracledb.locked_accounts":
+					assert.False(t, validatedMetrics["newrelicoracledb.locked_accounts"], "Found a duplicate in the metrics slice: newrelicoracledb.locked_accounts")
+					validatedMetrics["newrelicoracledb.locked_accounts"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Count of locked user accounts in the database", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("newrelic.entity_name")
+					assert.True(t, ok)
+					assert.Equal(t, "newrelic.entity_name-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("instance.id")
+					assert.True(t, ok)
+					assert.Equal(t, "instance.id-val", attrVal.Str())
 				case "newrelicoracledb.sessions.count":
 					assert.False(t, validatedMetrics["newrelicoracledb.sessions.count"], "Found a duplicate in the metrics slice: newrelicoracledb.sessions.count")
 					validatedMetrics["newrelicoracledb.sessions.count"] = true
@@ -112,6 +170,168 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("newrelic.entity_name")
 					assert.True(t, ok)
 					assert.Equal(t, "newrelic.entity_name-val", attrVal.Str())
+				case "newrelicoracledb.tablespace.db_id":
+					assert.False(t, validatedMetrics["newrelicoracledb.tablespace.db_id"], "Found a duplicate in the metrics slice: newrelicoracledb.tablespace.db_id")
+					validatedMetrics["newrelicoracledb.tablespace.db_id"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Database ID information for tablespace", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("newrelic.entity_name")
+					assert.True(t, ok)
+					assert.Equal(t, "newrelic.entity_name-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("tablespace.name")
+					assert.True(t, ok)
+					assert.Equal(t, "tablespace.name-val", attrVal.Str())
+				case "newrelicoracledb.tablespace.global_name":
+					assert.False(t, validatedMetrics["newrelicoracledb.tablespace.global_name"], "Found a duplicate in the metrics slice: newrelicoracledb.tablespace.global_name")
+					validatedMetrics["newrelicoracledb.tablespace.global_name"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Global name information for tablespace", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("newrelic.entity_name")
+					assert.True(t, ok)
+					assert.Equal(t, "newrelic.entity_name-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("tablespace.name")
+					assert.True(t, ok)
+					assert.Equal(t, "tablespace.name-val", attrVal.Str())
+				case "newrelicoracledb.tablespace.is_offline":
+					assert.False(t, validatedMetrics["newrelicoracledb.tablespace.is_offline"], "Found a duplicate in the metrics slice: newrelicoracledb.tablespace.is_offline")
+					validatedMetrics["newrelicoracledb.tablespace.is_offline"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Whether the tablespace is offline (1) or online (0)", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("newrelic.entity_name")
+					assert.True(t, ok)
+					assert.Equal(t, "newrelic.entity_name-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("tablespace.name")
+					assert.True(t, ok)
+					assert.Equal(t, "tablespace.name-val", attrVal.Str())
+				case "newrelicoracledb.tablespace.offline_cdb_datafiles":
+					assert.False(t, validatedMetrics["newrelicoracledb.tablespace.offline_cdb_datafiles"], "Found a duplicate in the metrics slice: newrelicoracledb.tablespace.offline_cdb_datafiles")
+					validatedMetrics["newrelicoracledb.tablespace.offline_cdb_datafiles"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Count of offline CDB datafiles by tablespace", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("newrelic.entity_name")
+					assert.True(t, ok)
+					assert.Equal(t, "newrelic.entity_name-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("tablespace.name")
+					assert.True(t, ok)
+					assert.Equal(t, "tablespace.name-val", attrVal.Str())
+				case "newrelicoracledb.tablespace.offline_pdb_datafiles":
+					assert.False(t, validatedMetrics["newrelicoracledb.tablespace.offline_pdb_datafiles"], "Found a duplicate in the metrics slice: newrelicoracledb.tablespace.offline_pdb_datafiles")
+					validatedMetrics["newrelicoracledb.tablespace.offline_pdb_datafiles"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Count of offline PDB datafiles by tablespace", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("newrelic.entity_name")
+					assert.True(t, ok)
+					assert.Equal(t, "newrelic.entity_name-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("tablespace.name")
+					assert.True(t, ok)
+					assert.Equal(t, "tablespace.name-val", attrVal.Str())
+				case "newrelicoracledb.tablespace.pdb_non_write_mode":
+					assert.False(t, validatedMetrics["newrelicoracledb.tablespace.pdb_non_write_mode"], "Found a duplicate in the metrics slice: newrelicoracledb.tablespace.pdb_non_write_mode")
+					validatedMetrics["newrelicoracledb.tablespace.pdb_non_write_mode"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Count of PDB datafiles in non-write mode by tablespace", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("newrelic.entity_name")
+					assert.True(t, ok)
+					assert.Equal(t, "newrelic.entity_name-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("tablespace.name")
+					assert.True(t, ok)
+					assert.Equal(t, "tablespace.name-val", attrVal.Str())
+				case "newrelicoracledb.tablespace.space_consumed_bytes":
+					assert.False(t, validatedMetrics["newrelicoracledb.tablespace.space_consumed_bytes"], "Found a duplicate in the metrics slice: newrelicoracledb.tablespace.space_consumed_bytes")
+					validatedMetrics["newrelicoracledb.tablespace.space_consumed_bytes"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Total bytes consumed by the tablespace", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("newrelic.entity_name")
+					assert.True(t, ok)
+					assert.Equal(t, "newrelic.entity_name-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("tablespace.name")
+					assert.True(t, ok)
+					assert.Equal(t, "tablespace.name-val", attrVal.Str())
+				case "newrelicoracledb.tablespace.space_reserved_bytes":
+					assert.False(t, validatedMetrics["newrelicoracledb.tablespace.space_reserved_bytes"], "Found a duplicate in the metrics slice: newrelicoracledb.tablespace.space_reserved_bytes")
+					validatedMetrics["newrelicoracledb.tablespace.space_reserved_bytes"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Total bytes reserved by the tablespace", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("newrelic.entity_name")
+					assert.True(t, ok)
+					assert.Equal(t, "newrelic.entity_name-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("tablespace.name")
+					assert.True(t, ok)
+					assert.Equal(t, "tablespace.name-val", attrVal.Str())
+				case "newrelicoracledb.tablespace.space_used_percentage":
+					assert.False(t, validatedMetrics["newrelicoracledb.tablespace.space_used_percentage"], "Found a duplicate in the metrics slice: newrelicoracledb.tablespace.space_used_percentage")
+					validatedMetrics["newrelicoracledb.tablespace.space_used_percentage"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Percentage of tablespace space currently used", ms.At(i).Description())
+					assert.Equal(t, "%", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("newrelic.entity_name")
+					assert.True(t, ok)
+					assert.Equal(t, "newrelic.entity_name-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("tablespace.name")
+					assert.True(t, ok)
+					assert.Equal(t, "tablespace.name-val", attrVal.Str())
 				}
 			}
 		})

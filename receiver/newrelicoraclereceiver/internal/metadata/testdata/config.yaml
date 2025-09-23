@@ -1,7 +1,27 @@
 default:
 all_set:
   metrics:
+    newrelicoracledb.locked_accounts:
+      enabled: true
     newrelicoracledb.sessions.count:
+      enabled: true
+    newrelicoracledb.tablespace.db_id:
+      enabled: true
+    newrelicoracledb.tablespace.global_name:
+      enabled: true
+    newrelicoracledb.tablespace.is_offline:
+      enabled: true
+    newrelicoracledb.tablespace.offline_cdb_datafiles:
+      enabled: true
+    newrelicoracledb.tablespace.offline_pdb_datafiles:
+      enabled: true
+    newrelicoracledb.tablespace.pdb_non_write_mode:
+      enabled: true
+    newrelicoracledb.tablespace.space_consumed_bytes:
+      enabled: true
+    newrelicoracledb.tablespace.space_reserved_bytes:
+      enabled: true
+    newrelicoracledb.tablespace.space_used_percentage:
       enabled: true
   resource_attributes:
     host.name:
@@ -10,7 +30,27 @@ all_set:
       enabled: true
 none_set:
   metrics:
+    newrelicoracledb.locked_accounts:
+      enabled: false
     newrelicoracledb.sessions.count:
+      enabled: false
+    newrelicoracledb.tablespace.db_id:
+      enabled: false
+    newrelicoracledb.tablespace.global_name:
+      enabled: false
+    newrelicoracledb.tablespace.is_offline:
+      enabled: false
+    newrelicoracledb.tablespace.offline_cdb_datafiles:
+      enabled: false
+    newrelicoracledb.tablespace.offline_pdb_datafiles:
+      enabled: false
+    newrelicoracledb.tablespace.pdb_non_write_mode:
+      enabled: false
+    newrelicoracledb.tablespace.space_consumed_bytes:
+      enabled: false
+    newrelicoracledb.tablespace.space_reserved_bytes:
+      enabled: false
+    newrelicoracledb.tablespace.space_used_percentage:
       enabled: false
   resource_attributes:
     host.name:

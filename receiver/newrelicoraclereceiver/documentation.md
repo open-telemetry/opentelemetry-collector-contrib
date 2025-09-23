@@ -12,6 +12,21 @@ metrics:
     enabled: false
 ```
 
+### newrelicoracledb.locked_accounts
+
+Count of locked user accounts in the database
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+| instance.id | Oracle database instance ID | Any Str | false |
+
 ### newrelicoracledb.sessions.count
 
 Total number of active Oracle database sessions
@@ -25,6 +40,141 @@ Total number of active Oracle database sessions
 | Name | Description | Values | Optional |
 | ---- | ----------- | ------ | -------- |
 | newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+
+### newrelicoracledb.tablespace.db_id
+
+Database ID information for tablespace
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+| tablespace.name | Name of the Oracle tablespace | Any Str | false |
+
+### newrelicoracledb.tablespace.global_name
+
+Global name information for tablespace
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+| tablespace.name | Name of the Oracle tablespace | Any Str | false |
+
+### newrelicoracledb.tablespace.is_offline
+
+Whether the tablespace is offline (1) or online (0)
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+| tablespace.name | Name of the Oracle tablespace | Any Str | false |
+
+### newrelicoracledb.tablespace.offline_cdb_datafiles
+
+Count of offline CDB datafiles by tablespace
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+| tablespace.name | Name of the Oracle tablespace | Any Str | false |
+
+### newrelicoracledb.tablespace.offline_pdb_datafiles
+
+Count of offline PDB datafiles by tablespace
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+| tablespace.name | Name of the Oracle tablespace | Any Str | false |
+
+### newrelicoracledb.tablespace.pdb_non_write_mode
+
+Count of PDB datafiles in non-write mode by tablespace
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+| tablespace.name | Name of the Oracle tablespace | Any Str | false |
+
+### newrelicoracledb.tablespace.space_consumed_bytes
+
+Total bytes consumed by the tablespace
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+| tablespace.name | Name of the Oracle tablespace | Any Str | false |
+
+### newrelicoracledb.tablespace.space_reserved_bytes
+
+Total bytes reserved by the tablespace
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+| tablespace.name | Name of the Oracle tablespace | Any Str | false |
+
+### newrelicoracledb.tablespace.space_used_percentage
+
+Percentage of tablespace space currently used
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| % | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+| tablespace.name | Name of the Oracle tablespace | Any Str | false |
 
 ## Resource Attributes
 
