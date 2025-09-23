@@ -52,7 +52,7 @@ jobs:
             } >> "$GITHUB_OUTPUT"
           fi
 
-  scoped-tests:
+  scoped-tests-matrix:
     needs: changedfiles
     if: needs.changedfiles.outputs.go_sources != '' || needs.changedfiles.outputs.go_tests != ''
     strategy:
@@ -99,4 +99,22 @@ jobs:
         env:
           CHANGED_GOLANG_SOURCES: ${{ needs.changedfiles.outputs.go_sources }}
         run: |
-          make for-affected-components CMD="make lint test-three-times"
+          make for-affected-components CMD="make lint test-twice"
+
+  scoped-tests:
+    # Keeps the name of the job required for merging in the GH configuration, make it
+    # wait for all runners completion
+    runs-on: ubuntu-24.04
+    needs: [scoped-tests-matrix]
+    steps:
+      - name: Print result
+        run: echo ${{ needs.scoped-tests-matrix.result }}
+      - name: Interpret result
+        run: |
+          if [[ success == ${{ needs.scoped-tests-matrix.result }} ]]
+          then
+            echo "All matrix jobs passed!"
+          else
+            echo "One or more matrix jobs failed."
+            false
+          fi

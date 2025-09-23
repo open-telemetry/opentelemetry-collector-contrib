@@ -11,44 +11,46 @@ resourceProfiles:
       - profiles:
           - attributeIndices: [0, 1]
             sample:
-              - locationsLength: 0
-                timestampsUnixNano: ["0"]
+              - timestampsUnixNano: ["0"]
             sampleType:
-              - unitStrindex: 0
+              unitStrindex: 0
             duration: 10000
           - attributeIndices: [2, 3]
             sample:
-              - locationsLength: 0
-                timestampsUnixNano: ["0"]
+              - timestampsUnixNano: ["0"]
             sampleType:
-              - unitStrindex: 0
+              unitStrindex: 0
             stringTable:
               - count
             duration: 10000
           - attributeIndices: [5]
             sample:
-              - locationsLength: 0
-                timestampsUnixNano: ["0"]
+              - timestampsUnixNano: ["0"]
             sampleType:
-              - unitStrindex: 0
+              unitStrindex: 0
         scope: {}
 dictionary:
   attributeTable:
-    - key: profile.foo
+    - keyStrindex: 0
       value:
         stringValue: foo
-    - key: profile.bar
+    - keyStrindex: 1
       value:
         stringValue: bar
-    - key: profile.required
+    - keyStrindex: 2
       value:
         stringValue: foo
-    - key: profile.optional
+    - keyStrindex: 3
       value:
         stringValue: notbar
-    - key: profile.optional
+    - keyStrindex: 3
       value:
         stringValue: notbar
-    - key: profile.required
+    - keyStrindex: 2
       value:
         stringValue: notfoo
+  stringTable:
+    - profile.foo
+    - profile.bar
+    - profile.required
+    - profile.optional
