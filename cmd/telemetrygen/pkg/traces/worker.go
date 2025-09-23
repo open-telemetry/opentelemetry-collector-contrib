@@ -20,6 +20,7 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/time/rate"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
 	types "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/pkg"
 )
 
@@ -40,8 +41,6 @@ type worker struct {
 
 const (
 	fakeIP string = "1.2.3.4"
-
-	charactersPerMB = 1024 * 1024 // One character takes up one byte of space, so this number comes from the number of bytes in a megabyte
 )
 
 func (w worker) simulateTraces(telemetryAttributes []attribute.KeyValue) {
@@ -66,7 +65,7 @@ func (w worker) simulateTraces(telemetryAttributes []attribute.KeyValue) {
 		)
 		sp.SetAttributes(telemetryAttributes...)
 		for j := 0; j < w.loadSize; j++ {
-			sp.SetAttributes(attribute.String(fmt.Sprintf("load-%v", j), string(make([]byte, charactersPerMB))))
+			sp.SetAttributes(common.CreateLoadAttribute(fmt.Sprintf("load-%v", j), 1))
 		}
 
 		childCtx := ctx
