@@ -225,4 +225,21 @@ const DatabaseMemoryQueryAzureSQL = `SELECT
 FROM sys.configurations 
 WHERE name = 'max server memory (MB)'`
 
+// DatabaseListQuery returns the SQL query to get the list of user databases for iteration
+// This query excludes system databases and only returns online databases for metric collection
+// Source: Based on the exclusion pattern used throughout the New Relic implementation
+const DatabaseListQuery = `SELECT name FROM sys.databases 
+WHERE name NOT IN ('master', 'tempdb', 'msdb', 'model', 'rdsadmin', 'distribution', 'model_msdb', 'model_replicatedmaster')
+AND state = 0`
+
+// DatabaseListQueryAzureSQL returns the Azure SQL Database specific database list query
+// Azure SQL Database can only query the current database, so we return the current DB_NAME()
+const DatabaseListQueryAzureSQL = `SELECT DB_NAME() AS name`
+
+// DatabaseListQueryAzureMI returns the Azure SQL Managed Instance specific database list query
+// Azure SQL Managed Instance supports multiple databases like standard SQL Server
+const DatabaseListQueryAzureMI = `SELECT name FROM sys.databases 
+WHERE name NOT IN ('master', 'tempdb', 'msdb', 'model', 'rdsadmin', 'distribution', 'model_msdb', 'model_replicatedmaster')
+AND state = 0`
+
 

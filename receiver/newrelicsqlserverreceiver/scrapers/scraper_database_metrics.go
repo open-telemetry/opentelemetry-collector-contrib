@@ -722,10 +722,11 @@ func (s *DatabaseScraper) ScrapeDatabasePageFileMetrics(ctx context.Context, sco
 
 // scrapeDatabasePageFileWithIteration handles page file metrics for engines that require database iteration
 func (s *DatabaseScraper) scrapeDatabasePageFileWithIteration(ctx context.Context, scopeMetrics pmetric.ScopeMetrics, queryTemplate string) error {
-	// First, get the list of databases to iterate through
-	databasesQuery := `SELECT name FROM sys.databases 
-		WHERE name NOT IN ('master', 'tempdb', 'msdb', 'model', 'rdsadmin', 'distribution', 'model_msdb', 'model_replicatedmaster')
-		AND state = 0`
+	// Get the appropriate database list query for this engine edition
+	databasesQuery, found := s.getQueryForMetric("sqlserver.database.list")
+	if !found {
+		return fmt.Errorf("no database list query available for engine edition %d", s.engineEdition)
+	}
 
 	var databases []struct {
 		Name string `db:"name"`
@@ -824,10 +825,11 @@ func (s *DatabaseScraper) ScrapeDatabasePageFileTotalMetrics(ctx context.Context
 
 // scrapeDatabasePageFileTotalWithIteration handles page file total metrics for engines that require database iteration
 func (s *DatabaseScraper) scrapeDatabasePageFileTotalWithIteration(ctx context.Context, scopeMetrics pmetric.ScopeMetrics, queryTemplate string) error {
-	// First, get the list of databases to iterate through
-	databasesQuery := `SELECT name FROM sys.databases 
-		WHERE name NOT IN ('master', 'tempdb', 'msdb', 'model', 'rdsadmin', 'distribution', 'model_msdb', 'model_replicatedmaster')
-		AND state = 0`
+	// Get the appropriate database list query for this engine edition
+	databasesQuery, found := s.getQueryForMetric("sqlserver.database.list")
+	if !found {
+		return fmt.Errorf("no database list query available for engine edition %d", s.engineEdition)
+	}
 
 	var databases []struct {
 		Name string `db:"name"`

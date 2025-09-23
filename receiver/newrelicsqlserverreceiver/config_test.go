@@ -289,11 +289,11 @@ func TestConfigCreation(t *testing.T) {
 
 func TestMasterToggleFunctionality(t *testing.T) {
 	tests := []struct {
-		name                        string
-		masterToggle                bool
-		individualFlag              bool
-		expectedResult              bool
-		description                 string
+		name           string
+		masterToggle   bool
+		individualFlag bool
+		expectedResult bool
+		description    string
 	}{
 		{
 			name:           "Master toggle enabled, individual disabled",
@@ -350,18 +350,18 @@ func TestAllHelperMethods(t *testing.T) {
 		},
 		EnableDatabaseSampleMetrics: true,
 		// All individual flags are false, but master toggle should enable everything
-		EnableBufferMetrics:               false,
-		EnableDatabaseReserveMetrics:      false,
-		EnableDiskMetricsInBytes:          false,
-		EnableIOMetrics:                   false,
-		EnableLogGrowthMetrics:            false,
-		EnablePageFileMetrics:             false,
-		EnablePageFileTotalMetrics:        false,
-		EnableMemoryMetrics:               false,
-		EnableMemoryTotalMetrics:          false,
-		EnableMemoryAvailableMetrics:      false,
-		EnableMemoryUtilizationMetrics:    false,
-		Timeout:                           30 * time.Second,
+		EnableBufferMetrics:            false,
+		EnableDatabaseReserveMetrics:   false,
+		EnableDiskMetricsInBytes:       false,
+		EnableIOMetrics:                false,
+		EnableLogGrowthMetrics:         false,
+		EnablePageFileMetrics:          false,
+		EnablePageFileTotalMetrics:     false,
+		EnableMemoryMetrics:            false,
+		EnableMemoryTotalMetrics:       false,
+		EnableMemoryAvailableMetrics:   false,
+		EnableMemoryUtilizationMetrics: false,
+		Timeout:                        30 * time.Second,
 	}
 
 	tests := []struct {
@@ -398,19 +398,19 @@ func TestIndividualControlWhenMasterDisabled(t *testing.T) {
 		},
 		EnableDatabaseSampleMetrics: false,
 		// Enable only specific metrics
-		EnableBufferMetrics:     true,
-		EnableMemoryMetrics:     true,
+		EnableBufferMetrics: true,
+		EnableMemoryMetrics: true,
 		// All others disabled
-		EnableDatabaseReserveMetrics:      false,
-		EnableDiskMetricsInBytes:          false,
-		EnableIOMetrics:                   false,
-		EnableLogGrowthMetrics:            false,
-		EnablePageFileMetrics:             false,
-		EnablePageFileTotalMetrics:        false,
-		EnableMemoryTotalMetrics:          false,
-		EnableMemoryAvailableMetrics:      false,
-		EnableMemoryUtilizationMetrics:    false,
-		Timeout:                           30 * time.Second,
+		EnableDatabaseReserveMetrics:   false,
+		EnableDiskMetricsInBytes:       false,
+		EnableIOMetrics:                false,
+		EnableLogGrowthMetrics:         false,
+		EnablePageFileMetrics:          false,
+		EnablePageFileTotalMetrics:     false,
+		EnableMemoryTotalMetrics:       false,
+		EnableMemoryAvailableMetrics:   false,
+		EnableMemoryUtilizationMetrics: false,
+		Timeout:                        30 * time.Second,
 	}
 
 	tests := []struct {

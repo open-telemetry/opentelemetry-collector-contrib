@@ -196,6 +196,11 @@ var databaseQueriesDefault = []*QueryDefinition{
 		MetricName:  "sqlserver.database.page_file_total",
 		Description: "Total page file space (total reserved space) for the database in bytes",
 	},
+	{
+		Query:       DatabaseListQuery,
+		MetricName:  "sqlserver.database.list",
+		Description: "List of user databases for metric collection",
+	},
 }
 
 // Database-level query definitions for Azure SQL Database
@@ -235,6 +240,11 @@ var databaseQueriesAzureManagedDatabase = []*QueryDefinition{
 		MetricName:  "sqlserver.database_memory_metrics",
 		Description: "Available physical memory on the system in bytes (Azure SQL Database)",
 	},
+	{
+		Query:       DatabaseListQueryAzureSQL,
+		MetricName:  "sqlserver.database.list",
+		Description: "List of user databases for metric collection (Azure SQL Database)",
+	},
 }
 
 // Database-level query definitions for Azure SQL Managed Instance
@@ -263,6 +273,11 @@ var databaseQueriesAzureManagedInstance = []*QueryDefinition{
 		Query:       DatabasePageFileTotalQueryAzureMI,
 		MetricName:  "sqlserver.database.page_file_total",
 		Description: "Total page file space (total reserved space) for the database in bytes (Azure Managed Instance)",
+	},
+	{
+		Query:       DatabaseListQueryAzureMI,
+		MetricName:  "sqlserver.database.list",
+		Description: "List of user databases for metric collection (Azure SQL Managed Instance)",
 	},
 }
 
