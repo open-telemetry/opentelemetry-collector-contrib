@@ -367,6 +367,46 @@ metrics:
       - newrelic.entity_name
       - instance.id
 
+  newrelicoracledb.sga_log_buffer_redo_allocation_retries:
+    description: Number of redo buffer allocation retries from sysstat
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.sga_log_buffer_redo_entries:
+    description: Number of redo entries from sysstat
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.sorts_memory:
+    description: Number of sorts performed in memory from sysstat
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.sorts_disk:
+    description: Number of sorts performed on disk from sysstat
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
 tests:
   config:
   goleak:

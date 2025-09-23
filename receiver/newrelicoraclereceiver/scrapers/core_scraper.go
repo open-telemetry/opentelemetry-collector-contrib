@@ -89,6 +89,9 @@ func (s *CoreScraper) ScrapeCoreMetrics(ctx context.Context) []error {
 	// Scrape SGA hit ratio metrics
 	errors = append(errors, s.scrapeSGAHitRatioMetrics(ctx, now)...)
 
+	// Scrape sysstat metrics
+	errors = append(errors, s.scrapeSysstatMetrics(ctx, now)...)
+
 	return errors
 }
 
@@ -902,6 +905,91 @@ func (s *CoreScraper) scrapeSGAHitRatioMetrics(ctx context.Context, now pcommon.
 	}
 
 	s.logger.Debug("Collected Oracle SGA hit ratio metrics", zap.Int("metric_count", metricCount), zap.String("instance", s.instanceName))
+
+	return errors
+}
+
+// scrapeSysstatMetrics handles the sysstat metrics
+func (s *CoreScraper) scrapeSysstatMetrics(ctx context.Context, now pcommon.Timestamp) []error {
+	var errors []error
+	metricCount := 0
+
+	// Execute sysstat query
+	s.logger.Debug("Executing sysstat query", zap.String("sql", queries.SysstatSQL))
+	rows, err := s.db.QueryContext(ctx, queries.SysstatSQL)
+	if err != nil {
+		errors = append(errors, fmt.Errorf("error executing sysstat query: %w", err))
+		return errors
+	}
+	defer rows.Close()
+
+	// Process query results
+	for rows.Next() {
+		var instID interface{}
+		var name string
+		var value sql.NullInt64
+
+		err := rows.Scan(&instID, &name, &value)
+		if err != nil {
+			errors = append(errors, fmt.Errorf("error scanning sysstat metrics row: %w", err))
+			continue
+		}
+
+		// Convert instance ID to string
+		instanceID := getInstanceIDString(instID)
+
+		// Handle NULL values
+		valueInt := int64(0)
+		if value.Valid {
+			valueInt = value.Int64
+		}
+
+		// Record appropriate metric based on the name
+		switch name {
+		case "redo buffer allocation retries":
+			s.logger.Info("SGA log buffer redo allocation retries metrics collected",
+				zap.String("instance_id", instanceID),
+				zap.Int64("sga_log_buffer_redo_allocation_retries", valueInt),
+				zap.String("instance", s.instanceName),
+			)
+			s.mb.RecordNewrelicoracledbSgaLogBufferRedoAllocationRetriesDataPoint(now, valueInt, s.instanceName, instanceID)
+
+		case "redo entries":
+			s.logger.Info("SGA log buffer redo entries metrics collected",
+				zap.String("instance_id", instanceID),
+				zap.Int64("sga_log_buffer_redo_entries", valueInt),
+				zap.String("instance", s.instanceName),
+			)
+			s.mb.RecordNewrelicoracledbSgaLogBufferRedoEntriesDataPoint(now, valueInt, s.instanceName, instanceID)
+
+		case "sorts (memory)":
+			s.logger.Info("Sorts memory metrics collected",
+				zap.String("instance_id", instanceID),
+				zap.Int64("sorts_memory", valueInt),
+				zap.String("instance", s.instanceName),
+			)
+			s.mb.RecordNewrelicoracledbSortsMemoryDataPoint(now, valueInt, s.instanceName, instanceID)
+
+		case "sorts (disk)":
+			s.logger.Info("Sorts disk metrics collected",
+				zap.String("instance_id", instanceID),
+				zap.Int64("sorts_disk", valueInt),
+				zap.String("instance", s.instanceName),
+			)
+			s.mb.RecordNewrelicoracledbSortsDiskDataPoint(now, valueInt, s.instanceName, instanceID)
+
+		default:
+			s.logger.Warn("Unknown sysstat metric name", zap.String("name", name), zap.String("instance_id", instanceID))
+		}
+
+		metricCount++
+	}
+
+	if err = rows.Err(); err != nil {
+		errors = append(errors, fmt.Errorf("error iterating sysstat metrics rows: %w", err))
+	}
+
+	s.logger.Debug("Collected Oracle sysstat metrics", zap.Int("metric_count", metricCount), zap.String("instance", s.instanceName))
 
 	return errors
 }

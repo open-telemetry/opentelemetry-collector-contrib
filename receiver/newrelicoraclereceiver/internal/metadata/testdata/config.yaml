@@ -41,6 +41,10 @@ all_set:
       enabled: true
     newrelicoracledb.sga_log_allocation_retries_ratio:
       enabled: true
+    newrelicoracledb.sga_log_buffer_redo_allocation_retries:
+      enabled: true
+    newrelicoracledb.sga_log_buffer_redo_entries:
+      enabled: true
     newrelicoracledb.sga_log_buffer_space_waits:
       enabled: true
     newrelicoracledb.sga_shared_pool_dict_cache_miss_ratio:
@@ -48,6 +52,10 @@ all_set:
     newrelicoracledb.sga_shared_pool_library_cache_hit_ratio:
       enabled: true
     newrelicoracledb.sga_shared_pool_library_cache_reload_ratio:
+      enabled: true
+    newrelicoracledb.sorts_disk:
+      enabled: true
+    newrelicoracledb.sorts_memory:
       enabled: true
     newrelicoracledb.tablespace.db_id:
       enabled: true
@@ -114,6 +122,10 @@ none_set:
       enabled: false
     newrelicoracledb.sga_log_allocation_retries_ratio:
       enabled: false
+    newrelicoracledb.sga_log_buffer_redo_allocation_retries:
+      enabled: false
+    newrelicoracledb.sga_log_buffer_redo_entries:
+      enabled: false
     newrelicoracledb.sga_log_buffer_space_waits:
       enabled: false
     newrelicoracledb.sga_shared_pool_dict_cache_miss_ratio:
@@ -121,6 +133,10 @@ none_set:
     newrelicoracledb.sga_shared_pool_library_cache_hit_ratio:
       enabled: false
     newrelicoracledb.sga_shared_pool_library_cache_reload_ratio:
+      enabled: false
+    newrelicoracledb.sorts_disk:
+      enabled: false
+    newrelicoracledb.sorts_memory:
       enabled: false
     newrelicoracledb.tablespace.db_id:
       enabled: false

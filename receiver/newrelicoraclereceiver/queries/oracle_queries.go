@@ -191,4 +191,10 @@ const (
 		AND lob.inst_id=inst.inst_id
 		AND dir.inst_id=inst.inst_id
 		AND phy.inst_id=inst.inst_id`
+
+	SysstatSQL = `
+		SELECT inst.inst_id, sysstat.name, sysstat.value
+		FROM GV$SYSSTAT sysstat, GV$INSTANCE inst
+		WHERE sysstat.inst_id=inst.inst_id 
+		AND sysstat.name IN ('redo buffer allocation retries', 'redo entries', 'sorts (memory)', 'sorts (disk)')`
 )

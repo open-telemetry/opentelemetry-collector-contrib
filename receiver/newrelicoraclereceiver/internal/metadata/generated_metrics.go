@@ -73,6 +73,12 @@ var MetricsInfo = metricsInfo{
 	NewrelicoracledbSgaLogAllocationRetriesRatio: metricInfo{
 		Name: "newrelicoracledb.sga_log_allocation_retries_ratio",
 	},
+	NewrelicoracledbSgaLogBufferRedoAllocationRetries: metricInfo{
+		Name: "newrelicoracledb.sga_log_buffer_redo_allocation_retries",
+	},
+	NewrelicoracledbSgaLogBufferRedoEntries: metricInfo{
+		Name: "newrelicoracledb.sga_log_buffer_redo_entries",
+	},
 	NewrelicoracledbSgaLogBufferSpaceWaits: metricInfo{
 		Name: "newrelicoracledb.sga_log_buffer_space_waits",
 	},
@@ -84,6 +90,12 @@ var MetricsInfo = metricsInfo{
 	},
 	NewrelicoracledbSgaSharedPoolLibraryCacheReloadRatio: metricInfo{
 		Name: "newrelicoracledb.sga_shared_pool_library_cache_reload_ratio",
+	},
+	NewrelicoracledbSortsDisk: metricInfo{
+		Name: "newrelicoracledb.sorts_disk",
+	},
+	NewrelicoracledbSortsMemory: metricInfo{
+		Name: "newrelicoracledb.sorts_memory",
 	},
 	NewrelicoracledbTablespaceDbID: metricInfo{
 		Name: "newrelicoracledb.tablespace.db_id",
@@ -135,10 +147,14 @@ type metricsInfo struct {
 	NewrelicoracledbSessionsCount                                metricInfo
 	NewrelicoracledbSgaHitRatio                                  metricInfo
 	NewrelicoracledbSgaLogAllocationRetriesRatio                 metricInfo
+	NewrelicoracledbSgaLogBufferRedoAllocationRetries            metricInfo
+	NewrelicoracledbSgaLogBufferRedoEntries                      metricInfo
 	NewrelicoracledbSgaLogBufferSpaceWaits                       metricInfo
 	NewrelicoracledbSgaSharedPoolDictCacheMissRatio              metricInfo
 	NewrelicoracledbSgaSharedPoolLibraryCacheHitRatio            metricInfo
 	NewrelicoracledbSgaSharedPoolLibraryCacheReloadRatio         metricInfo
+	NewrelicoracledbSortsDisk                                    metricInfo
+	NewrelicoracledbSortsMemory                                  metricInfo
 	NewrelicoracledbTablespaceDbID                               metricInfo
 	NewrelicoracledbTablespaceGlobalName                         metricInfo
 	NewrelicoracledbTablespaceIsOffline                          metricInfo
@@ -1195,6 +1211,110 @@ func newMetricNewrelicoracledbSgaLogAllocationRetriesRatio(cfg MetricConfig) met
 	return m
 }
 
+type metricNewrelicoracledbSgaLogBufferRedoAllocationRetries struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.sga_log_buffer_redo_allocation_retries metric with initial data.
+func (m *metricNewrelicoracledbSgaLogBufferRedoAllocationRetries) init() {
+	m.data.SetName("newrelicoracledb.sga_log_buffer_redo_allocation_retries")
+	m.data.SetDescription("Number of redo buffer allocation retries from sysstat")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSgaLogBufferRedoAllocationRetries) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSgaLogBufferRedoAllocationRetries) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSgaLogBufferRedoAllocationRetries) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSgaLogBufferRedoAllocationRetries(cfg MetricConfig) metricNewrelicoracledbSgaLogBufferRedoAllocationRetries {
+	m := metricNewrelicoracledbSgaLogBufferRedoAllocationRetries{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSgaLogBufferRedoEntries struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.sga_log_buffer_redo_entries metric with initial data.
+func (m *metricNewrelicoracledbSgaLogBufferRedoEntries) init() {
+	m.data.SetName("newrelicoracledb.sga_log_buffer_redo_entries")
+	m.data.SetDescription("Number of redo entries from sysstat")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSgaLogBufferRedoEntries) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSgaLogBufferRedoEntries) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSgaLogBufferRedoEntries) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSgaLogBufferRedoEntries(cfg MetricConfig) metricNewrelicoracledbSgaLogBufferRedoEntries {
+	m := metricNewrelicoracledbSgaLogBufferRedoEntries{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricNewrelicoracledbSgaLogBufferSpaceWaits struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -1396,6 +1516,110 @@ func (m *metricNewrelicoracledbSgaSharedPoolLibraryCacheReloadRatio) emit(metric
 
 func newMetricNewrelicoracledbSgaSharedPoolLibraryCacheReloadRatio(cfg MetricConfig) metricNewrelicoracledbSgaSharedPoolLibraryCacheReloadRatio {
 	m := metricNewrelicoracledbSgaSharedPoolLibraryCacheReloadRatio{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSortsDisk struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.sorts_disk metric with initial data.
+func (m *metricNewrelicoracledbSortsDisk) init() {
+	m.data.SetName("newrelicoracledb.sorts_disk")
+	m.data.SetDescription("Number of sorts performed on disk from sysstat")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSortsDisk) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSortsDisk) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSortsDisk) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSortsDisk(cfg MetricConfig) metricNewrelicoracledbSortsDisk {
+	m := metricNewrelicoracledbSortsDisk{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSortsMemory struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.sorts_memory metric with initial data.
+func (m *metricNewrelicoracledbSortsMemory) init() {
+	m.data.SetName("newrelicoracledb.sorts_memory")
+	m.data.SetDescription("Number of sorts performed in memory from sysstat")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSortsMemory) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSortsMemory) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSortsMemory) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSortsMemory(cfg MetricConfig) metricNewrelicoracledbSortsMemory {
+	m := metricNewrelicoracledbSortsMemory{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1901,10 +2125,14 @@ type MetricsBuilder struct {
 	metricNewrelicoracledbSessionsCount                                metricNewrelicoracledbSessionsCount
 	metricNewrelicoracledbSgaHitRatio                                  metricNewrelicoracledbSgaHitRatio
 	metricNewrelicoracledbSgaLogAllocationRetriesRatio                 metricNewrelicoracledbSgaLogAllocationRetriesRatio
+	metricNewrelicoracledbSgaLogBufferRedoAllocationRetries            metricNewrelicoracledbSgaLogBufferRedoAllocationRetries
+	metricNewrelicoracledbSgaLogBufferRedoEntries                      metricNewrelicoracledbSgaLogBufferRedoEntries
 	metricNewrelicoracledbSgaLogBufferSpaceWaits                       metricNewrelicoracledbSgaLogBufferSpaceWaits
 	metricNewrelicoracledbSgaSharedPoolDictCacheMissRatio              metricNewrelicoracledbSgaSharedPoolDictCacheMissRatio
 	metricNewrelicoracledbSgaSharedPoolLibraryCacheHitRatio            metricNewrelicoracledbSgaSharedPoolLibraryCacheHitRatio
 	metricNewrelicoracledbSgaSharedPoolLibraryCacheReloadRatio         metricNewrelicoracledbSgaSharedPoolLibraryCacheReloadRatio
+	metricNewrelicoracledbSortsDisk                                    metricNewrelicoracledbSortsDisk
+	metricNewrelicoracledbSortsMemory                                  metricNewrelicoracledbSortsMemory
 	metricNewrelicoracledbTablespaceDbID                               metricNewrelicoracledbTablespaceDbID
 	metricNewrelicoracledbTablespaceGlobalName                         metricNewrelicoracledbTablespaceGlobalName
 	metricNewrelicoracledbTablespaceIsOffline                          metricNewrelicoracledbTablespaceIsOffline
@@ -1959,10 +2187,14 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricNewrelicoracledbSessionsCount:                                newMetricNewrelicoracledbSessionsCount(mbc.Metrics.NewrelicoracledbSessionsCount),
 		metricNewrelicoracledbSgaHitRatio:                                  newMetricNewrelicoracledbSgaHitRatio(mbc.Metrics.NewrelicoracledbSgaHitRatio),
 		metricNewrelicoracledbSgaLogAllocationRetriesRatio:                 newMetricNewrelicoracledbSgaLogAllocationRetriesRatio(mbc.Metrics.NewrelicoracledbSgaLogAllocationRetriesRatio),
+		metricNewrelicoracledbSgaLogBufferRedoAllocationRetries:            newMetricNewrelicoracledbSgaLogBufferRedoAllocationRetries(mbc.Metrics.NewrelicoracledbSgaLogBufferRedoAllocationRetries),
+		metricNewrelicoracledbSgaLogBufferRedoEntries:                      newMetricNewrelicoracledbSgaLogBufferRedoEntries(mbc.Metrics.NewrelicoracledbSgaLogBufferRedoEntries),
 		metricNewrelicoracledbSgaLogBufferSpaceWaits:                       newMetricNewrelicoracledbSgaLogBufferSpaceWaits(mbc.Metrics.NewrelicoracledbSgaLogBufferSpaceWaits),
 		metricNewrelicoracledbSgaSharedPoolDictCacheMissRatio:              newMetricNewrelicoracledbSgaSharedPoolDictCacheMissRatio(mbc.Metrics.NewrelicoracledbSgaSharedPoolDictCacheMissRatio),
 		metricNewrelicoracledbSgaSharedPoolLibraryCacheHitRatio:            newMetricNewrelicoracledbSgaSharedPoolLibraryCacheHitRatio(mbc.Metrics.NewrelicoracledbSgaSharedPoolLibraryCacheHitRatio),
 		metricNewrelicoracledbSgaSharedPoolLibraryCacheReloadRatio:         newMetricNewrelicoracledbSgaSharedPoolLibraryCacheReloadRatio(mbc.Metrics.NewrelicoracledbSgaSharedPoolLibraryCacheReloadRatio),
+		metricNewrelicoracledbSortsDisk:                                    newMetricNewrelicoracledbSortsDisk(mbc.Metrics.NewrelicoracledbSortsDisk),
+		metricNewrelicoracledbSortsMemory:                                  newMetricNewrelicoracledbSortsMemory(mbc.Metrics.NewrelicoracledbSortsMemory),
 		metricNewrelicoracledbTablespaceDbID:                               newMetricNewrelicoracledbTablespaceDbID(mbc.Metrics.NewrelicoracledbTablespaceDbID),
 		metricNewrelicoracledbTablespaceGlobalName:                         newMetricNewrelicoracledbTablespaceGlobalName(mbc.Metrics.NewrelicoracledbTablespaceGlobalName),
 		metricNewrelicoracledbTablespaceIsOffline:                          newMetricNewrelicoracledbTablespaceIsOffline(mbc.Metrics.NewrelicoracledbTablespaceIsOffline),
@@ -2076,10 +2308,14 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricNewrelicoracledbSessionsCount.emit(ils.Metrics())
 	mb.metricNewrelicoracledbSgaHitRatio.emit(ils.Metrics())
 	mb.metricNewrelicoracledbSgaLogAllocationRetriesRatio.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSgaLogBufferRedoAllocationRetries.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSgaLogBufferRedoEntries.emit(ils.Metrics())
 	mb.metricNewrelicoracledbSgaLogBufferSpaceWaits.emit(ils.Metrics())
 	mb.metricNewrelicoracledbSgaSharedPoolDictCacheMissRatio.emit(ils.Metrics())
 	mb.metricNewrelicoracledbSgaSharedPoolLibraryCacheHitRatio.emit(ils.Metrics())
 	mb.metricNewrelicoracledbSgaSharedPoolLibraryCacheReloadRatio.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSortsDisk.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSortsMemory.emit(ils.Metrics())
 	mb.metricNewrelicoracledbTablespaceDbID.emit(ils.Metrics())
 	mb.metricNewrelicoracledbTablespaceGlobalName.emit(ils.Metrics())
 	mb.metricNewrelicoracledbTablespaceIsOffline.emit(ils.Metrics())
@@ -2220,6 +2456,16 @@ func (mb *MetricsBuilder) RecordNewrelicoracledbSgaLogAllocationRetriesRatioData
 	mb.metricNewrelicoracledbSgaLogAllocationRetriesRatio.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
 }
 
+// RecordNewrelicoracledbSgaLogBufferRedoAllocationRetriesDataPoint adds a data point to newrelicoracledb.sga_log_buffer_redo_allocation_retries metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSgaLogBufferRedoAllocationRetriesDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSgaLogBufferRedoAllocationRetries.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSgaLogBufferRedoEntriesDataPoint adds a data point to newrelicoracledb.sga_log_buffer_redo_entries metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSgaLogBufferRedoEntriesDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSgaLogBufferRedoEntries.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
 // RecordNewrelicoracledbSgaLogBufferSpaceWaitsDataPoint adds a data point to newrelicoracledb.sga_log_buffer_space_waits metric.
 func (mb *MetricsBuilder) RecordNewrelicoracledbSgaLogBufferSpaceWaitsDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
 	mb.metricNewrelicoracledbSgaLogBufferSpaceWaits.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
@@ -2238,6 +2484,16 @@ func (mb *MetricsBuilder) RecordNewrelicoracledbSgaSharedPoolLibraryCacheHitRati
 // RecordNewrelicoracledbSgaSharedPoolLibraryCacheReloadRatioDataPoint adds a data point to newrelicoracledb.sga_shared_pool_library_cache_reload_ratio metric.
 func (mb *MetricsBuilder) RecordNewrelicoracledbSgaSharedPoolLibraryCacheReloadRatioDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
 	mb.metricNewrelicoracledbSgaSharedPoolLibraryCacheReloadRatio.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSortsDiskDataPoint adds a data point to newrelicoracledb.sorts_disk metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSortsDiskDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSortsDisk.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSortsMemoryDataPoint adds a data point to newrelicoracledb.sorts_memory metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSortsMemoryDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSortsMemory.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
 }
 
 // RecordNewrelicoracledbTablespaceDbIDDataPoint adds a data point to newrelicoracledb.tablespace.db_id metric.

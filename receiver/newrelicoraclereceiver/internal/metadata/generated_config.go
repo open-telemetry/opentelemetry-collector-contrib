@@ -48,10 +48,14 @@ type MetricsConfig struct {
 	NewrelicoracledbSessionsCount                                MetricConfig `mapstructure:"newrelicoracledb.sessions.count"`
 	NewrelicoracledbSgaHitRatio                                  MetricConfig `mapstructure:"newrelicoracledb.sga_hit_ratio"`
 	NewrelicoracledbSgaLogAllocationRetriesRatio                 MetricConfig `mapstructure:"newrelicoracledb.sga_log_allocation_retries_ratio"`
+	NewrelicoracledbSgaLogBufferRedoAllocationRetries            MetricConfig `mapstructure:"newrelicoracledb.sga_log_buffer_redo_allocation_retries"`
+	NewrelicoracledbSgaLogBufferRedoEntries                      MetricConfig `mapstructure:"newrelicoracledb.sga_log_buffer_redo_entries"`
 	NewrelicoracledbSgaLogBufferSpaceWaits                       MetricConfig `mapstructure:"newrelicoracledb.sga_log_buffer_space_waits"`
 	NewrelicoracledbSgaSharedPoolDictCacheMissRatio              MetricConfig `mapstructure:"newrelicoracledb.sga_shared_pool_dict_cache_miss_ratio"`
 	NewrelicoracledbSgaSharedPoolLibraryCacheHitRatio            MetricConfig `mapstructure:"newrelicoracledb.sga_shared_pool_library_cache_hit_ratio"`
 	NewrelicoracledbSgaSharedPoolLibraryCacheReloadRatio         MetricConfig `mapstructure:"newrelicoracledb.sga_shared_pool_library_cache_reload_ratio"`
+	NewrelicoracledbSortsDisk                                    MetricConfig `mapstructure:"newrelicoracledb.sorts_disk"`
+	NewrelicoracledbSortsMemory                                  MetricConfig `mapstructure:"newrelicoracledb.sorts_memory"`
 	NewrelicoracledbTablespaceDbID                               MetricConfig `mapstructure:"newrelicoracledb.tablespace.db_id"`
 	NewrelicoracledbTablespaceGlobalName                         MetricConfig `mapstructure:"newrelicoracledb.tablespace.global_name"`
 	NewrelicoracledbTablespaceIsOffline                          MetricConfig `mapstructure:"newrelicoracledb.tablespace.is_offline"`
@@ -125,6 +129,12 @@ func DefaultMetricsConfig() MetricsConfig {
 		NewrelicoracledbSgaLogAllocationRetriesRatio: MetricConfig{
 			Enabled: true,
 		},
+		NewrelicoracledbSgaLogBufferRedoAllocationRetries: MetricConfig{
+			Enabled: true,
+		},
+		NewrelicoracledbSgaLogBufferRedoEntries: MetricConfig{
+			Enabled: true,
+		},
 		NewrelicoracledbSgaLogBufferSpaceWaits: MetricConfig{
 			Enabled: true,
 		},
@@ -135,6 +145,12 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		NewrelicoracledbSgaSharedPoolLibraryCacheReloadRatio: MetricConfig{
+			Enabled: true,
+		},
+		NewrelicoracledbSortsDisk: MetricConfig{
+			Enabled: true,
+		},
+		NewrelicoracledbSortsMemory: MetricConfig{
 			Enabled: true,
 		},
 		NewrelicoracledbTablespaceDbID: MetricConfig{
