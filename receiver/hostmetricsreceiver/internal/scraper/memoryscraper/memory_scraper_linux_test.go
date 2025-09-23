@@ -41,7 +41,7 @@ func TestScrape_UseMemAvailable(t *testing.T) {
 	_ = featuregate.GlobalRegistry().Set(
 		"receiver.hostmetricsreceiver.UseLinuxMemAvailable", false)
 	t.Cleanup(func() {
-		_ = featuregate.GlobalRegistry().Set("receiver.hostmetricsreceiver.UseLinuxMemAvailable", false)
+		_ = featuregate.GlobalRegistry().Set("receiver.hostmetricsreceiver.UseLinuxMemAvailable", true)
 	})
 	scraper.recordMemoryUsageMetric(pcommon.NewTimestampFromTime(time.Now()), memInfo)
 	scraper.recordMemoryUtilizationMetric(pcommon.NewTimestampFromTime(time.Now()), memInfo)
