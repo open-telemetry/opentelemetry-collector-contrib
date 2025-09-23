@@ -24,6 +24,8 @@ import (
 
 	"github.com/shirou/gopsutil/v4/cpu"
 	"github.com/shirou/gopsutil/v4/process"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 )
 
 // childProcessCollector implements the OtelcolRunner interface as a child process on the same machine executing
@@ -117,8 +119,9 @@ func (cp *childProcessCollector) PrepareConfig(t *testing.T, configStr string) (
 	configCleanup = func() {
 		// NoOp
 	}
+
 	var file *os.File
-	file, err = os.CreateTemp(t.TempDir(), "agent*.yaml")
+	file, err = os.CreateTemp(testutil.TempDir(t), "agent*.yaml")
 	if err != nil {
 		log.Printf("%s", err)
 		return configCleanup, err

@@ -694,4 +694,4 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           make install-tools
-          ./.tools/issuegenerator -path ./internal/tools/testresults/
+          ./.tools/issuegenerator -path ./internal/tools/testresults/ -labels "flaky tests,needs triage"

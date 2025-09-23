@@ -46,12 +46,9 @@ func Transform(dic pprofile.ProfilesDictionary, resource pcommon.Resource, scope
 // and mixing profiles will make profiling information unusable.
 func checkProfileType(dic pprofile.ProfilesDictionary, profile pprofile.Profile) error {
 	sampleType := profile.SampleType()
-	if sampleType.Len() != 1 {
-		return fmt.Errorf("expected 1 sample type but got %d", sampleType.Len())
-	}
 
-	sType := getString(dic, int(sampleType.At(0).TypeStrindex()))
-	sUnit := getString(dic, int(sampleType.At(0).UnitStrindex()))
+	sType := getString(dic, int(sampleType.TypeStrindex()))
+	sUnit := getString(dic, int(sampleType.UnitStrindex()))
 
 	// Make sure only on-CPU profiling data is accepted at the moment.
 	// This needs to match with
@@ -96,7 +93,7 @@ func stackPayloads(dic pprofile.ProfilesDictionary, resource pcommon.Resource, s
 	}
 
 	for _, sample := range profile.Sample().All() {
-		frames, frameTypes, leafFrame, err := stackFrames(dic, profile, sample)
+		frames, frameTypes, leafFrame, err := stackFrames(dic, sample)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create stackframes: %w", err)
 		}
@@ -144,8 +141,8 @@ func stackPayloads(dic pprofile.ProfilesDictionary, resource pcommon.Resource, s
 			event.TimeStamp = newUnixTime64(t)
 
 			count := 1
-			if j < sample.Value().Len() {
-				count = int(sample.Value().At(j))
+			if j < sample.Values().Len() {
+				count = int(sample.Values().At(j))
 			}
 			for range count {
 				stackPayload = append(stackPayload, StackPayload{
@@ -237,8 +234,9 @@ func stackTraceEvent(dic pprofile.ProfilesDictionary, traceID string, sample ppr
 			continue
 		}
 		attr := dic.AttributeTable().At(int(idx))
+		key := dic.StringTable().At(int(attr.KeyStrindex()))
 
-		switch attribute.Key(attr.Key()) {
+		switch attribute.Key(key) {
 		case semconv.ThreadNameKey:
 			event.ThreadName = attr.Value().AsString()
 		case semconv.ProcessExecutableNameKey:
@@ -253,7 +251,8 @@ func stackTraceEvent(dic pprofile.ProfilesDictionary, traceID string, sample ppr
 
 func stackTrace(stackTraceID string, frames []StackFrame, frameTypes []libpf.FrameType) StackTrace {
 	frameIDs := make([]string, 0, len(frames))
-	for _, f := range frames {
+	for i := range frames {
+		f := &frames[i]
 		frameIDs = append(frameIDs, f.DocID)
 	}
 
@@ -273,10 +272,11 @@ func stackTrace(stackTraceID string, frames []StackFrame, frameTypes []libpf.Fra
 	}
 }
 
-func stackFrames(dic pprofile.ProfilesDictionary, profile pprofile.Profile, sample pprofile.Sample) ([]StackFrame, []libpf.FrameType, *frameID, error) {
-	frames := make([]StackFrame, 0, sample.LocationsLength())
+func stackFrames(dic pprofile.ProfilesDictionary, sample pprofile.Sample) ([]StackFrame, []libpf.FrameType, *frameID, error) {
+	stack := dic.StackTable().At(int(sample.StackIndex()))
+	frames := make([]StackFrame, 0, stack.LocationIndices().Len())
 
-	locations := getLocations(dic, profile, sample)
+	locations := getLocations(dic, stack)
 	totalFrames := 0
 	for _, location := range locations {
 		totalFrames += location.Line().Len()
@@ -331,7 +331,8 @@ func stackFrames(dic pprofile.ProfilesDictionary, profile pprofile.Profile, samp
 func getFrameID(dic pprofile.ProfilesDictionary, location pprofile.Location) *frameID {
 	// The MappingIndex is known to be valid.
 	fileID := libpf.FileID{}
-	if location.HasMappingIndex() {
+
+	if location.MappingIndex() > 0 {
 		mapping := dic.MappingTable().At(int(location.MappingIndex()))
 		fileID, _ = getBuildID(dic, mapping)
 	}
@@ -380,7 +381,9 @@ func getStringFromAttribute(dic pprofile.ProfilesDictionary, record attributable
 			return "", fmt.Errorf("requested attribute index (%d) "+
 				"exceeds size of attribute table (%d)", idx, lenAttrTable)
 		}
-		if dic.AttributeTable().At(idx).Key() == attrKey {
+
+		key := dic.StringTable().At(int(dic.AttributeTable().At(idx).KeyStrindex()))
+		if key == attrKey {
 			return dic.AttributeTable().At(idx).Value().AsString(), nil
 		}
 	}
@@ -408,7 +411,11 @@ func executables(dic pprofile.ProfilesDictionary, mappings pprofile.MappingSlice
 	metadata := make([]ExeMetadata, 0, mappings.Len())
 	lastSeen := GetStartOfWeekFromTime(time.Now())
 
-	for _, mapping := range mappings.All() {
+	for i, mapping := range mappings.All() {
+		if i == 0 {
+			continue
+		}
+
 		filename := dic.StringTable().At(int(mapping.FilenameStrindex()))
 		if filename == "" {
 			// This is true for interpreted languages like Python.
@@ -463,18 +470,13 @@ func stackTraceID(frames []StackFrame) (string, error) {
 	return traceHash.Base64(), nil
 }
 
-func getLocations(dic pprofile.ProfilesDictionary, profile pprofile.Profile, sample pprofile.Sample) []pprofile.Location {
-	locations := make([]pprofile.Location, 0, sample.LocationsLength())
+func getLocations(dic pprofile.ProfilesDictionary, stack pprofile.Stack) []pprofile.Location {
+	locations := make([]pprofile.Location, 0, stack.LocationIndices().Len())
 
-	firstIndexPos := int(sample.LocationsStartIndex())
-	lastIndexPos := int(sample.LocationsStartIndex() + sample.LocationsLength())
-	lastIndexPos = min(lastIndexPos, profile.LocationIndices().Len())
-	for i := firstIndexPos; i < lastIndexPos; i++ {
-		locationIndex := int(profile.LocationIndices().At(i))
-		if locationIndex < dic.LocationTable().Len() {
-			locations = append(locations, dic.LocationTable().At(locationIndex))
-		}
+	for i := range stack.LocationIndices().All() {
+		locations = append(locations, dic.LocationTable().At(i))
 	}
+
 	return locations
 }
 
@@ -505,7 +507,7 @@ func newHostMetadata(dic pprofile.ProfilesDictionary, resource pcommon.Resource,
 
 	addEventHostData(attrs, resource.Attributes())
 	addEventHostData(attrs, scope.Attributes())
-	addEventHostData(attrs, pprofile.FromAttributeIndices(dic.AttributeTable(), profile))
+	addEventHostData(attrs, pprofile.FromAttributeIndices(dic.AttributeTable(), profile, dic))
 
 	return attrs
 }
