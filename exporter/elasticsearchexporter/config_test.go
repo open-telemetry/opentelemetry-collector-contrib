@@ -65,8 +65,8 @@ func TestConfig(t *testing.T) {
 					Batch: configoptional.Some(exporterhelper.BatchConfig{
 						FlushTimeout: 10 * time.Second,
 						Sizer:        exporterhelper.RequestSizerTypeBytes,
-						MinSize:      5000000,
-						MaxSize:      10000000,
+						MinSize:      1000000,
+						MaxSize:      5000000,
 					}),
 				},
 				Endpoints: []string{
@@ -148,8 +148,8 @@ func TestConfig(t *testing.T) {
 					Batch: configoptional.Some(exporterhelper.BatchConfig{
 						FlushTimeout: 10 * time.Second,
 						Sizer:        exporterhelper.RequestSizerTypeBytes,
-						MinSize:      5000000,
-						MaxSize:      10000000,
+						MinSize:      1000000,
+						MaxSize:      5000000,
 					}),
 				},
 				Endpoints: []string{"http://localhost:9200"},
@@ -221,8 +221,8 @@ func TestConfig(t *testing.T) {
 					Batch: configoptional.Some(exporterhelper.BatchConfig{
 						FlushTimeout: 10 * time.Second,
 						Sizer:        exporterhelper.RequestSizerTypeBytes,
-						MinSize:      5000000,
-						MaxSize:      10000000,
+						MinSize:      1000000,
+						MaxSize:      5000000,
 					}),
 				},
 				Endpoints: []string{"http://localhost:9200"},

@@ -94,8 +94,8 @@ sending_queue:
   queue_size: 10
   batch:
     flush_timeout: 10s
-    min_size: 5e+6 // 5MB
-    max_size: 10e+6 // 10MB
+    min_size: 1e+6 // 1MB
+    max_size: 5e+6 // 5MB
     sizer: bytes
 ```
 
@@ -292,8 +292,8 @@ This can be configured through the following settings:
 The Elasticsearch exporter uses the [Elasticsearch Bulk API] for indexing documents.
 The behaviour of this bulk indexing can be configured with the following settings:
 
-- `num_workers` (default=runtime.NumCPU()): Number of workers publishing bulk requests concurrently. Note this is not applicable if `batcher::enabled` is `true` or `false`.
-- `flush`: Event bulk indexer buffer flush settings
+- `num_workers` (default=runtime.NumCPU()): This config is deprecated now and will be ignored, use the `sending_queue` config. Number of workers publishing bulk requests concurrently. Note this is not applicable if `batcher::enabled` is `true` or `false`.
+- `flush`: This config is deprecated now and will be ignored, use `sending_queue` config. Event bulk indexer buffer flush settings
   - `bytes` (default=5000000): Write buffer flush size limit before compression. A bulk request will be sent immediately when its buffer exceeds this limit. This value should be much lower than [Elasticsearch's `http.max_content_length`](https://www.elastic.co/guide/en/elasticsearch/reference/current/modules-network.html#http-settings) config to avoid HTTP 413 Entity Too Large error. It is recommended to keep this value under 5MB.
   - `interval` (default=10s): Write buffer flush time limit.
 - `retry`: Elasticsearch bulk request retry settings
@@ -303,9 +303,18 @@ The behaviour of this bulk indexing can be configured with the following setting
   - `initial_interval` (default=100ms): Initial waiting time if a HTTP request failed.
   - `max_interval` (default=1m): Max waiting time if a HTTP request failed.
   - `retry_on_status` (default=[429]): Status codes that trigger request or document level retries. Request level retry and document level retry status codes are shared and cannot be configured separately. To avoid duplicates, it defaults to `[429]`.
-
-> [!NOTE]
-> The `flush::interval` config will be ignored when `batcher::enabled` config is explicitly set to `true` or `false`.
+- `sending_queue`: Configures the queueing and batching behaviour. Below are the defaults (which may vary from standard defaults), for full configuration check the [exporterheler docs][exporterhelper].
+  - `enabled` (default=true): Enable queueing and batching behaviour.
+  - `num_consumers` (default=10): Number of consumers that dequeue batches.
+  - `wait_for_result` (default=false): If `true`, blocks incoming requests until processed.
+  - `block_on_overflow` (default=false): If `true`, blocks the request until the queue has space.
+  - `sizer` (default=requests): Measure queueing by requests.
+  - `queue_size` (default=10): Maximum size the queue can accept.
+  - `batch`:
+    - `flush_timeout` (default=10s): Time after which batch is exported irrespective of other settings.
+    - `sizer` (default=bytes): Size batches by bytes.
+    - `min_size` (default=1MB): Min size of the batch.
+    - `max_size` (default=5MB): Max size of the batch.
 
 #### Bulk indexing error response
 

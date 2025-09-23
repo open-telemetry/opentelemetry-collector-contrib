@@ -46,8 +46,8 @@ func createDefaultConfig() component.Config {
 	qs.QueueSize = 10
 	qs.Batch = configoptional.Some(exporterhelper.BatchConfig{
 		FlushTimeout: 10 * time.Second,
-		MinSize:      5e+6,
-		MaxSize:      10e+6,
+		MinSize:      1e+6,
+		MaxSize:      5e+6,
 		Sizer:        exporterhelper.RequestSizerTypeBytes,
 	})
 
@@ -220,19 +220,11 @@ func exporterhelperOptions(
 ) []exporterhelper.Option {
 	// not setting capabilities as they will default to non-mutating but will be updated
 	// by the base-exporter to mutating if batching is enabled.
-	opts := []exporterhelper.Option{
+	return []exporterhelper.Option{
 		exporterhelper.WithStart(start),
 		exporterhelper.WithShutdown(shutdown),
 		exporterhelper.WithQueueBatch(cfg.QueueBatchConfig, qbs),
+		// Effectively disable timeout_sender because timeout is enforced in bulk indexer.
+		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 	}
-
-	// Effectively disable timeout_sender because timeout is enforced in bulk indexer.
-	//
-	// We keep timeout_sender enabled in the async mode (sending_queue not enabled OR sending
-	// queue enabled but batching not enabled OR based on the deprecated batcher setting), to
-	// ensure sending data to the background workers will not block indefinitely.
-	if cfg.QueueBatchConfig.Enabled {
-		opts = append(opts, exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}))
-	}
-	return opts
 }
