@@ -45,6 +45,9 @@ type MetricsConfig struct {
 	NewrelicoracledbMemorySgaSharedPoolLibraryCacheSharableBytes MetricConfig `mapstructure:"newrelicoracledb.memory.sga_shared_pool_library_cache_sharable_bytes"`
 	NewrelicoracledbMemorySgaSharedPoolLibraryCacheUserBytes     MetricConfig `mapstructure:"newrelicoracledb.memory.sga_shared_pool_library_cache_user_bytes"`
 	NewrelicoracledbMemorySgaUgaTotalBytes                       MetricConfig `mapstructure:"newrelicoracledb.memory.sga_uga_total_bytes"`
+	NewrelicoracledbRollbackSegmentsGets                         MetricConfig `mapstructure:"newrelicoracledb.rollback_segments_gets"`
+	NewrelicoracledbRollbackSegmentsWaitRatio                    MetricConfig `mapstructure:"newrelicoracledb.rollback_segments_wait_ratio"`
+	NewrelicoracledbRollbackSegmentsWaits                        MetricConfig `mapstructure:"newrelicoracledb.rollback_segments_waits"`
 	NewrelicoracledbSessionsCount                                MetricConfig `mapstructure:"newrelicoracledb.sessions.count"`
 	NewrelicoracledbSgaFixedSizeBytes                            MetricConfig `mapstructure:"newrelicoracledb.sga_fixed_size_bytes"`
 	NewrelicoracledbSgaHitRatio                                  MetricConfig `mapstructure:"newrelicoracledb.sga_hit_ratio"`
@@ -120,6 +123,15 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		NewrelicoracledbMemorySgaUgaTotalBytes: MetricConfig{
+			Enabled: true,
+		},
+		NewrelicoracledbRollbackSegmentsGets: MetricConfig{
+			Enabled: true,
+		},
+		NewrelicoracledbRollbackSegmentsWaitRatio: MetricConfig{
+			Enabled: true,
+		},
+		NewrelicoracledbRollbackSegmentsWaits: MetricConfig{
 			Enabled: true,
 		},
 		NewrelicoracledbSessionsCount: MetricConfig{

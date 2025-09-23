@@ -95,6 +95,9 @@ func (s *CoreScraper) ScrapeCoreMetrics(ctx context.Context) []error {
 	// Scrape SGA metrics
 	errors = append(errors, s.scrapeSGAMetrics(ctx, now)...)
 
+	// Scrape rollback segments metrics
+	errors = append(errors, s.scrapeRollbackSegmentsMetrics(ctx, now)...)
+
 	return errors
 }
 
@@ -1062,6 +1065,78 @@ func (s *CoreScraper) scrapeSGAMetrics(ctx context.Context, now pcommon.Timestam
 	}
 
 	s.logger.Debug("Collected Oracle SGA metrics", zap.Int("metric_count", metricCount), zap.String("instance", s.instanceName))
+
+	return errors
+}
+
+// scrapeRollbackSegmentsMetrics handles the rollback segments metrics
+func (s *CoreScraper) scrapeRollbackSegmentsMetrics(ctx context.Context, now pcommon.Timestamp) []error {
+	var errors []error
+	metricCount := 0
+
+	// Execute rollback segments query
+	s.logger.Debug("Executing rollback segments query", zap.String("sql", queries.RollbackSegmentsSQL))
+	rows, err := s.db.QueryContext(ctx, queries.RollbackSegmentsSQL)
+	if err != nil {
+		errors = append(errors, fmt.Errorf("error executing rollback segments query: %w", err))
+		return errors
+	}
+	defer rows.Close()
+
+	// Process query results
+	for rows.Next() {
+		var gets sql.NullInt64
+		var waits sql.NullInt64
+		var ratio sql.NullFloat64
+		var instID interface{}
+
+		err := rows.Scan(&gets, &waits, &ratio, &instID)
+		if err != nil {
+			errors = append(errors, fmt.Errorf("error scanning rollback segments metrics row: %w", err))
+			continue
+		}
+
+		// Convert instance ID to string
+		instanceID := getInstanceIDString(instID)
+
+		// Handle NULL values
+		getsValue := int64(0)
+		if gets.Valid {
+			getsValue = gets.Int64
+		}
+
+		waitsValue := int64(0)
+		if waits.Valid {
+			waitsValue = waits.Int64
+		}
+
+		ratioValue := 0.0
+		if ratio.Valid {
+			ratioValue = ratio.Float64
+		}
+
+		// Record rollback segments metrics
+		s.logger.Info("Rollback segments metrics collected",
+			zap.String("instance_id", instanceID),
+			zap.Int64("rollback_segments_gets", getsValue),
+			zap.Int64("rollback_segments_waits", waitsValue),
+			zap.Float64("rollback_segments_wait_ratio", ratioValue),
+			zap.String("instance", s.instanceName),
+		)
+
+		// Record all rollback segments metrics
+		s.mb.RecordNewrelicoracledbRollbackSegmentsGetsDataPoint(now, getsValue, s.instanceName, instanceID)
+		s.mb.RecordNewrelicoracledbRollbackSegmentsWaitsDataPoint(now, waitsValue, s.instanceName, instanceID)
+		s.mb.RecordNewrelicoracledbRollbackSegmentsWaitRatioDataPoint(now, ratioValue, s.instanceName, instanceID)
+
+		metricCount++
+	}
+
+	if err = rows.Err(); err != nil {
+		errors = append(errors, fmt.Errorf("error iterating rollback segments metrics rows: %w", err))
+	}
+
+	s.logger.Debug("Collected Oracle rollback segments metrics", zap.Int("metric_count", metricCount), zap.String("instance", s.instanceName))
 
 	return errors
 }

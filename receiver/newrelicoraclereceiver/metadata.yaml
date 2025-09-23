@@ -427,6 +427,36 @@ metrics:
       - newrelic.entity_name
       - instance.id
 
+  newrelicoracledb.rollback_segments_gets:
+    description: Number of gets on rollback segments
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.rollback_segments_waits:
+    description: Number of waits on rollback segments
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.rollback_segments_wait_ratio:
+    description: Rollback segments wait ratio (waits/gets)
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
 tests:
   config:
   goleak:

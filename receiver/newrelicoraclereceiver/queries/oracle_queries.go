@@ -203,4 +203,14 @@ const (
 		FROM GV$SGA sga, GV$INSTANCE inst
 		WHERE sga.inst_id=inst.inst_id 
 		AND sga.name IN ('Fixed Size', 'Redo Buffers')`
+
+	RollbackSegmentsSQL = `
+		SELECT
+			SUM(stat.gets) AS gets,
+			sum(stat.waits) AS waits,
+			sum(stat.waits)/sum(stat.gets) AS ratio,
+			inst.inst_id
+		FROM GV$ROLLSTAT stat, GV$INSTANCE inst
+		WHERE stat.inst_id=inst.inst_id
+		GROUP BY inst.inst_id`
 )

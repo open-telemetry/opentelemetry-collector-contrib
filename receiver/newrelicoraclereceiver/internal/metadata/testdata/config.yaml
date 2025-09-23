@@ -35,6 +35,12 @@ all_set:
       enabled: true
     newrelicoracledb.memory.sga_uga_total_bytes:
       enabled: true
+    newrelicoracledb.rollback_segments_gets:
+      enabled: true
+    newrelicoracledb.rollback_segments_wait_ratio:
+      enabled: true
+    newrelicoracledb.rollback_segments_waits:
+      enabled: true
     newrelicoracledb.sessions.count:
       enabled: true
     newrelicoracledb.sga_fixed_size_bytes:
@@ -119,6 +125,12 @@ none_set:
     newrelicoracledb.memory.sga_shared_pool_library_cache_user_bytes:
       enabled: false
     newrelicoracledb.memory.sga_uga_total_bytes:
+      enabled: false
+    newrelicoracledb.rollback_segments_gets:
+      enabled: false
+    newrelicoracledb.rollback_segments_wait_ratio:
+      enabled: false
+    newrelicoracledb.rollback_segments_waits:
       enabled: false
     newrelicoracledb.sessions.count:
       enabled: false
