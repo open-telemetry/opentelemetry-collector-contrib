@@ -223,7 +223,7 @@ func exporterhelperOptions(
 	return []exporterhelper.Option{
 		exporterhelper.WithStart(start),
 		exporterhelper.WithShutdown(shutdown),
-		exporterhelper.WithQueueBatch(cfg.QueueBatchConfig, qbs),
+		xexporterhelper.WithQueueBatch(cfg.QueueBatchConfig, qbs),
 		// Effectively disable timeout_sender because timeout is enforced in bulk indexer.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 	}
