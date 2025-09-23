@@ -7,7 +7,7 @@ change_type: bug_fix
 component: postgresqlreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Fixing the misspelled client_addr in query_sample collection code.
+note: Properly set `network.peer.address` attribute
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [42447]
