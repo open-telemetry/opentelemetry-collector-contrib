@@ -29,6 +29,8 @@ all_set:
       enabled: true
     newrelicoracledb.memory.pga_max_size_bytes:
       enabled: true
+    newrelicoracledb.memory.sga_uga_total_bytes:
+      enabled: true
     newrelicoracledb.sessions.count:
       enabled: true
     newrelicoracledb.tablespace.db_id:
@@ -83,6 +85,8 @@ none_set:
     newrelicoracledb.memory.pga_in_use_bytes:
       enabled: false
     newrelicoracledb.memory.pga_max_size_bytes:
+      enabled: false
+    newrelicoracledb.memory.sga_uga_total_bytes:
       enabled: false
     newrelicoracledb.sessions.count:
       enabled: false

@@ -224,6 +224,21 @@ Global memory bound for PGA in bytes
 | newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
 | instance.id | Oracle database instance ID | Any Str | false |
 
+### newrelicoracledb.memory.sga_uga_total_bytes
+
+Total SGA UGA memory in bytes (session uga memory max)
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+| instance.id | Oracle database instance ID | Any Str | false |
+
 ### newrelicoracledb.sessions.count
 
 Total number of active Oracle database sessions

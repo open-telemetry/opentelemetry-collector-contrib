@@ -62,6 +62,9 @@ func (s *CoreScraper) ScrapeCoreMetrics(ctx context.Context) []error {
 	// Scrape long running queries metrics
 	errors = append(errors, s.scrapeLongRunningQueriesMetrics(ctx, now)...)
 
+	// Scrape SGA UGA total memory metrics
+	errors = append(errors, s.scrapeSGAUGATotalMemoryMetrics(ctx, now)...)
+
 	return errors
 }
 
@@ -406,6 +409,57 @@ func (s *CoreScraper) scrapeLongRunningQueriesMetrics(ctx context.Context, now p
 	}
 
 	s.logger.Debug("Collected Oracle long running queries metrics", zap.Int("metric_count", metricCount), zap.String("instance", s.instanceName))
+
+	return errors
+}
+
+// scrapeSGAUGATotalMemoryMetrics handles the SGA UGA total memory metrics
+func (s *CoreScraper) scrapeSGAUGATotalMemoryMetrics(ctx context.Context, now pcommon.Timestamp) []error {
+	var errors []error
+
+	// Execute SGA UGA total memory metrics query
+	s.logger.Debug("Executing SGA UGA total memory metrics query", zap.String("sql", queries.SGAUGATotalMemorySQL))
+
+	rows, err := s.db.QueryContext(ctx, queries.SGAUGATotalMemorySQL)
+	if err != nil {
+		errors = append(errors, fmt.Errorf("error executing SGA UGA total memory metrics query: %w", err))
+		return errors
+	}
+	defer rows.Close()
+
+	// Process each row and record metrics
+	metricCount := 0
+	for rows.Next() {
+		var sum int64
+		var instID interface{}
+
+		err := rows.Scan(&sum, &instID)
+		if err != nil {
+			errors = append(errors, fmt.Errorf("error scanning SGA UGA total memory metrics row: %w", err))
+			continue
+		}
+
+		// Convert instance ID to string
+		instanceID := getInstanceIDString(instID)
+
+		// Record SGA UGA total memory metrics
+		s.logger.Info("SGA UGA total memory metrics collected",
+			zap.String("instance_id", instanceID),
+			zap.Int64("sga_uga_total_bytes", sum),
+			zap.String("instance", s.instanceName),
+		)
+
+		// Record the SGA UGA total memory metric
+		s.mb.RecordNewrelicoracledbMemorySgaUgaTotalBytesDataPoint(now, sum, s.instanceName, instanceID)
+
+		metricCount++
+	}
+
+	if err = rows.Err(); err != nil {
+		errors = append(errors, fmt.Errorf("error iterating SGA UGA total memory metrics rows: %w", err))
+	}
+
+	s.logger.Debug("Collected Oracle SGA UGA total memory metrics", zap.Int("metric_count", metricCount), zap.String("instance", s.instanceName))
 
 	return errors
 }

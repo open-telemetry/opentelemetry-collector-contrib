@@ -55,6 +55,9 @@ var MetricsInfo = metricsInfo{
 	NewrelicoracledbMemoryPgaMaxSizeBytes: metricInfo{
 		Name: "newrelicoracledb.memory.pga_max_size_bytes",
 	},
+	NewrelicoracledbMemorySgaUgaTotalBytes: metricInfo{
+		Name: "newrelicoracledb.memory.sga_uga_total_bytes",
+	},
 	NewrelicoracledbSessionsCount: metricInfo{
 		Name: "newrelicoracledb.sessions.count",
 	},
@@ -102,6 +105,7 @@ type metricsInfo struct {
 	NewrelicoracledbMemoryPgaFreeableBytes        metricInfo
 	NewrelicoracledbMemoryPgaInUseBytes           metricInfo
 	NewrelicoracledbMemoryPgaMaxSizeBytes         metricInfo
+	NewrelicoracledbMemorySgaUgaTotalBytes        metricInfo
 	NewrelicoracledbSessionsCount                 metricInfo
 	NewrelicoracledbTablespaceDbID                metricInfo
 	NewrelicoracledbTablespaceGlobalName          metricInfo
@@ -848,6 +852,58 @@ func newMetricNewrelicoracledbMemoryPgaMaxSizeBytes(cfg MetricConfig) metricNewr
 	return m
 }
 
+type metricNewrelicoracledbMemorySgaUgaTotalBytes struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.memory.sga_uga_total_bytes metric with initial data.
+func (m *metricNewrelicoracledbMemorySgaUgaTotalBytes) init() {
+	m.data.SetName("newrelicoracledb.memory.sga_uga_total_bytes")
+	m.data.SetDescription("Total SGA UGA memory in bytes (session uga memory max)")
+	m.data.SetUnit("By")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbMemorySgaUgaTotalBytes) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbMemorySgaUgaTotalBytes) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbMemorySgaUgaTotalBytes) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbMemorySgaUgaTotalBytes(cfg MetricConfig) metricNewrelicoracledbMemorySgaUgaTotalBytes {
+	m := metricNewrelicoracledbMemorySgaUgaTotalBytes{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricNewrelicoracledbSessionsCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -1391,6 +1447,7 @@ type MetricsBuilder struct {
 	metricNewrelicoracledbMemoryPgaFreeableBytes        metricNewrelicoracledbMemoryPgaFreeableBytes
 	metricNewrelicoracledbMemoryPgaInUseBytes           metricNewrelicoracledbMemoryPgaInUseBytes
 	metricNewrelicoracledbMemoryPgaMaxSizeBytes         metricNewrelicoracledbMemoryPgaMaxSizeBytes
+	metricNewrelicoracledbMemorySgaUgaTotalBytes        metricNewrelicoracledbMemorySgaUgaTotalBytes
 	metricNewrelicoracledbSessionsCount                 metricNewrelicoracledbSessionsCount
 	metricNewrelicoracledbTablespaceDbID                metricNewrelicoracledbTablespaceDbID
 	metricNewrelicoracledbTablespaceGlobalName          metricNewrelicoracledbTablespaceGlobalName
@@ -1440,6 +1497,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricNewrelicoracledbMemoryPgaFreeableBytes:        newMetricNewrelicoracledbMemoryPgaFreeableBytes(mbc.Metrics.NewrelicoracledbMemoryPgaFreeableBytes),
 		metricNewrelicoracledbMemoryPgaInUseBytes:           newMetricNewrelicoracledbMemoryPgaInUseBytes(mbc.Metrics.NewrelicoracledbMemoryPgaInUseBytes),
 		metricNewrelicoracledbMemoryPgaMaxSizeBytes:         newMetricNewrelicoracledbMemoryPgaMaxSizeBytes(mbc.Metrics.NewrelicoracledbMemoryPgaMaxSizeBytes),
+		metricNewrelicoracledbMemorySgaUgaTotalBytes:        newMetricNewrelicoracledbMemorySgaUgaTotalBytes(mbc.Metrics.NewrelicoracledbMemorySgaUgaTotalBytes),
 		metricNewrelicoracledbSessionsCount:                 newMetricNewrelicoracledbSessionsCount(mbc.Metrics.NewrelicoracledbSessionsCount),
 		metricNewrelicoracledbTablespaceDbID:                newMetricNewrelicoracledbTablespaceDbID(mbc.Metrics.NewrelicoracledbTablespaceDbID),
 		metricNewrelicoracledbTablespaceGlobalName:          newMetricNewrelicoracledbTablespaceGlobalName(mbc.Metrics.NewrelicoracledbTablespaceGlobalName),
@@ -1548,6 +1606,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricNewrelicoracledbMemoryPgaFreeableBytes.emit(ils.Metrics())
 	mb.metricNewrelicoracledbMemoryPgaInUseBytes.emit(ils.Metrics())
 	mb.metricNewrelicoracledbMemoryPgaMaxSizeBytes.emit(ils.Metrics())
+	mb.metricNewrelicoracledbMemorySgaUgaTotalBytes.emit(ils.Metrics())
 	mb.metricNewrelicoracledbSessionsCount.emit(ils.Metrics())
 	mb.metricNewrelicoracledbTablespaceDbID.emit(ils.Metrics())
 	mb.metricNewrelicoracledbTablespaceGlobalName.emit(ils.Metrics())
@@ -1657,6 +1716,11 @@ func (mb *MetricsBuilder) RecordNewrelicoracledbMemoryPgaInUseBytesDataPoint(ts 
 // RecordNewrelicoracledbMemoryPgaMaxSizeBytesDataPoint adds a data point to newrelicoracledb.memory.pga_max_size_bytes metric.
 func (mb *MetricsBuilder) RecordNewrelicoracledbMemoryPgaMaxSizeBytesDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
 	mb.metricNewrelicoracledbMemoryPgaMaxSizeBytes.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbMemorySgaUgaTotalBytesDataPoint adds a data point to newrelicoracledb.memory.sga_uga_total_bytes metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbMemorySgaUgaTotalBytesDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbMemorySgaUgaTotalBytes.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
 }
 
 // RecordNewrelicoracledbSessionsCountDataPoint adds a data point to newrelicoracledb.sessions.count metric.

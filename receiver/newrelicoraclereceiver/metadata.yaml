@@ -277,6 +277,16 @@ metrics:
       - newrelic.entity_name
       - instance.id
 
+  newrelicoracledb.memory.sga_uga_total_bytes:
+    description: Total SGA UGA memory in bytes (session uga memory max)
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "By"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
 tests:
   config:
   goleak:

@@ -125,4 +125,13 @@ const (
 			WHERE i.inst_id=s.inst_id
 		))
 		GROUP BY inst_id`
+
+	SGAUGATotalMemorySQL = `
+		SELECT SUM(value) AS sum, inst.inst_id
+		FROM GV$sesstat, GV$statname, GV$INSTANCE inst
+		WHERE name = 'session uga memory max'
+		AND GV$sesstat.statistic#=GV$statname.statistic#
+		AND GV$sesstat.inst_id=inst.inst_id
+		AND GV$statname.inst_id=inst.inst_id
+		GROUP BY inst.inst_id`
 )
