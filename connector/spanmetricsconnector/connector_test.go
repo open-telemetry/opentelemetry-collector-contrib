@@ -767,6 +767,12 @@ func TestConsumeMetricsErrors(t *testing.T) {
 }
 
 func TestConsumeTraces(t *testing.T) {
+	// enable it
+	require.NoError(t, featuregate.GlobalRegistry().Set(excludeResourceMetrics.ID(), true))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(legacyMetricNamesFeatureGate.ID(), false))
+	}()
+
 	t.Parallel()
 
 	testcases := []struct {
@@ -1682,6 +1688,12 @@ func assertDataPointsHaveExactlyOneExemplarForTrace(t *testing.T, metrics pmetri
 }
 
 func TestTimestampsForUninterruptedStream(t *testing.T) {
+	// enable it
+	require.NoError(t, featuregate.GlobalRegistry().Set(excludeResourceMetrics.ID(), true))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(legacyMetricNamesFeatureGate.ID(), false))
+	}()
+
 	tests := []struct {
 		temporality      string
 		verifyTimestamps func(startTime1, timestamp1, startTime2, timestamp2 pcommon.Timestamp)

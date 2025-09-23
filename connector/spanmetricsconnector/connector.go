@@ -278,6 +278,10 @@ func (p *connectorImp) buildMetrics() pmetric.Metrics {
 
 	p.resourceMetrics.ForEach(func(_ resourceKey, rawMetrics *resourceMetrics) {
 		rm := m.ResourceMetrics().AppendEmpty()
+		if !excludeResourceMetrics.IsEnabled() {
+			rawMetrics.attributes.CopyTo(rm.Resource().Attributes())
+		}
+
 		sm := rm.ScopeMetrics().AppendEmpty()
 		sm.Scope().SetName("spanmetricsconnector")
 
