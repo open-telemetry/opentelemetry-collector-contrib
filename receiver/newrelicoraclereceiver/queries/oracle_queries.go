@@ -197,4 +197,10 @@ const (
 		FROM GV$SYSSTAT sysstat, GV$INSTANCE inst
 		WHERE sysstat.inst_id=inst.inst_id 
 		AND sysstat.name IN ('redo buffer allocation retries', 'redo entries', 'sorts (memory)', 'sorts (disk)')`
+
+	SGASQL = `
+		SELECT inst.inst_id, sga.name, sga.value
+		FROM GV$SGA sga, GV$INSTANCE inst
+		WHERE sga.inst_id=inst.inst_id 
+		AND sga.name IN ('Fixed Size', 'Redo Buffers')`
 )

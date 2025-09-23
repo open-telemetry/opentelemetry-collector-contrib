@@ -46,11 +46,13 @@ type MetricsConfig struct {
 	NewrelicoracledbMemorySgaSharedPoolLibraryCacheUserBytes     MetricConfig `mapstructure:"newrelicoracledb.memory.sga_shared_pool_library_cache_user_bytes"`
 	NewrelicoracledbMemorySgaUgaTotalBytes                       MetricConfig `mapstructure:"newrelicoracledb.memory.sga_uga_total_bytes"`
 	NewrelicoracledbSessionsCount                                MetricConfig `mapstructure:"newrelicoracledb.sessions.count"`
+	NewrelicoracledbSgaFixedSizeBytes                            MetricConfig `mapstructure:"newrelicoracledb.sga_fixed_size_bytes"`
 	NewrelicoracledbSgaHitRatio                                  MetricConfig `mapstructure:"newrelicoracledb.sga_hit_ratio"`
 	NewrelicoracledbSgaLogAllocationRetriesRatio                 MetricConfig `mapstructure:"newrelicoracledb.sga_log_allocation_retries_ratio"`
 	NewrelicoracledbSgaLogBufferRedoAllocationRetries            MetricConfig `mapstructure:"newrelicoracledb.sga_log_buffer_redo_allocation_retries"`
 	NewrelicoracledbSgaLogBufferRedoEntries                      MetricConfig `mapstructure:"newrelicoracledb.sga_log_buffer_redo_entries"`
 	NewrelicoracledbSgaLogBufferSpaceWaits                       MetricConfig `mapstructure:"newrelicoracledb.sga_log_buffer_space_waits"`
+	NewrelicoracledbSgaRedoBuffersBytes                          MetricConfig `mapstructure:"newrelicoracledb.sga_redo_buffers_bytes"`
 	NewrelicoracledbSgaSharedPoolDictCacheMissRatio              MetricConfig `mapstructure:"newrelicoracledb.sga_shared_pool_dict_cache_miss_ratio"`
 	NewrelicoracledbSgaSharedPoolLibraryCacheHitRatio            MetricConfig `mapstructure:"newrelicoracledb.sga_shared_pool_library_cache_hit_ratio"`
 	NewrelicoracledbSgaSharedPoolLibraryCacheReloadRatio         MetricConfig `mapstructure:"newrelicoracledb.sga_shared_pool_library_cache_reload_ratio"`
@@ -123,6 +125,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		NewrelicoracledbSessionsCount: MetricConfig{
 			Enabled: true,
 		},
+		NewrelicoracledbSgaFixedSizeBytes: MetricConfig{
+			Enabled: true,
+		},
 		NewrelicoracledbSgaHitRatio: MetricConfig{
 			Enabled: true,
 		},
@@ -136,6 +141,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		NewrelicoracledbSgaLogBufferSpaceWaits: MetricConfig{
+			Enabled: true,
+		},
+		NewrelicoracledbSgaRedoBuffersBytes: MetricConfig{
 			Enabled: true,
 		},
 		NewrelicoracledbSgaSharedPoolDictCacheMissRatio: MetricConfig{

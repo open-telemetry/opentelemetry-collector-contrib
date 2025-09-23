@@ -37,6 +37,8 @@ all_set:
       enabled: true
     newrelicoracledb.sessions.count:
       enabled: true
+    newrelicoracledb.sga_fixed_size_bytes:
+      enabled: true
     newrelicoracledb.sga_hit_ratio:
       enabled: true
     newrelicoracledb.sga_log_allocation_retries_ratio:
@@ -46,6 +48,8 @@ all_set:
     newrelicoracledb.sga_log_buffer_redo_entries:
       enabled: true
     newrelicoracledb.sga_log_buffer_space_waits:
+      enabled: true
+    newrelicoracledb.sga_redo_buffers_bytes:
       enabled: true
     newrelicoracledb.sga_shared_pool_dict_cache_miss_ratio:
       enabled: true
@@ -118,6 +122,8 @@ none_set:
       enabled: false
     newrelicoracledb.sessions.count:
       enabled: false
+    newrelicoracledb.sga_fixed_size_bytes:
+      enabled: false
     newrelicoracledb.sga_hit_ratio:
       enabled: false
     newrelicoracledb.sga_log_allocation_retries_ratio:
@@ -127,6 +133,8 @@ none_set:
     newrelicoracledb.sga_log_buffer_redo_entries:
       enabled: false
     newrelicoracledb.sga_log_buffer_space_waits:
+      enabled: false
+    newrelicoracledb.sga_redo_buffers_bytes:
       enabled: false
     newrelicoracledb.sga_shared_pool_dict_cache_miss_ratio:
       enabled: false

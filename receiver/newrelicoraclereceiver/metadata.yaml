@@ -407,6 +407,26 @@ metrics:
       - newrelic.entity_name
       - instance.id
 
+  newrelicoracledb.sga_fixed_size_bytes:
+    description: SGA fixed size memory in bytes
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "By"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.sga_redo_buffers_bytes:
+    description: SGA redo buffers memory in bytes
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "By"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
 tests:
   config:
   goleak:

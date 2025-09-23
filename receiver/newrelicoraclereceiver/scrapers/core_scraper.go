@@ -92,6 +92,9 @@ func (s *CoreScraper) ScrapeCoreMetrics(ctx context.Context) []error {
 	// Scrape sysstat metrics
 	errors = append(errors, s.scrapeSysstatMetrics(ctx, now)...)
 
+	// Scrape SGA metrics
+	errors = append(errors, s.scrapeSGAMetrics(ctx, now)...)
+
 	return errors
 }
 
@@ -990,6 +993,75 @@ func (s *CoreScraper) scrapeSysstatMetrics(ctx context.Context, now pcommon.Time
 	}
 
 	s.logger.Debug("Collected Oracle sysstat metrics", zap.Int("metric_count", metricCount), zap.String("instance", s.instanceName))
+
+	return errors
+}
+
+// scrapeSGAMetrics handles the SGA metrics
+func (s *CoreScraper) scrapeSGAMetrics(ctx context.Context, now pcommon.Timestamp) []error {
+	var errors []error
+	metricCount := 0
+
+	// Execute SGA query
+	s.logger.Debug("Executing SGA query", zap.String("sql", queries.SGASQL))
+	rows, err := s.db.QueryContext(ctx, queries.SGASQL)
+	if err != nil {
+		errors = append(errors, fmt.Errorf("error executing SGA query: %w", err))
+		return errors
+	}
+	defer rows.Close()
+
+	// Process query results
+	for rows.Next() {
+		var instID interface{}
+		var name string
+		var value sql.NullInt64
+
+		err := rows.Scan(&instID, &name, &value)
+		if err != nil {
+			errors = append(errors, fmt.Errorf("error scanning SGA metrics row: %w", err))
+			continue
+		}
+
+		// Convert instance ID to string
+		instanceID := getInstanceIDString(instID)
+
+		// Handle NULL values
+		valueInt := int64(0)
+		if value.Valid {
+			valueInt = value.Int64
+		}
+
+		// Record appropriate metric based on the name
+		switch name {
+		case "Fixed Size":
+			s.logger.Info("SGA fixed size metrics collected",
+				zap.String("instance_id", instanceID),
+				zap.Int64("sga_fixed_size_bytes", valueInt),
+				zap.String("instance", s.instanceName),
+			)
+			s.mb.RecordNewrelicoracledbSgaFixedSizeBytesDataPoint(now, valueInt, s.instanceName, instanceID)
+
+		case "Redo Buffers":
+			s.logger.Info("SGA redo buffers metrics collected",
+				zap.String("instance_id", instanceID),
+				zap.Int64("sga_redo_buffers_bytes", valueInt),
+				zap.String("instance", s.instanceName),
+			)
+			s.mb.RecordNewrelicoracledbSgaRedoBuffersBytesDataPoint(now, valueInt, s.instanceName, instanceID)
+
+		default:
+			s.logger.Warn("Unknown SGA metric name", zap.String("name", name), zap.String("instance_id", instanceID))
+		}
+
+		metricCount++
+	}
+
+	if err = rows.Err(); err != nil {
+		errors = append(errors, fmt.Errorf("error iterating SGA metrics rows: %w", err))
+	}
+
+	s.logger.Debug("Collected Oracle SGA metrics", zap.Int("metric_count", metricCount), zap.String("instance", s.instanceName))
 
 	return errors
 }
