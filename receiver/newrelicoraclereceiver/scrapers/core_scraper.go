@@ -53,6 +53,9 @@ func (s *CoreScraper) ScrapeCoreMetrics(ctx context.Context) []error {
 	// Scrape PGA memory metrics
 	errors = append(errors, s.scrapePGAMetrics(ctx, now)...)
 
+	// Scrape global name instance metrics
+	errors = append(errors, s.scrapeGlobalNameInstanceMetrics(ctx, now)...)
+
 	return errors
 }
 
@@ -244,6 +247,57 @@ func (s *CoreScraper) scrapePGAMetrics(ctx context.Context, now pcommon.Timestam
 	}
 
 	s.logger.Debug("Collected Oracle PGA memory metrics", zap.Int("metric_count", metricCount), zap.String("instance", s.instanceName))
+
+	return errors
+}
+
+// scrapeGlobalNameInstanceMetrics handles the global name instance metrics
+func (s *CoreScraper) scrapeGlobalNameInstanceMetrics(ctx context.Context, now pcommon.Timestamp) []error {
+	var errors []error
+
+	// Execute global name instance metrics query
+	s.logger.Debug("Executing global name instance metrics query", zap.String("sql", queries.GlobalNameInstanceSQL))
+
+	rows, err := s.db.QueryContext(ctx, queries.GlobalNameInstanceSQL)
+	if err != nil {
+		errors = append(errors, fmt.Errorf("error executing global name instance metrics query: %w", err))
+		return errors
+	}
+	defer rows.Close()
+
+	// Process each row and record metrics
+	metricCount := 0
+	for rows.Next() {
+		var instID interface{}
+		var globalName string
+
+		err := rows.Scan(&instID, &globalName)
+		if err != nil {
+			errors = append(errors, fmt.Errorf("error scanning global name instance metrics row: %w", err))
+			continue
+		}
+
+		// Convert instance ID to string
+		instanceID := getInstanceIDString(instID)
+
+		// Record global name instance metrics
+		s.logger.Info("Global name instance metrics collected",
+			zap.String("instance_id", instanceID),
+			zap.String("global_name", globalName),
+			zap.String("instance", s.instanceName),
+		)
+
+		// Record the global name metric (using 1 as value since it's an attribute metric)
+		s.mb.RecordNewrelicoracledbGlobalNameDataPoint(now, 1, s.instanceName, instanceID, globalName)
+
+		metricCount++
+	}
+
+	if err = rows.Err(); err != nil {
+		errors = append(errors, fmt.Errorf("error iterating global name instance metrics rows: %w", err))
+	}
+
+	s.logger.Debug("Collected Oracle global name instance metrics", zap.Int("metric_count", metricCount), zap.String("instance", s.instanceName))
 
 	return errors
 }

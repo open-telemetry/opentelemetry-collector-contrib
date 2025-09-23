@@ -13,6 +13,8 @@ all_set:
       enabled: true
     newrelicoracledb.disk.writes:
       enabled: true
+    newrelicoracledb.global_name:
+      enabled: true
     newrelicoracledb.locked_accounts:
       enabled: true
     newrelicoracledb.memory.pga_allocated_bytes:
@@ -61,6 +63,8 @@ none_set:
     newrelicoracledb.disk.write_time_milliseconds:
       enabled: false
     newrelicoracledb.disk.writes:
+      enabled: false
+    newrelicoracledb.global_name:
       enabled: false
     newrelicoracledb.locked_accounts:
       enabled: false

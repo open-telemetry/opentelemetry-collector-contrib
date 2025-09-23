@@ -94,4 +94,12 @@ const (
 		SELECT INST_ID, NAME, VALUE 
 		FROM gv$pgastat 
 		WHERE NAME IN ('total PGA inuse', 'total PGA allocated', 'total freeable PGA memory', 'global memory bound')`
+
+	GlobalNameInstanceSQL = `
+		SELECT
+			t1.INST_ID,
+			t2.GLOBAL_NAME
+		FROM
+			(SELECT INST_ID FROM gv$instance) t1,
+			(SELECT GLOBAL_NAME FROM global_name) t2`
 )

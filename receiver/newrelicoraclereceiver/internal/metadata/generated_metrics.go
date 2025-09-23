@@ -31,6 +31,9 @@ var MetricsInfo = metricsInfo{
 	NewrelicoracledbDiskWrites: metricInfo{
 		Name: "newrelicoracledb.disk.writes",
 	},
+	NewrelicoracledbGlobalName: metricInfo{
+		Name: "newrelicoracledb.global_name",
+	},
 	NewrelicoracledbLockedAccounts: metricInfo{
 		Name: "newrelicoracledb.locked_accounts",
 	},
@@ -85,6 +88,7 @@ type metricsInfo struct {
 	NewrelicoracledbDiskReads                     metricInfo
 	NewrelicoracledbDiskWriteTimeMilliseconds     metricInfo
 	NewrelicoracledbDiskWrites                    metricInfo
+	NewrelicoracledbGlobalName                    metricInfo
 	NewrelicoracledbLockedAccounts                metricInfo
 	NewrelicoracledbMemoryPgaAllocatedBytes       metricInfo
 	NewrelicoracledbMemoryPgaFreeableBytes        metricInfo
@@ -411,6 +415,59 @@ func (m *metricNewrelicoracledbDiskWrites) emit(metrics pmetric.MetricSlice) {
 
 func newMetricNewrelicoracledbDiskWrites(cfg MetricConfig) metricNewrelicoracledbDiskWrites {
 	m := metricNewrelicoracledbDiskWrites{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbGlobalName struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.global_name metric with initial data.
+func (m *metricNewrelicoracledbGlobalName) init() {
+	m.data.SetName("newrelicoracledb.global_name")
+	m.data.SetDescription("Oracle database global name information")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbGlobalName) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string, globalNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+	dp.Attributes().PutStr("global.name", globalNameAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbGlobalName) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbGlobalName) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbGlobalName(cfg MetricConfig) metricNewrelicoracledbGlobalName {
+	m := metricNewrelicoracledbGlobalName{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1213,6 +1270,7 @@ type MetricsBuilder struct {
 	metricNewrelicoracledbDiskReads                     metricNewrelicoracledbDiskReads
 	metricNewrelicoracledbDiskWriteTimeMilliseconds     metricNewrelicoracledbDiskWriteTimeMilliseconds
 	metricNewrelicoracledbDiskWrites                    metricNewrelicoracledbDiskWrites
+	metricNewrelicoracledbGlobalName                    metricNewrelicoracledbGlobalName
 	metricNewrelicoracledbLockedAccounts                metricNewrelicoracledbLockedAccounts
 	metricNewrelicoracledbMemoryPgaAllocatedBytes       metricNewrelicoracledbMemoryPgaAllocatedBytes
 	metricNewrelicoracledbMemoryPgaFreeableBytes        metricNewrelicoracledbMemoryPgaFreeableBytes
@@ -1259,6 +1317,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricNewrelicoracledbDiskReads:                     newMetricNewrelicoracledbDiskReads(mbc.Metrics.NewrelicoracledbDiskReads),
 		metricNewrelicoracledbDiskWriteTimeMilliseconds:     newMetricNewrelicoracledbDiskWriteTimeMilliseconds(mbc.Metrics.NewrelicoracledbDiskWriteTimeMilliseconds),
 		metricNewrelicoracledbDiskWrites:                    newMetricNewrelicoracledbDiskWrites(mbc.Metrics.NewrelicoracledbDiskWrites),
+		metricNewrelicoracledbGlobalName:                    newMetricNewrelicoracledbGlobalName(mbc.Metrics.NewrelicoracledbGlobalName),
 		metricNewrelicoracledbLockedAccounts:                newMetricNewrelicoracledbLockedAccounts(mbc.Metrics.NewrelicoracledbLockedAccounts),
 		metricNewrelicoracledbMemoryPgaAllocatedBytes:       newMetricNewrelicoracledbMemoryPgaAllocatedBytes(mbc.Metrics.NewrelicoracledbMemoryPgaAllocatedBytes),
 		metricNewrelicoracledbMemoryPgaFreeableBytes:        newMetricNewrelicoracledbMemoryPgaFreeableBytes(mbc.Metrics.NewrelicoracledbMemoryPgaFreeableBytes),
@@ -1364,6 +1423,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricNewrelicoracledbDiskReads.emit(ils.Metrics())
 	mb.metricNewrelicoracledbDiskWriteTimeMilliseconds.emit(ils.Metrics())
 	mb.metricNewrelicoracledbDiskWrites.emit(ils.Metrics())
+	mb.metricNewrelicoracledbGlobalName.emit(ils.Metrics())
 	mb.metricNewrelicoracledbLockedAccounts.emit(ils.Metrics())
 	mb.metricNewrelicoracledbMemoryPgaAllocatedBytes.emit(ils.Metrics())
 	mb.metricNewrelicoracledbMemoryPgaFreeableBytes.emit(ils.Metrics())
@@ -1438,6 +1498,11 @@ func (mb *MetricsBuilder) RecordNewrelicoracledbDiskWriteTimeMillisecondsDataPoi
 // RecordNewrelicoracledbDiskWritesDataPoint adds a data point to newrelicoracledb.disk.writes metric.
 func (mb *MetricsBuilder) RecordNewrelicoracledbDiskWritesDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
 	mb.metricNewrelicoracledbDiskWrites.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbGlobalNameDataPoint adds a data point to newrelicoracledb.global_name metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbGlobalNameDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string, globalNameAttributeValue string) {
+	mb.metricNewrelicoracledbGlobalName.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue, globalNameAttributeValue)
 }
 
 // RecordNewrelicoracledbLockedAccountsDataPoint adds a data point to newrelicoracledb.locked_accounts metric.

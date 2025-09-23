@@ -102,6 +102,22 @@ Number of physical disk writes
 | newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
 | instance.id | Oracle database instance ID | Any Str | false |
 
+### newrelicoracledb.global_name
+
+Oracle database global name information
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+| instance.id | Oracle database instance ID | Any Str | false |
+| global.name | Oracle database global name | Any Str | false |
+
 ### newrelicoracledb.locked_accounts
 
 Count of locked user accounts in the database

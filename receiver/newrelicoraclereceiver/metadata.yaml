@@ -28,6 +28,9 @@ attributes:
   instance.id:
     description: Oracle database instance ID
     type: string
+  global.name:
+    description: Oracle database global name
+    type: string
 
 metrics:
   newrelicoracledb.sessions.count:
@@ -238,6 +241,17 @@ metrics:
     attributes:
       - newrelic.entity_name
       - instance.id
+
+  newrelicoracledb.global_name:
+    description: Oracle database global name information
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+      - global.name
 
 tests:
   config:
