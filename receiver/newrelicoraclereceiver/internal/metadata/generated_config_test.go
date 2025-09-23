@@ -27,6 +27,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
+					NewrelicoracledbLockedAccounts:                MetricConfig{Enabled: true},
 					NewrelicoracledbSessionsCount:                 MetricConfig{Enabled: true},
 					NewrelicoracledbTablespaceDbID:                MetricConfig{Enabled: true},
 					NewrelicoracledbTablespaceGlobalName:          MetricConfig{Enabled: true},
@@ -48,6 +49,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
+					NewrelicoracledbLockedAccounts:                MetricConfig{Enabled: false},
 					NewrelicoracledbSessionsCount:                 MetricConfig{Enabled: false},
 					NewrelicoracledbTablespaceDbID:                MetricConfig{Enabled: false},
 					NewrelicoracledbTablespaceGlobalName:          MetricConfig{Enabled: false},

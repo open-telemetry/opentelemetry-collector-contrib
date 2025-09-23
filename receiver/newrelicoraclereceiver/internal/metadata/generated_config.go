@@ -28,6 +28,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for newrelicoracledb metrics.
 type MetricsConfig struct {
+	NewrelicoracledbLockedAccounts                MetricConfig `mapstructure:"newrelicoracledb.locked_accounts"`
 	NewrelicoracledbSessionsCount                 MetricConfig `mapstructure:"newrelicoracledb.sessions.count"`
 	NewrelicoracledbTablespaceDbID                MetricConfig `mapstructure:"newrelicoracledb.tablespace.db_id"`
 	NewrelicoracledbTablespaceGlobalName          MetricConfig `mapstructure:"newrelicoracledb.tablespace.global_name"`
@@ -42,6 +43,9 @@ type MetricsConfig struct {
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
+		NewrelicoracledbLockedAccounts: MetricConfig{
+			Enabled: true,
+		},
 		NewrelicoracledbSessionsCount: MetricConfig{
 			Enabled: true,
 		},

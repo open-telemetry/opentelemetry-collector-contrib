@@ -63,4 +63,18 @@ const (
 		FROM cdb_data_files a, cdb_pdbs b
 		WHERE a.con_id = b.con_id
 		GROUP BY TABLESPACE_NAME`
+
+	// Core database metrics queries
+	LockedAccountsSQL = `
+		SELECT
+			INST_ID, LOCKED_ACCOUNTS
+		FROM
+		(	SELECT count(1) AS LOCKED_ACCOUNTS
+			FROM
+				cdb_users a,
+				cdb_pdbs b
+			WHERE a.con_id = b.con_id
+				AND a.account_status != 'OPEN'
+		) l,
+		gv$instance i`
 )

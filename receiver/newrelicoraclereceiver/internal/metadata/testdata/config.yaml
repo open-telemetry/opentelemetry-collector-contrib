@@ -1,6 +1,8 @@
 default:
 all_set:
   metrics:
+    newrelicoracledb.locked_accounts:
+      enabled: true
     newrelicoracledb.sessions.count:
       enabled: true
     newrelicoracledb.tablespace.db_id:
@@ -28,6 +30,8 @@ all_set:
       enabled: true
 none_set:
   metrics:
+    newrelicoracledb.locked_accounts:
+      enabled: false
     newrelicoracledb.sessions.count:
       enabled: false
     newrelicoracledb.tablespace.db_id:

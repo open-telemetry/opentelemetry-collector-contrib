@@ -25,6 +25,9 @@ attributes:
   tablespace.name:
     description: Name of the Oracle tablespace
     type: string
+  instance.id:
+    description: Oracle database instance ID
+    type: string
 
 metrics:
   newrelicoracledb.sessions.count:
@@ -125,6 +128,16 @@ metrics:
     attributes:
       - newrelic.entity_name
       - tablespace.name
+
+  newrelicoracledb.locked_accounts:
+    description: Count of locked user accounts in the database
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
 
 tests:
   config:
