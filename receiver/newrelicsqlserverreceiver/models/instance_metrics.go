@@ -134,10 +134,8 @@
 // - Enables consistent data handling across SQL Server editions
 package models
 
-// InstanceBufferMetrics represents buffer pool metrics result
-// This is the currently implemented instance metric following the nri-mssql pattern
-type InstanceBufferMetrics struct {
-	InstanceBufferPoolSize *int64 `db:"instance_buffer_pool_size" metric_name:"sqlserver.buffer_pool.size_bytes" source_type:"gauge"`
+type InstanceBufferMetricsModel struct {
+	BufferPoolSize *int64 `db:"buffer_pool_size" metric_name:"sqlserver.instance.buffer_pool_size" source_type:"gauge" description:"Buffer pool size" unit:"By"`
 }
 
 type InstanceMemoryDefinitionsModel struct {
@@ -163,4 +161,31 @@ type InstanceStatsModel struct {
 	PageLifeExpectancySec      *float64 `db:"page_life_expectancy_ms" metric_name:"sqlserver.bufferpool.page_life_expectancy_ms" source_type:"gauge" description:"Page life expectancy in milliseconds" unit:"ms"`
 	TransactionsSec            *int64   `db:"transactions_sec" metric_name:"sqlserver.instance.transactions_per_sec" source_type:"rate" description:"Transactions per second" unit:"1/s"`
 	ForcedParameterizationsSec *int64   `db:"forced_parameterizations_sec" metric_name:"sqlserver.instance.forced_parameterizations_per_sec" source_type:"rate" description:"Forced parameterizations per second" unit:"1/s"`
+}
+
+type BufferPoolHitPercentMetricsModel struct {
+	BufferPoolHitPercent *float64 `db:"buffer_pool_hit_percent" metric_name:"sqlserver.bufferPoolHitPercent" source_type:"gauge"`
+}
+
+type InstanceProcessCountsModel struct {
+	Preconnect *int64 `db:"preconnect" metric_name:"instance.preconnectProcessesCount" source_type:"gauge"`
+	Background *int64 `db:"background" metric_name:"instance.backgroundProcessesCount" source_type:"gauge"`
+	Dormant    *int64 `db:"dormant" metric_name:"instance.dormantProcessesCount" source_type:"gauge"`
+	Runnable   *int64 `db:"runnable" metric_name:"instance.runnableProcessesCount" source_type:"gauge"`
+	Suspended  *int64 `db:"suspended" metric_name:"instance.suspendedProcessesCount" source_type:"gauge"`
+	Running    *int64 `db:"running" metric_name:"instance.runningProcessesCount" source_type:"gauge"`
+	Blocked    *int64 `db:"blocked" metric_name:"instance.blockedProcessesCount" source_type:"gauge"`
+	Sleeping   *int64 `db:"sleeping" metric_name:"instance.sleepingProcessesCount" source_type:"gauge"`
+}
+
+type RunnableTasksMetricsModel struct {
+	RunnableTasksCount *int64 `db:"runnable_tasks_count" metric_name:"instance.runnableTasks" source_type:"gauge"`
+}
+
+type InstanceActiveConnectionsMetricsModel struct {
+	InstanceActiveConnections *int64 `db:"instance_active_connections" metric_name:"activeConnections" source_type:"gauge"`
+}
+
+type InstanceDiskMetricsModel struct {
+	TotalDiskSpace *int64 `db:"total_disk_space" metric_name:"instance.diskInBytes" source_type:"gauge"`
 }

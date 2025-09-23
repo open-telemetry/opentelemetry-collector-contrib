@@ -93,3 +93,43 @@ const InstanceStatsQuery = `SELECT
         (SELECT * FROM sys.dm_os_performance_counters WITH (nolock) WHERE counter_name = 'Page life expectancy' AND object_name LIKE '%Manager%') t11,
         (SELECT Sum(cntr_value) AS cntr_value FROM sys.dm_os_performance_counters WITH (nolock) WHERE counter_name = 'Transactions/sec') t12,
         (SELECT * FROM sys.dm_os_performance_counters WITH (nolock) WHERE counter_name = 'Forced Parameterizations/sec') t13`
+
+const BufferPoolHitPercentMetricsQuery = `SELECT (a.cntr_value * 1.0 / b.cntr_value) * 100.0 AS buffer_pool_hit_percent
+		FROM sys.dm_os_performance_counters 
+		a JOIN (SELECT cntr_value, OBJECT_NAME FROM sys.dm_os_performance_counters WHERE counter_name = 'Buffer cache hit ratio base') 
+		b ON  a.OBJECT_NAME = b.OBJECT_NAME 
+		WHERE a.counter_name = 'Buffer cache hit ratio'`
+
+const InstanceProcessCountMetricsQuery = `SELECT
+		Max(CASE WHEN sessions.status = 'preconnect' THEN counts ELSE 0 END) AS preconnect,
+		Max(CASE WHEN sessions.status = 'background' THEN counts ELSE 0 END) AS background,
+		Max(CASE WHEN sessions.status = 'dormant' THEN counts ELSE 0 END) AS dormant,
+		Max(CASE WHEN sessions.status = 'runnable' THEN counts ELSE 0 END) AS runnable,
+		Max(CASE WHEN sessions.status = 'suspended' THEN counts ELSE 0 END) AS suspended,
+		Max(CASE WHEN sessions.status = 'running' THEN counts ELSE 0 END) AS running,
+		Max(CASE WHEN sessions.status = 'blocked' THEN counts ELSE 0 END) AS blocked,
+		Max(CASE WHEN sessions.status = 'sleeping' THEN counts ELSE 0 END) AS sleeping
+		FROM (SELECT status, Count(*) counts FROM (
+			SELECT CASE WHEN req.status IS NOT NULL THEN
+				CASE WHEN req.blocking_session_id <> 0 THEN 'blocked' ELSE req.status END
+			  ELSE sess.status END status, req.blocking_session_id
+			FROM sys.dm_exec_sessions sess
+			LEFT JOIN sys.dm_exec_requests req
+			ON sess.session_id = req.session_id
+			WHERE sess.session_id > 50 ) statuses
+		  GROUP BY status) sessions`
+
+const RunnableTasksMetricsQuery = `SELECT Sum(runnable_tasks_count) AS runnable_tasks_count
+		FROM sys.dm_os_schedulers
+		WHERE   scheduler_id < 255 AND [status] = 'VISIBLE ONLINE'`
+
+const InstanceActiveConnectionsMetricsQuery = `SELECT Count(dbid) AS instance_active_connections FROM sys.sysprocesses WITH (nolock) WHERE dbid > 0`
+
+const InstanceDiskMetricsQuery = `SELECT Sum(total_bytes) AS total_disk_space FROM (
+			SELECT DISTINCT
+			dovs.volume_mount_point,
+			dovs.available_bytes available_bytes,
+			dovs.total_bytes total_bytes
+			FROM sys.master_files mf WITH (nolock)
+			CROSS apply sys.dm_os_volume_stats(mf.database_id, mf.file_id) dovs
+			) drives`
