@@ -83,6 +83,9 @@ func (s *CoreScraper) ScrapeCoreMetrics(ctx context.Context) []error {
 	// Scrape SGA log buffer space waits metrics
 	errors = append(errors, s.scrapeSGALogBufferSpaceWaitsMetrics(ctx, now)...)
 
+	// Scrape SGA log allocation retries metrics
+	errors = append(errors, s.scrapeSGALogAllocRetriesMetrics(ctx, now)...)
+
 	return errors
 }
 
@@ -784,6 +787,62 @@ func (s *CoreScraper) scrapeSGALogBufferSpaceWaitsMetrics(ctx context.Context, n
 	}
 
 	s.logger.Debug("Collected Oracle SGA log buffer space waits metrics", zap.Int("metric_count", metricCount), zap.String("instance", s.instanceName))
+
+	return errors
+}
+
+// scrapeSGALogAllocRetriesMetrics handles the SGA log allocation retries metrics
+func (s *CoreScraper) scrapeSGALogAllocRetriesMetrics(ctx context.Context, now pcommon.Timestamp) []error {
+	var errors []error
+	metricCount := 0
+
+	// Execute SGA log allocation retries query
+	s.logger.Debug("Executing SGA log allocation retries query", zap.String("sql", queries.SGALogAllocRetriesSQL))
+	rows, err := s.db.QueryContext(ctx, queries.SGALogAllocRetriesSQL)
+	if err != nil {
+		errors = append(errors, fmt.Errorf("error executing SGA log allocation retries query: %w", err))
+		return errors
+	}
+	defer rows.Close()
+
+	// Process query results
+	for rows.Next() {
+		var ratio sql.NullFloat64
+		var instID interface{}
+
+		err := rows.Scan(&ratio, &instID)
+		if err != nil {
+			errors = append(errors, fmt.Errorf("error scanning SGA log allocation retries metrics row: %w", err))
+			continue
+		}
+
+		// Convert instance ID to string
+		instanceID := getInstanceIDString(instID)
+
+		// Handle NULL ratio values
+		ratioValue := 0.0
+		if ratio.Valid {
+			ratioValue = ratio.Float64
+		}
+
+		// Record SGA log allocation retries metrics
+		s.logger.Info("SGA log allocation retries metrics collected",
+			zap.String("instance_id", instanceID),
+			zap.Float64("sga_log_allocation_retries_ratio", ratioValue),
+			zap.String("instance", s.instanceName),
+		)
+
+		// Record the SGA log allocation retries metric
+		s.mb.RecordNewrelicoracledbSgaLogAllocationRetriesRatioDataPoint(now, ratioValue, s.instanceName, instanceID)
+
+		metricCount++
+	}
+
+	if err = rows.Err(); err != nil {
+		errors = append(errors, fmt.Errorf("error iterating SGA log allocation retries metrics rows: %w", err))
+	}
+
+	s.logger.Debug("Collected Oracle SGA log allocation retries metrics", zap.Int("metric_count", metricCount), zap.String("instance", s.instanceName))
 
 	return errors
 }

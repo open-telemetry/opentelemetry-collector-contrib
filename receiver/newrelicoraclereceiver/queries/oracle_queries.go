@@ -172,4 +172,11 @@ const (
 		WHERE wait.event like 'log buffer space%'
 		AND inst.inst_id=wait.inst_id
 		GROUP BY inst.inst_id`
+
+	SGALogAllocRetriesSQL = `
+		SELECT (rbar.value/re.value) as ratio, inst.inst_id
+		FROM GV$SYSSTAT rbar, GV$SYSSTAT re, GV$INSTANCE inst
+		WHERE rbar.name like 'redo buffer allocation retries'
+		AND re.name like 'redo entries'
+		AND re.inst_id=inst.inst_id AND rbar.inst_id=inst.inst_id`
 )

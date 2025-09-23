@@ -37,6 +37,8 @@ all_set:
       enabled: true
     newrelicoracledb.sessions.count:
       enabled: true
+    newrelicoracledb.sga_log_allocation_retries_ratio:
+      enabled: true
     newrelicoracledb.sga_log_buffer_space_waits:
       enabled: true
     newrelicoracledb.sga_shared_pool_dict_cache_miss_ratio:
@@ -105,6 +107,8 @@ none_set:
     newrelicoracledb.memory.sga_uga_total_bytes:
       enabled: false
     newrelicoracledb.sessions.count:
+      enabled: false
+    newrelicoracledb.sga_log_allocation_retries_ratio:
       enabled: false
     newrelicoracledb.sga_log_buffer_space_waits:
       enabled: false

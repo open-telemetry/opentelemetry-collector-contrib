@@ -347,6 +347,16 @@ metrics:
       - newrelic.entity_name
       - instance.id
 
+  newrelicoracledb.sga_log_allocation_retries_ratio:
+    description: SGA log allocation retries ratio (redo buffer allocation retries / redo entries)
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
 tests:
   config:
   goleak:

@@ -142,6 +142,10 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
+			mb.RecordNewrelicoracledbSgaLogAllocationRetriesRatioDataPoint(ts, 1, "newrelic.entity_name-val", "instance.id-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
 			mb.RecordNewrelicoracledbSgaLogBufferSpaceWaitsDataPoint(ts, 1, "newrelic.entity_name-val", "instance.id-val")
 
 			defaultMetricsCount++
@@ -544,6 +548,24 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("newrelic.entity_name")
 					assert.True(t, ok)
 					assert.Equal(t, "newrelic.entity_name-val", attrVal.Str())
+				case "newrelicoracledb.sga_log_allocation_retries_ratio":
+					assert.False(t, validatedMetrics["newrelicoracledb.sga_log_allocation_retries_ratio"], "Found a duplicate in the metrics slice: newrelicoracledb.sga_log_allocation_retries_ratio")
+					validatedMetrics["newrelicoracledb.sga_log_allocation_retries_ratio"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "SGA log allocation retries ratio (redo buffer allocation retries / redo entries)", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					attrVal, ok := dp.Attributes().Get("newrelic.entity_name")
+					assert.True(t, ok)
+					assert.Equal(t, "newrelic.entity_name-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("instance.id")
+					assert.True(t, ok)
+					assert.Equal(t, "instance.id-val", attrVal.Str())
 				case "newrelicoracledb.sga_log_buffer_space_waits":
 					assert.False(t, validatedMetrics["newrelicoracledb.sga_log_buffer_space_waits"], "Found a duplicate in the metrics slice: newrelicoracledb.sga_log_buffer_space_waits")
 					validatedMetrics["newrelicoracledb.sga_log_buffer_space_waits"] = true
