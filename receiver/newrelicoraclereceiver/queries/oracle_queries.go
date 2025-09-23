@@ -179,4 +179,16 @@ const (
 		WHERE rbar.name like 'redo buffer allocation retries'
 		AND re.name like 'redo entries'
 		AND re.inst_id=inst.inst_id AND rbar.inst_id=inst.inst_id`
+
+	SGAHitRatioSQL = `
+		SELECT inst.inst_id,(1 - (phy.value - lob.value - dir.value)/ses.value) as ratio
+		FROM GV$SYSSTAT ses, GV$SYSSTAT lob, GV$SYSSTAT dir, GV$SYSSTAT phy, GV$INSTANCE inst
+		WHERE ses.name='session logical reads'
+		AND dir.name='physical reads direct'
+		AND lob.name='physical reads direct (lob)'
+		AND phy.name='physical reads'
+		AND ses.inst_id=inst.inst_id
+		AND lob.inst_id=inst.inst_id
+		AND dir.inst_id=inst.inst_id
+		AND phy.inst_id=inst.inst_id`
 )

@@ -283,6 +283,21 @@ Total number of active Oracle database sessions
 | ---- | ----------- | ------ | -------- |
 | newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
 
+### newrelicoracledb.sga_hit_ratio
+
+SGA hit ratio (session logical reads minus physical reads / session logical reads)
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+| instance.id | Oracle database instance ID | Any Str | false |
+
 ### newrelicoracledb.sga_log_allocation_retries_ratio
 
 SGA log allocation retries ratio (redo buffer allocation retries / redo entries)

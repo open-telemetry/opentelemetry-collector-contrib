@@ -86,6 +86,9 @@ func (s *CoreScraper) ScrapeCoreMetrics(ctx context.Context) []error {
 	// Scrape SGA log allocation retries metrics
 	errors = append(errors, s.scrapeSGALogAllocRetriesMetrics(ctx, now)...)
 
+	// Scrape SGA hit ratio metrics
+	errors = append(errors, s.scrapeSGAHitRatioMetrics(ctx, now)...)
+
 	return errors
 }
 
@@ -843,6 +846,62 @@ func (s *CoreScraper) scrapeSGALogAllocRetriesMetrics(ctx context.Context, now p
 	}
 
 	s.logger.Debug("Collected Oracle SGA log allocation retries metrics", zap.Int("metric_count", metricCount), zap.String("instance", s.instanceName))
+
+	return errors
+}
+
+// scrapeSGAHitRatioMetrics handles the SGA hit ratio metrics
+func (s *CoreScraper) scrapeSGAHitRatioMetrics(ctx context.Context, now pcommon.Timestamp) []error {
+	var errors []error
+	metricCount := 0
+
+	// Execute SGA hit ratio query
+	s.logger.Debug("Executing SGA hit ratio query", zap.String("sql", queries.SGAHitRatioSQL))
+	rows, err := s.db.QueryContext(ctx, queries.SGAHitRatioSQL)
+	if err != nil {
+		errors = append(errors, fmt.Errorf("error executing SGA hit ratio query: %w", err))
+		return errors
+	}
+	defer rows.Close()
+
+	// Process query results
+	for rows.Next() {
+		var instID interface{}
+		var ratio sql.NullFloat64
+
+		err := rows.Scan(&instID, &ratio)
+		if err != nil {
+			errors = append(errors, fmt.Errorf("error scanning SGA hit ratio metrics row: %w", err))
+			continue
+		}
+
+		// Convert instance ID to string
+		instanceID := getInstanceIDString(instID)
+
+		// Handle NULL ratio values
+		ratioValue := 0.0
+		if ratio.Valid {
+			ratioValue = ratio.Float64
+		}
+
+		// Record SGA hit ratio metrics
+		s.logger.Info("SGA hit ratio metrics collected",
+			zap.String("instance_id", instanceID),
+			zap.Float64("sga_hit_ratio", ratioValue),
+			zap.String("instance", s.instanceName),
+		)
+
+		// Record the SGA hit ratio metric
+		s.mb.RecordNewrelicoracledbSgaHitRatioDataPoint(now, ratioValue, s.instanceName, instanceID)
+
+		metricCount++
+	}
+
+	if err = rows.Err(); err != nil {
+		errors = append(errors, fmt.Errorf("error iterating SGA hit ratio metrics rows: %w", err))
+	}
+
+	s.logger.Debug("Collected Oracle SGA hit ratio metrics", zap.Int("metric_count", metricCount), zap.String("instance", s.instanceName))
 
 	return errors
 }
