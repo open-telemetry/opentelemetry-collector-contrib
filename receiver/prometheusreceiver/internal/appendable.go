@@ -27,8 +27,8 @@ type appendable struct {
 	startTimeMetricRegex   *regexp.Regexp
 	externalLabels         labels.Labels
 
-	settings        receiver.Settings
-	obsrecv         *receiverhelper.ObsReport
+	settings         receiver.Settings
+	obsrecv          *receiverhelper.ObsReport
 	telemetryBuilder *metadata.TelemetryBuilder
 }
 
