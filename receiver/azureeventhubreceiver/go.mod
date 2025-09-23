@@ -8,26 +8,26 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.19.1
 	github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs/v2 v2.0.0
 	github.com/json-iterator/go v1.1.12
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.135.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.135.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure v0.135.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azurelogs v0.135.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.136.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.136.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure v0.136.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azurelogs v0.136.0
 	github.com/relvacode/iso8601 v1.7.0
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/component v1.41.1-0.20250918163459-ba0b327d5fe9
-	go.opentelemetry.io/collector/component/componenttest v0.135.1-0.20250918163459-ba0b327d5fe9
-	go.opentelemetry.io/collector/confmap v1.41.1-0.20250918163459-ba0b327d5fe9
-	go.opentelemetry.io/collector/confmap/xconfmap v0.135.1-0.20250918163459-ba0b327d5fe9
-	go.opentelemetry.io/collector/consumer v1.41.1-0.20250918163459-ba0b327d5fe9
-	go.opentelemetry.io/collector/consumer/consumertest v0.135.1-0.20250918163459-ba0b327d5fe9
-	go.opentelemetry.io/collector/extension/xextension v0.135.1-0.20250918163459-ba0b327d5fe9
-	go.opentelemetry.io/collector/featuregate v1.41.1-0.20250918163459-ba0b327d5fe9
-	go.opentelemetry.io/collector/otelcol/otelcoltest v0.135.1-0.20250918163459-ba0b327d5fe9
-	go.opentelemetry.io/collector/pdata v1.41.1-0.20250918163459-ba0b327d5fe9
-	go.opentelemetry.io/collector/pipeline v1.41.1-0.20250918163459-ba0b327d5fe9
-	go.opentelemetry.io/collector/receiver v1.41.1-0.20250918163459-ba0b327d5fe9
-	go.opentelemetry.io/collector/receiver/receiverhelper v0.135.1-0.20250918163459-ba0b327d5fe9
-	go.opentelemetry.io/collector/receiver/receivertest v0.135.1-0.20250918163459-ba0b327d5fe9
+	go.opentelemetry.io/collector/component v1.42.0
+	go.opentelemetry.io/collector/component/componenttest v0.136.0
+	go.opentelemetry.io/collector/confmap v1.42.0
+	go.opentelemetry.io/collector/confmap/xconfmap v0.136.0
+	go.opentelemetry.io/collector/consumer v1.42.0
+	go.opentelemetry.io/collector/consumer/consumertest v0.136.0
+	go.opentelemetry.io/collector/extension/xextension v0.136.0
+	go.opentelemetry.io/collector/featuregate v1.42.0
+	go.opentelemetry.io/collector/otelcol/otelcoltest v0.136.0
+	go.opentelemetry.io/collector/pdata v1.42.0
+	go.opentelemetry.io/collector/pipeline v1.42.0
+	go.opentelemetry.io/collector/receiver v1.42.0
+	go.opentelemetry.io/collector/receiver/receiverhelper v0.136.0
+	go.opentelemetry.io/collector/receiver/receivertest v0.136.0
 	go.opentelemetry.io/otel v1.38.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
@@ -81,7 +81,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.135.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.136.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
 	github.com/prometheus/client_golang v1.23.2 // indirect
@@ -97,36 +97,36 @@ require (
 	github.com/valyala/fastjson v1.6.4 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/component/componentstatus v0.135.1-0.20250918163459-ba0b327d5fe9 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.135.1-0.20250918163459-ba0b327d5fe9 // indirect
-	go.opentelemetry.io/collector/confmap/provider/envprovider v1.41.1-0.20250918163459-ba0b327d5fe9 // indirect
-	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.41.1-0.20250918163459-ba0b327d5fe9 // indirect
-	go.opentelemetry.io/collector/confmap/provider/httpprovider v1.41.1-0.20250918163459-ba0b327d5fe9 // indirect
-	go.opentelemetry.io/collector/confmap/provider/yamlprovider v1.41.1-0.20250918163459-ba0b327d5fe9 // indirect
-	go.opentelemetry.io/collector/connector v0.135.1-0.20250918163459-ba0b327d5fe9 // indirect
-	go.opentelemetry.io/collector/connector/connectortest v0.135.1-0.20250918163459-ba0b327d5fe9 // indirect
-	go.opentelemetry.io/collector/connector/xconnector v0.135.1-0.20250918163459-ba0b327d5fe9 // indirect
-	go.opentelemetry.io/collector/consumer/consumererror v0.135.1-0.20250918163459-ba0b327d5fe9 // indirect
-	go.opentelemetry.io/collector/consumer/xconsumer v0.135.1-0.20250918163459-ba0b327d5fe9 // indirect
-	go.opentelemetry.io/collector/exporter v0.135.1-0.20250918163459-ba0b327d5fe9 // indirect
-	go.opentelemetry.io/collector/exporter/exportertest v0.135.1-0.20250918163459-ba0b327d5fe9 // indirect
-	go.opentelemetry.io/collector/exporter/xexporter v0.135.1-0.20250918163459-ba0b327d5fe9 // indirect
-	go.opentelemetry.io/collector/extension v1.41.1-0.20250918163459-ba0b327d5fe9 // indirect
-	go.opentelemetry.io/collector/extension/extensioncapabilities v0.135.1-0.20250918163459-ba0b327d5fe9 // indirect
-	go.opentelemetry.io/collector/extension/extensiontest v0.135.1-0.20250918163459-ba0b327d5fe9 // indirect
-	go.opentelemetry.io/collector/internal/fanoutconsumer v0.135.1-0.20250918163459-ba0b327d5fe9 // indirect
-	go.opentelemetry.io/collector/internal/telemetry v0.135.1-0.20250918163459-ba0b327d5fe9 // indirect
-	go.opentelemetry.io/collector/otelcol v0.135.1-0.20250918163459-ba0b327d5fe9 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.135.1-0.20250918163459-ba0b327d5fe9 // indirect
-	go.opentelemetry.io/collector/pdata/testdata v0.135.1-0.20250918163459-ba0b327d5fe9 // indirect
-	go.opentelemetry.io/collector/pdata/xpdata v0.135.1-0.20250918163459-ba0b327d5fe9 // indirect
-	go.opentelemetry.io/collector/pipeline/xpipeline v0.135.1-0.20250918163459-ba0b327d5fe9 // indirect
-	go.opentelemetry.io/collector/processor v1.41.1-0.20250918163459-ba0b327d5fe9 // indirect
-	go.opentelemetry.io/collector/processor/processortest v0.135.1-0.20250918163459-ba0b327d5fe9 // indirect
-	go.opentelemetry.io/collector/processor/xprocessor v0.135.1-0.20250918163459-ba0b327d5fe9 // indirect
-	go.opentelemetry.io/collector/receiver/xreceiver v0.135.1-0.20250918163459-ba0b327d5fe9 // indirect
-	go.opentelemetry.io/collector/service v0.135.1-0.20250918163459-ba0b327d5fe9 // indirect
-	go.opentelemetry.io/collector/service/hostcapabilities v0.135.1-0.20250918163459-ba0b327d5fe9 // indirect
+	go.opentelemetry.io/collector/component/componentstatus v0.136.0 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.136.0 // indirect
+	go.opentelemetry.io/collector/confmap/provider/envprovider v1.42.0 // indirect
+	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.42.0 // indirect
+	go.opentelemetry.io/collector/confmap/provider/httpprovider v1.42.0 // indirect
+	go.opentelemetry.io/collector/confmap/provider/yamlprovider v1.42.0 // indirect
+	go.opentelemetry.io/collector/connector v0.136.0 // indirect
+	go.opentelemetry.io/collector/connector/connectortest v0.136.0 // indirect
+	go.opentelemetry.io/collector/connector/xconnector v0.136.0 // indirect
+	go.opentelemetry.io/collector/consumer/consumererror v0.136.0 // indirect
+	go.opentelemetry.io/collector/consumer/xconsumer v0.136.0 // indirect
+	go.opentelemetry.io/collector/exporter v1.42.0 // indirect
+	go.opentelemetry.io/collector/exporter/exportertest v0.136.0 // indirect
+	go.opentelemetry.io/collector/exporter/xexporter v0.136.0 // indirect
+	go.opentelemetry.io/collector/extension v1.42.0 // indirect
+	go.opentelemetry.io/collector/extension/extensioncapabilities v0.136.0 // indirect
+	go.opentelemetry.io/collector/extension/extensiontest v0.136.0 // indirect
+	go.opentelemetry.io/collector/internal/fanoutconsumer v0.136.0 // indirect
+	go.opentelemetry.io/collector/internal/telemetry v0.136.0 // indirect
+	go.opentelemetry.io/collector/otelcol v0.136.0 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.136.0 // indirect
+	go.opentelemetry.io/collector/pdata/testdata v0.136.0 // indirect
+	go.opentelemetry.io/collector/pdata/xpdata v0.136.0 // indirect
+	go.opentelemetry.io/collector/pipeline/xpipeline v0.136.0 // indirect
+	go.opentelemetry.io/collector/processor v1.42.0 // indirect
+	go.opentelemetry.io/collector/processor/processortest v0.136.0 // indirect
+	go.opentelemetry.io/collector/processor/xprocessor v0.136.0 // indirect
+	go.opentelemetry.io/collector/receiver/xreceiver v0.136.0 // indirect
+	go.opentelemetry.io/collector/service v0.136.0 // indirect
+	go.opentelemetry.io/collector/service/hostcapabilities v0.136.0 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.12.0 // indirect
 	go.opentelemetry.io/contrib/otelconf v0.16.0 // indirect
 	go.opentelemetry.io/contrib/propagators/b3 v1.37.0 // indirect
