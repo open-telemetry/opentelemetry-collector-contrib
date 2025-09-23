@@ -26,6 +26,66 @@ Total number of active Oracle database sessions
 | ---- | ----------- | ------ | -------- |
 | newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
 
+### newrelicoracledb.tablespace.is_offline
+
+Whether the tablespace is offline (1) or online (0)
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+| tablespace.name | Name of the Oracle tablespace | Any Str | false |
+
+### newrelicoracledb.tablespace.space_consumed_bytes
+
+Total bytes consumed by the tablespace
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+| tablespace.name | Name of the Oracle tablespace | Any Str | false |
+
+### newrelicoracledb.tablespace.space_reserved_bytes
+
+Total bytes reserved by the tablespace
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+| tablespace.name | Name of the Oracle tablespace | Any Str | false |
+
+### newrelicoracledb.tablespace.space_used_percentage
+
+Percentage of tablespace space currently used
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| % | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+| tablespace.name | Name of the Oracle tablespace | Any Str | false |
+
 ## Resource Attributes
 
 | Name | Description | Values | Enabled |

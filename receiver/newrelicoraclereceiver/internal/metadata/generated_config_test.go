@@ -27,7 +27,11 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					NewrelicoracledbSessionsCount: MetricConfig{Enabled: true},
+					NewrelicoracledbSessionsCount:                 MetricConfig{Enabled: true},
+					NewrelicoracledbTablespaceIsOffline:           MetricConfig{Enabled: true},
+					NewrelicoracledbTablespaceSpaceConsumedBytes:  MetricConfig{Enabled: true},
+					NewrelicoracledbTablespaceSpaceReservedBytes:  MetricConfig{Enabled: true},
+					NewrelicoracledbTablespaceSpaceUsedPercentage: MetricConfig{Enabled: true},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					HostName:                     ResourceAttributeConfig{Enabled: true},
@@ -39,7 +43,11 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					NewrelicoracledbSessionsCount: MetricConfig{Enabled: false},
+					NewrelicoracledbSessionsCount:                 MetricConfig{Enabled: false},
+					NewrelicoracledbTablespaceIsOffline:           MetricConfig{Enabled: false},
+					NewrelicoracledbTablespaceSpaceConsumedBytes:  MetricConfig{Enabled: false},
+					NewrelicoracledbTablespaceSpaceReservedBytes:  MetricConfig{Enabled: false},
+					NewrelicoracledbTablespaceSpaceUsedPercentage: MetricConfig{Enabled: false},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					HostName:                     ResourceAttributeConfig{Enabled: false},

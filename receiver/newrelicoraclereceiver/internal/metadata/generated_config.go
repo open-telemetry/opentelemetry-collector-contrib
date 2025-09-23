@@ -28,12 +28,28 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for newrelicoracledb metrics.
 type MetricsConfig struct {
-	NewrelicoracledbSessionsCount MetricConfig `mapstructure:"newrelicoracledb.sessions.count"`
+	NewrelicoracledbSessionsCount                 MetricConfig `mapstructure:"newrelicoracledb.sessions.count"`
+	NewrelicoracledbTablespaceIsOffline           MetricConfig `mapstructure:"newrelicoracledb.tablespace.is_offline"`
+	NewrelicoracledbTablespaceSpaceConsumedBytes  MetricConfig `mapstructure:"newrelicoracledb.tablespace.space_consumed_bytes"`
+	NewrelicoracledbTablespaceSpaceReservedBytes  MetricConfig `mapstructure:"newrelicoracledb.tablespace.space_reserved_bytes"`
+	NewrelicoracledbTablespaceSpaceUsedPercentage MetricConfig `mapstructure:"newrelicoracledb.tablespace.space_used_percentage"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
 		NewrelicoracledbSessionsCount: MetricConfig{
+			Enabled: true,
+		},
+		NewrelicoracledbTablespaceIsOffline: MetricConfig{
+			Enabled: true,
+		},
+		NewrelicoracledbTablespaceSpaceConsumedBytes: MetricConfig{
+			Enabled: true,
+		},
+		NewrelicoracledbTablespaceSpaceReservedBytes: MetricConfig{
+			Enabled: true,
+		},
+		NewrelicoracledbTablespaceSpaceUsedPercentage: MetricConfig{
 			Enabled: true,
 		},
 	}

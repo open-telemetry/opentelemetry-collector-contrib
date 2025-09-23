@@ -22,6 +22,9 @@ attributes:
   newrelic.entity_name:
     description: New Relic entity name for the metric
     type: string
+  tablespace.name:
+    description: Name of the Oracle tablespace
+    type: string
 
 metrics:
   newrelicoracledb.sessions.count:
@@ -32,6 +35,46 @@ metrics:
     unit: "{sessions}"
     attributes:
       - newrelic.entity_name
+
+  newrelicoracledb.tablespace.space_consumed_bytes:
+    description: Total bytes consumed by the tablespace
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "By"
+    attributes:
+      - newrelic.entity_name
+      - tablespace.name
+
+  newrelicoracledb.tablespace.space_reserved_bytes:
+    description: Total bytes reserved by the tablespace
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "By"
+    attributes:
+      - newrelic.entity_name
+      - tablespace.name
+
+  newrelicoracledb.tablespace.space_used_percentage:
+    description: Percentage of tablespace space currently used
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "%"
+    attributes:
+      - newrelic.entity_name
+      - tablespace.name
+
+  newrelicoracledb.tablespace.is_offline:
+    description: Whether the tablespace is offline (1) or online (0)
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - tablespace.name
 
 tests:
   config:
