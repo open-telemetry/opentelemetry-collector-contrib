@@ -20,7 +20,6 @@ import (
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/newrelicoraclereceiver/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/newrelicoraclereceiver/models"
 )
 
 // NewFactory creates a new New Relic Oracle receiver factory.
@@ -30,7 +29,7 @@ func NewFactory() receiver.Factory {
 		createDefaultConfig,
 		receiver.WithMetrics(createReceiverFunc(func(dataSourceName string) (*sql.DB, error) {
 			return sql.Open("godror", dataSourceName)
-		}, newDbClient), metadata.MetricsStability))
+		}), metadata.MetricsStability))
 }
 
 func createDefaultConfig() component.Config {
@@ -45,7 +44,7 @@ func createDefaultConfig() component.Config {
 
 type sqlOpenerFunc func(dataSourceName string) (*sql.DB, error)
 
-func createReceiverFunc(sqlOpenerFunc sqlOpenerFunc, clientProviderFunc models.ClientProviderFunc) receiver.CreateMetricsFunc {
+func createReceiverFunc(sqlOpenerFunc sqlOpenerFunc) receiver.CreateMetricsFunc {
 	return func(
 		_ context.Context,
 		settings receiver.Settings,
@@ -66,7 +65,7 @@ func createReceiverFunc(sqlOpenerFunc sqlOpenerFunc, clientProviderFunc models.C
 
 		mp, err := newScraper(metricsBuilder, sqlCfg.MetricsBuilderConfig, sqlCfg.ControllerConfig, settings.Logger, func() (*sql.DB, error) {
 			return sqlOpenerFunc(getDataSource(*sqlCfg))
-		}, clientProviderFunc, instanceName, hostName)
+		}, instanceName, hostName)
 		if err != nil {
 			return nil, err
 		}

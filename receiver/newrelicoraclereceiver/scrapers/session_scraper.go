@@ -5,20 +5,20 @@ package scrapers
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
-	"strconv"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
 	
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/newrelicoraclereceiver/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/newrelicoraclereceiver/models"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/newrelicoraclereceiver/queries"
 )
 
 // SessionScraper handles session count Oracle metric
 type SessionScraper struct {
-	client       models.DbClient
+	db           *sql.DB          // Direct DB connection passed from main scraper
 	mb           *metadata.MetricsBuilder
 	logger       *zap.Logger
 	instanceName string
@@ -26,9 +26,9 @@ type SessionScraper struct {
 }
 
 // NewSessionScraper creates a new session scraper
-func NewSessionScraper(client models.DbClient, mb *metadata.MetricsBuilder, logger *zap.Logger, instanceName string, config metadata.MetricsBuilderConfig) *SessionScraper {
+func NewSessionScraper(db *sql.DB, mb *metadata.MetricsBuilder, logger *zap.Logger, instanceName string, config metadata.MetricsBuilderConfig) *SessionScraper {
 	return &SessionScraper{
-		client:       client,
+		db:           db,
 		mb:           mb,
 		logger:       logger,
 		instanceName: instanceName,
@@ -47,23 +47,23 @@ func (s *SessionScraper) ScrapeSessionCount(ctx context.Context) []error {
 	s.logger.Debug("Scraping Oracle session count")
 	now := pcommon.NewTimestampFromTime(time.Now())
 	
-	rows, err := s.client.MetricRows(ctx)
+	// Execute session count query directly using the shared DB connection
+	s.logger.Debug("Executing session count query", zap.String("sql", queries.SessionCountSQL))
+	
+	var sessionCount int64
+	err := s.db.QueryRowContext(ctx, queries.SessionCountSQL).Scan(&sessionCount)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			s.logger.Warn("No rows returned from session count query")
+			return errors
+		}
 		errors = append(errors, fmt.Errorf("error executing session count query: %w", err))
 		return errors
 	}
-
-	for _, row := range rows {
-		sessionCountStr := row["SESSION_COUNT"]
-		sessionCount, parseErr := strconv.ParseInt(sessionCountStr, 10, 64)
-		if parseErr != nil {
-			errors = append(errors, fmt.Errorf("failed to parse session count value: %s, error: %w", sessionCountStr, parseErr))
-			continue
-		}
-		
-		s.mb.RecordNewrelicoracledbSessionsCountDataPoint(now, sessionCount, s.instanceName)
-		s.logger.Debug("Collected Oracle session count", zap.Int64("count", sessionCount))
-	}
+	
+	// Record the metric
+	s.mb.RecordNewrelicoracledbSessionsCountDataPoint(now, sessionCount, s.instanceName)
+	s.logger.Debug("Collected Oracle session count", zap.Int64("count", sessionCount), zap.String("instance", s.instanceName))
 	
 	return errors
 }
