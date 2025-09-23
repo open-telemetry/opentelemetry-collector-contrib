@@ -29,10 +29,8 @@ func newUnrollProcessor(config *Config) (*unrollProcessor, error) {
 // ProcessLogs implements the processor interface
 func (p *unrollProcessor) ProcessLogs(_ context.Context, ld plog.Logs) (plog.Logs, error) {
 	var errs error
-	for i := 0; i < ld.ResourceLogs().Len(); i++ {
-		rls := ld.ResourceLogs().At(i)
-		for j := 0; j < rls.ScopeLogs().Len(); j++ {
-			sls := rls.ScopeLogs().At(j)
+	for _, rls := range ld.ResourceLogs().All() {
+		for _, sls := range rls.ScopeLogs().All() {
 			origLen := sls.LogRecords().Len()
 			var last func() int
 			if p.cfg.Recursive {
@@ -84,6 +82,6 @@ func setBody(newLogRecord plog.LogRecord, expansion pcommon.Value) {
 	case pcommon.ValueTypeBytes:
 		expansion.Bytes().CopyTo(newLogRecord.Body().SetEmptyBytes())
 	case pcommon.ValueTypeEmpty:
-		newLogRecord.Body().SetStr("")
+		newLogRecord.Body().FromRaw(nil)
 	}
 }

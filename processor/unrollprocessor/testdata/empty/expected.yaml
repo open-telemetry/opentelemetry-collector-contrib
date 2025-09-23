@@ -7,7 +7,7 @@ resourceLogs:
                 value:
                   stringValue: recordA
             body:
-              stringValue: ""
+              emptyValue:
           - attributes:
               - key: recordName
                 value:
