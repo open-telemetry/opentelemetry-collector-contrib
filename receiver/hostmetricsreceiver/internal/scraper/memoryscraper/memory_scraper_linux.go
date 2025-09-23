@@ -7,13 +7,29 @@ package memoryscraper // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"github.com/shirou/gopsutil/v4/mem"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/memoryscraper/internal/metadata"
 )
 
+var useMemAvailable = featuregate.GlobalRegistry().MustRegister(
+	"receiver.hostmetricsreceiver.UseLinuxMemAvailable",
+	featuregate.StageBeta,
+	featuregate.WithRegisterFromVersion("v0.137.0"),
+	featuregate.WithRegisterDescription("When enabled, the used value for the system.memory.usage and system.memory.utilization metrics will be based on the Linux kernel’s MemAvailable statistic instead of MemFree, Buffers, and Cached."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42221"),
+)
+
 func (s *memoryScraper) recordMemoryUsageMetric(now pcommon.Timestamp, memInfo *mem.VirtualMemoryStat) {
-	s.mb.RecordSystemMemoryUsageDataPoint(now, int64(memInfo.Used), metadata.AttributeStateUsed)
+	// TODO: rely on memInfo.Used value once https://github.com/shirou/gopsutil/pull/1882 is released
+	// gopsutil formula: https://github.com/shirou/gopsutil/pull/1882/files#diff-5af8322731595fb792b48f3c38f31ddb24f596cf11a74a9c37b19734597baef6R321
+	if useMemAvailable.IsEnabled() {
+		s.mb.RecordSystemMemoryUsageDataPoint(now, int64(memInfo.Total-memInfo.Available), metadata.AttributeStateUsed)
+	} else {
+		// gopsutil legacy "Used" memory formula = Total - Free - Buffers - Cache
+		s.mb.RecordSystemMemoryUsageDataPoint(now, int64(memInfo.Total-memInfo.Free-memInfo.Buffers-memInfo.Cached), metadata.AttributeStateUsed)
+	}
 	s.mb.RecordSystemMemoryUsageDataPoint(now, int64(memInfo.Free), metadata.AttributeStateFree)
 	s.mb.RecordSystemMemoryUsageDataPoint(now, int64(memInfo.Buffers), metadata.AttributeStateBuffered)
 	s.mb.RecordSystemMemoryUsageDataPoint(now, int64(memInfo.Cached), metadata.AttributeStateCached)
@@ -22,7 +38,14 @@ func (s *memoryScraper) recordMemoryUsageMetric(now pcommon.Timestamp, memInfo *
 }
 
 func (s *memoryScraper) recordMemoryUtilizationMetric(now pcommon.Timestamp, memInfo *mem.VirtualMemoryStat) {
-	s.mb.RecordSystemMemoryUtilizationDataPoint(now, float64(memInfo.Used)/float64(memInfo.Total), metadata.AttributeStateUsed)
+	// TODO: rely on memInfo.Used value once https://github.com/shirou/gopsutil/pull/1882 is released
+	// gopsutil formula: https://github.com/shirou/gopsutil/pull/1882/files#diff-5af8322731595fb792b48f3c38f31ddb24f596cf11a74a9c37b19734597baef6R321
+	if useMemAvailable.IsEnabled() {
+		s.mb.RecordSystemMemoryUtilizationDataPoint(now, float64(memInfo.Total-memInfo.Available)/float64(memInfo.Total), metadata.AttributeStateUsed)
+	} else {
+		// gopsutil legacy "Used" memory formula = Total - Free - Buffers - Cache
+		s.mb.RecordSystemMemoryUtilizationDataPoint(now, float64(memInfo.Total-memInfo.Free-memInfo.Buffers-memInfo.Cached)/float64(memInfo.Total), metadata.AttributeStateUsed)
+	}
 	s.mb.RecordSystemMemoryUtilizationDataPoint(now, float64(memInfo.Free)/float64(memInfo.Total), metadata.AttributeStateFree)
 	s.mb.RecordSystemMemoryUtilizationDataPoint(now, float64(memInfo.Buffers)/float64(memInfo.Total), metadata.AttributeStateBuffered)
 	s.mb.RecordSystemMemoryUtilizationDataPoint(now, float64(memInfo.Cached)/float64(memInfo.Total), metadata.AttributeStateCached)
