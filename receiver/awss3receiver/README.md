@@ -35,8 +35,8 @@ The following exporter configuration parameters are supported.
 | `queue_url`             | The URL of the SQS queue that receives S3 bucket notifications                                                                             |             | Required if fetching by SQS notification |
 | `region`                | AWS region of the SQS queue                                                                                                                |             | Required if fetching by SQS notification |
 | `endpoint`              | Custom endpoint for the SQS service                                                                                                        |             | Optional |
-| `max_messages`          | Maximum number of messages to retrieve in a single SQS request                                                                             | 10          | Optional |
-| `wait_time`             | Wait time in seconds for long polling SQS requests                                                                                         | 20          | Optional |
+| `max_number_of_messages`          | Maximum number of messages to retrieve in a single SQS request                                                                             | 10          | Optional |
+| `wait_time_seconds`             | Wait time in seconds for long polling SQS requests                                                                                         | 20          | Optional |
 | `delete_messages`             | Controls whether to delete messages from the queue after processing                                                                                         | true          | Optional |
 | `encodings:`            | An array of entries with the following properties:                                                                                         |             | Optional |
 | `extension`             | Extension to use for decoding a key with a matching suffix.                                                                                |             | Required |

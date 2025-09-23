@@ -96,7 +96,9 @@ func TestNewS3SQSReader(t *testing.T) {
 		assert.NoError(t, err)
 
 		// check all defaults are set
-		assert.True(t, r.deleteMessages)
+		assert.Equal(t, int32(10), r.maxNumberOfMessages)
+		assert.Equal(t, int32(20), r.waitTimeSeconds)
+        assert.True(t, r.deleteMessages)
 	})
 
 	t.Run("override non-default config", func(t *testing.T) {
@@ -108,8 +110,8 @@ func TestNewS3SQSReader(t *testing.T) {
 			SQS: &SQSConfig{
 				QueueURL:            "https://sqs.us-east-1.amazonaws.com/123456789012/test-queue",
 				Region:              "us-east-1",
-				MaxNumberOfMessages: 5,
-				WaitTimeSeconds:     10,
+				MaxNumberOfMessages: aws.Int64(5),
+				WaitTimeSeconds:     aws.Int64(10),
 				DeleteMessages:      aws.Bool(false),
 			},
 		}

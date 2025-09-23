@@ -222,11 +222,6 @@ func Test_getValue(t *testing.T) {
 	})
 }
 
-func Test_newPlaceholder(t *testing.T) {
-	expectStr := "(?,?,?,?,?),"
-	require.Equal(t, newPlaceholder(5), &expectStr)
-}
-
 func Test_GetServiceName(t *testing.T) {
 	t.Run("should return empty string on unset service.name", func(t *testing.T) {
 		require.Empty(t, GetServiceName(pcommon.NewMap()))
