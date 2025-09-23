@@ -111,7 +111,7 @@ func createLogsExporter(
 		return nil, err
 	}
 
-	qbs := exporterhelper.NewLogsQueueBatchSettings()
+	qbs := xexporterhelper.NewLogsQueueBatchSettings()
 	if len(cf.MetadataKeys) > 0 {
 		qbs.Partitioner = metadataKeysPartitioner{keys: cf.MetadataKeys}
 	}
@@ -139,7 +139,7 @@ func createMetricsExporter(
 		return nil, err
 	}
 
-	qbs := exporterhelper.NewMetricsQueueBatchSettings()
+	qbs := xexporterhelper.NewMetricsQueueBatchSettings()
 	if len(cf.MetadataKeys) > 0 {
 		qbs.Partitioner = metadataKeysPartitioner{keys: cf.MetadataKeys}
 	}
@@ -166,7 +166,7 @@ func createTracesExporter(ctx context.Context,
 		return nil, err
 	}
 
-	qbs := exporterhelper.NewTracesQueueBatchSettings()
+	qbs := xexporterhelper.NewTracesQueueBatchSettings()
 	if len(cf.MetadataKeys) > 0 {
 		qbs.Partitioner = metadataKeysPartitioner{keys: cf.MetadataKeys}
 	}
@@ -216,7 +216,7 @@ func exporterhelperOptions(
 	cfg *Config,
 	start component.StartFunc,
 	shutdown component.ShutdownFunc,
-	qbs exporterhelper.QueueBatchSettings,
+	qbs xexporterhelper.QueueBatchSettings,
 ) []exporterhelper.Option {
 	// not setting capabilities as they will default to non-mutating but will be updated
 	// by the base-exporter to mutating if batching is enabled.
