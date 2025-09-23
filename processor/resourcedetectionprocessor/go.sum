@@ -209,6 +209,8 @@ github.com/hashicorp/serf v0.10.1 h1:Z1H2J60yRKvfDYAOZLd2MU0ND4AH/WDz7xYHDWQsIPY
 github.com/hashicorp/serf v0.10.1/go.mod h1:yL2t6BqATOLGc5HF7qbFkTfXoPIY0WZdWHfEvMqbG+4=
 github.com/hetznercloud/hcloud-go/v2 v2.23.0 h1:cx4t0loUz/Xo70N4IvMX5se0WvHoUrHGibyHkreEvws=
 github.com/hetznercloud/hcloud-go/v2 v2.23.0/go.mod h1:ERaDt5CFz2Y5J0oimN3XfMe98cJIggqfG6pmo2BlPv4=
+github.com/hetznercloud/hcloud-go/v2 v2.24.0 h1:57YlEQOc9QperCGck+iX4MqCrwEsznEdK7bPrsdAgOQ=
+github.com/hetznercloud/hcloud-go/v2 v2.24.0/go.mod h1:uQdAWaW3d9TimiyOjQWY8HKShs0Nd6S4wNYqo0HjvIY=
 github.com/jarcoal/httpmock v1.4.0 h1:BvhqnH0JAYbNudL2GMJKgOHe2CtKlzJ/5rWKyp+hc2k=
 github.com/jarcoal/httpmock v1.4.0/go.mod h1:ftW1xULwo+j0R0JJkJIIi7UKigZUXCLLanykgjwBXL0=
 github.com/josharian/intern v1.0.0 h1:vlS4z54oSdjm0bgjRigI+G1HpF+tI+9rE5LLzOg8HmY=
