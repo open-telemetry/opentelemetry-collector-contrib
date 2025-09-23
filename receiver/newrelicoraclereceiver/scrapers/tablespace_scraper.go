@@ -43,6 +43,19 @@ func (s *TablespaceScraper) ScrapeTablespaceMetrics(ctx context.Context) []error
 	s.logger.Debug("Scraping Oracle tablespace metrics")
 	now := pcommon.NewTimestampFromTime(time.Now())
 
+	// Scrape main tablespace metrics
+	errors = append(errors, s.scrapeTablespaceUsageMetrics(ctx, now)...)
+
+	// Scrape global name tablespace metrics
+	errors = append(errors, s.scrapeGlobalNameTablespaceMetrics(ctx, now)...)
+
+	return errors
+}
+
+// scrapeTablespaceUsageMetrics handles the main tablespace usage metrics
+func (s *TablespaceScraper) scrapeTablespaceUsageMetrics(ctx context.Context, now pcommon.Timestamp) []error {
+	var errors []error
+
 	// Execute tablespace metrics query directly using the shared DB connection
 	s.logger.Debug("Executing tablespace metrics query", zap.String("sql", queries.TablespaceMetricsSQL))
 
@@ -89,6 +102,53 @@ func (s *TablespaceScraper) ScrapeTablespaceMetrics(ctx context.Context) []error
 	}
 
 	s.logger.Debug("Collected Oracle tablespace metrics", zap.Int("metric_count", metricCount), zap.String("instance", s.instanceName))
+
+	return errors
+}
+
+// scrapeGlobalNameTablespaceMetrics handles the global name tablespace metrics
+func (s *TablespaceScraper) scrapeGlobalNameTablespaceMetrics(ctx context.Context, now pcommon.Timestamp) []error {
+	var errors []error
+
+	// Execute global name tablespace query
+	s.logger.Debug("Executing global name tablespace query", zap.String("sql", queries.GlobalNameTablespaceSQL))
+
+	rows, err := s.db.QueryContext(ctx, queries.GlobalNameTablespaceSQL)
+	if err != nil {
+		errors = append(errors, fmt.Errorf("error executing global name tablespace query: %w", err))
+		return errors
+	}
+	defer rows.Close()
+
+	// Process each row and record metrics
+	metricCount := 0
+	for rows.Next() {
+		var tablespaceName, globalName string
+
+		err := rows.Scan(&tablespaceName, &globalName)
+		if err != nil {
+			errors = append(errors, fmt.Errorf("error scanning global name tablespace row: %w", err))
+			continue
+		}
+
+		// Record global name metrics
+		s.logger.Info("Global name tablespace metrics collected",
+			zap.String("tablespace", tablespaceName),
+			zap.String("global_name", globalName),
+			zap.String("instance", s.instanceName),
+		)
+
+		// Record the global name metric (using 1 as value since it's an attribute metric)
+		s.mb.RecordNewrelicoracledbTablespaceGlobalNameDataPoint(now, 1, s.instanceName, tablespaceName)
+
+		metricCount++
+	}
+
+	if err = rows.Err(); err != nil {
+		errors = append(errors, fmt.Errorf("error iterating global name tablespace rows: %w", err))
+	}
+
+	s.logger.Debug("Collected Oracle global name tablespace metrics", zap.Int("metric_count", metricCount), zap.String("instance", s.instanceName))
 
 	return errors
 }

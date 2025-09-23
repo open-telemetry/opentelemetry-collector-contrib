@@ -74,6 +74,10 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
+			mb.RecordNewrelicoracledbTablespaceGlobalNameDataPoint(ts, 1, "newrelic.entity_name-val", "tablespace.name-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
 			mb.RecordNewrelicoracledbTablespaceIsOfflineDataPoint(ts, 1, "newrelic.entity_name-val", "tablespace.name-val")
 
 			defaultMetricsCount++
@@ -128,6 +132,24 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("newrelic.entity_name")
 					assert.True(t, ok)
 					assert.Equal(t, "newrelic.entity_name-val", attrVal.Str())
+				case "newrelicoracledb.tablespace.global_name":
+					assert.False(t, validatedMetrics["newrelicoracledb.tablespace.global_name"], "Found a duplicate in the metrics slice: newrelicoracledb.tablespace.global_name")
+					validatedMetrics["newrelicoracledb.tablespace.global_name"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Global name information for tablespace", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("newrelic.entity_name")
+					assert.True(t, ok)
+					assert.Equal(t, "newrelic.entity_name-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("tablespace.name")
+					assert.True(t, ok)
+					assert.Equal(t, "tablespace.name-val", attrVal.Str())
 				case "newrelicoracledb.tablespace.is_offline":
 					assert.False(t, validatedMetrics["newrelicoracledb.tablespace.is_offline"], "Found a duplicate in the metrics slice: newrelicoracledb.tablespace.is_offline")
 					validatedMetrics["newrelicoracledb.tablespace.is_offline"] = true

@@ -3,6 +3,8 @@ all_set:
   metrics:
     newrelicoracledb.sessions.count:
       enabled: true
+    newrelicoracledb.tablespace.global_name:
+      enabled: true
     newrelicoracledb.tablespace.is_offline:
       enabled: true
     newrelicoracledb.tablespace.space_consumed_bytes:
@@ -19,6 +21,8 @@ all_set:
 none_set:
   metrics:
     newrelicoracledb.sessions.count:
+      enabled: false
+    newrelicoracledb.tablespace.global_name:
       enabled: false
     newrelicoracledb.tablespace.is_offline:
       enabled: false
