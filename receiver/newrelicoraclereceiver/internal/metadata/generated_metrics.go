@@ -13,6 +13,24 @@ import (
 )
 
 var MetricsInfo = metricsInfo{
+	NewrelicoracledbDiskBlocksRead: metricInfo{
+		Name: "newrelicoracledb.disk.blocks_read",
+	},
+	NewrelicoracledbDiskBlocksWritten: metricInfo{
+		Name: "newrelicoracledb.disk.blocks_written",
+	},
+	NewrelicoracledbDiskReadTimeMilliseconds: metricInfo{
+		Name: "newrelicoracledb.disk.read_time_milliseconds",
+	},
+	NewrelicoracledbDiskReads: metricInfo{
+		Name: "newrelicoracledb.disk.reads",
+	},
+	NewrelicoracledbDiskWriteTimeMilliseconds: metricInfo{
+		Name: "newrelicoracledb.disk.write_time_milliseconds",
+	},
+	NewrelicoracledbDiskWrites: metricInfo{
+		Name: "newrelicoracledb.disk.writes",
+	},
 	NewrelicoracledbLockedAccounts: metricInfo{
 		Name: "newrelicoracledb.locked_accounts",
 	},
@@ -49,6 +67,12 @@ var MetricsInfo = metricsInfo{
 }
 
 type metricsInfo struct {
+	NewrelicoracledbDiskBlocksRead                metricInfo
+	NewrelicoracledbDiskBlocksWritten             metricInfo
+	NewrelicoracledbDiskReadTimeMilliseconds      metricInfo
+	NewrelicoracledbDiskReads                     metricInfo
+	NewrelicoracledbDiskWriteTimeMilliseconds     metricInfo
+	NewrelicoracledbDiskWrites                    metricInfo
 	NewrelicoracledbLockedAccounts                metricInfo
 	NewrelicoracledbSessionsCount                 metricInfo
 	NewrelicoracledbTablespaceDbID                metricInfo
@@ -64,6 +88,318 @@ type metricsInfo struct {
 
 type metricInfo struct {
 	Name string
+}
+
+type metricNewrelicoracledbDiskBlocksRead struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.disk.blocks_read metric with initial data.
+func (m *metricNewrelicoracledbDiskBlocksRead) init() {
+	m.data.SetName("newrelicoracledb.disk.blocks_read")
+	m.data.SetDescription("Number of physical blocks read from disk")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbDiskBlocksRead) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbDiskBlocksRead) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbDiskBlocksRead) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbDiskBlocksRead(cfg MetricConfig) metricNewrelicoracledbDiskBlocksRead {
+	m := metricNewrelicoracledbDiskBlocksRead{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbDiskBlocksWritten struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.disk.blocks_written metric with initial data.
+func (m *metricNewrelicoracledbDiskBlocksWritten) init() {
+	m.data.SetName("newrelicoracledb.disk.blocks_written")
+	m.data.SetDescription("Number of physical blocks written to disk")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbDiskBlocksWritten) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbDiskBlocksWritten) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbDiskBlocksWritten) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbDiskBlocksWritten(cfg MetricConfig) metricNewrelicoracledbDiskBlocksWritten {
+	m := metricNewrelicoracledbDiskBlocksWritten{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbDiskReadTimeMilliseconds struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.disk.read_time_milliseconds metric with initial data.
+func (m *metricNewrelicoracledbDiskReadTimeMilliseconds) init() {
+	m.data.SetName("newrelicoracledb.disk.read_time_milliseconds")
+	m.data.SetDescription("Time spent reading from disk in milliseconds")
+	m.data.SetUnit("ms")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbDiskReadTimeMilliseconds) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbDiskReadTimeMilliseconds) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbDiskReadTimeMilliseconds) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbDiskReadTimeMilliseconds(cfg MetricConfig) metricNewrelicoracledbDiskReadTimeMilliseconds {
+	m := metricNewrelicoracledbDiskReadTimeMilliseconds{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbDiskReads struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.disk.reads metric with initial data.
+func (m *metricNewrelicoracledbDiskReads) init() {
+	m.data.SetName("newrelicoracledb.disk.reads")
+	m.data.SetDescription("Number of physical disk reads")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbDiskReads) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbDiskReads) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbDiskReads) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbDiskReads(cfg MetricConfig) metricNewrelicoracledbDiskReads {
+	m := metricNewrelicoracledbDiskReads{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbDiskWriteTimeMilliseconds struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.disk.write_time_milliseconds metric with initial data.
+func (m *metricNewrelicoracledbDiskWriteTimeMilliseconds) init() {
+	m.data.SetName("newrelicoracledb.disk.write_time_milliseconds")
+	m.data.SetDescription("Time spent writing to disk in milliseconds")
+	m.data.SetUnit("ms")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbDiskWriteTimeMilliseconds) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbDiskWriteTimeMilliseconds) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbDiskWriteTimeMilliseconds) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbDiskWriteTimeMilliseconds(cfg MetricConfig) metricNewrelicoracledbDiskWriteTimeMilliseconds {
+	m := metricNewrelicoracledbDiskWriteTimeMilliseconds{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbDiskWrites struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.disk.writes metric with initial data.
+func (m *metricNewrelicoracledbDiskWrites) init() {
+	m.data.SetName("newrelicoracledb.disk.writes")
+	m.data.SetDescription("Number of physical disk writes")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbDiskWrites) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbDiskWrites) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbDiskWrites) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbDiskWrites(cfg MetricConfig) metricNewrelicoracledbDiskWrites {
+	m := metricNewrelicoracledbDiskWrites{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
 }
 
 type metricNewrelicoracledbLockedAccounts struct {
@@ -647,6 +983,12 @@ type MetricsBuilder struct {
 	buildInfo                                           component.BuildInfo  // contains version information.
 	resourceAttributeIncludeFilter                      map[string]filter.Filter
 	resourceAttributeExcludeFilter                      map[string]filter.Filter
+	metricNewrelicoracledbDiskBlocksRead                metricNewrelicoracledbDiskBlocksRead
+	metricNewrelicoracledbDiskBlocksWritten             metricNewrelicoracledbDiskBlocksWritten
+	metricNewrelicoracledbDiskReadTimeMilliseconds      metricNewrelicoracledbDiskReadTimeMilliseconds
+	metricNewrelicoracledbDiskReads                     metricNewrelicoracledbDiskReads
+	metricNewrelicoracledbDiskWriteTimeMilliseconds     metricNewrelicoracledbDiskWriteTimeMilliseconds
+	metricNewrelicoracledbDiskWrites                    metricNewrelicoracledbDiskWrites
 	metricNewrelicoracledbLockedAccounts                metricNewrelicoracledbLockedAccounts
 	metricNewrelicoracledbSessionsCount                 metricNewrelicoracledbSessionsCount
 	metricNewrelicoracledbTablespaceDbID                metricNewrelicoracledbTablespaceDbID
@@ -679,13 +1021,19 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 }
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		config:                               mbc,
-		startTime:                            pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:                        pmetric.NewMetrics(),
-		buildInfo:                            settings.BuildInfo,
-		metricNewrelicoracledbLockedAccounts: newMetricNewrelicoracledbLockedAccounts(mbc.Metrics.NewrelicoracledbLockedAccounts),
-		metricNewrelicoracledbSessionsCount:  newMetricNewrelicoracledbSessionsCount(mbc.Metrics.NewrelicoracledbSessionsCount),
-		metricNewrelicoracledbTablespaceDbID: newMetricNewrelicoracledbTablespaceDbID(mbc.Metrics.NewrelicoracledbTablespaceDbID),
+		config:                                  mbc,
+		startTime:                               pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:                           pmetric.NewMetrics(),
+		buildInfo:                               settings.BuildInfo,
+		metricNewrelicoracledbDiskBlocksRead:    newMetricNewrelicoracledbDiskBlocksRead(mbc.Metrics.NewrelicoracledbDiskBlocksRead),
+		metricNewrelicoracledbDiskBlocksWritten: newMetricNewrelicoracledbDiskBlocksWritten(mbc.Metrics.NewrelicoracledbDiskBlocksWritten),
+		metricNewrelicoracledbDiskReadTimeMilliseconds:      newMetricNewrelicoracledbDiskReadTimeMilliseconds(mbc.Metrics.NewrelicoracledbDiskReadTimeMilliseconds),
+		metricNewrelicoracledbDiskReads:                     newMetricNewrelicoracledbDiskReads(mbc.Metrics.NewrelicoracledbDiskReads),
+		metricNewrelicoracledbDiskWriteTimeMilliseconds:     newMetricNewrelicoracledbDiskWriteTimeMilliseconds(mbc.Metrics.NewrelicoracledbDiskWriteTimeMilliseconds),
+		metricNewrelicoracledbDiskWrites:                    newMetricNewrelicoracledbDiskWrites(mbc.Metrics.NewrelicoracledbDiskWrites),
+		metricNewrelicoracledbLockedAccounts:                newMetricNewrelicoracledbLockedAccounts(mbc.Metrics.NewrelicoracledbLockedAccounts),
+		metricNewrelicoracledbSessionsCount:                 newMetricNewrelicoracledbSessionsCount(mbc.Metrics.NewrelicoracledbSessionsCount),
+		metricNewrelicoracledbTablespaceDbID:                newMetricNewrelicoracledbTablespaceDbID(mbc.Metrics.NewrelicoracledbTablespaceDbID),
 		metricNewrelicoracledbTablespaceGlobalName:          newMetricNewrelicoracledbTablespaceGlobalName(mbc.Metrics.NewrelicoracledbTablespaceGlobalName),
 		metricNewrelicoracledbTablespaceIsOffline:           newMetricNewrelicoracledbTablespaceIsOffline(mbc.Metrics.NewrelicoracledbTablespaceIsOffline),
 		metricNewrelicoracledbTablespaceOfflineCdbDatafiles: newMetricNewrelicoracledbTablespaceOfflineCdbDatafiles(mbc.Metrics.NewrelicoracledbTablespaceOfflineCdbDatafiles),
@@ -778,6 +1126,12 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
+	mb.metricNewrelicoracledbDiskBlocksRead.emit(ils.Metrics())
+	mb.metricNewrelicoracledbDiskBlocksWritten.emit(ils.Metrics())
+	mb.metricNewrelicoracledbDiskReadTimeMilliseconds.emit(ils.Metrics())
+	mb.metricNewrelicoracledbDiskReads.emit(ils.Metrics())
+	mb.metricNewrelicoracledbDiskWriteTimeMilliseconds.emit(ils.Metrics())
+	mb.metricNewrelicoracledbDiskWrites.emit(ils.Metrics())
 	mb.metricNewrelicoracledbLockedAccounts.emit(ils.Metrics())
 	mb.metricNewrelicoracledbSessionsCount.emit(ils.Metrics())
 	mb.metricNewrelicoracledbTablespaceDbID.emit(ils.Metrics())
@@ -818,6 +1172,36 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 	metrics := mb.metricsBuffer
 	mb.metricsBuffer = pmetric.NewMetrics()
 	return metrics
+}
+
+// RecordNewrelicoracledbDiskBlocksReadDataPoint adds a data point to newrelicoracledb.disk.blocks_read metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbDiskBlocksReadDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbDiskBlocksRead.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbDiskBlocksWrittenDataPoint adds a data point to newrelicoracledb.disk.blocks_written metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbDiskBlocksWrittenDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbDiskBlocksWritten.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbDiskReadTimeMillisecondsDataPoint adds a data point to newrelicoracledb.disk.read_time_milliseconds metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbDiskReadTimeMillisecondsDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbDiskReadTimeMilliseconds.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbDiskReadsDataPoint adds a data point to newrelicoracledb.disk.reads metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbDiskReadsDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbDiskReads.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbDiskWriteTimeMillisecondsDataPoint adds a data point to newrelicoracledb.disk.write_time_milliseconds metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbDiskWriteTimeMillisecondsDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbDiskWriteTimeMilliseconds.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbDiskWritesDataPoint adds a data point to newrelicoracledb.disk.writes metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbDiskWritesDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbDiskWrites.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
 }
 
 // RecordNewrelicoracledbLockedAccountsDataPoint adds a data point to newrelicoracledb.locked_accounts metric.

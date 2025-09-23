@@ -28,6 +28,12 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for newrelicoracledb metrics.
 type MetricsConfig struct {
+	NewrelicoracledbDiskBlocksRead                MetricConfig `mapstructure:"newrelicoracledb.disk.blocks_read"`
+	NewrelicoracledbDiskBlocksWritten             MetricConfig `mapstructure:"newrelicoracledb.disk.blocks_written"`
+	NewrelicoracledbDiskReadTimeMilliseconds      MetricConfig `mapstructure:"newrelicoracledb.disk.read_time_milliseconds"`
+	NewrelicoracledbDiskReads                     MetricConfig `mapstructure:"newrelicoracledb.disk.reads"`
+	NewrelicoracledbDiskWriteTimeMilliseconds     MetricConfig `mapstructure:"newrelicoracledb.disk.write_time_milliseconds"`
+	NewrelicoracledbDiskWrites                    MetricConfig `mapstructure:"newrelicoracledb.disk.writes"`
 	NewrelicoracledbLockedAccounts                MetricConfig `mapstructure:"newrelicoracledb.locked_accounts"`
 	NewrelicoracledbSessionsCount                 MetricConfig `mapstructure:"newrelicoracledb.sessions.count"`
 	NewrelicoracledbTablespaceDbID                MetricConfig `mapstructure:"newrelicoracledb.tablespace.db_id"`
@@ -43,6 +49,24 @@ type MetricsConfig struct {
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
+		NewrelicoracledbDiskBlocksRead: MetricConfig{
+			Enabled: true,
+		},
+		NewrelicoracledbDiskBlocksWritten: MetricConfig{
+			Enabled: true,
+		},
+		NewrelicoracledbDiskReadTimeMilliseconds: MetricConfig{
+			Enabled: true,
+		},
+		NewrelicoracledbDiskReads: MetricConfig{
+			Enabled: true,
+		},
+		NewrelicoracledbDiskWriteTimeMilliseconds: MetricConfig{
+			Enabled: true,
+		},
+		NewrelicoracledbDiskWrites: MetricConfig{
+			Enabled: true,
+		},
 		NewrelicoracledbLockedAccounts: MetricConfig{
 			Enabled: true,
 		},

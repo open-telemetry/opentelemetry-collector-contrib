@@ -77,4 +77,16 @@ const (
 				AND a.account_status != 'OPEN'
 		) l,
 		gv$instance i`
+
+	ReadWriteMetricsSQL = `
+		SELECT
+			INST_ID,
+			SUM(PHYRDS) AS PhysicalReads,
+			SUM(PHYWRTS) AS PhysicalWrites,
+			SUM(PHYBLKRD) AS PhysicalBlockReads,
+			SUM(PHYBLKWRT) AS PhysicalBlockWrites,
+			SUM(READTIM) * 10 AS ReadTime,
+			SUM(WRITETIM) * 10 AS WriteTime
+		FROM gv$filestat
+		GROUP BY INST_ID`
 )

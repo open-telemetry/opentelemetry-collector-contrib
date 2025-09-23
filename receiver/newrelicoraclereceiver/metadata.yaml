@@ -139,6 +139,66 @@ metrics:
       - newrelic.entity_name
       - instance.id
 
+  newrelicoracledb.disk.reads:
+    description: Number of physical disk reads
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.disk.writes:
+    description: Number of physical disk writes
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.disk.blocks_read:
+    description: Number of physical blocks read from disk
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.disk.blocks_written:
+    description: Number of physical blocks written to disk
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.disk.read_time_milliseconds:
+    description: Time spent reading from disk in milliseconds
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "ms"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.disk.write_time_milliseconds:
+    description: Time spent writing to disk in milliseconds
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "ms"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
 tests:
   config:
   goleak:

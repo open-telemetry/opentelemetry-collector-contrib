@@ -27,6 +27,12 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
+					NewrelicoracledbDiskBlocksRead:                MetricConfig{Enabled: true},
+					NewrelicoracledbDiskBlocksWritten:             MetricConfig{Enabled: true},
+					NewrelicoracledbDiskReadTimeMilliseconds:      MetricConfig{Enabled: true},
+					NewrelicoracledbDiskReads:                     MetricConfig{Enabled: true},
+					NewrelicoracledbDiskWriteTimeMilliseconds:     MetricConfig{Enabled: true},
+					NewrelicoracledbDiskWrites:                    MetricConfig{Enabled: true},
 					NewrelicoracledbLockedAccounts:                MetricConfig{Enabled: true},
 					NewrelicoracledbSessionsCount:                 MetricConfig{Enabled: true},
 					NewrelicoracledbTablespaceDbID:                MetricConfig{Enabled: true},
@@ -49,6 +55,12 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
+					NewrelicoracledbDiskBlocksRead:                MetricConfig{Enabled: false},
+					NewrelicoracledbDiskBlocksWritten:             MetricConfig{Enabled: false},
+					NewrelicoracledbDiskReadTimeMilliseconds:      MetricConfig{Enabled: false},
+					NewrelicoracledbDiskReads:                     MetricConfig{Enabled: false},
+					NewrelicoracledbDiskWriteTimeMilliseconds:     MetricConfig{Enabled: false},
+					NewrelicoracledbDiskWrites:                    MetricConfig{Enabled: false},
 					NewrelicoracledbLockedAccounts:                MetricConfig{Enabled: false},
 					NewrelicoracledbSessionsCount:                 MetricConfig{Enabled: false},
 					NewrelicoracledbTablespaceDbID:                MetricConfig{Enabled: false},

@@ -1,6 +1,18 @@
 default:
 all_set:
   metrics:
+    newrelicoracledb.disk.blocks_read:
+      enabled: true
+    newrelicoracledb.disk.blocks_written:
+      enabled: true
+    newrelicoracledb.disk.read_time_milliseconds:
+      enabled: true
+    newrelicoracledb.disk.reads:
+      enabled: true
+    newrelicoracledb.disk.write_time_milliseconds:
+      enabled: true
+    newrelicoracledb.disk.writes:
+      enabled: true
     newrelicoracledb.locked_accounts:
       enabled: true
     newrelicoracledb.sessions.count:
@@ -30,6 +42,18 @@ all_set:
       enabled: true
 none_set:
   metrics:
+    newrelicoracledb.disk.blocks_read:
+      enabled: false
+    newrelicoracledb.disk.blocks_written:
+      enabled: false
+    newrelicoracledb.disk.read_time_milliseconds:
+      enabled: false
+    newrelicoracledb.disk.reads:
+      enabled: false
+    newrelicoracledb.disk.write_time_milliseconds:
+      enabled: false
+    newrelicoracledb.disk.writes:
+      enabled: false
     newrelicoracledb.locked_accounts:
       enabled: false
     newrelicoracledb.sessions.count:
