@@ -13,11 +13,695 @@ import (
 )
 
 var MetricsInfo = metricsInfo{
+	NewrelicoracledbDbID: metricInfo{
+		Name: "newrelicoracledb.db_id",
+	},
+	NewrelicoracledbDiskBlocksRead: metricInfo{
+		Name: "newrelicoracledb.disk.blocks_read",
+	},
+	NewrelicoracledbDiskBlocksWritten: metricInfo{
+		Name: "newrelicoracledb.disk.blocks_written",
+	},
+	NewrelicoracledbDiskReadTimeMilliseconds: metricInfo{
+		Name: "newrelicoracledb.disk.read_time_milliseconds",
+	},
+	NewrelicoracledbDiskReads: metricInfo{
+		Name: "newrelicoracledb.disk.reads",
+	},
+	NewrelicoracledbDiskWriteTimeMilliseconds: metricInfo{
+		Name: "newrelicoracledb.disk.write_time_milliseconds",
+	},
+	NewrelicoracledbDiskWrites: metricInfo{
+		Name: "newrelicoracledb.disk.writes",
+	},
+	NewrelicoracledbGlobalName: metricInfo{
+		Name: "newrelicoracledb.global_name",
+	},
 	NewrelicoracledbLockedAccounts: metricInfo{
 		Name: "newrelicoracledb.locked_accounts",
 	},
+	NewrelicoracledbLongRunningQueries: metricInfo{
+		Name: "newrelicoracledb.long_running_queries",
+	},
+	NewrelicoracledbMemoryPgaAllocatedBytes: metricInfo{
+		Name: "newrelicoracledb.memory.pga_allocated_bytes",
+	},
+	NewrelicoracledbMemoryPgaFreeableBytes: metricInfo{
+		Name: "newrelicoracledb.memory.pga_freeable_bytes",
+	},
+	NewrelicoracledbMemoryPgaInUseBytes: metricInfo{
+		Name: "newrelicoracledb.memory.pga_in_use_bytes",
+	},
+	NewrelicoracledbMemoryPgaMaxSizeBytes: metricInfo{
+		Name: "newrelicoracledb.memory.pga_max_size_bytes",
+	},
+	NewrelicoracledbMemorySgaSharedPoolLibraryCacheSharableBytes: metricInfo{
+		Name: "newrelicoracledb.memory.sga_shared_pool_library_cache_sharable_bytes",
+	},
+	NewrelicoracledbMemorySgaSharedPoolLibraryCacheUserBytes: metricInfo{
+		Name: "newrelicoracledb.memory.sga_shared_pool_library_cache_user_bytes",
+	},
+	NewrelicoracledbMemorySgaUgaTotalBytes: metricInfo{
+		Name: "newrelicoracledb.memory.sga_uga_total_bytes",
+	},
+	NewrelicoracledbPdbActiveParallelSessions: metricInfo{
+		Name: "newrelicoracledb.pdb.active_parallel_sessions",
+	},
+	NewrelicoracledbPdbActiveSerialSessions: metricInfo{
+		Name: "newrelicoracledb.pdb.active_serial_sessions",
+	},
+	NewrelicoracledbPdbAverageActiveSessions: metricInfo{
+		Name: "newrelicoracledb.pdb.average_active_sessions",
+	},
+	NewrelicoracledbPdbBackgroundCPUUsagePerSecond: metricInfo{
+		Name: "newrelicoracledb.pdb.background_cpu_usage_per_second",
+	},
+	NewrelicoracledbPdbBackgroundTimePerSecond: metricInfo{
+		Name: "newrelicoracledb.pdb.background_time_per_second",
+	},
+	NewrelicoracledbPdbBlockChangesPerSecond: metricInfo{
+		Name: "newrelicoracledb.pdb.block_changes_per_second",
+	},
+	NewrelicoracledbPdbBlockChangesPerTransaction: metricInfo{
+		Name: "newrelicoracledb.pdb.block_changes_per_transaction",
+	},
+	NewrelicoracledbPdbCPUTimeRatio: metricInfo{
+		Name: "newrelicoracledb.pdb.cpu_time_ratio",
+	},
+	NewrelicoracledbPdbCPUUsagePerSecond: metricInfo{
+		Name: "newrelicoracledb.pdb.cpu_usage_per_second",
+	},
+	NewrelicoracledbPdbCPUUsagePerTransaction: metricInfo{
+		Name: "newrelicoracledb.pdb.cpu_usage_per_transaction",
+	},
+	NewrelicoracledbPdbCurrentLogons: metricInfo{
+		Name: "newrelicoracledb.pdb.current_logons",
+	},
+	NewrelicoracledbPdbCurrentOpenCursors: metricInfo{
+		Name: "newrelicoracledb.pdb.current_open_cursors",
+	},
+	NewrelicoracledbPdbDbPhysicalReadBytesPerSecond: metricInfo{
+		Name: "newrelicoracledb.pdb.db_physical_read_bytes_per_second",
+	},
+	NewrelicoracledbPdbDbPhysicalReadsPerSecond: metricInfo{
+		Name: "newrelicoracledb.pdb.db_physical_reads_per_second",
+	},
+	NewrelicoracledbPdbDbPhysicalWriteBytesPerSecond: metricInfo{
+		Name: "newrelicoracledb.pdb.db_physical_write_bytes_per_second",
+	},
+	NewrelicoracledbPdbDbPhysicalWritesPerSecond: metricInfo{
+		Name: "newrelicoracledb.pdb.db_physical_writes_per_second",
+	},
+	NewrelicoracledbPdbExecuteWithoutParseRatio: metricInfo{
+		Name: "newrelicoracledb.pdb.execute_without_parse_ratio",
+	},
+	NewrelicoracledbPdbExecutionsPerSecond: metricInfo{
+		Name: "newrelicoracledb.pdb.executions_per_second",
+	},
+	NewrelicoracledbPdbExecutionsPerTransaction: metricInfo{
+		Name: "newrelicoracledb.pdb.executions_per_transaction",
+	},
+	NewrelicoracledbPdbHardParseCountPerSecond: metricInfo{
+		Name: "newrelicoracledb.pdb.hard_parse_count_per_second",
+	},
+	NewrelicoracledbPdbHardParseCountPerTransaction: metricInfo{
+		Name: "newrelicoracledb.pdb.hard_parse_count_per_transaction",
+	},
+	NewrelicoracledbPdbLogicalReadsPerSecond: metricInfo{
+		Name: "newrelicoracledb.pdb.logical_reads_per_second",
+	},
+	NewrelicoracledbPdbLogicalReadsPerTransaction: metricInfo{
+		Name: "newrelicoracledb.pdb.logical_reads_per_transaction",
+	},
+	NewrelicoracledbPdbLogonsPerSecond: metricInfo{
+		Name: "newrelicoracledb.pdb.logons_per_second",
+	},
+	NewrelicoracledbPdbLogonsPerTransaction: metricInfo{
+		Name: "newrelicoracledb.pdb.logons_per_transaction",
+	},
+	NewrelicoracledbPdbNetworkTrafficBytePerSecond: metricInfo{
+		Name: "newrelicoracledb.pdb.network_traffic_byte_per_second",
+	},
+	NewrelicoracledbPdbOpenCursorsPerSecond: metricInfo{
+		Name: "newrelicoracledb.pdb.open_cursors_per_second",
+	},
+	NewrelicoracledbPdbOpenCursorsPerTransaction: metricInfo{
+		Name: "newrelicoracledb.pdb.open_cursors_per_transaction",
+	},
+	NewrelicoracledbPdbParseFailureCountPerSecond: metricInfo{
+		Name: "newrelicoracledb.pdb.parse_failure_count_per_second",
+	},
+	NewrelicoracledbPdbPhysicalReadBytesPerSecond: metricInfo{
+		Name: "newrelicoracledb.pdb.physical_read_bytes_per_second",
+	},
+	NewrelicoracledbPdbPhysicalReadsPerTransaction: metricInfo{
+		Name: "newrelicoracledb.pdb.physical_reads_per_transaction",
+	},
+	NewrelicoracledbPdbPhysicalWriteBytesPerSecond: metricInfo{
+		Name: "newrelicoracledb.pdb.physical_write_bytes_per_second",
+	},
+	NewrelicoracledbPdbPhysicalWritesPerTransaction: metricInfo{
+		Name: "newrelicoracledb.pdb.physical_writes_per_transaction",
+	},
+	NewrelicoracledbPdbRedoGeneratedBytesPerSecond: metricInfo{
+		Name: "newrelicoracledb.pdb.redo_generated_bytes_per_second",
+	},
+	NewrelicoracledbPdbRedoGeneratedBytesPerTransaction: metricInfo{
+		Name: "newrelicoracledb.pdb.redo_generated_bytes_per_transaction",
+	},
+	NewrelicoracledbPdbResponseTimePerTransaction: metricInfo{
+		Name: "newrelicoracledb.pdb.response_time_per_transaction",
+	},
+	NewrelicoracledbPdbSessionCount: metricInfo{
+		Name: "newrelicoracledb.pdb.session_count",
+	},
+	NewrelicoracledbPdbSoftParseRatio: metricInfo{
+		Name: "newrelicoracledb.pdb.soft_parse_ratio",
+	},
+	NewrelicoracledbPdbSQLServiceResponseTime: metricInfo{
+		Name: "newrelicoracledb.pdb.sql_service_response_time",
+	},
+	NewrelicoracledbPdbTotalParseCountPerSecond: metricInfo{
+		Name: "newrelicoracledb.pdb.total_parse_count_per_second",
+	},
+	NewrelicoracledbPdbTotalParseCountPerTransaction: metricInfo{
+		Name: "newrelicoracledb.pdb.total_parse_count_per_transaction",
+	},
+	NewrelicoracledbPdbTransactionsPerSecond: metricInfo{
+		Name: "newrelicoracledb.pdb.transactions_per_second",
+	},
+	NewrelicoracledbPdbUserCallsPerSecond: metricInfo{
+		Name: "newrelicoracledb.pdb.user_calls_per_second",
+	},
+	NewrelicoracledbPdbUserCallsPerTransaction: metricInfo{
+		Name: "newrelicoracledb.pdb.user_calls_per_transaction",
+	},
+	NewrelicoracledbPdbUserCommitsPerSecond: metricInfo{
+		Name: "newrelicoracledb.pdb.user_commits_per_second",
+	},
+	NewrelicoracledbPdbUserCommitsPercentage: metricInfo{
+		Name: "newrelicoracledb.pdb.user_commits_percentage",
+	},
+	NewrelicoracledbPdbUserRollbacksPerSecond: metricInfo{
+		Name: "newrelicoracledb.pdb.user_rollbacks_per_second",
+	},
+	NewrelicoracledbPdbUserRollbacksPercentage: metricInfo{
+		Name: "newrelicoracledb.pdb.user_rollbacks_percentage",
+	},
+	NewrelicoracledbPdbWaitTimeRatio: metricInfo{
+		Name: "newrelicoracledb.pdb.wait_time_ratio",
+	},
+	NewrelicoracledbRedoLogParallelWriteWaits: metricInfo{
+		Name: "newrelicoracledb.redo_log_parallel_write_waits",
+	},
+	NewrelicoracledbRedoLogSwitchArchivingNeededWaits: metricInfo{
+		Name: "newrelicoracledb.redo_log_switch_archiving_needed_waits",
+	},
+	NewrelicoracledbRedoLogSwitchCheckpointIncompleteWaits: metricInfo{
+		Name: "newrelicoracledb.redo_log_switch_checkpoint_incomplete_waits",
+	},
+	NewrelicoracledbRedoLogSwitchCompletionWaits: metricInfo{
+		Name: "newrelicoracledb.redo_log_switch_completion_waits",
+	},
+	NewrelicoracledbRollbackSegmentsGets: metricInfo{
+		Name: "newrelicoracledb.rollback_segments_gets",
+	},
+	NewrelicoracledbRollbackSegmentsWaitRatio: metricInfo{
+		Name: "newrelicoracledb.rollback_segments_wait_ratio",
+	},
+	NewrelicoracledbRollbackSegmentsWaits: metricInfo{
+		Name: "newrelicoracledb.rollback_segments_waits",
+	},
 	NewrelicoracledbSessionsCount: metricInfo{
 		Name: "newrelicoracledb.sessions.count",
+	},
+	NewrelicoracledbSgaBufferBusyWaits: metricInfo{
+		Name: "newrelicoracledb.sga_buffer_busy_waits",
+	},
+	NewrelicoracledbSgaFixedSizeBytes: metricInfo{
+		Name: "newrelicoracledb.sga_fixed_size_bytes",
+	},
+	NewrelicoracledbSgaFreeBufferInspectedWaits: metricInfo{
+		Name: "newrelicoracledb.sga_free_buffer_inspected_waits",
+	},
+	NewrelicoracledbSgaFreeBufferWaits: metricInfo{
+		Name: "newrelicoracledb.sga_free_buffer_waits",
+	},
+	NewrelicoracledbSgaHitRatio: metricInfo{
+		Name: "newrelicoracledb.sga_hit_ratio",
+	},
+	NewrelicoracledbSgaLogAllocationRetriesRatio: metricInfo{
+		Name: "newrelicoracledb.sga_log_allocation_retries_ratio",
+	},
+	NewrelicoracledbSgaLogBufferRedoAllocationRetries: metricInfo{
+		Name: "newrelicoracledb.sga_log_buffer_redo_allocation_retries",
+	},
+	NewrelicoracledbSgaLogBufferRedoEntries: metricInfo{
+		Name: "newrelicoracledb.sga_log_buffer_redo_entries",
+	},
+	NewrelicoracledbSgaLogBufferSpaceWaits: metricInfo{
+		Name: "newrelicoracledb.sga_log_buffer_space_waits",
+	},
+	NewrelicoracledbSgaRedoBuffersBytes: metricInfo{
+		Name: "newrelicoracledb.sga_redo_buffers_bytes",
+	},
+	NewrelicoracledbSgaSharedPoolDictCacheMissRatio: metricInfo{
+		Name: "newrelicoracledb.sga_shared_pool_dict_cache_miss_ratio",
+	},
+	NewrelicoracledbSgaSharedPoolLibraryCacheHitRatio: metricInfo{
+		Name: "newrelicoracledb.sga_shared_pool_library_cache_hit_ratio",
+	},
+	NewrelicoracledbSgaSharedPoolLibraryCacheReloadRatio: metricInfo{
+		Name: "newrelicoracledb.sga_shared_pool_library_cache_reload_ratio",
+	},
+	NewrelicoracledbSortsDisk: metricInfo{
+		Name: "newrelicoracledb.sorts_disk",
+	},
+	NewrelicoracledbSortsMemory: metricInfo{
+		Name: "newrelicoracledb.sorts_memory",
+	},
+	NewrelicoracledbSystemActiveParallelSessions: metricInfo{
+		Name: "newrelicoracledb.system.active_parallel_sessions",
+	},
+	NewrelicoracledbSystemActiveSerialSessions: metricInfo{
+		Name: "newrelicoracledb.system.active_serial_sessions",
+	},
+	NewrelicoracledbSystemAverageActiveSessions: metricInfo{
+		Name: "newrelicoracledb.system.average_active_sessions",
+	},
+	NewrelicoracledbSystemBackgroundCheckpointsPerSecond: metricInfo{
+		Name: "newrelicoracledb.system.background_checkpoints_per_second",
+	},
+	NewrelicoracledbSystemBackgroundCPUUsagePerSecond: metricInfo{
+		Name: "newrelicoracledb.system.background_cpu_usage_per_second",
+	},
+	NewrelicoracledbSystemBackgroundTimePerSecond: metricInfo{
+		Name: "newrelicoracledb.system.background_time_per_second",
+	},
+	NewrelicoracledbSystemBranchNodeSplitsPerSecond: metricInfo{
+		Name: "newrelicoracledb.system.branch_node_splits_per_second",
+	},
+	NewrelicoracledbSystemBranchNodeSplitsPerTransaction: metricInfo{
+		Name: "newrelicoracledb.system.branch_node_splits_per_transaction",
+	},
+	NewrelicoracledbSystemBufferCacheHitRatio: metricInfo{
+		Name: "newrelicoracledb.system.buffer_cache_hit_ratio",
+	},
+	NewrelicoracledbSystemCapturedUserCalls: metricInfo{
+		Name: "newrelicoracledb.system.captured_user_calls",
+	},
+	NewrelicoracledbSystemConsistentReadChangesPerSecond: metricInfo{
+		Name: "newrelicoracledb.system.consistent_read_changes_per_second",
+	},
+	NewrelicoracledbSystemConsistentReadChangesPerTransaction: metricInfo{
+		Name: "newrelicoracledb.system.consistent_read_changes_per_transaction",
+	},
+	NewrelicoracledbSystemConsistentReadGetsPerSecond: metricInfo{
+		Name: "newrelicoracledb.system.consistent_read_gets_per_second",
+	},
+	NewrelicoracledbSystemConsistentReadGetsPerTransaction: metricInfo{
+		Name: "newrelicoracledb.system.consistent_read_gets_per_transaction",
+	},
+	NewrelicoracledbSystemCPUUsagePerSecond: metricInfo{
+		Name: "newrelicoracledb.system.cpu_usage_per_second",
+	},
+	NewrelicoracledbSystemCPUUsagePerTransaction: metricInfo{
+		Name: "newrelicoracledb.system.cpu_usage_per_transaction",
+	},
+	NewrelicoracledbSystemCrBlocksCreatedPerSecond: metricInfo{
+		Name: "newrelicoracledb.system.cr_blocks_created_per_second",
+	},
+	NewrelicoracledbSystemCrBlocksCreatedPerTransaction: metricInfo{
+		Name: "newrelicoracledb.system.cr_blocks_created_per_transaction",
+	},
+	NewrelicoracledbSystemCrUndoRecordsAppliedPerSecond: metricInfo{
+		Name: "newrelicoracledb.system.cr_undo_records_applied_per_second",
+	},
+	NewrelicoracledbSystemCrUndoRecordsAppliedPerTransaction: metricInfo{
+		Name: "newrelicoracledb.system.cr_undo_records_applied_per_transaction",
+	},
+	NewrelicoracledbSystemCurrentLogonsCount: metricInfo{
+		Name: "newrelicoracledb.system.current_logons_count",
+	},
+	NewrelicoracledbSystemCurrentOpenCursorsCount: metricInfo{
+		Name: "newrelicoracledb.system.current_open_cursors_count",
+	},
+	NewrelicoracledbSystemCurrentOsLoad: metricInfo{
+		Name: "newrelicoracledb.system.current_os_load",
+	},
+	NewrelicoracledbSystemCursorCacheHitRatio: metricInfo{
+		Name: "newrelicoracledb.system.cursor_cache_hit_ratio",
+	},
+	NewrelicoracledbSystemDatabaseCPUTimeRatio: metricInfo{
+		Name: "newrelicoracledb.system.database_cpu_time_ratio",
+	},
+	NewrelicoracledbSystemDatabaseTimePerSecond: metricInfo{
+		Name: "newrelicoracledb.system.database_time_per_second",
+	},
+	NewrelicoracledbSystemDatabaseWaitTimeRatio: metricInfo{
+		Name: "newrelicoracledb.system.database_wait_time_ratio",
+	},
+	NewrelicoracledbSystemDbBlockChangesPerSecond: metricInfo{
+		Name: "newrelicoracledb.system.db_block_changes_per_second",
+	},
+	NewrelicoracledbSystemDbBlockChangesPerTransaction: metricInfo{
+		Name: "newrelicoracledb.system.db_block_changes_per_transaction",
+	},
+	NewrelicoracledbSystemDbBlockChangesPerUserCall: metricInfo{
+		Name: "newrelicoracledb.system.db_block_changes_per_user_call",
+	},
+	NewrelicoracledbSystemDbBlockGetsPerSecond: metricInfo{
+		Name: "newrelicoracledb.system.db_block_gets_per_second",
+	},
+	NewrelicoracledbSystemDbBlockGetsPerTransaction: metricInfo{
+		Name: "newrelicoracledb.system.db_block_gets_per_transaction",
+	},
+	NewrelicoracledbSystemDbBlockGetsPerUserCall: metricInfo{
+		Name: "newrelicoracledb.system.db_block_gets_per_user_call",
+	},
+	NewrelicoracledbSystemDbwrCheckpointsPerSecond: metricInfo{
+		Name: "newrelicoracledb.system.dbwr_checkpoints_per_second",
+	},
+	NewrelicoracledbSystemDiskSortPerSecond: metricInfo{
+		Name: "newrelicoracledb.system.disk_sort_per_second",
+	},
+	NewrelicoracledbSystemDiskSortPerTransaction: metricInfo{
+		Name: "newrelicoracledb.system.disk_sort_per_transaction",
+	},
+	NewrelicoracledbSystemEnqueueDeadlocksPerSecond: metricInfo{
+		Name: "newrelicoracledb.system.enqueue_deadlocks_per_second",
+	},
+	NewrelicoracledbSystemEnqueueDeadlocksPerTransaction: metricInfo{
+		Name: "newrelicoracledb.system.enqueue_deadlocks_per_transaction",
+	},
+	NewrelicoracledbSystemEnqueueRequestsPerSecond: metricInfo{
+		Name: "newrelicoracledb.system.enqueue_requests_per_second",
+	},
+	NewrelicoracledbSystemEnqueueRequestsPerTransaction: metricInfo{
+		Name: "newrelicoracledb.system.enqueue_requests_per_transaction",
+	},
+	NewrelicoracledbSystemEnqueueTimeoutsPerSecond: metricInfo{
+		Name: "newrelicoracledb.system.enqueue_timeouts_per_second",
+	},
+	NewrelicoracledbSystemEnqueueTimeoutsPerTransaction: metricInfo{
+		Name: "newrelicoracledb.system.enqueue_timeouts_per_transaction",
+	},
+	NewrelicoracledbSystemEnqueueWaitsPerSecond: metricInfo{
+		Name: "newrelicoracledb.system.enqueue_waits_per_second",
+	},
+	NewrelicoracledbSystemEnqueueWaitsPerTransaction: metricInfo{
+		Name: "newrelicoracledb.system.enqueue_waits_per_transaction",
+	},
+	NewrelicoracledbSystemExecuteWithoutParseRatio: metricInfo{
+		Name: "newrelicoracledb.system.execute_without_parse_ratio",
+	},
+	NewrelicoracledbSystemExecutionsPerSecond: metricInfo{
+		Name: "newrelicoracledb.system.executions_per_second",
+	},
+	NewrelicoracledbSystemExecutionsPerTransaction: metricInfo{
+		Name: "newrelicoracledb.system.executions_per_transaction",
+	},
+	NewrelicoracledbSystemExecutionsPerUserCall: metricInfo{
+		Name: "newrelicoracledb.system.executions_per_user_call",
+	},
+	NewrelicoracledbSystemFullIndexScansPerSecond: metricInfo{
+		Name: "newrelicoracledb.system.full_index_scans_per_second",
+	},
+	NewrelicoracledbSystemFullIndexScansPerTransaction: metricInfo{
+		Name: "newrelicoracledb.system.full_index_scans_per_transaction",
+	},
+	NewrelicoracledbSystemGcCrBlockReceivedPerSecond: metricInfo{
+		Name: "newrelicoracledb.system.gc_cr_block_received_per_second",
+	},
+	NewrelicoracledbSystemGcCrBlockReceivedPerTransaction: metricInfo{
+		Name: "newrelicoracledb.system.gc_cr_block_received_per_transaction",
+	},
+	NewrelicoracledbSystemGcCurrentBlockReceivedPerSecond: metricInfo{
+		Name: "newrelicoracledb.system.gc_current_block_received_per_second",
+	},
+	NewrelicoracledbSystemGcCurrentBlockReceivedPerTransaction: metricInfo{
+		Name: "newrelicoracledb.system.gc_current_block_received_per_transaction",
+	},
+	NewrelicoracledbSystemGlobalCacheAverageCrGetTime: metricInfo{
+		Name: "newrelicoracledb.system.global_cache_average_cr_get_time",
+	},
+	NewrelicoracledbSystemGlobalCacheAverageCurrentGetTime: metricInfo{
+		Name: "newrelicoracledb.system.global_cache_average_current_get_time",
+	},
+	NewrelicoracledbSystemGlobalCacheBlocksCorrupted: metricInfo{
+		Name: "newrelicoracledb.system.global_cache_blocks_corrupted",
+	},
+	NewrelicoracledbSystemGlobalCacheBlocksLost: metricInfo{
+		Name: "newrelicoracledb.system.global_cache_blocks_lost",
+	},
+	NewrelicoracledbSystemHardParseCountPerSecond: metricInfo{
+		Name: "newrelicoracledb.system.hard_parse_count_per_second",
+	},
+	NewrelicoracledbSystemHardParseCountPerTransaction: metricInfo{
+		Name: "newrelicoracledb.system.hard_parse_count_per_transaction",
+	},
+	NewrelicoracledbSystemHostCPUUsagePerSecond: metricInfo{
+		Name: "newrelicoracledb.system.host_cpu_usage_per_second",
+	},
+	NewrelicoracledbSystemHostCPUUtilization: metricInfo{
+		Name: "newrelicoracledb.system.host_cpu_utilization",
+	},
+	NewrelicoracledbSystemIoMegabytesPerSecond: metricInfo{
+		Name: "newrelicoracledb.system.io_megabytes_per_second",
+	},
+	NewrelicoracledbSystemIoRequestsPerSecond: metricInfo{
+		Name: "newrelicoracledb.system.io_requests_per_second",
+	},
+	NewrelicoracledbSystemLeafNodeSplitsPerSecond: metricInfo{
+		Name: "newrelicoracledb.system.leaf_node_splits_per_second",
+	},
+	NewrelicoracledbSystemLeafNodeSplitsPerTransaction: metricInfo{
+		Name: "newrelicoracledb.system.leaf_node_splits_per_transaction",
+	},
+	NewrelicoracledbSystemLibraryCacheHitRatio: metricInfo{
+		Name: "newrelicoracledb.system.library_cache_hit_ratio",
+	},
+	NewrelicoracledbSystemLibraryCacheMissRatio: metricInfo{
+		Name: "newrelicoracledb.system.library_cache_miss_ratio",
+	},
+	NewrelicoracledbSystemLogicalReadsPerSecond: metricInfo{
+		Name: "newrelicoracledb.system.logical_reads_per_second",
+	},
+	NewrelicoracledbSystemLogicalReadsPerTransaction: metricInfo{
+		Name: "newrelicoracledb.system.logical_reads_per_transaction",
+	},
+	NewrelicoracledbSystemLogicalReadsPerUserCall: metricInfo{
+		Name: "newrelicoracledb.system.logical_reads_per_user_call",
+	},
+	NewrelicoracledbSystemLogonsPerSecond: metricInfo{
+		Name: "newrelicoracledb.system.logons_per_second",
+	},
+	NewrelicoracledbSystemLogonsPerTransaction: metricInfo{
+		Name: "newrelicoracledb.system.logons_per_transaction",
+	},
+	NewrelicoracledbSystemLongTableScansPerSecond: metricInfo{
+		Name: "newrelicoracledb.system.long_table_scans_per_second",
+	},
+	NewrelicoracledbSystemLongTableScansPerTransaction: metricInfo{
+		Name: "newrelicoracledb.system.long_table_scans_per_transaction",
+	},
+	NewrelicoracledbSystemMemorySortsRatio: metricInfo{
+		Name: "newrelicoracledb.system.memory_sorts_ratio",
+	},
+	NewrelicoracledbSystemNetworkTrafficVolumePerSecond: metricInfo{
+		Name: "newrelicoracledb.system.network_traffic_volume_per_second",
+	},
+	NewrelicoracledbSystemOpenCursorsPerSecond: metricInfo{
+		Name: "newrelicoracledb.system.open_cursors_per_second",
+	},
+	NewrelicoracledbSystemOpenCursorsPerTransaction: metricInfo{
+		Name: "newrelicoracledb.system.open_cursors_per_transaction",
+	},
+	NewrelicoracledbSystemParseFailureCountPerSecond: metricInfo{
+		Name: "newrelicoracledb.system.parse_failure_count_per_second",
+	},
+	NewrelicoracledbSystemParseFailureCountPerTransaction: metricInfo{
+		Name: "newrelicoracledb.system.parse_failure_count_per_transaction",
+	},
+	NewrelicoracledbSystemPgaCacheHitPercentage: metricInfo{
+		Name: "newrelicoracledb.system.pga_cache_hit_percentage",
+	},
+	NewrelicoracledbSystemPhysicalLobsReadsPerSecond: metricInfo{
+		Name: "newrelicoracledb.system.physical_lobs_reads_per_second",
+	},
+	NewrelicoracledbSystemPhysicalLobsReadsPerTransaction: metricInfo{
+		Name: "newrelicoracledb.system.physical_lobs_reads_per_transaction",
+	},
+	NewrelicoracledbSystemPhysicalLobsWritesPerSecond: metricInfo{
+		Name: "newrelicoracledb.system.physical_lobs_writes_per_second",
+	},
+	NewrelicoracledbSystemPhysicalLobsWritesPerTransaction: metricInfo{
+		Name: "newrelicoracledb.system.physical_lobs_writes_per_transaction",
+	},
+	NewrelicoracledbSystemPhysicalReadBytesPerSecond: metricInfo{
+		Name: "newrelicoracledb.system.physical_read_bytes_per_second",
+	},
+	NewrelicoracledbSystemPhysicalReadIoRequestsPerSecond: metricInfo{
+		Name: "newrelicoracledb.system.physical_read_io_requests_per_second",
+	},
+	NewrelicoracledbSystemPhysicalReadTotalBytesPerSecond: metricInfo{
+		Name: "newrelicoracledb.system.physical_read_total_bytes_per_second",
+	},
+	NewrelicoracledbSystemPhysicalReadTotalIoRequestsPerSecond: metricInfo{
+		Name: "newrelicoracledb.system.physical_read_total_io_requests_per_second",
+	},
+	NewrelicoracledbSystemPhysicalReadsDirectPerSecond: metricInfo{
+		Name: "newrelicoracledb.system.physical_reads_direct_per_second",
+	},
+	NewrelicoracledbSystemPhysicalReadsDirectPerTransaction: metricInfo{
+		Name: "newrelicoracledb.system.physical_reads_direct_per_transaction",
+	},
+	NewrelicoracledbSystemPhysicalReadsPerSecond: metricInfo{
+		Name: "newrelicoracledb.system.physical_reads_per_second",
+	},
+	NewrelicoracledbSystemPhysicalReadsPerTransaction: metricInfo{
+		Name: "newrelicoracledb.system.physical_reads_per_transaction",
+	},
+	NewrelicoracledbSystemPhysicalWriteBytesPerSecond: metricInfo{
+		Name: "newrelicoracledb.system.physical_write_bytes_per_second",
+	},
+	NewrelicoracledbSystemPhysicalWriteIoRequestsPerSecond: metricInfo{
+		Name: "newrelicoracledb.system.physical_write_io_requests_per_second",
+	},
+	NewrelicoracledbSystemPhysicalWriteTotalBytesPerSecond: metricInfo{
+		Name: "newrelicoracledb.system.physical_write_total_bytes_per_second",
+	},
+	NewrelicoracledbSystemPhysicalWriteTotalIoRequestsPerSecond: metricInfo{
+		Name: "newrelicoracledb.system.physical_write_total_io_requests_per_second",
+	},
+	NewrelicoracledbSystemPhysicalWritesDirectPerSecond: metricInfo{
+		Name: "newrelicoracledb.system.physical_writes_direct_per_second",
+	},
+	NewrelicoracledbSystemPhysicalWritesDirectPerTransaction: metricInfo{
+		Name: "newrelicoracledb.system.physical_writes_direct_per_transaction",
+	},
+	NewrelicoracledbSystemPhysicalWritesPerSecond: metricInfo{
+		Name: "newrelicoracledb.system.physical_writes_per_second",
+	},
+	NewrelicoracledbSystemPhysicalWritesPerTransaction: metricInfo{
+		Name: "newrelicoracledb.system.physical_writes_per_transaction",
+	},
+	NewrelicoracledbSystemProcessLimitPercentage: metricInfo{
+		Name: "newrelicoracledb.system.process_limit_percentage",
+	},
+	NewrelicoracledbSystemRecursiveCallsPerSecond: metricInfo{
+		Name: "newrelicoracledb.system.recursive_calls_per_second",
+	},
+	NewrelicoracledbSystemRecursiveCallsPerTransaction: metricInfo{
+		Name: "newrelicoracledb.system.recursive_calls_per_transaction",
+	},
+	NewrelicoracledbSystemRedoAllocationHitRatio: metricInfo{
+		Name: "newrelicoracledb.system.redo_allocation_hit_ratio",
+	},
+	NewrelicoracledbSystemRedoGeneratedBytesPerSecond: metricInfo{
+		Name: "newrelicoracledb.system.redo_generated_bytes_per_second",
+	},
+	NewrelicoracledbSystemRedoGeneratedBytesPerTransaction: metricInfo{
+		Name: "newrelicoracledb.system.redo_generated_bytes_per_transaction",
+	},
+	NewrelicoracledbSystemRedoWritesPerSecond: metricInfo{
+		Name: "newrelicoracledb.system.redo_writes_per_second",
+	},
+	NewrelicoracledbSystemRedoWritesPerTransaction: metricInfo{
+		Name: "newrelicoracledb.system.redo_writes_per_transaction",
+	},
+	NewrelicoracledbSystemResponseTimePerTransaction: metricInfo{
+		Name: "newrelicoracledb.system.response_time_per_transaction",
+	},
+	NewrelicoracledbSystemRowCacheHitRatio: metricInfo{
+		Name: "newrelicoracledb.system.row_cache_hit_ratio",
+	},
+	NewrelicoracledbSystemRowCacheMissRatio: metricInfo{
+		Name: "newrelicoracledb.system.row_cache_miss_ratio",
+	},
+	NewrelicoracledbSystemRowsPerSort: metricInfo{
+		Name: "newrelicoracledb.system.rows_per_sort",
+	},
+	NewrelicoracledbSystemSessionCount: metricInfo{
+		Name: "newrelicoracledb.system.session_count",
+	},
+	NewrelicoracledbSystemSessionLimitPercentage: metricInfo{
+		Name: "newrelicoracledb.system.session_limit_percentage",
+	},
+	NewrelicoracledbSystemSharedPoolFreePercentage: metricInfo{
+		Name: "newrelicoracledb.system.shared_pool_free_percentage",
+	},
+	NewrelicoracledbSystemSoftParseRatio: metricInfo{
+		Name: "newrelicoracledb.system.soft_parse_ratio",
+	},
+	NewrelicoracledbSystemSQLServiceResponseTime: metricInfo{
+		Name: "newrelicoracledb.system.sql_service_response_time",
+	},
+	NewrelicoracledbSystemStreamsPoolUsagePercentage: metricInfo{
+		Name: "newrelicoracledb.system.streams_pool_usage_percentage",
+	},
+	NewrelicoracledbSystemTempSpaceUsed: metricInfo{
+		Name: "newrelicoracledb.system.temp_space_used",
+	},
+	NewrelicoracledbSystemTotalIndexScansPerSecond: metricInfo{
+		Name: "newrelicoracledb.system.total_index_scans_per_second",
+	},
+	NewrelicoracledbSystemTotalIndexScansPerTransaction: metricInfo{
+		Name: "newrelicoracledb.system.total_index_scans_per_transaction",
+	},
+	NewrelicoracledbSystemTotalParseCountPerSecond: metricInfo{
+		Name: "newrelicoracledb.system.total_parse_count_per_second",
+	},
+	NewrelicoracledbSystemTotalParseCountPerTransaction: metricInfo{
+		Name: "newrelicoracledb.system.total_parse_count_per_transaction",
+	},
+	NewrelicoracledbSystemTotalSortsPerUserCall: metricInfo{
+		Name: "newrelicoracledb.system.total_sorts_per_user_call",
+	},
+	NewrelicoracledbSystemTotalTableScansPerSecond: metricInfo{
+		Name: "newrelicoracledb.system.total_table_scans_per_second",
+	},
+	NewrelicoracledbSystemTotalTableScansPerTransaction: metricInfo{
+		Name: "newrelicoracledb.system.total_table_scans_per_transaction",
+	},
+	NewrelicoracledbSystemTotalTableScansPerUserCall: metricInfo{
+		Name: "newrelicoracledb.system.total_table_scans_per_user_call",
+	},
+	NewrelicoracledbSystemTransactionsPerLogon: metricInfo{
+		Name: "newrelicoracledb.system.transactions_per_logon",
+	},
+	NewrelicoracledbSystemTransactionsPerSecond: metricInfo{
+		Name: "newrelicoracledb.system.transactions_per_second",
+	},
+	NewrelicoracledbSystemUserCallsPerSecond: metricInfo{
+		Name: "newrelicoracledb.system.user_calls_per_second",
+	},
+	NewrelicoracledbSystemUserCallsPerTransaction: metricInfo{
+		Name: "newrelicoracledb.system.user_calls_per_transaction",
+	},
+	NewrelicoracledbSystemUserCallsRatio: metricInfo{
+		Name: "newrelicoracledb.system.user_calls_ratio",
+	},
+	NewrelicoracledbSystemUserCommitsPerSecond: metricInfo{
+		Name: "newrelicoracledb.system.user_commits_per_second",
+	},
+	NewrelicoracledbSystemUserCommitsPercentage: metricInfo{
+		Name: "newrelicoracledb.system.user_commits_percentage",
+	},
+	NewrelicoracledbSystemUserLimitPercentage: metricInfo{
+		Name: "newrelicoracledb.system.user_limit_percentage",
+	},
+	NewrelicoracledbSystemUserRollbackUndoRecordsAppliedPerSecond: metricInfo{
+		Name: "newrelicoracledb.system.user_rollback_undo_records_applied_per_second",
+	},
+	NewrelicoracledbSystemUserRollbackUndoRecordsAppliedPerTransaction: metricInfo{
+		Name: "newrelicoracledb.system.user_rollback_undo_records_applied_per_transaction",
+	},
+	NewrelicoracledbSystemUserRollbacksPerSecond: metricInfo{
+		Name: "newrelicoracledb.system.user_rollbacks_per_second",
+	},
+	NewrelicoracledbSystemUserRollbacksPercentage: metricInfo{
+		Name: "newrelicoracledb.system.user_rollbacks_percentage",
 	},
 	NewrelicoracledbTablespaceDbID: metricInfo{
 		Name: "newrelicoracledb.tablespace.db_id",
@@ -49,21 +733,667 @@ var MetricsInfo = metricsInfo{
 }
 
 type metricsInfo struct {
-	NewrelicoracledbLockedAccounts                metricInfo
-	NewrelicoracledbSessionsCount                 metricInfo
-	NewrelicoracledbTablespaceDbID                metricInfo
-	NewrelicoracledbTablespaceGlobalName          metricInfo
-	NewrelicoracledbTablespaceIsOffline           metricInfo
-	NewrelicoracledbTablespaceOfflineCdbDatafiles metricInfo
-	NewrelicoracledbTablespaceOfflinePdbDatafiles metricInfo
-	NewrelicoracledbTablespacePdbNonWriteMode     metricInfo
-	NewrelicoracledbTablespaceSpaceConsumedBytes  metricInfo
-	NewrelicoracledbTablespaceSpaceReservedBytes  metricInfo
-	NewrelicoracledbTablespaceSpaceUsedPercentage metricInfo
+	NewrelicoracledbDbID                                               metricInfo
+	NewrelicoracledbDiskBlocksRead                                     metricInfo
+	NewrelicoracledbDiskBlocksWritten                                  metricInfo
+	NewrelicoracledbDiskReadTimeMilliseconds                           metricInfo
+	NewrelicoracledbDiskReads                                          metricInfo
+	NewrelicoracledbDiskWriteTimeMilliseconds                          metricInfo
+	NewrelicoracledbDiskWrites                                         metricInfo
+	NewrelicoracledbGlobalName                                         metricInfo
+	NewrelicoracledbLockedAccounts                                     metricInfo
+	NewrelicoracledbLongRunningQueries                                 metricInfo
+	NewrelicoracledbMemoryPgaAllocatedBytes                            metricInfo
+	NewrelicoracledbMemoryPgaFreeableBytes                             metricInfo
+	NewrelicoracledbMemoryPgaInUseBytes                                metricInfo
+	NewrelicoracledbMemoryPgaMaxSizeBytes                              metricInfo
+	NewrelicoracledbMemorySgaSharedPoolLibraryCacheSharableBytes       metricInfo
+	NewrelicoracledbMemorySgaSharedPoolLibraryCacheUserBytes           metricInfo
+	NewrelicoracledbMemorySgaUgaTotalBytes                             metricInfo
+	NewrelicoracledbPdbActiveParallelSessions                          metricInfo
+	NewrelicoracledbPdbActiveSerialSessions                            metricInfo
+	NewrelicoracledbPdbAverageActiveSessions                           metricInfo
+	NewrelicoracledbPdbBackgroundCPUUsagePerSecond                     metricInfo
+	NewrelicoracledbPdbBackgroundTimePerSecond                         metricInfo
+	NewrelicoracledbPdbBlockChangesPerSecond                           metricInfo
+	NewrelicoracledbPdbBlockChangesPerTransaction                      metricInfo
+	NewrelicoracledbPdbCPUTimeRatio                                    metricInfo
+	NewrelicoracledbPdbCPUUsagePerSecond                               metricInfo
+	NewrelicoracledbPdbCPUUsagePerTransaction                          metricInfo
+	NewrelicoracledbPdbCurrentLogons                                   metricInfo
+	NewrelicoracledbPdbCurrentOpenCursors                              metricInfo
+	NewrelicoracledbPdbDbPhysicalReadBytesPerSecond                    metricInfo
+	NewrelicoracledbPdbDbPhysicalReadsPerSecond                        metricInfo
+	NewrelicoracledbPdbDbPhysicalWriteBytesPerSecond                   metricInfo
+	NewrelicoracledbPdbDbPhysicalWritesPerSecond                       metricInfo
+	NewrelicoracledbPdbExecuteWithoutParseRatio                        metricInfo
+	NewrelicoracledbPdbExecutionsPerSecond                             metricInfo
+	NewrelicoracledbPdbExecutionsPerTransaction                        metricInfo
+	NewrelicoracledbPdbHardParseCountPerSecond                         metricInfo
+	NewrelicoracledbPdbHardParseCountPerTransaction                    metricInfo
+	NewrelicoracledbPdbLogicalReadsPerSecond                           metricInfo
+	NewrelicoracledbPdbLogicalReadsPerTransaction                      metricInfo
+	NewrelicoracledbPdbLogonsPerSecond                                 metricInfo
+	NewrelicoracledbPdbLogonsPerTransaction                            metricInfo
+	NewrelicoracledbPdbNetworkTrafficBytePerSecond                     metricInfo
+	NewrelicoracledbPdbOpenCursorsPerSecond                            metricInfo
+	NewrelicoracledbPdbOpenCursorsPerTransaction                       metricInfo
+	NewrelicoracledbPdbParseFailureCountPerSecond                      metricInfo
+	NewrelicoracledbPdbPhysicalReadBytesPerSecond                      metricInfo
+	NewrelicoracledbPdbPhysicalReadsPerTransaction                     metricInfo
+	NewrelicoracledbPdbPhysicalWriteBytesPerSecond                     metricInfo
+	NewrelicoracledbPdbPhysicalWritesPerTransaction                    metricInfo
+	NewrelicoracledbPdbRedoGeneratedBytesPerSecond                     metricInfo
+	NewrelicoracledbPdbRedoGeneratedBytesPerTransaction                metricInfo
+	NewrelicoracledbPdbResponseTimePerTransaction                      metricInfo
+	NewrelicoracledbPdbSessionCount                                    metricInfo
+	NewrelicoracledbPdbSoftParseRatio                                  metricInfo
+	NewrelicoracledbPdbSQLServiceResponseTime                          metricInfo
+	NewrelicoracledbPdbTotalParseCountPerSecond                        metricInfo
+	NewrelicoracledbPdbTotalParseCountPerTransaction                   metricInfo
+	NewrelicoracledbPdbTransactionsPerSecond                           metricInfo
+	NewrelicoracledbPdbUserCallsPerSecond                              metricInfo
+	NewrelicoracledbPdbUserCallsPerTransaction                         metricInfo
+	NewrelicoracledbPdbUserCommitsPerSecond                            metricInfo
+	NewrelicoracledbPdbUserCommitsPercentage                           metricInfo
+	NewrelicoracledbPdbUserRollbacksPerSecond                          metricInfo
+	NewrelicoracledbPdbUserRollbacksPercentage                         metricInfo
+	NewrelicoracledbPdbWaitTimeRatio                                   metricInfo
+	NewrelicoracledbRedoLogParallelWriteWaits                          metricInfo
+	NewrelicoracledbRedoLogSwitchArchivingNeededWaits                  metricInfo
+	NewrelicoracledbRedoLogSwitchCheckpointIncompleteWaits             metricInfo
+	NewrelicoracledbRedoLogSwitchCompletionWaits                       metricInfo
+	NewrelicoracledbRollbackSegmentsGets                               metricInfo
+	NewrelicoracledbRollbackSegmentsWaitRatio                          metricInfo
+	NewrelicoracledbRollbackSegmentsWaits                              metricInfo
+	NewrelicoracledbSessionsCount                                      metricInfo
+	NewrelicoracledbSgaBufferBusyWaits                                 metricInfo
+	NewrelicoracledbSgaFixedSizeBytes                                  metricInfo
+	NewrelicoracledbSgaFreeBufferInspectedWaits                        metricInfo
+	NewrelicoracledbSgaFreeBufferWaits                                 metricInfo
+	NewrelicoracledbSgaHitRatio                                        metricInfo
+	NewrelicoracledbSgaLogAllocationRetriesRatio                       metricInfo
+	NewrelicoracledbSgaLogBufferRedoAllocationRetries                  metricInfo
+	NewrelicoracledbSgaLogBufferRedoEntries                            metricInfo
+	NewrelicoracledbSgaLogBufferSpaceWaits                             metricInfo
+	NewrelicoracledbSgaRedoBuffersBytes                                metricInfo
+	NewrelicoracledbSgaSharedPoolDictCacheMissRatio                    metricInfo
+	NewrelicoracledbSgaSharedPoolLibraryCacheHitRatio                  metricInfo
+	NewrelicoracledbSgaSharedPoolLibraryCacheReloadRatio               metricInfo
+	NewrelicoracledbSortsDisk                                          metricInfo
+	NewrelicoracledbSortsMemory                                        metricInfo
+	NewrelicoracledbSystemActiveParallelSessions                       metricInfo
+	NewrelicoracledbSystemActiveSerialSessions                         metricInfo
+	NewrelicoracledbSystemAverageActiveSessions                        metricInfo
+	NewrelicoracledbSystemBackgroundCheckpointsPerSecond               metricInfo
+	NewrelicoracledbSystemBackgroundCPUUsagePerSecond                  metricInfo
+	NewrelicoracledbSystemBackgroundTimePerSecond                      metricInfo
+	NewrelicoracledbSystemBranchNodeSplitsPerSecond                    metricInfo
+	NewrelicoracledbSystemBranchNodeSplitsPerTransaction               metricInfo
+	NewrelicoracledbSystemBufferCacheHitRatio                          metricInfo
+	NewrelicoracledbSystemCapturedUserCalls                            metricInfo
+	NewrelicoracledbSystemConsistentReadChangesPerSecond               metricInfo
+	NewrelicoracledbSystemConsistentReadChangesPerTransaction          metricInfo
+	NewrelicoracledbSystemConsistentReadGetsPerSecond                  metricInfo
+	NewrelicoracledbSystemConsistentReadGetsPerTransaction             metricInfo
+	NewrelicoracledbSystemCPUUsagePerSecond                            metricInfo
+	NewrelicoracledbSystemCPUUsagePerTransaction                       metricInfo
+	NewrelicoracledbSystemCrBlocksCreatedPerSecond                     metricInfo
+	NewrelicoracledbSystemCrBlocksCreatedPerTransaction                metricInfo
+	NewrelicoracledbSystemCrUndoRecordsAppliedPerSecond                metricInfo
+	NewrelicoracledbSystemCrUndoRecordsAppliedPerTransaction           metricInfo
+	NewrelicoracledbSystemCurrentLogonsCount                           metricInfo
+	NewrelicoracledbSystemCurrentOpenCursorsCount                      metricInfo
+	NewrelicoracledbSystemCurrentOsLoad                                metricInfo
+	NewrelicoracledbSystemCursorCacheHitRatio                          metricInfo
+	NewrelicoracledbSystemDatabaseCPUTimeRatio                         metricInfo
+	NewrelicoracledbSystemDatabaseTimePerSecond                        metricInfo
+	NewrelicoracledbSystemDatabaseWaitTimeRatio                        metricInfo
+	NewrelicoracledbSystemDbBlockChangesPerSecond                      metricInfo
+	NewrelicoracledbSystemDbBlockChangesPerTransaction                 metricInfo
+	NewrelicoracledbSystemDbBlockChangesPerUserCall                    metricInfo
+	NewrelicoracledbSystemDbBlockGetsPerSecond                         metricInfo
+	NewrelicoracledbSystemDbBlockGetsPerTransaction                    metricInfo
+	NewrelicoracledbSystemDbBlockGetsPerUserCall                       metricInfo
+	NewrelicoracledbSystemDbwrCheckpointsPerSecond                     metricInfo
+	NewrelicoracledbSystemDiskSortPerSecond                            metricInfo
+	NewrelicoracledbSystemDiskSortPerTransaction                       metricInfo
+	NewrelicoracledbSystemEnqueueDeadlocksPerSecond                    metricInfo
+	NewrelicoracledbSystemEnqueueDeadlocksPerTransaction               metricInfo
+	NewrelicoracledbSystemEnqueueRequestsPerSecond                     metricInfo
+	NewrelicoracledbSystemEnqueueRequestsPerTransaction                metricInfo
+	NewrelicoracledbSystemEnqueueTimeoutsPerSecond                     metricInfo
+	NewrelicoracledbSystemEnqueueTimeoutsPerTransaction                metricInfo
+	NewrelicoracledbSystemEnqueueWaitsPerSecond                        metricInfo
+	NewrelicoracledbSystemEnqueueWaitsPerTransaction                   metricInfo
+	NewrelicoracledbSystemExecuteWithoutParseRatio                     metricInfo
+	NewrelicoracledbSystemExecutionsPerSecond                          metricInfo
+	NewrelicoracledbSystemExecutionsPerTransaction                     metricInfo
+	NewrelicoracledbSystemExecutionsPerUserCall                        metricInfo
+	NewrelicoracledbSystemFullIndexScansPerSecond                      metricInfo
+	NewrelicoracledbSystemFullIndexScansPerTransaction                 metricInfo
+	NewrelicoracledbSystemGcCrBlockReceivedPerSecond                   metricInfo
+	NewrelicoracledbSystemGcCrBlockReceivedPerTransaction              metricInfo
+	NewrelicoracledbSystemGcCurrentBlockReceivedPerSecond              metricInfo
+	NewrelicoracledbSystemGcCurrentBlockReceivedPerTransaction         metricInfo
+	NewrelicoracledbSystemGlobalCacheAverageCrGetTime                  metricInfo
+	NewrelicoracledbSystemGlobalCacheAverageCurrentGetTime             metricInfo
+	NewrelicoracledbSystemGlobalCacheBlocksCorrupted                   metricInfo
+	NewrelicoracledbSystemGlobalCacheBlocksLost                        metricInfo
+	NewrelicoracledbSystemHardParseCountPerSecond                      metricInfo
+	NewrelicoracledbSystemHardParseCountPerTransaction                 metricInfo
+	NewrelicoracledbSystemHostCPUUsagePerSecond                        metricInfo
+	NewrelicoracledbSystemHostCPUUtilization                           metricInfo
+	NewrelicoracledbSystemIoMegabytesPerSecond                         metricInfo
+	NewrelicoracledbSystemIoRequestsPerSecond                          metricInfo
+	NewrelicoracledbSystemLeafNodeSplitsPerSecond                      metricInfo
+	NewrelicoracledbSystemLeafNodeSplitsPerTransaction                 metricInfo
+	NewrelicoracledbSystemLibraryCacheHitRatio                         metricInfo
+	NewrelicoracledbSystemLibraryCacheMissRatio                        metricInfo
+	NewrelicoracledbSystemLogicalReadsPerSecond                        metricInfo
+	NewrelicoracledbSystemLogicalReadsPerTransaction                   metricInfo
+	NewrelicoracledbSystemLogicalReadsPerUserCall                      metricInfo
+	NewrelicoracledbSystemLogonsPerSecond                              metricInfo
+	NewrelicoracledbSystemLogonsPerTransaction                         metricInfo
+	NewrelicoracledbSystemLongTableScansPerSecond                      metricInfo
+	NewrelicoracledbSystemLongTableScansPerTransaction                 metricInfo
+	NewrelicoracledbSystemMemorySortsRatio                             metricInfo
+	NewrelicoracledbSystemNetworkTrafficVolumePerSecond                metricInfo
+	NewrelicoracledbSystemOpenCursorsPerSecond                         metricInfo
+	NewrelicoracledbSystemOpenCursorsPerTransaction                    metricInfo
+	NewrelicoracledbSystemParseFailureCountPerSecond                   metricInfo
+	NewrelicoracledbSystemParseFailureCountPerTransaction              metricInfo
+	NewrelicoracledbSystemPgaCacheHitPercentage                        metricInfo
+	NewrelicoracledbSystemPhysicalLobsReadsPerSecond                   metricInfo
+	NewrelicoracledbSystemPhysicalLobsReadsPerTransaction              metricInfo
+	NewrelicoracledbSystemPhysicalLobsWritesPerSecond                  metricInfo
+	NewrelicoracledbSystemPhysicalLobsWritesPerTransaction             metricInfo
+	NewrelicoracledbSystemPhysicalReadBytesPerSecond                   metricInfo
+	NewrelicoracledbSystemPhysicalReadIoRequestsPerSecond              metricInfo
+	NewrelicoracledbSystemPhysicalReadTotalBytesPerSecond              metricInfo
+	NewrelicoracledbSystemPhysicalReadTotalIoRequestsPerSecond         metricInfo
+	NewrelicoracledbSystemPhysicalReadsDirectPerSecond                 metricInfo
+	NewrelicoracledbSystemPhysicalReadsDirectPerTransaction            metricInfo
+	NewrelicoracledbSystemPhysicalReadsPerSecond                       metricInfo
+	NewrelicoracledbSystemPhysicalReadsPerTransaction                  metricInfo
+	NewrelicoracledbSystemPhysicalWriteBytesPerSecond                  metricInfo
+	NewrelicoracledbSystemPhysicalWriteIoRequestsPerSecond             metricInfo
+	NewrelicoracledbSystemPhysicalWriteTotalBytesPerSecond             metricInfo
+	NewrelicoracledbSystemPhysicalWriteTotalIoRequestsPerSecond        metricInfo
+	NewrelicoracledbSystemPhysicalWritesDirectPerSecond                metricInfo
+	NewrelicoracledbSystemPhysicalWritesDirectPerTransaction           metricInfo
+	NewrelicoracledbSystemPhysicalWritesPerSecond                      metricInfo
+	NewrelicoracledbSystemPhysicalWritesPerTransaction                 metricInfo
+	NewrelicoracledbSystemProcessLimitPercentage                       metricInfo
+	NewrelicoracledbSystemRecursiveCallsPerSecond                      metricInfo
+	NewrelicoracledbSystemRecursiveCallsPerTransaction                 metricInfo
+	NewrelicoracledbSystemRedoAllocationHitRatio                       metricInfo
+	NewrelicoracledbSystemRedoGeneratedBytesPerSecond                  metricInfo
+	NewrelicoracledbSystemRedoGeneratedBytesPerTransaction             metricInfo
+	NewrelicoracledbSystemRedoWritesPerSecond                          metricInfo
+	NewrelicoracledbSystemRedoWritesPerTransaction                     metricInfo
+	NewrelicoracledbSystemResponseTimePerTransaction                   metricInfo
+	NewrelicoracledbSystemRowCacheHitRatio                             metricInfo
+	NewrelicoracledbSystemRowCacheMissRatio                            metricInfo
+	NewrelicoracledbSystemRowsPerSort                                  metricInfo
+	NewrelicoracledbSystemSessionCount                                 metricInfo
+	NewrelicoracledbSystemSessionLimitPercentage                       metricInfo
+	NewrelicoracledbSystemSharedPoolFreePercentage                     metricInfo
+	NewrelicoracledbSystemSoftParseRatio                               metricInfo
+	NewrelicoracledbSystemSQLServiceResponseTime                       metricInfo
+	NewrelicoracledbSystemStreamsPoolUsagePercentage                   metricInfo
+	NewrelicoracledbSystemTempSpaceUsed                                metricInfo
+	NewrelicoracledbSystemTotalIndexScansPerSecond                     metricInfo
+	NewrelicoracledbSystemTotalIndexScansPerTransaction                metricInfo
+	NewrelicoracledbSystemTotalParseCountPerSecond                     metricInfo
+	NewrelicoracledbSystemTotalParseCountPerTransaction                metricInfo
+	NewrelicoracledbSystemTotalSortsPerUserCall                        metricInfo
+	NewrelicoracledbSystemTotalTableScansPerSecond                     metricInfo
+	NewrelicoracledbSystemTotalTableScansPerTransaction                metricInfo
+	NewrelicoracledbSystemTotalTableScansPerUserCall                   metricInfo
+	NewrelicoracledbSystemTransactionsPerLogon                         metricInfo
+	NewrelicoracledbSystemTransactionsPerSecond                        metricInfo
+	NewrelicoracledbSystemUserCallsPerSecond                           metricInfo
+	NewrelicoracledbSystemUserCallsPerTransaction                      metricInfo
+	NewrelicoracledbSystemUserCallsRatio                               metricInfo
+	NewrelicoracledbSystemUserCommitsPerSecond                         metricInfo
+	NewrelicoracledbSystemUserCommitsPercentage                        metricInfo
+	NewrelicoracledbSystemUserLimitPercentage                          metricInfo
+	NewrelicoracledbSystemUserRollbackUndoRecordsAppliedPerSecond      metricInfo
+	NewrelicoracledbSystemUserRollbackUndoRecordsAppliedPerTransaction metricInfo
+	NewrelicoracledbSystemUserRollbacksPerSecond                       metricInfo
+	NewrelicoracledbSystemUserRollbacksPercentage                      metricInfo
+	NewrelicoracledbTablespaceDbID                                     metricInfo
+	NewrelicoracledbTablespaceGlobalName                               metricInfo
+	NewrelicoracledbTablespaceIsOffline                                metricInfo
+	NewrelicoracledbTablespaceOfflineCdbDatafiles                      metricInfo
+	NewrelicoracledbTablespaceOfflinePdbDatafiles                      metricInfo
+	NewrelicoracledbTablespacePdbNonWriteMode                          metricInfo
+	NewrelicoracledbTablespaceSpaceConsumedBytes                       metricInfo
+	NewrelicoracledbTablespaceSpaceReservedBytes                       metricInfo
+	NewrelicoracledbTablespaceSpaceUsedPercentage                      metricInfo
 }
 
 type metricInfo struct {
 	Name string
+}
+
+type metricNewrelicoracledbDbID struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.db_id metric with initial data.
+func (m *metricNewrelicoracledbDbID) init() {
+	m.data.SetName("newrelicoracledb.db_id")
+	m.data.SetDescription("Oracle database ID information")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbDbID) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string, dbIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+	dp.Attributes().PutStr("db.id", dbIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbDbID) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbDbID) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbDbID(cfg MetricConfig) metricNewrelicoracledbDbID {
+	m := metricNewrelicoracledbDbID{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbDiskBlocksRead struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.disk.blocks_read metric with initial data.
+func (m *metricNewrelicoracledbDiskBlocksRead) init() {
+	m.data.SetName("newrelicoracledb.disk.blocks_read")
+	m.data.SetDescription("Number of physical blocks read from disk")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbDiskBlocksRead) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbDiskBlocksRead) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbDiskBlocksRead) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbDiskBlocksRead(cfg MetricConfig) metricNewrelicoracledbDiskBlocksRead {
+	m := metricNewrelicoracledbDiskBlocksRead{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbDiskBlocksWritten struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.disk.blocks_written metric with initial data.
+func (m *metricNewrelicoracledbDiskBlocksWritten) init() {
+	m.data.SetName("newrelicoracledb.disk.blocks_written")
+	m.data.SetDescription("Number of physical blocks written to disk")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbDiskBlocksWritten) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbDiskBlocksWritten) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbDiskBlocksWritten) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbDiskBlocksWritten(cfg MetricConfig) metricNewrelicoracledbDiskBlocksWritten {
+	m := metricNewrelicoracledbDiskBlocksWritten{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbDiskReadTimeMilliseconds struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.disk.read_time_milliseconds metric with initial data.
+func (m *metricNewrelicoracledbDiskReadTimeMilliseconds) init() {
+	m.data.SetName("newrelicoracledb.disk.read_time_milliseconds")
+	m.data.SetDescription("Time spent reading from disk in milliseconds")
+	m.data.SetUnit("ms")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbDiskReadTimeMilliseconds) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbDiskReadTimeMilliseconds) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbDiskReadTimeMilliseconds) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbDiskReadTimeMilliseconds(cfg MetricConfig) metricNewrelicoracledbDiskReadTimeMilliseconds {
+	m := metricNewrelicoracledbDiskReadTimeMilliseconds{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbDiskReads struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.disk.reads metric with initial data.
+func (m *metricNewrelicoracledbDiskReads) init() {
+	m.data.SetName("newrelicoracledb.disk.reads")
+	m.data.SetDescription("Number of physical disk reads")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbDiskReads) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbDiskReads) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbDiskReads) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbDiskReads(cfg MetricConfig) metricNewrelicoracledbDiskReads {
+	m := metricNewrelicoracledbDiskReads{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbDiskWriteTimeMilliseconds struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.disk.write_time_milliseconds metric with initial data.
+func (m *metricNewrelicoracledbDiskWriteTimeMilliseconds) init() {
+	m.data.SetName("newrelicoracledb.disk.write_time_milliseconds")
+	m.data.SetDescription("Time spent writing to disk in milliseconds")
+	m.data.SetUnit("ms")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbDiskWriteTimeMilliseconds) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbDiskWriteTimeMilliseconds) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbDiskWriteTimeMilliseconds) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbDiskWriteTimeMilliseconds(cfg MetricConfig) metricNewrelicoracledbDiskWriteTimeMilliseconds {
+	m := metricNewrelicoracledbDiskWriteTimeMilliseconds{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbDiskWrites struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.disk.writes metric with initial data.
+func (m *metricNewrelicoracledbDiskWrites) init() {
+	m.data.SetName("newrelicoracledb.disk.writes")
+	m.data.SetDescription("Number of physical disk writes")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbDiskWrites) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbDiskWrites) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbDiskWrites) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbDiskWrites(cfg MetricConfig) metricNewrelicoracledbDiskWrites {
+	m := metricNewrelicoracledbDiskWrites{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbGlobalName struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.global_name metric with initial data.
+func (m *metricNewrelicoracledbGlobalName) init() {
+	m.data.SetName("newrelicoracledb.global_name")
+	m.data.SetDescription("Oracle database global name information")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbGlobalName) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string, globalNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+	dp.Attributes().PutStr("global.name", globalNameAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbGlobalName) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbGlobalName) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbGlobalName(cfg MetricConfig) metricNewrelicoracledbGlobalName {
+	m := metricNewrelicoracledbGlobalName{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
 }
 
 type metricNewrelicoracledbLockedAccounts struct {
@@ -118,6 +1448,3334 @@ func newMetricNewrelicoracledbLockedAccounts(cfg MetricConfig) metricNewrelicora
 	return m
 }
 
+type metricNewrelicoracledbLongRunningQueries struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.long_running_queries metric with initial data.
+func (m *metricNewrelicoracledbLongRunningQueries) init() {
+	m.data.SetName("newrelicoracledb.long_running_queries")
+	m.data.SetDescription("Number of long running queries (active sessions running for more than 60 seconds)")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbLongRunningQueries) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbLongRunningQueries) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbLongRunningQueries) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbLongRunningQueries(cfg MetricConfig) metricNewrelicoracledbLongRunningQueries {
+	m := metricNewrelicoracledbLongRunningQueries{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbMemoryPgaAllocatedBytes struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.memory.pga_allocated_bytes metric with initial data.
+func (m *metricNewrelicoracledbMemoryPgaAllocatedBytes) init() {
+	m.data.SetName("newrelicoracledb.memory.pga_allocated_bytes")
+	m.data.SetDescription("Total PGA memory allocated in bytes")
+	m.data.SetUnit("By")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbMemoryPgaAllocatedBytes) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbMemoryPgaAllocatedBytes) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbMemoryPgaAllocatedBytes) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbMemoryPgaAllocatedBytes(cfg MetricConfig) metricNewrelicoracledbMemoryPgaAllocatedBytes {
+	m := metricNewrelicoracledbMemoryPgaAllocatedBytes{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbMemoryPgaFreeableBytes struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.memory.pga_freeable_bytes metric with initial data.
+func (m *metricNewrelicoracledbMemoryPgaFreeableBytes) init() {
+	m.data.SetName("newrelicoracledb.memory.pga_freeable_bytes")
+	m.data.SetDescription("Total freeable PGA memory in bytes")
+	m.data.SetUnit("By")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbMemoryPgaFreeableBytes) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbMemoryPgaFreeableBytes) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbMemoryPgaFreeableBytes) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbMemoryPgaFreeableBytes(cfg MetricConfig) metricNewrelicoracledbMemoryPgaFreeableBytes {
+	m := metricNewrelicoracledbMemoryPgaFreeableBytes{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbMemoryPgaInUseBytes struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.memory.pga_in_use_bytes metric with initial data.
+func (m *metricNewrelicoracledbMemoryPgaInUseBytes) init() {
+	m.data.SetName("newrelicoracledb.memory.pga_in_use_bytes")
+	m.data.SetDescription("Total PGA memory currently in use in bytes")
+	m.data.SetUnit("By")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbMemoryPgaInUseBytes) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbMemoryPgaInUseBytes) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbMemoryPgaInUseBytes) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbMemoryPgaInUseBytes(cfg MetricConfig) metricNewrelicoracledbMemoryPgaInUseBytes {
+	m := metricNewrelicoracledbMemoryPgaInUseBytes{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbMemoryPgaMaxSizeBytes struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.memory.pga_max_size_bytes metric with initial data.
+func (m *metricNewrelicoracledbMemoryPgaMaxSizeBytes) init() {
+	m.data.SetName("newrelicoracledb.memory.pga_max_size_bytes")
+	m.data.SetDescription("Global memory bound for PGA in bytes")
+	m.data.SetUnit("By")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbMemoryPgaMaxSizeBytes) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbMemoryPgaMaxSizeBytes) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbMemoryPgaMaxSizeBytes) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbMemoryPgaMaxSizeBytes(cfg MetricConfig) metricNewrelicoracledbMemoryPgaMaxSizeBytes {
+	m := metricNewrelicoracledbMemoryPgaMaxSizeBytes{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbMemorySgaSharedPoolLibraryCacheSharableBytes struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.memory.sga_shared_pool_library_cache_sharable_bytes metric with initial data.
+func (m *metricNewrelicoracledbMemorySgaSharedPoolLibraryCacheSharableBytes) init() {
+	m.data.SetName("newrelicoracledb.memory.sga_shared_pool_library_cache_sharable_bytes")
+	m.data.SetDescription("SGA shared pool library cache sharable memory in bytes for statements with more than 5 executions")
+	m.data.SetUnit("By")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbMemorySgaSharedPoolLibraryCacheSharableBytes) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbMemorySgaSharedPoolLibraryCacheSharableBytes) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbMemorySgaSharedPoolLibraryCacheSharableBytes) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbMemorySgaSharedPoolLibraryCacheSharableBytes(cfg MetricConfig) metricNewrelicoracledbMemorySgaSharedPoolLibraryCacheSharableBytes {
+	m := metricNewrelicoracledbMemorySgaSharedPoolLibraryCacheSharableBytes{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbMemorySgaSharedPoolLibraryCacheUserBytes struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.memory.sga_shared_pool_library_cache_user_bytes metric with initial data.
+func (m *metricNewrelicoracledbMemorySgaSharedPoolLibraryCacheUserBytes) init() {
+	m.data.SetName("newrelicoracledb.memory.sga_shared_pool_library_cache_user_bytes")
+	m.data.SetDescription("SGA shared pool library cache shareable memory per user in bytes (250 * users_opening)")
+	m.data.SetUnit("By")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbMemorySgaSharedPoolLibraryCacheUserBytes) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbMemorySgaSharedPoolLibraryCacheUserBytes) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbMemorySgaSharedPoolLibraryCacheUserBytes) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbMemorySgaSharedPoolLibraryCacheUserBytes(cfg MetricConfig) metricNewrelicoracledbMemorySgaSharedPoolLibraryCacheUserBytes {
+	m := metricNewrelicoracledbMemorySgaSharedPoolLibraryCacheUserBytes{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbMemorySgaUgaTotalBytes struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.memory.sga_uga_total_bytes metric with initial data.
+func (m *metricNewrelicoracledbMemorySgaUgaTotalBytes) init() {
+	m.data.SetName("newrelicoracledb.memory.sga_uga_total_bytes")
+	m.data.SetDescription("Total SGA UGA memory in bytes (session uga memory max)")
+	m.data.SetUnit("By")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbMemorySgaUgaTotalBytes) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbMemorySgaUgaTotalBytes) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbMemorySgaUgaTotalBytes) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbMemorySgaUgaTotalBytes(cfg MetricConfig) metricNewrelicoracledbMemorySgaUgaTotalBytes {
+	m := metricNewrelicoracledbMemorySgaUgaTotalBytes{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbPdbActiveParallelSessions struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.pdb.active_parallel_sessions metric with initial data.
+func (m *metricNewrelicoracledbPdbActiveParallelSessions) init() {
+	m.data.SetName("newrelicoracledb.pdb.active_parallel_sessions")
+	m.data.SetDescription("Number of active parallel sessions in PDB")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbPdbActiveParallelSessions) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbPdbActiveParallelSessions) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbPdbActiveParallelSessions) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbPdbActiveParallelSessions(cfg MetricConfig) metricNewrelicoracledbPdbActiveParallelSessions {
+	m := metricNewrelicoracledbPdbActiveParallelSessions{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbPdbActiveSerialSessions struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.pdb.active_serial_sessions metric with initial data.
+func (m *metricNewrelicoracledbPdbActiveSerialSessions) init() {
+	m.data.SetName("newrelicoracledb.pdb.active_serial_sessions")
+	m.data.SetDescription("Number of active serial sessions in PDB")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbPdbActiveSerialSessions) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbPdbActiveSerialSessions) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbPdbActiveSerialSessions) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbPdbActiveSerialSessions(cfg MetricConfig) metricNewrelicoracledbPdbActiveSerialSessions {
+	m := metricNewrelicoracledbPdbActiveSerialSessions{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbPdbAverageActiveSessions struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.pdb.average_active_sessions metric with initial data.
+func (m *metricNewrelicoracledbPdbAverageActiveSessions) init() {
+	m.data.SetName("newrelicoracledb.pdb.average_active_sessions")
+	m.data.SetDescription("Average number of active sessions in PDB")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbPdbAverageActiveSessions) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbPdbAverageActiveSessions) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbPdbAverageActiveSessions) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbPdbAverageActiveSessions(cfg MetricConfig) metricNewrelicoracledbPdbAverageActiveSessions {
+	m := metricNewrelicoracledbPdbAverageActiveSessions{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbPdbBackgroundCPUUsagePerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.pdb.background_cpu_usage_per_second metric with initial data.
+func (m *metricNewrelicoracledbPdbBackgroundCPUUsagePerSecond) init() {
+	m.data.SetName("newrelicoracledb.pdb.background_cpu_usage_per_second")
+	m.data.SetDescription("Background CPU usage per second in PDB")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbPdbBackgroundCPUUsagePerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbPdbBackgroundCPUUsagePerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbPdbBackgroundCPUUsagePerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbPdbBackgroundCPUUsagePerSecond(cfg MetricConfig) metricNewrelicoracledbPdbBackgroundCPUUsagePerSecond {
+	m := metricNewrelicoracledbPdbBackgroundCPUUsagePerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbPdbBackgroundTimePerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.pdb.background_time_per_second metric with initial data.
+func (m *metricNewrelicoracledbPdbBackgroundTimePerSecond) init() {
+	m.data.SetName("newrelicoracledb.pdb.background_time_per_second")
+	m.data.SetDescription("Background time per second in PDB")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbPdbBackgroundTimePerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbPdbBackgroundTimePerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbPdbBackgroundTimePerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbPdbBackgroundTimePerSecond(cfg MetricConfig) metricNewrelicoracledbPdbBackgroundTimePerSecond {
+	m := metricNewrelicoracledbPdbBackgroundTimePerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbPdbBlockChangesPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.pdb.block_changes_per_second metric with initial data.
+func (m *metricNewrelicoracledbPdbBlockChangesPerSecond) init() {
+	m.data.SetName("newrelicoracledb.pdb.block_changes_per_second")
+	m.data.SetDescription("DB block changes per second in PDB")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbPdbBlockChangesPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbPdbBlockChangesPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbPdbBlockChangesPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbPdbBlockChangesPerSecond(cfg MetricConfig) metricNewrelicoracledbPdbBlockChangesPerSecond {
+	m := metricNewrelicoracledbPdbBlockChangesPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbPdbBlockChangesPerTransaction struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.pdb.block_changes_per_transaction metric with initial data.
+func (m *metricNewrelicoracledbPdbBlockChangesPerTransaction) init() {
+	m.data.SetName("newrelicoracledb.pdb.block_changes_per_transaction")
+	m.data.SetDescription("DB block changes per transaction in PDB")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbPdbBlockChangesPerTransaction) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbPdbBlockChangesPerTransaction) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbPdbBlockChangesPerTransaction) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbPdbBlockChangesPerTransaction(cfg MetricConfig) metricNewrelicoracledbPdbBlockChangesPerTransaction {
+	m := metricNewrelicoracledbPdbBlockChangesPerTransaction{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbPdbCPUTimeRatio struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.pdb.cpu_time_ratio metric with initial data.
+func (m *metricNewrelicoracledbPdbCPUTimeRatio) init() {
+	m.data.SetName("newrelicoracledb.pdb.cpu_time_ratio")
+	m.data.SetDescription("Database CPU time ratio in PDB")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbPdbCPUTimeRatio) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbPdbCPUTimeRatio) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbPdbCPUTimeRatio) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbPdbCPUTimeRatio(cfg MetricConfig) metricNewrelicoracledbPdbCPUTimeRatio {
+	m := metricNewrelicoracledbPdbCPUTimeRatio{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbPdbCPUUsagePerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.pdb.cpu_usage_per_second metric with initial data.
+func (m *metricNewrelicoracledbPdbCPUUsagePerSecond) init() {
+	m.data.SetName("newrelicoracledb.pdb.cpu_usage_per_second")
+	m.data.SetDescription("CPU usage per second in PDB")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbPdbCPUUsagePerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbPdbCPUUsagePerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbPdbCPUUsagePerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbPdbCPUUsagePerSecond(cfg MetricConfig) metricNewrelicoracledbPdbCPUUsagePerSecond {
+	m := metricNewrelicoracledbPdbCPUUsagePerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbPdbCPUUsagePerTransaction struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.pdb.cpu_usage_per_transaction metric with initial data.
+func (m *metricNewrelicoracledbPdbCPUUsagePerTransaction) init() {
+	m.data.SetName("newrelicoracledb.pdb.cpu_usage_per_transaction")
+	m.data.SetDescription("CPU usage per transaction in PDB")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbPdbCPUUsagePerTransaction) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbPdbCPUUsagePerTransaction) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbPdbCPUUsagePerTransaction) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbPdbCPUUsagePerTransaction(cfg MetricConfig) metricNewrelicoracledbPdbCPUUsagePerTransaction {
+	m := metricNewrelicoracledbPdbCPUUsagePerTransaction{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbPdbCurrentLogons struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.pdb.current_logons metric with initial data.
+func (m *metricNewrelicoracledbPdbCurrentLogons) init() {
+	m.data.SetName("newrelicoracledb.pdb.current_logons")
+	m.data.SetDescription("Current number of logons in PDB")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbPdbCurrentLogons) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbPdbCurrentLogons) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbPdbCurrentLogons) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbPdbCurrentLogons(cfg MetricConfig) metricNewrelicoracledbPdbCurrentLogons {
+	m := metricNewrelicoracledbPdbCurrentLogons{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbPdbCurrentOpenCursors struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.pdb.current_open_cursors metric with initial data.
+func (m *metricNewrelicoracledbPdbCurrentOpenCursors) init() {
+	m.data.SetName("newrelicoracledb.pdb.current_open_cursors")
+	m.data.SetDescription("Current number of open cursors in PDB")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbPdbCurrentOpenCursors) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbPdbCurrentOpenCursors) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbPdbCurrentOpenCursors) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbPdbCurrentOpenCursors(cfg MetricConfig) metricNewrelicoracledbPdbCurrentOpenCursors {
+	m := metricNewrelicoracledbPdbCurrentOpenCursors{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbPdbDbPhysicalReadBytesPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.pdb.db_physical_read_bytes_per_second metric with initial data.
+func (m *metricNewrelicoracledbPdbDbPhysicalReadBytesPerSecond) init() {
+	m.data.SetName("newrelicoracledb.pdb.db_physical_read_bytes_per_second")
+	m.data.SetDescription("Physical read bytes per second in PDB")
+	m.data.SetUnit("By/s")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbPdbDbPhysicalReadBytesPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbPdbDbPhysicalReadBytesPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbPdbDbPhysicalReadBytesPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbPdbDbPhysicalReadBytesPerSecond(cfg MetricConfig) metricNewrelicoracledbPdbDbPhysicalReadBytesPerSecond {
+	m := metricNewrelicoracledbPdbDbPhysicalReadBytesPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbPdbDbPhysicalReadsPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.pdb.db_physical_reads_per_second metric with initial data.
+func (m *metricNewrelicoracledbPdbDbPhysicalReadsPerSecond) init() {
+	m.data.SetName("newrelicoracledb.pdb.db_physical_reads_per_second")
+	m.data.SetDescription("Physical reads per second in PDB")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbPdbDbPhysicalReadsPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbPdbDbPhysicalReadsPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbPdbDbPhysicalReadsPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbPdbDbPhysicalReadsPerSecond(cfg MetricConfig) metricNewrelicoracledbPdbDbPhysicalReadsPerSecond {
+	m := metricNewrelicoracledbPdbDbPhysicalReadsPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbPdbDbPhysicalWriteBytesPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.pdb.db_physical_write_bytes_per_second metric with initial data.
+func (m *metricNewrelicoracledbPdbDbPhysicalWriteBytesPerSecond) init() {
+	m.data.SetName("newrelicoracledb.pdb.db_physical_write_bytes_per_second")
+	m.data.SetDescription("Physical write bytes per second in PDB")
+	m.data.SetUnit("By/s")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbPdbDbPhysicalWriteBytesPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbPdbDbPhysicalWriteBytesPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbPdbDbPhysicalWriteBytesPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbPdbDbPhysicalWriteBytesPerSecond(cfg MetricConfig) metricNewrelicoracledbPdbDbPhysicalWriteBytesPerSecond {
+	m := metricNewrelicoracledbPdbDbPhysicalWriteBytesPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbPdbDbPhysicalWritesPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.pdb.db_physical_writes_per_second metric with initial data.
+func (m *metricNewrelicoracledbPdbDbPhysicalWritesPerSecond) init() {
+	m.data.SetName("newrelicoracledb.pdb.db_physical_writes_per_second")
+	m.data.SetDescription("Physical writes per second in PDB")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbPdbDbPhysicalWritesPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbPdbDbPhysicalWritesPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbPdbDbPhysicalWritesPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbPdbDbPhysicalWritesPerSecond(cfg MetricConfig) metricNewrelicoracledbPdbDbPhysicalWritesPerSecond {
+	m := metricNewrelicoracledbPdbDbPhysicalWritesPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbPdbExecuteWithoutParseRatio struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.pdb.execute_without_parse_ratio metric with initial data.
+func (m *metricNewrelicoracledbPdbExecuteWithoutParseRatio) init() {
+	m.data.SetName("newrelicoracledb.pdb.execute_without_parse_ratio")
+	m.data.SetDescription("Execute without parse ratio in PDB")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbPdbExecuteWithoutParseRatio) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbPdbExecuteWithoutParseRatio) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbPdbExecuteWithoutParseRatio) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbPdbExecuteWithoutParseRatio(cfg MetricConfig) metricNewrelicoracledbPdbExecuteWithoutParseRatio {
+	m := metricNewrelicoracledbPdbExecuteWithoutParseRatio{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbPdbExecutionsPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.pdb.executions_per_second metric with initial data.
+func (m *metricNewrelicoracledbPdbExecutionsPerSecond) init() {
+	m.data.SetName("newrelicoracledb.pdb.executions_per_second")
+	m.data.SetDescription("Executions per second in PDB")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbPdbExecutionsPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbPdbExecutionsPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbPdbExecutionsPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbPdbExecutionsPerSecond(cfg MetricConfig) metricNewrelicoracledbPdbExecutionsPerSecond {
+	m := metricNewrelicoracledbPdbExecutionsPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbPdbExecutionsPerTransaction struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.pdb.executions_per_transaction metric with initial data.
+func (m *metricNewrelicoracledbPdbExecutionsPerTransaction) init() {
+	m.data.SetName("newrelicoracledb.pdb.executions_per_transaction")
+	m.data.SetDescription("Executions per transaction in PDB")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbPdbExecutionsPerTransaction) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbPdbExecutionsPerTransaction) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbPdbExecutionsPerTransaction) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbPdbExecutionsPerTransaction(cfg MetricConfig) metricNewrelicoracledbPdbExecutionsPerTransaction {
+	m := metricNewrelicoracledbPdbExecutionsPerTransaction{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbPdbHardParseCountPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.pdb.hard_parse_count_per_second metric with initial data.
+func (m *metricNewrelicoracledbPdbHardParseCountPerSecond) init() {
+	m.data.SetName("newrelicoracledb.pdb.hard_parse_count_per_second")
+	m.data.SetDescription("Hard parse count per second in PDB")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbPdbHardParseCountPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbPdbHardParseCountPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbPdbHardParseCountPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbPdbHardParseCountPerSecond(cfg MetricConfig) metricNewrelicoracledbPdbHardParseCountPerSecond {
+	m := metricNewrelicoracledbPdbHardParseCountPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbPdbHardParseCountPerTransaction struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.pdb.hard_parse_count_per_transaction metric with initial data.
+func (m *metricNewrelicoracledbPdbHardParseCountPerTransaction) init() {
+	m.data.SetName("newrelicoracledb.pdb.hard_parse_count_per_transaction")
+	m.data.SetDescription("Hard parse count per transaction in PDB")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbPdbHardParseCountPerTransaction) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbPdbHardParseCountPerTransaction) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbPdbHardParseCountPerTransaction) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbPdbHardParseCountPerTransaction(cfg MetricConfig) metricNewrelicoracledbPdbHardParseCountPerTransaction {
+	m := metricNewrelicoracledbPdbHardParseCountPerTransaction{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbPdbLogicalReadsPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.pdb.logical_reads_per_second metric with initial data.
+func (m *metricNewrelicoracledbPdbLogicalReadsPerSecond) init() {
+	m.data.SetName("newrelicoracledb.pdb.logical_reads_per_second")
+	m.data.SetDescription("Logical reads per second in PDB")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbPdbLogicalReadsPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbPdbLogicalReadsPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbPdbLogicalReadsPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbPdbLogicalReadsPerSecond(cfg MetricConfig) metricNewrelicoracledbPdbLogicalReadsPerSecond {
+	m := metricNewrelicoracledbPdbLogicalReadsPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbPdbLogicalReadsPerTransaction struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.pdb.logical_reads_per_transaction metric with initial data.
+func (m *metricNewrelicoracledbPdbLogicalReadsPerTransaction) init() {
+	m.data.SetName("newrelicoracledb.pdb.logical_reads_per_transaction")
+	m.data.SetDescription("Logical reads per transaction in PDB")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbPdbLogicalReadsPerTransaction) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbPdbLogicalReadsPerTransaction) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbPdbLogicalReadsPerTransaction) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbPdbLogicalReadsPerTransaction(cfg MetricConfig) metricNewrelicoracledbPdbLogicalReadsPerTransaction {
+	m := metricNewrelicoracledbPdbLogicalReadsPerTransaction{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbPdbLogonsPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.pdb.logons_per_second metric with initial data.
+func (m *metricNewrelicoracledbPdbLogonsPerSecond) init() {
+	m.data.SetName("newrelicoracledb.pdb.logons_per_second")
+	m.data.SetDescription("Logons per second in PDB")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbPdbLogonsPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbPdbLogonsPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbPdbLogonsPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbPdbLogonsPerSecond(cfg MetricConfig) metricNewrelicoracledbPdbLogonsPerSecond {
+	m := metricNewrelicoracledbPdbLogonsPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbPdbLogonsPerTransaction struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.pdb.logons_per_transaction metric with initial data.
+func (m *metricNewrelicoracledbPdbLogonsPerTransaction) init() {
+	m.data.SetName("newrelicoracledb.pdb.logons_per_transaction")
+	m.data.SetDescription("Logons per transaction in PDB")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbPdbLogonsPerTransaction) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbPdbLogonsPerTransaction) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbPdbLogonsPerTransaction) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbPdbLogonsPerTransaction(cfg MetricConfig) metricNewrelicoracledbPdbLogonsPerTransaction {
+	m := metricNewrelicoracledbPdbLogonsPerTransaction{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbPdbNetworkTrafficBytePerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.pdb.network_traffic_byte_per_second metric with initial data.
+func (m *metricNewrelicoracledbPdbNetworkTrafficBytePerSecond) init() {
+	m.data.SetName("newrelicoracledb.pdb.network_traffic_byte_per_second")
+	m.data.SetDescription("Network traffic volume per second in bytes in PDB")
+	m.data.SetUnit("By/s")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbPdbNetworkTrafficBytePerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbPdbNetworkTrafficBytePerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbPdbNetworkTrafficBytePerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbPdbNetworkTrafficBytePerSecond(cfg MetricConfig) metricNewrelicoracledbPdbNetworkTrafficBytePerSecond {
+	m := metricNewrelicoracledbPdbNetworkTrafficBytePerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbPdbOpenCursorsPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.pdb.open_cursors_per_second metric with initial data.
+func (m *metricNewrelicoracledbPdbOpenCursorsPerSecond) init() {
+	m.data.SetName("newrelicoracledb.pdb.open_cursors_per_second")
+	m.data.SetDescription("Open cursors per second in PDB")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbPdbOpenCursorsPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbPdbOpenCursorsPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbPdbOpenCursorsPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbPdbOpenCursorsPerSecond(cfg MetricConfig) metricNewrelicoracledbPdbOpenCursorsPerSecond {
+	m := metricNewrelicoracledbPdbOpenCursorsPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbPdbOpenCursorsPerTransaction struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.pdb.open_cursors_per_transaction metric with initial data.
+func (m *metricNewrelicoracledbPdbOpenCursorsPerTransaction) init() {
+	m.data.SetName("newrelicoracledb.pdb.open_cursors_per_transaction")
+	m.data.SetDescription("Open cursors per transaction in PDB")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbPdbOpenCursorsPerTransaction) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbPdbOpenCursorsPerTransaction) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbPdbOpenCursorsPerTransaction) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbPdbOpenCursorsPerTransaction(cfg MetricConfig) metricNewrelicoracledbPdbOpenCursorsPerTransaction {
+	m := metricNewrelicoracledbPdbOpenCursorsPerTransaction{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbPdbParseFailureCountPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.pdb.parse_failure_count_per_second metric with initial data.
+func (m *metricNewrelicoracledbPdbParseFailureCountPerSecond) init() {
+	m.data.SetName("newrelicoracledb.pdb.parse_failure_count_per_second")
+	m.data.SetDescription("Parse failure count per second in PDB")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbPdbParseFailureCountPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbPdbParseFailureCountPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbPdbParseFailureCountPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbPdbParseFailureCountPerSecond(cfg MetricConfig) metricNewrelicoracledbPdbParseFailureCountPerSecond {
+	m := metricNewrelicoracledbPdbParseFailureCountPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbPdbPhysicalReadBytesPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.pdb.physical_read_bytes_per_second metric with initial data.
+func (m *metricNewrelicoracledbPdbPhysicalReadBytesPerSecond) init() {
+	m.data.SetName("newrelicoracledb.pdb.physical_read_bytes_per_second")
+	m.data.SetDescription("Physical read total bytes per second in PDB")
+	m.data.SetUnit("By/s")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbPdbPhysicalReadBytesPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbPdbPhysicalReadBytesPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbPdbPhysicalReadBytesPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbPdbPhysicalReadBytesPerSecond(cfg MetricConfig) metricNewrelicoracledbPdbPhysicalReadBytesPerSecond {
+	m := metricNewrelicoracledbPdbPhysicalReadBytesPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbPdbPhysicalReadsPerTransaction struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.pdb.physical_reads_per_transaction metric with initial data.
+func (m *metricNewrelicoracledbPdbPhysicalReadsPerTransaction) init() {
+	m.data.SetName("newrelicoracledb.pdb.physical_reads_per_transaction")
+	m.data.SetDescription("Physical reads per transaction in PDB")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbPdbPhysicalReadsPerTransaction) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbPdbPhysicalReadsPerTransaction) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbPdbPhysicalReadsPerTransaction) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbPdbPhysicalReadsPerTransaction(cfg MetricConfig) metricNewrelicoracledbPdbPhysicalReadsPerTransaction {
+	m := metricNewrelicoracledbPdbPhysicalReadsPerTransaction{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbPdbPhysicalWriteBytesPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.pdb.physical_write_bytes_per_second metric with initial data.
+func (m *metricNewrelicoracledbPdbPhysicalWriteBytesPerSecond) init() {
+	m.data.SetName("newrelicoracledb.pdb.physical_write_bytes_per_second")
+	m.data.SetDescription("Physical write total bytes per second in PDB")
+	m.data.SetUnit("By/s")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbPdbPhysicalWriteBytesPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbPdbPhysicalWriteBytesPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbPdbPhysicalWriteBytesPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbPdbPhysicalWriteBytesPerSecond(cfg MetricConfig) metricNewrelicoracledbPdbPhysicalWriteBytesPerSecond {
+	m := metricNewrelicoracledbPdbPhysicalWriteBytesPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbPdbPhysicalWritesPerTransaction struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.pdb.physical_writes_per_transaction metric with initial data.
+func (m *metricNewrelicoracledbPdbPhysicalWritesPerTransaction) init() {
+	m.data.SetName("newrelicoracledb.pdb.physical_writes_per_transaction")
+	m.data.SetDescription("Physical writes per transaction in PDB")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbPdbPhysicalWritesPerTransaction) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbPdbPhysicalWritesPerTransaction) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbPdbPhysicalWritesPerTransaction) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbPdbPhysicalWritesPerTransaction(cfg MetricConfig) metricNewrelicoracledbPdbPhysicalWritesPerTransaction {
+	m := metricNewrelicoracledbPdbPhysicalWritesPerTransaction{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbPdbRedoGeneratedBytesPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.pdb.redo_generated_bytes_per_second metric with initial data.
+func (m *metricNewrelicoracledbPdbRedoGeneratedBytesPerSecond) init() {
+	m.data.SetName("newrelicoracledb.pdb.redo_generated_bytes_per_second")
+	m.data.SetDescription("Redo generated per second in bytes in PDB")
+	m.data.SetUnit("By/s")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbPdbRedoGeneratedBytesPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbPdbRedoGeneratedBytesPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbPdbRedoGeneratedBytesPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbPdbRedoGeneratedBytesPerSecond(cfg MetricConfig) metricNewrelicoracledbPdbRedoGeneratedBytesPerSecond {
+	m := metricNewrelicoracledbPdbRedoGeneratedBytesPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbPdbRedoGeneratedBytesPerTransaction struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.pdb.redo_generated_bytes_per_transaction metric with initial data.
+func (m *metricNewrelicoracledbPdbRedoGeneratedBytesPerTransaction) init() {
+	m.data.SetName("newrelicoracledb.pdb.redo_generated_bytes_per_transaction")
+	m.data.SetDescription("Redo generated per transaction in bytes in PDB")
+	m.data.SetUnit("By/s")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbPdbRedoGeneratedBytesPerTransaction) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbPdbRedoGeneratedBytesPerTransaction) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbPdbRedoGeneratedBytesPerTransaction) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbPdbRedoGeneratedBytesPerTransaction(cfg MetricConfig) metricNewrelicoracledbPdbRedoGeneratedBytesPerTransaction {
+	m := metricNewrelicoracledbPdbRedoGeneratedBytesPerTransaction{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbPdbResponseTimePerTransaction struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.pdb.response_time_per_transaction metric with initial data.
+func (m *metricNewrelicoracledbPdbResponseTimePerTransaction) init() {
+	m.data.SetName("newrelicoracledb.pdb.response_time_per_transaction")
+	m.data.SetDescription("Response time per transaction in PDB")
+	m.data.SetUnit("s")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbPdbResponseTimePerTransaction) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbPdbResponseTimePerTransaction) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbPdbResponseTimePerTransaction) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbPdbResponseTimePerTransaction(cfg MetricConfig) metricNewrelicoracledbPdbResponseTimePerTransaction {
+	m := metricNewrelicoracledbPdbResponseTimePerTransaction{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbPdbSessionCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.pdb.session_count metric with initial data.
+func (m *metricNewrelicoracledbPdbSessionCount) init() {
+	m.data.SetName("newrelicoracledb.pdb.session_count")
+	m.data.SetDescription("Session count in PDB")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbPdbSessionCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbPdbSessionCount) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbPdbSessionCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbPdbSessionCount(cfg MetricConfig) metricNewrelicoracledbPdbSessionCount {
+	m := metricNewrelicoracledbPdbSessionCount{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbPdbSoftParseRatio struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.pdb.soft_parse_ratio metric with initial data.
+func (m *metricNewrelicoracledbPdbSoftParseRatio) init() {
+	m.data.SetName("newrelicoracledb.pdb.soft_parse_ratio")
+	m.data.SetDescription("Soft parse ratio in PDB")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbPdbSoftParseRatio) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbPdbSoftParseRatio) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbPdbSoftParseRatio) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbPdbSoftParseRatio(cfg MetricConfig) metricNewrelicoracledbPdbSoftParseRatio {
+	m := metricNewrelicoracledbPdbSoftParseRatio{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbPdbSQLServiceResponseTime struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.pdb.sql_service_response_time metric with initial data.
+func (m *metricNewrelicoracledbPdbSQLServiceResponseTime) init() {
+	m.data.SetName("newrelicoracledb.pdb.sql_service_response_time")
+	m.data.SetDescription("SQL service response time in PDB")
+	m.data.SetUnit("s")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbPdbSQLServiceResponseTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbPdbSQLServiceResponseTime) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbPdbSQLServiceResponseTime) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbPdbSQLServiceResponseTime(cfg MetricConfig) metricNewrelicoracledbPdbSQLServiceResponseTime {
+	m := metricNewrelicoracledbPdbSQLServiceResponseTime{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbPdbTotalParseCountPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.pdb.total_parse_count_per_second metric with initial data.
+func (m *metricNewrelicoracledbPdbTotalParseCountPerSecond) init() {
+	m.data.SetName("newrelicoracledb.pdb.total_parse_count_per_second")
+	m.data.SetDescription("Total parse count per second in PDB")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbPdbTotalParseCountPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbPdbTotalParseCountPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbPdbTotalParseCountPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbPdbTotalParseCountPerSecond(cfg MetricConfig) metricNewrelicoracledbPdbTotalParseCountPerSecond {
+	m := metricNewrelicoracledbPdbTotalParseCountPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbPdbTotalParseCountPerTransaction struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.pdb.total_parse_count_per_transaction metric with initial data.
+func (m *metricNewrelicoracledbPdbTotalParseCountPerTransaction) init() {
+	m.data.SetName("newrelicoracledb.pdb.total_parse_count_per_transaction")
+	m.data.SetDescription("Total parse count per transaction in PDB")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbPdbTotalParseCountPerTransaction) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbPdbTotalParseCountPerTransaction) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbPdbTotalParseCountPerTransaction) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbPdbTotalParseCountPerTransaction(cfg MetricConfig) metricNewrelicoracledbPdbTotalParseCountPerTransaction {
+	m := metricNewrelicoracledbPdbTotalParseCountPerTransaction{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbPdbTransactionsPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.pdb.transactions_per_second metric with initial data.
+func (m *metricNewrelicoracledbPdbTransactionsPerSecond) init() {
+	m.data.SetName("newrelicoracledb.pdb.transactions_per_second")
+	m.data.SetDescription("User transactions per second in PDB")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbPdbTransactionsPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbPdbTransactionsPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbPdbTransactionsPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbPdbTransactionsPerSecond(cfg MetricConfig) metricNewrelicoracledbPdbTransactionsPerSecond {
+	m := metricNewrelicoracledbPdbTransactionsPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbPdbUserCallsPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.pdb.user_calls_per_second metric with initial data.
+func (m *metricNewrelicoracledbPdbUserCallsPerSecond) init() {
+	m.data.SetName("newrelicoracledb.pdb.user_calls_per_second")
+	m.data.SetDescription("User calls per second in PDB")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbPdbUserCallsPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbPdbUserCallsPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbPdbUserCallsPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbPdbUserCallsPerSecond(cfg MetricConfig) metricNewrelicoracledbPdbUserCallsPerSecond {
+	m := metricNewrelicoracledbPdbUserCallsPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbPdbUserCallsPerTransaction struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.pdb.user_calls_per_transaction metric with initial data.
+func (m *metricNewrelicoracledbPdbUserCallsPerTransaction) init() {
+	m.data.SetName("newrelicoracledb.pdb.user_calls_per_transaction")
+	m.data.SetDescription("User calls per transaction in PDB")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbPdbUserCallsPerTransaction) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbPdbUserCallsPerTransaction) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbPdbUserCallsPerTransaction) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbPdbUserCallsPerTransaction(cfg MetricConfig) metricNewrelicoracledbPdbUserCallsPerTransaction {
+	m := metricNewrelicoracledbPdbUserCallsPerTransaction{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbPdbUserCommitsPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.pdb.user_commits_per_second metric with initial data.
+func (m *metricNewrelicoracledbPdbUserCommitsPerSecond) init() {
+	m.data.SetName("newrelicoracledb.pdb.user_commits_per_second")
+	m.data.SetDescription("User commits per second in PDB")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbPdbUserCommitsPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbPdbUserCommitsPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbPdbUserCommitsPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbPdbUserCommitsPerSecond(cfg MetricConfig) metricNewrelicoracledbPdbUserCommitsPerSecond {
+	m := metricNewrelicoracledbPdbUserCommitsPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbPdbUserCommitsPercentage struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.pdb.user_commits_percentage metric with initial data.
+func (m *metricNewrelicoracledbPdbUserCommitsPercentage) init() {
+	m.data.SetName("newrelicoracledb.pdb.user_commits_percentage")
+	m.data.SetDescription("User commits percentage in PDB")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbPdbUserCommitsPercentage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbPdbUserCommitsPercentage) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbPdbUserCommitsPercentage) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbPdbUserCommitsPercentage(cfg MetricConfig) metricNewrelicoracledbPdbUserCommitsPercentage {
+	m := metricNewrelicoracledbPdbUserCommitsPercentage{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbPdbUserRollbacksPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.pdb.user_rollbacks_per_second metric with initial data.
+func (m *metricNewrelicoracledbPdbUserRollbacksPerSecond) init() {
+	m.data.SetName("newrelicoracledb.pdb.user_rollbacks_per_second")
+	m.data.SetDescription("User rollbacks per second in PDB")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbPdbUserRollbacksPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbPdbUserRollbacksPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbPdbUserRollbacksPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbPdbUserRollbacksPerSecond(cfg MetricConfig) metricNewrelicoracledbPdbUserRollbacksPerSecond {
+	m := metricNewrelicoracledbPdbUserRollbacksPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbPdbUserRollbacksPercentage struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.pdb.user_rollbacks_percentage metric with initial data.
+func (m *metricNewrelicoracledbPdbUserRollbacksPercentage) init() {
+	m.data.SetName("newrelicoracledb.pdb.user_rollbacks_percentage")
+	m.data.SetDescription("User rollbacks percentage in PDB")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbPdbUserRollbacksPercentage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbPdbUserRollbacksPercentage) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbPdbUserRollbacksPercentage) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbPdbUserRollbacksPercentage(cfg MetricConfig) metricNewrelicoracledbPdbUserRollbacksPercentage {
+	m := metricNewrelicoracledbPdbUserRollbacksPercentage{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbPdbWaitTimeRatio struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.pdb.wait_time_ratio metric with initial data.
+func (m *metricNewrelicoracledbPdbWaitTimeRatio) init() {
+	m.data.SetName("newrelicoracledb.pdb.wait_time_ratio")
+	m.data.SetDescription("Database wait time ratio in PDB")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbPdbWaitTimeRatio) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbPdbWaitTimeRatio) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbPdbWaitTimeRatio) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbPdbWaitTimeRatio(cfg MetricConfig) metricNewrelicoracledbPdbWaitTimeRatio {
+	m := metricNewrelicoracledbPdbWaitTimeRatio{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbRedoLogParallelWriteWaits struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.redo_log_parallel_write_waits metric with initial data.
+func (m *metricNewrelicoracledbRedoLogParallelWriteWaits) init() {
+	m.data.SetName("newrelicoracledb.redo_log_parallel_write_waits")
+	m.data.SetDescription("Number of waits for log file parallel write events")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbRedoLogParallelWriteWaits) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbRedoLogParallelWriteWaits) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbRedoLogParallelWriteWaits) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbRedoLogParallelWriteWaits(cfg MetricConfig) metricNewrelicoracledbRedoLogParallelWriteWaits {
+	m := metricNewrelicoracledbRedoLogParallelWriteWaits{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbRedoLogSwitchArchivingNeededWaits struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.redo_log_switch_archiving_needed_waits metric with initial data.
+func (m *metricNewrelicoracledbRedoLogSwitchArchivingNeededWaits) init() {
+	m.data.SetName("newrelicoracledb.redo_log_switch_archiving_needed_waits")
+	m.data.SetDescription("Number of waits for log file switch (archiving needed) events")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbRedoLogSwitchArchivingNeededWaits) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbRedoLogSwitchArchivingNeededWaits) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbRedoLogSwitchArchivingNeededWaits) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbRedoLogSwitchArchivingNeededWaits(cfg MetricConfig) metricNewrelicoracledbRedoLogSwitchArchivingNeededWaits {
+	m := metricNewrelicoracledbRedoLogSwitchArchivingNeededWaits{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbRedoLogSwitchCheckpointIncompleteWaits struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.redo_log_switch_checkpoint_incomplete_waits metric with initial data.
+func (m *metricNewrelicoracledbRedoLogSwitchCheckpointIncompleteWaits) init() {
+	m.data.SetName("newrelicoracledb.redo_log_switch_checkpoint_incomplete_waits")
+	m.data.SetDescription("Number of waits for log file switch (checkpoint incomplete) events")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbRedoLogSwitchCheckpointIncompleteWaits) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbRedoLogSwitchCheckpointIncompleteWaits) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbRedoLogSwitchCheckpointIncompleteWaits) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbRedoLogSwitchCheckpointIncompleteWaits(cfg MetricConfig) metricNewrelicoracledbRedoLogSwitchCheckpointIncompleteWaits {
+	m := metricNewrelicoracledbRedoLogSwitchCheckpointIncompleteWaits{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbRedoLogSwitchCompletionWaits struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.redo_log_switch_completion_waits metric with initial data.
+func (m *metricNewrelicoracledbRedoLogSwitchCompletionWaits) init() {
+	m.data.SetName("newrelicoracledb.redo_log_switch_completion_waits")
+	m.data.SetDescription("Number of waits for log file switch completion events")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbRedoLogSwitchCompletionWaits) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbRedoLogSwitchCompletionWaits) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbRedoLogSwitchCompletionWaits) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbRedoLogSwitchCompletionWaits(cfg MetricConfig) metricNewrelicoracledbRedoLogSwitchCompletionWaits {
+	m := metricNewrelicoracledbRedoLogSwitchCompletionWaits{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbRollbackSegmentsGets struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.rollback_segments_gets metric with initial data.
+func (m *metricNewrelicoracledbRollbackSegmentsGets) init() {
+	m.data.SetName("newrelicoracledb.rollback_segments_gets")
+	m.data.SetDescription("Number of gets on rollback segments")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbRollbackSegmentsGets) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbRollbackSegmentsGets) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbRollbackSegmentsGets) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbRollbackSegmentsGets(cfg MetricConfig) metricNewrelicoracledbRollbackSegmentsGets {
+	m := metricNewrelicoracledbRollbackSegmentsGets{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbRollbackSegmentsWaitRatio struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.rollback_segments_wait_ratio metric with initial data.
+func (m *metricNewrelicoracledbRollbackSegmentsWaitRatio) init() {
+	m.data.SetName("newrelicoracledb.rollback_segments_wait_ratio")
+	m.data.SetDescription("Rollback segments wait ratio (waits/gets)")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbRollbackSegmentsWaitRatio) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbRollbackSegmentsWaitRatio) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbRollbackSegmentsWaitRatio) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbRollbackSegmentsWaitRatio(cfg MetricConfig) metricNewrelicoracledbRollbackSegmentsWaitRatio {
+	m := metricNewrelicoracledbRollbackSegmentsWaitRatio{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbRollbackSegmentsWaits struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.rollback_segments_waits metric with initial data.
+func (m *metricNewrelicoracledbRollbackSegmentsWaits) init() {
+	m.data.SetName("newrelicoracledb.rollback_segments_waits")
+	m.data.SetDescription("Number of waits on rollback segments")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbRollbackSegmentsWaits) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbRollbackSegmentsWaits) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbRollbackSegmentsWaits) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbRollbackSegmentsWaits(cfg MetricConfig) metricNewrelicoracledbRollbackSegmentsWaits {
+	m := metricNewrelicoracledbRollbackSegmentsWaits{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricNewrelicoracledbSessionsCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -162,6 +4820,8118 @@ func (m *metricNewrelicoracledbSessionsCount) emit(metrics pmetric.MetricSlice) 
 
 func newMetricNewrelicoracledbSessionsCount(cfg MetricConfig) metricNewrelicoracledbSessionsCount {
 	m := metricNewrelicoracledbSessionsCount{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSgaBufferBusyWaits struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.sga_buffer_busy_waits metric with initial data.
+func (m *metricNewrelicoracledbSgaBufferBusyWaits) init() {
+	m.data.SetName("newrelicoracledb.sga_buffer_busy_waits")
+	m.data.SetDescription("Number of buffer busy waits events")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSgaBufferBusyWaits) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSgaBufferBusyWaits) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSgaBufferBusyWaits) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSgaBufferBusyWaits(cfg MetricConfig) metricNewrelicoracledbSgaBufferBusyWaits {
+	m := metricNewrelicoracledbSgaBufferBusyWaits{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSgaFixedSizeBytes struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.sga_fixed_size_bytes metric with initial data.
+func (m *metricNewrelicoracledbSgaFixedSizeBytes) init() {
+	m.data.SetName("newrelicoracledb.sga_fixed_size_bytes")
+	m.data.SetDescription("SGA fixed size memory in bytes")
+	m.data.SetUnit("By")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSgaFixedSizeBytes) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSgaFixedSizeBytes) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSgaFixedSizeBytes) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSgaFixedSizeBytes(cfg MetricConfig) metricNewrelicoracledbSgaFixedSizeBytes {
+	m := metricNewrelicoracledbSgaFixedSizeBytes{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSgaFreeBufferInspectedWaits struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.sga_free_buffer_inspected_waits metric with initial data.
+func (m *metricNewrelicoracledbSgaFreeBufferInspectedWaits) init() {
+	m.data.SetName("newrelicoracledb.sga_free_buffer_inspected_waits")
+	m.data.SetDescription("Number of free buffer inspected waits events")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSgaFreeBufferInspectedWaits) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSgaFreeBufferInspectedWaits) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSgaFreeBufferInspectedWaits) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSgaFreeBufferInspectedWaits(cfg MetricConfig) metricNewrelicoracledbSgaFreeBufferInspectedWaits {
+	m := metricNewrelicoracledbSgaFreeBufferInspectedWaits{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSgaFreeBufferWaits struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.sga_free_buffer_waits metric with initial data.
+func (m *metricNewrelicoracledbSgaFreeBufferWaits) init() {
+	m.data.SetName("newrelicoracledb.sga_free_buffer_waits")
+	m.data.SetDescription("Number of free buffer waits events")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSgaFreeBufferWaits) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSgaFreeBufferWaits) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSgaFreeBufferWaits) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSgaFreeBufferWaits(cfg MetricConfig) metricNewrelicoracledbSgaFreeBufferWaits {
+	m := metricNewrelicoracledbSgaFreeBufferWaits{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSgaHitRatio struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.sga_hit_ratio metric with initial data.
+func (m *metricNewrelicoracledbSgaHitRatio) init() {
+	m.data.SetName("newrelicoracledb.sga_hit_ratio")
+	m.data.SetDescription("SGA hit ratio (session logical reads minus physical reads / session logical reads)")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSgaHitRatio) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSgaHitRatio) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSgaHitRatio) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSgaHitRatio(cfg MetricConfig) metricNewrelicoracledbSgaHitRatio {
+	m := metricNewrelicoracledbSgaHitRatio{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSgaLogAllocationRetriesRatio struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.sga_log_allocation_retries_ratio metric with initial data.
+func (m *metricNewrelicoracledbSgaLogAllocationRetriesRatio) init() {
+	m.data.SetName("newrelicoracledb.sga_log_allocation_retries_ratio")
+	m.data.SetDescription("SGA log allocation retries ratio (redo buffer allocation retries / redo entries)")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSgaLogAllocationRetriesRatio) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSgaLogAllocationRetriesRatio) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSgaLogAllocationRetriesRatio) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSgaLogAllocationRetriesRatio(cfg MetricConfig) metricNewrelicoracledbSgaLogAllocationRetriesRatio {
+	m := metricNewrelicoracledbSgaLogAllocationRetriesRatio{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSgaLogBufferRedoAllocationRetries struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.sga_log_buffer_redo_allocation_retries metric with initial data.
+func (m *metricNewrelicoracledbSgaLogBufferRedoAllocationRetries) init() {
+	m.data.SetName("newrelicoracledb.sga_log_buffer_redo_allocation_retries")
+	m.data.SetDescription("Number of redo buffer allocation retries from sysstat")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSgaLogBufferRedoAllocationRetries) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSgaLogBufferRedoAllocationRetries) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSgaLogBufferRedoAllocationRetries) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSgaLogBufferRedoAllocationRetries(cfg MetricConfig) metricNewrelicoracledbSgaLogBufferRedoAllocationRetries {
+	m := metricNewrelicoracledbSgaLogBufferRedoAllocationRetries{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSgaLogBufferRedoEntries struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.sga_log_buffer_redo_entries metric with initial data.
+func (m *metricNewrelicoracledbSgaLogBufferRedoEntries) init() {
+	m.data.SetName("newrelicoracledb.sga_log_buffer_redo_entries")
+	m.data.SetDescription("Number of redo entries from sysstat")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSgaLogBufferRedoEntries) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSgaLogBufferRedoEntries) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSgaLogBufferRedoEntries) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSgaLogBufferRedoEntries(cfg MetricConfig) metricNewrelicoracledbSgaLogBufferRedoEntries {
+	m := metricNewrelicoracledbSgaLogBufferRedoEntries{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSgaLogBufferSpaceWaits struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.sga_log_buffer_space_waits metric with initial data.
+func (m *metricNewrelicoracledbSgaLogBufferSpaceWaits) init() {
+	m.data.SetName("newrelicoracledb.sga_log_buffer_space_waits")
+	m.data.SetDescription("Number of sessions waiting for log buffer space")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSgaLogBufferSpaceWaits) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSgaLogBufferSpaceWaits) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSgaLogBufferSpaceWaits) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSgaLogBufferSpaceWaits(cfg MetricConfig) metricNewrelicoracledbSgaLogBufferSpaceWaits {
+	m := metricNewrelicoracledbSgaLogBufferSpaceWaits{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSgaRedoBuffersBytes struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.sga_redo_buffers_bytes metric with initial data.
+func (m *metricNewrelicoracledbSgaRedoBuffersBytes) init() {
+	m.data.SetName("newrelicoracledb.sga_redo_buffers_bytes")
+	m.data.SetDescription("SGA redo buffers memory in bytes")
+	m.data.SetUnit("By")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSgaRedoBuffersBytes) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSgaRedoBuffersBytes) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSgaRedoBuffersBytes) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSgaRedoBuffersBytes(cfg MetricConfig) metricNewrelicoracledbSgaRedoBuffersBytes {
+	m := metricNewrelicoracledbSgaRedoBuffersBytes{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSgaSharedPoolDictCacheMissRatio struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.sga_shared_pool_dict_cache_miss_ratio metric with initial data.
+func (m *metricNewrelicoracledbSgaSharedPoolDictCacheMissRatio) init() {
+	m.data.SetName("newrelicoracledb.sga_shared_pool_dict_cache_miss_ratio")
+	m.data.SetDescription("SGA shared pool dictionary cache miss ratio (getmisses/gets)")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSgaSharedPoolDictCacheMissRatio) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSgaSharedPoolDictCacheMissRatio) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSgaSharedPoolDictCacheMissRatio) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSgaSharedPoolDictCacheMissRatio(cfg MetricConfig) metricNewrelicoracledbSgaSharedPoolDictCacheMissRatio {
+	m := metricNewrelicoracledbSgaSharedPoolDictCacheMissRatio{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSgaSharedPoolLibraryCacheHitRatio struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.sga_shared_pool_library_cache_hit_ratio metric with initial data.
+func (m *metricNewrelicoracledbSgaSharedPoolLibraryCacheHitRatio) init() {
+	m.data.SetName("newrelicoracledb.sga_shared_pool_library_cache_hit_ratio")
+	m.data.SetDescription("SGA shared pool library cache hit ratio for SQL AREA namespace")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSgaSharedPoolLibraryCacheHitRatio) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSgaSharedPoolLibraryCacheHitRatio) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSgaSharedPoolLibraryCacheHitRatio) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSgaSharedPoolLibraryCacheHitRatio(cfg MetricConfig) metricNewrelicoracledbSgaSharedPoolLibraryCacheHitRatio {
+	m := metricNewrelicoracledbSgaSharedPoolLibraryCacheHitRatio{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSgaSharedPoolLibraryCacheReloadRatio struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.sga_shared_pool_library_cache_reload_ratio metric with initial data.
+func (m *metricNewrelicoracledbSgaSharedPoolLibraryCacheReloadRatio) init() {
+	m.data.SetName("newrelicoracledb.sga_shared_pool_library_cache_reload_ratio")
+	m.data.SetDescription("SGA shared pool library cache reload ratio (reloads/pins)")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSgaSharedPoolLibraryCacheReloadRatio) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSgaSharedPoolLibraryCacheReloadRatio) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSgaSharedPoolLibraryCacheReloadRatio) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSgaSharedPoolLibraryCacheReloadRatio(cfg MetricConfig) metricNewrelicoracledbSgaSharedPoolLibraryCacheReloadRatio {
+	m := metricNewrelicoracledbSgaSharedPoolLibraryCacheReloadRatio{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSortsDisk struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.sorts_disk metric with initial data.
+func (m *metricNewrelicoracledbSortsDisk) init() {
+	m.data.SetName("newrelicoracledb.sorts_disk")
+	m.data.SetDescription("Number of sorts performed on disk from sysstat")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSortsDisk) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSortsDisk) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSortsDisk) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSortsDisk(cfg MetricConfig) metricNewrelicoracledbSortsDisk {
+	m := metricNewrelicoracledbSortsDisk{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSortsMemory struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.sorts_memory metric with initial data.
+func (m *metricNewrelicoracledbSortsMemory) init() {
+	m.data.SetName("newrelicoracledb.sorts_memory")
+	m.data.SetDescription("Number of sorts performed in memory from sysstat")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSortsMemory) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSortsMemory) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSortsMemory) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSortsMemory(cfg MetricConfig) metricNewrelicoracledbSortsMemory {
+	m := metricNewrelicoracledbSortsMemory{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemActiveParallelSessions struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.active_parallel_sessions metric with initial data.
+func (m *metricNewrelicoracledbSystemActiveParallelSessions) init() {
+	m.data.SetName("newrelicoracledb.system.active_parallel_sessions")
+	m.data.SetDescription("Active Parallel Sessions")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemActiveParallelSessions) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemActiveParallelSessions) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemActiveParallelSessions) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemActiveParallelSessions(cfg MetricConfig) metricNewrelicoracledbSystemActiveParallelSessions {
+	m := metricNewrelicoracledbSystemActiveParallelSessions{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemActiveSerialSessions struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.active_serial_sessions metric with initial data.
+func (m *metricNewrelicoracledbSystemActiveSerialSessions) init() {
+	m.data.SetName("newrelicoracledb.system.active_serial_sessions")
+	m.data.SetDescription("Active Serial Sessions")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemActiveSerialSessions) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemActiveSerialSessions) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemActiveSerialSessions) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemActiveSerialSessions(cfg MetricConfig) metricNewrelicoracledbSystemActiveSerialSessions {
+	m := metricNewrelicoracledbSystemActiveSerialSessions{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemAverageActiveSessions struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.average_active_sessions metric with initial data.
+func (m *metricNewrelicoracledbSystemAverageActiveSessions) init() {
+	m.data.SetName("newrelicoracledb.system.average_active_sessions")
+	m.data.SetDescription("Average Active Sessions")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemAverageActiveSessions) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemAverageActiveSessions) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemAverageActiveSessions) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemAverageActiveSessions(cfg MetricConfig) metricNewrelicoracledbSystemAverageActiveSessions {
+	m := metricNewrelicoracledbSystemAverageActiveSessions{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemBackgroundCheckpointsPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.background_checkpoints_per_second metric with initial data.
+func (m *metricNewrelicoracledbSystemBackgroundCheckpointsPerSecond) init() {
+	m.data.SetName("newrelicoracledb.system.background_checkpoints_per_second")
+	m.data.SetDescription("Background Checkpoints Per Sec")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemBackgroundCheckpointsPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemBackgroundCheckpointsPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemBackgroundCheckpointsPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemBackgroundCheckpointsPerSecond(cfg MetricConfig) metricNewrelicoracledbSystemBackgroundCheckpointsPerSecond {
+	m := metricNewrelicoracledbSystemBackgroundCheckpointsPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemBackgroundCPUUsagePerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.background_cpu_usage_per_second metric with initial data.
+func (m *metricNewrelicoracledbSystemBackgroundCPUUsagePerSecond) init() {
+	m.data.SetName("newrelicoracledb.system.background_cpu_usage_per_second")
+	m.data.SetDescription("Background CPU Usage Per Sec")
+	m.data.SetUnit("s")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemBackgroundCPUUsagePerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemBackgroundCPUUsagePerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemBackgroundCPUUsagePerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemBackgroundCPUUsagePerSecond(cfg MetricConfig) metricNewrelicoracledbSystemBackgroundCPUUsagePerSecond {
+	m := metricNewrelicoracledbSystemBackgroundCPUUsagePerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemBackgroundTimePerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.background_time_per_second metric with initial data.
+func (m *metricNewrelicoracledbSystemBackgroundTimePerSecond) init() {
+	m.data.SetName("newrelicoracledb.system.background_time_per_second")
+	m.data.SetDescription("Background Time Per Sec")
+	m.data.SetUnit("s")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemBackgroundTimePerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemBackgroundTimePerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemBackgroundTimePerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemBackgroundTimePerSecond(cfg MetricConfig) metricNewrelicoracledbSystemBackgroundTimePerSecond {
+	m := metricNewrelicoracledbSystemBackgroundTimePerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemBranchNodeSplitsPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.branch_node_splits_per_second metric with initial data.
+func (m *metricNewrelicoracledbSystemBranchNodeSplitsPerSecond) init() {
+	m.data.SetName("newrelicoracledb.system.branch_node_splits_per_second")
+	m.data.SetDescription("Branch Node Splits Per Sec")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemBranchNodeSplitsPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemBranchNodeSplitsPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemBranchNodeSplitsPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemBranchNodeSplitsPerSecond(cfg MetricConfig) metricNewrelicoracledbSystemBranchNodeSplitsPerSecond {
+	m := metricNewrelicoracledbSystemBranchNodeSplitsPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemBranchNodeSplitsPerTransaction struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.branch_node_splits_per_transaction metric with initial data.
+func (m *metricNewrelicoracledbSystemBranchNodeSplitsPerTransaction) init() {
+	m.data.SetName("newrelicoracledb.system.branch_node_splits_per_transaction")
+	m.data.SetDescription("Branch Node Splits Per Txn")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemBranchNodeSplitsPerTransaction) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemBranchNodeSplitsPerTransaction) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemBranchNodeSplitsPerTransaction) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemBranchNodeSplitsPerTransaction(cfg MetricConfig) metricNewrelicoracledbSystemBranchNodeSplitsPerTransaction {
+	m := metricNewrelicoracledbSystemBranchNodeSplitsPerTransaction{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemBufferCacheHitRatio struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.buffer_cache_hit_ratio metric with initial data.
+func (m *metricNewrelicoracledbSystemBufferCacheHitRatio) init() {
+	m.data.SetName("newrelicoracledb.system.buffer_cache_hit_ratio")
+	m.data.SetDescription("Buffer Cache Hit Ratio")
+	m.data.SetUnit("%")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemBufferCacheHitRatio) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemBufferCacheHitRatio) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemBufferCacheHitRatio) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemBufferCacheHitRatio(cfg MetricConfig) metricNewrelicoracledbSystemBufferCacheHitRatio {
+	m := metricNewrelicoracledbSystemBufferCacheHitRatio{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemCapturedUserCalls struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.captured_user_calls metric with initial data.
+func (m *metricNewrelicoracledbSystemCapturedUserCalls) init() {
+	m.data.SetName("newrelicoracledb.system.captured_user_calls")
+	m.data.SetDescription("Captured user calls")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemCapturedUserCalls) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemCapturedUserCalls) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemCapturedUserCalls) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemCapturedUserCalls(cfg MetricConfig) metricNewrelicoracledbSystemCapturedUserCalls {
+	m := metricNewrelicoracledbSystemCapturedUserCalls{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemConsistentReadChangesPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.consistent_read_changes_per_second metric with initial data.
+func (m *metricNewrelicoracledbSystemConsistentReadChangesPerSecond) init() {
+	m.data.SetName("newrelicoracledb.system.consistent_read_changes_per_second")
+	m.data.SetDescription("Consistent Read Changes Per Sec")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemConsistentReadChangesPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemConsistentReadChangesPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemConsistentReadChangesPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemConsistentReadChangesPerSecond(cfg MetricConfig) metricNewrelicoracledbSystemConsistentReadChangesPerSecond {
+	m := metricNewrelicoracledbSystemConsistentReadChangesPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemConsistentReadChangesPerTransaction struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.consistent_read_changes_per_transaction metric with initial data.
+func (m *metricNewrelicoracledbSystemConsistentReadChangesPerTransaction) init() {
+	m.data.SetName("newrelicoracledb.system.consistent_read_changes_per_transaction")
+	m.data.SetDescription("Consistent Read Changes Per Txn")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemConsistentReadChangesPerTransaction) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemConsistentReadChangesPerTransaction) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemConsistentReadChangesPerTransaction) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemConsistentReadChangesPerTransaction(cfg MetricConfig) metricNewrelicoracledbSystemConsistentReadChangesPerTransaction {
+	m := metricNewrelicoracledbSystemConsistentReadChangesPerTransaction{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemConsistentReadGetsPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.consistent_read_gets_per_second metric with initial data.
+func (m *metricNewrelicoracledbSystemConsistentReadGetsPerSecond) init() {
+	m.data.SetName("newrelicoracledb.system.consistent_read_gets_per_second")
+	m.data.SetDescription("Consistent Read Gets Per Sec")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemConsistentReadGetsPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemConsistentReadGetsPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemConsistentReadGetsPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemConsistentReadGetsPerSecond(cfg MetricConfig) metricNewrelicoracledbSystemConsistentReadGetsPerSecond {
+	m := metricNewrelicoracledbSystemConsistentReadGetsPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemConsistentReadGetsPerTransaction struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.consistent_read_gets_per_transaction metric with initial data.
+func (m *metricNewrelicoracledbSystemConsistentReadGetsPerTransaction) init() {
+	m.data.SetName("newrelicoracledb.system.consistent_read_gets_per_transaction")
+	m.data.SetDescription("Consistent Read Gets Per Txn")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemConsistentReadGetsPerTransaction) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemConsistentReadGetsPerTransaction) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemConsistentReadGetsPerTransaction) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemConsistentReadGetsPerTransaction(cfg MetricConfig) metricNewrelicoracledbSystemConsistentReadGetsPerTransaction {
+	m := metricNewrelicoracledbSystemConsistentReadGetsPerTransaction{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemCPUUsagePerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.cpu_usage_per_second metric with initial data.
+func (m *metricNewrelicoracledbSystemCPUUsagePerSecond) init() {
+	m.data.SetName("newrelicoracledb.system.cpu_usage_per_second")
+	m.data.SetDescription("CPU Usage Per Sec")
+	m.data.SetUnit("s")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemCPUUsagePerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemCPUUsagePerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemCPUUsagePerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemCPUUsagePerSecond(cfg MetricConfig) metricNewrelicoracledbSystemCPUUsagePerSecond {
+	m := metricNewrelicoracledbSystemCPUUsagePerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemCPUUsagePerTransaction struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.cpu_usage_per_transaction metric with initial data.
+func (m *metricNewrelicoracledbSystemCPUUsagePerTransaction) init() {
+	m.data.SetName("newrelicoracledb.system.cpu_usage_per_transaction")
+	m.data.SetDescription("CPU Usage Per Txn")
+	m.data.SetUnit("s")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemCPUUsagePerTransaction) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemCPUUsagePerTransaction) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemCPUUsagePerTransaction) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemCPUUsagePerTransaction(cfg MetricConfig) metricNewrelicoracledbSystemCPUUsagePerTransaction {
+	m := metricNewrelicoracledbSystemCPUUsagePerTransaction{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemCrBlocksCreatedPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.cr_blocks_created_per_second metric with initial data.
+func (m *metricNewrelicoracledbSystemCrBlocksCreatedPerSecond) init() {
+	m.data.SetName("newrelicoracledb.system.cr_blocks_created_per_second")
+	m.data.SetDescription("CR Blocks Created Per Sec")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemCrBlocksCreatedPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemCrBlocksCreatedPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemCrBlocksCreatedPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemCrBlocksCreatedPerSecond(cfg MetricConfig) metricNewrelicoracledbSystemCrBlocksCreatedPerSecond {
+	m := metricNewrelicoracledbSystemCrBlocksCreatedPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemCrBlocksCreatedPerTransaction struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.cr_blocks_created_per_transaction metric with initial data.
+func (m *metricNewrelicoracledbSystemCrBlocksCreatedPerTransaction) init() {
+	m.data.SetName("newrelicoracledb.system.cr_blocks_created_per_transaction")
+	m.data.SetDescription("CR Blocks Created Per Txn")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemCrBlocksCreatedPerTransaction) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemCrBlocksCreatedPerTransaction) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemCrBlocksCreatedPerTransaction) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemCrBlocksCreatedPerTransaction(cfg MetricConfig) metricNewrelicoracledbSystemCrBlocksCreatedPerTransaction {
+	m := metricNewrelicoracledbSystemCrBlocksCreatedPerTransaction{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemCrUndoRecordsAppliedPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.cr_undo_records_applied_per_second metric with initial data.
+func (m *metricNewrelicoracledbSystemCrUndoRecordsAppliedPerSecond) init() {
+	m.data.SetName("newrelicoracledb.system.cr_undo_records_applied_per_second")
+	m.data.SetDescription("CR Undo Records Applied Per Sec")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemCrUndoRecordsAppliedPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemCrUndoRecordsAppliedPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemCrUndoRecordsAppliedPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemCrUndoRecordsAppliedPerSecond(cfg MetricConfig) metricNewrelicoracledbSystemCrUndoRecordsAppliedPerSecond {
+	m := metricNewrelicoracledbSystemCrUndoRecordsAppliedPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemCrUndoRecordsAppliedPerTransaction struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.cr_undo_records_applied_per_transaction metric with initial data.
+func (m *metricNewrelicoracledbSystemCrUndoRecordsAppliedPerTransaction) init() {
+	m.data.SetName("newrelicoracledb.system.cr_undo_records_applied_per_transaction")
+	m.data.SetDescription("CR Undo Records Applied Per Txn")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemCrUndoRecordsAppliedPerTransaction) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemCrUndoRecordsAppliedPerTransaction) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemCrUndoRecordsAppliedPerTransaction) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemCrUndoRecordsAppliedPerTransaction(cfg MetricConfig) metricNewrelicoracledbSystemCrUndoRecordsAppliedPerTransaction {
+	m := metricNewrelicoracledbSystemCrUndoRecordsAppliedPerTransaction{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemCurrentLogonsCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.current_logons_count metric with initial data.
+func (m *metricNewrelicoracledbSystemCurrentLogonsCount) init() {
+	m.data.SetName("newrelicoracledb.system.current_logons_count")
+	m.data.SetDescription("Current Logons Count")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemCurrentLogonsCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemCurrentLogonsCount) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemCurrentLogonsCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemCurrentLogonsCount(cfg MetricConfig) metricNewrelicoracledbSystemCurrentLogonsCount {
+	m := metricNewrelicoracledbSystemCurrentLogonsCount{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemCurrentOpenCursorsCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.current_open_cursors_count metric with initial data.
+func (m *metricNewrelicoracledbSystemCurrentOpenCursorsCount) init() {
+	m.data.SetName("newrelicoracledb.system.current_open_cursors_count")
+	m.data.SetDescription("Current Open Cursors Count")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemCurrentOpenCursorsCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemCurrentOpenCursorsCount) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemCurrentOpenCursorsCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemCurrentOpenCursorsCount(cfg MetricConfig) metricNewrelicoracledbSystemCurrentOpenCursorsCount {
+	m := metricNewrelicoracledbSystemCurrentOpenCursorsCount{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemCurrentOsLoad struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.current_os_load metric with initial data.
+func (m *metricNewrelicoracledbSystemCurrentOsLoad) init() {
+	m.data.SetName("newrelicoracledb.system.current_os_load")
+	m.data.SetDescription("Current OS Load")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemCurrentOsLoad) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemCurrentOsLoad) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemCurrentOsLoad) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemCurrentOsLoad(cfg MetricConfig) metricNewrelicoracledbSystemCurrentOsLoad {
+	m := metricNewrelicoracledbSystemCurrentOsLoad{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemCursorCacheHitRatio struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.cursor_cache_hit_ratio metric with initial data.
+func (m *metricNewrelicoracledbSystemCursorCacheHitRatio) init() {
+	m.data.SetName("newrelicoracledb.system.cursor_cache_hit_ratio")
+	m.data.SetDescription("Cursor Cache Hit Ratio")
+	m.data.SetUnit("%")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemCursorCacheHitRatio) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemCursorCacheHitRatio) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemCursorCacheHitRatio) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemCursorCacheHitRatio(cfg MetricConfig) metricNewrelicoracledbSystemCursorCacheHitRatio {
+	m := metricNewrelicoracledbSystemCursorCacheHitRatio{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemDatabaseCPUTimeRatio struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.database_cpu_time_ratio metric with initial data.
+func (m *metricNewrelicoracledbSystemDatabaseCPUTimeRatio) init() {
+	m.data.SetName("newrelicoracledb.system.database_cpu_time_ratio")
+	m.data.SetDescription("Database CPU Time Ratio")
+	m.data.SetUnit("%")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemDatabaseCPUTimeRatio) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemDatabaseCPUTimeRatio) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemDatabaseCPUTimeRatio) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemDatabaseCPUTimeRatio(cfg MetricConfig) metricNewrelicoracledbSystemDatabaseCPUTimeRatio {
+	m := metricNewrelicoracledbSystemDatabaseCPUTimeRatio{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemDatabaseTimePerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.database_time_per_second metric with initial data.
+func (m *metricNewrelicoracledbSystemDatabaseTimePerSecond) init() {
+	m.data.SetName("newrelicoracledb.system.database_time_per_second")
+	m.data.SetDescription("Database Time Per Sec")
+	m.data.SetUnit("s")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemDatabaseTimePerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemDatabaseTimePerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemDatabaseTimePerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemDatabaseTimePerSecond(cfg MetricConfig) metricNewrelicoracledbSystemDatabaseTimePerSecond {
+	m := metricNewrelicoracledbSystemDatabaseTimePerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemDatabaseWaitTimeRatio struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.database_wait_time_ratio metric with initial data.
+func (m *metricNewrelicoracledbSystemDatabaseWaitTimeRatio) init() {
+	m.data.SetName("newrelicoracledb.system.database_wait_time_ratio")
+	m.data.SetDescription("Database Wait Time Ratio")
+	m.data.SetUnit("%")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemDatabaseWaitTimeRatio) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemDatabaseWaitTimeRatio) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemDatabaseWaitTimeRatio) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemDatabaseWaitTimeRatio(cfg MetricConfig) metricNewrelicoracledbSystemDatabaseWaitTimeRatio {
+	m := metricNewrelicoracledbSystemDatabaseWaitTimeRatio{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemDbBlockChangesPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.db_block_changes_per_second metric with initial data.
+func (m *metricNewrelicoracledbSystemDbBlockChangesPerSecond) init() {
+	m.data.SetName("newrelicoracledb.system.db_block_changes_per_second")
+	m.data.SetDescription("DB Block Changes Per Sec")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemDbBlockChangesPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemDbBlockChangesPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemDbBlockChangesPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemDbBlockChangesPerSecond(cfg MetricConfig) metricNewrelicoracledbSystemDbBlockChangesPerSecond {
+	m := metricNewrelicoracledbSystemDbBlockChangesPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemDbBlockChangesPerTransaction struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.db_block_changes_per_transaction metric with initial data.
+func (m *metricNewrelicoracledbSystemDbBlockChangesPerTransaction) init() {
+	m.data.SetName("newrelicoracledb.system.db_block_changes_per_transaction")
+	m.data.SetDescription("DB Block Changes Per Txn")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemDbBlockChangesPerTransaction) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemDbBlockChangesPerTransaction) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemDbBlockChangesPerTransaction) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemDbBlockChangesPerTransaction(cfg MetricConfig) metricNewrelicoracledbSystemDbBlockChangesPerTransaction {
+	m := metricNewrelicoracledbSystemDbBlockChangesPerTransaction{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemDbBlockChangesPerUserCall struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.db_block_changes_per_user_call metric with initial data.
+func (m *metricNewrelicoracledbSystemDbBlockChangesPerUserCall) init() {
+	m.data.SetName("newrelicoracledb.system.db_block_changes_per_user_call")
+	m.data.SetDescription("DB Block Changes Per User Call")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemDbBlockChangesPerUserCall) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemDbBlockChangesPerUserCall) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemDbBlockChangesPerUserCall) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemDbBlockChangesPerUserCall(cfg MetricConfig) metricNewrelicoracledbSystemDbBlockChangesPerUserCall {
+	m := metricNewrelicoracledbSystemDbBlockChangesPerUserCall{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemDbBlockGetsPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.db_block_gets_per_second metric with initial data.
+func (m *metricNewrelicoracledbSystemDbBlockGetsPerSecond) init() {
+	m.data.SetName("newrelicoracledb.system.db_block_gets_per_second")
+	m.data.SetDescription("DB Block Gets Per Sec")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemDbBlockGetsPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemDbBlockGetsPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemDbBlockGetsPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemDbBlockGetsPerSecond(cfg MetricConfig) metricNewrelicoracledbSystemDbBlockGetsPerSecond {
+	m := metricNewrelicoracledbSystemDbBlockGetsPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemDbBlockGetsPerTransaction struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.db_block_gets_per_transaction metric with initial data.
+func (m *metricNewrelicoracledbSystemDbBlockGetsPerTransaction) init() {
+	m.data.SetName("newrelicoracledb.system.db_block_gets_per_transaction")
+	m.data.SetDescription("DB Block Gets Per Txn")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemDbBlockGetsPerTransaction) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemDbBlockGetsPerTransaction) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemDbBlockGetsPerTransaction) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemDbBlockGetsPerTransaction(cfg MetricConfig) metricNewrelicoracledbSystemDbBlockGetsPerTransaction {
+	m := metricNewrelicoracledbSystemDbBlockGetsPerTransaction{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemDbBlockGetsPerUserCall struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.db_block_gets_per_user_call metric with initial data.
+func (m *metricNewrelicoracledbSystemDbBlockGetsPerUserCall) init() {
+	m.data.SetName("newrelicoracledb.system.db_block_gets_per_user_call")
+	m.data.SetDescription("DB Block Gets Per User Call")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemDbBlockGetsPerUserCall) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemDbBlockGetsPerUserCall) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemDbBlockGetsPerUserCall) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemDbBlockGetsPerUserCall(cfg MetricConfig) metricNewrelicoracledbSystemDbBlockGetsPerUserCall {
+	m := metricNewrelicoracledbSystemDbBlockGetsPerUserCall{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemDbwrCheckpointsPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.dbwr_checkpoints_per_second metric with initial data.
+func (m *metricNewrelicoracledbSystemDbwrCheckpointsPerSecond) init() {
+	m.data.SetName("newrelicoracledb.system.dbwr_checkpoints_per_second")
+	m.data.SetDescription("DBWR Checkpoints Per Sec")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemDbwrCheckpointsPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemDbwrCheckpointsPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemDbwrCheckpointsPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemDbwrCheckpointsPerSecond(cfg MetricConfig) metricNewrelicoracledbSystemDbwrCheckpointsPerSecond {
+	m := metricNewrelicoracledbSystemDbwrCheckpointsPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemDiskSortPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.disk_sort_per_second metric with initial data.
+func (m *metricNewrelicoracledbSystemDiskSortPerSecond) init() {
+	m.data.SetName("newrelicoracledb.system.disk_sort_per_second")
+	m.data.SetDescription("Disk Sort Per Sec")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemDiskSortPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemDiskSortPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemDiskSortPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemDiskSortPerSecond(cfg MetricConfig) metricNewrelicoracledbSystemDiskSortPerSecond {
+	m := metricNewrelicoracledbSystemDiskSortPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemDiskSortPerTransaction struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.disk_sort_per_transaction metric with initial data.
+func (m *metricNewrelicoracledbSystemDiskSortPerTransaction) init() {
+	m.data.SetName("newrelicoracledb.system.disk_sort_per_transaction")
+	m.data.SetDescription("Disk Sort Per Txn")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemDiskSortPerTransaction) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemDiskSortPerTransaction) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemDiskSortPerTransaction) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemDiskSortPerTransaction(cfg MetricConfig) metricNewrelicoracledbSystemDiskSortPerTransaction {
+	m := metricNewrelicoracledbSystemDiskSortPerTransaction{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemEnqueueDeadlocksPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.enqueue_deadlocks_per_second metric with initial data.
+func (m *metricNewrelicoracledbSystemEnqueueDeadlocksPerSecond) init() {
+	m.data.SetName("newrelicoracledb.system.enqueue_deadlocks_per_second")
+	m.data.SetDescription("Enqueue Deadlocks Per Sec")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemEnqueueDeadlocksPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemEnqueueDeadlocksPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemEnqueueDeadlocksPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemEnqueueDeadlocksPerSecond(cfg MetricConfig) metricNewrelicoracledbSystemEnqueueDeadlocksPerSecond {
+	m := metricNewrelicoracledbSystemEnqueueDeadlocksPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemEnqueueDeadlocksPerTransaction struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.enqueue_deadlocks_per_transaction metric with initial data.
+func (m *metricNewrelicoracledbSystemEnqueueDeadlocksPerTransaction) init() {
+	m.data.SetName("newrelicoracledb.system.enqueue_deadlocks_per_transaction")
+	m.data.SetDescription("Enqueue Deadlocks Per Txn")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemEnqueueDeadlocksPerTransaction) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemEnqueueDeadlocksPerTransaction) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemEnqueueDeadlocksPerTransaction) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemEnqueueDeadlocksPerTransaction(cfg MetricConfig) metricNewrelicoracledbSystemEnqueueDeadlocksPerTransaction {
+	m := metricNewrelicoracledbSystemEnqueueDeadlocksPerTransaction{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemEnqueueRequestsPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.enqueue_requests_per_second metric with initial data.
+func (m *metricNewrelicoracledbSystemEnqueueRequestsPerSecond) init() {
+	m.data.SetName("newrelicoracledb.system.enqueue_requests_per_second")
+	m.data.SetDescription("Enqueue Requests Per Sec")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemEnqueueRequestsPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemEnqueueRequestsPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemEnqueueRequestsPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemEnqueueRequestsPerSecond(cfg MetricConfig) metricNewrelicoracledbSystemEnqueueRequestsPerSecond {
+	m := metricNewrelicoracledbSystemEnqueueRequestsPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemEnqueueRequestsPerTransaction struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.enqueue_requests_per_transaction metric with initial data.
+func (m *metricNewrelicoracledbSystemEnqueueRequestsPerTransaction) init() {
+	m.data.SetName("newrelicoracledb.system.enqueue_requests_per_transaction")
+	m.data.SetDescription("Enqueue Requests Per Txn")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemEnqueueRequestsPerTransaction) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemEnqueueRequestsPerTransaction) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemEnqueueRequestsPerTransaction) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemEnqueueRequestsPerTransaction(cfg MetricConfig) metricNewrelicoracledbSystemEnqueueRequestsPerTransaction {
+	m := metricNewrelicoracledbSystemEnqueueRequestsPerTransaction{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemEnqueueTimeoutsPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.enqueue_timeouts_per_second metric with initial data.
+func (m *metricNewrelicoracledbSystemEnqueueTimeoutsPerSecond) init() {
+	m.data.SetName("newrelicoracledb.system.enqueue_timeouts_per_second")
+	m.data.SetDescription("Enqueue Timeouts Per Sec")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemEnqueueTimeoutsPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemEnqueueTimeoutsPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemEnqueueTimeoutsPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemEnqueueTimeoutsPerSecond(cfg MetricConfig) metricNewrelicoracledbSystemEnqueueTimeoutsPerSecond {
+	m := metricNewrelicoracledbSystemEnqueueTimeoutsPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemEnqueueTimeoutsPerTransaction struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.enqueue_timeouts_per_transaction metric with initial data.
+func (m *metricNewrelicoracledbSystemEnqueueTimeoutsPerTransaction) init() {
+	m.data.SetName("newrelicoracledb.system.enqueue_timeouts_per_transaction")
+	m.data.SetDescription("Enqueue Timeouts Per Txn")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemEnqueueTimeoutsPerTransaction) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemEnqueueTimeoutsPerTransaction) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemEnqueueTimeoutsPerTransaction) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemEnqueueTimeoutsPerTransaction(cfg MetricConfig) metricNewrelicoracledbSystemEnqueueTimeoutsPerTransaction {
+	m := metricNewrelicoracledbSystemEnqueueTimeoutsPerTransaction{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemEnqueueWaitsPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.enqueue_waits_per_second metric with initial data.
+func (m *metricNewrelicoracledbSystemEnqueueWaitsPerSecond) init() {
+	m.data.SetName("newrelicoracledb.system.enqueue_waits_per_second")
+	m.data.SetDescription("Enqueue Waits Per Sec")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemEnqueueWaitsPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemEnqueueWaitsPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemEnqueueWaitsPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemEnqueueWaitsPerSecond(cfg MetricConfig) metricNewrelicoracledbSystemEnqueueWaitsPerSecond {
+	m := metricNewrelicoracledbSystemEnqueueWaitsPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemEnqueueWaitsPerTransaction struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.enqueue_waits_per_transaction metric with initial data.
+func (m *metricNewrelicoracledbSystemEnqueueWaitsPerTransaction) init() {
+	m.data.SetName("newrelicoracledb.system.enqueue_waits_per_transaction")
+	m.data.SetDescription("Enqueue Waits Per Txn")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemEnqueueWaitsPerTransaction) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemEnqueueWaitsPerTransaction) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemEnqueueWaitsPerTransaction) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemEnqueueWaitsPerTransaction(cfg MetricConfig) metricNewrelicoracledbSystemEnqueueWaitsPerTransaction {
+	m := metricNewrelicoracledbSystemEnqueueWaitsPerTransaction{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemExecuteWithoutParseRatio struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.execute_without_parse_ratio metric with initial data.
+func (m *metricNewrelicoracledbSystemExecuteWithoutParseRatio) init() {
+	m.data.SetName("newrelicoracledb.system.execute_without_parse_ratio")
+	m.data.SetDescription("Execute Without Parse Ratio")
+	m.data.SetUnit("%")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemExecuteWithoutParseRatio) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemExecuteWithoutParseRatio) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemExecuteWithoutParseRatio) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemExecuteWithoutParseRatio(cfg MetricConfig) metricNewrelicoracledbSystemExecuteWithoutParseRatio {
+	m := metricNewrelicoracledbSystemExecuteWithoutParseRatio{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemExecutionsPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.executions_per_second metric with initial data.
+func (m *metricNewrelicoracledbSystemExecutionsPerSecond) init() {
+	m.data.SetName("newrelicoracledb.system.executions_per_second")
+	m.data.SetDescription("Executions Per Sec")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemExecutionsPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemExecutionsPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemExecutionsPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemExecutionsPerSecond(cfg MetricConfig) metricNewrelicoracledbSystemExecutionsPerSecond {
+	m := metricNewrelicoracledbSystemExecutionsPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemExecutionsPerTransaction struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.executions_per_transaction metric with initial data.
+func (m *metricNewrelicoracledbSystemExecutionsPerTransaction) init() {
+	m.data.SetName("newrelicoracledb.system.executions_per_transaction")
+	m.data.SetDescription("Executions Per Txn")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemExecutionsPerTransaction) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemExecutionsPerTransaction) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemExecutionsPerTransaction) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemExecutionsPerTransaction(cfg MetricConfig) metricNewrelicoracledbSystemExecutionsPerTransaction {
+	m := metricNewrelicoracledbSystemExecutionsPerTransaction{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemExecutionsPerUserCall struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.executions_per_user_call metric with initial data.
+func (m *metricNewrelicoracledbSystemExecutionsPerUserCall) init() {
+	m.data.SetName("newrelicoracledb.system.executions_per_user_call")
+	m.data.SetDescription("Executions Per User Call")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemExecutionsPerUserCall) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemExecutionsPerUserCall) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemExecutionsPerUserCall) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemExecutionsPerUserCall(cfg MetricConfig) metricNewrelicoracledbSystemExecutionsPerUserCall {
+	m := metricNewrelicoracledbSystemExecutionsPerUserCall{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemFullIndexScansPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.full_index_scans_per_second metric with initial data.
+func (m *metricNewrelicoracledbSystemFullIndexScansPerSecond) init() {
+	m.data.SetName("newrelicoracledb.system.full_index_scans_per_second")
+	m.data.SetDescription("Full Index Scans Per Sec")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemFullIndexScansPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemFullIndexScansPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemFullIndexScansPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemFullIndexScansPerSecond(cfg MetricConfig) metricNewrelicoracledbSystemFullIndexScansPerSecond {
+	m := metricNewrelicoracledbSystemFullIndexScansPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemFullIndexScansPerTransaction struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.full_index_scans_per_transaction metric with initial data.
+func (m *metricNewrelicoracledbSystemFullIndexScansPerTransaction) init() {
+	m.data.SetName("newrelicoracledb.system.full_index_scans_per_transaction")
+	m.data.SetDescription("Full Index Scans Per Txn")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemFullIndexScansPerTransaction) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemFullIndexScansPerTransaction) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemFullIndexScansPerTransaction) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemFullIndexScansPerTransaction(cfg MetricConfig) metricNewrelicoracledbSystemFullIndexScansPerTransaction {
+	m := metricNewrelicoracledbSystemFullIndexScansPerTransaction{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemGcCrBlockReceivedPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.gc_cr_block_received_per_second metric with initial data.
+func (m *metricNewrelicoracledbSystemGcCrBlockReceivedPerSecond) init() {
+	m.data.SetName("newrelicoracledb.system.gc_cr_block_received_per_second")
+	m.data.SetDescription("GC CR Block Received Per Second")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemGcCrBlockReceivedPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemGcCrBlockReceivedPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemGcCrBlockReceivedPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemGcCrBlockReceivedPerSecond(cfg MetricConfig) metricNewrelicoracledbSystemGcCrBlockReceivedPerSecond {
+	m := metricNewrelicoracledbSystemGcCrBlockReceivedPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemGcCrBlockReceivedPerTransaction struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.gc_cr_block_received_per_transaction metric with initial data.
+func (m *metricNewrelicoracledbSystemGcCrBlockReceivedPerTransaction) init() {
+	m.data.SetName("newrelicoracledb.system.gc_cr_block_received_per_transaction")
+	m.data.SetDescription("GC CR Block Received Per Txn")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemGcCrBlockReceivedPerTransaction) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemGcCrBlockReceivedPerTransaction) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemGcCrBlockReceivedPerTransaction) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemGcCrBlockReceivedPerTransaction(cfg MetricConfig) metricNewrelicoracledbSystemGcCrBlockReceivedPerTransaction {
+	m := metricNewrelicoracledbSystemGcCrBlockReceivedPerTransaction{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemGcCurrentBlockReceivedPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.gc_current_block_received_per_second metric with initial data.
+func (m *metricNewrelicoracledbSystemGcCurrentBlockReceivedPerSecond) init() {
+	m.data.SetName("newrelicoracledb.system.gc_current_block_received_per_second")
+	m.data.SetDescription("GC Current Block Received Per Second")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemGcCurrentBlockReceivedPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemGcCurrentBlockReceivedPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemGcCurrentBlockReceivedPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemGcCurrentBlockReceivedPerSecond(cfg MetricConfig) metricNewrelicoracledbSystemGcCurrentBlockReceivedPerSecond {
+	m := metricNewrelicoracledbSystemGcCurrentBlockReceivedPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemGcCurrentBlockReceivedPerTransaction struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.gc_current_block_received_per_transaction metric with initial data.
+func (m *metricNewrelicoracledbSystemGcCurrentBlockReceivedPerTransaction) init() {
+	m.data.SetName("newrelicoracledb.system.gc_current_block_received_per_transaction")
+	m.data.SetDescription("GC Current Block Received Per Txn")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemGcCurrentBlockReceivedPerTransaction) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemGcCurrentBlockReceivedPerTransaction) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemGcCurrentBlockReceivedPerTransaction) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemGcCurrentBlockReceivedPerTransaction(cfg MetricConfig) metricNewrelicoracledbSystemGcCurrentBlockReceivedPerTransaction {
+	m := metricNewrelicoracledbSystemGcCurrentBlockReceivedPerTransaction{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemGlobalCacheAverageCrGetTime struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.global_cache_average_cr_get_time metric with initial data.
+func (m *metricNewrelicoracledbSystemGlobalCacheAverageCrGetTime) init() {
+	m.data.SetName("newrelicoracledb.system.global_cache_average_cr_get_time")
+	m.data.SetDescription("Global Cache Average CR Get Time")
+	m.data.SetUnit("ms")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemGlobalCacheAverageCrGetTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemGlobalCacheAverageCrGetTime) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemGlobalCacheAverageCrGetTime) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemGlobalCacheAverageCrGetTime(cfg MetricConfig) metricNewrelicoracledbSystemGlobalCacheAverageCrGetTime {
+	m := metricNewrelicoracledbSystemGlobalCacheAverageCrGetTime{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemGlobalCacheAverageCurrentGetTime struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.global_cache_average_current_get_time metric with initial data.
+func (m *metricNewrelicoracledbSystemGlobalCacheAverageCurrentGetTime) init() {
+	m.data.SetName("newrelicoracledb.system.global_cache_average_current_get_time")
+	m.data.SetDescription("Global Cache Average Current Get Time")
+	m.data.SetUnit("ms")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemGlobalCacheAverageCurrentGetTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemGlobalCacheAverageCurrentGetTime) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemGlobalCacheAverageCurrentGetTime) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemGlobalCacheAverageCurrentGetTime(cfg MetricConfig) metricNewrelicoracledbSystemGlobalCacheAverageCurrentGetTime {
+	m := metricNewrelicoracledbSystemGlobalCacheAverageCurrentGetTime{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemGlobalCacheBlocksCorrupted struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.global_cache_blocks_corrupted metric with initial data.
+func (m *metricNewrelicoracledbSystemGlobalCacheBlocksCorrupted) init() {
+	m.data.SetName("newrelicoracledb.system.global_cache_blocks_corrupted")
+	m.data.SetDescription("Global Cache Blocks Corrupted")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemGlobalCacheBlocksCorrupted) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemGlobalCacheBlocksCorrupted) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemGlobalCacheBlocksCorrupted) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemGlobalCacheBlocksCorrupted(cfg MetricConfig) metricNewrelicoracledbSystemGlobalCacheBlocksCorrupted {
+	m := metricNewrelicoracledbSystemGlobalCacheBlocksCorrupted{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemGlobalCacheBlocksLost struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.global_cache_blocks_lost metric with initial data.
+func (m *metricNewrelicoracledbSystemGlobalCacheBlocksLost) init() {
+	m.data.SetName("newrelicoracledb.system.global_cache_blocks_lost")
+	m.data.SetDescription("Global Cache Blocks Lost")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemGlobalCacheBlocksLost) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemGlobalCacheBlocksLost) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemGlobalCacheBlocksLost) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemGlobalCacheBlocksLost(cfg MetricConfig) metricNewrelicoracledbSystemGlobalCacheBlocksLost {
+	m := metricNewrelicoracledbSystemGlobalCacheBlocksLost{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemHardParseCountPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.hard_parse_count_per_second metric with initial data.
+func (m *metricNewrelicoracledbSystemHardParseCountPerSecond) init() {
+	m.data.SetName("newrelicoracledb.system.hard_parse_count_per_second")
+	m.data.SetDescription("Hard Parse Count Per Sec")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemHardParseCountPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemHardParseCountPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemHardParseCountPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemHardParseCountPerSecond(cfg MetricConfig) metricNewrelicoracledbSystemHardParseCountPerSecond {
+	m := metricNewrelicoracledbSystemHardParseCountPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemHardParseCountPerTransaction struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.hard_parse_count_per_transaction metric with initial data.
+func (m *metricNewrelicoracledbSystemHardParseCountPerTransaction) init() {
+	m.data.SetName("newrelicoracledb.system.hard_parse_count_per_transaction")
+	m.data.SetDescription("Hard Parse Count Per Txn")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemHardParseCountPerTransaction) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemHardParseCountPerTransaction) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemHardParseCountPerTransaction) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemHardParseCountPerTransaction(cfg MetricConfig) metricNewrelicoracledbSystemHardParseCountPerTransaction {
+	m := metricNewrelicoracledbSystemHardParseCountPerTransaction{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemHostCPUUsagePerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.host_cpu_usage_per_second metric with initial data.
+func (m *metricNewrelicoracledbSystemHostCPUUsagePerSecond) init() {
+	m.data.SetName("newrelicoracledb.system.host_cpu_usage_per_second")
+	m.data.SetDescription("Host CPU Usage Per Sec")
+	m.data.SetUnit("s")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemHostCPUUsagePerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemHostCPUUsagePerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemHostCPUUsagePerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemHostCPUUsagePerSecond(cfg MetricConfig) metricNewrelicoracledbSystemHostCPUUsagePerSecond {
+	m := metricNewrelicoracledbSystemHostCPUUsagePerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemHostCPUUtilization struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.host_cpu_utilization metric with initial data.
+func (m *metricNewrelicoracledbSystemHostCPUUtilization) init() {
+	m.data.SetName("newrelicoracledb.system.host_cpu_utilization")
+	m.data.SetDescription("Host CPU Utilization (%)")
+	m.data.SetUnit("%")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemHostCPUUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemHostCPUUtilization) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemHostCPUUtilization) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemHostCPUUtilization(cfg MetricConfig) metricNewrelicoracledbSystemHostCPUUtilization {
+	m := metricNewrelicoracledbSystemHostCPUUtilization{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemIoMegabytesPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.io_megabytes_per_second metric with initial data.
+func (m *metricNewrelicoracledbSystemIoMegabytesPerSecond) init() {
+	m.data.SetName("newrelicoracledb.system.io_megabytes_per_second")
+	m.data.SetDescription("I/O Megabytes per Second")
+	m.data.SetUnit("MBy/s")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemIoMegabytesPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemIoMegabytesPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemIoMegabytesPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemIoMegabytesPerSecond(cfg MetricConfig) metricNewrelicoracledbSystemIoMegabytesPerSecond {
+	m := metricNewrelicoracledbSystemIoMegabytesPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemIoRequestsPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.io_requests_per_second metric with initial data.
+func (m *metricNewrelicoracledbSystemIoRequestsPerSecond) init() {
+	m.data.SetName("newrelicoracledb.system.io_requests_per_second")
+	m.data.SetDescription("I/O Requests per Second")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemIoRequestsPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemIoRequestsPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemIoRequestsPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemIoRequestsPerSecond(cfg MetricConfig) metricNewrelicoracledbSystemIoRequestsPerSecond {
+	m := metricNewrelicoracledbSystemIoRequestsPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemLeafNodeSplitsPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.leaf_node_splits_per_second metric with initial data.
+func (m *metricNewrelicoracledbSystemLeafNodeSplitsPerSecond) init() {
+	m.data.SetName("newrelicoracledb.system.leaf_node_splits_per_second")
+	m.data.SetDescription("Leaf Node Splits Per Sec")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemLeafNodeSplitsPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemLeafNodeSplitsPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemLeafNodeSplitsPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemLeafNodeSplitsPerSecond(cfg MetricConfig) metricNewrelicoracledbSystemLeafNodeSplitsPerSecond {
+	m := metricNewrelicoracledbSystemLeafNodeSplitsPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemLeafNodeSplitsPerTransaction struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.leaf_node_splits_per_transaction metric with initial data.
+func (m *metricNewrelicoracledbSystemLeafNodeSplitsPerTransaction) init() {
+	m.data.SetName("newrelicoracledb.system.leaf_node_splits_per_transaction")
+	m.data.SetDescription("Leaf Node Splits Per Txn")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemLeafNodeSplitsPerTransaction) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemLeafNodeSplitsPerTransaction) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemLeafNodeSplitsPerTransaction) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemLeafNodeSplitsPerTransaction(cfg MetricConfig) metricNewrelicoracledbSystemLeafNodeSplitsPerTransaction {
+	m := metricNewrelicoracledbSystemLeafNodeSplitsPerTransaction{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemLibraryCacheHitRatio struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.library_cache_hit_ratio metric with initial data.
+func (m *metricNewrelicoracledbSystemLibraryCacheHitRatio) init() {
+	m.data.SetName("newrelicoracledb.system.library_cache_hit_ratio")
+	m.data.SetDescription("Library Cache Hit Ratio")
+	m.data.SetUnit("%")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemLibraryCacheHitRatio) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemLibraryCacheHitRatio) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemLibraryCacheHitRatio) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemLibraryCacheHitRatio(cfg MetricConfig) metricNewrelicoracledbSystemLibraryCacheHitRatio {
+	m := metricNewrelicoracledbSystemLibraryCacheHitRatio{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemLibraryCacheMissRatio struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.library_cache_miss_ratio metric with initial data.
+func (m *metricNewrelicoracledbSystemLibraryCacheMissRatio) init() {
+	m.data.SetName("newrelicoracledb.system.library_cache_miss_ratio")
+	m.data.SetDescription("Library Cache Miss Ratio")
+	m.data.SetUnit("%")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemLibraryCacheMissRatio) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemLibraryCacheMissRatio) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemLibraryCacheMissRatio) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemLibraryCacheMissRatio(cfg MetricConfig) metricNewrelicoracledbSystemLibraryCacheMissRatio {
+	m := metricNewrelicoracledbSystemLibraryCacheMissRatio{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemLogicalReadsPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.logical_reads_per_second metric with initial data.
+func (m *metricNewrelicoracledbSystemLogicalReadsPerSecond) init() {
+	m.data.SetName("newrelicoracledb.system.logical_reads_per_second")
+	m.data.SetDescription("Logical Reads Per Sec")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemLogicalReadsPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemLogicalReadsPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemLogicalReadsPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemLogicalReadsPerSecond(cfg MetricConfig) metricNewrelicoracledbSystemLogicalReadsPerSecond {
+	m := metricNewrelicoracledbSystemLogicalReadsPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemLogicalReadsPerTransaction struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.logical_reads_per_transaction metric with initial data.
+func (m *metricNewrelicoracledbSystemLogicalReadsPerTransaction) init() {
+	m.data.SetName("newrelicoracledb.system.logical_reads_per_transaction")
+	m.data.SetDescription("Logical Reads Per Txn")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemLogicalReadsPerTransaction) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemLogicalReadsPerTransaction) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemLogicalReadsPerTransaction) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemLogicalReadsPerTransaction(cfg MetricConfig) metricNewrelicoracledbSystemLogicalReadsPerTransaction {
+	m := metricNewrelicoracledbSystemLogicalReadsPerTransaction{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemLogicalReadsPerUserCall struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.logical_reads_per_user_call metric with initial data.
+func (m *metricNewrelicoracledbSystemLogicalReadsPerUserCall) init() {
+	m.data.SetName("newrelicoracledb.system.logical_reads_per_user_call")
+	m.data.SetDescription("Logical Reads Per User Call")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemLogicalReadsPerUserCall) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemLogicalReadsPerUserCall) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemLogicalReadsPerUserCall) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemLogicalReadsPerUserCall(cfg MetricConfig) metricNewrelicoracledbSystemLogicalReadsPerUserCall {
+	m := metricNewrelicoracledbSystemLogicalReadsPerUserCall{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemLogonsPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.logons_per_second metric with initial data.
+func (m *metricNewrelicoracledbSystemLogonsPerSecond) init() {
+	m.data.SetName("newrelicoracledb.system.logons_per_second")
+	m.data.SetDescription("Logons Per Sec")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemLogonsPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemLogonsPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemLogonsPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemLogonsPerSecond(cfg MetricConfig) metricNewrelicoracledbSystemLogonsPerSecond {
+	m := metricNewrelicoracledbSystemLogonsPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemLogonsPerTransaction struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.logons_per_transaction metric with initial data.
+func (m *metricNewrelicoracledbSystemLogonsPerTransaction) init() {
+	m.data.SetName("newrelicoracledb.system.logons_per_transaction")
+	m.data.SetDescription("Logons Per Txn")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemLogonsPerTransaction) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemLogonsPerTransaction) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemLogonsPerTransaction) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemLogonsPerTransaction(cfg MetricConfig) metricNewrelicoracledbSystemLogonsPerTransaction {
+	m := metricNewrelicoracledbSystemLogonsPerTransaction{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemLongTableScansPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.long_table_scans_per_second metric with initial data.
+func (m *metricNewrelicoracledbSystemLongTableScansPerSecond) init() {
+	m.data.SetName("newrelicoracledb.system.long_table_scans_per_second")
+	m.data.SetDescription("Long Table Scans Per Sec")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemLongTableScansPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemLongTableScansPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemLongTableScansPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemLongTableScansPerSecond(cfg MetricConfig) metricNewrelicoracledbSystemLongTableScansPerSecond {
+	m := metricNewrelicoracledbSystemLongTableScansPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemLongTableScansPerTransaction struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.long_table_scans_per_transaction metric with initial data.
+func (m *metricNewrelicoracledbSystemLongTableScansPerTransaction) init() {
+	m.data.SetName("newrelicoracledb.system.long_table_scans_per_transaction")
+	m.data.SetDescription("Long Table Scans Per Txn")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemLongTableScansPerTransaction) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemLongTableScansPerTransaction) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemLongTableScansPerTransaction) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemLongTableScansPerTransaction(cfg MetricConfig) metricNewrelicoracledbSystemLongTableScansPerTransaction {
+	m := metricNewrelicoracledbSystemLongTableScansPerTransaction{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemMemorySortsRatio struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.memory_sorts_ratio metric with initial data.
+func (m *metricNewrelicoracledbSystemMemorySortsRatio) init() {
+	m.data.SetName("newrelicoracledb.system.memory_sorts_ratio")
+	m.data.SetDescription("Memory Sorts Ratio")
+	m.data.SetUnit("%")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemMemorySortsRatio) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemMemorySortsRatio) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemMemorySortsRatio) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemMemorySortsRatio(cfg MetricConfig) metricNewrelicoracledbSystemMemorySortsRatio {
+	m := metricNewrelicoracledbSystemMemorySortsRatio{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemNetworkTrafficVolumePerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.network_traffic_volume_per_second metric with initial data.
+func (m *metricNewrelicoracledbSystemNetworkTrafficVolumePerSecond) init() {
+	m.data.SetName("newrelicoracledb.system.network_traffic_volume_per_second")
+	m.data.SetDescription("Network Traffic Volume Per Sec")
+	m.data.SetUnit("By/s")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemNetworkTrafficVolumePerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemNetworkTrafficVolumePerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemNetworkTrafficVolumePerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemNetworkTrafficVolumePerSecond(cfg MetricConfig) metricNewrelicoracledbSystemNetworkTrafficVolumePerSecond {
+	m := metricNewrelicoracledbSystemNetworkTrafficVolumePerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemOpenCursorsPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.open_cursors_per_second metric with initial data.
+func (m *metricNewrelicoracledbSystemOpenCursorsPerSecond) init() {
+	m.data.SetName("newrelicoracledb.system.open_cursors_per_second")
+	m.data.SetDescription("Open Cursors Per Sec")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemOpenCursorsPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemOpenCursorsPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemOpenCursorsPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemOpenCursorsPerSecond(cfg MetricConfig) metricNewrelicoracledbSystemOpenCursorsPerSecond {
+	m := metricNewrelicoracledbSystemOpenCursorsPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemOpenCursorsPerTransaction struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.open_cursors_per_transaction metric with initial data.
+func (m *metricNewrelicoracledbSystemOpenCursorsPerTransaction) init() {
+	m.data.SetName("newrelicoracledb.system.open_cursors_per_transaction")
+	m.data.SetDescription("Open Cursors Per Txn")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemOpenCursorsPerTransaction) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemOpenCursorsPerTransaction) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemOpenCursorsPerTransaction) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemOpenCursorsPerTransaction(cfg MetricConfig) metricNewrelicoracledbSystemOpenCursorsPerTransaction {
+	m := metricNewrelicoracledbSystemOpenCursorsPerTransaction{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemParseFailureCountPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.parse_failure_count_per_second metric with initial data.
+func (m *metricNewrelicoracledbSystemParseFailureCountPerSecond) init() {
+	m.data.SetName("newrelicoracledb.system.parse_failure_count_per_second")
+	m.data.SetDescription("Parse Failure Count Per Sec")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemParseFailureCountPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemParseFailureCountPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemParseFailureCountPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemParseFailureCountPerSecond(cfg MetricConfig) metricNewrelicoracledbSystemParseFailureCountPerSecond {
+	m := metricNewrelicoracledbSystemParseFailureCountPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemParseFailureCountPerTransaction struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.parse_failure_count_per_transaction metric with initial data.
+func (m *metricNewrelicoracledbSystemParseFailureCountPerTransaction) init() {
+	m.data.SetName("newrelicoracledb.system.parse_failure_count_per_transaction")
+	m.data.SetDescription("Parse Failure Count Per Txn")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemParseFailureCountPerTransaction) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemParseFailureCountPerTransaction) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemParseFailureCountPerTransaction) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemParseFailureCountPerTransaction(cfg MetricConfig) metricNewrelicoracledbSystemParseFailureCountPerTransaction {
+	m := metricNewrelicoracledbSystemParseFailureCountPerTransaction{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemPgaCacheHitPercentage struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.pga_cache_hit_percentage metric with initial data.
+func (m *metricNewrelicoracledbSystemPgaCacheHitPercentage) init() {
+	m.data.SetName("newrelicoracledb.system.pga_cache_hit_percentage")
+	m.data.SetDescription("PGA Cache Hit %")
+	m.data.SetUnit("%")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemPgaCacheHitPercentage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemPgaCacheHitPercentage) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemPgaCacheHitPercentage) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemPgaCacheHitPercentage(cfg MetricConfig) metricNewrelicoracledbSystemPgaCacheHitPercentage {
+	m := metricNewrelicoracledbSystemPgaCacheHitPercentage{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemPhysicalLobsReadsPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.physical_lobs_reads_per_second metric with initial data.
+func (m *metricNewrelicoracledbSystemPhysicalLobsReadsPerSecond) init() {
+	m.data.SetName("newrelicoracledb.system.physical_lobs_reads_per_second")
+	m.data.SetDescription("Physical Reads Direct Lobs Per Sec")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemPhysicalLobsReadsPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemPhysicalLobsReadsPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemPhysicalLobsReadsPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemPhysicalLobsReadsPerSecond(cfg MetricConfig) metricNewrelicoracledbSystemPhysicalLobsReadsPerSecond {
+	m := metricNewrelicoracledbSystemPhysicalLobsReadsPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemPhysicalLobsReadsPerTransaction struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.physical_lobs_reads_per_transaction metric with initial data.
+func (m *metricNewrelicoracledbSystemPhysicalLobsReadsPerTransaction) init() {
+	m.data.SetName("newrelicoracledb.system.physical_lobs_reads_per_transaction")
+	m.data.SetDescription("Physical Reads Direct Lobs Per Txn")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemPhysicalLobsReadsPerTransaction) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemPhysicalLobsReadsPerTransaction) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemPhysicalLobsReadsPerTransaction) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemPhysicalLobsReadsPerTransaction(cfg MetricConfig) metricNewrelicoracledbSystemPhysicalLobsReadsPerTransaction {
+	m := metricNewrelicoracledbSystemPhysicalLobsReadsPerTransaction{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemPhysicalLobsWritesPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.physical_lobs_writes_per_second metric with initial data.
+func (m *metricNewrelicoracledbSystemPhysicalLobsWritesPerSecond) init() {
+	m.data.SetName("newrelicoracledb.system.physical_lobs_writes_per_second")
+	m.data.SetDescription("Physical Writes Direct Lobs Per Sec")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemPhysicalLobsWritesPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemPhysicalLobsWritesPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemPhysicalLobsWritesPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemPhysicalLobsWritesPerSecond(cfg MetricConfig) metricNewrelicoracledbSystemPhysicalLobsWritesPerSecond {
+	m := metricNewrelicoracledbSystemPhysicalLobsWritesPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemPhysicalLobsWritesPerTransaction struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.physical_lobs_writes_per_transaction metric with initial data.
+func (m *metricNewrelicoracledbSystemPhysicalLobsWritesPerTransaction) init() {
+	m.data.SetName("newrelicoracledb.system.physical_lobs_writes_per_transaction")
+	m.data.SetDescription("Physical Writes Direct Lobs Per Txn")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemPhysicalLobsWritesPerTransaction) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemPhysicalLobsWritesPerTransaction) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemPhysicalLobsWritesPerTransaction) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemPhysicalLobsWritesPerTransaction(cfg MetricConfig) metricNewrelicoracledbSystemPhysicalLobsWritesPerTransaction {
+	m := metricNewrelicoracledbSystemPhysicalLobsWritesPerTransaction{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemPhysicalReadBytesPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.physical_read_bytes_per_second metric with initial data.
+func (m *metricNewrelicoracledbSystemPhysicalReadBytesPerSecond) init() {
+	m.data.SetName("newrelicoracledb.system.physical_read_bytes_per_second")
+	m.data.SetDescription("Physical Read Bytes Per Sec")
+	m.data.SetUnit("By/s")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemPhysicalReadBytesPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemPhysicalReadBytesPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemPhysicalReadBytesPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemPhysicalReadBytesPerSecond(cfg MetricConfig) metricNewrelicoracledbSystemPhysicalReadBytesPerSecond {
+	m := metricNewrelicoracledbSystemPhysicalReadBytesPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemPhysicalReadIoRequestsPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.physical_read_io_requests_per_second metric with initial data.
+func (m *metricNewrelicoracledbSystemPhysicalReadIoRequestsPerSecond) init() {
+	m.data.SetName("newrelicoracledb.system.physical_read_io_requests_per_second")
+	m.data.SetDescription("Physical Read IO Requests Per Sec")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemPhysicalReadIoRequestsPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemPhysicalReadIoRequestsPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemPhysicalReadIoRequestsPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemPhysicalReadIoRequestsPerSecond(cfg MetricConfig) metricNewrelicoracledbSystemPhysicalReadIoRequestsPerSecond {
+	m := metricNewrelicoracledbSystemPhysicalReadIoRequestsPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemPhysicalReadTotalBytesPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.physical_read_total_bytes_per_second metric with initial data.
+func (m *metricNewrelicoracledbSystemPhysicalReadTotalBytesPerSecond) init() {
+	m.data.SetName("newrelicoracledb.system.physical_read_total_bytes_per_second")
+	m.data.SetDescription("Physical Read Total Bytes Per Sec")
+	m.data.SetUnit("By/s")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemPhysicalReadTotalBytesPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemPhysicalReadTotalBytesPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemPhysicalReadTotalBytesPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemPhysicalReadTotalBytesPerSecond(cfg MetricConfig) metricNewrelicoracledbSystemPhysicalReadTotalBytesPerSecond {
+	m := metricNewrelicoracledbSystemPhysicalReadTotalBytesPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemPhysicalReadTotalIoRequestsPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.physical_read_total_io_requests_per_second metric with initial data.
+func (m *metricNewrelicoracledbSystemPhysicalReadTotalIoRequestsPerSecond) init() {
+	m.data.SetName("newrelicoracledb.system.physical_read_total_io_requests_per_second")
+	m.data.SetDescription("Physical Read Total IO Requests Per Sec")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemPhysicalReadTotalIoRequestsPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemPhysicalReadTotalIoRequestsPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemPhysicalReadTotalIoRequestsPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemPhysicalReadTotalIoRequestsPerSecond(cfg MetricConfig) metricNewrelicoracledbSystemPhysicalReadTotalIoRequestsPerSecond {
+	m := metricNewrelicoracledbSystemPhysicalReadTotalIoRequestsPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemPhysicalReadsDirectPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.physical_reads_direct_per_second metric with initial data.
+func (m *metricNewrelicoracledbSystemPhysicalReadsDirectPerSecond) init() {
+	m.data.SetName("newrelicoracledb.system.physical_reads_direct_per_second")
+	m.data.SetDescription("Physical Reads Direct Per Sec")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemPhysicalReadsDirectPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemPhysicalReadsDirectPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemPhysicalReadsDirectPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemPhysicalReadsDirectPerSecond(cfg MetricConfig) metricNewrelicoracledbSystemPhysicalReadsDirectPerSecond {
+	m := metricNewrelicoracledbSystemPhysicalReadsDirectPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemPhysicalReadsDirectPerTransaction struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.physical_reads_direct_per_transaction metric with initial data.
+func (m *metricNewrelicoracledbSystemPhysicalReadsDirectPerTransaction) init() {
+	m.data.SetName("newrelicoracledb.system.physical_reads_direct_per_transaction")
+	m.data.SetDescription("Physical Reads Direct Per Txn")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemPhysicalReadsDirectPerTransaction) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemPhysicalReadsDirectPerTransaction) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemPhysicalReadsDirectPerTransaction) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemPhysicalReadsDirectPerTransaction(cfg MetricConfig) metricNewrelicoracledbSystemPhysicalReadsDirectPerTransaction {
+	m := metricNewrelicoracledbSystemPhysicalReadsDirectPerTransaction{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemPhysicalReadsPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.physical_reads_per_second metric with initial data.
+func (m *metricNewrelicoracledbSystemPhysicalReadsPerSecond) init() {
+	m.data.SetName("newrelicoracledb.system.physical_reads_per_second")
+	m.data.SetDescription("Physical Reads Per Sec")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemPhysicalReadsPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemPhysicalReadsPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemPhysicalReadsPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemPhysicalReadsPerSecond(cfg MetricConfig) metricNewrelicoracledbSystemPhysicalReadsPerSecond {
+	m := metricNewrelicoracledbSystemPhysicalReadsPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemPhysicalReadsPerTransaction struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.physical_reads_per_transaction metric with initial data.
+func (m *metricNewrelicoracledbSystemPhysicalReadsPerTransaction) init() {
+	m.data.SetName("newrelicoracledb.system.physical_reads_per_transaction")
+	m.data.SetDescription("Physical Reads Per Txn")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemPhysicalReadsPerTransaction) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemPhysicalReadsPerTransaction) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemPhysicalReadsPerTransaction) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemPhysicalReadsPerTransaction(cfg MetricConfig) metricNewrelicoracledbSystemPhysicalReadsPerTransaction {
+	m := metricNewrelicoracledbSystemPhysicalReadsPerTransaction{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemPhysicalWriteBytesPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.physical_write_bytes_per_second metric with initial data.
+func (m *metricNewrelicoracledbSystemPhysicalWriteBytesPerSecond) init() {
+	m.data.SetName("newrelicoracledb.system.physical_write_bytes_per_second")
+	m.data.SetDescription("Physical Write Bytes Per Sec")
+	m.data.SetUnit("By/s")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemPhysicalWriteBytesPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemPhysicalWriteBytesPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemPhysicalWriteBytesPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemPhysicalWriteBytesPerSecond(cfg MetricConfig) metricNewrelicoracledbSystemPhysicalWriteBytesPerSecond {
+	m := metricNewrelicoracledbSystemPhysicalWriteBytesPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemPhysicalWriteIoRequestsPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.physical_write_io_requests_per_second metric with initial data.
+func (m *metricNewrelicoracledbSystemPhysicalWriteIoRequestsPerSecond) init() {
+	m.data.SetName("newrelicoracledb.system.physical_write_io_requests_per_second")
+	m.data.SetDescription("Physical Write IO Requests Per Sec")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemPhysicalWriteIoRequestsPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemPhysicalWriteIoRequestsPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemPhysicalWriteIoRequestsPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemPhysicalWriteIoRequestsPerSecond(cfg MetricConfig) metricNewrelicoracledbSystemPhysicalWriteIoRequestsPerSecond {
+	m := metricNewrelicoracledbSystemPhysicalWriteIoRequestsPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemPhysicalWriteTotalBytesPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.physical_write_total_bytes_per_second metric with initial data.
+func (m *metricNewrelicoracledbSystemPhysicalWriteTotalBytesPerSecond) init() {
+	m.data.SetName("newrelicoracledb.system.physical_write_total_bytes_per_second")
+	m.data.SetDescription("Physical Write Total Bytes Per Sec")
+	m.data.SetUnit("By/s")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemPhysicalWriteTotalBytesPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemPhysicalWriteTotalBytesPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemPhysicalWriteTotalBytesPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemPhysicalWriteTotalBytesPerSecond(cfg MetricConfig) metricNewrelicoracledbSystemPhysicalWriteTotalBytesPerSecond {
+	m := metricNewrelicoracledbSystemPhysicalWriteTotalBytesPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemPhysicalWriteTotalIoRequestsPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.physical_write_total_io_requests_per_second metric with initial data.
+func (m *metricNewrelicoracledbSystemPhysicalWriteTotalIoRequestsPerSecond) init() {
+	m.data.SetName("newrelicoracledb.system.physical_write_total_io_requests_per_second")
+	m.data.SetDescription("Physical Write Total IO Requests Per Sec")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemPhysicalWriteTotalIoRequestsPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemPhysicalWriteTotalIoRequestsPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemPhysicalWriteTotalIoRequestsPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemPhysicalWriteTotalIoRequestsPerSecond(cfg MetricConfig) metricNewrelicoracledbSystemPhysicalWriteTotalIoRequestsPerSecond {
+	m := metricNewrelicoracledbSystemPhysicalWriteTotalIoRequestsPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemPhysicalWritesDirectPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.physical_writes_direct_per_second metric with initial data.
+func (m *metricNewrelicoracledbSystemPhysicalWritesDirectPerSecond) init() {
+	m.data.SetName("newrelicoracledb.system.physical_writes_direct_per_second")
+	m.data.SetDescription("Physical Writes Direct Per Sec")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemPhysicalWritesDirectPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemPhysicalWritesDirectPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemPhysicalWritesDirectPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemPhysicalWritesDirectPerSecond(cfg MetricConfig) metricNewrelicoracledbSystemPhysicalWritesDirectPerSecond {
+	m := metricNewrelicoracledbSystemPhysicalWritesDirectPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemPhysicalWritesDirectPerTransaction struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.physical_writes_direct_per_transaction metric with initial data.
+func (m *metricNewrelicoracledbSystemPhysicalWritesDirectPerTransaction) init() {
+	m.data.SetName("newrelicoracledb.system.physical_writes_direct_per_transaction")
+	m.data.SetDescription("Physical Writes Direct Per Txn")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemPhysicalWritesDirectPerTransaction) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemPhysicalWritesDirectPerTransaction) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemPhysicalWritesDirectPerTransaction) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemPhysicalWritesDirectPerTransaction(cfg MetricConfig) metricNewrelicoracledbSystemPhysicalWritesDirectPerTransaction {
+	m := metricNewrelicoracledbSystemPhysicalWritesDirectPerTransaction{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemPhysicalWritesPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.physical_writes_per_second metric with initial data.
+func (m *metricNewrelicoracledbSystemPhysicalWritesPerSecond) init() {
+	m.data.SetName("newrelicoracledb.system.physical_writes_per_second")
+	m.data.SetDescription("Physical Writes Per Sec")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemPhysicalWritesPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemPhysicalWritesPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemPhysicalWritesPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemPhysicalWritesPerSecond(cfg MetricConfig) metricNewrelicoracledbSystemPhysicalWritesPerSecond {
+	m := metricNewrelicoracledbSystemPhysicalWritesPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemPhysicalWritesPerTransaction struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.physical_writes_per_transaction metric with initial data.
+func (m *metricNewrelicoracledbSystemPhysicalWritesPerTransaction) init() {
+	m.data.SetName("newrelicoracledb.system.physical_writes_per_transaction")
+	m.data.SetDescription("Physical Writes Per Txn")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemPhysicalWritesPerTransaction) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemPhysicalWritesPerTransaction) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemPhysicalWritesPerTransaction) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemPhysicalWritesPerTransaction(cfg MetricConfig) metricNewrelicoracledbSystemPhysicalWritesPerTransaction {
+	m := metricNewrelicoracledbSystemPhysicalWritesPerTransaction{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemProcessLimitPercentage struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.process_limit_percentage metric with initial data.
+func (m *metricNewrelicoracledbSystemProcessLimitPercentage) init() {
+	m.data.SetName("newrelicoracledb.system.process_limit_percentage")
+	m.data.SetDescription("Process Limit %")
+	m.data.SetUnit("%")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemProcessLimitPercentage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemProcessLimitPercentage) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemProcessLimitPercentage) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemProcessLimitPercentage(cfg MetricConfig) metricNewrelicoracledbSystemProcessLimitPercentage {
+	m := metricNewrelicoracledbSystemProcessLimitPercentage{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemRecursiveCallsPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.recursive_calls_per_second metric with initial data.
+func (m *metricNewrelicoracledbSystemRecursiveCallsPerSecond) init() {
+	m.data.SetName("newrelicoracledb.system.recursive_calls_per_second")
+	m.data.SetDescription("Recursive Calls Per Sec")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemRecursiveCallsPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemRecursiveCallsPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemRecursiveCallsPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemRecursiveCallsPerSecond(cfg MetricConfig) metricNewrelicoracledbSystemRecursiveCallsPerSecond {
+	m := metricNewrelicoracledbSystemRecursiveCallsPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemRecursiveCallsPerTransaction struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.recursive_calls_per_transaction metric with initial data.
+func (m *metricNewrelicoracledbSystemRecursiveCallsPerTransaction) init() {
+	m.data.SetName("newrelicoracledb.system.recursive_calls_per_transaction")
+	m.data.SetDescription("Recursive Calls Per Txn")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemRecursiveCallsPerTransaction) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemRecursiveCallsPerTransaction) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemRecursiveCallsPerTransaction) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemRecursiveCallsPerTransaction(cfg MetricConfig) metricNewrelicoracledbSystemRecursiveCallsPerTransaction {
+	m := metricNewrelicoracledbSystemRecursiveCallsPerTransaction{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemRedoAllocationHitRatio struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.redo_allocation_hit_ratio metric with initial data.
+func (m *metricNewrelicoracledbSystemRedoAllocationHitRatio) init() {
+	m.data.SetName("newrelicoracledb.system.redo_allocation_hit_ratio")
+	m.data.SetDescription("Redo Allocation Hit Ratio")
+	m.data.SetUnit("%")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemRedoAllocationHitRatio) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemRedoAllocationHitRatio) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemRedoAllocationHitRatio) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemRedoAllocationHitRatio(cfg MetricConfig) metricNewrelicoracledbSystemRedoAllocationHitRatio {
+	m := metricNewrelicoracledbSystemRedoAllocationHitRatio{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemRedoGeneratedBytesPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.redo_generated_bytes_per_second metric with initial data.
+func (m *metricNewrelicoracledbSystemRedoGeneratedBytesPerSecond) init() {
+	m.data.SetName("newrelicoracledb.system.redo_generated_bytes_per_second")
+	m.data.SetDescription("Redo Generated Per Sec")
+	m.data.SetUnit("By/s")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemRedoGeneratedBytesPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemRedoGeneratedBytesPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemRedoGeneratedBytesPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemRedoGeneratedBytesPerSecond(cfg MetricConfig) metricNewrelicoracledbSystemRedoGeneratedBytesPerSecond {
+	m := metricNewrelicoracledbSystemRedoGeneratedBytesPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemRedoGeneratedBytesPerTransaction struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.redo_generated_bytes_per_transaction metric with initial data.
+func (m *metricNewrelicoracledbSystemRedoGeneratedBytesPerTransaction) init() {
+	m.data.SetName("newrelicoracledb.system.redo_generated_bytes_per_transaction")
+	m.data.SetDescription("Redo Generated Per Txn")
+	m.data.SetUnit("By")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemRedoGeneratedBytesPerTransaction) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemRedoGeneratedBytesPerTransaction) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemRedoGeneratedBytesPerTransaction) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemRedoGeneratedBytesPerTransaction(cfg MetricConfig) metricNewrelicoracledbSystemRedoGeneratedBytesPerTransaction {
+	m := metricNewrelicoracledbSystemRedoGeneratedBytesPerTransaction{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemRedoWritesPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.redo_writes_per_second metric with initial data.
+func (m *metricNewrelicoracledbSystemRedoWritesPerSecond) init() {
+	m.data.SetName("newrelicoracledb.system.redo_writes_per_second")
+	m.data.SetDescription("Redo Writes Per Sec")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemRedoWritesPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemRedoWritesPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemRedoWritesPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemRedoWritesPerSecond(cfg MetricConfig) metricNewrelicoracledbSystemRedoWritesPerSecond {
+	m := metricNewrelicoracledbSystemRedoWritesPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemRedoWritesPerTransaction struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.redo_writes_per_transaction metric with initial data.
+func (m *metricNewrelicoracledbSystemRedoWritesPerTransaction) init() {
+	m.data.SetName("newrelicoracledb.system.redo_writes_per_transaction")
+	m.data.SetDescription("Redo Writes Per Txn")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemRedoWritesPerTransaction) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemRedoWritesPerTransaction) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemRedoWritesPerTransaction) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemRedoWritesPerTransaction(cfg MetricConfig) metricNewrelicoracledbSystemRedoWritesPerTransaction {
+	m := metricNewrelicoracledbSystemRedoWritesPerTransaction{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemResponseTimePerTransaction struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.response_time_per_transaction metric with initial data.
+func (m *metricNewrelicoracledbSystemResponseTimePerTransaction) init() {
+	m.data.SetName("newrelicoracledb.system.response_time_per_transaction")
+	m.data.SetDescription("Response Time Per Txn")
+	m.data.SetUnit("ms")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemResponseTimePerTransaction) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemResponseTimePerTransaction) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemResponseTimePerTransaction) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemResponseTimePerTransaction(cfg MetricConfig) metricNewrelicoracledbSystemResponseTimePerTransaction {
+	m := metricNewrelicoracledbSystemResponseTimePerTransaction{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemRowCacheHitRatio struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.row_cache_hit_ratio metric with initial data.
+func (m *metricNewrelicoracledbSystemRowCacheHitRatio) init() {
+	m.data.SetName("newrelicoracledb.system.row_cache_hit_ratio")
+	m.data.SetDescription("Row Cache Hit Ratio")
+	m.data.SetUnit("%")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemRowCacheHitRatio) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemRowCacheHitRatio) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemRowCacheHitRatio) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemRowCacheHitRatio(cfg MetricConfig) metricNewrelicoracledbSystemRowCacheHitRatio {
+	m := metricNewrelicoracledbSystemRowCacheHitRatio{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemRowCacheMissRatio struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.row_cache_miss_ratio metric with initial data.
+func (m *metricNewrelicoracledbSystemRowCacheMissRatio) init() {
+	m.data.SetName("newrelicoracledb.system.row_cache_miss_ratio")
+	m.data.SetDescription("Row Cache Miss Ratio")
+	m.data.SetUnit("%")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemRowCacheMissRatio) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemRowCacheMissRatio) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemRowCacheMissRatio) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemRowCacheMissRatio(cfg MetricConfig) metricNewrelicoracledbSystemRowCacheMissRatio {
+	m := metricNewrelicoracledbSystemRowCacheMissRatio{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemRowsPerSort struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.rows_per_sort metric with initial data.
+func (m *metricNewrelicoracledbSystemRowsPerSort) init() {
+	m.data.SetName("newrelicoracledb.system.rows_per_sort")
+	m.data.SetDescription("Rows Per Sort")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemRowsPerSort) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemRowsPerSort) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemRowsPerSort) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemRowsPerSort(cfg MetricConfig) metricNewrelicoracledbSystemRowsPerSort {
+	m := metricNewrelicoracledbSystemRowsPerSort{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemSessionCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.session_count metric with initial data.
+func (m *metricNewrelicoracledbSystemSessionCount) init() {
+	m.data.SetName("newrelicoracledb.system.session_count")
+	m.data.SetDescription("Session Count")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemSessionCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemSessionCount) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemSessionCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemSessionCount(cfg MetricConfig) metricNewrelicoracledbSystemSessionCount {
+	m := metricNewrelicoracledbSystemSessionCount{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemSessionLimitPercentage struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.session_limit_percentage metric with initial data.
+func (m *metricNewrelicoracledbSystemSessionLimitPercentage) init() {
+	m.data.SetName("newrelicoracledb.system.session_limit_percentage")
+	m.data.SetDescription("Session Limit %")
+	m.data.SetUnit("%")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemSessionLimitPercentage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemSessionLimitPercentage) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemSessionLimitPercentage) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemSessionLimitPercentage(cfg MetricConfig) metricNewrelicoracledbSystemSessionLimitPercentage {
+	m := metricNewrelicoracledbSystemSessionLimitPercentage{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemSharedPoolFreePercentage struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.shared_pool_free_percentage metric with initial data.
+func (m *metricNewrelicoracledbSystemSharedPoolFreePercentage) init() {
+	m.data.SetName("newrelicoracledb.system.shared_pool_free_percentage")
+	m.data.SetDescription("Shared Pool Free %")
+	m.data.SetUnit("%")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemSharedPoolFreePercentage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemSharedPoolFreePercentage) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemSharedPoolFreePercentage) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemSharedPoolFreePercentage(cfg MetricConfig) metricNewrelicoracledbSystemSharedPoolFreePercentage {
+	m := metricNewrelicoracledbSystemSharedPoolFreePercentage{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemSoftParseRatio struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.soft_parse_ratio metric with initial data.
+func (m *metricNewrelicoracledbSystemSoftParseRatio) init() {
+	m.data.SetName("newrelicoracledb.system.soft_parse_ratio")
+	m.data.SetDescription("Soft Parse Ratio")
+	m.data.SetUnit("%")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemSoftParseRatio) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemSoftParseRatio) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemSoftParseRatio) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemSoftParseRatio(cfg MetricConfig) metricNewrelicoracledbSystemSoftParseRatio {
+	m := metricNewrelicoracledbSystemSoftParseRatio{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemSQLServiceResponseTime struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.sql_service_response_time metric with initial data.
+func (m *metricNewrelicoracledbSystemSQLServiceResponseTime) init() {
+	m.data.SetName("newrelicoracledb.system.sql_service_response_time")
+	m.data.SetDescription("SQL Service Response Time")
+	m.data.SetUnit("ms")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemSQLServiceResponseTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemSQLServiceResponseTime) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemSQLServiceResponseTime) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemSQLServiceResponseTime(cfg MetricConfig) metricNewrelicoracledbSystemSQLServiceResponseTime {
+	m := metricNewrelicoracledbSystemSQLServiceResponseTime{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemStreamsPoolUsagePercentage struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.streams_pool_usage_percentage metric with initial data.
+func (m *metricNewrelicoracledbSystemStreamsPoolUsagePercentage) init() {
+	m.data.SetName("newrelicoracledb.system.streams_pool_usage_percentage")
+	m.data.SetDescription("Streams Pool Usage Percentage")
+	m.data.SetUnit("%")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemStreamsPoolUsagePercentage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemStreamsPoolUsagePercentage) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemStreamsPoolUsagePercentage) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemStreamsPoolUsagePercentage(cfg MetricConfig) metricNewrelicoracledbSystemStreamsPoolUsagePercentage {
+	m := metricNewrelicoracledbSystemStreamsPoolUsagePercentage{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemTempSpaceUsed struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.temp_space_used metric with initial data.
+func (m *metricNewrelicoracledbSystemTempSpaceUsed) init() {
+	m.data.SetName("newrelicoracledb.system.temp_space_used")
+	m.data.SetDescription("Temp Space Used")
+	m.data.SetUnit("By")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemTempSpaceUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemTempSpaceUsed) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemTempSpaceUsed) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemTempSpaceUsed(cfg MetricConfig) metricNewrelicoracledbSystemTempSpaceUsed {
+	m := metricNewrelicoracledbSystemTempSpaceUsed{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemTotalIndexScansPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.total_index_scans_per_second metric with initial data.
+func (m *metricNewrelicoracledbSystemTotalIndexScansPerSecond) init() {
+	m.data.SetName("newrelicoracledb.system.total_index_scans_per_second")
+	m.data.SetDescription("Total Index Scans Per Sec")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemTotalIndexScansPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemTotalIndexScansPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemTotalIndexScansPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemTotalIndexScansPerSecond(cfg MetricConfig) metricNewrelicoracledbSystemTotalIndexScansPerSecond {
+	m := metricNewrelicoracledbSystemTotalIndexScansPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemTotalIndexScansPerTransaction struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.total_index_scans_per_transaction metric with initial data.
+func (m *metricNewrelicoracledbSystemTotalIndexScansPerTransaction) init() {
+	m.data.SetName("newrelicoracledb.system.total_index_scans_per_transaction")
+	m.data.SetDescription("Total Index Scans Per Txn")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemTotalIndexScansPerTransaction) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemTotalIndexScansPerTransaction) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemTotalIndexScansPerTransaction) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemTotalIndexScansPerTransaction(cfg MetricConfig) metricNewrelicoracledbSystemTotalIndexScansPerTransaction {
+	m := metricNewrelicoracledbSystemTotalIndexScansPerTransaction{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemTotalParseCountPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.total_parse_count_per_second metric with initial data.
+func (m *metricNewrelicoracledbSystemTotalParseCountPerSecond) init() {
+	m.data.SetName("newrelicoracledb.system.total_parse_count_per_second")
+	m.data.SetDescription("Total Parse Count Per Sec")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemTotalParseCountPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemTotalParseCountPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemTotalParseCountPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemTotalParseCountPerSecond(cfg MetricConfig) metricNewrelicoracledbSystemTotalParseCountPerSecond {
+	m := metricNewrelicoracledbSystemTotalParseCountPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemTotalParseCountPerTransaction struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.total_parse_count_per_transaction metric with initial data.
+func (m *metricNewrelicoracledbSystemTotalParseCountPerTransaction) init() {
+	m.data.SetName("newrelicoracledb.system.total_parse_count_per_transaction")
+	m.data.SetDescription("Total Parse Count Per Txn")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemTotalParseCountPerTransaction) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemTotalParseCountPerTransaction) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemTotalParseCountPerTransaction) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemTotalParseCountPerTransaction(cfg MetricConfig) metricNewrelicoracledbSystemTotalParseCountPerTransaction {
+	m := metricNewrelicoracledbSystemTotalParseCountPerTransaction{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemTotalSortsPerUserCall struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.total_sorts_per_user_call metric with initial data.
+func (m *metricNewrelicoracledbSystemTotalSortsPerUserCall) init() {
+	m.data.SetName("newrelicoracledb.system.total_sorts_per_user_call")
+	m.data.SetDescription("Total Sorts Per User Call")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemTotalSortsPerUserCall) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemTotalSortsPerUserCall) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemTotalSortsPerUserCall) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemTotalSortsPerUserCall(cfg MetricConfig) metricNewrelicoracledbSystemTotalSortsPerUserCall {
+	m := metricNewrelicoracledbSystemTotalSortsPerUserCall{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemTotalTableScansPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.total_table_scans_per_second metric with initial data.
+func (m *metricNewrelicoracledbSystemTotalTableScansPerSecond) init() {
+	m.data.SetName("newrelicoracledb.system.total_table_scans_per_second")
+	m.data.SetDescription("Total Table Scans Per Sec")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemTotalTableScansPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemTotalTableScansPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemTotalTableScansPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemTotalTableScansPerSecond(cfg MetricConfig) metricNewrelicoracledbSystemTotalTableScansPerSecond {
+	m := metricNewrelicoracledbSystemTotalTableScansPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemTotalTableScansPerTransaction struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.total_table_scans_per_transaction metric with initial data.
+func (m *metricNewrelicoracledbSystemTotalTableScansPerTransaction) init() {
+	m.data.SetName("newrelicoracledb.system.total_table_scans_per_transaction")
+	m.data.SetDescription("Total Table Scans Per Txn")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemTotalTableScansPerTransaction) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemTotalTableScansPerTransaction) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemTotalTableScansPerTransaction) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemTotalTableScansPerTransaction(cfg MetricConfig) metricNewrelicoracledbSystemTotalTableScansPerTransaction {
+	m := metricNewrelicoracledbSystemTotalTableScansPerTransaction{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemTotalTableScansPerUserCall struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.total_table_scans_per_user_call metric with initial data.
+func (m *metricNewrelicoracledbSystemTotalTableScansPerUserCall) init() {
+	m.data.SetName("newrelicoracledb.system.total_table_scans_per_user_call")
+	m.data.SetDescription("Total Table Scans Per User Call")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemTotalTableScansPerUserCall) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemTotalTableScansPerUserCall) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemTotalTableScansPerUserCall) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemTotalTableScansPerUserCall(cfg MetricConfig) metricNewrelicoracledbSystemTotalTableScansPerUserCall {
+	m := metricNewrelicoracledbSystemTotalTableScansPerUserCall{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemTransactionsPerLogon struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.transactions_per_logon metric with initial data.
+func (m *metricNewrelicoracledbSystemTransactionsPerLogon) init() {
+	m.data.SetName("newrelicoracledb.system.transactions_per_logon")
+	m.data.SetDescription("Txns Per Logon")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemTransactionsPerLogon) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemTransactionsPerLogon) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemTransactionsPerLogon) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemTransactionsPerLogon(cfg MetricConfig) metricNewrelicoracledbSystemTransactionsPerLogon {
+	m := metricNewrelicoracledbSystemTransactionsPerLogon{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemTransactionsPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.transactions_per_second metric with initial data.
+func (m *metricNewrelicoracledbSystemTransactionsPerSecond) init() {
+	m.data.SetName("newrelicoracledb.system.transactions_per_second")
+	m.data.SetDescription("User Transaction Per Sec")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemTransactionsPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemTransactionsPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemTransactionsPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemTransactionsPerSecond(cfg MetricConfig) metricNewrelicoracledbSystemTransactionsPerSecond {
+	m := metricNewrelicoracledbSystemTransactionsPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemUserCallsPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.user_calls_per_second metric with initial data.
+func (m *metricNewrelicoracledbSystemUserCallsPerSecond) init() {
+	m.data.SetName("newrelicoracledb.system.user_calls_per_second")
+	m.data.SetDescription("User Calls Per Sec")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemUserCallsPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemUserCallsPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemUserCallsPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemUserCallsPerSecond(cfg MetricConfig) metricNewrelicoracledbSystemUserCallsPerSecond {
+	m := metricNewrelicoracledbSystemUserCallsPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemUserCallsPerTransaction struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.user_calls_per_transaction metric with initial data.
+func (m *metricNewrelicoracledbSystemUserCallsPerTransaction) init() {
+	m.data.SetName("newrelicoracledb.system.user_calls_per_transaction")
+	m.data.SetDescription("User Calls Per Txn")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemUserCallsPerTransaction) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemUserCallsPerTransaction) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemUserCallsPerTransaction) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemUserCallsPerTransaction(cfg MetricConfig) metricNewrelicoracledbSystemUserCallsPerTransaction {
+	m := metricNewrelicoracledbSystemUserCallsPerTransaction{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemUserCallsRatio struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.user_calls_ratio metric with initial data.
+func (m *metricNewrelicoracledbSystemUserCallsRatio) init() {
+	m.data.SetName("newrelicoracledb.system.user_calls_ratio")
+	m.data.SetDescription("User Calls Ratio")
+	m.data.SetUnit("%")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemUserCallsRatio) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemUserCallsRatio) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemUserCallsRatio) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemUserCallsRatio(cfg MetricConfig) metricNewrelicoracledbSystemUserCallsRatio {
+	m := metricNewrelicoracledbSystemUserCallsRatio{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemUserCommitsPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.user_commits_per_second metric with initial data.
+func (m *metricNewrelicoracledbSystemUserCommitsPerSecond) init() {
+	m.data.SetName("newrelicoracledb.system.user_commits_per_second")
+	m.data.SetDescription("User Commits Per Sec")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemUserCommitsPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemUserCommitsPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemUserCommitsPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemUserCommitsPerSecond(cfg MetricConfig) metricNewrelicoracledbSystemUserCommitsPerSecond {
+	m := metricNewrelicoracledbSystemUserCommitsPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemUserCommitsPercentage struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.user_commits_percentage metric with initial data.
+func (m *metricNewrelicoracledbSystemUserCommitsPercentage) init() {
+	m.data.SetName("newrelicoracledb.system.user_commits_percentage")
+	m.data.SetDescription("User Commits Percentage")
+	m.data.SetUnit("%")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemUserCommitsPercentage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemUserCommitsPercentage) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemUserCommitsPercentage) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemUserCommitsPercentage(cfg MetricConfig) metricNewrelicoracledbSystemUserCommitsPercentage {
+	m := metricNewrelicoracledbSystemUserCommitsPercentage{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemUserLimitPercentage struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.user_limit_percentage metric with initial data.
+func (m *metricNewrelicoracledbSystemUserLimitPercentage) init() {
+	m.data.SetName("newrelicoracledb.system.user_limit_percentage")
+	m.data.SetDescription("User Limit %")
+	m.data.SetUnit("%")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemUserLimitPercentage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemUserLimitPercentage) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemUserLimitPercentage) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemUserLimitPercentage(cfg MetricConfig) metricNewrelicoracledbSystemUserLimitPercentage {
+	m := metricNewrelicoracledbSystemUserLimitPercentage{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemUserRollbackUndoRecordsAppliedPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.user_rollback_undo_records_applied_per_second metric with initial data.
+func (m *metricNewrelicoracledbSystemUserRollbackUndoRecordsAppliedPerSecond) init() {
+	m.data.SetName("newrelicoracledb.system.user_rollback_undo_records_applied_per_second")
+	m.data.SetDescription("User Rollback UndoRec Applied Per Sec")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemUserRollbackUndoRecordsAppliedPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemUserRollbackUndoRecordsAppliedPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemUserRollbackUndoRecordsAppliedPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemUserRollbackUndoRecordsAppliedPerSecond(cfg MetricConfig) metricNewrelicoracledbSystemUserRollbackUndoRecordsAppliedPerSecond {
+	m := metricNewrelicoracledbSystemUserRollbackUndoRecordsAppliedPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemUserRollbackUndoRecordsAppliedPerTransaction struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.user_rollback_undo_records_applied_per_transaction metric with initial data.
+func (m *metricNewrelicoracledbSystemUserRollbackUndoRecordsAppliedPerTransaction) init() {
+	m.data.SetName("newrelicoracledb.system.user_rollback_undo_records_applied_per_transaction")
+	m.data.SetDescription("User Rollback Undo Records Applied Per Txn")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemUserRollbackUndoRecordsAppliedPerTransaction) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemUserRollbackUndoRecordsAppliedPerTransaction) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemUserRollbackUndoRecordsAppliedPerTransaction) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemUserRollbackUndoRecordsAppliedPerTransaction(cfg MetricConfig) metricNewrelicoracledbSystemUserRollbackUndoRecordsAppliedPerTransaction {
+	m := metricNewrelicoracledbSystemUserRollbackUndoRecordsAppliedPerTransaction{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemUserRollbacksPerSecond struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.user_rollbacks_per_second metric with initial data.
+func (m *metricNewrelicoracledbSystemUserRollbacksPerSecond) init() {
+	m.data.SetName("newrelicoracledb.system.user_rollbacks_per_second")
+	m.data.SetDescription("User Rollbacks Per Sec")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemUserRollbacksPerSecond) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemUserRollbacksPerSecond) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemUserRollbacksPerSecond) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemUserRollbacksPerSecond(cfg MetricConfig) metricNewrelicoracledbSystemUserRollbacksPerSecond {
+	m := metricNewrelicoracledbSystemUserRollbacksPerSecond{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbSystemUserRollbacksPercentage struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.system.user_rollbacks_percentage metric with initial data.
+func (m *metricNewrelicoracledbSystemUserRollbacksPercentage) init() {
+	m.data.SetName("newrelicoracledb.system.user_rollbacks_percentage")
+	m.data.SetDescription("User Rollbacks Percentage")
+	m.data.SetUnit("%")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbSystemUserRollbacksPercentage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("instance.id", instanceIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbSystemUserRollbacksPercentage) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbSystemUserRollbacksPercentage) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbSystemUserRollbacksPercentage(cfg MetricConfig) metricNewrelicoracledbSystemUserRollbacksPercentage {
+	m := metricNewrelicoracledbSystemUserRollbacksPercentage{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -640,24 +13410,252 @@ func newMetricNewrelicoracledbTablespaceSpaceUsedPercentage(cfg MetricConfig) me
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	config                                              MetricsBuilderConfig // config of the metrics builder.
-	startTime                                           pcommon.Timestamp    // start time that will be applied to all recorded data points.
-	metricsCapacity                                     int                  // maximum observed number of metrics per resource.
-	metricsBuffer                                       pmetric.Metrics      // accumulates metrics data before emitting.
-	buildInfo                                           component.BuildInfo  // contains version information.
-	resourceAttributeIncludeFilter                      map[string]filter.Filter
-	resourceAttributeExcludeFilter                      map[string]filter.Filter
-	metricNewrelicoracledbLockedAccounts                metricNewrelicoracledbLockedAccounts
-	metricNewrelicoracledbSessionsCount                 metricNewrelicoracledbSessionsCount
-	metricNewrelicoracledbTablespaceDbID                metricNewrelicoracledbTablespaceDbID
-	metricNewrelicoracledbTablespaceGlobalName          metricNewrelicoracledbTablespaceGlobalName
-	metricNewrelicoracledbTablespaceIsOffline           metricNewrelicoracledbTablespaceIsOffline
-	metricNewrelicoracledbTablespaceOfflineCdbDatafiles metricNewrelicoracledbTablespaceOfflineCdbDatafiles
-	metricNewrelicoracledbTablespaceOfflinePdbDatafiles metricNewrelicoracledbTablespaceOfflinePdbDatafiles
-	metricNewrelicoracledbTablespacePdbNonWriteMode     metricNewrelicoracledbTablespacePdbNonWriteMode
-	metricNewrelicoracledbTablespaceSpaceConsumedBytes  metricNewrelicoracledbTablespaceSpaceConsumedBytes
-	metricNewrelicoracledbTablespaceSpaceReservedBytes  metricNewrelicoracledbTablespaceSpaceReservedBytes
-	metricNewrelicoracledbTablespaceSpaceUsedPercentage metricNewrelicoracledbTablespaceSpaceUsedPercentage
+	config                                                                   MetricsBuilderConfig // config of the metrics builder.
+	startTime                                                                pcommon.Timestamp    // start time that will be applied to all recorded data points.
+	metricsCapacity                                                          int                  // maximum observed number of metrics per resource.
+	metricsBuffer                                                            pmetric.Metrics      // accumulates metrics data before emitting.
+	buildInfo                                                                component.BuildInfo  // contains version information.
+	resourceAttributeIncludeFilter                                           map[string]filter.Filter
+	resourceAttributeExcludeFilter                                           map[string]filter.Filter
+	metricNewrelicoracledbDbID                                               metricNewrelicoracledbDbID
+	metricNewrelicoracledbDiskBlocksRead                                     metricNewrelicoracledbDiskBlocksRead
+	metricNewrelicoracledbDiskBlocksWritten                                  metricNewrelicoracledbDiskBlocksWritten
+	metricNewrelicoracledbDiskReadTimeMilliseconds                           metricNewrelicoracledbDiskReadTimeMilliseconds
+	metricNewrelicoracledbDiskReads                                          metricNewrelicoracledbDiskReads
+	metricNewrelicoracledbDiskWriteTimeMilliseconds                          metricNewrelicoracledbDiskWriteTimeMilliseconds
+	metricNewrelicoracledbDiskWrites                                         metricNewrelicoracledbDiskWrites
+	metricNewrelicoracledbGlobalName                                         metricNewrelicoracledbGlobalName
+	metricNewrelicoracledbLockedAccounts                                     metricNewrelicoracledbLockedAccounts
+	metricNewrelicoracledbLongRunningQueries                                 metricNewrelicoracledbLongRunningQueries
+	metricNewrelicoracledbMemoryPgaAllocatedBytes                            metricNewrelicoracledbMemoryPgaAllocatedBytes
+	metricNewrelicoracledbMemoryPgaFreeableBytes                             metricNewrelicoracledbMemoryPgaFreeableBytes
+	metricNewrelicoracledbMemoryPgaInUseBytes                                metricNewrelicoracledbMemoryPgaInUseBytes
+	metricNewrelicoracledbMemoryPgaMaxSizeBytes                              metricNewrelicoracledbMemoryPgaMaxSizeBytes
+	metricNewrelicoracledbMemorySgaSharedPoolLibraryCacheSharableBytes       metricNewrelicoracledbMemorySgaSharedPoolLibraryCacheSharableBytes
+	metricNewrelicoracledbMemorySgaSharedPoolLibraryCacheUserBytes           metricNewrelicoracledbMemorySgaSharedPoolLibraryCacheUserBytes
+	metricNewrelicoracledbMemorySgaUgaTotalBytes                             metricNewrelicoracledbMemorySgaUgaTotalBytes
+	metricNewrelicoracledbPdbActiveParallelSessions                          metricNewrelicoracledbPdbActiveParallelSessions
+	metricNewrelicoracledbPdbActiveSerialSessions                            metricNewrelicoracledbPdbActiveSerialSessions
+	metricNewrelicoracledbPdbAverageActiveSessions                           metricNewrelicoracledbPdbAverageActiveSessions
+	metricNewrelicoracledbPdbBackgroundCPUUsagePerSecond                     metricNewrelicoracledbPdbBackgroundCPUUsagePerSecond
+	metricNewrelicoracledbPdbBackgroundTimePerSecond                         metricNewrelicoracledbPdbBackgroundTimePerSecond
+	metricNewrelicoracledbPdbBlockChangesPerSecond                           metricNewrelicoracledbPdbBlockChangesPerSecond
+	metricNewrelicoracledbPdbBlockChangesPerTransaction                      metricNewrelicoracledbPdbBlockChangesPerTransaction
+	metricNewrelicoracledbPdbCPUTimeRatio                                    metricNewrelicoracledbPdbCPUTimeRatio
+	metricNewrelicoracledbPdbCPUUsagePerSecond                               metricNewrelicoracledbPdbCPUUsagePerSecond
+	metricNewrelicoracledbPdbCPUUsagePerTransaction                          metricNewrelicoracledbPdbCPUUsagePerTransaction
+	metricNewrelicoracledbPdbCurrentLogons                                   metricNewrelicoracledbPdbCurrentLogons
+	metricNewrelicoracledbPdbCurrentOpenCursors                              metricNewrelicoracledbPdbCurrentOpenCursors
+	metricNewrelicoracledbPdbDbPhysicalReadBytesPerSecond                    metricNewrelicoracledbPdbDbPhysicalReadBytesPerSecond
+	metricNewrelicoracledbPdbDbPhysicalReadsPerSecond                        metricNewrelicoracledbPdbDbPhysicalReadsPerSecond
+	metricNewrelicoracledbPdbDbPhysicalWriteBytesPerSecond                   metricNewrelicoracledbPdbDbPhysicalWriteBytesPerSecond
+	metricNewrelicoracledbPdbDbPhysicalWritesPerSecond                       metricNewrelicoracledbPdbDbPhysicalWritesPerSecond
+	metricNewrelicoracledbPdbExecuteWithoutParseRatio                        metricNewrelicoracledbPdbExecuteWithoutParseRatio
+	metricNewrelicoracledbPdbExecutionsPerSecond                             metricNewrelicoracledbPdbExecutionsPerSecond
+	metricNewrelicoracledbPdbExecutionsPerTransaction                        metricNewrelicoracledbPdbExecutionsPerTransaction
+	metricNewrelicoracledbPdbHardParseCountPerSecond                         metricNewrelicoracledbPdbHardParseCountPerSecond
+	metricNewrelicoracledbPdbHardParseCountPerTransaction                    metricNewrelicoracledbPdbHardParseCountPerTransaction
+	metricNewrelicoracledbPdbLogicalReadsPerSecond                           metricNewrelicoracledbPdbLogicalReadsPerSecond
+	metricNewrelicoracledbPdbLogicalReadsPerTransaction                      metricNewrelicoracledbPdbLogicalReadsPerTransaction
+	metricNewrelicoracledbPdbLogonsPerSecond                                 metricNewrelicoracledbPdbLogonsPerSecond
+	metricNewrelicoracledbPdbLogonsPerTransaction                            metricNewrelicoracledbPdbLogonsPerTransaction
+	metricNewrelicoracledbPdbNetworkTrafficBytePerSecond                     metricNewrelicoracledbPdbNetworkTrafficBytePerSecond
+	metricNewrelicoracledbPdbOpenCursorsPerSecond                            metricNewrelicoracledbPdbOpenCursorsPerSecond
+	metricNewrelicoracledbPdbOpenCursorsPerTransaction                       metricNewrelicoracledbPdbOpenCursorsPerTransaction
+	metricNewrelicoracledbPdbParseFailureCountPerSecond                      metricNewrelicoracledbPdbParseFailureCountPerSecond
+	metricNewrelicoracledbPdbPhysicalReadBytesPerSecond                      metricNewrelicoracledbPdbPhysicalReadBytesPerSecond
+	metricNewrelicoracledbPdbPhysicalReadsPerTransaction                     metricNewrelicoracledbPdbPhysicalReadsPerTransaction
+	metricNewrelicoracledbPdbPhysicalWriteBytesPerSecond                     metricNewrelicoracledbPdbPhysicalWriteBytesPerSecond
+	metricNewrelicoracledbPdbPhysicalWritesPerTransaction                    metricNewrelicoracledbPdbPhysicalWritesPerTransaction
+	metricNewrelicoracledbPdbRedoGeneratedBytesPerSecond                     metricNewrelicoracledbPdbRedoGeneratedBytesPerSecond
+	metricNewrelicoracledbPdbRedoGeneratedBytesPerTransaction                metricNewrelicoracledbPdbRedoGeneratedBytesPerTransaction
+	metricNewrelicoracledbPdbResponseTimePerTransaction                      metricNewrelicoracledbPdbResponseTimePerTransaction
+	metricNewrelicoracledbPdbSessionCount                                    metricNewrelicoracledbPdbSessionCount
+	metricNewrelicoracledbPdbSoftParseRatio                                  metricNewrelicoracledbPdbSoftParseRatio
+	metricNewrelicoracledbPdbSQLServiceResponseTime                          metricNewrelicoracledbPdbSQLServiceResponseTime
+	metricNewrelicoracledbPdbTotalParseCountPerSecond                        metricNewrelicoracledbPdbTotalParseCountPerSecond
+	metricNewrelicoracledbPdbTotalParseCountPerTransaction                   metricNewrelicoracledbPdbTotalParseCountPerTransaction
+	metricNewrelicoracledbPdbTransactionsPerSecond                           metricNewrelicoracledbPdbTransactionsPerSecond
+	metricNewrelicoracledbPdbUserCallsPerSecond                              metricNewrelicoracledbPdbUserCallsPerSecond
+	metricNewrelicoracledbPdbUserCallsPerTransaction                         metricNewrelicoracledbPdbUserCallsPerTransaction
+	metricNewrelicoracledbPdbUserCommitsPerSecond                            metricNewrelicoracledbPdbUserCommitsPerSecond
+	metricNewrelicoracledbPdbUserCommitsPercentage                           metricNewrelicoracledbPdbUserCommitsPercentage
+	metricNewrelicoracledbPdbUserRollbacksPerSecond                          metricNewrelicoracledbPdbUserRollbacksPerSecond
+	metricNewrelicoracledbPdbUserRollbacksPercentage                         metricNewrelicoracledbPdbUserRollbacksPercentage
+	metricNewrelicoracledbPdbWaitTimeRatio                                   metricNewrelicoracledbPdbWaitTimeRatio
+	metricNewrelicoracledbRedoLogParallelWriteWaits                          metricNewrelicoracledbRedoLogParallelWriteWaits
+	metricNewrelicoracledbRedoLogSwitchArchivingNeededWaits                  metricNewrelicoracledbRedoLogSwitchArchivingNeededWaits
+	metricNewrelicoracledbRedoLogSwitchCheckpointIncompleteWaits             metricNewrelicoracledbRedoLogSwitchCheckpointIncompleteWaits
+	metricNewrelicoracledbRedoLogSwitchCompletionWaits                       metricNewrelicoracledbRedoLogSwitchCompletionWaits
+	metricNewrelicoracledbRollbackSegmentsGets                               metricNewrelicoracledbRollbackSegmentsGets
+	metricNewrelicoracledbRollbackSegmentsWaitRatio                          metricNewrelicoracledbRollbackSegmentsWaitRatio
+	metricNewrelicoracledbRollbackSegmentsWaits                              metricNewrelicoracledbRollbackSegmentsWaits
+	metricNewrelicoracledbSessionsCount                                      metricNewrelicoracledbSessionsCount
+	metricNewrelicoracledbSgaBufferBusyWaits                                 metricNewrelicoracledbSgaBufferBusyWaits
+	metricNewrelicoracledbSgaFixedSizeBytes                                  metricNewrelicoracledbSgaFixedSizeBytes
+	metricNewrelicoracledbSgaFreeBufferInspectedWaits                        metricNewrelicoracledbSgaFreeBufferInspectedWaits
+	metricNewrelicoracledbSgaFreeBufferWaits                                 metricNewrelicoracledbSgaFreeBufferWaits
+	metricNewrelicoracledbSgaHitRatio                                        metricNewrelicoracledbSgaHitRatio
+	metricNewrelicoracledbSgaLogAllocationRetriesRatio                       metricNewrelicoracledbSgaLogAllocationRetriesRatio
+	metricNewrelicoracledbSgaLogBufferRedoAllocationRetries                  metricNewrelicoracledbSgaLogBufferRedoAllocationRetries
+	metricNewrelicoracledbSgaLogBufferRedoEntries                            metricNewrelicoracledbSgaLogBufferRedoEntries
+	metricNewrelicoracledbSgaLogBufferSpaceWaits                             metricNewrelicoracledbSgaLogBufferSpaceWaits
+	metricNewrelicoracledbSgaRedoBuffersBytes                                metricNewrelicoracledbSgaRedoBuffersBytes
+	metricNewrelicoracledbSgaSharedPoolDictCacheMissRatio                    metricNewrelicoracledbSgaSharedPoolDictCacheMissRatio
+	metricNewrelicoracledbSgaSharedPoolLibraryCacheHitRatio                  metricNewrelicoracledbSgaSharedPoolLibraryCacheHitRatio
+	metricNewrelicoracledbSgaSharedPoolLibraryCacheReloadRatio               metricNewrelicoracledbSgaSharedPoolLibraryCacheReloadRatio
+	metricNewrelicoracledbSortsDisk                                          metricNewrelicoracledbSortsDisk
+	metricNewrelicoracledbSortsMemory                                        metricNewrelicoracledbSortsMemory
+	metricNewrelicoracledbSystemActiveParallelSessions                       metricNewrelicoracledbSystemActiveParallelSessions
+	metricNewrelicoracledbSystemActiveSerialSessions                         metricNewrelicoracledbSystemActiveSerialSessions
+	metricNewrelicoracledbSystemAverageActiveSessions                        metricNewrelicoracledbSystemAverageActiveSessions
+	metricNewrelicoracledbSystemBackgroundCheckpointsPerSecond               metricNewrelicoracledbSystemBackgroundCheckpointsPerSecond
+	metricNewrelicoracledbSystemBackgroundCPUUsagePerSecond                  metricNewrelicoracledbSystemBackgroundCPUUsagePerSecond
+	metricNewrelicoracledbSystemBackgroundTimePerSecond                      metricNewrelicoracledbSystemBackgroundTimePerSecond
+	metricNewrelicoracledbSystemBranchNodeSplitsPerSecond                    metricNewrelicoracledbSystemBranchNodeSplitsPerSecond
+	metricNewrelicoracledbSystemBranchNodeSplitsPerTransaction               metricNewrelicoracledbSystemBranchNodeSplitsPerTransaction
+	metricNewrelicoracledbSystemBufferCacheHitRatio                          metricNewrelicoracledbSystemBufferCacheHitRatio
+	metricNewrelicoracledbSystemCapturedUserCalls                            metricNewrelicoracledbSystemCapturedUserCalls
+	metricNewrelicoracledbSystemConsistentReadChangesPerSecond               metricNewrelicoracledbSystemConsistentReadChangesPerSecond
+	metricNewrelicoracledbSystemConsistentReadChangesPerTransaction          metricNewrelicoracledbSystemConsistentReadChangesPerTransaction
+	metricNewrelicoracledbSystemConsistentReadGetsPerSecond                  metricNewrelicoracledbSystemConsistentReadGetsPerSecond
+	metricNewrelicoracledbSystemConsistentReadGetsPerTransaction             metricNewrelicoracledbSystemConsistentReadGetsPerTransaction
+	metricNewrelicoracledbSystemCPUUsagePerSecond                            metricNewrelicoracledbSystemCPUUsagePerSecond
+	metricNewrelicoracledbSystemCPUUsagePerTransaction                       metricNewrelicoracledbSystemCPUUsagePerTransaction
+	metricNewrelicoracledbSystemCrBlocksCreatedPerSecond                     metricNewrelicoracledbSystemCrBlocksCreatedPerSecond
+	metricNewrelicoracledbSystemCrBlocksCreatedPerTransaction                metricNewrelicoracledbSystemCrBlocksCreatedPerTransaction
+	metricNewrelicoracledbSystemCrUndoRecordsAppliedPerSecond                metricNewrelicoracledbSystemCrUndoRecordsAppliedPerSecond
+	metricNewrelicoracledbSystemCrUndoRecordsAppliedPerTransaction           metricNewrelicoracledbSystemCrUndoRecordsAppliedPerTransaction
+	metricNewrelicoracledbSystemCurrentLogonsCount                           metricNewrelicoracledbSystemCurrentLogonsCount
+	metricNewrelicoracledbSystemCurrentOpenCursorsCount                      metricNewrelicoracledbSystemCurrentOpenCursorsCount
+	metricNewrelicoracledbSystemCurrentOsLoad                                metricNewrelicoracledbSystemCurrentOsLoad
+	metricNewrelicoracledbSystemCursorCacheHitRatio                          metricNewrelicoracledbSystemCursorCacheHitRatio
+	metricNewrelicoracledbSystemDatabaseCPUTimeRatio                         metricNewrelicoracledbSystemDatabaseCPUTimeRatio
+	metricNewrelicoracledbSystemDatabaseTimePerSecond                        metricNewrelicoracledbSystemDatabaseTimePerSecond
+	metricNewrelicoracledbSystemDatabaseWaitTimeRatio                        metricNewrelicoracledbSystemDatabaseWaitTimeRatio
+	metricNewrelicoracledbSystemDbBlockChangesPerSecond                      metricNewrelicoracledbSystemDbBlockChangesPerSecond
+	metricNewrelicoracledbSystemDbBlockChangesPerTransaction                 metricNewrelicoracledbSystemDbBlockChangesPerTransaction
+	metricNewrelicoracledbSystemDbBlockChangesPerUserCall                    metricNewrelicoracledbSystemDbBlockChangesPerUserCall
+	metricNewrelicoracledbSystemDbBlockGetsPerSecond                         metricNewrelicoracledbSystemDbBlockGetsPerSecond
+	metricNewrelicoracledbSystemDbBlockGetsPerTransaction                    metricNewrelicoracledbSystemDbBlockGetsPerTransaction
+	metricNewrelicoracledbSystemDbBlockGetsPerUserCall                       metricNewrelicoracledbSystemDbBlockGetsPerUserCall
+	metricNewrelicoracledbSystemDbwrCheckpointsPerSecond                     metricNewrelicoracledbSystemDbwrCheckpointsPerSecond
+	metricNewrelicoracledbSystemDiskSortPerSecond                            metricNewrelicoracledbSystemDiskSortPerSecond
+	metricNewrelicoracledbSystemDiskSortPerTransaction                       metricNewrelicoracledbSystemDiskSortPerTransaction
+	metricNewrelicoracledbSystemEnqueueDeadlocksPerSecond                    metricNewrelicoracledbSystemEnqueueDeadlocksPerSecond
+	metricNewrelicoracledbSystemEnqueueDeadlocksPerTransaction               metricNewrelicoracledbSystemEnqueueDeadlocksPerTransaction
+	metricNewrelicoracledbSystemEnqueueRequestsPerSecond                     metricNewrelicoracledbSystemEnqueueRequestsPerSecond
+	metricNewrelicoracledbSystemEnqueueRequestsPerTransaction                metricNewrelicoracledbSystemEnqueueRequestsPerTransaction
+	metricNewrelicoracledbSystemEnqueueTimeoutsPerSecond                     metricNewrelicoracledbSystemEnqueueTimeoutsPerSecond
+	metricNewrelicoracledbSystemEnqueueTimeoutsPerTransaction                metricNewrelicoracledbSystemEnqueueTimeoutsPerTransaction
+	metricNewrelicoracledbSystemEnqueueWaitsPerSecond                        metricNewrelicoracledbSystemEnqueueWaitsPerSecond
+	metricNewrelicoracledbSystemEnqueueWaitsPerTransaction                   metricNewrelicoracledbSystemEnqueueWaitsPerTransaction
+	metricNewrelicoracledbSystemExecuteWithoutParseRatio                     metricNewrelicoracledbSystemExecuteWithoutParseRatio
+	metricNewrelicoracledbSystemExecutionsPerSecond                          metricNewrelicoracledbSystemExecutionsPerSecond
+	metricNewrelicoracledbSystemExecutionsPerTransaction                     metricNewrelicoracledbSystemExecutionsPerTransaction
+	metricNewrelicoracledbSystemExecutionsPerUserCall                        metricNewrelicoracledbSystemExecutionsPerUserCall
+	metricNewrelicoracledbSystemFullIndexScansPerSecond                      metricNewrelicoracledbSystemFullIndexScansPerSecond
+	metricNewrelicoracledbSystemFullIndexScansPerTransaction                 metricNewrelicoracledbSystemFullIndexScansPerTransaction
+	metricNewrelicoracledbSystemGcCrBlockReceivedPerSecond                   metricNewrelicoracledbSystemGcCrBlockReceivedPerSecond
+	metricNewrelicoracledbSystemGcCrBlockReceivedPerTransaction              metricNewrelicoracledbSystemGcCrBlockReceivedPerTransaction
+	metricNewrelicoracledbSystemGcCurrentBlockReceivedPerSecond              metricNewrelicoracledbSystemGcCurrentBlockReceivedPerSecond
+	metricNewrelicoracledbSystemGcCurrentBlockReceivedPerTransaction         metricNewrelicoracledbSystemGcCurrentBlockReceivedPerTransaction
+	metricNewrelicoracledbSystemGlobalCacheAverageCrGetTime                  metricNewrelicoracledbSystemGlobalCacheAverageCrGetTime
+	metricNewrelicoracledbSystemGlobalCacheAverageCurrentGetTime             metricNewrelicoracledbSystemGlobalCacheAverageCurrentGetTime
+	metricNewrelicoracledbSystemGlobalCacheBlocksCorrupted                   metricNewrelicoracledbSystemGlobalCacheBlocksCorrupted
+	metricNewrelicoracledbSystemGlobalCacheBlocksLost                        metricNewrelicoracledbSystemGlobalCacheBlocksLost
+	metricNewrelicoracledbSystemHardParseCountPerSecond                      metricNewrelicoracledbSystemHardParseCountPerSecond
+	metricNewrelicoracledbSystemHardParseCountPerTransaction                 metricNewrelicoracledbSystemHardParseCountPerTransaction
+	metricNewrelicoracledbSystemHostCPUUsagePerSecond                        metricNewrelicoracledbSystemHostCPUUsagePerSecond
+	metricNewrelicoracledbSystemHostCPUUtilization                           metricNewrelicoracledbSystemHostCPUUtilization
+	metricNewrelicoracledbSystemIoMegabytesPerSecond                         metricNewrelicoracledbSystemIoMegabytesPerSecond
+	metricNewrelicoracledbSystemIoRequestsPerSecond                          metricNewrelicoracledbSystemIoRequestsPerSecond
+	metricNewrelicoracledbSystemLeafNodeSplitsPerSecond                      metricNewrelicoracledbSystemLeafNodeSplitsPerSecond
+	metricNewrelicoracledbSystemLeafNodeSplitsPerTransaction                 metricNewrelicoracledbSystemLeafNodeSplitsPerTransaction
+	metricNewrelicoracledbSystemLibraryCacheHitRatio                         metricNewrelicoracledbSystemLibraryCacheHitRatio
+	metricNewrelicoracledbSystemLibraryCacheMissRatio                        metricNewrelicoracledbSystemLibraryCacheMissRatio
+	metricNewrelicoracledbSystemLogicalReadsPerSecond                        metricNewrelicoracledbSystemLogicalReadsPerSecond
+	metricNewrelicoracledbSystemLogicalReadsPerTransaction                   metricNewrelicoracledbSystemLogicalReadsPerTransaction
+	metricNewrelicoracledbSystemLogicalReadsPerUserCall                      metricNewrelicoracledbSystemLogicalReadsPerUserCall
+	metricNewrelicoracledbSystemLogonsPerSecond                              metricNewrelicoracledbSystemLogonsPerSecond
+	metricNewrelicoracledbSystemLogonsPerTransaction                         metricNewrelicoracledbSystemLogonsPerTransaction
+	metricNewrelicoracledbSystemLongTableScansPerSecond                      metricNewrelicoracledbSystemLongTableScansPerSecond
+	metricNewrelicoracledbSystemLongTableScansPerTransaction                 metricNewrelicoracledbSystemLongTableScansPerTransaction
+	metricNewrelicoracledbSystemMemorySortsRatio                             metricNewrelicoracledbSystemMemorySortsRatio
+	metricNewrelicoracledbSystemNetworkTrafficVolumePerSecond                metricNewrelicoracledbSystemNetworkTrafficVolumePerSecond
+	metricNewrelicoracledbSystemOpenCursorsPerSecond                         metricNewrelicoracledbSystemOpenCursorsPerSecond
+	metricNewrelicoracledbSystemOpenCursorsPerTransaction                    metricNewrelicoracledbSystemOpenCursorsPerTransaction
+	metricNewrelicoracledbSystemParseFailureCountPerSecond                   metricNewrelicoracledbSystemParseFailureCountPerSecond
+	metricNewrelicoracledbSystemParseFailureCountPerTransaction              metricNewrelicoracledbSystemParseFailureCountPerTransaction
+	metricNewrelicoracledbSystemPgaCacheHitPercentage                        metricNewrelicoracledbSystemPgaCacheHitPercentage
+	metricNewrelicoracledbSystemPhysicalLobsReadsPerSecond                   metricNewrelicoracledbSystemPhysicalLobsReadsPerSecond
+	metricNewrelicoracledbSystemPhysicalLobsReadsPerTransaction              metricNewrelicoracledbSystemPhysicalLobsReadsPerTransaction
+	metricNewrelicoracledbSystemPhysicalLobsWritesPerSecond                  metricNewrelicoracledbSystemPhysicalLobsWritesPerSecond
+	metricNewrelicoracledbSystemPhysicalLobsWritesPerTransaction             metricNewrelicoracledbSystemPhysicalLobsWritesPerTransaction
+	metricNewrelicoracledbSystemPhysicalReadBytesPerSecond                   metricNewrelicoracledbSystemPhysicalReadBytesPerSecond
+	metricNewrelicoracledbSystemPhysicalReadIoRequestsPerSecond              metricNewrelicoracledbSystemPhysicalReadIoRequestsPerSecond
+	metricNewrelicoracledbSystemPhysicalReadTotalBytesPerSecond              metricNewrelicoracledbSystemPhysicalReadTotalBytesPerSecond
+	metricNewrelicoracledbSystemPhysicalReadTotalIoRequestsPerSecond         metricNewrelicoracledbSystemPhysicalReadTotalIoRequestsPerSecond
+	metricNewrelicoracledbSystemPhysicalReadsDirectPerSecond                 metricNewrelicoracledbSystemPhysicalReadsDirectPerSecond
+	metricNewrelicoracledbSystemPhysicalReadsDirectPerTransaction            metricNewrelicoracledbSystemPhysicalReadsDirectPerTransaction
+	metricNewrelicoracledbSystemPhysicalReadsPerSecond                       metricNewrelicoracledbSystemPhysicalReadsPerSecond
+	metricNewrelicoracledbSystemPhysicalReadsPerTransaction                  metricNewrelicoracledbSystemPhysicalReadsPerTransaction
+	metricNewrelicoracledbSystemPhysicalWriteBytesPerSecond                  metricNewrelicoracledbSystemPhysicalWriteBytesPerSecond
+	metricNewrelicoracledbSystemPhysicalWriteIoRequestsPerSecond             metricNewrelicoracledbSystemPhysicalWriteIoRequestsPerSecond
+	metricNewrelicoracledbSystemPhysicalWriteTotalBytesPerSecond             metricNewrelicoracledbSystemPhysicalWriteTotalBytesPerSecond
+	metricNewrelicoracledbSystemPhysicalWriteTotalIoRequestsPerSecond        metricNewrelicoracledbSystemPhysicalWriteTotalIoRequestsPerSecond
+	metricNewrelicoracledbSystemPhysicalWritesDirectPerSecond                metricNewrelicoracledbSystemPhysicalWritesDirectPerSecond
+	metricNewrelicoracledbSystemPhysicalWritesDirectPerTransaction           metricNewrelicoracledbSystemPhysicalWritesDirectPerTransaction
+	metricNewrelicoracledbSystemPhysicalWritesPerSecond                      metricNewrelicoracledbSystemPhysicalWritesPerSecond
+	metricNewrelicoracledbSystemPhysicalWritesPerTransaction                 metricNewrelicoracledbSystemPhysicalWritesPerTransaction
+	metricNewrelicoracledbSystemProcessLimitPercentage                       metricNewrelicoracledbSystemProcessLimitPercentage
+	metricNewrelicoracledbSystemRecursiveCallsPerSecond                      metricNewrelicoracledbSystemRecursiveCallsPerSecond
+	metricNewrelicoracledbSystemRecursiveCallsPerTransaction                 metricNewrelicoracledbSystemRecursiveCallsPerTransaction
+	metricNewrelicoracledbSystemRedoAllocationHitRatio                       metricNewrelicoracledbSystemRedoAllocationHitRatio
+	metricNewrelicoracledbSystemRedoGeneratedBytesPerSecond                  metricNewrelicoracledbSystemRedoGeneratedBytesPerSecond
+	metricNewrelicoracledbSystemRedoGeneratedBytesPerTransaction             metricNewrelicoracledbSystemRedoGeneratedBytesPerTransaction
+	metricNewrelicoracledbSystemRedoWritesPerSecond                          metricNewrelicoracledbSystemRedoWritesPerSecond
+	metricNewrelicoracledbSystemRedoWritesPerTransaction                     metricNewrelicoracledbSystemRedoWritesPerTransaction
+	metricNewrelicoracledbSystemResponseTimePerTransaction                   metricNewrelicoracledbSystemResponseTimePerTransaction
+	metricNewrelicoracledbSystemRowCacheHitRatio                             metricNewrelicoracledbSystemRowCacheHitRatio
+	metricNewrelicoracledbSystemRowCacheMissRatio                            metricNewrelicoracledbSystemRowCacheMissRatio
+	metricNewrelicoracledbSystemRowsPerSort                                  metricNewrelicoracledbSystemRowsPerSort
+	metricNewrelicoracledbSystemSessionCount                                 metricNewrelicoracledbSystemSessionCount
+	metricNewrelicoracledbSystemSessionLimitPercentage                       metricNewrelicoracledbSystemSessionLimitPercentage
+	metricNewrelicoracledbSystemSharedPoolFreePercentage                     metricNewrelicoracledbSystemSharedPoolFreePercentage
+	metricNewrelicoracledbSystemSoftParseRatio                               metricNewrelicoracledbSystemSoftParseRatio
+	metricNewrelicoracledbSystemSQLServiceResponseTime                       metricNewrelicoracledbSystemSQLServiceResponseTime
+	metricNewrelicoracledbSystemStreamsPoolUsagePercentage                   metricNewrelicoracledbSystemStreamsPoolUsagePercentage
+	metricNewrelicoracledbSystemTempSpaceUsed                                metricNewrelicoracledbSystemTempSpaceUsed
+	metricNewrelicoracledbSystemTotalIndexScansPerSecond                     metricNewrelicoracledbSystemTotalIndexScansPerSecond
+	metricNewrelicoracledbSystemTotalIndexScansPerTransaction                metricNewrelicoracledbSystemTotalIndexScansPerTransaction
+	metricNewrelicoracledbSystemTotalParseCountPerSecond                     metricNewrelicoracledbSystemTotalParseCountPerSecond
+	metricNewrelicoracledbSystemTotalParseCountPerTransaction                metricNewrelicoracledbSystemTotalParseCountPerTransaction
+	metricNewrelicoracledbSystemTotalSortsPerUserCall                        metricNewrelicoracledbSystemTotalSortsPerUserCall
+	metricNewrelicoracledbSystemTotalTableScansPerSecond                     metricNewrelicoracledbSystemTotalTableScansPerSecond
+	metricNewrelicoracledbSystemTotalTableScansPerTransaction                metricNewrelicoracledbSystemTotalTableScansPerTransaction
+	metricNewrelicoracledbSystemTotalTableScansPerUserCall                   metricNewrelicoracledbSystemTotalTableScansPerUserCall
+	metricNewrelicoracledbSystemTransactionsPerLogon                         metricNewrelicoracledbSystemTransactionsPerLogon
+	metricNewrelicoracledbSystemTransactionsPerSecond                        metricNewrelicoracledbSystemTransactionsPerSecond
+	metricNewrelicoracledbSystemUserCallsPerSecond                           metricNewrelicoracledbSystemUserCallsPerSecond
+	metricNewrelicoracledbSystemUserCallsPerTransaction                      metricNewrelicoracledbSystemUserCallsPerTransaction
+	metricNewrelicoracledbSystemUserCallsRatio                               metricNewrelicoracledbSystemUserCallsRatio
+	metricNewrelicoracledbSystemUserCommitsPerSecond                         metricNewrelicoracledbSystemUserCommitsPerSecond
+	metricNewrelicoracledbSystemUserCommitsPercentage                        metricNewrelicoracledbSystemUserCommitsPercentage
+	metricNewrelicoracledbSystemUserLimitPercentage                          metricNewrelicoracledbSystemUserLimitPercentage
+	metricNewrelicoracledbSystemUserRollbackUndoRecordsAppliedPerSecond      metricNewrelicoracledbSystemUserRollbackUndoRecordsAppliedPerSecond
+	metricNewrelicoracledbSystemUserRollbackUndoRecordsAppliedPerTransaction metricNewrelicoracledbSystemUserRollbackUndoRecordsAppliedPerTransaction
+	metricNewrelicoracledbSystemUserRollbacksPerSecond                       metricNewrelicoracledbSystemUserRollbacksPerSecond
+	metricNewrelicoracledbSystemUserRollbacksPercentage                      metricNewrelicoracledbSystemUserRollbacksPercentage
+	metricNewrelicoracledbTablespaceDbID                                     metricNewrelicoracledbTablespaceDbID
+	metricNewrelicoracledbTablespaceGlobalName                               metricNewrelicoracledbTablespaceGlobalName
+	metricNewrelicoracledbTablespaceIsOffline                                metricNewrelicoracledbTablespaceIsOffline
+	metricNewrelicoracledbTablespaceOfflineCdbDatafiles                      metricNewrelicoracledbTablespaceOfflineCdbDatafiles
+	metricNewrelicoracledbTablespaceOfflinePdbDatafiles                      metricNewrelicoracledbTablespaceOfflinePdbDatafiles
+	metricNewrelicoracledbTablespacePdbNonWriteMode                          metricNewrelicoracledbTablespacePdbNonWriteMode
+	metricNewrelicoracledbTablespaceSpaceConsumedBytes                       metricNewrelicoracledbTablespaceSpaceConsumedBytes
+	metricNewrelicoracledbTablespaceSpaceReservedBytes                       metricNewrelicoracledbTablespaceSpaceReservedBytes
+	metricNewrelicoracledbTablespaceSpaceUsedPercentage                      metricNewrelicoracledbTablespaceSpaceUsedPercentage
 }
 
 // MetricBuilderOption applies changes to default metrics builder.
@@ -679,23 +13677,251 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 }
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		config:                               mbc,
-		startTime:                            pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:                        pmetric.NewMetrics(),
-		buildInfo:                            settings.BuildInfo,
-		metricNewrelicoracledbLockedAccounts: newMetricNewrelicoracledbLockedAccounts(mbc.Metrics.NewrelicoracledbLockedAccounts),
-		metricNewrelicoracledbSessionsCount:  newMetricNewrelicoracledbSessionsCount(mbc.Metrics.NewrelicoracledbSessionsCount),
-		metricNewrelicoracledbTablespaceDbID: newMetricNewrelicoracledbTablespaceDbID(mbc.Metrics.NewrelicoracledbTablespaceDbID),
-		metricNewrelicoracledbTablespaceGlobalName:          newMetricNewrelicoracledbTablespaceGlobalName(mbc.Metrics.NewrelicoracledbTablespaceGlobalName),
-		metricNewrelicoracledbTablespaceIsOffline:           newMetricNewrelicoracledbTablespaceIsOffline(mbc.Metrics.NewrelicoracledbTablespaceIsOffline),
-		metricNewrelicoracledbTablespaceOfflineCdbDatafiles: newMetricNewrelicoracledbTablespaceOfflineCdbDatafiles(mbc.Metrics.NewrelicoracledbTablespaceOfflineCdbDatafiles),
-		metricNewrelicoracledbTablespaceOfflinePdbDatafiles: newMetricNewrelicoracledbTablespaceOfflinePdbDatafiles(mbc.Metrics.NewrelicoracledbTablespaceOfflinePdbDatafiles),
-		metricNewrelicoracledbTablespacePdbNonWriteMode:     newMetricNewrelicoracledbTablespacePdbNonWriteMode(mbc.Metrics.NewrelicoracledbTablespacePdbNonWriteMode),
-		metricNewrelicoracledbTablespaceSpaceConsumedBytes:  newMetricNewrelicoracledbTablespaceSpaceConsumedBytes(mbc.Metrics.NewrelicoracledbTablespaceSpaceConsumedBytes),
-		metricNewrelicoracledbTablespaceSpaceReservedBytes:  newMetricNewrelicoracledbTablespaceSpaceReservedBytes(mbc.Metrics.NewrelicoracledbTablespaceSpaceReservedBytes),
-		metricNewrelicoracledbTablespaceSpaceUsedPercentage: newMetricNewrelicoracledbTablespaceSpaceUsedPercentage(mbc.Metrics.NewrelicoracledbTablespaceSpaceUsedPercentage),
-		resourceAttributeIncludeFilter:                      make(map[string]filter.Filter),
-		resourceAttributeExcludeFilter:                      make(map[string]filter.Filter),
+		config:                                  mbc,
+		startTime:                               pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:                           pmetric.NewMetrics(),
+		buildInfo:                               settings.BuildInfo,
+		metricNewrelicoracledbDbID:              newMetricNewrelicoracledbDbID(mbc.Metrics.NewrelicoracledbDbID),
+		metricNewrelicoracledbDiskBlocksRead:    newMetricNewrelicoracledbDiskBlocksRead(mbc.Metrics.NewrelicoracledbDiskBlocksRead),
+		metricNewrelicoracledbDiskBlocksWritten: newMetricNewrelicoracledbDiskBlocksWritten(mbc.Metrics.NewrelicoracledbDiskBlocksWritten),
+		metricNewrelicoracledbDiskReadTimeMilliseconds:                           newMetricNewrelicoracledbDiskReadTimeMilliseconds(mbc.Metrics.NewrelicoracledbDiskReadTimeMilliseconds),
+		metricNewrelicoracledbDiskReads:                                          newMetricNewrelicoracledbDiskReads(mbc.Metrics.NewrelicoracledbDiskReads),
+		metricNewrelicoracledbDiskWriteTimeMilliseconds:                          newMetricNewrelicoracledbDiskWriteTimeMilliseconds(mbc.Metrics.NewrelicoracledbDiskWriteTimeMilliseconds),
+		metricNewrelicoracledbDiskWrites:                                         newMetricNewrelicoracledbDiskWrites(mbc.Metrics.NewrelicoracledbDiskWrites),
+		metricNewrelicoracledbGlobalName:                                         newMetricNewrelicoracledbGlobalName(mbc.Metrics.NewrelicoracledbGlobalName),
+		metricNewrelicoracledbLockedAccounts:                                     newMetricNewrelicoracledbLockedAccounts(mbc.Metrics.NewrelicoracledbLockedAccounts),
+		metricNewrelicoracledbLongRunningQueries:                                 newMetricNewrelicoracledbLongRunningQueries(mbc.Metrics.NewrelicoracledbLongRunningQueries),
+		metricNewrelicoracledbMemoryPgaAllocatedBytes:                            newMetricNewrelicoracledbMemoryPgaAllocatedBytes(mbc.Metrics.NewrelicoracledbMemoryPgaAllocatedBytes),
+		metricNewrelicoracledbMemoryPgaFreeableBytes:                             newMetricNewrelicoracledbMemoryPgaFreeableBytes(mbc.Metrics.NewrelicoracledbMemoryPgaFreeableBytes),
+		metricNewrelicoracledbMemoryPgaInUseBytes:                                newMetricNewrelicoracledbMemoryPgaInUseBytes(mbc.Metrics.NewrelicoracledbMemoryPgaInUseBytes),
+		metricNewrelicoracledbMemoryPgaMaxSizeBytes:                              newMetricNewrelicoracledbMemoryPgaMaxSizeBytes(mbc.Metrics.NewrelicoracledbMemoryPgaMaxSizeBytes),
+		metricNewrelicoracledbMemorySgaSharedPoolLibraryCacheSharableBytes:       newMetricNewrelicoracledbMemorySgaSharedPoolLibraryCacheSharableBytes(mbc.Metrics.NewrelicoracledbMemorySgaSharedPoolLibraryCacheSharableBytes),
+		metricNewrelicoracledbMemorySgaSharedPoolLibraryCacheUserBytes:           newMetricNewrelicoracledbMemorySgaSharedPoolLibraryCacheUserBytes(mbc.Metrics.NewrelicoracledbMemorySgaSharedPoolLibraryCacheUserBytes),
+		metricNewrelicoracledbMemorySgaUgaTotalBytes:                             newMetricNewrelicoracledbMemorySgaUgaTotalBytes(mbc.Metrics.NewrelicoracledbMemorySgaUgaTotalBytes),
+		metricNewrelicoracledbPdbActiveParallelSessions:                          newMetricNewrelicoracledbPdbActiveParallelSessions(mbc.Metrics.NewrelicoracledbPdbActiveParallelSessions),
+		metricNewrelicoracledbPdbActiveSerialSessions:                            newMetricNewrelicoracledbPdbActiveSerialSessions(mbc.Metrics.NewrelicoracledbPdbActiveSerialSessions),
+		metricNewrelicoracledbPdbAverageActiveSessions:                           newMetricNewrelicoracledbPdbAverageActiveSessions(mbc.Metrics.NewrelicoracledbPdbAverageActiveSessions),
+		metricNewrelicoracledbPdbBackgroundCPUUsagePerSecond:                     newMetricNewrelicoracledbPdbBackgroundCPUUsagePerSecond(mbc.Metrics.NewrelicoracledbPdbBackgroundCPUUsagePerSecond),
+		metricNewrelicoracledbPdbBackgroundTimePerSecond:                         newMetricNewrelicoracledbPdbBackgroundTimePerSecond(mbc.Metrics.NewrelicoracledbPdbBackgroundTimePerSecond),
+		metricNewrelicoracledbPdbBlockChangesPerSecond:                           newMetricNewrelicoracledbPdbBlockChangesPerSecond(mbc.Metrics.NewrelicoracledbPdbBlockChangesPerSecond),
+		metricNewrelicoracledbPdbBlockChangesPerTransaction:                      newMetricNewrelicoracledbPdbBlockChangesPerTransaction(mbc.Metrics.NewrelicoracledbPdbBlockChangesPerTransaction),
+		metricNewrelicoracledbPdbCPUTimeRatio:                                    newMetricNewrelicoracledbPdbCPUTimeRatio(mbc.Metrics.NewrelicoracledbPdbCPUTimeRatio),
+		metricNewrelicoracledbPdbCPUUsagePerSecond:                               newMetricNewrelicoracledbPdbCPUUsagePerSecond(mbc.Metrics.NewrelicoracledbPdbCPUUsagePerSecond),
+		metricNewrelicoracledbPdbCPUUsagePerTransaction:                          newMetricNewrelicoracledbPdbCPUUsagePerTransaction(mbc.Metrics.NewrelicoracledbPdbCPUUsagePerTransaction),
+		metricNewrelicoracledbPdbCurrentLogons:                                   newMetricNewrelicoracledbPdbCurrentLogons(mbc.Metrics.NewrelicoracledbPdbCurrentLogons),
+		metricNewrelicoracledbPdbCurrentOpenCursors:                              newMetricNewrelicoracledbPdbCurrentOpenCursors(mbc.Metrics.NewrelicoracledbPdbCurrentOpenCursors),
+		metricNewrelicoracledbPdbDbPhysicalReadBytesPerSecond:                    newMetricNewrelicoracledbPdbDbPhysicalReadBytesPerSecond(mbc.Metrics.NewrelicoracledbPdbDbPhysicalReadBytesPerSecond),
+		metricNewrelicoracledbPdbDbPhysicalReadsPerSecond:                        newMetricNewrelicoracledbPdbDbPhysicalReadsPerSecond(mbc.Metrics.NewrelicoracledbPdbDbPhysicalReadsPerSecond),
+		metricNewrelicoracledbPdbDbPhysicalWriteBytesPerSecond:                   newMetricNewrelicoracledbPdbDbPhysicalWriteBytesPerSecond(mbc.Metrics.NewrelicoracledbPdbDbPhysicalWriteBytesPerSecond),
+		metricNewrelicoracledbPdbDbPhysicalWritesPerSecond:                       newMetricNewrelicoracledbPdbDbPhysicalWritesPerSecond(mbc.Metrics.NewrelicoracledbPdbDbPhysicalWritesPerSecond),
+		metricNewrelicoracledbPdbExecuteWithoutParseRatio:                        newMetricNewrelicoracledbPdbExecuteWithoutParseRatio(mbc.Metrics.NewrelicoracledbPdbExecuteWithoutParseRatio),
+		metricNewrelicoracledbPdbExecutionsPerSecond:                             newMetricNewrelicoracledbPdbExecutionsPerSecond(mbc.Metrics.NewrelicoracledbPdbExecutionsPerSecond),
+		metricNewrelicoracledbPdbExecutionsPerTransaction:                        newMetricNewrelicoracledbPdbExecutionsPerTransaction(mbc.Metrics.NewrelicoracledbPdbExecutionsPerTransaction),
+		metricNewrelicoracledbPdbHardParseCountPerSecond:                         newMetricNewrelicoracledbPdbHardParseCountPerSecond(mbc.Metrics.NewrelicoracledbPdbHardParseCountPerSecond),
+		metricNewrelicoracledbPdbHardParseCountPerTransaction:                    newMetricNewrelicoracledbPdbHardParseCountPerTransaction(mbc.Metrics.NewrelicoracledbPdbHardParseCountPerTransaction),
+		metricNewrelicoracledbPdbLogicalReadsPerSecond:                           newMetricNewrelicoracledbPdbLogicalReadsPerSecond(mbc.Metrics.NewrelicoracledbPdbLogicalReadsPerSecond),
+		metricNewrelicoracledbPdbLogicalReadsPerTransaction:                      newMetricNewrelicoracledbPdbLogicalReadsPerTransaction(mbc.Metrics.NewrelicoracledbPdbLogicalReadsPerTransaction),
+		metricNewrelicoracledbPdbLogonsPerSecond:                                 newMetricNewrelicoracledbPdbLogonsPerSecond(mbc.Metrics.NewrelicoracledbPdbLogonsPerSecond),
+		metricNewrelicoracledbPdbLogonsPerTransaction:                            newMetricNewrelicoracledbPdbLogonsPerTransaction(mbc.Metrics.NewrelicoracledbPdbLogonsPerTransaction),
+		metricNewrelicoracledbPdbNetworkTrafficBytePerSecond:                     newMetricNewrelicoracledbPdbNetworkTrafficBytePerSecond(mbc.Metrics.NewrelicoracledbPdbNetworkTrafficBytePerSecond),
+		metricNewrelicoracledbPdbOpenCursorsPerSecond:                            newMetricNewrelicoracledbPdbOpenCursorsPerSecond(mbc.Metrics.NewrelicoracledbPdbOpenCursorsPerSecond),
+		metricNewrelicoracledbPdbOpenCursorsPerTransaction:                       newMetricNewrelicoracledbPdbOpenCursorsPerTransaction(mbc.Metrics.NewrelicoracledbPdbOpenCursorsPerTransaction),
+		metricNewrelicoracledbPdbParseFailureCountPerSecond:                      newMetricNewrelicoracledbPdbParseFailureCountPerSecond(mbc.Metrics.NewrelicoracledbPdbParseFailureCountPerSecond),
+		metricNewrelicoracledbPdbPhysicalReadBytesPerSecond:                      newMetricNewrelicoracledbPdbPhysicalReadBytesPerSecond(mbc.Metrics.NewrelicoracledbPdbPhysicalReadBytesPerSecond),
+		metricNewrelicoracledbPdbPhysicalReadsPerTransaction:                     newMetricNewrelicoracledbPdbPhysicalReadsPerTransaction(mbc.Metrics.NewrelicoracledbPdbPhysicalReadsPerTransaction),
+		metricNewrelicoracledbPdbPhysicalWriteBytesPerSecond:                     newMetricNewrelicoracledbPdbPhysicalWriteBytesPerSecond(mbc.Metrics.NewrelicoracledbPdbPhysicalWriteBytesPerSecond),
+		metricNewrelicoracledbPdbPhysicalWritesPerTransaction:                    newMetricNewrelicoracledbPdbPhysicalWritesPerTransaction(mbc.Metrics.NewrelicoracledbPdbPhysicalWritesPerTransaction),
+		metricNewrelicoracledbPdbRedoGeneratedBytesPerSecond:                     newMetricNewrelicoracledbPdbRedoGeneratedBytesPerSecond(mbc.Metrics.NewrelicoracledbPdbRedoGeneratedBytesPerSecond),
+		metricNewrelicoracledbPdbRedoGeneratedBytesPerTransaction:                newMetricNewrelicoracledbPdbRedoGeneratedBytesPerTransaction(mbc.Metrics.NewrelicoracledbPdbRedoGeneratedBytesPerTransaction),
+		metricNewrelicoracledbPdbResponseTimePerTransaction:                      newMetricNewrelicoracledbPdbResponseTimePerTransaction(mbc.Metrics.NewrelicoracledbPdbResponseTimePerTransaction),
+		metricNewrelicoracledbPdbSessionCount:                                    newMetricNewrelicoracledbPdbSessionCount(mbc.Metrics.NewrelicoracledbPdbSessionCount),
+		metricNewrelicoracledbPdbSoftParseRatio:                                  newMetricNewrelicoracledbPdbSoftParseRatio(mbc.Metrics.NewrelicoracledbPdbSoftParseRatio),
+		metricNewrelicoracledbPdbSQLServiceResponseTime:                          newMetricNewrelicoracledbPdbSQLServiceResponseTime(mbc.Metrics.NewrelicoracledbPdbSQLServiceResponseTime),
+		metricNewrelicoracledbPdbTotalParseCountPerSecond:                        newMetricNewrelicoracledbPdbTotalParseCountPerSecond(mbc.Metrics.NewrelicoracledbPdbTotalParseCountPerSecond),
+		metricNewrelicoracledbPdbTotalParseCountPerTransaction:                   newMetricNewrelicoracledbPdbTotalParseCountPerTransaction(mbc.Metrics.NewrelicoracledbPdbTotalParseCountPerTransaction),
+		metricNewrelicoracledbPdbTransactionsPerSecond:                           newMetricNewrelicoracledbPdbTransactionsPerSecond(mbc.Metrics.NewrelicoracledbPdbTransactionsPerSecond),
+		metricNewrelicoracledbPdbUserCallsPerSecond:                              newMetricNewrelicoracledbPdbUserCallsPerSecond(mbc.Metrics.NewrelicoracledbPdbUserCallsPerSecond),
+		metricNewrelicoracledbPdbUserCallsPerTransaction:                         newMetricNewrelicoracledbPdbUserCallsPerTransaction(mbc.Metrics.NewrelicoracledbPdbUserCallsPerTransaction),
+		metricNewrelicoracledbPdbUserCommitsPerSecond:                            newMetricNewrelicoracledbPdbUserCommitsPerSecond(mbc.Metrics.NewrelicoracledbPdbUserCommitsPerSecond),
+		metricNewrelicoracledbPdbUserCommitsPercentage:                           newMetricNewrelicoracledbPdbUserCommitsPercentage(mbc.Metrics.NewrelicoracledbPdbUserCommitsPercentage),
+		metricNewrelicoracledbPdbUserRollbacksPerSecond:                          newMetricNewrelicoracledbPdbUserRollbacksPerSecond(mbc.Metrics.NewrelicoracledbPdbUserRollbacksPerSecond),
+		metricNewrelicoracledbPdbUserRollbacksPercentage:                         newMetricNewrelicoracledbPdbUserRollbacksPercentage(mbc.Metrics.NewrelicoracledbPdbUserRollbacksPercentage),
+		metricNewrelicoracledbPdbWaitTimeRatio:                                   newMetricNewrelicoracledbPdbWaitTimeRatio(mbc.Metrics.NewrelicoracledbPdbWaitTimeRatio),
+		metricNewrelicoracledbRedoLogParallelWriteWaits:                          newMetricNewrelicoracledbRedoLogParallelWriteWaits(mbc.Metrics.NewrelicoracledbRedoLogParallelWriteWaits),
+		metricNewrelicoracledbRedoLogSwitchArchivingNeededWaits:                  newMetricNewrelicoracledbRedoLogSwitchArchivingNeededWaits(mbc.Metrics.NewrelicoracledbRedoLogSwitchArchivingNeededWaits),
+		metricNewrelicoracledbRedoLogSwitchCheckpointIncompleteWaits:             newMetricNewrelicoracledbRedoLogSwitchCheckpointIncompleteWaits(mbc.Metrics.NewrelicoracledbRedoLogSwitchCheckpointIncompleteWaits),
+		metricNewrelicoracledbRedoLogSwitchCompletionWaits:                       newMetricNewrelicoracledbRedoLogSwitchCompletionWaits(mbc.Metrics.NewrelicoracledbRedoLogSwitchCompletionWaits),
+		metricNewrelicoracledbRollbackSegmentsGets:                               newMetricNewrelicoracledbRollbackSegmentsGets(mbc.Metrics.NewrelicoracledbRollbackSegmentsGets),
+		metricNewrelicoracledbRollbackSegmentsWaitRatio:                          newMetricNewrelicoracledbRollbackSegmentsWaitRatio(mbc.Metrics.NewrelicoracledbRollbackSegmentsWaitRatio),
+		metricNewrelicoracledbRollbackSegmentsWaits:                              newMetricNewrelicoracledbRollbackSegmentsWaits(mbc.Metrics.NewrelicoracledbRollbackSegmentsWaits),
+		metricNewrelicoracledbSessionsCount:                                      newMetricNewrelicoracledbSessionsCount(mbc.Metrics.NewrelicoracledbSessionsCount),
+		metricNewrelicoracledbSgaBufferBusyWaits:                                 newMetricNewrelicoracledbSgaBufferBusyWaits(mbc.Metrics.NewrelicoracledbSgaBufferBusyWaits),
+		metricNewrelicoracledbSgaFixedSizeBytes:                                  newMetricNewrelicoracledbSgaFixedSizeBytes(mbc.Metrics.NewrelicoracledbSgaFixedSizeBytes),
+		metricNewrelicoracledbSgaFreeBufferInspectedWaits:                        newMetricNewrelicoracledbSgaFreeBufferInspectedWaits(mbc.Metrics.NewrelicoracledbSgaFreeBufferInspectedWaits),
+		metricNewrelicoracledbSgaFreeBufferWaits:                                 newMetricNewrelicoracledbSgaFreeBufferWaits(mbc.Metrics.NewrelicoracledbSgaFreeBufferWaits),
+		metricNewrelicoracledbSgaHitRatio:                                        newMetricNewrelicoracledbSgaHitRatio(mbc.Metrics.NewrelicoracledbSgaHitRatio),
+		metricNewrelicoracledbSgaLogAllocationRetriesRatio:                       newMetricNewrelicoracledbSgaLogAllocationRetriesRatio(mbc.Metrics.NewrelicoracledbSgaLogAllocationRetriesRatio),
+		metricNewrelicoracledbSgaLogBufferRedoAllocationRetries:                  newMetricNewrelicoracledbSgaLogBufferRedoAllocationRetries(mbc.Metrics.NewrelicoracledbSgaLogBufferRedoAllocationRetries),
+		metricNewrelicoracledbSgaLogBufferRedoEntries:                            newMetricNewrelicoracledbSgaLogBufferRedoEntries(mbc.Metrics.NewrelicoracledbSgaLogBufferRedoEntries),
+		metricNewrelicoracledbSgaLogBufferSpaceWaits:                             newMetricNewrelicoracledbSgaLogBufferSpaceWaits(mbc.Metrics.NewrelicoracledbSgaLogBufferSpaceWaits),
+		metricNewrelicoracledbSgaRedoBuffersBytes:                                newMetricNewrelicoracledbSgaRedoBuffersBytes(mbc.Metrics.NewrelicoracledbSgaRedoBuffersBytes),
+		metricNewrelicoracledbSgaSharedPoolDictCacheMissRatio:                    newMetricNewrelicoracledbSgaSharedPoolDictCacheMissRatio(mbc.Metrics.NewrelicoracledbSgaSharedPoolDictCacheMissRatio),
+		metricNewrelicoracledbSgaSharedPoolLibraryCacheHitRatio:                  newMetricNewrelicoracledbSgaSharedPoolLibraryCacheHitRatio(mbc.Metrics.NewrelicoracledbSgaSharedPoolLibraryCacheHitRatio),
+		metricNewrelicoracledbSgaSharedPoolLibraryCacheReloadRatio:               newMetricNewrelicoracledbSgaSharedPoolLibraryCacheReloadRatio(mbc.Metrics.NewrelicoracledbSgaSharedPoolLibraryCacheReloadRatio),
+		metricNewrelicoracledbSortsDisk:                                          newMetricNewrelicoracledbSortsDisk(mbc.Metrics.NewrelicoracledbSortsDisk),
+		metricNewrelicoracledbSortsMemory:                                        newMetricNewrelicoracledbSortsMemory(mbc.Metrics.NewrelicoracledbSortsMemory),
+		metricNewrelicoracledbSystemActiveParallelSessions:                       newMetricNewrelicoracledbSystemActiveParallelSessions(mbc.Metrics.NewrelicoracledbSystemActiveParallelSessions),
+		metricNewrelicoracledbSystemActiveSerialSessions:                         newMetricNewrelicoracledbSystemActiveSerialSessions(mbc.Metrics.NewrelicoracledbSystemActiveSerialSessions),
+		metricNewrelicoracledbSystemAverageActiveSessions:                        newMetricNewrelicoracledbSystemAverageActiveSessions(mbc.Metrics.NewrelicoracledbSystemAverageActiveSessions),
+		metricNewrelicoracledbSystemBackgroundCheckpointsPerSecond:               newMetricNewrelicoracledbSystemBackgroundCheckpointsPerSecond(mbc.Metrics.NewrelicoracledbSystemBackgroundCheckpointsPerSecond),
+		metricNewrelicoracledbSystemBackgroundCPUUsagePerSecond:                  newMetricNewrelicoracledbSystemBackgroundCPUUsagePerSecond(mbc.Metrics.NewrelicoracledbSystemBackgroundCPUUsagePerSecond),
+		metricNewrelicoracledbSystemBackgroundTimePerSecond:                      newMetricNewrelicoracledbSystemBackgroundTimePerSecond(mbc.Metrics.NewrelicoracledbSystemBackgroundTimePerSecond),
+		metricNewrelicoracledbSystemBranchNodeSplitsPerSecond:                    newMetricNewrelicoracledbSystemBranchNodeSplitsPerSecond(mbc.Metrics.NewrelicoracledbSystemBranchNodeSplitsPerSecond),
+		metricNewrelicoracledbSystemBranchNodeSplitsPerTransaction:               newMetricNewrelicoracledbSystemBranchNodeSplitsPerTransaction(mbc.Metrics.NewrelicoracledbSystemBranchNodeSplitsPerTransaction),
+		metricNewrelicoracledbSystemBufferCacheHitRatio:                          newMetricNewrelicoracledbSystemBufferCacheHitRatio(mbc.Metrics.NewrelicoracledbSystemBufferCacheHitRatio),
+		metricNewrelicoracledbSystemCapturedUserCalls:                            newMetricNewrelicoracledbSystemCapturedUserCalls(mbc.Metrics.NewrelicoracledbSystemCapturedUserCalls),
+		metricNewrelicoracledbSystemConsistentReadChangesPerSecond:               newMetricNewrelicoracledbSystemConsistentReadChangesPerSecond(mbc.Metrics.NewrelicoracledbSystemConsistentReadChangesPerSecond),
+		metricNewrelicoracledbSystemConsistentReadChangesPerTransaction:          newMetricNewrelicoracledbSystemConsistentReadChangesPerTransaction(mbc.Metrics.NewrelicoracledbSystemConsistentReadChangesPerTransaction),
+		metricNewrelicoracledbSystemConsistentReadGetsPerSecond:                  newMetricNewrelicoracledbSystemConsistentReadGetsPerSecond(mbc.Metrics.NewrelicoracledbSystemConsistentReadGetsPerSecond),
+		metricNewrelicoracledbSystemConsistentReadGetsPerTransaction:             newMetricNewrelicoracledbSystemConsistentReadGetsPerTransaction(mbc.Metrics.NewrelicoracledbSystemConsistentReadGetsPerTransaction),
+		metricNewrelicoracledbSystemCPUUsagePerSecond:                            newMetricNewrelicoracledbSystemCPUUsagePerSecond(mbc.Metrics.NewrelicoracledbSystemCPUUsagePerSecond),
+		metricNewrelicoracledbSystemCPUUsagePerTransaction:                       newMetricNewrelicoracledbSystemCPUUsagePerTransaction(mbc.Metrics.NewrelicoracledbSystemCPUUsagePerTransaction),
+		metricNewrelicoracledbSystemCrBlocksCreatedPerSecond:                     newMetricNewrelicoracledbSystemCrBlocksCreatedPerSecond(mbc.Metrics.NewrelicoracledbSystemCrBlocksCreatedPerSecond),
+		metricNewrelicoracledbSystemCrBlocksCreatedPerTransaction:                newMetricNewrelicoracledbSystemCrBlocksCreatedPerTransaction(mbc.Metrics.NewrelicoracledbSystemCrBlocksCreatedPerTransaction),
+		metricNewrelicoracledbSystemCrUndoRecordsAppliedPerSecond:                newMetricNewrelicoracledbSystemCrUndoRecordsAppliedPerSecond(mbc.Metrics.NewrelicoracledbSystemCrUndoRecordsAppliedPerSecond),
+		metricNewrelicoracledbSystemCrUndoRecordsAppliedPerTransaction:           newMetricNewrelicoracledbSystemCrUndoRecordsAppliedPerTransaction(mbc.Metrics.NewrelicoracledbSystemCrUndoRecordsAppliedPerTransaction),
+		metricNewrelicoracledbSystemCurrentLogonsCount:                           newMetricNewrelicoracledbSystemCurrentLogonsCount(mbc.Metrics.NewrelicoracledbSystemCurrentLogonsCount),
+		metricNewrelicoracledbSystemCurrentOpenCursorsCount:                      newMetricNewrelicoracledbSystemCurrentOpenCursorsCount(mbc.Metrics.NewrelicoracledbSystemCurrentOpenCursorsCount),
+		metricNewrelicoracledbSystemCurrentOsLoad:                                newMetricNewrelicoracledbSystemCurrentOsLoad(mbc.Metrics.NewrelicoracledbSystemCurrentOsLoad),
+		metricNewrelicoracledbSystemCursorCacheHitRatio:                          newMetricNewrelicoracledbSystemCursorCacheHitRatio(mbc.Metrics.NewrelicoracledbSystemCursorCacheHitRatio),
+		metricNewrelicoracledbSystemDatabaseCPUTimeRatio:                         newMetricNewrelicoracledbSystemDatabaseCPUTimeRatio(mbc.Metrics.NewrelicoracledbSystemDatabaseCPUTimeRatio),
+		metricNewrelicoracledbSystemDatabaseTimePerSecond:                        newMetricNewrelicoracledbSystemDatabaseTimePerSecond(mbc.Metrics.NewrelicoracledbSystemDatabaseTimePerSecond),
+		metricNewrelicoracledbSystemDatabaseWaitTimeRatio:                        newMetricNewrelicoracledbSystemDatabaseWaitTimeRatio(mbc.Metrics.NewrelicoracledbSystemDatabaseWaitTimeRatio),
+		metricNewrelicoracledbSystemDbBlockChangesPerSecond:                      newMetricNewrelicoracledbSystemDbBlockChangesPerSecond(mbc.Metrics.NewrelicoracledbSystemDbBlockChangesPerSecond),
+		metricNewrelicoracledbSystemDbBlockChangesPerTransaction:                 newMetricNewrelicoracledbSystemDbBlockChangesPerTransaction(mbc.Metrics.NewrelicoracledbSystemDbBlockChangesPerTransaction),
+		metricNewrelicoracledbSystemDbBlockChangesPerUserCall:                    newMetricNewrelicoracledbSystemDbBlockChangesPerUserCall(mbc.Metrics.NewrelicoracledbSystemDbBlockChangesPerUserCall),
+		metricNewrelicoracledbSystemDbBlockGetsPerSecond:                         newMetricNewrelicoracledbSystemDbBlockGetsPerSecond(mbc.Metrics.NewrelicoracledbSystemDbBlockGetsPerSecond),
+		metricNewrelicoracledbSystemDbBlockGetsPerTransaction:                    newMetricNewrelicoracledbSystemDbBlockGetsPerTransaction(mbc.Metrics.NewrelicoracledbSystemDbBlockGetsPerTransaction),
+		metricNewrelicoracledbSystemDbBlockGetsPerUserCall:                       newMetricNewrelicoracledbSystemDbBlockGetsPerUserCall(mbc.Metrics.NewrelicoracledbSystemDbBlockGetsPerUserCall),
+		metricNewrelicoracledbSystemDbwrCheckpointsPerSecond:                     newMetricNewrelicoracledbSystemDbwrCheckpointsPerSecond(mbc.Metrics.NewrelicoracledbSystemDbwrCheckpointsPerSecond),
+		metricNewrelicoracledbSystemDiskSortPerSecond:                            newMetricNewrelicoracledbSystemDiskSortPerSecond(mbc.Metrics.NewrelicoracledbSystemDiskSortPerSecond),
+		metricNewrelicoracledbSystemDiskSortPerTransaction:                       newMetricNewrelicoracledbSystemDiskSortPerTransaction(mbc.Metrics.NewrelicoracledbSystemDiskSortPerTransaction),
+		metricNewrelicoracledbSystemEnqueueDeadlocksPerSecond:                    newMetricNewrelicoracledbSystemEnqueueDeadlocksPerSecond(mbc.Metrics.NewrelicoracledbSystemEnqueueDeadlocksPerSecond),
+		metricNewrelicoracledbSystemEnqueueDeadlocksPerTransaction:               newMetricNewrelicoracledbSystemEnqueueDeadlocksPerTransaction(mbc.Metrics.NewrelicoracledbSystemEnqueueDeadlocksPerTransaction),
+		metricNewrelicoracledbSystemEnqueueRequestsPerSecond:                     newMetricNewrelicoracledbSystemEnqueueRequestsPerSecond(mbc.Metrics.NewrelicoracledbSystemEnqueueRequestsPerSecond),
+		metricNewrelicoracledbSystemEnqueueRequestsPerTransaction:                newMetricNewrelicoracledbSystemEnqueueRequestsPerTransaction(mbc.Metrics.NewrelicoracledbSystemEnqueueRequestsPerTransaction),
+		metricNewrelicoracledbSystemEnqueueTimeoutsPerSecond:                     newMetricNewrelicoracledbSystemEnqueueTimeoutsPerSecond(mbc.Metrics.NewrelicoracledbSystemEnqueueTimeoutsPerSecond),
+		metricNewrelicoracledbSystemEnqueueTimeoutsPerTransaction:                newMetricNewrelicoracledbSystemEnqueueTimeoutsPerTransaction(mbc.Metrics.NewrelicoracledbSystemEnqueueTimeoutsPerTransaction),
+		metricNewrelicoracledbSystemEnqueueWaitsPerSecond:                        newMetricNewrelicoracledbSystemEnqueueWaitsPerSecond(mbc.Metrics.NewrelicoracledbSystemEnqueueWaitsPerSecond),
+		metricNewrelicoracledbSystemEnqueueWaitsPerTransaction:                   newMetricNewrelicoracledbSystemEnqueueWaitsPerTransaction(mbc.Metrics.NewrelicoracledbSystemEnqueueWaitsPerTransaction),
+		metricNewrelicoracledbSystemExecuteWithoutParseRatio:                     newMetricNewrelicoracledbSystemExecuteWithoutParseRatio(mbc.Metrics.NewrelicoracledbSystemExecuteWithoutParseRatio),
+		metricNewrelicoracledbSystemExecutionsPerSecond:                          newMetricNewrelicoracledbSystemExecutionsPerSecond(mbc.Metrics.NewrelicoracledbSystemExecutionsPerSecond),
+		metricNewrelicoracledbSystemExecutionsPerTransaction:                     newMetricNewrelicoracledbSystemExecutionsPerTransaction(mbc.Metrics.NewrelicoracledbSystemExecutionsPerTransaction),
+		metricNewrelicoracledbSystemExecutionsPerUserCall:                        newMetricNewrelicoracledbSystemExecutionsPerUserCall(mbc.Metrics.NewrelicoracledbSystemExecutionsPerUserCall),
+		metricNewrelicoracledbSystemFullIndexScansPerSecond:                      newMetricNewrelicoracledbSystemFullIndexScansPerSecond(mbc.Metrics.NewrelicoracledbSystemFullIndexScansPerSecond),
+		metricNewrelicoracledbSystemFullIndexScansPerTransaction:                 newMetricNewrelicoracledbSystemFullIndexScansPerTransaction(mbc.Metrics.NewrelicoracledbSystemFullIndexScansPerTransaction),
+		metricNewrelicoracledbSystemGcCrBlockReceivedPerSecond:                   newMetricNewrelicoracledbSystemGcCrBlockReceivedPerSecond(mbc.Metrics.NewrelicoracledbSystemGcCrBlockReceivedPerSecond),
+		metricNewrelicoracledbSystemGcCrBlockReceivedPerTransaction:              newMetricNewrelicoracledbSystemGcCrBlockReceivedPerTransaction(mbc.Metrics.NewrelicoracledbSystemGcCrBlockReceivedPerTransaction),
+		metricNewrelicoracledbSystemGcCurrentBlockReceivedPerSecond:              newMetricNewrelicoracledbSystemGcCurrentBlockReceivedPerSecond(mbc.Metrics.NewrelicoracledbSystemGcCurrentBlockReceivedPerSecond),
+		metricNewrelicoracledbSystemGcCurrentBlockReceivedPerTransaction:         newMetricNewrelicoracledbSystemGcCurrentBlockReceivedPerTransaction(mbc.Metrics.NewrelicoracledbSystemGcCurrentBlockReceivedPerTransaction),
+		metricNewrelicoracledbSystemGlobalCacheAverageCrGetTime:                  newMetricNewrelicoracledbSystemGlobalCacheAverageCrGetTime(mbc.Metrics.NewrelicoracledbSystemGlobalCacheAverageCrGetTime),
+		metricNewrelicoracledbSystemGlobalCacheAverageCurrentGetTime:             newMetricNewrelicoracledbSystemGlobalCacheAverageCurrentGetTime(mbc.Metrics.NewrelicoracledbSystemGlobalCacheAverageCurrentGetTime),
+		metricNewrelicoracledbSystemGlobalCacheBlocksCorrupted:                   newMetricNewrelicoracledbSystemGlobalCacheBlocksCorrupted(mbc.Metrics.NewrelicoracledbSystemGlobalCacheBlocksCorrupted),
+		metricNewrelicoracledbSystemGlobalCacheBlocksLost:                        newMetricNewrelicoracledbSystemGlobalCacheBlocksLost(mbc.Metrics.NewrelicoracledbSystemGlobalCacheBlocksLost),
+		metricNewrelicoracledbSystemHardParseCountPerSecond:                      newMetricNewrelicoracledbSystemHardParseCountPerSecond(mbc.Metrics.NewrelicoracledbSystemHardParseCountPerSecond),
+		metricNewrelicoracledbSystemHardParseCountPerTransaction:                 newMetricNewrelicoracledbSystemHardParseCountPerTransaction(mbc.Metrics.NewrelicoracledbSystemHardParseCountPerTransaction),
+		metricNewrelicoracledbSystemHostCPUUsagePerSecond:                        newMetricNewrelicoracledbSystemHostCPUUsagePerSecond(mbc.Metrics.NewrelicoracledbSystemHostCPUUsagePerSecond),
+		metricNewrelicoracledbSystemHostCPUUtilization:                           newMetricNewrelicoracledbSystemHostCPUUtilization(mbc.Metrics.NewrelicoracledbSystemHostCPUUtilization),
+		metricNewrelicoracledbSystemIoMegabytesPerSecond:                         newMetricNewrelicoracledbSystemIoMegabytesPerSecond(mbc.Metrics.NewrelicoracledbSystemIoMegabytesPerSecond),
+		metricNewrelicoracledbSystemIoRequestsPerSecond:                          newMetricNewrelicoracledbSystemIoRequestsPerSecond(mbc.Metrics.NewrelicoracledbSystemIoRequestsPerSecond),
+		metricNewrelicoracledbSystemLeafNodeSplitsPerSecond:                      newMetricNewrelicoracledbSystemLeafNodeSplitsPerSecond(mbc.Metrics.NewrelicoracledbSystemLeafNodeSplitsPerSecond),
+		metricNewrelicoracledbSystemLeafNodeSplitsPerTransaction:                 newMetricNewrelicoracledbSystemLeafNodeSplitsPerTransaction(mbc.Metrics.NewrelicoracledbSystemLeafNodeSplitsPerTransaction),
+		metricNewrelicoracledbSystemLibraryCacheHitRatio:                         newMetricNewrelicoracledbSystemLibraryCacheHitRatio(mbc.Metrics.NewrelicoracledbSystemLibraryCacheHitRatio),
+		metricNewrelicoracledbSystemLibraryCacheMissRatio:                        newMetricNewrelicoracledbSystemLibraryCacheMissRatio(mbc.Metrics.NewrelicoracledbSystemLibraryCacheMissRatio),
+		metricNewrelicoracledbSystemLogicalReadsPerSecond:                        newMetricNewrelicoracledbSystemLogicalReadsPerSecond(mbc.Metrics.NewrelicoracledbSystemLogicalReadsPerSecond),
+		metricNewrelicoracledbSystemLogicalReadsPerTransaction:                   newMetricNewrelicoracledbSystemLogicalReadsPerTransaction(mbc.Metrics.NewrelicoracledbSystemLogicalReadsPerTransaction),
+		metricNewrelicoracledbSystemLogicalReadsPerUserCall:                      newMetricNewrelicoracledbSystemLogicalReadsPerUserCall(mbc.Metrics.NewrelicoracledbSystemLogicalReadsPerUserCall),
+		metricNewrelicoracledbSystemLogonsPerSecond:                              newMetricNewrelicoracledbSystemLogonsPerSecond(mbc.Metrics.NewrelicoracledbSystemLogonsPerSecond),
+		metricNewrelicoracledbSystemLogonsPerTransaction:                         newMetricNewrelicoracledbSystemLogonsPerTransaction(mbc.Metrics.NewrelicoracledbSystemLogonsPerTransaction),
+		metricNewrelicoracledbSystemLongTableScansPerSecond:                      newMetricNewrelicoracledbSystemLongTableScansPerSecond(mbc.Metrics.NewrelicoracledbSystemLongTableScansPerSecond),
+		metricNewrelicoracledbSystemLongTableScansPerTransaction:                 newMetricNewrelicoracledbSystemLongTableScansPerTransaction(mbc.Metrics.NewrelicoracledbSystemLongTableScansPerTransaction),
+		metricNewrelicoracledbSystemMemorySortsRatio:                             newMetricNewrelicoracledbSystemMemorySortsRatio(mbc.Metrics.NewrelicoracledbSystemMemorySortsRatio),
+		metricNewrelicoracledbSystemNetworkTrafficVolumePerSecond:                newMetricNewrelicoracledbSystemNetworkTrafficVolumePerSecond(mbc.Metrics.NewrelicoracledbSystemNetworkTrafficVolumePerSecond),
+		metricNewrelicoracledbSystemOpenCursorsPerSecond:                         newMetricNewrelicoracledbSystemOpenCursorsPerSecond(mbc.Metrics.NewrelicoracledbSystemOpenCursorsPerSecond),
+		metricNewrelicoracledbSystemOpenCursorsPerTransaction:                    newMetricNewrelicoracledbSystemOpenCursorsPerTransaction(mbc.Metrics.NewrelicoracledbSystemOpenCursorsPerTransaction),
+		metricNewrelicoracledbSystemParseFailureCountPerSecond:                   newMetricNewrelicoracledbSystemParseFailureCountPerSecond(mbc.Metrics.NewrelicoracledbSystemParseFailureCountPerSecond),
+		metricNewrelicoracledbSystemParseFailureCountPerTransaction:              newMetricNewrelicoracledbSystemParseFailureCountPerTransaction(mbc.Metrics.NewrelicoracledbSystemParseFailureCountPerTransaction),
+		metricNewrelicoracledbSystemPgaCacheHitPercentage:                        newMetricNewrelicoracledbSystemPgaCacheHitPercentage(mbc.Metrics.NewrelicoracledbSystemPgaCacheHitPercentage),
+		metricNewrelicoracledbSystemPhysicalLobsReadsPerSecond:                   newMetricNewrelicoracledbSystemPhysicalLobsReadsPerSecond(mbc.Metrics.NewrelicoracledbSystemPhysicalLobsReadsPerSecond),
+		metricNewrelicoracledbSystemPhysicalLobsReadsPerTransaction:              newMetricNewrelicoracledbSystemPhysicalLobsReadsPerTransaction(mbc.Metrics.NewrelicoracledbSystemPhysicalLobsReadsPerTransaction),
+		metricNewrelicoracledbSystemPhysicalLobsWritesPerSecond:                  newMetricNewrelicoracledbSystemPhysicalLobsWritesPerSecond(mbc.Metrics.NewrelicoracledbSystemPhysicalLobsWritesPerSecond),
+		metricNewrelicoracledbSystemPhysicalLobsWritesPerTransaction:             newMetricNewrelicoracledbSystemPhysicalLobsWritesPerTransaction(mbc.Metrics.NewrelicoracledbSystemPhysicalLobsWritesPerTransaction),
+		metricNewrelicoracledbSystemPhysicalReadBytesPerSecond:                   newMetricNewrelicoracledbSystemPhysicalReadBytesPerSecond(mbc.Metrics.NewrelicoracledbSystemPhysicalReadBytesPerSecond),
+		metricNewrelicoracledbSystemPhysicalReadIoRequestsPerSecond:              newMetricNewrelicoracledbSystemPhysicalReadIoRequestsPerSecond(mbc.Metrics.NewrelicoracledbSystemPhysicalReadIoRequestsPerSecond),
+		metricNewrelicoracledbSystemPhysicalReadTotalBytesPerSecond:              newMetricNewrelicoracledbSystemPhysicalReadTotalBytesPerSecond(mbc.Metrics.NewrelicoracledbSystemPhysicalReadTotalBytesPerSecond),
+		metricNewrelicoracledbSystemPhysicalReadTotalIoRequestsPerSecond:         newMetricNewrelicoracledbSystemPhysicalReadTotalIoRequestsPerSecond(mbc.Metrics.NewrelicoracledbSystemPhysicalReadTotalIoRequestsPerSecond),
+		metricNewrelicoracledbSystemPhysicalReadsDirectPerSecond:                 newMetricNewrelicoracledbSystemPhysicalReadsDirectPerSecond(mbc.Metrics.NewrelicoracledbSystemPhysicalReadsDirectPerSecond),
+		metricNewrelicoracledbSystemPhysicalReadsDirectPerTransaction:            newMetricNewrelicoracledbSystemPhysicalReadsDirectPerTransaction(mbc.Metrics.NewrelicoracledbSystemPhysicalReadsDirectPerTransaction),
+		metricNewrelicoracledbSystemPhysicalReadsPerSecond:                       newMetricNewrelicoracledbSystemPhysicalReadsPerSecond(mbc.Metrics.NewrelicoracledbSystemPhysicalReadsPerSecond),
+		metricNewrelicoracledbSystemPhysicalReadsPerTransaction:                  newMetricNewrelicoracledbSystemPhysicalReadsPerTransaction(mbc.Metrics.NewrelicoracledbSystemPhysicalReadsPerTransaction),
+		metricNewrelicoracledbSystemPhysicalWriteBytesPerSecond:                  newMetricNewrelicoracledbSystemPhysicalWriteBytesPerSecond(mbc.Metrics.NewrelicoracledbSystemPhysicalWriteBytesPerSecond),
+		metricNewrelicoracledbSystemPhysicalWriteIoRequestsPerSecond:             newMetricNewrelicoracledbSystemPhysicalWriteIoRequestsPerSecond(mbc.Metrics.NewrelicoracledbSystemPhysicalWriteIoRequestsPerSecond),
+		metricNewrelicoracledbSystemPhysicalWriteTotalBytesPerSecond:             newMetricNewrelicoracledbSystemPhysicalWriteTotalBytesPerSecond(mbc.Metrics.NewrelicoracledbSystemPhysicalWriteTotalBytesPerSecond),
+		metricNewrelicoracledbSystemPhysicalWriteTotalIoRequestsPerSecond:        newMetricNewrelicoracledbSystemPhysicalWriteTotalIoRequestsPerSecond(mbc.Metrics.NewrelicoracledbSystemPhysicalWriteTotalIoRequestsPerSecond),
+		metricNewrelicoracledbSystemPhysicalWritesDirectPerSecond:                newMetricNewrelicoracledbSystemPhysicalWritesDirectPerSecond(mbc.Metrics.NewrelicoracledbSystemPhysicalWritesDirectPerSecond),
+		metricNewrelicoracledbSystemPhysicalWritesDirectPerTransaction:           newMetricNewrelicoracledbSystemPhysicalWritesDirectPerTransaction(mbc.Metrics.NewrelicoracledbSystemPhysicalWritesDirectPerTransaction),
+		metricNewrelicoracledbSystemPhysicalWritesPerSecond:                      newMetricNewrelicoracledbSystemPhysicalWritesPerSecond(mbc.Metrics.NewrelicoracledbSystemPhysicalWritesPerSecond),
+		metricNewrelicoracledbSystemPhysicalWritesPerTransaction:                 newMetricNewrelicoracledbSystemPhysicalWritesPerTransaction(mbc.Metrics.NewrelicoracledbSystemPhysicalWritesPerTransaction),
+		metricNewrelicoracledbSystemProcessLimitPercentage:                       newMetricNewrelicoracledbSystemProcessLimitPercentage(mbc.Metrics.NewrelicoracledbSystemProcessLimitPercentage),
+		metricNewrelicoracledbSystemRecursiveCallsPerSecond:                      newMetricNewrelicoracledbSystemRecursiveCallsPerSecond(mbc.Metrics.NewrelicoracledbSystemRecursiveCallsPerSecond),
+		metricNewrelicoracledbSystemRecursiveCallsPerTransaction:                 newMetricNewrelicoracledbSystemRecursiveCallsPerTransaction(mbc.Metrics.NewrelicoracledbSystemRecursiveCallsPerTransaction),
+		metricNewrelicoracledbSystemRedoAllocationHitRatio:                       newMetricNewrelicoracledbSystemRedoAllocationHitRatio(mbc.Metrics.NewrelicoracledbSystemRedoAllocationHitRatio),
+		metricNewrelicoracledbSystemRedoGeneratedBytesPerSecond:                  newMetricNewrelicoracledbSystemRedoGeneratedBytesPerSecond(mbc.Metrics.NewrelicoracledbSystemRedoGeneratedBytesPerSecond),
+		metricNewrelicoracledbSystemRedoGeneratedBytesPerTransaction:             newMetricNewrelicoracledbSystemRedoGeneratedBytesPerTransaction(mbc.Metrics.NewrelicoracledbSystemRedoGeneratedBytesPerTransaction),
+		metricNewrelicoracledbSystemRedoWritesPerSecond:                          newMetricNewrelicoracledbSystemRedoWritesPerSecond(mbc.Metrics.NewrelicoracledbSystemRedoWritesPerSecond),
+		metricNewrelicoracledbSystemRedoWritesPerTransaction:                     newMetricNewrelicoracledbSystemRedoWritesPerTransaction(mbc.Metrics.NewrelicoracledbSystemRedoWritesPerTransaction),
+		metricNewrelicoracledbSystemResponseTimePerTransaction:                   newMetricNewrelicoracledbSystemResponseTimePerTransaction(mbc.Metrics.NewrelicoracledbSystemResponseTimePerTransaction),
+		metricNewrelicoracledbSystemRowCacheHitRatio:                             newMetricNewrelicoracledbSystemRowCacheHitRatio(mbc.Metrics.NewrelicoracledbSystemRowCacheHitRatio),
+		metricNewrelicoracledbSystemRowCacheMissRatio:                            newMetricNewrelicoracledbSystemRowCacheMissRatio(mbc.Metrics.NewrelicoracledbSystemRowCacheMissRatio),
+		metricNewrelicoracledbSystemRowsPerSort:                                  newMetricNewrelicoracledbSystemRowsPerSort(mbc.Metrics.NewrelicoracledbSystemRowsPerSort),
+		metricNewrelicoracledbSystemSessionCount:                                 newMetricNewrelicoracledbSystemSessionCount(mbc.Metrics.NewrelicoracledbSystemSessionCount),
+		metricNewrelicoracledbSystemSessionLimitPercentage:                       newMetricNewrelicoracledbSystemSessionLimitPercentage(mbc.Metrics.NewrelicoracledbSystemSessionLimitPercentage),
+		metricNewrelicoracledbSystemSharedPoolFreePercentage:                     newMetricNewrelicoracledbSystemSharedPoolFreePercentage(mbc.Metrics.NewrelicoracledbSystemSharedPoolFreePercentage),
+		metricNewrelicoracledbSystemSoftParseRatio:                               newMetricNewrelicoracledbSystemSoftParseRatio(mbc.Metrics.NewrelicoracledbSystemSoftParseRatio),
+		metricNewrelicoracledbSystemSQLServiceResponseTime:                       newMetricNewrelicoracledbSystemSQLServiceResponseTime(mbc.Metrics.NewrelicoracledbSystemSQLServiceResponseTime),
+		metricNewrelicoracledbSystemStreamsPoolUsagePercentage:                   newMetricNewrelicoracledbSystemStreamsPoolUsagePercentage(mbc.Metrics.NewrelicoracledbSystemStreamsPoolUsagePercentage),
+		metricNewrelicoracledbSystemTempSpaceUsed:                                newMetricNewrelicoracledbSystemTempSpaceUsed(mbc.Metrics.NewrelicoracledbSystemTempSpaceUsed),
+		metricNewrelicoracledbSystemTotalIndexScansPerSecond:                     newMetricNewrelicoracledbSystemTotalIndexScansPerSecond(mbc.Metrics.NewrelicoracledbSystemTotalIndexScansPerSecond),
+		metricNewrelicoracledbSystemTotalIndexScansPerTransaction:                newMetricNewrelicoracledbSystemTotalIndexScansPerTransaction(mbc.Metrics.NewrelicoracledbSystemTotalIndexScansPerTransaction),
+		metricNewrelicoracledbSystemTotalParseCountPerSecond:                     newMetricNewrelicoracledbSystemTotalParseCountPerSecond(mbc.Metrics.NewrelicoracledbSystemTotalParseCountPerSecond),
+		metricNewrelicoracledbSystemTotalParseCountPerTransaction:                newMetricNewrelicoracledbSystemTotalParseCountPerTransaction(mbc.Metrics.NewrelicoracledbSystemTotalParseCountPerTransaction),
+		metricNewrelicoracledbSystemTotalSortsPerUserCall:                        newMetricNewrelicoracledbSystemTotalSortsPerUserCall(mbc.Metrics.NewrelicoracledbSystemTotalSortsPerUserCall),
+		metricNewrelicoracledbSystemTotalTableScansPerSecond:                     newMetricNewrelicoracledbSystemTotalTableScansPerSecond(mbc.Metrics.NewrelicoracledbSystemTotalTableScansPerSecond),
+		metricNewrelicoracledbSystemTotalTableScansPerTransaction:                newMetricNewrelicoracledbSystemTotalTableScansPerTransaction(mbc.Metrics.NewrelicoracledbSystemTotalTableScansPerTransaction),
+		metricNewrelicoracledbSystemTotalTableScansPerUserCall:                   newMetricNewrelicoracledbSystemTotalTableScansPerUserCall(mbc.Metrics.NewrelicoracledbSystemTotalTableScansPerUserCall),
+		metricNewrelicoracledbSystemTransactionsPerLogon:                         newMetricNewrelicoracledbSystemTransactionsPerLogon(mbc.Metrics.NewrelicoracledbSystemTransactionsPerLogon),
+		metricNewrelicoracledbSystemTransactionsPerSecond:                        newMetricNewrelicoracledbSystemTransactionsPerSecond(mbc.Metrics.NewrelicoracledbSystemTransactionsPerSecond),
+		metricNewrelicoracledbSystemUserCallsPerSecond:                           newMetricNewrelicoracledbSystemUserCallsPerSecond(mbc.Metrics.NewrelicoracledbSystemUserCallsPerSecond),
+		metricNewrelicoracledbSystemUserCallsPerTransaction:                      newMetricNewrelicoracledbSystemUserCallsPerTransaction(mbc.Metrics.NewrelicoracledbSystemUserCallsPerTransaction),
+		metricNewrelicoracledbSystemUserCallsRatio:                               newMetricNewrelicoracledbSystemUserCallsRatio(mbc.Metrics.NewrelicoracledbSystemUserCallsRatio),
+		metricNewrelicoracledbSystemUserCommitsPerSecond:                         newMetricNewrelicoracledbSystemUserCommitsPerSecond(mbc.Metrics.NewrelicoracledbSystemUserCommitsPerSecond),
+		metricNewrelicoracledbSystemUserCommitsPercentage:                        newMetricNewrelicoracledbSystemUserCommitsPercentage(mbc.Metrics.NewrelicoracledbSystemUserCommitsPercentage),
+		metricNewrelicoracledbSystemUserLimitPercentage:                          newMetricNewrelicoracledbSystemUserLimitPercentage(mbc.Metrics.NewrelicoracledbSystemUserLimitPercentage),
+		metricNewrelicoracledbSystemUserRollbackUndoRecordsAppliedPerSecond:      newMetricNewrelicoracledbSystemUserRollbackUndoRecordsAppliedPerSecond(mbc.Metrics.NewrelicoracledbSystemUserRollbackUndoRecordsAppliedPerSecond),
+		metricNewrelicoracledbSystemUserRollbackUndoRecordsAppliedPerTransaction: newMetricNewrelicoracledbSystemUserRollbackUndoRecordsAppliedPerTransaction(mbc.Metrics.NewrelicoracledbSystemUserRollbackUndoRecordsAppliedPerTransaction),
+		metricNewrelicoracledbSystemUserRollbacksPerSecond:                       newMetricNewrelicoracledbSystemUserRollbacksPerSecond(mbc.Metrics.NewrelicoracledbSystemUserRollbacksPerSecond),
+		metricNewrelicoracledbSystemUserRollbacksPercentage:                      newMetricNewrelicoracledbSystemUserRollbacksPercentage(mbc.Metrics.NewrelicoracledbSystemUserRollbacksPercentage),
+		metricNewrelicoracledbTablespaceDbID:                                     newMetricNewrelicoracledbTablespaceDbID(mbc.Metrics.NewrelicoracledbTablespaceDbID),
+		metricNewrelicoracledbTablespaceGlobalName:                               newMetricNewrelicoracledbTablespaceGlobalName(mbc.Metrics.NewrelicoracledbTablespaceGlobalName),
+		metricNewrelicoracledbTablespaceIsOffline:                                newMetricNewrelicoracledbTablespaceIsOffline(mbc.Metrics.NewrelicoracledbTablespaceIsOffline),
+		metricNewrelicoracledbTablespaceOfflineCdbDatafiles:                      newMetricNewrelicoracledbTablespaceOfflineCdbDatafiles(mbc.Metrics.NewrelicoracledbTablespaceOfflineCdbDatafiles),
+		metricNewrelicoracledbTablespaceOfflinePdbDatafiles:                      newMetricNewrelicoracledbTablespaceOfflinePdbDatafiles(mbc.Metrics.NewrelicoracledbTablespaceOfflinePdbDatafiles),
+		metricNewrelicoracledbTablespacePdbNonWriteMode:                          newMetricNewrelicoracledbTablespacePdbNonWriteMode(mbc.Metrics.NewrelicoracledbTablespacePdbNonWriteMode),
+		metricNewrelicoracledbTablespaceSpaceConsumedBytes:                       newMetricNewrelicoracledbTablespaceSpaceConsumedBytes(mbc.Metrics.NewrelicoracledbTablespaceSpaceConsumedBytes),
+		metricNewrelicoracledbTablespaceSpaceReservedBytes:                       newMetricNewrelicoracledbTablespaceSpaceReservedBytes(mbc.Metrics.NewrelicoracledbTablespaceSpaceReservedBytes),
+		metricNewrelicoracledbTablespaceSpaceUsedPercentage:                      newMetricNewrelicoracledbTablespaceSpaceUsedPercentage(mbc.Metrics.NewrelicoracledbTablespaceSpaceUsedPercentage),
+		resourceAttributeIncludeFilter:                                           make(map[string]filter.Filter),
+		resourceAttributeExcludeFilter:                                           make(map[string]filter.Filter),
 	}
 	if mbc.ResourceAttributes.HostName.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["host.name"] = filter.CreateFilter(mbc.ResourceAttributes.HostName.MetricsInclude)
@@ -778,8 +14004,236 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
+	mb.metricNewrelicoracledbDbID.emit(ils.Metrics())
+	mb.metricNewrelicoracledbDiskBlocksRead.emit(ils.Metrics())
+	mb.metricNewrelicoracledbDiskBlocksWritten.emit(ils.Metrics())
+	mb.metricNewrelicoracledbDiskReadTimeMilliseconds.emit(ils.Metrics())
+	mb.metricNewrelicoracledbDiskReads.emit(ils.Metrics())
+	mb.metricNewrelicoracledbDiskWriteTimeMilliseconds.emit(ils.Metrics())
+	mb.metricNewrelicoracledbDiskWrites.emit(ils.Metrics())
+	mb.metricNewrelicoracledbGlobalName.emit(ils.Metrics())
 	mb.metricNewrelicoracledbLockedAccounts.emit(ils.Metrics())
+	mb.metricNewrelicoracledbLongRunningQueries.emit(ils.Metrics())
+	mb.metricNewrelicoracledbMemoryPgaAllocatedBytes.emit(ils.Metrics())
+	mb.metricNewrelicoracledbMemoryPgaFreeableBytes.emit(ils.Metrics())
+	mb.metricNewrelicoracledbMemoryPgaInUseBytes.emit(ils.Metrics())
+	mb.metricNewrelicoracledbMemoryPgaMaxSizeBytes.emit(ils.Metrics())
+	mb.metricNewrelicoracledbMemorySgaSharedPoolLibraryCacheSharableBytes.emit(ils.Metrics())
+	mb.metricNewrelicoracledbMemorySgaSharedPoolLibraryCacheUserBytes.emit(ils.Metrics())
+	mb.metricNewrelicoracledbMemorySgaUgaTotalBytes.emit(ils.Metrics())
+	mb.metricNewrelicoracledbPdbActiveParallelSessions.emit(ils.Metrics())
+	mb.metricNewrelicoracledbPdbActiveSerialSessions.emit(ils.Metrics())
+	mb.metricNewrelicoracledbPdbAverageActiveSessions.emit(ils.Metrics())
+	mb.metricNewrelicoracledbPdbBackgroundCPUUsagePerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbPdbBackgroundTimePerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbPdbBlockChangesPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbPdbBlockChangesPerTransaction.emit(ils.Metrics())
+	mb.metricNewrelicoracledbPdbCPUTimeRatio.emit(ils.Metrics())
+	mb.metricNewrelicoracledbPdbCPUUsagePerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbPdbCPUUsagePerTransaction.emit(ils.Metrics())
+	mb.metricNewrelicoracledbPdbCurrentLogons.emit(ils.Metrics())
+	mb.metricNewrelicoracledbPdbCurrentOpenCursors.emit(ils.Metrics())
+	mb.metricNewrelicoracledbPdbDbPhysicalReadBytesPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbPdbDbPhysicalReadsPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbPdbDbPhysicalWriteBytesPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbPdbDbPhysicalWritesPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbPdbExecuteWithoutParseRatio.emit(ils.Metrics())
+	mb.metricNewrelicoracledbPdbExecutionsPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbPdbExecutionsPerTransaction.emit(ils.Metrics())
+	mb.metricNewrelicoracledbPdbHardParseCountPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbPdbHardParseCountPerTransaction.emit(ils.Metrics())
+	mb.metricNewrelicoracledbPdbLogicalReadsPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbPdbLogicalReadsPerTransaction.emit(ils.Metrics())
+	mb.metricNewrelicoracledbPdbLogonsPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbPdbLogonsPerTransaction.emit(ils.Metrics())
+	mb.metricNewrelicoracledbPdbNetworkTrafficBytePerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbPdbOpenCursorsPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbPdbOpenCursorsPerTransaction.emit(ils.Metrics())
+	mb.metricNewrelicoracledbPdbParseFailureCountPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbPdbPhysicalReadBytesPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbPdbPhysicalReadsPerTransaction.emit(ils.Metrics())
+	mb.metricNewrelicoracledbPdbPhysicalWriteBytesPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbPdbPhysicalWritesPerTransaction.emit(ils.Metrics())
+	mb.metricNewrelicoracledbPdbRedoGeneratedBytesPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbPdbRedoGeneratedBytesPerTransaction.emit(ils.Metrics())
+	mb.metricNewrelicoracledbPdbResponseTimePerTransaction.emit(ils.Metrics())
+	mb.metricNewrelicoracledbPdbSessionCount.emit(ils.Metrics())
+	mb.metricNewrelicoracledbPdbSoftParseRatio.emit(ils.Metrics())
+	mb.metricNewrelicoracledbPdbSQLServiceResponseTime.emit(ils.Metrics())
+	mb.metricNewrelicoracledbPdbTotalParseCountPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbPdbTotalParseCountPerTransaction.emit(ils.Metrics())
+	mb.metricNewrelicoracledbPdbTransactionsPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbPdbUserCallsPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbPdbUserCallsPerTransaction.emit(ils.Metrics())
+	mb.metricNewrelicoracledbPdbUserCommitsPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbPdbUserCommitsPercentage.emit(ils.Metrics())
+	mb.metricNewrelicoracledbPdbUserRollbacksPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbPdbUserRollbacksPercentage.emit(ils.Metrics())
+	mb.metricNewrelicoracledbPdbWaitTimeRatio.emit(ils.Metrics())
+	mb.metricNewrelicoracledbRedoLogParallelWriteWaits.emit(ils.Metrics())
+	mb.metricNewrelicoracledbRedoLogSwitchArchivingNeededWaits.emit(ils.Metrics())
+	mb.metricNewrelicoracledbRedoLogSwitchCheckpointIncompleteWaits.emit(ils.Metrics())
+	mb.metricNewrelicoracledbRedoLogSwitchCompletionWaits.emit(ils.Metrics())
+	mb.metricNewrelicoracledbRollbackSegmentsGets.emit(ils.Metrics())
+	mb.metricNewrelicoracledbRollbackSegmentsWaitRatio.emit(ils.Metrics())
+	mb.metricNewrelicoracledbRollbackSegmentsWaits.emit(ils.Metrics())
 	mb.metricNewrelicoracledbSessionsCount.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSgaBufferBusyWaits.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSgaFixedSizeBytes.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSgaFreeBufferInspectedWaits.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSgaFreeBufferWaits.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSgaHitRatio.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSgaLogAllocationRetriesRatio.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSgaLogBufferRedoAllocationRetries.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSgaLogBufferRedoEntries.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSgaLogBufferSpaceWaits.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSgaRedoBuffersBytes.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSgaSharedPoolDictCacheMissRatio.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSgaSharedPoolLibraryCacheHitRatio.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSgaSharedPoolLibraryCacheReloadRatio.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSortsDisk.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSortsMemory.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemActiveParallelSessions.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemActiveSerialSessions.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemAverageActiveSessions.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemBackgroundCheckpointsPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemBackgroundCPUUsagePerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemBackgroundTimePerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemBranchNodeSplitsPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemBranchNodeSplitsPerTransaction.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemBufferCacheHitRatio.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemCapturedUserCalls.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemConsistentReadChangesPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemConsistentReadChangesPerTransaction.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemConsistentReadGetsPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemConsistentReadGetsPerTransaction.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemCPUUsagePerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemCPUUsagePerTransaction.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemCrBlocksCreatedPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemCrBlocksCreatedPerTransaction.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemCrUndoRecordsAppliedPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemCrUndoRecordsAppliedPerTransaction.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemCurrentLogonsCount.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemCurrentOpenCursorsCount.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemCurrentOsLoad.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemCursorCacheHitRatio.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemDatabaseCPUTimeRatio.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemDatabaseTimePerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemDatabaseWaitTimeRatio.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemDbBlockChangesPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemDbBlockChangesPerTransaction.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemDbBlockChangesPerUserCall.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemDbBlockGetsPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemDbBlockGetsPerTransaction.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemDbBlockGetsPerUserCall.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemDbwrCheckpointsPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemDiskSortPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemDiskSortPerTransaction.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemEnqueueDeadlocksPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemEnqueueDeadlocksPerTransaction.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemEnqueueRequestsPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemEnqueueRequestsPerTransaction.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemEnqueueTimeoutsPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemEnqueueTimeoutsPerTransaction.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemEnqueueWaitsPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemEnqueueWaitsPerTransaction.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemExecuteWithoutParseRatio.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemExecutionsPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemExecutionsPerTransaction.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemExecutionsPerUserCall.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemFullIndexScansPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemFullIndexScansPerTransaction.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemGcCrBlockReceivedPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemGcCrBlockReceivedPerTransaction.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemGcCurrentBlockReceivedPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemGcCurrentBlockReceivedPerTransaction.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemGlobalCacheAverageCrGetTime.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemGlobalCacheAverageCurrentGetTime.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemGlobalCacheBlocksCorrupted.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemGlobalCacheBlocksLost.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemHardParseCountPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemHardParseCountPerTransaction.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemHostCPUUsagePerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemHostCPUUtilization.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemIoMegabytesPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemIoRequestsPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemLeafNodeSplitsPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemLeafNodeSplitsPerTransaction.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemLibraryCacheHitRatio.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemLibraryCacheMissRatio.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemLogicalReadsPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemLogicalReadsPerTransaction.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemLogicalReadsPerUserCall.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemLogonsPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemLogonsPerTransaction.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemLongTableScansPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemLongTableScansPerTransaction.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemMemorySortsRatio.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemNetworkTrafficVolumePerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemOpenCursorsPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemOpenCursorsPerTransaction.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemParseFailureCountPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemParseFailureCountPerTransaction.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemPgaCacheHitPercentage.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemPhysicalLobsReadsPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemPhysicalLobsReadsPerTransaction.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemPhysicalLobsWritesPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemPhysicalLobsWritesPerTransaction.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemPhysicalReadBytesPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemPhysicalReadIoRequestsPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemPhysicalReadTotalBytesPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemPhysicalReadTotalIoRequestsPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemPhysicalReadsDirectPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemPhysicalReadsDirectPerTransaction.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemPhysicalReadsPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemPhysicalReadsPerTransaction.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemPhysicalWriteBytesPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemPhysicalWriteIoRequestsPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemPhysicalWriteTotalBytesPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemPhysicalWriteTotalIoRequestsPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemPhysicalWritesDirectPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemPhysicalWritesDirectPerTransaction.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemPhysicalWritesPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemPhysicalWritesPerTransaction.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemProcessLimitPercentage.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemRecursiveCallsPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemRecursiveCallsPerTransaction.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemRedoAllocationHitRatio.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemRedoGeneratedBytesPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemRedoGeneratedBytesPerTransaction.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemRedoWritesPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemRedoWritesPerTransaction.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemResponseTimePerTransaction.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemRowCacheHitRatio.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemRowCacheMissRatio.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemRowsPerSort.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemSessionCount.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemSessionLimitPercentage.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemSharedPoolFreePercentage.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemSoftParseRatio.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemSQLServiceResponseTime.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemStreamsPoolUsagePercentage.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemTempSpaceUsed.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemTotalIndexScansPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemTotalIndexScansPerTransaction.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemTotalParseCountPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemTotalParseCountPerTransaction.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemTotalSortsPerUserCall.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemTotalTableScansPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemTotalTableScansPerTransaction.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemTotalTableScansPerUserCall.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemTransactionsPerLogon.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemTransactionsPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemUserCallsPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemUserCallsPerTransaction.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemUserCallsRatio.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemUserCommitsPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemUserCommitsPercentage.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemUserLimitPercentage.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemUserRollbackUndoRecordsAppliedPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemUserRollbackUndoRecordsAppliedPerTransaction.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemUserRollbacksPerSecond.emit(ils.Metrics())
+	mb.metricNewrelicoracledbSystemUserRollbacksPercentage.emit(ils.Metrics())
 	mb.metricNewrelicoracledbTablespaceDbID.emit(ils.Metrics())
 	mb.metricNewrelicoracledbTablespaceGlobalName.emit(ils.Metrics())
 	mb.metricNewrelicoracledbTablespaceIsOffline.emit(ils.Metrics())
@@ -820,14 +14274,1154 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 	return metrics
 }
 
+// RecordNewrelicoracledbDbIDDataPoint adds a data point to newrelicoracledb.db_id metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbDbIDDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string, dbIDAttributeValue string) {
+	mb.metricNewrelicoracledbDbID.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue, dbIDAttributeValue)
+}
+
+// RecordNewrelicoracledbDiskBlocksReadDataPoint adds a data point to newrelicoracledb.disk.blocks_read metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbDiskBlocksReadDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbDiskBlocksRead.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbDiskBlocksWrittenDataPoint adds a data point to newrelicoracledb.disk.blocks_written metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbDiskBlocksWrittenDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbDiskBlocksWritten.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbDiskReadTimeMillisecondsDataPoint adds a data point to newrelicoracledb.disk.read_time_milliseconds metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbDiskReadTimeMillisecondsDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbDiskReadTimeMilliseconds.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbDiskReadsDataPoint adds a data point to newrelicoracledb.disk.reads metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbDiskReadsDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbDiskReads.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbDiskWriteTimeMillisecondsDataPoint adds a data point to newrelicoracledb.disk.write_time_milliseconds metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbDiskWriteTimeMillisecondsDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbDiskWriteTimeMilliseconds.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbDiskWritesDataPoint adds a data point to newrelicoracledb.disk.writes metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbDiskWritesDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbDiskWrites.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbGlobalNameDataPoint adds a data point to newrelicoracledb.global_name metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbGlobalNameDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string, globalNameAttributeValue string) {
+	mb.metricNewrelicoracledbGlobalName.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue, globalNameAttributeValue)
+}
+
 // RecordNewrelicoracledbLockedAccountsDataPoint adds a data point to newrelicoracledb.locked_accounts metric.
 func (mb *MetricsBuilder) RecordNewrelicoracledbLockedAccountsDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
 	mb.metricNewrelicoracledbLockedAccounts.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
 }
 
+// RecordNewrelicoracledbLongRunningQueriesDataPoint adds a data point to newrelicoracledb.long_running_queries metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbLongRunningQueriesDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbLongRunningQueries.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbMemoryPgaAllocatedBytesDataPoint adds a data point to newrelicoracledb.memory.pga_allocated_bytes metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbMemoryPgaAllocatedBytesDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbMemoryPgaAllocatedBytes.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbMemoryPgaFreeableBytesDataPoint adds a data point to newrelicoracledb.memory.pga_freeable_bytes metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbMemoryPgaFreeableBytesDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbMemoryPgaFreeableBytes.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbMemoryPgaInUseBytesDataPoint adds a data point to newrelicoracledb.memory.pga_in_use_bytes metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbMemoryPgaInUseBytesDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbMemoryPgaInUseBytes.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbMemoryPgaMaxSizeBytesDataPoint adds a data point to newrelicoracledb.memory.pga_max_size_bytes metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbMemoryPgaMaxSizeBytesDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbMemoryPgaMaxSizeBytes.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbMemorySgaSharedPoolLibraryCacheSharableBytesDataPoint adds a data point to newrelicoracledb.memory.sga_shared_pool_library_cache_sharable_bytes metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbMemorySgaSharedPoolLibraryCacheSharableBytesDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbMemorySgaSharedPoolLibraryCacheSharableBytes.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbMemorySgaSharedPoolLibraryCacheUserBytesDataPoint adds a data point to newrelicoracledb.memory.sga_shared_pool_library_cache_user_bytes metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbMemorySgaSharedPoolLibraryCacheUserBytesDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbMemorySgaSharedPoolLibraryCacheUserBytes.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbMemorySgaUgaTotalBytesDataPoint adds a data point to newrelicoracledb.memory.sga_uga_total_bytes metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbMemorySgaUgaTotalBytesDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbMemorySgaUgaTotalBytes.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbPdbActiveParallelSessionsDataPoint adds a data point to newrelicoracledb.pdb.active_parallel_sessions metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbPdbActiveParallelSessionsDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbPdbActiveParallelSessions.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbPdbActiveSerialSessionsDataPoint adds a data point to newrelicoracledb.pdb.active_serial_sessions metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbPdbActiveSerialSessionsDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbPdbActiveSerialSessions.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbPdbAverageActiveSessionsDataPoint adds a data point to newrelicoracledb.pdb.average_active_sessions metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbPdbAverageActiveSessionsDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbPdbAverageActiveSessions.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbPdbBackgroundCPUUsagePerSecondDataPoint adds a data point to newrelicoracledb.pdb.background_cpu_usage_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbPdbBackgroundCPUUsagePerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbPdbBackgroundCPUUsagePerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbPdbBackgroundTimePerSecondDataPoint adds a data point to newrelicoracledb.pdb.background_time_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbPdbBackgroundTimePerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbPdbBackgroundTimePerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbPdbBlockChangesPerSecondDataPoint adds a data point to newrelicoracledb.pdb.block_changes_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbPdbBlockChangesPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbPdbBlockChangesPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbPdbBlockChangesPerTransactionDataPoint adds a data point to newrelicoracledb.pdb.block_changes_per_transaction metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbPdbBlockChangesPerTransactionDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbPdbBlockChangesPerTransaction.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbPdbCPUTimeRatioDataPoint adds a data point to newrelicoracledb.pdb.cpu_time_ratio metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbPdbCPUTimeRatioDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbPdbCPUTimeRatio.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbPdbCPUUsagePerSecondDataPoint adds a data point to newrelicoracledb.pdb.cpu_usage_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbPdbCPUUsagePerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbPdbCPUUsagePerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbPdbCPUUsagePerTransactionDataPoint adds a data point to newrelicoracledb.pdb.cpu_usage_per_transaction metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbPdbCPUUsagePerTransactionDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbPdbCPUUsagePerTransaction.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbPdbCurrentLogonsDataPoint adds a data point to newrelicoracledb.pdb.current_logons metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbPdbCurrentLogonsDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbPdbCurrentLogons.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbPdbCurrentOpenCursorsDataPoint adds a data point to newrelicoracledb.pdb.current_open_cursors metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbPdbCurrentOpenCursorsDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbPdbCurrentOpenCursors.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbPdbDbPhysicalReadBytesPerSecondDataPoint adds a data point to newrelicoracledb.pdb.db_physical_read_bytes_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbPdbDbPhysicalReadBytesPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbPdbDbPhysicalReadBytesPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbPdbDbPhysicalReadsPerSecondDataPoint adds a data point to newrelicoracledb.pdb.db_physical_reads_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbPdbDbPhysicalReadsPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbPdbDbPhysicalReadsPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbPdbDbPhysicalWriteBytesPerSecondDataPoint adds a data point to newrelicoracledb.pdb.db_physical_write_bytes_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbPdbDbPhysicalWriteBytesPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbPdbDbPhysicalWriteBytesPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbPdbDbPhysicalWritesPerSecondDataPoint adds a data point to newrelicoracledb.pdb.db_physical_writes_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbPdbDbPhysicalWritesPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbPdbDbPhysicalWritesPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbPdbExecuteWithoutParseRatioDataPoint adds a data point to newrelicoracledb.pdb.execute_without_parse_ratio metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbPdbExecuteWithoutParseRatioDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbPdbExecuteWithoutParseRatio.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbPdbExecutionsPerSecondDataPoint adds a data point to newrelicoracledb.pdb.executions_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbPdbExecutionsPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbPdbExecutionsPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbPdbExecutionsPerTransactionDataPoint adds a data point to newrelicoracledb.pdb.executions_per_transaction metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbPdbExecutionsPerTransactionDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbPdbExecutionsPerTransaction.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbPdbHardParseCountPerSecondDataPoint adds a data point to newrelicoracledb.pdb.hard_parse_count_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbPdbHardParseCountPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbPdbHardParseCountPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbPdbHardParseCountPerTransactionDataPoint adds a data point to newrelicoracledb.pdb.hard_parse_count_per_transaction metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbPdbHardParseCountPerTransactionDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbPdbHardParseCountPerTransaction.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbPdbLogicalReadsPerSecondDataPoint adds a data point to newrelicoracledb.pdb.logical_reads_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbPdbLogicalReadsPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbPdbLogicalReadsPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbPdbLogicalReadsPerTransactionDataPoint adds a data point to newrelicoracledb.pdb.logical_reads_per_transaction metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbPdbLogicalReadsPerTransactionDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbPdbLogicalReadsPerTransaction.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbPdbLogonsPerSecondDataPoint adds a data point to newrelicoracledb.pdb.logons_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbPdbLogonsPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbPdbLogonsPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbPdbLogonsPerTransactionDataPoint adds a data point to newrelicoracledb.pdb.logons_per_transaction metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbPdbLogonsPerTransactionDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbPdbLogonsPerTransaction.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbPdbNetworkTrafficBytePerSecondDataPoint adds a data point to newrelicoracledb.pdb.network_traffic_byte_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbPdbNetworkTrafficBytePerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbPdbNetworkTrafficBytePerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbPdbOpenCursorsPerSecondDataPoint adds a data point to newrelicoracledb.pdb.open_cursors_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbPdbOpenCursorsPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbPdbOpenCursorsPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbPdbOpenCursorsPerTransactionDataPoint adds a data point to newrelicoracledb.pdb.open_cursors_per_transaction metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbPdbOpenCursorsPerTransactionDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbPdbOpenCursorsPerTransaction.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbPdbParseFailureCountPerSecondDataPoint adds a data point to newrelicoracledb.pdb.parse_failure_count_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbPdbParseFailureCountPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbPdbParseFailureCountPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbPdbPhysicalReadBytesPerSecondDataPoint adds a data point to newrelicoracledb.pdb.physical_read_bytes_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbPdbPhysicalReadBytesPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbPdbPhysicalReadBytesPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbPdbPhysicalReadsPerTransactionDataPoint adds a data point to newrelicoracledb.pdb.physical_reads_per_transaction metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbPdbPhysicalReadsPerTransactionDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbPdbPhysicalReadsPerTransaction.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbPdbPhysicalWriteBytesPerSecondDataPoint adds a data point to newrelicoracledb.pdb.physical_write_bytes_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbPdbPhysicalWriteBytesPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbPdbPhysicalWriteBytesPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbPdbPhysicalWritesPerTransactionDataPoint adds a data point to newrelicoracledb.pdb.physical_writes_per_transaction metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbPdbPhysicalWritesPerTransactionDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbPdbPhysicalWritesPerTransaction.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbPdbRedoGeneratedBytesPerSecondDataPoint adds a data point to newrelicoracledb.pdb.redo_generated_bytes_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbPdbRedoGeneratedBytesPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbPdbRedoGeneratedBytesPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbPdbRedoGeneratedBytesPerTransactionDataPoint adds a data point to newrelicoracledb.pdb.redo_generated_bytes_per_transaction metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbPdbRedoGeneratedBytesPerTransactionDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbPdbRedoGeneratedBytesPerTransaction.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbPdbResponseTimePerTransactionDataPoint adds a data point to newrelicoracledb.pdb.response_time_per_transaction metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbPdbResponseTimePerTransactionDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbPdbResponseTimePerTransaction.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbPdbSessionCountDataPoint adds a data point to newrelicoracledb.pdb.session_count metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbPdbSessionCountDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbPdbSessionCount.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbPdbSoftParseRatioDataPoint adds a data point to newrelicoracledb.pdb.soft_parse_ratio metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbPdbSoftParseRatioDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbPdbSoftParseRatio.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbPdbSQLServiceResponseTimeDataPoint adds a data point to newrelicoracledb.pdb.sql_service_response_time metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbPdbSQLServiceResponseTimeDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbPdbSQLServiceResponseTime.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbPdbTotalParseCountPerSecondDataPoint adds a data point to newrelicoracledb.pdb.total_parse_count_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbPdbTotalParseCountPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbPdbTotalParseCountPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbPdbTotalParseCountPerTransactionDataPoint adds a data point to newrelicoracledb.pdb.total_parse_count_per_transaction metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbPdbTotalParseCountPerTransactionDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbPdbTotalParseCountPerTransaction.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbPdbTransactionsPerSecondDataPoint adds a data point to newrelicoracledb.pdb.transactions_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbPdbTransactionsPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbPdbTransactionsPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbPdbUserCallsPerSecondDataPoint adds a data point to newrelicoracledb.pdb.user_calls_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbPdbUserCallsPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbPdbUserCallsPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbPdbUserCallsPerTransactionDataPoint adds a data point to newrelicoracledb.pdb.user_calls_per_transaction metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbPdbUserCallsPerTransactionDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbPdbUserCallsPerTransaction.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbPdbUserCommitsPerSecondDataPoint adds a data point to newrelicoracledb.pdb.user_commits_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbPdbUserCommitsPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbPdbUserCommitsPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbPdbUserCommitsPercentageDataPoint adds a data point to newrelicoracledb.pdb.user_commits_percentage metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbPdbUserCommitsPercentageDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbPdbUserCommitsPercentage.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbPdbUserRollbacksPerSecondDataPoint adds a data point to newrelicoracledb.pdb.user_rollbacks_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbPdbUserRollbacksPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbPdbUserRollbacksPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbPdbUserRollbacksPercentageDataPoint adds a data point to newrelicoracledb.pdb.user_rollbacks_percentage metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbPdbUserRollbacksPercentageDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbPdbUserRollbacksPercentage.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbPdbWaitTimeRatioDataPoint adds a data point to newrelicoracledb.pdb.wait_time_ratio metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbPdbWaitTimeRatioDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbPdbWaitTimeRatio.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbRedoLogParallelWriteWaitsDataPoint adds a data point to newrelicoracledb.redo_log_parallel_write_waits metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbRedoLogParallelWriteWaitsDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbRedoLogParallelWriteWaits.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbRedoLogSwitchArchivingNeededWaitsDataPoint adds a data point to newrelicoracledb.redo_log_switch_archiving_needed_waits metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbRedoLogSwitchArchivingNeededWaitsDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbRedoLogSwitchArchivingNeededWaits.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbRedoLogSwitchCheckpointIncompleteWaitsDataPoint adds a data point to newrelicoracledb.redo_log_switch_checkpoint_incomplete_waits metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbRedoLogSwitchCheckpointIncompleteWaitsDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbRedoLogSwitchCheckpointIncompleteWaits.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbRedoLogSwitchCompletionWaitsDataPoint adds a data point to newrelicoracledb.redo_log_switch_completion_waits metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbRedoLogSwitchCompletionWaitsDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbRedoLogSwitchCompletionWaits.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbRollbackSegmentsGetsDataPoint adds a data point to newrelicoracledb.rollback_segments_gets metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbRollbackSegmentsGetsDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbRollbackSegmentsGets.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbRollbackSegmentsWaitRatioDataPoint adds a data point to newrelicoracledb.rollback_segments_wait_ratio metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbRollbackSegmentsWaitRatioDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbRollbackSegmentsWaitRatio.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbRollbackSegmentsWaitsDataPoint adds a data point to newrelicoracledb.rollback_segments_waits metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbRollbackSegmentsWaitsDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbRollbackSegmentsWaits.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
 // RecordNewrelicoracledbSessionsCountDataPoint adds a data point to newrelicoracledb.sessions.count metric.
 func (mb *MetricsBuilder) RecordNewrelicoracledbSessionsCountDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string) {
 	mb.metricNewrelicoracledbSessionsCount.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue)
+}
+
+// RecordNewrelicoracledbSgaBufferBusyWaitsDataPoint adds a data point to newrelicoracledb.sga_buffer_busy_waits metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSgaBufferBusyWaitsDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSgaBufferBusyWaits.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSgaFixedSizeBytesDataPoint adds a data point to newrelicoracledb.sga_fixed_size_bytes metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSgaFixedSizeBytesDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSgaFixedSizeBytes.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSgaFreeBufferInspectedWaitsDataPoint adds a data point to newrelicoracledb.sga_free_buffer_inspected_waits metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSgaFreeBufferInspectedWaitsDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSgaFreeBufferInspectedWaits.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSgaFreeBufferWaitsDataPoint adds a data point to newrelicoracledb.sga_free_buffer_waits metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSgaFreeBufferWaitsDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSgaFreeBufferWaits.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSgaHitRatioDataPoint adds a data point to newrelicoracledb.sga_hit_ratio metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSgaHitRatioDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSgaHitRatio.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSgaLogAllocationRetriesRatioDataPoint adds a data point to newrelicoracledb.sga_log_allocation_retries_ratio metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSgaLogAllocationRetriesRatioDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSgaLogAllocationRetriesRatio.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSgaLogBufferRedoAllocationRetriesDataPoint adds a data point to newrelicoracledb.sga_log_buffer_redo_allocation_retries metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSgaLogBufferRedoAllocationRetriesDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSgaLogBufferRedoAllocationRetries.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSgaLogBufferRedoEntriesDataPoint adds a data point to newrelicoracledb.sga_log_buffer_redo_entries metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSgaLogBufferRedoEntriesDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSgaLogBufferRedoEntries.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSgaLogBufferSpaceWaitsDataPoint adds a data point to newrelicoracledb.sga_log_buffer_space_waits metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSgaLogBufferSpaceWaitsDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSgaLogBufferSpaceWaits.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSgaRedoBuffersBytesDataPoint adds a data point to newrelicoracledb.sga_redo_buffers_bytes metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSgaRedoBuffersBytesDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSgaRedoBuffersBytes.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSgaSharedPoolDictCacheMissRatioDataPoint adds a data point to newrelicoracledb.sga_shared_pool_dict_cache_miss_ratio metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSgaSharedPoolDictCacheMissRatioDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSgaSharedPoolDictCacheMissRatio.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSgaSharedPoolLibraryCacheHitRatioDataPoint adds a data point to newrelicoracledb.sga_shared_pool_library_cache_hit_ratio metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSgaSharedPoolLibraryCacheHitRatioDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSgaSharedPoolLibraryCacheHitRatio.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSgaSharedPoolLibraryCacheReloadRatioDataPoint adds a data point to newrelicoracledb.sga_shared_pool_library_cache_reload_ratio metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSgaSharedPoolLibraryCacheReloadRatioDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSgaSharedPoolLibraryCacheReloadRatio.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSortsDiskDataPoint adds a data point to newrelicoracledb.sorts_disk metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSortsDiskDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSortsDisk.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSortsMemoryDataPoint adds a data point to newrelicoracledb.sorts_memory metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSortsMemoryDataPoint(ts pcommon.Timestamp, val int64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSortsMemory.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemActiveParallelSessionsDataPoint adds a data point to newrelicoracledb.system.active_parallel_sessions metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemActiveParallelSessionsDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemActiveParallelSessions.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemActiveSerialSessionsDataPoint adds a data point to newrelicoracledb.system.active_serial_sessions metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemActiveSerialSessionsDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemActiveSerialSessions.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemAverageActiveSessionsDataPoint adds a data point to newrelicoracledb.system.average_active_sessions metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemAverageActiveSessionsDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemAverageActiveSessions.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemBackgroundCheckpointsPerSecondDataPoint adds a data point to newrelicoracledb.system.background_checkpoints_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemBackgroundCheckpointsPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemBackgroundCheckpointsPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemBackgroundCPUUsagePerSecondDataPoint adds a data point to newrelicoracledb.system.background_cpu_usage_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemBackgroundCPUUsagePerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemBackgroundCPUUsagePerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemBackgroundTimePerSecondDataPoint adds a data point to newrelicoracledb.system.background_time_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemBackgroundTimePerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemBackgroundTimePerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemBranchNodeSplitsPerSecondDataPoint adds a data point to newrelicoracledb.system.branch_node_splits_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemBranchNodeSplitsPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemBranchNodeSplitsPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemBranchNodeSplitsPerTransactionDataPoint adds a data point to newrelicoracledb.system.branch_node_splits_per_transaction metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemBranchNodeSplitsPerTransactionDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemBranchNodeSplitsPerTransaction.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemBufferCacheHitRatioDataPoint adds a data point to newrelicoracledb.system.buffer_cache_hit_ratio metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemBufferCacheHitRatioDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemBufferCacheHitRatio.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemCapturedUserCallsDataPoint adds a data point to newrelicoracledb.system.captured_user_calls metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemCapturedUserCallsDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemCapturedUserCalls.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemConsistentReadChangesPerSecondDataPoint adds a data point to newrelicoracledb.system.consistent_read_changes_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemConsistentReadChangesPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemConsistentReadChangesPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemConsistentReadChangesPerTransactionDataPoint adds a data point to newrelicoracledb.system.consistent_read_changes_per_transaction metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemConsistentReadChangesPerTransactionDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemConsistentReadChangesPerTransaction.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemConsistentReadGetsPerSecondDataPoint adds a data point to newrelicoracledb.system.consistent_read_gets_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemConsistentReadGetsPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemConsistentReadGetsPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemConsistentReadGetsPerTransactionDataPoint adds a data point to newrelicoracledb.system.consistent_read_gets_per_transaction metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemConsistentReadGetsPerTransactionDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemConsistentReadGetsPerTransaction.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemCPUUsagePerSecondDataPoint adds a data point to newrelicoracledb.system.cpu_usage_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemCPUUsagePerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemCPUUsagePerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemCPUUsagePerTransactionDataPoint adds a data point to newrelicoracledb.system.cpu_usage_per_transaction metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemCPUUsagePerTransactionDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemCPUUsagePerTransaction.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemCrBlocksCreatedPerSecondDataPoint adds a data point to newrelicoracledb.system.cr_blocks_created_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemCrBlocksCreatedPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemCrBlocksCreatedPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemCrBlocksCreatedPerTransactionDataPoint adds a data point to newrelicoracledb.system.cr_blocks_created_per_transaction metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemCrBlocksCreatedPerTransactionDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemCrBlocksCreatedPerTransaction.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemCrUndoRecordsAppliedPerSecondDataPoint adds a data point to newrelicoracledb.system.cr_undo_records_applied_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemCrUndoRecordsAppliedPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemCrUndoRecordsAppliedPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemCrUndoRecordsAppliedPerTransactionDataPoint adds a data point to newrelicoracledb.system.cr_undo_records_applied_per_transaction metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemCrUndoRecordsAppliedPerTransactionDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemCrUndoRecordsAppliedPerTransaction.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemCurrentLogonsCountDataPoint adds a data point to newrelicoracledb.system.current_logons_count metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemCurrentLogonsCountDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemCurrentLogonsCount.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemCurrentOpenCursorsCountDataPoint adds a data point to newrelicoracledb.system.current_open_cursors_count metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemCurrentOpenCursorsCountDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemCurrentOpenCursorsCount.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemCurrentOsLoadDataPoint adds a data point to newrelicoracledb.system.current_os_load metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemCurrentOsLoadDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemCurrentOsLoad.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemCursorCacheHitRatioDataPoint adds a data point to newrelicoracledb.system.cursor_cache_hit_ratio metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemCursorCacheHitRatioDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemCursorCacheHitRatio.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemDatabaseCPUTimeRatioDataPoint adds a data point to newrelicoracledb.system.database_cpu_time_ratio metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemDatabaseCPUTimeRatioDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemDatabaseCPUTimeRatio.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemDatabaseTimePerSecondDataPoint adds a data point to newrelicoracledb.system.database_time_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemDatabaseTimePerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemDatabaseTimePerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemDatabaseWaitTimeRatioDataPoint adds a data point to newrelicoracledb.system.database_wait_time_ratio metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemDatabaseWaitTimeRatioDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemDatabaseWaitTimeRatio.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemDbBlockChangesPerSecondDataPoint adds a data point to newrelicoracledb.system.db_block_changes_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemDbBlockChangesPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemDbBlockChangesPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemDbBlockChangesPerTransactionDataPoint adds a data point to newrelicoracledb.system.db_block_changes_per_transaction metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemDbBlockChangesPerTransactionDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemDbBlockChangesPerTransaction.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemDbBlockChangesPerUserCallDataPoint adds a data point to newrelicoracledb.system.db_block_changes_per_user_call metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemDbBlockChangesPerUserCallDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemDbBlockChangesPerUserCall.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemDbBlockGetsPerSecondDataPoint adds a data point to newrelicoracledb.system.db_block_gets_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemDbBlockGetsPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemDbBlockGetsPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemDbBlockGetsPerTransactionDataPoint adds a data point to newrelicoracledb.system.db_block_gets_per_transaction metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemDbBlockGetsPerTransactionDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemDbBlockGetsPerTransaction.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemDbBlockGetsPerUserCallDataPoint adds a data point to newrelicoracledb.system.db_block_gets_per_user_call metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemDbBlockGetsPerUserCallDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemDbBlockGetsPerUserCall.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemDbwrCheckpointsPerSecondDataPoint adds a data point to newrelicoracledb.system.dbwr_checkpoints_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemDbwrCheckpointsPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemDbwrCheckpointsPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemDiskSortPerSecondDataPoint adds a data point to newrelicoracledb.system.disk_sort_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemDiskSortPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemDiskSortPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemDiskSortPerTransactionDataPoint adds a data point to newrelicoracledb.system.disk_sort_per_transaction metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemDiskSortPerTransactionDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemDiskSortPerTransaction.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemEnqueueDeadlocksPerSecondDataPoint adds a data point to newrelicoracledb.system.enqueue_deadlocks_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemEnqueueDeadlocksPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemEnqueueDeadlocksPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemEnqueueDeadlocksPerTransactionDataPoint adds a data point to newrelicoracledb.system.enqueue_deadlocks_per_transaction metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemEnqueueDeadlocksPerTransactionDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemEnqueueDeadlocksPerTransaction.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemEnqueueRequestsPerSecondDataPoint adds a data point to newrelicoracledb.system.enqueue_requests_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemEnqueueRequestsPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemEnqueueRequestsPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemEnqueueRequestsPerTransactionDataPoint adds a data point to newrelicoracledb.system.enqueue_requests_per_transaction metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemEnqueueRequestsPerTransactionDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemEnqueueRequestsPerTransaction.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemEnqueueTimeoutsPerSecondDataPoint adds a data point to newrelicoracledb.system.enqueue_timeouts_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemEnqueueTimeoutsPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemEnqueueTimeoutsPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemEnqueueTimeoutsPerTransactionDataPoint adds a data point to newrelicoracledb.system.enqueue_timeouts_per_transaction metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemEnqueueTimeoutsPerTransactionDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemEnqueueTimeoutsPerTransaction.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemEnqueueWaitsPerSecondDataPoint adds a data point to newrelicoracledb.system.enqueue_waits_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemEnqueueWaitsPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemEnqueueWaitsPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemEnqueueWaitsPerTransactionDataPoint adds a data point to newrelicoracledb.system.enqueue_waits_per_transaction metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemEnqueueWaitsPerTransactionDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemEnqueueWaitsPerTransaction.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemExecuteWithoutParseRatioDataPoint adds a data point to newrelicoracledb.system.execute_without_parse_ratio metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemExecuteWithoutParseRatioDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemExecuteWithoutParseRatio.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemExecutionsPerSecondDataPoint adds a data point to newrelicoracledb.system.executions_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemExecutionsPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemExecutionsPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemExecutionsPerTransactionDataPoint adds a data point to newrelicoracledb.system.executions_per_transaction metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemExecutionsPerTransactionDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemExecutionsPerTransaction.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemExecutionsPerUserCallDataPoint adds a data point to newrelicoracledb.system.executions_per_user_call metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemExecutionsPerUserCallDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemExecutionsPerUserCall.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemFullIndexScansPerSecondDataPoint adds a data point to newrelicoracledb.system.full_index_scans_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemFullIndexScansPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemFullIndexScansPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemFullIndexScansPerTransactionDataPoint adds a data point to newrelicoracledb.system.full_index_scans_per_transaction metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemFullIndexScansPerTransactionDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemFullIndexScansPerTransaction.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemGcCrBlockReceivedPerSecondDataPoint adds a data point to newrelicoracledb.system.gc_cr_block_received_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemGcCrBlockReceivedPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemGcCrBlockReceivedPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemGcCrBlockReceivedPerTransactionDataPoint adds a data point to newrelicoracledb.system.gc_cr_block_received_per_transaction metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemGcCrBlockReceivedPerTransactionDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemGcCrBlockReceivedPerTransaction.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemGcCurrentBlockReceivedPerSecondDataPoint adds a data point to newrelicoracledb.system.gc_current_block_received_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemGcCurrentBlockReceivedPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemGcCurrentBlockReceivedPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemGcCurrentBlockReceivedPerTransactionDataPoint adds a data point to newrelicoracledb.system.gc_current_block_received_per_transaction metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemGcCurrentBlockReceivedPerTransactionDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemGcCurrentBlockReceivedPerTransaction.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemGlobalCacheAverageCrGetTimeDataPoint adds a data point to newrelicoracledb.system.global_cache_average_cr_get_time metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemGlobalCacheAverageCrGetTimeDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemGlobalCacheAverageCrGetTime.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemGlobalCacheAverageCurrentGetTimeDataPoint adds a data point to newrelicoracledb.system.global_cache_average_current_get_time metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemGlobalCacheAverageCurrentGetTimeDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemGlobalCacheAverageCurrentGetTime.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemGlobalCacheBlocksCorruptedDataPoint adds a data point to newrelicoracledb.system.global_cache_blocks_corrupted metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemGlobalCacheBlocksCorruptedDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemGlobalCacheBlocksCorrupted.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemGlobalCacheBlocksLostDataPoint adds a data point to newrelicoracledb.system.global_cache_blocks_lost metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemGlobalCacheBlocksLostDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemGlobalCacheBlocksLost.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemHardParseCountPerSecondDataPoint adds a data point to newrelicoracledb.system.hard_parse_count_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemHardParseCountPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemHardParseCountPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemHardParseCountPerTransactionDataPoint adds a data point to newrelicoracledb.system.hard_parse_count_per_transaction metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemHardParseCountPerTransactionDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemHardParseCountPerTransaction.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemHostCPUUsagePerSecondDataPoint adds a data point to newrelicoracledb.system.host_cpu_usage_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemHostCPUUsagePerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemHostCPUUsagePerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemHostCPUUtilizationDataPoint adds a data point to newrelicoracledb.system.host_cpu_utilization metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemHostCPUUtilizationDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemHostCPUUtilization.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemIoMegabytesPerSecondDataPoint adds a data point to newrelicoracledb.system.io_megabytes_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemIoMegabytesPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemIoMegabytesPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemIoRequestsPerSecondDataPoint adds a data point to newrelicoracledb.system.io_requests_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemIoRequestsPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemIoRequestsPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemLeafNodeSplitsPerSecondDataPoint adds a data point to newrelicoracledb.system.leaf_node_splits_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemLeafNodeSplitsPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemLeafNodeSplitsPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemLeafNodeSplitsPerTransactionDataPoint adds a data point to newrelicoracledb.system.leaf_node_splits_per_transaction metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemLeafNodeSplitsPerTransactionDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemLeafNodeSplitsPerTransaction.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemLibraryCacheHitRatioDataPoint adds a data point to newrelicoracledb.system.library_cache_hit_ratio metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemLibraryCacheHitRatioDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemLibraryCacheHitRatio.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemLibraryCacheMissRatioDataPoint adds a data point to newrelicoracledb.system.library_cache_miss_ratio metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemLibraryCacheMissRatioDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemLibraryCacheMissRatio.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemLogicalReadsPerSecondDataPoint adds a data point to newrelicoracledb.system.logical_reads_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemLogicalReadsPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemLogicalReadsPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemLogicalReadsPerTransactionDataPoint adds a data point to newrelicoracledb.system.logical_reads_per_transaction metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemLogicalReadsPerTransactionDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemLogicalReadsPerTransaction.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemLogicalReadsPerUserCallDataPoint adds a data point to newrelicoracledb.system.logical_reads_per_user_call metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemLogicalReadsPerUserCallDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemLogicalReadsPerUserCall.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemLogonsPerSecondDataPoint adds a data point to newrelicoracledb.system.logons_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemLogonsPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemLogonsPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemLogonsPerTransactionDataPoint adds a data point to newrelicoracledb.system.logons_per_transaction metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemLogonsPerTransactionDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemLogonsPerTransaction.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemLongTableScansPerSecondDataPoint adds a data point to newrelicoracledb.system.long_table_scans_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemLongTableScansPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemLongTableScansPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemLongTableScansPerTransactionDataPoint adds a data point to newrelicoracledb.system.long_table_scans_per_transaction metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemLongTableScansPerTransactionDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemLongTableScansPerTransaction.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemMemorySortsRatioDataPoint adds a data point to newrelicoracledb.system.memory_sorts_ratio metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemMemorySortsRatioDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemMemorySortsRatio.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemNetworkTrafficVolumePerSecondDataPoint adds a data point to newrelicoracledb.system.network_traffic_volume_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemNetworkTrafficVolumePerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemNetworkTrafficVolumePerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemOpenCursorsPerSecondDataPoint adds a data point to newrelicoracledb.system.open_cursors_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemOpenCursorsPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemOpenCursorsPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemOpenCursorsPerTransactionDataPoint adds a data point to newrelicoracledb.system.open_cursors_per_transaction metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemOpenCursorsPerTransactionDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemOpenCursorsPerTransaction.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemParseFailureCountPerSecondDataPoint adds a data point to newrelicoracledb.system.parse_failure_count_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemParseFailureCountPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemParseFailureCountPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemParseFailureCountPerTransactionDataPoint adds a data point to newrelicoracledb.system.parse_failure_count_per_transaction metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemParseFailureCountPerTransactionDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemParseFailureCountPerTransaction.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemPgaCacheHitPercentageDataPoint adds a data point to newrelicoracledb.system.pga_cache_hit_percentage metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemPgaCacheHitPercentageDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemPgaCacheHitPercentage.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemPhysicalLobsReadsPerSecondDataPoint adds a data point to newrelicoracledb.system.physical_lobs_reads_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemPhysicalLobsReadsPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemPhysicalLobsReadsPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemPhysicalLobsReadsPerTransactionDataPoint adds a data point to newrelicoracledb.system.physical_lobs_reads_per_transaction metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemPhysicalLobsReadsPerTransactionDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemPhysicalLobsReadsPerTransaction.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemPhysicalLobsWritesPerSecondDataPoint adds a data point to newrelicoracledb.system.physical_lobs_writes_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemPhysicalLobsWritesPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemPhysicalLobsWritesPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemPhysicalLobsWritesPerTransactionDataPoint adds a data point to newrelicoracledb.system.physical_lobs_writes_per_transaction metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemPhysicalLobsWritesPerTransactionDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemPhysicalLobsWritesPerTransaction.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemPhysicalReadBytesPerSecondDataPoint adds a data point to newrelicoracledb.system.physical_read_bytes_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemPhysicalReadBytesPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemPhysicalReadBytesPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemPhysicalReadIoRequestsPerSecondDataPoint adds a data point to newrelicoracledb.system.physical_read_io_requests_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemPhysicalReadIoRequestsPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemPhysicalReadIoRequestsPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemPhysicalReadTotalBytesPerSecondDataPoint adds a data point to newrelicoracledb.system.physical_read_total_bytes_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemPhysicalReadTotalBytesPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemPhysicalReadTotalBytesPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemPhysicalReadTotalIoRequestsPerSecondDataPoint adds a data point to newrelicoracledb.system.physical_read_total_io_requests_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemPhysicalReadTotalIoRequestsPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemPhysicalReadTotalIoRequestsPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemPhysicalReadsDirectPerSecondDataPoint adds a data point to newrelicoracledb.system.physical_reads_direct_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemPhysicalReadsDirectPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemPhysicalReadsDirectPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemPhysicalReadsDirectPerTransactionDataPoint adds a data point to newrelicoracledb.system.physical_reads_direct_per_transaction metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemPhysicalReadsDirectPerTransactionDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemPhysicalReadsDirectPerTransaction.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemPhysicalReadsPerSecondDataPoint adds a data point to newrelicoracledb.system.physical_reads_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemPhysicalReadsPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemPhysicalReadsPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemPhysicalReadsPerTransactionDataPoint adds a data point to newrelicoracledb.system.physical_reads_per_transaction metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemPhysicalReadsPerTransactionDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemPhysicalReadsPerTransaction.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemPhysicalWriteBytesPerSecondDataPoint adds a data point to newrelicoracledb.system.physical_write_bytes_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemPhysicalWriteBytesPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemPhysicalWriteBytesPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemPhysicalWriteIoRequestsPerSecondDataPoint adds a data point to newrelicoracledb.system.physical_write_io_requests_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemPhysicalWriteIoRequestsPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemPhysicalWriteIoRequestsPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemPhysicalWriteTotalBytesPerSecondDataPoint adds a data point to newrelicoracledb.system.physical_write_total_bytes_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemPhysicalWriteTotalBytesPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemPhysicalWriteTotalBytesPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemPhysicalWriteTotalIoRequestsPerSecondDataPoint adds a data point to newrelicoracledb.system.physical_write_total_io_requests_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemPhysicalWriteTotalIoRequestsPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemPhysicalWriteTotalIoRequestsPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemPhysicalWritesDirectPerSecondDataPoint adds a data point to newrelicoracledb.system.physical_writes_direct_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemPhysicalWritesDirectPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemPhysicalWritesDirectPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemPhysicalWritesDirectPerTransactionDataPoint adds a data point to newrelicoracledb.system.physical_writes_direct_per_transaction metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemPhysicalWritesDirectPerTransactionDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemPhysicalWritesDirectPerTransaction.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemPhysicalWritesPerSecondDataPoint adds a data point to newrelicoracledb.system.physical_writes_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemPhysicalWritesPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemPhysicalWritesPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemPhysicalWritesPerTransactionDataPoint adds a data point to newrelicoracledb.system.physical_writes_per_transaction metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemPhysicalWritesPerTransactionDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemPhysicalWritesPerTransaction.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemProcessLimitPercentageDataPoint adds a data point to newrelicoracledb.system.process_limit_percentage metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemProcessLimitPercentageDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemProcessLimitPercentage.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemRecursiveCallsPerSecondDataPoint adds a data point to newrelicoracledb.system.recursive_calls_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemRecursiveCallsPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemRecursiveCallsPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemRecursiveCallsPerTransactionDataPoint adds a data point to newrelicoracledb.system.recursive_calls_per_transaction metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemRecursiveCallsPerTransactionDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemRecursiveCallsPerTransaction.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemRedoAllocationHitRatioDataPoint adds a data point to newrelicoracledb.system.redo_allocation_hit_ratio metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemRedoAllocationHitRatioDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemRedoAllocationHitRatio.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemRedoGeneratedBytesPerSecondDataPoint adds a data point to newrelicoracledb.system.redo_generated_bytes_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemRedoGeneratedBytesPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemRedoGeneratedBytesPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemRedoGeneratedBytesPerTransactionDataPoint adds a data point to newrelicoracledb.system.redo_generated_bytes_per_transaction metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemRedoGeneratedBytesPerTransactionDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemRedoGeneratedBytesPerTransaction.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemRedoWritesPerSecondDataPoint adds a data point to newrelicoracledb.system.redo_writes_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemRedoWritesPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemRedoWritesPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemRedoWritesPerTransactionDataPoint adds a data point to newrelicoracledb.system.redo_writes_per_transaction metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemRedoWritesPerTransactionDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemRedoWritesPerTransaction.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemResponseTimePerTransactionDataPoint adds a data point to newrelicoracledb.system.response_time_per_transaction metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemResponseTimePerTransactionDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemResponseTimePerTransaction.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemRowCacheHitRatioDataPoint adds a data point to newrelicoracledb.system.row_cache_hit_ratio metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemRowCacheHitRatioDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemRowCacheHitRatio.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemRowCacheMissRatioDataPoint adds a data point to newrelicoracledb.system.row_cache_miss_ratio metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemRowCacheMissRatioDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemRowCacheMissRatio.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemRowsPerSortDataPoint adds a data point to newrelicoracledb.system.rows_per_sort metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemRowsPerSortDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemRowsPerSort.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemSessionCountDataPoint adds a data point to newrelicoracledb.system.session_count metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemSessionCountDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemSessionCount.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemSessionLimitPercentageDataPoint adds a data point to newrelicoracledb.system.session_limit_percentage metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemSessionLimitPercentageDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemSessionLimitPercentage.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemSharedPoolFreePercentageDataPoint adds a data point to newrelicoracledb.system.shared_pool_free_percentage metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemSharedPoolFreePercentageDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemSharedPoolFreePercentage.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemSoftParseRatioDataPoint adds a data point to newrelicoracledb.system.soft_parse_ratio metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemSoftParseRatioDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemSoftParseRatio.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemSQLServiceResponseTimeDataPoint adds a data point to newrelicoracledb.system.sql_service_response_time metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemSQLServiceResponseTimeDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemSQLServiceResponseTime.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemStreamsPoolUsagePercentageDataPoint adds a data point to newrelicoracledb.system.streams_pool_usage_percentage metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemStreamsPoolUsagePercentageDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemStreamsPoolUsagePercentage.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemTempSpaceUsedDataPoint adds a data point to newrelicoracledb.system.temp_space_used metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemTempSpaceUsedDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemTempSpaceUsed.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemTotalIndexScansPerSecondDataPoint adds a data point to newrelicoracledb.system.total_index_scans_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemTotalIndexScansPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemTotalIndexScansPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemTotalIndexScansPerTransactionDataPoint adds a data point to newrelicoracledb.system.total_index_scans_per_transaction metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemTotalIndexScansPerTransactionDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemTotalIndexScansPerTransaction.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemTotalParseCountPerSecondDataPoint adds a data point to newrelicoracledb.system.total_parse_count_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemTotalParseCountPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemTotalParseCountPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemTotalParseCountPerTransactionDataPoint adds a data point to newrelicoracledb.system.total_parse_count_per_transaction metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemTotalParseCountPerTransactionDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemTotalParseCountPerTransaction.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemTotalSortsPerUserCallDataPoint adds a data point to newrelicoracledb.system.total_sorts_per_user_call metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemTotalSortsPerUserCallDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemTotalSortsPerUserCall.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemTotalTableScansPerSecondDataPoint adds a data point to newrelicoracledb.system.total_table_scans_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemTotalTableScansPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemTotalTableScansPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemTotalTableScansPerTransactionDataPoint adds a data point to newrelicoracledb.system.total_table_scans_per_transaction metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemTotalTableScansPerTransactionDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemTotalTableScansPerTransaction.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemTotalTableScansPerUserCallDataPoint adds a data point to newrelicoracledb.system.total_table_scans_per_user_call metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemTotalTableScansPerUserCallDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemTotalTableScansPerUserCall.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemTransactionsPerLogonDataPoint adds a data point to newrelicoracledb.system.transactions_per_logon metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemTransactionsPerLogonDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemTransactionsPerLogon.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemTransactionsPerSecondDataPoint adds a data point to newrelicoracledb.system.transactions_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemTransactionsPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemTransactionsPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemUserCallsPerSecondDataPoint adds a data point to newrelicoracledb.system.user_calls_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemUserCallsPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemUserCallsPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemUserCallsPerTransactionDataPoint adds a data point to newrelicoracledb.system.user_calls_per_transaction metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemUserCallsPerTransactionDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemUserCallsPerTransaction.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemUserCallsRatioDataPoint adds a data point to newrelicoracledb.system.user_calls_ratio metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemUserCallsRatioDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemUserCallsRatio.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemUserCommitsPerSecondDataPoint adds a data point to newrelicoracledb.system.user_commits_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemUserCommitsPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemUserCommitsPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemUserCommitsPercentageDataPoint adds a data point to newrelicoracledb.system.user_commits_percentage metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemUserCommitsPercentageDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemUserCommitsPercentage.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemUserLimitPercentageDataPoint adds a data point to newrelicoracledb.system.user_limit_percentage metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemUserLimitPercentageDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemUserLimitPercentage.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemUserRollbackUndoRecordsAppliedPerSecondDataPoint adds a data point to newrelicoracledb.system.user_rollback_undo_records_applied_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemUserRollbackUndoRecordsAppliedPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemUserRollbackUndoRecordsAppliedPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemUserRollbackUndoRecordsAppliedPerTransactionDataPoint adds a data point to newrelicoracledb.system.user_rollback_undo_records_applied_per_transaction metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemUserRollbackUndoRecordsAppliedPerTransactionDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemUserRollbackUndoRecordsAppliedPerTransaction.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemUserRollbacksPerSecondDataPoint adds a data point to newrelicoracledb.system.user_rollbacks_per_second metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemUserRollbacksPerSecondDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemUserRollbacksPerSecond.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
+}
+
+// RecordNewrelicoracledbSystemUserRollbacksPercentageDataPoint adds a data point to newrelicoracledb.system.user_rollbacks_percentage metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbSystemUserRollbacksPercentageDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, instanceIDAttributeValue string) {
+	mb.metricNewrelicoracledbSystemUserRollbacksPercentage.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, instanceIDAttributeValue)
 }
 
 // RecordNewrelicoracledbTablespaceDbIDDataPoint adds a data point to newrelicoracledb.tablespace.db_id metric.

@@ -28,6 +28,12 @@ attributes:
   instance.id:
     description: Oracle database instance ID
     type: string
+  global.name:
+    description: Oracle database global name
+    type: string
+  db.id:
+    description: Oracle database ID
+    type: string
 
 metrics:
   newrelicoracledb.sessions.count:
@@ -134,6 +140,2289 @@ metrics:
     enabled: true
     gauge:
       value_type: int
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.disk.reads:
+    description: Number of physical disk reads
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.disk.writes:
+    description: Number of physical disk writes
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.disk.blocks_read:
+    description: Number of physical blocks read from disk
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.disk.blocks_written:
+    description: Number of physical blocks written to disk
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.disk.read_time_milliseconds:
+    description: Time spent reading from disk in milliseconds
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "ms"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.disk.write_time_milliseconds:
+    description: Time spent writing to disk in milliseconds
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "ms"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.memory.pga_in_use_bytes:
+    description: Total PGA memory currently in use in bytes
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "By"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.memory.pga_allocated_bytes:
+    description: Total PGA memory allocated in bytes
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "By"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.memory.pga_freeable_bytes:
+    description: Total freeable PGA memory in bytes
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "By"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.memory.pga_max_size_bytes:
+    description: Global memory bound for PGA in bytes
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "By"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.global_name:
+    description: Oracle database global name information
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+      - global.name
+
+  newrelicoracledb.db_id:
+    description: Oracle database ID information
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+      - db.id
+
+  newrelicoracledb.long_running_queries:
+    description: Number of long running queries (active sessions running for more than 60 seconds)
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.memory.sga_uga_total_bytes:
+    description: Total SGA UGA memory in bytes (session uga memory max)
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "By"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.memory.sga_shared_pool_library_cache_sharable_bytes:
+    description: SGA shared pool library cache sharable memory in bytes for statements with more than 5 executions
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "By"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.memory.sga_shared_pool_library_cache_user_bytes:
+    description: SGA shared pool library cache shareable memory per user in bytes (250 * users_opening)
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "By"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.sga_shared_pool_library_cache_reload_ratio:
+    description: SGA shared pool library cache reload ratio (reloads/pins)
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.sga_shared_pool_library_cache_hit_ratio:
+    description: SGA shared pool library cache hit ratio for SQL AREA namespace
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.sga_shared_pool_dict_cache_miss_ratio:
+    description: SGA shared pool dictionary cache miss ratio (getmisses/gets)
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.sga_log_buffer_space_waits:
+    description: Number of sessions waiting for log buffer space
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.sga_log_allocation_retries_ratio:
+    description: SGA log allocation retries ratio (redo buffer allocation retries / redo entries)
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.sga_hit_ratio:
+    description: SGA hit ratio (session logical reads minus physical reads / session logical reads)
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.sga_log_buffer_redo_allocation_retries:
+    description: Number of redo buffer allocation retries from sysstat
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.sga_log_buffer_redo_entries:
+    description: Number of redo entries from sysstat
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.sorts_memory:
+    description: Number of sorts performed in memory from sysstat
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.sorts_disk:
+    description: Number of sorts performed on disk from sysstat
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.sga_fixed_size_bytes:
+    description: SGA fixed size memory in bytes
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "By"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.sga_redo_buffers_bytes:
+    description: SGA redo buffers memory in bytes
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "By"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.rollback_segments_gets:
+    description: Number of gets on rollback segments
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.rollback_segments_waits:
+    description: Number of waits on rollback segments
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.rollback_segments_wait_ratio:
+    description: Rollback segments wait ratio (waits/gets)
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.redo_log_parallel_write_waits:
+    description: Number of waits for log file parallel write events
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.redo_log_switch_completion_waits:
+    description: Number of waits for log file switch completion events
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.redo_log_switch_checkpoint_incomplete_waits:
+    description: Number of waits for log file switch (checkpoint incomplete) events
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.redo_log_switch_archiving_needed_waits:
+    description: Number of waits for log file switch (archiving needed) events
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.sga_buffer_busy_waits:
+    description: Number of buffer busy waits events
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.sga_free_buffer_waits:
+    description: Number of free buffer waits events
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.sga_free_buffer_inspected_waits:
+    description: Number of free buffer inspected waits events
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.pdb.active_parallel_sessions:
+    description: Number of active parallel sessions in PDB
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.pdb.active_serial_sessions:
+    description: Number of active serial sessions in PDB
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.pdb.average_active_sessions:
+    description: Average number of active sessions in PDB
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.pdb.background_cpu_usage_per_second:
+    description: Background CPU usage per second in PDB
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.pdb.background_time_per_second:
+    description: Background time per second in PDB
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.pdb.cpu_usage_per_second:
+    description: CPU usage per second in PDB
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.pdb.cpu_usage_per_transaction:
+    description: CPU usage per transaction in PDB
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.pdb.current_logons:
+    description: Current number of logons in PDB
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.pdb.current_open_cursors:
+    description: Current number of open cursors in PDB
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.pdb.cpu_time_ratio:
+    description: Database CPU time ratio in PDB
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.pdb.wait_time_ratio:
+    description: Database wait time ratio in PDB
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.pdb.block_changes_per_second:
+    description: DB block changes per second in PDB
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.pdb.block_changes_per_transaction:
+    description: DB block changes per transaction in PDB
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.pdb.executions_per_second:
+    description: Executions per second in PDB
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.pdb.executions_per_transaction:
+    description: Executions per transaction in PDB
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.pdb.hard_parse_count_per_second:
+    description: Hard parse count per second in PDB
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.pdb.hard_parse_count_per_transaction:
+    description: Hard parse count per transaction in PDB
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.pdb.logical_reads_per_second:
+    description: Logical reads per second in PDB
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.pdb.logical_reads_per_transaction:
+    description: Logical reads per transaction in PDB
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.pdb.logons_per_transaction:
+    description: Logons per transaction in PDB
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.pdb.network_traffic_byte_per_second:
+    description: Network traffic volume per second in bytes in PDB
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "By/s"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.pdb.open_cursors_per_second:
+    description: Open cursors per second in PDB
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.pdb.open_cursors_per_transaction:
+    description: Open cursors per transaction in PDB
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.pdb.parse_failure_count_per_second:
+    description: Parse failure count per second in PDB
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.pdb.physical_read_bytes_per_second:
+    description: Physical read total bytes per second in PDB
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "By/s"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.pdb.physical_reads_per_transaction:
+    description: Physical reads per transaction in PDB
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.pdb.physical_write_bytes_per_second:
+    description: Physical write total bytes per second in PDB
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "By/s"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.pdb.physical_writes_per_transaction:
+    description: Physical writes per transaction in PDB
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.pdb.redo_generated_bytes_per_second:
+    description: Redo generated per second in bytes in PDB
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "By/s"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.pdb.redo_generated_bytes_per_transaction:
+    description: Redo generated per transaction in bytes in PDB
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "By/s"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.pdb.response_time_per_transaction:
+    description: Response time per transaction in PDB
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "s"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.pdb.session_count:
+    description: Session count in PDB
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.pdb.soft_parse_ratio:
+    description: Soft parse ratio in PDB
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.pdb.sql_service_response_time:
+    description: SQL service response time in PDB
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "s"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.pdb.total_parse_count_per_second:
+    description: Total parse count per second in PDB
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.pdb.total_parse_count_per_transaction:
+    description: Total parse count per transaction in PDB
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.pdb.user_calls_per_second:
+    description: User calls per second in PDB
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.pdb.user_calls_per_transaction:
+    description: User calls per transaction in PDB
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.pdb.user_commits_per_second:
+    description: User commits per second in PDB
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.pdb.user_commits_percentage:
+    description: User commits percentage in PDB
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.pdb.user_rollbacks_per_second:
+    description: User rollbacks per second in PDB
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.pdb.user_rollbacks_percentage:
+    description: User rollbacks percentage in PDB
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.pdb.transactions_per_second:
+    description: User transactions per second in PDB
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.pdb.execute_without_parse_ratio:
+    description: Execute without parse ratio in PDB
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.pdb.logons_per_second:
+    description: Logons per second in PDB
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.pdb.db_physical_read_bytes_per_second:
+    description: Physical read bytes per second in PDB
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "By/s"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.pdb.db_physical_reads_per_second:
+    description: Physical reads per second in PDB
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.pdb.db_physical_write_bytes_per_second:
+    description: Physical write bytes per second in PDB
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "By/s"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.pdb.db_physical_writes_per_second:
+    description: Physical writes per second in PDB
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  # System metrics from gv$sysmetric
+  newrelicoracledb.system.buffer_cache_hit_ratio:
+    description: Buffer Cache Hit Ratio
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "%"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.memory_sorts_ratio:
+    description: Memory Sorts Ratio
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "%"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.redo_allocation_hit_ratio:
+    description: Redo Allocation Hit Ratio
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "%"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.transactions_per_second:
+    description: User Transaction Per Sec
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.physical_reads_per_transaction:
+    description: Physical Reads Per Txn
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.physical_writes_per_transaction:
+    description: Physical Writes Per Txn
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.physical_reads_direct_per_second:
+    description: Physical Reads Direct Per Sec
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.physical_reads_direct_per_transaction:
+    description: Physical Reads Direct Per Txn
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.physical_writes_direct_per_second:
+    description: Physical Writes Direct Per Sec
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.physical_writes_direct_per_transaction:
+    description: Physical Writes Direct Per Txn
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.physical_lobs_reads_per_second:
+    description: Physical Reads Direct Lobs Per Sec
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.physical_lobs_reads_per_transaction:
+    description: Physical Reads Direct Lobs Per Txn
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.physical_lobs_writes_per_second:
+    description: Physical Writes Direct Lobs Per Sec
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.physical_lobs_writes_per_transaction:
+    description: Physical Writes Direct Lobs Per Txn
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.redo_generated_bytes_per_second:
+    description: Redo Generated Per Sec
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "By/s"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.redo_generated_bytes_per_transaction:
+    description: Redo Generated Per Txn
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "By"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.logons_per_transaction:
+    description: Logons Per Txn
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.open_cursors_per_second:
+    description: Open Cursors Per Sec
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.open_cursors_per_transaction:
+    description: Open Cursors Per Txn
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.user_commits_per_second:
+    description: User Commits Per Sec
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.user_commits_percentage:
+    description: User Commits Percentage
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "%"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.user_rollbacks_per_second:
+    description: User Rollbacks Per Sec
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.user_rollbacks_percentage:
+    description: User Rollbacks Percentage
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "%"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.user_calls_per_second:
+    description: User Calls Per Sec
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.user_calls_per_transaction:
+    description: User Calls Per Txn
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.recursive_calls_per_second:
+    description: Recursive Calls Per Sec
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.recursive_calls_per_transaction:
+    description: Recursive Calls Per Txn
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.logical_reads_per_second:
+    description: Logical Reads Per Sec
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.logical_reads_per_transaction:
+    description: Logical Reads Per Txn
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.dbwr_checkpoints_per_second:
+    description: DBWR Checkpoints Per Sec
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.background_checkpoints_per_second:
+    description: Background Checkpoints Per Sec
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.redo_writes_per_second:
+    description: Redo Writes Per Sec
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.redo_writes_per_transaction:
+    description: Redo Writes Per Txn
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.long_table_scans_per_second:
+    description: Long Table Scans Per Sec
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.long_table_scans_per_transaction:
+    description: Long Table Scans Per Txn
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.total_table_scans_per_second:
+    description: Total Table Scans Per Sec
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.total_table_scans_per_transaction:
+    description: Total Table Scans Per Txn
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.full_index_scans_per_second:
+    description: Full Index Scans Per Sec
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.full_index_scans_per_transaction:
+    description: Full Index Scans Per Txn
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.total_index_scans_per_second:
+    description: Total Index Scans Per Sec
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.total_index_scans_per_transaction:
+    description: Total Index Scans Per Txn
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.total_parse_count_per_second:
+    description: Total Parse Count Per Sec
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.total_parse_count_per_transaction:
+    description: Total Parse Count Per Txn
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.hard_parse_count_per_second:
+    description: Hard Parse Count Per Sec
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.hard_parse_count_per_transaction:
+    description: Hard Parse Count Per Txn
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.parse_failure_count_per_second:
+    description: Parse Failure Count Per Sec
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.parse_failure_count_per_transaction:
+    description: Parse Failure Count Per Txn
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.cursor_cache_hit_ratio:
+    description: Cursor Cache Hit Ratio
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "%"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.disk_sort_per_second:
+    description: Disk Sort Per Sec
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.disk_sort_per_transaction:
+    description: Disk Sort Per Txn
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.rows_per_sort:
+    description: Rows Per Sort
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.soft_parse_ratio:
+    description: Soft Parse Ratio
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "%"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.user_calls_ratio:
+    description: User Calls Ratio
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "%"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.host_cpu_utilization:
+    description: Host CPU Utilization (%)
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "%"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.network_traffic_volume_per_second:
+    description: Network Traffic Volume Per Sec
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "By/s"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.enqueue_timeouts_per_second:
+    description: Enqueue Timeouts Per Sec
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.enqueue_timeouts_per_transaction:
+    description: Enqueue Timeouts Per Txn
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.enqueue_waits_per_second:
+    description: Enqueue Waits Per Sec
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.enqueue_waits_per_transaction:
+    description: Enqueue Waits Per Txn
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.enqueue_deadlocks_per_second:
+    description: Enqueue Deadlocks Per Sec
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.enqueue_deadlocks_per_transaction:
+    description: Enqueue Deadlocks Per Txn
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.enqueue_requests_per_second:
+    description: Enqueue Requests Per Sec
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.enqueue_requests_per_transaction:
+    description: Enqueue Requests Per Txn
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.db_block_gets_per_second:
+    description: DB Block Gets Per Sec
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.db_block_gets_per_transaction:
+    description: DB Block Gets Per Txn
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.consistent_read_gets_per_second:
+    description: Consistent Read Gets Per Sec
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.db_block_changes_per_second:
+    description: DB Block Changes Per Sec
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.consistent_read_gets_per_transaction:
+    description: Consistent Read Gets Per Txn
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.db_block_changes_per_transaction:
+    description: DB Block Changes Per Txn
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.consistent_read_changes_per_second:
+    description: Consistent Read Changes Per Sec
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.consistent_read_changes_per_transaction:
+    description: Consistent Read Changes Per Txn
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.cpu_usage_per_second:
+    description: CPU Usage Per Sec
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "s"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.cpu_usage_per_transaction:
+    description: CPU Usage Per Txn
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "s"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.cr_blocks_created_per_second:
+    description: CR Blocks Created Per Sec
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.cr_blocks_created_per_transaction:
+    description: CR Blocks Created Per Txn
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.cr_undo_records_applied_per_second:
+    description: CR Undo Records Applied Per Sec
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.cr_undo_records_applied_per_transaction:
+    description: CR Undo Records Applied Per Txn
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.user_rollback_undo_records_applied_per_second:
+    description: User Rollback UndoRec Applied Per Sec
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.user_rollback_undo_records_applied_per_transaction:
+    description: User Rollback Undo Records Applied Per Txn
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.leaf_node_splits_per_second:
+    description: Leaf Node Splits Per Sec
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.leaf_node_splits_per_transaction:
+    description: Leaf Node Splits Per Txn
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.branch_node_splits_per_second:
+    description: Branch Node Splits Per Sec
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.branch_node_splits_per_transaction:
+    description: Branch Node Splits Per Txn
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.physical_read_total_io_requests_per_second:
+    description: Physical Read Total IO Requests Per Sec
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.physical_read_total_bytes_per_second:
+    description: Physical Read Total Bytes Per Sec
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "By/s"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.gc_cr_block_received_per_second:
+    description: GC CR Block Received Per Second
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.gc_cr_block_received_per_transaction:
+    description: GC CR Block Received Per Txn
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.gc_current_block_received_per_second:
+    description: GC Current Block Received Per Second
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.gc_current_block_received_per_transaction:
+    description: GC Current Block Received Per Txn
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.global_cache_average_cr_get_time:
+    description: Global Cache Average CR Get Time
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "ms"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.global_cache_average_current_get_time:
+    description: Global Cache Average Current Get Time
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "ms"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.physical_write_total_io_requests_per_second:
+    description: Physical Write Total IO Requests Per Sec
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.global_cache_blocks_corrupted:
+    description: Global Cache Blocks Corrupted
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.global_cache_blocks_lost:
+    description: Global Cache Blocks Lost
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.current_logons_count:
+    description: Current Logons Count
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.current_open_cursors_count:
+    description: Current Open Cursors Count
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.user_limit_percentage:
+    description: User Limit %
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "%"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.sql_service_response_time:
+    description: SQL Service Response Time
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "ms"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.database_wait_time_ratio:
+    description: Database Wait Time Ratio
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "%"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.database_cpu_time_ratio:
+    description: Database CPU Time Ratio
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "%"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.response_time_per_transaction:
+    description: Response Time Per Txn
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "ms"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.row_cache_hit_ratio:
+    description: Row Cache Hit Ratio
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "%"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.row_cache_miss_ratio:
+    description: Row Cache Miss Ratio
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "%"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.library_cache_hit_ratio:
+    description: Library Cache Hit Ratio
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "%"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.library_cache_miss_ratio:
+    description: Library Cache Miss Ratio
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "%"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.shared_pool_free_percentage:
+    description: Shared Pool Free %
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "%"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.pga_cache_hit_percentage:
+    description: PGA Cache Hit %
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "%"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.process_limit_percentage:
+    description: Process Limit %
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "%"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.session_limit_percentage:
+    description: Session Limit %
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "%"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.executions_per_transaction:
+    description: Executions Per Txn
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.executions_per_second:
+    description: Executions Per Sec
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.transactions_per_logon:
+    description: Txns Per Logon
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.database_time_per_second:
+    description: Database Time Per Sec
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "s"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.physical_write_total_bytes_per_second:
+    description: Physical Write Total Bytes Per Sec
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "By/s"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.physical_write_io_requests_per_second:
+    description: Physical Write IO Requests Per Sec
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.db_block_changes_per_user_call:
+    description: DB Block Changes Per User Call
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.db_block_gets_per_user_call:
+    description: DB Block Gets Per User Call
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.executions_per_user_call:
+    description: Executions Per User Call
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.logical_reads_per_user_call:
+    description: Logical Reads Per User Call
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.total_sorts_per_user_call:
+    description: Total Sorts Per User Call
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.total_table_scans_per_user_call:
+    description: Total Table Scans Per User Call
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.current_os_load:
+    description: Current OS Load
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.streams_pool_usage_percentage:
+    description: Streams Pool Usage Percentage
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "%"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.io_megabytes_per_second:
+    description: I/O Megabytes per Second
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "MBy/s"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.io_requests_per_second:
+    description: I/O Requests per Second
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.average_active_sessions:
+    description: Average Active Sessions
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.active_serial_sessions:
+    description: Active Serial Sessions
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.active_parallel_sessions:
+    description: Active Parallel Sessions
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.background_cpu_usage_per_second:
+    description: Background CPU Usage Per Sec
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "s"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.background_time_per_second:
+    description: Background Time Per Sec
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "s"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.host_cpu_usage_per_second:
+    description: Host CPU Usage Per Sec
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "s"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.temp_space_used:
+    description: Temp Space Used
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "By"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.session_count:
+    description: Session Count
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.captured_user_calls:
+    description: Captured user calls
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.execute_without_parse_ratio:
+    description: Execute Without Parse Ratio
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "%"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.logons_per_second:
+    description: Logons Per Sec
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.physical_read_bytes_per_second:
+    description: Physical Read Bytes Per Sec
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "By/s"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.physical_read_io_requests_per_second:
+    description: Physical Read IO Requests Per Sec
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.physical_reads_per_second:
+    description: Physical Reads Per Sec
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.physical_write_bytes_per_second:
+    description: Physical Write Bytes Per Sec
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "By/s"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
+  newrelicoracledb.system.physical_writes_per_second:
+    description: Physical Writes Per Sec
+    enabled: true
+    gauge:
+      value_type: double
     unit: "1"
     attributes:
       - newrelic.entity_name
