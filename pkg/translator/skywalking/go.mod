@@ -6,7 +6,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/pdata v1.42.0
-	go.opentelemetry.io/otel v1.37.0
+	go.opentelemetry.io/otel v1.38.0
 	go.uber.org/goleak v1.3.0
 	skywalking.apache.org/repo/goapi v0.0.0-20240104145220-ba7202308dd4
 )
@@ -20,7 +20,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.42.0 // indirect
-	go.opentelemetry.io/otel/trace v1.37.0 // indirect
+	go.opentelemetry.io/otel/trace v1.38.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/net v0.41.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
