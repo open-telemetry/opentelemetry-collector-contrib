@@ -8,6 +8,11 @@ const (
 	SessionCountSQL = "SELECT COUNT(*) as SESSION_COUNT FROM v$session WHERE type = 'USER'"
 )
 
+// Oracle SQL query for system metrics from gv$sysmetric
+const (
+	SystemSysMetricsSQL = "SELECT INST_ID, METRIC_NAME, VALUE FROM gv$sysmetric"
+)
+
 // Oracle SQL query for tablespace metrics
 const (
 	TablespaceMetricsSQL = `

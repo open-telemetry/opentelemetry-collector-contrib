@@ -35,6 +35,7 @@ type newRelicOracleScraper struct {
 	tablespaceScraper *scrapers.TablespaceScraper
 	coreScraper       *scrapers.CoreScraper
 	pdbScraper        *scrapers.PdbScraper
+	systemScraper     *scrapers.SystemScraper
 
 	db                   *sql.DB
 	mb                   *metadata.MetricsBuilder
@@ -80,6 +81,9 @@ func (s *newRelicOracleScraper) start(context.Context, component.Host) error {
 	// Initialize PDB scraper with direct DB connection
 	s.pdbScraper = scrapers.NewPdbScraper(s.db, s.mb, s.logger, s.instanceName, s.metricsBuilderConfig)
 
+	// Initialize system scraper with direct DB connection
+	s.systemScraper = scrapers.NewSystemScraper(s.db, s.mb, s.logger, s.instanceName, s.metricsBuilderConfig)
+
 	return nil
 }
 
@@ -88,11 +92,12 @@ func (s *newRelicOracleScraper) scrape(ctx context.Context) (pmetric.Metrics, er
 
 	var scrapeErrors []error
 
-	// Scrape session count, tablespace metrics, core metrics, and PDB metrics
+	// Scrape session count, tablespace metrics, core metrics, PDB metrics, and system metrics
 	scrapeErrors = append(scrapeErrors, s.sessionScraper.ScrapeSessionCount(ctx)...)
 	scrapeErrors = append(scrapeErrors, s.tablespaceScraper.ScrapeTablespaceMetrics(ctx)...)
 	scrapeErrors = append(scrapeErrors, s.coreScraper.ScrapeCoreMetrics(ctx)...)
 	scrapeErrors = append(scrapeErrors, s.pdbScraper.ScrapePdbMetrics(ctx)...)
+	scrapeErrors = append(scrapeErrors, s.systemScraper.ScrapeSystemMetrics(ctx)...)
 
 	// Build the resource with instance and host information
 	rb := s.mb.NewResourceBuilder()
