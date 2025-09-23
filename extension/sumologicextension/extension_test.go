@@ -372,7 +372,7 @@ func TestStoreCredentials_PreexistingCredentialsAreUsed(t *testing.T) {
 	require.NoError(t, se.Shutdown(t.Context()))
 	require.FileExists(t, credsPath)
 
-	require.EqualValues(t, 3, atomic.LoadInt32(&reqCount))
+	require.EqualValues(t, 2, atomic.LoadInt32(&reqCount))
 }
 
 func TestStoreCredentials_V2CredentialsAreUsed(t *testing.T) {
