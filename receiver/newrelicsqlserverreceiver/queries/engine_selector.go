@@ -151,6 +151,16 @@ var instanceQueriesDefault = []*QueryDefinition{
 		MetricName:  "sqlserver.instance.page_life_expectancy",
 		Description: "Page life expectancy in seconds",
 	},
+	{
+		Query:       InstanceMemoryDefinitions,
+		MetricName:  "sqlserver.instance.memory_metrics",
+		Description: "SQL Server instance memory metrics",
+	},
+	{
+		Query:       InstanceStatsQuery,
+		MetricName:  "sqlserver.instance.comprehensive_stats",
+		Description: "Comprehensive SQL Server instance statistics",
+	},
 }
 
 var instanceQueriesAzureManagedDatabase = []*QueryDefinition{
@@ -166,6 +176,16 @@ var instanceQueriesAzureManagedInstance = []*QueryDefinition{
 		Query:       InstanceBufferPoolQuery,
 		MetricName:  "sqlserver.instance.buffer_pool_size",
 		Description: "Buffer pool size in bytes",
+	},
+	{
+		Query:       InstanceMemoryDefinitions,
+		MetricName:  "sqlserver.instance.memory_metrics",
+		Description: "SQL Server instance memory metrics for Azure SQL Managed Instance",
+	},
+	{
+		Query:       InstanceStatsQuery,
+		MetricName:  "sqlserver.instance.comprehensive_stats",
+		Description: "Comprehensive SQL Server instance statistics",
 	},
 }
 
