@@ -28,31 +28,32 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for newrelicoracledb metrics.
 type MetricsConfig struct {
-	NewrelicoracledbDbID                          MetricConfig `mapstructure:"newrelicoracledb.db_id"`
-	NewrelicoracledbDiskBlocksRead                MetricConfig `mapstructure:"newrelicoracledb.disk.blocks_read"`
-	NewrelicoracledbDiskBlocksWritten             MetricConfig `mapstructure:"newrelicoracledb.disk.blocks_written"`
-	NewrelicoracledbDiskReadTimeMilliseconds      MetricConfig `mapstructure:"newrelicoracledb.disk.read_time_milliseconds"`
-	NewrelicoracledbDiskReads                     MetricConfig `mapstructure:"newrelicoracledb.disk.reads"`
-	NewrelicoracledbDiskWriteTimeMilliseconds     MetricConfig `mapstructure:"newrelicoracledb.disk.write_time_milliseconds"`
-	NewrelicoracledbDiskWrites                    MetricConfig `mapstructure:"newrelicoracledb.disk.writes"`
-	NewrelicoracledbGlobalName                    MetricConfig `mapstructure:"newrelicoracledb.global_name"`
-	NewrelicoracledbLockedAccounts                MetricConfig `mapstructure:"newrelicoracledb.locked_accounts"`
-	NewrelicoracledbLongRunningQueries            MetricConfig `mapstructure:"newrelicoracledb.long_running_queries"`
-	NewrelicoracledbMemoryPgaAllocatedBytes       MetricConfig `mapstructure:"newrelicoracledb.memory.pga_allocated_bytes"`
-	NewrelicoracledbMemoryPgaFreeableBytes        MetricConfig `mapstructure:"newrelicoracledb.memory.pga_freeable_bytes"`
-	NewrelicoracledbMemoryPgaInUseBytes           MetricConfig `mapstructure:"newrelicoracledb.memory.pga_in_use_bytes"`
-	NewrelicoracledbMemoryPgaMaxSizeBytes         MetricConfig `mapstructure:"newrelicoracledb.memory.pga_max_size_bytes"`
-	NewrelicoracledbMemorySgaUgaTotalBytes        MetricConfig `mapstructure:"newrelicoracledb.memory.sga_uga_total_bytes"`
-	NewrelicoracledbSessionsCount                 MetricConfig `mapstructure:"newrelicoracledb.sessions.count"`
-	NewrelicoracledbTablespaceDbID                MetricConfig `mapstructure:"newrelicoracledb.tablespace.db_id"`
-	NewrelicoracledbTablespaceGlobalName          MetricConfig `mapstructure:"newrelicoracledb.tablespace.global_name"`
-	NewrelicoracledbTablespaceIsOffline           MetricConfig `mapstructure:"newrelicoracledb.tablespace.is_offline"`
-	NewrelicoracledbTablespaceOfflineCdbDatafiles MetricConfig `mapstructure:"newrelicoracledb.tablespace.offline_cdb_datafiles"`
-	NewrelicoracledbTablespaceOfflinePdbDatafiles MetricConfig `mapstructure:"newrelicoracledb.tablespace.offline_pdb_datafiles"`
-	NewrelicoracledbTablespacePdbNonWriteMode     MetricConfig `mapstructure:"newrelicoracledb.tablespace.pdb_non_write_mode"`
-	NewrelicoracledbTablespaceSpaceConsumedBytes  MetricConfig `mapstructure:"newrelicoracledb.tablespace.space_consumed_bytes"`
-	NewrelicoracledbTablespaceSpaceReservedBytes  MetricConfig `mapstructure:"newrelicoracledb.tablespace.space_reserved_bytes"`
-	NewrelicoracledbTablespaceSpaceUsedPercentage MetricConfig `mapstructure:"newrelicoracledb.tablespace.space_used_percentage"`
+	NewrelicoracledbDbID                                         MetricConfig `mapstructure:"newrelicoracledb.db_id"`
+	NewrelicoracledbDiskBlocksRead                               MetricConfig `mapstructure:"newrelicoracledb.disk.blocks_read"`
+	NewrelicoracledbDiskBlocksWritten                            MetricConfig `mapstructure:"newrelicoracledb.disk.blocks_written"`
+	NewrelicoracledbDiskReadTimeMilliseconds                     MetricConfig `mapstructure:"newrelicoracledb.disk.read_time_milliseconds"`
+	NewrelicoracledbDiskReads                                    MetricConfig `mapstructure:"newrelicoracledb.disk.reads"`
+	NewrelicoracledbDiskWriteTimeMilliseconds                    MetricConfig `mapstructure:"newrelicoracledb.disk.write_time_milliseconds"`
+	NewrelicoracledbDiskWrites                                   MetricConfig `mapstructure:"newrelicoracledb.disk.writes"`
+	NewrelicoracledbGlobalName                                   MetricConfig `mapstructure:"newrelicoracledb.global_name"`
+	NewrelicoracledbLockedAccounts                               MetricConfig `mapstructure:"newrelicoracledb.locked_accounts"`
+	NewrelicoracledbLongRunningQueries                           MetricConfig `mapstructure:"newrelicoracledb.long_running_queries"`
+	NewrelicoracledbMemoryPgaAllocatedBytes                      MetricConfig `mapstructure:"newrelicoracledb.memory.pga_allocated_bytes"`
+	NewrelicoracledbMemoryPgaFreeableBytes                       MetricConfig `mapstructure:"newrelicoracledb.memory.pga_freeable_bytes"`
+	NewrelicoracledbMemoryPgaInUseBytes                          MetricConfig `mapstructure:"newrelicoracledb.memory.pga_in_use_bytes"`
+	NewrelicoracledbMemoryPgaMaxSizeBytes                        MetricConfig `mapstructure:"newrelicoracledb.memory.pga_max_size_bytes"`
+	NewrelicoracledbMemorySgaSharedPoolLibraryCacheSharableBytes MetricConfig `mapstructure:"newrelicoracledb.memory.sga_shared_pool_library_cache_sharable_bytes"`
+	NewrelicoracledbMemorySgaUgaTotalBytes                       MetricConfig `mapstructure:"newrelicoracledb.memory.sga_uga_total_bytes"`
+	NewrelicoracledbSessionsCount                                MetricConfig `mapstructure:"newrelicoracledb.sessions.count"`
+	NewrelicoracledbTablespaceDbID                               MetricConfig `mapstructure:"newrelicoracledb.tablespace.db_id"`
+	NewrelicoracledbTablespaceGlobalName                         MetricConfig `mapstructure:"newrelicoracledb.tablespace.global_name"`
+	NewrelicoracledbTablespaceIsOffline                          MetricConfig `mapstructure:"newrelicoracledb.tablespace.is_offline"`
+	NewrelicoracledbTablespaceOfflineCdbDatafiles                MetricConfig `mapstructure:"newrelicoracledb.tablespace.offline_cdb_datafiles"`
+	NewrelicoracledbTablespaceOfflinePdbDatafiles                MetricConfig `mapstructure:"newrelicoracledb.tablespace.offline_pdb_datafiles"`
+	NewrelicoracledbTablespacePdbNonWriteMode                    MetricConfig `mapstructure:"newrelicoracledb.tablespace.pdb_non_write_mode"`
+	NewrelicoracledbTablespaceSpaceConsumedBytes                 MetricConfig `mapstructure:"newrelicoracledb.tablespace.space_consumed_bytes"`
+	NewrelicoracledbTablespaceSpaceReservedBytes                 MetricConfig `mapstructure:"newrelicoracledb.tablespace.space_reserved_bytes"`
+	NewrelicoracledbTablespaceSpaceUsedPercentage                MetricConfig `mapstructure:"newrelicoracledb.tablespace.space_used_percentage"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -97,6 +98,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		NewrelicoracledbMemoryPgaMaxSizeBytes: MetricConfig{
+			Enabled: true,
+		},
+		NewrelicoracledbMemorySgaSharedPoolLibraryCacheSharableBytes: MetricConfig{
 			Enabled: true,
 		},
 		NewrelicoracledbMemorySgaUgaTotalBytes: MetricConfig{

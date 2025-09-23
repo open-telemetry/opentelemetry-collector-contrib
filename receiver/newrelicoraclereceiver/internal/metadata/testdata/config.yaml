@@ -29,6 +29,8 @@ all_set:
       enabled: true
     newrelicoracledb.memory.pga_max_size_bytes:
       enabled: true
+    newrelicoracledb.memory.sga_shared_pool_library_cache_sharable_bytes:
+      enabled: true
     newrelicoracledb.memory.sga_uga_total_bytes:
       enabled: true
     newrelicoracledb.sessions.count:
@@ -85,6 +87,8 @@ none_set:
     newrelicoracledb.memory.pga_in_use_bytes:
       enabled: false
     newrelicoracledb.memory.pga_max_size_bytes:
+      enabled: false
+    newrelicoracledb.memory.sga_shared_pool_library_cache_sharable_bytes:
       enabled: false
     newrelicoracledb.memory.sga_uga_total_bytes:
       enabled: false

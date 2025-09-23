@@ -134,4 +134,11 @@ const (
 		AND GV$sesstat.inst_id=inst.inst_id
 		AND GV$statname.inst_id=inst.inst_id
 		GROUP BY inst.inst_id`
+
+	SGASharedPoolLibraryCacheShareableStatementSQL = `
+		SELECT SUM(sqlarea.sharable_mem) AS sum, inst.inst_id
+		FROM GV$sqlarea sqlarea, GV$INSTANCE inst
+		WHERE sqlarea.executions > 5
+		AND inst.inst_id=sqlarea.inst_id
+		GROUP BY inst.inst_id`
 )
