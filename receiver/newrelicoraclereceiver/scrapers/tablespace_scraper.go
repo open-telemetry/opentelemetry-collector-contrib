@@ -55,6 +55,9 @@ func (s *TablespaceScraper) ScrapeTablespaceMetrics(ctx context.Context) []error
 	// Scrape CDB datafiles offline tablespace metrics
 	errors = append(errors, s.scrapeCDBDatafilesOfflineTablespaceMetrics(ctx, now)...)
 
+	// Scrape PDB datafiles offline tablespace metrics
+	errors = append(errors, s.scrapePDBDatafilesOfflineTablespaceMetrics(ctx, now)...)
+
 	return errors
 }
 
@@ -251,6 +254,54 @@ func (s *TablespaceScraper) scrapeCDBDatafilesOfflineTablespaceMetrics(ctx conte
 	}
 
 	s.logger.Debug("Collected Oracle CDB datafiles offline tablespace metrics", zap.Int("metric_count", metricCount), zap.String("instance", s.instanceName))
+
+	return errors
+}
+
+// scrapePDBDatafilesOfflineTablespaceMetrics handles the PDB datafiles offline tablespace metrics
+func (s *TablespaceScraper) scrapePDBDatafilesOfflineTablespaceMetrics(ctx context.Context, now pcommon.Timestamp) []error {
+	var errors []error
+
+	// Execute PDB datafiles offline tablespace query
+	s.logger.Debug("Executing PDB datafiles offline tablespace query", zap.String("sql", queries.PDBDatafilesOfflineTablespaceSQL))
+
+	rows, err := s.db.QueryContext(ctx, queries.PDBDatafilesOfflineTablespaceSQL)
+	if err != nil {
+		errors = append(errors, fmt.Errorf("error executing PDB datafiles offline tablespace query: %w", err))
+		return errors
+	}
+	defer rows.Close()
+
+	// Process each row and record metrics
+	metricCount := 0
+	for rows.Next() {
+		var offlineCount int64
+		var tablespaceName string
+
+		err := rows.Scan(&offlineCount, &tablespaceName)
+		if err != nil {
+			errors = append(errors, fmt.Errorf("error scanning PDB datafiles offline tablespace row: %w", err))
+			continue
+		}
+
+		// Record PDB datafiles offline metrics
+		s.logger.Info("PDB datafiles offline tablespace metrics collected",
+			zap.String("tablespace", tablespaceName),
+			zap.Int64("offline_count", offlineCount),
+			zap.String("instance", s.instanceName),
+		)
+
+		// Record the PDB datafiles offline metric
+		s.mb.RecordNewrelicoracledbTablespaceOfflinePdbDatafilesDataPoint(now, offlineCount, s.instanceName, tablespaceName)
+
+		metricCount++
+	}
+
+	if err = rows.Err(); err != nil {
+		errors = append(errors, fmt.Errorf("error iterating PDB datafiles offline tablespace rows: %w", err))
+	}
+
+	s.logger.Debug("Collected Oracle PDB datafiles offline tablespace metrics", zap.Int("metric_count", metricCount), zap.String("instance", s.instanceName))
 
 	return errors
 }

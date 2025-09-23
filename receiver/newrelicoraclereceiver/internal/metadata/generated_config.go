@@ -33,6 +33,7 @@ type MetricsConfig struct {
 	NewrelicoracledbTablespaceGlobalName          MetricConfig `mapstructure:"newrelicoracledb.tablespace.global_name"`
 	NewrelicoracledbTablespaceIsOffline           MetricConfig `mapstructure:"newrelicoracledb.tablespace.is_offline"`
 	NewrelicoracledbTablespaceOfflineCdbDatafiles MetricConfig `mapstructure:"newrelicoracledb.tablespace.offline_cdb_datafiles"`
+	NewrelicoracledbTablespaceOfflinePdbDatafiles MetricConfig `mapstructure:"newrelicoracledb.tablespace.offline_pdb_datafiles"`
 	NewrelicoracledbTablespaceSpaceConsumedBytes  MetricConfig `mapstructure:"newrelicoracledb.tablespace.space_consumed_bytes"`
 	NewrelicoracledbTablespaceSpaceReservedBytes  MetricConfig `mapstructure:"newrelicoracledb.tablespace.space_reserved_bytes"`
 	NewrelicoracledbTablespaceSpaceUsedPercentage MetricConfig `mapstructure:"newrelicoracledb.tablespace.space_used_percentage"`
@@ -53,6 +54,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		NewrelicoracledbTablespaceOfflineCdbDatafiles: MetricConfig{
+			Enabled: true,
+		},
+		NewrelicoracledbTablespaceOfflinePdbDatafiles: MetricConfig{
 			Enabled: true,
 		},
 		NewrelicoracledbTablespaceSpaceConsumedBytes: MetricConfig{

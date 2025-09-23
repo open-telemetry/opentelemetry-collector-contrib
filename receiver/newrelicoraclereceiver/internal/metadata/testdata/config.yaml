@@ -11,6 +11,8 @@ all_set:
       enabled: true
     newrelicoracledb.tablespace.offline_cdb_datafiles:
       enabled: true
+    newrelicoracledb.tablespace.offline_pdb_datafiles:
+      enabled: true
     newrelicoracledb.tablespace.space_consumed_bytes:
       enabled: true
     newrelicoracledb.tablespace.space_reserved_bytes:
@@ -33,6 +35,8 @@ none_set:
     newrelicoracledb.tablespace.is_offline:
       enabled: false
     newrelicoracledb.tablespace.offline_cdb_datafiles:
+      enabled: false
+    newrelicoracledb.tablespace.offline_pdb_datafiles:
       enabled: false
     newrelicoracledb.tablespace.space_consumed_bytes:
       enabled: false

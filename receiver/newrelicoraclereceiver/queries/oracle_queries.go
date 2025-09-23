@@ -47,4 +47,12 @@ const (
 			TABLESPACE_NAME
 		FROM dba_data_files
 		GROUP BY TABLESPACE_NAME`
+
+	PDBDatafilesOfflineTablespaceSQL = `
+		SELECT
+			sum(CASE WHEN ONLINE_STATUS IN ('ONLINE','SYSTEM','RECOVER') THEN 0 ELSE 1 END) AS PDB_DATAFILES_OFFLINE,
+			a.TABLESPACE_NAME
+		FROM cdb_data_files a, cdb_pdbs b
+		WHERE a.con_id = b.con_id
+		GROUP BY a.TABLESPACE_NAME`
 )
