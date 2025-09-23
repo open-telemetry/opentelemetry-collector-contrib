@@ -54,11 +54,11 @@ type ClientConfig struct {
 	// standard "client.rack" setting. By default, this is empty.
 	RackID string `mapstructure:"rack_id"`
 
-	// UseLeaderEpoch forces the collector to clear the leader epoch from
-	// all fetched offsets when using the franz-go consumer. This effectively
-	// disables KIP-320 (truncation detection via leader epoch) without
-	// downgrading protocol versions or patching franz-go.
-	// Default: true (leader epoch is used when supported by the broker).
+	// When enabled, the consumer uses the leader epoch returned by brokers (KIP-320)
+	// to detect log truncation. Setting this to false clears the leader epoch from
+	// fetch offsets, disabling KIP-320. Disabling can improve compatibility with
+	// brokers that don’t fully support leader epochs (e.g., Azure Event Hubs),
+	// at the cost of losing automatic log-truncation safety.
 	//
 	// NOTE: this is experimental and may be removed in a future release.
 	UseLeaderEpoch bool `mapstructure:"use_leader_epoch"`

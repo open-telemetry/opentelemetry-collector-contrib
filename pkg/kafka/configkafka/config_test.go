@@ -112,37 +112,12 @@ func TestClientConfig(t *testing.T) {
 				return cfg
 			}(),
 		},
-		"use_leader_epoch": {
-			expected: ClientConfig{
-				Brokers:                              []string{"foo:123", "bar:456"},
-				ResolveCanonicalBootstrapServersOnly: true,
-				ClientID:                             "vip",
-				ProtocolVersion:                      "1.2.3",
-				TLS: &configtls.ClientConfig{
-					Config: configtls.Config{
-						CAFile:   "ca.pem",
-						CertFile: "cert.pem",
-						KeyFile:  "key.pem",
-					},
-				},
-				Authentication: AuthenticationConfig{
-					SASL: &SASLConfig{
-						Mechanism: "PLAIN",
-						Username:  "abc",
-						Password:  "def",
-					},
-				},
-				Metadata: MetadataConfig{
-					Full:            false,
-					RefreshInterval: 10 * time.Minute,
-					Retry: MetadataRetryConfig{
-						Max:     10,
-						Backoff: 5 * time.Second,
-					},
-				},
-				RackID:         "rack1",
-				UseLeaderEpoch: true,
-			},
+		"not_use_leader_epoch": {
+			expected: func() ClientConfig {
+				cfg := NewDefaultClientConfig()
+				cfg.UseLeaderEpoch = false
+				return cfg
+			}(),
 		},
 
 		// Invalid configurations

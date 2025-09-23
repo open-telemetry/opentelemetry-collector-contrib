@@ -373,7 +373,7 @@ func TestFranzConsumer_UseLeaderEpoch_Smoke(t *testing.T) {
 }
 
 func TestMakeUseLeaderEpochAdjuster_ClearsEpoch(t *testing.T) {
-	adj := makeUseLeaderEpochAdjuster()
+	adj := makeClearLeaderEpochAdjuster()
 
 	input := map[string]map[int32]kgo.Offset{
 		"t": {

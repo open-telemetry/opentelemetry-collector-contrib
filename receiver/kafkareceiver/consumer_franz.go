@@ -177,7 +177,7 @@ func (c *franzConsumer) Start(ctx context.Context, host component.Host) error {
 	}
 
 	if !c.config.UseLeaderEpoch {
-		opts = append(opts, kgo.AdjustFetchOffsetsFn(makeUseLeaderEpochAdjuster()))
+		opts = append(opts, kgo.AdjustFetchOffsetsFn(makeClearLeaderEpochAdjuster()))
 	}
 
 	// Create franz-go consumer client
@@ -667,7 +667,7 @@ func compressionFromCodec(c uint8) string {
 	}
 }
 
-func makeUseLeaderEpochAdjuster() func(context.Context, map[string]map[int32]kgo.Offset) (map[string]map[int32]kgo.Offset, error) {
+func makeClearLeaderEpochAdjuster() func(context.Context, map[string]map[int32]kgo.Offset) (map[string]map[int32]kgo.Offset, error) {
 	return func(_ context.Context, topics map[string]map[int32]kgo.Offset) (map[string]map[int32]kgo.Offset, error) {
 		for _, parts := range topics {
 			for p, off := range parts {

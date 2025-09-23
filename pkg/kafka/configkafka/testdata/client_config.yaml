@@ -96,24 +96,5 @@ kafka/foo:
       max: 10
       backoff: 5s
 
-kafka/use_leader_epoch:
-  brokers: ["foo:123", "bar:456"]
-  resolve_canonical_bootstrap_servers_only: true
-  client_id: vip
-  protocol_version: 1.2.3
-  rack_id: rack1
-  use_leader_epoch: true
-  tls:
-    ca_file: ca.pem
-    cert_file: cert.pem
-    key_file: key.pem
-  auth:
-    sasl:
-      mechanism: PLAIN
-      username: abc
-      password: def
-  metadata:
-    full: false
-    retry:
-      max: 10
-      backoff: 5s
+kafka/not_use_leader_epoch:
+  use_leader_epoch: false
