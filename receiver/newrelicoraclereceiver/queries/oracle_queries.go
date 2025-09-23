@@ -165,4 +165,11 @@ const (
 		FROM GV$rowcache rcache, GV$INSTANCE inst
 		WHERE inst.inst_id=rcache.inst_id
 		GROUP BY inst.inst_id`
+
+	SGALogBufferSpaceWaitsSQL = `
+		SELECT count(wait.inst_id) as count, inst.inst_id
+		FROM GV$SESSION_WAIT wait, GV$INSTANCE inst
+		WHERE wait.event like 'log buffer space%'
+		AND inst.inst_id=wait.inst_id
+		GROUP BY inst.inst_id`
 )

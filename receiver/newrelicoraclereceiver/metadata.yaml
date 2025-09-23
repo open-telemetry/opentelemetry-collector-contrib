@@ -337,6 +337,16 @@ metrics:
       - newrelic.entity_name
       - instance.id
 
+  newrelicoracledb.sga_log_buffer_space_waits:
+    description: Number of sessions waiting for log buffer space
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
 tests:
   config:
   goleak:
