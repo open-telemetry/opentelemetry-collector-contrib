@@ -10,6 +10,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
@@ -18,6 +19,9 @@ import (
 // Config defines configuration for Prometheus exporter.
 type Config struct {
 	confighttp.ServerConfig `mapstructure:",squash"`
+
+	// QueueBatchConfig defines the queue configuration.
+	QueueBatchConfig exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
 
 	// Namespace if set, exports metrics under the provided value.
 	Namespace string `mapstructure:"namespace"`
