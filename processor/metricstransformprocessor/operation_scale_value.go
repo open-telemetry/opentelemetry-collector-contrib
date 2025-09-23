@@ -11,7 +11,7 @@ import (
 
 // scaleValueOp scales the numeric metric value of sum and gauge metrics.
 // For histograms it scales the value of the sum and the explicit bounds.
-func scaleValueOp(metric pmetric.Metric, op internalOperation, f internalFilter) {
+func scaleValueOp(metric pmetric.Metric, op *internalOperation, f internalFilter) {
 	var dps pmetric.NumberDataPointSlice
 	switch metric.Type() {
 	case pmetric.MetricTypeGauge:
@@ -42,7 +42,7 @@ func scaleValueOp(metric pmetric.Metric, op internalOperation, f internalFilter)
 	}
 }
 
-func scaleHistogramOp(metric pmetric.Metric, op internalOperation, f internalFilter) {
+func scaleHistogramOp(metric pmetric.Metric, op *internalOperation, f internalFilter) {
 	dps := metric.Histogram().DataPoints()
 
 	for i := 0; i < dps.Len(); i++ {
@@ -65,11 +65,11 @@ func scaleHistogramOp(metric pmetric.Metric, op internalOperation, f internalFil
 			bounds.SetAt(bi, bounds.At(bi)*op.configOperation.Scale)
 		}
 
-		scaleExemplars(dp.Exemplars(), &op)
+		scaleExemplars(dp.Exemplars(), op)
 	}
 }
 
-func scaleExpHistogramOp(metric pmetric.Metric, op internalOperation, f internalFilter) {
+func scaleExpHistogramOp(metric pmetric.Metric, op *internalOperation, f internalFilter) {
 	dps := metric.ExponentialHistogram().DataPoints()
 	for i := 0; i < dps.Len(); i++ {
 		dp := dps.At(i)
@@ -92,14 +92,14 @@ func scaleExpHistogramOp(metric pmetric.Metric, op internalOperation, f internal
 		// For the buckets, we only need to change the offset.
 		// The bucket counts and the scale remain the same.
 		if len(dp.Positive().BucketCounts().AsRaw()) != 0 {
-			dp.Positive().SetOffset(updateOffset(dp.Scale(), dp.Positive().Offset(), &op))
+			dp.Positive().SetOffset(updateOffset(dp.Scale(), dp.Positive().Offset(), op))
 		}
 
 		if len(dp.Negative().BucketCounts().AsRaw()) != 0 {
-			dp.Negative().SetOffset(updateOffset(dp.Scale(), dp.Negative().Offset(), &op))
+			dp.Negative().SetOffset(updateOffset(dp.Scale(), dp.Negative().Offset(), op))
 		}
 
-		scaleExemplars(dp.Exemplars(), &op)
+		scaleExemplars(dp.Exemplars(), op)
 	}
 }
 
