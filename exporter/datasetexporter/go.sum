@@ -53,8 +53,6 @@ github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZb
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/rogpeppe/go-internal v1.13.1 h1:KvO1DLK/DRN07sQ1LQKScxyZJuNnedQ5/wKSR38lUII=
 github.com/rogpeppe/go-internal v1.13.1/go.mod h1:uMEvuHeurkdAXX61udpOXGD/AzZDWNMNyH2VO9fmH0o=
-github.com/scalyr/dataset-go v0.20.0 h1:VZJew4W/ufnb67yZSpWQKI40U4XpA+w+cDM+mk0qS2E=
-github.com/scalyr/dataset-go v0.20.0/go.mod h1:k/A+KhdEyffuTGb1n+jSWg8J5ikV9iYVKejVGjGXXoA=
 github.com/scalyr/dataset-go v0.21.0 h1:795jmJjsz1DSZOhumBvtXvX9IFrczQ1ULzQ3GkvNL1Q=
 github.com/scalyr/dataset-go v0.21.0/go.mod h1:49Bsey07QVW3zHVX067eOAgqW4GtdzEtA0s0uxCT5V4=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
