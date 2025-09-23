@@ -837,34 +837,30 @@ func (s *oracleScraper) setupResourceBuilder(rb *metadata.ResourceBuilder) *meta
 }
 
 func getInstanceID(instanceString string, logger *zap.Logger) string {
-	parts := strings.SplitN(instanceString, "/", 2)
-	hostAndPort := parts[0]
-	service := ""
-	if len(parts) == 2 {
-		service = "/" + parts[1]
+	hostAndPort, service, found := strings.Cut(instanceString, "/")
+	if !found {
+		logger.Info("No serviceName found in the connection string", zap.String("instanceString", instanceString))
 	}
 
 	host, port, err := net.SplitHostPort(hostAndPort)
 	if err != nil {
-		return handleInstanceIDErr(err, logger, port, service)
+		logger.Warn("Computing service.instance.id failed. Couldn't extract host and port from the connection data.", zap.Error(err))
+		return constructInstanceID("unknown", "1521", service)
 	}
 
+	// Replace the host value with machine name if connecting to localhost target
 	if strings.EqualFold(host, "localhost") || net.ParseIP(host).IsLoopback() {
 		host, err = os.Hostname()
 	}
-	if err != nil {
-		return handleInstanceIDErr(err, logger, port, service)
-	}
 
-	return host + ":" + port + service
+	return constructInstanceID(host, port, service)
 }
 
-func handleInstanceIDErr(err error, logger *zap.Logger, port, service string) string {
-	const fallback = "unknown:1521"
-
-	logger.Warn("Failed to compute service.instance.id", zap.Error(err))
-	if port == "" {
-		return fallback + service
+func constructInstanceID(host, port, service string) (id string) {
+	if service != "" {
+		id = fmt.Sprintf("%s:%s/%s", host, port, service)
+	} else {
+		id = fmt.Sprintf("%s:%s", host, port)
 	}
-	return "unknown:" + port + service
+	return
 }

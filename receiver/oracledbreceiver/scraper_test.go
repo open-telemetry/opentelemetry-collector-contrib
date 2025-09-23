@@ -416,6 +416,11 @@ func TestGetInstanceId(t *testing.T) {
 	localInstanceID = getInstanceID(hostWithoutService, zap.NewNop())
 	assert.NotNil(t, localInstanceID)
 	assert.Equal(t, localhostName+":1521", localInstanceID)
+
+	hostNameErrorSample := ""
+	localInstanceID = getInstanceID(hostNameErrorSample, zap.NewNop())
+	assert.NotNil(t, localInstanceID)
+	assert.Equal(t, "unknown:1521", localInstanceID)
 }
 
 func readFile(fname string) []byte {
