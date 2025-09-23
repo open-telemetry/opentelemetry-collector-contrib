@@ -168,6 +168,7 @@ require (
 	github.com/antchfx/xpath v1.3.5 // indirect
 	github.com/armon/go-metrics v0.4.1 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2 // indirect
+	github.com/aws/aws-sdk-go v1.55.7 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.37.0 // indirect
 	github.com/aws/aws-sdk-go-v2/config v1.30.1 // indirect
 	github.com/aws/aws-sdk-go-v2/credentials v1.18.1 // indirect
@@ -178,7 +179,6 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ec2 v1.237.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.13.0 // indirect
-	github.com/aws/aws-sdk-go-v2/service/lightsail v1.44.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sso v1.26.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.31.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.35.0 // indirect
@@ -278,6 +278,7 @@ require (
 	github.com/iancoleman/strcase v0.3.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/ionos-cloud/sdk-go/v6 v6.3.4 // indirect
+	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/jonboulle/clockwork v0.5.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/jpillora/backoff v1.0.0 // indirect
@@ -356,7 +357,7 @@ require (
 	github.com/prometheus/exporter-toolkit v0.14.0 // indirect
 	github.com/prometheus/otlptranslator v0.0.2 // indirect
 	github.com/prometheus/procfs v0.17.0 // indirect
-	github.com/prometheus/prometheus v0.305.1-0.20250808193045-294f36e80261 // indirect
+	github.com/prometheus/prometheus v0.306.0 // indirect
 	github.com/prometheus/sigv4 v0.2.0 // indirect
 	github.com/puzpuzpuz/xsync/v3 v3.5.1 // indirect
 	github.com/richardartoul/molecule v1.0.1-0.20240531184615-7ca0df43c0b3 // indirect
