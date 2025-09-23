@@ -45,6 +45,55 @@ type MetricsConfig struct {
 	NewrelicoracledbMemorySgaSharedPoolLibraryCacheSharableBytes MetricConfig `mapstructure:"newrelicoracledb.memory.sga_shared_pool_library_cache_sharable_bytes"`
 	NewrelicoracledbMemorySgaSharedPoolLibraryCacheUserBytes     MetricConfig `mapstructure:"newrelicoracledb.memory.sga_shared_pool_library_cache_user_bytes"`
 	NewrelicoracledbMemorySgaUgaTotalBytes                       MetricConfig `mapstructure:"newrelicoracledb.memory.sga_uga_total_bytes"`
+	NewrelicoracledbPdbActiveParallelSessions                    MetricConfig `mapstructure:"newrelicoracledb.pdb.active_parallel_sessions"`
+	NewrelicoracledbPdbActiveSerialSessions                      MetricConfig `mapstructure:"newrelicoracledb.pdb.active_serial_sessions"`
+	NewrelicoracledbPdbAverageActiveSessions                     MetricConfig `mapstructure:"newrelicoracledb.pdb.average_active_sessions"`
+	NewrelicoracledbPdbBackgroundCPUUsagePerSecond               MetricConfig `mapstructure:"newrelicoracledb.pdb.background_cpu_usage_per_second"`
+	NewrelicoracledbPdbBackgroundTimePerSecond                   MetricConfig `mapstructure:"newrelicoracledb.pdb.background_time_per_second"`
+	NewrelicoracledbPdbBlockChangesPerSecond                     MetricConfig `mapstructure:"newrelicoracledb.pdb.block_changes_per_second"`
+	NewrelicoracledbPdbBlockChangesPerTransaction                MetricConfig `mapstructure:"newrelicoracledb.pdb.block_changes_per_transaction"`
+	NewrelicoracledbPdbCPUTimeRatio                              MetricConfig `mapstructure:"newrelicoracledb.pdb.cpu_time_ratio"`
+	NewrelicoracledbPdbCPUUsagePerSecond                         MetricConfig `mapstructure:"newrelicoracledb.pdb.cpu_usage_per_second"`
+	NewrelicoracledbPdbCPUUsagePerTransaction                    MetricConfig `mapstructure:"newrelicoracledb.pdb.cpu_usage_per_transaction"`
+	NewrelicoracledbPdbCurrentLogons                             MetricConfig `mapstructure:"newrelicoracledb.pdb.current_logons"`
+	NewrelicoracledbPdbCurrentOpenCursors                        MetricConfig `mapstructure:"newrelicoracledb.pdb.current_open_cursors"`
+	NewrelicoracledbPdbDbPhysicalReadBytesPerSecond              MetricConfig `mapstructure:"newrelicoracledb.pdb.db_physical_read_bytes_per_second"`
+	NewrelicoracledbPdbDbPhysicalReadsPerSecond                  MetricConfig `mapstructure:"newrelicoracledb.pdb.db_physical_reads_per_second"`
+	NewrelicoracledbPdbDbPhysicalWriteBytesPerSecond             MetricConfig `mapstructure:"newrelicoracledb.pdb.db_physical_write_bytes_per_second"`
+	NewrelicoracledbPdbDbPhysicalWritesPerSecond                 MetricConfig `mapstructure:"newrelicoracledb.pdb.db_physical_writes_per_second"`
+	NewrelicoracledbPdbExecuteWithoutParseRatio                  MetricConfig `mapstructure:"newrelicoracledb.pdb.execute_without_parse_ratio"`
+	NewrelicoracledbPdbExecutionsPerSecond                       MetricConfig `mapstructure:"newrelicoracledb.pdb.executions_per_second"`
+	NewrelicoracledbPdbExecutionsPerTransaction                  MetricConfig `mapstructure:"newrelicoracledb.pdb.executions_per_transaction"`
+	NewrelicoracledbPdbHardParseCountPerSecond                   MetricConfig `mapstructure:"newrelicoracledb.pdb.hard_parse_count_per_second"`
+	NewrelicoracledbPdbHardParseCountPerTransaction              MetricConfig `mapstructure:"newrelicoracledb.pdb.hard_parse_count_per_transaction"`
+	NewrelicoracledbPdbLogicalReadsPerSecond                     MetricConfig `mapstructure:"newrelicoracledb.pdb.logical_reads_per_second"`
+	NewrelicoracledbPdbLogicalReadsPerTransaction                MetricConfig `mapstructure:"newrelicoracledb.pdb.logical_reads_per_transaction"`
+	NewrelicoracledbPdbLogonsPerSecond                           MetricConfig `mapstructure:"newrelicoracledb.pdb.logons_per_second"`
+	NewrelicoracledbPdbLogonsPerTransaction                      MetricConfig `mapstructure:"newrelicoracledb.pdb.logons_per_transaction"`
+	NewrelicoracledbPdbNetworkTrafficBytePerSecond               MetricConfig `mapstructure:"newrelicoracledb.pdb.network_traffic_byte_per_second"`
+	NewrelicoracledbPdbOpenCursorsPerSecond                      MetricConfig `mapstructure:"newrelicoracledb.pdb.open_cursors_per_second"`
+	NewrelicoracledbPdbOpenCursorsPerTransaction                 MetricConfig `mapstructure:"newrelicoracledb.pdb.open_cursors_per_transaction"`
+	NewrelicoracledbPdbParseFailureCountPerSecond                MetricConfig `mapstructure:"newrelicoracledb.pdb.parse_failure_count_per_second"`
+	NewrelicoracledbPdbPhysicalReadBytesPerSecond                MetricConfig `mapstructure:"newrelicoracledb.pdb.physical_read_bytes_per_second"`
+	NewrelicoracledbPdbPhysicalReadsPerTransaction               MetricConfig `mapstructure:"newrelicoracledb.pdb.physical_reads_per_transaction"`
+	NewrelicoracledbPdbPhysicalWriteBytesPerSecond               MetricConfig `mapstructure:"newrelicoracledb.pdb.physical_write_bytes_per_second"`
+	NewrelicoracledbPdbPhysicalWritesPerTransaction              MetricConfig `mapstructure:"newrelicoracledb.pdb.physical_writes_per_transaction"`
+	NewrelicoracledbPdbRedoGeneratedBytesPerSecond               MetricConfig `mapstructure:"newrelicoracledb.pdb.redo_generated_bytes_per_second"`
+	NewrelicoracledbPdbRedoGeneratedBytesPerTransaction          MetricConfig `mapstructure:"newrelicoracledb.pdb.redo_generated_bytes_per_transaction"`
+	NewrelicoracledbPdbResponseTimePerTransaction                MetricConfig `mapstructure:"newrelicoracledb.pdb.response_time_per_transaction"`
+	NewrelicoracledbPdbSessionCount                              MetricConfig `mapstructure:"newrelicoracledb.pdb.session_count"`
+	NewrelicoracledbPdbSoftParseRatio                            MetricConfig `mapstructure:"newrelicoracledb.pdb.soft_parse_ratio"`
+	NewrelicoracledbPdbSQLServiceResponseTime                    MetricConfig `mapstructure:"newrelicoracledb.pdb.sql_service_response_time"`
+	NewrelicoracledbPdbTotalParseCountPerSecond                  MetricConfig `mapstructure:"newrelicoracledb.pdb.total_parse_count_per_second"`
+	NewrelicoracledbPdbTotalParseCountPerTransaction             MetricConfig `mapstructure:"newrelicoracledb.pdb.total_parse_count_per_transaction"`
+	NewrelicoracledbPdbTransactionsPerSecond                     MetricConfig `mapstructure:"newrelicoracledb.pdb.transactions_per_second"`
+	NewrelicoracledbPdbUserCallsPerSecond                        MetricConfig `mapstructure:"newrelicoracledb.pdb.user_calls_per_second"`
+	NewrelicoracledbPdbUserCallsPerTransaction                   MetricConfig `mapstructure:"newrelicoracledb.pdb.user_calls_per_transaction"`
+	NewrelicoracledbPdbUserCommitsPerSecond                      MetricConfig `mapstructure:"newrelicoracledb.pdb.user_commits_per_second"`
+	NewrelicoracledbPdbUserCommitsPercentage                     MetricConfig `mapstructure:"newrelicoracledb.pdb.user_commits_percentage"`
+	NewrelicoracledbPdbUserRollbacksPerSecond                    MetricConfig `mapstructure:"newrelicoracledb.pdb.user_rollbacks_per_second"`
+	NewrelicoracledbPdbUserRollbacksPercentage                   MetricConfig `mapstructure:"newrelicoracledb.pdb.user_rollbacks_percentage"`
+	NewrelicoracledbPdbWaitTimeRatio                             MetricConfig `mapstructure:"newrelicoracledb.pdb.wait_time_ratio"`
 	NewrelicoracledbRedoLogParallelWriteWaits                    MetricConfig `mapstructure:"newrelicoracledb.redo_log_parallel_write_waits"`
 	NewrelicoracledbRedoLogSwitchArchivingNeededWaits            MetricConfig `mapstructure:"newrelicoracledb.redo_log_switch_archiving_needed_waits"`
 	NewrelicoracledbRedoLogSwitchCheckpointIncompleteWaits       MetricConfig `mapstructure:"newrelicoracledb.redo_log_switch_checkpoint_incomplete_waits"`
@@ -131,6 +180,153 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		NewrelicoracledbMemorySgaUgaTotalBytes: MetricConfig{
 			Enabled: true,
+		},
+		NewrelicoracledbPdbActiveParallelSessions: MetricConfig{
+			Enabled: true,
+		},
+		NewrelicoracledbPdbActiveSerialSessions: MetricConfig{
+			Enabled: false,
+		},
+		NewrelicoracledbPdbAverageActiveSessions: MetricConfig{
+			Enabled: false,
+		},
+		NewrelicoracledbPdbBackgroundCPUUsagePerSecond: MetricConfig{
+			Enabled: false,
+		},
+		NewrelicoracledbPdbBackgroundTimePerSecond: MetricConfig{
+			Enabled: false,
+		},
+		NewrelicoracledbPdbBlockChangesPerSecond: MetricConfig{
+			Enabled: false,
+		},
+		NewrelicoracledbPdbBlockChangesPerTransaction: MetricConfig{
+			Enabled: false,
+		},
+		NewrelicoracledbPdbCPUTimeRatio: MetricConfig{
+			Enabled: false,
+		},
+		NewrelicoracledbPdbCPUUsagePerSecond: MetricConfig{
+			Enabled: true,
+		},
+		NewrelicoracledbPdbCPUUsagePerTransaction: MetricConfig{
+			Enabled: false,
+		},
+		NewrelicoracledbPdbCurrentLogons: MetricConfig{
+			Enabled: false,
+		},
+		NewrelicoracledbPdbCurrentOpenCursors: MetricConfig{
+			Enabled: false,
+		},
+		NewrelicoracledbPdbDbPhysicalReadBytesPerSecond: MetricConfig{
+			Enabled: false,
+		},
+		NewrelicoracledbPdbDbPhysicalReadsPerSecond: MetricConfig{
+			Enabled: false,
+		},
+		NewrelicoracledbPdbDbPhysicalWriteBytesPerSecond: MetricConfig{
+			Enabled: false,
+		},
+		NewrelicoracledbPdbDbPhysicalWritesPerSecond: MetricConfig{
+			Enabled: false,
+		},
+		NewrelicoracledbPdbExecuteWithoutParseRatio: MetricConfig{
+			Enabled: false,
+		},
+		NewrelicoracledbPdbExecutionsPerSecond: MetricConfig{
+			Enabled: true,
+		},
+		NewrelicoracledbPdbExecutionsPerTransaction: MetricConfig{
+			Enabled: false,
+		},
+		NewrelicoracledbPdbHardParseCountPerSecond: MetricConfig{
+			Enabled: false,
+		},
+		NewrelicoracledbPdbHardParseCountPerTransaction: MetricConfig{
+			Enabled: false,
+		},
+		NewrelicoracledbPdbLogicalReadsPerSecond: MetricConfig{
+			Enabled: false,
+		},
+		NewrelicoracledbPdbLogicalReadsPerTransaction: MetricConfig{
+			Enabled: false,
+		},
+		NewrelicoracledbPdbLogonsPerSecond: MetricConfig{
+			Enabled: false,
+		},
+		NewrelicoracledbPdbLogonsPerTransaction: MetricConfig{
+			Enabled: false,
+		},
+		NewrelicoracledbPdbNetworkTrafficBytePerSecond: MetricConfig{
+			Enabled: true,
+		},
+		NewrelicoracledbPdbOpenCursorsPerSecond: MetricConfig{
+			Enabled: false,
+		},
+		NewrelicoracledbPdbOpenCursorsPerTransaction: MetricConfig{
+			Enabled: false,
+		},
+		NewrelicoracledbPdbParseFailureCountPerSecond: MetricConfig{
+			Enabled: false,
+		},
+		NewrelicoracledbPdbPhysicalReadBytesPerSecond: MetricConfig{
+			Enabled: true,
+		},
+		NewrelicoracledbPdbPhysicalReadsPerTransaction: MetricConfig{
+			Enabled: false,
+		},
+		NewrelicoracledbPdbPhysicalWriteBytesPerSecond: MetricConfig{
+			Enabled: false,
+		},
+		NewrelicoracledbPdbPhysicalWritesPerTransaction: MetricConfig{
+			Enabled: false,
+		},
+		NewrelicoracledbPdbRedoGeneratedBytesPerSecond: MetricConfig{
+			Enabled: false,
+		},
+		NewrelicoracledbPdbRedoGeneratedBytesPerTransaction: MetricConfig{
+			Enabled: false,
+		},
+		NewrelicoracledbPdbResponseTimePerTransaction: MetricConfig{
+			Enabled: false,
+		},
+		NewrelicoracledbPdbSessionCount: MetricConfig{
+			Enabled: true,
+		},
+		NewrelicoracledbPdbSoftParseRatio: MetricConfig{
+			Enabled: false,
+		},
+		NewrelicoracledbPdbSQLServiceResponseTime: MetricConfig{
+			Enabled: true,
+		},
+		NewrelicoracledbPdbTotalParseCountPerSecond: MetricConfig{
+			Enabled: false,
+		},
+		NewrelicoracledbPdbTotalParseCountPerTransaction: MetricConfig{
+			Enabled: false,
+		},
+		NewrelicoracledbPdbTransactionsPerSecond: MetricConfig{
+			Enabled: true,
+		},
+		NewrelicoracledbPdbUserCallsPerSecond: MetricConfig{
+			Enabled: false,
+		},
+		NewrelicoracledbPdbUserCallsPerTransaction: MetricConfig{
+			Enabled: false,
+		},
+		NewrelicoracledbPdbUserCommitsPerSecond: MetricConfig{
+			Enabled: false,
+		},
+		NewrelicoracledbPdbUserCommitsPercentage: MetricConfig{
+			Enabled: false,
+		},
+		NewrelicoracledbPdbUserRollbacksPerSecond: MetricConfig{
+			Enabled: false,
+		},
+		NewrelicoracledbPdbUserRollbacksPercentage: MetricConfig{
+			Enabled: false,
+		},
+		NewrelicoracledbPdbWaitTimeRatio: MetricConfig{
+			Enabled: false,
 		},
 		NewrelicoracledbRedoLogParallelWriteWaits: MetricConfig{
 			Enabled: true,

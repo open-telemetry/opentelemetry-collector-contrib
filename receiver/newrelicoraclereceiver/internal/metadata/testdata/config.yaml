@@ -35,6 +35,104 @@ all_set:
       enabled: true
     newrelicoracledb.memory.sga_uga_total_bytes:
       enabled: true
+    newrelicoracledb.pdb.active_parallel_sessions:
+      enabled: true
+    newrelicoracledb.pdb.active_serial_sessions:
+      enabled: true
+    newrelicoracledb.pdb.average_active_sessions:
+      enabled: true
+    newrelicoracledb.pdb.background_cpu_usage_per_second:
+      enabled: true
+    newrelicoracledb.pdb.background_time_per_second:
+      enabled: true
+    newrelicoracledb.pdb.block_changes_per_second:
+      enabled: true
+    newrelicoracledb.pdb.block_changes_per_transaction:
+      enabled: true
+    newrelicoracledb.pdb.cpu_time_ratio:
+      enabled: true
+    newrelicoracledb.pdb.cpu_usage_per_second:
+      enabled: true
+    newrelicoracledb.pdb.cpu_usage_per_transaction:
+      enabled: true
+    newrelicoracledb.pdb.current_logons:
+      enabled: true
+    newrelicoracledb.pdb.current_open_cursors:
+      enabled: true
+    newrelicoracledb.pdb.db_physical_read_bytes_per_second:
+      enabled: true
+    newrelicoracledb.pdb.db_physical_reads_per_second:
+      enabled: true
+    newrelicoracledb.pdb.db_physical_write_bytes_per_second:
+      enabled: true
+    newrelicoracledb.pdb.db_physical_writes_per_second:
+      enabled: true
+    newrelicoracledb.pdb.execute_without_parse_ratio:
+      enabled: true
+    newrelicoracledb.pdb.executions_per_second:
+      enabled: true
+    newrelicoracledb.pdb.executions_per_transaction:
+      enabled: true
+    newrelicoracledb.pdb.hard_parse_count_per_second:
+      enabled: true
+    newrelicoracledb.pdb.hard_parse_count_per_transaction:
+      enabled: true
+    newrelicoracledb.pdb.logical_reads_per_second:
+      enabled: true
+    newrelicoracledb.pdb.logical_reads_per_transaction:
+      enabled: true
+    newrelicoracledb.pdb.logons_per_second:
+      enabled: true
+    newrelicoracledb.pdb.logons_per_transaction:
+      enabled: true
+    newrelicoracledb.pdb.network_traffic_byte_per_second:
+      enabled: true
+    newrelicoracledb.pdb.open_cursors_per_second:
+      enabled: true
+    newrelicoracledb.pdb.open_cursors_per_transaction:
+      enabled: true
+    newrelicoracledb.pdb.parse_failure_count_per_second:
+      enabled: true
+    newrelicoracledb.pdb.physical_read_bytes_per_second:
+      enabled: true
+    newrelicoracledb.pdb.physical_reads_per_transaction:
+      enabled: true
+    newrelicoracledb.pdb.physical_write_bytes_per_second:
+      enabled: true
+    newrelicoracledb.pdb.physical_writes_per_transaction:
+      enabled: true
+    newrelicoracledb.pdb.redo_generated_bytes_per_second:
+      enabled: true
+    newrelicoracledb.pdb.redo_generated_bytes_per_transaction:
+      enabled: true
+    newrelicoracledb.pdb.response_time_per_transaction:
+      enabled: true
+    newrelicoracledb.pdb.session_count:
+      enabled: true
+    newrelicoracledb.pdb.soft_parse_ratio:
+      enabled: true
+    newrelicoracledb.pdb.sql_service_response_time:
+      enabled: true
+    newrelicoracledb.pdb.total_parse_count_per_second:
+      enabled: true
+    newrelicoracledb.pdb.total_parse_count_per_transaction:
+      enabled: true
+    newrelicoracledb.pdb.transactions_per_second:
+      enabled: true
+    newrelicoracledb.pdb.user_calls_per_second:
+      enabled: true
+    newrelicoracledb.pdb.user_calls_per_transaction:
+      enabled: true
+    newrelicoracledb.pdb.user_commits_per_second:
+      enabled: true
+    newrelicoracledb.pdb.user_commits_percentage:
+      enabled: true
+    newrelicoracledb.pdb.user_rollbacks_per_second:
+      enabled: true
+    newrelicoracledb.pdb.user_rollbacks_percentage:
+      enabled: true
+    newrelicoracledb.pdb.wait_time_ratio:
+      enabled: true
     newrelicoracledb.redo_log_parallel_write_waits:
       enabled: true
     newrelicoracledb.redo_log_switch_archiving_needed_waits:
@@ -139,6 +237,104 @@ none_set:
     newrelicoracledb.memory.sga_shared_pool_library_cache_user_bytes:
       enabled: false
     newrelicoracledb.memory.sga_uga_total_bytes:
+      enabled: false
+    newrelicoracledb.pdb.active_parallel_sessions:
+      enabled: false
+    newrelicoracledb.pdb.active_serial_sessions:
+      enabled: false
+    newrelicoracledb.pdb.average_active_sessions:
+      enabled: false
+    newrelicoracledb.pdb.background_cpu_usage_per_second:
+      enabled: false
+    newrelicoracledb.pdb.background_time_per_second:
+      enabled: false
+    newrelicoracledb.pdb.block_changes_per_second:
+      enabled: false
+    newrelicoracledb.pdb.block_changes_per_transaction:
+      enabled: false
+    newrelicoracledb.pdb.cpu_time_ratio:
+      enabled: false
+    newrelicoracledb.pdb.cpu_usage_per_second:
+      enabled: false
+    newrelicoracledb.pdb.cpu_usage_per_transaction:
+      enabled: false
+    newrelicoracledb.pdb.current_logons:
+      enabled: false
+    newrelicoracledb.pdb.current_open_cursors:
+      enabled: false
+    newrelicoracledb.pdb.db_physical_read_bytes_per_second:
+      enabled: false
+    newrelicoracledb.pdb.db_physical_reads_per_second:
+      enabled: false
+    newrelicoracledb.pdb.db_physical_write_bytes_per_second:
+      enabled: false
+    newrelicoracledb.pdb.db_physical_writes_per_second:
+      enabled: false
+    newrelicoracledb.pdb.execute_without_parse_ratio:
+      enabled: false
+    newrelicoracledb.pdb.executions_per_second:
+      enabled: false
+    newrelicoracledb.pdb.executions_per_transaction:
+      enabled: false
+    newrelicoracledb.pdb.hard_parse_count_per_second:
+      enabled: false
+    newrelicoracledb.pdb.hard_parse_count_per_transaction:
+      enabled: false
+    newrelicoracledb.pdb.logical_reads_per_second:
+      enabled: false
+    newrelicoracledb.pdb.logical_reads_per_transaction:
+      enabled: false
+    newrelicoracledb.pdb.logons_per_second:
+      enabled: false
+    newrelicoracledb.pdb.logons_per_transaction:
+      enabled: false
+    newrelicoracledb.pdb.network_traffic_byte_per_second:
+      enabled: false
+    newrelicoracledb.pdb.open_cursors_per_second:
+      enabled: false
+    newrelicoracledb.pdb.open_cursors_per_transaction:
+      enabled: false
+    newrelicoracledb.pdb.parse_failure_count_per_second:
+      enabled: false
+    newrelicoracledb.pdb.physical_read_bytes_per_second:
+      enabled: false
+    newrelicoracledb.pdb.physical_reads_per_transaction:
+      enabled: false
+    newrelicoracledb.pdb.physical_write_bytes_per_second:
+      enabled: false
+    newrelicoracledb.pdb.physical_writes_per_transaction:
+      enabled: false
+    newrelicoracledb.pdb.redo_generated_bytes_per_second:
+      enabled: false
+    newrelicoracledb.pdb.redo_generated_bytes_per_transaction:
+      enabled: false
+    newrelicoracledb.pdb.response_time_per_transaction:
+      enabled: false
+    newrelicoracledb.pdb.session_count:
+      enabled: false
+    newrelicoracledb.pdb.soft_parse_ratio:
+      enabled: false
+    newrelicoracledb.pdb.sql_service_response_time:
+      enabled: false
+    newrelicoracledb.pdb.total_parse_count_per_second:
+      enabled: false
+    newrelicoracledb.pdb.total_parse_count_per_transaction:
+      enabled: false
+    newrelicoracledb.pdb.transactions_per_second:
+      enabled: false
+    newrelicoracledb.pdb.user_calls_per_second:
+      enabled: false
+    newrelicoracledb.pdb.user_calls_per_transaction:
+      enabled: false
+    newrelicoracledb.pdb.user_commits_per_second:
+      enabled: false
+    newrelicoracledb.pdb.user_commits_percentage:
+      enabled: false
+    newrelicoracledb.pdb.user_rollbacks_per_second:
+      enabled: false
+    newrelicoracledb.pdb.user_rollbacks_percentage:
+      enabled: false
+    newrelicoracledb.pdb.wait_time_ratio:
       enabled: false
     newrelicoracledb.redo_log_parallel_write_waits:
       enabled: false

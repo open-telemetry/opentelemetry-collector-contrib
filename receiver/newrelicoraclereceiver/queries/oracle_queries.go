@@ -230,4 +230,11 @@ const (
 		OR sysevent.event LIKE '%buffer busy waits%'
 		OR sysevent.event LIKE '%freeBufferWaits%'
 		OR sysevent.event LIKE '%free buffer inspected%')`
+
+	PDBSysMetricsSQL = `
+		SELECT
+			INST_ID,
+			METRIC_NAME,
+			VALUE
+		FROM gv$con_sysmetric`
 )
