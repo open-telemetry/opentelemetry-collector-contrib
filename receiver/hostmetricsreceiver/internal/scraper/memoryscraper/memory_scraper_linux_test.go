@@ -35,17 +35,17 @@ func TestScrape_UseMemAvailable(t *testing.T) {
 
 	scraper.recordMemoryUsageMetric(pcommon.NewTimestampFromTime(time.Now()), memInfo)
 	scraper.recordMemoryUtilizationMetric(pcommon.NewTimestampFromTime(time.Now()), memInfo)
-	legacyMd := scraper.mb.Emit()
+	memUsedMd := scraper.mb.Emit()
 
-	// enable feature gate
+	// disable feature gate
 	_ = featuregate.GlobalRegistry().Set(
-		"receiver.hostmetricsreceiver.UseLinuxMemAvailable", true)
+		"receiver.hostmetricsreceiver.UseLinuxMemAvailable", false)
 	t.Cleanup(func() {
 		_ = featuregate.GlobalRegistry().Set("receiver.hostmetricsreceiver.UseLinuxMemAvailable", false)
 	})
 	scraper.recordMemoryUsageMetric(pcommon.NewTimestampFromTime(time.Now()), memInfo)
 	scraper.recordMemoryUtilizationMetric(pcommon.NewTimestampFromTime(time.Now()), memInfo)
-	memUsedMd := scraper.mb.Emit()
+	legacyMd := scraper.mb.Emit()
 
 	// Used memory calculation based on MemAvailable is greater than "Total
 	// - Free - Buffers - Cache" as it takes into account the amount of
