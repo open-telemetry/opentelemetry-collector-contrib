@@ -52,6 +52,9 @@ func (s *TablespaceScraper) ScrapeTablespaceMetrics(ctx context.Context) []error
 	// Scrape DB ID tablespace metrics
 	errors = append(errors, s.scrapeDBIDTablespaceMetrics(ctx, now)...)
 
+	// Scrape CDB datafiles offline tablespace metrics
+	errors = append(errors, s.scrapeCDBDatafilesOfflineTablespaceMetrics(ctx, now)...)
+
 	return errors
 }
 
@@ -200,6 +203,54 @@ func (s *TablespaceScraper) scrapeDBIDTablespaceMetrics(ctx context.Context, now
 	}
 
 	s.logger.Debug("Collected Oracle DB ID tablespace metrics", zap.Int("metric_count", metricCount), zap.String("instance", s.instanceName))
+
+	return errors
+}
+
+// scrapeCDBDatafilesOfflineTablespaceMetrics handles the CDB datafiles offline tablespace metrics
+func (s *TablespaceScraper) scrapeCDBDatafilesOfflineTablespaceMetrics(ctx context.Context, now pcommon.Timestamp) []error {
+	var errors []error
+
+	// Execute CDB datafiles offline tablespace query
+	s.logger.Debug("Executing CDB datafiles offline tablespace query", zap.String("sql", queries.CDBDatafilesOfflineTablespaceSQL))
+
+	rows, err := s.db.QueryContext(ctx, queries.CDBDatafilesOfflineTablespaceSQL)
+	if err != nil {
+		errors = append(errors, fmt.Errorf("error executing CDB datafiles offline tablespace query: %w", err))
+		return errors
+	}
+	defer rows.Close()
+
+	// Process each row and record metrics
+	metricCount := 0
+	for rows.Next() {
+		var offlineCount int64
+		var tablespaceName string
+
+		err := rows.Scan(&offlineCount, &tablespaceName)
+		if err != nil {
+			errors = append(errors, fmt.Errorf("error scanning CDB datafiles offline tablespace row: %w", err))
+			continue
+		}
+
+		// Record CDB datafiles offline metrics
+		s.logger.Info("CDB datafiles offline tablespace metrics collected",
+			zap.String("tablespace", tablespaceName),
+			zap.Int64("offline_count", offlineCount),
+			zap.String("instance", s.instanceName),
+		)
+
+		// Record the CDB datafiles offline metric
+		s.mb.RecordNewrelicoracledbTablespaceOfflineCdbDatafilesDataPoint(now, offlineCount, s.instanceName, tablespaceName)
+
+		metricCount++
+	}
+
+	if err = rows.Err(); err != nil {
+		errors = append(errors, fmt.Errorf("error iterating CDB datafiles offline tablespace rows: %w", err))
+	}
+
+	s.logger.Debug("Collected Oracle CDB datafiles offline tablespace metrics", zap.Int("metric_count", metricCount), zap.String("instance", s.instanceName))
 
 	return errors
 }

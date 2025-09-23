@@ -96,6 +96,16 @@ metrics:
       - newrelic.entity_name
       - tablespace.name
 
+  newrelicoracledb.tablespace.offline_cdb_datafiles:
+    description: Count of offline CDB datafiles by tablespace
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - tablespace.name
+
 tests:
   config:
   goleak:

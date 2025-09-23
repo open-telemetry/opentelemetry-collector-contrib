@@ -71,6 +71,21 @@ Whether the tablespace is offline (1) or online (0)
 | newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
 | tablespace.name | Name of the Oracle tablespace | Any Str | false |
 
+### newrelicoracledb.tablespace.offline_cdb_datafiles
+
+Count of offline CDB datafiles by tablespace
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+| tablespace.name | Name of the Oracle tablespace | Any Str | false |
+
 ### newrelicoracledb.tablespace.space_consumed_bytes
 
 Total bytes consumed by the tablespace
