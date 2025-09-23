@@ -111,3 +111,35 @@
 // - Provides type safety and clear data contracts
 // - Enables consistent data handling across different engines
 package models
+
+// SlowQuery represents slow query performance data collected from SQL Server
+// This struct is modeled after nri-mssql's TopNSlowQueryDetails for compatibility
+type SlowQuery struct {
+	QueryID                *string  `db:"query_id" metric_name:"query_id" source_type:"attribute"`
+	QueryText              *string  `db:"query_text" metric_name:"query_text" source_type:"attribute"`
+	DatabaseName           *string  `db:"database_name" metric_name:"database_name" source_type:"attribute"`
+	SchemaName             *string  `db:"schema_name" metric_name:"schema_name" source_type:"attribute"`
+	LastExecutionTimestamp *string  `db:"last_execution_timestamp" metric_name:"last_execution_timestamp" source_type:"attribute"`
+	ExecutionCount         *int64   `db:"execution_count" metric_name:"execution_count" source_type:"gauge"`
+	AvgCPUTimeMS           *float64 `db:"avg_cpu_time_ms" metric_name:"avg_cpu_time_ms" source_type:"gauge"`
+	AvgElapsedTimeMS       *float64 `db:"avg_elapsed_time_ms" metric_name:"avg_elapsed_time_ms" source_type:"gauge"`
+	AvgDiskReads           *float64 `db:"avg_disk_reads" metric_name:"avg_disk_reads" source_type:"gauge"`
+	AvgDiskWrites          *float64 `db:"avg_disk_writes" metric_name:"avg_disk_writes" source_type:"gauge"`
+	StatementType          *string  `db:"statement_type" metric_name:"statement_type" source_type:"attribute"`
+	CollectionTimestamp    *string  `db:"collection_timestamp" metric_name:"collection_timestamp" source_type:"attribute"`
+}
+
+// BlockingSession represents blocking session information
+type BlockingSession struct {
+BlockingSPID          *int64   `db:"blocking_spid" metric_name:"sqlserver.blocking.spid" source_type:"gauge"`
+	BlockingStatus        *string  `db:"blocking_status" metric_name:"sqlserver.blocking.status" source_type:"attribute"`
+	BlockedSPID           *int64   `db:"blocked_spid" metric_name:"sqlserver.blocked.spid" source_type:"gauge"`
+	BlockedStatus         *string  `db:"blocked_status" metric_name:"sqlserver.blocked.status" source_type:"attribute"`
+	WaitType              *string  `db:"wait_type" metric_name:"sqlserver.wait.type" source_type:"attribute"`
+	WaitTimeInSeconds     *float64 `db:"wait_time_in_seconds" metric_name:"sqlserver.wait.time_seconds" source_type:"gauge"`
+	CommandType           *string  `db:"command_type" metric_name:"sqlserver.command.type" source_type:"attribute"`
+	DatabaseName          *string  `db:"database_name" metric_name:"sqlserver.database.name" source_type:"attribute"`
+	BlockingQueryText     *string  `db:"blocking_query_text" metric_name:"sqlserver.blocking.query_text" source_type:"attribute"`
+	BlockedQueryText      *string  `db:"blocked_query_text" metric_name:"sqlserver.blocked.query_text" source_type:"attribute"`
+	BlockedQueryStartTime *string  `db:"blocked_query_start_time" metric_name:"sqlserver.blocked.query_start_time" source_type:"attribute"`
+}

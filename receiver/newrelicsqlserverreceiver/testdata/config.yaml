@@ -59,10 +59,10 @@ receivers:
   newrelicsqlserver:
     # SQL Server connection configuration
     # ⚠️  REPLACE THESE WITH YOUR ACTUAL VALUES ⚠️
-    hostname: "20.235.136.68"                    # e.g., "your-sql-server.com" or "192.168.1.100"
+    hostname: "20.235.45.215"                    # e.g., "your-sql-server.com" or "192.168.1.100"
     port: "1433"                # Default SQL Server port
-    username: ""              # e.g., "monitoring_user"
-    password: ""              # Your SQL Server password
+    username: "sa"              # e.g., "monitoring_user"
+    password: "AbAnTaPassword@123"              # Your SQL Server password
 
     # Optional: Named instance (if using SQL Server named instances)
     # instance: "${SQLSERVER_INSTANCE}"            # e.g., "SQLEXPRESS" 
@@ -75,6 +75,13 @@ receivers:
     
     # Optional: Initial delay before starting collection
     # initial_delay: 10s
+    
+    # Enable query performance monitoring (blocking sessions, slow queries, etc.)
+    enable_query_monitoring: true
+    
+    # Query monitoring thresholds (required when enable_query_monitoring is true)
+    query_monitoring_response_time_threshold: 1  # milliseconds - queries slower than this will be monitored
+    query_monitoring_count_threshold: 5          # minimum execution count for queries to be monitored
 
 # Exporters send telemetry data to destinations
 exporters:
@@ -86,7 +93,7 @@ exporters:
     # Headers for authentication
     headers:
       # ⚠️  REPLACE WITH YOUR ACTUAL NEW RELIC LICENSE KEY ⚠️
-      api-key: ""
+      api-key: "2ad457cf983af41e66d2a329e19e52b8FFFFNRAL"
     
     # TLS configuration
     tls:
