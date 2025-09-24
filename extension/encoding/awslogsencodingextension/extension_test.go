@@ -27,6 +27,7 @@ func TestNew_CloudWatchLogsSubscriptionFilter(t *testing.T) {
 	_, err = e.UnmarshalLogs([]byte("invalid"))
 	require.ErrorContains(t, err, `failed to unmarshal logs as "cloudwatch_subscription_filter" format`)
 }
+
 func TestNew_CloudWatchLogsSubscriptionFilterV1(t *testing.T) {
 	e, err := newExtension(&Config{Format: constants.FormatCloudWatchLogsSubscriptionFilterV1}, extensiontest.NewNopSettings(extensiontest.NopType))
 	require.NoError(t, err)
@@ -91,6 +92,7 @@ func TestNew_S3AccessLogV1(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, e)
 }
+
 func TestNew_WAFLog(t *testing.T) {
 	e, err := newExtension(&Config{Format: constants.FormatWAFLog}, extensiontest.NewNopSettings(extensiontest.NopType))
 	require.NoError(t, err)
@@ -124,6 +126,7 @@ func TestNew_ELBAcessLogV1(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, e)
 }
+
 func TestNew_Unimplemented(t *testing.T) {
 	e, err := newExtension(&Config{Format: "invalid"}, extensiontest.NewNopSettings(extensiontest.NopType))
 	require.Error(t, err)
