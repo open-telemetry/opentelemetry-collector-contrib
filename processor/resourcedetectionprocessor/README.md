@@ -320,7 +320,7 @@ processors:
 ### Amazon EKS
 
 This detector reads resource information from the [EC2 instance metadata service](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-metadata.html) to retrieve related resource attributes.
-If IMDS is not available, (example: EKS-AutoMode and POD not on the hostnetwork), it falls back to a combination of [Kubernetes API](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.25/#-strong-kubernetes-api-v1-25-strong-) 
+If IMDS is not available, (example: EKS-AutoMode and POD not on the hostnetwork), it falls back to a combination of [Kubernetes API](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.25/#-strong-kubernetes-api-v1-25-strong-)
 and [EC2 API](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_DescribeInstances.html) to retrieve related resource attributes.
 
 EC2 API requires the `EC2:DescribeInstances` permission to be granted to the IAM role. If IMDS is not accessible, ex: EKS-AutoMode, you can use [POD Identity](https://docs.aws.amazon.com/eks/latest/userguide/pod-identities.html).
@@ -498,6 +498,39 @@ Queries the K8S API server to retrieve kubeadm resource attributes:
 
 The list of the populated resource attributes can be found at [kubeadm Detector Resource Attributes](./internal/kubeadm/documentation.md).
 
+---
+
+### Oracle Cloud Infrastructure (OCI) metadata
+
+Queries the [Oracle Cloud Infrastructure (OCI) metadata service](https://docs.oracle.com/en-us/iaas/Content/Compute/Tasks/gettingmetadata.htm)
+to retrieve resource attributes related to the OCI instance environment.
+
+The list of the populated resource attributes can be found at [OracleCloud Detector Resource Attributes](./internal/oraclecloud/documentation.md).
+
+Example:
+
+```yaml
+processors:
+  resourcedetection/oraclecloud:
+    detectors: [env, oraclecloud]
+    timeout: 2s
+    override: false
+```
+
+**Populated resource attributes:**
+- `cloud.provider`
+- `cloud.platform`
+- `cloud.region`
+- `cloud.availability_zone`
+- `host.id`
+- `host.name`
+- `host.type`
+- `k8s.cluster.name`
+
+See [internal/oraclecloud/documentation.md](./internal/oraclecloud/documentation.md) for detailed attribute definitions.
+
+---
+
 The following permissions are required:
 ```yaml
 apiVersion: rbac.authorization.k8s.io/v1
@@ -655,10 +688,76 @@ other sources to the collector, then these describe the monitored entity in the 
 Overriding these with the collector's own identifier would instead make the telemetry appear as if it was coming from the collector
 or the collector's host instead, which might be inaccurate.
 
+### Hetzner
+
+Uses the [Hetzner metadata API](https://docs.hetzner.cloud/reference/cloud#server-metadata) to read resource information from the instance metadata service and populate related resource attributes.
+
+The list of the populated resource attributes can be found at [Hetzner Detector Resource Attributes](./internal/hetzner/documentation.md).
+
+Hetzner custom configuration example:
+
+```yaml
+processors:
+  resourcedetection/hetzner:
+    detectors: ["hetzner"]
+```
+
+### Akamai
+
+Uses the [Akamai metadata API](https://techdocs.akamai.com/cloud-computing/docs/metadata-service-api) to read resource information from the instance metadata service and populate related resource attributes.
+
+The list of the populated resource attributes can be found at [Akamai Detector Resource Attributes](./internal/akamai/documentation.md).
+
+Akamai custom configuration example:
+
+```yaml
+processors:
+  resourcedetection/akamai:
+    detectors: ["akamai"]
+```
+
+### Scaleway
+
+Uses the Scaleway metadata API to read resource information from the instance metadata service and populate related resource attributes.
+
+The list of the populated resource attributes can be found at [Scaleway Detector Resource Attributes](./internal/scaleway/documentation.md).
+
+Scaleway custom configuration example:
+
+```yaml
+processors:
+  resourcedetection/scaleway:
+    detectors: ["scaleway"]
+```
+
+### Vultr
+
+Uses the [Vultr metadata API](https://www.vultr.com/metadata/) to read resource information from the instance metadata service and populate related resource attributes.
+
+The list of the populated resource attributes can be found at [Vultr Detector Resource Attributes](./internal/vultr/documentation.md).
+
+Vultr custom configuration example:
+
+```yaml
+processors:
+  resourcedetection/vultr:
+    detectors: ["vultr"]
+```
+
+The Vultr detector will report an error in logs if the metadata endpoint is unavailable. You can configure the detector to instead fail with this flag:
+
+```yaml
+processors:
+  resourcedetection/vultr:
+    detectors: ["vultr"]
+    vultr:
+      fail_on_missing_metadata: true
+```
+
 ## Configuration
 
 ```yaml
-# a list of resource detectors to run, valid options are: "env", "system", "gcp", "ec2", "ecs", "elastic_beanstalk", "eks", "lambda", "azure", "heroku", "openshift", "dynatrace"
+# a list of resource detectors to run, valid options are: "env", "system", "gcp", "ec2", "ecs", "elastic_beanstalk", "eks", "lambda", "azure", "aks", "heroku", "openshift", "dynatrace", "consul", "docker", "k8snode, "kubeadm", "hetzner", "akamai", "scaleway", "vultr", "oraclecloud"
 detectors: [ <string> ]
 # determines if existing resource attributes should be overridden or preserved, defaults to true
 override: <bool>

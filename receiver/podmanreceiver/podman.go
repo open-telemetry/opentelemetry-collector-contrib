@@ -46,8 +46,8 @@ func (pc *containerScraper) getContainers() []container {
 	pc.containersLock.Lock()
 	defer pc.containersLock.Unlock()
 	containers := make([]container, 0, len(pc.containers))
-	for _, container := range pc.containers {
-		containers = append(containers, container)
+	for i := range pc.containers {
+		containers = append(containers, pc.containers[i])
 	}
 	return containers
 }
@@ -73,7 +73,8 @@ func (pc *containerScraper) loadContainerList(ctx context.Context) error {
 		return err
 	}
 
-	for _, c := range containerList {
+	for i := range containerList {
+		c := containerList[i]
 		pc.persistContainer(c)
 	}
 	return nil
