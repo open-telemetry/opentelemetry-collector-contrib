@@ -44,7 +44,7 @@ func TestAccessLogToLogRecord(t *testing.T) {
 		Links: []*mongodbatlas.Link{},
 	}
 
-	cluster := mongodbatlas.Cluster{
+	cluster := &mongodbatlas.Cluster{
 		GroupID: testProjectID,
 		Name:    testClusterName,
 		ProviderSettings: &mongodbatlas.ProviderSettings{

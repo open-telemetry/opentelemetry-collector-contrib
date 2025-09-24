@@ -3126,3 +3126,197 @@ func TestGetIdentifiersFromAssoc(t *testing.T) {
 		})
 	}
 }
+
+func TestCronJobExtractionRules_FromJobOwner(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+	// Disable saving ip into k8s.pod.ip so attributes length assertions stay predictable
+	c.Associations[0].Sources[0].Name = ""
+
+	// Pod owned by a Job
+	pod := &api_v1.Pod{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:              "my-cronjob-27667920-pod",
+			UID:               "pod-uid-1",
+			Namespace:         "ns1",
+			CreationTimestamp: meta_v1.Now(),
+			OwnerReferences: []meta_v1.OwnerReference{
+				{
+					APIVersion: "batch/v1",
+					Kind:       "Job",
+					Name:       "my-cronjob-27667920",
+					UID:        "job-uid-123",
+				},
+			},
+		},
+		Spec: api_v1.PodSpec{
+			NodeName: "node1",
+		},
+		Status: api_v1.PodStatus{
+			PodIP: "1.1.1.1",
+		},
+	}
+
+	// The Job object the pod points to (we'll mutate OwnerReferences per test case)
+	job := &batch_v1.Job{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      "my-cronjob-27667920",
+			Namespace: "ns1",
+			UID:       "job-uid-123",
+		},
+	}
+
+	isController := true
+	isNotController := false
+
+	testCases := []struct {
+		name      string
+		rules     ExtractionRules
+		jobOwners []meta_v1.OwnerReference
+		want      map[string]string
+	}{
+		{
+			name:  "no-rules",
+			rules: ExtractionRules{},
+			jobOwners: []meta_v1.OwnerReference{
+				{
+					APIVersion: "batch/v1",
+					Kind:       "CronJob",
+					Name:       "my-cronjob",
+					UID:        "cron-uid-999",
+					Controller: &isController,
+				},
+			},
+			want: map[string]string{},
+		},
+		{
+			name: "cronjob-is-controller_emit_uid_only",
+			rules: ExtractionRules{
+				CronJobUID: true,
+			},
+			jobOwners: []meta_v1.OwnerReference{
+				{
+					APIVersion: "batch/v1",
+					Kind:       "CronJob",
+					Name:       "my-cronjob",
+					UID:        "cron-uid-999",
+					Controller: &isController,
+				},
+			},
+			want: map[string]string{
+				"k8s.cronjob.uid": "cron-uid-999",
+			},
+		},
+		{
+			name: "cronjob-is-controller_emit_name_and_uid",
+			rules: ExtractionRules{
+				CronJobName: true,
+				CronJobUID:  true,
+			},
+			jobOwners: []meta_v1.OwnerReference{
+				{
+					APIVersion: "batch/v1",
+					Kind:       "CronJob",
+					Name:       "my-cronjob",
+					UID:        "cron-uid-999",
+					Controller: &isController,
+				},
+			},
+			want: map[string]string{
+				"k8s.cronjob.name": "my-cronjob",
+				"k8s.cronjob.uid":  "cron-uid-999",
+			},
+		},
+		{
+			name: "cronjob-is-not-controller_do_not_emit",
+			rules: ExtractionRules{
+				CronJobName: true,
+				CronJobUID:  true,
+			},
+			jobOwners: []meta_v1.OwnerReference{
+				{
+					APIVersion: "batch/v1",
+					Kind:       "CronJob",
+					Name:       "my-cronjob",
+					UID:        "cron-uid-999",
+					Controller: &isNotController,
+				},
+			},
+			want: map[string]string{
+				"k8s.cronjob.name": "my-cronjob",
+			},
+		},
+		{
+			name: "multiple_owners_only_controller_counts",
+			rules: ExtractionRules{
+				CronJobName: true,
+				CronJobUID:  true,
+			},
+			jobOwners: []meta_v1.OwnerReference{
+				{
+					APIVersion: "batch/v1",
+					Kind:       "CronJob",
+					Name:       "cj-not-controller",
+					UID:        "cron-uid-111",
+					Controller: &isNotController,
+				},
+				{
+					APIVersion: "batch/v1",
+					Kind:       "CronJob",
+					Name:       "cj-controller",
+					UID:        "cron-uid-222",
+					Controller: &isController,
+				},
+			},
+			want: map[string]string{
+				"k8s.cronjob.name": "my-cronjob",
+				"k8s.cronjob.uid":  "cron-uid-222",
+			},
+		},
+		{
+			name: "no_cronjob_owner",
+			rules: ExtractionRules{
+				CronJobName: true,
+				CronJobUID:  true,
+			},
+			jobOwners: []meta_v1.OwnerReference{
+				{
+					APIVersion: "batch/v1",
+					Kind:       "SomethingElse",
+					Name:       "not-a-cronjob",
+					UID:        "whatever",
+					Controller: &isController,
+				},
+			},
+			want: map[string]string{
+				"k8s.cronjob.name": "my-cronjob",
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			c.Rules = tc.rules
+
+			// Set owners on Job according to case
+			job.OwnerReferences = tc.jobOwners
+
+			// Emulate informer transforms (like other tests do)
+			transformedPod := removeUnnecessaryPodData(pod, c.Rules)
+
+			// Feed caches
+			c.handleJobAdd(job)
+			c.handlePodAdd(transformedPod)
+
+			// Fetch enriched pod by connection id
+			p, ok := c.GetPod(newPodIdentifier("connection", "", pod.Status.PodIP))
+			require.True(t, ok)
+
+			assert.Len(t, p.Attributes, len(tc.want))
+			for k, v := range tc.want {
+				got, ok := p.Attributes[k]
+				assert.True(t, ok, "expected attribute %s", k)
+				assert.Equal(t, v, got)
+			}
+		})
+	}
+}

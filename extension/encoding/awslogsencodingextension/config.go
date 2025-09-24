@@ -8,32 +8,22 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/confmap/xconfmap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/constants"
 )
 
 var _ xconfmap.Validator = (*Config)(nil)
 
-const (
-	formatCloudWatchLogsSubscriptionFilter = "cloudwatch_logs_subscription_filter"
-	formatVPCFlowLog                       = "vpc_flow_log"
-	formatS3AccessLog                      = "s3_access_log"
-	formatWAFLog                           = "waf_log"
-	formatCloudTrailLog                    = "cloudtrail_log"
-	formatELBAccessLog                     = "elb_access_log"
-
-	fileFormatPlainText = "plain-text"
-	fileFormatParquet   = "parquet"
-)
-
 var (
 	supportedLogFormats = []string{
-		formatCloudWatchLogsSubscriptionFilter,
-		formatVPCFlowLog,
-		formatS3AccessLog,
-		formatWAFLog,
-		formatCloudTrailLog,
-		formatELBAccessLog,
+		constants.FormatCloudWatchLogsSubscriptionFilter,
+		constants.FormatVPCFlowLog,
+		constants.FormatS3AccessLog,
+		constants.FormatWAFLog,
+		constants.FormatCloudTrailLog,
+		constants.FormatELBAccessLog,
 	}
-	supportedVPCFlowLogFileFormat = []string{fileFormatPlainText, fileFormatParquet}
+	supportedVPCFlowLogFileFormat = []string{constants.FileFormatPlainText, constants.FileFormatParquet}
 )
 
 type Config struct {
@@ -72,19 +62,19 @@ func (cfg *Config) Validate() error {
 	switch cfg.Format {
 	case "":
 		errs = append(errs, fmt.Errorf("format unspecified, expected one of %q", supportedLogFormats))
-	case formatCloudWatchLogsSubscriptionFilter: // valid
-	case formatVPCFlowLog: // valid
-	case formatS3AccessLog: // valid
-	case formatWAFLog: // valid
-	case formatCloudTrailLog: // valid
-	case formatELBAccessLog: // valid
+	case constants.FormatCloudWatchLogsSubscriptionFilter: // valid
+	case constants.FormatVPCFlowLog: // valid
+	case constants.FormatS3AccessLog: // valid
+	case constants.FormatWAFLog: // valid
+	case constants.FormatCloudTrailLog: // valid
+	case constants.FormatELBAccessLog: // valid
 	default:
 		errs = append(errs, fmt.Errorf("unsupported format %q, expected one of %q", cfg.Format, supportedLogFormats))
 	}
 
 	switch cfg.VPCFlowLogConfig.FileFormat {
-	case fileFormatParquet: // valid
-	case fileFormatPlainText: // valid
+	case constants.FileFormatParquet: // valid
+	case constants.FileFormatPlainText: // valid
 	default:
 		errs = append(errs, fmt.Errorf(
 			"unsupported file format %q for VPC flow log, expected one of %q",

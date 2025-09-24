@@ -49,7 +49,8 @@ func Transform(pod *corev1.Pod) *corev1.Pod {
 			Reason:   pod.Status.Reason,
 		},
 	}
-	for _, cs := range pod.Status.ContainerStatuses {
+	for i := range pod.Status.ContainerStatuses {
+		cs := &pod.Status.ContainerStatuses[i]
 		if cs.ContainerID == "" {
 			continue
 		}
@@ -63,7 +64,8 @@ func Transform(pod *corev1.Pod) *corev1.Pod {
 			LastTerminationState: cs.LastTerminationState,
 		})
 	}
-	for _, c := range pod.Spec.Containers {
+	for i := range pod.Spec.Containers {
+		c := &pod.Spec.Containers[i]
 		newPod.Spec.Containers = append(newPod.Spec.Containers, corev1.Container{
 			Name: c.Name,
 			Resources: corev1.ResourceRequirements{
@@ -86,7 +88,8 @@ func RecordMetrics(logger *zap.Logger, mb *metadata.MetricsBuilder, pod *corev1.
 	rb.SetK8sPodQosClass(string(pod.Status.QOSClass))
 	mb.EmitForResource(metadata.WithResource(rb.Emit()))
 
-	for _, c := range pod.Spec.Containers {
+	for i := range pod.Spec.Containers {
+		c := pod.Spec.Containers[i]
 		container.RecordSpecMetrics(logger, mb, c, pod, ts)
 	}
 }
@@ -273,7 +276,8 @@ func getWorkloadProperties(ref *v1.OwnerReference, labelKey string) map[string]s
 
 func getPodContainerProperties(pod *corev1.Pod, logger *zap.Logger) map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata {
 	km := map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{}
-	for _, cs := range pod.Status.ContainerStatuses {
+	for i := range pod.Status.ContainerStatuses {
+		cs := pod.Status.ContainerStatuses[i]
 		md := container.GetMetadata(pod, cs, logger)
 		km[md.ResourceID] = md
 	}

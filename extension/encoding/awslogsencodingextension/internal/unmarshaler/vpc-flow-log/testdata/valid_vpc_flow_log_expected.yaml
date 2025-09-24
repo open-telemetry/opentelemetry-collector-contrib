@@ -23,8 +23,10 @@ resourceLogs:
                 value:
                   stringValue: NODATA
             body: {}
-            spanId: ""
             timeUnixNano: "1742570142000000000"
-            traceId: ""
         scope:
+          attributes:
+            - key: awslogs_encoding.format
+              value:
+                stringValue: vpc_flow_log
           name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension

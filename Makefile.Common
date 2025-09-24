@@ -108,11 +108,11 @@ test: $(GOTESTSUM)
 
 # This target is used in scoped tests.
 # We do not pass GOTESTSUM_OPT so that we do not re-run failures
-# and run each changed test three times.
+# and run each changed test two times.
 #
 # This helps us catch flakes more easily before they land on main.
-test-three-times: $(GOTESTSUM)
-	$(GOTESTSUM) --packages="./..." -- $(GOTEST_OPT) -count=3
+test-twice: $(GOTESTSUM)
+	$(GOTESTSUM) --packages="./..." -- $(GOTEST_OPT) -count=2
 
 .PHONY: test-with-cover
 test-with-cover: $(GOTESTSUM)

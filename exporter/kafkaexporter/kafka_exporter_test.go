@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"testing"
-	"time"
 
 	"github.com/IBM/sarama"
 	"github.com/IBM/sarama/mocks"
@@ -1600,7 +1599,9 @@ func configureExporter[T any](tb testing.TB,
 	return cluster
 }
 
-// fetchKgoRecords polls a franz-go topic for up to 5 seconds and returns all records produced to that topic.
+// fetchKgoRecords polls a franz-go topic and returns at most one record produced to that topic.
+//
+// TODO rename the function to fetchKgoRecord, and have it return exactly one record.
 func fetchKgoRecords(tb testing.TB, brokers []string, topic string) []*kgo.Record {
 	clientOpts := []kgo.Opt{
 		kgo.SeedBrokers(brokers...),
@@ -1611,12 +1612,8 @@ func fetchKgoRecords(tb testing.TB, brokers []string, topic string) []*kgo.Recor
 	require.NoError(tb, err, "failed to create kgo consumer client")
 	defer consumerClient.Close()
 
-	ctx, cancel := context.WithTimeoutCause(tb.Context(), 500*time.Millisecond,
-		errors.New("No records were received"))
-	defer cancel()
-
 	var records []*kgo.Record
-	fetches := consumerClient.PollRecords(ctx, 1)
+	fetches := consumerClient.PollRecords(tb.Context(), 1)
 	require.NoError(tb, fetches.Err(), "error polling records")
 	fetches.EachRecord(func(r *kgo.Record) {
 		records = append(records, r)

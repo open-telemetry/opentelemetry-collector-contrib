@@ -82,7 +82,8 @@ func RecordSpecMetrics(logger *zap.Logger, mb *metadata.MetricsBuilder, c corev1
 	rb := mb.NewResourceBuilder()
 	var containerID string
 	var imageStr string
-	for _, cs := range pod.Status.ContainerStatuses {
+	for i := range pod.Status.ContainerStatuses {
+		cs := pod.Status.ContainerStatuses[i]
 		if cs.Name != c.Name {
 			continue
 		}

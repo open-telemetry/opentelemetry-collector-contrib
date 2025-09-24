@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/constants"
 	awsunmarshaler "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler"
 	cloudtraillog "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/cloudtraillog"
 	elbaccesslogs "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/elb-access-log"
@@ -44,12 +45,12 @@ type encodingExtension struct {
 
 func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension, error) {
 	switch cfg.Format {
-	case formatCloudWatchLogsSubscriptionFilter:
+	case constants.FormatCloudWatchLogsSubscriptionFilter:
 		return &encodingExtension{
 			unmarshaler: subscriptionfilter.NewSubscriptionFilterUnmarshaler(settings.BuildInfo),
-			format:      formatCloudWatchLogsSubscriptionFilter,
+			format:      constants.FormatCloudWatchLogsSubscriptionFilter,
 		}, nil
-	case formatVPCFlowLog:
+	case constants.FormatVPCFlowLog:
 		unmarshaler, err := vpcflowlog.NewVPCFlowLogUnmarshaler(
 			cfg.VPCFlowLogConfig.FileFormat,
 			settings.BuildInfo,
@@ -58,30 +59,30 @@ func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension,
 		return &encodingExtension{
 			unmarshaler: unmarshaler,
 			vpcFormat:   cfg.VPCFlowLogConfig.FileFormat,
-			format:      formatVPCFlowLog,
+			format:      constants.FormatVPCFlowLog,
 		}, err
-	case formatS3AccessLog:
+	case constants.FormatS3AccessLog:
 		return &encodingExtension{
 			unmarshaler: s3accesslog.NewS3AccessLogUnmarshaler(settings.BuildInfo),
-			format:      formatS3AccessLog,
+			format:      constants.FormatS3AccessLog,
 		}, nil
-	case formatWAFLog:
+	case constants.FormatWAFLog:
 		return &encodingExtension{
 			unmarshaler: waf.NewWAFLogUnmarshaler(settings.BuildInfo),
-			format:      formatWAFLog,
+			format:      constants.FormatWAFLog,
 		}, nil
-	case formatCloudTrailLog:
+	case constants.FormatCloudTrailLog:
 		return &encodingExtension{
 			unmarshaler: cloudtraillog.NewCloudTrailLogUnmarshaler(settings.BuildInfo),
-			format:      formatCloudTrailLog,
+			format:      constants.FormatCloudTrailLog,
 		}, nil
-	case formatELBAccessLog:
+	case constants.FormatELBAccessLog:
 		return &encodingExtension{
 			unmarshaler: elbaccesslogs.NewELBAccessLogUnmarshaler(
 				settings.BuildInfo,
 				settings.Logger,
 			),
-			format: formatELBAccessLog,
+			format: constants.FormatELBAccessLog,
 		}, nil
 	default:
 		// Format will have been validated by Config.Validate,
@@ -134,17 +135,17 @@ func (e *encodingExtension) getReaderForData(buf []byte) (string, io.Reader, err
 
 func (e *encodingExtension) getReaderFromFormat(buf []byte) (string, io.Reader, error) {
 	switch e.format {
-	case formatWAFLog, formatCloudWatchLogsSubscriptionFilter, formatCloudTrailLog, formatELBAccessLog:
+	case constants.FormatWAFLog, constants.FormatCloudWatchLogsSubscriptionFilter, constants.FormatCloudTrailLog, constants.FormatELBAccessLog:
 		return e.getReaderForData(buf)
 
-	case formatS3AccessLog:
+	case constants.FormatS3AccessLog:
 		return bytesEncoding, bytes.NewReader(buf), nil
 
-	case formatVPCFlowLog:
+	case constants.FormatVPCFlowLog:
 		switch e.vpcFormat {
-		case fileFormatParquet:
+		case constants.FileFormatParquet:
 			return parquetEncoding, nil, fmt.Errorf("%q still needs to be implemented", e.vpcFormat)
-		case fileFormatPlainText:
+		case constants.FileFormatPlainText:
 			return e.getReaderForData(buf)
 		default:
 			// should not be possible

@@ -32,7 +32,7 @@ The processor stores the list of running pods and the associated metadata. When 
 to the pod from where the datapoint originated, so we can add the relevant pod metadata to the datapoint. By default, it associates the incoming connection IP
 to the Pod IP. But for cases where this approach doesn't work (sending through a proxy, etc.), a custom association rule can be specified.
 
-Each association is specified as a list of sources of associations. The maximum number of sources within an association is 4. 
+Each association is specified as a list of sources of associations. The maximum number of sources within an association is 4.
 A source is a rule that matches metadata from the datapoint to pod metadata.
 In order to get an association applied, all the sources specified need to match.
 
@@ -63,7 +63,7 @@ If Pod association rules are not configured, resources are associated with metad
 
 Which metadata to collect is determined by `metadata` configuration that defines list of resource attributes
 to be added. Items in the list called exactly the same as the resource attributes that will be added.
-The following attributes are added by default: 
+The following attributes are added by default:
   - k8s.namespace.name
   - k8s.pod.name
   - k8s.pod.uid
@@ -71,8 +71,8 @@ The following attributes are added by default:
   - k8s.deployment.name
   - k8s.node.name
 
-These attributes are also available for the use within association rules by default. 
-The `metadata` section can also be extended with additional attributes which, if present in the `metadata` section, 
+These attributes are also available for the use within association rules by default.
+The `metadata` section can also be extended with additional attributes which, if present in the `metadata` section,
 are then also available for the use within association rules. Available attributes are:
   - k8s.namespace.name
   - k8s.pod.name
@@ -100,7 +100,7 @@ are then also available for the use within association rules. Available attribut
   - [service.instance.id](https://opentelemetry.io/docs/specs/semconv/non-normative/k8s-attributes/#how-serviceinstanceid-should-be-calculated)(cannot be used for source rules in the pod_association)
   - Any tags extracted from the pod labels and annotations, as described in [extracting attributes from pod labels and annotations](#extracting-attributes-from-pod-labels-and-annotations)
 
-Not all the attributes are guaranteed to be added. Only attribute names from `metadata` should be used for 
+Not all the attributes are guaranteed to be added. Only attribute names from `metadata` should be used for
 pod_association's `resource_attribute`, because empty or non-existing values will be ignored.
 
 Additional container level attributes can be extracted. If a pod contains more than one container,
@@ -204,7 +204,7 @@ the processor associates the received trace to the pod, based on the connection 
     "k8s.pod.name": "telemetrygen-pod",
     "k8s.pod.uid": "038e2267-b473-489b-b48c-46bafdb852eb",
     "container.image.name": "telemetrygen",
-    "container.image.tag": "0.112.0", 
+    "container.image.tag": "0.112.0",
     "container.image.repo_digests": ["ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:b248ef911f93ae27cbbc85056d1ffacc87fd941bbdc2ffd951b6df8df72b8096"]
   }
 }
@@ -262,16 +262,16 @@ extract:
       from: node
 ```
 
-## Configuring recommended resource attributes 
+## Configuring recommended resource attributes
 
-The processor can be configured to set the 
+The processor can be configured to set the
 [recommended resource attributes](https://opentelemetry.io/docs/specs/semconv/non-normative/k8s-attributes/):
 
 - `otel_annotations` will translate `resource.opentelemetry.io/foo` to the `foo` resource attribute, etc.
 
 ```yaml
   extract:
-    otel_annotations: true 
+    otel_annotations: true
     metadata:
       - service.namespace
       - service.name
@@ -306,7 +306,7 @@ k8sattributes:
       - tag_name: app.label.component
         key: app.kubernetes.io/component
         from: pod
-    otel_annotations: true 
+    otel_annotations: true
   pod_association:
     - sources:
         # This rule associates all resources containing the 'k8s.pod.ip' attribute with the matching pods. If this attribute is not present in the resource, this rule will not be able to find the matching pod.
@@ -325,7 +325,7 @@ k8sattributes:
 
 ## Cluster-scoped RBAC
 
-If you'd like to set up the k8sattributesprocessor to receive telemetry from across namespaces, it will need `get`, `watch` and `list` permissions on both `pods` and `namespaces` resources, for all namespaces and pods included in the configured filters. Additionally, when using `k8s.deployment.name` (which is enabled by default) or `k8s.deployment.uid` the processor also needs `get`, `watch` and `list` permissions for `replicasets` resources. When using `k8s.node.uid` or extracting metadata from `node`, the processor needs `get`, `watch` and `list` permissions for `nodes` resources.
+If you'd like to set up the k8sattributesprocessor to receive telemetry from across namespaces, it will need `get`, `watch` and `list` permissions on both `pods` and `namespaces` resources, for all namespaces and pods included in the configured filters. Additionally, when using `k8s.deployment.name` (which is enabled by default) or `k8s.deployment.uid` the processor also needs `get`, `watch` and `list` permissions for `replicasets` resources. When using `k8s.node.uid` or extracting metadata from `node`, the processor needs `get`, `watch` and `list` permissions for `nodes` resources. When using `k8s.cronjob.uid` the processor also needs `get`, `watch` and `list` permissions for `jobs` resources.
 
 Here is an example of a `ClusterRole` to give a `ServiceAccount` the necessary permissions for all pods, nodes, and namespaces in the cluster (replace `<OTEL_COL_NAMESPACE>` with a namespace where collector is deployed):
 

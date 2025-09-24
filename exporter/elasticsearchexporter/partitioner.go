@@ -8,7 +8,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/client"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper"
 )
 
 type metadataKeysPartitioner struct {
@@ -17,7 +17,7 @@ type metadataKeysPartitioner struct {
 
 func (p metadataKeysPartitioner) GetKey(
 	ctx context.Context,
-	_ exporterhelper.Request,
+	_ xexporterhelper.Request,
 ) string {
 	var kb bytes.Buffer
 	meta := client.FromContext(ctx).Metadata
