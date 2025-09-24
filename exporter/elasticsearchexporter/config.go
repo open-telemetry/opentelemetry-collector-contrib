@@ -480,7 +480,7 @@ func handleDeprecatedConfig(cfg *Config, logger *zap.Logger) {
 		logger.Warn("flush settings are now deprecated and ignored. Use `sending_queue` instead.")
 	}
 	if cfg.NumWorkers > 0 {
-		logger.Warn("`num_workers` are now deprecated and ignored. Please use `sending_queue` instead.")
+		logger.Warn("num_workers is now deprecated and ignored. Use `sending_queue` instead.")
 	}
 }
 
