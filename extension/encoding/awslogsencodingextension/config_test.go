@@ -35,7 +35,7 @@ func TestLoadConfig(t *testing.T) {
 			expectedErr: fmt.Sprintf("format unspecified, expected one of %q", supportedLogFormats),
 		},
 		{
-			id: component.NewIDWithName(metadata.Type, "cloudwatch_logs_subscription_filter"),
+			id: component.NewIDWithName(metadata.Type, "cloudwatch_subscription_filter"),
 			expected: &Config{
 				Format: constants.FormatCloudWatchLogsSubscriptionFilter,
 				VPCFlowLogConfig: VPCFlowLogConfig{
@@ -44,7 +44,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(metadata.Type, "text_vpc_flow_log"),
+			id: component.NewIDWithName(metadata.Type, "text_vpcflow"),
 			expected: &Config{
 				Format: constants.FormatVPCFlowLog,
 				VPCFlowLogConfig: VPCFlowLogConfig{
@@ -53,7 +53,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(metadata.Type, "parquet_vpc_flow_log"),
+			id: component.NewIDWithName(metadata.Type, "parquet_vpcflow"),
 			expected: &Config{
 				Format: constants.FormatVPCFlowLog,
 				VPCFlowLogConfig: VPCFlowLogConfig{
@@ -62,14 +62,14 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(metadata.Type, "invalid_vpc_flow_log"),
+			id: component.NewIDWithName(metadata.Type, "invalid_vpcflow"),
 			expectedErr: fmt.Sprintf(
 				`unsupported file format "invalid" for VPC flow log, expected one of %q`,
 				supportedVPCFlowLogFileFormat,
 			),
 		},
 		{
-			id: component.NewIDWithName(metadata.Type, "s3_access_log"),
+			id: component.NewIDWithName(metadata.Type, "s3access"),
 			expected: &Config{
 				Format: constants.FormatS3AccessLog,
 				VPCFlowLogConfig: VPCFlowLogConfig{
@@ -78,7 +78,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(metadata.Type, "waf_log"),
+			id: component.NewIDWithName(metadata.Type, "waf"),
 			expected: &Config{
 				Format: constants.FormatWAFLog,
 				VPCFlowLogConfig: VPCFlowLogConfig{
@@ -87,7 +87,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(metadata.Type, "cloudtrail_log"),
+			id: component.NewIDWithName(metadata.Type, "cloudtrail"),
 			expected: &Config{
 				Format: constants.FormatCloudTrailLog,
 				VPCFlowLogConfig: VPCFlowLogConfig{
@@ -96,7 +96,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(metadata.Type, "elb_access_log"),
+			id: component.NewIDWithName(metadata.Type, "elbaccess"),
 			expected: &Config{
 				Format: constants.FormatELBAccessLog,
 				VPCFlowLogConfig: VPCFlowLogConfig{

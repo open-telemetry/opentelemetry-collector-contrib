@@ -238,12 +238,6 @@ resourceLogs:
                         value:
                           kvlistValue:
                             values:
-                              - key: userName
-                                value:
-                                  stringValue: Richard
-                              - key: path
-                                value:
-                                  stringValue: /
                               - key: arn
                                 value:
                                   stringValue: arn:aws:iam::123456789012:user/Richard
@@ -253,6 +247,12 @@ resourceLogs:
                               - key: createDate
                                 value:
                                   stringValue: Jul 19, 2023 9:25:09 PM
+                              - key: userName
+                                value:
+                                  stringValue: Richard
+                              - key: path
+                                value:
+                                  stringValue: /
             body: {}
             timeUnixNano: "1689801909000000000"
           - attributes:
@@ -314,6 +314,9 @@ resourceLogs:
                 value:
                   kvlistValue:
                     values:
+                      - key: topicArn
+                        value:
+                          stringValue: arn:aws:sns:us-east-1:123456789012:ExampleSNSTopic
                       - key: message
                         value:
                           stringValue: HIDDEN_DUE_TO_SECURITY_REASONS
@@ -326,9 +329,6 @@ resourceLogs:
                       - key: messageAttributes
                         value:
                           stringValue: HIDDEN_DUE_TO_SECURITY_REASONS
-                      - key: topicArn
-                        value:
-                          stringValue: arn:aws:sns:us-east-1:123456789012:ExampleSNSTopic
               - key: aws.response.elements
                 value:
                   kvlistValue:
@@ -556,6 +556,6 @@ resourceLogs:
           attributes:
             - key: awslogs_encoding.format
               value:
-                stringValue: cloudtrail_log
+                stringValue: cloudtrail
           name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension
           version: test-version

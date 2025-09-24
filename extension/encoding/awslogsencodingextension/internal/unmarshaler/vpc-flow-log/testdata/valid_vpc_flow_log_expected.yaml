@@ -28,5 +28,5 @@ resourceLogs:
           attributes:
             - key: awslogs_encoding.format
               value:
-                stringValue: vpc_flow_log
+                stringValue: vpcflow
           name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension

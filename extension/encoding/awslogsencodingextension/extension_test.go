@@ -25,7 +25,7 @@ func TestNew_CloudWatchLogsSubscriptionFilter(t *testing.T) {
 	require.NotNil(t, e)
 
 	_, err = e.UnmarshalLogs([]byte("invalid"))
-	require.ErrorContains(t, err, `failed to unmarshal logs as "cloudwatch_logs_subscription_filter" format`)
+	require.ErrorContains(t, err, `failed to unmarshal logs as "cloudwatch_subscription_filter" format`)
 }
 
 func TestNew_CloudTrailLog(t *testing.T) {
@@ -34,7 +34,7 @@ func TestNew_CloudTrailLog(t *testing.T) {
 	require.NotNil(t, e)
 
 	_, err = e.UnmarshalLogs([]byte("invalid"))
-	require.ErrorContains(t, err, `failed to unmarshal logs as "cloudtrail_log" format`)
+	require.ErrorContains(t, err, `failed to unmarshal logs as "cloudtrail" format`)
 }
 
 func TestNew_VPCFlowLog(t *testing.T) {
@@ -56,7 +56,7 @@ func TestNew_S3AccessLog(t *testing.T) {
 	require.NotNil(t, e)
 
 	_, err = e.UnmarshalLogs([]byte("invalid"))
-	require.ErrorContains(t, err, `failed to unmarshal logs as "s3_access_log" format`)
+	require.ErrorContains(t, err, `failed to unmarshal logs as "s3access" format`)
 }
 
 func TestNew_WAFLog(t *testing.T) {
@@ -65,7 +65,7 @@ func TestNew_WAFLog(t *testing.T) {
 	require.NotNil(t, e)
 
 	_, err = e.UnmarshalLogs([]byte("invalid"))
-	require.ErrorContains(t, err, `failed to unmarshal logs as "waf_log" format`)
+	require.ErrorContains(t, err, `failed to unmarshal logs as "waf" format`)
 }
 
 func TestNew_ELBAcessLog(t *testing.T) {
@@ -74,7 +74,7 @@ func TestNew_ELBAcessLog(t *testing.T) {
 	require.NotNil(t, e)
 
 	_, err = e.UnmarshalLogs([]byte("invalid"))
-	require.ErrorContains(t, err, `failed to unmarshal logs as "elb_access_log" format`)
+	require.ErrorContains(t, err, `failed to unmarshal logs as "elbaccess" format`)
 }
 
 func TestNew_Unimplemented(t *testing.T) {

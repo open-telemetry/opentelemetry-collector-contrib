@@ -29,7 +29,7 @@ Example for Amazon CloudWatch Logs Subscription Filters:
 ```yaml
 extensions:
   awslogs_encoding/cloudwatch:
-    format: cloudwatch_logs_subscription_filter
+    format: cloudwatch_subscription_filter
 
 receivers:
   awsfirehose:
@@ -40,9 +40,9 @@ receivers:
 Example for VPC flow logs:
 ```yaml
 extensions:
-  awslogs_encoding/vpc_flow_log:
-    format: vpc_flow_log
-    vpc_flow_log:
+  awslogs_encoding/vpcflow:
+    format: vpcflow
+    vpcflow:
       # options [parquet, plain-text]. 
       # parquet option still needs to be implemented.
       file_format: plain-text 
@@ -51,22 +51,22 @@ extensions:
 Example for S3 access logs:
 ```yaml
 extensions:
-  awslogs_encoding/s3_access_log:
-    format: s3_access_log
+  awslogs_encoding/s3access:
+    format: s3access
 ```
 
 Example for CloudTrail logs:
 ```yaml
 extensions:
   awslogs_encoding/cloudtrail:
-    format: cloudtrail_log
+    format: cloudtrail
 ```
 
 Example for ELB access logs:
 ```yaml
 extensions:
-  awslogs_encoding/elb_access_log:
-    format: elb_access_log
+  awslogs_encoding/elbaccess:
+    format: elbaccess
 ```
 
 ## Log Format Identification
