@@ -598,9 +598,10 @@ jobs:
           fetch-depth: 0
 
       - run: |
-          cp ./.github/workflows/configs/build-and-test/package.json ./.github/workflows/scripts/
-          cp ./.github/workflows/configs/build-and-test/package-lock.json ./.github/workflows/scripts/
+          cp ../configs/build-and-test/package.json .
+          cp ../configs/build-and-test/package-lock.json .
           npm ci
+        working-directory: ./.github/workflows/scripts
 
       - name: Set current and previous tags
         id: github_tag
