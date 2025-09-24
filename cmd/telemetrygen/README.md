@@ -79,7 +79,7 @@ All telemetry signals have batching capability configurable with the following f
 ```
 
 ```console
---batch-size=100 #Defaults - metrics: 100, traces: 512, logs: 100
+--batch-size=1000 #Defaults to 100
 ```
 
 Once the OpenTelemetry Collector instance is up and running, run `telemetrygen` for your desired telemetry:
