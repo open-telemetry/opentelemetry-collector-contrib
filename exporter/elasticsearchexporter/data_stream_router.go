@@ -191,13 +191,15 @@ func routeRecord(
 		if selfTelemetryScopeNames[scope.Name()] {
 			// For collector self-telemetry, use a fixed dataset name
 			dataset = collectorSelfTelemetryDataStreamDataset
-		} else if submatch := receiverRegex.FindStringSubmatch(scope.Name()); len(submatch) > 0 {
+		} else {
 			// Receiver-based routing
 			// For example, hostmetricsreceiver (or hostmetricsreceiver.otel in the OTel output mode)
 			// for the scope name
 			// github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper
-			receiverName := submatch[1]
-			dataset = receiverName
+			loc := receiverRegex.FindStringSubmatchIndex(scope.Name())
+			if len(loc) == 4 {
+				dataset = scope.Name()[loc[2]:loc[3]]
+			}
 		}
 	}
 
