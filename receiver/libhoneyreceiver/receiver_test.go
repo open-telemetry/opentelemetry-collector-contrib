@@ -589,6 +589,18 @@ func TestLibhoneyReceiver_ZstdDecompressionPanic(t *testing.T) {
 			description:     "JSON processing handles nil MsgPackTimestamp correctly after fix",
 		},
 		{
+			name: "real_libhoney_json_format",
+			createPayload: func() []byte {
+				// Real JSON format as sent by libhoney clients (S3 handler, etc)
+				// Note: time is at root level, all fields under "data"
+				// This format bypasses custom UnmarshalJSON, leaving MsgPackTimestamp nil
+				return []byte(`[{"data":{"message":"test event from S3","aws.s3.bucket":"test-bucket"},"samplerate":1,"time":"2025-09-24T15:03:49.883965174Z"}]`)
+			},
+			expectPanic:     false,
+			expectErrorCode: 200,
+			description:     "Real libhoney JSON format should be handled without panic",
+		},
+		{
 			name: "valid_msgpack_data",
 			createPayload: func() []byte {
 				// Create valid msgpack payload - should work fine
@@ -627,7 +639,7 @@ func TestLibhoneyReceiver_ZstdDecompressionPanic(t *testing.T) {
 			var contentType string
 
 			switch tt.name {
-			case "valid_json_data_nil_pointer_bug":
+			case "valid_json_data_nil_pointer_bug", "real_libhoney_json_format":
 				reqBody = bytes.NewReader(payload)
 				contentType = "application/json"
 			case "valid_msgpack_data":
@@ -647,7 +659,7 @@ func TestLibhoneyReceiver_ZstdDecompressionPanic(t *testing.T) {
 			req.Header.Set("Content-Type", contentType)
 
 			// Only set compression headers for zstd tests
-			if tt.name != "valid_json_data_nil_pointer_bug" && tt.name != "valid_msgpack_data" {
+			if tt.name != "valid_json_data_nil_pointer_bug" && tt.name != "valid_msgpack_data" && tt.name != "real_libhoney_json_format" {
 				req.Header.Set("Content-Encoding", "zstd")
 			}
 
