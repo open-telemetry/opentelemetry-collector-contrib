@@ -37,13 +37,14 @@ func (*tracesJSONLMarshaler) MarshalTraces(td ptrace.Traces) ([]byte, error) {
 				scope.CopyTo(tempSs.Scope())
 				span.CopyTo(tempSs.Spans().AppendEmpty())
 
+				cleanTraceAttributes(tempTd)
+
 				jsonBytes, err := marshaler.MarshalTraces(tempTd)
 				if err != nil {
 					return nil, err
 				}
 
-				cleanedJSON := removeNullValues(jsonBytes)
-				buf.Write(cleanedJSON)
+				buf.Write(jsonBytes)
 				buf.WriteByte('\n')
 			}
 		}
@@ -51,4 +52,3 @@ func (*tracesJSONLMarshaler) MarshalTraces(td ptrace.Traces) ([]byte, error) {
 
 	return buf.Bytes(), nil
 }
-

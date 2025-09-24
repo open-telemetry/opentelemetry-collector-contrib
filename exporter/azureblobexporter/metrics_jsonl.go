@@ -42,8 +42,7 @@ func (*metricsJSONLMarshaler) MarshalMetrics(md pmetric.Metrics) ([]byte, error)
 					return nil, err
 				}
 
-				cleanedJSON := removeNullValues(jsonBytes)
-				buf.Write(cleanedJSON)
+				buf.Write(jsonBytes)
 				buf.WriteByte('\n')
 			}
 		}
