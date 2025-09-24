@@ -4,7 +4,6 @@
 package k8sobjectsreceiver
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -542,8 +541,10 @@ func TestNamespaceDenyListWatchObject(t *testing.T) {
 		{
 			Name: "pods",
 			Mode: WatchMode,
-			ExcludeNamespaces: filter.Config{
-				Regex: "default_ignore",
+			ExcludeNamespaces: ExcludeNamespace{
+				filter.Config{
+					Regex: "default_ignore",
+				},
 			},
 		},
 	}
@@ -555,7 +556,7 @@ func TestNamespaceDenyListWatchObject(t *testing.T) {
 		consumer,
 	)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	require.NoError(t, err)
 	require.NotNil(t, r)
 	require.NoError(t, r.Start(ctx, componenttest.NewNopHost()))

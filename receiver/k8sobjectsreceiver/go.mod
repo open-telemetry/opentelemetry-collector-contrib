@@ -104,6 +104,7 @@ require (
 	go.opentelemetry.io/collector/extension/extensionauth v1.42.0 // indirect
 	go.opentelemetry.io/collector/extension/extensionmiddleware v0.136.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.42.0 // indirect
+	go.opentelemetry.io/collector/filter v0.136.0
 	go.opentelemetry.io/collector/internal/sharedcomponent v0.136.0 // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.136.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.136.0 // indirect
