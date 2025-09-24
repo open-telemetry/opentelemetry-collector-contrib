@@ -22,7 +22,6 @@ type Config struct {
 	Body           string
 	TraceID        string
 	SpanID         string
-	UseHTTP        bool
 }
 
 func NewConfig() *Config {

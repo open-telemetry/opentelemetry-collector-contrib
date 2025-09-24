@@ -112,7 +112,7 @@ func TestDefaultConfiguration(t *testing.T) {
 	assert.Equal(t, 0, cfg.NumTraces, "Default NumTraces should be 0")
 	assert.Equal(t, float64(1), cfg.Rate, "Default Rate should be 1")
 	assert.Equal(t, 1, cfg.NumChildSpans, "Default NumChildSpans should be 1")
-	assert.True(t, cfg.Config.Batch, "Default Batch should be true")
+	assert.True(t, cfg.Batch, "Default Batch should be true")
 }
 
 // TestDurationWithInfValues tests various DurationWithInf values
