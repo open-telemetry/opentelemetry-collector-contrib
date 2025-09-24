@@ -20,8 +20,8 @@ jobs:
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
       - run: |
-          cp ./.github/workflows/configs/generate-weekly-report/package.json ./.github/workflows/scripts/
-          cp ./.github/workflows/configs/generate-weekly-report/package-lock.json ./.github/workflows/scripts/
+          cp ../configs/generate-weekly-report/package.json ./.github/workflows/scripts/
+          cp ../configs/generate-weekly-report/package-lock.json ./.github/workflows/scripts/
           npm ci
         working-directory: ./.github/workflows/scripts
       - uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
