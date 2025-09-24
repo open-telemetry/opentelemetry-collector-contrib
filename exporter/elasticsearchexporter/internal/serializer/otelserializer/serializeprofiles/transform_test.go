@@ -960,6 +960,7 @@ func TestStackTrace(t *testing.T) {
 		})
 	}
 }
+
 func TestGetLocations(t *testing.T) {
 	dic := pprofile.NewProfilesDictionary()
 
@@ -987,7 +988,7 @@ func TestGetLocations(t *testing.T) {
 	// Test with empty stack
 	emptyStack := dic.StackTable().AppendEmpty()
 	locations = getLocations(dic, emptyStack)
-	assert.Len(t, locations, 0)
+	assert.Empty(t, locations)
 }
 
 // frameTypesToString converts a slice of FrameType to a RLE encoded string as stored in ES.
