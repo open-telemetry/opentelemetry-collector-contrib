@@ -600,7 +600,7 @@ jobs:
       - run: |
           cp ./.github/workflows/configs/build-and-test/package.json ./.github/workflows/scripts/
           cp ./.github/workflows/configs/build-and-test/package-lock.json ./.github/workflows/scripts/
-          npm install
+          npm ci
 
       - name: Set current and previous tags
         id: github_tag
