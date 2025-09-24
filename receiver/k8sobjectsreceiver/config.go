@@ -44,11 +44,15 @@ const (
 	SilentError    ErrorMode = "silent"
 )
 
+type ExcludeNamespace struct {
+	filter.Config `mapstructure:",squash"`
+}
+
 type K8sObjectsConfig struct {
 	Name              string               `mapstructure:"name"`
 	Group             string               `mapstructure:"group"`
 	Namespaces        []string             `mapstructure:"namespaces"`
-	ExcludeNamespaces filter.Config        `mapstructure:"exclude_namespaces"`
+	ExcludeNamespaces ExcludeNamespace     `mapstructure:"exclude_namespaces"`
 	Mode              mode                 `mapstructure:"mode"`
 	LabelSelector     string               `mapstructure:"label_selector"`
 	FieldSelector     string               `mapstructure:"field_selector"`

@@ -7,7 +7,7 @@ change_type: enhancement
 component: k8sobjectsreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Add support for namespace_deny_list to exclude specific namespaces from being watched."
+note: "Add support for exclude_namespaces to exclude specific namespaces from being watched."
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [36217]
@@ -16,7 +16,7 @@ issues: [36217]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  Add support for namespace_deny_list to exclude specific namespaces from being watched.
+  Add support for exclude_namespaces to exclude specific namespaces from being watched.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
