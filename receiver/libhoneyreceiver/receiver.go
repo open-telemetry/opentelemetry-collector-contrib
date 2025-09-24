@@ -135,6 +135,7 @@ func (r *libhoneyReceiver) registerLogConsumer(tc consumer.Logs) {
 }
 
 func (r *libhoneyReceiver) handleAuth(resp http.ResponseWriter, req *http.Request) {
+	r.settings.Logger.Debug("handling auth request", zap.String("auth_api", r.cfg.AuthAPI))
 	authURL := fmt.Sprintf("%s/1/auth", r.cfg.AuthAPI)
 	authReq, err := http.NewRequest(http.MethodGet, authURL, http.NoBody)
 	if err != nil {
