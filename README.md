@@ -101,7 +101,7 @@ For more information about the approver role, see the [community repository](htt
 ### Triagers
 
 - [Benedikt Bongartz](https://github.com/frzifus), Red Hat
-- [Constanca Manteigas](https://github.com/constanca-m), Elastic
+- [Constança Manteigas](https://github.com/constanca-m), Elastic
 - [Douglas Camata](https://github.com/douglascamata), Coralogix
 - [Florian Bacher](https://github.com/bacherfl), Dynatrace
 - [Israel Blancas](https://github.com/iblancasa), Coralogix
