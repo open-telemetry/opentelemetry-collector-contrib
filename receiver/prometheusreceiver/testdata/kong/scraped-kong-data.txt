@@ -1,0 +1,92 @@
+# HELP kong_datastore_reachable Datastore reachable from Kong, 0 is unreachable
+# TYPE kong_datastore_reachable gauge
+kong_datastore_reachable 1
+# HELP kong_memory_lua_shared_dict_bytes Allocated slabs in bytes in a shared_dict
+# TYPE kong_memory_lua_shared_dict_bytes gauge
+kong_memory_lua_shared_dict_bytes{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",shared_dict="kong",kong_subsystem="http"} 45056
+kong_memory_lua_shared_dict_bytes{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",shared_dict="kong_cluster_events",kong_subsystem="http"} 40960
+kong_memory_lua_shared_dict_bytes{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",shared_dict="kong_consumers_db_cache",kong_subsystem="http"} 794624
+kong_memory_lua_shared_dict_bytes{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",shared_dict="kong_consumers_db_cache_miss",kong_subsystem="http"} 86016
+kong_memory_lua_shared_dict_bytes{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",shared_dict="kong_core_db_cache",kong_subsystem="http"} 798720
+kong_memory_lua_shared_dict_bytes{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",shared_dict="kong_core_db_cache_miss",kong_subsystem="http"} 86016
+kong_memory_lua_shared_dict_bytes{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",shared_dict="kong_counters",kong_subsystem="http"} 16384
+kong_memory_lua_shared_dict_bytes{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",shared_dict="kong_db_cache",kong_subsystem="http"} 811008
+kong_memory_lua_shared_dict_bytes{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",shared_dict="kong_db_cache_miss",kong_subsystem="http"} 86016
+kong_memory_lua_shared_dict_bytes{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",shared_dict="kong_debug_session",kong_subsystem="http"} 16384
+kong_memory_lua_shared_dict_bytes{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",shared_dict="kong_healthchecks",kong_subsystem="http"} 40960
+kong_memory_lua_shared_dict_bytes{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",shared_dict="kong_keyring",kong_subsystem="http"} 40960
+kong_memory_lua_shared_dict_bytes{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",shared_dict="kong_locks",kong_subsystem="http"} 61440
+kong_memory_lua_shared_dict_bytes{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",shared_dict="kong_profiling_state",kong_subsystem="http"} 20480
+kong_memory_lua_shared_dict_bytes{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",shared_dict="kong_rate_limiting_counters",kong_subsystem="http"} 86016
+kong_memory_lua_shared_dict_bytes{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",shared_dict="kong_reports_consumers",kong_subsystem="http"} 73728
+kong_memory_lua_shared_dict_bytes{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",shared_dict="kong_reports_routes",kong_subsystem="http"} 16384
+kong_memory_lua_shared_dict_bytes{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",shared_dict="kong_reports_services",kong_subsystem="http"} 16384
+kong_memory_lua_shared_dict_bytes{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",shared_dict="kong_reports_workspaces",kong_subsystem="http"} 16384
+kong_memory_lua_shared_dict_bytes{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",shared_dict="kong_secrets",kong_subsystem="http"} 40960
+kong_memory_lua_shared_dict_bytes{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",shared_dict="kong_vaults_hcv",kong_subsystem="http"} 16384
+kong_memory_lua_shared_dict_bytes{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",shared_dict="kong_vitals",kong_subsystem="http"} 16384
+kong_memory_lua_shared_dict_bytes{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",shared_dict="kong_vitals_counters",kong_subsystem="http"} 315392
+kong_memory_lua_shared_dict_bytes{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",shared_dict="kong_vitals_lists",kong_subsystem="http"} 16384
+kong_memory_lua_shared_dict_bytes{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",shared_dict="prometheus_metrics",kong_subsystem="http"} 40960
+# HELP kong_memory_lua_shared_dict_total_bytes Total capacity in bytes of a shared_dict
+# TYPE kong_memory_lua_shared_dict_total_bytes gauge
+kong_memory_lua_shared_dict_total_bytes{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",shared_dict="kong",kong_subsystem="http"} 5242880
+kong_memory_lua_shared_dict_total_bytes{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",shared_dict="kong_cluster_events",kong_subsystem="http"} 5242880
+kong_memory_lua_shared_dict_total_bytes{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",shared_dict="kong_consumers_db_cache",kong_subsystem="http"} 134217728
+kong_memory_lua_shared_dict_total_bytes{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",shared_dict="kong_consumers_db_cache_miss",kong_subsystem="http"} 12582912
+kong_memory_lua_shared_dict_total_bytes{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",shared_dict="kong_core_db_cache",kong_subsystem="http"} 134217728
+kong_memory_lua_shared_dict_total_bytes{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",shared_dict="kong_core_db_cache_miss",kong_subsystem="http"} 12582912
+kong_memory_lua_shared_dict_total_bytes{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",shared_dict="kong_counters",kong_subsystem="http"} 1048576
+kong_memory_lua_shared_dict_total_bytes{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",shared_dict="kong_db_cache",kong_subsystem="http"} 134217728
+kong_memory_lua_shared_dict_total_bytes{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",shared_dict="kong_db_cache_miss",kong_subsystem="http"} 12582912
+kong_memory_lua_shared_dict_total_bytes{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",shared_dict="kong_debug_session",kong_subsystem="http"} 1048576
+kong_memory_lua_shared_dict_total_bytes{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",shared_dict="kong_healthchecks",kong_subsystem="http"} 5242880
+kong_memory_lua_shared_dict_total_bytes{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",shared_dict="kong_keyring",kong_subsystem="http"} 5242880
+kong_memory_lua_shared_dict_total_bytes{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",shared_dict="kong_locks",kong_subsystem="http"} 8388608
+kong_memory_lua_shared_dict_total_bytes{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",shared_dict="kong_profiling_state",kong_subsystem="http"} 1572864
+kong_memory_lua_shared_dict_total_bytes{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",shared_dict="kong_rate_limiting_counters",kong_subsystem="http"} 12582912
+kong_memory_lua_shared_dict_total_bytes{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",shared_dict="kong_reports_consumers",kong_subsystem="http"} 10485760
+kong_memory_lua_shared_dict_total_bytes{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",shared_dict="kong_reports_routes",kong_subsystem="http"} 1048576
+kong_memory_lua_shared_dict_total_bytes{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",shared_dict="kong_reports_services",kong_subsystem="http"} 1048576
+kong_memory_lua_shared_dict_total_bytes{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",shared_dict="kong_reports_workspaces",kong_subsystem="http"} 1048576
+kong_memory_lua_shared_dict_total_bytes{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",shared_dict="kong_secrets",kong_subsystem="http"} 5242880
+kong_memory_lua_shared_dict_total_bytes{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",shared_dict="kong_vaults_hcv",kong_subsystem="http"} 1048576
+kong_memory_lua_shared_dict_total_bytes{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",shared_dict="kong_vitals",kong_subsystem="http"} 1048576
+kong_memory_lua_shared_dict_total_bytes{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",shared_dict="kong_vitals_counters",kong_subsystem="http"} 52428800
+kong_memory_lua_shared_dict_total_bytes{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",shared_dict="kong_vitals_lists",kong_subsystem="http"} 1048576
+kong_memory_lua_shared_dict_total_bytes{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",shared_dict="prometheus_metrics",kong_subsystem="http"} 5242880
+# HELP kong_memory_workers_lua_vms_bytes Allocated bytes in worker Lua VM
+# TYPE kong_memory_workers_lua_vms_bytes gauge
+kong_memory_workers_lua_vms_bytes{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",pid="2630",kong_subsystem="http"} 80994484
+kong_memory_workers_lua_vms_bytes{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",pid="2631",kong_subsystem="http"} 80493077
+kong_memory_workers_lua_vms_bytes{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",pid="2632",kong_subsystem="http"} 80493077
+kong_memory_workers_lua_vms_bytes{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",pid="2633",kong_subsystem="http"} 80494145
+kong_memory_workers_lua_vms_bytes{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",pid="2634",kong_subsystem="http"} 80495686
+kong_memory_workers_lua_vms_bytes{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",pid="2635",kong_subsystem="http"} 80497569
+kong_memory_workers_lua_vms_bytes{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",pid="2636",kong_subsystem="http"} 80529461
+kong_memory_workers_lua_vms_bytes{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",pid="2637",kong_subsystem="http"} 80495317
+kong_memory_workers_lua_vms_bytes{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",pid="2638",kong_subsystem="http"} 80493681
+kong_memory_workers_lua_vms_bytes{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",pid="2639",kong_subsystem="http"} 80493685
+kong_memory_workers_lua_vms_bytes{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",pid="2640",kong_subsystem="http"} 80493685
+kong_memory_workers_lua_vms_bytes{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",pid="2641",kong_subsystem="http"} 80493685
+kong_memory_workers_lua_vms_bytes{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",pid="2642",kong_subsystem="http"} 80493685
+kong_memory_workers_lua_vms_bytes{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",pid="2643",kong_subsystem="http"} 80496709
+# HELP kong_nginx_connections_total Number of connections by subsystem
+# TYPE kong_nginx_connections_total gauge
+kong_nginx_connections_total{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",subsystem="http",state="accepted"} 19
+kong_nginx_connections_total{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",subsystem="http",state="active"} 15
+kong_nginx_connections_total{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",subsystem="http",state="handled"} 19
+kong_nginx_connections_total{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",subsystem="http",state="reading"} 0
+kong_nginx_connections_total{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",subsystem="http",state="total"} 19
+kong_nginx_connections_total{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",subsystem="http",state="waiting"} 0
+kong_nginx_connections_total{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",subsystem="http",state="writing"} 15
+# HELP kong_nginx_requests_total Number of requests total
+# TYPE kong_nginx_requests_total gauge
+kong_nginx_requests_total{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",subsystem="http"} 19
+# HELP kong_nginx_timers Number of nginx timers
+# TYPE kong_nginx_timers gauge
+kong_nginx_timers{state="pending"} 2
+kong_nginx_timers{state="running"} 257
+# HELP kong_node_info Kong Node metadata information
+# TYPE kong_node_info gauge
+kong_node_info{node_id="b420701d-16f8-4eca-ae4b-0877e29de2f9",version="3.11.0.3"} 1
