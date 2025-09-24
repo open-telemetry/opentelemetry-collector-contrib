@@ -477,7 +477,7 @@ func handleDeprecatedConfig(cfg *Config, logger *zap.Logger) {
 		logger.Warn("traces_dynamic_index::enabled has been deprecated, and will be removed in a future version. It is now a no-op. Dynamic document routing is now the default. See Elasticsearch Exporter README.")
 	}
 	if cfg.Flush.Bytes > 0 || cfg.Flush.Interval > 0 {
-		logger.Warn("flush settings are now deprecated and ignored. Please use `sending_queue` instead.")
+		logger.Warn("flush settings are now deprecated and ignored. Use `sending_queue` instead.")
 	}
 	if cfg.NumWorkers > 0 {
 		logger.Warn("`num_workers` are now deprecated and ignored. Please use `sending_queue` instead.")
