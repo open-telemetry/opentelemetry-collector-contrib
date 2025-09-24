@@ -92,7 +92,7 @@ func TestTelemetrygenIntegration(t *testing.T) {
 
 	testBinaryPath := "../../../telemetrygen/" + binaryName
 
-	t.Run("RespectsMetricsParameter", func(t *testing.T) {
+	t.Run("RespectsMetricsParameterWithBatching", func(t *testing.T) {
 		server, endpoint, receiver := startMockReceiver(t)
 		defer func() {
 			server.Stop()
@@ -106,19 +106,50 @@ func TestTelemetrygenIntegration(t *testing.T) {
 		// Add timeout to prevent hanging
 		ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 		defer cancel()
-		cmd := exec.CommandContext(ctx, testBinaryPath, "metrics", "--metrics", "3", "--batch=false", "--workers", "1", "--otlp-endpoint", endpoint, "--otlp-insecure")
+		cmd := exec.CommandContext(ctx, testBinaryPath, "metrics", "--metrics", "5", "--workers", "1", "--otlp-endpoint", endpoint, "--otlp-insecure", "--batch", "--batch-size", "2")
 
 		start := time.Now()
 		err := cmd.Run()
 		duration := time.Since(start)
 
-		assert.NoError(t, err, "telemetrygen should complete successfully with --metrics parameter")
+		assert.NoError(t, err, "telemetrygen should complete successfully with batching enabled")
 		assert.Less(t, duration, 6*time.Second, "Should complete quickly without connection issues")
 
 		// Wait for all metrics to be processed
 		time.Sleep(500 * time.Millisecond)
 		metrics := receiver.GetMetrics()
-		assert.Len(t, metrics, 3, "Should have received exactly 3 metrics")
+
+		assert.Len(t, metrics, 3, "Should have received exactly 3 metric batches with batching enabled")
+	})
+
+	t.Run("RespectsMetricsParameterWithoutBatching", func(t *testing.T) {
+		server, endpoint, receiver := startMockReceiver(t)
+		defer func() {
+			server.Stop()
+			// Wait for server to fully stop and connections to close
+			time.Sleep(200 * time.Millisecond)
+		}()
+
+		// Reset receiver to ensure clean state
+		receiver.Reset()
+
+		// Add timeout to prevent hanging
+		ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+		defer cancel()
+		cmd := exec.CommandContext(ctx, testBinaryPath, "metrics", "--metrics", "4", "--workers", "1", "--otlp-endpoint", endpoint, "--otlp-insecure", "--batch=false")
+
+		start := time.Now()
+		err := cmd.Run()
+		duration := time.Since(start)
+
+		assert.NoError(t, err, "telemetrygen should complete successfully with batching disabled")
+		assert.Less(t, duration, 6*time.Second, "Should complete quickly without connection issues")
+
+		// Wait for all metrics to be processed
+		time.Sleep(500 * time.Millisecond)
+		metrics := receiver.GetMetrics()
+
+		assert.Len(t, metrics, 4, "Should have received exactly 4 metric batches with batching disabled")
 	})
 
 	t.Run("DurationOverridesMetrics", func(t *testing.T) {

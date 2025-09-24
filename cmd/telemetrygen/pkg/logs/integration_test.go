@@ -92,7 +92,7 @@ func TestTelemetrygenIntegration(t *testing.T) {
 
 	testBinaryPath := "../../../telemetrygen/" + binaryName
 
-	t.Run("RespectsLogsParameter", func(t *testing.T) {
+	t.Run("RespectsLogsParameterWithBatching", func(t *testing.T) {
 		server, endpoint, receiver := startMockReceiver(t)
 		defer func() {
 			server.Stop()
@@ -106,19 +106,50 @@ func TestTelemetrygenIntegration(t *testing.T) {
 		// Add timeout to prevent hanging
 		ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 		defer cancel()
-		cmd := exec.CommandContext(ctx, testBinaryPath, "logs", "--logs", "3", "--workers", "1", "--otlp-endpoint", endpoint, "--otlp-insecure", "--batch=false")
+		cmd := exec.CommandContext(ctx, testBinaryPath, "logs", "--logs", "5", "--workers", "1", "--otlp-endpoint", endpoint, "--otlp-insecure", "--batch", "--batch-size", "2")
 
 		start := time.Now()
 		err := cmd.Run()
 		duration := time.Since(start)
 
-		assert.NoError(t, err, "telemetrygen should complete successfully with --logs parameter")
+		assert.NoError(t, err, "telemetrygen should complete successfully with batching enabled")
 		assert.Less(t, duration, 6*time.Second, "Should complete quickly without connection issues")
 
 		// Wait for all logs to be processed
 		time.Sleep(500 * time.Millisecond)
 		logs := receiver.GetLogs()
-		assert.Len(t, logs, 3, "Should have received exactly 3 logs")
+
+		assert.Len(t, logs, 3, "Should have received exactly 3 log batches with batching enabled")
+	})
+
+	t.Run("RespectsLogsParameterWithoutBatching", func(t *testing.T) {
+		server, endpoint, receiver := startMockReceiver(t)
+		defer func() {
+			server.Stop()
+			// Wait for server to fully stop and connections to close
+			time.Sleep(200 * time.Millisecond)
+		}()
+
+		// Reset receiver to ensure clean state
+		receiver.Reset()
+
+		// Add timeout to prevent hanging
+		ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+		defer cancel()
+		cmd := exec.CommandContext(ctx, testBinaryPath, "logs", "--logs", "4", "--workers", "1", "--otlp-endpoint", endpoint, "--otlp-insecure", "--batch=false")
+
+		start := time.Now()
+		err := cmd.Run()
+		duration := time.Since(start)
+
+		assert.NoError(t, err, "telemetrygen should complete successfully with batching disabled")
+		assert.Less(t, duration, 6*time.Second, "Should complete quickly without connection issues")
+
+		// Wait for all logs to be processed
+		time.Sleep(500 * time.Millisecond)
+		logs := receiver.GetLogs()
+
+		assert.Len(t, logs, 4, "Should have received exactly 4 log batches with batching disabled")
 	})
 
 	t.Run("DurationOverridesLogs", func(t *testing.T) {
@@ -235,5 +266,65 @@ func TestTelemetrygenIntegration(t *testing.T) {
 		assert.Equal(t, 1, logs[0].LogRecordCount(), "Each log should be sent individually")
 		assert.Equal(t, 1, logs[1].LogRecordCount(), "Each log should be sent individually")
 		assert.Equal(t, 1, logs[2].LogRecordCount(), "Each log should be sent individually")
+	})
+
+	t.Run("RespectsLogsParameterWithBatching", func(t *testing.T) {
+		server, endpoint, receiver := startMockReceiver(t)
+		defer func() {
+			server.Stop()
+			// Wait for server to fully stop and connections to close
+			time.Sleep(200 * time.Millisecond)
+		}()
+
+		// Reset receiver to ensure clean state
+		receiver.Reset()
+
+		// Add timeout to prevent hanging
+		ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+		defer cancel()
+		cmd := exec.CommandContext(ctx, testBinaryPath, "logs", "--logs", "5", "--workers", "1", "--otlp-endpoint", endpoint, "--otlp-insecure", "--batch", "--batch-size", "2")
+
+		start := time.Now()
+		err := cmd.Run()
+		duration := time.Since(start)
+
+		assert.NoError(t, err, "telemetrygen should complete successfully with batching enabled")
+		assert.Less(t, duration, 6*time.Second, "Should complete quickly without connection issues")
+
+		// Wait for all logs to be processed
+		time.Sleep(500 * time.Millisecond)
+		logs := receiver.GetLogs()
+
+		assert.Len(t, logs, 3, "Should have received exactly 3 log batches with batching enabled")
+	})
+
+	t.Run("RespectsLogsParameterWithoutBatching", func(t *testing.T) {
+		server, endpoint, receiver := startMockReceiver(t)
+		defer func() {
+			server.Stop()
+			// Wait for server to fully stop and connections to close
+			time.Sleep(200 * time.Millisecond)
+		}()
+
+		// Reset receiver to ensure clean state
+		receiver.Reset()
+
+		// Add timeout to prevent hanging
+		ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+		defer cancel()
+		cmd := exec.CommandContext(ctx, testBinaryPath, "logs", "--logs", "4", "--workers", "1", "--otlp-endpoint", endpoint, "--otlp-insecure", "--batch=false")
+
+		start := time.Now()
+		err := cmd.Run()
+		duration := time.Since(start)
+
+		assert.NoError(t, err, "telemetrygen should complete successfully with batching disabled")
+		assert.Less(t, duration, 6*time.Second, "Should complete quickly without connection issues")
+
+		// Wait for all logs to be processed
+		time.Sleep(500 * time.Millisecond)
+		logs := receiver.GetLogs()
+
+		assert.Len(t, logs, 4, "Should have received exactly 4 log batches with batching disabled")
 	})
 }
