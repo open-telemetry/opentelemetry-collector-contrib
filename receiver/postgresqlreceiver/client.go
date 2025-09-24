@@ -333,18 +333,19 @@ func (c *postgreSQLClient) getDatabaseSize(ctx context.Context, databases []stri
 
 // tableStats contains a result for a row of the getDatabaseTableMetrics result
 type tableStats struct {
-	database    string
-	schema      string
-	table       string
-	live        int64
-	dead        int64
-	inserts     int64
-	upd         int64
-	del         int64
-	hotUpd      int64
-	seqScans    int64
-	size        int64
-	vacuumCount int64
+	database        string
+	schema          string
+	table           string
+	live            int64
+	dead            int64
+	inserts         int64
+	upd             int64
+	del             int64
+	hotUpd          int64
+	seqScans        int64
+	size            int64
+	vacuumCount     int64
+	autovacuumCount int64
 }
 
 func (c *postgreSQLClient) getDatabaseTableMetrics(ctx context.Context, db string) (map[tableIdentifier]tableStats, error) {
@@ -357,7 +358,8 @@ func (c *postgreSQLClient) getDatabaseTableMetrics(ctx context.Context, db strin
 	n_tup_hot_upd AS hot_upd,
 	seq_scan AS seq_scans,
 	pg_relation_size(relid) AS table_size,
-	vacuum_count
+	vacuum_count,
+  autovacuum_count
 	FROM pg_stat_user_tables;`
 
 	ts := map[tableIdentifier]tableStats{}
@@ -368,25 +370,26 @@ func (c *postgreSQLClient) getDatabaseTableMetrics(ctx context.Context, db strin
 	}
 	for rows.Next() {
 		var schema, table string
-		var live, dead, ins, upd, del, hotUpd, seqScans, tableSize, vacuumCount int64
-		err = rows.Scan(&schema, &table, &live, &dead, &ins, &upd, &del, &hotUpd, &seqScans, &tableSize, &vacuumCount)
+		var live, dead, ins, upd, del, hotUpd, seqScans, tableSize, vacuumCount, autovacuumCount int64
+		err = rows.Scan(&schema, &table, &live, &dead, &ins, &upd, &del, &hotUpd, &seqScans, &tableSize, &vacuumCount, &autovacuumCount)
 		if err != nil {
 			errors = multierr.Append(errors, err)
 			continue
 		}
 		ts[tableKey(db, schema, table)] = tableStats{
-			database:    db,
-			schema:      schema,
-			table:       table,
-			live:        live,
-			dead:        dead,
-			inserts:     ins,
-			upd:         upd,
-			del:         del,
-			hotUpd:      hotUpd,
-			seqScans:    seqScans,
-			size:        tableSize,
-			vacuumCount: vacuumCount,
+			database:        db,
+			schema:          schema,
+			table:           table,
+			live:            live,
+			dead:            dead,
+			inserts:         ins,
+			upd:             upd,
+			del:             del,
+			hotUpd:          hotUpd,
+			seqScans:        seqScans,
+			size:            tableSize,
+			vacuumCount:     vacuumCount,
+			autovacuumCount: autovacuumCount,
 		}
 	}
 	return ts, errors

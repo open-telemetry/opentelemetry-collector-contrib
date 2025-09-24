@@ -190,6 +190,14 @@ The number of rows in the database.
 | ---- | ----------- | ------ | -------- |
 | state | The tuple (row) state. | Str: ``dead``, ``live`` | false |
 
+### postgresql.table.autovacuum.count
+
+Number of times a table has manually been autovacuumed.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {autovacuums} | Sum | Int | Cumulative | true |
+
 ### postgresql.table.count
 
 Number of user tables in a database.
