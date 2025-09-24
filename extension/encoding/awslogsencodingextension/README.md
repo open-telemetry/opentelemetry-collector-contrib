@@ -88,7 +88,7 @@ The following format values are supported in the `awslogsencodingextension` to i
 
 ### Breaking Change Notice
 
-**Format values have been simplified in v0.137.0+**
+**Format values have been simplified in v0.137.0**
 
 **The old format values are deprecated and will be unsupported in v0.138.0.**
 
@@ -106,7 +106,9 @@ The following format values are supported in the `awslogsencodingextension` to i
 If you're using the old format values you should update the encoding extension configuration with the new format values.
 
 
-#### VPC flow log record fields
+## Produced Records per Format
+
+### VPC flow log record fields
 
 [VPC flow log record fields](https://docs.aws.amazon.com/vpc/latest/userguide/flow-log-records.html#flow-logs-fields) are mapped this way in the resulting OpenTelemetry log:
 
@@ -153,7 +155,7 @@ If you're using the old format values you should update the encoding extension c
 | `ecs-task-id`                | `aws.ecs.task.id`                                                                                     |
 | `reject-reason`              | `aws.vpc.flow.reject_reason`                                                                          |
 
-#### S3 access log record fields
+### S3 access log record fields
 
 [S3 access log record fields](https://docs.aws.amazon.com/AmazonS3/latest/userguide/LogFormat.html) are mapped this way in the resulting OpenTelemetry log:
 
@@ -186,7 +188,7 @@ If you're using the old format values you should update the encoding extension c
 | TLS version         | `tls.protocol.version`                                                                                                                                                                                                                                                                                  |
 | Access point ARN    | `aws.s3.access_point.arn`                                                                                                                                                                                                                                                                               |
 | aclRequired         | `aws.s3.acl_required`                                                                                                                                                                                                                                                                                   |
-#### AWS WAF log record fields
+### AWS WAF log record fields
 
 [AWS WAF log record fields](https://docs.aws.amazon.com/waf/latest/developerguide/logging-fields.html) are mapped this way in the resulting OpenTelemetry log:
 
@@ -265,11 +267,11 @@ If you're using the old format values you should update the encoding extension c
 
 All request parameters and response elements are included directly as nested maps in the attributes, preserving their original structure.
 
-#### ELB Access Log Fields
+### ELB Access Log Fields
 
 ELB access log record fields are mapped this way in the resulting OpenTelemetry log:
 
-##### Application Load Balancer (ALB)
+#### Application Load Balancer (ALB)
 
 > AWS Fields are according to [documentation](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-access-logs.html).
 
@@ -307,7 +309,7 @@ ELB access log record fields are mapped this way in the resulting OpenTelemetry 
 | "classification_reason"      | _Currently not supported_                                |
 | conn_trace_id                | _Currently not supported_                                |
 
-##### Network Load Balancer (NLB)
+#### Network Load Balancer (NLB)
 
 > AWS Fields are according to [documentation](https://docs.aws.amazon.com/elasticloadbalancing/latest//network/load-balancer-access-logs.html#access-log-entry-format).
 
@@ -336,7 +338,7 @@ ELB access log record fields are mapped this way in the resulting OpenTelemetry 
 | alpn_client_preference_list  | _Currently not supported_                                   |
 | tls_connection_creation_time | _Currently not supported_                                   |
 
-##### Classic Load Balancer (CLB)
+#### Classic Load Balancer (CLB)
 
 > AWS Fields are according to [documentation](https://docs.aws.amazon.com/elasticloadbalancing/latest/classic/access-log-collection.html)
 
