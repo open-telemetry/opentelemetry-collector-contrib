@@ -342,7 +342,7 @@ func TestEncodeSpan_Events(t *testing.T) {
 	t.Parallel()
 
 	span := ptrace.NewSpan()
-	for i := 0; i < 4; i++ {
+	for i := range 4 {
 		event := span.Events().AppendEmpty()
 		event.SetName(fmt.Sprintf("event_%d", i))
 	}

@@ -74,7 +74,7 @@ func BenchmarkLRUSetCheck(b *testing.B) {
 	_ = cache.WithLock(func(lock LockedLRUSet) error {
 		b.ReportAllocs()
 		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			lock.CheckAndAdd("a")
 		}
 
