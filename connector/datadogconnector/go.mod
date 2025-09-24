@@ -51,7 +51,7 @@ require (
 	github.com/DataDog/datadog-agent/comp/core/log/def v0.72.0-devel // indirect
 	github.com/DataDog/datadog-agent/comp/core/secrets/def v0.72.0-devel // indirect
 	github.com/DataDog/datadog-agent/comp/core/status v0.72.0-devel // indirect
-	github.com/DataDog/datadog-agent/comp/core/tagger/def v0.72.0-devel.0.20250924192156-6174da47d026 // indirect
+	github.com/DataDog/datadog-agent/comp/core/tagger/def v0.72.0-devel // indirect
 	github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.72.0-devel // indirect
 	github.com/DataDog/datadog-agent/comp/core/tagger/types v0.72.0-devel // indirect
 	github.com/DataDog/datadog-agent/comp/core/tagger/utils v0.72.0-devel // indirect

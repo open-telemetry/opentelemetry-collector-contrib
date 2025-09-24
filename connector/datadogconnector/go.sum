@@ -43,8 +43,8 @@ github.com/DataDog/datadog-agent/comp/core/secrets/utils v0.72.0-devel h1:cR82ep
 github.com/DataDog/datadog-agent/comp/core/secrets/utils v0.72.0-devel/go.mod h1:vr6hp0B/jcoYfeADRkFU9sqpUxsOwTOdrHrNibVdugs=
 github.com/DataDog/datadog-agent/comp/core/status v0.72.0-devel h1:miC5ItSMsmPe6Wz/+Lc/ZbErNVvl/HFUzmHbodo113g=
 github.com/DataDog/datadog-agent/comp/core/status v0.72.0-devel/go.mod h1:TFMc8H4RIOZPVp2CjU7aTSL1iCZwx3FZg12J+vhJ1Ms=
-github.com/DataDog/datadog-agent/comp/core/tagger/def v0.72.0-devel.0.20250924192156-6174da47d026 h1:A8ZQqUrZuL9Zu9QZYxSWQwyxj9Tc/vBNqut5KK2Pems=
-github.com/DataDog/datadog-agent/comp/core/tagger/def v0.72.0-devel.0.20250924192156-6174da47d026/go.mod h1:MJh0OYkMGudlSyCPF2bl2Ewf70l1Pxf5WUZQEUhaqwQ=
+github.com/DataDog/datadog-agent/comp/core/tagger/def v0.72.0-devel h1:32Ujr5sV67qUyHV3kP89CaEHDUoiGlUhIut9s9adziI=
+github.com/DataDog/datadog-agent/comp/core/tagger/def v0.72.0-devel/go.mod h1:4eiuluNBHuuH3KXliSsQB9fqpb2HSzkNAmDxkBvOH4U=
 github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.72.0-devel h1:odsX5KDCbOUszNujCA46fHYvMZaB6SgK+RrSODHtxwc=
 github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.72.0-devel/go.mod h1:y05SPqKEtrigKul+JBVM69ehv3lOgyKwrUIwLugoaSI=
 github.com/DataDog/datadog-agent/comp/core/tagger/types v0.72.0-devel h1:1o4c2ijttKrspMvftu9JBxG/aW5pZvpI8JvEQLoSTbE=
