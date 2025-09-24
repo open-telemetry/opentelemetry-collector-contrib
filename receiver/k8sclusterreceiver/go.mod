@@ -25,7 +25,7 @@ require (
 	go.opentelemetry.io/collector/confmap/xconfmap v0.136.0
 	go.opentelemetry.io/collector/consumer v1.42.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.136.0
-  go.opentelemetry.io/collector/featuregate v1.42.0
+	go.opentelemetry.io/collector/featuregate v1.42.0
 	go.opentelemetry.io/collector/filter v0.136.0
 	go.opentelemetry.io/collector/pdata v1.42.0
 	go.opentelemetry.io/collector/pipeline v1.42.0
