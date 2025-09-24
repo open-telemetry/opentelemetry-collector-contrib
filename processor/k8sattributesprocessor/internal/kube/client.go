@@ -15,10 +15,12 @@ import (
 
 	"github.com/distribution/reference"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/otel/attribute"
 	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 	"go.uber.org/zap"
 	apps_v1 "k8s.io/api/apps/v1"
+	batch_v1 "k8s.io/api/batch/v1"
 	api_v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -37,18 +39,37 @@ const (
 	// `*.label.*` and `*.annotation.*`
 	// Sematic conventions define `*.label.*` and `*.annotation.*`
 	// More information - https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/37957
-	K8sPodLabels            = "k8s.pod.labels.%s"
-	K8sPodAnnotations       = "k8s.pod.annotations.%s"
-	K8sNodeLabels           = "k8s.node.labels.%s"
-	K8sNodeAnnotations      = "k8s.node.annotations.%s"
-	K8sNamespaceLabels      = "k8s.namespace.labels.%s"
-	K8sNamespaceAnnotations = "k8s.namespace.annotations.%s"
+	K8sPodLabelsKey            = "k8s.pod.labels.%s"
+	K8sPodLabelKey             = "k8s.pod.label.%s"
+	K8sPodAnnotationsKey       = "k8s.pod.annotations.%s"
+	K8sPodAnnotationKey        = "k8s.pod.annotation.%s"
+	K8sNodeLabelsKey           = "k8s.node.labels.%s"
+	K8sNodeLabelKey            = "k8s.node.label.%s"
+	K8sNodeAnnotationsKey      = "k8s.node.annotations.%s"
+	K8sNodeAnnotationKey       = "k8s.node.annotation.%s"
+	K8sNamespaceLabelsKey      = "k8s.namespace.labels.%s"
+	K8sNamespaceLabelKey       = "k8s.namespace.label.%s"
+	K8sNamespaceAnnotationsKey = "k8s.namespace.annotations.%s"
+	K8sNamespaceAnnotationKey  = "k8s.namespace.annotation.%s"
 	// Semconv attributes https://github.com/open-telemetry/semantic-conventions/blob/main/docs/resource/k8s.md#deployment
 	K8sDeploymentLabel      = "k8s.deployment.label.%s"
 	K8sDeploymentAnnotation = "k8s.deployment.annotation.%s"
 	// Semconv attributes https://github.com/open-telemetry/semantic-conventions/blob/main/docs/resource/k8s.md#statefulset
 	K8sStatefulSetLabel      = "k8s.statefulset.label.%s"
 	K8sStatefulSetAnnotation = "k8s.statefulset.annotation.%s"
+	// Semconv attributes https://github.com/open-telemetry/semantic-conventions/blob/main/docs/resource/k8s.md#daemonset
+	K8sDaemonSetLabel      = "k8s.daemonset.label.%s"
+	K8sDaemonSetAnnotation = "k8s.daemonset.annotation.%s"
+	// Semconv attributes https://github.com/open-telemetry/semantic-conventions/blob/main/docs/resource/k8s.md#job
+	K8sJobLabel      = "k8s.job.label.%s"
+	K8sJobAnnotation = "k8s.job.annotation.%s"
+)
+
+var allowLabelsAnnotationsSingular = featuregate.GlobalRegistry().MustRegister(
+	"k8sattr.labelsAnnotationsSingular.allow",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, default k8s label and annotation resource attribute keys will be singular, instead of plural"),
+	featuregate.WithRegisterFromVersion("v0.125.0"),
 )
 
 // WatchClient is the main interface provided by this package to a kubernetes cluster.
@@ -62,6 +83,8 @@ type WatchClient struct {
 	nodeInformer           cache.SharedInformer
 	deploymentInformer     cache.SharedInformer
 	statefulsetInformer    cache.SharedInformer
+	daemonsetInformer      cache.SharedInformer
+	jobInformer            cache.SharedInformer
 	replicasetInformer     cache.SharedInformer
 	replicasetRegex        *regexp.Regexp
 	cronJobRegex           *regexp.Regexp
@@ -93,6 +116,14 @@ type WatchClient struct {
 	// A map containing StatefulSet related data, used to associate them with resources.
 	// Key is statefulset uid
 	StatefulSets map[string]*StatefulSet
+
+	// A map containing DaemonSet related data, used to associate them with resources.
+	// Key is daemonset uid
+	DaemonSets map[string]*DaemonSet
+
+	// A map containing job related data, used to associate them with resources.
+	// Key is job uid
+	Jobs map[string]*Job
 
 	// A map containing ReplicaSets related data, used to associate them with resources.
 	// Key is replicaset uid
@@ -155,6 +186,8 @@ func New(
 	c.ReplicaSets = map[string]*ReplicaSet{}
 	c.Deployments = map[string]*Deployment{}
 	c.StatefulSets = map[string]*StatefulSet{}
+	c.DaemonSets = map[string]*DaemonSet{}
+	c.Jobs = map[string]*Job{}
 	if newClientSet == nil {
 		newClientSet = k8sconfig.MakeClient
 	}
@@ -242,6 +275,14 @@ func New(
 		c.statefulsetInformer = newStatefulSetSharedInformer(c.kc, c.Filters.Namespace)
 	}
 
+	if c.extractDaemonSetLabelsAnnotations() {
+		c.daemonsetInformer = newDaemonSetSharedInformer(c.kc, c.Filters.Namespace)
+	}
+
+	if c.extractJobLabelsAnnotations() || rules.CronJobUID {
+		c.jobInformer = newJobSharedInformer(c.kc, c.Filters.Namespace)
+	}
+
 	return c, err
 }
 
@@ -311,6 +352,32 @@ func (c *WatchClient) Start() error {
 		}
 		synced = append(synced, reg.HasSynced)
 		go c.statefulsetInformer.Run(c.stopCh)
+	}
+
+	if c.daemonsetInformer != nil {
+		reg, err = c.daemonsetInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+			AddFunc:    c.handleDaemonSetAdd,
+			UpdateFunc: c.handleDaemonSetUpdate,
+			DeleteFunc: c.handleDaemonSetDelete,
+		})
+		if err != nil {
+			return err
+		}
+		synced = append(synced, reg.HasSynced)
+		go c.daemonsetInformer.Run(c.stopCh)
+	}
+
+	if c.jobInformer != nil {
+		reg, err = c.jobInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+			AddFunc:    c.handleJobAdd,
+			UpdateFunc: c.handleJobUpdate,
+			DeleteFunc: c.handleJobDelete,
+		})
+		if err != nil {
+			return err
+		}
+		synced = append(synced, reg.HasSynced)
+		go c.jobInformer.Run(c.stopCh)
 	}
 
 	reg, err = c.informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
@@ -507,6 +574,68 @@ func (c *WatchClient) handleStatefulSetDelete(obj any) {
 	}
 }
 
+func (c *WatchClient) handleDaemonSetAdd(obj any) {
+	c.telemetryBuilder.OtelsvcK8sDaemonsetAdded.Add(context.Background(), 1)
+	if daemonset, ok := obj.(*apps_v1.DaemonSet); ok {
+		c.addOrUpdateDaemonSet(daemonset)
+	} else {
+		c.logger.Error("object received was not of type api_v1.DaemonSet", zap.Any("received", obj))
+	}
+}
+
+func (c *WatchClient) handleDaemonSetUpdate(_, newDaemonSet any) {
+	c.telemetryBuilder.OtelsvcK8sDaemonsetUpdated.Add(context.Background(), 1)
+	if daemonset, ok := newDaemonSet.(*apps_v1.DaemonSet); ok {
+		c.addOrUpdateDaemonSet(daemonset)
+	} else {
+		c.logger.Error("object received was not of type api_v1.DaemonSet", zap.Any("received", newDaemonSet))
+	}
+}
+
+func (c *WatchClient) handleDaemonSetDelete(obj any) {
+	c.telemetryBuilder.OtelsvcK8sDaemonsetDeleted.Add(context.Background(), 1)
+	if daemonset, ok := ignoreDeletedFinalStateUnknown(obj).(*apps_v1.DaemonSet); ok {
+		c.m.Lock()
+		if n, ok := c.DaemonSets[string(daemonset.UID)]; ok {
+			delete(c.DaemonSets, n.UID)
+		}
+		c.m.Unlock()
+	} else {
+		c.logger.Error("object received was not of type api_v1.DaemonSet", zap.Any("received", obj))
+	}
+}
+
+func (c *WatchClient) handleJobAdd(obj any) {
+	c.telemetryBuilder.OtelsvcK8sJobAdded.Add(context.Background(), 1)
+	if job, ok := obj.(*batch_v1.Job); ok {
+		c.addOrUpdateJob(job)
+	} else {
+		c.logger.Error("object received was not of type api_v1.Job", zap.Any("received", obj))
+	}
+}
+
+func (c *WatchClient) handleJobUpdate(_, newJob any) {
+	c.telemetryBuilder.OtelsvcK8sJobUpdated.Add(context.Background(), 1)
+	if job, ok := newJob.(*batch_v1.Job); ok {
+		c.addOrUpdateJob(job)
+	} else {
+		c.logger.Error("object received was not of type api_v1.Job", zap.Any("received", newJob))
+	}
+}
+
+func (c *WatchClient) handleJobDelete(obj any) {
+	c.telemetryBuilder.OtelsvcK8sJobDeleted.Add(context.Background(), 1)
+	if job, ok := ignoreDeletedFinalStateUnknown(obj).(*batch_v1.Job); ok {
+		c.m.Lock()
+		if n, ok := c.Jobs[string(job.UID)]; ok {
+			delete(c.Jobs, n.UID)
+		}
+		c.m.Unlock()
+	} else {
+		c.logger.Error("object received was not of type api_v1.Job", zap.Any("received", obj))
+	}
+}
+
 func (c *WatchClient) deleteLoop(interval, gracePeriod time.Duration) {
 	// This loop runs after N seconds and deletes pods from cache.
 	// It iterates over the delete queue and deletes all that aren't
@@ -517,7 +646,8 @@ func (c *WatchClient) deleteLoop(interval, gracePeriod time.Duration) {
 			var cutoff int
 			now := time.Now()
 			c.deleteMut.Lock()
-			for i, d := range c.deleteQueue {
+			for i := range c.deleteQueue {
+				d := c.deleteQueue[i]
 				if d.ts.Add(gracePeriod).After(now) {
 					break
 				}
@@ -528,7 +658,8 @@ func (c *WatchClient) deleteLoop(interval, gracePeriod time.Duration) {
 			c.deleteMut.Unlock()
 
 			c.m.Lock()
-			for _, d := range toDelete {
+			for i := range toDelete {
+				d := toDelete[i]
 				if p, ok := c.Pods[d.id]; ok {
 					// Sanity check: make sure we are deleting the same pod
 					// and the underlying state (ip<>pod mapping) has not changed.
@@ -594,12 +725,42 @@ func (c *WatchClient) GetDeployment(deploymentUID string) (*Deployment, bool) {
 	return nil, false
 }
 
+func (c *WatchClient) GetReplicaSet(uid string) (*ReplicaSet, bool) {
+	c.m.RLock()
+	replicaset, ok := c.ReplicaSets[uid]
+	c.m.RUnlock()
+	if ok {
+		return replicaset, ok
+	}
+	return nil, false
+}
+
 func (c *WatchClient) GetStatefulSet(statefulSetUID string) (*StatefulSet, bool) {
 	c.m.RLock()
 	statefulSet, ok := c.StatefulSets[statefulSetUID]
 	c.m.RUnlock()
 	if ok {
 		return statefulSet, ok
+	}
+	return nil, false
+}
+
+func (c *WatchClient) GetDaemonSet(daemonSetUID string) (*DaemonSet, bool) {
+	c.m.RLock()
+	daemonSet, ok := c.DaemonSets[daemonSetUID]
+	c.m.RUnlock()
+	if ok {
+		return daemonSet, ok
+	}
+	return nil, false
+}
+
+func (c *WatchClient) GetJob(jobUID string) (*Job, bool) {
+	c.m.RLock()
+	job, ok := c.Jobs[jobUID]
+	c.m.RUnlock()
+	if ok {
+		return job, ok
 	}
 	return nil, false
 }
@@ -650,7 +811,8 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 		c.Rules.JobUID || c.Rules.JobName ||
 		c.Rules.StatefulSetUID || c.Rules.StatefulSetName ||
 		c.Rules.DeploymentName || c.Rules.DeploymentUID ||
-		c.Rules.CronJobName || c.Rules.ServiceName {
+		c.Rules.CronJobUID || c.Rules.CronJobName ||
+		c.Rules.ServiceName {
 		for _, ref := range pod.OwnerReferences {
 			switch ref.Kind {
 			case "ReplicaSet":
@@ -664,7 +826,7 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 					tags[string(conventions.ServiceNameKey)] = ref.Name
 				}
 				if c.Rules.DeploymentName || c.Rules.ServiceName {
-					if replicaset, ok := c.getReplicaSet(string(ref.UID)); ok {
+					if replicaset, ok := c.GetReplicaSet(string(ref.UID)); ok {
 						name := replicaset.Deployment.Name
 						if name != "" {
 							if c.Rules.DeploymentName {
@@ -678,7 +840,7 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 					}
 				}
 				if c.Rules.DeploymentUID {
-					if replicaset, ok := c.getReplicaSet(string(ref.UID)); ok {
+					if replicaset, ok := c.GetReplicaSet(string(ref.UID)); ok {
 						if replicaset.Deployment.Name != "" {
 							tags[string(conventions.K8SDeploymentUIDKey)] = replicaset.Deployment.UID
 						}
@@ -727,6 +889,13 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 						}
 					}
 				}
+				if c.Rules.CronJobUID {
+					if job, ok := c.GetJob(string(ref.UID)); ok {
+						if job.CronJob.UID != "" {
+							tags[string(conventions.K8SCronJobUIDKey)] = job.CronJob.UID
+						}
+					}
+				}
 			}
 		}
 	}
@@ -743,8 +912,18 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 		}
 	}
 
+	formatterLabel := K8sPodLabelsKey
+	if allowLabelsAnnotationsSingular.IsEnabled() {
+		formatterLabel = K8sPodLabelKey
+	}
+
 	for _, r := range c.Rules.Labels {
-		r.extractFromPodMetadata(pod.Labels, tags, K8sPodLabels)
+		r.extractFromPodMetadata(pod.Labels, tags, formatterLabel)
+	}
+
+	formatterAnnotation := K8sPodAnnotationsKey
+	if allowLabelsAnnotationsSingular.IsEnabled() {
+		formatterAnnotation = K8sPodAnnotationKey
 	}
 
 	if c.Rules.ServiceName {
@@ -758,7 +937,7 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 	}
 
 	for _, r := range c.Rules.Annotations {
-		r.extractFromPodMetadata(pod.Annotations, tags, K8sPodAnnotations)
+		r.extractFromPodMetadata(pod.Annotations, tags, formatterAnnotation)
 	}
 	return tags
 }
@@ -817,12 +996,14 @@ func removeUnnecessaryPodData(pod *api_v1.Pod, rules ExtractionRules) *api_v1.Po
 			return transformedContainerStatus
 		}
 
-		for _, containerStatus := range pod.Status.ContainerStatuses {
+		for i := range pod.Status.ContainerStatuses {
+			containerStatus := pod.Status.ContainerStatuses[i]
 			transformedPod.Status.ContainerStatuses = append(
 				transformedPod.Status.ContainerStatuses, removeUnnecessaryContainerStatus(containerStatus),
 			)
 		}
-		for _, containerStatus := range pod.Status.InitContainerStatuses {
+		for i := range pod.Status.InitContainerStatuses {
+			containerStatus := pod.Status.InitContainerStatuses[i]
 			transformedPod.Status.InitContainerStatuses = append(
 				transformedPod.Status.InitContainerStatuses, removeUnnecessaryContainerStatus(containerStatus),
 			)
@@ -837,12 +1018,14 @@ func removeUnnecessaryPodData(pod *api_v1.Pod, rules ExtractionRules) *api_v1.Po
 			return transformedContainer
 		}
 
-		for _, container := range pod.Spec.Containers {
+		for i := range pod.Spec.Containers {
+			container := pod.Spec.Containers[i]
 			transformedPod.Spec.Containers = append(
 				transformedPod.Spec.Containers, removeUnnecessaryContainerData(container),
 			)
 		}
-		for _, container := range pod.Spec.InitContainers {
+		for i := range pod.Spec.InitContainers {
+			container := pod.Spec.InitContainers[i]
 			transformedPod.Spec.InitContainers = append(
 				transformedPod.Spec.InitContainers, removeUnnecessaryContainerData(container),
 			)
@@ -906,7 +1089,9 @@ func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) PodContain
 	}
 	if c.Rules.ContainerImageName || c.Rules.ContainerImageTag ||
 		c.Rules.ServiceVersion || c.Rules.ServiceInstanceID {
-		for _, spec := range append(pod.Spec.Containers, pod.Spec.InitContainers...) {
+		specs := append(pod.Spec.Containers, pod.Spec.InitContainers...) //nolint:gocritic // appendAssign: append result not assigned to the same slice
+		for i := range specs {
+			spec := &specs[i]
 			container := &Container{}
 			imageRef, err := dcommon.ParseImageName(spec.Image)
 			if err == nil {
@@ -926,7 +1111,9 @@ func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) PodContain
 			containers.ByName[spec.Name] = container
 		}
 	}
-	for _, apiStatus := range append(pod.Status.ContainerStatuses, pod.Status.InitContainerStatuses...) {
+	apiStatuses := append(pod.Status.ContainerStatuses, pod.Status.InitContainerStatuses...) //nolint:gocritic // appendAssign: append result not assigned to the same slice
+	for i := range apiStatuses {
+		apiStatus := &apiStatuses[i]
 		containerName := apiStatus.Name
 		container, ok := containers.ByName[containerName]
 		if !ok {
@@ -970,12 +1157,22 @@ func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) PodContain
 func (c *WatchClient) extractNamespaceAttributes(namespace *api_v1.Namespace) map[string]string {
 	tags := map[string]string{}
 
+	formatterLabel := K8sNamespaceLabelsKey
+	if allowLabelsAnnotationsSingular.IsEnabled() {
+		formatterLabel = K8sNamespaceLabelKey
+	}
+
 	for _, r := range c.Rules.Labels {
-		r.extractFromNamespaceMetadata(namespace.Labels, tags, K8sNamespaceLabels)
+		r.extractFromNamespaceMetadata(namespace.Labels, tags, formatterLabel)
+	}
+
+	formatterAnnotation := K8sNamespaceAnnotationsKey
+	if allowLabelsAnnotationsSingular.IsEnabled() {
+		formatterAnnotation = K8sNamespaceAnnotationKey
 	}
 
 	for _, r := range c.Rules.Annotations {
-		r.extractFromNamespaceMetadata(namespace.Annotations, tags, K8sNamespaceAnnotations)
+		r.extractFromNamespaceMetadata(namespace.Annotations, tags, formatterAnnotation)
 	}
 
 	return tags
@@ -984,14 +1181,23 @@ func (c *WatchClient) extractNamespaceAttributes(namespace *api_v1.Namespace) ma
 func (c *WatchClient) extractNodeAttributes(node *api_v1.Node) map[string]string {
 	tags := map[string]string{}
 
+	formatterLabel := K8sNodeLabelsKey
+	if allowLabelsAnnotationsSingular.IsEnabled() {
+		formatterLabel = K8sNodeLabelKey
+	}
+
 	for _, r := range c.Rules.Labels {
-		r.extractFromNodeMetadata(node.Labels, tags, K8sNodeLabels)
+		r.extractFromNodeMetadata(node.Labels, tags, formatterLabel)
+	}
+
+	formatterAnnotation := K8sNodeAnnotationsKey
+	if allowLabelsAnnotationsSingular.IsEnabled() {
+		formatterAnnotation = K8sNodeAnnotationKey
 	}
 
 	for _, r := range c.Rules.Annotations {
-		r.extractFromNodeMetadata(node.Annotations, tags, K8sNodeAnnotations)
+		r.extractFromNodeMetadata(node.Annotations, tags, formatterAnnotation)
 	}
-
 	return tags
 }
 
@@ -1023,6 +1229,34 @@ func (c *WatchClient) extractStatefulSetAttributes(d *apps_v1.StatefulSet) map[s
 	return tags
 }
 
+func (c *WatchClient) extractDaemonSetAttributes(d *apps_v1.DaemonSet) map[string]string {
+	tags := map[string]string{}
+
+	for _, r := range c.Rules.Labels {
+		r.extractFromDaemonSetMetadata(d.Labels, tags, K8sDaemonSetLabel)
+	}
+
+	for _, r := range c.Rules.Annotations {
+		r.extractFromDaemonSetMetadata(d.Annotations, tags, K8sDaemonSetAnnotation)
+	}
+
+	return tags
+}
+
+func (c *WatchClient) extractJobAttributes(d *batch_v1.Job) map[string]string {
+	tags := map[string]string{}
+
+	for _, r := range c.Rules.Labels {
+		r.extractFromJobMetadata(d.Labels, tags, K8sJobLabel)
+	}
+
+	for _, r := range c.Rules.Annotations {
+		r.extractFromJobMetadata(d.Annotations, tags, K8sJobAnnotation)
+	}
+
+	return tags
+}
+
 func (c *WatchClient) podFromAPI(pod *api_v1.Pod) *Pod {
 	newPod := &Pod{
 		Name:           pod.Name,
@@ -1030,20 +1264,30 @@ func (c *WatchClient) podFromAPI(pod *api_v1.Pod) *Pod {
 		NodeName:       pod.Spec.NodeName,
 		DeploymentUID:  "",
 		StatefulSetUID: "",
+		DaemonSetUID:   "",
+		JobUID:         "",
 		Address:        pod.Status.PodIP,
 		HostNetwork:    pod.Spec.HostNetwork,
 		PodUID:         string(pod.UID),
 		StartTime:      pod.Status.StartTime,
 	}
 
-	if replicaset, ok := c.getReplicaSet(getPodReplicaSetUID(pod)); ok {
+	if replicaset, ok := c.GetReplicaSet(getPodReplicaSetUID(pod)); ok {
 		if replicaset.Deployment.UID != "" {
 			newPod.DeploymentUID = replicaset.Deployment.UID
 		}
 	}
 
-	if statefulset, ok := c.getStatefulSet(getPodStatefulSetUID(pod)); ok {
+	if statefulset, ok := c.GetStatefulSet(getPodStatefulSetUID(pod)); ok {
 		newPod.StatefulSetUID = statefulset.UID
+	}
+
+	if daemonset, ok := c.GetDaemonSet(getPodDaemonSetUID(pod)); ok {
+		newPod.DaemonSetUID = daemonset.UID
+	}
+
+	if job, ok := c.GetJob(getPodJobUID(pod)); ok {
+		newPod.JobUID = job.UID
 	}
 
 	if c.shouldIgnorePod(pod) {
@@ -1070,6 +1314,24 @@ func getPodReplicaSetUID(pod *api_v1.Pod) string {
 func getPodStatefulSetUID(pod *api_v1.Pod) string {
 	for _, ref := range pod.OwnerReferences {
 		if ref.Kind == "StatefulSet" {
+			return string(ref.UID)
+		}
+	}
+	return ""
+}
+
+func getPodDaemonSetUID(pod *api_v1.Pod) string {
+	for _, ref := range pod.OwnerReferences {
+		if ref.Kind == "DaemonSet" {
+			return string(ref.UID)
+		}
+	}
+	return ""
+}
+
+func getPodJobUID(pod *api_v1.Pod) string {
+	for _, ref := range pod.OwnerReferences {
+		if ref.Kind == "Job" {
 			return string(ref.UID)
 		}
 	}
@@ -1178,7 +1440,9 @@ func (c *WatchClient) addOrUpdatePod(pod *api_v1.Pod) {
 	c.m.Lock()
 	defer c.m.Unlock()
 
-	for _, id := range c.getIdentifiersFromAssoc(newPod) {
+	identifiers := c.getIdentifiersFromAssoc(newPod)
+	for i := range identifiers {
+		id := identifiers[i]
 		// compare initial scheduled timestamp for existing pod and new pod with same identifier
 		// and only replace old pod if scheduled time of new pod is newer or equal.
 		// This should fix the case where scheduler has assigned the same attributes (like IP address)
@@ -1194,7 +1458,9 @@ func (c *WatchClient) addOrUpdatePod(pod *api_v1.Pod) {
 
 func (c *WatchClient) forgetPod(pod *api_v1.Pod) {
 	podToRemove := c.podFromAPI(pod)
-	for _, id := range c.getIdentifiersFromAssoc(podToRemove) {
+	identifiers := c.getIdentifiersFromAssoc(podToRemove)
+	for i := range identifiers {
+		id := identifiers[i]
 		p, ok := c.GetPod(id)
 
 		if ok && p.Name == pod.Name {
@@ -1339,6 +1605,38 @@ func (c *WatchClient) extractStatefulSetLabelsAnnotations() bool {
 	return false
 }
 
+func (c *WatchClient) extractDaemonSetLabelsAnnotations() bool {
+	for _, r := range c.Rules.Labels {
+		if r.From == MetadataFromDaemonSet {
+			return true
+		}
+	}
+
+	for _, r := range c.Rules.Annotations {
+		if r.From == MetadataFromDaemonSet {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (c *WatchClient) extractJobLabelsAnnotations() bool {
+	for _, r := range c.Rules.Labels {
+		if r.From == MetadataFromJob {
+			return true
+		}
+	}
+
+	for _, r := range c.Rules.Annotations {
+		if r.From == MetadataFromJob {
+			return true
+		}
+	}
+
+	return false
+}
+
 func (c *WatchClient) extractNodeLabelsAnnotations() bool {
 	for _, r := range c.Rules.Labels {
 		if r.From == MetadataFromNode {
@@ -1397,6 +1695,44 @@ func (c *WatchClient) addOrUpdateStatefulSet(statefulset *apps_v1.StatefulSet) {
 	c.m.Lock()
 	if statefulset.UID != "" {
 		c.StatefulSets[string(statefulset.UID)] = newStatefulSet
+	}
+	c.m.Unlock()
+}
+
+func (c *WatchClient) addOrUpdateDaemonSet(daemonset *apps_v1.DaemonSet) {
+	newDaemonSet := &DaemonSet{
+		Name: daemonset.Name,
+		UID:  string(daemonset.UID),
+	}
+	newDaemonSet.Attributes = c.extractDaemonSetAttributes(daemonset)
+
+	c.m.Lock()
+	if daemonset.UID != "" {
+		c.DaemonSets[string(daemonset.UID)] = newDaemonSet
+	}
+	c.m.Unlock()
+}
+
+func (c *WatchClient) addOrUpdateJob(job *batch_v1.Job) {
+	newJob := &Job{
+		Name: job.Name,
+		UID:  string(job.UID),
+	}
+	newJob.Attributes = c.extractJobAttributes(job)
+
+	for _, ownerReference := range job.OwnerReferences {
+		if ownerReference.Kind == "CronJob" && ownerReference.Controller != nil && *ownerReference.Controller {
+			newJob.CronJob = CronJob{
+				Name: ownerReference.Name,
+				UID:  string(ownerReference.UID),
+			}
+			break
+		}
+	}
+
+	c.m.Lock()
+	if job.UID != "" {
+		c.Jobs[string(job.UID)] = newJob
 	}
 	c.m.Unlock()
 }
@@ -1476,26 +1812,6 @@ func removeUnnecessaryReplicaSetData(replicaset *apps_v1.ReplicaSet) *apps_v1.Re
 	}
 	transformedReplicaset.SetOwnerReferences(replicaset.GetOwnerReferences())
 	return &transformedReplicaset
-}
-
-func (c *WatchClient) getReplicaSet(uid string) (*ReplicaSet, bool) {
-	c.m.RLock()
-	replicaset, ok := c.ReplicaSets[uid]
-	c.m.RUnlock()
-	if ok {
-		return replicaset, ok
-	}
-	return nil, false
-}
-
-func (c *WatchClient) getStatefulSet(uid string) (*StatefulSet, bool) {
-	c.m.RLock()
-	statefulset, ok := c.StatefulSets[uid]
-	c.m.RUnlock()
-	if ok {
-		return statefulset, ok
-	}
-	return nil, false
 }
 
 // runInformerWithDependencies starts the given informer. The second argument is a list of other informers that should complete

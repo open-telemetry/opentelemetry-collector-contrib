@@ -17,7 +17,7 @@ import (
 	"go.opentelemetry.io/otel/log"
 	sdklog "go.opentelemetry.io/otel/sdk/log"
 	"go.opentelemetry.io/otel/sdk/resource"
-	semconv "go.opentelemetry.io/otel/semconv/v1.25.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 	"go.uber.org/zap"
 	"golang.org/x/time/rate"
 
@@ -84,10 +84,12 @@ func run(c *Config, expF exporterFunc, logger *zap.Logger) error {
 			index:          i,
 			traceID:        c.TraceID,
 			spanID:         c.SpanID,
-			batch:          c.Batch,
+			batch:          c.Config.Batch,
 			batchBuffer:    make([]sdklog.Record, 0),
 			bufferMutex:    sync.Mutex{},
-			batchSize:      c.BatchSize,
+			batchSize:      c.Config.BatchSize,
+			loadSize:       c.LoadSize,
+			allowFailures:  c.AllowExportFailures,
 		}
 
 		exp, err := expF()

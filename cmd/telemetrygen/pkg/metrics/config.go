@@ -5,6 +5,7 @@ package metrics
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/spf13/pflag"
@@ -25,8 +26,6 @@ type Config struct {
 	TraceID                 string
 	EnforceUniqueTimeseries bool
 	UniqueTimelimit         time.Duration
-	BatchSize               int
-	Batch                   bool
 }
 
 // NewConfig creates a new Config with default values.
@@ -48,12 +47,10 @@ func (c *Config) Flags(fs *pflag.FlagSet) {
 	fs.StringVar(&c.TraceID, "trace-id", c.TraceID, "TraceID to use as exemplar")
 	fs.StringVar(&c.SpanID, "span-id", c.SpanID, "SpanID to use as exemplar")
 
-	fs.Var(&c.MetricType, "metric-type", "Metric type enum. must be one of 'Gauge', 'Sum' or 'Histogram'")
+	fs.Var(&c.MetricType, "metric-type", "Metric type enum. must be one of 'Gauge', 'Sum', 'Histogram', or 'ExponentialHistogram'")
 	fs.Var(&c.AggregationTemporality, "aggregation-temporality", "aggregation-temporality for metrics. Must be one of 'delta' or 'cumulative'")
 	fs.BoolVar(&c.EnforceUniqueTimeseries, "unique-timeseries", c.EnforceUniqueTimeseries, "Enforce unique timeseries within unique-timeseries-timelimit, performance impacting")
 	fs.DurationVar(&c.UniqueTimelimit, "unique-timeseries-duration", c.UniqueTimelimit, "Time limit for unique timeseries generation, timeseries generated within this time will be unique")
-	fs.IntVar(&c.BatchSize, "batch-size", c.BatchSize, "Number of metrics to batch before flushing, defaults to 100")
-	fs.BoolVar(&c.Batch, "batch", c.Batch, "Enable batching of metrics, defaults to true")
 }
 
 // SetDefaults sets the default values for the configuration
@@ -76,14 +73,16 @@ func (c *Config) SetDefaults() {
 
 	c.TraceID = ""
 	c.SpanID = ""
-	c.BatchSize = 100
-	c.Batch = true
 }
 
 // Validate validates the test scenario parameters.
 func (c *Config) Validate() error {
 	if !c.TotalDuration.IsInf() && c.TotalDuration.Duration() <= 0 && c.NumMetrics <= 0 {
 		return errors.New("either `metrics` or `duration` must be greater than 0")
+	}
+
+	if c.LoadSize < 0 {
+		return fmt.Errorf("load size must be non-negative, found %d", c.LoadSize)
 	}
 
 	if c.TraceID != "" {

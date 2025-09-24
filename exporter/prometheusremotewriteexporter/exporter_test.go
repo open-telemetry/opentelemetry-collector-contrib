@@ -435,6 +435,8 @@ func Test_PushMetrics(t *testing.T) {
 
 	emptySummaryBatch := getMetricsFromMetricList(invalidMetrics[emptySummary])
 
+	metricWithInvalidTranslatedNameBatch := getMetricsFromMetricList(invalidMetrics[metricWithInvalidTranslatedName])
+
 	// partial success (or partial failure) cases
 
 	partialSuccess1 := getMetricsFromMetricList(validMetrics1[validSum], validMetrics2[validSum],
@@ -638,6 +640,13 @@ func Test_PushMetrics(t *testing.T) {
 			expectedFailedTranslations: 1,
 		},
 		{
+			name:                       "emptyMetricWithInvalidTranslatedName_case",
+			metrics:                    metricWithInvalidTranslatedNameBatch,
+			reqTestFunc:                checkFunc,
+			httpResponseCode:           http.StatusAccepted,
+			expectedFailedTranslations: 1,
+		},
+		{
 			name:                       "partialSuccess_case",
 			metrics:                    partialSuccess1,
 			reqTestFunc:                checkFunc,
@@ -758,7 +767,7 @@ func Test_PushMetrics(t *testing.T) {
 
 					if useWAL {
 						cfg.WAL = configoptional.Some(WALConfig{
-							Directory: t.TempDir(),
+							Directory: testutil.TempDir(t),
 						})
 					}
 
@@ -1195,16 +1204,15 @@ func TestRetries(t *testing.T) {
 				telemetry: telemetry,
 			}
 			buf := bufferPool.Get().(*buffer)
-			buf.protobuf.Reset()
 			defer bufferPool.Put(buf)
 
-			errMarshal := buf.protobuf.Marshal(&prompb.WriteRequest{})
+			reqBuf, errMarshal := buf.MarshalAndEncode(&prompb.WriteRequest{})
 			if errMarshal != nil {
 				require.NoError(t, errMarshal)
 				return
 			}
 
-			err = exporter.execute(tt.ctx, buf)
+			err = exporter.execute(tt.ctx, reqBuf)
 			tt.assertError(t, err)
 			tt.assertErrorType(t, err)
 			assert.Equal(t, tt.expectedAttempts, totalAttempts)
@@ -1228,10 +1236,17 @@ func benchmarkExecute(b *testing.B, numSample int) {
 	endpointURL, err := url.Parse(mockServer.URL)
 	require.NoError(b, err)
 
+	// Create the telemetry
+	testTel := componenttest.NewTelemetry()
+	telemetry, err := newPRWTelemetry(exporter.Settings{TelemetrySettings: testTel.NewTelemetrySettings()}, endpointURL)
+	require.NoError(b, err)
+
 	// Create the prwExporter
 	exporter := &prwExporter{
 		endpointURL: endpointURL,
 		client:      http.DefaultClient,
+		settings:    testTel.NewTelemetrySettings(),
+		telemetry:   telemetry,
 	}
 
 	generateSamples := func(n int) []prompb.Sample {
@@ -1297,18 +1312,18 @@ func benchmarkExecute(b *testing.B, numSample int) {
 	ctx := b.Context()
 	b.ReportAllocs()
 	b.ResetTimer()
+
 	for _, req := range reqs {
 		buf := bufferPool.Get().(*buffer)
-		buf.protobuf.Reset()
-		defer bufferPool.Put(buf)
-
-		errMarshal := buf.protobuf.Marshal(req)
+		reqBuf, errMarshal := buf.MarshalAndEncode(req)
 		if errMarshal != nil {
 			require.NoError(b, errMarshal)
 			return
 		}
-		err := exporter.execute(ctx, buf)
-		require.NoError(b, err)
+		if err = exporter.execute(ctx, reqBuf); err != nil {
+			b.Fatal(err)
+		}
+		bufferPool.Put(buf)
 	}
 }
 

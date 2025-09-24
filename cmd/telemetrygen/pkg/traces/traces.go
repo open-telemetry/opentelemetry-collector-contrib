@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.25.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 	"go.uber.org/zap"
 	"golang.org/x/time/rate"
 
@@ -68,8 +68,8 @@ func Start(cfg *Config) error {
 	}()
 
 	var ssp sdktrace.SpanProcessor
-	if cfg.Batch {
-		ssp = sdktrace.NewBatchSpanProcessor(exp, sdktrace.WithBatchTimeout(time.Second), sdktrace.WithMaxExportBatchSize(cfg.BatchSize))
+	if cfg.Config.Batch {
+		ssp = sdktrace.NewBatchSpanProcessor(exp, sdktrace.WithBatchTimeout(time.Second), sdktrace.WithMaxExportBatchSize(cfg.Config.BatchSize))
 		defer func() {
 			logger.Info("stop the batch span processor")
 
@@ -158,6 +158,7 @@ func run(c *Config, logger *zap.Logger) error {
 			logger:           logger.With(zap.Int("worker", i)),
 			loadSize:         c.LoadSize,
 			spanDuration:     c.SpanDuration,
+			allowFailures:    c.AllowExportFailures,
 		}
 
 		go w.simulateTraces(telemetryAttributes)

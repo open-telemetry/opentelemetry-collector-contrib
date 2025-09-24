@@ -5,10 +5,13 @@ package metrics
 
 import (
 	"context"
+	"fmt"
+	"math/rand/v2"
 	"sync"
 	"sync/atomic"
 	"time"
 
+	"github.com/lightstep/go-expohisto/structure"
 	"go.opentelemetry.io/otel/attribute"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
@@ -16,6 +19,8 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/time/rate"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/util"
 	types "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/pkg"
 )
 
@@ -37,6 +42,9 @@ type worker struct {
 	metricBuffer           []metricdata.ResourceMetrics // buffer for batching metrics
 	bufferMutex            sync.Mutex                   // mutex for buffer access
 	batch                  bool                         // whether to batch metrics
+	loadSize               int                          // desired minimum size in MB of string data for each generated metric
+	allowFailures          bool                         // whether to continue on export failures
+	rand                   *rand.Rand                   // random number generator for exponential histogram generation
 }
 
 // We use a 15-element bounds slice for histograms below, so there must be 16 buckets here.
@@ -99,11 +107,20 @@ func (w *worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Expo
 		if w.enforceUnique {
 			signalAttrs = append(signalAttrs, tb.getAttribute())
 		}
+
+		// Add load size attributes if specified
+		loadAttrs := signalAttrs
+		if w.loadSize > 0 {
+			for j := 0; j < w.loadSize; j++ {
+				loadAttrs = append(loadAttrs, common.CreateLoadAttribute(fmt.Sprintf("load-%v", j), 1))
+			}
+		}
 		var metrics []metricdata.Metrics
 		now := w.clock.Now()
 		if w.aggregationTemporality.AsTemporality() == metricdata.DeltaTemporality {
 			startTime = now.Add(-1 * time.Second)
 		}
+
 		switch w.metricType {
 		case MetricTypeGauge:
 			metrics = append(metrics, metricdata.Metrics{
@@ -113,7 +130,7 @@ func (w *worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Expo
 						{
 							Time:       now,
 							Value:      i,
-							Attributes: attribute.NewSet(signalAttrs...),
+							Attributes: attribute.NewSet(loadAttrs...),
 							Exemplars:  w.exemplars,
 						},
 					},
@@ -130,7 +147,7 @@ func (w *worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Expo
 							StartTime:  startTime,
 							Time:       now,
 							Value:      i,
-							Attributes: attribute.NewSet(signalAttrs...),
+							Attributes: attribute.NewSet(loadAttrs...),
 							Exemplars:  w.exemplars,
 						},
 					},
@@ -152,7 +169,7 @@ func (w *worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Expo
 						{
 							StartTime:  startTime,
 							Time:       now,
-							Attributes: attribute.NewSet(signalAttrs...),
+							Attributes: attribute.NewSet(loadAttrs...),
 							Exemplars:  w.exemplars,
 							Count:      totalCount,
 							Sum:        sum,
@@ -161,6 +178,34 @@ func (w *worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Expo
 							BucketCounts: bucketCounts,
 						},
 					},
+				},
+			})
+		case MetricTypeExponentialHistogram:
+			// Generate realistic exponential histogram data using go-expohisto
+			cfg := structure.NewConfig(structure.WithMaxSize(8))
+			hist := structure.NewFloat64(cfg)
+
+			// Add random values to the histogram
+			count := 10 + w.rand.IntN(20) // Random count between 10-30
+			for j := 0; j < count; j++ {
+				value := float64(w.rand.IntN(1000))
+				hist.Update(value)
+			}
+
+			// Create the data point and convert using utility function
+			dp := &metricdata.ExponentialHistogramDataPoint[int64]{
+				StartTime:  startTime,
+				Time:       now,
+				Attributes: attribute.NewSet(signalAttrs...),
+				Exemplars:  w.exemplars,
+			}
+			util.ExpoHistToSDKExponentialDataPoint(hist, dp)
+
+			metrics = append(metrics, metricdata.Metrics{
+				Name: w.metricName,
+				Data: metricdata.ExponentialHistogram[int64]{
+					Temporality: w.aggregationTemporality.AsTemporality(),
+					DataPoints:  []metricdata.ExponentialHistogramDataPoint[int64]{*dp},
 				},
 			})
 		default:
@@ -180,7 +225,11 @@ func (w *worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Expo
 			w.addToBuffer(rm, exporter)
 		} else {
 			if err := exporter.Export(context.Background(), &rm); err != nil {
-				w.logger.Fatal("exporter failed", zap.Error(err))
+				if w.allowFailures {
+					w.logger.Error("exporter failed, continuing due to --allow-export-failures", zap.Error(err))
+				} else {
+					w.logger.Fatal("exporter failed", zap.Error(err))
+				}
 			}
 		}
 

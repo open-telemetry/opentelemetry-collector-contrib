@@ -55,14 +55,14 @@ func TestLRUSetLifeTime(t *testing.T) {
 	require.NoError(t, err)
 
 	// Keep checking for expiry and assert that first expiry happens after at least lifetime
-	assert.Eventually(t, func() bool {
+	assert.EventuallyWithT(t, func(tt *assert.CollectT) {
 		var val bool
 		err = cache.WithLock(func(lock LockedLRUSet) error {
 			val = lock.CheckAndAdd("a")
 			return nil
 		})
-		require.NoError(t, err)
-		return !val
+		require.NoError(tt, err)
+		assert.False(tt, val)
 	}, lifetime*2, lifetime/10)
 	assert.GreaterOrEqual(t, time.Since(timeSet), lifetime)
 }
@@ -74,7 +74,7 @@ func BenchmarkLRUSetCheck(b *testing.B) {
 	_ = cache.WithLock(func(lock LockedLRUSet) error {
 		b.ReportAllocs()
 		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			lock.CheckAndAdd("a")
 		}
 

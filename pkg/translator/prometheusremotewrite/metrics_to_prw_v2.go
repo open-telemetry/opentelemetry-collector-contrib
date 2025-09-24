@@ -85,7 +85,11 @@ func (c *prometheusConverterV2) fromMetrics(md pmetric.Metrics, settings Setting
 					continue
 				}
 
-				promName := c.metricNamer.Build(prom.TranslatorMetricFromOtelMetric(metric))
+				promName, err := c.metricNamer.Build(prom.TranslatorMetricFromOtelMetric(metric))
+				if err != nil {
+					errs = multierr.Append(errs, err)
+					continue
+				}
 				m := metadata{
 					Type: otelMetricTypeToPromMetricTypeV2(metric),
 					Help: metric.Description(),
@@ -100,37 +104,42 @@ func (c *prometheusConverterV2) fromMetrics(md pmetric.Metrics, settings Setting
 					if dataPoints.Len() == 0 {
 						break
 					}
-					c.addGaugeNumberDataPoints(dataPoints, resource, settings, promName, m)
+					errs = multierr.Append(errs, c.addGaugeNumberDataPoints(dataPoints, resource, settings, promName, m))
 				case pmetric.MetricTypeSum:
 					dataPoints := metric.Sum().DataPoints()
 					if dataPoints.Len() == 0 {
 						break
 					}
 					if !metric.Sum().IsMonotonic() {
-						c.addGaugeNumberDataPoints(dataPoints, resource, settings, promName, m)
+						errs = multierr.Append(errs, c.addGaugeNumberDataPoints(dataPoints, resource, settings, promName, m))
 					} else {
-						c.addSumNumberDataPoints(dataPoints, resource, metric, settings, promName, m)
+						errs = multierr.Append(errs, c.addSumNumberDataPoints(dataPoints, resource, metric, settings, promName, m))
 					}
 				case pmetric.MetricTypeHistogram:
 					dataPoints := metric.Histogram().DataPoints()
 					if dataPoints.Len() == 0 {
 						break
 					}
-					c.addHistogramDataPoints(dataPoints, resource, settings, promName, m)
+					errs = multierr.Append(errs, c.addHistogramDataPoints(dataPoints, resource, settings, promName, m))
 				case pmetric.MetricTypeExponentialHistogram:
-					// TODO implement
+					dataPoints := metric.ExponentialHistogram().DataPoints()
+					if dataPoints.Len() == 0 {
+						break
+					}
+					errs = multierr.Append(errs, c.addExponentialHistogramDataPoints(
+						dataPoints, resource, settings, promName, m))
 				case pmetric.MetricTypeSummary:
 					dataPoints := metric.Summary().DataPoints()
 					if dataPoints.Len() == 0 {
 						break
 					}
-					c.addSummaryDataPoints(dataPoints, resource, settings, promName, m)
+					errs = multierr.Append(errs, c.addSummaryDataPoints(dataPoints, resource, settings, promName, m))
 				default:
 					errs = multierr.Append(errs, errors.New("unsupported metric type"))
 				}
 			}
 		}
-		c.addResourceTargetInfoV2(resource, settings, mostRecentTimestamp)
+		errs = multierr.Append(errs, c.addResourceTargetInfoV2(resource, settings, mostRecentTimestamp))
 	}
 
 	return
@@ -151,11 +160,8 @@ func (c *prometheusConverterV2) timeSeries() []writev2.TimeSeries {
 }
 
 func (c *prometheusConverterV2) addSample(sample *writev2.Sample, lbls []prompb.Label, metadata metadata) {
-	ts, isNewMetric := c.getOrCreateTimeSeries(lbls, metadata, sample)
-	// If the time series is not new, we can just append the sample to the existing time series.
-	if !isNewMetric {
-		ts.Samples = append(ts.Samples, *sample)
-	}
+	ts := c.getOrCreateTimeSeries(lbls, metadata)
+	ts.Samples = append(ts.Samples, *sample)
 }
 
 // isSameMetricV2 checks if two time series are the same metric
@@ -171,8 +177,8 @@ func isSameMetricV2(ts1, ts2 *writev2.TimeSeries) bool {
 	return true
 }
 
-// getOrCreateTimeSeries returns the time series corresponding to the label set, and a boolean indicating if the metric is new or not.
-func (c *prometheusConverterV2) getOrCreateTimeSeries(lbls []prompb.Label, metadata metadata, sample *writev2.Sample) (*writev2.TimeSeries, bool) {
+// getOrCreateTimeSeries returns the time series corresponding to the label set
+func (c *prometheusConverterV2) getOrCreateTimeSeries(lbls []prompb.Label, metadata metadata) *writev2.TimeSeries {
 	signature := timeSeriesSignature(lbls)
 	ts := c.unique[signature]
 	buf := make([]uint32, 0, len(lbls)*2)
@@ -186,7 +192,6 @@ func (c *prometheusConverterV2) getOrCreateTimeSeries(lbls []prompb.Label, metad
 
 	ts2 := &writev2.TimeSeries{
 		LabelsRefs: buf,
-		Samples:    []writev2.Sample{*sample},
 		Metadata: writev2.Metadata{
 			Type:    metadata.Type,
 			HelpRef: c.symbolTable.Symbolize(metadata.Help),
@@ -197,24 +202,24 @@ func (c *prometheusConverterV2) getOrCreateTimeSeries(lbls []prompb.Label, metad
 	if ts != nil {
 		if isSameMetricV2(ts, ts2) {
 			// We already have this metric
-			return ts, false
+			return ts
 		}
 
 		// Look for a matching conflict
 		for _, cTS := range c.conflicts[signature] {
 			if isSameMetricV2(cTS, ts2) {
 				// We already have this metric
-				return cTS, false
+				return cTS
 			}
 		}
 
 		// New conflict
 		c.conflicts[signature] = append(c.conflicts[signature], ts2)
 		c.conflictCount++
-		return ts2, true
+		return ts2
 	}
 
 	// This metric is new
 	c.unique[signature] = ts2
-	return ts2, true
+	return ts2
 }
