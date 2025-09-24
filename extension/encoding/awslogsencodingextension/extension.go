@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/constants"
@@ -46,11 +47,23 @@ type encodingExtension struct {
 func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension, error) {
 	switch cfg.Format {
 	case constants.FormatCloudWatchLogsSubscriptionFilter, constants.FormatCloudWatchLogsSubscriptionFilterV1:
+		if cfg.Format == constants.FormatCloudWatchLogsSubscriptionFilterV1 {
+			settings.Logger.Warn("using old format value. This format will be removed in version 0.138.0.",
+				zap.String("old_format", string(constants.FormatCloudWatchLogsSubscriptionFilterV1)),
+				zap.String("new_format", string(constants.FormatCloudWatchLogsSubscriptionFilter)),
+			)
+		}
 		return &encodingExtension{
 			unmarshaler: subscriptionfilter.NewSubscriptionFilterUnmarshaler(settings.BuildInfo),
 			format:      constants.FormatCloudWatchLogsSubscriptionFilter,
 		}, nil
 	case constants.FormatVPCFlowLog, constants.FormatVPCFlowLogV1:
+		if cfg.Format == constants.FormatVPCFlowLogV1 {
+			settings.Logger.Warn("using old format value. This format will be removed in version 0.138.0.",
+				zap.String("old_format", string(constants.FormatVPCFlowLogV1)),
+				zap.String("new_format", string(constants.FormatVPCFlowLog)),
+			)
+		}
 		unmarshaler, err := vpcflowlog.NewVPCFlowLogUnmarshaler(
 			cfg.VPCFlowLogConfig.FileFormat,
 			settings.BuildInfo,
@@ -62,21 +75,45 @@ func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension,
 			format:      constants.FormatVPCFlowLog,
 		}, err
 	case constants.FormatS3AccessLog, constants.FormatS3AccessLogV1:
+		if cfg.Format == constants.FormatS3AccessLogV1 {
+			settings.Logger.Warn("using old format value. This format will be removed in version 0.138.0.",
+				zap.String("old_format", string(constants.FormatS3AccessLogV1)),
+				zap.String("new_format", string(constants.FormatS3AccessLog)),
+			)
+		}
 		return &encodingExtension{
 			unmarshaler: s3accesslog.NewS3AccessLogUnmarshaler(settings.BuildInfo),
 			format:      constants.FormatS3AccessLog,
 		}, nil
 	case constants.FormatWAFLog, constants.FormatWAFLogV1:
+		if cfg.Format == constants.FormatWAFLogV1 {
+			settings.Logger.Warn("using old format value. This format will be removed in version 0.138.0.",
+				zap.String("old_format", string(constants.FormatWAFLogV1)),
+				zap.String("new_format", string(constants.FormatWAFLog)),
+			)
+		}
 		return &encodingExtension{
 			unmarshaler: waf.NewWAFLogUnmarshaler(settings.BuildInfo),
 			format:      constants.FormatWAFLog,
 		}, nil
 	case constants.FormatCloudTrailLog, constants.FormatCloudTrailLogV1:
+		if cfg.Format == constants.FormatCloudTrailLogV1 {
+			settings.Logger.Warn("using old format value. This format will be removed in version 0.138.0.",
+				zap.String("old_format", string(constants.FormatCloudTrailLogV1)),
+				zap.String("new_format", string(constants.FormatCloudTrailLog)),
+			)
+		}
 		return &encodingExtension{
 			unmarshaler: cloudtraillog.NewCloudTrailLogUnmarshaler(settings.BuildInfo),
 			format:      constants.FormatCloudTrailLog,
 		}, nil
 	case constants.FormatELBAccessLog, constants.FormatELBAccessLogV1:
+		if cfg.Format == constants.FormatELBAccessLogV1 {
+			settings.Logger.Warn("using old format value. This format will be removed in version 0.138.0.",
+				zap.String("old_format", string(constants.FormatELBAccessLogV1)),
+				zap.String("new_format", string(constants.FormatELBAccessLog)),
+			)
+		}
 		return &encodingExtension{
 			unmarshaler: elbaccesslogs.NewELBAccessLogUnmarshaler(
 				settings.BuildInfo,
