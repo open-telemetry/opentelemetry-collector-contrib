@@ -36,6 +36,20 @@ attributes:
 
 
 metrics:
+  haproxy.active:
+    description: Number of active servers (backend) or server is active (server). Corresponds to HAProxy's `act` metric.
+    enabled: false
+    gauge:
+      value_type: int
+      input_type: string
+    unit: "{servers}"
+  haproxy.backup:
+    description: Number of backup servers (backend) or server is backup (server). Corresponds to HAProxy's `bck` metric.
+    enabled: false
+    gauge:
+      value_type: int
+      input_type: string
+    unit: "{servers}"
   haproxy.connections.rate:
     description: Number of connections over the last elapsed second (frontend). Corresponds to HAProxy's `conn_rate` metric.
     enabled: true
@@ -259,5 +273,40 @@ metrics:
     enabled: true
     gauge:
       value_type: double
+      input_type: string
+    unit: "{sessions}"
+  haproxy.weight:
+    description: Total effective weight (backend) or effective weight (server). Corresponds to HAProxy's `weight` metric.
+    enabled: false
+    gauge:
+      value_type: int
+      input_type: string
+    unit: "1"
+  haproxy.connections.average_time:
+    description: Average connect time in ms over the 1024 last requests. Corresponds to HAProxy's `ctime` metric.
+    enabled: false
+    gauge:
+      value_type: double
+      input_type: string
+    unit: ms
+  haproxy.requests.average_time:
+    description: Average queue time in ms over the 1024 last requests. Corresponds to HAProxy's `qtime` metric.
+    enabled: false
+    gauge:
+      value_type: double
+      input_type: string
+    unit: ms
+  haproxy.responses.average_time:
+    description: Average response time in ms over the 1024 last requests. Corresponds to HAProxy's `rtime` metric.
+    enabled: false
+    gauge:
+      value_type: double
+      input_type: string
+    unit: ms
+  haproxy.sessions.limit:
+    description: Configured session limit. Corresponds to HAProxy's `slim` metric.
+    enabled: false
+    gauge:
+      value_type: int
       input_type: string
     unit: "{sessions}"

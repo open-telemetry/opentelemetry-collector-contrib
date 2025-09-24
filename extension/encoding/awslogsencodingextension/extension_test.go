@@ -15,11 +15,12 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/constants"
 	subscriptionfilter "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/subscription-filter"
 )
 
 func TestNew_CloudWatchLogsSubscriptionFilter(t *testing.T) {
-	e, err := newExtension(&Config{Format: formatCloudWatchLogsSubscriptionFilter}, extensiontest.NewNopSettings(extensiontest.NopType))
+	e, err := newExtension(&Config{Format: constants.FormatCloudWatchLogsSubscriptionFilter}, extensiontest.NewNopSettings(extensiontest.NopType))
 	require.NoError(t, err)
 	require.NotNil(t, e)
 
@@ -28,7 +29,7 @@ func TestNew_CloudWatchLogsSubscriptionFilter(t *testing.T) {
 }
 
 func TestNew_CloudTrailLog(t *testing.T) {
-	e, err := newExtension(&Config{Format: formatCloudTrailLog}, extensiontest.NewNopSettings(extensiontest.NopType))
+	e, err := newExtension(&Config{Format: constants.FormatCloudTrailLog}, extensiontest.NewNopSettings(extensiontest.NopType))
 	require.NoError(t, err)
 	require.NotNil(t, e)
 
@@ -38,7 +39,7 @@ func TestNew_CloudTrailLog(t *testing.T) {
 
 func TestNew_VPCFlowLog(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Format = formatVPCFlowLog
+	cfg.Format = constants.FormatVPCFlowLog
 	e, err := newExtension(cfg, extensiontest.NewNopSettings(extensiontest.NopType))
 	require.NoError(t, err)
 	require.NotNil(t, e)
@@ -50,7 +51,7 @@ func TestNew_VPCFlowLog(t *testing.T) {
 }
 
 func TestNew_S3AccessLog(t *testing.T) {
-	e, err := newExtension(&Config{Format: formatS3AccessLog}, extensiontest.NewNopSettings(extensiontest.NopType))
+	e, err := newExtension(&Config{Format: constants.FormatS3AccessLog}, extensiontest.NewNopSettings(extensiontest.NopType))
 	require.NoError(t, err)
 	require.NotNil(t, e)
 
@@ -59,7 +60,7 @@ func TestNew_S3AccessLog(t *testing.T) {
 }
 
 func TestNew_WAFLog(t *testing.T) {
-	e, err := newExtension(&Config{Format: formatWAFLog}, extensiontest.NewNopSettings(extensiontest.NopType))
+	e, err := newExtension(&Config{Format: constants.FormatWAFLog}, extensiontest.NewNopSettings(extensiontest.NopType))
 	require.NoError(t, err)
 	require.NotNil(t, e)
 
@@ -68,7 +69,7 @@ func TestNew_WAFLog(t *testing.T) {
 }
 
 func TestNew_ELBAcessLog(t *testing.T) {
-	e, err := newExtension(&Config{Format: formatELBAccessLog}, extensiontest.NewNopSettings(extensiontest.NopType))
+	e, err := newExtension(&Config{Format: constants.FormatELBAccessLog}, extensiontest.NewNopSettings(extensiontest.NopType))
 	require.NoError(t, err)
 	require.NotNil(t, e)
 
@@ -91,11 +92,11 @@ func TestGetReaderFromFormat(t *testing.T) {
 		buf    []byte
 	}{
 		"non_gzip_data_waf_log": {
-			format: formatWAFLog,
+			format: constants.FormatWAFLog,
 			buf:    []byte("invalid"),
 		},
 		"valid_gzip_reader": {
-			format: formatWAFLog,
+			format: constants.FormatWAFLog,
 			buf: func() []byte {
 				var buf bytes.Buffer
 				gz := gzip.NewWriter(&buf)
@@ -106,7 +107,7 @@ func TestGetReaderFromFormat(t *testing.T) {
 			}(),
 		},
 		"valid_bytes_reader": {
-			format: formatS3AccessLog,
+			format: constants.FormatS3AccessLog,
 			buf:    []byte("valid"),
 		},
 	}
@@ -141,7 +142,7 @@ func TestConcurrentGzipReaderUsage(t *testing.T) {
 	// and concurrent usage
 	ext := &encodingExtension{
 		unmarshaler: subscriptionfilter.NewSubscriptionFilterUnmarshaler(component.BuildInfo{}),
-		format:      formatCloudWatchLogsSubscriptionFilter,
+		format:      constants.FormatCloudWatchLogsSubscriptionFilter,
 		gzipPool:    sync.Pool{},
 	}
 
