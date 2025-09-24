@@ -961,6 +961,36 @@ func TestStackTrace(t *testing.T) {
 	}
 }
 
+func TestGetLocations(t *testing.T) {
+	dic := pprofile.NewProfilesDictionary()
+
+	// By convention location_table[0] is always present with a default value.
+	dic.LocationTable().AppendEmpty()
+	// Add three locations to the dictionary
+	loc1 := dic.LocationTable().AppendEmpty()
+	loc1.SetAddress(0x1000)
+	loc2 := dic.LocationTable().AppendEmpty()
+	loc2.SetAddress(0x2000)
+	loc3 := dic.LocationTable().AppendEmpty()
+	loc3.SetAddress(0x3000)
+
+	// Create a stack with indices to the locations
+	stack := dic.StackTable().AppendEmpty()
+	stack.LocationIndices().Append(1, 2, 3)
+
+	// Call getLocations and check the result
+	locations := getLocations(dic, stack)
+	require.Len(t, locations, 3)
+	assert.Equal(t, uint64(0x1000), locations[0].Address())
+	assert.Equal(t, uint64(0x2000), locations[1].Address())
+	assert.Equal(t, uint64(0x3000), locations[2].Address())
+
+	// Test with empty stack
+	emptyStack := dic.StackTable().AppendEmpty()
+	locations = getLocations(dic, emptyStack)
+	assert.Empty(t, locations)
+}
+
 // frameTypesToString converts a slice of FrameType to a RLE encoded string as stored in ES.
 //
 // Decode such strings with e.g. 'echo -n Ago | basenc --base64url -d | od -t x1'.
