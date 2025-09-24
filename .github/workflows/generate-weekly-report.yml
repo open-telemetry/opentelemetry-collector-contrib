@@ -22,7 +22,7 @@ jobs:
       - run: |
           cp ./.github/workflows/configs/generate-weekly-report/package.json ./.github/workflows/scripts/
           cp ./.github/workflows/configs/generate-weekly-report/package-lock.json ./.github/workflows/scripts/
-          npm install
+          npm ci
         working-directory: ./.github/workflows/scripts
       - uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         id: get-issues
