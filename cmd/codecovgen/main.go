@@ -16,7 +16,7 @@ import (
 	"strings"
 
 	"github.com/bmatcuk/doublestar/v4"
-	"go.yaml.in/yaml/v2"
+	"go.yaml.in/yaml/v3"
 	"golang.org/x/mod/modfile"
 )
 
