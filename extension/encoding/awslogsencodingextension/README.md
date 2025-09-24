@@ -227,7 +227,7 @@ If you're using the old format values you should update the encoding extension c
 | `challengeResponse`           | _Currently not supported_                                                                        |
 | `oversizeFields`              | _Currently not supported_                                                                        |
 
-#### CloudTrail log record fields
+### CloudTrail log record fields
 
 [CloudTrail log record fields](https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-event-reference-record-contents.html) are mapped this way in the resulting OpenTelemetry log:
 
