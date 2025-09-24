@@ -426,7 +426,7 @@ func TestScrapeQuerySample(t *testing.T) {
 	scraper := newPostgreSQLScraper(settings, cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
 	scraper.newestQueryTimestamp = 123440.111
 	mock.ExpectQuery(expectedScrapeSampleQuery).WillReturnRows(sqlmock.NewRows(
-		[]string{"datname", "usename", "client_addrs", "client_hostname", "client_port", "query_start", "wait_event_type", "wait_event", "query_id", "pid", "application_name", "_query_start_timestamp", "state", "query", "duration_ms"},
+		[]string{"datname", "usename", "client_addr", "client_hostname", "client_port", "query_start", "wait_event_type", "wait_event", "query_id", "pid", "application_name", "_query_start_timestamp", "state", "query", "duration_ms"},
 	).FromCSVString("postgres,otelu,11.4.5.14,otel,114514,2025-02-12T16:37:54.843+08:00,,,123131231231,1450,receiver,123445.123,idle,select * from pg_stat_activity where id = 32,1.2"))
 	actualLogs, err := scraper.scrapeQuerySamples(t.Context(), 30)
 	assert.NoError(t, err)
