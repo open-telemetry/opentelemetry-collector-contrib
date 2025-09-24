@@ -314,7 +314,7 @@ The behaviour of this bulk indexing can be configured with the following setting
     - `flush_timeout` (default=10s): Time after which batch is exported irrespective of other settings.
     - `sizer` (default=bytes): Size batches by bytes.
     - `min_size` (default=1MB): Min size of the batch.
-    - `max_size` (default=5MB): Max size of the batch.
+    - `max_size` (default=5MB): Max size of the batch. This value should be much lower than [Elasticsearch's `http.max_content_length`](https://www.elastic.co/guide/en/elasticsearch/reference/current/modules-network.html#http-settings) config to avoid HTTP 413 Entity Too Large error. It is recommended to keep this value under 5MB.
 
 #### Bulk indexing error response
 
