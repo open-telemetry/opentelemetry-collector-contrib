@@ -120,6 +120,7 @@ func (e *logsJSONExporter) pushLogsData(ctx context.Context, ld plog.Logs) error
 				if timestamp == 0 {
 					timestamp = r.ObservedTimestamp()
 				}
+				eventName := r.EventName()
 
 				appendErr := batch.Append(
 					timestamp.AsTime(),
@@ -137,6 +138,7 @@ func (e *logsJSONExporter) pushLogsData(ctx context.Context, ld plog.Logs) error
 					scopeVersion,
 					scopeAttrBytes,
 					logAttrBytes,
+					eventName,
 				)
 				if appendErr != nil {
 					return fmt.Errorf("failed to append json log row: %w", appendErr)

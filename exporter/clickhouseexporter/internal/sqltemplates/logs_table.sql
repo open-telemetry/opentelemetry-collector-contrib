@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS "%s"."%s" %s (
     ScopeVersion LowCardinality(String) CODEC(ZSTD(1)),
     ScopeAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
     LogAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
+    EventName String CODEC(ZSTD(1)),
 
     INDEX idx_trace_id TraceId TYPE bloom_filter(0.001) GRANULARITY 1,
     INDEX idx_res_attr_key mapKeys(ResourceAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
