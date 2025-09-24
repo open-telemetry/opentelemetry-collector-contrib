@@ -237,6 +237,8 @@ func (se *SumologicExtension) Start(ctx context.Context, host component.Host) er
 }
 
 func (se *SumologicExtension) Shutdown(ctx context.Context) error {
+	se.closeOnce.Do(func() { close(se.closeChan) })
+
 	hashKeyV2 := createHashKeyV2(se.conf)
 	_, err := se.credentialsStore.Get(hashKeyV2)
 	se.logger.Debug("Shutting down Sumo Logic extension migrating to hashkeyV2 ")
@@ -248,7 +250,6 @@ func (se *SumologicExtension) Shutdown(ctx context.Context) error {
 		}
 	}
 
-	se.closeOnce.Do(func() { close(se.closeChan) })
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
