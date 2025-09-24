@@ -45,12 +45,12 @@ type encodingExtension struct {
 
 func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension, error) {
 	switch cfg.Format {
-	case constants.FormatCloudWatchLogsSubscriptionFilter:
+	case constants.FormatCloudWatchLogsSubscriptionFilter, constants.FormatCloudWatchLogsSubscriptionFilterV1:
 		return &encodingExtension{
 			unmarshaler: subscriptionfilter.NewSubscriptionFilterUnmarshaler(settings.BuildInfo),
 			format:      constants.FormatCloudWatchLogsSubscriptionFilter,
 		}, nil
-	case constants.FormatVPCFlowLog:
+	case constants.FormatVPCFlowLog, constants.FormatVPCFlowLogV1:
 		unmarshaler, err := vpcflowlog.NewVPCFlowLogUnmarshaler(
 			cfg.VPCFlowLogConfig.FileFormat,
 			settings.BuildInfo,
@@ -61,22 +61,22 @@ func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension,
 			vpcFormat:   cfg.VPCFlowLogConfig.FileFormat,
 			format:      constants.FormatVPCFlowLog,
 		}, err
-	case constants.FormatS3AccessLog:
+	case constants.FormatS3AccessLog, constants.FormatS3AccessLogV1:
 		return &encodingExtension{
 			unmarshaler: s3accesslog.NewS3AccessLogUnmarshaler(settings.BuildInfo),
 			format:      constants.FormatS3AccessLog,
 		}, nil
-	case constants.FormatWAFLog:
+	case constants.FormatWAFLog, constants.FormatWAFLogV1:
 		return &encodingExtension{
 			unmarshaler: waf.NewWAFLogUnmarshaler(settings.BuildInfo),
 			format:      constants.FormatWAFLog,
 		}, nil
-	case constants.FormatCloudTrailLog:
+	case constants.FormatCloudTrailLog, constants.FormatCloudTrailLogV1:
 		return &encodingExtension{
 			unmarshaler: cloudtraillog.NewCloudTrailLogUnmarshaler(settings.BuildInfo),
 			format:      constants.FormatCloudTrailLog,
 		}, nil
-	case constants.FormatELBAccessLog:
+	case constants.FormatELBAccessLog, constants.FormatELBAccessLogV1:
 		return &encodingExtension{
 			unmarshaler: elbaccesslogs.NewELBAccessLogUnmarshaler(
 				settings.BuildInfo,

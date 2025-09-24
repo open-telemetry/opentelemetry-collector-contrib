@@ -11,6 +11,14 @@ const (
 	FormatCloudTrailLog                    = "cloudtrail"
 	FormatELBAccessLog                     = "elbaccess"
 
+	// Legacy format values (v1) - kept for backward compatibility
+	FormatVPCFlowLogV1                       = "vpc_flow_log"
+	FormatELBAccessLogV1                     = "elb_access_log"
+	FormatS3AccessLogV1                      = "s3_access_log"
+	FormatCloudTrailLogV1                    = "cloudtrail_log"
+	FormatWAFLogV1                           = "waf_log"
+	FormatCloudWatchLogsSubscriptionFilterV1 = "cloudwatch_logs_subscription_filter"
+
 	FileFormatPlainText     = "plain-text"
 	FileFormatParquet       = "parquet"
 	FormatIdentificationTag = "awslogs_encoding.format"
