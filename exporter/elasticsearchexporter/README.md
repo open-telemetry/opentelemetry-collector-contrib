@@ -294,7 +294,7 @@ The behaviour of this bulk indexing can be configured with the following setting
 
 - `num_workers` (DEPRECATED, use sending_queue::num_consumers instead): This config is deprecated and ignored. Number of workers publishing bulk requests concurrently.
 - `flush` (DEPRECATED, use sending_queue instead): This config is deprecated and will be ignored. Event bulk indexer buffer flush settings
-  - `bytes` (default=5000000): Write buffer flush size limit before compression. A bulk request will be sent immediately when its buffer exceeds this limit. This value should be much lower than [Elasticsearch's `http.max_content_length`](https://www.elastic.co/guide/en/elasticsearch/reference/current/modules-network.html#http-settings) config to avoid HTTP 413 Entity Too Large error. It is recommended to keep this value under 5MB.
+  - `bytes`: Write buffer flush size limit before compression. A bulk request will be sent immediately when its buffer exceeds this limit. This value should be much lower than [Elasticsearch's `http.max_content_length`](https://www.elastic.co/guide/en/elasticsearch/reference/current/modules-network.html#http-settings) config to avoid HTTP 413 Entity Too Large error. It is recommended to keep this value under 5MB.
   - `interval` (default=10s): Write buffer flush time limit.
 - `retry`: Elasticsearch bulk request retry settings
   - `enabled` (default=true): Enable/Disable request retry on error. Failed requests are retried with exponential backoff.
