@@ -2650,9 +2650,10 @@ func TestSupervisorUpgradesAgent(t *testing.T) {
 
 	// Start the supervisor
 	s, _ := newSupervisor(t, "upgrade", map[string]string{
-		"url":         server.addr,
-		"storage_dir": storageDir,
-		"agent_path":  agentFileCopyPath,
+		"url":          server.addr,
+		"storage_dir":  storageDir,
+		"agent_path":   agentFileCopyPath,
+		"agent_binary": "otelcol-contrib" + ext,
 	})
 	require.NoError(t, s.Start(t.Context()))
 	defer s.Shutdown()
