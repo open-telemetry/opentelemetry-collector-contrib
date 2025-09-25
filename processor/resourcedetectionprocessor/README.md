@@ -720,9 +720,9 @@ processors:
 
 Uses the Scaleway metadata API to read resource information from the instance metadata service and populate related resource attributes.
 
-The list of the populated resource attributes can be found at [Scaleway Detector Resource Attributes](./internal/akamai/documentation.md).
+The list of the populated resource attributes can be found at [Scaleway Detector Resource Attributes](./internal/scaleway/documentation.md).
 
-Akamai custom configuration example:
+Scaleway custom configuration example:
 
 ```yaml
 processors:
@@ -744,6 +744,20 @@ processors:
     detectors: ["vultr"]
 ```
 
+### Digital Ocean
+
+Uses the [Digital Ocean metadata API](https://docs.digitalocean.com/reference/api/metadata/) to read resource information from the instance metadata service and populate related resource attributes.
+
+The list of the populated resource attributes can be found at [Digital Ocean Detector Resource Attributes](./internal/digitalocean/documentation.md).
+
+Akamai custom configuration example:
+
+```yaml
+processors:
+  resourcedetection/digitalocean:
+    detectors: ["digitalocean"]
+```
+
 The Vultr detector will report an error in logs if the metadata endpoint is unavailable. You can configure the detector to instead fail with this flag:
 
 ```yaml
@@ -752,11 +766,12 @@ processors:
     detectors: ["vultr"]
     vultr:
       fail_on_missing_metadata: true
+```
 
 ## Configuration
 
 ```yaml
-# a list of resource detectors to run, valid options are: "env", "system", "gcp", "ec2", "ecs", "elastic_beanstalk", "eks", "lambda", "azure", "heroku", "openshift", "dynatrace"
+# a list of resource detectors to run, valid options are: "env", "system", "gcp", "ec2", "ecs", "elastic_beanstalk", "eks", "lambda", "azure", "aks", "heroku", "openshift", "dynatrace", "consul", "docker", "k8snode, "kubeadm", "hetzner", "akamai", "scaleway", "vultr", "oraclecloud", "digitalocean"
 detectors: [ <string> ]
 # determines if existing resource attributes should be overridden or preserved, defaults to true
 override: <bool>
