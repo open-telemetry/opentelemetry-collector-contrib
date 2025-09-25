@@ -84,6 +84,7 @@ func newLoadBalancer(logger *zap.Logger, cfg component.Config, factory component
 			dnsResolver.Port,
 			dnsResolver.Interval,
 			dnsResolver.Timeout,
+			dnsResolver.Server,
 			telemetry,
 		)
 		if err != nil {
