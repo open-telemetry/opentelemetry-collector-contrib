@@ -67,7 +67,6 @@ type franzConsumer struct {
 
 	// ---- status reporting (parity with Sarama) ----
 	host         component.Host
-	okOnce       sync.Once
 	stoppingOnce sync.Once
 	stoppedOnce  sync.Once
 }
@@ -412,8 +411,6 @@ func (c *franzConsumer) Shutdown(ctx context.Context) error {
 	case <-c.consumerClosed:
 	}
 
-	// Emit Stopped (idempotent).
-	c.stoppedOnce.Do(func() { c.reportStatus(componentstatus.StatusStopped) })
 	return nil
 }
 
@@ -447,8 +444,8 @@ func (c *franzConsumer) triggerShutdown() bool {
 // assigned must be set as kgo.OnPartitionsAssigned callback. Ensuring all
 // assigned partitions to this consumer process received records.
 func (c *franzConsumer) assigned(ctx context.Context, _ *kgo.Client, assigned map[string][]int32) {
-	// Parity with Sarama: on the first successful group session, report OK.
-	c.okOnce.Do(func() { c.reportStatus(componentstatus.StatusOK) })
+	// Report OK on each successful assignment so we can recover status after transient errors.
+	c.reportStatus(componentstatus.StatusOK)
 
 	c.mu.Lock()
 	defer c.mu.Unlock()
