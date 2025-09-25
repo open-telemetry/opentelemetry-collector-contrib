@@ -16,6 +16,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure/aks"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/consul"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/digitalocean"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/docker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/heroku"
@@ -23,6 +24,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/k8snode"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/kubeadm"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/openshift"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/oraclecloud"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/scaleway"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/system"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/vultr"
@@ -73,6 +75,9 @@ type DetectorConfig struct {
 	// ConsulConfig contains user-specified configurations for the Consul detector
 	ConsulConfig consul.Config `mapstructure:"consul"`
 
+	// DigitalOceanConfig contains user-specified configurations for the docker detector
+	DigitalOceanConfig digitalocean.Config `mapstructure:"digitalocean"`
+
 	// DockerConfig contains user-specified configurations for the docker detector
 	DockerConfig docker.Config `mapstructure:"docker"`
 
@@ -90,6 +95,9 @@ type DetectorConfig struct {
 
 	// OpenShift contains user-specified configurations for the OpenShift detector
 	OpenShiftConfig openshift.Config `mapstructure:"openshift"`
+
+	// OracleCloud contains user-specified configurations for the OracleCloud detector
+	OracleCloudConfig oraclecloud.Config `mapstructure:"oraclecloud"`
 
 	// K8SNode contains user-specified configurations for the K8SNode detector
 	K8SNodeConfig k8snode.Config `mapstructure:"k8snode"`
@@ -117,12 +125,14 @@ func detectorCreateDefaultConfig() DetectorConfig {
 		AzureConfig:            azure.CreateDefaultConfig(),
 		AksConfig:              aks.CreateDefaultConfig(),
 		ConsulConfig:           consul.CreateDefaultConfig(),
+		DigitalOceanConfig:     digitalocean.CreateDefaultConfig(),
 		DockerConfig:           docker.CreateDefaultConfig(),
 		GcpConfig:              gcp.CreateDefaultConfig(),
 		HerokuConfig:           heroku.CreateDefaultConfig(),
 		HetznerConfig:          hetzner.CreateDefaultConfig(),
 		SystemConfig:           system.CreateDefaultConfig(),
 		OpenShiftConfig:        openshift.CreateDefaultConfig(),
+		OracleCloudConfig:      oraclecloud.CreateDefaultConfig(),
 		K8SNodeConfig:          k8snode.CreateDefaultConfig(),
 		KubeadmConfig:          kubeadm.CreateDefaultConfig(),
 		AkamaiConfig:           akamai.CreateDefaultConfig(),
@@ -149,6 +159,8 @@ func (d *DetectorConfig) GetConfigFromType(detectorType internal.DetectorType) i
 		return d.AksConfig
 	case consul.TypeStr:
 		return d.ConsulConfig
+	case digitalocean.TypeStr:
+		return d.DigitalOceanConfig
 	case docker.TypeStr:
 		return d.DockerConfig
 	case gcp.TypeStr:
@@ -161,6 +173,8 @@ func (d *DetectorConfig) GetConfigFromType(detectorType internal.DetectorType) i
 		return d.SystemConfig
 	case openshift.TypeStr:
 		return d.OpenShiftConfig
+	case oraclecloud.TypeStr:
+		return d.OracleCloudConfig
 	case k8snode.TypeStr:
 		return d.K8SNodeConfig
 	case kubeadm.TypeStr:
