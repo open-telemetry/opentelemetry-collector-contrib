@@ -4,7 +4,7 @@
 package constants // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/constants"
 
 const (
-	FormatCloudWatchLogsSubscriptionFilter = "cloudwatch_subscription_filter"
+	FormatCloudWatchLogsSubscriptionFilter = "cloudwatch"
 	FormatVPCFlowLog                       = "vpcflow"
 	FormatS3AccessLog                      = "s3access"
 	FormatWAFLog                           = "waf"

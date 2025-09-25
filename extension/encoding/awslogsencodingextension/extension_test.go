@@ -25,7 +25,7 @@ func TestNew_CloudWatchLogsSubscriptionFilter(t *testing.T) {
 	require.NotNil(t, e)
 
 	_, err = e.UnmarshalLogs([]byte("invalid"))
-	require.ErrorContains(t, err, `failed to unmarshal logs as "cloudwatch_subscription_filter" format`)
+	require.ErrorContains(t, err, `failed to unmarshal logs as "cloudwatch" format`)
 }
 
 func TestNew_CloudWatchLogsSubscriptionFilterV1(t *testing.T) {
@@ -34,7 +34,7 @@ func TestNew_CloudWatchLogsSubscriptionFilterV1(t *testing.T) {
 	require.NotNil(t, e)
 
 	_, err = e.UnmarshalLogs([]byte("invalid"))
-	require.ErrorContains(t, err, `failed to unmarshal logs as "cloudwatch_subscription_filter" format`)
+	require.ErrorContains(t, err, `failed to unmarshal logs as "cloudwatch" format`)
 }
 
 func TestNew_CloudTrailLog(t *testing.T) {

@@ -35,7 +35,7 @@ func TestLoadConfig(t *testing.T) {
 			expectedErr: fmt.Sprintf("format unspecified, expected one of %q", supportedLogFormats),
 		},
 		{
-			id: component.NewIDWithName(metadata.Type, "cloudwatch_subscription_filter"),
+			id: component.NewIDWithName(metadata.Type, "cloudwatch"),
 			expected: &Config{
 				Format: constants.FormatCloudWatchLogsSubscriptionFilter,
 				VPCFlowLogConfig: VPCFlowLogConfig{

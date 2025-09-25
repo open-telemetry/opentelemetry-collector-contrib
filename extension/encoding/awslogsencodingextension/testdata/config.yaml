@@ -1,7 +1,7 @@
 awslogs_encoding:
 
-awslogs_encoding/cloudwatch_subscription_filter:
-  format: cloudwatch_subscription_filter
+awslogs_encoding/cloudwatch:
+  format: cloudwatch
 
 awslogs_encoding/text_vpcflow:
   format: vpcflow

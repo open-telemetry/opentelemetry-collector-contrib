@@ -47,9 +47,9 @@ type Config struct {
 	//
 	Format string `mapstructure:"format"`
 
-	VPCFlowLogConfig   VPCFlowLogConfig `mapstructure:"vpcflow"`
-    // Deprecated: use VPCFlowLogConfig instead. It will be removed in v0.138.0
-	VPCFlowLogConfigV1 VPCFlowLogConfig `mapstructure:"vpc_flow_log"` 
+	VPCFlowLogConfig VPCFlowLogConfig `mapstructure:"vpcflow"`
+	// Deprecated: use VPCFlowLogConfig instead. It will be removed in v0.138.0
+	VPCFlowLogConfigV1 VPCFlowLogConfig `mapstructure:"vpc_flow_log"`
 
 	// prevent unkeyed literal initialization
 	_ struct{}

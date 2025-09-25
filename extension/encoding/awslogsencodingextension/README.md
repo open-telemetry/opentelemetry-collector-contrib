@@ -29,7 +29,7 @@ Example for Amazon CloudWatch Logs Subscription Filters:
 ```yaml
 extensions:
   awslogs_encoding/cloudwatch:
-    format: cloudwatch_subscription_filter
+    format: cloudwatch
 
 receivers:
   awsfirehose:
@@ -71,7 +71,13 @@ extensions:
 
 ## Log Format Identification
 
-All logs processed by this extension are automatically tagged with an `awslogs_encoding.format` attribute at the scope level to identify the source format.
+All logs processed by this extension are automatically tagged with an `encoding.format` attribute at the scope level to identify the source format. This allows you to easily filter and route logs based on their AWS service origin.
+
+The pattern used is `aws.<format_name>`.
+
+Examples:
+- VPC Flow Logs: `encoding.format:"aws.vpcflow"`
+- ELB Access Logs: `encoding.format:"aws.elbaccess"`
 
 ## Format Values
 
