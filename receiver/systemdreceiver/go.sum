@@ -1,3 +1,5 @@
+github.com/cespare/xxhash/v2 v2.3.0 h1:UL815xU9SqsFlibzuggzjXhog7bL6oX9BbNZnL2UFvs=
+github.com/cespare/xxhash/v2 v2.3.0/go.mod h1:VGX0DQ3Q6kWi7AoAeZDth3/j3BFtOZR5XLFGgcrjCOs=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
@@ -10,6 +12,8 @@ github.com/go-viper/mapstructure/v2 v2.4.0 h1:EBsztssimR/CONLSZZ04E8qAkxNYq4Qp9L
 github.com/go-viper/mapstructure/v2 v2.4.0/go.mod h1:oJDH3BJKyqBA2TXFhDsKDGDTlndYOZ6rGS0BRZIxGhM=
 github.com/gobwas/glob v0.2.3 h1:A4xDbljILXROh+kObIiy5kIaPYD8e96x1tgBhUI5J+Y=
 github.com/gobwas/glob v0.2.3/go.mod h1:d3Ez4x06l9bZtSvzIay5+Yzi0fmZzPgnTbPcKjJAkT8=
+github.com/godbus/dbus/v5 v5.1.0 h1:4KLkAxT3aOY8Li4FRJe/KvhoNFFxo0m6fNuFUO8QJUk=
+github.com/godbus/dbus/v5 v5.1.0/go.mod h1:xhWf0FNVPg57R7Z0UbKHbJfkEywrmjJnf7w5xrFpKfA=
 github.com/gogo/protobuf v1.3.2 h1:Ov1cvc58UF3b5XjBnZv7+opcTcQFZebYjWzi34vdm4Q=
 github.com/gogo/protobuf v1.3.2/go.mod h1:P1XiOD3dCwIKUDQYPy72D8LYyHL2YPYrpS2s69NZV8Q=
 github.com/golang/protobuf v1.5.4 h1:i7eJL8qZTpSEXOPTxNKhASYpMn+8e5Q6AdndVa1dWek=
@@ -73,6 +77,8 @@ go.opentelemetry.io/collector/consumer/xconsumer v0.136.0 h1:7GczvR8x75lTyP9M+oW
 go.opentelemetry.io/collector/consumer/xconsumer v0.136.0/go.mod h1:sXw0lOF6D1iKhLy2xorJ8D3PysDXT0egmHJZu8TY0lE=
 go.opentelemetry.io/collector/featuregate v1.42.0 h1:uCVwumVBVex46DsG/fvgiTGuf9f53bALra7vGyKaqFI=
 go.opentelemetry.io/collector/featuregate v1.42.0/go.mod h1:d0tiRzVYrytB6LkcYgz2ESFTv7OktRPQe0QEQcPt1L4=
+go.opentelemetry.io/collector/filter v0.135.1-0.20250911155607-37a3ace6274c h1:n2QJpryGsGtFc/wAOIRsqqrzIxF9FPvLKWTcHmWCBe4=
+go.opentelemetry.io/collector/filter v0.135.1-0.20250911155607-37a3ace6274c/go.mod h1:SkQtZG0Vv3Vkb1S7h8pll5uvjO1oYjW6PYVy8/LeMu4=
 go.opentelemetry.io/collector/internal/telemetry v0.136.0 h1:3TcnxyUFs6jJZeLo5ju3fMWS4lRmIApl9To2XWk922M=
 go.opentelemetry.io/collector/internal/telemetry v0.136.0/go.mod h1:dTykH9zv/zOnlyUvqfGIqpaQZhmayW7NssD7TPU4paE=
 go.opentelemetry.io/collector/pdata v1.42.0 h1:XEzisp/SNfKDcY4aRU6qrHeLzGypRUdYHjbBqkDFOO4=
@@ -85,10 +91,16 @@ go.opentelemetry.io/collector/pipeline v1.42.0 h1:jqn1lPwUdCn+lsyNubCtwzXZLEm+R3
 go.opentelemetry.io/collector/pipeline v1.42.0/go.mod h1:xUrAqiebzYbrgxyoXSkk6/Y3oi5Sy3im2iCA51LwUAI=
 go.opentelemetry.io/collector/receiver v1.42.0 h1:wdR3SShnOUj6PQFNOHJl8amKDaMrY6gnnU7oh7z61rQ=
 go.opentelemetry.io/collector/receiver v1.42.0/go.mod h1:ts8UqHPKm+fP3/nsPrLizbUClqpL8JO3HM5Rd9UQEWA=
+go.opentelemetry.io/collector/receiver/receiverhelper v0.135.1-0.20250911155607-37a3ace6274c h1:5KkZ1PG7ERMW56M0mrXhW7EbRBVmLbZ3kJHUnUSiJp4=
+go.opentelemetry.io/collector/receiver/receiverhelper v0.135.1-0.20250911155607-37a3ace6274c/go.mod h1:fIm4Sj/ChJuMxWXDii9EguOhLJHiFh3ypbCAySTbxg0=
 go.opentelemetry.io/collector/receiver/receivertest v0.136.0 h1:xPhvg2K72Iy+bqzMwz+q4CmudYKy/Vq+dS1x2ETojP0=
 go.opentelemetry.io/collector/receiver/receivertest v0.136.0/go.mod h1:DgPO43LjdtRXJ7BnXU2gGKak74cvGOie9qSdb7D/UWg=
 go.opentelemetry.io/collector/receiver/xreceiver v0.136.0 h1:eb2DLzWewhJMJU34mgmL8WxgoYim44+Ry6/AMrjfY8E=
 go.opentelemetry.io/collector/receiver/xreceiver v0.136.0/go.mod h1:k/j2K4krExMopkkOBFyPyDSgkrnQSN1fXHqLCvh8O5g=
+go.opentelemetry.io/collector/scraper v0.135.1-0.20250911155607-37a3ace6274c h1:meSrpWuxVpDmF8VjoyHxxqE+mvJLpbG5bzWEm/gzBQw=
+go.opentelemetry.io/collector/scraper v0.135.1-0.20250911155607-37a3ace6274c/go.mod h1:9SaZVxtOy42i6DrxF3IvIIUAQZ9+zMtCY293ifUwg0U=
+go.opentelemetry.io/collector/scraper/scraperhelper v0.135.1-0.20250911155607-37a3ace6274c h1:TcGQQx1D5akjZWN5u0GvZoG32j9MB541Q9/NCnN27NQ=
+go.opentelemetry.io/collector/scraper/scraperhelper v0.135.1-0.20250911155607-37a3ace6274c/go.mod h1:43N6GrZ97Cmk1Vx9HmWT4CRmtBna9SPHZrLX1gket08=
 go.opentelemetry.io/contrib/bridges/otelzap v0.12.0 h1:FGre0nZh5BSw7G73VpT3xs38HchsfPsa2aZtMp0NPOs=
 go.opentelemetry.io/contrib/bridges/otelzap v0.12.0/go.mod h1:X2PYPViI2wTPIMIOBjG17KNybTzsrATnvPJ02kkz7LM=
 go.opentelemetry.io/otel v1.38.0 h1:RkfdswUDRimDg0m2Az18RKOsnI8UDzppJAtj01/Ymk8=
