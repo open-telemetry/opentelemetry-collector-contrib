@@ -15,6 +15,8 @@ import (
 	krb5config "github.com/jcmturner/gokrb5/v8/config"
 	"github.com/jcmturner/gokrb5/v8/keytab"
 	"github.com/twmb/franz-go/pkg/kgo"
+	"github.com/twmb/franz-go/pkg/kmsg"
+	"github.com/twmb/franz-go/pkg/kversion"
 	"github.com/twmb/franz-go/pkg/sasl"
 	"github.com/twmb/franz-go/pkg/sasl/kerberos"
 	"github.com/twmb/franz-go/pkg/sasl/oauth"
@@ -236,6 +238,21 @@ func commonOpts(ctx context.Context, clientCfg configkafka.ClientConfig,
 	// Reuse existing metadata refresh interval for franz-go metadataMaxAge
 	if clientCfg.Metadata.RefreshInterval > 0 {
 		opts = append(opts, kgo.MetadataMaxAge(clientCfg.Metadata.RefreshInterval))
+	}
+	// Configure the min/max protocol version if provided
+	if clientCfg.ProtocolVersion != "" {
+		keyVersions := make(map[string]any)
+		versions := kversion.FromString(clientCfg.ProtocolVersion)
+		versions.EachMaxKeyVersion(func(k, v int16) {
+			name := kmsg.NameForKey(k)
+			keyVersions[name] = v
+		})
+		logger.Info(
+			"setting kafka protocol version",
+			zap.String("version", clientCfg.ProtocolVersion),
+			zap.Any("key_versions", keyVersions),
+		)
+		opts = append(opts, kgo.MinVersions(versions), kgo.MaxVersions(versions))
 	}
 	return opts, nil
 }

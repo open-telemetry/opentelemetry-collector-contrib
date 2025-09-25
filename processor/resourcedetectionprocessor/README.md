@@ -498,6 +498,39 @@ Queries the K8S API server to retrieve kubeadm resource attributes:
 
 The list of the populated resource attributes can be found at [kubeadm Detector Resource Attributes](./internal/kubeadm/documentation.md).
 
+---
+
+### Oracle Cloud Infrastructure (OCI) metadata
+
+Queries the [Oracle Cloud Infrastructure (OCI) metadata service](https://docs.oracle.com/en-us/iaas/Content/Compute/Tasks/gettingmetadata.htm)
+to retrieve resource attributes related to the OCI instance environment.
+
+The list of the populated resource attributes can be found at [OracleCloud Detector Resource Attributes](./internal/oraclecloud/documentation.md).
+
+Example:
+
+```yaml
+processors:
+  resourcedetection/oraclecloud:
+    detectors: [env, oraclecloud]
+    timeout: 2s
+    override: false
+```
+
+**Populated resource attributes:**
+- `cloud.provider`
+- `cloud.platform`
+- `cloud.region`
+- `cloud.availability_zone`
+- `host.id`
+- `host.name`
+- `host.type`
+- `k8s.cluster.name`
+
+See [internal/oraclecloud/documentation.md](./internal/oraclecloud/documentation.md) for detailed attribute definitions.
+
+---
+
 The following permissions are required:
 ```yaml
 apiVersion: rbac.authorization.k8s.io/v1
@@ -687,9 +720,9 @@ processors:
 
 Uses the Scaleway metadata API to read resource information from the instance metadata service and populate related resource attributes.
 
-The list of the populated resource attributes can be found at [Scaleway Detector Resource Attributes](./internal/akamai/documentation.md).
+The list of the populated resource attributes can be found at [Scaleway Detector Resource Attributes](./internal/scaleway/documentation.md).
 
-Akamai custom configuration example:
+Scaleway custom configuration example:
 
 ```yaml
 processors:
@@ -711,6 +744,20 @@ processors:
     detectors: ["vultr"]
 ```
 
+### Digital Ocean
+
+Uses the [Digital Ocean metadata API](https://docs.digitalocean.com/reference/api/metadata/) to read resource information from the instance metadata service and populate related resource attributes.
+
+The list of the populated resource attributes can be found at [Digital Ocean Detector Resource Attributes](./internal/digitalocean/documentation.md).
+
+Akamai custom configuration example:
+
+```yaml
+processors:
+  resourcedetection/digitalocean:
+    detectors: ["digitalocean"]
+```
+
 The Vultr detector will report an error in logs if the metadata endpoint is unavailable. You can configure the detector to instead fail with this flag:
 
 ```yaml
@@ -719,11 +766,12 @@ processors:
     detectors: ["vultr"]
     vultr:
       fail_on_missing_metadata: true
+```
 
 ## Configuration
 
 ```yaml
-# a list of resource detectors to run, valid options are: "env", "system", "gcp", "ec2", "ecs", "elastic_beanstalk", "eks", "lambda", "azure", "heroku", "openshift", "dynatrace"
+# a list of resource detectors to run, valid options are: "env", "system", "gcp", "ec2", "ecs", "elastic_beanstalk", "eks", "lambda", "azure", "aks", "heroku", "openshift", "dynatrace", "consul", "docker", "k8snode, "kubeadm", "hetzner", "akamai", "scaleway", "vultr", "oraclecloud", "digitalocean"
 detectors: [ <string> ]
 # determines if existing resource attributes should be overridden or preserved, defaults to true
 override: <bool>

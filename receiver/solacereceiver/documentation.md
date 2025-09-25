@@ -8,104 +8,104 @@ The following telemetry is emitted by this component.
 
 ### otelcol_solacereceiver_dropped_egress_spans
 
-Number of dropped egress spans
+Number of dropped egress spans [development]
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | development |
 
 ### otelcol_solacereceiver_dropped_span_messages
 
-Number of dropped span messages
+Number of dropped span messages [development]
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | development |
 
 ### otelcol_solacereceiver_failed_reconnections
 
-Number of failed broker reconnections
+Number of failed broker reconnections [development]
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | development |
 
 ### otelcol_solacereceiver_fatal_unmarshalling_errors
 
-Number of fatal message unmarshalling errors
+Number of fatal message unmarshalling errors [development]
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | development |
 
 ### otelcol_solacereceiver_need_upgrade
 
-Indicates with value 1 that receiver requires an upgrade and is not compatible with messages received from a broker
+Indicates with value 1 that receiver requires an upgrade and is not compatible with messages received from a broker [development]
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Int | development |
 
 ### otelcol_solacereceiver_received_span_messages
 
-Number of received span messages
+Number of received span messages [development]
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | development |
 
 ### otelcol_solacereceiver_receiver_flow_control_recent_retries
 
-Most recent/current retry count when flow controlled
+Most recent/current retry count when flow controlled [development]
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Int | development |
 
 ### otelcol_solacereceiver_receiver_flow_control_status
 
-Indicates the flow control status of the receiver. 0 = not flow controlled, 1 = currently flow controlled
+Indicates the flow control status of the receiver. 0 = not flow controlled, 1 = currently flow controlled [development]
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Int | development |
 
 ### otelcol_solacereceiver_receiver_flow_control_total
 
-Number of times the receiver instance became flow controlled
+Number of times the receiver instance became flow controlled [development]
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | development |
 
 ### otelcol_solacereceiver_receiver_flow_control_with_single_successful_retry
 
-Number of times the receiver instance became flow controlled and resolved situations after the first retry
+Number of times the receiver instance became flow controlled and resolved situations after the first retry [development]
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | development |
 
 ### otelcol_solacereceiver_receiver_status
 
-Indicates the status of the receiver as an enum. 0 = starting, 1 = connecting, 2 = connected, 3 = disabled (often paired with needs_upgrade), 4 = terminating, 5 = terminated
+Indicates the status of the receiver as an enum. 0 = starting, 1 = connecting, 2 = connected, 3 = disabled (often paired with needs_upgrade), 4 = terminating, 5 = terminated [development]
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Int | development |
 
 ### otelcol_solacereceiver_recoverable_unmarshalling_errors
 
-Number of recoverable message unmarshalling errors
+Number of recoverable message unmarshalling errors [development]
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | development |
 
 ### otelcol_solacereceiver_reported_spans
 
-Number of reported spans
+Number of reported spans [development]
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | development |

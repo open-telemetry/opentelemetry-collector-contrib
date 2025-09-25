@@ -21,6 +21,8 @@ metrics:
     enabled: false
     description: Total bytes of memory available.
     unit: By
+    stability:
+      level: development
     sum:
       value_type: int
       aggregation_temporality: cumulative
@@ -30,6 +32,8 @@ metrics:
     enabled: true
     description: Bytes of memory in use.
     unit: By
+    stability:
+      level: development
     sum:
       value_type: int
       aggregation_temporality: cumulative
@@ -40,6 +44,8 @@ metrics:
     enabled: false
     description: Percentage of memory bytes in use.
     unit: "1"
+    stability:
+      level: development
     gauge:
       value_type: double
     attributes: [state]
@@ -48,6 +54,8 @@ metrics:
     enabled: false
     description: A constant value for the system's configured page size.
     unit: By
+    stability:
+      level: development
     gauge:
       value_type: int
       aggregation_temporality: cumulative
@@ -57,6 +65,8 @@ metrics:
     enabled: false
     description: An estimate of how much memory is available for starting new applications, without swapping. This is a more accurate alternative than system.memory.usage with state=free. (Linux only)
     unit: By
+    stability:
+      level: development
     sum:
       value_type: int
       aggregation_temporality: cumulative
@@ -66,6 +76,8 @@ metrics:
     enabled: false
     description: The amount of dirty memory according to `/proc/meminfo`.
     unit: By
+    stability:
+      level: development
     sum:
       value_type: int
       aggregation_temporality: cumulative

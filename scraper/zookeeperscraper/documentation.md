@@ -16,49 +16,49 @@ metrics:
 
 Number of active clients connected to a ZooKeeper server.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {connections} | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {connections} | Sum | Int | Cumulative | false | development |
 
 ### zookeeper.data_tree.ephemeral_node.count
 
 Number of ephemeral nodes that a ZooKeeper server has in its data tree.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {nodes} | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {nodes} | Sum | Int | Cumulative | false | development |
 
 ### zookeeper.data_tree.size
 
 Size of data in bytes that a ZooKeeper server has in its data tree.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | false | development |
 
 ### zookeeper.file_descriptor.limit
 
 Maximum number of file descriptors that a ZooKeeper server can open.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {file_descriptors} | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {file_descriptors} | Gauge | Int | development |
 
 ### zookeeper.file_descriptor.open
 
 Number of file descriptors that a ZooKeeper server has open.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {file_descriptors} | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {file_descriptors} | Sum | Int | Cumulative | false | development |
 
 ### zookeeper.follower.count
 
 The number of followers. Only exposed by the leader.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {followers} | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {followers} | Sum | Int | Cumulative | false | development |
 
 #### Attributes
 
@@ -70,41 +70,41 @@ The number of followers. Only exposed by the leader.
 
 Number of times fsync duration has exceeded warning threshold.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {events} | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {events} | Sum | Int | Cumulative | true | development |
 
 ### zookeeper.latency.avg
 
 Average time in milliseconds for requests to be processed.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| ms | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| ms | Gauge | Int | development |
 
 ### zookeeper.latency.max
 
 Maximum time in milliseconds for requests to be processed.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| ms | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| ms | Gauge | Int | development |
 
 ### zookeeper.latency.min
 
 Minimum time in milliseconds for requests to be processed.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| ms | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| ms | Gauge | Int | development |
 
 ### zookeeper.packet.count
 
 The number of ZooKeeper packets received or sent by a server.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {packets} | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {packets} | Sum | Int | Cumulative | true | development |
 
 #### Attributes
 
@@ -116,41 +116,41 @@ The number of ZooKeeper packets received or sent by a server.
 
 Number of currently executing requests.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {requests} | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {requests} | Sum | Int | Cumulative | false | development |
 
 ### zookeeper.ruok
 
 Response from zookeeper ruok command
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Int | development |
 
 ### zookeeper.sync.pending
 
 The number of pending syncs from the followers. Only exposed by the leader.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {syncs} | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {syncs} | Sum | Int | Cumulative | false | development |
 
 ### zookeeper.watch.count
 
 Number of watches placed on Z-Nodes on a ZooKeeper server.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {watches} | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {watches} | Sum | Int | Cumulative | false | development |
 
 ### zookeeper.znode.count
 
 Number of z-nodes that a ZooKeeper server has in its data tree.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {znodes} | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {znodes} | Sum | Int | Cumulative | false | development |
 
 ## Resource Attributes
 

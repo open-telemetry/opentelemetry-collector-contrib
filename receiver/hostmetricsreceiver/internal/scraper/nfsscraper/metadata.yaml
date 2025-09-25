@@ -16,5 +16,7 @@ metrics:
     enabled: true
     description: Reports the count of kernel NFS client network requests handled
     unit: '{request}'
+    stability:
+      level: development
     gauge:
       value_type: int

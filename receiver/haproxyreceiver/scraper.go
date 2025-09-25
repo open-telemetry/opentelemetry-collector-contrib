@@ -80,6 +80,16 @@ func (s *haproxyScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 
 	now := pcommon.NewTimestampFromTime(time.Now())
 	for _, record := range records {
+		if record["act"] != "" {
+			if err := s.mb.RecordHaproxyActiveDataPoint(now, record["act"]); err != nil {
+				scrapeErrors = append(scrapeErrors, err)
+			}
+		}
+		if record["bck"] != "" {
+			if err := s.mb.RecordHaproxyBackupDataPoint(now, record["bck"]); err != nil {
+				scrapeErrors = append(scrapeErrors, err)
+			}
+		}
 		if record["scur"] != "" {
 			if err := s.mb.RecordHaproxySessionsCountDataPoint(now, record["scur"]); err != nil {
 				scrapeErrors = append(scrapeErrors, err)
@@ -240,6 +250,31 @@ func (s *haproxyScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		}
 		if record["rate"] != "" {
 			if err := s.mb.RecordHaproxySessionsRateDataPoint(now, record["rate"]); err != nil {
+				scrapeErrors = append(scrapeErrors, err)
+			}
+		}
+		if record["weight"] != "" {
+			if err := s.mb.RecordHaproxyWeightDataPoint(now, record["weight"]); err != nil {
+				scrapeErrors = append(scrapeErrors, err)
+			}
+		}
+		if record["ctime"] != "" {
+			if err := s.mb.RecordHaproxyConnectionsAverageTimeDataPoint(now, record["ctime"]); err != nil {
+				scrapeErrors = append(scrapeErrors, err)
+			}
+		}
+		if record["qtime"] != "" {
+			if err := s.mb.RecordHaproxyRequestsAverageTimeDataPoint(now, record["qtime"]); err != nil {
+				scrapeErrors = append(scrapeErrors, err)
+			}
+		}
+		if record["rtime"] != "" {
+			if err := s.mb.RecordHaproxyResponsesAverageTimeDataPoint(now, record["rtime"]); err != nil {
+				scrapeErrors = append(scrapeErrors, err)
+			}
+		}
+		if record["slim"] != "" {
+			if err := s.mb.RecordHaproxySessionsLimitDataPoint(now, record["slim"]); err != nil {
 				scrapeErrors = append(scrapeErrors, err)
 			}
 		}

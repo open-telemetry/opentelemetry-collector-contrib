@@ -1,5 +1,5 @@
-github.com/Masterminds/semver/v3 v3.3.1 h1:QtNSWtVZ3nBfk8mAOu/B6v7FMJ+NHTIgUPi7rj+4nv4=
-github.com/Masterminds/semver/v3 v3.3.1/go.mod h1:4V+yj/TJE1HU9XfppCwVMZq3I84lprf4nC11bSS5beM=
+github.com/Masterminds/semver/v3 v3.4.0 h1:Zog+i5UMtVoCU8oKka5P7i9q9HgrJeGzI9SA1Xbatp0=
+github.com/Masterminds/semver/v3 v3.4.0/go.mod h1:4V+yj/TJE1HU9XfppCwVMZq3I84lprf4nC11bSS5beM=
 github.com/cespare/xxhash/v2 v2.3.0 h1:UL815xU9SqsFlibzuggzjXhog7bL6oX9BbNZnL2UFvs=
 github.com/cespare/xxhash/v2 v2.3.0/go.mod h1:VGX0DQ3Q6kWi7AoAeZDth3/j3BFtOZR5XLFGgcrjCOs=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
@@ -157,8 +157,8 @@ go.opentelemetry.io/otel/log/logtest v0.14.0 h1:BGTqNeluJDK2uIHAY8lRqxjVAYfqgcaT
 go.opentelemetry.io/otel/log/logtest v0.14.0/go.mod h1:IuguGt8XVP4XA4d2oEEDMVDBBCesMg8/tSGWDjuKfoA=
 go.opentelemetry.io/otel/metric v1.38.0 h1:Kl6lzIYGAh5M159u9NgiRkmoMKjvbsKtYRwgfrA6WpA=
 go.opentelemetry.io/otel/metric v1.38.0/go.mod h1:kB5n/QoRM8YwmUahxvI3bO34eVtQf2i4utNVLr9gEmI=
-go.opentelemetry.io/otel/schema v0.0.12 h1:X8NKrwH07Oe9SJruY/D1XmwHrb6D2+qrLs2POlZX7F4=
-go.opentelemetry.io/otel/schema v0.0.12/go.mod h1:+w+Q7DdGfykSNi+UU9GAQz5/rtYND6FkBJUWUXzZb0M=
+go.opentelemetry.io/otel/schema v0.0.13 h1:gf5AhGzU3V4Ll3xGO+D+Eg2VTMqhz2JlPFr5JpVC/3Q=
+go.opentelemetry.io/otel/schema v0.0.13/go.mod h1:Ge9lCwrk+B2oYsO2+Tv1R97c+1psVHFs5/4oRTI0OeY=
 go.opentelemetry.io/otel/sdk v1.38.0 h1:l48sr5YbNf2hpCUj/FoGhW9yDkl+Ma+LrVl8qaM5b+E=
 go.opentelemetry.io/otel/sdk v1.38.0/go.mod h1:ghmNdGlVemJI3+ZB5iDEuk4bWA3GkTpW+DOoZMYBVVg=
 go.opentelemetry.io/otel/sdk/metric v1.38.0 h1:aSH66iL0aZqo//xXzQLYozmWrXxyFkBJ6qT5wthqPoM=

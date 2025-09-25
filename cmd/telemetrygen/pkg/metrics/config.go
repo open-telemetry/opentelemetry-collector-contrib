@@ -5,6 +5,7 @@ package metrics
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/spf13/pflag"
@@ -78,6 +79,10 @@ func (c *Config) SetDefaults() {
 func (c *Config) Validate() error {
 	if !c.TotalDuration.IsInf() && c.TotalDuration.Duration() <= 0 && c.NumMetrics <= 0 {
 		return errors.New("either `metrics` or `duration` must be greater than 0")
+	}
+
+	if c.LoadSize < 0 {
+		return fmt.Errorf("load size must be non-negative, found %d", c.LoadSize)
 	}
 
 	if c.TraceID != "" {

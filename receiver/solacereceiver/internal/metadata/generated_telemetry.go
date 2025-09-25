@@ -72,79 +72,79 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	var err, errs error
 	builder.SolacereceiverDroppedEgressSpans, err = builder.meter.Int64Counter(
 		"otelcol_solacereceiver_dropped_egress_spans",
-		metric.WithDescription("Number of dropped egress spans"),
+		metric.WithDescription("Number of dropped egress spans [development]"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
 	builder.SolacereceiverDroppedSpanMessages, err = builder.meter.Int64Counter(
 		"otelcol_solacereceiver_dropped_span_messages",
-		metric.WithDescription("Number of dropped span messages"),
+		metric.WithDescription("Number of dropped span messages [development]"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
 	builder.SolacereceiverFailedReconnections, err = builder.meter.Int64Counter(
 		"otelcol_solacereceiver_failed_reconnections",
-		metric.WithDescription("Number of failed broker reconnections"),
+		metric.WithDescription("Number of failed broker reconnections [development]"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
 	builder.SolacereceiverFatalUnmarshallingErrors, err = builder.meter.Int64Counter(
 		"otelcol_solacereceiver_fatal_unmarshalling_errors",
-		metric.WithDescription("Number of fatal message unmarshalling errors"),
+		metric.WithDescription("Number of fatal message unmarshalling errors [development]"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
 	builder.SolacereceiverNeedUpgrade, err = builder.meter.Int64Gauge(
 		"otelcol_solacereceiver_need_upgrade",
-		metric.WithDescription("Indicates with value 1 that receiver requires an upgrade and is not compatible with messages received from a broker"),
+		metric.WithDescription("Indicates with value 1 that receiver requires an upgrade and is not compatible with messages received from a broker [development]"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
 	builder.SolacereceiverReceivedSpanMessages, err = builder.meter.Int64Counter(
 		"otelcol_solacereceiver_received_span_messages",
-		metric.WithDescription("Number of received span messages"),
+		metric.WithDescription("Number of received span messages [development]"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
 	builder.SolacereceiverReceiverFlowControlRecentRetries, err = builder.meter.Int64Gauge(
 		"otelcol_solacereceiver_receiver_flow_control_recent_retries",
-		metric.WithDescription("Most recent/current retry count when flow controlled"),
+		metric.WithDescription("Most recent/current retry count when flow controlled [development]"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
 	builder.SolacereceiverReceiverFlowControlStatus, err = builder.meter.Int64Gauge(
 		"otelcol_solacereceiver_receiver_flow_control_status",
-		metric.WithDescription("Indicates the flow control status of the receiver. 0 = not flow controlled, 1 = currently flow controlled"),
+		metric.WithDescription("Indicates the flow control status of the receiver. 0 = not flow controlled, 1 = currently flow controlled [development]"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
 	builder.SolacereceiverReceiverFlowControlTotal, err = builder.meter.Int64Counter(
 		"otelcol_solacereceiver_receiver_flow_control_total",
-		metric.WithDescription("Number of times the receiver instance became flow controlled"),
+		metric.WithDescription("Number of times the receiver instance became flow controlled [development]"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
 	builder.SolacereceiverReceiverFlowControlWithSingleSuccessfulRetry, err = builder.meter.Int64Counter(
 		"otelcol_solacereceiver_receiver_flow_control_with_single_successful_retry",
-		metric.WithDescription("Number of times the receiver instance became flow controlled and resolved situations after the first retry"),
+		metric.WithDescription("Number of times the receiver instance became flow controlled and resolved situations after the first retry [development]"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
 	builder.SolacereceiverReceiverStatus, err = builder.meter.Int64Gauge(
 		"otelcol_solacereceiver_receiver_status",
-		metric.WithDescription("Indicates the status of the receiver as an enum. 0 = starting, 1 = connecting, 2 = connected, 3 = disabled (often paired with needs_upgrade), 4 = terminating, 5 = terminated"),
+		metric.WithDescription("Indicates the status of the receiver as an enum. 0 = starting, 1 = connecting, 2 = connected, 3 = disabled (often paired with needs_upgrade), 4 = terminating, 5 = terminated [development]"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
 	builder.SolacereceiverRecoverableUnmarshallingErrors, err = builder.meter.Int64Counter(
 		"otelcol_solacereceiver_recoverable_unmarshalling_errors",
-		metric.WithDescription("Number of recoverable message unmarshalling errors"),
+		metric.WithDescription("Number of recoverable message unmarshalling errors [development]"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
 	builder.SolacereceiverReportedSpans, err = builder.meter.Int64Counter(
 		"otelcol_solacereceiver_reported_spans",
-		metric.WithDescription("Number of reported spans"),
+		metric.WithDescription("Number of reported spans [development]"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
