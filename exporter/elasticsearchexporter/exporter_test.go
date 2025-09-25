@@ -995,10 +995,6 @@ func TestExporterMetrics(t *testing.T) {
 	t.Run("publish with success", func(t *testing.T) {
 		rec := newBulkRecorder()
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
-			for _, doc := range docs {
-				fmt.Println("KKK", string(doc.Action))
-				fmt.Println("KKK", string(doc.Document))
-			}
 			rec.Record(docs)
 			return itemsAllOK(docs)
 		})
