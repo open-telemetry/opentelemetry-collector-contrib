@@ -205,6 +205,7 @@ processor/redactionprocessor/                                    @open-telemetry
 processor/remotetapprocessor/                                    @open-telemetry/collector-contrib-approvers @atoulme @jaronoff97
 processor/resourcedetectionprocessor/                            @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole
 processor/resourcedetectionprocessor/internal/akamai/            @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole @paulojmdias
+processor/resourcedetectionprocessor/internal/digitalocean/      @open-telemetry/collector-contrib-approvers @dashpole @paulojmdias
 processor/resourcedetectionprocessor/internal/dynatrace/         @open-telemetry/collector-contrib-approvers @bacherfl @evan-bradley
 processor/resourcedetectionprocessor/internal/hetzner/           @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole @paulojmdias
 processor/resourcedetectionprocessor/internal/oraclecloud/       @open-telemetry/collector-contrib-approvers @dashpole
@@ -216,6 +217,7 @@ processor/spanprocessor/                                         @open-telemetry
 processor/sumologicprocessor/                                    @open-telemetry/collector-contrib-approvers @rnishtala-sumo @chan-tim-sumo @echlebek @amdprophet
 processor/tailsamplingprocessor/                                 @open-telemetry/collector-contrib-approvers @portertech
 processor/transformprocessor/                                    @open-telemetry/collector-contrib-approvers @TylerHelmuth @evan-bradley @edmocosta
+processor/unrollprocessor/                                       @open-telemetry/collector-contrib-approvers @axw @schmikei @rnishtala-sumo
 receiver/activedirectorydsreceiver/                              @open-telemetry/collector-contrib-approvers @pjanotti
 receiver/aerospikereceiver/                                      @open-telemetry/collector-contrib-approvers @antonblock
 receiver/apachereceiver/                                         @open-telemetry/collector-contrib-approvers @colelaven @ishleenk17

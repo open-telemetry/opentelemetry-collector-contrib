@@ -597,7 +597,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - run: npm install simple-git@^3.27.0
+      - run: |
+          cp ../configs/build-and-test/package.json .
+          cp ../configs/build-and-test/package-lock.json .
+          npm ci
+        working-directory: ./.github/workflows/scripts
 
       - name: Set current and previous tags
         id: github_tag
