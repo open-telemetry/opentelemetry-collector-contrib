@@ -10,6 +10,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/vmihailenco/msgpack/v5"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -607,6 +608,102 @@ func TestGetParentID(t *testing.T) {
 
 			require.NoError(t, err)
 			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestLibhoneyEvent_UnmarshalMsgpack(t *testing.T) {
+	tests := []struct {
+		name                  string
+		msgpackData           map[string]any
+		expectNonNilTimestamp bool
+		wantErr               bool
+	}{
+		{
+			name: "msgpack with nil timestamp",
+			msgpackData: map[string]any{
+				"data": map[string]any{
+					"key": "value",
+				},
+				"samplerate": 1,
+				// time field is not set (nil)
+			},
+			expectNonNilTimestamp: true,
+		},
+		{
+			name: "msgpack with time string in data",
+			msgpackData: map[string]any{
+				"data": map[string]any{
+					"key":  "value",
+					"time": "2024-01-01T00:00:00Z",
+				},
+				"samplerate": 2,
+			},
+			expectNonNilTimestamp: true,
+		},
+		{
+			name: "msgpack with timestamp field",
+			msgpackData: map[string]any{
+				"time": time.Now(),
+				"data": map[string]any{
+					"key": "value",
+				},
+				"samplerate": 3,
+			},
+			expectNonNilTimestamp: true,
+		},
+		{
+			name: "msgpack with zero timestamp",
+			msgpackData: map[string]any{
+				"time": time.Time{},
+				"data": map[string]any{
+					"key": "value",
+				},
+				"samplerate": 4,
+			},
+			expectNonNilTimestamp: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Marshal the test data to msgpack
+			msgpackBytes, err := msgpack.Marshal(tt.msgpackData)
+			require.NoError(t, err)
+
+			// Unmarshal using our custom unmarshaller
+			var event LibhoneyEvent
+			err = event.UnmarshalMsgpack(msgpackBytes)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
+
+			require.NoError(t, err)
+
+			// The key assertion: MsgPackTimestamp should never be nil after unmarshalling
+			if tt.expectNonNilTimestamp {
+				assert.NotNil(t, event.MsgPackTimestamp, "MsgPackTimestamp should never be nil after UnmarshalMsgpack")
+
+				// Additional checks
+				if event.MsgPackTimestamp != nil && !event.MsgPackTimestamp.IsZero() {
+					// If we have a valid timestamp, Time string should also be set
+					assert.NotEmpty(t, event.Time, "Time string should be set when MsgPackTimestamp is valid")
+				}
+			}
+
+			// Check that data was preserved
+			assert.Equal(t, tt.msgpackData["samplerate"], event.Samplerate)
+			if data, ok := tt.msgpackData["data"].(map[string]any); ok {
+				// Remove "time" from data if it was extracted
+				delete(data, "time")
+				if len(data) > 0 {
+					for k, v := range data {
+						assert.Equal(t, v, event.Data[k])
+					}
+				}
+			}
 		})
 	}
 }
