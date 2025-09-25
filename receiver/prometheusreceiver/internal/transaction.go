@@ -53,6 +53,8 @@ type metricFamilyKey struct {
 	name                   string
 }
 
+var _ storage.Appender = (*transaction)(nil)
+
 type transaction struct {
 	isNew                  bool
 	trimSuffixes           bool
@@ -592,8 +594,8 @@ func (t *transaction) reportTargetMetrics() {
 		if count > 0 {
 			t.telemetryBuilder.ReceiverTargetAcceptedMetricPoints.Record(t.ctx, int64(count),
 				metric.WithAttributes(
-					attribute.String("job", rKey.job),
-					attribute.String("instance", rKey.instance),
+					attribute.String("prometheus.target.job", rKey.job),
+					attribute.String("prometheus.target.instance", rKey.instance),
 				),
 			)
 		}
