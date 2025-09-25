@@ -26,12 +26,21 @@ var (
 	errEmptyUsername = errors.New("username must be set")
 )
 
+// IndividualQueryConfig represents individual query filtering configuration
+type IndividualQueryConfig struct {
+	Enabled        bool     `mapstructure:"enabled"`
+	SearchText     string   `mapstructure:"search_text"`
+	ExcludeSchemas []string `mapstructure:"exclude_schemas"`
+	MaxQueries     int      `mapstructure:"max_queries"`
+}
+
 type Config struct {
-	DataSource                     string `mapstructure:"datasource"`
-	Endpoint                       string `mapstructure:"endpoint"`
-	Password                       string `mapstructure:"password"`
-	Service                        string `mapstructure:"service"`
-	Username                       string `mapstructure:"username"`
+	DataSource                     string                 `mapstructure:"datasource"`
+	Endpoint                       string                 `mapstructure:"endpoint"`
+	Password                       string                 `mapstructure:"password"`
+	Service                        string                 `mapstructure:"service"`
+	Username                       string                 `mapstructure:"username"`
+	IndividualQuerySettings        *IndividualQueryConfig `mapstructure:"individual_query_settings"`
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
 	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
 }

@@ -3,6 +3,11 @@
 
 package queries
 
+import (
+	"fmt"
+	"strings"
+)
+
 // Oracle SQL query for session count metric
 const (
 	SessionCountSQL = "SELECT COUNT(*) as SESSION_COUNT FROM v$session WHERE type = 'USER'"
@@ -242,4 +247,55 @@ const (
 			METRIC_NAME,
 			VALUE
 		FROM gv$con_sysmetric`
+
+	// Individual query metrics SQL template
+	IndividualQuerySQLBase = `
+		SELECT
+			sql_id,
+			child_number,
+			sql_fulltext,
+			executions,
+			elapsed_time / 1000 AS elapsed_time_ms
+		FROM
+			v$sql
+		WHERE
+			sql_fulltext LIKE '%%%s%%'
+			AND parsing_schema_name NOT IN ('SYS', 'SYSTEM')
+		ORDER BY
+			elapsed_time DESC
+		FETCH FIRST %d ROWS ONLY`
 )
+
+// IndividualQueryConfig represents individual query filtering configuration
+type IndividualQueryConfig struct {
+	Enabled        bool     `mapstructure:"enabled"`
+	SearchText     string   `mapstructure:"search_text"`
+	ExcludeSchemas []string `mapstructure:"exclude_schemas"`
+	MaxQueries     int      `mapstructure:"max_queries"`
+}
+
+// BuildIndividualQuerySQL builds a dynamic individual query SQL based on configuration
+func BuildIndividualQuerySQL(config IndividualQueryConfig) string {
+	// Set default values
+	searchText := config.SearchText
+	if searchText == "" {
+		searchText = "SELECT" // Default search text
+	}
+
+	maxQueries := config.MaxQueries
+	if maxQueries <= 0 {
+		maxQueries = 10 // Default
+	}
+
+	// Build the base query with search text and limit
+	query := fmt.Sprintf(IndividualQuerySQLBase, searchText, maxQueries)
+
+	// Add additional schema exclusions if specified
+	if len(config.ExcludeSchemas) > 0 {
+		additionalSchemas := strings.Join(config.ExcludeSchemas, "', '")
+		query = strings.Replace(query, "NOT IN ('SYS', 'SYSTEM')",
+			fmt.Sprintf("NOT IN ('SYS', 'SYSTEM', '%s')", additionalSchemas), 1)
+	}
+
+	return query
+}

@@ -39,6 +39,12 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		ControllerConfig:     cfg,
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		IndividualQuerySettings: &IndividualQueryConfig{
+			Enabled:        true,
+			SearchText:     "SELECT",
+			ExcludeSchemas: []string{},
+			MaxQueries:     10,
+		},
 	}
 }
 
@@ -65,7 +71,7 @@ func createReceiverFunc(sqlOpenerFunc sqlOpenerFunc) receiver.CreateMetricsFunc 
 
 		mp, err := newScraper(metricsBuilder, sqlCfg.MetricsBuilderConfig, sqlCfg.ControllerConfig, settings.Logger, func() (*sql.DB, error) {
 			return sqlOpenerFunc(getDataSource(*sqlCfg))
-		}, instanceName, hostName)
+		}, instanceName, hostName, sqlCfg)
 		if err != nil {
 			return nil, err
 		}
@@ -99,7 +105,7 @@ func getInstanceName(datasource string) (string, error) {
 	if atIndex := strings.Index(datasource, "@"); atIndex != -1 {
 		return datasource[atIndex+1:], nil
 	}
-	
+
 	// Fallback to URL parsing for oracle:// format
 	datasourceURL, err := url.Parse(datasource)
 	if err != nil {
@@ -120,7 +126,7 @@ func getHostName(datasource string) (string, error) {
 		}
 		return hostPart, nil
 	}
-	
+
 	// Fallback to URL parsing for oracle:// format
 	datasourceURL, err := url.Parse(datasource)
 	if err != nil {

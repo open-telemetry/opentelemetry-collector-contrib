@@ -2428,6 +2428,16 @@ metrics:
       - newrelic.entity_name
       - instance.id
 
+  newrelicoracledb.individual_query_sample:
+    description: Sample of Oracle individual query with all metrics as attributes
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "ms"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+
 tests:
   config:
   goleak:
