@@ -239,8 +239,7 @@ func TestConsumerShutdownNotStarted(t *testing.T) {
 	require.NoError(t, err)
 
 	for range 2 {
-		require.EqualError(t, c.Shutdown(t.Context()),
-			"kafka consumer: consumer isn't running")
+		require.NoError(t, c.Shutdown(t.Context()))
 	}
 
 	// Verify internal signal that there's nothing to shut down.
