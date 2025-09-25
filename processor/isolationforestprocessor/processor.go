@@ -46,6 +46,7 @@ type isolationForestProcessor struct {
 	lastModelUpdate time.Time
 	updateTicker    *time.Ticker
 	stopChan        chan struct{}
+	shutdownWG      sync.WaitGroup
 }
 
 // newIsolationForestProcessor creates a new processor instance with the specified configuration.
@@ -103,7 +104,6 @@ func newIsolationForestProcessor(config *Config, logger *zap.Logger) (*isolation
 	}
 
 	processor.updateTicker = time.NewTicker(updateFreq)
-	go processor.modelUpdateLoop()
 
 	return processor, nil
 }
@@ -112,6 +112,14 @@ func newIsolationForestProcessor(config *Config, logger *zap.Logger) (*isolation
 func (p *isolationForestProcessor) Start(_ context.Context, _ component.Host) error {
 	p.logger.Info("Starting isolation forest processor")
 	// Any additional initialization logic can go here
+
+	// Start the background model update loop
+	p.shutdownWG.Add(1)
+	go func() {
+		defer p.shutdownWG.Done()
+		p.modelUpdateLoop()
+	}()
+
 	return nil
 }
 
@@ -126,6 +134,9 @@ func (p *isolationForestProcessor) Shutdown(_ context.Context) error {
 
 	// Signal background goroutines to stop
 	close(p.stopChan)
+
+	// Wait for all background goroutines to complete
+	p.shutdownWG.Wait()
 
 	p.logger.Info("Isolation forest processor shutdown complete")
 	return nil
