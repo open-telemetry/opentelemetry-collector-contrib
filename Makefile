@@ -55,6 +55,10 @@ INTEGRATION_MODS := $(shell $(FIND_INTEGRATION_TEST_MODS) | xargs $(TO_MOD_DIR) 
 # Excluded from ALL_MODS
 GENERATED_MODS := $(shell find ./cmd/otel*col/* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR))
 
+ifeq ($(GOOS),windows)
+	EXTENSION := .exe
+endif
+
 .DEFAULT_GOAL := all
 
 all-modules:
