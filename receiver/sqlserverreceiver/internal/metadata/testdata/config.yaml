@@ -7,6 +7,8 @@ all_set:
       enabled: true
     sqlserver.batch.sql_recompilation.rate:
       enabled: true
+    sqlserver.computer.uptime:
+      enabled: true
     sqlserver.cpu.count:
       enabled: true
     sqlserver.database.backup_or_restore.rate:
@@ -110,6 +112,8 @@ all_set:
     server.address:
       enabled: true
     server.port:
+      enabled: true
+    service.instance.id:
       enabled: true
     sqlserver.computer.name:
       enabled: true
@@ -125,6 +129,8 @@ none_set:
       enabled: false
     sqlserver.batch.sql_recompilation.rate:
       enabled: false
+    sqlserver.computer.uptime:
+      enabled: false
     sqlserver.cpu.count:
       enabled: false
     sqlserver.database.backup_or_restore.rate:
@@ -228,6 +234,8 @@ none_set:
     server.address:
       enabled: false
     server.port:
+      enabled: false
+    service.instance.id:
       enabled: false
     sqlserver.computer.name:
       enabled: false
@@ -250,6 +258,12 @@ filter_set_include:
       events_include:
         - regexp: ".*"
     server.port:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+      events_include:
+        - regexp: ".*"
+    service.instance.id:
       enabled: true
       metrics_include:
         - regexp: ".*"
@@ -293,6 +307,12 @@ filter_set_exclude:
         - regexp: ".*"
       events_exclude:
         - regexp: ".*"
+    service.instance.id:
+      enabled: true
+      metrics_exclude:
+        - strict: "service.instance.id-val"
+      events_exclude:
+        - strict: "service.instance.id-val"
     sqlserver.computer.name:
       enabled: true
       metrics_exclude:

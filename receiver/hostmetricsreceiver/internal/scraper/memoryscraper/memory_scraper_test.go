@@ -93,7 +93,7 @@ func TestScrape(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper := newMemoryScraper(context.Background(), scrapertest.NewNopSettings(metadata.Type), test.config)
+			scraper := newMemoryScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), test.config)
 			if test.virtualMemoryFunc != nil {
 				scraper.virtualMemory = test.virtualMemoryFunc
 			}
@@ -101,13 +101,13 @@ func TestScrape(t *testing.T) {
 				scraper.bootTime = test.bootTimeFunc
 			}
 
-			err := scraper.start(context.Background(), componenttest.NewNopHost())
+			err := scraper.start(t.Context(), componenttest.NewNopHost())
 			if test.initializationErr != "" {
 				assert.EqualError(t, err, test.initializationErr)
 				return
 			}
 			require.NoError(t, err, "Failed to initialize memory scraper: %v", err)
-			md, err := scraper.scrape(context.Background())
+			md, err := scraper.scrape(t.Context())
 			if test.expectedErr != "" {
 				assert.EqualError(t, err, test.expectedErr)
 
@@ -171,15 +171,15 @@ func TestScrape_MemoryUtilization(t *testing.T) {
 			scraperConfig := Config{
 				MetricsBuilderConfig: mbc,
 			}
-			scraper := newMemoryScraper(context.Background(), scrapertest.NewNopSettings(metadata.Type), &scraperConfig)
+			scraper := newMemoryScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), &scraperConfig)
 			if test.virtualMemoryFunc != nil {
 				scraper.virtualMemory = test.virtualMemoryFunc
 			}
 
-			err := scraper.start(context.Background(), componenttest.NewNopHost())
+			err := scraper.start(t.Context(), componenttest.NewNopHost())
 			require.NoError(t, err, "Failed to initialize memory scraper: %v", err)
 
-			md, err := scraper.scrape(context.Background())
+			md, err := scraper.scrape(t.Context())
 			if test.expectedErr != nil {
 				var partialScrapeErr scrapererror.PartialScrapeError
 				assert.ErrorAs(t, err, &partialScrapeErr)
@@ -207,8 +207,10 @@ func assertMemoryUsageMetricValid(t *testing.T, metric pmetric.Metric, expectedN
 	assert.GreaterOrEqual(t, metric.Sum().DataPoints().Len(), 2)
 	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "state",
 		pcommon.NewValueStr(metadata.AttributeStateUsed.String()))
+	assert.Positive(t, metric.Sum().DataPoints().At(0).IntValue())
 	internal.AssertSumMetricHasAttributeValue(t, metric, 1, "state",
 		pcommon.NewValueStr(metadata.AttributeStateFree.String()))
+	assert.Positive(t, metric.Sum().DataPoints().At(1).IntValue())
 }
 
 func assertMemoryUtilizationMetricValid(t *testing.T, metric pmetric.Metric, expectedName string) {
@@ -216,8 +218,10 @@ func assertMemoryUtilizationMetricValid(t *testing.T, metric pmetric.Metric, exp
 	assert.GreaterOrEqual(t, metric.Gauge().DataPoints().Len(), 2)
 	internal.AssertGaugeMetricHasAttributeValue(t, metric, 0, "state",
 		pcommon.NewValueStr(metadata.AttributeStateUsed.String()))
+	assert.Positive(t, metric.Gauge().DataPoints().At(0).DoubleValue())
 	internal.AssertGaugeMetricHasAttributeValue(t, metric, 1, "state",
 		pcommon.NewValueStr(metadata.AttributeStateFree.String()))
+	assert.Positive(t, metric.Gauge().DataPoints().At(1).DoubleValue())
 }
 
 func assertMemoryUsageMetricHasLinuxSpecificStateLabels(t *testing.T, metric pmetric.Metric) {

@@ -32,7 +32,7 @@ func runIndividualTestCase(t *testing.T, tt testCase, ap *AttrProc) {
 	t.Run(tt.name, func(t *testing.T) {
 		inputMap := pcommon.NewMap()
 		assert.NoError(t, inputMap.FromRaw(tt.inputAttributes))
-		ap.Process(context.TODO(), nil, inputMap)
+		ap.Process(t.Context(), nil, inputMap)
 		require.Equal(t, tt.expectedAttributes, inputMap.AsRaw())
 	})
 }
@@ -808,14 +808,14 @@ func TestInvalidConfig(t *testing.T) {
 				{Key: "one", Action: DELETE},
 				{Key: "", Value: 123, Action: UPSERT},
 			},
-			errorString: "error creating AttrProc due to missing required field \"key\" at the 1-th actions",
+			errorString: "error creating AttrProc due to missing required field \"key\" at the 1-th action",
 		},
 		{
 			name: "invalid action",
 			actionLists: []ActionKeyValue{
 				{Key: "invalid", Action: "invalid"},
 			},
-			errorString: "error creating AttrProc due to unsupported action \"invalid\" at the 0-th actions",
+			errorString: "error with key \"invalid\" (0-th action): error creating AttrProc due to unsupported action \"invalid\"",
 		},
 		{
 			name: "unsupported value",
@@ -829,63 +829,63 @@ func TestInvalidConfig(t *testing.T) {
 			actionLists: []ActionKeyValue{
 				{Key: "MissingValueFromAttributes", Action: INSERT},
 			},
-			errorString: "error creating AttrProc. Either field \"value\", \"from_attribute\" or \"from_context\" setting must be specified for 0-th action",
+			errorString: "error with key \"MissingValueFromAttributes\" (0-th action): error creating AttrProc. Either field \"value\", \"from_attribute\" or \"from_context\" setting must be specified",
 		},
 		{
 			name: "both set value and from attribute",
 			actionLists: []ActionKeyValue{
 				{Key: "BothSet", Value: 123, FromAttribute: "aa", Action: UPSERT},
 			},
-			errorString: "error creating AttrProc due to multiple value sources being set at the 0-th actions",
+			errorString: "error with key \"BothSet\" (0-th action): error creating AttrProc due to multiple value sources being set",
 		},
 		{
 			name: "pattern shouldn't be specified",
 			actionLists: []ActionKeyValue{
 				{Key: "key", RegexPattern: "(?P<operation_website>.*?)$", FromAttribute: "aa", Action: INSERT},
 			},
-			errorString: "error creating AttrProc. Action \"insert\" does not use the \"pattern\" field. This must not be specified for 0-th action",
+			errorString: "error with key \"key\" (0-th action): error creating AttrProc. Action \"insert\" does not use the \"pattern\" field. This must not be specified",
 		},
 		{
 			name: "missing rule for extract",
 			actionLists: []ActionKeyValue{
 				{Key: "aa", Action: EXTRACT},
 			},
-			errorString: "error creating AttrProc due to missing required field \"pattern\" for action \"extract\" at the 0-th action",
+			errorString: "error with key \"aa\" (0-th action): error creating AttrProc due to missing required field \"pattern\" for action \"extract\"",
 		},
 		{
 			name: "set value for extract",
 			actionLists: []ActionKeyValue{
 				{Key: "Key", RegexPattern: "(?P<operation_website>.*?)$", Value: "value", Action: EXTRACT},
 			},
-			errorString: "error creating AttrProc. Action \"extract\" does not use a value source field. These must not be specified for 0-th action",
+			errorString: "error with key \"Key\" (0-th action): error creating AttrProc. Action \"extract\" does not use a value source field. These must not be specified",
 		},
 		{
 			name: "set from attribute for extract",
 			actionLists: []ActionKeyValue{
 				{Key: "key", RegexPattern: "(?P<operation_website>.*?)$", FromAttribute: "aa", Action: EXTRACT},
 			},
-			errorString: "error creating AttrProc. Action \"extract\" does not use a value source field. These must not be specified for 0-th action",
+			errorString: "error with key \"key\" (0-th action): error creating AttrProc. Action \"extract\" does not use a value source field. These must not be specified",
 		},
 		{
 			name: "invalid regex",
 			actionLists: []ActionKeyValue{
 				{Key: "aa", RegexPattern: "(?P<invalid.regex>.*?)$", Action: EXTRACT},
 			},
-			errorString: "error creating AttrProc. Field \"pattern\" has invalid pattern: \"(?P<invalid.regex>.*?)$\" to be set at the 0-th actions",
+			errorString: "error with key \"aa\" (0-th action): error creating AttrProc. Field \"pattern\" has invalid pattern: \"(?P<invalid.regex>.*?)$\"",
 		},
 		{
 			name: "regex with unnamed capture group",
 			actionLists: []ActionKeyValue{
 				{Key: "aa", RegexPattern: ".*$", Action: EXTRACT},
 			},
-			errorString: "error creating AttrProc. Field \"pattern\" contains no named matcher groups at the 0-th actions",
+			errorString: "error with key \"aa\" (0-th action): error creating AttrProc. Field \"pattern\" contains no named matcher groups",
 		},
 		{
 			name: "regex with one unnamed capture groups",
 			actionLists: []ActionKeyValue{
 				{Key: "aa", RegexPattern: "^\\/api\\/v1\\/document\\/(?P<new_user_key>.*)\\/update\\/(.*)$", Action: EXTRACT},
 			},
-			errorString: "error creating AttrProc. Field \"pattern\" contains at least one unnamed matcher group at the 0-th actions",
+			errorString: "error with key \"aa\" (0-th action): error creating AttrProc. Field \"pattern\" contains at least one unnamed matcher group",
 		},
 	}
 
@@ -946,7 +946,7 @@ func (a mockInfoAuth) GetAttributeNames() []string {
 }
 
 func TestFromContext(t *testing.T) {
-	mdCtx := client.NewContext(context.TODO(), client.Info{
+	mdCtx := client.NewContext(t.Context(), client.Info{
 		Metadata: client.NewMetadata(map[string][]string{
 			"source_single_val":   {"single_val"},
 			"source_multiple_val": {"first_val", "second_val"},
@@ -967,7 +967,7 @@ func TestFromContext(t *testing.T) {
 	}{
 		{
 			name:               "no_metadata",
-			ctx:                context.TODO(),
+			ctx:                t.Context(),
 			expectedAttributes: map[string]any{},
 			action:             &ActionKeyValue{Key: "dest", FromContext: "source", Action: INSERT},
 		},

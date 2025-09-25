@@ -31,6 +31,7 @@ type MetricsConfig struct {
 	SqlserverBatchRequestRate                   MetricConfig `mapstructure:"sqlserver.batch.request.rate"`
 	SqlserverBatchSQLCompilationRate            MetricConfig `mapstructure:"sqlserver.batch.sql_compilation.rate"`
 	SqlserverBatchSQLRecompilationRate          MetricConfig `mapstructure:"sqlserver.batch.sql_recompilation.rate"`
+	SqlserverComputerUptime                     MetricConfig `mapstructure:"sqlserver.computer.uptime"`
 	SqlserverCPUCount                           MetricConfig `mapstructure:"sqlserver.cpu.count"`
 	SqlserverDatabaseBackupOrRestoreRate        MetricConfig `mapstructure:"sqlserver.database.backup_or_restore.rate"`
 	SqlserverDatabaseCount                      MetricConfig `mapstructure:"sqlserver.database.count"`
@@ -89,6 +90,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		SqlserverBatchSQLRecompilationRate: MetricConfig{
 			Enabled: true,
+		},
+		SqlserverComputerUptime: MetricConfig{
+			Enabled: false,
 		},
 		SqlserverCPUCount: MetricConfig{
 			Enabled: false,
@@ -305,6 +309,7 @@ type ResourceAttributesConfig struct {
 	HostName              ResourceAttributeConfig `mapstructure:"host.name"`
 	ServerAddress         ResourceAttributeConfig `mapstructure:"server.address"`
 	ServerPort            ResourceAttributeConfig `mapstructure:"server.port"`
+	ServiceInstanceID     ResourceAttributeConfig `mapstructure:"service.instance.id"`
 	SqlserverComputerName ResourceAttributeConfig `mapstructure:"sqlserver.computer.name"`
 	SqlserverDatabaseName ResourceAttributeConfig `mapstructure:"sqlserver.database.name"`
 	SqlserverInstanceName ResourceAttributeConfig `mapstructure:"sqlserver.instance.name"`
@@ -320,6 +325,9 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 		},
 		ServerPort: ResourceAttributeConfig{
 			Enabled: false,
+		},
+		ServiceInstanceID: ResourceAttributeConfig{
+			Enabled: true,
 		},
 		SqlserverComputerName: ResourceAttributeConfig{
 			Enabled: false,

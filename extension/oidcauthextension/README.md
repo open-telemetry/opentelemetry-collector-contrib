@@ -22,10 +22,11 @@ This extension implements a `configauth.ServerAuthenticator`, to be used in rece
 ```yaml
 extensions:
   oidc:
-    issuer_url: http://localhost:8080/auth/realms/opentelemetry
-    issuer_ca_path: /etc/pki/tls/cert.pem
-    audience: account
-    username_claim: email
+    providers:
+      - issuer_url: http://localhost:8080/auth/realms/opentelemetry
+        issuer_ca_path: /etc/pki/tls/cert.pem
+        audience: account
+        username_claim: email
 
 receivers:
   otlp:
@@ -47,4 +48,55 @@ service:
       receivers: [otlp]
       processors: []
       exporters: [debug]
+```
+
+## Provider Matching
+
+Although multiple OIDC providers can be configured, incoming tokens will only be verified against a single provider. This is done by decoding the token, extracting the `iss` claim, and checking the configured providers for one with a matching `issuer_url` field.
+
+If no matching `issuer_url` is found, the extension will fail to authenticate with an error informing the caller that `no OIDC provider configured for the issuer`.
+
+## Configuration Structure Change
+
+Earlier versions of this extension only allowed configuring a single provider:
+```yaml
+extensions:
+  oidc:
+    issuer_url: http://localhost:8080/auth/realms/opentelemetry
+    issuer_ca_path: /etc/pki/tls/cert.pem
+```
+
+Although this configuration is still accepted by the extension, it is deprecated and support for it will be dropped in the future.
+
+## Accessing JWT Claims
+
+The OIDC extension allows you to access JWT claims in the processor context.
+This allows you to implement custom labeling based on received JWT token claims.
+
+```yaml
+extensions:
+  oidc:
+    providers:
+      - issuer_url: http://localhost:8080/auth/realms/opentelemetry
+        audience: account
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        auth:
+          authenticator: oidc
+
+processors:
+  resource:
+    attributes:
+      # Add predefined OIDC claims to the resource attributes
+      - key: subject
+        action: upsert
+        from_context: auth.claims.subject
+
+      # Adding dynamic claims from the JWT token
+      - key: tenant_id
+        action: upsert
+        from_context: auth.claims.tenant_id
 ```

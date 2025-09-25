@@ -22,9 +22,10 @@ var UseConvertBetweenSumAndGaugeMetricContext = featuregate.GlobalRegistry().Mus
 func DataPointFunctions() map[string]ottl.Factory[ottldatapoint.TransformContext] {
 	functions := ottlfuncs.StandardFuncs[ottldatapoint.TransformContext]()
 
-	datapointFunctions := ottl.CreateFactoryMap[ottldatapoint.TransformContext](
+	datapointFunctions := ottl.CreateFactoryMap(
 		newConvertSummarySumValToSumFactory(),
 		newConvertSummaryCountValToSumFactory(),
+		newMergeHistogramBucketsFactory(),
 	)
 
 	for k, v := range datapointFunctions {
@@ -47,6 +48,7 @@ func MetricFunctions() map[string]ottl.Factory[ottlmetric.TransformContext] {
 		newAggregateOnAttributesFactory(),
 		newconvertExponentialHistToExplicitHistFactory(),
 		newAggregateOnAttributeValueFactory(),
+		newConvertSummaryQuantileValToGaugeFactory(),
 	)
 
 	for k, v := range metricFunctions {

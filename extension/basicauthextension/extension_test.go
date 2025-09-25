@@ -5,7 +5,6 @@ package basicauthextension // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"bytes"
-	"context"
 	"encoding/base64"
 	"fmt"
 	"net/http"
@@ -57,7 +56,7 @@ func TestBasicAuth_Valid(t *testing.T) {
 	err := os.WriteFile(htpasswdFile, buf.Bytes(), 0o600)
 	require.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ext, err := newServerAuthExtension(&Config{
 		Htpasswd: &HtpasswdSettings{
@@ -90,8 +89,8 @@ func TestBasicAuth_InvalidCredentials(t *testing.T) {
 		},
 	})
 	require.NoError(t, err)
-	require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
-	_, err = ext.Authenticate(context.Background(), map[string][]string{"authorization": {"Basic dXNlcm5hbWU6cGFzc3dvcmR4eHg="}})
+	require.NoError(t, ext.Start(t.Context(), componenttest.NewNopHost()))
+	_, err = ext.Authenticate(t.Context(), map[string][]string{"authorization": {"Basic dXNlcm5hbWU6cGFzc3dvcmR4eHg="}})
 	assert.Equal(t, errInvalidCredentials, err)
 }
 
@@ -102,7 +101,7 @@ func TestBasicAuth_NoHeader(t *testing.T) {
 		},
 	})
 	require.NoError(t, err)
-	_, err = ext.Authenticate(context.Background(), map[string][]string{})
+	_, err = ext.Authenticate(t.Context(), map[string][]string{})
 	assert.Equal(t, errNoAuth, err)
 }
 
@@ -113,7 +112,7 @@ func TestBasicAuth_InvalidPrefix(t *testing.T) {
 		},
 	})
 	require.NoError(t, err)
-	_, err = ext.Authenticate(context.Background(), map[string][]string{"authorization": {"Bearer token"}})
+	_, err = ext.Authenticate(t.Context(), map[string][]string{"authorization": {"Bearer token"}})
 	assert.Equal(t, errInvalidSchemePrefix, err)
 }
 
@@ -126,7 +125,7 @@ func TestBasicAuth_NoFile(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, ext)
 
-	require.Error(t, ext.Start(context.Background(), componenttest.NewNopHost()))
+	require.Error(t, ext.Start(t.Context(), componenttest.NewNopHost()))
 }
 
 func TestBasicAuth_InvalidFormat(t *testing.T) {
@@ -141,7 +140,7 @@ func TestBasicAuth_InvalidFormat(t *testing.T) {
 		{"missing separator", "aW52YWxpZAo="},
 	} {
 		t.Run(auth[0], func(t *testing.T) {
-			_, err = ext.Authenticate(context.Background(), map[string][]string{"authorization": {"Basic " + auth[1]}})
+			_, err = ext.Authenticate(t.Context(), map[string][]string{"authorization": {"Basic " + auth[1]}})
 			assert.Equal(t, errInvalidFormat, err)
 		})
 	}
@@ -161,16 +160,16 @@ func TestBasicAuth_HtpasswdInlinePrecedence(t *testing.T) {
 		},
 	})
 	require.NoError(t, err)
-	require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, ext.Start(t.Context(), componenttest.NewNopHost()))
 
 	auth := base64.StdEncoding.EncodeToString([]byte("username:frominline"))
 
-	_, err = ext.Authenticate(context.Background(), map[string][]string{"authorization": {"Basic " + auth}})
+	_, err = ext.Authenticate(t.Context(), map[string][]string{"authorization": {"Basic " + auth}})
 	assert.NoError(t, err)
 
 	auth = base64.StdEncoding.EncodeToString([]byte("username:fromfile"))
 
-	_, err = ext.Authenticate(context.Background(), map[string][]string{"authorization": {"Basic " + auth}})
+	_, err = ext.Authenticate(t.Context(), map[string][]string{"authorization": {"Basic " + auth}})
 	assert.ErrorIs(t, errInvalidCredentials, err)
 }
 
@@ -181,7 +180,7 @@ func TestBasicAuth_SupportedHeaders(t *testing.T) {
 		},
 	})
 	require.NoError(t, err)
-	require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, ext.Start(t.Context(), componenttest.NewNopHost()))
 
 	auth := base64.StdEncoding.EncodeToString([]byte("username:password"))
 
@@ -190,7 +189,7 @@ func TestBasicAuth_SupportedHeaders(t *testing.T) {
 		"authorization",
 		"aUtHoRiZaTiOn",
 	} {
-		_, err = ext.Authenticate(context.Background(), map[string][]string{k: {"Basic " + auth}})
+		_, err = ext.Authenticate(t.Context(), map[string][]string{k: {"Basic " + auth}})
 		assert.NoError(t, err)
 	}
 }
@@ -208,7 +207,7 @@ func TestPerRPCAuth(t *testing.T) {
 	}
 
 	rpcAuth := &perRPCAuth{metadata: metadata}
-	md, err := rpcAuth.GetRequestMetadata(context.Background())
+	md, err := rpcAuth.GetRequestMetadata(t.Context())
 	assert.NoError(t, err)
 	assert.Equal(t, md, metadata)
 
@@ -235,7 +234,7 @@ func TestBasicAuth_ClientValid(t *testing.T) {
 	})
 	require.NotNil(t, ext)
 
-	require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, ext.Start(t.Context(), componenttest.NewNopHost()))
 
 	base := &mockRoundTripper{}
 	c, err := ext.RoundTripper(base)
@@ -260,7 +259,7 @@ func TestBasicAuth_ClientValid(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, credential)
 
-	md, err := credential.GetRequestMetadata(context.Background())
+	md, err := credential.GetRequestMetadata(t.Context())
 	expectedMd := map[string]string{
 		"authorization": fmt.Sprintf("Basic %s", authCreds),
 	}
@@ -268,7 +267,7 @@ func TestBasicAuth_ClientValid(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, credential.RequireTransportSecurity())
 
-	assert.NoError(t, ext.Shutdown(context.Background()))
+	assert.NoError(t, ext.Shutdown(t.Context()))
 }
 
 func TestBasicAuth_ClientInvalid(t *testing.T) {
@@ -281,7 +280,7 @@ func TestBasicAuth_ClientInvalid(t *testing.T) {
 		})
 		require.NotNil(t, ext)
 
-		require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
+		require.NoError(t, ext.Start(t.Context(), componenttest.NewNopHost()))
 
 		base := &mockRoundTripper{}
 		_, err := ext.RoundTripper(base)

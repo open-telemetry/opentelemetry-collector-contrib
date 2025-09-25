@@ -167,6 +167,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordPostgresqlTableVacuumCountDataPoint(ts, 1)
 
 			allMetricsCount++
+			mb.RecordPostgresqlTempIoDataPoint(ts, 1)
+
+			allMetricsCount++
 			mb.RecordPostgresqlTempFilesDataPoint(ts, 1)
 
 			allMetricsCount++
@@ -604,6 +607,20 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "Number of times a table has manually been vacuumed.", ms.At(i).Description())
 					assert.Equal(t, "{vacuums}", ms.At(i).Unit())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "postgresql.temp.io":
+					assert.False(t, validatedMetrics["postgresql.temp.io"], "Found a duplicate in the metrics slice: postgresql.temp.io")
+					validatedMetrics["postgresql.temp.io"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Total amount of data written to temporary files by queries.", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
 					assert.True(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)

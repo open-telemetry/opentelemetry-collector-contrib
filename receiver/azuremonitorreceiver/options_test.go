@@ -11,14 +11,13 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
 	"github.com/Azure/azure-sdk-for-go/sdk/monitor/query/azmetrics"
+	azmetricsfake "github.com/Azure/azure-sdk-for-go/sdk/monitor/query/azmetrics/fake"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/monitor/armmonitor"
 	armmonitorfake "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/monitor/armmonitor/fake"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources/v3"
 	armresourcesfake "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources/v3/fake"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions"
 	armsubscriptionsfake "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions/fake"
-
-	azmetricsfake "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver/fake"
 )
 
 func TestAzureScraperClientOptions(t *testing.T) {
@@ -144,12 +143,12 @@ func newMockClientOptionsResolver(
 	}
 
 	// Init az metrics client options from metrics query responses mock data
-	azMetricsServer := azmetricsfake.MetricsServer{
+	azMetricsServer := azmetricsfake.Server{
 		QueryResources: newMockMetricsQueryResponse(metricsQueryResponses),
 	}
 	azMetricsClientOptions := &azmetrics.ClientOptions{
 		ClientOptions: azcore.ClientOptions{
-			Transport: azmetricsfake.NewMetricsServerTransport(&azMetricsServer),
+			Transport: azmetricsfake.NewServerTransport(&azMetricsServer),
 		},
 	}
 

@@ -315,6 +315,14 @@ The number of sequential scans.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {sequential_scan} | Sum | Int | Cumulative | true |
 
+### postgresql.temp.io
+
+Total amount of data written to temporary files by queries.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | true |
+
 ### postgresql.temp_files
 
 The number of temp files.
@@ -413,6 +421,7 @@ query sample
 | postgresql.wait_event | Wait event name if backend is currently waiting, otherwise NULL. | Any Str |
 | postgresql.wait_event_type | The type of event for which the backend is waiting, if any; otherwise NULL. | Any Str |
 | postgresql.query_id | Identifier of this backend's most recent query. If state is active this field shows the identifier of the currently executing query. In all other states, it shows the identifier of last query that was executed. | Any Str |
+| postgresql.total_exec_time | Total time spent executing the statement, in delta milliseconds. | Any Double |
 
 ### db.server.top_query
 

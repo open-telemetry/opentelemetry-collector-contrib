@@ -32,6 +32,7 @@ const (
 	spanNameKey                    = "span.name"                          // OpenTelemetry non-standard constant.
 	spanKindKey                    = "span.kind"                          // OpenTelemetry non-standard constant.
 	statusCodeKey                  = "status.code"                        // OpenTelemetry non-standard constant.
+	collectorInstanceKey           = "collector.instance.id"              // OpenTelemetry non-standard constant.
 	instrumentationScopeNameKey    = "span.instrumentation.scope.name"    // OpenTelemetry non-standard constant.
 	instrumentationScopeVersionKey = "span.instrumentation.scope.version" // OpenTelemetry non-standard constant.
 	metricKeySeparator             = string(byte(0))
@@ -46,6 +47,8 @@ const (
 
 	// https://github.com/open-telemetry/opentelemetry-go/blob/3ae002c3caf3e44387f0554dfcbbde2c5aab7909/sdk/metric/internal/aggregate/limit.go#L11C36-L11C50
 	overflowKey = "otel.metric.overflow"
+
+	defaultMaxPerDatapoint = 5
 )
 
 type connectorImp struct {
@@ -84,6 +87,7 @@ type connectorImp struct {
 
 	// Tracks the last TimestampUnixNano for delta metrics so that they represent an uninterrupted series. Unused for cumulative span metrics.
 	lastDeltaTimestamps *simplelru.LRU[metrics.Key, pcommon.Timestamp]
+	instanceID          string
 }
 
 type resourceMetrics struct {
@@ -110,7 +114,7 @@ func newDimensions(cfgDims []Dimension) []utilattri.Dimension {
 	return dims
 }
 
-func newConnector(logger *zap.Logger, config component.Config, clock clockwork.Clock) (*connectorImp, error) {
+func newConnector(logger *zap.Logger, config component.Config, clock clockwork.Clock, instanceID string) (*connectorImp, error) {
 	logger.Info("Building spanmetrics connector")
 	cfg := config.(*Config)
 	if cfg.DimensionsCacheSize != 0 {
@@ -153,6 +157,7 @@ func newConnector(logger *zap.Logger, config component.Config, clock clockwork.C
 		callsDimensions:              newDimensions(cfg.CallsDimensions),
 		durationDimensions:           newDimensions(cfg.Histogram.Dimensions),
 		events:                       cfg.Events,
+		instanceID:                   instanceID,
 	}, nil
 }
 
@@ -160,17 +165,19 @@ func initHistogramMetrics(cfg Config) metrics.HistogramMetrics {
 	if cfg.Histogram.Disable {
 		return nil
 	}
-	if cfg.Histogram.Exponential != nil {
+	if cfg.Histogram.Exponential.HasValue() {
 		maxSize := structure.DefaultMaxSize
-		if cfg.Histogram.Exponential.MaxSize != 0 {
-			maxSize = cfg.Histogram.Exponential.MaxSize
+		if expConfig := cfg.Histogram.Exponential.Get(); expConfig != nil && expConfig.MaxSize != 0 {
+			maxSize = expConfig.MaxSize
 		}
 		return metrics.NewExponentialHistogramMetrics(maxSize, cfg.Exemplars.MaxPerDataPoint, cfg.AggregationCardinalityLimit)
 	}
 
 	var bounds []float64
-	if cfg.Histogram.Explicit != nil && cfg.Histogram.Explicit.Buckets != nil {
-		bounds = durationsToUnits(cfg.Histogram.Explicit.Buckets, unitDivider(cfg.Histogram.Unit))
+	if cfg.Histogram.Explicit.HasValue() {
+		if expConfig := cfg.Histogram.Explicit.Get(); expConfig != nil && expConfig.Buckets != nil {
+			bounds = durationsToUnits(expConfig.Buckets, unitDivider(cfg.Histogram.Unit))
+		}
 	} else {
 		switch cfg.Histogram.Unit {
 		case metrics.Milliseconds:
@@ -525,7 +532,7 @@ func (p *connectorImp) buildAttributes(
 	instrumentationScope pcommon.InstrumentationScope,
 ) pcommon.Map {
 	attr := pcommon.NewMap()
-	attr.EnsureCapacity(4 + len(dimensions))
+	attr.EnsureCapacity(5 + len(dimensions))
 	if !contains(p.config.ExcludeDimensions, serviceNameKey) {
 		attr.PutStr(serviceNameKey, serviceName)
 	}
@@ -537,6 +544,11 @@ func (p *connectorImp) buildAttributes(
 	}
 	if !contains(p.config.ExcludeDimensions, statusCodeKey) {
 		attr.PutStr(statusCodeKey, traceutil.StatusCodeStr(span.Status().Code()))
+	}
+	if includeCollectorInstanceID.IsEnabled() {
+		if !contains(p.config.ExcludeDimensions, collectorInstanceKey) {
+			attr.PutStr(collectorInstanceKey, p.instanceID)
+		}
 	}
 
 	if contains(p.config.IncludeInstrumentationScope, instrumentationScope.Name()) && instrumentationScope.Name() != "" {

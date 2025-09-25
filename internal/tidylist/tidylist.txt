@@ -11,10 +11,6 @@ connector/spanmetricsconnector
 internal/common
 pkg/resourcetotelemetry
 exporter/carbonexporter
-pkg/translator/opencensus
-internal/sharedcomponent
-receiver/opencensusreceiver
-exporter/opencensusexporter
 pkg/translator/prometheus
 pkg/translator/prometheusremotewrite
 exporter/prometheusremotewriteexporter
@@ -42,6 +38,7 @@ internal/aws/ecsutil
 internal/k8sconfig
 internal/metadataproviders
 internal/datadog
+internal/sharedcomponent
 pkg/datadog
 receiver/datadogreceiver
 receiver/jaegerreceiver
@@ -127,8 +124,6 @@ exporter/kafkaexporter
 exporter/loadbalancingexporter
 exporter/logicmonitorexporter
 exporter/logzioexporter
-pkg/translator/loki
-exporter/lokiexporter
 exporter/mezmoexporter
 exporter/opensearchexporter
 internal/grpcutil
@@ -171,6 +166,7 @@ extension/googleclientauthextension
 extension/headerssetterextension
 extension/healthcheckextension
 pkg/status
+internal/healthcheck
 extension/healthcheckv2extension
 extension/httpforwarderextension
 extension/jaegerremotesampling
@@ -204,6 +200,8 @@ internal/sqlquery
 internal/tools
 pkg/translator/azure
 pkg/translator/azurelogs
+pkg/translator/loki
+pkg/translator/opencensus
 processor/attributesprocessor
 processor/coralogixprocessor
 processor/cumulativetodeltaprocessor
@@ -215,6 +213,7 @@ processor/geoipprocessor
 processor/groupbyattrsprocessor
 processor/groupbytraceprocessor
 processor/intervalprocessor
+processor/isolationforestprocessor
 processor/logdedupprocessor
 processor/logstransformprocessor
 processor/metricsgenerationprocessor
@@ -223,15 +222,14 @@ processor/metricstransformprocessor
 processor/redactionprocessor
 processor/remotetapprocessor
 processor/resourceprocessor
-processor/routingprocessor
 processor/schemaprocessor
 processor/spanprocessor
 processor/sumologicprocessor
+processor/unrollprocessor
 receiver/activedirectorydsreceiver
 receiver/aerospikereceiver
 receiver/apachereceiver
 receiver/apachesparkreceiver
-receiver/awscloudwatchmetricsreceiver
 receiver/awscloudwatchreceiver
 receiver/awscontainerinsightreceiver
 receiver/awsecscontainermetricsreceiver
@@ -299,7 +297,6 @@ receiver/receivercreator
 receiver/redisreceiver
 receiver/riakreceiver
 receiver/saphanareceiver
-receiver/sapmreceiver
 receiver/simpleprometheusreceiver/examples/federation/prom-counter
 receiver/simpleprometheusreceiver
 receiver/skywalkingreceiver

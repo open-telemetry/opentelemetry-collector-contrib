@@ -28,7 +28,7 @@ The following configuration options are required:
 Multiple policies exist today and it is straight forward to add more. These include:
 - `always_sample`: Sample all traces
 - `latency`: Sample based on the duration of the trace. The duration is determined by looking at the earliest start time and latest end time, without taking into consideration what happened in between. Supplying no upper bound will result in a policy sampling anything greater than `threshold_ms`.
-- `numeric_attribute`: Sample based on number attributes (resource and record)
+- `numeric_attribute`: Sample based on number attributes (resource and record) by `min_value` and/or `max_value`
 - `probabilistic`: Sample a percentage of traces. Read [a comparison with the Probabilistic Sampling Processor](#probabilistic-sampling-processor-compared-to-the-tail-sampling-processor-with-the-probabilistic-policy).
 - `status_code`: Sample based upon the status code (`OK`, `ERROR` or `UNSET`)
 - `string_attribute`: Sample based on string attributes (resource and record) value matches, both exact and regex value matches are supported
@@ -545,21 +545,31 @@ otelcol_processor_tail_sampling_global_count_traces_sampled
 To see how often each policy votes to sample a trace, use:
 
 ```
-sum (otelcol_processor_tail_sampling_count_traces_sampled{sampled="true"}) by (policy) /
+sum (otelcol_processor_tail_sampling_count_traces_sampled{decision="sampled"}) by (policy) /
 sum (otelcol_processor_tail_sampling_count_traces_sampled) by (policy)
 ```
 
-As a reminder, a policy voting to sample the trace does not guarantee sampling; an "inverted not" decision from another policy would still discard the trace.
+As a reminder, a policy voting to sample the trace does not guarantee sampling; an "inverted not" or "drop" decision from another policy would still discard the trace.
+
+**Drop Policy Decision Frequency**
+
+To track how often a drop policy votes to drop a trace, use:
+
+```
+sum (otelcol_processor_tail_sampling_count_traces_sampled{decision="dropped"}) by (policy) /
+sum (otelcol_processor_tail_sampling_count_traces_sampled) by (policy)
+```
 
 ### Tracking sampling policy
 To better understand _which_ sampling policy made the decision to include a trace, you can enable tracking the policy responsible for sampling a trace via the `processor.tailsamplingprocessor.recordpolicy` feature gate.
 
 When this feature gate is set, this will add additional attributes on each sampled span:
 
-| Attribute                       | Description                                                               | Present?                   |
-|---------------------------------|---------------------------------------------------------------------------|----------------------------|
-| `tailsampling.policy`           | Records the configured name of the policy that sampled a trace            | Always                     |
-| `tailsampling.composite_policy` | Records the configured name of a composite subpolicy that sampled a trace | When composite policy used |
+| Attribute                       | Description                                                               | Present?                                               |
+|---------------------------------|---------------------------------------------------------------------------|--------------------------------------------------------|
+| `tailsampling.policy`           | Records the configured name of the policy that sampled a trace            | Always, unless trace was sampled by the decision cache |
+| `tailsampling.composite_policy` | Records the configured name of a composite subpolicy that sampled a trace | When composite policy used                             |
+| `tailsampling.cached_decision`  | Records whether a trace was sampled by the decision cache                 | When decision cache used                               |
 
 ### Disable invert decisions
 

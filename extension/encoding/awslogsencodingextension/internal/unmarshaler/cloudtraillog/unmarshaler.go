@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler"
 )
@@ -23,6 +24,32 @@ type CloudTrailLogUnmarshaler struct {
 }
 
 var _ unmarshaler.AWSUnmarshaler = (*CloudTrailLogUnmarshaler)(nil)
+
+// UserIdentity represents the user identity information in CloudTrail logs
+type UserIdentity struct {
+	Type             string `json:"type"`
+	PrincipalID      string `json:"principalId"`
+	ARN              string `json:"arn"`
+	AccountID        string `json:"accountId"`
+	AccessKeyID      string `json:"accessKeyId"`
+	UserName         string `json:"userName"`
+	UserID           string `json:"userId"`
+	IdentityStoreARN string `json:"identityStoreArn"`
+}
+
+// TLSDetails represents the TLS connection details in CloudTrail logs
+type TLSDetails struct {
+	TLSVersion               string `json:"tlsVersion"`
+	CipherSuite              string `json:"cipherSuite"`
+	ClientProvidedHostHeader string `json:"clientProvidedHostHeader"`
+}
+
+// Resource represents a resource referenced in CloudTrail logs
+type Resource struct {
+	AccountID string `json:"accountId"`
+	Type      string `json:"type"`
+	ARN       string `json:"ARN"`
+}
 
 // CloudTrailRecord represents a CloudTrail log record
 // There is no builtin CloudTrailRecord we can leverage like in S3
@@ -40,13 +67,13 @@ type CloudTrailRecord struct {
 	EventType                    string         `json:"eventType"`
 	EventCategory                string         `json:"eventCategory"`
 	RecipientAccountID           string         `json:"recipientAccountId"`
-	UserIdentity                 map[string]any `json:"userIdentity"`
+	UserIdentity                 *UserIdentity  `json:"userIdentity"`
 	ResponseElements             map[string]any `json:"responseElements"`
 	RequestParameters            map[string]any `json:"requestParameters"`
-	Resources                    []any          `json:"resources"`
+	Resources                    []*Resource    `json:"resources"`
 	ReadOnly                     *bool          `json:"readOnly"`
 	ManagementEvent              *bool          `json:"managementEvent"`
-	TLSDetails                   map[string]any `json:"tlsDetails"`
+	TLSDetails                   *TLSDetails    `json:"tlsDetails"`
 	SessionCredentialFromConsole string         `json:"sessionCredentialFromConsole"`
 	ErrorCode                    string         `json:"errorCode"`
 	ErrorMessage                 string         `json:"errorMessage"`
@@ -90,12 +117,14 @@ func (u *CloudTrailLogUnmarshaler) processRecords(records []CloudTrailRecord) (p
 	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
 	scopeLogs.Scope().SetName(metadata.ScopeName)
 	scopeLogs.Scope().SetVersion(u.buildInfo.Version)
+	scopeLogs.Scope().Attributes().PutStr(constants.FormatIdentificationTag, constants.FormatCloudTrailLog)
 
 	// Set resource attributes based on the first record
 	// (all records have the same account ID and region)
 	u.setResourceAttributes(resourceLogs.Resource().Attributes(), records[0])
 
-	for _, record := range records {
+	for i := range records {
+		record := &records[i]
 		logRecord := scopeLogs.LogRecords().AppendEmpty()
 		if err := u.setLogRecord(logRecord, record); err != nil {
 			return plog.Logs{}, err
@@ -111,7 +140,7 @@ func (*CloudTrailLogUnmarshaler) setResourceAttributes(attrs pcommon.Map, record
 	attrs.PutStr(string(conventions.CloudAccountIDKey), record.RecipientAccountID)
 }
 
-func (u *CloudTrailLogUnmarshaler) setLogRecord(logRecord plog.LogRecord, record CloudTrailRecord) error {
+func (u *CloudTrailLogUnmarshaler) setLogRecord(logRecord plog.LogRecord, record *CloudTrailRecord) error {
 	t, err := time.Parse(time.RFC3339, record.EventTime)
 	if err != nil {
 		return fmt.Errorf("failed to parse timestamp of log: %w", err)
@@ -121,7 +150,7 @@ func (u *CloudTrailLogUnmarshaler) setLogRecord(logRecord plog.LogRecord, record
 	return nil
 }
 
-func (*CloudTrailLogUnmarshaler) setLogAttributes(attrs pcommon.Map, record CloudTrailRecord) {
+func (*CloudTrailLogUnmarshaler) setLogAttributes(attrs pcommon.Map, record *CloudTrailRecord) {
 	attrs.PutStr("aws.cloudtrail.event_version", record.EventVersion)
 
 	attrs.PutStr("aws.cloudtrail.event_id", record.EventID)
@@ -163,44 +192,48 @@ func (*CloudTrailLogUnmarshaler) setLogAttributes(attrs pcommon.Map, record Clou
 	}
 
 	if record.UserIdentity != nil {
-		if userID, ok := record.UserIdentity["userId"].(string); ok {
-			attrs.PutStr(string(conventions.UserIDKey), userID)
+		if record.UserIdentity.UserID != "" {
+			attrs.PutStr(string(conventions.UserIDKey), record.UserIdentity.UserID)
 		}
 
-		if userName, ok := record.UserIdentity["userName"].(string); ok {
-			attrs.PutStr(string(conventions.UserNameKey), userName)
+		if record.UserIdentity.UserName != "" {
+			attrs.PutStr(string(conventions.UserNameKey), record.UserIdentity.UserName)
+		}
+
+		if record.UserIdentity.AccessKeyID != "" {
+			attrs.PutStr("aws.access_key.id", record.UserIdentity.AccessKeyID)
 		}
 
 		// Store the Identity Store ARN and others as custom attributes
 		// since there are no standard conventions for them
-		if identityStoreArn, ok := record.UserIdentity["identityStoreArn"].(string); ok {
-			attrs.PutStr("aws.identity_store.arn", identityStoreArn)
+		if record.UserIdentity.IdentityStoreARN != "" {
+			attrs.PutStr("aws.identity_store.arn", record.UserIdentity.IdentityStoreARN)
 		}
 
-		if principalID, ok := record.UserIdentity["principalId"].(string); ok {
-			attrs.PutStr("aws.principal.id", principalID)
+		if record.UserIdentity.PrincipalID != "" {
+			attrs.PutStr("aws.principal.id", record.UserIdentity.PrincipalID)
 		}
 
-		if arn, ok := record.UserIdentity["arn"].(string); ok {
-			attrs.PutStr("aws.principal.arn", arn)
+		if record.UserIdentity.ARN != "" {
+			attrs.PutStr("aws.principal.arn", record.UserIdentity.ARN)
 		}
 
-		if identityType, ok := record.UserIdentity["type"].(string); ok {
-			attrs.PutStr("aws.principal.type", identityType)
+		if record.UserIdentity.Type != "" {
+			attrs.PutStr("aws.principal.type", record.UserIdentity.Type)
 		}
 	}
 
 	if record.TLSDetails != nil {
-		if tlsVersion, ok := record.TLSDetails["tlsVersion"].(string); ok {
+		if record.TLSDetails.TLSVersion != "" {
 			// Extract only the version number from TLSv1.2 format
-			version := extractTLSVersion(tlsVersion)
+			version := extractTLSVersion(record.TLSDetails.TLSVersion)
 			attrs.PutStr(string(conventions.TLSProtocolVersionKey), version)
 		}
-		if cipherSuite, ok := record.TLSDetails["cipherSuite"].(string); ok {
-			attrs.PutStr(string(conventions.TLSCipherKey), cipherSuite)
+		if record.TLSDetails.CipherSuite != "" {
+			attrs.PutStr(string(conventions.TLSCipherKey), record.TLSDetails.CipherSuite)
 		}
-		if hostHeader, ok := record.TLSDetails["clientProvidedHostHeader"].(string); ok {
-			attrs.PutStr(string(conventions.ServerAddressKey), hostHeader)
+		if record.TLSDetails.ClientProvidedHostHeader != "" {
+			attrs.PutStr(string(conventions.ServerAddressKey), record.TLSDetails.ClientProvidedHostHeader)
 		}
 	}
 
@@ -233,7 +266,18 @@ func (*CloudTrailLogUnmarshaler) setLogAttributes(attrs pcommon.Map, record Clou
 
 	if len(record.Resources) > 0 {
 		resourcesArray := attrs.PutEmptySlice("aws.resources")
-		_ = resourcesArray.FromRaw(record.Resources)
+		for _, resource := range record.Resources {
+			resourceMap := resourcesArray.AppendEmpty().SetEmptyMap()
+			if resource.AccountID != "" {
+				resourceMap.PutStr("account.id", resource.AccountID)
+			}
+			if resource.Type != "" {
+				resourceMap.PutStr("type", resource.Type)
+			}
+			if resource.ARN != "" {
+				resourceMap.PutStr("arn", resource.ARN)
+			}
+		}
 	}
 }
 

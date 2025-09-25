@@ -15,6 +15,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
+	types "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/pkg"
 )
 
 const (
@@ -66,11 +67,28 @@ func TestFixedNumberOfLogs(t *testing.T) {
 	require.Len(t, m.logs, 5)
 }
 
+func TestDurationInf(t *testing.T) {
+	cfg := &Config{
+		Config: common.Config{
+			TotalDuration: types.DurationWithInf(-1),
+		},
+		SeverityText:   "Info",
+		SeverityNumber: 9,
+	}
+	m := &mockExporter{}
+	expFunc := func() (sdklog.Exporter, error) {
+		return m, nil
+	}
+
+	// test
+	require.NoError(t, run(cfg, expFunc, zap.NewNop()))
+}
+
 func TestRateOfLogs(t *testing.T) {
 	cfg := &Config{
 		Config: common.Config{
 			Rate:          10,
-			TotalDuration: time.Second / 2,
+			TotalDuration: types.DurationWithInf(time.Second / 2),
 			WorkerCount:   1,
 		},
 		SeverityText:   "Info",
@@ -94,7 +112,7 @@ func TestRateOfLogs(t *testing.T) {
 func TestUnthrottled(t *testing.T) {
 	cfg := &Config{
 		Config: common.Config{
-			TotalDuration: 1 * time.Second,
+			TotalDuration: types.DurationWithInf(1 * time.Second),
 			WorkerCount:   1,
 		},
 		SeverityText:   "Info",
@@ -236,7 +254,7 @@ func TestValidate(t *testing.T) {
 		wantErrMessage string
 	}{
 		{
-			name: "No duration or NumLogs",
+			name: "No duration, NumLogs",
 			cfg: &Config{
 				Config: common.Config{
 					WorkerCount: 1,
@@ -267,6 +285,17 @@ func TestValidate(t *testing.T) {
 				SpanID:  "123",
 			},
 			wantErrMessage: "SpanID must be a 16 character hex string, like: '5828fa4960140870'",
+		},
+		{
+			name: "LoadSize negative",
+			cfg: &Config{
+				Config: common.Config{
+					WorkerCount: 1,
+					LoadSize:    -1,
+				},
+				NumLogs: 5,
+			},
+			wantErrMessage: "load size must be non-negative, found -1",
 		},
 	}
 	for _, tt := range tests {
@@ -319,4 +348,109 @@ func configWithMultipleAttributes(qty int, body string) *Config {
 		SeverityText:   "Info",
 		SeverityNumber: 9,
 	}
+}
+
+func TestLogsWithLoadSize(t *testing.T) {
+	// arrange
+	cfg := &Config{
+		Config: common.Config{
+			WorkerCount: 1,
+			LoadSize:    2, // 2MB of load data
+		},
+		NumLogs:        1,
+		Body:           "test log",
+		SeverityText:   "Info",
+		SeverityNumber: 9,
+	}
+	m := &mockExporter{}
+	expFunc := func() (sdklog.Exporter, error) {
+		return m, nil
+	}
+
+	// act
+	logger, _ := zap.NewDevelopment()
+	require.NoError(t, run(cfg, expFunc, logger))
+
+	time.Sleep(1 * time.Second)
+
+	// assert
+	require.Len(t, m.logs, 1)
+	logRecord := m.logs[0]
+
+	// Should have 3 attributes: "app" + 2 load attributes (load-0 and load-1)
+	assert.Equal(t, 3, logRecord.AttributesLen(), "should have 3 attributes")
+
+	// Check that load attributes exist and have the expected size
+	var load0Found, load1Found bool
+	logRecord.WalkAttributes(func(attr log.KeyValue) bool {
+		if attr.Key == "load-0" {
+			load0Found = true
+			assert.Len(t, attr.Value.AsString(), common.CharactersPerMB, "load-0 should have 1MB of data")
+		}
+		if attr.Key == "load-1" {
+			load1Found = true
+			assert.Len(t, attr.Value.AsString(), common.CharactersPerMB, "load-1 should have 1MB of data")
+		}
+		return true
+	})
+
+	assert.True(t, load0Found, "should have load-0 attribute")
+	assert.True(t, load1Found, "should have load-1 attribute")
+}
+
+func TestLogsWithDefaultLoadSize(t *testing.T) {
+	// arrange
+	cfg := NewConfig()
+	cfg.NumLogs = 1
+	cfg.Body = "test log"
+	// LoadSize should default to 0
+
+	m := &mockExporter{}
+	expFunc := func() (sdklog.Exporter, error) {
+		return m, nil
+	}
+
+	// act
+	logger, _ := zap.NewDevelopment()
+	require.NoError(t, run(cfg, expFunc, logger))
+
+	time.Sleep(1 * time.Second)
+
+	// assert
+	require.Len(t, m.logs, 1)
+	logRecord := m.logs[0]
+
+	// Should have only 1 attribute ("app") by default (LoadSize = 0)
+	assert.Equal(t, 1, logRecord.AttributesLen(), "should have only 1 attribute by default")
+}
+
+func TestLogsWithZeroLoadSize(t *testing.T) {
+	// arrange
+	cfg := &Config{
+		Config: common.Config{
+			WorkerCount: 1,
+			LoadSize:    0, // Disable load size
+		},
+		NumLogs:        1,
+		Body:           "test log",
+		SeverityText:   "Info",
+		SeverityNumber: 9,
+	}
+	m := &mockExporter{}
+	expFunc := func() (sdklog.Exporter, error) {
+		return m, nil
+	}
+
+	// act
+	logger, _ := zap.NewDevelopment()
+	require.NoError(t, run(cfg, expFunc, logger))
+
+	time.Sleep(1 * time.Second)
+
+	// assert
+	require.Len(t, m.logs, 1)
+	logRecord := m.logs[0]
+
+	// Should have only 1 attribute ("app") when LoadSize is 0
+	assert.Equal(t, 1, logRecord.AttributesLen(), "should have only 1 attribute when LoadSize is 0")
 }

@@ -6,7 +6,6 @@
 package gopsutilenv
 
 import (
-	"context"
 	"testing"
 
 	"github.com/shirou/gopsutil/v4/common"
@@ -22,6 +21,6 @@ func TestRootPathUnset(t *testing.T) {
 }
 
 func TestGetEnvWithContext(t *testing.T) {
-	val := GetEnvWithContext(context.Background(), string(common.HostProcEnvKey), "default")
+	val := GetEnvWithContext(t.Context(), string(common.HostProcEnvKey), "default")
 	assert.Equal(t, "default", val)
 }

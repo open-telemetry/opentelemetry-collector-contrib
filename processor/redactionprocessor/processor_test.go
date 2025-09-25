@@ -16,9 +16,11 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap/zaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor/internal/url"
 )
 
-type TestConfig struct {
+type testConfig struct {
 	allowed       map[string]pcommon.Value
 	ignored       map[string]pcommon.Value
 	redacted      map[string]pcommon.Value
@@ -32,7 +34,7 @@ type TestConfig struct {
 // TestRedactUnknownAttributes validates that the processor deletes span
 // attributes that are not the allowed keys list
 func TestRedactUnknownAttributes(t *testing.T) {
-	testConfig := TestConfig{
+	tc := testConfig{
 		config: &Config{
 			AllowedKeys: []string{"group", "id", "name"},
 		},
@@ -49,31 +51,45 @@ func TestRedactUnknownAttributes(t *testing.T) {
 		},
 	}
 
-	outTraces := runTest(t, testConfig)
-	outLogs := runLogsTest(t, testConfig)
-	outMetricsGauge := runMetricsTest(t, testConfig, pmetric.MetricTypeGauge)
-	outMetricsSum := runMetricsTest(t, testConfig, pmetric.MetricTypeSum)
-	outMetricsHistogram := runMetricsTest(t, testConfig, pmetric.MetricTypeHistogram)
-	outMetricsExponentialHistogram := runMetricsTest(t, testConfig, pmetric.MetricTypeExponentialHistogram)
-	outMetricsSummary := runMetricsTest(t, testConfig, pmetric.MetricTypeSummary)
+	outTraces := runTest(t, tc)
+	outLogs := runLogsTest(t, tc)
+	outMetricsGauge := runMetricsTest(t, tc, pmetric.MetricTypeGauge)
+	outMetricsSum := runMetricsTest(t, tc, pmetric.MetricTypeSum)
+	outMetricsHistogram := runMetricsTest(t, tc, pmetric.MetricTypeHistogram)
+	outMetricsExponentialHistogram := runMetricsTest(t, tc, pmetric.MetricTypeExponentialHistogram)
+	outMetricsSummary := runMetricsTest(t, tc, pmetric.MetricTypeSummary)
 
 	attrs := []pcommon.Map{
+		outTraces.ResourceSpans().At(0).Resource().Attributes(),
+		outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Scope().Attributes(),
 		outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes(),
+		outLogs.ResourceLogs().At(0).Resource().Attributes(),
+		outLogs.ResourceLogs().At(0).ScopeLogs().At(0).Scope().Attributes(),
 		outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes(),
 		outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().Map(),
+		outMetricsGauge.ResourceMetrics().At(0).Resource().Attributes(),
+		outMetricsGauge.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes(),
 		outMetricsGauge.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes(),
+		outMetricsSum.ResourceMetrics().At(0).Resource().Attributes(),
+		outMetricsSum.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes(),
 		outMetricsSum.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes(),
+		outMetricsHistogram.ResourceMetrics().At(0).Resource().Attributes(),
+		outMetricsHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes(),
 		outMetricsHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Histogram().DataPoints().At(0).Attributes(),
+		outMetricsExponentialHistogram.ResourceMetrics().At(0).Resource().Attributes(),
+		outMetricsExponentialHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes(),
 		outMetricsExponentialHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).ExponentialHistogram().DataPoints().At(0).Attributes(),
+		outMetricsSummary.ResourceMetrics().At(0).Resource().Attributes(),
+		outMetricsSummary.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes(),
 		outMetricsSummary.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Summary().DataPoints().At(0).Attributes(),
 	}
 	for _, attr := range attrs {
-		for k, v := range testConfig.allowed {
+		for k, v := range tc.allowed {
 			val, ok := attr.Get(k)
 			assert.True(t, ok)
 			assert.Equal(t, v.AsRaw(), val.AsRaw())
 		}
-		for k := range testConfig.redacted {
+		for k := range tc.redacted {
 			_, ok := attr.Get(k)
 			assert.False(t, ok)
 		}
@@ -84,7 +100,7 @@ func TestRedactUnknownAttributes(t *testing.T) {
 // span attributes that are not the allowed keys list if Config.AllowAllKeys
 // is set to true
 func TestAllowAllKeys(t *testing.T) {
-	testConfig := TestConfig{
+	tc := testConfig{
 		config: &Config{
 			AllowedKeys:  []string{"group", "id"},
 			AllowAllKeys: true,
@@ -96,27 +112,41 @@ func TestAllowAllKeys(t *testing.T) {
 		},
 	}
 
-	outTraces := runTest(t, testConfig)
-	outLogs := runLogsTest(t, testConfig)
-	outMetricsGauge := runMetricsTest(t, testConfig, pmetric.MetricTypeGauge)
-	outMetricsSum := runMetricsTest(t, testConfig, pmetric.MetricTypeSum)
-	outMetricsHistogram := runMetricsTest(t, testConfig, pmetric.MetricTypeHistogram)
-	outMetricsExponentialHistogram := runMetricsTest(t, testConfig, pmetric.MetricTypeExponentialHistogram)
-	outMetricsSummary := runMetricsTest(t, testConfig, pmetric.MetricTypeSummary)
+	outTraces := runTest(t, tc)
+	outLogs := runLogsTest(t, tc)
+	outMetricsGauge := runMetricsTest(t, tc, pmetric.MetricTypeGauge)
+	outMetricsSum := runMetricsTest(t, tc, pmetric.MetricTypeSum)
+	outMetricsHistogram := runMetricsTest(t, tc, pmetric.MetricTypeHistogram)
+	outMetricsExponentialHistogram := runMetricsTest(t, tc, pmetric.MetricTypeExponentialHistogram)
+	outMetricsSummary := runMetricsTest(t, tc, pmetric.MetricTypeSummary)
 
 	attrs := []pcommon.Map{
+		outTraces.ResourceSpans().At(0).Resource().Attributes(),
+		outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Scope().Attributes(),
 		outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes(),
+		outLogs.ResourceLogs().At(0).Resource().Attributes(),
+		outLogs.ResourceLogs().At(0).ScopeLogs().At(0).Scope().Attributes(),
 		outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes(),
 		outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().Map(),
+		outMetricsGauge.ResourceMetrics().At(0).Resource().Attributes(),
+		outMetricsGauge.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes(),
 		outMetricsGauge.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes(),
+		outMetricsSum.ResourceMetrics().At(0).Resource().Attributes(),
+		outMetricsSum.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes(),
 		outMetricsSum.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes(),
+		outMetricsHistogram.ResourceMetrics().At(0).Resource().Attributes(),
+		outMetricsHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes(),
 		outMetricsHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Histogram().DataPoints().At(0).Attributes(),
+		outMetricsExponentialHistogram.ResourceMetrics().At(0).Resource().Attributes(),
+		outMetricsExponentialHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes(),
 		outMetricsExponentialHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).ExponentialHistogram().DataPoints().At(0).Attributes(),
+		outMetricsSummary.ResourceMetrics().At(0).Resource().Attributes(),
+		outMetricsSummary.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes(),
 		outMetricsSummary.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Summary().DataPoints().At(0).Attributes(),
 	}
 
 	for _, attr := range attrs {
-		for k, v := range testConfig.allowed {
+		for k, v := range tc.allowed {
 			val, ok := attr.Get(k)
 			assert.True(t, ok)
 			assert.Equal(t, v.AsRaw(), val.AsRaw())
@@ -129,7 +159,7 @@ func TestAllowAllKeys(t *testing.T) {
 // TestAllowAllKeysMaskValues validates that the processor still redacts
 // span attribute values if Config.AllowAllKeys is set to true
 func TestAllowAllKeysMaskValues(t *testing.T) {
-	testConfig := TestConfig{
+	tc := testConfig{
 		config: &Config{
 			AllowedKeys:   []string{"group", "id", "name"},
 			BlockedValues: []string{"4[0-9]{12}(?:[0-9]{3})?"},
@@ -148,27 +178,41 @@ func TestAllowAllKeysMaskValues(t *testing.T) {
 		},
 	}
 
-	outTraces := runTest(t, testConfig)
-	outLogs := runLogsTest(t, testConfig)
-	outMetricsGauge := runMetricsTest(t, testConfig, pmetric.MetricTypeGauge)
-	outMetricsSum := runMetricsTest(t, testConfig, pmetric.MetricTypeSum)
-	outMetricsHistogram := runMetricsTest(t, testConfig, pmetric.MetricTypeHistogram)
-	outMetricsExponentialHistogram := runMetricsTest(t, testConfig, pmetric.MetricTypeExponentialHistogram)
-	outMetricsSummary := runMetricsTest(t, testConfig, pmetric.MetricTypeSummary)
+	outTraces := runTest(t, tc)
+	outLogs := runLogsTest(t, tc)
+	outMetricsGauge := runMetricsTest(t, tc, pmetric.MetricTypeGauge)
+	outMetricsSum := runMetricsTest(t, tc, pmetric.MetricTypeSum)
+	outMetricsHistogram := runMetricsTest(t, tc, pmetric.MetricTypeHistogram)
+	outMetricsExponentialHistogram := runMetricsTest(t, tc, pmetric.MetricTypeExponentialHistogram)
+	outMetricsSummary := runMetricsTest(t, tc, pmetric.MetricTypeSummary)
 
 	attrs := []pcommon.Map{
+		outTraces.ResourceSpans().At(0).Resource().Attributes(),
+		outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Scope().Attributes(),
 		outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes(),
+		outLogs.ResourceLogs().At(0).Resource().Attributes(),
+		outLogs.ResourceLogs().At(0).ScopeLogs().At(0).Scope().Attributes(),
 		outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes(),
 		outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().Map(),
+		outMetricsGauge.ResourceMetrics().At(0).Resource().Attributes(),
+		outMetricsGauge.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes(),
 		outMetricsGauge.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes(),
+		outMetricsSum.ResourceMetrics().At(0).Resource().Attributes(),
+		outMetricsSum.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes(),
 		outMetricsSum.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes(),
+		outMetricsHistogram.ResourceMetrics().At(0).Resource().Attributes(),
+		outMetricsHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes(),
 		outMetricsHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Histogram().DataPoints().At(0).Attributes(),
+		outMetricsExponentialHistogram.ResourceMetrics().At(0).Resource().Attributes(),
+		outMetricsExponentialHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes(),
 		outMetricsExponentialHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).ExponentialHistogram().DataPoints().At(0).Attributes(),
+		outMetricsSummary.ResourceMetrics().At(0).Resource().Attributes(),
+		outMetricsSummary.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes(),
 		outMetricsSummary.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Summary().DataPoints().At(0).Attributes(),
 	}
 
 	for _, attr := range attrs {
-		for k, v := range testConfig.allowed {
+		for k, v := range tc.allowed {
 			val, ok := attr.Get(k)
 			assert.True(t, ok)
 			assert.Equal(t, v.AsRaw(), val.AsRaw())
@@ -187,12 +231,12 @@ func TestAllowAllKeysMaskValues(t *testing.T) {
 // of any attributes it deleted to the new redaction.redacted.keys and
 // redaction.redacted.count span attributes while set to full debug output
 func TestRedactSummaryDebug(t *testing.T) {
-	testConfig := TestConfig{
+	tc := testConfig{
 		config: &Config{
 			AllowedKeys:        []string{"id", "group", "name", "group.id", "member (id)", "token_some", "api_key_some", "email"},
 			BlockedValues:      []string{"4[0-9]{12}(?:[0-9]{3})?"},
 			IgnoredKeys:        []string{"safe_attribute"},
-			BlockedKeyPatterns: []string{".*token.*", ".*api_key.*"},
+			BlockedKeyPatterns: []string{".*(token|api_key).*"},
 			AllowedValues:      []string{".+@mycompany.com"},
 			Summary:            "debug",
 		},
@@ -219,29 +263,43 @@ func TestRedactSummaryDebug(t *testing.T) {
 		},
 	}
 
-	outTraces := runTest(t, testConfig)
-	outLogs := runLogsTest(t, testConfig)
-	outMetricsGauge := runMetricsTest(t, testConfig, pmetric.MetricTypeGauge)
-	outMetricsSum := runMetricsTest(t, testConfig, pmetric.MetricTypeSum)
-	outMetricsHistogram := runMetricsTest(t, testConfig, pmetric.MetricTypeHistogram)
-	outMetricsExponentialHistogram := runMetricsTest(t, testConfig, pmetric.MetricTypeExponentialHistogram)
-	outMetricsSummary := runMetricsTest(t, testConfig, pmetric.MetricTypeSummary)
+	outTraces := runTest(t, tc)
+	outLogs := runLogsTest(t, tc)
+	outMetricsGauge := runMetricsTest(t, tc, pmetric.MetricTypeGauge)
+	outMetricsSum := runMetricsTest(t, tc, pmetric.MetricTypeSum)
+	outMetricsHistogram := runMetricsTest(t, tc, pmetric.MetricTypeHistogram)
+	outMetricsExponentialHistogram := runMetricsTest(t, tc, pmetric.MetricTypeExponentialHistogram)
+	outMetricsSummary := runMetricsTest(t, tc, pmetric.MetricTypeSummary)
 	outLogBody := getLogBodyWithDebugAttrs(outLogs)
 
 	attrs := []pcommon.Map{
+		outTraces.ResourceSpans().At(0).Resource().Attributes(),
+		outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Scope().Attributes(),
 		outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes(),
+		outLogs.ResourceLogs().At(0).Resource().Attributes(),
+		outLogs.ResourceLogs().At(0).ScopeLogs().At(0).Scope().Attributes(),
 		outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes(),
 		outLogBody,
+		outMetricsGauge.ResourceMetrics().At(0).Resource().Attributes(),
+		outMetricsGauge.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes(),
 		outMetricsGauge.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes(),
+		outMetricsSum.ResourceMetrics().At(0).Resource().Attributes(),
+		outMetricsSum.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes(),
 		outMetricsSum.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes(),
+		outMetricsHistogram.ResourceMetrics().At(0).Resource().Attributes(),
+		outMetricsHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes(),
 		outMetricsHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Histogram().DataPoints().At(0).Attributes(),
+		outMetricsExponentialHistogram.ResourceMetrics().At(0).Resource().Attributes(),
+		outMetricsExponentialHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes(),
 		outMetricsExponentialHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).ExponentialHistogram().DataPoints().At(0).Attributes(),
+		outMetricsSummary.ResourceMetrics().At(0).Resource().Attributes(),
+		outMetricsSummary.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes(),
 		outMetricsSummary.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Summary().DataPoints().At(0).Attributes(),
 	}
 
 	for _, attr := range attrs {
-		deleted := make([]string, 0, len(testConfig.redacted))
-		for k := range testConfig.redacted {
+		deleted := make([]string, 0, len(tc.redacted))
+		for k := range tc.redacted {
 			_, ok := attr.Get(k)
 			assert.False(t, ok)
 			deleted = append(deleted, k)
@@ -256,7 +314,7 @@ func TestRedactSummaryDebug(t *testing.T) {
 
 		ignoredKeyCount, ok := attr.Get(redactionIgnoredCount)
 		assert.True(t, ok)
-		assert.Equal(t, int64(len(testConfig.ignored)), ignoredKeyCount.Int())
+		assert.Equal(t, int64(len(tc.ignored)), ignoredKeyCount.Int())
 
 		blockedKeys := []string{"api_key_some", "name", "token_some"}
 		maskedKeys, ok := attr.Get(redactionMaskedKeys)
@@ -273,6 +331,11 @@ func TestRedactSummaryDebug(t *testing.T) {
 		assert.Equal(t, int64(1), allowedValueCount.Int())
 		value, _ = attr.Get("email")
 		assert.Equal(t, "user@mycompany.com", value.Str())
+
+		value, _ = attr.Get("api_key_some")
+		assert.Equal(t, "****", value.Str())
+		value, _ = attr.Get("token_some")
+		assert.Equal(t, "****", value.Str())
 	}
 }
 
@@ -312,7 +375,7 @@ func getLogBodyWithDebugAttrs(outLogs plog.Logs) pcommon.Map {
 }
 
 func TestRedactSummaryDebugHashMD5(t *testing.T) {
-	testConfig := TestConfig{
+	tc := testConfig{
 		config: &Config{
 			AllowedKeys:        []string{"id", "group", "name", "group.id", "member (id)", "token_some", "api_key_some", "email"},
 			BlockedValues:      []string{"4[0-9]{12}(?:[0-9]{3})?"},
@@ -344,29 +407,43 @@ func TestRedactSummaryDebugHashMD5(t *testing.T) {
 		},
 	}
 
-	outTraces := runTest(t, testConfig)
-	outLogs := runLogsTest(t, testConfig)
-	outMetricsGauge := runMetricsTest(t, testConfig, pmetric.MetricTypeGauge)
-	outMetricsSum := runMetricsTest(t, testConfig, pmetric.MetricTypeSum)
-	outMetricsHistogram := runMetricsTest(t, testConfig, pmetric.MetricTypeHistogram)
-	outMetricsExponentialHistogram := runMetricsTest(t, testConfig, pmetric.MetricTypeExponentialHistogram)
-	outMetricsSummary := runMetricsTest(t, testConfig, pmetric.MetricTypeSummary)
+	outTraces := runTest(t, tc)
+	outLogs := runLogsTest(t, tc)
+	outMetricsGauge := runMetricsTest(t, tc, pmetric.MetricTypeGauge)
+	outMetricsSum := runMetricsTest(t, tc, pmetric.MetricTypeSum)
+	outMetricsHistogram := runMetricsTest(t, tc, pmetric.MetricTypeHistogram)
+	outMetricsExponentialHistogram := runMetricsTest(t, tc, pmetric.MetricTypeExponentialHistogram)
+	outMetricsSummary := runMetricsTest(t, tc, pmetric.MetricTypeSummary)
 	outLogBody := getLogBodyWithDebugAttrs(outLogs)
 
 	attrs := []pcommon.Map{
+		outTraces.ResourceSpans().At(0).Resource().Attributes(),
+		outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Scope().Attributes(),
 		outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes(),
+		outLogs.ResourceLogs().At(0).Resource().Attributes(),
+		outLogs.ResourceLogs().At(0).ScopeLogs().At(0).Scope().Attributes(),
 		outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes(),
 		outLogBody,
+		outMetricsGauge.ResourceMetrics().At(0).Resource().Attributes(),
+		outMetricsGauge.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes(),
 		outMetricsGauge.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes(),
+		outMetricsSum.ResourceMetrics().At(0).Resource().Attributes(),
+		outMetricsSum.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes(),
 		outMetricsSum.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes(),
+		outMetricsHistogram.ResourceMetrics().At(0).Resource().Attributes(),
+		outMetricsHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes(),
 		outMetricsHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Histogram().DataPoints().At(0).Attributes(),
+		outMetricsExponentialHistogram.ResourceMetrics().At(0).Resource().Attributes(),
+		outMetricsExponentialHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes(),
 		outMetricsExponentialHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).ExponentialHistogram().DataPoints().At(0).Attributes(),
+		outMetricsSummary.ResourceMetrics().At(0).Resource().Attributes(),
+		outMetricsSummary.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes(),
 		outMetricsSummary.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Summary().DataPoints().At(0).Attributes(),
 	}
 
 	for _, attr := range attrs {
-		deleted := make([]string, 0, len(testConfig.redacted))
-		for k := range testConfig.redacted {
+		deleted := make([]string, 0, len(tc.redacted))
+		for k := range tc.redacted {
 			_, ok := attr.Get(k)
 			assert.False(t, ok)
 			deleted = append(deleted, k)
@@ -381,7 +458,7 @@ func TestRedactSummaryDebugHashMD5(t *testing.T) {
 
 		ignoredKeyCount, ok := attr.Get(redactionIgnoredCount)
 		assert.True(t, ok)
-		assert.Equal(t, int64(len(testConfig.ignored)), ignoredKeyCount.Int())
+		assert.Equal(t, int64(len(tc.ignored)), ignoredKeyCount.Int())
 
 		blockedKeys := []string{"api_key_some", "name", "token_some"}
 		maskedKeys, ok := attr.Get(redactionMaskedKeys)
@@ -404,7 +481,7 @@ func TestRedactSummaryDebugHashMD5(t *testing.T) {
 // attribute (but not to redaction.redacted.keys) when set to the info level
 // of output
 func TestRedactSummaryInfo(t *testing.T) {
-	testConfig := TestConfig{
+	tc := testConfig{
 		config: &Config{
 			AllowedKeys:   []string{"id", "name", "group", "email"},
 			BlockedValues: []string{"4[0-9]{12}(?:[0-9]{3})?"},
@@ -429,29 +506,43 @@ func TestRedactSummaryInfo(t *testing.T) {
 		},
 	}
 
-	outTraces := runTest(t, testConfig)
-	outLogs := runLogsTest(t, testConfig)
-	outMetricsGauge := runMetricsTest(t, testConfig, pmetric.MetricTypeGauge)
-	outMetricsSum := runMetricsTest(t, testConfig, pmetric.MetricTypeSum)
-	outMetricsHistogram := runMetricsTest(t, testConfig, pmetric.MetricTypeHistogram)
-	outMetricsExponentialHistogram := runMetricsTest(t, testConfig, pmetric.MetricTypeExponentialHistogram)
-	outMetricsSummary := runMetricsTest(t, testConfig, pmetric.MetricTypeSummary)
+	outTraces := runTest(t, tc)
+	outLogs := runLogsTest(t, tc)
+	outMetricsGauge := runMetricsTest(t, tc, pmetric.MetricTypeGauge)
+	outMetricsSum := runMetricsTest(t, tc, pmetric.MetricTypeSum)
+	outMetricsHistogram := runMetricsTest(t, tc, pmetric.MetricTypeHistogram)
+	outMetricsExponentialHistogram := runMetricsTest(t, tc, pmetric.MetricTypeExponentialHistogram)
+	outMetricsSummary := runMetricsTest(t, tc, pmetric.MetricTypeSummary)
 	outLogBody := getLogBodyWithDebugAttrs(outLogs)
 
 	attrs := []pcommon.Map{
+		outTraces.ResourceSpans().At(0).Resource().Attributes(),
+		outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Scope().Attributes(),
 		outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes(),
+		outLogs.ResourceLogs().At(0).Resource().Attributes(),
+		outLogs.ResourceLogs().At(0).ScopeLogs().At(0).Scope().Attributes(),
 		outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes(),
 		outLogBody,
+		outMetricsGauge.ResourceMetrics().At(0).Resource().Attributes(),
+		outMetricsGauge.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes(),
 		outMetricsGauge.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes(),
+		outMetricsSum.ResourceMetrics().At(0).Resource().Attributes(),
+		outMetricsSum.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes(),
 		outMetricsSum.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes(),
+		outMetricsHistogram.ResourceMetrics().At(0).Resource().Attributes(),
+		outMetricsHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes(),
 		outMetricsHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Histogram().DataPoints().At(0).Attributes(),
+		outMetricsExponentialHistogram.ResourceMetrics().At(0).Resource().Attributes(),
+		outMetricsExponentialHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes(),
 		outMetricsExponentialHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).ExponentialHistogram().DataPoints().At(0).Attributes(),
+		outMetricsSummary.ResourceMetrics().At(0).Resource().Attributes(),
+		outMetricsSummary.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes(),
 		outMetricsSummary.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Summary().DataPoints().At(0).Attributes(),
 	}
 
 	for _, attr := range attrs {
-		deleted := make([]string, 0, len(testConfig.redacted))
-		for k := range testConfig.redacted {
+		deleted := make([]string, 0, len(tc.redacted))
+		for k := range tc.redacted {
 			_, ok := attr.Get(k)
 			assert.False(t, ok)
 			deleted = append(deleted, k)
@@ -487,7 +578,7 @@ func TestRedactSummaryInfo(t *testing.T) {
 // TestRedactSummarySilent validates that the processor does not create the
 // summary attributes when set to silent
 func TestRedactSummarySilent(t *testing.T) {
-	testConfig := TestConfig{
+	tc := testConfig{
 		config: &Config{
 			AllowedKeys:   []string{"id", "name", "group"},
 			BlockedValues: []string{"4[0-9]{12}(?:[0-9]{3})?"},
@@ -504,28 +595,42 @@ func TestRedactSummarySilent(t *testing.T) {
 		},
 	}
 
-	outTraces := runTest(t, testConfig)
-	outLogs := runLogsTest(t, testConfig)
-	outMetricsGauge := runMetricsTest(t, testConfig, pmetric.MetricTypeGauge)
-	outMetricsSum := runMetricsTest(t, testConfig, pmetric.MetricTypeSum)
-	outMetricsHistogram := runMetricsTest(t, testConfig, pmetric.MetricTypeHistogram)
-	outMetricsExponentialHistogram := runMetricsTest(t, testConfig, pmetric.MetricTypeExponentialHistogram)
-	outMetricsSummary := runMetricsTest(t, testConfig, pmetric.MetricTypeSummary)
+	outTraces := runTest(t, tc)
+	outLogs := runLogsTest(t, tc)
+	outMetricsGauge := runMetricsTest(t, tc, pmetric.MetricTypeGauge)
+	outMetricsSum := runMetricsTest(t, tc, pmetric.MetricTypeSum)
+	outMetricsHistogram := runMetricsTest(t, tc, pmetric.MetricTypeHistogram)
+	outMetricsExponentialHistogram := runMetricsTest(t, tc, pmetric.MetricTypeExponentialHistogram)
+	outMetricsSummary := runMetricsTest(t, tc, pmetric.MetricTypeSummary)
 	outLogBody := getLogBodyWithDebugAttrs(outLogs)
 
 	attrs := []pcommon.Map{
+		outTraces.ResourceSpans().At(0).Resource().Attributes(),
+		outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Scope().Attributes(),
 		outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes(),
+		outLogs.ResourceLogs().At(0).Resource().Attributes(),
+		outLogs.ResourceLogs().At(0).ScopeLogs().At(0).Scope().Attributes(),
 		outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes(),
 		outLogBody,
+		outMetricsGauge.ResourceMetrics().At(0).Resource().Attributes(),
+		outMetricsGauge.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes(),
 		outMetricsGauge.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes(),
+		outMetricsSum.ResourceMetrics().At(0).Resource().Attributes(),
+		outMetricsSum.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes(),
 		outMetricsSum.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes(),
+		outMetricsHistogram.ResourceMetrics().At(0).Resource().Attributes(),
+		outMetricsHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes(),
 		outMetricsHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Histogram().DataPoints().At(0).Attributes(),
+		outMetricsExponentialHistogram.ResourceMetrics().At(0).Resource().Attributes(),
+		outMetricsExponentialHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes(),
 		outMetricsExponentialHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).ExponentialHistogram().DataPoints().At(0).Attributes(),
+		outMetricsSummary.ResourceMetrics().At(0).Resource().Attributes(),
+		outMetricsSummary.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes(),
 		outMetricsSummary.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Summary().DataPoints().At(0).Attributes(),
 	}
 
 	for _, attr := range attrs {
-		for k := range testConfig.redacted {
+		for k := range tc.redacted {
 			_, ok := attr.Get(k)
 			assert.False(t, ok)
 		}
@@ -545,7 +650,7 @@ func TestRedactSummarySilent(t *testing.T) {
 // TestRedactSummaryDefault validates that the processor does not create the
 // summary attributes by default
 func TestRedactSummaryDefault(t *testing.T) {
-	testConfig := TestConfig{
+	tc := testConfig{
 		config: &Config{AllowedKeys: []string{"id", "name", "group"}},
 		allowed: map[string]pcommon.Value{
 			"id": pcommon.NewValueInt(5),
@@ -558,23 +663,37 @@ func TestRedactSummaryDefault(t *testing.T) {
 		},
 	}
 
-	outTraces := runTest(t, testConfig)
-	outLogs := runLogsTest(t, testConfig)
-	outMetricsGauge := runMetricsTest(t, testConfig, pmetric.MetricTypeGauge)
-	outMetricsSum := runMetricsTest(t, testConfig, pmetric.MetricTypeSum)
-	outMetricsHistogram := runMetricsTest(t, testConfig, pmetric.MetricTypeHistogram)
-	outMetricsExponentialHistogram := runMetricsTest(t, testConfig, pmetric.MetricTypeExponentialHistogram)
-	outMetricsSummary := runMetricsTest(t, testConfig, pmetric.MetricTypeSummary)
+	outTraces := runTest(t, tc)
+	outLogs := runLogsTest(t, tc)
+	outMetricsGauge := runMetricsTest(t, tc, pmetric.MetricTypeGauge)
+	outMetricsSum := runMetricsTest(t, tc, pmetric.MetricTypeSum)
+	outMetricsHistogram := runMetricsTest(t, tc, pmetric.MetricTypeHistogram)
+	outMetricsExponentialHistogram := runMetricsTest(t, tc, pmetric.MetricTypeExponentialHistogram)
+	outMetricsSummary := runMetricsTest(t, tc, pmetric.MetricTypeSummary)
 	outLogBody := getLogBodyWithDebugAttrs(outLogs)
 
 	attrs := []pcommon.Map{
+		outTraces.ResourceSpans().At(0).Resource().Attributes(),
+		outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Scope().Attributes(),
 		outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes(),
+		outLogs.ResourceLogs().At(0).Resource().Attributes(),
+		outLogs.ResourceLogs().At(0).ScopeLogs().At(0).Scope().Attributes(),
 		outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes(),
 		outLogBody,
+		outMetricsGauge.ResourceMetrics().At(0).Resource().Attributes(),
+		outMetricsGauge.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes(),
 		outMetricsGauge.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes(),
+		outMetricsSum.ResourceMetrics().At(0).Resource().Attributes(),
+		outMetricsSum.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes(),
 		outMetricsSum.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes(),
+		outMetricsHistogram.ResourceMetrics().At(0).Resource().Attributes(),
+		outMetricsHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes(),
 		outMetricsHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Histogram().DataPoints().At(0).Attributes(),
+		outMetricsExponentialHistogram.ResourceMetrics().At(0).Resource().Attributes(),
+		outMetricsExponentialHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes(),
 		outMetricsExponentialHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).ExponentialHistogram().DataPoints().At(0).Attributes(),
+		outMetricsSummary.ResourceMetrics().At(0).Resource().Attributes(),
+		outMetricsSummary.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes(),
 		outMetricsSummary.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Summary().DataPoints().At(0).Attributes(),
 	}
 
@@ -595,7 +714,7 @@ func TestRedactSummaryDefault(t *testing.T) {
 // TestMultipleBlockValues validates that the processor can block multiple
 // patterns
 func TestMultipleBlockValues(t *testing.T) {
-	testConfig := TestConfig{
+	tc := testConfig{
 		config: &Config{
 			AllowedKeys:   []string{"id", "name", "mystery"},
 			BlockedValues: []string{"4[0-9]{12}(?:[0-9]{3})?", "(5[1-5][0-9]{3})"},
@@ -613,29 +732,43 @@ func TestMultipleBlockValues(t *testing.T) {
 		},
 	}
 
-	outTraces := runTest(t, testConfig)
-	outLogs := runLogsTest(t, testConfig)
-	outMetricsGauge := runMetricsTest(t, testConfig, pmetric.MetricTypeGauge)
-	outMetricsSum := runMetricsTest(t, testConfig, pmetric.MetricTypeSum)
-	outMetricsHistogram := runMetricsTest(t, testConfig, pmetric.MetricTypeHistogram)
-	outMetricsExponentialHistogram := runMetricsTest(t, testConfig, pmetric.MetricTypeExponentialHistogram)
-	outMetricsSummary := runMetricsTest(t, testConfig, pmetric.MetricTypeSummary)
+	outTraces := runTest(t, tc)
+	outLogs := runLogsTest(t, tc)
+	outMetricsGauge := runMetricsTest(t, tc, pmetric.MetricTypeGauge)
+	outMetricsSum := runMetricsTest(t, tc, pmetric.MetricTypeSum)
+	outMetricsHistogram := runMetricsTest(t, tc, pmetric.MetricTypeHistogram)
+	outMetricsExponentialHistogram := runMetricsTest(t, tc, pmetric.MetricTypeExponentialHistogram)
+	outMetricsSummary := runMetricsTest(t, tc, pmetric.MetricTypeSummary)
 	outLogBody := getLogBodyWithDebugAttrs(outLogs)
 
 	attrs := []pcommon.Map{
+		outTraces.ResourceSpans().At(0).Resource().Attributes(),
+		outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Scope().Attributes(),
 		outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes(),
+		outLogs.ResourceLogs().At(0).Resource().Attributes(),
+		outLogs.ResourceLogs().At(0).ScopeLogs().At(0).Scope().Attributes(),
 		outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes(),
 		outLogBody,
+		outMetricsGauge.ResourceMetrics().At(0).Resource().Attributes(),
+		outMetricsGauge.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes(),
 		outMetricsGauge.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes(),
+		outMetricsSum.ResourceMetrics().At(0).Resource().Attributes(),
+		outMetricsSum.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes(),
 		outMetricsSum.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes(),
+		outMetricsHistogram.ResourceMetrics().At(0).Resource().Attributes(),
+		outMetricsHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes(),
 		outMetricsHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Histogram().DataPoints().At(0).Attributes(),
+		outMetricsExponentialHistogram.ResourceMetrics().At(0).Resource().Attributes(),
+		outMetricsExponentialHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes(),
 		outMetricsExponentialHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).ExponentialHistogram().DataPoints().At(0).Attributes(),
+		outMetricsSummary.ResourceMetrics().At(0).Resource().Attributes(),
+		outMetricsSummary.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes(),
 		outMetricsSummary.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Summary().DataPoints().At(0).Attributes(),
 	}
 
 	for _, attr := range attrs {
-		deleted := make([]string, 0, len(testConfig.redacted))
-		for k := range testConfig.redacted {
+		deleted := make([]string, 0, len(tc.redacted))
+		for k := range tc.redacted {
 			_, ok := attr.Get(k)
 			assert.False(t, ok)
 			deleted = append(deleted, k)
@@ -672,7 +805,7 @@ func TestProcessAttrsAppliedTwice(t *testing.T) {
 		BlockedValues: []string{"4[0-9]{12}(?:[0-9]{3})?"},
 		Summary:       "debug",
 	}
-	processor, err := newRedaction(context.TODO(), config, zaptest.NewLogger(t))
+	processor, err := newRedaction(t.Context(), config, zaptest.NewLogger(t))
 	require.NoError(t, err)
 
 	attrs := pcommon.NewMap()
@@ -686,7 +819,7 @@ func TestProcessAttrsAppliedTwice(t *testing.T) {
 		redactionMaskedKeys:    "mystery",
 		redactionMaskedCount:   1,
 	}))
-	processor.processAttrs(context.TODO(), attrs)
+	processor.processAttrs(t.Context(), attrs)
 
 	assert.Equal(t, 7, attrs.Len())
 	val, found := attrs.Get(redactionRedactedKeys)
@@ -698,6 +831,135 @@ func TestProcessAttrsAppliedTwice(t *testing.T) {
 	val, found = attrs.Get(redactionMaskedCount)
 	assert.True(t, found)
 	assert.Equal(t, int64(2), val.Int())
+}
+
+// TestRedactAllTypesFalse validates that not all types are redacted when the setting is false
+func TestRedactAllTypesFalse(t *testing.T) {
+	tc := testConfig{
+		config: &Config{
+			AllowedKeys:    []string{"group", "id", "name"},
+			AllowAllKeys:   true,
+			BlockedValues:  []string{"4[0-9]{12}(?:[0-9]{3})?"},
+			RedactAllTypes: false,
+		},
+		allowed: map[string]pcommon.Value{
+			"group":           pcommon.NewValueStr("temporary"),
+			"id":              pcommon.NewValueInt(5),
+			"name":            pcommon.NewValueStr("placeholder"),
+			"credit_card_int": pcommon.NewValueInt(4111111111111111),
+		},
+		masked: map[string]pcommon.Value{
+			"credit_card": pcommon.NewValueStr("placeholder 4111111111111111"),
+		},
+	}
+
+	outTraces := runTest(t, tc)
+	outLogs := runLogsTest(t, tc)
+	outMetricsGauge := runMetricsTest(t, tc, pmetric.MetricTypeGauge)
+	outMetricsSum := runMetricsTest(t, tc, pmetric.MetricTypeSum)
+	outMetricsHistogram := runMetricsTest(t, tc, pmetric.MetricTypeHistogram)
+	outMetricsExponentialHistogram := runMetricsTest(t, tc, pmetric.MetricTypeExponentialHistogram)
+	outMetricsSummary := runMetricsTest(t, tc, pmetric.MetricTypeSummary)
+
+	attrs := []pcommon.Map{
+		outTraces.ResourceSpans().At(0).Resource().Attributes(),
+		outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Scope().Attributes(),
+		outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes(),
+		outLogs.ResourceLogs().At(0).Resource().Attributes(),
+		outLogs.ResourceLogs().At(0).ScopeLogs().At(0).Scope().Attributes(),
+		outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes(),
+		outMetricsGauge.ResourceMetrics().At(0).Resource().Attributes(),
+		outMetricsGauge.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes(),
+		outMetricsGauge.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes(),
+		outMetricsSum.ResourceMetrics().At(0).Resource().Attributes(),
+		outMetricsSum.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes(),
+		outMetricsSum.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes(),
+		outMetricsHistogram.ResourceMetrics().At(0).Resource().Attributes(),
+		outMetricsHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes(),
+		outMetricsHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Histogram().DataPoints().At(0).Attributes(),
+		outMetricsExponentialHistogram.ResourceMetrics().At(0).Resource().Attributes(),
+		outMetricsExponentialHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes(),
+		outMetricsExponentialHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).ExponentialHistogram().DataPoints().At(0).Attributes(),
+		outMetricsSummary.ResourceMetrics().At(0).Resource().Attributes(),
+		outMetricsSummary.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes(),
+		outMetricsSummary.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Summary().DataPoints().At(0).Attributes(),
+	}
+
+	for _, attr := range attrs {
+		for k, v := range tc.allowed {
+			val, ok := attr.Get(k)
+			assert.True(t, ok)
+			assert.Equal(t, v.AsRaw(), val.AsRaw())
+		}
+		value, _ := attr.Get("credit_card")
+		assert.Equal(t, "placeholder ****", value.Str())
+	}
+}
+
+// TestRedactAllTypesTrue validates the redact all types setting ensures ints and maps can be redacted
+func TestRedactAllTypesTrue(t *testing.T) {
+	tc := testConfig{
+		config: &Config{
+			AllowedKeys:    []string{"group", "id", "name"},
+			AllowAllKeys:   true,
+			BlockedValues:  []string{"4[0-9]{12}(?:[0-9]{3})?"},
+			RedactAllTypes: true,
+		},
+		allowed: map[string]pcommon.Value{
+			"group": pcommon.NewValueStr("temporary"),
+			"id":    pcommon.NewValueInt(5),
+			"name":  pcommon.NewValueStr("placeholder"),
+		},
+		masked: map[string]pcommon.Value{
+			"credit_card":     pcommon.NewValueStr("placeholder 4111111111111111"),
+			"credit_card_int": pcommon.NewValueInt(4111111111111111),
+		},
+	}
+
+	outTraces := runTest(t, tc)
+	outLogs := runLogsTest(t, tc)
+	outMetricsGauge := runMetricsTest(t, tc, pmetric.MetricTypeGauge)
+	outMetricsSum := runMetricsTest(t, tc, pmetric.MetricTypeSum)
+	outMetricsHistogram := runMetricsTest(t, tc, pmetric.MetricTypeHistogram)
+	outMetricsExponentialHistogram := runMetricsTest(t, tc, pmetric.MetricTypeExponentialHistogram)
+	outMetricsSummary := runMetricsTest(t, tc, pmetric.MetricTypeSummary)
+
+	attrs := []pcommon.Map{
+		outTraces.ResourceSpans().At(0).Resource().Attributes(),
+		outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Scope().Attributes(),
+		outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes(),
+		outLogs.ResourceLogs().At(0).Resource().Attributes(),
+		outLogs.ResourceLogs().At(0).ScopeLogs().At(0).Scope().Attributes(),
+		outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes(),
+		outMetricsGauge.ResourceMetrics().At(0).Resource().Attributes(),
+		outMetricsGauge.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes(),
+		outMetricsGauge.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes(),
+		outMetricsSum.ResourceMetrics().At(0).Resource().Attributes(),
+		outMetricsSum.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes(),
+		outMetricsSum.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes(),
+		outMetricsHistogram.ResourceMetrics().At(0).Resource().Attributes(),
+		outMetricsHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes(),
+		outMetricsHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Histogram().DataPoints().At(0).Attributes(),
+		outMetricsExponentialHistogram.ResourceMetrics().At(0).Resource().Attributes(),
+		outMetricsExponentialHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes(),
+		outMetricsExponentialHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).ExponentialHistogram().DataPoints().At(0).Attributes(),
+		outMetricsSummary.ResourceMetrics().At(0).Resource().Attributes(),
+		outMetricsSummary.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes(),
+		outMetricsSummary.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Summary().DataPoints().At(0).Attributes(),
+	}
+
+	for _, attr := range attrs {
+		for k, v := range tc.allowed {
+			val, ok := attr.Get(k)
+			assert.True(t, ok)
+			assert.Equal(t, v.AsRaw(), val.AsRaw())
+		}
+		value, _ := attr.Get("credit_card")
+		assert.Equal(t, "placeholder ****", value.Str())
+
+		value, _ = attr.Get("credit_card_int")
+		assert.Equal(t, "****", value.Str())
+	}
 }
 
 func TestSpanEventRedacted(t *testing.T) {
@@ -722,10 +984,10 @@ func TestSpanEventRedacted(t *testing.T) {
 		BlockedValues: []string{"xyzxyz"},
 		Summary:       "debug",
 	}
-	processor, err := newRedaction(context.TODO(), config, zaptest.NewLogger(t))
+	processor, err := newRedaction(t.Context(), config, zaptest.NewLogger(t))
 	require.NoError(t, err)
 
-	outTraces, err := processor.processTraces(context.TODO(), inBatch)
+	outTraces, err := processor.processTraces(t.Context(), inBatch)
 	require.NoError(t, err)
 
 	attr := outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Events().At(0).Attributes()
@@ -741,7 +1003,7 @@ func TestSpanEventRedacted(t *testing.T) {
 
 func TestLogBodyRedactionDifferentTypes(t *testing.T) {
 	stringBody := pcommon.NewValueStr("placeholder 4111111111111111")
-	testConfig := TestConfig{
+	tc := testConfig{
 		config: &Config{
 			AllowedKeys:   []string{"id", "email", "credit_card", "nested", "slice"},
 			BlockedValues: []string{"4[0-9]{12}(?:[0-9]{3})?"},
@@ -750,7 +1012,7 @@ func TestLogBodyRedactionDifferentTypes(t *testing.T) {
 		logBody: &stringBody,
 	}
 
-	outLogs := runLogsTest(t, testConfig)
+	outLogs := runLogsTest(t, tc)
 	outLogBody := outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body()
 	outLogAttrs := outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes()
 	assert.Equal(t, pcommon.ValueTypeStr, outLogBody.Type())
@@ -778,7 +1040,7 @@ func TestLogBodyRedactionDifferentTypes(t *testing.T) {
 	slice.AppendEmpty().SetStr("4111111111111111")
 	slice.AppendEmpty().SetStr("user123")
 
-	testConfig = TestConfig{
+	tc = testConfig{
 		config: &Config{
 			AllowedKeys:   []string{"id", "email", "credit_card", "nested", "slice"},
 			BlockedValues: []string{"4[0-9]{12}(?:[0-9]{3})?"},
@@ -789,7 +1051,7 @@ func TestLogBodyRedactionDifferentTypes(t *testing.T) {
 		logBody: &nestedBodyMap,
 	}
 
-	outLogs = runLogsTest(t, testConfig)
+	outLogs = runLogsTest(t, tc)
 
 	outLogBody = outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body()
 	assert.Equal(t, pcommon.ValueTypeMap, outLogBody.Type())
@@ -843,7 +1105,7 @@ func TestLogBodyRedactionDifferentTypes(t *testing.T) {
 // runTest transforms the test input data and passes it through the processor
 func runTest(
 	t *testing.T,
-	cfg TestConfig,
+	cfg testConfig,
 ) ptrace.Traces {
 	inBatch := ptrace.NewTraces()
 	rs := inBatch.ResourceSpans().AppendEmpty()
@@ -858,24 +1120,33 @@ func runTest(
 	length := len(cfg.allowed) + len(cfg.masked) + len(cfg.redacted) + len(cfg.ignored) + len(cfg.blockedKeys) + len(cfg.allowedValues)
 	for k, v := range cfg.allowed {
 		v.CopyTo(span.Attributes().PutEmpty(k))
+		v.CopyTo(rs.Resource().Attributes().PutEmpty(k))
+		v.CopyTo(ils.Scope().Attributes().PutEmpty(k))
 	}
 	for k, v := range cfg.masked {
 		v.CopyTo(span.Attributes().PutEmpty(k))
+		v.CopyTo(rs.Resource().Attributes().PutEmpty(k))
+		v.CopyTo(ils.Scope().Attributes().PutEmpty(k))
 	}
 	for k, v := range cfg.allowedValues {
 		v.CopyTo(span.Attributes().PutEmpty(k))
+		v.CopyTo(rs.Resource().Attributes().PutEmpty(k))
+		v.CopyTo(ils.Scope().Attributes().PutEmpty(k))
 	}
 	for k, v := range cfg.redacted {
 		v.CopyTo(span.Attributes().PutEmpty(k))
+		v.CopyTo(rs.Resource().Attributes().PutEmpty(k))
+		v.CopyTo(ils.Scope().Attributes().PutEmpty(k))
 	}
 	for k, v := range cfg.blockedKeys {
 		v.CopyTo(span.Attributes().PutEmpty(k))
-	}
-	for k, v := range cfg.redacted {
-		v.CopyTo(span.Attributes().PutEmpty(k))
+		v.CopyTo(rs.Resource().Attributes().PutEmpty(k))
+		v.CopyTo(ils.Scope().Attributes().PutEmpty(k))
 	}
 	for k, v := range cfg.ignored {
 		v.CopyTo(span.Attributes().PutEmpty(k))
+		v.CopyTo(rs.Resource().Attributes().PutEmpty(k))
+		v.CopyTo(ils.Scope().Attributes().PutEmpty(k))
 	}
 
 	assert.Equal(t, span.Attributes().Len(), length)
@@ -883,7 +1154,7 @@ func runTest(
 	assert.Equal(t, inBatch.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().Len(), length)
 
 	// test
-	ctx := context.Background()
+	ctx := t.Context()
 	processor, err := newRedaction(ctx, cfg.config, zaptest.NewLogger(t))
 	assert.NoError(t, err)
 	outBatch, err := processor.processTraces(ctx, inBatch)
@@ -896,7 +1167,7 @@ func runTest(
 // runLogsTest transforms the test input log data and passes it through the processor
 func runLogsTest(
 	t *testing.T,
-	cfg TestConfig,
+	cfg testConfig,
 ) plog.Logs {
 	inBatch := plog.NewLogs()
 	rl := inBatch.ResourceLogs().AppendEmpty()
@@ -913,30 +1184,38 @@ func runLogsTest(
 	for k, v := range cfg.allowed {
 		v.CopyTo(logEntry.Attributes().PutEmpty(k))
 		v.CopyTo(logEntry.Body().Map().PutEmpty(k))
+		v.CopyTo(rl.Resource().Attributes().PutEmpty(k))
+		v.CopyTo(ils.Scope().Attributes().PutEmpty(k))
 	}
 	for k, v := range cfg.masked {
 		v.CopyTo(logEntry.Attributes().PutEmpty(k))
 		v.CopyTo(logEntry.Body().Map().PutEmpty(k))
+		v.CopyTo(rl.Resource().Attributes().PutEmpty(k))
+		v.CopyTo(ils.Scope().Attributes().PutEmpty(k))
 	}
 	for k, v := range cfg.allowedValues {
 		v.CopyTo(logEntry.Attributes().PutEmpty(k))
 		v.CopyTo(logEntry.Body().Map().PutEmpty(k))
+		v.CopyTo(rl.Resource().Attributes().PutEmpty(k))
+		v.CopyTo(ils.Scope().Attributes().PutEmpty(k))
 	}
 	for k, v := range cfg.redacted {
 		v.CopyTo(logEntry.Attributes().PutEmpty(k))
 		v.CopyTo(logEntry.Body().Map().PutEmpty(k))
+		v.CopyTo(rl.Resource().Attributes().PutEmpty(k))
+		v.CopyTo(ils.Scope().Attributes().PutEmpty(k))
 	}
 	for k, v := range cfg.blockedKeys {
 		v.CopyTo(logEntry.Attributes().PutEmpty(k))
 		v.CopyTo(logEntry.Body().Map().PutEmpty(k))
-	}
-	for k, v := range cfg.redacted {
-		v.CopyTo(logEntry.Attributes().PutEmpty(k))
-		v.CopyTo(logEntry.Body().Map().PutEmpty(k))
+		v.CopyTo(rl.Resource().Attributes().PutEmpty(k))
+		v.CopyTo(ils.Scope().Attributes().PutEmpty(k))
 	}
 	for k, v := range cfg.ignored {
 		v.CopyTo(logEntry.Attributes().PutEmpty(k))
 		v.CopyTo(logEntry.Body().Map().PutEmpty(k))
+		v.CopyTo(rl.Resource().Attributes().PutEmpty(k))
+		v.CopyTo(ils.Scope().Attributes().PutEmpty(k))
 	}
 	if cfg.logBody != nil {
 		cfg.logBody.CopyTo(logEntry.Body())
@@ -947,7 +1226,7 @@ func runLogsTest(
 	assert.Equal(t, inBatch.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Len(), length)
 
 	// test
-	ctx := context.Background()
+	ctx := t.Context()
 	processor, err := newRedaction(ctx, cfg.config, zaptest.NewLogger(t))
 	assert.NoError(t, err)
 	outBatch, err := processor.processLogs(ctx, inBatch)
@@ -960,7 +1239,7 @@ func runLogsTest(
 // runMetricsTest transforms the test input metric data and passes it through the processor
 func runMetricsTest(
 	t *testing.T,
-	cfg TestConfig,
+	cfg testConfig,
 	metricType pmetric.MetricType,
 ) pmetric.Metrics {
 	inBatch := pmetric.NewMetrics()
@@ -991,37 +1270,39 @@ func runMetricsTest(
 	for k, v := range cfg.allowed {
 		v.CopyTo(dataPointAttrs.PutEmpty(k))
 		v.CopyTo(rl.Resource().Attributes().PutEmpty(k))
+		v.CopyTo(ils.Scope().Attributes().PutEmpty(k))
 	}
 	for k, v := range cfg.masked {
 		v.CopyTo(dataPointAttrs.PutEmpty(k))
 		v.CopyTo(rl.Resource().Attributes().PutEmpty(k))
+		v.CopyTo(ils.Scope().Attributes().PutEmpty(k))
 	}
 	for k, v := range cfg.allowedValues {
 		v.CopyTo(dataPointAttrs.PutEmpty(k))
 		v.CopyTo(rl.Resource().Attributes().PutEmpty(k))
+		v.CopyTo(ils.Scope().Attributes().PutEmpty(k))
 	}
 	for k, v := range cfg.redacted {
 		v.CopyTo(dataPointAttrs.PutEmpty(k))
 		v.CopyTo(rl.Resource().Attributes().PutEmpty(k))
+		v.CopyTo(ils.Scope().Attributes().PutEmpty(k))
 	}
 	for k, v := range cfg.blockedKeys {
 		v.CopyTo(dataPointAttrs.PutEmpty(k))
 		v.CopyTo(rl.Resource().Attributes().PutEmpty(k))
-	}
-	for k, v := range cfg.redacted {
-		v.CopyTo(dataPointAttrs.PutEmpty(k))
-		v.CopyTo(rl.Resource().Attributes().PutEmpty(k))
+		v.CopyTo(ils.Scope().Attributes().PutEmpty(k))
 	}
 	for k, v := range cfg.ignored {
 		v.CopyTo(dataPointAttrs.PutEmpty(k))
 		v.CopyTo(rl.Resource().Attributes().PutEmpty(k))
+		v.CopyTo(ils.Scope().Attributes().PutEmpty(k))
 	}
 
 	assert.Equal(t, length, dataPointAttrs.Len())
 	assert.Equal(t, length, rl.Resource().Attributes().Len())
 
 	// test
-	ctx := context.Background()
+	ctx := t.Context()
 	processor, err := newRedaction(ctx, cfg.config, zaptest.NewLogger(t))
 	assert.NoError(t, err)
 	outBatch, err := processor.processMetrics(ctx, inBatch)
@@ -1055,7 +1336,7 @@ func BenchmarkRedactSummaryDebug(b *testing.B) {
 	redacted := map[string]pcommon.Value{
 		"credit_card": pcommon.NewValueStr("would be nice"),
 	}
-	ctx := context.Background()
+	ctx := b.Context()
 	processor, _ := newRedaction(ctx, config, zaptest.NewLogger(b))
 
 	for i := 0; i < b.N; i++ {
@@ -1086,7 +1367,7 @@ func BenchmarkMaskSummaryDebug(b *testing.B) {
 		"safe_attribute": pcommon.NewValueStr("suspicious 4111111111111112"),
 		"also_safe":      pcommon.NewValueStr("suspicious 4111111111111113"),
 	}
-	ctx := context.Background()
+	ctx := b.Context()
 	processor, _ := newRedaction(ctx, config, zaptest.NewLogger(b))
 
 	for i := 0; i < b.N; i++ {
@@ -1126,4 +1407,387 @@ func runBenchmark(
 	}
 
 	_, _ = processor.processTraces(context.Background(), inBatch)
+}
+
+func TestURLSanitizationEnabled(t *testing.T) {
+	tc := testConfig{
+		config: &Config{
+			AllowAllKeys: true,
+			URLSanitization: url.URLSanitizationConfig{
+				Enabled:    true,
+				Attributes: []string{"http.url", "url", "request_url"},
+			},
+			Summary: "debug",
+		},
+		allowed: map[string]pcommon.Value{
+			"http.url":    pcommon.NewValueStr("/users/2"),
+			"url":         pcommon.NewValueStr("/products/1/org/3"),
+			"request_url": pcommon.NewValueStr("/v1/products/22"),
+			"other_field": pcommon.NewValueStr("/not/sanitized/123"),
+		},
+	}
+
+	outTraces := runTest(t, tc)
+	outLogs := runLogsTest(t, tc)
+	outMetricsGauge := runMetricsTest(t, tc, pmetric.MetricTypeGauge)
+
+	attrs := []pcommon.Map{
+		outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes(),
+		outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes(),
+		outMetricsGauge.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes(),
+	}
+
+	for _, attr := range attrs {
+		httpURL, _ := attr.Get("http.url")
+		assert.Equal(t, "/users/*", httpURL.Str())
+
+		url, _ := attr.Get("url")
+		assert.Equal(t, "/products/*/org/*", url.Str())
+
+		requestURL, _ := attr.Get("request_url")
+		assert.Equal(t, "/v1/products/*", requestURL.Str())
+
+		otherField, _ := attr.Get("other_field")
+		assert.Equal(t, "/not/sanitized/123", otherField.Str())
+	}
+}
+
+func TestURLSanitizationDisabled(t *testing.T) {
+	tc := testConfig{
+		config: &Config{
+			AllowAllKeys: true,
+			URLSanitization: url.URLSanitizationConfig{
+				Enabled: false,
+			},
+		},
+		allowed: map[string]pcommon.Value{
+			"http.url": pcommon.NewValueStr("/v1/products/123"),
+			"url":      pcommon.NewValueStr("/users/456/profile"),
+		},
+	}
+
+	outTraces := runTest(t, tc)
+	outLogs := runLogsTest(t, tc)
+
+	attrs := []pcommon.Map{
+		outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes(),
+		outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes(),
+	}
+
+	for _, attr := range attrs {
+		httpURL, _ := attr.Get("http.url")
+		assert.Equal(t, "/v1/products/123", httpURL.Str())
+
+		url, _ := attr.Get("url")
+		assert.Equal(t, "/users/456/profile", url.Str())
+	}
+}
+
+func TestURLSanitizationWithBlockedValues(t *testing.T) {
+	tc := testConfig{
+		config: &Config{
+			AllowAllKeys:  true,
+			BlockedValues: []string{"4[0-9]{12}(?:[0-9]{3})?"},
+			URLSanitization: url.URLSanitizationConfig{
+				Enabled:    true,
+				Attributes: []string{"http.url"},
+			},
+			Summary: "debug",
+		},
+		allowed: map[string]pcommon.Value{
+			"http.url":    pcommon.NewValueStr("/v1/products/2"),
+			"credit_card": pcommon.NewValueStr("4111111111111111"),
+		},
+	}
+
+	outTraces := runTest(t, tc)
+	attr := outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes()
+
+	httpURL, _ := attr.Get("http.url")
+	assert.Equal(t, "/v1/products/*", httpURL.Str())
+
+	creditCard, _ := attr.Get("credit_card")
+	assert.Equal(t, "****", creditCard.Str())
+
+	maskedCount, _ := attr.Get(redactionMaskedCount)
+	assert.Equal(t, int64(2), maskedCount.Int())
+}
+
+func TestURLSanitizationInLogBody(t *testing.T) {
+	bodyWithURL := pcommon.NewValueStr("/users/2")
+	tc := testConfig{
+		config: &Config{
+			AllowAllKeys: true,
+			URLSanitization: url.URLSanitizationConfig{
+				Enabled: true,
+			},
+		},
+		logBody: &bodyWithURL,
+	}
+
+	outLogs := runLogsTest(t, tc)
+	outLogBody := outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body()
+
+	assert.Equal(t, "/users/*", outLogBody.Str())
+}
+
+func TestURLSanitizationComplexLogBody(t *testing.T) {
+	complexBody := pcommon.NewValueMap()
+	complexBody.Map().PutStr("message", "/users/2")
+	complexBody.Map().PutStr("url", "/products/1/org/3")
+
+	tc := testConfig{
+		config: &Config{
+			AllowAllKeys: true,
+			URLSanitization: url.URLSanitizationConfig{
+				Enabled: true,
+			},
+		},
+		logBody: &complexBody,
+	}
+
+	outLogs := runLogsTest(t, tc)
+	outLogBody := outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body()
+
+	message, _ := outLogBody.Map().Get("message")
+	assert.Equal(t, "/users/*", message.Str())
+
+	url, _ := outLogBody.Map().Get("url")
+	assert.Equal(t, "/products/*/org/*", url.Str())
+}
+
+func TestURLSanitizationAttributeFiltering(t *testing.T) {
+	tc := testConfig{
+		config: &Config{
+			AllowAllKeys: true,
+			URLSanitization: url.URLSanitizationConfig{
+				Enabled:    true,
+				Attributes: []string{"http.url"},
+			},
+		},
+		allowed: map[string]pcommon.Value{
+			"http.url":  pcommon.NewValueStr("/users/2"),
+			"other_url": pcommon.NewValueStr("/users/3"),
+		},
+	}
+
+	outTraces := runTest(t, tc)
+	attr := outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes()
+
+	// Configured attribute should be sanitized
+	httpURL, _ := attr.Get("http.url")
+	assert.Equal(t, "/users/*", httpURL.Str())
+
+	otherURL, _ := attr.Get("other_url")
+	assert.Equal(t, "/users/3", otherURL.Str())
+}
+
+func TestURLSanitizationSpanName(t *testing.T) {
+	t.Run("span name should be sanitized when allowed", func(t *testing.T) {
+		tc := testConfig{
+			config: &Config{
+				AllowAllKeys: true,
+				URLSanitization: url.URLSanitizationConfig{
+					Enabled: true,
+				},
+			},
+		}
+
+		inBatch := ptrace.NewTraces()
+		rs := inBatch.ResourceSpans().AppendEmpty()
+		ils := rs.ScopeSpans().AppendEmpty()
+		span := ils.Spans().AppendEmpty()
+		span.SetName("/users/123/profile")
+		span.SetKind(ptrace.SpanKindClient)
+
+		processor, err := newRedaction(t.Context(), tc.config, zaptest.NewLogger(t))
+		require.NoError(t, err)
+		outTraces, err := processor.processTraces(t.Context(), inBatch)
+		require.NoError(t, err)
+
+		outSpan := outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+		assert.Equal(t, "/users/*/profile", outSpan.Name())
+	})
+
+	t.Run("span name should not be sanitized when is not client or server", func(t *testing.T) {
+		tc := testConfig{
+			config: &Config{
+				AllowAllKeys: true,
+				URLSanitization: url.URLSanitizationConfig{
+					Enabled: true,
+				},
+			},
+		}
+
+		inBatch := ptrace.NewTraces()
+		rs := inBatch.ResourceSpans().AppendEmpty()
+		ils := rs.ScopeSpans().AppendEmpty()
+		span := ils.Spans().AppendEmpty()
+		span.SetName("/users/123/profile")
+
+		processor, err := newRedaction(t.Context(), tc.config, zaptest.NewLogger(t))
+		require.NoError(t, err)
+		outTraces, err := processor.processTraces(t.Context(), inBatch)
+		require.NoError(t, err)
+
+		outSpan := outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+		assert.Equal(t, "/users/123/profile", outSpan.Name())
+	})
+}
+
+func TestURLSanitizationSpanNameWithBlockedValues(t *testing.T) {
+	t.Run("span name with blocked value should not be sanitized", func(t *testing.T) {
+		tc := testConfig{
+			config: &Config{
+				AllowAllKeys:  true,
+				BlockedValues: []string{"4[0-9]{12}(?:[0-9]{3})?"},
+				URLSanitization: url.URLSanitizationConfig{
+					Enabled: true,
+				},
+			},
+		}
+
+		inBatch := ptrace.NewTraces()
+		rs := inBatch.ResourceSpans().AppendEmpty()
+		ils := rs.ScopeSpans().AppendEmpty()
+		span := ils.Spans().AppendEmpty()
+		span.SetName("/users/4111111111111111/profile")
+
+		processor, err := newRedaction(t.Context(), tc.config, zaptest.NewLogger(t))
+		require.NoError(t, err)
+		outTraces, err := processor.processTraces(t.Context(), inBatch)
+		require.NoError(t, err)
+
+		outSpan := outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+		assert.Equal(t, "/users/4111111111111111/profile", outSpan.Name())
+	})
+
+	t.Run("span name with service identifiers should be sanitized when allowed", func(t *testing.T) {
+		tc := testConfig{
+			config: &Config{
+				AllowAllKeys: true,
+				URLSanitization: url.URLSanitizationConfig{
+					Enabled: true,
+				},
+			},
+		}
+
+		inBatch := ptrace.NewTraces()
+		rs := inBatch.ResourceSpans().AppendEmpty()
+		ils := rs.ScopeSpans().AppendEmpty()
+		span := ils.Spans().AppendEmpty()
+		span.SetName("payments-dev-sql-adapter-queue /api/process/123")
+		span.SetKind(ptrace.SpanKindServer)
+
+		processor, err := newRedaction(t.Context(), tc.config, zaptest.NewLogger(t))
+		require.NoError(t, err)
+		outTraces, err := processor.processTraces(t.Context(), inBatch)
+		require.NoError(t, err)
+
+		outSpan := outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+		assert.Equal(t, "payments-dev-sql-adapter-queue /api/process/*", outSpan.Name())
+	})
+
+	t.Run("span name with secret pattern should not be sanitized", func(t *testing.T) {
+		tc := testConfig{
+			config: &Config{
+				AllowAllKeys:  true,
+				BlockedValues: []string{"secret-[0-9]+"},
+				URLSanitization: url.URLSanitizationConfig{
+					Enabled: true,
+				},
+			},
+		}
+
+		inBatch := ptrace.NewTraces()
+		rs := inBatch.ResourceSpans().AppendEmpty()
+		ils := rs.ScopeSpans().AppendEmpty()
+		span := ils.Spans().AppendEmpty()
+		span.SetName("payments-service /api/secret-123/process")
+
+		processor, err := newRedaction(t.Context(), tc.config, zaptest.NewLogger(t))
+		require.NoError(t, err)
+		outTraces, err := processor.processTraces(t.Context(), inBatch)
+		require.NoError(t, err)
+
+		outSpan := outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+		assert.Equal(t, "payments-service /api/secret-123/process", outSpan.Name())
+	})
+
+	t.Run("span name without slash should not be sanitized even when URL sanitization enabled", func(t *testing.T) {
+		tc := testConfig{
+			config: &Config{
+				AllowAllKeys:  true,
+				AllowedValues: []string{".*"},
+				URLSanitization: url.URLSanitizationConfig{
+					Enabled: true,
+				},
+			},
+		}
+
+		inBatch := ptrace.NewTraces()
+		rs := inBatch.ResourceSpans().AppendEmpty()
+		ils := rs.ScopeSpans().AppendEmpty()
+
+		// Test CLIENT span
+		clientSpan := ils.Spans().AppendEmpty()
+		clientSpan.SetName("us-west2-inventory-dev-catalog-sql-adapter-queue process")
+		clientSpan.SetKind(ptrace.SpanKindClient)
+
+		// Test SERVER span
+		serverSpan := ils.Spans().AppendEmpty()
+		serverSpan.SetName("eu-central1-shipping-prod-delivery-processor handle")
+		serverSpan.SetKind(ptrace.SpanKindServer)
+
+		// Test INTERNAL span (should not be processed)
+		internalSpan := ils.Spans().AppendEmpty()
+		internalSpan.SetName("cache-service-lookup get-item")
+		internalSpan.SetKind(ptrace.SpanKindInternal)
+
+		processor, err := newRedaction(t.Context(), tc.config, zaptest.NewLogger(t))
+		require.NoError(t, err)
+		outTraces, err := processor.processTraces(t.Context(), inBatch)
+		require.NoError(t, err)
+
+		spans := outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans()
+
+		// CLIENT span should remain unchanged (no slash)
+		assert.Equal(t, "us-west2-inventory-dev-catalog-sql-adapter-queue process", spans.At(0).Name())
+
+		// SERVER span should remain unchanged (no slash)
+		assert.Equal(t, "eu-central1-shipping-prod-delivery-processor handle", spans.At(1).Name())
+
+		// INTERNAL span should remain unchanged (wrong kind)
+		assert.Equal(t, "cache-service-lookup get-item", spans.At(2).Name())
+	})
+
+	t.Run("span name with slash should be sanitized when conditions met", func(t *testing.T) {
+		tc := testConfig{
+			config: &Config{
+				AllowAllKeys: true,
+				URLSanitization: url.URLSanitizationConfig{
+					Enabled: true,
+				},
+			},
+		}
+
+		inBatch := ptrace.NewTraces()
+		rs := inBatch.ResourceSpans().AppendEmpty()
+		ils := rs.ScopeSpans().AppendEmpty()
+
+		// Test CLIENT span with slash
+		clientSpan := ils.Spans().AppendEmpty()
+		clientSpan.SetName("GET /api/v1/payments/123")
+		clientSpan.SetKind(ptrace.SpanKindClient)
+
+		processor, err := newRedaction(t.Context(), tc.config, zaptest.NewLogger(t))
+		require.NoError(t, err)
+		outTraces, err := processor.processTraces(t.Context(), inBatch)
+		require.NoError(t, err)
+
+		spans := outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans()
+
+		// CLIENT span should be sanitized (has slash and is CLIENT/SERVER kind)
+		assert.Equal(t, "GET /api/v1/payments/*", spans.At(0).Name())
+	})
 }

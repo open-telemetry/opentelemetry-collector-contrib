@@ -443,9 +443,12 @@ func (ecsDataPointsEncoder) encodeMetrics(
 
 func addDataStreamAttributes(document *objmodel.Document, key string, idx elasticsearch.Index) {
 	if idx.IsDataStream() {
-		document.AddString(key+"data_stream.type", idx.Type)
-		document.AddString(key+"data_stream.dataset", idx.Dataset)
-		document.AddString(key+"data_stream.namespace", idx.Namespace)
+		if key != "" {
+			key += "."
+		}
+		document.AddString(key+elasticsearch.DataStreamType, idx.Type)
+		document.AddString(key+elasticsearch.DataStreamDataset, idx.Dataset)
+		document.AddString(key+elasticsearch.DataStreamNamespace, idx.Namespace)
 	}
 }
 
@@ -466,8 +469,7 @@ func encodeAttributes(prefix string, document *objmodel.Document, attributes pco
 
 func spanLinksToString(spanLinkSlice ptrace.SpanLinkSlice) string {
 	linkArray := make([]map[string]any, 0, spanLinkSlice.Len())
-	for i := 0; i < spanLinkSlice.Len(); i++ {
-		spanLink := spanLinkSlice.At(i)
+	for _, spanLink := range spanLinkSlice.All() {
 		link := map[string]any{}
 		link[spanIDField] = traceutil.SpanIDToHexOrEmptyString(spanLink.SpanID())
 		link[traceIDField] = traceutil.TraceIDToHexOrEmptyString(spanLink.TraceID())

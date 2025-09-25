@@ -67,11 +67,13 @@ func (bq *bqTest) startWaiter(ctx context.Context, size uint64, relp *ReleaseFun
 }
 
 func (bq *bqTest) waitForPending(admitted, waiting uint64) {
+	// TODO: Remove time.Sleep below, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42514
+	time.Sleep(20 * time.Millisecond)
 	require.Eventually(bq.t, func() bool {
 		bq.lock.Lock()
 		defer bq.lock.Unlock()
 		return bq.currentAdmitted == admitted && bq.currentWaiting == waiting
-	}, time.Second, 20*time.Millisecond)
+	}, 10*time.Second, 20*time.Millisecond)
 }
 
 func mkRepeat(x uint64, n int) []uint64 {
@@ -188,7 +190,7 @@ func TestBoundedQueueLimits(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			bq := newBQTest(t, test.maxLimitAdmit, test.maxLimitWait)
-			ctx := context.Background()
+			ctx := t.Context()
 
 			if test.timeout != 0 {
 				var cancel context.CancelFunc
@@ -284,7 +286,7 @@ func (bq bqTest) verifyMetrics(t *testing.T) (inflight, waiting int64) {
 	waiting = -1
 
 	var rm metricdata.ResourceMetrics
-	require.NoError(t, bq.reader.Collect(context.Background(), &rm))
+	require.NoError(t, bq.reader.Collect(t.Context(), &rm))
 
 	for _, sm := range rm.ScopeMetrics {
 		if sm.Scope.Name != expectScope {
@@ -311,7 +313,7 @@ func TestBoundedQueueLIFO(t *testing.T) {
 				t.Parallel()
 
 				bq := newBQTest(t, maxAdmit, maxAdmit)
-				ctx := context.Background()
+				ctx := t.Context()
 
 				// Fill the queue
 				relFirst, err := bq.Acquire(ctx, firstAcquire)
@@ -386,7 +388,7 @@ func TestBoundedQueueCancelation(t *testing.T) {
 	bq := newBQTest(t, maxAdmit, maxAdmit)
 
 	for number := range repetition {
-		ctx, cancel := context.WithCancel(context.Background())
+		ctx, cancel := context.WithCancel(t.Context())
 
 		tester := func() {
 			// This acquire either succeeds or is canceled.
@@ -420,7 +422,7 @@ func TestBoundedQueueCancelation(t *testing.T) {
 func TestBoundedQueueNoop(t *testing.T) {
 	nq := NewUnboundedQueue()
 	for _, i := range mkRange(1, 100) {
-		rel, err := nq.Acquire(context.Background(), i<<20)
+		rel, err := nq.Acquire(t.Context(), i<<20)
 		require.NoError(t, err)
 		defer rel()
 	}

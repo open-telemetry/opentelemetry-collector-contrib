@@ -19,11 +19,12 @@ The following settings are required:
 
 - url: Must be specified if auth type is not connection_string. If auth type is connection_string, it's optional or will be override by the auth.connection_string. Azure storage account endpoint. This setting might be replaced with `endpoint` for future. e.g. https://<account-name>.blob.core.windows.net/
 - auth (no default): Authentication method for exporter to ingest data.
-  - type (no default): Authentication type for expoter. supported values are: connection_string, service_principal, system_managed_identity, user_managed_identity and etc.
-  - tenand_id: Tenand Id for the client, only needed when type is service_principal.
-  - client_id: Client Id for the auth, only needed when type is service_principal and user_managed_identity.
+  - type (no default): Authentication type for exporter. supported values are: connection_string, service_principal, system_managed_identity, user_managed_identity and workload_identity.
+  - tenand_id: Tenand Id for the client, only needed when type is service_principal and workload_identity.
+  - client_id: Client Id for the auth, only needed when type is service_principal, user_managed_identity and workload_identity.
   - client_secret: Secret for the client, only needed when type is service_principal.
   - connection_string: Connection string to the endpoint. Only needed for connection_string auth type. Once provided, it'll **override** the `url` parameter to the storage account.
+  - federated_token_file: The path of the projected service account token file, only needed when type is workload_identity.
 
 
 The following settings can be optionally configured and have default values:
@@ -32,7 +33,8 @@ The following settings can be optionally configured and have default values:
   - metrics (default `metrics`): container to store metrics. default value is `metrics`.
   - logs (default `logs`): container to store logs. default value is `logs`.
   - traces (default `traces`): container to store traces. default value is `traces`.
-- blob_name_format: the final blob name will be blob_name + 
+- blob_name_format: the final blob name will be blob_name
+  - template_enabled (default `false`): enables Go template parsing for blob name formats. If parsing fails, it will not throw an error but will log a warning and continue formatting the blob name using other rules.
   - metrics_format (default `2006/01/02/metrics_15_04_05.json`): blob name format. The date format follows constants in Golang, refer [here](https://go.dev/src/time/format.go).
   - logs_format (default `2006/01/02/logs_15_04_05.json`): blob name format.
   - traces_format (default `2006/01/02/traces_15_04_05.json`): blob name format.
@@ -52,6 +54,24 @@ The following settings can be optionally configured and have default values:
   - `max_interval` (default = 30s): Is the upper bound on backoff; ignored if `enabled` is `false`
   - `max_elapsed_time` (default = 120s): Is the maximum amount of time spent trying to send a batch; ignored if `enabled` is `false`
 
+### Blob Name Templates
+
+When `template_enabled` is `true`, you can use Go templates in `metrics_format`, `logs_format`, and `traces_format` to create dynamic blob names based on telemetry data. The root object for the template is the telemetry data itself (`pmetric.Metrics`, `plog.Logs`, or `ptrace.Traces`).
+
+The following template functions are available:
+
+| Function                | Description                                                                 | Example                                                              |
+| ----------------------- | --------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| `getResourceMetricAttr` | Gets a resource attribute from metrics data.                                | `{{ getResourceMetricAttr . 0 "service.name" }}`                     |
+| `getResourceLogAttr`    | Gets a resource attribute from logs data.                                   | `{{ getResourceLogAttr . 0 "service.name" }}`                        |
+| `getResourceSpanAttr`   | Gets a resource attribute from traces data.                                 | `{{ getResourceSpanAttr . 0 "service.name" }}`                       |
+| `getScopeMetricAttr`    | Gets a scope attribute from metrics data.                                   | `{{ getScopeMetricAttr . 0 0 "scope.name" }}`                        |
+| `getScopeLogAttr`       | Gets a scope attribute from logs data.                                      | `{{ getScopeLogAttr . 0 0 "scope.name" }}`                           |
+| `getScopeSpanAttr`      | Gets a scope attribute from traces data.                                    | `{{ getScopeSpanAttr . 0 0 "scope.name" }}`                          |
+| `getMetric`             | Gets a metric object. You can chain to access its fields.                   | `{{ (getMetric . 0 0 0).Name }}`                                     |
+| `getLogRecord`          | Gets a log record object. You can chain to access its fields.               | `{{ (getLogRecord . 0 0 0).TraceID }}`                               |
+| `getSpan`               | Gets a span object. You can chain to access its fields.                     | `{{ (getSpan . 0 0 0).Name }}`                                       |
+
 An example configuration is provided as follows:
 
 ```yaml
@@ -70,6 +90,11 @@ exporter:
       logs: "logs"
       metrics: "metrics"
       traces: "traces"
+    blob_name_format:
+      template_enabled: true
+      metrics_format: `{{ getResourceMetricAttr . 0 "service.name" }}/2006/01/02/metrics.json`
+      logs_format: `{{ getScopeLogAttr . 0 0 "scope.name" }}/2006/01/02/logs.json`
+      traces_format: `{{ (getSpan . 0 0 0).Name }}/2006/01/02/traces.json`
     auth:
       type: "connection_string"
       connection_string: "DefaultEndpointsProtocol=https;AccountName=<your-acount>;AccountKey=<account-key>;EndpointSuffix=core.windows.net"
@@ -79,6 +104,8 @@ exporter:
       enabled: true
       separator: "\n"
 ```
+
+### Append Blob
 
 When `append_blob` is enabled:
 - The exporter will create append blobs instead of block blobs

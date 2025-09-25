@@ -4,7 +4,6 @@
 package filestorage
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -25,7 +24,7 @@ import (
 )
 
 func TestExtensionIntegrity(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	se := newTestExtension(t)
 
 	type mockComponent struct {
@@ -101,7 +100,7 @@ func TestExtensionIntegrity(t *testing.T) {
 }
 
 func TestClientHandlesSimpleCases(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	se := newTestExtension(t)
 
 	client, err := se.GetClient(
@@ -145,7 +144,7 @@ func TestClientHandlesSimpleCases(t *testing.T) {
 }
 
 func TestTwoClientsWithDifferentNames(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	se := newTestExtension(t)
 
 	client1, err := se.GetClient(
@@ -232,14 +231,14 @@ func TestComponentNameWithUnsafeCharacters(t *testing.T) {
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.Directory = tempDir
 
-	extension, err := f.Create(context.Background(), extensiontest.NewNopSettings(f.Type()), cfg)
+	extension, err := f.Create(t.Context(), extensiontest.NewNopSettings(f.Type()), cfg)
 	require.NoError(t, err)
 
 	se, ok := extension.(storage.Extension)
 	require.True(t, ok)
 
 	client, err := se.GetClient(
-		context.Background(),
+		t.Context(),
 		component.KindReceiver,
 		newTestEntity("my/slashed/component*"),
 		"",
@@ -248,11 +247,11 @@ func TestComponentNameWithUnsafeCharacters(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, client)
 
-	client.Close(context.Background())
+	client.Close(t.Context())
 }
 
 func TestGetClientErrorsOnDeletedDirectory(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	tempDir := t.TempDir()
 
@@ -260,7 +259,7 @@ func TestGetClientErrorsOnDeletedDirectory(t *testing.T) {
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.Directory = tempDir
 
-	extension, err := f.Create(context.Background(), extensiontest.NewNopSettings(f.Type()), cfg)
+	extension, err := f.Create(t.Context(), extensiontest.NewNopSettings(f.Type()), cfg)
 	require.NoError(t, err)
 
 	se, ok := extension.(storage.Extension)
@@ -286,7 +285,7 @@ func newTestExtension(t *testing.T) storage.Extension {
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.Directory = t.TempDir()
 
-	extension, err := f.Create(context.Background(), extensiontest.NewNopSettings(f.Type()), cfg)
+	extension, err := f.Create(t.Context(), extensiontest.NewNopSettings(f.Type()), cfg)
 	require.NoError(t, err)
 
 	se, ok := extension.(storage.Extension)
@@ -300,7 +299,7 @@ func newTestEntity(name string) component.ID {
 }
 
 func TestCompaction(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	tempDir := t.TempDir()
 
@@ -308,7 +307,7 @@ func TestCompaction(t *testing.T) {
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.Directory = tempDir
 
-	extension, err := f.Create(context.Background(), extensiontest.NewNopSettings(f.Type()), cfg)
+	extension, err := f.Create(t.Context(), extensiontest.NewNopSettings(f.Type()), cfg)
 	require.NoError(t, err)
 
 	se, ok := extension.(storage.Extension)
@@ -390,7 +389,7 @@ func TestCompaction(t *testing.T) {
 // TestCompactionRemoveTemp validates if temporary db used for compaction is removed afterwards
 // test is performed for both: the same and different than storage directories
 func TestCompactionRemoveTemp(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	tempDir := t.TempDir()
 
@@ -398,7 +397,7 @@ func TestCompactionRemoveTemp(t *testing.T) {
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.Directory = tempDir
 
-	extension, err := f.Create(context.Background(), extensiontest.NewNopSettings(f.Type()), cfg)
+	extension, err := f.Create(t.Context(), extensiontest.NewNopSettings(f.Type()), cfg)
 	require.NoError(t, err)
 
 	se, ok := extension.(storage.Extension)
@@ -454,7 +453,7 @@ func TestCompactionRemoveTemp(t *testing.T) {
 }
 
 func TestCleanupOnStart(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	tempDir := t.TempDir()
 	// simulate left temporary compaction file from killed process
@@ -466,7 +465,7 @@ func TestCleanupOnStart(t *testing.T) {
 	cfg.Directory = tempDir
 	cfg.Compaction.Directory = tempDir
 	cfg.Compaction.CleanupOnStart = true
-	extension, err := f.Create(context.Background(), extensiontest.NewNopSettings(f.Type()), cfg)
+	extension, err := f.Create(t.Context(), extensiontest.NewNopSettings(f.Type()), cfg)
 	require.NoError(t, err)
 
 	se, ok := extension.(storage.Extension)
@@ -490,7 +489,7 @@ func TestCleanupOnStart(t *testing.T) {
 }
 
 func TestCompactionOnStart(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	f := NewFactory()
 
 	logCore, logObserver := observer.New(zap.DebugLevel)
@@ -506,7 +505,7 @@ func TestCompactionOnStart(t *testing.T) {
 	cfg.Directory = tempDir
 	cfg.Compaction.Directory = tempDir
 	cfg.Compaction.OnStart = true
-	extension, err := f.Create(context.Background(), set, cfg)
+	extension, err := f.Create(t.Context(), set, cfg)
 	require.NoError(t, err)
 
 	se, ok := extension.(storage.Extension)
@@ -523,7 +522,7 @@ func TestCompactionOnStart(t *testing.T) {
 	t.Cleanup(func() {
 		// At least one compaction should have happened on start
 		require.GreaterOrEqual(t, len(logObserver.FilterMessage("finished compaction").All()), 1)
-		require.NoError(t, client.Close(context.TODO()))
+		require.NoError(t, client.Close(t.Context()))
 	})
 }
 
@@ -604,7 +603,7 @@ func TestDirectoryCreation(t *testing.T) {
 			f := NewFactory()
 			config := tt.config(t, f)
 			if config != nil {
-				ext, err := f.Create(context.Background(), extensiontest.NewNopSettings(f.Type()), config)
+				ext, err := f.Create(t.Context(), extensiontest.NewNopSettings(f.Type()), config)
 				require.NoError(t, err)
 				require.NotNil(t, ext)
 				tt.validate(t, config)
@@ -614,7 +613,7 @@ func TestDirectoryCreation(t *testing.T) {
 }
 
 func TestRecreate(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	temp := t.TempDir()
 	f := NewFactory()
 
@@ -667,7 +666,8 @@ func TestRecreate(t *testing.T) {
 		require.NoError(t, ext.Shutdown(ctx))
 	}
 
-	// step 3: re-create the extension, but with Recreate=true and make sure that the data is not preset
+	// step 3: re-create the extension, but with Recreate=true and make sure that the data still exists
+	// (since recreate now only happens on panic, not always when recreate=true)
 	{
 		config.Recreate = true
 		ext, err := f.Create(ctx, extensiontest.NewNopSettings(f.Type()), config)
@@ -680,9 +680,9 @@ func TestRecreate(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, client)
 
-		// The data shouldn't exist.
+		// The data should still exist since no panic occurred
 		val, err := client.Get(ctx, "key")
-		require.Nil(t, val)
+		require.Equal(t, val, []byte("val"))
 		require.NoError(t, err)
 
 		// close the extension

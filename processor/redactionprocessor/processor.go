@@ -21,6 +21,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/sha3"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor/internal/db"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor/internal/url"
 )
 
 const attrValuesSeparator = ","
@@ -42,6 +45,10 @@ type redaction struct {
 	config *Config
 	// Logger
 	logger *zap.Logger
+	// URL sanitizer
+	urlSanitizer *url.URLSanitizer
+	// Database obfuscator
+	dbObfuscator *db.Obfuscator
 }
 
 // newRedaction creates a new instance of the redaction processor
@@ -65,6 +72,15 @@ func newRedaction(ctx context.Context, config *Config, logger *zap.Logger) (*red
 		return nil, fmt.Errorf("failed to process allow list: %w", err)
 	}
 
+	var urlSanitizer *url.URLSanitizer
+	if config.URLSanitization.Enabled {
+		urlSanitizer, err = url.NewURLSanitizer(config.URLSanitization)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create URL sanitizer: %w", err)
+		}
+	}
+	dbObfuscator := db.NewObfuscator(config.DBSanitizer)
+
 	return &redaction{
 		allowList:         allowList,
 		ignoreList:        ignoreList,
@@ -74,6 +90,8 @@ func newRedaction(ctx context.Context, config *Config, logger *zap.Logger) (*red
 		hashFunction:      config.HashFunction,
 		config:            config,
 		logger:            logger,
+		urlSanitizer:      urlSanitizer,
+		dbObfuscator:      dbObfuscator,
 	}, nil
 }
 
@@ -113,6 +131,8 @@ func (s *redaction) processResourceSpan(ctx context.Context, rs ptrace.ResourceS
 
 	for j := 0; j < rs.ScopeSpans().Len(); j++ {
 		ils := rs.ScopeSpans().At(j)
+		scopeAttrs := ils.Scope().Attributes()
+		s.processAttrs(ctx, scopeAttrs)
 		for k := 0; k < ils.Spans().Len(); k++ {
 			span := ils.Spans().At(k)
 			spanAttrs := span.Attributes()
@@ -122,6 +142,10 @@ func (s *redaction) processResourceSpan(ctx context.Context, rs ptrace.ResourceS
 
 			// Attributes can also be part of span events
 			s.processSpanEvents(ctx, span.Events())
+
+			if s.shouldRedactSpanName(&span) {
+				span.SetName(s.urlSanitizer.SanitizeURL(span.Name()))
+			}
 		}
 	}
 }
@@ -141,6 +165,8 @@ func (s *redaction) processResourceLog(ctx context.Context, rl plog.ResourceLogs
 
 	for j := 0; j < rl.ScopeLogs().Len(); j++ {
 		ils := rl.ScopeLogs().At(j)
+		scopeAttrs := ils.Scope().Attributes()
+		s.processAttrs(ctx, scopeAttrs)
 		for k := 0; k < ils.LogRecords().Len(); k++ {
 			log := ils.LogRecords().At(k)
 			s.processAttrs(ctx, log.Attributes())
@@ -186,7 +212,7 @@ func (s *redaction) processLogBody(ctx context.Context, body pcommon.Value, attr
 			allowedKeys = append(allowedKeys, "body")
 			return
 		}
-		processedValue := s.processStringValue(strVal)
+		processedValue := s.processStringValueForLogBody(strVal)
 		if strVal != processedValue {
 			maskedKeys = append(maskedKeys, "body")
 			body.SetStr(processedValue)
@@ -237,7 +263,7 @@ func (s *redaction) redactLogBodyRecursive(ctx context.Context, key string, valu
 			*allowedKeys = append(*allowedKeys, key)
 			return
 		}
-		processedValue := s.processStringValue(strVal)
+		processedValue := s.processStringValueForLogBody(strVal)
 		if strVal != processedValue {
 			*maskedKeys = append(*maskedKeys, key)
 			value.SetStr(processedValue)
@@ -252,6 +278,8 @@ func (s *redaction) processResourceMetric(ctx context.Context, rm pmetric.Resour
 
 	for j := 0; j < rm.ScopeMetrics().Len(); j++ {
 		ils := rm.ScopeMetrics().At(j)
+		scopeAttrs := ils.Scope().Attributes()
+		s.processAttrs(ctx, scopeAttrs)
 		for k := 0; k < ils.Metrics().Len(); k++ {
 			metric := ils.Metrics().At(k)
 			switch metric.Type() {
@@ -309,6 +337,10 @@ func (s *redaction) processAttrs(_ context.Context, attributes pcommon.Map) {
 			continue
 		}
 		strVal := value.Str()
+		if s.config.RedactAllTypes {
+			strVal = value.AsString()
+		}
+
 		if s.shouldAllowValue(strVal) {
 			allowedKeys = append(allowedKeys, k)
 			continue
@@ -319,7 +351,7 @@ func (s *redaction) processAttrs(_ context.Context, attributes pcommon.Map) {
 			value.SetStr(maskedValue)
 			continue
 		}
-		processedString := s.processStringValue(strVal)
+		processedString := s.processStringValueForAttribute(strVal, k)
 		if processedString != strVal {
 			maskedKeys = append(maskedKeys, k)
 			value.SetStr(processedString)
@@ -382,7 +414,30 @@ func (s *redaction) addMetaAttrs(redactedAttrs []string, attributes pcommon.Map,
 	}
 }
 
-func (s *redaction) processStringValue(strVal string) string {
+func (s *redaction) processStringValueForAttribute(strVal, attributeKey string) string {
+	for _, compiledRE := range s.blockRegexList {
+		match := compiledRE.MatchString(strVal)
+		if match {
+			strVal = s.maskValue(strVal, compiledRE)
+		}
+	}
+
+	if s.urlSanitizer != nil {
+		strVal = s.urlSanitizer.SanitizeAttributeURL(strVal, attributeKey)
+	}
+
+	if s.dbObfuscator != nil {
+		obfuscatedQuery, err := s.dbObfuscator.ObfuscateAttribute(strVal, attributeKey)
+		if err != nil {
+			return strVal
+		}
+		strVal = obfuscatedQuery
+	}
+
+	return strVal
+}
+
+func (s *redaction) processStringValueForLogBody(strVal string) string {
 	// Mask any blocked values for the other attributes
 	for _, compiledRE := range s.blockRegexList {
 		match := compiledRE.MatchString(strVal)
@@ -390,6 +445,19 @@ func (s *redaction) processStringValue(strVal string) string {
 			strVal = s.maskValue(strVal, compiledRE)
 		}
 	}
+
+	if s.urlSanitizer != nil {
+		strVal = s.urlSanitizer.SanitizeURL(strVal)
+	}
+
+	if s.dbObfuscator != nil {
+		obfuscatedQuery, err := s.dbObfuscator.Obfuscate(strVal)
+		if err != nil {
+			return strVal
+		}
+		strVal = obfuscatedQuery
+	}
+
 	return strVal
 }
 
@@ -427,6 +495,22 @@ func (s *redaction) shouldRedactKey(k string) bool {
 		}
 	}
 	return false
+}
+
+func (s *redaction) shouldRedactSpanName(span *ptrace.Span) bool {
+	if s.urlSanitizer == nil {
+		return false
+	}
+	spanKind := span.Kind()
+	if spanKind != ptrace.SpanKindClient && spanKind != ptrace.SpanKindServer {
+		return false
+	}
+
+	spanName := span.Name()
+	if !strings.Contains(spanName, "/") {
+		return false
+	}
+	return !s.shouldAllowValue(spanName)
 }
 
 const (

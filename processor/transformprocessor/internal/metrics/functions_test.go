@@ -36,6 +36,7 @@ func Test_DataPointFunctions(t *testing.T) {
 			expected := ottlfuncs.StandardFuncs[ottldatapoint.TransformContext]()
 			expected["convert_summary_sum_val_to_sum"] = newConvertSummarySumValToSumFactory()
 			expected["convert_summary_count_val_to_sum"] = newConvertSummaryCountValToSumFactory()
+			expected["merge_histogram_buckets"] = newMergeHistogramBucketsFactory()
 
 			actual := DataPointFunctions()
 
@@ -59,6 +60,7 @@ func Test_MetricFunctions(t *testing.T) {
 	expected["copy_metric"] = newCopyMetricFactory()
 	expected["scale_metric"] = newScaleMetricFactory()
 	expected["convert_exponential_histogram_to_histogram"] = newconvertExponentialHistToExplicitHistFactory()
+	expected["convert_summary_quantile_val_to_gauge"] = newConvertSummaryQuantileValToGaugeFactory()
 
 	actual := MetricFunctions()
 	require.Len(t, actual, len(expected))

@@ -4,7 +4,6 @@
 package asapauthextension
 
 import (
-	"context"
 	"net/http"
 	"testing"
 	"time"
@@ -82,7 +81,7 @@ func TestRPCAuth(t *testing.T) {
 	assert.True(t, credentials.RequireTransportSecurity())
 
 	// Generate auth header
-	metadata, err := credentials.GetRequestMetadata(context.Background())
+	metadata, err := credentials.GetRequestMetadata(t.Context())
 	assert.NoError(t, err)
 	tokenString := metadata["authorization"][7:] // Remove "Bearer " from front
 	validateAsapJWT(t, cfg, tokenString)

@@ -64,9 +64,7 @@ body:
       - exporter/loadbalancing
       - exporter/logicmonitor
       - exporter/logzio
-      - exporter/loki
       - exporter/mezmo
-      - exporter/opencensus
       - exporter/opensearch
       - exporter/otelarrow
       - exporter/prometheus
@@ -140,6 +138,7 @@ body:
       - internal/exp/metrics
       - internal/filter
       - internal/grpcutil
+      - internal/healthcheck
       - internal/k8sconfig
       - internal/kafka
       - internal/kubelet
@@ -192,6 +191,7 @@ body:
       - processor/groupbyattrs
       - processor/groupbytrace
       - processor/interval
+      - processor/isolationforest
       - processor/k8sattributes
       - processor/logdedup
       - processor/logstransform
@@ -203,19 +203,24 @@ body:
       - processor/remotetap
       - processor/resource
       - processor/resourcedetection
+      - processor/resourcedetection/internal/akamai
+      - processor/resourcedetection/internal/digitalocean
       - processor/resourcedetection/internal/dynatrace
-      - processor/routing
+      - processor/resourcedetection/internal/hetzner
+      - processor/resourcedetection/internal/oraclecloud
+      - processor/resourcedetection/internal/scaleway
+      - processor/resourcedetection/internal/vultr
       - processor/schema
       - processor/span
       - processor/sumologic
       - processor/tailsampling
       - processor/transform
+      - processor/unroll
       - receiver/activedirectoryds
       - receiver/aerospike
       - receiver/apache
       - receiver/apachespark
       - receiver/awscloudwatch
-      - receiver/awscloudwatchmetrics
       - receiver/awscontainerinsight
       - receiver/awsecscontainermetrics
       - receiver/awsfirehose
@@ -284,7 +289,6 @@ body:
       - receiver/nginx
       - receiver/nsxt
       - receiver/ntp
-      - receiver/opencensus
       - receiver/oracledb
       - receiver/osquery
       - receiver/otelarrow
@@ -302,7 +306,6 @@ body:
       - receiver/redis
       - receiver/riak
       - receiver/saphana
-      - receiver/sapm
       - receiver/signalfx
       - receiver/simpleprometheus
       - receiver/skywalking

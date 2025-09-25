@@ -55,7 +55,12 @@ across all spans:
 - `span.name`
 - `span.kind`
 - `status.code`
+- `collector.instance.id`
 
+The `collector.instance.id` dimension is intended to add a unique UUID to all metrics, ensuring that the spanmetrics connector 
+does not violate the **Single Writer Principle** when spanmetrics is used in a multi-deployment model.
+Currently, `collector.instance.id` must be manually enabled via the feature gate: `connector.spanmetrics.includeServiceInstanceID`.
+More detail, please see [Known Limitation: the Single Writer Principle](#known-limitation-the-single-writer-principle)
 
 ## Span to Metrics processor to Span to metrics connector
 
@@ -122,6 +127,7 @@ The following settings can be optionally configured:
 - `metric_timestamp_cache_size` (default `1000`): Only relevant for delta temporality span metrics. Controls the size of the cache used to keep track of a metric's TimestampUnixNano the last time it was flushed. When a metric is evicted from the cache, its next data point will indicate a "reset" in the series. Downstream components converting from delta to cumulative, like `prometheusexporter`, may handle these resets by setting cumulative counters back to 0.
 - `exemplars`:  Use to configure how to attach exemplars to metrics.
   - `enabled` (default: `false`): enabling will add spans as Exemplars to all metrics. Exemplars are only kept for one flush interval.rom the cache, its next data point will indicate a "reset" in the series. Downstream components converting from delta to cumulative, like `prometheusexporter`, may handle these resets by setting cumulative counters back to 0.
+  - `max_per_data_point` (default: `5`): The maximum number of exemplars to attach to a single metric data point.
 - `events`: Use to configure the events metric.
   - `enabled`: (default: `false`): enabling will add the events metric.
   - `dimensions`: (mandatory if `enabled`) the list of the span's event attributes to add as dimensions to the `traces.span.metrics.events` metric, which will be included _on top of_ the common and configured `dimensions` for span attributes and resource attributes.
@@ -163,7 +169,6 @@ connectors:
     exemplars:
       enabled: true
     exclude_dimensions: ['status.code']
-    dimensions_cache_size: 1000
     aggregation_temporality: "AGGREGATION_TEMPORALITY_CUMULATIVE"    
     metrics_flush_interval: 15s
     metrics_expiration: 5m
@@ -244,9 +249,12 @@ For more example configuration covering various other use cases, please visit th
 
 [Connectors README]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md
 
-## Known Limitation: Violation of the Single Writer Principle
+## Known Limitation: the Single Writer Principle
 
-The `spanmetricsconnector` currently does not guarantee adherence to the [Single Writer Principle](https://opentelemetry.io/docs/specs/otel/metrics/data-model/#single-writer), which is a core requirement in the OpenTelemetry metrics data model. Depending on how the collector is configured, multiple components may write to the same metric stream. This can result in inconsistent data, metric conflicts, or dropped series in metric backends.
+Proper configuration of the `spanmetricsconnector` ensures compliance with the [Single Writer Principle](https://opentelemetry.io/docs/specs/otel/metrics/data-model/#single-writer),
+which is a core requirement in the OpenTelemetry metrics data model. Misconfiguration, however, 
+may allow multiple components to write to the same metric stream, resulting in data inconsistency, 
+metric conflicts, or the dropping of time series by metric backends.
 
 ### Why this happens
 
@@ -260,8 +268,16 @@ This issue typically arises when:
 
 To reduce the risk of conflicting writes:
 
-* Avoid using multiple instances of the `spanmetricsconnector` unless metrics are partitioned (e.g., by attribute filtering) so each stream has a single writer
-* If multiple pipelines are used, ensure each produces uniquely identified metrics (e.g., inject attributes using a processor)
+* Add `resource_metrics_key_attributes` to your configuration.
+```
+connectors:
+  spanmetrics:
+    resource_metrics_key_attributes:
+      - service.name
+      - telemetry.sdk.language
+      - telemetry.sdk.name
+```
+* Manually enable the feature gate: `connector.spanmetrics.includeServiceInstanceID` to produce uniquely identified metrics.
 * For exporters like Prometheus, which rely on the single writer assumption, use a dedicated pipeline with a single `spanmetricsconnector` instance
 
 More context is available in [GitHub issue #21101](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21101).

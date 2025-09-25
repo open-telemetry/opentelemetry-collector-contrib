@@ -42,30 +42,29 @@ func TestLRUSetLifeTime(t *testing.T) {
 	})
 	require.NoError(t, err)
 
+	var timeSet time.Time
+
 	// Wait until cache item is expired.
 	time.Sleep(lifetime)
 	err = cache.WithLock(func(lock LockedLRUSet) error {
 		assert.False(t, lock.CheckAndAdd("a"))
+		timeSet = time.Now()
 		assert.True(t, lock.CheckAndAdd("a"))
 		return nil
 	})
 	require.NoError(t, err)
 
-	// Wait 50% of the lifetime, so the item is not expired.
-	time.Sleep(lifetime / 2)
-	err = cache.WithLock(func(lock LockedLRUSet) error {
-		assert.True(t, lock.CheckAndAdd("a"))
-		return nil
-	})
-	require.NoError(t, err)
-
-	// Wait another 50% of the lifetime, so the item should be expired.
-	time.Sleep(lifetime / 2)
-	err = cache.WithLock(func(lock LockedLRUSet) error {
-		assert.False(t, lock.CheckAndAdd("a"))
-		return nil
-	})
-	require.NoError(t, err)
+	// Keep checking for expiry and assert that first expiry happens after at least lifetime
+	assert.EventuallyWithT(t, func(tt *assert.CollectT) {
+		var val bool
+		err = cache.WithLock(func(lock LockedLRUSet) error {
+			val = lock.CheckAndAdd("a")
+			return nil
+		})
+		require.NoError(tt, err)
+		assert.False(tt, val)
+	}, lifetime*2, lifetime/10)
+	assert.GreaterOrEqual(t, time.Since(timeSet), lifetime)
 }
 
 func BenchmarkLRUSetCheck(b *testing.B) {
@@ -75,7 +74,7 @@ func BenchmarkLRUSetCheck(b *testing.B) {
 	_ = cache.WithLock(func(lock LockedLRUSet) error {
 		b.ReportAllocs()
 		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			lock.CheckAndAdd("a")
 		}
 

@@ -4,7 +4,6 @@
 package snmpreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver"
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"path/filepath"
@@ -94,7 +93,7 @@ func TestStart(t *testing.T) {
 					cfg:      &Config{},
 					settings: receivertest.NewNopSettings(metadata.Type),
 				}
-				err := scraper.start(context.Background(), componenttest.NewNopHost())
+				err := scraper.start(t.Context(), componenttest.NewNopHost())
 				require.Error(t, err)
 			},
 		},
@@ -105,7 +104,7 @@ func TestStart(t *testing.T) {
 					cfg:      createDefaultConfig().(*Config),
 					settings: receivertest.NewNopSettings(metadata.Type),
 				}
-				err := scraper.start(context.Background(), componenttest.NewNopHost())
+				err := scraper.start(t.Context(), componenttest.NewNopHost())
 				require.NoError(t, err)
 			},
 		},
@@ -134,7 +133,7 @@ func TestScrape(t *testing.T) {
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
-				metrics, err := scraper.scrape(context.Background())
+				metrics, err := scraper.scrape(t.Context())
 				require.NoError(t, err)
 				require.Equal(t, 0, metrics.MetricCount())
 			},
@@ -169,7 +168,7 @@ func TestScrape(t *testing.T) {
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
-				metrics, err := scraper.scrape(context.Background())
+				metrics, err := scraper.scrape(t.Context())
 				require.EqualError(t, err, clientErr.Error())
 				require.Equal(t, 0, metrics.MetricCount())
 			},
@@ -205,7 +204,7 @@ func TestScrape(t *testing.T) {
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
-				metrics, err := scraper.scrape(context.Background())
+				metrics, err := scraper.scrape(t.Context())
 				require.EqualError(t, err, expectedScrapeErr.Error())
 				require.Equal(t, 0, metrics.MetricCount())
 			},
@@ -251,7 +250,7 @@ func TestScrape(t *testing.T) {
 					return expectedMetrics
 				}
 				expectedMetrics := expectedMetricGen(t)
-				metrics, err := scraper.scrape(context.Background())
+				metrics, err := scraper.scrape(t.Context())
 				require.NoError(t, err)
 				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
@@ -298,7 +297,7 @@ func TestScrape(t *testing.T) {
 					return expectedMetrics
 				}
 				expectedMetrics := expectedMetricGen(t)
-				metrics, err := scraper.scrape(context.Background())
+				metrics, err := scraper.scrape(t.Context())
 				require.NoError(t, err)
 				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
@@ -348,7 +347,7 @@ func TestScrape(t *testing.T) {
 					return expectedMetrics
 				}
 				expectedMetrics := expectedMetricGen(t)
-				metrics, err := scraper.scrape(context.Background())
+				metrics, err := scraper.scrape(t.Context())
 				require.NoError(t, err)
 				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
@@ -398,7 +397,7 @@ func TestScrape(t *testing.T) {
 					return expectedMetrics
 				}
 				expectedMetrics := expectedMetricGen(t)
-				metrics, err := scraper.scrape(context.Background())
+				metrics, err := scraper.scrape(t.Context())
 				require.NoError(t, err)
 				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
@@ -462,7 +461,7 @@ func TestScrape(t *testing.T) {
 					return expectedMetrics
 				}
 				expectedMetrics := expectedMetricGen(t)
-				metrics, err := scraper.scrape(context.Background())
+				metrics, err := scraper.scrape(t.Context())
 				require.NoError(t, err)
 				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
@@ -528,7 +527,7 @@ func TestScrape(t *testing.T) {
 					return expectedMetrics
 				}
 				expectedMetrics := expectedMetricGen(t)
-				metrics, err := scraper.scrape(context.Background())
+				metrics, err := scraper.scrape(t.Context())
 				require.NoError(t, err)
 				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
@@ -601,7 +600,7 @@ func TestScrape(t *testing.T) {
 					return expectedMetrics
 				}
 				expectedMetrics := expectedMetricGen(t)
-				metrics, err := scraper.scrape(context.Background())
+				metrics, err := scraper.scrape(t.Context())
 				require.NoError(t, err)
 				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
@@ -636,7 +635,7 @@ func TestScrape(t *testing.T) {
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
-				metrics, err := scraper.scrape(context.Background())
+				metrics, err := scraper.scrape(t.Context())
 				require.EqualError(t, err, clientErr.Error())
 				require.Equal(t, 0, metrics.MetricCount())
 			},
@@ -684,7 +683,7 @@ func TestScrape(t *testing.T) {
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
-				metrics, err := scraper.scrape(context.Background())
+				metrics, err := scraper.scrape(t.Context())
 				require.EqualError(t, err, expectedScrapeErrMsg)
 				require.Equal(t, 0, metrics.MetricCount())
 			},
@@ -747,7 +746,7 @@ func TestScrape(t *testing.T) {
 					return expectedMetrics
 				}
 				expectedMetrics := expectedMetricGen(t)
-				metrics, err := scraper.scrape(context.Background())
+				metrics, err := scraper.scrape(t.Context())
 				require.NoError(t, err)
 				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
@@ -811,7 +810,7 @@ func TestScrape(t *testing.T) {
 					return expectedMetrics
 				}
 				expectedMetrics := expectedMetricGen(t)
-				metrics, err := scraper.scrape(context.Background())
+				metrics, err := scraper.scrape(t.Context())
 				require.NoError(t, err)
 				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
@@ -878,7 +877,7 @@ func TestScrape(t *testing.T) {
 					return expectedMetrics
 				}
 				expectedMetrics := expectedMetricGen(t)
-				metrics, err := scraper.scrape(context.Background())
+				metrics, err := scraper.scrape(t.Context())
 				require.NoError(t, err)
 				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
@@ -945,7 +944,7 @@ func TestScrape(t *testing.T) {
 					return expectedMetrics
 				}
 				expectedMetrics := expectedMetricGen(t)
-				metrics, err := scraper.scrape(context.Background())
+				metrics, err := scraper.scrape(t.Context())
 				require.NoError(t, err)
 				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
@@ -1028,7 +1027,7 @@ func TestScrape(t *testing.T) {
 					return expectedMetrics
 				}
 				expectedMetrics := expectedMetricGen(t)
-				metrics, err := scraper.scrape(context.Background())
+				metrics, err := scraper.scrape(t.Context())
 				require.NoError(t, err)
 				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
@@ -1122,7 +1121,7 @@ func TestScrape(t *testing.T) {
 					return expectedMetrics
 				}
 				expectedMetrics := expectedMetricGen(t)
-				metrics, err := scraper.scrape(context.Background())
+				metrics, err := scraper.scrape(t.Context())
 				require.NoError(t, err)
 				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
@@ -1214,7 +1213,7 @@ func TestScrape(t *testing.T) {
 					return expectedMetrics
 				}
 				expectedMetrics := expectedMetricGen(t)
-				metrics, err := scraper.scrape(context.Background())
+				metrics, err := scraper.scrape(t.Context())
 				require.NoError(t, err)
 				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
@@ -1286,7 +1285,7 @@ func TestScrape(t *testing.T) {
 					logger:   zap.NewNop(),
 				}
 
-				metrics, err := scraper.scrape(context.Background())
+				metrics, err := scraper.scrape(t.Context())
 				require.EqualError(t, err, fmt.Sprintf("%s; %s; %s", clientErr, expectedErr1, expectedErr2))
 				require.Equal(t, 0, metrics.MetricCount())
 			},
@@ -1370,7 +1369,7 @@ func TestScrape(t *testing.T) {
 					logger:   zap.NewNop(),
 				}
 
-				metrics, err := scraper.scrape(context.Background())
+				metrics, err := scraper.scrape(t.Context())
 				require.EqualError(t, err, fmt.Sprintf("%s; %s; %s; %s", expectedErr1, expectedErr2, expectedErr3, expectedErr4))
 				require.Equal(t, 0, metrics.MetricCount())
 			},
@@ -1447,7 +1446,7 @@ func TestScrape(t *testing.T) {
 					return expectedMetrics
 				}
 				expectedMetrics := expectedMetricGen(t)
-				metrics, err := scraper.scrape(context.Background())
+				metrics, err := scraper.scrape(t.Context())
 				require.NoError(t, err)
 				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
@@ -1525,7 +1524,7 @@ func TestScrape(t *testing.T) {
 					return expectedMetrics
 				}
 				expectedMetrics := expectedMetricGen(t)
-				metrics, err := scraper.scrape(context.Background())
+				metrics, err := scraper.scrape(t.Context())
 				require.NoError(t, err)
 				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
@@ -1603,7 +1602,7 @@ func TestScrape(t *testing.T) {
 					return expectedMetrics
 				}
 				expectedMetrics := expectedMetricGen(t)
-				metrics, err := scraper.scrape(context.Background())
+				metrics, err := scraper.scrape(t.Context())
 				require.NoError(t, err)
 				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
@@ -1681,7 +1680,7 @@ func TestScrape(t *testing.T) {
 					return expectedMetrics
 				}
 				expectedMetrics := expectedMetricGen(t)
-				metrics, err := scraper.scrape(context.Background())
+				metrics, err := scraper.scrape(t.Context())
 				require.NoError(t, err)
 				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
@@ -1767,7 +1766,7 @@ func TestScrape(t *testing.T) {
 					return expectedMetrics
 				}
 				expectedMetrics := expectedMetricGen(t)
-				metrics, err := scraper.scrape(context.Background())
+				metrics, err := scraper.scrape(t.Context())
 				require.NoError(t, err)
 				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
@@ -1835,7 +1834,7 @@ func TestScrape(t *testing.T) {
 					logger:   zap.NewNop(),
 				}
 
-				metrics, err := scraper.scrape(context.Background())
+				metrics, err := scraper.scrape(t.Context())
 				require.EqualError(t, err, fmt.Sprintf("%s; %s; %s", clientErr, expectedErr1, expectedErr2))
 				require.Equal(t, 0, metrics.MetricCount())
 			},
@@ -1915,7 +1914,7 @@ func TestScrape(t *testing.T) {
 					logger:   zap.NewNop(),
 				}
 
-				metrics, err := scraper.scrape(context.Background())
+				metrics, err := scraper.scrape(t.Context())
 				require.EqualError(t, err, fmt.Sprintf("%s; %s; %s; %s", expectedErr1, expectedErr2, expectedErr3, expectedErr4))
 				require.Equal(t, 0, metrics.MetricCount())
 			},
@@ -2012,7 +2011,7 @@ func TestScrape(t *testing.T) {
 					return expectedMetrics
 				}
 				expectedMetrics := expectedMetricGen(t)
-				metrics, err := scraper.scrape(context.Background())
+				metrics, err := scraper.scrape(t.Context())
 				require.NoError(t, err)
 				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
@@ -2110,7 +2109,7 @@ func TestScrape(t *testing.T) {
 					return expectedMetrics
 				}
 				expectedMetrics := expectedMetricGen(t)
-				metrics, err := scraper.scrape(context.Background())
+				metrics, err := scraper.scrape(t.Context())
 				require.NoError(t, err)
 				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
@@ -2187,7 +2186,7 @@ func TestScrape(t *testing.T) {
 					return expectedMetrics
 				}
 				expectedMetrics := expectedMetricGen(t)
-				metrics, err := scraper.scrape(context.Background())
+				metrics, err := scraper.scrape(t.Context())
 				require.NoError(t, err)
 				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
@@ -2269,7 +2268,7 @@ func TestScrape(t *testing.T) {
 					return expectedMetrics
 				}
 				expectedMetrics := expectedMetricGen(t)
-				metrics, err := scraper.scrape(context.Background())
+				metrics, err := scraper.scrape(t.Context())
 				require.NoError(t, err)
 				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
@@ -2351,7 +2350,7 @@ func TestScrape(t *testing.T) {
 					return expectedMetrics
 				}
 				expectedMetrics := expectedMetricGen(t)
-				metrics, err := scraper.scrape(context.Background())
+				metrics, err := scraper.scrape(t.Context())
 				require.NoError(t, err)
 				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
@@ -2433,7 +2432,7 @@ func TestScrape(t *testing.T) {
 					return expectedMetrics
 				}
 				expectedMetrics := expectedMetricGen(t)
-				metrics, err := scraper.scrape(context.Background())
+				metrics, err := scraper.scrape(t.Context())
 				require.NoError(t, err)
 				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
@@ -2502,7 +2501,7 @@ func TestScrape(t *testing.T) {
 					return expectedMetrics
 				}
 				expectedMetrics := expectedMetricGen(t)
-				metrics, err := scraper.scrape(context.Background())
+				metrics, err := scraper.scrape(t.Context())
 				require.NoError(t, err)
 				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
@@ -2607,7 +2606,7 @@ func TestScrape(t *testing.T) {
 					return expectedMetrics
 				}
 				expectedMetrics := expectedMetricGen(t)
-				metrics, err := scraper.scrape(context.Background())
+				metrics, err := scraper.scrape(t.Context())
 				require.NoError(t, err)
 				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
@@ -2696,7 +2695,7 @@ func TestScrape(t *testing.T) {
 					return expectedMetrics
 				}
 				expectedMetrics := expectedMetricGen(t)
-				metrics, err := scraper.scrape(context.Background())
+				metrics, err := scraper.scrape(t.Context())
 				require.NoError(t, err)
 				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
@@ -2772,7 +2771,7 @@ func TestScrape(t *testing.T) {
 					return expectedMetrics
 				}
 				expectedMetrics := expectedMetricGen(t)
-				metrics, err := scraper.scrape(context.Background())
+				metrics, err := scraper.scrape(t.Context())
 				require.NoError(t, err)
 				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
@@ -2831,7 +2830,7 @@ func TestScrape(t *testing.T) {
 					return expectedMetrics
 				}
 				expectedMetrics := expectedMetricGen(t)
-				metrics, err := scraper.scrape(context.Background())
+				metrics, err := scraper.scrape(t.Context())
 				require.NoError(t, err)
 				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
@@ -2898,7 +2897,7 @@ func TestScrape(t *testing.T) {
 					return expectedMetrics
 				}
 				expectedMetrics := expectedMetricGen(t)
-				metrics, err := scraper.scrape(context.Background())
+				metrics, err := scraper.scrape(t.Context())
 				require.NoError(t, err)
 				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
@@ -2975,7 +2974,7 @@ func TestScrape(t *testing.T) {
 					return expectedMetrics
 				}
 				expectedMetrics := expectedMetricGen(t)
-				metrics, err := scraper.scrape(context.Background())
+				metrics, err := scraper.scrape(t.Context())
 				require.NoError(t, err)
 				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
@@ -3072,7 +3071,7 @@ func TestScrape(t *testing.T) {
 					return expectedMetrics
 				}
 				expectedMetrics := expectedMetricGen(t)
-				metrics, err := scraper.scrape(context.Background())
+				metrics, err := scraper.scrape(t.Context())
 				require.NoError(t, err)
 				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)

@@ -107,7 +107,7 @@ func TestDetect(t *testing.T) {
 			p, err := f.CreateResourceProvider(processortest.NewNopSettings(metadata.Type), time.Second, tt.attributes, &mockDetectorConfig{}, mockDetectorTypes...)
 			require.NoError(t, err)
 
-			got, _, err := p.Get(context.Background(), &http.Client{Timeout: 10 * time.Second})
+			got, _, err := p.Get(t.Context(), &http.Client{Timeout: 10 * time.Second})
 			require.NoError(t, err)
 
 			assert.Equal(t, tt.expectedResource, got.Attributes().AsRaw())
@@ -149,7 +149,7 @@ func TestDetectResource_Error_ContextDeadline_WithErrPropagation(t *testing.T) {
 	p := NewResourceProvider(zap.NewNop(), time.Second, nil, md1, md2)
 
 	var cancel context.CancelFunc
-	ctx, cancel := context.WithTimeout(context.TODO(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 3*time.Second)
 	defer cancel()
 
 	_, _, err = p.Get(ctx, &http.Client{Timeout: 10 * time.Second})
@@ -168,7 +168,7 @@ func TestDetectResource_Error_ContextDeadline_WithoutErrPropagation(t *testing.T
 	p := NewResourceProvider(zap.NewNop(), time.Second, nil, md1, md2)
 
 	var cancel context.CancelFunc
-	ctx, cancel := context.WithTimeout(context.TODO(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 3*time.Second)
 	defer cancel()
 
 	_, _, err := p.Get(ctx, &http.Client{Timeout: 10 * time.Second})
@@ -245,10 +245,10 @@ func TestDetectResource_Parallel(t *testing.T) {
 	// call p.Get multiple times
 	wg := &sync.WaitGroup{}
 	wg.Add(iterations)
-	for i := 0; i < iterations; i++ {
+	for range iterations {
 		go func() {
 			defer wg.Done()
-			detected, _, err := p.Get(context.Background(), &http.Client{Timeout: 10 * time.Second})
+			detected, _, err := p.Get(t.Context(), &http.Client{Timeout: 10 * time.Second})
 			assert.NoError(t, err)
 			assert.Equal(t, expectedResourceAttrs, detected.Attributes().AsRaw())
 		}()
@@ -284,7 +284,7 @@ func TestDetectResource_Reconnect(t *testing.T) {
 
 	p := NewResourceProvider(zap.NewNop(), time.Second, nil, md1, md2)
 
-	detected, _, err := p.Get(context.Background(), &http.Client{Timeout: 15 * time.Second})
+	detected, _, err := p.Get(t.Context(), &http.Client{Timeout: 15 * time.Second})
 	assert.NoError(t, err)
 	assert.Equal(t, expectedResourceAttrs, detected.Attributes().AsRaw())
 

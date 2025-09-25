@@ -4,13 +4,12 @@
 package datadogextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension"
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"testing"
 	"time"
 
-	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
+	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes/source"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -152,7 +151,7 @@ func TestExtensionWithProxyConfig(t *testing.T) {
 		mockUUID: "test-uuid",
 	}
 
-	ext, err := newExtension(context.Background(), cfg, set, hostProvider, uuidProvider)
+	ext, err := newExtension(t.Context(), cfg, set, hostProvider, uuidProvider)
 	require.NoError(t, err)
 	require.NotNil(t, ext)
 
@@ -161,9 +160,9 @@ func TestExtensionWithProxyConfig(t *testing.T) {
 	require.NotNil(t, serializer)
 
 	// Start and stop the extension to test lifecycle
-	err = ext.Start(context.Background(), nil)
+	err = ext.Start(t.Context(), nil)
 	require.NoError(t, err)
 
-	err = ext.Shutdown(context.Background())
+	err = ext.Shutdown(t.Context())
 	require.NoError(t, err)
 }

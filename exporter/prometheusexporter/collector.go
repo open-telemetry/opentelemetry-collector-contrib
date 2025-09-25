@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/otel/semconv/v1.25.0"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
@@ -31,12 +32,11 @@ type collector struct {
 	accumulator accumulator
 	logger      *zap.Logger
 
-	sendTimestamps    bool
-	addMetricSuffixes bool
-	namespace         string
-	constLabels       prometheus.Labels
-	metricFamilies    sync.Map
-	metricExpiration  time.Duration
+	sendTimestamps   bool
+	namespace        string
+	constLabels      prometheus.Labels
+	metricFamilies   sync.Map
+	metricExpiration time.Duration
 
 	metricNamer otlptranslator.MetricNamer
 	labelNamer  otlptranslator.LabelNamer
@@ -48,18 +48,70 @@ type metricFamily struct {
 }
 
 func newCollector(config *Config, logger *zap.Logger) *collector {
-	labelNamer := otlptranslator.LabelNamer{}
-	return &collector{
-		accumulator:       newAccumulator(logger, config.MetricExpiration),
-		logger:            logger,
-		namespace:         labelNamer.Build(config.Namespace),
-		sendTimestamps:    config.SendTimestamps,
-		constLabels:       config.ConstLabels,
-		addMetricSuffixes: config.AddMetricSuffixes,
-		metricExpiration:  config.MetricExpiration,
-		metricNamer:       otlptranslator.MetricNamer{WithMetricSuffixes: config.AddMetricSuffixes, Namespace: config.Namespace},
-		labelNamer:        labelNamer,
+	labelNamer := configureLabelNamer(config)
+	namespace, err := labelNamer.Build(config.Namespace)
+	if err != nil {
+		logger.Error("failed to build namespace, ignoring", zap.Error(err))
+		namespace = ""
 	}
+	return &collector{
+		accumulator:      newAccumulator(logger, config.MetricExpiration),
+		logger:           logger,
+		namespace:        namespace,
+		sendTimestamps:   config.SendTimestamps,
+		constLabels:      config.ConstLabels,
+		metricExpiration: config.MetricExpiration,
+		metricNamer:      configureMetricNamer(config),
+		labelNamer:       labelNamer,
+	}
+}
+
+// configureMetricNamer configures the MetricNamer based on the translation strategy or legacy configuration
+func configureMetricNamer(config *Config) otlptranslator.MetricNamer {
+	withSuffixes, utf8Allowed := getTranslationConfiguration(config)
+	return otlptranslator.MetricNamer{
+		WithMetricSuffixes: withSuffixes,
+		Namespace:          config.Namespace,
+		UTF8Allowed:        utf8Allowed,
+	}
+}
+
+// configureLabelNamer configures the LabelNamer based on the translation strategy or legacy configuration
+func configureLabelNamer(config *Config) otlptranslator.LabelNamer {
+	_, utf8Allowed := getTranslationConfiguration(config)
+	return otlptranslator.LabelNamer{
+		UTF8Allowed: utf8Allowed,
+	}
+}
+
+// getTranslationConfiguration returns the translation configuration based on the strategy or legacy settings
+// Returns (withSuffixes, allowUTF8)
+func getTranslationConfiguration(config *Config) (bool, bool) {
+	// If TranslationStrategy is explicitly set, use it (takes precedence)
+	if config.TranslationStrategy != "" {
+		switch config.TranslationStrategy {
+		case underscoreEscapingWithSuffixes:
+			return true, false
+		case underscoreEscapingWithoutSuffixes:
+			return false, false
+		case noUTF8EscapingWithSuffixes:
+			return true, true
+		case noTranslation:
+			return false, true
+		default:
+			// Fallback to default behavior, suffixes enabled, UTF-8 escaped to underscores.
+			return true, false
+		}
+	}
+
+	// If feature gate is enabled, ignore AddMetricSuffixes (for deprecation)
+	if disableAddMetricSuffixesFeatureGate.IsEnabled() {
+		// Default to UnderscoreEscapingWithSuffixes behavior when AddMetricSuffixes is deprecated
+		return true, false
+	}
+
+	// Fall back to legacy AddMetricSuffixes behavior, UTF-8 escaped to underscores.
+	return config.AddMetricSuffixes, false
 }
 
 func convertExemplars(exemplars pmetric.ExemplarSlice) []prometheus.Exemplar {
@@ -124,7 +176,10 @@ func (c *collector) convertMetric(metric pmetric.Metric, resourceAttrs pcommon.M
 }
 
 func (c *collector) getMetricMetadata(metric pmetric.Metric, mType *dto.MetricType, attributes, resourceAttrs pcommon.Map, scopeName, scopeVersion, scopeSchemaURL string, scopeAttributes pcommon.Map) (*prometheus.Desc, []string, error) {
-	name := c.metricNamer.Build(prom.TranslatorMetricFromOtelMetric(metric))
+	name, err := c.metricNamer.Build(prom.TranslatorMetricFromOtelMetric(metric))
+	if err != nil {
+		return nil, nil, err
+	}
 	help, err := c.validateMetrics(name, metric.Description(), mType)
 	if err != nil {
 		return nil, nil, err
@@ -133,13 +188,24 @@ func (c *collector) getMetricMetadata(metric pmetric.Metric, mType *dto.MetricTy
 	keys := make([]string, 0, attributes.Len()+scopeAttributes.Len()+5) // +2 for job and instance labels, +3 for scope name, version and schema url
 	values := make([]string, 0, attributes.Len()+scopeAttributes.Len()+5)
 
+	var multiErrs error
 	for k, v := range attributes.All() {
-		keys = append(keys, c.labelNamer.Build(k))
+		labelName, err := c.labelNamer.Build(k)
+		if err != nil {
+			multiErrs = multierr.Append(multiErrs, err)
+			continue
+		}
+		keys = append(keys, labelName)
 		values = append(values, v.AsString())
 	}
 
 	for k, v := range scopeAttributes.All() {
-		keys = append(keys, c.labelNamer.Build("otel_scope_"+k))
+		labelName, err := c.labelNamer.Build("otel_scope_" + k)
+		if err != nil {
+			multiErrs = multierr.Append(multiErrs, err)
+			continue
+		}
+		keys = append(keys, labelName)
 		values = append(values, v.AsString())
 	}
 
@@ -158,7 +224,9 @@ func (c *collector) getMetricMetadata(metric pmetric.Metric, mType *dto.MetricTy
 		keys = append(keys, model.InstanceLabel)
 		values = append(values, instance)
 	}
-
+	if multiErrs != nil {
+		return nil, nil, multiErrs
+	}
 	return prometheus.NewDesc(name, help, keys, c.constLabels), values, nil
 }
 
@@ -368,13 +436,21 @@ func (c *collector) createTargetInfoMetrics(resourceAttrs []pcommon.Map) ([]prom
 			}
 		})
 
+		var multiErrs error
 		for k, v := range attributes.All() {
-			finalKey := c.labelNamer.Build(k)
+			finalKey, err := c.labelNamer.Build(k)
+			if err != nil {
+				multiErrs = multierr.Append(multiErrs, err)
+				continue
+			}
 			if existingVal, ok := labels[finalKey]; ok {
 				labels[finalKey] = existingVal + ";" + v.AsString()
 			} else {
 				labels[finalKey] = v.AsString()
 			}
+		}
+		if multiErrs != nil {
+			return nil, multiErrs
 		}
 
 		// Map service.name + service.namespace to job

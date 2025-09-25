@@ -130,7 +130,7 @@ func TestExporterLogs(t *testing.T) {
 					body := pcommon.NewValueMap()
 					m := body.Map()
 					s := m.PutEmptySlice("a")
-					for i := 0; i < 2; i++ {
+					for i := range 2 {
 						s.AppendEmpty().SetInt(int64(i))
 					}
 					return body
@@ -214,7 +214,7 @@ func TestExporterLogs(t *testing.T) {
 			cfg.Mapping.Mode = "bodymap"
 		})
 
-		err := exporter.ConsumeLogs(context.Background(), logs)
+		err := exporter.ConsumeLogs(t.Context(), logs)
 		assert.NoError(t, err)
 		rec.WaitItems(1)
 	})
@@ -641,7 +641,7 @@ func TestExporterLogs(t *testing.T) {
 				scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
 				scopeLogs.LogRecords().AppendEmpty()
 				logs.MarkReadOnly()
-				err := exporter.ConsumeLogs(context.Background(), logs) // as sync bulk indexer is used, retries are finished on return
+				err := exporter.ConsumeLogs(t.Context(), logs) // as sync bulk indexer is used, retries are finished on return
 				var errFlushFailed docappender.ErrorFlushFailed
 				require.ErrorAs(t, err, &errFlushFailed)
 
@@ -826,7 +826,7 @@ func TestExporterLogs(t *testing.T) {
 			cfg.Retry.InitialInterval = 1 * time.Millisecond
 			cfg.Retry.MaxInterval = 10 * time.Millisecond
 		})
-		for i := 0; i < 3; i++ {
+		for i := range 3 {
 			logRecord := plog.NewLogRecord()
 			logRecord.Attributes().PutInt("idx", int64(i))
 			mustSendLogRecords(t, exporter, logRecord)
@@ -1176,7 +1176,7 @@ func TestExporterMetrics(t *testing.T) {
 		fooDp.ExplicitBounds().FromRaw([]float64{1.0, 2.0, 3.0})
 		fooDp.BucketCounts().FromRaw([]uint64{1, 2, 3, 4})
 
-		err := exporter.ConsumeMetrics(context.Background(), metrics)
+		err := exporter.ConsumeMetrics(t.Context(), metrics)
 		assert.NoError(t, err)
 	})
 
@@ -1207,7 +1207,7 @@ func TestExporterMetrics(t *testing.T) {
 		fooDp.Negative().SetOffset(1)
 		fooDp.Negative().BucketCounts().FromRaw([]uint64{1, 0, 0, 1})
 
-		err := exporter.ConsumeMetrics(context.Background(), metrics)
+		err := exporter.ConsumeMetrics(t.Context(), metrics)
 		assert.NoError(t, err)
 	})
 
@@ -1246,7 +1246,7 @@ func TestExporterMetrics(t *testing.T) {
 		barOtherDp := barDps.AppendEmpty()
 		barOtherDp.SetDoubleValue(1.0)
 
-		err := exporter.ConsumeMetrics(context.Background(), metrics)
+		err := exporter.ConsumeMetrics(t.Context(), metrics)
 		assert.NoError(t, err)
 
 		expected := []itemRequest{
@@ -1291,13 +1291,45 @@ func TestExporterMetrics(t *testing.T) {
 		fooOtherDp.ExplicitBounds().FromRaw([]float64{4.0, 5.0, 6.0})
 		fooOtherDp.BucketCounts().FromRaw([]uint64{4, 5, 6, 7})
 
-		sumMetric := metricSlice.AppendEmpty()
-		sumMetric.SetName("metric.sum")
-		sumDps := sumMetric.SetEmptySum().DataPoints()
-		sumDp := sumDps.AppendEmpty()
-		sumDp.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(3600, 0)))
-		sumDp.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(7200, 0)))
-		sumDp.SetDoubleValue(1.5)
+		sumMonotonicCumulative := metricSlice.AppendEmpty()
+		sumMonotonicCumulative.SetName("metric.sum.monotonic.cumulative")
+		sumMonotonicCumulative.SetEmptySum()
+		sumMonotonicCumulative.Sum().SetIsMonotonic(true)
+		sumMonotonicCumulative.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+		dp := sumMonotonicCumulative.Sum().DataPoints().AppendEmpty()
+		dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(3600, 0)))
+		dp.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(7200, 0)))
+		dp.SetDoubleValue(1.5)
+
+		sumMonotonicDelta := metricSlice.AppendEmpty()
+		sumMonotonicDelta.SetName("metric.sum.monotonic.delta")
+		sumMonotonicDelta.SetEmptySum()
+		sumMonotonicDelta.Sum().SetIsMonotonic(true)
+		sumMonotonicDelta.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+		dp = sumMonotonicDelta.Sum().DataPoints().AppendEmpty()
+		dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(3600, 0)))
+		dp.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(7200, 0)))
+		dp.SetDoubleValue(2.5)
+
+		sumCumulative := metricSlice.AppendEmpty()
+		sumCumulative.SetName("metric.sum.nonmonotonic.cumulative")
+		sumCumulative.SetEmptySum()
+		sumCumulative.Sum().SetIsMonotonic(false)
+		sumCumulative.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+		dp = sumCumulative.Sum().DataPoints().AppendEmpty()
+		dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(3600, 0)))
+		dp.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(7200, 0)))
+		dp.SetDoubleValue(3.5)
+
+		sumDelta := metricSlice.AppendEmpty()
+		sumDelta.SetName("metric.sum.nonmonotonic.delta")
+		sumDelta.SetEmptySum()
+		sumDelta.Sum().SetIsMonotonic(false)
+		sumDelta.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+		dp = sumDelta.Sum().DataPoints().AppendEmpty()
+		dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(3600, 0)))
+		dp.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(7200, 0)))
+		dp.SetDoubleValue(4.5)
 
 		summaryMetric := metricSlice.AppendEmpty()
 		summaryMetric.SetName("metric.summary")
@@ -1313,19 +1345,19 @@ func TestExporterMetrics(t *testing.T) {
 		expected := []itemRequest{
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.metric.foo":"histogram"}}}`),
-				Document: []byte(`{"@timestamp":"0.0","data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"metric.foo":{"counts":[1,2,3,4],"values":[0.5,1.5,2.5,3.0]}},"resource":{},"scope":{},"_metric_names_hash":"b23939f78dc5f649"}`),
+				Document: []byte(`{"@timestamp":0,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"metric.foo":{"counts":[1,2,3,4],"values":[0.5,1.5,2.5,3.0]}},"resource":{},"scope":{},"_metric_names_hash":"b23939f78dc5f649"}`),
 			},
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.metric.foo":"histogram"}}}`),
-				Document: []byte(`{"@timestamp":"3600000.0","data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"metric.foo":{"counts":[4,5,6,7],"values":[2.0,4.5,5.5,6.0]}},"resource":{},"scope":{},"_metric_names_hash":"b23939f78dc5f649"}`),
+				Document: []byte(`{"@timestamp":3600000,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"metric.foo":{"counts":[4,5,6,7],"values":[2.0,4.5,5.5,6.0]}},"resource":{},"scope":{},"_metric_names_hash":"b23939f78dc5f649"}`),
 			},
 			{
-				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.metric.sum":"gauge_double"}}}`),
-				Document: []byte(`{"@timestamp":"3600000.0","data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"metric.sum":1.5},"resource":{},"scope":{},"start_timestamp":"7200000.0","_metric_names_hash":"f4a8ac5e1b330ad6"}`),
+				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.metric.sum.monotonic.delta":"gauge_double","metrics.metric.sum.nonmonotonic.cumulative":"gauge_double","metrics.metric.sum.nonmonotonic.delta":"gauge_double","metrics.metric.sum.monotonic.cumulative":"counter_double"}}}`),
+				Document: []byte(`{"@timestamp":3600000,"start_timestamp":7200000,"data_stream":{"type":"metrics","dataset":"generic.otel","namespace":"default"},"resource":{},"scope":{},"metrics":{"metric.sum.monotonic.cumulative":1.5,"metric.sum.monotonic.delta":2.5,"metric.sum.nonmonotonic.cumulative":3.5,"metric.sum.nonmonotonic.delta":4.5},"_metric_names_hash":"4c23ec9ba381ab20"}`),
 			},
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.metric.summary":"summary"}}}`),
-				Document: []byte(`{"@timestamp":"10800000.0","data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"metric.summary":{"sum":1.5,"value_count":1}},"resource":{},"scope":{},"start_timestamp":"10800000.0","_metric_names_hash":"2f30c89222c9d308"}`),
+				Document: []byte(`{"@timestamp":10800000,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"metric.summary":{"sum":1.5,"value_count":1}},"resource":{},"scope":{},"start_timestamp":10800000,"_metric_names_hash":"2f30c89222c9d308"}`),
 			},
 		}
 
@@ -1435,7 +1467,7 @@ func TestExporterMetrics(t *testing.T) {
 		expected := []itemRequest{
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.sum":"gauge_long","metrics.summary":"summary"}}}`),
-				Document: []byte(`{"@timestamp":"0.0","_doc_count":10,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"sum":0,"summary":{"sum":1.0,"value_count":10}},"resource":{},"scope":{},"_metric_names_hash":"e446964dc8337bbb"}`),
+				Document: []byte(`{"@timestamp":0,"_doc_count":10,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"sum":0,"summary":{"sum":1.0,"value_count":10}},"resource":{},"scope":{},"_metric_names_hash":"e446964dc8337bbb"}`),
 			},
 		}
 
@@ -1485,11 +1517,11 @@ func TestExporterMetrics(t *testing.T) {
 		expected := []itemRequest{
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.histogram.summary":"summary"}}}`),
-				Document: []byte(`{"@timestamp":"0.0","_doc_count":10,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"attributes":{},"metrics":{"histogram.summary":{"sum":1.0,"value_count":10}},"resource":{},"scope":{},"_metric_names_hash":"fcd1d6737d725996"}`),
+				Document: []byte(`{"@timestamp":0,"_doc_count":10,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"attributes":{},"metrics":{"histogram.summary":{"sum":1.0,"value_count":10}},"resource":{},"scope":{},"_metric_names_hash":"fcd1d6737d725996"}`),
 			},
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.exphistogram.summary":"summary"}}}`),
-				Document: []byte(`{"@timestamp":"3600000.0","_doc_count":10,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"attributes":{},"metrics":{"exphistogram.summary":{"sum":1.0,"value_count":10}},"resource":{},"scope":{},"_metric_names_hash":"6a10ca190ae63c5"}`),
+				Document: []byte(`{"@timestamp":3600000,"_doc_count":10,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"attributes":{},"metrics":{"exphistogram.summary":{"sum":1.0,"value_count":10}},"resource":{},"scope":{},"_metric_names_hash":"6a10ca190ae63c5"}`),
 			},
 		}
 
@@ -1528,7 +1560,7 @@ func TestExporterMetrics(t *testing.T) {
 		expected := []itemRequest{
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.foo.bar":"gauge_long","metrics.foo":"gauge_long","metrics.foo.bar.baz":"gauge_long"}}}`),
-				Document: []byte(`{"@timestamp":"0.0","data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"foo":0,"foo.bar":0,"foo.bar.baz":0},"resource":{},"scope":{},"_metric_names_hash":"9c732a69b35274fe"}`),
+				Document: []byte(`{"@timestamp":0,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"foo":0,"foo.bar":0,"foo.bar.baz":0},"resource":{},"scope":{},"_metric_names_hash":"9c732a69b35274fe"}`),
 			},
 		}
 
@@ -2265,14 +2297,17 @@ func TestExporterTraces(t *testing.T) {
 }
 
 func TestExporter_DynamicMappingMode(t *testing.T) {
-	otelContext := client.NewContext(context.Background(), client.Info{
+	otelContext := client.NewContext(t.Context(), client.Info{
 		Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"otel"}}),
 	})
-	ecsContext := client.NewContext(context.Background(), client.Info{
+	ecsContext := client.NewContext(t.Context(), client.Info{
 		Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"ecs"}}),
 	})
-	noneContext := client.NewContext(context.Background(), client.Info{
+	noneContext := client.NewContext(t.Context(), client.Info{
 		Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"none"}}),
+	})
+	multipleModesContext := client.NewContext(t.Context(), client.Info{
+		Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"otel", "ecs"}}),
 	})
 
 	defaultScope := pcommon.NewInstrumentationScope()
@@ -2367,22 +2402,27 @@ func TestExporter_DynamicMappingMode(t *testing.T) {
 		name:      "none",
 		ctx:       noneContext,
 		scopes:    []pcommon.InstrumentationScope{defaultScope},
-		expectErr: `invalid context mapping mode: unsupported mapping mode "none", expected one of ["ecs" "otel"]`,
+		expectErr: `Permanent error: invalid context mapping mode: unsupported mapping mode "none", expected one of ["ecs" "otel"]`,
+	}, {
+		name:      "multiple modes",
+		ctx:       multipleModesContext,
+		scopes:    []pcommon.InstrumentationScope{defaultScope},
+		expectErr: `Permanent error: expected one value for client metadata key "x-elastic-mapping-mode", got 2`,
 	}, {
 		name:   "ecs_scope",
-		ctx:    context.Background(),
+		ctx:    t.Context(),
 		scopes: []pcommon.InstrumentationScope{ecsScope},
 		checks: []checkFunc{checkECSResource},
 	}, {
 		name:   "mixed_scopes",
-		ctx:    context.Background(),
+		ctx:    t.Context(),
 		scopes: []pcommon.InstrumentationScope{ecsScope, defaultScope},
 		checks: []checkFunc{checkECSResource, checkOTelResource},
 	}, {
 		name:      "bodymap_scope",
 		ctx:       otelContext, // scope overrides context
 		scopes:    []pcommon.InstrumentationScope{bodymapScope},
-		expectErr: `invalid scope mapping mode: unsupported mapping mode "bodymap", expected one of ["ecs" "otel"]`,
+		expectErr: `Permanent error: invalid scope mapping mode: unsupported mapping mode "bodymap", expected one of ["ecs" "otel"]`,
 	}}
 
 	t.Run("logs", func(t *testing.T) {
@@ -2437,11 +2477,16 @@ func TestExporter_DynamicMappingMode(t *testing.T) {
 	})
 	t.Run("profiles", func(t *testing.T) {
 		// Profiles are only supported by otel mode, so just verify that
-		// the metadata is picked up and an invalid mode is rejected.
+		// the metadata is picked up and invalid modes are rejected.
 		exporter := newTestProfilesExporter(t, "https://testing.invalid", setAllowedMappingModes)
 		err := exporter.ConsumeProfiles(noneContext, pprofile.NewProfiles())
 		assert.EqualError(t, err,
-			`invalid context mapping mode: unsupported mapping mode "none", expected one of ["ecs" "otel"]`,
+			`Permanent error: invalid context mapping mode: unsupported mapping mode "none", expected one of ["ecs" "otel"]`,
+		)
+
+		err = exporter.ConsumeProfiles(multipleModesContext, pprofile.NewProfiles())
+		assert.EqualError(t, err,
+			`Permanent error: expected one value for client metadata key "x-elastic-mapping-mode", got 2`,
 		)
 	})
 	t.Run("traces", func(t *testing.T) {
@@ -2479,7 +2524,7 @@ func TestExporterAuth(t *testing.T) {
 	exporter := newUnstartedTestLogsExporter(t, "http://testing.invalid", func(cfg *Config) {
 		cfg.Auth = configoptional.Some(configauth.Config{AuthenticatorID: testauthID})
 	})
-	err := exporter.Start(context.Background(), &mockHost{
+	err := exporter.Start(t.Context(), &mockHost{
 		extensions: map[component.ID]component.Component{
 			testauthID: newMockAuthClient(func(*http.Request) (*http.Response, error) {
 				select {
@@ -2492,7 +2537,7 @@ func TestExporterAuth(t *testing.T) {
 	})
 	require.NoError(t, err)
 	defer func() {
-		require.NoError(t, exporter.Shutdown(context.Background()))
+		require.NoError(t, exporter.Shutdown(t.Context()))
 	}()
 
 	mustSendLogRecords(t, exporter, plog.NewLogRecord())
@@ -2514,7 +2559,7 @@ func TestExporterBatcher(t *testing.T) {
 		cfg.Auth = configoptional.Some(configauth.Config{AuthenticatorID: testauthID})
 		cfg.Retry.Enabled = false
 	})
-	err := exporter.Start(context.Background(), &mockHost{
+	err := exporter.Start(t.Context(), &mockHost{
 		extensions: map[component.ID]component.Component{
 			testauthID: newMockAuthClient(func(req *http.Request) (*http.Response, error) {
 				requests = append(requests, req)
@@ -2524,7 +2569,7 @@ func TestExporterBatcher(t *testing.T) {
 	})
 	require.NoError(t, err)
 	defer func() {
-		require.NoError(t, exporter.Shutdown(context.Background()))
+		require.NoError(t, exporter.Shutdown(t.Context()))
 	}()
 
 	logs := plog.NewLogs()
@@ -2533,8 +2578,8 @@ func TestExporterBatcher(t *testing.T) {
 	scopeLogs.LogRecords().AppendEmpty().Body().SetStr("log record body")
 
 	type key struct{}
-	_ = exporter.ConsumeLogs(context.WithValue(context.Background(), key{}, "value1"), logs)
-	_ = exporter.ConsumeLogs(context.WithValue(context.Background(), key{}, "value2"), logs)
+	_ = exporter.ConsumeLogs(context.WithValue(t.Context(), key{}, "value1"), logs)
+	_ = exporter.ConsumeLogs(context.WithValue(t.Context(), key{}, "value2"), logs)
 	require.Len(t, requests, 2) // flushed immediately by Consume
 
 	assert.Equal(t, "value1", requests[0].Context().Value(key{}))
@@ -2549,13 +2594,13 @@ func newTestTracesExporter(t *testing.T, url string, fns ...func(*Config)) expor
 		cfg.Flush.Interval = 10 * time.Millisecond
 	}}, fns...)...)
 	require.NoError(t, xconfmap.Validate(cfg))
-	exp, err := f.CreateTraces(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
+	exp, err := f.CreateTraces(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
 
-	err = exp.Start(context.Background(), componenttest.NewNopHost())
+	err = exp.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		require.NoError(t, exp.Shutdown(context.Background()))
+		require.NoError(t, exp.Shutdown(context.Background())) //nolint:usetesting
 	})
 	return exp
 }
@@ -2568,13 +2613,13 @@ func newTestProfilesExporter(t *testing.T, url string, fns ...func(*Config)) xex
 		cfg.Flush.Interval = 10 * time.Millisecond
 	}}, fns...)...)
 	require.NoError(t, xconfmap.Validate(cfg))
-	exp, err := f.CreateProfiles(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
+	exp, err := f.CreateProfiles(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
 
-	err = exp.Start(context.Background(), componenttest.NewNopHost())
+	err = exp.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		require.NoError(t, exp.Shutdown(context.Background()))
+		require.NoError(t, exp.Shutdown(context.Background())) //nolint:usetesting
 	})
 	return exp
 }
@@ -2587,23 +2632,23 @@ func newTestMetricsExporter(t *testing.T, url string, fns ...func(*Config)) expo
 		cfg.Flush.Interval = 10 * time.Millisecond
 	}}, fns...)...)
 	require.NoError(t, xconfmap.Validate(cfg))
-	exp, err := f.CreateMetrics(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
+	exp, err := f.CreateMetrics(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
 
-	err = exp.Start(context.Background(), componenttest.NewNopHost())
+	err = exp.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		require.NoError(t, exp.Shutdown(context.Background()))
+		require.NoError(t, exp.Shutdown(context.Background())) //nolint:usetesting
 	})
 	return exp
 }
 
 func newTestLogsExporter(t *testing.T, url string, fns ...func(*Config)) exporter.Logs {
 	exp := newUnstartedTestLogsExporter(t, url, fns...)
-	err := exp.Start(context.Background(), componenttest.NewNopHost())
+	err := exp.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		require.NoError(t, exp.Shutdown(context.Background()))
+		require.NoError(t, exp.Shutdown(context.Background())) //nolint:usetesting
 	})
 	return exp
 }
@@ -2616,7 +2661,7 @@ func newUnstartedTestLogsExporter(t *testing.T, url string, fns ...func(*Config)
 		cfg.Flush.Interval = 10 * time.Millisecond
 	}}, fns...)...)
 	require.NoError(t, xconfmap.Validate(cfg))
-	exp, err := f.CreateLogs(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
+	exp, err := f.CreateLogs(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
 	return exp
 }
@@ -2633,7 +2678,7 @@ func mustSendLogRecords(t *testing.T, exporter exporter.Logs, records ...plog.Lo
 
 func mustSendLogs(t *testing.T, exporter exporter.Logs, logs plog.Logs) {
 	logs.MarkReadOnly()
-	err := exporter.ConsumeLogs(context.Background(), logs)
+	err := exporter.ConsumeLogs(t.Context(), logs)
 	require.NoError(t, err)
 }
 
@@ -2663,7 +2708,7 @@ func mustSendMetricGaugeDataPoints(t *testing.T, exporter exporter.Metrics, data
 
 func mustSendMetrics(t *testing.T, exporter exporter.Metrics, metrics pmetric.Metrics) {
 	metrics.MarkReadOnly()
-	err := exporter.ConsumeMetrics(context.Background(), metrics)
+	err := exporter.ConsumeMetrics(t.Context(), metrics)
 	require.NoError(t, err)
 }
 
@@ -2679,7 +2724,7 @@ func mustSendSpans(t *testing.T, exporter exporter.Traces, spans ...ptrace.Span)
 
 func mustSendTraces(t *testing.T, exporter exporter.Traces, traces ptrace.Traces) {
 	traces.MarkReadOnly()
-	err := exporter.ConsumeTraces(context.Background(), traces)
+	err := exporter.ConsumeTraces(t.Context(), traces)
 	require.NoError(t, err)
 }
 

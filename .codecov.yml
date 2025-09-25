@@ -212,18 +212,10 @@ component_management:
     name: exporter_logzio
     paths:
     - exporter/logzioexporter/**
-  - component_id: exporter_loki
-    name: exporter_loki
-    paths:
-    - exporter/lokiexporter/**
   - component_id: exporter_mezmo
     name: exporter_mezmo
     paths:
     - exporter/mezmoexporter/**
-  - component_id: exporter_opencensus
-    name: exporter_opencensus
-    paths:
-    - exporter/opencensusexporter/**
   - component_id: exporter_opensearch
     name: exporter_opensearch
     paths:
@@ -484,6 +476,10 @@ component_management:
     name: processor_interval
     paths:
     - processor/intervalprocessor/**
+  - component_id: processor_isolationforest
+    name: processor_isolationforest
+    paths:
+    - processor/isolationforestprocessor/**
   - component_id: processor_k8sattributes
     name: processor_k8sattributes
     paths:
@@ -528,10 +524,6 @@ component_management:
     name: processor_resource
     paths:
     - processor/resourceprocessor/**
-  - component_id: processor_routing
-    name: processor_routing
-    paths:
-    - processor/routingprocessor/**
   - component_id: processor_schema
     name: processor_schema
     paths:
@@ -552,6 +544,10 @@ component_management:
     name: processor_transform
     paths:
     - processor/transformprocessor/**
+  - component_id: processor_unroll
+    name: processor_unroll
+    paths:
+    - processor/unrollprocessor/**
   - component_id: receiver_activedirectoryds
     name: receiver_activedirectoryds
     paths:
@@ -568,10 +564,6 @@ component_management:
     name: receiver_apachespark
     paths:
     - receiver/apachesparkreceiver/**
-  - component_id: receiver_awscloudwatchmetrics
-    name: receiver_awscloudwatchmetrics
-    paths:
-    - receiver/awscloudwatchmetricsreceiver/**
   - component_id: receiver_awscloudwatch
     name: receiver_awscloudwatch
     paths:
@@ -804,10 +796,6 @@ component_management:
     name: receiver_ntp
     paths:
     - receiver/ntpreceiver/**
-  - component_id: receiver_opencensus
-    name: receiver_opencensus
-    paths:
-    - receiver/opencensusreceiver/**
   - component_id: receiver_oracledb
     name: receiver_oracledb
     paths:
@@ -876,10 +864,6 @@ component_management:
     name: receiver_saphana
     paths:
     - receiver/saphanareceiver/**
-  - component_id: receiver_sapm
-    name: receiver_sapm
-    paths:
-    - receiver/sapmreceiver/**
   - component_id: receiver_signalfx
     name: receiver_signalfx
     paths:

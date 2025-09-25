@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.uber.org/zap"
@@ -31,7 +32,7 @@ func TestExtension(t *testing.T) {
 		RetryPeriod:    2 * time.Second,
 	}
 
-	ctx := context.TODO()
+	ctx := t.Context()
 	fakeClient := fake.NewClientset()
 	config.makeClient = func(_ k8sconfig.APIConfig) (kubernetes.Interface, error) {
 		return fakeClient, nil
@@ -61,12 +62,11 @@ func TestExtension(t *testing.T) {
 
 	expectedLeaseDurationSeconds := ptr.To(int32(15))
 
-	require.Eventually(t, func() bool {
+	require.EventuallyWithT(t, func(t *assert.CollectT) {
 		lease, err := fakeClient.CoordinationV1().Leases("default").Get(ctx, "foo", metav1.GetOptions{})
 		require.NoError(t, err)
 		require.NotNil(t, lease)
 		require.Equal(t, expectedLeaseDurationSeconds, lease.Spec.LeaseDurationSeconds)
-		return true
 	}, 10*time.Second, 100*time.Millisecond)
 
 	require.True(t, onStartLeadingInvoked.Load())
@@ -82,7 +82,7 @@ func TestExtension_WithDelay(t *testing.T) {
 		RetryPeriod:    2 * time.Second,
 	}
 
-	ctx := context.TODO()
+	ctx := t.Context()
 	fakeClient := fake.NewClientset()
 	config.makeClient = func(_ k8sconfig.APIConfig) (kubernetes.Interface, error) {
 		return fakeClient, nil
@@ -103,6 +103,8 @@ func TestExtension_WithDelay(t *testing.T) {
 
 	// Simulate a delay of setting up callbacks after the leader has been elected.
 	expectedLeaseDurationSeconds := ptr.To(int32(15))
+	// TODO: Remove time.Sleep below, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42460
+	time.Sleep(100 * time.Millisecond)
 	require.Eventually(t, func() bool {
 		lease, err := fakeClient.CoordinationV1().Leases("default").Get(ctx, "foo", metav1.GetOptions{})
 		require.NoError(t, err)

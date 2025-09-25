@@ -723,7 +723,7 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
-			ctx := context.Background()
+			ctx := t.Context()
 
 			allocator, err := setupMockTargetAllocator(tc.responses)
 			require.NoError(t, err, "Failed to create allocator", tc.responses)
@@ -734,8 +734,9 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 			tc.cfg.Endpoint = allocator.srv.URL // set service URL with the automatic generated one
 			scrapeManager, discoveryManager := initPrometheusManagers(ctx, t)
 
-			baseCfg := promconfig.Config{GlobalConfig: promconfig.DefaultGlobalConfig}
-			manager := NewManager(receivertest.NewNopSettings(metadata.Type), tc.cfg, &baseCfg, false)
+			baseCfg, err := promconfig.Load("", nil)
+			require.NoError(t, err)
+			manager := NewManager(receivertest.NewNopSettings(metadata.Type), tc.cfg, baseCfg, false)
 			require.NoError(t, manager.Start(ctx, componenttest.NewNopHost(), scrapeManager, discoveryManager))
 
 			allocator.wg.Wait()
@@ -773,6 +774,14 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 						// which is identical to the source url
 						s.Labels["__meta_url"] = model.LabelValue(sdConfig.URL)
 						require.Equal(t, s.Labels, group.Labels)
+
+						// The manager may not be done processing the Refresh call by the
+						// time we check the value of the ScrapeConfig.
+						require.Eventually(t, func() bool {
+							v := manager.configUpdateCount.Load()
+							return v >= int64(len(tc.responses.responses["/scrape_configs"]))
+						}, 5*time.Second, 250*time.Millisecond)
+
 						if s.MetricRelabelConfig != nil {
 							for _, sc := range manager.promCfg.ScrapeConfigs {
 								if sc.JobName == s.MetricRelabelConfig.JobName {
@@ -849,7 +858,7 @@ func TestConfigureSDHTTPClientConfigFromTA(t *testing.T) {
 }
 
 func TestManagerSyncWithInitialScrapeConfigs(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	initialScrapeConfigs := []*promconfig.ScrapeConfig{
 		{
 			JobName:         "job1",
@@ -926,8 +935,10 @@ func TestManagerSyncWithInitialScrapeConfigs(t *testing.T) {
 	cfg.Endpoint = allocator.srv.URL // set service URL with the automatic generated one
 	scrapeManager, discoveryManager := initPrometheusManagers(ctx, t)
 
-	baseCfg := promconfig.Config{GlobalConfig: promconfig.DefaultGlobalConfig, ScrapeConfigs: initialScrapeConfigs}
-	manager := NewManager(receivertest.NewNopSettings(metadata.Type), cfg, &baseCfg, false)
+	baseCfg, err := promconfig.Load("", nil)
+	require.NoError(t, err)
+	baseCfg.ScrapeConfigs = initialScrapeConfigs
+	manager := NewManager(receivertest.NewNopSettings(metadata.Type), cfg, baseCfg, false)
 	require.NoError(t, manager.Start(ctx, componenttest.NewNopHost(), scrapeManager, discoveryManager))
 
 	allocator.wg.Wait()

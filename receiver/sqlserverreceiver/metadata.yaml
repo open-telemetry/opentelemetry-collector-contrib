@@ -7,7 +7,8 @@ status:
     development: [logs]
   distributions: [contrib]
   codeowners:
-    active: [StefanKurek, sincejune, crobert-1]
+    active: [sincejune, crobert-1]
+    emeritus: [StefanKurek]
     seeking_new: true
 
 resource_attributes:
@@ -33,6 +34,10 @@ resource_attributes:
     type: int
   host.name:
     description: The host name of SQL Server
+    enabled: true
+    type: string
+  service.instance.id:
+    description: A unique identifier of the SQL Server instance in the format host:port. This resource attribute is only available when the receiver is configured to directly connect to SQL Server.
     enabled: true
     type: string
 
@@ -652,6 +657,13 @@ metrics:
     enabled: false
     description: Number of CPUs.
     unit: "{CPUs}"
+    gauge:
+      value_type: int
+      input_type: string
+  sqlserver.computer.uptime:
+    enabled: false
+    description: Computer uptime.
+    unit: "{seconds}"
     gauge:
       value_type: int
       input_type: string

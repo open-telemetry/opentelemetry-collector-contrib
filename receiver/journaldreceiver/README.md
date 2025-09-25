@@ -8,8 +8,8 @@
 | Distributions | [contrib], [k8s] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fjournald%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fjournald) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fjournald%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fjournald) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_journald)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_journald&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@sumo-drosiek](https://www.github.com/sumo-drosiek) |
-| Emeritus      | [@djaglowski](https://www.github.com/djaglowski) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    |  |
+| Emeritus      | [@djaglowski](https://www.github.com/djaglowski), [@sumo-drosiek](https://www.github.com/sumo-drosiek) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -39,6 +39,7 @@ Journald receiver requires that:
 | `all`                               | 'false'                              | If `true`, very long logs and logs with unprintable characters will also be included.                                                                                                                                                    |
 | `namespace`                         |                                      | Will query the given namespace. See man page [`systemd-journald.service(8)`](https://www.man7.org/linux/man-pages/man8/systemd-journald.service.8.html#JOURNAL_NAMESPACES) for details.                                                  |
 | `convert_message_bytes`             | 'false'                              | If `true` and if the `MESSAGE` field is read [as an array of bytes](https://github.com/systemd/systemd/blob/main/docs/JOURNAL_EXPORT_FORMATS.md#journal-json-format), the array will be converted to string.                             |
+| `merge`                             | 'false'                              | If `true`, read from all available journals, including remote ones.                                                                                                                                                                      |
 | `retry_on_failure.enabled`          | `false`                              | If `true`, the receiver will pause reading a file and attempt to resend the current batch of logs if it encounters an error from downstream components.                                                                                  |
 | `retry_on_failure.initial_interval` | `1 second`                           | Time to wait after the first failure before retrying.                                                                                                                                                                                    |
 | `retry_on_failure.max_interval`     | `30 seconds`                         | Upper bound on retry backoff interval. Once this value is reached the delay between consecutive retries will remain constant at the specified value.                                                                                     |
@@ -55,6 +56,49 @@ Each operator performs a simple responsibility, such as parsing a timestamp or J
 - Only parsers and general purpose operators should be used.
 
 ### Example Configurations
+#### Minimal configuration
+
+The following configuration is the minimal configuration to read
+journald logs:
+
+```yaml
+receivers:
+  journald:
+```
+will be passed to journalctl as the following arguments: `journalctl
+... --priority info`. This will read the 10 most recent entries and
+any subsequent entry.  `--priority info` is the default priority, the
+following examples will omit it for simplicity.
+
+#### Cursor tracking
+```yaml
+receivers:
+  journald:
+    storage: file_storage/journald
+
+extensions:
+  file_storage/journald:
+    directory: .
+
+service:
+  extensions: [file_storage/journald]
+```
+
+If you stop and start the otel collector, only new entries will be
+read.
+
+#### Reading from the beginning
+
+```yaml
+receivers:
+  journald:
+    start_at: beginning
+```
+
+will be passed to journalctl as the following arguments: `journalctl
+... --no-tail`. This will read all messages from the current boot.
+
+#### Units
 
 ```yaml
 receivers:

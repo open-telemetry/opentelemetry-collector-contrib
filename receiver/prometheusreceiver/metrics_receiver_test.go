@@ -4,7 +4,6 @@
 package prometheusreceiver
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -1586,6 +1585,7 @@ example_process_start_time_seconds 400.8
 
 // TestStartTimeMetricRegex validates that timeseries have start time regex set to 'process_start_time_seconds'
 func TestStartTimeMetricRegex(t *testing.T) {
+	t.Skip("Skipping test since it is flaky, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42684.")
 	targets := []*testData{
 		{
 			name: "target1",
@@ -1763,7 +1763,7 @@ scrape_configs:
 	}, new(consumertest.MetricsSink))
 	require.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	require.NoError(t, receiver.Start(ctx, componenttest.NewNopHost()))
 	t.Cleanup(func() {

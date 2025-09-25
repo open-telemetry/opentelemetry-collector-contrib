@@ -215,6 +215,7 @@ events:
       - postgresql.wait_event
       - postgresql.wait_event_type
       - postgresql.query_id
+      - postgresql.total_exec_time
 metrics:
   postgresql.bgwriter.buffers.allocated:
     description: Number of buffers allocated.
@@ -407,6 +408,14 @@ metrics:
     enabled: false
     description: The number of temp files.
     unit: "{temp_file}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+  postgresql.temp.io:
+    enabled: false
+    description: Total amount of data written to temporary files by queries.
+    unit: By
     sum:
       value_type: int
       monotonic: true

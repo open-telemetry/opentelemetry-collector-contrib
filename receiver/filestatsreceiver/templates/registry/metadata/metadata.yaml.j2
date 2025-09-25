@@ -1,0 +1,44 @@
+type: filestats
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+  distributions: [contrib]
+  codeowners:
+    active: [atoulme]
+    seeking_new: true
+
+
+resource_attributes:
+{% for attr in (ctx.groups | selectattr("id", "equalto", "resource.attributes") | first).attributes %}  {{ attr.name | safe }}:
+    description: {{ attr.brief | safe }}
+    enabled: {% if attr.requirement_level == "opt_in" %}false{% else %}true{% endif %}
+    type: {{ attr.type | safe }}
+{% endfor %}
+attributes:
+{% for attr in (ctx.groups | selectattr("id", "equalto", "metric.attributes") | first).attributes %}  {{ attr.name | safe }}:
+    description: {{ attr.brief | safe }}
+    type: {{ attr.type | safe }}
+{% endfor %}
+metrics:
+{% for m in ctx.groups | selectattr("type", "equalto", "metric") %}  {{ m.id | safe }}:
+    description: {{ m.brief | safe }}
+    enabled: {{ m.annotations.scraper.enabled | safe }}
+    {% if m.instrument == "counter" %}sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: {{ m.annotations.scraper.value_type | safe }}
+      {% if m.annotations.scraper.input_type == "string"%}input_type: string{% endif %}
+    {% elif m.instrument == "updowncounter" %}sum:
+      aggregation_temporality: cumulative
+      monotonic: false
+      value_type: {{ m.annotations.scraper.value_type | safe }}
+      {% if m.annotations.scraper.input_type == "string"%}input_type: string{% endif %}
+    {% else %}gauge:
+      value_type: {{ m.annotations.scraper.value_type | safe }}
+      {% if m.annotations.scraper.input_type == "string"%}input_type: string{% endif %}
+    {% endif %}unit: {{ m.unit }}
+{% if m.attributes %}    attributes:{% for attr in m.attributes %}
+      - {{ attr.name | safe }}{% endfor %}
+{% endif %}{% endfor %}

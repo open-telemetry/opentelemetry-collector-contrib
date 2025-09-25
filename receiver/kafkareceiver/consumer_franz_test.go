@@ -194,7 +194,7 @@ func TestConsumerShutdownConsuming(t *testing.T) {
 		}
 
 		test := func(tb testing.TB, expected int64) {
-			ctx := context.Background()
+			ctx := t.Context()
 			consumeFn, consuming := newConsumeFunc()
 			consumer, e := newFranzKafkaConsumer(cfg, settings, []string{topic}, consumeFn)
 			require.NoError(tb, e)
@@ -216,7 +216,7 @@ func TestConsumerShutdownConsuming(t *testing.T) {
 		test(tb, want.firstBatchProcessedCount)
 		test(tb, want.secondBatchProcessedCount)
 
-		offsets, err := kadm.NewClient(kafkaClient).FetchOffsets(context.Background(), tb.Name())
+		offsets, err := kadm.NewClient(kafkaClient).FetchOffsets(t.Context(), tb.Name())
 		require.NoError(tb, err)
 		// Lookup the last committed offset for partition 0
 		offset, _ := offsets.Lookup(topic, 0)
@@ -238,8 +238,8 @@ func TestConsumerShutdownNotStarted(t *testing.T) {
 	c, err := newFranzKafkaConsumer(cfg, settings, []string{"test"}, nil)
 	require.NoError(t, err)
 
-	for i := 0; i < 2; i++ {
-		require.EqualError(t, c.Shutdown(context.Background()),
+	for range 2 {
+		require.EqualError(t, c.Shutdown(t.Context()),
 			"kafka consumer: consumer isn't running")
 	}
 }
@@ -262,13 +262,13 @@ func TestRaceLostVsConsume(t *testing.T) {
 
 	// Produce records.
 	var rs []*kgo.Record
-	for i := 0; i < 500; i++ {
+	for range 500 {
 		traces := testdata.GenerateTraces(5)
 		data, err := (&ptrace.ProtoMarshaler{}).MarshalTraces(traces)
 		require.NoError(t, err)
 		rs = append(rs, &kgo.Record{Topic: topic, Value: data})
 	}
-	require.NoError(t, kafkaClient.ProduceSync(context.Background(), rs...).FirstErr())
+	require.NoError(t, kafkaClient.ProduceSync(t.Context(), rs...).FirstErr())
 	settings, _, _ := mustNewSettings(t)
 
 	// Noop consume function.
@@ -280,23 +280,23 @@ func TestRaceLostVsConsume(t *testing.T) {
 
 	c, err := newFranzKafkaConsumer(cfg, settings, []string{topic}, consumeFn)
 	require.NoError(t, err)
-	require.NoError(t, c.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, c.Start(t.Context(), componenttest.NewNopHost()))
 
 	done := make(chan struct{})
 	// Hammer lost/assigned and rebalance in a goroutine.
 	go func() {
 		defer close(done)
 		topicMap := map[string][]int32{topic: {0}}
-		for i := 0; i < 2000; i++ {
-			c.lost(context.Background(), nil, topicMap, false)
-			c.assigned(context.Background(), kafkaClient, topicMap)
+		for range 2000 {
+			c.lost(t.Context(), nil, topicMap, false)
+			c.assigned(t.Context(), kafkaClient, topicMap)
 			c.client.ForceRebalance()
 			time.Sleep(time.Millisecond)
 		}
 	}()
 
 	<-done
-	require.NoError(t, c.Shutdown(context.Background()))
+	require.NoError(t, c.Shutdown(t.Context()))
 }
 
 func TestLost(t *testing.T) {
@@ -313,14 +313,77 @@ func TestLost(t *testing.T) {
 	}
 	c, err := newFranzKafkaConsumer(cfg, settings, []string{"test"}, consumeFn)
 	require.NoError(t, err)
-	require.NoError(t, c.Start(context.Background(), componenttest.NewNopHost()))
-	defer func() { require.NoError(t, c.Shutdown(context.Background())) }()
+	require.NoError(t, c.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() { require.NoError(t, c.Shutdown(t.Context())) }()
 
 	// Call lost couple of times for same partition
 	lostM := map[string][]int32{"test": {0}}
-	c.lost(context.Background(), nil, lostM, false)
-	c.lost(context.Background(), nil, lostM, false)
+	c.lost(t.Context(), nil, lostM, false)
+	c.lost(t.Context(), nil, lostM, false)
 
 	// Call lost for a topic and partition that was not assigned
-	c.lost(context.Background(), nil, map[string][]int32{"404": {0}}, true)
+	c.lost(t.Context(), nil, map[string][]int32{"404": {0}}, true)
+}
+
+func TestFranzConsumer_UseLeaderEpoch_Smoke(t *testing.T) {
+	setFranzGo(t, true)
+
+	topic := "otlp_spans"
+	kafkaClient, cfg := mustNewFakeCluster(t, kfake.SeedTopics(1, topic))
+	cfg.UseLeaderEpoch = false // <-- exercise the option
+	cfg.ConsumerConfig = configkafka.ConsumerConfig{
+		GroupID:    t.Name(),
+		AutoCommit: configkafka.AutoCommitConfig{Enable: true, Interval: 100 * time.Millisecond},
+	}
+
+	var called atomic.Int64
+	settings, _, _ := mustNewSettings(t)
+	consumeFn := func(component.Host, *receiverhelper.ObsReport, *metadata.TelemetryBuilder) (consumeMessageFunc, error) {
+		return func(_ context.Context, _ kafkaMessage, _ attribute.Set) error {
+			called.Add(1)
+			return nil
+		}, nil
+	}
+
+	// produce a couple of records
+	traces := testdata.GenerateTraces(5)
+	data, err := (&ptrace.ProtoMarshaler{}).MarshalTraces(traces)
+	require.NoError(t, err)
+	rs := []*kgo.Record{
+		{Topic: topic, Value: data},
+		{Topic: topic, Value: data},
+	}
+
+	c, err := newFranzKafkaConsumer(cfg, settings, []string{topic}, consumeFn)
+	require.NoError(t, err)
+	require.NoError(t, c.Start(t.Context(), componenttest.NewNopHost()))
+	require.NoError(t, kafkaClient.ProduceSync(t.Context(), rs...).FirstErr())
+
+	// wait briefly for consumption
+	deadline := time.After(2 * time.Second)
+	for called.Load() < 2 {
+		select {
+		case <-deadline:
+			t.Fatalf("expected to consume 2 records, got %d", called.Load())
+		case <-time.After(25 * time.Millisecond):
+		}
+	}
+
+	require.NoError(t, c.Shutdown(t.Context()))
+}
+
+func TestMakeUseLeaderEpochAdjuster_ClearsEpoch(t *testing.T) {
+	adj := makeClearLeaderEpochAdjuster()
+
+	input := map[string]map[int32]kgo.Offset{
+		"t": {
+			0: kgo.NewOffset().At(42).WithEpoch(7),
+			1: kgo.NewOffset().At(100), // no epoch set
+		},
+	}
+	out, err := adj(t.Context(), input)
+	require.NoError(t, err)
+
+	require.Equal(t, kgo.NewOffset().At(42).WithEpoch(-1), out["t"][0])
+	require.Equal(t, kgo.NewOffset().At(100).WithEpoch(-1), out["t"][1])
 }

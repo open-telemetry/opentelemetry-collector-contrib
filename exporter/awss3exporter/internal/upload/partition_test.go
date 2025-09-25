@@ -27,7 +27,32 @@ func TestPartitionKeyInputsNewPartitionKey(t *testing.T) {
 					return "fixed"
 				},
 			},
-			expect:         "/_fixed",
+			expect:         "_fixed",
+			overridePrefix: "",
+		},
+		{
+			name: "fixed key with prefix",
+			inputs: &PartitionKeyBuilder{
+				PartitionPrefix: "telemetry",
+				UniqueKeyFunc: func() string {
+					return "fixed"
+				},
+			},
+			expect:         "telemetry/_fixed",
+			overridePrefix: "",
+		},
+		{
+			name: "empty partition",
+			inputs: &PartitionKeyBuilder{
+				PartitionPrefix: "telemetry/foo",
+				PartitionFormat: "",
+				FilePrefix:      "signal-output-",
+				FileFormat:      "metrics",
+				UniqueKeyFunc: func() string {
+					return "fixed"
+				},
+			},
+			expect:         "telemetry/foo/signal-output-_fixed.metrics",
 			overridePrefix: "",
 		},
 		{
@@ -76,6 +101,69 @@ func TestPartitionKeyInputsNewPartitionKey(t *testing.T) {
 			},
 			expect:         "/foo-prefix1/year=2024/month=01/day=24/hour=06/minute=40/signal-output-service-01_pod2_fixed.metrics.gz",
 			overridePrefix: "/foo-prefix1",
+		},
+		{
+			name: "base path only",
+			inputs: &PartitionKeyBuilder{
+				PartitionBasePrefix: "base/path",
+				PartitionFormat:     "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
+				FilePrefix:          "signal-output-",
+				Metadata:            "service-01_pod2",
+				FileFormat:          "metrics",
+				UniqueKeyFunc: func() string {
+					return "fixed"
+				},
+			},
+			expect:         "base/path/year=2024/month=01/day=24/hour=06/minute=40/signal-output-service-01_pod2_fixed.metrics",
+			overridePrefix: "",
+		},
+		{
+			name: "base path with prefix",
+			inputs: &PartitionKeyBuilder{
+				PartitionBasePrefix: "base/path",
+				PartitionPrefix:     "telemetry",
+				PartitionFormat:     "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
+				FilePrefix:          "signal-output-",
+				Metadata:            "service-01_pod2",
+				FileFormat:          "metrics",
+				UniqueKeyFunc: func() string {
+					return "fixed"
+				},
+			},
+			expect:         "base/path/telemetry/year=2024/month=01/day=24/hour=06/minute=40/signal-output-service-01_pod2_fixed.metrics",
+			overridePrefix: "",
+		},
+		{
+			name: "base path with prefix and override",
+			inputs: &PartitionKeyBuilder{
+				PartitionBasePrefix: "base/path",
+				PartitionPrefix:     "telemetry",
+				PartitionFormat:     "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
+				FilePrefix:          "signal-output-",
+				Metadata:            "service-01_pod2",
+				FileFormat:          "metrics",
+				UniqueKeyFunc: func() string {
+					return "fixed"
+				},
+			},
+			expect:         "base/path/override/year=2024/month=01/day=24/hour=06/minute=40/signal-output-service-01_pod2_fixed.metrics",
+			overridePrefix: "override",
+		},
+		{
+			name: "base path with empty prefix",
+			inputs: &PartitionKeyBuilder{
+				PartitionBasePrefix: "base/path",
+				PartitionPrefix:     "",
+				PartitionFormat:     "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
+				FilePrefix:          "signal-output-",
+				Metadata:            "service-01_pod2",
+				FileFormat:          "metrics",
+				UniqueKeyFunc: func() string {
+					return "fixed"
+				},
+			},
+			expect:         "base/path/year=2024/month=01/day=24/hour=06/minute=40/signal-output-service-01_pod2_fixed.metrics",
+			overridePrefix: "",
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

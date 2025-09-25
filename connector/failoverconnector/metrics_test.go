@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pipeline"
 
@@ -39,12 +40,12 @@ func TestMetricsRegisterConsumers(t *testing.T) {
 		metricsThird:  &sinkThird,
 	})
 
-	conn, err := NewFactory().CreateMetricsToMetrics(context.Background(),
+	conn, err := NewFactory().CreateMetricsToMetrics(t.Context(),
 		connectortest.NewNopSettings(metadata.Type), cfg, router.(consumer.Metrics))
 
 	failoverConnector := conn.(*metricsFailover)
 	defer func() {
-		assert.NoError(t, failoverConnector.Shutdown(context.Background()))
+		assert.NoError(t, failoverConnector.Shutdown(t.Context()))
 	}()
 
 	require.NoError(t, err)
@@ -76,7 +77,7 @@ func TestMetricsWithValidFailover(t *testing.T) {
 		metricsThird:  &sinkThird,
 	})
 
-	conn, err := NewFactory().CreateMetricsToMetrics(context.Background(),
+	conn, err := NewFactory().CreateMetricsToMetrics(t.Context(),
 		connectortest.NewNopSettings(metadata.Type), cfg, router.(consumer.Metrics))
 
 	require.NoError(t, err)
@@ -84,7 +85,7 @@ func TestMetricsWithValidFailover(t *testing.T) {
 	failoverConnector := conn.(*metricsFailover)
 	failoverConnector.failover.ModifyConsumerAtIndex(0, consumertest.NewErr(errMetricsConsumer))
 	defer func() {
-		assert.NoError(t, failoverConnector.Shutdown(context.Background()))
+		assert.NoError(t, failoverConnector.Shutdown(t.Context()))
 	}()
 
 	md := sampleMetric()
@@ -111,7 +112,7 @@ func TestMetricsWithFailoverError(t *testing.T) {
 		metricsThird:  &sinkThird,
 	})
 
-	conn, err := NewFactory().CreateMetricsToMetrics(context.Background(),
+	conn, err := NewFactory().CreateMetricsToMetrics(t.Context(),
 		connectortest.NewNopSettings(metadata.Type), cfg, router.(consumer.Metrics))
 
 	require.NoError(t, err)
@@ -121,12 +122,49 @@ func TestMetricsWithFailoverError(t *testing.T) {
 	failoverConnector.failover.ModifyConsumerAtIndex(1, consumertest.NewErr(errMetricsConsumer))
 	failoverConnector.failover.ModifyConsumerAtIndex(2, consumertest.NewErr(errMetricsConsumer))
 	defer func() {
-		assert.NoError(t, failoverConnector.Shutdown(context.Background()))
+		assert.NoError(t, failoverConnector.Shutdown(t.Context()))
 	}()
 
 	md := sampleMetric()
 
-	assert.EqualError(t, conn.ConsumeMetrics(context.Background(), md), "All provided pipelines return errors")
+	assert.EqualError(t, conn.ConsumeMetrics(t.Context(), md), "All provided pipelines return errors")
+}
+
+func TestMetricsWithQueue(t *testing.T) {
+	var sinkFirst, sinkSecond, sinkThird consumertest.MetricsSink
+	metricsFirst := pipeline.NewIDWithName(pipeline.SignalMetrics, "metrics/first")
+	metricsSecond := pipeline.NewIDWithName(pipeline.SignalMetrics, "metrics/second")
+	metricsThird := pipeline.NewIDWithName(pipeline.SignalMetrics, "metrics/third")
+
+	cfg := &Config{
+		PipelinePriority: [][]pipeline.ID{{metricsFirst}, {metricsSecond}, {metricsThird}},
+		RetryInterval:    50 * time.Millisecond,
+		QueueSettings:    exporterhelper.NewDefaultQueueConfig(),
+	}
+
+	router := connector.NewMetricsRouter(map[pipeline.ID]consumer.Metrics{
+		metricsFirst:  &sinkFirst,
+		metricsSecond: &sinkSecond,
+		metricsThird:  &sinkThird,
+	})
+
+	conn, err := NewFactory().CreateMetricsToMetrics(t.Context(),
+		connectortest.NewNopSettings(metadata.Type), cfg, router.(consumer.Metrics))
+
+	require.NoError(t, err)
+
+	failoverConnector := conn.(*wrappedMetricsConnector)
+	mRouter := failoverConnector.GetFailoverRouter()
+	mRouter.ModifyConsumerAtIndex(0, consumertest.NewErr(errMetricsConsumer))
+	mRouter.ModifyConsumerAtIndex(1, consumertest.NewErr(errMetricsConsumer))
+	mRouter.ModifyConsumerAtIndex(2, consumertest.NewErr(errMetricsConsumer))
+	defer func() {
+		assert.NoError(t, failoverConnector.Shutdown(t.Context()))
+	}()
+
+	md := sampleMetric()
+
+	assert.NoError(t, conn.ConsumeMetrics(t.Context(), md))
 }
 
 func consumeMetricsAndCheckStable(conn *metricsFailover, idx int, mr pmetric.Metrics) bool {

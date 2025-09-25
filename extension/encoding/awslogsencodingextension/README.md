@@ -18,7 +18,12 @@ This extension unmarshals logs encoded in formats produced by AWS services, incl
    - Parquet support still to be added.
  - [S3 access log records](https://docs.aws.amazon.com/AmazonS3/latest/userguide/LogFormat.html).
  - [AWS CloudTrail logs](https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-log-file-examples.html).
+- ELB access logs:
+   - [Classic Load Balancer (CLB)](https://docs.aws.amazon.com/elasticloadbalancing/latest/classic/access-log-collection.html)
+   - [Application Load Balancer (ALB)](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-access-logs.html)
+   - [Network Load Balancer (NLB)](https://docs.aws.amazon.com/elasticloadbalancing/latest/network/load-balancer-access-logs.html)
  - (More to be added later.)
+
 
 Example for Amazon CloudWatch Logs Subscription Filters:
 ```yaml
@@ -56,6 +61,17 @@ extensions:
   awslogs_encoding/cloudtrail:
     format: cloudtrail_log
 ```
+
+Example for ELB access logs:
+```yaml
+extensions:
+  awslogs_encoding/elb_access_log:
+    format: elb_access_log
+```
+
+## Log Format Identification
+
+All logs processed by this extension are automatically tagged with an `awslogs_encoding.format` attribute at the scope level to identify the source format.
 
 #### VPC flow log record fields
 
@@ -194,6 +210,7 @@ extensions:
 | `userIdentity.arn`                    | `aws.principal.arn`                                           |
 | `userIdentity.principalId`            | `aws.principal.id`                                            |
 | `userIdentity.type`                   | `aws.principal.type`                                          |
+| `userIdentity.accessKeyId`            | `aws.access_key.id`                                           |
 | `requestParameters`                   | `aws.request.parameters` (map of all request parameters)      |
 | `requestID`                           | `aws.request_id`                                              |
 | `resources`                           | `aws.resources` (as an array, if available)                   |
@@ -213,5 +230,97 @@ extensions:
 | `userIdentity.userId`                 | `user.id`                                                     |
 | `userIdentity.userName`               | `user.name`                                                   |
 
-
 All request parameters and response elements are included directly as nested maps in the attributes, preserving their original structure.
+
+#### ELB Access Log Fields
+
+ELB access log record fields are mapped this way in the resulting OpenTelemetry log:
+
+##### Application Load Balancer (ALB)
+
+> AWS Fields are according to [documentation](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-access-logs.html).
+
+
+| **AWS Field**                | **OpenTelemetry Field(s)**                                      |
+|------------------------------|-----------------------------------------------------------------------|
+| type                         | `network.protocol.name`                                |
+| time                         | Log timestamp                                |
+| elb                          | `cloud.resource_id`                                                  |
+| client:port                  | `client.address`, `client.port`                                      |
+| received_bytes               | `http.request.size`                                                  |
+| sent_bytes                   | `http.response.size`                                                 |
+| "request"                    | `url.full`, `http.request.method`, `network.protocol.version`                                    |
+| ssl_cipher                   | `tls.cipher`                                                         |
+| ssl_protocol                 | `tls.protocol.version`                                               |
+| elb_status_code              | `aws.elb.status.code`                                                |
+| target:port                  | _Currently not supported_                                |
+| request_processing_time      | _Currently not supported_                                |
+| target_processing_time       | _Currently not supported_                                |
+| response_processing_time     | _Currently not supported_                                |
+| target_status_code           | _Currently not supported_                                |
+| "user_agent"                 | _Currently not supported_                                |
+| target_group_arn             | _Currently not supported_                                |
+| "trace_id"                   | _Currently not supported_                                |
+| "domain_name"                | _Currently not supported_                                |
+| "chosen_cert_arn"            | _Currently not supported_                                |
+| matched_rule_priority        | _Currently not supported_                                |
+| request_creation_time        | _Currently not supported_                                |
+| "actions_executed"           | _Currently not supported_                                |
+| "redirect_url"               | _Currently not supported_                                |
+| "error_reason"               | _Currently not supported_                                |
+| "target:port_list"           | _Currently not supported_                                |
+| "target_status_code_list"    | _Currently not supported_                                |
+| "classification"             | _Currently not supported_                                |
+| "classification_reason"      | _Currently not supported_                                |
+| conn_trace_id                | _Currently not supported_                                |
+
+##### Network Load Balancer (NLB)
+
+> AWS Fields are according to [documentation](https://docs.aws.amazon.com/elasticloadbalancing/latest//network/load-balancer-access-logs.html#access-log-entry-format).
+
+| **AWS Field**                | **OpenTelemetry Field(s)**                                      |
+|------------------------------|-------------------------------------------------------------|
+| type                         | `network.protocol.name`                                     |
+| version                      | `network.protocol.version`                                  |
+| time                         | Log timestamp                                               |
+| elb                          | `cloud.resource_id`                                         |
+| listener                     | `aws.elb.tls.listener.resource_id`                                  |
+| client:port                  | `client.address`, `client.port`                             |
+| received_bytes               | `http.request.size`                                         |
+| sent_bytes                   | `http.response.size`                                        |
+| tls_cipher                   | `tls.cipher`                                                |
+| tls_protocol_version         | `tls.protocol.version`                                      |
+| destination:port             | _Currently not supported_                                   |
+| connection_time              | _Currently not supported_                                   |
+| tls_handshake_time           | _Currently not supported_                                   |
+| incoming_tls_alert           | _Currently not supported_                                   |
+| chosen_cert_arn              | _Currently not supported_                                   |
+| chosen_cert_serial           | _Currently not supported_                                   |
+| tls_named_group              | _Currently not supported_                                   |
+| domain_name                  | _Currently not supported_                                   |
+| alpn_fe_protocol             | _Currently not supported_                                   |
+| alpn_be_protocol             | _Currently not supported_                                   |
+| alpn_client_preference_list  | _Currently not supported_                                   |
+| tls_connection_creation_time | _Currently not supported_                                   |
+
+##### Classic Load Balancer (CLB)
+
+> AWS Fields are according to [documentation](https://docs.aws.amazon.com/elasticloadbalancing/latest/classic/access-log-collection.html)
+
+| **AWS Field**         | **OpenTelemetry Field(s)**                                                                 |
+|-----------------------|--------------------------------------------------------------------------------------------|
+| time                  | Log timestamp                                                                              |
+| elb                   | `cloud.resource_id`                                                                        |
+| client:port                  | `client.address`, `client.port`                             |
+| elb_status_code       | `aws.elb.status.code`                                                                      |
+| backend_status_code   | `aws.elb.backend.status.code`                                                              |
+| received_bytes        | `http.request.size`                                                                        |
+| sent_bytes            | `http.response.size`                                                                       |
+| "request"                    | `url.full`, `http.request.method`, `network.protocol.name`, `network.protocol.version`                                    |
+| ssl_cipher            | `tls.cipher`                                                                               |
+| ssl_protocol          | `tls.protocol.version`                                                                     |
+| backend:port                  | _Currently not supported_                                |
+| request_processing_time | _Currently not supported_                                                                |
+| backend_processing_time | _Currently not supported_                                                                |
+| response_processing_time | _Currently not supported_                                                               |
+| user_agent                            | _Currently not supported_            |

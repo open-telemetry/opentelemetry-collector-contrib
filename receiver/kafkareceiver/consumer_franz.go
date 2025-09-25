@@ -159,12 +159,13 @@ func (c *franzConsumer) Start(ctx context.Context, host component.Host) error {
 	}
 	c.obsrecv = obsrecv
 
+	var hooks kgo.Hook = c
+	if c.config.Telemetry.Metrics.KafkaReceiverRecordsDelay.Enabled {
+		hooks = franzConsumerWithOptionalHooks{c}
+	}
+
 	// Create franz-go consumer client
-	client, err := kafka.NewFranzConsumerGroup(ctx,
-		c.config.ClientConfig,
-		c.config.ConsumerConfig,
-		c.topics,
-		c.settings.Logger,
+	opts := []kgo.Opt{
 		kgo.OnPartitionsAssigned(c.assigned),
 		kgo.OnPartitionsRevoked(func(ctx context.Context, _ *kgo.Client, m map[string][]int32) {
 			c.lost(ctx, c.client, m, false)
@@ -172,7 +173,21 @@ func (c *franzConsumer) Start(ctx context.Context, host component.Host) error {
 		kgo.OnPartitionsLost(func(ctx context.Context, _ *kgo.Client, m map[string][]int32) {
 			c.lost(ctx, c.client, m, true)
 		}),
-		kgo.WithHooks(c),
+		kgo.WithHooks(hooks),
+	}
+
+	if !c.config.UseLeaderEpoch {
+		opts = append(opts, kgo.AdjustFetchOffsetsFn(makeClearLeaderEpochAdjuster()))
+	}
+
+	// Create franz-go consumer client
+	client, err := kafka.NewFranzConsumerGroup(
+		ctx,
+		c.config.ClientConfig,
+		c.config.ConsumerConfig,
+		c.topics,
+		c.settings.Logger,
+		opts...,
 	)
 	if err != nil {
 		return err
@@ -290,7 +305,10 @@ func (c *franzConsumer) consume(ctx context.Context, size int) bool {
 					// which isn't ideal since there needs to be some sort of manual
 					// intervention to unlock the partition. But this is already
 					// mentioned in the docs and also happens with Sarama.
-					if !c.config.MessageMarking.OnError {
+					isPermanent := consumererror.IsPermanent(err)
+					shouldMark := (!isPermanent && c.config.MessageMarking.OnError) || (isPermanent && c.config.MessageMarking.OnPermanentError)
+
+					if !shouldMark {
 						fatalOffset = msg.Offset
 						break // Stop processing messages.
 					}
@@ -313,7 +331,7 @@ func (c *franzConsumer) consume(ctx context.Context, size int) bool {
 				// Ideally, we would attempt to re-process permanent errors
 				// for up to N times and then pause processing, or even better,
 				// produce the message to a dead letter topic.
-				pc.logger.Error("unable to process message: pausing consumption of this topic / partition on this consumer instance due to MessageMarking.OnError=false",
+				pc.logger.Error("unable to process message: pausing consumption of this topic / partition on this consumer instance due to message_marking configuration",
 					zap.Int64("offset", fatalOffset),
 				)
 			}
@@ -491,7 +509,11 @@ func (c *franzConsumer) handleMessage(pc *pc, msg kafkaMessage) error {
 				zap.Duration("max_elapsed_time", pc.backOff.MaxElapsedTime),
 			)
 		}
-		if c.config.MessageMarking.After && !c.config.MessageMarking.OnError {
+
+		isPermanent := consumererror.IsPermanent(err)
+		shouldMark := (!isPermanent && c.config.MessageMarking.OnError) || (isPermanent && c.config.MessageMarking.OnPermanentError)
+
+		if c.config.MessageMarking.After && !shouldMark {
 			// Only return an error if messages are marked after successful processing.
 			return err
 		}
@@ -530,9 +552,15 @@ func (c *franzConsumer) OnBrokerDisconnect(meta kgo.BrokerMetadata, _ net.Conn) 
 }
 
 func (c *franzConsumer) OnBrokerThrottle(meta kgo.BrokerMetadata, throttleInterval time.Duration, _ bool) {
+	// KafkaBrokerThrottlingDuration is deprecated in favor of KafkaBrokerThrottlingLatency.
 	c.telemetryBuilder.KafkaBrokerThrottlingDuration.Record(
 		context.Background(),
 		throttleInterval.Milliseconds(),
+		metric.WithAttributes(attribute.String("node_id", kgo.NodeName(meta.NodeID))),
+	)
+	c.telemetryBuilder.KafkaBrokerThrottlingLatency.Record(
+		context.Background(),
+		throttleInterval.Seconds(),
 		metric.WithAttributes(attribute.String("node_id", kgo.NodeName(meta.NodeID))),
 	)
 }
@@ -542,9 +570,18 @@ func (c *franzConsumer) OnBrokerRead(meta kgo.BrokerMetadata, _ int16, _ int, re
 	if err != nil {
 		outcome = "failure"
 	}
+	// KafkaReceiverLatency is deprecated in favor of KafkaReceiverReadLatency.
 	c.telemetryBuilder.KafkaReceiverLatency.Record(
 		context.Background(),
 		readWait.Milliseconds()+timeToRead.Milliseconds(),
+		metric.WithAttributes(
+			attribute.String("node_id", kgo.NodeName(meta.NodeID)),
+			attribute.String("outcome", outcome),
+		),
+	)
+	c.telemetryBuilder.KafkaReceiverReadLatency.Record(
+		context.Background(),
+		readWait.Seconds()+timeToRead.Seconds(),
 		metric.WithAttributes(
 			attribute.String("node_id", kgo.NodeName(meta.NodeID)),
 			attribute.String("outcome", outcome),
@@ -562,7 +599,13 @@ func (c *franzConsumer) OnFetchBatchRead(meta kgo.BrokerMetadata, topic string, 
 		attribute.String("compression_codec", compressionFromCodec(m.CompressionType)),
 		attribute.String("outcome", "success"),
 	}
+	// KafkaReceiverMessages is deprecated in favor of KafkaReceiverRecords.
 	c.telemetryBuilder.KafkaReceiverMessages.Add(
+		context.Background(),
+		int64(m.NumRecords),
+		metric.WithAttributes(attrs...),
+	)
+	c.telemetryBuilder.KafkaReceiverRecords.Add(
 		context.Background(),
 		int64(m.NumRecords),
 		metric.WithAttributes(attrs...),
@@ -576,6 +619,29 @@ func (c *franzConsumer) OnFetchBatchRead(meta kgo.BrokerMetadata, topic string, 
 		context.Background(),
 		int64(m.UncompressedBytes),
 		metric.WithAttributes(attrs...),
+	)
+}
+
+// franzConsumerWithOptionalHooks wraps franzConsumer
+// so the optional OnFetchRecordUnbuffered can be enabled.
+type franzConsumerWithOptionalHooks struct {
+	*franzConsumer
+}
+
+// OnFetchRecordUnbuffered is called when a fetched record is unbuffered and ready to be processed.
+// Note that this hook may slow down high-volume consuming a bit.
+// https://pkg.go.dev/github.com/twmb/franz-go/pkg/kgo#HookFetchRecordUnbuffered
+func (c franzConsumerWithOptionalHooks) OnFetchRecordUnbuffered(r *kgo.Record, polled bool) {
+	if !polled {
+		return // Record metrics when polled by `client.PollRecords()`.
+	}
+	c.telemetryBuilder.KafkaReceiverRecordsDelay.Record(
+		context.Background(),
+		time.Since(r.Timestamp).Seconds(),
+		metric.WithAttributes(
+			attribute.String("topic", r.Topic),
+			attribute.Int64("partition", int64(r.Partition)),
+		),
 	)
 }
 
@@ -598,5 +664,16 @@ func compressionFromCodec(c uint8) string {
 		return "zstd"
 	default:
 		return "unknown"
+	}
+}
+
+func makeClearLeaderEpochAdjuster() func(context.Context, map[string]map[int32]kgo.Offset) (map[string]map[int32]kgo.Offset, error) {
+	return func(_ context.Context, topics map[string]map[int32]kgo.Offset) (map[string]map[int32]kgo.Offset, error) {
+		for _, parts := range topics {
+			for p, off := range parts {
+				parts[p] = off.WithEpoch(-1)
+			}
+		}
+		return topics, nil
 	}
 }

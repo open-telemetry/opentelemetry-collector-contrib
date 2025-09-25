@@ -15,15 +15,15 @@ jobs:
     runs-on: ubuntu-24.04
     if: ${{ github.repository_owner == 'open-telemetry' }}
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
         with:
           path: opentelemetry-collector-contrib
       - name: Pull the latest collector repo
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
         with:
           path: opentelemetry-collector
           repository: open-telemetry/opentelemetry-collector
-      - uses: actions/create-github-app-token@df432ceedc7162793a195dd1713ff69aefc7379e # v2.0.6
+      - uses: actions/create-github-app-token@67018539274d69449ef7c02e8e71183d1719ab42 # v2.1.4
         id: otelbot-token
         with:
           app-id: ${{ vars.OTELBOT_APP_ID }}
@@ -31,19 +31,19 @@ jobs:
       - name: Prepare to update dependencies
         run: |
           exec > >(tee log.out) 2>&1
-          LAST_COMMIT=$(git -C ./opentelemetry-collector/ rev-parse HEAD)
+          LAST_COMMIT="$(git -C ./opentelemetry-collector/ rev-parse HEAD)"
           cd opentelemetry-collector-contrib
           git config user.name otelbot
           git config user.email 197425009+otelbot@users.noreply.github.com
           branch="otelbot/update-otel-$(date +%s)"
-          git checkout -b $branch
+          git checkout -b "$branch"
           make genotelcontribcol
-          echo "LAST_COMMIT=$LAST_COMMIT" >> $GITHUB_ENV
-          echo "BRANCH_NAME=$branch" >> $GITHUB_ENV
+          echo "LAST_COMMIT=$LAST_COMMIT" >> "$GITHUB_ENV"
+          echo "BRANCH_NAME=$branch" >> "$GITHUB_ENV"
         env:
           GITHUB_TOKEN: ${{ steps.otelbot-token.outputs.token }}
       - name: Gets packages from links with retries
-        uses: nick-fields/retry@v3
+        uses: nick-fields/retry@ce71cc2ab81d554ebbe88c79ab5975992d79ba08 # v3.0.2
         with:  
           retry_wait_seconds: 1800
           timeout_minutes: 120
@@ -56,14 +56,14 @@ jobs:
         run: |  
           cd opentelemetry-collector-contrib
           git push --set-upstream origin ${{ env.BRANCH_NAME }}
-          gh pr create --base main --title "[chore] Update core dependencies" --body "This PR updates the opentelemetry-collector dependency to the latest release"
+          gh pr create --base main --title "[chore] Update core dependencies" --body "This PR updates the opentelemetry-collector modules to open-telemetry/opentelemetry-collector@${{ env.LAST_COMMIT }}" --draft
         env:
           GITHUB_TOKEN: ${{ steps.otelbot-token.outputs.token }}
       - name: File an issue if the workflow failed
         if: failure()
         run: |
-          template=$(cat <<'END'
-          [Link to job log](%s)
+          job_url="$(gh run view ${{ github.run_id }} -R ${{ github.repository }} --json jobs -q '.jobs[] | select(.name == "update-otel") | .url')"
+          body="$(printf '[Link to job log](%s)
           
           <details>
           <summary>Last 100 lines of log</summary>
@@ -71,11 +71,7 @@ jobs:
           ```
           %s
           ```
-          </details>
-          END
-          )
-          job_url="$(gh run view ${{ github.run_id }} -R ${{ github.repository }} --json jobs -q '.jobs[] | select(.name == "update-otel") | .url')"
-          body="$(printf "$template" "$job_url" "$(tail -n100 log.out | tail -c63K)")"
+          </details>' "$job_url" "$(tail -n100 log.out | tail -c63K)")"
           gh issue create -R ${{ github.repository }} -t 'update-otel workflow failed' -b "$body" -l 'ci-cd'
         env:
           GH_TOKEN: ${{ github.token }}

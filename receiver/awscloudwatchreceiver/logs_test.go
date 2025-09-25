@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -37,10 +38,10 @@ func TestStart(t *testing.T) {
 		},
 	}, sink)
 
-	err := logsRcvr.Start(context.Background(), componenttest.NewNopHost())
+	err := logsRcvr.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
-	err = logsRcvr.Shutdown(context.Background())
+	err = logsRcvr.Shutdown(t.Context())
 	require.NoError(t, err)
 }
 
@@ -64,14 +65,14 @@ func TestPrefixedConfig(t *testing.T) {
 	}, sink)
 	alertRcvr.client = defaultMockClient()
 
-	err := alertRcvr.Start(context.Background(), componenttest.NewNopHost())
+	err := alertRcvr.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	require.Eventually(t, func() bool {
 		return sink.LogRecordCount() > 0
 	}, 2*time.Second, 10*time.Millisecond)
 
-	err = alertRcvr.Shutdown(context.Background())
+	err = alertRcvr.Shutdown(t.Context())
 	require.NoError(t, err)
 
 	logs := sink.AllLogs()[0]
@@ -100,7 +101,7 @@ func TestPrefixedNamedStreamsConfig(t *testing.T) {
 	}, sink)
 	alertRcvr.client = defaultMockClient()
 
-	err := alertRcvr.Start(context.Background(), componenttest.NewNopHost())
+	err := alertRcvr.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	require.Eventually(t, func() bool {
@@ -111,7 +112,7 @@ func TestPrefixedNamedStreamsConfig(t *testing.T) {
 	require.Len(t, groupRequests, 1)
 	require.Equal(t, "test-log-group-name", groupRequests[0].groupName())
 
-	err = alertRcvr.Shutdown(context.Background())
+	err = alertRcvr.Shutdown(t.Context())
 	require.NoError(t, err)
 
 	logs := sink.AllLogs()[0]
@@ -138,7 +139,7 @@ func TestNamedConfigNoStreamFilter(t *testing.T) {
 	}, sink)
 	alertRcvr.client = defaultMockClient()
 
-	err := alertRcvr.Start(context.Background(), componenttest.NewNopHost())
+	err := alertRcvr.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	require.Eventually(t, func() bool {
@@ -149,7 +150,7 @@ func TestNamedConfigNoStreamFilter(t *testing.T) {
 	require.Len(t, groupRequests, 1)
 	require.Equal(t, "test-log-group-name", groupRequests[0].groupName())
 
-	err = alertRcvr.Shutdown(context.Background())
+	err = alertRcvr.Shutdown(t.Context())
 	require.NoError(t, err)
 
 	logs := sink.AllLogs()[0]
@@ -180,12 +181,12 @@ func TestDiscovery(t *testing.T) {
 	}, sink)
 	logsRcvr.client = defaultMockClient()
 
-	require.NoError(t, logsRcvr.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, logsRcvr.Start(t.Context(), componenttest.NewNopHost()))
 	require.Eventually(t, func() bool {
 		return sink.LogRecordCount() > 0
 	}, 2*time.Second, 10*time.Millisecond)
 	require.Len(t, logsRcvr.groupRequests, 2)
-	require.NoError(t, logsRcvr.Shutdown(context.Background()))
+	require.NoError(t, logsRcvr.Shutdown(t.Context()))
 }
 
 // Test to ensure that mid collection while streaming results we will
@@ -217,7 +218,7 @@ func TestShutdownWhileCollecting(t *testing.T) {
 		WaitUntil(doneChan)
 	alertRcvr.client = mc
 
-	err := alertRcvr.Start(context.Background(), componenttest.NewNopHost())
+	err := alertRcvr.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	require.Never(t, func() bool {
@@ -225,7 +226,82 @@ func TestShutdownWhileCollecting(t *testing.T) {
 	}, 3*time.Second, 10*time.Millisecond)
 
 	close(doneChan)
-	require.NoError(t, alertRcvr.Shutdown(context.Background()))
+	require.NoError(t, alertRcvr.Shutdown(t.Context()))
+}
+
+func TestAutodiscoverPattern(t *testing.T) {
+	mc := &mockClient{}
+
+	mc.On(
+		"DescribeLogGroups",
+		mock.Anything,
+		mock.MatchedBy(func(input *cloudwatchlogs.DescribeLogGroupsInput) bool {
+			if input.LogGroupNamePattern != nil && strings.Contains(testLogGroupName, *input.LogGroupNamePattern) {
+				return true
+			}
+
+			return false
+		}),
+		mock.Anything,
+	).Return(
+		&cloudwatchlogs.DescribeLogGroupsOutput{
+			LogGroups: []types.LogGroup{
+				{
+					LogGroupName: &testLogGroupName,
+				},
+			},
+			NextToken: nil,
+		}, nil)
+
+	mc.On(
+		"DescribeLogGroups",
+		mock.Anything,
+		mock.MatchedBy(func(input *cloudwatchlogs.DescribeLogGroupsInput) bool {
+			fmt.Printf("The log group name pattern %s", *input.LogGroupNamePattern)
+			if input.LogGroupNamePattern == nil || !strings.Contains(testLogGroupName, *input.LogGroupNamePattern) {
+				return true
+			}
+
+			return false
+		}),
+		mock.Anything,
+	).Return(
+		&cloudwatchlogs.DescribeLogGroupsOutput{
+			LogGroups: []types.LogGroup{},
+			NextToken: nil,
+		}, nil)
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.Region = "us-west-1"
+	cfg.Logs.Groups = GroupConfig{
+		AutodiscoverConfig: &AutodiscoverConfig{
+			Limit:   1,
+			Pattern: testLogGroupName[2:5],
+		},
+	}
+
+	sink := &consumertest.LogsSink{}
+	alertRcvr := newLogsReceiver(cfg, receiver.Settings{
+		TelemetrySettings: component.TelemetrySettings{
+			Logger: zap.NewNop(),
+		},
+	}, sink)
+	alertRcvr.client = mc
+
+	grs, err := alertRcvr.discoverGroups(t.Context(), cfg.Logs.Groups.AutodiscoverConfig)
+	require.NoError(t, err)
+	require.Len(t, grs, 1)
+
+	cfg.Logs.Groups = GroupConfig{
+		AutodiscoverConfig: &AutodiscoverConfig{
+			Limit:   1,
+			Pattern: testLogGroupName[5:] + "-no-matches",
+		},
+	}
+
+	grs, err = alertRcvr.discoverGroups(t.Context(), cfg.Logs.Groups.AutodiscoverConfig)
+	require.NoError(t, err)
+	require.Empty(t, grs)
 }
 
 func TestAutodiscoverLimit(t *testing.T) {
@@ -269,7 +345,7 @@ func TestAutodiscoverLimit(t *testing.T) {
 	}, sink)
 	alertRcvr.client = mc
 
-	grs, err := alertRcvr.discoverGroups(context.Background(), cfg.Logs.Groups.AutodiscoverConfig)
+	grs, err := alertRcvr.discoverGroups(t.Context(), cfg.Logs.Groups.AutodiscoverConfig)
 	require.NoError(t, err)
 	require.Len(t, grs, cfg.Logs.Groups.AutodiscoverConfig.Limit)
 }
@@ -288,7 +364,7 @@ func TestShutdownCheckpointer(t *testing.T) {
 	mockStorage := newMockStorageClient()
 	logsRcvr.cloudwatchCheckpointPersister = newCloudwatchCheckpointPersister(mockStorage, zap.NewNop())
 
-	err := logsRcvr.Shutdown(context.Background())
+	err := logsRcvr.Shutdown(t.Context())
 	require.NoError(t, err)
 
 	require.Nil(t, mockStorage.cache)
@@ -312,7 +388,7 @@ func TestShutdownCheckpointerWithError(t *testing.T) {
 	cloudwatchCheckpointPersister := newCloudwatchCheckpointPersister(mockStorage, zap.NewNop())
 	logsRcvr.cloudwatchCheckpointPersister = cloudwatchCheckpointPersister
 
-	err := logsRcvr.Shutdown(context.Background())
+	err := logsRcvr.Shutdown(t.Context())
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "forced storage error")
 }
@@ -332,7 +408,7 @@ func TestShutdownWithoutCheckpointer(t *testing.T) {
 	require.Nil(t, logsRcvr.cloudwatchCheckpointPersister)
 
 	// Call Shutdown and verify it doesn't error when checkpointer is nil
-	err := logsRcvr.Shutdown(context.Background())
+	err := logsRcvr.Shutdown(t.Context())
 	require.NoError(t, err)
 }
 
@@ -381,7 +457,7 @@ func TestDeletedLogGroupContinuesPolling(t *testing.T) {
 
 	logsRcvr.client = mc
 
-	err := logsRcvr.Start(context.Background(), componenttest.NewNopHost())
+	err := logsRcvr.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	require.Eventually(t, func() bool {
@@ -394,7 +470,7 @@ func TestDeletedLogGroupContinuesPolling(t *testing.T) {
 	logRecord := logs[0].ResourceLogs().At(0)
 	require.Equal(t, "existing-group", logRecord.Resource().Attributes().AsRaw()["cloudwatch.log.group.name"])
 
-	err = logsRcvr.Shutdown(context.Background())
+	err = logsRcvr.Shutdown(t.Context())
 	require.NoError(t, err)
 
 	// Verify all mock expectations were met
@@ -513,7 +589,7 @@ func TestDeletedLogGroupDuringAutodiscover(t *testing.T) {
 
 	logsRcvr.client = mc
 
-	err := logsRcvr.Start(context.Background(), componenttest.NewNopHost())
+	err := logsRcvr.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	// Wait for first poll to complete
@@ -526,7 +602,7 @@ func TestDeletedLogGroupDuringAutodiscover(t *testing.T) {
 		}
 	}, 15*time.Second, 10*time.Millisecond)
 
-	err = logsRcvr.Shutdown(context.Background())
+	err = logsRcvr.Shutdown(t.Context())
 	require.NoError(t, err)
 
 	groupNames := make([]string, 0, len(logsRcvr.groupRequests))

@@ -394,6 +394,10 @@ func (l *logsReceiver) discoverGroups(ctx context.Context, auto *AutodiscoverCon
 			req.NextToken = nextToken
 		}
 
+		if auto.Pattern != "" {
+			req.LogGroupNamePattern = &auto.Pattern
+		}
+
 		if auto.Prefix != "" {
 			req.LogGroupNamePrefix = &auto.Prefix
 		}
@@ -403,7 +407,8 @@ func (l *logsReceiver) discoverGroups(ctx context.Context, auto *AutodiscoverCon
 			return groups, fmt.Errorf("unable to list log groups: %w", err)
 		}
 
-		for _, lg := range dlgResults.LogGroups {
+		for i := range dlgResults.LogGroups {
+			lg := &dlgResults.LogGroups[i]
 			if numGroups == auto.Limit {
 				l.settings.Logger.Debug("reached limit of the number of log groups to discover."+
 					"To increase the number of groups able to be discovered, please increase the autodiscover limit field.",

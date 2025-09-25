@@ -1,0 +1,53 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: aws
+        - key: cloud.resource_id
+          value:
+            stringValue: app/my-loadbalancer/50dc6c495c0c9188
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: network.protocol.name
+                value:
+                  stringValue: https
+              - key: network.protocol.version
+                value:
+                  stringValue: "1.1"
+              - key: client.address
+                value:
+                  stringValue: 192.168.131.39
+              - key: http.request.method
+                value:
+                  stringValue: GET
+              - key: url.full
+                value:
+                  stringValue: https://www.example.com:443/
+              - key: client.port
+                value:
+                  intValue: "2817"
+              - key: http.request.size
+                value:
+                  intValue: "0"
+              - key: http.response.size
+                value:
+                  intValue: "57"
+              - key: aws.elb.status.code
+                value:
+                  intValue: "200"
+              - key: tls.protocol.version
+                value:
+                  stringValue: tlsv1.2
+              - key: tls.cipher
+                value:
+                  stringValue: ECDHE-RSA-AES128-GCM-SHA256
+            body: {}
+            timeUnixNano: "1530570180186641000"
+        scope:
+          attributes:
+            - key: awslogs_encoding.format
+              value:
+                stringValue: elb_access_log
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension
