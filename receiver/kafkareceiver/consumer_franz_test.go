@@ -199,6 +199,13 @@ func TestConsumerShutdownConsuming(t *testing.T) {
 			consumer, e := newFranzKafkaConsumer(cfg, settings, []string{topic}, consumeFn)
 			require.NoError(tb, e)
 			require.NoError(tb, consumer.Start(ctx, componenttest.NewNopHost()))
+			// Wait until the group has assigned at least one partition.
+			require.Eventually(tb, func() bool {
+				consumer.mu.RLock()
+				n := len(consumer.assignments)
+				consumer.mu.RUnlock()
+				return n > 0
+			}, 5*time.Second, 10*time.Millisecond)
 			require.NoError(tb, kafkaClient.ProduceSync(ctx, rs...).FirstErr())
 
 			select {
