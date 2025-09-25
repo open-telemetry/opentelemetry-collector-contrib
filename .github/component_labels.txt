@@ -186,6 +186,7 @@ processor/redactionprocessor processor/redaction
 processor/remotetapprocessor processor/remotetap
 processor/resourcedetectionprocessor processor/resourcedetection
 processor/resourcedetectionprocessor/internal/akamai processor/resourcedetection/internal/akamai
+processor/resourcedetectionprocessor/internal/digitalocean processor/resourcedetection/internal/digitalocean
 processor/resourcedetectionprocessor/internal/dynatrace processor/resourcedetection/internal/dynatrace
 processor/resourcedetectionprocessor/internal/hetzner processor/resourcedetection/internal/hetzner
 processor/resourcedetectionprocessor/internal/oraclecloud processor/resourcedetection/internal/oraclecloud
@@ -197,6 +198,7 @@ processor/spanprocessor processor/span
 processor/sumologicprocessor processor/sumologic
 processor/tailsamplingprocessor processor/tailsampling
 processor/transformprocessor processor/transform
+processor/unrollprocessor processor/unroll
 receiver/activedirectorydsreceiver receiver/activedirectoryds
 receiver/aerospikereceiver receiver/aerospike
 receiver/apachereceiver receiver/apache
