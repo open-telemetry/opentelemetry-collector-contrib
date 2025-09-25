@@ -16,6 +16,6 @@ metrics:
 
 Reports the count of kernel NFS client network requests handled
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {request} | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {request} | Gauge | Int | development |
