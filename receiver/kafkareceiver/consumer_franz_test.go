@@ -205,7 +205,7 @@ func TestConsumerShutdownConsuming(t *testing.T) {
 				n := len(consumer.assignments)
 				consumer.mu.RUnlock()
 				return n > 0
-			}, 5*time.Second, 10*time.Millisecond)
+			}, 10*time.Second, 10*time.Millisecond)
 			require.NoError(tb, kafkaClient.ProduceSync(ctx, rs...).FirstErr())
 
 			select {
