@@ -58,20 +58,24 @@ func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension,
 			format:      constants.FormatCloudWatchLogsSubscriptionFilter,
 		}, nil
 	case constants.FormatVPCFlowLog, constants.FormatVPCFlowLogV1:
+		var fileFormat string
 		if cfg.Format == constants.FormatVPCFlowLogV1 {
 			settings.Logger.Warn("using old format value. This format will be removed in version 0.138.0.",
 				zap.String("old_format", string(constants.FormatVPCFlowLogV1)),
 				zap.String("new_format", string(constants.FormatVPCFlowLog)),
 			)
+			fileFormat = cfg.VPCFlowLogConfigV1.FileFormat
+		} else {
+			fileFormat = cfg.VPCFlowLogConfig.FileFormat
 		}
 		unmarshaler, err := vpcflowlog.NewVPCFlowLogUnmarshaler(
-			cfg.VPCFlowLogConfig.FileFormat,
+			fileFormat,
 			settings.BuildInfo,
 			settings.Logger,
 		)
 		return &encodingExtension{
 			unmarshaler: unmarshaler,
-			vpcFormat:   cfg.VPCFlowLogConfig.FileFormat,
+			vpcFormat:   fileFormat,
 			format:      constants.FormatVPCFlowLog,
 		}, err
 	case constants.FormatS3AccessLog, constants.FormatS3AccessLogV1:
