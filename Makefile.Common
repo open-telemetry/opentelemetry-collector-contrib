@@ -18,7 +18,8 @@ GO_BUILD_TAGS=""
 # These ldflags allow the build tool to omit the symbol table, debug information, and the DWARF symbol table to downscale binary size.
 GO_BUILD_LDFLAGS="-s -w"
 GOTEST_TIMEOUT?= 900s
-GOTEST_OPT?= -race -timeout $(GOTEST_TIMEOUT) -parallel 4 --tags=$(GO_BUILD_TAGS)
+# On Windows arm64 `-race` is not supported
+GOTEST_OPT?=-timeout $(GOTEST_TIMEOUT) -parallel 4 --tags=$(GO_BUILD_TAGS) $(if $(and $(filter windows,$(GOOS)), $(filter arm64,$(GOARCH))),,-race)
 GOTEST_INTEGRATION_OPT?= -race -timeout 360s -parallel 4 -skip Sudo
 GOTEST_INTEGRATION_OPT_SUDO?= -race -timeout 360s -parallel 4 -exec sudo -run Sudo
 COVER_OPT :=-cover -covermode=atomic -test.gocoverdir="$(COVER_DIR_ABS)"
@@ -139,7 +140,7 @@ test-with-junit-and-cover: $(GOTESTSUM)
 .PHONY: buildtest
 buildtest:
 ifneq (,$(wildcard ./*.go))
-	GOARCH=$(GOTESTARCH) CGO_ENABLED=1 $(GOCMD) test -c -o builtunitetest.test
+	GOARCH=$(GOTESTARCH) CGO_ENABLED=$(if $(and $(filter windows,$(GOOS)), $(filter arm64,$(GOARCH))),0,1) $(GOCMD) test -c -o builtunitetest.test
 endif
 
 .PHONY: runbuilttest
