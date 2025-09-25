@@ -164,6 +164,22 @@ metrics:
     enabled: true
 ```
 
+### haproxy.active
+
+Number of active servers (backend) or server is active (server). Corresponds to HAProxy's `act` metric.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {servers} | Gauge | Int |
+
+### haproxy.backup
+
+Number of backup servers (backend) or server is backup (server). Corresponds to HAProxy's `bck` metric.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {servers} | Gauge | Int |
+
 ### haproxy.clients.canceled
 
 Number of data transfers aborted by the client. Corresponds to HAProxy's `cli_abrt` metric
@@ -204,6 +220,14 @@ Number of HTTP response bytes emitted by the compressor. Corresponds to HAProxy'
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | by | Sum | Int | Cumulative | true |
 
+### haproxy.connections.average_time
+
+Average connect time in ms over the 1024 last requests. Corresponds to HAProxy's `ctime` metric.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| ms | Gauge | Double |
+
 ### haproxy.connections.total
 
 Cumulative number of connections (frontend). Corresponds to HAProxy's `conn_tot` metric.
@@ -228,6 +252,30 @@ Number of failed checks. (Only counts checks failed when the server is up). Corr
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {checks} | Sum | Int | Cumulative | true |
 
+### haproxy.requests.average_time
+
+Average queue time in ms over the 1024 last requests. Corresponds to HAProxy's `qtime` metric.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| ms | Gauge | Double |
+
+### haproxy.responses.average_time
+
+Average response time in ms over the 1024 last requests. Corresponds to HAProxy's `rtime` metric.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| ms | Gauge | Double |
+
+### haproxy.sessions.limit
+
+Configured session limit. Corresponds to HAProxy's `slim` metric.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {sessions} | Gauge | Int |
+
 ### haproxy.sessions.total
 
 Cumulative number of sessions. Corresponds to HAProxy's `stot` metric.
@@ -235,6 +283,14 @@ Cumulative number of sessions. Corresponds to HAProxy's `stot` metric.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {sessions} | Sum | Int | Cumulative | true |
+
+### haproxy.weight
+
+Total effective weight (backend) or effective weight (server). Corresponds to HAProxy's `weight` metric.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
 
 ## Resource Attributes
 

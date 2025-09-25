@@ -113,7 +113,7 @@ func createLogsExporter(
 		return nil, err
 	}
 
-	qbs := exporterhelper.NewLogsQueueBatchSettings()
+	qbs := xexporterhelper.NewLogsQueueBatchSettings()
 	if len(cf.MetadataKeys) > 0 {
 		qbs.Partitioner = metadataKeysPartitioner{keys: cf.MetadataKeys}
 	}
@@ -141,7 +141,7 @@ func createMetricsExporter(
 		return nil, err
 	}
 
-	qbs := exporterhelper.NewMetricsQueueBatchSettings()
+	qbs := xexporterhelper.NewMetricsQueueBatchSettings()
 	if len(cf.MetadataKeys) > 0 {
 		qbs.Partitioner = metadataKeysPartitioner{keys: cf.MetadataKeys}
 	}
@@ -168,7 +168,7 @@ func createTracesExporter(ctx context.Context,
 		return nil, err
 	}
 
-	qbs := exporterhelper.NewTracesQueueBatchSettings()
+	qbs := xexporterhelper.NewTracesQueueBatchSettings()
 	if len(cf.MetadataKeys) > 0 {
 		qbs.Partitioner = metadataKeysPartitioner{keys: cf.MetadataKeys}
 	}
