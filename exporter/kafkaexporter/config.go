@@ -46,6 +46,8 @@ type Config struct {
 	IncludeMetadataKeys []string `mapstructure:"include_metadata_keys"`
 
 	// TopicFromAttribute is the name of the attribute to use as the topic name.
+	// For correct topic selection in batches, consider enabling PartitionMetricsByResourceAttributes
+	// and PartitionLogsByResourceAttributes to group same topics on the same partition.
 	TopicFromAttribute string `mapstructure:"topic_from_attribute"`
 
 	// Encoding holds the encoding of Kafka message values.

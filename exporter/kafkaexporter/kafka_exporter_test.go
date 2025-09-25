@@ -569,6 +569,41 @@ func TestMetricsPusher_partitioning(t *testing.T) {
 		assert.Equal(t, keys[0], keys[1])
 		assert.NotEqual(t, keys[0], keys[2])
 	})
+
+	t.Run("topic_partitioning", func(t *testing.T) {
+		topicInput := pmetric.NewMetrics()
+		for _, topicName := range []string{"topic1", "topic1", "topic2"} {
+			resourceMetrics := testdata.GenerateMetrics(1).ResourceMetrics().At(0)
+			resourceMetrics.Resource().Attributes().PutStr("service.name", "test-service")
+			resourceMetrics.Resource().Attributes().PutStr("kafka.topic", topicName)
+			resourceMetrics.CopyTo(topicInput.ResourceMetrics().AppendEmpty())
+		}
+
+		config := createDefaultConfig().(*Config)
+		config.PartitionMetricsByResourceAttributes = true
+		config.TopicFromAttribute = "kafka.topic"
+		exp, producer := newMockMetricsExporter(t, *config, componenttest.NewNopHost())
+
+		var keys [][]byte
+		for i := 0; i < 3; i++ {
+			producer.ExpectSendMessageWithMessageCheckerFunctionAndSucceed(
+				func(msg *sarama.ProducerMessage) error {
+					key, err := msg.Key.Encode()
+					require.NoError(t, err)
+					keys = append(keys, key)
+					return nil
+				},
+			)
+		}
+
+		err := exp.exportData(t.Context(), topicInput)
+		require.NoError(t, err)
+
+		require.Len(t, keys, 3)
+		// First two should be the same (both topic1), third should be different (topic2)
+		assert.Equal(t, keys[0], keys[1], "Same topic should have same partition key")
+		assert.NotEqual(t, keys[0], keys[2], "Different topics should have different partition keys")
+	})
 }
 
 func TestMetricsDataPusher_Kgo(t *testing.T) {
@@ -981,6 +1016,40 @@ func TestLogsPusher_partitioning(t *testing.T) {
 		assert.NotEmpty(t, keys[0])
 		assert.Equal(t, keys[0], keys[1])
 		assert.NotEqual(t, keys[0], keys[2])
+	})
+
+	t.Run("topic_partitioning", func(t *testing.T) {
+		topicInput := plog.NewLogs()
+		for _, topicName := range []string{"topic1", "topic1", "topic2"} {
+			resourceLogs := testdata.GenerateLogs(1).ResourceLogs().At(0)
+			resourceLogs.Resource().Attributes().PutStr("service.name", "test-service")
+			resourceLogs.Resource().Attributes().PutStr("kafka.topic", topicName)
+			resourceLogs.CopyTo(topicInput.ResourceLogs().AppendEmpty())
+		}
+
+		config := createDefaultConfig().(*Config)
+		config.PartitionLogsByResourceAttributes = true
+		config.TopicFromAttribute = "kafka.topic"
+		exp, producer := newMockLogsExporter(t, *config, componenttest.NewNopHost())
+
+		var keys [][]byte
+		for i := 0; i < 3; i++ {
+			producer.ExpectSendMessageWithMessageCheckerFunctionAndSucceed(
+				func(msg *sarama.ProducerMessage) error {
+					key, err := msg.Key.Encode()
+					require.NoError(t, err)
+					keys = append(keys, key)
+					return nil
+				},
+			)
+		}
+
+		err := exp.exportData(t.Context(), topicInput)
+		require.NoError(t, err)
+
+		require.Len(t, keys, 3)
+		assert.Equal(t, keys[0], keys[1], "Same topic should have same partition key")
+		assert.NotEqual(t, keys[0], keys[2], "Different topics should have different partition keys")
 	})
 }
 
