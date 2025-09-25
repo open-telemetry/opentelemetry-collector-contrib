@@ -8,6 +8,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/observer"
+	pullobserver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/observer/pull"
+	watchobserver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/observer/watch"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"net/http"
 	"sync"
@@ -41,8 +43,7 @@ type k8sobjectsreceiver struct {
 	mu              sync.Mutex
 	cancel          context.CancelFunc
 
-	// TODO interface
-	observer *observer.Observer
+	observerFunc func(ctx context.Context, object *K8sObjectsConfig) (observer.Observer, error)
 }
 
 func newReceiver(params receiver.Settings, config *Config, consumer consumer.Logs) (receiver.Logs, error) {
@@ -70,14 +71,65 @@ func newReceiver(params receiver.Settings, config *Config, consumer consumer.Log
 		}
 	}
 
-	return &k8sobjectsreceiver{
+	kr := &k8sobjectsreceiver{
 		setting:  params,
 		config:   config,
 		objects:  objects,
 		consumer: consumer,
 		obsrecv:  obsrecv,
 		mu:       sync.Mutex{},
-	}, nil
+	}
+
+	kr.observerFunc = getObserverFunc(kr)
+
+	return kr, nil
+}
+
+func getObserverFunc(kr *k8sobjectsreceiver) func(ctx context.Context, object *K8sObjectsConfig) (observer.Observer, error) {
+	return func(ctx context.Context, object *K8sObjectsConfig) (observer.Observer, error) {
+		obsConf := observer.Config{
+			Gvr:                 *object.gvr,
+			Namespaces:          object.Namespaces,
+			Interval:            object.Interval,
+			LabelSelector:       object.LabelSelector,
+			FieldSelector:       object.FieldSelector,
+			ResourceVersion:     object.ResourceVersion,
+			IncludeInitialState: kr.config.IncludeInitialState,
+			Exclude:             object.exclude,
+		}
+		switch object.Mode {
+		case observer.PullMode:
+			return pullobserver.New(
+				kr.client,
+				obsConf,
+				kr.setting.Logger,
+				func(objects *unstructured.UnstructuredList) {
+					logs := pullObjectsToLogData(objects, time.Now(), object, kr.setting.BuildInfo.Version)
+					obsCtx := kr.obsrecv.StartLogsOp(ctx)
+					logRecordCount := logs.LogRecordCount()
+					err := kr.consumer.ConsumeLogs(obsCtx, logs)
+					kr.obsrecv.EndLogsOp(obsCtx, metadata.Type.String(), logRecordCount, err)
+				},
+			)
+		case observer.WatchMode:
+			return watchobserver.New(
+				kr.client,
+				obsConf,
+				kr.setting.Logger,
+				func(data *apiWatch.Event) {
+					logs, err := watchObjectsToLogData(data, time.Now(), object, kr.setting.BuildInfo.Version)
+					if err != nil {
+						kr.setting.Logger.Error("error converting objects to log data", zap.Error(err))
+					} else {
+						obsCtx := kr.obsrecv.StartLogsOp(ctx)
+						err := kr.consumer.ConsumeLogs(obsCtx, logs)
+						kr.obsrecv.EndLogsOp(obsCtx, metadata.Type.String(), 1, err)
+					}
+				},
+			)
+		}
+		return nil, fmt.Errorf("invalid observer mode mode: %s", object.Mode)
+	}
 }
 
 func (kr *k8sobjectsreceiver) Start(ctx context.Context, host component.Host) error {
@@ -181,43 +233,17 @@ func (kr *k8sobjectsreceiver) Shutdown(context.Context) error {
 }
 
 func (kr *k8sobjectsreceiver) start(ctx context.Context, object *K8sObjectsConfig) error {
-	obs, err := observer.New(
-		kr.client,
-		observer.Config{
-			ApiConfig:           kr.config.APIConfig,
-			Gvr:                 *object.gvr,
-			Mode:                object.Mode,
-			Namespaces:          object.Namespaces,
-			Interval:            object.Interval,
-			LabelSelector:       object.LabelSelector,
-			FieldSelector:       object.FieldSelector,
-			ResourceVersion:     object.ResourceVersion,
-			IncludeInitialState: kr.config.IncludeInitialState,
-			Exclude:             object.exclude,
-			HandleWatchEventFunc: func(data *apiWatch.Event) {
-				logs, err := watchObjectsToLogData(data, time.Now(), object, kr.setting.BuildInfo.Version)
-				if err != nil {
-					kr.setting.Logger.Error("error converting objects to log data", zap.Error(err))
-				} else {
-					obsCtx := kr.obsrecv.StartLogsOp(ctx)
-					err := kr.consumer.ConsumeLogs(obsCtx, logs)
-					kr.obsrecv.EndLogsOp(obsCtx, metadata.Type.String(), 1, err)
-				}
-			},
-			HandlePullObjectsFunc: func(objects *unstructured.UnstructuredList) {
-				logs := pullObjectsToLogData(objects, time.Now(), object, kr.setting.BuildInfo.Version)
-				obsCtx := kr.obsrecv.StartLogsOp(ctx)
-				logRecordCount := logs.LogRecordCount()
-				err := kr.consumer.ConsumeLogs(obsCtx, logs)
-				kr.obsrecv.EndLogsOp(obsCtx, metadata.Type.String(), logRecordCount, err)
-			},
-		}, kr.setting.Logger)
+	obs, err := kr.observerFunc(ctx, object)
 
 	if err != nil {
 		return err
 	}
 
-	go obs.Start(ctx)
+	stopChan := obs.Start(ctx)
+
+	kr.mu.Lock()
+	kr.stopperChanList = append(kr.stopperChanList, stopChan)
+	kr.mu.Unlock()
 
 	return nil
 }

@@ -1,12 +1,11 @@
-package observer
+package watch
 
 import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/observer"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/wait"
 	apiWatch "k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/tools/cache"
@@ -16,127 +15,52 @@ import (
 
 	"go.uber.org/zap"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
-	"time"
 )
 
-type Mode string
-
-const (
-	PullMode  Mode = "pull"
-	WatchMode Mode = "watch"
-
-	DefaultMode = PullMode
-
-	defaultResourceVersion = "1"
-)
-
-type Config struct {
-	ApiConfig           k8sconfig.APIConfig
-	Gvr                 schema.GroupVersionResource
-	Mode                Mode
-	Namespaces          []string
-	Interval            time.Duration
-	LabelSelector       string
-	FieldSelector       string
-	ResourceVersion     string
-	IncludeInitialState bool
-	Exclude             map[apiWatch.EventType]bool
-
-	HandleWatchEventFunc  func(event *apiWatch.Event)
-	HandlePullObjectsFunc func(objects *unstructured.UnstructuredList)
-}
+const defaultResourceVersion = "1"
 
 type Observer struct {
-	config Config
+	config observer.Config
 
-	client          dynamic.Interface
-	logger          *zap.Logger
-	stopperChanList []chan struct{}
-	mu              sync.Mutex
+	client dynamic.Interface
+	logger *zap.Logger
+	mu     sync.Mutex
+
+	handleWatchEventFunc func(event *apiWatch.Event)
 }
 
-func New(client dynamic.Interface, config Config, logger *zap.Logger) (*Observer, error) {
+func New(client dynamic.Interface, config observer.Config, logger *zap.Logger, handleWatchEventFunc func(event *apiWatch.Event)) (*Observer, error) {
 	o := &Observer{
-		client:          client,
-		config:          config,
-		logger:          logger,
-		stopperChanList: []chan struct{}{},
+		client:               client,
+		config:               config,
+		logger:               logger,
+		handleWatchEventFunc: handleWatchEventFunc,
 	}
 	return o, nil
 }
 
-func (o *Observer) Start(ctx context.Context) {
+func (o *Observer) Start(ctx context.Context) chan struct{} {
 	resource := o.client.Resource(o.config.Gvr)
 	o.logger.Info("Started collecting",
 		zap.Any("gvr", o.config.Gvr),
-		zap.Any("mode", o.config.Mode),
+		zap.Any("mode", "watch"),
 		zap.Any("namespaces", o.config.Namespaces))
 
-	switch o.config.Mode {
-	case PullMode:
-		if len(o.config.Namespaces) == 0 {
-			go o.startPull(ctx, resource)
-		} else {
-			for _, ns := range o.config.Namespaces {
-				go o.startPull(ctx, resource.Namespace(ns))
-			}
-		}
+	stopperChan := make(chan struct{})
 
-	case WatchMode:
-		if len(o.config.Namespaces) == 0 {
-			go o.startWatch(ctx, resource)
-		} else {
-			for _, ns := range o.config.Namespaces {
-				go o.startWatch(ctx, resource.Namespace(ns))
-			}
+	if len(o.config.Namespaces) == 0 {
+		go o.startWatch(ctx, resource, stopperChan)
+	} else {
+		for _, ns := range o.config.Namespaces {
+			go o.startWatch(ctx, resource.Namespace(ns), stopperChan)
 		}
 	}
+
+	return stopperChan
 }
 
-func (o *Observer) startPull(ctx context.Context, resource dynamic.ResourceInterface) {
-	stopperChan := make(chan struct{})
-	o.mu.Lock()
-	o.stopperChanList = append(o.stopperChanList, stopperChan)
-	o.mu.Unlock()
-	ticker := newTicker(ctx, o.config.Interval)
-	listOption := metav1.ListOptions{
-		FieldSelector: o.config.FieldSelector,
-		LabelSelector: o.config.LabelSelector,
-	}
-
-	if o.config.ResourceVersion != "" {
-		listOption.ResourceVersion = o.config.ResourceVersion
-		listOption.ResourceVersionMatch = metav1.ResourceVersionMatchExact
-	}
-
-	defer ticker.Stop()
-	for {
-		select {
-		case <-ticker.C:
-			objects, err := resource.List(ctx, listOption)
-			if err != nil {
-				o.logger.Error("error in pulling object",
-					zap.String("resource", o.config.Gvr.String()),
-					zap.Error(err))
-			} else if len(objects.Items) > 0 {
-				if o.config.HandlePullObjectsFunc != nil {
-					o.config.HandlePullObjectsFunc(objects)
-				}
-			}
-		case <-stopperChan:
-			return
-		}
-	}
-}
-
-func (o *Observer) startWatch(ctx context.Context, resource dynamic.ResourceInterface) {
-	stopperChan := make(chan struct{})
-	o.mu.Lock()
-	o.stopperChanList = append(o.stopperChanList, stopperChan)
-	o.mu.Unlock()
-
+func (o *Observer) startWatch(ctx context.Context, resource dynamic.ResourceInterface, stopperChan chan struct{}) {
 	if o.config.IncludeInitialState {
 		o.sendInitialState(ctx, resource)
 	}
@@ -159,7 +83,7 @@ func (o *Observer) startWatch(ctx context.Context, resource dynamic.ResourceInte
 			return
 		}
 
-		done := o.doWatch(newCtx, resourceVersion, watchFunc, stopperChan)
+		done := o.doWatch(resourceVersion, watchFunc, stopperChan)
 		if done {
 			cancel()
 			return
@@ -202,8 +126,8 @@ func (o *Observer) sendInitialState(ctx context.Context, resource dynamic.Resour
 			Object: &obj,
 		}
 
-		if o.config.HandleWatchEventFunc != nil {
-			o.config.HandleWatchEventFunc(event)
+		if o.handleWatchEventFunc != nil {
+			o.handleWatchEventFunc(event)
 		}
 	}
 
@@ -213,7 +137,7 @@ func (o *Observer) sendInitialState(ctx context.Context, resource dynamic.Resour
 }
 
 // doWatch returns true when watching is done, false when watching should be restarted.
-func (o *Observer) doWatch(ctx context.Context, resourceVersion string, watchFunc func(options metav1.ListOptions) (apiWatch.Interface, error), stopperChan chan struct{}) bool {
+func (o *Observer) doWatch(resourceVersion string, watchFunc func(options metav1.ListOptions) (apiWatch.Interface, error), stopperChan chan struct{}) bool {
 	watcher, err := watch.NewRetryWatcher(resourceVersion, &cache.ListWatch{WatchFunc: watchFunc})
 	if err != nil {
 		o.logger.Error("error in watching object",
@@ -250,8 +174,8 @@ func (o *Observer) doWatch(ctx context.Context, resourceVersion string, watchFun
 				continue
 			}
 
-			if o.config.HandleWatchEventFunc != nil {
-				o.config.HandleWatchEventFunc(&data)
+			if o.handleWatchEventFunc != nil {
+				o.handleWatchEventFunc(&data)
 			}
 
 		case <-stopperChan:
@@ -261,29 +185,7 @@ func (o *Observer) doWatch(ctx context.Context, resourceVersion string, watchFun
 	}
 }
 
-// Start ticking immediately.
-// Ref: https://stackoverflow.com/questions/32705582/how-to-get-time-tick-to-tick-immediately
-func newTicker(ctx context.Context, repeat time.Duration) *time.Ticker {
-	ticker := time.NewTicker(repeat)
-	oc := ticker.C
-	nc := make(chan time.Time, 1)
-	go func() {
-		nc <- time.Now()
-		for {
-			select {
-			case tm := <-oc:
-				nc <- tm
-			case <-ctx.Done():
-				return
-			}
-		}
-	}()
-
-	ticker.C = nc
-	return ticker
-}
-
-func getResourceVersion(ctx context.Context, config Config, resource dynamic.ResourceInterface) (string, error) {
+func getResourceVersion(ctx context.Context, config observer.Config, resource dynamic.ResourceInterface) (string, error) {
 	resourceVersion := config.ResourceVersion
 	if resourceVersion == "" || resourceVersion == "0" {
 		// Proper use of the Kubernetes API Watch capability when no resourceVersion is supplied is to do a list first
