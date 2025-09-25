@@ -89,6 +89,8 @@ func newKubeletScraper(
 	if metricsConfig.Metrics.K8sContainerCPUNodeUtilization.Enabled ||
 		metricsConfig.Metrics.K8sPodCPUNodeUtilization.Enabled ||
 		metricsConfig.Metrics.K8sContainerMemoryNodeUtilization.Enabled ||
+		metricsConfig.ResourceAttributes.K8sNodeAnnotation.Enabled ||
+		metricsConfig.ResourceAttributes.K8sNodeLabel.Enabled ||
 		metricsConfig.Metrics.K8sPodMemoryNodeUtilization.Enabled {
 		ks.nodeInformer = k8sconfig.NewNodeSharedInformer(rOptions.k8sAPIClient, nodeName, 5*time.Minute)
 	}
@@ -117,12 +119,7 @@ func (r *kubeletScraper) scrape(context.Context) (pmetric.Metrics, error) {
 		}
 	}
 
-	var nodeInfo kubelet.NodeInfo
-	if r.nodeInformer != nil {
-		nodeInfo = r.node()
-	}
-
-	metaD := kubelet.NewMetadata(r.extraMetadataLabels, podsMetadata, nodeInfo, r.detailedPVCLabelsSetter())
+	metaD := kubelet.NewMetadata(r.extraMetadataLabels, podsMetadata, r.node(), r.detailedPVCLabelsSetter())
 
 	mds := kubelet.MetricsData(r.logger, summary, metaD, r.metricGroupsToCollect, r.allNetworkInterfaces, r.mbs)
 	md := pmetric.NewMetrics()
@@ -222,4 +219,8 @@ func (r *kubeletScraper) addOrUpdateNode(node *v1.Node) {
 			r.nodeInfo.MemoryCapacity = float64(q.Value())
 		}
 	}
+
+	r.nodeInfo.Name = node.Name
+	r.nodeInfo.Labels = node.Labels
+	r.nodeInfo.Annotations = node.Annotations
 }
