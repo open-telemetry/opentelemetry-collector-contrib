@@ -12,7 +12,7 @@ status:
   codeowners:
     active: [ishleenk17, Mrod1598, pjanotti]
     seeking_new: true
-  unsupported_platforms: [linux, darwin]
+  unsupported_platforms: [linux, darwin, (windows && arm64)]
 
 resource_attributes:
   iis.site:
