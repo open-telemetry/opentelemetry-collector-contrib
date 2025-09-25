@@ -179,7 +179,7 @@ func (t *transaction) Append(_ storage.SeriesRef, ls labels.Labels, atMs int64, 
 		}
 	}
 
-	curMF := t.getOrCreateMetricFamily(*rKey, scope, metricName)
+	curMF := t.getOrCreateMetricFamily(*rKey, scope, metricName, -1)
 
 	seriesRef := t.getSeriesRef(ls, curMF.mtype)
 	err = curMF.addSeries(seriesRef, metricName, ls, atMs, val)
@@ -212,7 +212,7 @@ func (t *transaction) detectAndStoreNativeHistogramStaleness(atMs int64, key *re
 	// Store the staleness marker as a native histogram.
 	t.addingNativeHistogram = true
 
-	curMF := t.getOrCreateMetricFamily(*key, scope, metricName)
+	curMF := t.getOrCreateMetricFamily(*key, scope, metricName, -1)
 	seriesRef := t.getSeriesRef(ls, curMF.mtype)
 
 	_ = curMF.addExponentialHistogramSeries(seriesRef, metricName, ls, atMs, &histogram.Histogram{Sum: math.Float64frombits(value.StaleNaN)}, nil)
@@ -223,7 +223,7 @@ func (t *transaction) detectAndStoreNativeHistogramStaleness(atMs int64, key *re
 
 // getOrCreateMetricFamily returns the metric family for the given metric name and scope,
 // and true if an existing family was found.
-func (t *transaction) getOrCreateMetricFamily(key resourceKey, scope scopeID, mn string) *metricFamily {
+func (t *transaction) getOrCreateMetricFamily(key resourceKey, scope scopeID, mn string, schema int32) *metricFamily {
 	if _, ok := t.families[key]; !ok {
 		t.families[key] = make(map[scopeID]map[metricFamilyKey]*metricFamily)
 	}
@@ -245,7 +245,10 @@ func (t *transaction) getOrCreateMetricFamily(key resourceKey, scope scopeID, mn
 		if !ok || !mf.includesMetric(mn) {
 			curMf = newMetricFamily(mn, t.mc, t.logger)
 			if curMf.mtype == pmetric.MetricTypeHistogram && mfKey.isExponentialHistogram {
-				curMf.mtype = pmetric.MetricTypeExponentialHistogram
+				// Don't convert NHCB to ExponentialHistogram.
+				if schema != -53 {
+					curMf.mtype = pmetric.MetricTypeExponentialHistogram
+				}
 			}
 			t.families[key][scope][metricFamilyKey{isExponentialHistogram: mfKey.isExponentialHistogram, name: curMf.name}] = curMf
 			return curMf
@@ -278,7 +281,7 @@ func (t *transaction) AppendExemplar(_ storage.SeriesRef, l labels.Labels, e exe
 		return 0, errMetricNameNotFound
 	}
 
-	mf := t.getOrCreateMetricFamily(*rKey, getScopeID(l), mn)
+	mf := t.getOrCreateMetricFamily(*rKey, getScopeID(l), mn, -1)
 	mf.addExemplar(t.getSeriesRef(l, mf.mtype), e)
 
 	return 0, nil
@@ -295,6 +298,12 @@ func (t *transaction) AppendHistogram(_ storage.SeriesRef, ls labels.Labels, atM
 	default:
 	}
 
+	var schema int32
+	if h != nil {
+		schema = h.Schema
+	} else if fh != nil {
+		schema = fh.Schema
+	}
 	t.addingNativeHistogram = true
 
 	if t.externalLabels.Len() != 0 {
@@ -326,13 +335,17 @@ func (t *transaction) AppendHistogram(_ storage.SeriesRef, ls labels.Labels, atM
 	// The `up`, `target_info`, `otel_scope_info` metrics should never generate native histograms,
 	// thus we don't check for them here as opposed to the Append function.
 
-	curMF := t.getOrCreateMetricFamily(*rKey, getScopeID(ls), metricName)
+	curMF := t.getOrCreateMetricFamily(*rKey, getScopeID(ls), metricName, schema)
 
 	if h != nil && h.CounterResetHint == histogram.GaugeType || fh != nil && fh.CounterResetHint == histogram.GaugeType {
 		t.logger.Warn("dropping unsupported gauge histogram datapoint", zap.String("metric_name", metricName), zap.Any("labels", ls))
 	}
 
-	err = curMF.addExponentialHistogramSeries(t.getSeriesRef(ls, curMF.mtype), metricName, ls, atMs, h, fh)
+	if schema == -53 {
+		err = curMF.addNHCBSeries(t.getSeriesRef(ls, curMF.mtype), metricName, ls, atMs, h, fh)
+	} else {
+		err = curMF.addExponentialHistogramSeries(t.getSeriesRef(ls, curMF.mtype), metricName, ls, atMs, h, fh)
+	}
 	if err != nil {
 		t.logger.Warn("failed to add histogram datapoint", zap.Error(err), zap.String("metric_name", metricName), zap.Any("labels", ls))
 	}
@@ -383,7 +396,7 @@ func (t *transaction) setCreationTimestamp(ls labels.Labels, atMs, ctMs int64) (
 		return 0, errMetricNameNotFound
 	}
 
-	curMF := t.getOrCreateMetricFamily(*rKey, getScopeID(ls), metricName)
+	curMF := t.getOrCreateMetricFamily(*rKey, getScopeID(ls), metricName, -1)
 
 	seriesRef := t.getSeriesRef(ls, curMF.mtype)
 	curMF.addCreationTimestamp(seriesRef, ls, atMs, ctMs)
