@@ -161,6 +161,31 @@ var instanceQueriesDefault = []*QueryDefinition{
 		MetricName:  "sqlserver.instance.comprehensive_stats",
 		Description: "Comprehensive SQL Server instance statistics",
 	},
+	{
+		Query:       BufferPoolHitPercentMetricsQuery,
+		MetricName:  "sqlserver.instance.buffer_pool.hitPercent",
+		Description: "Buffer pool hit percentage",
+	},
+	{
+		Query:       InstanceProcessCountMetricsQuery,
+		MetricName:  "sqlserver.instance.process_counts",
+		Description: "SQL Server instance process counts",
+	},
+	{
+		Query:       RunnableTasksMetricsQuery,
+		MetricName:  "sqlserver.instance.runnable_tasks",
+		Description: "Number of runnable tasks",
+	},
+	{
+		Query:       InstanceDiskMetricsQuery,
+		MetricName:  "sqlserver.instance.disk_metrics",
+		Description: "SQL Server instance disk metrics",
+	},
+	{
+		Query:       InstanceActiveConnectionsMetricsQuery,
+		MetricName:  "sqlserver.instance.active_connections",
+		Description: "SQL Server instance active connections",
+	},
 }
 
 var instanceQueriesAzureManagedDatabase = []*QueryDefinition{
@@ -168,6 +193,31 @@ var instanceQueriesAzureManagedDatabase = []*QueryDefinition{
 		Query:       InstanceBufferPoolQuery,
 		MetricName:  "sqlserver.instance.buffer_pool_size",
 		Description: "Buffer pool size in bytes",
+	},
+	{
+		Query:       BufferPoolHitPercentMetricsQuery,
+		MetricName:  "sqlserver.instance.buffer_pool.hitPercent",
+		Description: "Buffer pool hit percentage",
+	},
+	{
+		Query:       InstanceProcessCountMetricsQuery,
+		MetricName:  "sqlserver.instance.process_counts",
+		Description: "SQL Server instance process counts",
+	},
+	{
+		Query:       RunnableTasksMetricsQuery,
+		MetricName:  "sqlserver.instance.runnable_tasks",
+		Description: "Number of runnable tasks",
+	},
+	{
+		Query:       InstanceDiskMetricsQuery,
+		MetricName:  "sqlserver.instance.disk_metrics",
+		Description: "SQL Server instance disk metrics",
+	},
+	{
+		Query:       InstanceActiveConnectionsMetricsQuery,
+		MetricName:  "sqlserver.instance.active_connections",
+		Description: "SQL Server instance active connections",
 	},
 }
 
@@ -186,6 +236,31 @@ var instanceQueriesAzureManagedInstance = []*QueryDefinition{
 		Query:       InstanceStatsQuery,
 		MetricName:  "sqlserver.instance.comprehensive_stats",
 		Description: "Comprehensive SQL Server instance statistics",
+	},
+	{
+		Query:       BufferPoolHitPercentMetricsQuery,
+		MetricName:  "sqlserver.instance.buffer_pool.hitPercent",
+		Description: "Buffer pool hit percentage",
+	},
+	{
+		Query:       InstanceProcessCountMetricsQuery,
+		MetricName:  "sqlserver.instance.process_counts",
+		Description: "SQL Server instance process counts",
+	},
+	{
+		Query:       RunnableTasksMetricsQuery,
+		MetricName:  "sqlserver.instance.runnable_tasks",
+		Description: "Number of runnable tasks",
+	},
+	{
+		Query:       InstanceDiskMetricsQuery,
+		MetricName:  "sqlserver.instance.disk_metrics",
+		Description: "SQL Server instance disk metrics",
+	},
+	{
+		Query:       InstanceActiveConnectionsMetricsQuery,
+		MetricName:  "sqlserver.instance.active_connections",
+		Description: "SQL Server instance active connections",
 	},
 }
 
