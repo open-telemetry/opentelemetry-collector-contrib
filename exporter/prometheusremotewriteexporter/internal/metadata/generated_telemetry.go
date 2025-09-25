@@ -75,99 +75,99 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	var err, errs error
 	builder.ExporterPrometheusremotewriteConsumers, err = builder.meter.Int64UpDownCounter(
 		"otelcol_exporter_prometheusremotewrite_consumers",
-		metric.WithDescription("Number of configured workers to use to fan out the outgoing requests"),
+		metric.WithDescription("Number of configured workers to use to fan out the outgoing requests [development]"),
 		metric.WithUnit("{consumer}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterPrometheusremotewriteFailedTranslations, err = builder.meter.Int64Counter(
 		"otelcol_exporter_prometheusremotewrite_failed_translations",
-		metric.WithDescription("Number of translation operations that failed to translate metrics from Otel to Prometheus"),
+		metric.WithDescription("Number of translation operations that failed to translate metrics from Otel to Prometheus [development]"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterPrometheusremotewriteSentBatches, err = builder.meter.Int64Counter(
 		"otelcol_exporter_prometheusremotewrite_sent_batches",
-		metric.WithDescription("Number of remote write request batches sent to the remote write endpoint regardless of success or failure"),
+		metric.WithDescription("Number of remote write request batches sent to the remote write endpoint regardless of success or failure [development]"),
 		metric.WithUnit("{batch}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterPrometheusremotewriteTranslatedTimeSeries, err = builder.meter.Int64Counter(
 		"otelcol_exporter_prometheusremotewrite_translated_time_series",
-		metric.WithDescription("Number of Prometheus time series that were translated from OTel metrics"),
+		metric.WithDescription("Number of Prometheus time series that were translated from OTel metrics [development]"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterPrometheusremotewriteWalBytesRead, err = builder.meter.Int64Counter(
 		"otelcol_exporter_prometheusremotewrite_wal_bytes_read",
-		metric.WithDescription("Total number of bytes read from the WAL"),
+		metric.WithDescription("Total number of bytes read from the WAL [development]"),
 		metric.WithUnit("By"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterPrometheusremotewriteWalBytesWritten, err = builder.meter.Int64Counter(
 		"otelcol_exporter_prometheusremotewrite_wal_bytes_written",
-		metric.WithDescription("Total number of bytes written to the WAL"),
+		metric.WithDescription("Total number of bytes written to the WAL [development]"),
 		metric.WithUnit("By"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterPrometheusremotewriteWalLag, err = builder.meter.Int64Gauge(
 		"otelcol_exporter_prometheusremotewrite_wal_lag",
-		metric.WithDescription("WAL lag"),
+		metric.WithDescription("WAL lag [development]"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterPrometheusremotewriteWalReadLatency, err = builder.meter.Int64Histogram(
 		"otelcol_exporter_prometheusremotewrite_wal_read_latency",
-		metric.WithDescription("Response latency in ms for the WAL reads."),
+		metric.WithDescription("Response latency in ms for the WAL reads. [development]"),
 		metric.WithUnit("ms"),
 		metric.WithExplicitBucketBoundaries([]float64{5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000}...),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterPrometheusremotewriteWalReads, err = builder.meter.Int64Counter(
 		"otelcol_exporter_prometheusremotewrite_wal_reads",
-		metric.WithDescription("Number of WAL reads"),
+		metric.WithDescription("Number of WAL reads [development]"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterPrometheusremotewriteWalReadsFailures, err = builder.meter.Int64Counter(
 		"otelcol_exporter_prometheusremotewrite_wal_reads_failures",
-		metric.WithDescription("Number of WAL reads that failed"),
+		metric.WithDescription("Number of WAL reads that failed [development]"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterPrometheusremotewriteWalWriteLatency, err = builder.meter.Int64Histogram(
 		"otelcol_exporter_prometheusremotewrite_wal_write_latency",
-		metric.WithDescription("Response latency in ms for the WAL writes."),
+		metric.WithDescription("Response latency in ms for the WAL writes. [development]"),
 		metric.WithUnit("ms"),
 		metric.WithExplicitBucketBoundaries([]float64{5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000}...),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterPrometheusremotewriteWalWrites, err = builder.meter.Int64Counter(
 		"otelcol_exporter_prometheusremotewrite_wal_writes",
-		metric.WithDescription("Number of WAL writes"),
+		metric.WithDescription("Number of WAL writes [development]"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterPrometheusremotewriteWalWritesFailures, err = builder.meter.Int64Counter(
 		"otelcol_exporter_prometheusremotewrite_wal_writes_failures",
-		metric.WithDescription("Number of WAL writes that failed"),
+		metric.WithDescription("Number of WAL writes that failed [development]"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterPrometheusremotewriteWrittenExemplars, err = builder.meter.Int64Counter(
 		"otelcol_exporter_prometheusremotewrite_written_exemplars",
-		metric.WithDescription("Number of Prometheus Exemplars that were successfully written to the remote write endpoint (only available when using remote write v2)"),
+		metric.WithDescription("Number of Prometheus Exemplars that were successfully written to the remote write endpoint (only available when using remote write v2) [development]"),
 		metric.WithUnit("{exemplar}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterPrometheusremotewriteWrittenHistograms, err = builder.meter.Int64Counter(
 		"otelcol_exporter_prometheusremotewrite_written_histograms",
-		metric.WithDescription("Number of Prometheus Histograms that were successfully written to the remote write endpoint (only available when using remote write v2)"),
+		metric.WithDescription("Number of Prometheus Histograms that were successfully written to the remote write endpoint (only available when using remote write v2) [development]"),
 		metric.WithUnit("{histogram}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterPrometheusremotewriteWrittenSamples, err = builder.meter.Int64Counter(
 		"otelcol_exporter_prometheusremotewrite_written_samples",
-		metric.WithDescription("Number of Prometheus Samples that were successfully written to the remote write endpoint (only available when using remote write v2)"),
+		metric.WithDescription("Number of Prometheus Samples that were successfully written to the remote write endpoint (only available when using remote write v2) [development]"),
 		metric.WithUnit("{sample}"),
 	)
 	errs = errors.Join(errs, err)
