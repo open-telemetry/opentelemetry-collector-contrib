@@ -465,6 +465,55 @@ func (mf *metricFamily) addExponentialHistogramSeries(seriesRef uint64, metricNa
 	return nil
 }
 
+func (mf *metricFamily) addNHCBSeries(seriesRef uint64, metricName string, ls labels.Labels, t int64, h *histogram.Histogram, fh *histogram.FloatHistogram) error {
+	mg := mf.loadMetricGroupOrCreate(seriesRef, ls, t)
+	if mg.ts != t {
+		return fmt.Errorf("inconsistent timestamps on metric points for metric %v", metricName)
+	}
+	if mg.mtype != pmetric.MetricTypeHistogram {
+		return fmt.Errorf("metric type mismatch for NHCB metric %v type %s", metricName, mg.mtype.String())
+	}
+
+	var bounds []float64
+	var counts []float64
+
+	switch {
+	case h != nil:
+		bounds = h.CustomValues
+		counts = make([]float64, len(h.PositiveBuckets))
+		for i, v := range h.PositiveBuckets {
+			counts[i] = float64(v)
+		}
+		mg.count = float64(h.Count)
+		mg.hasCount = true
+		mg.sum = h.Sum
+		mg.hasSum = true
+	case fh != nil:
+		bounds = fh.CustomValues
+		counts = fh.PositiveBuckets
+		mg.count = fh.Count
+		mg.hasCount = true
+		mg.sum = fh.Sum
+		mg.hasSum = true
+	default:
+		return fmt.Errorf("NHCB metric %v has no histogram data", metricName)
+	}
+
+	if len(bounds) != len(counts) {
+		return fmt.Errorf("NHCB metric %v has mismatched bounds and counts", metricName)
+	}
+
+	cumulative := 0.0
+	for i := range bounds {
+		cumulative += counts[i]
+		mg.complexValue = append(mg.complexValue, &dataPoint{
+			value:    cumulative,
+			boundary: bounds[i],
+		})
+	}
+	return nil
+}
+
 func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice, trimSuffixes bool) {
 	metric := pmetric.NewMetric()
 	// Trims type and unit suffixes from metric name
