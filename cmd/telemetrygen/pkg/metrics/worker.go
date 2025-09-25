@@ -5,6 +5,7 @@ package metrics
 
 import (
 	"context"
+	"fmt"
 	"math/rand/v2"
 	"sync"
 	"sync/atomic"
@@ -18,6 +19,7 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/time/rate"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/util"
 	types "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/pkg"
 )
@@ -36,6 +38,7 @@ type worker struct {
 	logger                 *zap.Logger                  // logger
 	index                  int                          // worker index
 	clock                  Clock                        // clock
+	loadSize               int                          // desired minimum size in MB of string data for each generated metric
 	allowFailures          bool                         // whether to continue on export failures
 	rand                   *rand.Rand                   // random number generator for exponential histogram generation
 }
@@ -100,6 +103,14 @@ func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Expor
 		if w.enforceUnique {
 			signalAttrs = append(signalAttrs, tb.getAttribute())
 		}
+
+		// Add load size attributes if specified
+		loadAttrs := signalAttrs
+		if w.loadSize > 0 {
+			for j := 0; j < w.loadSize; j++ {
+				loadAttrs = append(loadAttrs, common.CreateLoadAttribute(fmt.Sprintf("load-%v", j), 1))
+			}
+		}
 		var metrics []metricdata.Metrics
 		now := w.clock.Now()
 		if w.aggregationTemporality.AsTemporality() == metricdata.DeltaTemporality {
@@ -115,7 +126,7 @@ func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Expor
 						{
 							Time:       now,
 							Value:      i,
-							Attributes: attribute.NewSet(signalAttrs...),
+							Attributes: attribute.NewSet(loadAttrs...),
 							Exemplars:  w.exemplars,
 						},
 					},
@@ -132,7 +143,7 @@ func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Expor
 							StartTime:  startTime,
 							Time:       now,
 							Value:      i,
-							Attributes: attribute.NewSet(signalAttrs...),
+							Attributes: attribute.NewSet(loadAttrs...),
 							Exemplars:  w.exemplars,
 						},
 					},
@@ -154,7 +165,7 @@ func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Expor
 						{
 							StartTime:  startTime,
 							Time:       now,
-							Attributes: attribute.NewSet(signalAttrs...),
+							Attributes: attribute.NewSet(loadAttrs...),
 							Exemplars:  w.exemplars,
 							Count:      totalCount,
 							Sum:        sum,

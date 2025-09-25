@@ -34,7 +34,7 @@ jobs:
         with:
           # Fetch complete history depth only if the PR is not a chore.
           fetch-depth: ${{ !contains(github.event.pull_request.labels.*.name, 'dependencies') && !contains(github.event.pull_request.labels.*.name, 'Skip Changelog') && !contains(github.event.pull_request.title, '[chore]') && '0' || '1' }}
-      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
+      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
         with:
           go-version: oldstable
           cache-dependency-path: "**/*.sum"

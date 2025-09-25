@@ -238,7 +238,7 @@ func TestConsumerShutdownNotStarted(t *testing.T) {
 	c, err := newFranzKafkaConsumer(cfg, settings, []string{"test"}, nil)
 	require.NoError(t, err)
 
-	for i := 0; i < 2; i++ {
+	for range 2 {
 		require.EqualError(t, c.Shutdown(t.Context()),
 			"kafka consumer: consumer isn't running")
 	}
@@ -262,7 +262,7 @@ func TestRaceLostVsConsume(t *testing.T) {
 
 	// Produce records.
 	var rs []*kgo.Record
-	for i := 0; i < 500; i++ {
+	for range 500 {
 		traces := testdata.GenerateTraces(5)
 		data, err := (&ptrace.ProtoMarshaler{}).MarshalTraces(traces)
 		require.NoError(t, err)
@@ -287,7 +287,7 @@ func TestRaceLostVsConsume(t *testing.T) {
 	go func() {
 		defer close(done)
 		topicMap := map[string][]int32{topic: {0}}
-		for i := 0; i < 2000; i++ {
+		for range 2000 {
 			c.lost(t.Context(), nil, topicMap, false)
 			c.assigned(t.Context(), kafkaClient, topicMap)
 			c.client.ForceRebalance()
@@ -323,4 +323,67 @@ func TestLost(t *testing.T) {
 
 	// Call lost for a topic and partition that was not assigned
 	c.lost(t.Context(), nil, map[string][]int32{"404": {0}}, true)
+}
+
+func TestFranzConsumer_UseLeaderEpoch_Smoke(t *testing.T) {
+	setFranzGo(t, true)
+
+	topic := "otlp_spans"
+	kafkaClient, cfg := mustNewFakeCluster(t, kfake.SeedTopics(1, topic))
+	cfg.UseLeaderEpoch = false // <-- exercise the option
+	cfg.ConsumerConfig = configkafka.ConsumerConfig{
+		GroupID:    t.Name(),
+		AutoCommit: configkafka.AutoCommitConfig{Enable: true, Interval: 100 * time.Millisecond},
+	}
+
+	var called atomic.Int64
+	settings, _, _ := mustNewSettings(t)
+	consumeFn := func(component.Host, *receiverhelper.ObsReport, *metadata.TelemetryBuilder) (consumeMessageFunc, error) {
+		return func(_ context.Context, _ kafkaMessage, _ attribute.Set) error {
+			called.Add(1)
+			return nil
+		}, nil
+	}
+
+	// produce a couple of records
+	traces := testdata.GenerateTraces(5)
+	data, err := (&ptrace.ProtoMarshaler{}).MarshalTraces(traces)
+	require.NoError(t, err)
+	rs := []*kgo.Record{
+		{Topic: topic, Value: data},
+		{Topic: topic, Value: data},
+	}
+
+	c, err := newFranzKafkaConsumer(cfg, settings, []string{topic}, consumeFn)
+	require.NoError(t, err)
+	require.NoError(t, c.Start(t.Context(), componenttest.NewNopHost()))
+	require.NoError(t, kafkaClient.ProduceSync(t.Context(), rs...).FirstErr())
+
+	// wait briefly for consumption
+	deadline := time.After(2 * time.Second)
+	for called.Load() < 2 {
+		select {
+		case <-deadline:
+			t.Fatalf("expected to consume 2 records, got %d", called.Load())
+		case <-time.After(25 * time.Millisecond):
+		}
+	}
+
+	require.NoError(t, c.Shutdown(t.Context()))
+}
+
+func TestMakeUseLeaderEpochAdjuster_ClearsEpoch(t *testing.T) {
+	adj := makeClearLeaderEpochAdjuster()
+
+	input := map[string]map[int32]kgo.Offset{
+		"t": {
+			0: kgo.NewOffset().At(42).WithEpoch(7),
+			1: kgo.NewOffset().At(100), // no epoch set
+		},
+	}
+	out, err := adj(t.Context(), input)
+	require.NoError(t, err)
+
+	require.Equal(t, kgo.NewOffset().At(42).WithEpoch(-1), out["t"][0])
+	require.Equal(t, kgo.NewOffset().At(100).WithEpoch(-1), out["t"][1])
 }

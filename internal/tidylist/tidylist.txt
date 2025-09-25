@@ -225,6 +225,7 @@ processor/resourceprocessor
 processor/schemaprocessor
 processor/spanprocessor
 processor/sumologicprocessor
+processor/unrollprocessor
 receiver/activedirectorydsreceiver
 receiver/aerospikereceiver
 receiver/apachereceiver

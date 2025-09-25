@@ -165,11 +165,7 @@ func (c *franzConsumer) Start(ctx context.Context, host component.Host) error {
 	}
 
 	// Create franz-go consumer client
-	client, err := kafka.NewFranzConsumerGroup(ctx,
-		c.config.ClientConfig,
-		c.config.ConsumerConfig,
-		c.topics,
-		c.settings.Logger,
+	opts := []kgo.Opt{
 		kgo.OnPartitionsAssigned(c.assigned),
 		kgo.OnPartitionsRevoked(func(ctx context.Context, _ *kgo.Client, m map[string][]int32) {
 			c.lost(ctx, c.client, m, false)
@@ -178,6 +174,20 @@ func (c *franzConsumer) Start(ctx context.Context, host component.Host) error {
 			c.lost(ctx, c.client, m, true)
 		}),
 		kgo.WithHooks(hooks),
+	}
+
+	if !c.config.UseLeaderEpoch {
+		opts = append(opts, kgo.AdjustFetchOffsetsFn(makeClearLeaderEpochAdjuster()))
+	}
+
+	// Create franz-go consumer client
+	client, err := kafka.NewFranzConsumerGroup(
+		ctx,
+		c.config.ClientConfig,
+		c.config.ConsumerConfig,
+		c.topics,
+		c.settings.Logger,
+		opts...,
 	)
 	if err != nil {
 		return err
@@ -654,5 +664,16 @@ func compressionFromCodec(c uint8) string {
 		return "zstd"
 	default:
 		return "unknown"
+	}
+}
+
+func makeClearLeaderEpochAdjuster() func(context.Context, map[string]map[int32]kgo.Offset) (map[string]map[int32]kgo.Offset, error) {
+	return func(_ context.Context, topics map[string]map[int32]kgo.Offset) (map[string]map[int32]kgo.Offset, error) {
+		for _, parts := range topics {
+			for p, off := range parts {
+				parts[p] = off.WithEpoch(-1)
+			}
+		}
+		return topics, nil
 	}
 }

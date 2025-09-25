@@ -52,7 +52,8 @@ func TestClientConfig(t *testing.T) {
 						Backoff: 5 * time.Second,
 					},
 				},
-				RackID: "rack1",
+				RackID:         "rack1",
+				UseLeaderEpoch: true,
 			},
 		},
 		"sasl_aws_msk_iam_oauthbearer": {
@@ -108,6 +109,13 @@ func TestClientConfig(t *testing.T) {
 					Username: "abc",
 					Password: "def",
 				}
+				return cfg
+			}(),
+		},
+		"not_use_leader_epoch": {
+			expected: func() ClientConfig {
+				cfg := NewDefaultClientConfig()
+				cfg.UseLeaderEpoch = false
 				return cfg
 			}(),
 		},

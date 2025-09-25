@@ -78,6 +78,7 @@ func matchedHistogramMetrics(ilm pmetric.ScopeMetrics) (matchedMetricsIdx []int)
 
 // GetHistograms returns new Metrics slice containing only Histogram metrics found in the input
 // and the count of histogram metrics
+// This function also adds the host ID attribute to the resource if it can be derived from the resource attributes
 func GetHistograms(md pmetric.Metrics) (pmetric.Metrics, int) {
 	matchedMetricsIdxes := matchedHistogramResourceMetrics(md)
 	matchedRmCount := len(matchedMetricsIdxes)
@@ -95,6 +96,9 @@ func GetHistograms(md pmetric.Metrics) (pmetric.Metrics, int) {
 	for rmIdx, ilmMap := range matchedMetricsIdxes {
 		srcRm := srcRms.At(rmIdx)
 
+		if hostID, ok := splunk.ResourceToHostID(srcRm.Resource()); ok && hostID.Key != splunk.HostIDKeyHost {
+			srcRm.Resource().Attributes().PutStr(string(hostID.Key), hostID.ID)
+		}
 		// Copy resource metric properties to dest
 		destRm := dstRms.AppendEmpty()
 		srcRm.Resource().CopyTo(destRm.Resource())
