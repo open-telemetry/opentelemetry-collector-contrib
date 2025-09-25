@@ -152,8 +152,8 @@ func (s *stefExporter) sendMetricsAsync(
 	md := data.(pmetric.Metrics)
 
 	// Convert and write the data to the Writer.
-	converter := stefpdatametrics.OtlpToSTEFUnsorted{}
-	err = converter.WriteMetrics(md, stefWriter)
+	converter := stefpdatametrics.OtlpToStefUnsorted{}
+	err = converter.Convert(md, stefWriter)
 	if err != nil {
 		s.set.Logger.Debug("WriteMetrics failed", zap.Error(err))
 
