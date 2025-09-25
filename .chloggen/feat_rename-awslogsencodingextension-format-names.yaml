@@ -7,7 +7,7 @@ change_type: enhancement
 component: awslogsencodingextension
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Rename awslogsencodingextension format values to shorter, more concise identifiers. Old format values are still supported.
+note: Rename awslogsencodingextension format values to shorter, more concise identifiers. Old format values are still supported until v0.138.0.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [42899]
