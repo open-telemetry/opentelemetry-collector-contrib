@@ -10,9 +10,10 @@ require (
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.18.0
 	github.com/aws/aws-sdk-go-v2/service/ec2 v1.237.0
 	github.com/cenkalti/backoff/v5 v5.0.3
+	github.com/digitalocean/go-metadata v0.0.0-20250129100319-e3650a3df44b
 	github.com/google/go-cmp v0.7.0
 	github.com/hashicorp/consul/api v1.32.1
-	github.com/hetznercloud/hcloud-go/v2 v2.23.0
+	github.com/hetznercloud/hcloud-go/v2 v2.24.0
 	github.com/linode/go-metadata v0.2.2
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.136.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.136.0

@@ -72,6 +72,8 @@ github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSs
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc h1:U9qPSI2PIWSS1VwoXQT9A3Wy9MM3WgvqSxFWenqJduM=
 github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
+github.com/digitalocean/go-metadata v0.0.0-20250129100319-e3650a3df44b h1:2EkxDInMJ3ii8mk8kZs0Qq75JpsvNOOoa5etBJluzbI=
+github.com/digitalocean/go-metadata v0.0.0-20250129100319-e3650a3df44b/go.mod h1:lNrzMwI4fx6xfzieyLEpYIJPLWjT/Sak4G/hIzGTEL4=
 github.com/distribution/reference v0.6.0 h1:0IXCQ5g4/QMHHkarYzh5l+u8T3t73zM5QvfrDyIgxBk=
 github.com/distribution/reference v0.6.0/go.mod h1:BbU0aIcezP1/5jX/8MP0YiH4SdvB5Y4f/wlDRiLyi3E=
 github.com/dnaeon/go-vcr v1.2.0 h1:zHCHvJYTMh1N7xnV7zf1m1GPBF9Ad0Jk/whtQ1663qI=
@@ -207,8 +209,8 @@ github.com/hashicorp/memberlist v0.5.0 h1:EtYPN8DpAURiapus508I4n9CzHs2W+8NZGbmmR
 github.com/hashicorp/memberlist v0.5.0/go.mod h1:yvyXLpo0QaGE59Y7hDTsTzDD25JYBZ4mHgHUZ8lrOI0=
 github.com/hashicorp/serf v0.10.1 h1:Z1H2J60yRKvfDYAOZLd2MU0ND4AH/WDz7xYHDWQsIPY=
 github.com/hashicorp/serf v0.10.1/go.mod h1:yL2t6BqATOLGc5HF7qbFkTfXoPIY0WZdWHfEvMqbG+4=
-github.com/hetznercloud/hcloud-go/v2 v2.23.0 h1:cx4t0loUz/Xo70N4IvMX5se0WvHoUrHGibyHkreEvws=
-github.com/hetznercloud/hcloud-go/v2 v2.23.0/go.mod h1:ERaDt5CFz2Y5J0oimN3XfMe98cJIggqfG6pmo2BlPv4=
+github.com/hetznercloud/hcloud-go/v2 v2.24.0 h1:57YlEQOc9QperCGck+iX4MqCrwEsznEdK7bPrsdAgOQ=
+github.com/hetznercloud/hcloud-go/v2 v2.24.0/go.mod h1:uQdAWaW3d9TimiyOjQWY8HKShs0Nd6S4wNYqo0HjvIY=
 github.com/jarcoal/httpmock v1.4.0 h1:BvhqnH0JAYbNudL2GMJKgOHe2CtKlzJ/5rWKyp+hc2k=
 github.com/jarcoal/httpmock v1.4.0/go.mod h1:ftW1xULwo+j0R0JJkJIIi7UKigZUXCLLanykgjwBXL0=
 github.com/josharian/intern v1.0.0 h1:vlS4z54oSdjm0bgjRigI+G1HpF+tI+9rE5LLzOg8HmY=
