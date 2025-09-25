@@ -5,6 +5,7 @@ package kube
 
 import (
 	"errors"
+	"maps"
 	"regexp"
 	"testing"
 	"time"
@@ -18,6 +19,7 @@ import (
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 	apps_v1 "k8s.io/api/apps/v1"
+	batch_v1 "k8s.io/api/batch/v1"
 	api_v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -1081,12 +1083,8 @@ func TestExtractionRules(t *testing.T) {
 			// manually call the data removal functions here
 			// normally the informer does this, but fully emulating the informer in this test is annoying
 			podCopy := pod.DeepCopy()
-			for k, v := range tc.additionalAnnotations {
-				podCopy.Annotations[k] = v
-			}
-			for k, v := range tc.additionalLabels {
-				podCopy.Labels[k] = v
-			}
+			maps.Copy(podCopy.Annotations, tc.additionalAnnotations)
+			maps.Copy(podCopy.Labels, tc.additionalLabels)
 			transformedPod := removeUnnecessaryPodData(podCopy, c.Rules)
 			transformedReplicaset := removeUnnecessaryReplicaSetData(replicaset)
 			c.handleReplicaSetAdd(transformedReplicaset)
@@ -1804,6 +1802,102 @@ func TestDaemonSetExtractionRules(t *testing.T) {
 			c.Rules = tc.rules
 			c.handleDaemonSetAdd(daemonset)
 			n, ok := c.GetDaemonSet(string(daemonset.UID))
+			require.True(t, ok)
+
+			assert.Len(t, tc.attributes, len(n.Attributes))
+			for k, v := range tc.attributes {
+				got, ok := n.Attributes[k]
+				assert.True(t, ok)
+				assert.Equal(t, v, got)
+			}
+		})
+	}
+}
+
+func TestJobExtractionRules(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+
+	job := &batch_v1.Job{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:              "k8s-node-example",
+			UID:               "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+			CreationTimestamp: meta_v1.Now(),
+			Labels: map[string]string{
+				"label1": "lv1",
+			},
+			Annotations: map[string]string{
+				"annotation1": "av1",
+			},
+		},
+	}
+
+	testCases := []struct {
+		name       string
+		rules      ExtractionRules
+		attributes map[string]string
+	}{
+		{
+			name:       "no-rules",
+			rules:      ExtractionRules{},
+			attributes: nil,
+		},
+		{
+			name: "labels and annotations",
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						Name: "a1",
+						Key:  "annotation1",
+						From: MetadataFromJob,
+					},
+				},
+				Labels: []FieldExtractionRule{
+					{
+						Name: "l1",
+						Key:  "label1",
+						From: MetadataFromJob,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"l1": "lv1",
+				"a1": "av1",
+			},
+		},
+		{
+			name: "all-labels",
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						KeyRegex: regexp.MustCompile("^(?:la.*)$"),
+						From:     MetadataFromJob,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.job.label.label1": "lv1",
+			},
+		},
+		{
+			name: "all-annotations",
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						KeyRegex: regexp.MustCompile("^(?:an.*)$"),
+						From:     MetadataFromJob,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.job.annotation.annotation1": "av1",
+			},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			c.Rules = tc.rules
+			c.handleJobAdd(job)
+			n, ok := c.GetJob(string(job.UID))
 			require.True(t, ok)
 
 			assert.Len(t, tc.attributes, len(n.Attributes))
@@ -2676,6 +2770,70 @@ func TestExtractDaemonSetLabelsAnnotations(t *testing.T) {
 	}
 }
 
+func TestExtractJobLabelsAnnotations(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+	testCases := []struct {
+		name             string
+		shouldExtractJob bool
+		rules            ExtractionRules
+	}{
+		{
+			name:             "empty-rules",
+			shouldExtractJob: false,
+			rules:            ExtractionRules{},
+		}, {
+			name:             "pod-rules",
+			shouldExtractJob: false,
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						Name: "a1",
+						Key:  "annotation1",
+						From: MetadataFromPod,
+					},
+				},
+				Labels: []FieldExtractionRule{
+					{
+						Name: "l1",
+						Key:  "label1",
+						From: MetadataFromPod,
+					},
+				},
+			},
+		}, {
+			name:             "job-rules-only-annotations",
+			shouldExtractJob: true,
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						Name: "a1",
+						Key:  "annotation1",
+						From: MetadataFromJob,
+					},
+				},
+			},
+		}, {
+			name:             "job-rules-only-labels",
+			shouldExtractJob: true,
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						Name: "l1",
+						Key:  "label1",
+						From: MetadataFromJob,
+					},
+				},
+			},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			c.Rules = tc.rules
+			assert.Equal(t, tc.shouldExtractJob, c.extractJobLabelsAnnotations())
+		})
+	}
+}
+
 func newTestClientWithRulesAndFilters(t *testing.T, f Filters) (*WatchClient, *observer.ObservedLogs) {
 	set := componenttest.NewNopTelemetrySettings()
 	observedLogger, logs := observer.New(zapcore.WarnLevel)
@@ -2965,6 +3123,200 @@ func TestGetIdentifiersFromAssoc(t *testing.T) {
 			wc.Associations = tc.associations
 			actual := wc.getIdentifiersFromAssoc(tc.pod)
 			assert.ElementsMatch(t, tc.expected, actual)
+		})
+	}
+}
+
+func TestCronJobExtractionRules_FromJobOwner(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+	// Disable saving ip into k8s.pod.ip so attributes length assertions stay predictable
+	c.Associations[0].Sources[0].Name = ""
+
+	// Pod owned by a Job
+	pod := &api_v1.Pod{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:              "my-cronjob-27667920-pod",
+			UID:               "pod-uid-1",
+			Namespace:         "ns1",
+			CreationTimestamp: meta_v1.Now(),
+			OwnerReferences: []meta_v1.OwnerReference{
+				{
+					APIVersion: "batch/v1",
+					Kind:       "Job",
+					Name:       "my-cronjob-27667920",
+					UID:        "job-uid-123",
+				},
+			},
+		},
+		Spec: api_v1.PodSpec{
+			NodeName: "node1",
+		},
+		Status: api_v1.PodStatus{
+			PodIP: "1.1.1.1",
+		},
+	}
+
+	// The Job object the pod points to (we'll mutate OwnerReferences per test case)
+	job := &batch_v1.Job{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      "my-cronjob-27667920",
+			Namespace: "ns1",
+			UID:       "job-uid-123",
+		},
+	}
+
+	isController := true
+	isNotController := false
+
+	testCases := []struct {
+		name      string
+		rules     ExtractionRules
+		jobOwners []meta_v1.OwnerReference
+		want      map[string]string
+	}{
+		{
+			name:  "no-rules",
+			rules: ExtractionRules{},
+			jobOwners: []meta_v1.OwnerReference{
+				{
+					APIVersion: "batch/v1",
+					Kind:       "CronJob",
+					Name:       "my-cronjob",
+					UID:        "cron-uid-999",
+					Controller: &isController,
+				},
+			},
+			want: map[string]string{},
+		},
+		{
+			name: "cronjob-is-controller_emit_uid_only",
+			rules: ExtractionRules{
+				CronJobUID: true,
+			},
+			jobOwners: []meta_v1.OwnerReference{
+				{
+					APIVersion: "batch/v1",
+					Kind:       "CronJob",
+					Name:       "my-cronjob",
+					UID:        "cron-uid-999",
+					Controller: &isController,
+				},
+			},
+			want: map[string]string{
+				"k8s.cronjob.uid": "cron-uid-999",
+			},
+		},
+		{
+			name: "cronjob-is-controller_emit_name_and_uid",
+			rules: ExtractionRules{
+				CronJobName: true,
+				CronJobUID:  true,
+			},
+			jobOwners: []meta_v1.OwnerReference{
+				{
+					APIVersion: "batch/v1",
+					Kind:       "CronJob",
+					Name:       "my-cronjob",
+					UID:        "cron-uid-999",
+					Controller: &isController,
+				},
+			},
+			want: map[string]string{
+				"k8s.cronjob.name": "my-cronjob",
+				"k8s.cronjob.uid":  "cron-uid-999",
+			},
+		},
+		{
+			name: "cronjob-is-not-controller_do_not_emit",
+			rules: ExtractionRules{
+				CronJobName: true,
+				CronJobUID:  true,
+			},
+			jobOwners: []meta_v1.OwnerReference{
+				{
+					APIVersion: "batch/v1",
+					Kind:       "CronJob",
+					Name:       "my-cronjob",
+					UID:        "cron-uid-999",
+					Controller: &isNotController,
+				},
+			},
+			want: map[string]string{
+				"k8s.cronjob.name": "my-cronjob",
+			},
+		},
+		{
+			name: "multiple_owners_only_controller_counts",
+			rules: ExtractionRules{
+				CronJobName: true,
+				CronJobUID:  true,
+			},
+			jobOwners: []meta_v1.OwnerReference{
+				{
+					APIVersion: "batch/v1",
+					Kind:       "CronJob",
+					Name:       "cj-not-controller",
+					UID:        "cron-uid-111",
+					Controller: &isNotController,
+				},
+				{
+					APIVersion: "batch/v1",
+					Kind:       "CronJob",
+					Name:       "cj-controller",
+					UID:        "cron-uid-222",
+					Controller: &isController,
+				},
+			},
+			want: map[string]string{
+				"k8s.cronjob.name": "my-cronjob",
+				"k8s.cronjob.uid":  "cron-uid-222",
+			},
+		},
+		{
+			name: "no_cronjob_owner",
+			rules: ExtractionRules{
+				CronJobName: true,
+				CronJobUID:  true,
+			},
+			jobOwners: []meta_v1.OwnerReference{
+				{
+					APIVersion: "batch/v1",
+					Kind:       "SomethingElse",
+					Name:       "not-a-cronjob",
+					UID:        "whatever",
+					Controller: &isController,
+				},
+			},
+			want: map[string]string{
+				"k8s.cronjob.name": "my-cronjob",
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			c.Rules = tc.rules
+
+			// Set owners on Job according to case
+			job.OwnerReferences = tc.jobOwners
+
+			// Emulate informer transforms (like other tests do)
+			transformedPod := removeUnnecessaryPodData(pod, c.Rules)
+
+			// Feed caches
+			c.handleJobAdd(job)
+			c.handlePodAdd(transformedPod)
+
+			// Fetch enriched pod by connection id
+			p, ok := c.GetPod(newPodIdentifier("connection", "", pod.Status.PodIP))
+			require.True(t, ok)
+
+			assert.Len(t, p.Attributes, len(tc.want))
+			for k, v := range tc.want {
+				got, ok := p.Attributes[k]
+				assert.True(t, ok, "expected attribute %s", k)
+				assert.Equal(t, v, got)
+			}
 		})
 	}
 }

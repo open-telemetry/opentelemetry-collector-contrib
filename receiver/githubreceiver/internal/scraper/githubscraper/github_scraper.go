@@ -119,7 +119,7 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 			// SetStartTimestamp call from having a nil pointer panic
 			mux.Lock()
 
-			refType := metadata.AttributeVcsRefHeadTypeBranch
+			refType := metadata.AttributeVcsRefTypeBranch
 			ghs.mb.RecordVcsRefCountDataPoint(now, int64(count), url, name, refType)
 
 			// Iterate through the refs (branches) populating the Branch focused
@@ -133,11 +133,13 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 					continue
 				}
 
+				headRefType := metadata.AttributeVcsRefHeadTypeBranch
+
 				// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/githubreceiver/internal/scraper/githubscraper/README.md#github-limitations
 				// for more information as to why `BehindBy` and `AheadBy` are
 				// swapped.
-				ghs.mb.RecordVcsRefRevisionsDeltaDataPoint(now, int64(branch.Compare.BehindBy), url, branch.Repository.Name, branch.Name, refType, metadata.AttributeVcsRevisionDeltaDirectionAhead)
-				ghs.mb.RecordVcsRefRevisionsDeltaDataPoint(now, int64(branch.Compare.AheadBy), url, branch.Repository.Name, branch.Name, refType, metadata.AttributeVcsRevisionDeltaDirectionBehind)
+				ghs.mb.RecordVcsRefRevisionsDeltaDataPoint(now, int64(branch.Compare.BehindBy), url, branch.Repository.Name, branch.Name, headRefType, trunk, metadata.AttributeVcsRefBaseTypeBranch, metadata.AttributeVcsRevisionDeltaDirectionAhead)
+				ghs.mb.RecordVcsRefRevisionsDeltaDataPoint(now, int64(branch.Compare.AheadBy), url, branch.Repository.Name, branch.Name, headRefType, trunk, metadata.AttributeVcsRefBaseTypeBranch, metadata.AttributeVcsRevisionDeltaDirectionBehind)
 
 				var additions int
 				var deletions int
@@ -149,9 +151,9 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 					continue
 				}
 
-				ghs.mb.RecordVcsRefTimeDataPoint(now, age, url, branch.Repository.Name, branch.Name, refType)
-				ghs.mb.RecordVcsRefLinesDeltaDataPoint(now, int64(additions), url, branch.Repository.Name, branch.Name, refType, metadata.AttributeVcsLineChangeTypeAdded)
-				ghs.mb.RecordVcsRefLinesDeltaDataPoint(now, int64(deletions), url, branch.Repository.Name, branch.Name, refType, metadata.AttributeVcsLineChangeTypeRemoved)
+				ghs.mb.RecordVcsRefTimeDataPoint(now, age, url, branch.Repository.Name, branch.Name, headRefType)
+				ghs.mb.RecordVcsRefLinesDeltaDataPoint(now, int64(additions), url, branch.Repository.Name, branch.Name, headRefType, trunk, metadata.AttributeVcsRefBaseTypeBranch, metadata.AttributeVcsLineChangeTypeAdded)
+				ghs.mb.RecordVcsRefLinesDeltaDataPoint(now, int64(deletions), url, branch.Repository.Name, branch.Name, headRefType, trunk, metadata.AttributeVcsRefBaseTypeBranch, metadata.AttributeVcsLineChangeTypeRemoved)
 			}
 
 			// Get the contributor count for each of the repositories
@@ -170,7 +172,8 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 			var merged int
 			var open int
 
-			for _, pr := range prs {
+			for i := range prs {
+				pr := &prs[i]
 				if pr.Merged {
 					merged++
 
@@ -201,8 +204,8 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	wg.Wait()
 
 	// Set the resource attributes and emit metrics with those resources
-	ghs.rb.SetVcsVendorName("github")
-	ghs.rb.SetOrganizationName(ghs.cfg.GitHubOrg)
+	ghs.rb.SetVcsProviderName("github")
+	ghs.rb.SetVcsOwnerName(ghs.cfg.GitHubOrg)
 
 	res := ghs.rb.Emit()
 	return ghs.mb.Emit(metadata.WithResource(res)), nil

@@ -565,10 +565,11 @@ To better understand _which_ sampling policy made the decision to include a trac
 
 When this feature gate is set, this will add additional attributes on each sampled span:
 
-| Attribute                       | Description                                                               | Present?                   |
-|---------------------------------|---------------------------------------------------------------------------|----------------------------|
-| `tailsampling.policy`           | Records the configured name of the policy that sampled a trace            | Always                     |
-| `tailsampling.composite_policy` | Records the configured name of a composite subpolicy that sampled a trace | When composite policy used |
+| Attribute                       | Description                                                               | Present?                                               |
+|---------------------------------|---------------------------------------------------------------------------|--------------------------------------------------------|
+| `tailsampling.policy`           | Records the configured name of the policy that sampled a trace            | Always, unless trace was sampled by the decision cache |
+| `tailsampling.composite_policy` | Records the configured name of a composite subpolicy that sampled a trace | When composite policy used                             |
+| `tailsampling.cached_decision`  | Records whether a trace was sampled by the decision cache                 | When decision cache used                               |
 
 ### Disable invert decisions
 
