@@ -7,6 +7,12 @@ SHELL = /bin/bash
 
 # SRC_ROOT is the top of the source tree.
 SRC_ROOT := $(shell git rev-parse --show-toplevel)
+ifeq ($(OS),Windows_NT)
+	# The path format of SRC_ROOT is not understood by some tools like "go generate" on Windows, normalize the PATH to avoid issues.
+	SRC_ROOT := $(shell cygpath -u "$(SRC_ROOT)")
+	# Although make with mingw64 is able to launch tools without the ".exe" extension "go generate" is not, add the extension.
+	EXTENSION := .exe
+endif
 # SRC_PARENT_DIR is the absolute path of source tree's parent directory
 SRC_PARENT_DIR := $(shell dirname $(SRC_ROOT))
 
@@ -55,8 +61,10 @@ install-tools: $(TOOLS_BIN_NAMES)
 $(TOOLS_BIN_DIR):
 	mkdir -p $@
 
+$(TOOLS_MOD_DIR)/go.mod:
+
 $(TOOLS_BIN_NAMES): $(TOOLS_BIN_DIR) $(TOOLS_MOD_DIR)/go.mod
-	cd $(TOOLS_MOD_DIR) && GOOS="" GOARCH="" $(GOCMD) build -o $@ -trimpath $(filter %/$(notdir $@),$(TOOLS_PKG_NAMES))
+	cd $(TOOLS_MOD_DIR) && GOOS="" GOARCH="" $(GOCMD) build -o $@$(EXTENSION) -trimpath $(filter %/$(notdir $@),$(TOOLS_PKG_NAMES))
 
 ACTIONLINT          := $(TOOLS_BIN_DIR)/actionlint
 ADDLICENSE          := $(TOOLS_BIN_DIR)/addlicense
