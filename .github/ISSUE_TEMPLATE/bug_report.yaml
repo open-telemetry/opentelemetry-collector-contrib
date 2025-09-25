@@ -222,6 +222,7 @@ body:
       - processor/sumologic
       - processor/tailsampling
       - processor/transform
+      - processor/unroll
       - receiver/activedirectoryds
       - receiver/aerospike
       - receiver/apache

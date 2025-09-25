@@ -199,6 +199,7 @@ processor/spanprocessor processor/span
 processor/sumologicprocessor processor/sumologic
 processor/tailsamplingprocessor processor/tailsampling
 processor/transformprocessor processor/transform
+processor/unrollprocessor processor/unroll
 receiver/activedirectorydsreceiver receiver/activedirectoryds
 receiver/aerospikereceiver receiver/aerospike
 receiver/apachereceiver receiver/apache
