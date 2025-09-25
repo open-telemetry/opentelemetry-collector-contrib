@@ -137,9 +137,6 @@ resourceLogs:
                                                         stringValue: stopped
                                       - kvlistValue:
                                           values:
-                                            - key: instanceId
-                                              value:
-                                                stringValue: i-EXAMPLE56126103cb
                                             - key: currentState
                                               value:
                                                 kvlistValue:
@@ -160,6 +157,9 @@ resourceLogs:
                                                     - key: name
                                                       value:
                                                         stringValue: stopped
+                                            - key: instanceId
+                                              value:
+                                                stringValue: i-EXAMPLE56126103cb
             body: {}
             timeUnixNano: "1689801448000000000"
           - attributes:
@@ -238,6 +238,9 @@ resourceLogs:
                         value:
                           kvlistValue:
                             values:
+                              - key: path
+                                value:
+                                  stringValue: /
                               - key: arn
                                 value:
                                   stringValue: arn:aws:iam::123456789012:user/Richard
@@ -250,9 +253,6 @@ resourceLogs:
                               - key: userName
                                 value:
                                   stringValue: Richard
-                              - key: path
-                                value:
-                                  stringValue: /
             body: {}
             timeUnixNano: "1689801909000000000"
           - attributes:
@@ -373,6 +373,15 @@ resourceLogs:
                 value:
                   kvlistValue:
                     values:
+                      - key: state
+                        value:
+                          stringValue: Start
+                      - key: eventSource
+                        value:
+                          stringValue: ssm.amazonaws.com
+                      - key: eventName
+                        value:
+                          stringValue: UpdateInstanceInformation
                       - key: insightType
                         value:
                           stringValue: ApiCallRateInsight
@@ -398,15 +407,6 @@ resourceLogs:
                                               - key: average
                                                 value:
                                                   doubleValue: 669
-                      - key: state
-                        value:
-                          stringValue: Start
-                      - key: eventSource
-                        value:
-                          stringValue: ssm.amazonaws.com
-                      - key: eventName
-                        value:
-                          stringValue: UpdateInstanceInformation
             body: {}
             timeUnixNano: "1672627860000000000"
           - attributes:
@@ -554,8 +554,8 @@ resourceLogs:
             timeUnixNano: "1749997800000000000"
         scope:
           attributes:
-            - key: awslogs_encoding.format
+            - key: encoding.format
               value:
-                stringValue: cloudtrail
+                stringValue: aws.cloudtrail
           name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension
           version: test-version

@@ -21,5 +21,5 @@ const (
 
 	FileFormatPlainText     = "plain-text"
 	FileFormatParquet       = "parquet"
-	FormatIdentificationTag = "awslogs_encoding.format"
+	FormatIdentificationTag = "encoding.format"
 )
