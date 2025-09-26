@@ -150,14 +150,12 @@ func (kr *k8seventsReceiver) startWatch(ns string, client k8s.Interface) {
 	kr.stopperChanList = append(kr.stopperChanList, stopperChan)
 	kr.startWatchingNamespace(client, cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj any) {
-			if ev, ok := obj.(*corev1.Event); ok {
-				kr.handleEvent(ev)
-			}
+			ev := obj.(*corev1.Event)
+			kr.handleEvent(ev)
 		},
 		UpdateFunc: func(_, obj any) {
-			if ev, ok := obj.(*corev1.Event); ok {
-				kr.handleEvent(ev)
-			}
+			ev := obj.(*corev1.Event)
+			kr.handleEvent(ev)
 		},
 	}, ns, stopperChan)
 }
