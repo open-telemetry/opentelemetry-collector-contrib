@@ -1,0 +1,24 @@
+<clickhouse>
+    <users>
+        <default>
+            <password>otel</password>
+            <networks>
+                <ip>::/0</ip>
+            </networks>
+            <profile>default</profile>
+            <quota>default</quota>
+            <access_management>1</access_management>
+        </default>
+        <secure_default>
+            <networks>
+                <ip>::/0</ip>
+            </networks>
+            <profile>default</profile>
+            <quota>default</quota>
+            <access_management>1</access_management>
+            <ssl_certificates>
+                <common_name>client</common_name>
+            </ssl_certificates>
+        </secure_default>
+    </users>
+</clickhouse>

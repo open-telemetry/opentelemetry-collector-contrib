@@ -544,6 +544,10 @@ component_management:
     name: processor_transform
     paths:
     - processor/transformprocessor/**
+  - component_id: processor_unroll
+    name: processor_unroll
+    paths:
+    - processor/unrollprocessor/**
   - component_id: receiver_activedirectoryds
     name: receiver_activedirectoryds
     paths:
@@ -860,10 +864,6 @@ component_management:
     name: receiver_saphana
     paths:
     - receiver/saphanareceiver/**
-  - component_id: receiver_sapm
-    name: receiver_sapm
-    paths:
-    - receiver/sapmreceiver/**
   - component_id: receiver_signalfx
     name: receiver_signalfx
     paths:

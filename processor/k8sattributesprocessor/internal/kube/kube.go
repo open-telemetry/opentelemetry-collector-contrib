@@ -232,6 +232,7 @@ type LabelFilter struct {
 // from pods and added to the spans as tags.
 type ExtractionRules struct {
 	CronJobName               bool
+	CronJobUID                bool
 	DeploymentName            bool
 	DeploymentUID             bool
 	DaemonSetUID              bool
@@ -269,6 +270,7 @@ type ExtractionRules struct {
 func (rules *ExtractionRules) IncludesOwnerMetadata() bool {
 	rulesNeedingOwnerMetadata := []bool{
 		rules.CronJobName,
+		rules.CronJobUID,
 		rules.DeploymentName,
 		rules.DeploymentUID,
 		rules.DaemonSetUID,
@@ -446,6 +448,14 @@ type DaemonSet struct {
 
 // Job represents a kubernetes job.
 type Job struct {
+	Name       string
+	UID        string
+	Attributes map[string]string
+	CronJob    CronJob
+}
+
+// CronJob represents a kubernetes cronjob.
+type CronJob struct {
 	Name       string
 	UID        string
 	Attributes map[string]string
