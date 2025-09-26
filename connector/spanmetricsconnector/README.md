@@ -27,13 +27,6 @@
 The default duration metrics unit will change from `ms` to `s` to adhere to the OpenTelemetry semantic conventions and a feature gate `connector.spanmetrics.useSCDefaultMetricsUnit` is also added.
 
 Currently, the feature gate is disabled by default, so the unit will remain `ms`. After one release cycle, the unit will switch to `s` and the feature gate will also be enabled by default.
-To revert this change manually, users can either disabled the feature gate or modify the configuration as follows:
-  ```
-  connectors
-    spanmetrics:
-      histogram:
-        unit: "ms"
-  ```
 
 ## Overview
 
