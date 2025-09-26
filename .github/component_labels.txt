@@ -42,6 +42,7 @@ exporter/faroexporter exporter/faro
 exporter/fileexporter exporter/file
 exporter/googlecloudexporter exporter/googlecloud
 exporter/googlecloudpubsubexporter exporter/googlecloudpubsub
+exporter/googlecloudstorageexporter exporter/googlecloudstorage
 exporter/googlemanagedprometheusexporter exporter/googlemanagedprometheus
 exporter/honeycombmarkerexporter exporter/honeycombmarker
 exporter/influxdbexporter exporter/influxdb
