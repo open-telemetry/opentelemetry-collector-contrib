@@ -31,7 +31,7 @@ func NewBytesLimiting(settings component.TelemetrySettings, bytesPerSecond int64
 func NewBytesLimitingWithBurstCapacity(_ component.TelemetrySettings, bytesPerSecond, burstCapacity int64) PolicyEvaluator {
 	// Create rate limiter with specified rate and burst capacity
 	// rate.Limit is tokens per second (bytes per second in our case)
-	// burst capacity is the maximum number of tokens (bytes) that can be consumed in a burst
+	// burst capacity is the maximum number of tokens (bytes) that can be consumed in a single request
 	limiter := rate.NewLimiter(rate.Limit(bytesPerSecond), int(burstCapacity))
 
 	return &bytesLimiting{
