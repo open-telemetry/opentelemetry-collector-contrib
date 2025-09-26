@@ -8,5 +8,5 @@ import (
 )
 
 func TestConsumeLogs(t *testing.T) {
-	// TODO
+	t.Skip("TODO")
 }

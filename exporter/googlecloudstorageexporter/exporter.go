@@ -6,7 +6,6 @@ package googlecloudstorageexporter // import "github.com/open-telemetry/opentele
 import (
 	"context"
 
-	"cloud.google.com/go/storage"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
@@ -15,14 +14,7 @@ import (
 )
 
 type storageExporter struct {
-	logsEncodingID component.ID
-	logsEncoding   plog.Marshaler
-
-	storageClient *storage.Client
-	bucketName    string
-	filePrefix    string
-
-	logger *zap.Logger
+	// TODO
 }
 
 var _ exporter.Logs = (*storageExporter)(nil)
@@ -31,12 +23,12 @@ func newStorageExporter(
 	_ context.Context,
 	_ *Config,
 	_ *zap.Logger,
-) (*storageExporter, error) {
+) *storageExporter {
 	// TODO
-	return &storageExporter{}, nil
+	return &storageExporter{}
 }
 
-func (s *storageExporter) Start(_ context.Context, _ component.Host) error {
+func (*storageExporter) Start(_ context.Context, _ component.Host) error {
 	// TODO
 	return nil
 }
@@ -49,7 +41,7 @@ func (*storageExporter) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
-func (s *storageExporter) ConsumeLogs(_ context.Context, _ plog.Logs) error {
+func (*storageExporter) ConsumeLogs(_ context.Context, _ plog.Logs) error {
 	// TODO
 	return nil
 }
