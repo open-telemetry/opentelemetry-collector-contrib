@@ -90,7 +90,7 @@ func (w *wrappedTracesConnector) Shutdown(ctx context.Context) error {
 	if shutdowner, ok := w.consumer.(interface{ Shutdown(context.Context) error }); ok {
 		err = shutdowner.Shutdown(ctx)
 	}
-	w.failoverCore.failover.Shutdown()
+	w.failoverCore.failover.strategy.Shutdown()
 	return err
 }
 
@@ -99,7 +99,7 @@ func (w *wrappedMetricsConnector) Shutdown(ctx context.Context) error {
 	if shutdowner, ok := w.consumer.(interface{ Shutdown(context.Context) error }); ok {
 		err = shutdowner.Shutdown(ctx)
 	}
-	w.failoverCore.failover.Shutdown()
+	w.failoverCore.failover.strategy.Shutdown()
 	return err
 }
 
@@ -108,7 +108,7 @@ func (w *wrappedLogsConnector) Shutdown(ctx context.Context) error {
 	if shutdowner, ok := w.consumer.(interface{ Shutdown(context.Context) error }); ok {
 		err = shutdowner.Shutdown(ctx)
 	}
-	w.failoverCore.failover.Shutdown()
+	w.failoverCore.failover.strategy.Shutdown()
 	return err
 }
 

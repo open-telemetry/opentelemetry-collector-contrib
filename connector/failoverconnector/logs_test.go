@@ -85,7 +85,12 @@ func TestLogsWithValidFailover(t *testing.T) {
 	require.NoError(t, err)
 
 	failoverConnector := conn.(*logsFailover)
-	failoverConnector.failover.ModifyConsumerAtIndex(0, consumertest.NewErr(errLogsConsumer))
+	lRouter := failoverConnector.failover
+	strategy := lRouter.strategy.(*standardLogsStrategy)
+
+	strategy.router.ModifyConsumerAtIndex(0, consumertest.NewErr(errLogsConsumer))
+
+	//failoverConnector.failover.ModifyConsumerAtIndex(0, consumertest.NewErr(errLogsConsumer))
 	defer func() {
 		assert.NoError(t, failoverConnector.Shutdown(t.Context()))
 	}()
@@ -93,7 +98,7 @@ func TestLogsWithValidFailover(t *testing.T) {
 	ld := sampleLog()
 
 	require.Eventually(t, func() bool {
-		return consumeLogsAndCheckStable(failoverConnector, 1, ld)
+		return consumeLogsAndCheckStable(lRouter, 1, ld)
 	}, 3*time.Second, 5*time.Millisecond)
 }
 
@@ -169,9 +174,10 @@ func TestLogsWithQueue(t *testing.T) {
 	assert.NoError(t, conn.ConsumeLogs(t.Context(), ld))
 }
 
-func consumeLogsAndCheckStable(conn *logsFailover, idx int, lr plog.Logs) bool {
-	_ = conn.ConsumeLogs(context.Background(), lr)
-	stableIndex := conn.failover.pS.CurrentPipeline()
+func consumeLogsAndCheckStable(router *logsRouter, idx int, lr plog.Logs) bool {
+	strategy := router.strategy.(*standardLogsStrategy)
+	_ = router.Consume(context.Background(), lr)
+	stableIndex := strategy.pS.CurrentPipeline()
 	return stableIndex == idx
 }
 
