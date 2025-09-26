@@ -37,11 +37,15 @@ type worker struct {
 	index          int                   // worker index
 	traceID        string                // traceID string
 	spanID         string                // spanID string
+	batch          bool                  // whether to batch logs
+	batchBuffer    []sdklog.Record       // buffer for batching logs
+	bufferMutex    sync.Mutex            // mutex for thread-safe access to buffer
+	batchSize      int                   // number of logs to batch before flushing
 	loadSize       int                   // desired minimum size in MB of string data for each generated log
 	allowFailures  bool                  // whether to continue on export failures
 }
 
-func (w worker) simulateLogs(res *resource.Resource, exporter sdklog.Exporter, telemetryAttributes []attribute.KeyValue) {
+func (w *worker) simulateLogs(res *resource.Resource, exporter sdklog.Exporter, telemetryAttributes []attribute.KeyValue) {
 	limiter := rate.NewLimiter(w.limitPerSecond, 1)
 	var i int64
 
@@ -90,11 +94,15 @@ func (w worker) simulateLogs(res *resource.Resource, exporter sdklog.Exporter, t
 			w.logger.Fatal("limiter wait failed, retry", zap.Error(err))
 		}
 
-		if err := exporter.Export(context.Background(), logs); err != nil {
-			if w.allowFailures {
-				w.logger.Error("exporter failed, continuing due to --allow-export-failures", zap.Error(err))
-			} else {
-				w.logger.Fatal("exporter failed", zap.Error(err))
+		if w.batch {
+			w.addToBuffer(logs[0], exporter)
+		} else {
+			if err := exporter.Export(context.Background(), logs); err != nil {
+				if w.allowFailures {
+					w.logger.Error("exporter failed, continuing due to --allow-export-failures", zap.Error(err))
+				} else {
+					w.logger.Fatal("exporter failed", zap.Error(err))
+				}
 			}
 		}
 
@@ -104,6 +112,38 @@ func (w worker) simulateLogs(res *resource.Resource, exporter sdklog.Exporter, t
 		}
 	}
 
+	// Flush any remaining logs in the buffer
+	if w.batch && len(w.batchBuffer) > 0 {
+		w.flushBuffer(exporter)
+	}
+
 	w.logger.Info("logs generated", zap.Int64("logs", i))
 	w.wg.Done()
+}
+
+func (w *worker) addToBuffer(log sdklog.Record, exporter sdklog.Exporter) {
+	w.bufferMutex.Lock()
+	defer w.bufferMutex.Unlock()
+
+	w.batchBuffer = append(w.batchBuffer, log)
+
+	// Check if we should flush based on batch size
+	if len(w.batchBuffer) >= w.batchSize {
+		w.flushBuffer(exporter)
+	}
+}
+
+func (w *worker) flushBuffer(exporter sdklog.Exporter) {
+	if len(w.batchBuffer) == 0 {
+		return
+	}
+
+	if err := exporter.Export(context.Background(), w.batchBuffer); err != nil {
+		w.logger.Error("failed to export batched logs", zap.Error(err))
+	} else {
+		w.logger.Debug("exported batched logs", zap.Int("count", len(w.batchBuffer)))
+	}
+
+	// Clear buffer
+	w.batchBuffer = w.batchBuffer[:0]
 }

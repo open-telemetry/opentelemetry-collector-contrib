@@ -93,6 +93,10 @@ type Config struct {
 
 	// Load testing configuration
 	LoadSize int
+
+	// Batching configuration
+	Batch     bool
+	BatchSize int
 }
 
 type ClientAuth struct {
@@ -207,6 +211,10 @@ func (c *Config) CommonFlags(fs *pflag.FlagSet) {
 
 	// Load testing configuration
 	fs.IntVar(&c.LoadSize, "size", c.LoadSize, "Desired minimum size in MB of string data for each generated telemetry record")
+
+	// Batching configuration
+	fs.BoolVar(&c.Batch, "batch", c.Batch, "Whether to batch telemetry records before sending")
+	fs.IntVar(&c.BatchSize, "batch-size", c.BatchSize, "Number of telemetry records to batch before sending")
 }
 
 // SetDefaults is here to mirror the defaults for flags above,
@@ -232,6 +240,8 @@ func (c *Config) SetDefaults() {
 	c.ClientAuth.ClientKeyFile = ""
 	c.AllowExportFailures = false
 	c.LoadSize = 0
+	c.Batch = true
+	c.BatchSize = 100
 }
 
 // CharactersPerMB is the number of characters needed to create a 1MB string attribute

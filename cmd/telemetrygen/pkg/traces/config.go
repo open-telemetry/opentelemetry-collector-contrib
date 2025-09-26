@@ -20,7 +20,6 @@ type Config struct {
 	NumChildSpans    int
 	PropagateContext bool
 	StatusCode       string
-	Batch            bool
 
 	SpanDuration time.Duration
 }
@@ -41,7 +40,6 @@ func (c *Config) Flags(fs *pflag.FlagSet) {
 	fs.IntVar(&c.NumChildSpans, "child-spans", c.NumChildSpans, "Number of child spans to generate for each trace")
 	fs.BoolVar(&c.PropagateContext, "marshal", c.PropagateContext, "Whether to marshal trace context via HTTP headers")
 	fs.StringVar(&c.StatusCode, "status-code", c.StatusCode, "Status code to use for the spans, one of (Unset, Error, Ok) or the equivalent integer (0,1,2)")
-	fs.BoolVar(&c.Batch, "batch", c.Batch, "Whether to batch traces")
 	fs.DurationVar(&c.SpanDuration, "span-duration", c.SpanDuration, "The duration of each generated span.")
 }
 
@@ -56,7 +54,6 @@ func (c *Config) SetDefaults() {
 	c.NumChildSpans = 1
 	c.PropagateContext = false
 	c.StatusCode = "0"
-	c.Batch = true
 	c.SpanDuration = 123 * time.Microsecond
 }
 
