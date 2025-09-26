@@ -99,7 +99,7 @@ func TestHappyPath(t *testing.T) {
 		cleanupScriptPath(t, scriptPath)
 	})
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
 	subprocess, findProcessInfo := prepareSubprocess(&Config{
@@ -125,7 +125,7 @@ func TestWithArgs(t *testing.T) {
 		cleanupScriptPath(t, scriptPath)
 	})
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
 	subprocess, findProcessInfo := prepareSubprocess(&Config{
@@ -151,7 +151,7 @@ func TestWithEnvVars(t *testing.T) {
 	t.Cleanup(func() {
 		cleanupScriptPath(t, scriptPath)
 	})
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
 	config := &Config{
@@ -182,7 +182,7 @@ func TestWithAutoRestart(t *testing.T) {
 	t.Cleanup(func() {
 		cleanupScriptPath(t, scriptPath)
 	})
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
 	restartDelay := 100 * time.Millisecond
@@ -219,7 +219,7 @@ func TestSendingStdin(t *testing.T) {
 	t.Cleanup(func() {
 		cleanupScriptPath(t, scriptPath)
 	})
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
 	subprocess, findProcessInfo := prepareSubprocess(&Config{
@@ -239,7 +239,7 @@ func TestSendingStdin(t *testing.T) {
 }
 
 func TestSendingStdinFails(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
 	logCore, logObserver := observer.New(zap.DebugLevel)
@@ -271,7 +271,7 @@ func TestSendingStdinFails(t *testing.T) {
 }
 
 func TestSubprocessBadExec(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
 	logCore, logObserver := observer.New(zap.DebugLevel)
@@ -293,7 +293,7 @@ func TestSubprocessBadExec(t *testing.T) {
 }
 
 func TestSubprocessSuccessfullyReturns(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
 	// There is a race condition between writing from the stdout scanner and the closing of the stdout channel on

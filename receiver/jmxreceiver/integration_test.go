@@ -60,9 +60,7 @@ func TestJMXIntegration(t *testing.T) {
 	})
 
 	for version, jar := range versionToJar {
-		t.Run(version, func(t *testing.T) {
-			integrationTest(version, jar, jmxJarReleases[version].jmxConfig)
-		})
+		t.Run(version, integrationTest(version, jar, jmxJarReleases[version].jmxConfig))
 	}
 }
 
