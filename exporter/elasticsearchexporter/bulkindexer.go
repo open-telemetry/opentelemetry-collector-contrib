@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	semconv "go.opentelemetry.io/otel/semconv/v1.25.0"
@@ -118,24 +119,30 @@ func newSyncBulkIndexer(
 	tb *metadata.TelemetryBuilder,
 	logger *zap.Logger,
 ) *syncBulkIndexer {
+	var failedDocsInputLogger *zap.Logger
+	if config.LogFailedDocsInput {
+		failedDocsInputLogger = newFailedDocsInputLogger(logger, config)
+	} else {
+		failedDocsInputLogger = nil
+	}
 	return &syncBulkIndexer{
 		config:                bulkIndexerConfig(client, config, requireDataStream),
-		flushTimeout:          config.Timeout,
-		flushBytes:            config.Flush.Bytes,
-		retryConfig:           config.Retry,
 		metadataKeys:          config.MetadataKeys,
+		batchConfig:           config.QueueBatchConfig.Batch.Get(),
+		flushConfig:           &config.Flush,
+		retryConfig:           &config.Retry,
 		telemetryBuilder:      tb,
 		logger:                logger,
-		failedDocsInputLogger: newFailedDocsInputLogger(logger, config),
+		failedDocsInputLogger: failedDocsInputLogger,
 	}
 }
 
 type syncBulkIndexer struct {
 	config                docappender.BulkIndexerConfig
-	flushTimeout          time.Duration
-	flushBytes            int
-	retryConfig           RetrySettings
 	metadataKeys          []string
+	batchConfig           *exporterhelper.BatchConfig
+	flushConfig           *FlushSettings
+	retryConfig           *RetrySettings
 	telemetryBuilder      *metadata.TelemetryBuilder
 	logger                *zap.Logger
 	failedDocsInputLogger *zap.Logger
@@ -152,7 +159,24 @@ func (s *syncBulkIndexer) StartSession(context.Context) bulkIndexerSession {
 		// always be valid at this point.
 		return errBulkIndexerSession{err: err}
 	}
-	return &syncBulkIndexerSession{s: s, bi: bi}
+	var flushTimeout time.Duration
+	var flushMaxSize int
+	if s.batchConfig == nil {
+		// this is for back-compat
+		flushTimeout = 0
+		flushMaxSize = 0
+	} else {
+		flushTimeout = s.batchConfig.FlushTimeout
+		flushMaxSize = int(s.batchConfig.MaxSize)
+	}
+	return &syncBulkIndexerSession{
+		s:             s,
+		bi:            bi,
+		flushTime:     time.Now(),
+		flushTimeout:  flushTimeout,
+		flushMaxBytes: s.flushConfig.Bytes,
+		flushMaxSize:  flushMaxSize,
+	}
 }
 
 // Close is a no-op.
@@ -161,8 +185,12 @@ func (*syncBulkIndexer) Close(context.Context) error {
 }
 
 type syncBulkIndexerSession struct {
-	s  *syncBulkIndexer
-	bi *docappender.BulkIndexer
+	s             *syncBulkIndexer
+	bi            *docappender.BulkIndexer
+	flushTime     time.Time
+	flushTimeout  time.Duration
+	flushMaxBytes int
+	flushMaxSize  int
 }
 
 // Add adds an item to the sync bulk indexer session.
@@ -187,7 +215,18 @@ func (s *syncBulkIndexerSession) Add(ctx context.Context, index, docID, pipeline
 	)
 	// flush bytes should operate on uncompressed length
 	// as Elasticsearch http.max_content_length measures uncompressed length.
-	if s.bi.UncompressedLen() >= s.s.flushBytes {
+	if s.flushMaxBytes > 0 && s.bi.UncompressedLen() >= s.flushMaxBytes {
+		s.s.logger.Warn("force flushing docs to Elasticsearch because of size")
+		return s.Flush(ctx)
+	}
+	// NOTE: should never happen
+	if s.flushMaxSize > 0 && s.bi.Items() >= s.flushMaxSize {
+		s.s.logger.Warn("force flushing docs to Elasticsearch because of count")
+		return s.Flush(ctx)
+	}
+	// NOTE: should never happen
+	if s.flushTimeout > 0 && time.Since(s.flushTime) >= s.flushTimeout {
+		s.s.logger.Warn("force flushing docs to Elasticsearch because of timeout")
 		return s.Flush(ctx)
 	}
 	return nil
@@ -200,12 +239,14 @@ func (*syncBulkIndexerSession) End() {
 
 // Flush flushes documents added to the bulk indexer session.
 func (s *syncBulkIndexerSession) Flush(ctx context.Context) error {
+	s.flushTime = time.Now()
+	ctxTimeout := time.Duration(int(s.s.retryConfig.MaxInterval) * s.s.retryConfig.MaxRetries)
 	var retryBackoff func(int) time.Duration
 	for attempts := 0; ; attempts++ {
 		if err := flushBulkIndexer(
 			ctx,
 			s.bi,
-			s.s.flushTimeout,
+			ctxTimeout,
 			s.s.metadataKeys,
 			s.s.telemetryBuilder,
 			s.s.logger,
@@ -218,7 +259,7 @@ func (s *syncBulkIndexerSession) Flush(ctx context.Context) error {
 			return nil
 		}
 		if retryBackoff == nil {
-			retryBackoff = createElasticsearchBackoffFunc(&s.s.retryConfig)
+			retryBackoff = createElasticsearchBackoffFunc(s.s.retryConfig)
 			if retryBackoff == nil {
 				// BUG: This should never happen in practice.
 				// When retry is disabled / document level retry limit is reached,
@@ -227,6 +268,7 @@ func (s *syncBulkIndexerSession) Flush(ctx context.Context) error {
 			}
 		}
 		backoff := retryBackoff(attempts + 1) // TODO: use exporterhelper retry_sender
+		s.s.logger.Warn("bulk indexer contains documents pending retry, the request will be retried after interval.", zap.String("interval", backoff.String()))
 		timer := time.NewTimer(backoff)
 		select {
 		case <-ctx.Done():
@@ -261,6 +303,12 @@ func newAsyncBulkIndexer(
 		if err != nil {
 			return nil, err
 		}
+		var failedDocsInputLogger *zap.Logger
+		if config.LogFailedDocsInput {
+			failedDocsInputLogger = newFailedDocsInputLogger(logger, config)
+		} else {
+			failedDocsInputLogger = nil
+		}
 		w := asyncBulkIndexerWorker{
 			indexer:               bi,
 			items:                 pool.items,
@@ -269,7 +317,7 @@ func newAsyncBulkIndexer(
 			flushBytes:            config.Flush.Bytes,
 			telemetryBuilder:      tb,
 			logger:                logger,
-			failedDocsInputLogger: newFailedDocsInputLogger(logger, config),
+			failedDocsInputLogger: failedDocsInputLogger,
 		}
 		go func() {
 			defer pool.wg.Done()
@@ -530,19 +578,23 @@ func flushBulkIndexer(
 		// Log failed docs
 		fields = append(fields,
 			zap.String("index", resp.Index),
+			zap.Int("status", resp.Status),
+			zap.Int("position", resp.Position),
 			zap.String("error.type", resp.Error.Type),
 			zap.String("error.reason", resp.Error.Reason),
 		)
 
-		if hint := getErrorHint(resp.Index, resp.Error.Type); hint != "" {
-			fields = append(fields, zap.String("hint", hint))
+		if failedDocsInputLogger == nil {
+			if hint := getErrorHint(resp.Index, resp.Error.Type); hint != "" {
+				fields = append(fields, zap.String("hint", hint))
+			}
+			logger.Error("failed to index document", fields...)
+		} else {
+			if resp.Input != "" {
+				fields = append(fields, zap.String("input", resp.Input))
+			}
+			failedDocsInputLogger.Error("failed to index document; input may contain sensitive data", fields...)
 		}
-		logger.Error("failed to index document", fields...)
-
-		if resp.Input != "" {
-			fields = append(fields, zap.String("input", resp.Input))
-		}
-		failedDocsInputLogger.Debug("failed to index document; input may contain sensitive data", fields...)
 	}
 	if stat.Indexed > 0 {
 		tb.ElasticsearchDocsProcessed.Add(

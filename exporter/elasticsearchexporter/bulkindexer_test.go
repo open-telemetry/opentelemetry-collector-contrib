@@ -365,7 +365,6 @@ func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 			logFailedDocsInput: true,
 			wantMessage:        "failed to index document; input may contain sensitive data",
 			wantFields: []zap.Field{
-				zap.String("hint", "check the \"Known issues\" section of Elasticsearch Exporter docs"),
 				zap.String("input", `{"create":{"_index":"foo"}}
 {"foo": "bar"}
 `),
