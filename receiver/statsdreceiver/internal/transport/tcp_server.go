@@ -19,10 +19,8 @@ var errTCPServerDone = errors.New("server stopped")
 
 type tcpServer struct {
 	listener  net.Listener
-	reporter  Reporter
 	wg        sync.WaitGroup
 	transport Transport
-	stopChan  chan struct{}
 }
 
 // Ensure that Server is implemented on TCP Server.
@@ -43,7 +41,6 @@ func NewTCPServer(transport Transport, address string) (Server, error) {
 		return nil, fmt.Errorf("starting to listen %s socket: %w", transport.String(), err)
 	}
 
-	tsrv.stopChan = make(chan struct{})
 	return &tsrv, nil
 }
 
@@ -53,42 +50,34 @@ func (t *tcpServer) ListenAndServe(nextConsumer consumer.Metrics, reporter Repor
 		return errNilListenAndServeParameters
 	}
 
-	t.reporter = reporter
-LOOP:
 	for {
-		connChan := make(chan net.Conn, 1)
-		go func() {
-			c, err := t.listener.Accept()
-			if err != nil {
-				t.reporter.OnDebugf("TCP Transport - Accept error: %v",
-					err)
-			} else {
-				connChan <- c
+		conn, err := t.listener.Accept()
+		if err != nil {
+			if errors.Is(err, net.ErrClosed) {
+				return errTCPServerDone
 			}
-		}()
-
-		select {
-		case conn := <-connChan:
-			t.wg.Add(1)
-			go t.handleConn(conn, transferChan)
-		case <-t.stopChan:
-			break LOOP
+			reporter.OnDebugf("TCP Transport - Accept error: %v", err)
+			continue
 		}
+
+		t.wg.Add(1)
+		go func() {
+			defer t.wg.Done()
+			handleTCPConn(conn, reporter, transferChan)
+		}()
 	}
-	return errTCPServerDone
 }
 
-// handleConn is helper that parses the buffer and split it line by line to be parsed upstream.
-func (t *tcpServer) handleConn(c net.Conn, transferChan chan<- Metric) {
+// handleTCPConn is helper that parses the buffer and split it line by line to be parsed upstream.
+func handleTCPConn(c net.Conn, reporter Reporter, transferChan chan<- Metric) {
 	payload := make([]byte, 4096)
 	var remainder []byte
 	for {
 		n, err := c.Read(payload)
 		if err != nil {
 			if !errors.Is(err, io.EOF) {
-				t.reporter.OnDebugf("TCP transport (%s) Error reading payload: %v", c.LocalAddr(), err)
+				reporter.OnDebugf("TCP transport (%s) Error reading payload: %v", c.LocalAddr(), err)
 			}
-			t.wg.Done()
 			return
 		}
 		buf := bytes.NewBuffer(append(remainder, payload[0:n]...))
@@ -110,7 +99,7 @@ func (t *tcpServer) handleConn(c net.Conn, transferChan chan<- Metric) {
 
 // Close closes the server.
 func (t *tcpServer) Close() error {
-	close(t.stopChan)
+	err := t.listener.Close()
 	t.wg.Wait()
-	return t.listener.Close()
+	return err
 }
