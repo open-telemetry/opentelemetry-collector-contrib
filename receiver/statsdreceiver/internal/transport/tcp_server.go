@@ -20,7 +20,8 @@ var errTCPServerDone = errors.New("server stopped")
 type tcpServer struct {
 	listener  net.Listener
 	reporter  Reporter
-	wg        sync.WaitGroup
+	wg        *sync.WaitGroup
+	wgMu      sync.Mutex
 	transport Transport
 	stopChan  chan struct{}
 }
@@ -30,7 +31,9 @@ var _ Server = (*tcpServer)(nil)
 
 // NewTCPServer creates a transport.Server using TCP as its transport.
 func NewTCPServer(transport Transport, address string) (Server, error) {
-	var tsrv tcpServer
+	tsrv := tcpServer{
+		wg: &sync.WaitGroup{},
+	}
 	var err error
 
 	if !transport.IsStreamTransport() {
@@ -69,7 +72,10 @@ LOOP:
 
 		select {
 		case conn := <-connChan:
+			// Potential data race here because t.wg.Add is called concurrently with t.wg.Wait in Close().
+			t.wgMu.Lock()
 			t.wg.Add(1)
+			t.wgMu.Unlock()
 			go t.handleConn(conn, transferChan)
 		case <-t.stopChan:
 			break LOOP
@@ -88,7 +94,9 @@ func (t *tcpServer) handleConn(c net.Conn, transferChan chan<- Metric) {
 			if !errors.Is(err, io.EOF) {
 				t.reporter.OnDebugf("TCP transport (%s) Error reading payload: %v", c.LocalAddr(), err)
 			}
+			t.wgMu.Lock()
 			t.wg.Done()
+			t.wgMu.Unlock()
 			return
 		}
 		buf := bytes.NewBuffer(append(remainder, payload[0:n]...))
@@ -111,6 +119,8 @@ func (t *tcpServer) handleConn(c net.Conn, transferChan chan<- Metric) {
 // Close closes the server.
 func (t *tcpServer) Close() error {
 	close(t.stopChan)
+	t.wgMu.Lock()
 	t.wg.Wait()
+	t.wgMu.Unlock()
 	return t.listener.Close()
 }
