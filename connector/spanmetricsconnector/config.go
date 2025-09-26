@@ -94,6 +94,8 @@ type Config struct {
 	IncludeInstrumentationScope []string `mapstructure:"include_instrumentation_scope"`
 
 	AggregationCardinalityLimit int `mapstructure:"aggregation_cardinality_limit"`
+
+	SpanNameSemanticConvention bool `mapstructure:"span_name_semantic_convention"`
 }
 
 type HistogramConfig struct {
