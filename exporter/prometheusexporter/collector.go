@@ -49,11 +49,18 @@ type metricFamily struct {
 
 func newCollector(config *Config, logger *zap.Logger) *collector {
 	labelNamer := configureLabelNamer(config)
-	namespace, err := labelNamer.Build(config.Namespace)
-	if err != nil {
-		logger.Error("failed to build namespace, ignoring", zap.Error(err))
-		namespace = ""
+
+	// Normalize namespace if specified
+	namespace := ""
+	if config.Namespace != "" {
+		var err error
+		namespace, err = labelNamer.Build(config.Namespace)
+		if err != nil {
+			logger.Error("failed to build namespace, ignoring", zap.Error(err))
+			namespace = ""
+		}
 	}
+
 	return &collector{
 		accumulator:      newAccumulator(logger, config.MetricExpiration),
 		logger:           logger,
