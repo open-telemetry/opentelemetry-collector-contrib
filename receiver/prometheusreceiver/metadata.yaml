@@ -7,6 +7,18 @@ status:
   distributions: [core, contrib, k8s]
   codeowners:
     active: [Aneurysm9, dashpole, ArthurSens, krajorama]
+
+telemetry:
+  metrics:
+    receiver_target_accepted_metric_points:
+      enabled: true
+      stability:
+        level: alpha
+      description: Number of metric points successfully pushed into the pipeline from a specific target.
+      unit: "{datapoints}"
+      gauge:
+        value_type: int
+
 tests:
   config:
     config:
