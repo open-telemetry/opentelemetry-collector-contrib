@@ -56,7 +56,6 @@ func (r *azureGenericMetricRecord) UnmarshalJSON(data []byte) error {
 	}
 	typeDecoder := jsoniter.NewDecoder(bytes.NewReader(data))
 	err := typeDecoder.Decode(&recordWithType)
-
 	if err != nil {
 		return err
 	}
@@ -70,7 +69,6 @@ func (r *azureGenericMetricRecord) UnmarshalJSON(data []byte) error {
 
 	recordDecoder := jsoniter.NewDecoder(bytes.NewReader(data))
 	err = recordDecoder.Decode(r.Record)
-
 	if err != nil {
 		return err
 	}
@@ -301,7 +299,6 @@ func (r *azureResourceMetricsUnmarshaler) UnmarshalMetrics(event *azureEvent) (p
 	var azureMetrics azureMetricRecords
 	decoder := jsoniter.NewDecoder(bytes.NewReader(event.Data()))
 	err := decoder.Decode(&azureMetrics)
-
 	if err != nil {
 		return md, err
 	}
