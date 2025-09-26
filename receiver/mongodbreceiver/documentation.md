@@ -16,9 +16,9 @@ metrics:
 
 The number of cache operations of the instance.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {operations} | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {operations} | Sum | Int | Cumulative | true | development |
 
 #### Attributes
 
@@ -30,17 +30,17 @@ The number of cache operations of the instance.
 
 The number of collections.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {collections} | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {collections} | Sum | Int | Cumulative | false | development |
 
 ### mongodb.connection.count
 
 The number of connections.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {connections} | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {connections} | Sum | Int | Cumulative | false | development |
 
 #### Attributes
 
@@ -52,41 +52,41 @@ The number of connections.
 
 The number of open cursors maintained for clients.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {cursors} | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {cursors} | Sum | Int | Cumulative | false | development |
 
 ### mongodb.cursor.timeout.count
 
 The number of cursors that have timed out.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {cursors} | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {cursors} | Sum | Int | Cumulative | false | development |
 
 ### mongodb.data.size
 
 The size of the collection. Data compression does not affect this value.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | false | development |
 
 ### mongodb.database.count
 
 The number of existing databases.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {databases} | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {databases} | Sum | Int | Cumulative | false | development |
 
 ### mongodb.document.operation.count
 
 The number of document operations executed.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {documents} | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {documents} | Sum | Int | Cumulative | false | development |
 
 #### Attributes
 
@@ -98,25 +98,25 @@ The number of document operations executed.
 
 The number of extents.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {extents} | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {extents} | Sum | Int | Cumulative | false | development |
 
 ### mongodb.global_lock.time
 
 The time the global lock has been held.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| ms | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| ms | Sum | Int | Cumulative | true | development |
 
 ### mongodb.index.access.count
 
 The number of times an index has been accessed.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {accesses} | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {accesses} | Sum | Int | Cumulative | false | development |
 
 #### Attributes
 
@@ -128,25 +128,25 @@ The number of times an index has been accessed.
 
 The number of indexes.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {indexes} | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {indexes} | Sum | Int | Cumulative | false | development |
 
 ### mongodb.index.size
 
 Sum of the space allocated to all indexes in the database, including free index space.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | false | development |
 
 ### mongodb.memory.usage
 
 The amount of memory used.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | false | development |
 
 #### Attributes
 
@@ -158,41 +158,41 @@ The amount of memory used.
 
 The number of bytes received.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | false | development |
 
 ### mongodb.network.io.transmit
 
 The number of by transmitted.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | false | development |
 
 ### mongodb.network.request.count
 
 The number of requests received by the server.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {requests} | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {requests} | Sum | Int | Cumulative | false | development |
 
 ### mongodb.object.count
 
 The number of objects.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {objects} | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {objects} | Sum | Int | Cumulative | false | development |
 
 ### mongodb.operation.count
 
 The number of operations executed.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {operations} | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {operations} | Sum | Int | Cumulative | true | development |
 
 #### Attributes
 
@@ -204,9 +204,9 @@ The number of operations executed.
 
 The total time spent performing operations.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| ms | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| ms | Sum | Int | Cumulative | true | development |
 
 #### Attributes
 
@@ -218,9 +218,9 @@ The total time spent performing operations.
 
 The total number of active sessions.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {sessions} | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {sessions} | Sum | Int | Cumulative | false | development |
 
 ### mongodb.storage.size
 
@@ -228,9 +228,9 @@ The total amount of storage allocated to this collection.
 
 If collection data is compressed it reflects the compressed size.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | true | development |
 
 ## Optional Metrics
 
@@ -246,49 +246,49 @@ metrics:
 
 The number of read operations currently being processed.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {reads} | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {reads} | Sum | Int | Cumulative | false | development |
 
 ### mongodb.active.writes
 
 The number of write operations currently being processed.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {writes} | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {writes} | Sum | Int | Cumulative | false | development |
 
 ### mongodb.commands.rate
 
 The number of commands executed per second.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {command}/s | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {command}/s | Gauge | Double | development |
 
 ### mongodb.deletes.rate
 
 The number of deletes executed per second.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {delete}/s | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {delete}/s | Gauge | Double | development |
 
 ### mongodb.flushes.rate
 
 The number of flushes executed per second.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {flush}/s | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {flush}/s | Gauge | Double | development |
 
 ### mongodb.getmores.rate
 
 The number of getmores executed per second.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {getmore}/s | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {getmore}/s | Gauge | Double | development |
 
 ### mongodb.health
 
@@ -296,25 +296,25 @@ The health status of the server.
 
 A value of '1' indicates healthy. A value of '0' indicates unhealthy.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Int | development |
 
 ### mongodb.inserts.rate
 
 The number of insertions executed per second.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {insert}/s | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {insert}/s | Gauge | Double | development |
 
 ### mongodb.lock.acquire.count
 
 Number of times the lock was acquired in the specified mode.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {count} | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {count} | Sum | Int | Cumulative | true | development |
 
 #### Attributes
 
@@ -327,9 +327,9 @@ Number of times the lock was acquired in the specified mode.
 
 Cumulative wait time for the lock acquisitions.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| microseconds | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| microseconds | Sum | Int | Cumulative | true | development |
 
 #### Attributes
 
@@ -342,9 +342,9 @@ Cumulative wait time for the lock acquisitions.
 
 Number of times the lock acquisitions encountered waits because the locks were held in a conflicting mode.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {count} | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {count} | Sum | Int | Cumulative | true | development |
 
 #### Attributes
 
@@ -357,9 +357,9 @@ Number of times the lock acquisitions encountered waits because the locks were h
 
 Number of times the lock acquisitions encountered deadlocks.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {count} | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {count} | Sum | Int | Cumulative | true | development |
 
 #### Attributes
 
@@ -372,9 +372,9 @@ Number of times the lock acquisitions encountered deadlocks.
 
 The latency of operations.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| us | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| us | Gauge | Int | development |
 
 #### Attributes
 
@@ -386,9 +386,9 @@ The latency of operations.
 
 The number of replicated operations executed.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {operations} | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {operations} | Sum | Int | Cumulative | true | development |
 
 #### Attributes
 
@@ -400,89 +400,89 @@ The number of replicated operations executed.
 
 The number of page faults.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {faults} | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {faults} | Sum | Int | Cumulative | true | development |
 
 ### mongodb.queries.rate
 
 The number of queries executed per second.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {query}/s | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {query}/s | Gauge | Double | development |
 
 ### mongodb.repl_commands_per_sec
 
 The number of replicated commands executed per second.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {command}/s | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {command}/s | Gauge | Double | development |
 
 ### mongodb.repl_deletes_per_sec
 
 The number of replicated deletes executed per second.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {delete}/s | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {delete}/s | Gauge | Double | development |
 
 ### mongodb.repl_getmores_per_sec
 
 The number of replicated getmores executed per second.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {getmore}/s | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {getmore}/s | Gauge | Double | development |
 
 ### mongodb.repl_inserts_per_sec
 
 The number of replicated insertions executed per second.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {insert}/s | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {insert}/s | Gauge | Double | development |
 
 ### mongodb.repl_queries_per_sec
 
 The number of replicated queries executed per second.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {query}/s | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {query}/s | Gauge | Double | development |
 
 ### mongodb.repl_updates_per_sec
 
 The number of replicated updates executed per second.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {update}/s | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {update}/s | Gauge | Double | development |
 
 ### mongodb.updates.rate
 
 The number of updates executed per second.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {update}/s | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {update}/s | Gauge | Double | development |
 
 ### mongodb.uptime
 
 The amount of time that the server has been running.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| ms | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| ms | Sum | Int | Cumulative | true | development |
 
 ### mongodb.wtcache.bytes.read
 
 The number of bytes read into the WiredTiger cache.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | true | development |
 
 ## Resource Attributes
 
