@@ -2,9 +2,15 @@ name: codeowners
 on:
   push:
     branches: [main]
+    paths:
+      - ".github/CODEOWNERS"
+      - "**/metadata.yaml"
     tags:
       - "v[0-9]+.[0-9]+.[0-9]+*"
   pull_request_target:
+    paths:
+      - ".github/CODEOWNERS"
+      - "**/metadata.yaml"
     types:
       - opened
       - synchronize
