@@ -25,13 +25,13 @@ const (
 	DefaultNamespace                        = "traces.span.metrics"
 	legacyMetricNamesFeatureGateID          = "connector.spanmetrics.legacyMetricNames"
 	includeCollectorInstanceIDFeatureGateID = "connector.spanmetrics.includeCollectorInstanceID"
-	legacyDefaultMetricsUnitFeatureGateID   = "connector.spanmetrics.legacyDefaultMetricsUnit"
+	useSCDefaultMetricsUnitFeatureGateID    = "connector.spanmetrics.useSCDefaultMetricsUnit"
 )
 
 var (
 	legacyMetricNamesFeatureGate *featuregate.Gate
 	includeCollectorInstanceID   *featuregate.Gate
-	legacyDefaultMetricsUnit     *featuregate.Gate
+	useSCDefaultMetricsUnit      *featuregate.Gate
 )
 
 func init() {
@@ -48,10 +48,10 @@ func init() {
 		featuregate.WithRegisterDescription("When enabled, connector add collector.instance.id to default dimensions."),
 		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/40400"),
 	)
-	legacyDefaultMetricsUnit = featuregate.GlobalRegistry().MustRegister(
-		legacyDefaultMetricsUnitFeatureGateID,
-		featuregate.StageBeta, // current enabled by default and disable it in the next release
-		featuregate.WithRegisterDescription("enabled by default, connector use ms unit for duration metrics."),
+	useSCDefaultMetricsUnit = featuregate.GlobalRegistry().MustRegister(
+		useSCDefaultMetricsUnitFeatureGateID,
+		featuregate.StageAlpha,
+		featuregate.WithRegisterDescription("When enabled, connector use second as default unit for duration metrics."),
 		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42103"),
 	)
 }
@@ -71,11 +71,11 @@ func createDefaultConfig() component.Config {
 		ResourceMetricsCacheSize: defaultResourceMetricsCacheSize,
 		MetricsFlushInterval:     60 * time.Second,
 		Histogram: HistogramConfig{Disable: false, Unit: func() metrics.Unit {
-			if legacyDefaultMetricsUnit.IsEnabled() {
-				return metrics.Milliseconds
+			if useSCDefaultMetricsUnit.IsEnabled() {
+				return metrics.Seconds
 			}
 
-			return metrics.Seconds
+			return metrics.Milliseconds
 		}()},
 		Namespace:                   DefaultNamespace,
 		AggregationCardinalityLimit: 0,

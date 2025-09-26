@@ -26,9 +26,7 @@ import (
 func TestLoadConfig(t *testing.T) {
 	t.Parallel()
 
-	// disable legacyDefaultMetricsUnit featuregate
-	require.NoError(t, featuregate.GlobalRegistry().Set(legacyDefaultMetricsUnit.ID(), false))
-
+	require.NoError(t, featuregate.GlobalRegistry().Set(useSCDefaultMetricsUnit.ID(), true))
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 

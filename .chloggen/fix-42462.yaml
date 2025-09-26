@@ -16,8 +16,8 @@ issues: [42462]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  This change introduces a breaking change, which is now guarded by the feature gate `connector.spanmetrics.legacyDefaultMetricsUnit`.
-  Currently, the feature gate is enabled by default, so the unit will remain `ms`. After one or two release cycles, the unit will switch to `s` and the feature gate will also be disabled by default.
+  This change introduces a breaking change, which is now guarded by the feature gate `connector.spanmetrics.useSCDefaultMetricsUnit`.
+  Currently, the feature gate is disabled by default, so the unit will remain `ms`. After one release cycle, the unit will switch to `s` and the feature gate will also be enabled by default.
   To revert this change manually, users can either enable the feature gate or modify the configuration as follows:
   ```
   connectors
