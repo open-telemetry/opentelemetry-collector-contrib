@@ -246,7 +246,8 @@ func NewMetricTranslator(rules []Rule, ttl int64, done chan struct{}) (*MetricTr
 
 func validateTranslationRules(rules []Rule) error {
 	var renameDimensionKeysFound bool
-	for _, tr := range rules {
+	for i := range rules {
+		tr := &rules[i]
 		switch tr.Action {
 		case ActionRenameDimensionKeys:
 			if tr.Mapping == nil {
@@ -351,7 +352,8 @@ func validateTranslationRules(rules []Rule) error {
 // createDimensionsMap creates an additional map for dimensions
 // from ActionRenameDimensionKeys actions in rules.
 func createDimensionsMap(rules []Rule) map[string]string {
-	for _, tr := range rules {
+	for i := range rules {
+		tr := &rules[i]
 		if tr.Action == ActionRenameDimensionKeys {
 			return tr.Mapping
 		}
@@ -360,7 +362,8 @@ func createDimensionsMap(rules []Rule) map[string]string {
 }
 
 func processRules(rules []Rule) error {
-	for i, tr := range rules {
+	for i := range rules {
+		tr := &rules[i]
 		if tr.Action == ActionDropDimensions {
 			// Set metric name filter, if metric name(s) are specified on the rule.
 			// When "drop_dimensions" actions is not scoped to a metric name, the
@@ -402,7 +405,8 @@ func (mp *MetricTranslator) Start() {
 func (mp *MetricTranslator) TranslateDataPoints(logger *zap.Logger, sfxDataPoints []*sfxpb.DataPoint) []*sfxpb.DataPoint {
 	processedDataPoints := sfxDataPoints
 
-	for _, tr := range mp.rules {
+	for i := range mp.rules {
+		tr := &mp.rules[i]
 		switch tr.Action {
 		case ActionRenameDimensionKeys:
 			for _, dp := range processedDataPoints {
@@ -551,7 +555,7 @@ func (mp *MetricTranslator) Shutdown() {
 	}
 }
 
-func calcNewMetricInputPairs(processedDataPoints []*sfxpb.DataPoint, tr Rule) [][2]*sfxpb.DataPoint {
+func calcNewMetricInputPairs(processedDataPoints []*sfxpb.DataPoint, tr *Rule) [][2]*sfxpb.DataPoint {
 	var operand1Pts, operand2Pts []*sfxpb.DataPoint
 	for _, dp := range processedDataPoints {
 		switch dp.Metric {
@@ -600,7 +604,7 @@ func calculateNewMetric(
 	logger *zap.Logger,
 	operand1 *sfxpb.DataPoint,
 	operand2 *sfxpb.DataPoint,
-	tr Rule,
+	tr *Rule,
 ) *sfxpb.DataPoint {
 	v1 := ptToFloatVal(operand1)
 	if v1 == nil {
@@ -838,7 +842,7 @@ func convertMetricValue(logger *zap.Logger, dp *sfxpb.DataPoint, newType MetricV
 	}
 }
 
-func copyMetric(tr Rule, dp *sfxpb.DataPoint, newMetricName string) *sfxpb.DataPoint {
+func copyMetric(tr *Rule, dp *sfxpb.DataPoint, newMetricName string) *sfxpb.DataPoint {
 	if tr.DimensionKey != "" {
 		var match bool
 		for _, d := range dp.Dimensions {
@@ -857,7 +861,7 @@ func copyMetric(tr Rule, dp *sfxpb.DataPoint, newMetricName string) *sfxpb.DataP
 	return newDataPoint
 }
 
-func dropDimensions(dp *sfxpb.DataPoint, rule Rule) {
+func dropDimensions(dp *sfxpb.DataPoint, rule *Rule) {
 	if rule.metricMatcher != nil && !rule.metricMatcher.Matches(dp.Metric) {
 		return
 	}
