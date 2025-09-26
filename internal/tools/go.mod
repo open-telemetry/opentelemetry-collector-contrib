@@ -25,7 +25,7 @@ require (
 	golang.org/x/tools v0.36.0
 	golang.org/x/tools/gopls v0.20.0
 	golang.org/x/vuln v1.1.4
-	gotest.tools/gotestsum v1.12.3
+	gotest.tools/gotestsum v1.13.0
 	mvdan.cc/gofumpt v0.8.0
 )
 
@@ -271,7 +271,6 @@ require (
 	go.uber.org/automaxprocs v1.6.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
-	go.yaml.in/yaml/v2 v2.4.3 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/crypto v0.42.0 // indirect
 	golang.org/x/exp/typeparams v0.0.0-20250620022241-b7579e27df2b // indirect
