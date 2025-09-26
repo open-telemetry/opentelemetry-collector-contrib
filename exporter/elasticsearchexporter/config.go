@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 )
@@ -42,7 +43,8 @@ type Config struct {
 	// NumWorkers configures the number of workers publishing bulk requests.
 	//
 	// Deprecated: [v0.136.0] This config is now deprecated. Use `sending_queue::num_consumers`
-	// instead. Num workers will be ignored if defined and will be dropped in future releases.
+	// instead. If this config is defined and `sending_queue::num_consumers` is not defined then
+	// it will be used to set `sending_queue::num_consumers`.
 	NumWorkers int `mapstructure:"num_workers"`
 
 	// LogsIndex configures the static index used for document routing for logs.
@@ -78,7 +80,8 @@ type Config struct {
 	Retry                   RetrySettings          `mapstructure:"retry"`
 
 	// Deprecated: [v0.136.0] This config is now deprecated. Use `sending_queue::batch` instead.
-	// Flush settings will be ignored if defined and will be dropped in future releases.
+	// If this config is defined then it will be used to configure sending queue's batch provided
+	// sending queue's config are not explicitly defined.
 	Flush          FlushSettings          `mapstructure:"flush"`
 	Mapping        MappingsSettings       `mapstructure:"mapping"`
 	LogstashFormat LogstashFormatSettings `mapstructure:"logstash_format"`
@@ -203,15 +206,22 @@ type DiscoverySettings struct {
 // all events already serialized into the send-buffer.
 //
 // Deprecated: [v0.136.0] This config is now deprecated. Use `sending_queue::batch` instead.
-// Flush settings will be ignored if defined and will be dropped in future releases.
+// If this config is defined then it will be used to configure sending queue's batch provided
+// sending queue's config are not explicitly defined.
 type FlushSettings struct {
 	// Bytes sets the send buffer flushing limit.
-	// Bytes is now deprecated. Use `sending_queue::batch::{min, max}_size with `bytes`
+	// Bytes is now deprecated. Use `sending_queue::batch::{min, max}_size` with `bytes`
 	// sizer to configure batching based on bytes.
+	//
+	// If this config option is defined then it will be used to configure `sending_queue::batch::max_size`
+	// provided it is not explcitly defined.
 	Bytes int `mapstructure:"bytes"`
 
 	// Interval configures the max age of a document in the send buffer.
 	// Interval is now deprecated. Use `sending-queue::batch::flush_timeout` instead.
+	//
+	// If this config option is defined then it will be used to configure `sending_queue::batch::flush_timeout`
+	// provided it is not explcitly defined.
 	Interval time.Duration `mapstructure:"interval"`
 
 	// prevent unkeyed literal initialization
@@ -298,6 +308,25 @@ var (
 )
 
 const defaultElasticsearchEnvName = "ELASTICSEARCH_URL"
+
+func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
+	if err := conf.Unmarshal(cfg); err != nil {
+		return err
+	}
+	if !conf.IsSet("sending_queue::num_consumers") && conf.IsSet("num_workers") {
+		cfg.QueueBatchConfig.NumConsumers = cfg.NumWorkers
+	}
+	if cfg.QueueBatchConfig.Batch.HasValue() {
+		qbCfg := cfg.QueueBatchConfig.Batch.Get()
+		if !conf.IsSet("sending_queue::batch::flush_timeout") && conf.IsSet("flush::interval") {
+			qbCfg.FlushTimeout = cfg.Flush.Interval
+		}
+		if !conf.IsSet("sending_queue::batch::max_size") && conf.IsSet("flush::bytes") {
+			qbCfg.MaxSize = int64(cfg.Flush.Bytes)
+		}
+	}
+	return nil
+}
 
 // Validate validates the elasticsearch server configuration.
 func (cfg *Config) Validate() error {

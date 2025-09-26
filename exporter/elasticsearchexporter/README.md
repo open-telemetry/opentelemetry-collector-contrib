@@ -292,10 +292,10 @@ This can be configured through the following settings:
 The Elasticsearch exporter uses the [Elasticsearch Bulk API] for indexing documents.
 The behaviour of this bulk indexing can be configured with the following settings:
 
-- `num_workers` (DEPRECATED, use sending_queue::num_consumers instead): This config is deprecated and ignored. Number of workers publishing bulk requests concurrently.
-- `flush` (DEPRECATED, use sending_queue instead): This config is deprecated and will be ignored. Event bulk indexer buffer flush settings
-  - `bytes`: Write buffer flush size limit before compression. A bulk request will be sent immediately when its buffer exceeds this limit. This value should be much lower than [Elasticsearch's `http.max_content_length`](https://www.elastic.co/guide/en/elasticsearch/reference/current/modules-network.html#http-settings) config to avoid HTTP 413 Entity Too Large error. It is recommended to keep this value under 5MB.
-  - `interval`: Write buffer flush time limit.
+- `num_workers` (DEPRECATED, use `sending_queue::num_consumers` instead): This config is deprecated and will be used to configure `sending_queue::num_consumers` if it is not explicitly defined. Number of workers publishing bulk requests concurrently.
+- `flush` (DEPRECATED, use `sending_queue` instead): This config is deprecated and will be used to configure different options for `sending_queue` if they are not explicitly defined. Event bulk indexer buffer flush settings
+  - `bytes` (DEPRECATED, use `sending_queue::batch::max_size` instead): This config is deprecated and will be used to configure `sending_queue::batch::max_size` if not explicitly defined. See the `sending_queue::batch::max_size` for more details.
+  - `interval` (DEPRECATED, use `sending_queue::batch::flush_timeout` instead): This config is deprecated and will be used to configure `sending_queue::batch::flush_timeout` if not explicitly defind. See the `sending_queue::batch::flush_timeout` for more details.
 - `retry`: Elasticsearch bulk request retry settings
   - `enabled` (default=true): Enable/Disable request retry on error. Failed requests are retried with exponential backoff.
   - `max_requests` (DEPRECATED, use retry::max_retries instead): Number of HTTP request retries including the initial attempt. If used, `retry::max_retries` will be set to `max_requests - 1`.

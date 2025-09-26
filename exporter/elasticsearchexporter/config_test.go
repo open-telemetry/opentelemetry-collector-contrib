@@ -368,6 +368,44 @@ func TestConfig(t *testing.T) {
 				)
 			}),
 		},
+		{
+			id:         component.NewIDWithName(metadata.Type, "backward_compat_for_deprecated_cfgs/new_config_takes_priority"),
+			configFile: "config.yaml",
+			expected: withDefaultConfig(func(cfg *Config) {
+				cfg.Endpoint = "https://elastic.example.com:9200"
+
+				cfg.NumWorkers = 11
+				cfg.Flush = FlushSettings{
+					Bytes:    1001,
+					Interval: 11 * time.Second,
+				}
+				cfg.QueueBatchConfig.NumConsumers = 111
+				// QueueBatchConfig is set by default
+				qbCfg := cfg.QueueBatchConfig.Batch.Get()
+				qbCfg.FlushTimeout = 111 * time.Second
+				qbCfg.MaxSize = 1_000_001
+				qbCfg.Sizer = exporterhelper.RequestSizerTypeBytes
+			}),
+		},
+		{
+			id:         component.NewIDWithName(metadata.Type, "backward_compat_for_deprecated_cfgs/fallback_to_old_cfg"),
+			configFile: "config.yaml",
+			expected: withDefaultConfig(func(cfg *Config) {
+				cfg.Endpoint = "https://elastic.example.com:9200"
+
+				cfg.NumWorkers = 11
+				cfg.Flush = FlushSettings{
+					Bytes:    1_000_001,
+					Interval: 11 * time.Second,
+				}
+				cfg.QueueBatchConfig.NumConsumers = 11
+				// QueueBatchConfig is set by default
+				qbCfg := cfg.QueueBatchConfig.Batch.Get()
+				qbCfg.FlushTimeout = 11 * time.Second
+				qbCfg.MaxSize = 1_000_001
+				qbCfg.Sizer = exporterhelper.RequestSizerTypeBytes
+			}),
+		},
 	}
 
 	for _, tt := range tests {
