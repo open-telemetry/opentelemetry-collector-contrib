@@ -64,7 +64,7 @@ require (
 	go.opentelemetry.io/collector/pdata/pprofile v0.136.1-0.20250925151503-069408608b28 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.136.1-0.20250925151503-069408608b28 // indirect
 	go.opentelemetry.io/collector/processor/xprocessor v0.136.1-0.20250925151503-069408608b28 // indirect
-	go.opentelemetry.io/contrib/bridges/otelzap v0.12.0 // indirect
+	go.opentelemetry.io/contrib/bridges/otelzap v0.13.0 // indirect
 	go.opentelemetry.io/otel/log v0.14.0 // indirect
 	go.opentelemetry.io/otel/metric v1.38.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.38.0 // indirect
