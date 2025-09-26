@@ -5,5 +5,5 @@ status:
   stability:
     development: [logs]
   codeowners:
-    active: [constanca-m]
+    active: [constanca-m, braydonk]
     seeking_new: true
