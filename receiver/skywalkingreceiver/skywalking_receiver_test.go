@@ -81,9 +81,7 @@ func TestStartAndShutdown(t *testing.T) {
 	err := sr.registerTraceConsumer(sink)
 	require.NoError(t, err)
 	require.NoError(t, sr.Start(t.Context(), componenttest.NewNopHost()))
-	defer func() {
-		require.NoError(t, sr.Shutdown(t.Context()))
-	}()
+	require.NoError(t, sr.Shutdown(t.Context()))
 }
 
 func TestGRPCReception(t *testing.T) {
