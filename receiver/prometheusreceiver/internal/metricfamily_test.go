@@ -5,6 +5,7 @@ package internal
 
 import (
 	"math"
+	"strings"
 	"testing"
 	"time"
 
@@ -17,6 +18,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 )
 
 type testMetadataStore map[string]scrape.MetricMetadata
@@ -769,6 +772,77 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 			got := sdpL.At(0)
 			want := tt.want()
 			require.Equal(t, want, got, "Expected the points to be equal")
+		})
+	}
+}
+
+// TestPopulateAttributes_ScopeLabelFiltering tests the target behavior where otel_scope_
+// prefixed labels should always be filtered from datapoint attributes regardless of feature gate.
+func TestPopulateAttributes_ScopeLabelFiltering(t *testing.T) {
+	tests := []struct {
+		name           string
+		labels         labels.Labels
+		featureEnabled bool
+		wantAttrs      map[string]string
+	}{
+		{
+			name: "feature_gate_disabled",
+			labels: labels.FromStrings(
+				"__name__", "test_metric",
+				"job", "test-job",
+				"instance", "localhost:8080",
+				"method", "GET",
+				"otel_scope_name", "my-scope",
+				"otel_scope_version", "1.0.0",
+				"otel_scope_animal", "bear",
+			),
+			featureEnabled: false,
+			wantAttrs: map[string]string{
+				"method": "GET",
+				// otel_scope_* labels should always be filtered out regardless of feature gate
+			},
+		},
+		{
+			name: "feature_gate_enabled",
+			labels: labels.FromStrings(
+				"__name__", "test_metric",
+				"job", "test-job",
+				"instance", "localhost:8080",
+				"method", "GET",
+				"otel_scope_name", "my-scope",
+				"otel_scope_version", "1.0.0",
+				"otel_scope_animal", "bear",
+			),
+			featureEnabled: true,
+			wantAttrs: map[string]string{
+				"method": "GET",
+				// otel_scope_* labels should always be filtered out regardless of feature gate
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			defer testutil.SetFeatureGateForTest(t, RemoveScopeInfoGate, tt.featureEnabled)()
+
+			attrs := pcommon.NewMap()
+			populateAttributes(pmetric.MetricTypeGauge, tt.labels, attrs)
+
+			// Verify expected attributes
+			require.Equal(t, len(tt.wantAttrs), attrs.Len(), "Unexpected number of attributes")
+
+			for key, expectedValue := range tt.wantAttrs {
+				actualValue, exists := attrs.Get(key)
+				require.True(t, exists, "Expected attribute %s not found", key)
+				require.Equal(t, expectedValue, actualValue.AsString(), "Unexpected value for attribute %s", key)
+			}
+
+			// Verify no otel_scope_ attributes are present regardless of feature gate
+			attrs.Range(func(k string, _ pcommon.Value) bool {
+				require.False(t, strings.HasPrefix(k, "otel_scope_"),
+					"Found otel_scope_ prefixed attribute %s in datapoint attributes - these should always be filtered", k)
+				return true
+			})
 		})
 	}
 }

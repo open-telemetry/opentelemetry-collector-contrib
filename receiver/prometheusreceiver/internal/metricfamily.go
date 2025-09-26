@@ -360,6 +360,11 @@ func populateAttributes(mType pmetric.MetricType, ls labels.Labels, dest pcommon
 		if j < len(names) && l.Name == names[j] {
 			return
 		}
+
+		if strings.HasPrefix(l.Name, "otel_scope_") {
+			return
+		}
+
 		if l.Value == "" {
 			// empty label values should be omitted
 			return
