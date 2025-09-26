@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package watch
 
 import (
@@ -20,8 +23,14 @@ import (
 
 const defaultResourceVersion = "1"
 
+type Config struct {
+	observer.Config
+	IncludeInitialState bool
+	Exclude             map[apiWatch.EventType]bool
+}
+
 type Observer struct {
-	config observer.Config
+	config Config
 
 	client dynamic.Interface
 	logger *zap.Logger
@@ -30,7 +39,7 @@ type Observer struct {
 	handleWatchEventFunc func(event *apiWatch.Event)
 }
 
-func New(client dynamic.Interface, config observer.Config, logger *zap.Logger, handleWatchEventFunc func(event *apiWatch.Event)) (*Observer, error) {
+func New(client dynamic.Interface, config Config, logger *zap.Logger, handleWatchEventFunc func(event *apiWatch.Event)) (*Observer, error) {
 	o := &Observer{
 		client:               client,
 		config:               config,
@@ -74,7 +83,7 @@ func (o *Observer) startWatch(ctx context.Context, resource dynamic.ResourceInte
 	cancelCtx, cancel := context.WithCancel(ctx)
 
 	wait.UntilWithContext(cancelCtx, func(newCtx context.Context) {
-		resourceVersion, err := getResourceVersion(newCtx, o.config, resource)
+		resourceVersion, err := getResourceVersion(newCtx, o.config.Config, resource)
 		if err != nil {
 			o.logger.Error("could not retrieve a resourceVersion",
 				zap.String("resource", o.config.Gvr.String()),

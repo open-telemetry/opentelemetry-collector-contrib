@@ -88,20 +88,21 @@ func newReceiver(params receiver.Settings, config *Config, consumer consumer.Log
 func getObserverFunc(kr *k8sobjectsreceiver) func(ctx context.Context, object *K8sObjectsConfig) (observer.Observer, error) {
 	return func(ctx context.Context, object *K8sObjectsConfig) (observer.Observer, error) {
 		obsConf := observer.Config{
-			Gvr:                 *object.gvr,
-			Namespaces:          object.Namespaces,
-			Interval:            object.Interval,
-			LabelSelector:       object.LabelSelector,
-			FieldSelector:       object.FieldSelector,
-			ResourceVersion:     object.ResourceVersion,
-			IncludeInitialState: kr.config.IncludeInitialState,
-			Exclude:             object.exclude,
+			Gvr:             *object.gvr,
+			Namespaces:      object.Namespaces,
+			LabelSelector:   object.LabelSelector,
+			FieldSelector:   object.FieldSelector,
+			ResourceVersion: object.ResourceVersion,
 		}
+
 		switch object.Mode {
 		case observer.PullMode:
 			return pullobserver.New(
 				kr.client,
-				obsConf,
+				pullobserver.Config{
+					Config:   obsConf,
+					Interval: object.Interval,
+				},
 				kr.setting.Logger,
 				func(objects *unstructured.UnstructuredList) {
 					logs := pullObjectsToLogData(objects, time.Now(), object, kr.setting.BuildInfo.Version)
@@ -114,7 +115,17 @@ func getObserverFunc(kr *k8sobjectsreceiver) func(ctx context.Context, object *K
 		case observer.WatchMode:
 			return watchobserver.New(
 				kr.client,
-				obsConf,
+				watchobserver.Config{
+					Config: observer.Config{
+						Gvr:             *object.gvr,
+						Namespaces:      object.Namespaces,
+						LabelSelector:   object.LabelSelector,
+						FieldSelector:   object.FieldSelector,
+						ResourceVersion: object.ResourceVersion,
+					},
+					IncludeInitialState: kr.config.IncludeInitialState,
+					Exclude:             object.exclude,
+				},
 				kr.setting.Logger,
 				func(data *apiWatch.Event) {
 					logs, err := watchObjectsToLogData(data, time.Now(), object, kr.setting.BuildInfo.Version)

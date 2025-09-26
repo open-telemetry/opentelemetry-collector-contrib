@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package pull
 
 import (
@@ -11,8 +14,13 @@ import (
 	"time"
 )
 
+type Config struct {
+	observer.Config
+	Interval time.Duration
+}
+
 type Observer struct {
-	config observer.Config
+	config Config
 
 	client dynamic.Interface
 	logger *zap.Logger
@@ -21,7 +29,7 @@ type Observer struct {
 	handlePullObjectsFunc func(objects *unstructured.UnstructuredList)
 }
 
-func New(client dynamic.Interface, config observer.Config, logger *zap.Logger, handlePullObjectsFunc func(objects *unstructured.UnstructuredList)) (*Observer, error) {
+func New(client dynamic.Interface, config Config, logger *zap.Logger, handlePullObjectsFunc func(objects *unstructured.UnstructuredList)) (*Observer, error) {
 	o := &Observer{
 		client:                client,
 		config:                config,

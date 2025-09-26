@@ -1,7 +1,4 @@
-// Copyright The OpenTelemetry Authors
-// SPDX-License-Identifier: Apache-2.0
-
-package watch
+package pull
 
 import (
 	"context"
@@ -12,20 +9,15 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/dynamic/fake"
+	"sync"
 	"testing"
 	"time"
 )
 
 func TestObserver(t *testing.T) {
 	mockClient := newMockDynamicClient()
-	mockClient.createPods(
-		generatePod("pod1", "default", map[string]any{
-			"environment": "production",
-		}, "1"),
-	)
 
 	cfg := Config{
 		Config: observer.Config{
@@ -36,19 +28,16 @@ func TestObserver(t *testing.T) {
 			},
 			Namespaces: []string{"default"},
 		},
+		Interval: 10 * time.Millisecond,
 	}
 
-	receivedEventsChan := make(chan *watch.Event)
+	ts := testSink{}
 
-	obs, err := New(mockClient, cfg, zap.NewNop(), func(event *watch.Event) {
-		receivedEventsChan <- event
-	})
+	obs, err := New(mockClient, cfg, zap.NewNop(), ts.receive)
 
 	require.Nil(t, err)
 
 	stopChan := obs.Start(t.Context())
-
-	time.Sleep(time.Millisecond * 100)
 
 	mockClient.createPods(
 		generatePod("pod2", "default", map[string]any{
@@ -62,107 +51,29 @@ func TestObserver(t *testing.T) {
 		}, "4"),
 	)
 
-	verifyReceivedEvents(t, 2, receivedEventsChan, stopChan)
-}
-
-func TestObserverWithInitialState(t *testing.T) {
-	mockClient := newMockDynamicClient()
-	mockClient.createPods(
-		generatePod("pod1", "default", map[string]any{
-			"environment": "production",
-		}, "1"),
-	)
-
-	cfg := Config{
-		Config: observer.Config{
-			Gvr: schema.GroupVersionResource{
-				Group:    "",
-				Version:  "v1",
-				Resource: "pods",
-			},
-			Namespaces: []string{"default"},
-		},
-		IncludeInitialState: true,
-	}
-
-	receivedEventsChan := make(chan *watch.Event)
-
-	obs, err := New(mockClient, cfg, zap.NewNop(), func(event *watch.Event) {
-		receivedEventsChan <- event
-	})
-
-	require.Nil(t, err)
-
-	stopChan := obs.Start(t.Context())
-
-	verifyReceivedEvents(t, 1, receivedEventsChan, stopChan)
-}
-
-func TestObserverExcludeDelete(t *testing.T) {
-	mockClient := newMockDynamicClient()
-
-	cfg := Config{
-		Config: observer.Config{
-			Gvr: schema.GroupVersionResource{
-				Group:    "",
-				Version:  "v1",
-				Resource: "pods",
-			},
-			Namespaces: []string{"default"},
-		},
-		IncludeInitialState: true,
-		Exclude: map[watch.EventType]bool{
-			watch.Deleted: true,
-		},
-	}
-
-	receivedEventsChan := make(chan *watch.Event)
-
-	obs, err := New(mockClient, cfg, zap.NewNop(), func(event *watch.Event) {
-		receivedEventsChan <- event
-	})
-
-	require.Nil(t, err)
-
-	stopChan := obs.Start(t.Context())
-
-	<-time.After(time.Millisecond * 100)
-
-	pod := generatePod("pod1", "default", map[string]any{
-		"environment": "production",
-	}, "1")
-
-	// create and delete the pod - only the creation event should be received
-	mockClient.createPods(pod)
-	mockClient.deletePods(pod)
-
-	verifyReceivedEvents(t, 1, receivedEventsChan, stopChan)
-}
-
-func verifyReceivedEvents(t *testing.T, numEvents int, receivedEventsChan chan *watch.Event, stopChan chan struct{}) {
-	receivedEvents := 0
-
-	exit := false
-	for {
-		select {
-		case <-receivedEventsChan:
-			receivedEvents++
-			if receivedEvents == numEvents {
-				exit = true
-				break
-			}
-		case <-time.After(10 * time.Second):
-			t.Log("timed out waiting for expected events")
-			t.Fail()
-			exit = true
-			break
-		}
-		if exit {
-			break
-		}
-	}
+	require.Eventually(t, func() bool {
+		return ts.getReceivedEvents() == 2
+	}, 5*time.Second, 10*time.Millisecond, "Observer should receive events")
 
 	stopChan <- struct{}{}
+}
+
+type testSink struct {
+	receivedObjectsChan chan *unstructured.UnstructuredList
+	numReceivedEvents   int
+	mtx                 sync.RWMutex
+}
+
+func (t *testSink) receive(objs *unstructured.UnstructuredList) {
+	t.mtx.Lock()
+	defer t.mtx.Unlock()
+	t.numReceivedEvents += len(objs.Items)
+}
+
+func (t *testSink) getReceivedEvents() int {
+	t.mtx.RLock()
+	defer t.mtx.RUnlock()
+	return t.numReceivedEvents
 }
 
 type mockDynamicClient struct {
