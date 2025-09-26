@@ -609,10 +609,14 @@ func (p *connectorImp) buildKey(serviceName string, span ptrace.Span, optionalDi
 }
 
 func (p *connectorImp) spanName(span ptrace.Span) string {
-	if !p.config.SpanNameSemanticConvention {
+	if p.config.SpanNameSemanticConvention {
+		return inferSpanName(span)
+	} else {
 		return span.Name()
 	}
+}
 
+func inferSpanName(span ptrace.Span) string {
 	// span is sem conv compliant
 	// return sem conv conv span name
 	// bonus: else infer span name from smart span name sanitizer heuristic
