@@ -28,6 +28,7 @@ The following settings are optional:
 the K8s API server. This can be one of `none` (for no auth), `serviceAccount`
 (to use the standard service account token provided to the agent pod), or
 `kubeConfig` to use credentials from `~/.kube/config`.
+- `k8s_leader_elector` (default: none): if specified, will enable Leader Election by using `k8sleaderelector` extension
 - `namespaces` (default = `all`): An array of `namespaces` to collect events from.
 This receiver will continuously watch all the `namespaces` mentioned in the array for
 new events.
@@ -37,6 +38,7 @@ Examples:
 ```yaml
   k8s_events:
     auth_type: kubeConfig
+    k8s_leader_elector: k8s_leader_elector
     namespaces: [default, my_namespace]
 ```
 
