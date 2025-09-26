@@ -5,7 +5,6 @@ package googlecloudstorageexporter // import "github.com/open-telemetry/opentele
 
 import (
 	"context"
-	"errors"
 
 	"cloud.google.com/go/storage"
 	"go.opentelemetry.io/collector/component"
@@ -33,7 +32,8 @@ func newStorageExporter(
 	_ *Config,
 	_ *zap.Logger,
 ) (*storageExporter, error) {
-	return nil, errors.New("implement me")
+	// TODO
+	return &storageExporter{}, nil
 }
 
 func (s *storageExporter) Start(_ context.Context, _ component.Host) error {
