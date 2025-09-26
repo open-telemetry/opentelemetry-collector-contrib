@@ -396,6 +396,14 @@ metrics:
       aggregation_temporality: cumulative
       monotonic: false
       value_type: int
+  postgresql.table.autovacuum.count:
+    description: Number of times a table has manually been autovacuumed.
+    enabled: true
+    unit: "{autovacuums}"
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
   postgresql.table.vacuum.count:
     description: Number of times a table has manually been vacuumed.
     enabled: true
