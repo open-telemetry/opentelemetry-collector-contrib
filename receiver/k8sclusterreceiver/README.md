@@ -54,15 +54,25 @@ by the cluster. Currently supported versions are `kubernetes` and `openshift`. S
 the value to `openshift` enables OpenShift specific metrics in addition to standard
 kubernetes ones.
 - `allocatable_types_to_report` (default = `[]`): An array of allocatable resource types this receiver should report.
-The following allocatable resource types are available.
+The following allocatable resource types are available (see Node Allocatable in [Kubernetes docs](https://kubernetes.io/docs/tasks/administer-cluster/reserve-compute-resources/#node-allocatable)):
   - cpu
   - memory
   - ephemeral-storage
-  - storage
   - pods
+
+When enabled, this setting produces the following node-level metrics (one per selected type):
+
+| allocatable type | metric name                      | unit     | type  | value type |
+| ---------------- | -------------------------------- | -------- | ----- | ---------- |
+| cpu              | k8s.node.allocatable_cpu         | {cpu}    | Gauge | Double     |
+| memory           | k8s.node.allocatable_memory      | By       | Gauge | Double     |
+| ephemeral-storage| k8s.node.allocatable_ephemeral_storage | By | Gauge | Double     |
+| pods             | k8s.node.allocatable_pods        | {pod}    | Gauge | Int        |
+
 - `metrics`: Allows to enable/disable metrics.
 - `resource_attributes`: Allows to enable/disable resource attributes.
-- `namespace`: Allows to observe resources for a particular namespace only. If this option is set to a non-empty string, `Nodes`, `Namespaces` and `ClusterResourceQuotas` will not be observed. 
+- `namespace` (deprecated, use `namespaces` instead): Allows to observe resources for a particular namespace only. If this option is set to a non-empty string, `Nodes`, `Namespaces` and `ClusterResourceQuotas` will not be observed.
+- `namespaces`: Allows to observe resources for a list of given namespaces. If this option is set, `Nodes`, `Namespaces` and `ClusterResourceQuotas` will not be observed, as those are cluster-scoped resources.
 
 Example:
 
@@ -286,8 +296,8 @@ subjects:
 EOF
 ```
 
-As an alternative to setting up a `ClusterRole`/`ClusterRoleBinding`, it is also possible to limit the observed resources to a
-particular namespace by setting the `namespace` option of the receiver. This allows the collector to only rely on `Roles`/`RoleBindings`, 
+As an alternative to setting up a `ClusterRole`/`ClusterRoleBinding`, it is also possible to limit the observed resources to a list of
+particular namespaces by setting the `namespaces` option of the receiver. This allows the collector to only rely on `Roles`/`RoleBindings`, 
 instead of granting the collector cluster-wide read access to resources.
 Note however, that in this case the following resources will not be observed by the `k8sclusterreceiver`:
 
@@ -295,7 +305,7 @@ Note however, that in this case the following resources will not be observed by 
 - `Namespaces`
 - `ClusterResourceQuotas`
 
-To use this approach, use the commands below to create the required `Role` and `RoleBinding`:
+To use this approach, use the commands below to create the required `Role` and `RoleBinding` for each of the namespaces the collector should observe:
 
 ```bash
 <<EOF | kubectl apply -f -
@@ -433,7 +443,7 @@ Example:
 Add the following rules to your ClusterRole:
 
 ```yaml
-- apigroups:
+- apiGroups:
   - quota.openshift.io
   resources:
   - clusterresourcequotas

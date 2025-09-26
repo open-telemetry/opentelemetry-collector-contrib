@@ -39,6 +39,7 @@ Journald receiver requires that:
 | `all`                               | 'false'                              | If `true`, very long logs and logs with unprintable characters will also be included.                                                                                                                                                    |
 | `namespace`                         |                                      | Will query the given namespace. See man page [`systemd-journald.service(8)`](https://www.man7.org/linux/man-pages/man8/systemd-journald.service.8.html#JOURNAL_NAMESPACES) for details.                                                  |
 | `convert_message_bytes`             | 'false'                              | If `true` and if the `MESSAGE` field is read [as an array of bytes](https://github.com/systemd/systemd/blob/main/docs/JOURNAL_EXPORT_FORMATS.md#journal-json-format), the array will be converted to string.                             |
+| `merge`                             | 'false'                              | If `true`, read from all available journals, including remote ones.                                                                                                                                                                      |
 | `retry_on_failure.enabled`          | `false`                              | If `true`, the receiver will pause reading a file and attempt to resend the current batch of logs if it encounters an error from downstream components.                                                                                  |
 | `retry_on_failure.initial_interval` | `1 second`                           | Time to wait after the first failure before retrying.                                                                                                                                                                                    |
 | `retry_on_failure.max_interval`     | `30 seconds`                         | Upper bound on retry backoff interval. Once this value is reached the delay between consecutive retries will remain constant at the specified value.                                                                                     |
@@ -55,6 +56,49 @@ Each operator performs a simple responsibility, such as parsing a timestamp or J
 - Only parsers and general purpose operators should be used.
 
 ### Example Configurations
+#### Minimal configuration
+
+The following configuration is the minimal configuration to read
+journald logs:
+
+```yaml
+receivers:
+  journald:
+```
+will be passed to journalctl as the following arguments: `journalctl
+... --priority info`. This will read the 10 most recent entries and
+any subsequent entry.  `--priority info` is the default priority, the
+following examples will omit it for simplicity.
+
+#### Cursor tracking
+```yaml
+receivers:
+  journald:
+    storage: file_storage/journald
+
+extensions:
+  file_storage/journald:
+    directory: .
+
+service:
+  extensions: [file_storage/journald]
+```
+
+If you stop and start the otel collector, only new entries will be
+read.
+
+#### Reading from the beginning
+
+```yaml
+receivers:
+  journald:
+    start_at: beginning
+```
+
+will be passed to journalctl as the following arguments: `journalctl
+... --no-tail`. This will read all messages from the current boot.
+
+#### Units
 
 ```yaml
 receivers:
