@@ -6,7 +6,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.136.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/pdata v1.42.1-0.20250925151503-069408608b28
-	go.opentelemetry.io/collector/pdata/pprofile v0.136.0
+	go.opentelemetry.io/collector/pdata/pprofile v0.136.1-0.20250925151503-069408608b28
 	go.uber.org/goleak v1.3.0
 	gopkg.in/yaml.v3 v3.0.1
 )
