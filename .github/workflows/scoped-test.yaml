@@ -92,14 +92,14 @@ jobs:
         env:
           CHANGED_GOLANG_TESTS: ${{ needs.changedfiles.outputs.go_tests }}
         run: |
-          make run-changed-tests
+          make -f Makefile.Common run-changed-tests
 
       - name: Run tests on dependent components
         if: needs.changedfiles.outputs.go_sources
         env:
           CHANGED_GOLANG_SOURCES: ${{ needs.changedfiles.outputs.go_sources }}
         run: |
-          make for-affected-components CMD="make lint test-twice"
+          make -f Makefile.Common for-affected-components CMD="make lint test-twice"
 
   scoped-tests:
     # Keeps the name of the job required for merging in the GH configuration, make it
