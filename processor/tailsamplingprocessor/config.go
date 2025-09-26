@@ -213,7 +213,8 @@ type BytesLimitingCfg struct {
 	// BytesPerSecond sets the limit on the maximum number of bytes that can be processed each second.
 	BytesPerSecond int64 `mapstructure:"bytes_per_second"`
 	// BurstCapacity sets the maximum burst capacity in bytes. If not specified, defaults to 2x BytesPerSecond.
-	// This allows for short bursts of traffic above the sustained rate.
+	// This allows for short bursts of traffic above the sustained rate. It also acts as a 
+	// limit for individual trace sizes, a single trace larger than the burst size will not pass.
 	BurstCapacity int64 `mapstructure:"burst_capacity"`
 }
 
