@@ -17,6 +17,8 @@ telemetry:
   metrics:
     dedup_processor_aggregated_logs:
       description: Number of log records that were aggregated together.
+      stability:
+        level: development
       unit: "{records}"
       enabled: true
       histogram:
