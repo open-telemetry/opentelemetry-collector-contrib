@@ -18,13 +18,6 @@ issues: [42462]
 subtext: |
   This change introduces a breaking change, which is now guarded by the feature gate `connector.spanmetrics.useSCDefaultMetricsUnit`.
   Currently, the feature gate is disabled by default, so the unit will remain `ms`. After one release cycle, the unit will switch to `s` and the feature gate will also be enabled by default.
-  To revert this change manually, users can either enable the feature gate or modify the configuration as follows:
-  ```
-  connectors
-    spanmetrics:
-      histogram:
-        unit: "ms"
-  ```
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
