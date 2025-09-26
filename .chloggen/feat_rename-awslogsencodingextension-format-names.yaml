@@ -10,7 +10,7 @@ component: awslogsencodingextension
 note: Rename awslogsencodingextension format values to shorter, more concise identifiers. Old format values are still supported until v0.138.0.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: [42899]
+issues: [42901]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
