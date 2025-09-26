@@ -6,6 +6,7 @@ package traces // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"context"
 	"fmt"
+	"math/rand/v2"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -35,15 +36,66 @@ type worker struct {
 	wg               *sync.WaitGroup       // notify when done
 	loadSize         int                   // desired minimum size in MB of string data for each generated trace
 	spanDuration     time.Duration         // duration of generated spans
+	numSpanLinks     int                   // number of span links to generate per span
 	logger           *zap.Logger
-	allowFailures    bool // whether to continue on export failures
+	allowFailures    bool                // whether to continue on export failures
+	spanContexts     []trace.SpanContext // collection of span contexts for linking
+	spanContextsMu   sync.RWMutex        // mutex for spanContexts slice
 }
 
 const (
-	fakeIP string = "1.2.3.4"
+	fakeIP                string = "1.2.3.4"
+	maxSpanContextsBuffer int    = 1000 // Maximum number of span contexts to keep for linking
 )
 
-func (w worker) simulateTraces(telemetryAttributes []attribute.KeyValue) {
+// addSpanContext safely adds a span context to the worker's collection
+// Maintains a circular buffer to prevent unbounded memory growth
+func (w *worker) addSpanContext(spanCtx trace.SpanContext) {
+	w.spanContextsMu.Lock()
+	defer w.spanContextsMu.Unlock()
+
+	w.spanContexts = append(w.spanContexts, spanCtx)
+
+	// Keep only the most recent span contexts to prevent memory growth
+	if len(w.spanContexts) > maxSpanContextsBuffer {
+		w.spanContexts = w.spanContexts[1 : maxSpanContextsBuffer+1]
+	}
+}
+
+// generateSpanLinks creates span links to random existing span contexts
+func (w *worker) generateSpanLinks() []trace.Link {
+	if w.numSpanLinks <= 0 {
+		return nil
+	}
+
+	w.spanContextsMu.RLock()
+	defer w.spanContextsMu.RUnlock()
+
+	availableContexts := len(w.spanContexts)
+	if availableContexts == 0 {
+		return nil
+	}
+
+	links := make([]trace.Link, 0, w.numSpanLinks)
+
+	// Generate links to random existing span contexts
+	for i := 0; i < w.numSpanLinks; i++ {
+		randomIndex := rand.IntN(availableContexts)
+		spanCtx := w.spanContexts[randomIndex]
+
+		links = append(links, trace.Link{
+			SpanContext: spanCtx,
+			Attributes: []attribute.KeyValue{
+				attribute.String("link.type", "random"),
+				attribute.Int("link.index", i),
+			},
+		})
+	}
+
+	return links
+}
+
+func (w *worker) simulateTraces(telemetryAttributes []attribute.KeyValue) {
 	tracer := otel.Tracer("telemetrygen")
 	limiter := rate.NewLimiter(w.limitPerSecond, 1)
 	var i int
@@ -56,17 +108,24 @@ func (w worker) simulateTraces(telemetryAttributes []attribute.KeyValue) {
 			w.logger.Fatal("limiter waited failed, retry", zap.Error(err))
 		}
 
+		// Generate span links for the parent span
+		parentLinks := w.generateSpanLinks()
+
 		ctx, sp := tracer.Start(context.Background(), "lets-go", trace.WithAttributes(
 			semconv.NetworkPeerAddress(fakeIP),
 			semconv.PeerService("telemetrygen-server"),
 		),
 			trace.WithSpanKind(trace.SpanKindClient),
 			trace.WithTimestamp(spanStart),
+			trace.WithLinks(parentLinks...),
 		)
 		sp.SetAttributes(telemetryAttributes...)
 		for j := 0; j < w.loadSize; j++ {
 			sp.SetAttributes(common.CreateLoadAttribute(fmt.Sprintf("load-%v", j), 1))
 		}
+
+		// Store the parent span context for potential future linking
+		w.addSpanContext(sp.SpanContext())
 
 		childCtx := ctx
 		if w.propagateContext {
@@ -84,14 +143,21 @@ func (w worker) simulateTraces(telemetryAttributes []attribute.KeyValue) {
 				w.logger.Fatal("limiter waited failed, retry", zap.Error(err))
 			}
 
+			// Generate span links for child spans
+			childLinks := w.generateSpanLinks()
+
 			_, child := tracer.Start(childCtx, "okey-dokey-"+strconv.Itoa(j), trace.WithAttributes(
 				semconv.NetworkPeerAddress(fakeIP),
 				semconv.PeerService("telemetrygen-client"),
 			),
 				trace.WithSpanKind(trace.SpanKindServer),
 				trace.WithTimestamp(spanStart),
+				trace.WithLinks(childLinks...),
 			)
 			child.SetAttributes(telemetryAttributes...)
+
+			// Store the child span context for potential future linking
+			w.addSpanContext(child.SpanContext())
 
 			endTimestamp = trace.WithTimestamp(spanEnd)
 			child.SetStatus(w.statusCode, "")

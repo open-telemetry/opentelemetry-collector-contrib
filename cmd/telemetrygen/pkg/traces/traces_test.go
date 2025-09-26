@@ -5,17 +5,20 @@ package traces
 
 import (
 	"encoding/pem"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
+	"go.opentelemetry.io/otel/trace"
 	tracepb "go.opentelemetry.io/proto/otlp/trace/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
@@ -227,6 +230,18 @@ func TestConfigValidation(t *testing.T) {
 			expectError: true,
 			description: "Config with negative traces should be invalid",
 		},
+		{
+			name: "Valid config with span links",
+			config: Config{
+				Config: common.Config{
+					WorkerCount: 1,
+				},
+				NumTraces:    5,
+				NumSpanLinks: 2,
+			},
+			expectError: false,
+			description: "Config with span links should be valid",
+		},
 	}
 
 	for _, tt := range tests {
@@ -410,4 +425,127 @@ func TestHTTPExporterOptions_HTTP(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestSpanLinksGeneration tests the span links generation functionality
+func TestSpanLinksGeneration(t *testing.T) {
+	tests := []struct {
+		name              string
+		numSpanLinks      int
+		existingContexts  int
+		expectedLinkCount int
+		description       string
+	}{
+		{
+			name:              "No span links",
+			numSpanLinks:      0,
+			existingContexts:  5,
+			expectedLinkCount: 0,
+			description:       "Should generate no links when numSpanLinks is 0",
+		},
+		{
+			name:              "With existing contexts",
+			numSpanLinks:      3,
+			existingContexts:  5,
+			expectedLinkCount: 3,
+			description:       "Should generate links to random existing contexts",
+		},
+		{
+			name:              "No existing contexts",
+			numSpanLinks:      3,
+			existingContexts:  0,
+			expectedLinkCount: 0,
+			description:       "Should generate no links when no existing contexts",
+		},
+		{
+			name:              "Fewer contexts than requested links",
+			numSpanLinks:      5,
+			existingContexts:  3,
+			expectedLinkCount: 5,
+			description:       "Should generate requested number of links (allows duplicates)",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			w := &worker{
+				numSpanLinks:   tt.numSpanLinks,
+				spanContexts:   make([]trace.SpanContext, 0),
+				spanContextsMu: sync.RWMutex{},
+			}
+
+			// Add existing contexts for testing
+			for i := 0; i < tt.existingContexts; i++ {
+				traceID, _ := trace.TraceIDFromHex(fmt.Sprintf("%032d", i))
+				spanID, _ := trace.SpanIDFromHex(fmt.Sprintf("%016d", i))
+				spanCtx := trace.NewSpanContext(trace.SpanContextConfig{
+					TraceID:    traceID,
+					SpanID:     spanID,
+					TraceFlags: trace.FlagsSampled,
+				})
+				w.addSpanContext(spanCtx)
+			}
+
+			links := w.generateSpanLinks()
+
+			assert.Len(t, links, tt.expectedLinkCount, tt.description)
+
+			// Verify all links have random type and correct index
+			for i, link := range links {
+				// Verify link.type attribute is 'random'
+				found := false
+				for _, attr := range link.Attributes {
+					if attr.Key == "link.type" && attr.Value.AsString() == "random" {
+						found = true
+						break
+					}
+				}
+				assert.True(t, found, "Link should have 'link.type=random' attribute")
+
+				// Verify link.index attribute is present
+				foundIndex := false
+				for _, attr := range link.Attributes {
+					if attr.Key == "link.index" && attr.Value.AsInt64() == int64(i) {
+						foundIndex = true
+						break
+					}
+				}
+				assert.True(t, foundIndex, "Link should have correct 'link.index' attribute")
+			}
+		})
+	}
+}
+
+// TestDefaultSpanLinksConfiguration tests that the default span links configuration is correct
+func TestDefaultSpanLinksConfiguration(t *testing.T) {
+	cfg := NewConfig()
+
+	assert.Equal(t, 0, cfg.NumSpanLinks, "Default NumSpanLinks should be 0")
+}
+
+func TestSpanContextsBufferLimit(t *testing.T) {
+	w := &worker{
+		numSpanLinks:   2,
+		spanContexts:   make([]trace.SpanContext, 0),
+		spanContextsMu: sync.RWMutex{},
+	}
+
+	// Add more span contexts than the buffer limit
+	for i := 0; i < 1200; i++ {
+		traceID, _ := trace.TraceIDFromHex(fmt.Sprintf("%032d", i))
+		spanID, _ := trace.SpanIDFromHex(fmt.Sprintf("%016d", i))
+		spanCtx := trace.NewSpanContext(trace.SpanContextConfig{
+			TraceID:    traceID,
+			SpanID:     spanID,
+			TraceFlags: trace.FlagsSampled,
+		})
+		w.addSpanContext(spanCtx)
+	}
+
+	// Verify the buffer doesn't exceed the maximum size
+	assert.LessOrEqual(t, len(w.spanContexts), 1000, "Span contexts buffer should not exceed maximum size")
+
+	// Verify we can still generate links with the buffered contexts
+	links := w.generateSpanLinks()
+	assert.Len(t, links, 2, "Should generate correct number of links even with buffer limit")
 }
