@@ -22,16 +22,16 @@ import (
 )
 
 const (
-	DefaultNamespace                        = "traces.span.metrics"
-	legacyMetricNamesFeatureGateID          = "connector.spanmetrics.legacyMetricNames"
-	includeCollectorInstanceIDFeatureGateID = "connector.spanmetrics.includeCollectorInstanceID"
-	useSCDefaultMetricsUnitFeatureGateID    = "connector.spanmetrics.useSCDefaultMetricsUnit"
+	DefaultNamespace                           = "traces.span.metrics"
+	legacyMetricNamesFeatureGateID             = "connector.spanmetrics.legacyMetricNames"
+	includeCollectorInstanceIDFeatureGateID    = "connector.spanmetrics.includeCollectorInstanceID"
+	useSecondAsDefaultMetricsUnitFeatureGateID = "connector.spanmetrics.useSecondAsDefaultMetricsUnit"
 )
 
 var (
-	legacyMetricNamesFeatureGate *featuregate.Gate
-	includeCollectorInstanceID   *featuregate.Gate
-	useSCDefaultMetricsUnit      *featuregate.Gate
+	legacyMetricNamesFeatureGate  *featuregate.Gate
+	includeCollectorInstanceID    *featuregate.Gate
+	useSecondAsDefaultMetricsUnit *featuregate.Gate
 )
 
 func init() {
@@ -48,8 +48,8 @@ func init() {
 		featuregate.WithRegisterDescription("When enabled, connector add collector.instance.id to default dimensions."),
 		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/40400"),
 	)
-	useSCDefaultMetricsUnit = featuregate.GlobalRegistry().MustRegister(
-		useSCDefaultMetricsUnitFeatureGateID,
+	useSecondAsDefaultMetricsUnit = featuregate.GlobalRegistry().MustRegister(
+		useSecondAsDefaultMetricsUnitFeatureGateID,
 		featuregate.StageAlpha,
 		featuregate.WithRegisterDescription("When enabled, connector use second as default unit for duration metrics."),
 		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42103"),
@@ -71,7 +71,7 @@ func createDefaultConfig() component.Config {
 		ResourceMetricsCacheSize: defaultResourceMetricsCacheSize,
 		MetricsFlushInterval:     60 * time.Second,
 		Histogram: HistogramConfig{Disable: false, Unit: func() metrics.Unit {
-			if useSCDefaultMetricsUnit.IsEnabled() {
+			if useSecondAsDefaultMetricsUnit.IsEnabled() {
 				return metrics.Seconds
 			}
 
