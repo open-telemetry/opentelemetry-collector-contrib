@@ -101,21 +101,6 @@ func AssertEqualProcessorTailSamplingNewTraceIDReceived(t *testing.T, tt *compon
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualProcessorTailSamplingSamplingDecisionLatency(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...metricdatatest.Option) {
-	want := metricdata.Metrics{
-		Name:        "otelcol_processor_tail_sampling_sampling_decision_latency",
-		Description: "Latency (in microseconds) of a given sampling policy",
-		Unit:        "µs",
-		Data: metricdata.Histogram[int64]{
-			Temporality: metricdata.CumulativeTemporality,
-			DataPoints:  dps,
-		},
-	}
-	got, err := tt.GetMetric("otelcol_processor_tail_sampling_sampling_decision_latency")
-	require.NoError(t, err)
-	metricdatatest.AssertEqual(t, want, got, opts...)
-}
-
 func AssertEqualProcessorTailSamplingSamplingDecisionTimerLatency(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_tail_sampling_sampling_decision_timer_latency",
