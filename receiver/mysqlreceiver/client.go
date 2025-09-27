@@ -798,21 +798,15 @@ func (c *mySQLClient) explainQuery(statement, schema string, logger *zap.Logger)
 		return ""
 	}
 
-	sqlclient, err := sql.Open("mysql", c.connStr)
-	if err != nil {
-		logger.Error("unable to connect to database for explain", zap.Error(err))
-		return ""
-	}
-
 	if schema != "" {
-		if _, err = sqlclient.Exec(fmt.Sprintf("/* otel-collector-ignore */ USE %s;", schema)); err != nil {
+		if _, err = c.client.Exec(fmt.Sprintf("/* otel-collector-ignore */ USE %s;", schema)); err != nil {
 			logger.Error(fmt.Sprintf("unable to use schema: %s", schema), zap.Error(err))
 			return ""
 		}
 	}
 
 	var plan string
-	err = sqlclient.QueryRow(fmt.Sprintf("EXPLAIN FORMAT=json %s", statement)).Scan(&plan)
+	err = c.client.QueryRow(fmt.Sprintf("EXPLAIN FORMAT=json %s", statement)).Scan(&plan)
 	if err != nil {
 		logger.Error("unable to execute explain statement", zap.Error(err))
 		return ""
@@ -825,12 +819,10 @@ func (c *mySQLClient) explainQuery(statement, schema string, logger *zap.Logger)
 func isQueryExplainable(query string) bool {
 	sqlStartingKeywords := []string{
 		"select",
-		"table",
 		"delete",
 		"insert",
 		"replace",
 		"update",
-		"with",
 	}
 
 	trimmedQuery := strings.TrimSpace(query)
