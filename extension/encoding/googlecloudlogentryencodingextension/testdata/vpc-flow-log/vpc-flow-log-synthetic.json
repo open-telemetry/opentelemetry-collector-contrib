@@ -1,0 +1,65 @@
+{
+    "jsonPayload": {
+        "connection": {
+            "src_ip": "10.1.2.3",
+            "dest_ip": "192.168.1.2",
+            "src_port": 12345,
+            "dest_port": 80,
+            "protocol": 6
+        },
+        "packets_sent": "150",
+        "bytes_sent": "123456",
+        "reporter": "SRC",
+        "start_time": "2025-09-27T10:00:00.123456789Z",
+        "end_time": "2025-09-27T10:00:01.123456789Z",
+        "src_vpc": {
+            "project_id": "my-gcp-project",
+            "vpc_name": "my-vpc-network",
+            "subnetwork_name": "my-subnet"
+        },
+        "dest_vpc": {
+            "project_id": "another-gcp-project",
+            "vpc_name": "peer-vpc-network",
+            "subnetwork_name": "peer-subnet"
+        },
+        "src_instance": {
+            "project_id": "my-gcp-project",
+            "vm_name": "my-vm-instance",
+            "zone": "us-central1-a"
+        },
+        "dest_instance": {
+            "project_id": "another-gcp-project",
+            "vm_name": "peer-vm-instance",
+            "zone": "us-east1-b"
+        },
+        "src_gke_details": {
+            "cluster": "my-gke-cluster",
+            "pod_namespace": "default",
+            "pod_name": "my-pod-12345",
+            "service_name": "my-service"
+        },
+        "dest_gke_details": {},
+        "geographic_details": {
+            "source_continent": "North America",
+            "source_country": "USA",
+            "source_region": "California",
+            "source_city": "Mountain View",
+            "destination_continent": "Europe",
+            "destination_country": "Netherlands",
+            "destination_region": "North Holland",
+            "destination_city": "Amsterdam"
+        }
+    },
+    "insertId": "12345abcde",
+    "resource": {
+        "type": "gce_subnetwork",
+        "labels": {
+            "project_id": "my-gcp-project",
+            "subnetwork_name": "my-subnet",
+            "location": "us-central1"
+        }
+    },
+    "timestamp": "2025-09-27T10:00:01.123456789Z",
+    "logName": "projects/my-gcp-project/logs/compute.googleapis.com%2Fvpc_flows",
+    "receiveTimestamp": "2025-09-27T10:00:02.123456789Z"
+}
