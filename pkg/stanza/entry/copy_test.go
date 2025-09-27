@@ -78,50 +78,32 @@ func TestCopyValueUnknown(t *testing.T) {
 	require.Equal(t, expectedValue, copiedValue)
 }
 
-func TestCopyStringMap(t *testing.T) {
-	stringMap := map[string]string{
-		"message": "test",
-	}
-	copiedMap := copyStringMap(stringMap)
-	delete(stringMap, "message")
-	require.Equal(t, "test", copiedMap["message"])
+func TestCopyAnyMap(t *testing.T) {
+	t.Run("NonNil", func(t *testing.T) {
+		require.Nil(t, copyAnyMap(nil))
+	})
+
+	t.Run("NonNil", func(t *testing.T) {
+		stringMap := map[string]any{
+			"message": "test",
+		}
+		copiedMap := copyAnyMap(stringMap)
+		delete(stringMap, "message")
+		require.Equal(t, "test", copiedMap["message"])
+	})
 }
 
-func TestCopyInterfaceMap(t *testing.T) {
-	stringMap := map[string]any{
-		"message": "test",
-	}
-	copiedMap := copyInterfaceMap(stringMap)
-	delete(stringMap, "message")
-	require.Equal(t, "test", copiedMap["message"])
-}
+func TestCopyAnySlice(t *testing.T) {
+	t.Run("Nil", func(t *testing.T) {
+		require.Nil(t, copyAnySlice(nil))
+	})
 
-func TestCopyStringArray(t *testing.T) {
-	stringArray := []string{"test"}
-	copiedArray := copyStringArray(stringArray)
-	stringArray[0] = "new"
-	require.Equal(t, []string{"test"}, copiedArray)
-}
-
-func TestCopyByteArray(t *testing.T) {
-	byteArray := []byte("test")
-	copiedArray := copyByteArray(byteArray)
-	byteArray[0] = 'x'
-	require.Equal(t, []byte("test"), copiedArray)
-}
-
-func TestCopyIntArray(t *testing.T) {
-	intArray := []int{1}
-	copiedArray := copyIntArray(intArray)
-	intArray[0] = 0
-	require.Equal(t, []int{1}, copiedArray)
-}
-
-func TestCopyInterfaceArray(t *testing.T) {
-	interfaceArray := []any{"test", 0, true}
-	copiedArray := copyInterfaceArray(interfaceArray)
-	interfaceArray[0] = "new"
-	require.Equal(t, []any{"test", 0, true}, copiedArray)
+	t.Run("NonNil", func(t *testing.T) {
+		interfaceArray := []any{"test", 0, true}
+		copiedArray := copyAnySlice(interfaceArray)
+		interfaceArray[0] = "new"
+		require.Equal(t, []any{"test", 0, true}, copiedArray)
+	})
 }
 
 func TestCopyUnknownValueValid(t *testing.T) {
