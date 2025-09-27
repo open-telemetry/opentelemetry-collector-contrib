@@ -49,6 +49,24 @@ func (rs *redisScraper) dataPointRecorders() map[string]any {
 	}
 }
 
+// clusterInfoRecorder returns recorders for all metrics we want to extract from Redis CLUSTER INFO.
+func clusterInfoRecorder(rs *redisScraper) map[string]any {
+	return map[string]any{
+		"cluster_state":                             rs.mb.RecordRedisClusterInfoClusterStateDataPoint,
+		"cluster_slots_assigned":                    rs.mb.RecordRedisClusterInfoClusterSlotsAssignedDataPoint,
+		"cluster_slots_ok":                          rs.mb.RecordRedisClusterInfoClusterSlotsOkDataPoint,
+		"cluster_slots_pfail":                       rs.mb.RecordRedisClusterInfoClusterSlotsPfailDataPoint,
+		"cluster_slots_fail":                        rs.mb.RecordRedisClusterInfoClusterSlotsFailDataPoint,
+		"cluster_known_nodes":                       rs.mb.RecordRedisClusterInfoClusterKnownNodesDataPoint,
+		"cluster_size":                              rs.mb.RecordRedisClusterInfoClusterSizeDataPoint,
+		"cluster_current_epoch":                     rs.mb.RecordRedisClusterInfoClusterCurrentEpochDataPoint,
+		"cluster_my_epoch":                          rs.mb.RecordRedisClusterInfoClusterMyEpochDataPoint,
+		"cluster_stats_messages_sent":               rs.mb.RecordRedisClusterInfoClusterStatsMessagesSentDataPoint,
+		"cluster_stats_messages_received":           rs.mb.RecordRedisClusterInfoClusterStatsMessagesReceivedDataPoint,
+		"total_cluster_links_buffer_limit_exceeded": rs.mb.RecordRedisClusterInfoTotalClusterLinksBufferLimitExceededDataPoint,
+	}
+}
+
 func (rs *redisScraper) recordUsedCPUSys(now pcommon.Timestamp, val float64) {
 	rs.mb.RecordRedisCPUTimeDataPoint(now, val, metadata.AttributeStateSys)
 }
