@@ -12,4 +12,6 @@ import (
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
 	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
+		// TenantID es el identificador del tenant para conectar con Active Directory DS
+	TenantID string `mapstructure:"tenantid"`
 }
