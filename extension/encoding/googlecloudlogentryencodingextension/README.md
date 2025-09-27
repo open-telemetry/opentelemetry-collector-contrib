@@ -17,6 +17,7 @@ This extension can be used to unmarshall a [Cloud Logging LogEntry](https://clou
 
 Currently, this extension [can parse the following logs](#supported-log-types) into log record attributes:
 - [Cloud audit logs](https://cloud.google.com/logging/docs/reference/audit/auditlog/rest/Shared.Types/AuditLog) (extension [mapping](#cloud-audit-logs))
+- [VPC flow logs](https://cloud.google.com/vpc/docs/about-flow-logs-records) (extension [mapping](#vpc-flow-logs))
 
 For all others logs, the payload will be placed in the log record attribute. In this case, the following configuration options are supported:
 
@@ -175,3 +176,23 @@ See the struct of the Cloud Audit Log payload in [AuditLog](https://cloud.google
 | `response`                                                                 | _Currently not supported_                                           |
 | `metadata`                                                                 | _Currently not supported_                                           |
 | `serviceData`                                                              | [GCP Deprecated field]<br>_Currently not supported_                 |
+
+### VPC flow logs
+
+[VPC flow logs](https://cloud.google.com/vpc/docs/about-flow-logs-records) are mapped this way in the resulting OpenTelemetry log:
+
+| Flow log field | Attribute in OpenTelemetry log |
+|---|---|
+| `connection.protocol` | `network.protocol.name` |
+| `connection.src_ip` | `source.address` |
+| `connection.dest_ip` | `destination.address` |
+| `connection.src_port` | `source.port` |
+| `connection.dest_port` | `destination.port` |
+| `reporter` | `gcp.vpc.flow.reporter` |
+| `rtt_msec` | `network.rtt` |
+| `round_trip_time.median_msec` | `gcp.vpc.flow.rtt.median` |
+| `bytes_sent` | `gcp.vpc.flow.bytes_sent` |
+| `packets_sent` | `gcp.vpc.flow.packets_sent` |
+| `start_time` | `gcp.vpc.flow.start_time` |
+| `end_time` | Log timestamp |
+#### Left off here, good above here.
