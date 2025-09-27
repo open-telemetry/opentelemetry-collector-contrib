@@ -276,6 +276,13 @@ func (e *kafkaLogsMessenger) partitionData(ld plog.Logs) iter.Seq2[[]byte, plog.
 		}
 		for _, resourceLogs := range ld.ResourceLogs().All() {
 			hash := pdatautil.MapHash(resourceLogs.Resource().Attributes())
+			if e.config.TopicFromAttribute != "" {
+				if rv, ok := resourceLogs.Resource().Attributes().Get(e.config.TopicFromAttribute); ok && rv.Str() != "" {
+					tmpMap := pcommon.NewMap()
+					tmpMap.PutBool(rv.Str(), true)
+					hash = pdatautil.MapHash(tmpMap)
+				}
+			}
 			newLogs := plog.NewLogs()
 			resourceLogs.CopyTo(newLogs.ResourceLogs().AppendEmpty())
 			if !yield(hash[:], newLogs) {
@@ -319,6 +326,13 @@ func (e *kafkaMetricsMessenger) partitionData(md pmetric.Metrics) iter.Seq2[[]by
 		}
 		for _, resourceMetrics := range md.ResourceMetrics().All() {
 			hash := pdatautil.MapHash(resourceMetrics.Resource().Attributes())
+			if e.config.TopicFromAttribute != "" {
+				if rv, ok := resourceMetrics.Resource().Attributes().Get(e.config.TopicFromAttribute); ok && rv.Str() != "" {
+					tmpMap := pcommon.NewMap()
+					tmpMap.PutBool(rv.Str(), true)
+					hash = pdatautil.MapHash(tmpMap)
+				}
+			}
 			newMetrics := pmetric.NewMetrics()
 			resourceMetrics.CopyTo(newMetrics.ResourceMetrics().AppendEmpty())
 			if !yield(hash[:], newMetrics) {
