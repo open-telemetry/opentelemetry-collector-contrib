@@ -434,8 +434,20 @@ func TestLogsToLokiRequestWithoutTenant(t *testing.T) {
 			for i := 0; i < 3; i++ {
 				ld.ResourceLogs().At(0).ScopeLogs().AppendEmpty()
 				ld.ResourceLogs().At(0).ScopeLogs().At(i).LogRecords().AppendEmpty()
-				ld.ResourceLogs().At(0).ScopeLogs().At(i).LogRecords().At(0).SetTraceID([16]byte{byte(i + 1)})
-				ld.ResourceLogs().At(0).ScopeLogs().At(i).LogRecords().At(0).SetSeverityNumber(tt.severity)
+				ld.ResourceLogs().
+					At(0).
+					ScopeLogs().
+					At(i).
+					LogRecords().
+					At(0).
+					SetTraceID([16]byte{byte(i + 1)})
+				ld.ResourceLogs().
+					At(0).
+					ScopeLogs().
+					At(i).
+					LogRecords().
+					At(0).
+					SetSeverityNumber(tt.severity)
 			}
 
 			if len(tt.res) > 0 {
@@ -458,7 +470,7 @@ func TestLogsToLokiRequestWithoutTenant(t *testing.T) {
 							attrs = tt.attrs
 						}
 
-						if tt.levelAttribute != "" {
+						if len(tt.levelAttribute) > 0 {
 							attrs[levelAttributeName] = tt.levelAttribute
 						}
 						if val, ok := tt.hints[hintAttributes]; ok {
@@ -648,14 +660,23 @@ func TestLogToLokiEntry(t *testing.T) {
 				hintFormat: "my-format",
 			},
 			expected: nil,
-			err:      fmt.Errorf("invalid format %s. Expected one of: %s, %s, %s", "my-format", formatJSON, formatLogfmt, formatRaw),
+			err: fmt.Errorf(
+				"invalid format %s. Expected one of: %s, %s, %s",
+				"my-format",
+				formatJSON,
+				formatLogfmt,
+				formatRaw,
+			),
 		},
 	}
 
 	for _, tt := range testCases {
 		if tt.name == "with unknown format hint" {
 			t.Run(tt.name, func(t *testing.T) {
-				t.Skipf("skipping test '%v'. see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/20240 for details.", tt.name)
+				t.Skipf(
+					"skipping test '%v'. see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/20240 for details.",
+					tt.name,
+				)
 			})
 			continue
 		}
@@ -685,7 +706,7 @@ func TestLogToLokiEntry(t *testing.T) {
 				resource.Attributes().PutStr(k, fmt.Sprintf("%v", v))
 			}
 			lr.SetSeverityNumber(tt.severity)
-			if tt.levelAttribute != "" {
+			if len(tt.levelAttribute) > 0 {
 				lr.Attributes().PutStr(levelAttributeName, tt.levelAttribute)
 			}
 
@@ -743,7 +764,104 @@ func TestGetTenantFromTenantHint(t *testing.T) {
 			err = resource.Attributes().FromRaw(tt.res)
 			require.NoError(t, err)
 
-			assert.Equal(t, tt.expected, GetTenantFromTenantHint(lr.Attributes(), resource.Attributes()))
+			assert.Equal(
+				t,
+				tt.expected,
+				GetTenantFromTenantHint(lr.Attributes(), resource.Attributes()),
+			)
+		})
+	}
+}
+
+func TestLokiEntry(t *testing.T) {
+	testCases := []struct {
+		name                 string
+		timestamp            time.Time
+		severity             plog.SeverityNumber
+		levelAttribute       string
+		res                  map[string]any
+		attrs                map[string]any
+		hints                map[string]any
+		instrumentationScope *instrumentationScope
+		expected             *PushEntry
+		err                  error
+		defaultLabelsEnabled map[string]bool
+	}{
+		{
+			name:      "with attribute to label and regular attribute",
+			timestamp: time.Unix(0, 1677592916000000000),
+			res: map[string]any{
+				"aws.account.id":       "1234567890",
+				"aws.region":           "us-east-1",
+				"loki.resource.labels": "aws.account.id",
+			},
+			attrs: map[string]any{
+				"host.name":   "guarana",
+				"http.status": 200,
+			},
+			hints: map[string]any{
+				hintAttributes: "host.name",
+			},
+			expected: &PushEntry{
+				Entry: &push.Entry{
+					Timestamp: time.Unix(0, 1677592916000000000),
+					Line:      `{}`,
+				},
+				Labels: model.LabelSet{
+					"exporter":       "OTLP",
+					"host_name":      "guarana",
+					"http_status":    "200",
+					"aws_account_id": "1234567890",
+					"aws_region":     "us-east-1",
+				},
+			},
+			err: nil,
+		},
+	}
+
+	for _, tt := range testCases {
+		if tt.name == "with unknown format hint" {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Skipf(
+					"skipping test '%v'. see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/20240 for details.",
+					tt.name,
+				)
+			})
+			continue
+		}
+
+		t.Run(tt.name, func(t *testing.T) {
+			lr := plog.NewLogRecord()
+			lr.SetTimestamp(pcommon.NewTimestampFromTime(tt.timestamp))
+
+			err := lr.Attributes().FromRaw(tt.attrs)
+			require.NoError(t, err)
+			for k, v := range tt.hints {
+				lr.Attributes().PutStr(k, fmt.Sprintf("%v", v))
+			}
+
+			scope := pcommon.NewInstrumentationScope()
+			if tt.instrumentationScope != nil {
+				scope.SetName(tt.instrumentationScope.Name)
+				scope.SetVersion(tt.instrumentationScope.Version)
+				err = scope.Attributes().FromRaw(tt.instrumentationScope.Attributes)
+				require.NoError(t, err)
+			}
+
+			resource := pcommon.NewResource()
+			err = resource.Attributes().FromRaw(tt.res)
+			require.NoError(t, err)
+			for k, v := range tt.hints {
+				resource.Attributes().PutStr(k, fmt.Sprintf("%v", v))
+			}
+			lr.SetSeverityNumber(tt.severity)
+			if len(tt.levelAttribute) > 0 {
+				lr.Attributes().PutStr(levelAttributeName, tt.levelAttribute)
+			}
+
+			log, err := LogToLokiEntry(lr, resource, scope, tt.defaultLabelsEnabled)
+			assert.Equal(t, tt.err, err)
+			assert.Equal(t, tt.expected, log)
 		})
 	}
 }
