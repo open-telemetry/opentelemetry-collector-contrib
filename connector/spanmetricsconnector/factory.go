@@ -21,14 +21,16 @@ import (
 )
 
 const (
-	DefaultNamespace                 = "traces.span.metrics"
-	legacyMetricNamesFeatureGateID   = "connector.spanmetrics.legacyMetricNames"
-	includeCollectorInstanceIDGateID = "connector.spanmetrics.includeCollectorInstanceID"
+	DefaultNamespace                  = "traces.span.metrics"
+	legacyMetricNamesFeatureGateID    = "connector.spanmetrics.legacyMetricNames"
+	includeCollectorInstanceIDGateID  = "connector.spanmetrics.includeCollectorInstanceID"
+	excludeResourceMetricsFeatureGate = "connector.spanmetrics.excludeResourceMetrics"
 )
 
 var (
 	legacyMetricNamesFeatureGate *featuregate.Gate
 	includeCollectorInstanceID   *featuregate.Gate
+	excludeResourceMetrics       *featuregate.Gate
 )
 
 func init() {
@@ -44,6 +46,12 @@ func init() {
 		featuregate.StageAlpha,
 		featuregate.WithRegisterDescription("When enabled, connector add collector.instance.id to default dimensions."),
 		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/40400"),
+	)
+	excludeResourceMetrics = featuregate.GlobalRegistry().MustRegister(
+		excludeResourceMetricsFeatureGate,
+		featuregate.StageAlpha, // current disabled by default and enable it in the next release
+		featuregate.WithRegisterDescription("When enabled, connector uses legacy metric names."),
+		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33227"),
 	)
 }
 
