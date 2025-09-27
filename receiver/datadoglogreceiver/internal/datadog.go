@@ -121,8 +121,8 @@ func convertToLogs(datadogRecords []DatadogRecord, enableDdtagsAttribute bool) (
 	rls := logs.ResourceLogs()
 	rls.EnsureCapacity(len(datadogRecords))
 
-	for _, record := range datadogRecords {
-		if err := addRecordToLogs(rls.AppendEmpty(), record, enableDdtagsAttribute); err != nil {
+	for i := range datadogRecords {
+		if err := addRecordToLogs(rls.AppendEmpty(), datadogRecords[i], enableDdtagsAttribute); err != nil {
 			return nil, err
 		}
 	}
