@@ -721,7 +721,8 @@ func (m *mySQLScraper) scrapeQuerySamples(ctx context.Context, now pcommon.Times
 		return
 	}
 
-	for _, sample := range samples {
+	for i := range samples {
+		sample := &samples[i]
 		clientAddress := ""
 		clientPort := int64(0)
 		networkPeerAddress := ""

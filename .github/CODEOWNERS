@@ -23,7 +23,7 @@ cmd/golden/                                                      @open-telemetry
 cmd/opampsupervisor/                                             @open-telemetry/collector-contrib-approvers @evan-bradley @atoulme @tigrannajaryan
 cmd/otelcontribcol/                                              @open-telemetry/collector-contrib-approvers
 cmd/oteltestbedcol/                                              @open-telemetry/collector-contrib-approvers
-cmd/telemetrygen/                                                @open-telemetry/collector-contrib-approvers @mx-psi @codeboten @Erog38
+cmd/telemetrygen/                                                @open-telemetry/collector-contrib-approvers @mx-psi @codeboten @Erog38 @bogdan-st
 confmap/provider/aesprovider/                                    @open-telemetry/collector-contrib-approvers @kuiperda
 confmap/provider/googlesecretmanagerprovider/                    @open-telemetry/collector-contrib-approvers @aabmass @dashpole @jsuereth @psx95 @braydonk @ridwanmsharif
 confmap/provider/s3provider/                                     @open-telemetry/collector-contrib-approvers @Aneurysm9
@@ -205,8 +205,10 @@ processor/redactionprocessor/                                    @open-telemetry
 processor/remotetapprocessor/                                    @open-telemetry/collector-contrib-approvers @atoulme @jaronoff97
 processor/resourcedetectionprocessor/                            @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole
 processor/resourcedetectionprocessor/internal/akamai/            @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole @paulojmdias
+processor/resourcedetectionprocessor/internal/digitalocean/      @open-telemetry/collector-contrib-approvers @dashpole @paulojmdias
 processor/resourcedetectionprocessor/internal/dynatrace/         @open-telemetry/collector-contrib-approvers @bacherfl @evan-bradley
 processor/resourcedetectionprocessor/internal/hetzner/           @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole @paulojmdias
+processor/resourcedetectionprocessor/internal/oraclecloud/       @open-telemetry/collector-contrib-approvers @dashpole
 processor/resourcedetectionprocessor/internal/scaleway/          @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole @paulojmdias
 processor/resourcedetectionprocessor/internal/vultr/             @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole @paulojmdias
 processor/resourceprocessor/                                     @open-telemetry/collector-contrib-approvers @dmitryax
@@ -215,6 +217,7 @@ processor/spanprocessor/                                         @open-telemetry
 processor/sumologicprocessor/                                    @open-telemetry/collector-contrib-approvers @rnishtala-sumo @chan-tim-sumo @echlebek @amdprophet
 processor/tailsamplingprocessor/                                 @open-telemetry/collector-contrib-approvers @portertech
 processor/transformprocessor/                                    @open-telemetry/collector-contrib-approvers @TylerHelmuth @evan-bradley @edmocosta
+processor/unrollprocessor/                                       @open-telemetry/collector-contrib-approvers @axw @schmikei @rnishtala-sumo
 receiver/activedirectorydsreceiver/                              @open-telemetry/collector-contrib-approvers @pjanotti
 receiver/aerospikereceiver/                                      @open-telemetry/collector-contrib-approvers @antonblock
 receiver/apachereceiver/                                         @open-telemetry/collector-contrib-approvers @colelaven @ishleenk17
