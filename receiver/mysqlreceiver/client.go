@@ -787,7 +787,6 @@ func (c *mySQLClient) getQuerySamples(limit uint64) ([]querySample, error) {
 	return samples, nil
 }
 
-// explainQuery implements client.
 func (c *mySQLClient) explainQuery(statement, schema string, logger *zap.Logger) string {
 	if strings.HasSuffix(statement, "...") {
 		logger.Warn("statement is truncated, skipping explain", zap.String("statement", statement))

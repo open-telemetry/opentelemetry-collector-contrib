@@ -131,7 +131,6 @@ func (m *mySQLScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	return m.mb.Emit(), errs.Combine()
 }
 
-// scrape scrapes the mysql db query stats, transforms them and labels them into an event slices.
 func (m *mySQLScraper) scrapeTopQueryFunc(ctx context.Context) (plog.Logs, error) {
 	if m.sqlclient == nil {
 		return plog.NewLogs(), errors.New("failed to connect to http client")
@@ -149,7 +148,6 @@ func (m *mySQLScraper) scrapeTopQueryFunc(ctx context.Context) (plog.Logs, error
 	return m.lb.Emit(), errs.Combine()
 }
 
-// scrape scrapes the mysql db query stats, transforms them and labels them into an event slices.
 func (m *mySQLScraper) scrapeQuerySampleFunc(ctx context.Context) (plog.Logs, error) {
 	if m.sqlclient == nil {
 		return plog.NewLogs(), errors.New("failed to connect to http client")
@@ -663,7 +661,7 @@ func (m *mySQLScraper) scrapeTopQueries(ctx context.Context, now pcommon.Timesta
 		}
 	}
 
-	// sort the rows based on the totalElapsedTimeDiffs in descending order,
+	// sort the rows based on the sumTimerWaitInPicoSecondsDiff in descending order,
 	// only report first T(T=topQueryCount) rows.
 	queries = sortTopQueries(queries, sumTimerWaitInPicoSecondsDiff, m.config.TopQueryCollection.TopQueryCount)
 
