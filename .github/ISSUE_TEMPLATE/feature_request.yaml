@@ -57,6 +57,7 @@ body:
       - exporter/file
       - exporter/googlecloud
       - exporter/googlecloudpubsub
+      - exporter/googlecloudstorage
       - exporter/googlemanagedprometheus
       - exporter/honeycombmarker
       - exporter/influxdb
