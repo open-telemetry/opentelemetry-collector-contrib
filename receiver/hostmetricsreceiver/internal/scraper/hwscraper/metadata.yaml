@@ -1,0 +1,72 @@
+type: hw
+
+status:
+  class: scraper
+  stability:
+    development: [metrics]
+  distributions: [contrib]
+  unsupported_platforms: [darwin, windows]
+  codeowners:
+    active: [dmitryax, braydonk]
+
+sem_conv_version: 1.9.0
+
+attributes:
+  id:
+    description: An identifier for the hardware component, unique within the monitored host.
+    type: string
+
+  name:
+    description: An easily-recognizable name for the hardware component.
+    type: string
+
+  parent:
+    description: Unique identifier of the parent component (typically the id attribute of the enclosure, or disk controller).
+    type: string
+
+  sensor_location:
+    description: Location of the sensor.
+    type: string
+
+  type:
+    description: Type of the component.
+    type: string
+    enum: [battery, cpu, disk_controller, enclosure, fan, gpu, logical_disk, memory, network, physical_disk, power_supply, tape_drive, temperature, voltage, unknown]
+
+  limit_type:
+    description: Type of limit for hardware components.
+    type: string
+    enum: [high.critical, high.degraded, low.critical, low.degraded]
+
+  state:
+    description: The current state of the component.
+    type: string
+    enum: [degraded, failed, needs_cleaning, ok, predicted_failure]
+
+metrics:
+  hw.status:
+    enabled: true
+    description: "Operational status: 1 (true) or 0 (false) for each of the possible states."
+    unit: "1"
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+    attributes: [ id, state, type, name, parent ]
+
+  hw.temperature:
+    enabled: true
+    description: Temperature in degrees Celsius.
+    unit: Cel
+    gauge:
+      value_type: double
+    attributes: [id, name, parent, sensor_location]
+
+  hw.temperature.limit:
+    enabled: false
+    description: Temperature limit in degrees Celsius.
+    unit: Cel
+    gauge:
+      value_type: double
+    attributes: [id, limit_type, name, parent, sensor_location]
+
