@@ -799,14 +799,14 @@ func (c *mySQLClient) explainQuery(statement, schema string, logger *zap.Logger)
 	}
 
 	if schema != "" {
-		if _, err = c.client.Exec(fmt.Sprintf("/* otel-collector-ignore */ USE %s;", schema)); err != nil {
+		if _, err := c.client.Exec(fmt.Sprintf("/* otel-collector-ignore */ USE %s;", schema)); err != nil {
 			logger.Error(fmt.Sprintf("unable to use schema: %s", schema), zap.Error(err))
 			return ""
 		}
 	}
 
 	var plan string
-	err = c.client.QueryRow(fmt.Sprintf("EXPLAIN FORMAT=json %s", statement)).Scan(&plan)
+	err := c.client.QueryRow(fmt.Sprintf("EXPLAIN FORMAT=json %s", statement)).Scan(&plan)
 	if err != nil {
 		logger.Error("unable to execute explain statement", zap.Error(err))
 		return ""
