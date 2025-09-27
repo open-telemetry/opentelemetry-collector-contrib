@@ -28,30 +28,43 @@ type Parser struct {
 type parseFunc func(any) (any, error)
 
 func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
-	return p.TransformerOperator.ProcessBatchWith(ctx, entries, p.Process)
+	parseEntry := func(e *entry.Entry) error {
+		parse, err := p.parseFunc(e)
+		if err != nil {
+			return err
+		}
+		return p.ParseWith(ctx, e, parse)
+	}
+	return p.TransformerOperator.ProcessBatchWithTransform(ctx, entries, parseEntry)
 }
 
 // Process will parse an entry for csv.
 func (p *Parser) Process(ctx context.Context, e *entry.Entry) error {
-	// Static parse function
-	if p.parse != nil {
-		return p.ProcessWith(ctx, e, p.parse)
+	parse, err := p.parseFunc(e)
+	if err != nil {
+		return err
 	}
+	return p.ProcessWith(ctx, e, parse)
+}
 
+func (p *Parser) parseFunc(e *entry.Entry) (parseFunc, error) {
+	if p.parse != nil {
+		return p.parse, nil
+	}
 	// Dynamically generate the parse function based on a header attribute
 	h, ok := e.Attributes[p.headerAttribute]
 	if !ok {
 		p.Logger().Error("read dynamic header attribute", zap.String("attribute", p.headerAttribute))
-		return fmt.Errorf("failed to read dynamic header attribute %s", p.headerAttribute)
+		return nil, fmt.Errorf("failed to read dynamic header attribute %s", p.headerAttribute)
 	}
 	headerString, ok := h.(string)
 	if !ok {
 		p.Logger().Error("header must be string", zap.String("type", fmt.Sprintf("%T", h)))
-		return fmt.Errorf("header is expected to be a string but is %T", h)
+		return nil, fmt.Errorf("header is expected to be a string but is %T", h)
 	}
 	headers := strings.Split(headerString, string([]rune{p.headerDelimiter}))
 	parse := generateParseFunc(headers, p.fieldDelimiter, p.lazyQuotes, p.ignoreQuotes)
-	return p.ProcessWith(ctx, e, parse)
+	return parse, nil
 }
 
 // generateParseFunc returns a parse function for a given header, allowing
