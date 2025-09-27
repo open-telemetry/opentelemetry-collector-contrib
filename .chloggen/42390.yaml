@@ -7,7 +7,7 @@ change_type: breaking
 component: pkg/stanza
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Support batch processing for the csv_parser. Removed a parameter `write` of a method, `ParseWith`
+note: Support batch processing for csv_parser. Removed the parameters `context.Context` and `WriteFunction` from `ParseOperator.ParseWith`.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [42390]
