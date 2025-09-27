@@ -5,18 +5,228 @@ status:
   stability:
     development: [metrics]
   distributions: [core, contrib, k8s]
-  unsupported_platforms: [darwin, windows]
+  unsupported_platforms: [darwin, windows, freebsd, netbsd, openbsd, dragonfly, zos]
   codeowners:
     active: [dmitryax, braydonk]
 
 sem_conv_version: 1.9.0
 
+attributes:
+  rpc.onc.version:
+    enabled: true
+    description: ONC/Sun RPC program version
+    type: int
+  rpc.onc.procedure.name:
+    enabled: true
+    description: ONC/Sun RPC procedure name
+    type: string
+  rpc.nfs.operation.name:
+    enabled: true
+    description: NFSv4+ operation name
+    type: string
+
 metrics:
-  system.nfs.net.count:
+  nfs.client.net.count:
     enabled: true
     description: Reports the count of kernel NFS client network requests handled
     unit: '{request}'
     stability:
       level: development
+    gauge:
+      value_type: int
+
+  nfs.client.net.udp.count:
+    enabled: true
+    description: Reports the count of kernel NFS client UDP datagrams handled
+    unit: '{datagram}'
+    gauge:
+      value_type: int
+
+  nfs.client.net.tcp.count:
+    enabled: true
+    description: Reports the count of kernel NFS client TCP segments handled
+    unit: '{segment}'
+    gauge:
+      value_type: int
+
+  nfs.client.net.tcp.connection.count:
+    enabled: true
+    description: Reports the count of kernel NFS client TCP connections accepted
+    unit: '{connection}'
+    gauge:
+      value_type: int
+
+  nfs.client.rpc.count:
+    enabled: true
+    description: Reports the count of kernel NFS client RPCs handled
+    unit: '{request}'
+    gauge:
+      value_type: int
+
+  nfs.client.rpc.retransmit.count:
+    enabled: true
+    description: Reports the count of kernel NFS client RPC retransmits
+    unit: '{retransmit}'
+    gauge:
+      value_type: int
+
+  nfs.client.rpc.authrefresh.count:
+    enabled: true
+    description: Reports the count of kernel NFS client RPC authentication refreshes
+    unit: '{authrefresh}'
+    gauge:
+      value_type: int
+
+  nfs.client.procedure.count:
+    enabled: true
+    description: Reports the count of kernel NFS client procedures
+    unit: '{procedure}'
+    attributes:
+    - rpc.onc.version
+    - rpc.onc.procedure.name
+    gauge:
+      value_type: int
+
+  nfs.client.operation.count:
+    enabled: true
+    description: Reports the count of kernel NFSv4+ client operations
+    unit: '{procedure}'
+    attributes:
+    - rpc.onc.version
+    - rpc.nfs.operation.name
+    gauge:
+      value_type: int
+
+  nfs.server.repcache.hits:
+    enabled: true
+    description: Reports the kernel NFS server request reply cache hit count
+    unit: '{hit}'
+    gauge:
+      value_type: int
+
+  nfs.server.repcache.misses:
+    enabled: true
+    description: Reports the kernel NFS server request reply cache miss count
+    unit: '{miss}'
+    gauge:
+      value_type: int
+
+  nfs.server.repcache.nocache:
+    enabled: true
+    description: Reports the count of kernel NFS server request replies that are uncacheable
+    unit: '{miss}'
+    gauge:
+      value_type: int
+
+  nfs.server.fh.stale.count:
+    enabled: true
+    description: Reports the count of kernel NFS server stale file handles
+    unit: '{fh}'
+    gauge:
+      value_type: int
+
+  nfs.server.io.read.count:
+    enabled: true
+    description: Reports the count of kernel NFS server bytes returned to read requests
+    unit: By
+    gauge:
+      value_type: int
+
+  nfs.server.io.write.count:
+    enabled: true
+    description: Reports the count of kernel NFS server bytes passed to write requests
+    unit: By
+    gauge:
+      value_type: int
+
+  nfs.server.thread.count:
+    enabled: true
+    description: Reports the count of kernel NFS server available threads
+    unit: '{thread}'
+    gauge:
+      value_type: int
+
+  nfs.server.net.count:
+    enabled: true
+    description: Reports the count of kernel NFS server network requests handled
+    unit: '{request}'
+    gauge:
+      value_type: int
+
+  nfs.server.net.udp.count:
+    enabled: true
+    description: Reports the count of kernel NFS server UDP datagrams handled
+    unit: '{datagram}'
+    gauge:
+      value_type: int
+
+  nfs.server.net.tcp.count:
+    enabled: true
+    description: Reports the count of kernel NFS server TCP segments handled
+    unit: '{segment}'
+    gauge:
+      value_type: int
+
+  nfs.server.net.tcp.connection.count:
+    enabled: true
+    description: Reports the count of kernel NFS server TCP connections accepted
+    unit: '{connection}'
+    gauge:
+      value_type: int
+
+  nfs.server.rpc.count:
+    enabled: true
+    description: Reports the count of kernel NFS server RPCs handled
+    unit: '{request}'
+    gauge:
+      value_type: int
+
+  nfs.server.rpc.bad.count:
+    enabled: true
+    description: Reports the total count of kernel NFS server bad RPCs
+    unit: '{request}'
+    gauge:
+      value_type: int
+
+  nfs.server.rpc.badfmt.count:
+    enabled: true
+    description: Reports the total count of kernel NFS server badly formatted RPCs
+    unit: '{request}'
+    gauge:
+      value_type: int
+
+  nfs.server.rpc.badauth.count:
+    enabled: true
+    description: Reports the total count of kernel NFS server badly authenticated
+      RPCs
+    unit: '{request}'
+    gauge:
+      value_type: int
+
+  nfs.server.rpc.badclient.count:
+    enabled: true
+    description: Reports the total count of kernel NFS server unauthorized client
+      RPCs
+    unit: '{request}'
+    gauge:
+      value_type: int
+
+  nfs.server.procedure.count:
+    enabled: true
+    description: Reports the count of kernel NFS client procedures
+    unit: '{procedure}'
+    attributes:
+    - rpc.onc.version
+    - rpc.onc.procedure.name
+    gauge:
+      value_type: int
+
+  nfs.server.operation.count:
+    enabled: true
+    description: Reports the count of kernel NFSv4+ server operations
+    unit: '{operation}'
+    attributes:
+    - rpc.onc.version
+    - rpc.nfs.operation.name
     gauge:
       value_type: int
