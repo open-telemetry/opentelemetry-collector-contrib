@@ -16,9 +16,9 @@ metrics:
 
 The number of changes (pull requests) in a repository, categorized by their state (either open or merged).
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {change} | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {change} | Gauge | Int | development |
 
 #### Attributes
 
@@ -32,9 +32,9 @@ The number of changes (pull requests) in a repository, categorized by their stat
 
 The time duration a change (pull request/merge request/changelist) has been in an open state.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| s | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Gauge | Int | development |
 
 #### Attributes
 
@@ -49,9 +49,9 @@ The time duration a change (pull request/merge request/changelist) has been in a
 
 The amount of time it took a change (pull request) to go from open to approved.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| s | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Gauge | Int | development |
 
 #### Attributes
 
@@ -65,9 +65,9 @@ The amount of time it took a change (pull request) to go from open to approved.
 
 The amount of time it took a change (pull request) to go from open to merged.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| s | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Gauge | Int | development |
 
 #### Attributes
 
@@ -81,9 +81,9 @@ The amount of time it took a change (pull request) to go from open to merged.
 
 The number of refs of type branch in a repository.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {ref} | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {ref} | Gauge | Int | development |
 
 #### Attributes
 
@@ -97,9 +97,9 @@ The number of refs of type branch in a repository.
 
 The number of lines added/removed in a ref (branch) relative to the default branch (trunk).
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {line} | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {line} | Gauge | Int | development |
 
 #### Attributes
 
@@ -117,9 +117,9 @@ The number of lines added/removed in a ref (branch) relative to the default bran
 
 The number of revisions (commits) a ref (branch) is ahead/behind the branch from trunk (default).
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {revision} | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {revision} | Gauge | Int | development |
 
 #### Attributes
 
@@ -137,9 +137,9 @@ The number of revisions (commits) a ref (branch) is ahead/behind the branch from
 
 Time a ref (branch) created from the default branch (trunk) has existed. The `vcs.ref.type` attribute will always be `branch`.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| s | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Gauge | Int | development |
 
 #### Attributes
 
@@ -154,9 +154,9 @@ Time a ref (branch) created from the default branch (trunk) has existed. The `vc
 
 The number of repositories in an organization.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {repository} | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {repository} | Gauge | Int | development |
 
 ## Optional Metrics
 
@@ -172,9 +172,9 @@ metrics:
 
 The number of unique contributors to a repository.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {contributor} | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {contributor} | Gauge | Int | development |
 
 #### Attributes
 

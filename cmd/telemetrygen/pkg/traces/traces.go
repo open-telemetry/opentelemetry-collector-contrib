@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"golang.org/x/time/rate"
 
@@ -153,6 +154,8 @@ func run(c *Config, logger *zap.Logger) error {
 			loadSize:         c.LoadSize,
 			spanDuration:     c.SpanDuration,
 			allowFailures:    c.AllowExportFailures,
+			numSpanLinks:     c.NumSpanLinks,
+			spanContexts:     make([]trace.SpanContext, 0),
 		}
 
 		go w.simulateTraces(telemetryAttributes)
