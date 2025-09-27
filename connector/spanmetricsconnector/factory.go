@@ -64,6 +64,7 @@ func createDefaultConfig() component.Config {
 		Histogram:                   HistogramConfig{Disable: false, Unit: defaultUnit},
 		Namespace:                   DefaultNamespace,
 		AggregationCardinalityLimit: 0,
+		SpanNameSemanticConvention:  false,
 		Exemplars: ExemplarsConfig{
 			MaxPerDataPoint: defaultMaxPerDatapoint,
 		},

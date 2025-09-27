@@ -133,6 +133,9 @@ The following settings can be optionally configured:
   - `dimensions`: (mandatory if `enabled`) the list of the span's event attributes to add as dimensions to the `traces.span.metrics.events` metric, which will be included _on top of_ the common and configured `dimensions` for span attributes and resource attributes.
 - `resource_metrics_key_attributes`: Filter the resource attributes used to produce the resource metrics key map hash. Use this in case changing resource attributes (e.g. process id) are breaking counter metrics.
 - `aggregation_cardinality_limit` (default: `0`): Defines the maximum number of unique combinations of dimensions that will be tracked for metrics aggregation. When the limit is reached, additional unique combinations will be dropped but registered under a new entry with `otel.metric.overflow="true"`. A value of `0` means no limit is applied.
+- `span_name_semantic_convention` (default: `false`): When enabled, the connector will use the [OpenTelemetry Semantic Conventions for Span names](https://opentelemetry.io/docs/reference/specification/trace/semantic_conventions/span-general/#span-name) to populate the `span.name` dimension. If disabled, the raw span name will be used.
+  
+  For example, an HTTP server span with the name `GET /api/users` will be converted to `/api/users` when this option is enabled. 
 
 The feature gate `connector.spanmetrics.legacyMetricNames` (disabled by default) controls the connector to use legacy metric names.
 

@@ -2333,3 +2333,27 @@ func TestBuildAttributesWithFeatureGate(t *testing.T) {
 		})
 	}
 }
+
+func Test_inferSpanName(t *testing.T) {
+	tests := []struct {
+		name          string
+		addAttributes func(pcommon.Map)
+		want          string
+	}{
+		{
+			name: "http method and route",
+			addAttributes: func(attrs pcommon.Map) {
+				attrs.PutStr("http.method", "GET")
+				attrs.PutStr("http.route", "/users/:id")
+			},
+			want: "GET /users/:id",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			span := ptrace.NewSpan()
+			tt.addAttributes(span.Attributes())
+			assert.Equal(t, tt.want, inferSpanName(span))
+		})
+	}
+}
