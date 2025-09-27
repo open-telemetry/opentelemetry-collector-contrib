@@ -8,11 +8,11 @@ The following telemetry is emitted by this component.
 
 ### otelcol_processor_tail_sampling_count_spans_sampled
 
-Count of spans that were sampled or not per sampling policy
+Count of spans that were sampled or not per sampling policy [development]
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| {spans} | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {spans} | Sum | Int | true | development |
 
 #### Attributes
 
@@ -24,11 +24,11 @@ Count of spans that were sampled or not per sampling policy
 
 ### otelcol_processor_tail_sampling_count_traces_sampled
 
-Count of traces that were sampled or not per sampling policy
+Count of traces that were sampled or not per sampling policy [development]
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| {traces} | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {traces} | Sum | Int | true | development |
 
 #### Attributes
 
@@ -40,11 +40,11 @@ Count of traces that were sampled or not per sampling policy
 
 ### otelcol_processor_tail_sampling_early_releases_from_cache_decision
 
-Number of spans that were able to be immediately released due to a decision cache hit.
+Number of spans that were able to be immediately released due to a decision cache hit. [development]
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| {spans} | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {spans} | Sum | Int | true | development |
 
 #### Attributes
 
@@ -54,11 +54,11 @@ Number of spans that were able to be immediately released due to a decision cach
 
 ### otelcol_processor_tail_sampling_global_count_traces_sampled
 
-Global count of traces that were sampled or not by at least one policy
+Global count of traces that were sampled or not by at least one policy [development]
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| {traces} | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {traces} | Sum | Int | true | development |
 
 #### Attributes
 
@@ -69,64 +69,64 @@ Global count of traces that were sampled or not by at least one policy
 
 ### otelcol_processor_tail_sampling_new_trace_id_received
 
-Counts the arrival of new traces
+Counts the arrival of new traces [development]
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| {traces} | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {traces} | Sum | Int | true | development |
 
 ### otelcol_processor_tail_sampling_sampling_decision_latency
 
-Latency (in microseconds) of a given sampling policy
+Latency (in microseconds) of a given sampling policy [development]
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| µs | Histogram | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| µs | Histogram | Int | development |
 
 ### otelcol_processor_tail_sampling_sampling_decision_timer_latency
 
-Latency (in milliseconds) of each run of the sampling decision timer
+Latency (in milliseconds) of each run of the sampling decision timer [development]
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| ms | Histogram | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| ms | Histogram | Int | development |
 
 ### otelcol_processor_tail_sampling_sampling_late_span_age
 
-Time (in seconds) from the sampling decision was taken and the arrival of a late span
+Time (in seconds) from the sampling decision was taken and the arrival of a late span [development]
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| s | Histogram | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Histogram | Int | development |
 
 ### otelcol_processor_tail_sampling_sampling_policy_evaluation_error
 
-Count of sampling policy evaluation errors
+Count of sampling policy evaluation errors [development]
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| {errors} | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {errors} | Sum | Int | true | development |
 
 ### otelcol_processor_tail_sampling_sampling_trace_dropped_too_early
 
-Count of traces that needed to be dropped before the configured wait time
+Count of traces that needed to be dropped before the configured wait time [development]
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| {traces} | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {traces} | Sum | Int | true | development |
 
 ### otelcol_processor_tail_sampling_sampling_trace_removal_age
 
-Time (in seconds) from arrival of a new trace until its removal from memory
+Time (in seconds) from arrival of a new trace until its removal from memory [development]
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| s | Histogram | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Histogram | Int | development |
 
 ### otelcol_processor_tail_sampling_sampling_traces_on_memory
 
-Tracks the number of traces current on memory
+Tracks the number of traces current on memory [development]
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {traces} | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {traces} | Gauge | Int | development |
