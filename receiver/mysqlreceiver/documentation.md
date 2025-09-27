@@ -695,6 +695,33 @@ This provides real-time visibility into active queries, helping users monitor da
 | network.peer.address | IP address of the peer client. | Any Str |
 | network.peer.port | TCP port used by the peer client. | Any Int |
 
+## Optional Events
+
+The following events are not emitted by default. Each of them can be enabled by applying the following configuration:
+
+```yaml
+events:
+  <event_name>:
+    enabled: true
+```
+
+### db.server.top_query
+
+Top query collection enables monitoring of the queries that consumed the most CPU in the database.
+This provides insights into query performance and resource usage, helping users identify and optimize high-impact queries as part of their observability pipeline.
+
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| db.system.name | The name of the database system. | Str: ``mysql`` |
+| db.query.text | The SQL statement text for the event. | Any Str |
+| mysql.query_plan | The query plan for the statement, if available. | Any Str |
+| mysql.events_statements_summary_by_digest.digest | The statement digest SHA-256 value as a string of 64 hexadecimal characters, or empty if the statements_digest consumer is no. | Any Str |
+| mysql.events_statements_summary_by_digest.count_star | The number of times the statement was executed, report in delta value. | Any Int |
+| mysql.events_statements_summary_by_digest.sum_timer_wait | The total time spent executing the statement, report in delta seconds. | Any Double |
+
 ## Resource Attributes
 
 | Name | Description | Values | Enabled |
