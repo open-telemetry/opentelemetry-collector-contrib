@@ -73,7 +73,7 @@ func (w *wafLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs, error
 	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
 	scopeLogs.Scope().SetName(metadata.ScopeName)
 	scopeLogs.Scope().SetVersion(w.buildInfo.Version)
-	scopeLogs.Scope().Attributes().PutStr(constants.FormatIdentificationTag, constants.FormatWAFLog)
+	scopeLogs.Scope().Attributes().PutStr(constants.FormatIdentificationTag, "aws."+constants.FormatWAFLog)
 
 	scanner := bufio.NewScanner(reader)
 	webACLID := ""

@@ -125,7 +125,7 @@ func (f *elbAccessLogUnmarshaler) createLogs() (plog.Logs, plog.ResourceLogs, pl
 	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
 	scopeLogs.Scope().SetName(metadata.ScopeName)
 	scopeLogs.Scope().SetVersion(f.buildInfo.Version)
-	scopeLogs.Scope().Attributes().PutStr(constants.FormatIdentificationTag, constants.FormatELBAccessLog)
+	scopeLogs.Scope().Attributes().PutStr(constants.FormatIdentificationTag, "aws."+constants.FormatELBAccessLog)
 	return logs, resourceLogs, scopeLogs
 }
 
