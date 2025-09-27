@@ -707,7 +707,7 @@ events:
 
 ### db.server.top_query
 
-Top query collection enables monitoring of the most resource-intensive queries executed by the database.
+Top query collection enables monitoring of the queries that consumed the most CPU in the database.
 This provides insights into query performance and resource usage, helping users identify and optimize high-impact queries as part of their observability pipeline.
 
 
