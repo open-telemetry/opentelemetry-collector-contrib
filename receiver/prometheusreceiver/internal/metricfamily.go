@@ -52,6 +52,7 @@ type metricGroup struct {
 	fhValue        *histogram.FloatHistogram
 	complexValue   []*dataPoint
 	exemplars      pmetric.ExemplarSlice
+	isNHCB         bool // true if this is a Native Histogram Custom Buckets (schema -53)
 }
 
 func newMetricFamily(metricName string, mc scrape.MetricMetadataStore, logger *zap.Logger) *metricFamily {
@@ -94,41 +95,59 @@ func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice)
 
 	mg.sortPoints()
 
-	bucketCount := len(mg.complexValue) + 1
-	// if the final bucket is +Inf, we ignore it
-	if bucketCount > 1 && mg.complexValue[bucketCount-2].boundary == math.Inf(1) {
-		bucketCount--
-	}
-
-	// for OTLP the bounds won't include +inf
-	bounds := make([]float64, bucketCount-1)
-	bucketCounts := make([]uint64, bucketCount)
-	var adjustedCount float64
-
+	var bounds []float64
+	var bucketCounts []uint64
 	pointIsStale := value.IsStaleNaN(mg.sum) || value.IsStaleNaN(mg.count)
-	for i := 0; i < bucketCount-1; i++ {
-		bounds[i] = mg.complexValue[i].boundary
-		adjustedCount = mg.complexValue[i].value
 
-		// Buckets still need to be sent to know to set them as stale,
-		// but a staleness NaN converted to uint64 would be an extremely large number.
-		// Setting to 0 instead.
+	if mg.isNHCB {
+		bounds = make([]float64, len(mg.complexValue)-1)
+		bucketCounts = make([]uint64, len(mg.complexValue))
+
+		for i, dp := range mg.complexValue {
+
+			if pointIsStale {
+				bucketCounts[i] = 0
+			} else {
+				bucketCounts[i] = uint64(dp.value)
+			}
+			if i < len(mg.complexValue)-1 {
+				bounds[i] = dp.boundary
+			}
+		}
+
+		if pointIsStale {
+			bucketCounts[len(bucketCounts)-1] = 0
+		}
+	} else {
+		bucketCount := len(mg.complexValue) + 1
+		if bucketCount > 1 && mg.complexValue[bucketCount-2].boundary == math.Inf(1) {
+			bucketCount--
+		}
+
+		bounds = make([]float64, bucketCount-1)
+		bucketCounts = make([]uint64, bucketCount)
+		var adjustedCount float64
+
+		for i := 0; i < bucketCount-1; i++ {
+			bounds[i] = mg.complexValue[i].boundary
+			adjustedCount = mg.complexValue[i].value
+
+			if pointIsStale {
+				adjustedCount = 0
+			} else if i != 0 {
+				adjustedCount -= mg.complexValue[i-1].value
+			}
+			bucketCounts[i] = uint64(adjustedCount)
+		}
+
+		adjustedCount = mg.count
 		if pointIsStale {
 			adjustedCount = 0
-		} else if i != 0 {
-			adjustedCount -= mg.complexValue[i-1].value
+		} else if bucketCount > 1 {
+			adjustedCount -= mg.complexValue[bucketCount-2].value
 		}
-		bucketCounts[i] = uint64(adjustedCount)
+		bucketCounts[bucketCount-1] = uint64(adjustedCount)
 	}
-
-	// Add the final bucket based on the total count
-	adjustedCount = mg.count
-	if pointIsStale {
-		adjustedCount = 0
-	} else if bucketCount > 1 {
-		adjustedCount -= mg.complexValue[bucketCount-2].value
-	}
-	bucketCounts[bucketCount-1] = uint64(adjustedCount)
 
 	point := dest.AppendEmpty()
 
@@ -473,6 +492,7 @@ func (mf *metricFamily) addNHCBSeries(seriesRef uint64, metricName string, ls la
 	if mg.mtype != pmetric.MetricTypeHistogram {
 		return fmt.Errorf("metric type mismatch for NHCB metric %v type %s", metricName, mg.mtype.String())
 	}
+	mg.isNHCB = true
 
 	var bounds []float64
 	var counts []float64
@@ -481,8 +501,11 @@ func (mf *metricFamily) addNHCBSeries(seriesRef uint64, metricName string, ls la
 	case h != nil:
 		bounds = h.CustomValues
 		counts = make([]float64, len(h.PositiveBuckets))
+		cumulative := 0.0
 		for i, v := range h.PositiveBuckets {
-			counts[i] = float64(v)
+			currDelta := float64(v)
+			cumulative += currDelta
+			counts[i] = cumulative
 		}
 		mg.count = float64(h.Count)
 		mg.hasCount = true
@@ -499,16 +522,20 @@ func (mf *metricFamily) addNHCBSeries(seriesRef uint64, metricName string, ls la
 		return fmt.Errorf("NHCB metric %v has no histogram data", metricName)
 	}
 
-	if len(bounds) != len(counts) {
+	if len(bounds)+1 != len(counts) {
 		return fmt.Errorf("NHCB metric %v has mismatched bounds and counts", metricName)
 	}
 
-	cumulative := 0.0
-	for i := range bounds {
-		cumulative += counts[i]
+	for i := range counts {
+		boundary := 0.0
+		if i < len(bounds) {
+			boundary = bounds[i]
+		} else {
+			boundary = math.Inf(1)
+		}
 		mg.complexValue = append(mg.complexValue, &dataPoint{
-			value:    cumulative,
-			boundary: bounds[i],
+			value:    counts[i],
+			boundary: boundary,
 		})
 	}
 	return nil
