@@ -42,7 +42,8 @@ type MetricTypeConfig struct {
 // any type of metrics need implement it.
 type MetricsModel interface {
 	// Add used to bind MetricsMetaData to a specific metric then put them into a slice
-	Add(resAttr pcommon.Map, resURL string, scopeInstr pcommon.InstrumentationScope, scopeURL string, metrics any, name, description, unit string) error
+	Add(resAttr pcommon.Map, resURL string, scopeInstr pcommon.InstrumentationScope, scopeURL string, metrics pmetric.Metric)
+
 	// insert is used to insert metric data to clickhouse
 	insert(ctx context.Context, db driver.Conn) error
 }
