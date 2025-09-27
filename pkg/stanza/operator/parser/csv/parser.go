@@ -33,9 +33,9 @@ func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error
 		if err != nil {
 			return err
 		}
-		return p.ParseWith(ctx, e, parse)
+		return p.ParseWith(e, parse)
 	}
-	return p.TransformerOperator.ProcessBatchWithTransform(ctx, entries, parseEntry)
+	return p.ProcessBatchWithTransform(ctx, entries, parseEntry)
 }
 
 // Process will parse an entry for csv.

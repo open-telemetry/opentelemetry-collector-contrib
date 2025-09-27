@@ -115,8 +115,8 @@ func (p *ParserOperator) ProcessBatchWithCallback(ctx context.Context, entries [
 			continue
 		}
 
-		if err = p.ParseWith(ctx, ent, parse); err != nil {
-			err := p.HandleEntryErrorWithWrite(ctx, ent, err, write)
+		if err = p.ParseWith(ent, parse); err != nil {
+			err = p.HandleEntryErrorWithWrite(ctx, ent, err, write)
 			if p.OnError != DropOnErrorQuiet && p.OnError != SendOnErrorQuiet {
 				errs = append(errs, err)
 			}
@@ -152,8 +152,8 @@ func (p *ParserOperator) ProcessWithCallback(ctx context.Context, entry *entry.E
 		return p.Write(ctx, entry)
 	}
 
-	if err = p.ParseWith(ctx, entry, parse); err != nil {
-		err := p.HandleEntryError(ctx, entry, err)
+	if err = p.ParseWith(entry, parse); err != nil {
+		err = p.HandleEntryError(ctx, entry, err)
 		if p.OnError == DropOnErrorQuiet || p.OnError == SendOnErrorQuiet {
 			return nil
 		}
@@ -171,7 +171,7 @@ func (p *ParserOperator) ProcessWithCallback(ctx context.Context, entry *entry.E
 }
 
 // ParseWith will process an entry's field with a parser function.
-func (p *ParserOperator) ParseWith(ctx context.Context, entry *entry.Entry, parse ParseFunction) error {
+func (p *ParserOperator) ParseWith(entry *entry.Entry, parse ParseFunction) error {
 	value, ok := entry.Get(p.ParseFrom)
 	if !ok {
 		return stanza_errors.NewError(

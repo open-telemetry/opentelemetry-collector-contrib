@@ -117,14 +117,14 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
 
 		if format == containerdFormat {
 			// parse the message
-			err = p.ParseWith(ctx, entry, p.parseContainerd)
+			err = p.ParseWith(entry, p.parseContainerd)
 			if err != nil {
 				return fmt.Errorf("failed to parse containerd log: %w", p.HandleEntryError(ctx, entry, err))
 			}
 			p.timeLayout = goTimeLayout
 		} else {
 			// parse the message
-			err = p.ParseWith(ctx, entry, p.parseCRIO)
+			err = p.ParseWith(entry, p.parseCRIO)
 			if err != nil {
 				return fmt.Errorf("failed to parse crio log: %w", p.HandleEntryError(ctx, entry, err))
 			}
