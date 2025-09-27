@@ -70,7 +70,7 @@ The following settings are optional:
         - In this case, `top_query_collection.collection_internal` will have no impact on the collection frequency, which will run every 10s.
   - `query_plan_cache_size`: (optional, default = `1000`). The query plan cache size. Once we got query plan results from explain queries, we will store them in the cache.
     This defines the cache's size for query plan.
-  - `query_plan_cache_ttl`: (optional, default = `1h`). How long will a query plan expire in the cache. The receiver will run a explain query to MySQL to get the query plan after it expires. Example values: `1m`, `1h`.
+  - `query_plan_cache_ttl`: (optional, default = `1h`). How long until a query plan expires in the cache. The receiver will run an explain query to MySQL to get the query plan after it expires. Example values: `1m`, `1h`.
 
 ### Example Configuration
 
