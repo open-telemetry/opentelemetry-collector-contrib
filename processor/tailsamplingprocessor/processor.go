@@ -315,7 +315,8 @@ func (tsp *tailSamplingSpanProcessor) loadSamplingPolicy(cfgs []PolicyCfg) error
 	dropPolicies := make([]*policy, 0, cLen)
 	policyNames := make(map[string]struct{}, cLen)
 
-	for _, cfg := range cfgs {
+	for i := range cfgs {
+		cfg := cfgs[i]
 		if cfg.Name == "" {
 			return errors.New("policy name cannot be empty")
 		}
