@@ -101,6 +101,18 @@ var mc = testMetadataStore{
 		Help:         "This is some help for an unknown metric",
 		Unit:         "?",
 	},
+	"nhcb_histogram": scrape.MetricMetadata{
+		MetricFamily: "nhcb_histogram",
+		Type:         model.MetricTypeHistogram,
+		Help:         "This is a test NHCB histogram",
+		Unit:         "ms",
+	},
+	"nhcb_float_histogram": scrape.MetricMetadata{
+		MetricFamily: "nhcb_float_histogram",
+		Type:         model.MetricTypeHistogram,
+		Help:         "This is a test NHCB float histogram",
+		Unit:         "s",
+	},
 }
 
 func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
@@ -284,6 +296,95 @@ func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
 			metric := sl.At(0)
 			require.Equal(t, mc[tt.metricName].Help, metric.Description(), "Expected help metadata in metric description")
 			require.Equal(t, mc[tt.metricName].Unit, metric.Unit(), "Expected unit metadata in metric")
+
+			hdpL := metric.Histogram().DataPoints()
+			require.Equal(t, 1, hdpL.Len(), "Exactly one point expected")
+			got := hdpL.At(0)
+			want := tt.want()
+			require.Equal(t, want, got, "Expected the points to be equal")
+		})
+	}
+}
+
+func TestMetricGroupData_toNHCBDistributionUnitTest(t *testing.T) {
+	tests := []struct {
+		name                string
+		metricName          string
+		labels              labels.Labels
+		intervalStartTimeMs int64
+		histogram           *histogram.Histogram
+		floatHistogram      *histogram.FloatHistogram
+		want                func() pmetric.HistogramDataPoint
+	}{
+		{
+			name:                "NHCB integer histogram with custom buckets",
+			metricName:          "nhcb_histogram",
+			intervalStartTimeMs: 11,
+			labels:              labels.FromMap(map[string]string{"a": "A", "b": "B"}),
+			histogram: &histogram.Histogram{
+				Schema:          -53, // NHCB schema
+				Count:           180,
+				Sum:             100.5,
+				CustomValues:    []float64{1.0, 2.0, 5.0, 10.0}, // Custom bucket boundaries
+				PositiveSpans:   []histogram.Span{{Offset: 0, Length: 5}},
+				PositiveBuckets: []int64{10, 15, 20, 5, 0}, 
+			},
+			want: func() pmetric.HistogramDataPoint {
+				point := pmetric.NewHistogramDataPoint()
+				point.SetCount(180)
+				point.SetSum(100.5)
+				point.SetTimestamp(pcommon.Timestamp(11 * time.Millisecond))
+				point.SetStartTimestamp(pcommon.Timestamp(11 * time.Millisecond))
+				point.ExplicitBounds().FromRaw([]float64{1.0, 2.0, 5.0, 10.0})
+				point.BucketCounts().FromRaw([]uint64{10, 25, 45, 50, 50}) 
+				attributes := point.Attributes()
+				attributes.PutStr("a", "A")
+				attributes.PutStr("b", "B")
+				return point
+			},
+		},
+		{
+			name:                "NHCB float histogram with custom buckets",
+			metricName:          "nhcb_float_histogram",
+			intervalStartTimeMs: 12,
+			labels:              labels.FromMap(map[string]string{"env": "prod"}),
+			floatHistogram: &histogram.FloatHistogram{
+				Schema:          -53, 
+				Count:           50.0,
+				Sum:             125.25,
+				CustomValues:    []float64{0.5, 2.0},  
+				PositiveBuckets: []float64{15.0, 20.0, 15.0}, 
+			},
+			want: func() pmetric.HistogramDataPoint {
+				point := pmetric.NewHistogramDataPoint()
+				point.SetCount(50)
+				point.SetSum(125.25)
+				point.SetTimestamp(pcommon.Timestamp(12 * time.Millisecond))
+				point.SetStartTimestamp(pcommon.Timestamp(12 * time.Millisecond))
+				point.ExplicitBounds().FromRaw([]float64{0.5, 2.0})
+				point.BucketCounts().FromRaw([]uint64{15, 20, 15}) 
+				attributes := point.Attributes()
+				attributes.PutStr("env", "prod")
+				return point
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mp := newMetricFamily(tt.metricName, mc, zap.NewNop())
+			sRef, _ := getSeriesRef(nil, tt.labels, mp.mtype)
+
+			err := mp.addNHCBSeries(sRef, tt.metricName, tt.labels, tt.intervalStartTimeMs, tt.histogram, tt.floatHistogram)
+			require.NoError(t, err)
+
+			require.Len(t, mp.groups, 1)
+
+			sl := pmetric.NewMetricSlice()
+			mp.appendMetric(sl, false)
+
+			require.Equal(t, 1, sl.Len(), "Exactly one metric expected")
+			metric := sl.At(0)
 
 			hdpL := metric.Histogram().DataPoints()
 			require.Equal(t, 1, hdpL.Len(), "Exactly one point expected")
