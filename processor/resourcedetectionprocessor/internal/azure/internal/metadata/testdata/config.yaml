@@ -11,6 +11,8 @@ all_set:
       enabled: true
     cloud.account.id:
       enabled: true
+    cloud.availability_zone:
+      enabled: true
     cloud.platform:
       enabled: true
     cloud.provider:
@@ -32,6 +34,8 @@ none_set:
     azure.vm.size:
       enabled: false
     cloud.account.id:
+      enabled: false
+    cloud.availability_zone:
       enabled: false
     cloud.platform:
       enabled: false
