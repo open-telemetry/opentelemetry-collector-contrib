@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS "%s"."%s" %s (
     ScopeVersion LowCardinality(String) CODEC(ZSTD(1)),
     ScopeAttributes JSON CODEC(ZSTD(1)),
     LogAttributes JSON CODEC(ZSTD(1)),
+    EventName String CODEC(ZSTD(1)),
 
     INDEX idx_body Body TYPE tokenbf_v1(32768, 3, 0) GRANULARITY 8
 ) ENGINE = %s

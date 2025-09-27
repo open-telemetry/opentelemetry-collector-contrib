@@ -374,6 +374,27 @@ Column names and types must be the same to preserve compatibility with the expor
 As long as the column names/types match the `INSERT` statement, you can create whatever kind of table you want.
 See [ClickHouse's LogHouse](https://clickhouse.com/blog/building-a-logging-platform-with-clickhouse-and-saving-millions-over-datadog#schema) as an example of this flexibility.
 
+### Upgrading existing tables
+
+If you already have an `otel_logs` table created by a previous version of the exporter, you may need to add the new `EventName` column.
+Use the following commands to update your existing table (adjust database and table names as needed):
+
+Single-node:
+
+```sql
+ALTER TABLE otel.otel_logs
+ADD COLUMN IF NOT EXISTS EventName String CODEC(ZSTD(1));
+```
+
+Cluster:
+
+```sql
+ALTER TABLE otel.otel_logs ON CLUSTER cluster
+ADD COLUMN IF NOT EXISTS EventName String CODEC(ZSTD(1));
+```
+
+These statements are safe to run even if the column already exists thanks to `IF NOT EXISTS`.
+
 ## Example
 
 This example shows how to configure the exporter to send data to a ClickHouse server.

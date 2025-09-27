@@ -109,7 +109,7 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 				if timestamp == 0 {
 					timestamp = r.ObservedTimestamp()
 				}
-
+				eventName := r.EventName()
 				appendErr := batch.Append(
 					timestamp.AsTime(),
 					traceutil.TraceIDToHexOrEmptyString(r.TraceID()),
@@ -126,6 +126,7 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 					scopeVersion,
 					scopeAttrMap,
 					logAttrMap,
+					eventName,
 				)
 				if appendErr != nil {
 					return fmt.Errorf("failed to append log row: %w", appendErr)

@@ -57,6 +57,7 @@ func verifyExportLogsJSON(t *testing.T, exporter *logsJSONExporter, mapBody bool
 		ScopeVersion       string    `ch:"ScopeVersion"`
 		ScopeAttributes    string    `ch:"ScopeAttributes"`
 		LogAttributes      string    `ch:"LogAttributes"`
+		EventName          string    `ch:"EventName"`
 	}
 
 	expectedLog := log{
@@ -74,6 +75,7 @@ func verifyExportLogsJSON(t *testing.T, exporter *logsJSONExporter, mapBody bool
 		ScopeSchemaURL:     "https://opentelemetry.io/schemas/1.7.0",
 		ScopeAttributes:    `{"lib":"clickhouse"}`,
 		LogAttributes:      `{"service":{"namespace":"default"}}`,
+		EventName:          "event",
 	}
 	if mapBody {
 		expectedLog.Body = `{"error":"message"}`
