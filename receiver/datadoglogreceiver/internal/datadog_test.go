@@ -235,7 +235,8 @@ func validateParsedLogs(t *testing.T, logs *plog.Logs, input string, enableDdtag
 	}
 
 	logSlice := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
-	for i, record := range records {
+	for i := range records {
+		record := records[i]
 		lr := logSlice.At(i)
 
 		switch {

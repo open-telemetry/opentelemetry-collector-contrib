@@ -79,7 +79,8 @@ func (s *OTLPMetricStore) ProcessMetrics(md pmetric.Metrics) error {
 				return fmt.Errorf("failed to append sample: %w", err)
 			}
 		}
-		for _, hp := range ts.Histograms {
+		for i := range ts.Histograms {
+			hp := &ts.Histograms[i]
 			var appendErr error
 			if hp.IsFloatHistogram() {
 				_, appendErr = s.appender.AppendHistogram(0, ls, hp.Timestamp, nil, hp.ToFloatHistogram())

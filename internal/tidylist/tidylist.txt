@@ -226,6 +226,7 @@ processor/resourceprocessor
 processor/schemaprocessor
 processor/spanprocessor
 processor/sumologicprocessor
+processor/unrollprocessor
 receiver/activedirectorydsreceiver
 receiver/aerospikereceiver
 receiver/apachereceiver
@@ -298,7 +299,6 @@ receiver/receivercreator
 receiver/redisreceiver
 receiver/riakreceiver
 receiver/saphanareceiver
-receiver/sapmreceiver
 receiver/simpleprometheusreceiver/examples/federation/prom-counter
 receiver/simpleprometheusreceiver
 receiver/skywalkingreceiver

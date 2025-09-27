@@ -9,6 +9,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/metadata"
 )
 
@@ -28,7 +29,7 @@ func createExtension(_ context.Context, settings extension.Settings, cfg compone
 func createDefaultConfig() component.Config {
 	return &Config{
 		VPCFlowLogConfig: VPCFlowLogConfig{
-			FileFormat: fileFormatPlainText,
+			FileFormat: constants.FileFormatPlainText,
 		},
 	}
 }

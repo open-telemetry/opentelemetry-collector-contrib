@@ -4,6 +4,7 @@
 package db // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kedascalerexporter/tsdb"
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/prometheus/prometheus/model/exemplar"
@@ -11,8 +12,9 @@ import (
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/metadata"
 	"github.com/prometheus/prometheus/storage"
-	"github.com/prometheus/prometheus/tsdb"
 )
+
+var ErrInvalidSample = errors.New("invalid sample")
 
 type InMemoryAppender struct {
 	db *InMemoryDB
@@ -62,11 +64,11 @@ func (a *InMemoryAppender) AppendHistogram(
 
 	l = l.WithoutEmpty()
 	if l.IsEmpty() {
-		return 0, fmt.Errorf("empty labelset: %w", tsdb.ErrInvalidSample)
+		return 0, fmt.Errorf("empty labelset: %w", ErrInvalidSample)
 	}
 
 	if lbl, dup := l.HasDuplicateLabelNames(); dup {
-		return 0, fmt.Errorf(`label name "%s" is not unique: %w`, lbl, tsdb.ErrInvalidSample)
+		return 0, fmt.Errorf(`label name "%s" is not unique: %w`, lbl, ErrInvalidSample)
 	}
 
 	series := a.getOrCreateSeries(l)
@@ -92,11 +94,11 @@ func (a *InMemoryAppender) Append(
 
 	l = l.WithoutEmpty()
 	if l.IsEmpty() {
-		return 0, fmt.Errorf("empty labelset: %w", tsdb.ErrInvalidSample)
+		return 0, fmt.Errorf("empty labelset: %w", ErrInvalidSample)
 	}
 
 	if lbl, dup := l.HasDuplicateLabelNames(); dup {
-		return 0, fmt.Errorf(`label name "%s" is not unique: %w`, lbl, tsdb.ErrInvalidSample)
+		return 0, fmt.Errorf(`label name "%s" is not unique: %w`, lbl, ErrInvalidSample)
 	}
 
 	series := a.getOrCreateSeries(l)

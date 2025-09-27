@@ -339,7 +339,7 @@ func TestNewFranzKafkaConsumerRegex(t *testing.T) {
 	topicCount := 10
 	topics := make([]string, topicCount)
 	topicPrefix := "topic-"
-	for i := 0; i < topicCount; i++ {
+	for i := range topicCount {
 		topics[i] = fmt.Sprintf("%s%d", topicPrefix, i)
 	}
 	_, clientConfig := kafkatest.NewCluster(t, kfake.SeedTopics(1, topics...))
@@ -546,6 +546,51 @@ func TestFranzClient_MetadataRefreshInterval(t *testing.T) {
 			case <-time.After(2 * time.Second):
 				t.Fatal("timed out waiting for metadata refresh")
 			}
+		})
+	}
+}
+
+func TestFranzClient_ProtocolVersion(t *testing.T) {
+	type testcase struct {
+		protocolVersion string
+		expectedVersion int
+	}
+	tests := map[string]testcase{
+		"without protocol version": {
+			expectedVersion: 4, // maximum
+		},
+		"with protocol version": {
+			protocolVersion: "2.1.0",
+			expectedVersion: 2,
+		},
+	}
+
+	for name, testcase := range tests {
+		t.Run(name, func(t *testing.T) {
+			var calls int
+			cluster, clientConfig := kafkatest.NewCluster(t)
+			cluster.ControlKey(int16(kmsg.ApiVersions), func(req kmsg.Request) (kmsg.Response, error, bool) {
+				calls++
+				assert.Equal(t, int16(testcase.expectedVersion), req.GetVersion())
+				return nil, nil, false
+			})
+
+			clientConfig.ProtocolVersion = testcase.protocolVersion
+			t.Run("consumer", func(t *testing.T) {
+				consumeConfig := configkafka.NewDefaultConsumerConfig()
+				client := mustNewFranzConsumerGroup(t, clientConfig, consumeConfig, []string{})
+				assert.NoError(t, client.Ping(t.Context()))
+			})
+			t.Run("producer", func(t *testing.T) {
+				client, err := NewFranzSyncProducer(
+					t.Context(), clientConfig,
+					configkafka.NewDefaultProducerConfig(), time.Second, zap.NewNop(),
+				)
+				require.NoError(t, err)
+				require.NoError(t, client.Ping(t.Context())) // trigger an API call
+				client.Close()
+			})
+			assert.Equal(t, 2, calls)
 		})
 	}
 }
