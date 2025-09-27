@@ -43,7 +43,7 @@ const (
 	metricNameCalls    = "calls"
 	metricNameEvents   = "events"
 
-	defaultUnit = metrics.Milliseconds
+	defaultUnit = metrics.Seconds
 
 	// https://github.com/open-telemetry/opentelemetry-go/blob/3ae002c3caf3e44387f0554dfcbbde2c5aab7909/sdk/metric/internal/aggregate/limit.go#L11C36-L11C50
 	overflowKey = "otel.metric.overflow"
