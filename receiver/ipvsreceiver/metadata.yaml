@@ -1,0 +1,242 @@
+type: ipvs
+
+status:
+  class: receiver
+  stability:
+    development: [metrics]
+  codeowners:
+    active: [sergeysedoy97]
+
+attributes:
+  sched:
+    description: The scheduler of the service.
+    type: string
+  netmask:
+    description: The netmask of the service.
+    type: string
+  protocol:
+    description: The protocol of the service.
+    type: string
+  vip_address:
+    description: The IP address of the virtual service.
+    type: string
+  vip_family:
+    description: The IP address family of the virtual service.
+    type: string
+  vip_port:
+    description: The port of the virtual service.
+    type: string
+  rip_address:
+    description: The IP address of the real service destination.
+    type: string
+  rip_family:
+    description: The IP address family of the real service destination.
+    type: string
+  rip_port:
+    description: The port of the real service destination.
+    type: string
+
+metrics:
+  ipvs.service.connection.total:
+    enabled: true
+    description: Cumulative number of connections for the service.
+    unit: "1"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [sched, netmask, protocol, vip_address, vip_family, vip_port]
+
+  ipvs.service.packet.in.total:
+    enabled: true
+    description: Cumulative number of incoming packets for the service.
+    unit: "1"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [sched, netmask, protocol, vip_address, vip_family, vip_port]
+
+  ipvs.service.packet.out.total:
+    enabled: true
+    description: Cumulative number of outgoing packets for the service.
+    unit: "1"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [sched, netmask, protocol, vip_address, vip_family, vip_port]
+
+  ipvs.service.in.total:
+    enabled: true
+    description: Cumulative number of incoming bytes for the service.
+    unit: "By"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [sched, netmask, protocol, vip_address, vip_family, vip_port]
+
+  ipvs.service.out.total:
+    enabled: true
+    description: Cumulative number of outgoing bytes for the service.
+    unit: "By"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [sched, netmask, protocol, vip_address, vip_family, vip_port]
+
+  ipvs.service.packet.in.rate:
+    enabled: true
+    description: Current incoming packet rate (packets per second) for the service.
+    unit: "1/s"
+    gauge:
+      value_type: int
+    attributes: [sched, netmask, protocol, vip_address, vip_family, vip_port]
+
+  ipvs.service.packet.out.rate:
+    enabled: true
+    description: Current outgoing packet rate (packets per second) for the service.
+    unit: "1/s"
+    gauge:
+      value_type: int
+    attributes: [sched, netmask, protocol, vip_address, vip_family, vip_port]
+
+  ipvs.service.in.rate:
+    enabled: true
+    description: Current incoming bytes rate (bytes per second) for the service.
+    unit: "By/s"
+    gauge:
+      value_type: int
+    attributes: [sched, netmask, protocol, vip_address, vip_family, vip_port]
+
+  ipvs.service.out.rate:
+    enabled: true
+    description: Current outgoing bytes rate (bytes per second) for the service.
+    unit: "By/s"
+    gauge:
+      value_type: int
+    attributes: [sched, netmask, protocol, vip_address, vip_family, vip_port]
+
+  ipvs.service.connection.rate:
+    enabled: true
+    description: Current connection rate (connections per second) for the service.
+    unit: "1/s"
+    gauge:
+      value_type: int
+    attributes: [sched, netmask, protocol, vip_address, vip_family, vip_port]
+
+  ipvs.destination.connection.weight:
+    enabled: true
+    description: Current connection weight to the destination.
+    unit: "1"
+    gauge:
+      value_type: int
+    attributes: [sched, netmask, protocol, vip_address, vip_family, vip_port, rip_address, rip_family, rip_port]
+
+  ipvs.destination.connection.active.count:
+    enabled: true
+    description: Number of active connections to the destination.
+    unit: "1"
+    gauge:
+      value_type: int
+    attributes: [sched, netmask, protocol, vip_address, vip_family, vip_port, rip_address, rip_family, rip_port]
+
+  ipvs.destination.connection.inactive.count:
+    enabled: true
+    description: Number of inactive connections to the destination.
+    unit: "1"
+    gauge:
+      value_type: int
+    attributes: [sched, netmask, protocol, vip_address, vip_family, vip_port, rip_address, rip_family, rip_port]
+
+  ipvs.destination.connection.total:
+    enabled: true
+    description: Cumulative number of connections to the destination.
+    unit: "1"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [sched, netmask, protocol, vip_address, vip_family, vip_port, rip_address, rip_family, rip_port]
+
+  ipvs.destination.packet.in.total:
+    enabled: true
+    description: Cumulative number of incoming packets to the destination.
+    unit: "1"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [sched, netmask, protocol, vip_address, vip_family, vip_port, rip_address, rip_family, rip_port]
+
+  ipvs.destination.packet.out.total:
+    enabled: true
+    description: Cumulative number of outgoing packets from the destination.
+    unit: "1"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [sched, netmask, protocol, vip_address, vip_family, vip_port, rip_address, rip_family, rip_port]
+
+  ipvs.destination.in.total:
+    enabled: true
+    description: Cumulative number of incoming bytes to the destination.
+    unit: "By"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [sched, netmask, protocol, vip_address, vip_family, vip_port, rip_address, rip_family, rip_port]
+
+  ipvs.destination.out.total:
+    enabled: true
+    description: Cumulative number of outgoing bytes from the destination.
+    unit: "By"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [sched, netmask, protocol, vip_address, vip_family, vip_port, rip_address, rip_family, rip_port]
+
+  ipvs.destination.packet.in.rate:
+    enabled: true
+    description: Current incoming packet rate (packets per second) to the destination.
+    unit: "1/s"
+    gauge:
+      value_type: int
+    attributes: [sched, netmask, protocol, vip_address, vip_family, vip_port, rip_address, rip_family, rip_port]
+
+  ipvs.destination.packet.out.rate:
+    enabled: true
+    description: Current outgoing packet rate (packets per second) from the destination.
+    unit: "1/s"
+    gauge:
+      value_type: int
+    attributes: [sched, netmask, protocol, vip_address, vip_family, vip_port, rip_address, rip_family, rip_port]
+
+  ipvs.destination.in.rate:
+    enabled: true
+    description: Current incoming bytes rate (bytes per second) to the destination.
+    unit: "By/s"
+    gauge:
+      value_type: int
+    attributes: [sched, netmask, protocol, vip_address, vip_family, vip_port, rip_address, rip_family, rip_port]
+
+  ipvs.destination.out.rate:
+    enabled: true
+    description: Current outgoing bytes rate (bytes per second) from the destination.
+    unit: "By/s"
+    gauge:
+      value_type: int
+    attributes: [sched, netmask, protocol, vip_address, vip_family, vip_port, rip_address, rip_family, rip_port]
+
+  ipvs.destination.connection.rate:
+    enabled: true
+    description: Current connection rate (connections per second) to the destination.
+    unit: "1/s"
+    gauge:
+      value_type: int
+    attributes: [sched, netmask, protocol, vip_address, vip_family, vip_port, rip_address, rip_family, rip_port]

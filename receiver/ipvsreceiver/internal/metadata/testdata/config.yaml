@@ -1,0 +1,97 @@
+default:
+all_set:
+  metrics:
+    ipvs.destination.connection.active.count:
+      enabled: true
+    ipvs.destination.connection.inactive.count:
+      enabled: true
+    ipvs.destination.connection.rate:
+      enabled: true
+    ipvs.destination.connection.total:
+      enabled: true
+    ipvs.destination.connection.weight:
+      enabled: true
+    ipvs.destination.in.rate:
+      enabled: true
+    ipvs.destination.in.total:
+      enabled: true
+    ipvs.destination.out.rate:
+      enabled: true
+    ipvs.destination.out.total:
+      enabled: true
+    ipvs.destination.packet.in.rate:
+      enabled: true
+    ipvs.destination.packet.in.total:
+      enabled: true
+    ipvs.destination.packet.out.rate:
+      enabled: true
+    ipvs.destination.packet.out.total:
+      enabled: true
+    ipvs.service.connection.rate:
+      enabled: true
+    ipvs.service.connection.total:
+      enabled: true
+    ipvs.service.in.rate:
+      enabled: true
+    ipvs.service.in.total:
+      enabled: true
+    ipvs.service.out.rate:
+      enabled: true
+    ipvs.service.out.total:
+      enabled: true
+    ipvs.service.packet.in.rate:
+      enabled: true
+    ipvs.service.packet.in.total:
+      enabled: true
+    ipvs.service.packet.out.rate:
+      enabled: true
+    ipvs.service.packet.out.total:
+      enabled: true
+none_set:
+  metrics:
+    ipvs.destination.connection.active.count:
+      enabled: false
+    ipvs.destination.connection.inactive.count:
+      enabled: false
+    ipvs.destination.connection.rate:
+      enabled: false
+    ipvs.destination.connection.total:
+      enabled: false
+    ipvs.destination.connection.weight:
+      enabled: false
+    ipvs.destination.in.rate:
+      enabled: false
+    ipvs.destination.in.total:
+      enabled: false
+    ipvs.destination.out.rate:
+      enabled: false
+    ipvs.destination.out.total:
+      enabled: false
+    ipvs.destination.packet.in.rate:
+      enabled: false
+    ipvs.destination.packet.in.total:
+      enabled: false
+    ipvs.destination.packet.out.rate:
+      enabled: false
+    ipvs.destination.packet.out.total:
+      enabled: false
+    ipvs.service.connection.rate:
+      enabled: false
+    ipvs.service.connection.total:
+      enabled: false
+    ipvs.service.in.rate:
+      enabled: false
+    ipvs.service.in.total:
+      enabled: false
+    ipvs.service.out.rate:
+      enabled: false
+    ipvs.service.out.total:
+      enabled: false
+    ipvs.service.packet.in.rate:
+      enabled: false
+    ipvs.service.packet.in.total:
+      enabled: false
+    ipvs.service.packet.out.rate:
+      enabled: false
+    ipvs.service.packet.out.total:
+      enabled: false
