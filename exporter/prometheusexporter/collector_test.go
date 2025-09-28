@@ -844,7 +844,7 @@ func TestNormalizeNamespaceEmpty(t *testing.T) {
 	labelNamer := otlptranslator.LabelNamer{UTF8Allowed: false}
 
 	ns := normalizeNamespace("", labelNamer, logger)
-	require.Equal(t, "", ns, "empty configNamespace should yield empty namespace")
+	require.Empty(t, ns, "empty configNamespace should yield empty namespace")
 }
 
 func TestNormalizeNamespaceInvalid(t *testing.T) {
@@ -852,7 +852,7 @@ func TestNormalizeNamespaceInvalid(t *testing.T) {
 	labelNamer := otlptranslator.LabelNamer{UTF8Allowed: false}
 
 	ns := normalizeNamespace("----", labelNamer, logger)
-	require.Equal(t, "", ns, "invalid configNamespace should yield empty namespace")
+	require.Empty(t, ns, "configNamespace with no valid characters should yield empty namespace")
 }
 
 func TestNormalizeNamespaceSanitizes(t *testing.T) {
