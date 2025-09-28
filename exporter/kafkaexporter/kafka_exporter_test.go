@@ -30,6 +30,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/kafkaclient"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/kafkatest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/topic"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
@@ -982,6 +983,124 @@ func TestLogsPusher_partitioning(t *testing.T) {
 		assert.Equal(t, keys[0], keys[1])
 		assert.NotEqual(t, keys[0], keys[2])
 	})
+	t.Run("trace_id_partitioning", func(t *testing.T) {
+		config := createDefaultConfig().(*Config)
+		config.PartitionLogsByTraceID = true
+		exp, producer := newMockLogsExporter(t, *config, componenttest.NewNopHost())
+
+		// Build input with three ResourceLogs: two share the same TraceID, one has a different TraceID.
+		in := plog.NewLogs()
+		var rls []plog.ResourceLogs
+		tid1 := pcommon.TraceID([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1})
+		tid2 := pcommon.TraceID([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2})
+
+		mkRL := func(tid pcommon.TraceID) plog.ResourceLogs {
+			rl := in.ResourceLogs().AppendEmpty()
+			rl.Resource().Attributes().PutStr("service.name", "svc")
+			sl := rl.ScopeLogs().AppendEmpty()
+			lr := sl.LogRecords().AppendEmpty()
+			lr.SetTraceID(tid)
+			return rl
+		}
+		rl1 := mkRL(tid1)
+		rl2 := mkRL(tid1)
+		rl3 := mkRL(tid2)
+		rls = append(rls, rl1, rl2, rl3)
+
+		var keys [][]byte
+		for i := 0; i < len(rls); i++ {
+			producer.ExpectSendMessageWithMessageCheckerFunctionAndSucceed(
+				func(msg *sarama.ProducerMessage) error {
+					value, err := msg.Value.Encode()
+					require.NoError(t, err)
+					output, err := (&plog.ProtoUnmarshaler{}).UnmarshalLogs(value)
+					require.NoError(t, err)
+
+					require.Equal(t, 1, output.ResourceLogs().Len())
+					assert.NoError(t, plogtest.CompareResourceLogs(
+						rls[i],
+						output.ResourceLogs().At(0),
+					))
+
+					key, err := msg.Key.Encode()
+					require.NoError(t, err)
+					keys = append(keys, key)
+					return nil
+				},
+			)
+		}
+
+		err := exp.exportData(t.Context(), in)
+		require.NoError(t, err)
+
+		require.Len(t, keys, 3)
+		// Keys should be the hex TraceID only, identical for same TraceID, different otherwise.
+		expected1 := []byte(traceutil.TraceIDToHexOrEmptyString(tid1))
+		expected2 := []byte(traceutil.TraceIDToHexOrEmptyString(tid2))
+		assert.Equal(t, expected1, keys[0])
+		assert.Equal(t, expected1, keys[1])
+		assert.Equal(t, expected2, keys[2])
+		assert.NotEqual(t, keys[0], keys[2])
+	})
+
+	// precedence: when both flags are true, resource-attribute partitioning wins over trace-id
+	t.Run("partitioning_precedence_resource_over_trace", func(t *testing.T) {
+		config := createDefaultConfig().(*Config)
+		config.PartitionLogsByResourceAttributes = true
+		config.PartitionLogsByTraceID = true
+		exp, producer := newMockLogsExporter(t, *config, componenttest.NewNopHost())
+
+		// Build input with three ResourceLogs: first two share the same resource but have different TraceIDs;
+		// third has a different resource. Expect keys to be equal for the first two despite different TraceIDs.
+		in := plog.NewLogs()
+		var rls []plog.ResourceLogs
+		tidA := pcommon.TraceID([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3})
+		tidB := pcommon.TraceID([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4})
+
+		mkRL := func(service string, tid pcommon.TraceID) plog.ResourceLogs {
+			rl := in.ResourceLogs().AppendEmpty()
+			rl.Resource().Attributes().PutStr("service.name", service)
+			sl := rl.ScopeLogs().AppendEmpty()
+			lr := sl.LogRecords().AppendEmpty()
+			lr.SetTraceID(tid)
+			return rl
+		}
+		rl1 := mkRL("service1", tidA)
+		rl2 := mkRL("service1", tidB) // same resource attributes, different TraceID
+		rl3 := mkRL("service2", tidA)
+		rls = append(rls, rl1, rl2, rl3)
+
+		var keys [][]byte
+		for i := 0; i < len(rls); i++ {
+			producer.ExpectSendMessageWithMessageCheckerFunctionAndSucceed(
+				func(msg *sarama.ProducerMessage) error {
+					value, err := msg.Value.Encode()
+					require.NoError(t, err)
+					output, err := (&plog.ProtoUnmarshaler{}).UnmarshalLogs(value)
+					require.NoError(t, err)
+
+					require.Equal(t, 1, output.ResourceLogs().Len())
+					assert.NoError(t, plogtest.CompareResourceLogs(
+						rls[i],
+						output.ResourceLogs().At(0),
+					))
+
+					key, err := msg.Key.Encode()
+					require.NoError(t, err)
+					keys = append(keys, key)
+					return nil
+				},
+			)
+		}
+
+		err := exp.exportData(t.Context(), in)
+		require.NoError(t, err)
+
+		require.Len(t, keys, 3)
+		assert.NotEmpty(t, keys[0])
+		assert.Equal(t, keys[0], keys[1]) // same resource => same key, even with different TraceIDs (resource precedence)
+		assert.NotEqual(t, keys[0], keys[2])
+	})
 }
 
 func TestProfilesPusher(t *testing.T) {
@@ -1379,11 +1498,11 @@ func Test_GetTopic(t *testing.T) {
 			topic := ""
 			switch r := tests[i].resource.(type) {
 			case pmetric.ResourceMetricsSlice:
-				topic = getTopic(tests[i].ctx, tests[i].signalCfg, tests[i].topicFromAttribute, r)
+				topic = getTopic[pmetric.ResourceMetrics](tests[i].ctx, tests[i].signalCfg, tests[i].topicFromAttribute, r)
 			case ptrace.ResourceSpansSlice:
-				topic = getTopic(tests[i].ctx, tests[i].signalCfg, tests[i].topicFromAttribute, r)
+				topic = getTopic[ptrace.ResourceSpans](tests[i].ctx, tests[i].signalCfg, tests[i].topicFromAttribute, r)
 			case plog.ResourceLogsSlice:
-				topic = getTopic(tests[i].ctx, tests[i].signalCfg, tests[i].topicFromAttribute, r)
+				topic = getTopic[plog.ResourceLogs](tests[i].ctx, tests[i].signalCfg, tests[i].topicFromAttribute, r)
 			}
 			assert.Equal(t, tests[i].wantTopic, topic)
 		})
@@ -1620,3 +1739,5 @@ func fetchKgoRecords(tb testing.TB, brokers []string, topic string) []*kgo.Recor
 	})
 	return records
 }
+
+

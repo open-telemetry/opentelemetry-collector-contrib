@@ -71,6 +71,14 @@ type Config struct {
 	// If this is true, then the message key will be set to a hash of the resource's identifying
 	// attributes.
 	PartitionLogsByResourceAttributes bool `mapstructure:"partition_logs_by_resource_attributes"`
+
+	// PartitionLogsByTraceID controls partitioning of log messages by trace ID only.
+	// When enabled, the exporter splits incoming logs per TraceID (using SplitLogs)
+	// and sets the Kafka message key to the 16-byte hex string of that TraceID.
+	// If a LogRecord has an empty TraceID, the key may be empty and partition
+	// selection falls back to the Kafka client’s default strategy. Resource
+	// attributes are not used for the key when this option is enabled.
+	PartitionLogsByTraceID bool `mapstructure:"partition_logs_by_trace_id"`
 }
 
 func (c *Config) Unmarshal(conf *confmap.Conf) error {
