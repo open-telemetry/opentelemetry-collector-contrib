@@ -1739,5 +1739,3 @@ func fetchKgoRecords(tb testing.TB, brokers []string, topic string) []*kgo.Recor
 	})
 	return records
 }
-
-
