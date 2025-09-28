@@ -311,23 +311,24 @@ func TestMetricGroupData_toNHCBDistributionUnitTest(t *testing.T) {
 		name                string
 		metricName          string
 		labels              labels.Labels
-		intervalStartTimeMs int64
-		histogram           *histogram.Histogram
+		integerHistogram    *histogram.Histogram
 		floatHistogram      *histogram.FloatHistogram
 		want                func() pmetric.HistogramDataPoint
+		wantErr             bool
+		intervalStartTimeMs int64
 	}{
 		{
-			name:                "NHCB integer histogram with custom buckets",
+			name:                "NHCB with startTimestamp",
 			metricName:          "nhcb_histogram",
 			intervalStartTimeMs: 11,
 			labels:              labels.FromMap(map[string]string{"a": "A", "b": "B"}),
-			histogram: &histogram.Histogram{
-				Schema:          -53, // NHCB schema
-				Count:           180,
-				Sum:             100.5,
-				CustomValues:    []float64{1.0, 2.0, 5.0, 10.0}, // Custom bucket boundaries
-				PositiveSpans:   []histogram.Span{{Offset: 0, Length: 5}},
-				PositiveBuckets: []int64{10, 15, 20, 5, 0}, 
+			integerHistogram: &histogram.Histogram{
+				Schema:         -53,
+				Count:          180,
+				Sum:            100.5,
+				CustomValues:   []float64{1.0, 2.0, 5.0, 10.0},
+				PositiveSpans:  []histogram.Span{{Offset: 0, Length: 5}},
+				PositiveBuckets: []int64{10, 15, 20, 5, 0},
 			},
 			want: func() pmetric.HistogramDataPoint {
 				point := pmetric.NewHistogramDataPoint()
@@ -336,7 +337,7 @@ func TestMetricGroupData_toNHCBDistributionUnitTest(t *testing.T) {
 				point.SetTimestamp(pcommon.Timestamp(11 * time.Millisecond))
 				point.SetStartTimestamp(pcommon.Timestamp(11 * time.Millisecond))
 				point.ExplicitBounds().FromRaw([]float64{1.0, 2.0, 5.0, 10.0})
-				point.BucketCounts().FromRaw([]uint64{10, 25, 45, 50, 50}) 
+				point.BucketCounts().FromRaw([]uint64{10, 25, 45, 50, 50})
 				attributes := point.Attributes()
 				attributes.PutStr("a", "A")
 				attributes.PutStr("b", "B")
@@ -349,11 +350,11 @@ func TestMetricGroupData_toNHCBDistributionUnitTest(t *testing.T) {
 			intervalStartTimeMs: 12,
 			labels:              labels.FromMap(map[string]string{"env": "prod"}),
 			floatHistogram: &histogram.FloatHistogram{
-				Schema:          -53, 
+				Schema:          -53,
 				Count:           50.0,
 				Sum:             125.25,
-				CustomValues:    []float64{0.5, 2.0},  
-				PositiveBuckets: []float64{15.0, 20.0, 15.0}, 
+				CustomValues:    []float64{0.5, 2.0},
+				PositiveBuckets: []float64{15.0, 20.0, 15.0},
 			},
 			want: func() pmetric.HistogramDataPoint {
 				point := pmetric.NewHistogramDataPoint()
@@ -362,9 +363,87 @@ func TestMetricGroupData_toNHCBDistributionUnitTest(t *testing.T) {
 				point.SetTimestamp(pcommon.Timestamp(12 * time.Millisecond))
 				point.SetStartTimestamp(pcommon.Timestamp(12 * time.Millisecond))
 				point.ExplicitBounds().FromRaw([]float64{0.5, 2.0})
-				point.BucketCounts().FromRaw([]uint64{15, 20, 15}) 
+				point.BucketCounts().FromRaw([]uint64{15, 20, 15})
 				attributes := point.Attributes()
 				attributes.PutStr("env", "prod")
+				return point
+			},
+		},
+		{
+			name:                "NHCB with spans and gaps (integer)",
+			metricName:          "nhcb_histogram",
+			intervalStartTimeMs: 21,
+			labels:              labels.FromMap(map[string]string{"service": "api"}),
+			integerHistogram: &histogram.Histogram{
+				Schema:        -53,
+				Count:         20,
+				Sum:           42.0,
+				CustomValues:  []float64{1.0, 2.0, 5.0, 10.0}, // 5 buckets including +Inf
+				PositiveSpans: []histogram.Span{{Offset: 0, Length: 2}, {Offset: 1, Length: 2}}, // gap of 1 bucket
+				// These are treated as deltas per existing integer NHCB test convention.
+				PositiveBuckets: []int64{4, 6, 7, 3}, // maps to cumulative buckets: [4,10,10,17,20]
+			},
+			want: func() pmetric.HistogramDataPoint {
+				point := pmetric.NewHistogramDataPoint()
+				point.SetCount(20)
+				point.SetSum(42.0)
+				point.SetTimestamp(pcommon.Timestamp(21 * time.Millisecond))
+				point.SetStartTimestamp(pcommon.Timestamp(21 * time.Millisecond))
+				point.ExplicitBounds().FromRaw([]float64{1.0, 2.0, 5.0, 10.0})
+				// Expect cumulative-style buckets consistent with existing integer NHCB test.
+				point.BucketCounts().FromRaw([]uint64{4, 10, 10, 17, 20})
+				attrs := point.Attributes()
+				attrs.PutStr("service", "api")
+				return point
+			},
+		},
+		{
+			name:                "NHCB with leading offset (integer)",
+			metricName:          "nchb_histogram",
+			intervalStartTimeMs: 22,
+			labels:              labels.FromMap(map[string]string{"service": "payments"}),
+			integerHistogram: &histogram.Histogram{
+				Schema:         -53,
+				Count:          10,
+				Sum:            12.3,
+				CustomValues:   []float64{0.5, 1.0, 2.0, 5.0}, // 5 buckets including +Inf
+				PositiveSpans:  []histogram.Span{{Offset: 1, Length: 3}},         // 1 leading empty bucket
+				PositiveBuckets: []int64{2, 3, 5}, // cumulative buckets -> [0,2,5,10,10]
+			},
+			want: func() pmetric.HistogramDataPoint {
+				point := pmetric.NewHistogramDataPoint()
+				point.SetCount(10)
+				point.SetSum(12.3)
+				point.SetTimestamp(pcommon.Timestamp(22 * time.Millisecond))
+				point.SetStartTimestamp(pcommon.Timestamp(22 * time.Millisecond))
+				point.ExplicitBounds().FromRaw([]float64{0.5, 1.0, 2.0, 5.0})
+				point.BucketCounts().FromRaw([]uint64{0, 2, 5, 10, 10})
+				point.Attributes().PutStr("service", "payments")
+				return point
+			},
+		},
+		{
+			name:                "NHCB float histogram with spans and gap",
+			metricName:          "nhcb_float_histogram",
+			intervalStartTimeMs: 23,
+			labels:              labels.FromMap(map[string]string{"env": "staging"}),
+			floatHistogram: &histogram.FloatHistogram{
+				Schema:          -53,
+				Count:           30.0,
+				Sum:             7.25,
+				CustomValues:    []float64{0.1, 0.2, 1.0, 2.0}, // 5 buckets including +Inf
+				PositiveSpans:   []histogram.Span{{Offset: 2, Length: 3}},        // 2 leading empty buckets
+				PositiveBuckets: []float64{10.0, 5.0, 15.0},                       // direct per-bucket counts per existing float NHCB test
+			},
+			want: func() pmetric.HistogramDataPoint {
+				point := pmetric.NewHistogramDataPoint()
+				point.SetCount(30)
+				point.SetSum(7.25)
+				point.SetTimestamp(pcommon.Timestamp(23 * time.Millisecond))
+				point.SetStartTimestamp(pcommon.Timestamp(23 * time.Millisecond))
+				point.ExplicitBounds().FromRaw([]float64{0.1, 0.2, 1.0, 2.0})
+				point.BucketCounts().FromRaw([]uint64{0, 0, 10, 5, 15})
+				point.Attributes().PutStr("env", "staging")
 				return point
 			},
 		},
@@ -375,7 +454,7 @@ func TestMetricGroupData_toNHCBDistributionUnitTest(t *testing.T) {
 			mp := newMetricFamily(tt.metricName, mc, zap.NewNop())
 			sRef, _ := getSeriesRef(nil, tt.labels, mp.mtype)
 
-			err := mp.addNHCBSeries(sRef, tt.metricName, tt.labels, tt.intervalStartTimeMs, tt.histogram, tt.floatHistogram)
+			err := mp.addNHCBSeries(sRef, tt.metricName, tt.labels, tt.intervalStartTimeMs, tt.integerHistogram, tt.floatHistogram)
 			require.NoError(t, err)
 
 			require.Len(t, mp.groups, 1)

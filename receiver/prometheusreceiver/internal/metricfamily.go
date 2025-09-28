@@ -98,26 +98,14 @@ func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice)
 	var bounds []float64
 	var bucketCounts []uint64
 	pointIsStale := value.IsStaleNaN(mg.sum) || value.IsStaleNaN(mg.count)
+	point := dest.AppendEmpty()
 
-	if mg.isNHCB {
+	if mg.isNHCB && !pointIsStale {
 		bounds = make([]float64, len(mg.complexValue)-1)
 		bucketCounts = make([]uint64, len(mg.complexValue))
 
-		for i, dp := range mg.complexValue {
+		convertDeltaBuckets(mg.hValue.PositiveSpans, mg.hValue.PositiveBuckets, point.BucketCounts())
 
-			if pointIsStale {
-				bucketCounts[i] = 0
-			} else {
-				bucketCounts[i] = uint64(dp.value)
-			}
-			if i < len(mg.complexValue)-1 {
-				bounds[i] = dp.boundary
-			}
-		}
-
-		if pointIsStale {
-			bucketCounts[len(bucketCounts)-1] = 0
-		}
 	} else {
 		bucketCount := len(mg.complexValue) + 1
 		if bucketCount > 1 && mg.complexValue[bucketCount-2].boundary == math.Inf(1) {
@@ -147,9 +135,9 @@ func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice)
 			adjustedCount -= mg.complexValue[bucketCount-2].value
 		}
 		bucketCounts[bucketCount-1] = uint64(adjustedCount)
+		
+		point.BucketCounts().FromRaw(bucketCounts)
 	}
-
-	point := dest.AppendEmpty()
 
 	if pointIsStale {
 		point.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
@@ -161,7 +149,6 @@ func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice)
 	}
 
 	point.ExplicitBounds().FromRaw(bounds)
-	point.BucketCounts().FromRaw(bucketCounts)
 
 	// The timestamp MUST be in retrieved from milliseconds and converted to nanoseconds.
 	tsNanos := timestampFromMs(mg.ts)
@@ -500,6 +487,12 @@ func (mf *metricFamily) addNHCBSeries(seriesRef uint64, metricName string, ls la
 	switch {
 	case h != nil:
 		bounds = h.CustomValues
+		expandedBuckets := make([]int64, len(h.PositiveBuckets))
+		for i, v := range h.PositiveSpans {
+			for j := uint32(0); j < v.Length; j++ {
+				expandedBuckets[int(v.Offset)+int(j)] = h.PositiveBuckets[i]
+			}
+		}
 		counts = make([]float64, len(h.PositiveBuckets))
 		cumulative := 0.0
 		for i, v := range h.PositiveBuckets {
@@ -520,10 +513,6 @@ func (mf *metricFamily) addNHCBSeries(seriesRef uint64, metricName string, ls la
 		mg.hasSum = true
 	default:
 		return fmt.Errorf("NHCB metric %v has no histogram data", metricName)
-	}
-
-	if len(bounds)+1 != len(counts) {
-		return fmt.Errorf("NHCB metric %v has mismatched bounds and counts", metricName)
 	}
 
 	for i := range counts {
