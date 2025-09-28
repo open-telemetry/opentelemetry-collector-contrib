@@ -97,7 +97,7 @@ func (h *heartbeater) shutdown() {
 }
 
 func (*heartbeater) sendHeartbeat(config *Config, buildInfo component.BuildInfo, pushLogFn func(ctx context.Context, ld plog.Logs) error) error {
-	return pushLogFn(context.Background(), generateHeartbeatLog(config.HecToOtelAttrs, buildInfo))
+	return pushLogFn(context.Background(), generateHeartbeatLog(config.OtelAttrsToHec, buildInfo))
 }
 
 // there is only use case for open census metrics recording for now. Extend to use open telemetry in the future.

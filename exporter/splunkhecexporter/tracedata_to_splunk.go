@@ -48,10 +48,10 @@ type hecSpan struct {
 }
 
 func mapSpanToSplunkEvent(resource pcommon.Resource, span ptrace.Span, config *Config) *splunk.Event {
-	sourceKey := config.HecToOtelAttrs.Source
-	sourceTypeKey := config.HecToOtelAttrs.SourceType
-	indexKey := config.HecToOtelAttrs.Index
-	hostKey := config.HecToOtelAttrs.Host
+	sourceKey := config.OtelAttrsToHec.Source
+	sourceTypeKey := config.OtelAttrsToHec.SourceType
+	indexKey := config.OtelAttrsToHec.Index
+	hostKey := config.OtelAttrsToHec.Host
 
 	host := unknownHostName
 	source := config.Source

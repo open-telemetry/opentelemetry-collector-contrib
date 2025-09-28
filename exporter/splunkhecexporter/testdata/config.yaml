@@ -38,11 +38,6 @@ splunk_hec/allsettings:
     sourcetype: "mysourcetype"
     index: "myindex"
     host: "myhost"
-  hec_metadata_to_otel_attrs:
-    source: "mysource"
-    sourcetype: "mysourcetype"
-    index: "myindex"
-    host: "myhost"
   otel_to_hec_fields:
     severity_text: "myseverityfield"
     severity_number: "myseveritynumfield"
