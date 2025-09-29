@@ -195,14 +195,14 @@ See the struct of the Cloud Audit Log payload in [AuditLog](https://cloud.google
 | `packets_sent` | `gcp.vpc.flow.packets_sent` |
 | `start_time` | `gcp.vpc.flow.start_time` |
 | `end_time` | Log timestamp |
-| `src_gateway.project_id` | `gcp.gateway.project.id` |
-| `src_gateway.location` | `gcp.gateway.region` |
-| `src_gateway.name` | `gcp.gateway.name` |
-| `src_gateway.type` | `gcp.gateway.type` |
-| `src_gateway.vpc.project_id` | `gcp.gateway.vpc.project.id` |
-| `src_gateway.vpc.subnetwork_name` | `gcp.gateway.vpc.subnet.name` |
-| `src_gateway.vpc.subnetwork_region` | `gcp.gateway.vpc.subnet.region` |
-| `src_gateway.vpc.vpc_name` | `gcp.gateway.vpc.name` |
-| `src_gateway.interconnect_name` | `gcp.gateway.interconnect.name` |
-| `src_gateway.interconnect_project_number` | `gcp.gateway.interconnect.project.number` |
+| `src_gateway.project_id` | `gcp.src.gateway.project.id` |
+| `src_gateway.location` | `gcp.src.gateway.region` |
+| `src_gateway.name` | `gcp.src.gateway.name` |
+| `src_gateway.type` | `gcp.src.gateway.type` |
+| `src_gateway.vpc.project_id` | `gcp.src.gateway.vpc.project.id` |
+| `src_gateway.vpc.subnetwork_name` | `gcp.src.gateway.vpc.subnet.name` |
+| `src_gateway.vpc.subnetwork_region` | `gcp.src.gateway.vpc.subnet.region` |
+| `src_gateway.vpc.vpc_name` | `gcp.src.gateway.vpc.name` |
+| `src_gateway.interconnect_name` | `gcp.src.gateway.interconnect.name` |
+| `src_gateway.interconnect_project_number` | `gcp.src.gateway.interconnect.project.number` |
 #### Left off here, good above here.
