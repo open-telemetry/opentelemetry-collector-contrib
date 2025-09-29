@@ -671,6 +671,22 @@ func inferSpanName(span ptrace.Span) string {
 			} else {
 				return rpcMethodVal.AsString()
 			}
+		} else if dbSystemName, okDbSystemName := span.Attributes().Get("db.system.name"); okDbSystemName { // TODO or "db.system"
+			// https://opentelemetry.io/docs/specs/semconv/database/database-spans/
+			var res = ""
+			if dbOperationNameVal, okDbOperationName := span.Attributes().Get("db.operation.name"); okDbOperationName { // TODO or "db.operation"
+				res += dbOperationNameVal.AsString() + " "
+			}
+			if dbNamespaceVal, okDbNamespace := span.Attributes().Get("db.namespace"); okDbNamespace {
+				res += dbNamespaceVal.AsString() + "."
+			}
+			if dbCollectionNameVal, okDbCollectionName := span.Attributes().Get("db.collection.name"); okDbCollectionName { // TODO or "db.name"
+				res += dbCollectionNameVal.AsString()
+			}
+			if len(res) == 0 {
+				res = dbSystemName.AsString() // fallback
+			}
+			return res
 		} else {
 			// TODO
 			return span.Name()

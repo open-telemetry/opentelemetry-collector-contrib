@@ -2419,6 +2419,30 @@ func Test_inferSpanName(t *testing.T) {
 			},
 			want: "GET",
 		},
+		// DB CLIENT SPANS
+		{
+			testDescription: "DB client span with db.system and db.operation.name - postgresql",
+			name:            "insert into orders (date_created,status) values (?,?)",
+			kind:            ptrace.SpanKindClient,
+			addAttributes: func(attrs pcommon.Map) {
+				attrs.PutStr("db.system.name", "postgresql")
+				attrs.PutStr("db.namespace", "webshop")
+				attrs.PutStr("db.operation.name", "INSERT")
+				attrs.PutStr("db.collection.name", "orders")
+				attrs.PutStr("db.query.text", "insert into orders (date_created,status) values (?,?)")
+			},
+			want: "INSERT webshop.orders",
+		},
+		{
+			testDescription: "DB client span with db.system.name but lacking db.operation.name - io.opentelemetry.lettuce-5.1",
+			name:            "GET",
+			kind:            ptrace.SpanKindClient,
+			addAttributes: func(attrs pcommon.Map) {
+				attrs.PutStr("db.system.name", "redis")
+				attrs.PutStr("db.query.text", "GET productCache::10")
+			},
+			want: "redis",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
