@@ -627,19 +627,22 @@ on opamp extension to report the health when it changes?_
 
 ## Collector Executable Updates Flow
 
-The Supervisor will download Collector package updates when offered so
+The Supervisor will download Collector package updates when offered to
 by the OpAMP Server, if the AcceptsPackages capability is enabled.
+
+By default the flow is geared towards the [OpenTelemetry Collector Releases repository](https://github.com/open-telemetry/opentelemetry-collector-releases).
+This will use [Sigstore](https://docs.sigstore.dev/about/overview/)
+to facilitate signing and verifying the collector binary.
 
 ### Overview
 
 ![Supervisor architecture diagram](agent-upgrades-e2e.png)
 
 1. During the release workflow, [Cosign](https://github.com/sigstore/cosign) is used to sign the build artifacts.
-2. Cosign gets a signed certificate from [Fulcio](https://github.com/sigstore/fulcio). Fulcio verifies the
-   Open ID Connect token of the signer before signing the certificate.
-3. Cosign writes the computed signature and certificate to the public
+2. Cosign gets a signed certificate from [Fulcio](https://github.com/sigstore/fulcio).
+3. Cosign writes the artifact digest, computed signature, and certificate to the public
    [Rekor](https://github.com/sigstore/rekor) instance.
-4. The release workflow adds both the release artifacts and cosign generated signature
+4. The release workflow adds the release artifacts, Cosign signature,
    and certificate files to the release.
 5. An OpAMP server is made aware of the release through some mechanism
    (e.g. manually through user intervention, through polling the GitHub API,
@@ -647,12 +650,11 @@ by the OpAMP Server, if the AcceptsPackages capability is enabled.
 6. The OpAMP server sends a PackagesAvailable message with the new agent
    release specified. See the [Expected PackagesAvailable Format](#expected-packagesavailable-format)
    section for more information.
-7. The supervisor, on startup, has retrieved the sigstore root certificates.
-8. The supervisor downloads the agent binary from the releases, using
-   the URL that the OpAMP server gave it for downloading. After
-   downloading, it verifies the content hash matches the server
-   provided content hash from the PackagesAvailable message.
-9. The supervisor verifies the certificate via the root certificates downloaded in step 7.
+7. The supervisor, on startup, has retrieved the Sigstore root certificates.
+8. The supervisor downloads the agent binary from the release using
+   the URL that the OpAMP server gave it for downloading. Verifies the content hash matches
+   the server provided content hash.
+9. The supervisor verifies the signature, certificate, and artifact digest via the root certificates downloaded in step 7.
    In addition, the supervisor checks against the Rekor transparency log to
    verify the certificate hasn't been tampered with.
 10. The supervisor replaces and restarts the agent, and the new agent is now running.
@@ -695,25 +697,32 @@ Example:
 ### Signing
 
 In order for an agent package to be accepted by the supervisor, the
-package MUST be signed. The supervisor expects the agent tarball to be signed
+package MUST be signed. By default, the supervisor expects the agent tarball to be signed
 using [Cosign](https://github.com/sigstore/cosign), using the keyless signing method to generate separate certificate
 and signature files.
 
-Both the certificate and cosign signature will be used to create the
+Both the certificate and Cosign signature will be used to create the
 file's signature in the PackagesAvailable message.
 
+#### Signing Flow
+
 During release, the [opentelemetry-collector-releases](https://github.com/open-telemetry/opentelemetry-collector-releases)
-repository uses Cosign to sign the artifacts using a OpenID Connect identity token. This token is used to request a certificate from
-[Fulcio](https://github.com/sigstore/fulcio).
-This certificate contains the identity used to sign the certificate,
-and can be used to verify the signer.
+repository uses Cosign to sign artifacts. Cosign generates a public and private key pair, using the private key to sign
+the release artifact (the agent tarball).
+
+Cosign will use an OpenID Connect identity token to request a certificate from
+[Fulcio](https://github.com/sigstore/fulcio). The identity token is issued by GitHub actions and the token identifies as
+the GitHub repository action running the release.
 
 After Fulcio verifies the token, it signs a short-lived x509 certificate for
-the release workflow. This certificate's private key is used to compute
-a signature for the release artifact (in this case, the agent tarball).
+the release workflow.
 
-Afterwards, the certificate and signature are written to
-[Rekor](https://github.com/sigstore/rekor), a transparency log.
+The certificate signed by Fulcio is bound to the identity token and the public key. This certificate can be used
+to verify the identity of the signer and verify the artifacts have not been tampered with.
+
+Cosign then writes the Fulcio issued certificate, artifact signature, and artifact digest to
+[Rekor](https://github.com/sigstore/rekor), a public transparency log. Afterwards, the signature and certificate are
+included in the release as `.sig` and `.pem` files for the given artifact.
 
 As a result, both the certificate and signature together can be used to verify
 the identity of the signer, verify that the artifact that was downloaded
@@ -730,6 +739,7 @@ joining the base64 encoded certificate and signature files generated
 by Cosign. These fields should be separated with a single space in
 the string like in the example below. Note that the files generated
 by Cosign are already base64 encoded and do not need to be encoded further.
+These will be `.sig` and `.pem` files with names matching the release artifact.
 
 The signature format should look like this:
 
@@ -739,11 +749,20 @@ ${b64_certificate} ${b64_signature}
 
 ### Signature Verification
 
-The signature is verified using Cosign. In order to verify the signature,
-several things are needed:
+After receiving the PackagesAvailable message, the supervisor will verify the package's integrity.
 
-- A set of identities (issuer/subject pairs) that the signature must be
-  signed by.
+The signature on the artifact is verified using the public key bound to the Fulcio certificate to ensure
+the package has not been tampered with. Additionally the identity on the certificate is verified and checked
+against an expected identity. The certificate is also verified to be an authentic certificate generated by Fulcio.
+
+The [Rekor](https://github.com/sigstore/rekor) transparency log is also checked to ensure the presence of the given
+artifact signature, artifact digest, and certificate. This ensures the package matches the package that was generated at release.
+
+This process of signature verification requires several things.
+
+A list of configurable options include:
+
+- A set of identities (issuer/subject pairs) to verify the signature against.
   - By default, this will be issuer/subject used to sign the agent release
     from the [opentelemetry-collector-releases](https://github.com/open-telemetry/opentelemetry-collector-releases)
     repository.
@@ -751,17 +770,20 @@ several things are needed:
   - By default, this is "open-telemetry/opentelemetry-collector-releases".
   - This field may be explicitly set empty to skip verifying the repository field
     in the certificate
+
+Additionally various public keys and values are needed. These are retrieved by the supervisor at startup.
+
 - A set of [Fulcio](https://github.com/sigstore/fulcio) root certificates.
   - These certificates are retrieved from "https://tuf-repo-cdn.sigstore.dev"
     on startup.
-- A URL of a running [Rekor](https://github.com/sigstore/rekor) instance.
-  - This is hardcoded to be the public Rekor instance, "https://rekor.sigstore.dev".
 - A set of trusted Rekor public keys.
   - These public keys are retrieved from "https://tuf-repo-cdn.sigstore.dev"
     on startup.
 - A set of trusted certificate transparency (CT) log public keys
   - These certificates are retrieved from "https://tuf-repo-cdn.sigstore.dev"
     on startup.
+- A URL of a running [Rekor](https://github.com/sigstore/rekor) instance.
+  - This is hardcoded to be the public Rekor instance, "https://rekor.sigstore.dev".
 
 For a more in depth explanation of how Cosign/Sigstore works, see
 [Sigstore's docs](https://docs.sigstore.dev/about/overview/#how-sigstore-works).
