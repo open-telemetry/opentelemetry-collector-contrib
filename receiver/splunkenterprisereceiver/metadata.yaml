@@ -459,7 +459,7 @@ metrics:
     attributes: [splunk.splunkd.build, splunk.splunkd.version]
   splunk.license.expiration.seconds_remaining:
     enabled: false
-    description: Gauge tracking the seconds remaining on any given Splunk License found via Splunk API.
+    description: Gauge tracking the seconds remaining on any given Splunk License found via Splunk API. **Note:** This will only work on a Cluster Manager.
     unit: "{seconds}"
     gauge:
       value_type: int

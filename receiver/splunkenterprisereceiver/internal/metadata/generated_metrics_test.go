@@ -789,7 +789,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["splunk.license.expiration.seconds_remaining"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Gauge tracking the seconds remaining on any given Splunk License found via Splunk API.", ms.At(i).Description())
+					assert.Equal(t, "Gauge tracking the seconds remaining on any given Splunk License found via Splunk API. **Note:** This will only work on a Cluster Manager.", ms.At(i).Description())
 					assert.Equal(t, "{seconds}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())

@@ -1567,7 +1567,7 @@ type metricSplunkLicenseExpirationSecondsRemaining struct {
 // init fills splunk.license.expiration.seconds_remaining metric with initial data.
 func (m *metricSplunkLicenseExpirationSecondsRemaining) init() {
 	m.data.SetName("splunk.license.expiration.seconds_remaining")
-	m.data.SetDescription("Gauge tracking the seconds remaining on any given Splunk License found via Splunk API.")
+	m.data.SetDescription("Gauge tracking the seconds remaining on any given Splunk License found via Splunk API. **Note:** This will only work on a Cluster Manager.")
 	m.data.SetUnit("{seconds}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)

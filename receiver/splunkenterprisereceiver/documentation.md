@@ -432,7 +432,7 @@ This is the overall status of the kvstore for the given deployment.
 
 ### splunk.license.expiration.seconds_remaining
 
-Gauge tracking the seconds remaining on any given Splunk License found via Splunk API.
+Gauge tracking the seconds remaining on any given Splunk License found via Splunk API. **Note:** This will only work on a Cluster Manager.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
