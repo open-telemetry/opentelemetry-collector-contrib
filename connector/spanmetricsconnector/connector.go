@@ -622,58 +622,63 @@ func inferSpanName(span ptrace.Span) string {
 
 	switch span.Kind() {
 	case ptrace.SpanKindServer:
-		if httpRequestMethodVal, okHttpRequestMethod := span.Attributes().Get(string(semconv.HTTPRequestMethodKey)); okHttpRequestMethod {
+		if httpRequestMethodVal, okHTTPRequestMethod := span.Attributes().Get(string(semconv.HTTPRequestMethodKey)); okHTTPRequestMethod {
 			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/
-			if httpRouteVal, okHttpRoute := span.Attributes().Get(string(semconv.HTTPRouteKey)); okHttpRoute {
+			if httpRouteVal, okHTTPRoute := span.Attributes().Get(string(semconv.HTTPRouteKey)); okHTTPRoute {
 				return httpRequestMethodVal.AsString() + " " + httpRouteVal.AsString()
 			} else {
 				return httpRequestMethodVal.AsString()
 			}
-		} else if httpMethodVal, okHttpMethod := span.Attributes().Get(string(semconv.HTTPMethodKey)); okHttpMethod {
+		}
+
+		if httpMethodVal, okHTTPMethod := span.Attributes().Get(string(semconv.HTTPMethodKey)); okHTTPMethod {
 			// TODO simplify and combine logic for http.request.method and http.method
 			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/
 			if httpRouteVal, okHttpRoute := span.Attributes().Get(string(semconv.HTTPRouteKey)); okHttpRoute {
 				return httpMethodVal.AsString() + " " + httpRouteVal.AsString()
-			} else {
-				return httpMethodVal.AsString()
 			}
-		} else if rpcMethodVal, okRpcMethod := span.Attributes().Get(string(semconv.RPCMethodKey)); okRpcMethod {
+			return httpMethodVal.AsString()
+		}
+
+		if rpcMethodVal, okRPCMethod := span.Attributes().Get(string(semconv.RPCMethodKey)); okRPCMethod {
 			// https://opentelemetry.io/docs/specs/semconv/rpc/rpc-spans/
 			if rpcServiceVal, okRpcService := span.Attributes().Get(string(semconv.RPCServiceKey)); okRpcService {
 				return rpcServiceVal.AsString() + "/" + rpcMethodVal.AsString()
-			} else {
-				return rpcMethodVal.AsString()
 			}
-		} else {
-			// TODO
-			return span.Name()
+			return rpcMethodVal.AsString()
 		}
+
+		// TODO
+		return span.Name()
+
 	case ptrace.SpanKindClient:
-		if httpRequestMethodVal, okRequestHttpMethod := span.Attributes().Get(string(semconv.HTTPRequestMethodKey)); okRequestHttpMethod {
+		if httpRequestMethodVal, okHTTPRequestMethod := span.Attributes().Get(string(semconv.HTTPRequestMethodKey)); okHTTPRequestMethod {
 			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/
 			// the connector uses semconv 1.25 that doesn't include "url.template" so use the string value
 			if urlTemplateVal, okUrlTemplate := span.Attributes().Get("url.template"); okUrlTemplate {
 				return httpRequestMethodVal.AsString() + " " + urlTemplateVal.AsString()
-			} else {
-				return httpRequestMethodVal.AsString()
 			}
-		} else if httpMethodVal, okRequestHttpMethod := span.Attributes().Get(string(semconv.HTTPMethodKey)); okRequestHttpMethod {
+			return httpRequestMethodVal.AsString()
+
+		}
+		if httpMethodVal, okHTTPRequestMethod := span.Attributes().Get(string(semconv.HTTPMethodKey)); okHTTPRequestMethod {
 			// TODO simplify and combine logic for http.request.method and http.method
 			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/
 			// the connector uses semconv 1.25 that doesn't include "url.template" so use the string value
 			if urlTemplateVal, okUrlTemplate := span.Attributes().Get("url.template"); okUrlTemplate {
 				return httpMethodVal.AsString() + " " + urlTemplateVal.AsString()
-			} else {
-				return httpMethodVal.AsString()
 			}
-		} else if rpcMethodVal, okRpcMethod := span.Attributes().Get(string(semconv.RPCMethodKey)); okRpcMethod {
+			return httpMethodVal.AsString()
+
+		} else if rpcMethodVal, okRPCMethod := span.Attributes().Get(string(semconv.RPCMethodKey)); okRPCMethod {
 			// https://opentelemetry.io/docs/specs/semconv/rpc/rpc-spans/
 			if rpcServiceVal, okRpcService := span.Attributes().Get(string(semconv.RPCServiceKey)); okRpcService {
 				return rpcServiceVal.AsString() + "/" + rpcMethodVal.AsString()
-			} else {
-				return rpcMethodVal.AsString()
 			}
-		} else if dbSystemName, okDbSystemName := span.Attributes().Get("db.system.name"); okDbSystemName { // TODO or "db.system"
+			return rpcMethodVal.AsString()
+
+		}
+		if dbSystemName, okDbSystemName := span.Attributes().Get("db.system.name"); okDbSystemName { // TODO or "db.system"
 			// https://opentelemetry.io/docs/specs/semconv/database/database-spans/
 			var res = ""
 			if dbOperationNameVal, okDbOperationName := span.Attributes().Get("db.operation.name"); okDbOperationName { // TODO or "db.operation"
@@ -685,14 +690,14 @@ func inferSpanName(span ptrace.Span) string {
 			if dbCollectionNameVal, okDbCollectionName := span.Attributes().Get("db.collection.name"); okDbCollectionName { // TODO or "db.name"
 				res += dbCollectionNameVal.AsString()
 			}
-			if len(res) == 0 {
-				res = dbSystemName.AsString() // fallback
+			if res == "" {
+				res = dbSystemName.AsString() // fallback. Showing the db system name may be useful
 			}
 			return res
-		} else {
-			// TODO
-			return span.Name()
 		}
+		// TODO
+		return span.Name()
+
 	default:
 		return span.Name()
 	}
