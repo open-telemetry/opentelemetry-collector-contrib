@@ -839,7 +839,7 @@ func (s *oracleScraper) setupResourceBuilder(rb *metadata.ResourceBuilder) *meta
 func getInstanceID(instanceString string, logger *zap.Logger) string {
 	hostAndPort, service, found := strings.Cut(instanceString, "/")
 	if !found {
-		logger.Info("No serviceName found in the connection string", zap.String("instanceString", instanceString))
+		logger.Info("No service name found in the connection string", zap.String("instanceString", instanceString))
 	}
 
 	host, port, err := net.SplitHostPort(hostAndPort)
