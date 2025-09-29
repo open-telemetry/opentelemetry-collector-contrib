@@ -59,9 +59,9 @@ var identityBufferPool = sync.Pool{
 	},
 }
 
-type State struct {
+type state struct {
 	sync.Mutex
-	PrevPoint ValuePoint
+	prevPoint ValuePoint
 }
 
 type DeltaValue struct {
@@ -112,8 +112,8 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
 	hashableID := b.String()
 	identityBufferPool.Put(b)
 
-	s, ok := t.states.LoadOrStore(hashableID, &State{
-		PrevPoint: metricPoint,
+	s, ok := t.states.LoadOrStore(hashableID, &state{
+		prevPoint: metricPoint,
 	})
 	if !ok {
 		switch metricID.MetricType {
@@ -141,16 +141,16 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
 
 	valid = true
 
-	state := s.(*State)
+	state := s.(*state)
 	state.Lock()
 	defer state.Unlock()
 
-	out.StartTimestamp = state.PrevPoint.ObservedTimestamp
+	out.StartTimestamp = state.prevPoint.ObservedTimestamp
 
 	switch metricID.MetricType {
 	case pmetric.MetricTypeHistogram:
 		value := metricPoint.HistogramValue
-		prevValue := state.PrevPoint.HistogramValue
+		prevValue := state.prevPoint.HistogramValue
 		if math.IsNaN(value.Sum) {
 			value.Sum = prevValue.Sum
 		}
@@ -174,7 +174,7 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
 	case pmetric.MetricTypeSum:
 		if metricID.IsFloatVal() {
 			value := metricPoint.FloatValue
-			prevValue := state.PrevPoint.FloatValue
+			prevValue := state.prevPoint.FloatValue
 			delta := value - prevValue
 
 			// Detect reset (non-monotonic sums are not converted)
@@ -185,7 +185,7 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
 			out.FloatValue = delta
 		} else {
 			value := metricPoint.IntValue
-			prevValue := state.PrevPoint.IntValue
+			prevValue := state.prevPoint.IntValue
 			delta := value - prevValue
 
 			// Detect reset (non-monotonic sums are not converted)
@@ -198,13 +198,13 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
 	case pmetric.MetricTypeEmpty, pmetric.MetricTypeGauge, pmetric.MetricTypeExponentialHistogram, pmetric.MetricTypeSummary:
 	}
 
-	state.PrevPoint = metricPoint
+	state.prevPoint = metricPoint
 	return
 }
 
 func (t *MetricTracker) removeStale(staleBefore pcommon.Timestamp) {
 	t.states.Range(func(key, value any) bool {
-		s := value.(*State)
+		s := value.(*state)
 
 		// There is a known race condition here.
 		// Because the state may be in the process of updating at the
@@ -220,7 +220,7 @@ func (t *MetricTracker) removeStale(staleBefore pcommon.Timestamp) {
 		//	  not be persisted. The next update will load an entirely
 		//	  new state.
 		s.Lock()
-		lastObserved := s.PrevPoint.ObservedTimestamp
+		lastObserved := s.prevPoint.ObservedTimestamp
 		s.Unlock()
 		if lastObserved < staleBefore {
 			t.logger.Debug("removing stale state key", zap.String("key", key.(string)))
