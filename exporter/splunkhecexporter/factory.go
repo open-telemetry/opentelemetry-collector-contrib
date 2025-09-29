@@ -88,12 +88,6 @@ func createDefaultConfig() component.Config {
 			Index:      splunk.DefaultIndexLabel,
 			Host:       string(conventions.HostNameKey),
 		},
-		HecToOtelAttrs: splunk.HecToOtelAttrs{
-			Source:     splunk.DefaultSourceLabel,
-			SourceType: splunk.DefaultSourceTypeLabel,
-			Index:      splunk.DefaultIndexLabel,
-			Host:       string(conventions.HostNameKey),
-		},
 		HecFields: OtelToHecFields{
 			SeverityText:   splunk.DefaultSeverityTextLabel,
 			SeverityNumber: splunk.DefaultSeverityNumberLabel,
