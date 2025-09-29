@@ -1499,7 +1499,7 @@ func TestDeleteQueue(t *testing.T) {
 
 	// Delete loop processing should remove mappings for pod2.
 	c.deleteLoopProcessing(0 * time.Second)
-	assert.Len(t, c.Pods, 0) // No more mappings
+	assert.Empty(t, c.Pods) // No more mappings
 }
 
 func TestNodeExtractionRules(t *testing.T) {
