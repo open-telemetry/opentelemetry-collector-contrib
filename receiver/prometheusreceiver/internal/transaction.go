@@ -67,6 +67,7 @@ type transaction struct {
 	buildInfo              component.BuildInfo
 	metricAdjuster         MetricsAdjuster
 	obsrecv                *receiverhelper.ObsReport
+	targetSamplesReporter  TargetSamplesReporter
 	// Used as buffer to calculate series ref hash.
 	bufBytes []byte
 }
@@ -88,6 +89,7 @@ func newTransaction(
 	obsrecv *receiverhelper.ObsReport,
 	trimSuffixes bool,
 	enableNativeHistograms bool,
+	targetSamplesReporter TargetSamplesReporter,
 ) *transaction {
 	return &transaction{
 		ctx:                    ctx,
@@ -101,6 +103,7 @@ func newTransaction(
 		logger:                 settings.Logger,
 		buildInfo:              settings.BuildInfo,
 		obsrecv:                obsrecv,
+		targetSamplesReporter:  targetSamplesReporter,
 		bufBytes:               make([]byte, 0, 1024),
 		scopeAttributes:        make(map[resourceKey]map[scopeID]pcommon.Map),
 		nodeResources:          map[resourceKey]pcommon.Resource{},
@@ -563,6 +566,12 @@ func (t *transaction) Commit() error {
 
 	err = t.sink.ConsumeMetrics(ctx, md)
 	t.obsrecv.EndMetricsOp(ctx, dataformat, numPoints, err)
+
+	// Report target samples to target allocator if configured and successful
+	if err == nil && t.targetSamplesReporter != nil {
+		t.reportTargetSamples(numPoints)
+	}
+
 	return err
 }
 
@@ -618,4 +627,12 @@ func (t *transaction) addScopeInfo(key resourceKey, ls labels.Labels) {
 
 func getSeriesRef(bytes []byte, ls labels.Labels, mtype pmetric.MetricType) (uint64, []byte) {
 	return ls.HashWithoutLabels(bytes, getSortedNotUsefulLabels(mtype)...)
+}
+
+// reportTargetSamples reports the sample count for each target to the target allocator
+func (t *transaction) reportTargetSamples(totalSamples int) {
+	// Report samples for each resource (job/instance combination)
+	for rKey := range t.families {
+		t.targetSamplesReporter.ReportTargetSamples(rKey.job, rKey.instance, totalSamples)
+	}
 }

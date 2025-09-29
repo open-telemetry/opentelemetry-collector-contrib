@@ -25,6 +25,7 @@ type Config struct {
 	CollectorID             string                `mapstructure:"collector_id"`
 	HTTPSDConfig            *PromHTTPSDConfig     `mapstructure:"http_sd_config"`
 	HTTPScrapeConfig        *PromHTTPClientConfig `mapstructure:"http_scrape_config"`
+	ReportTargetSamples     bool                  `mapstructure:"report_target_samples"`
 }
 
 // PromHTTPSDConfig is a redeclaration of promHTTP.SDConfig because we need custom unmarshaling
