@@ -7,7 +7,7 @@ change_type: enhancement
 component: oracledbreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: service.instance.id attribute is added in resourceAttributes of all metrics and logs in oracledbreceiver
+note: Add `service.instance.id` resource attribute
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [42402]
@@ -16,8 +16,8 @@ issues: [42402]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  The `service.instance.id` attribute is added in the format `<host>:<port>/<service>` to uniquely identify 
-  Oracle db hosts.
+  The `service.instance.id` resource attribute is added in the format `<host>:<port>/<service>` to uniquely identify 
+  Oracle DB hosts. This resource attribute is enabled by default for metrics and logs.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
