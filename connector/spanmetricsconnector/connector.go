@@ -612,17 +612,14 @@ func (p *connectorImp) buildKey(serviceName string, span ptrace.Span, optionalDi
 func (p *connectorImp) spanName(span ptrace.Span) string {
 	if p.config.SpanNameSemanticConvention {
 		return inferSpanName(span)
-	} else {
-		return span.Name()
 	}
+	return span.Name()
 }
 
 func inferSpanName(span ptrace.Span) string {
-	// If the span is a server span and follows HTTP semconv, infer a friendly name.
-
 	switch span.Kind() {
 	case ptrace.SpanKindServer:
-		if httpRequestMethodVal, okHTTPRequestMethod := getAttributeValue(span, string(semconv.HTTPRequestMethodKey), string(semconv.HTTPMethodKey)); okHTTPRequestMethod {
+		if httpRequestMethodVal, ok := getAttributeValue(span, string(semconv.HTTPRequestMethodKey), string(semconv.HTTPMethodKey)); ok {
 			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/
 			if httpRouteVal, okHTTPRoute := span.Attributes().Get(string(semconv.HTTPRouteKey)); okHTTPRoute {
 				return httpRequestMethodVal.AsString() + " " + httpRouteVal.AsString()
@@ -630,7 +627,7 @@ func inferSpanName(span ptrace.Span) string {
 			return httpRequestMethodVal.AsString()
 		}
 
-		if rpcMethodVal, okRPCMethod := span.Attributes().Get(string(semconv.RPCMethodKey)); okRPCMethod {
+		if rpcMethodVal, ok := span.Attributes().Get(string(semconv.RPCMethodKey)); ok {
 			// https://opentelemetry.io/docs/specs/semconv/rpc/rpc-spans/
 			if rpcServiceVal, okRPCService := span.Attributes().Get(string(semconv.RPCServiceKey)); okRPCService {
 				return rpcServiceVal.AsString() + "/" + rpcMethodVal.AsString()
@@ -641,8 +638,17 @@ func inferSpanName(span ptrace.Span) string {
 		// TODO should we use a high cardinality proof default value?
 		return span.Name()
 
+	case ptrace.SpanKindProducer:
+		if _, ok := span.Attributes().Get(string(semconv.MessagingSystemKey)); ok {
+			if messagingSpanName, ok2 := getMessagingSpanName(span); ok2 {
+				return messagingSpanName.AsString()
+			}
+			return "messaging"
+		}
+		// TODO should we use a high cardinality proof default value?
+		return span.Name()
 	case ptrace.SpanKindClient:
-		if httpRequestMethodVal, okHTTPRequestMethod := getAttributeValue(span, string(semconv.HTTPRequestMethodKey), string(semconv.HTTPMethodKey)); okHTTPRequestMethod {
+		if httpRequestMethodVal, ok := getAttributeValue(span, string(semconv.HTTPRequestMethodKey), string(semconv.HTTPMethodKey)); ok {
 			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/
 			// TODO the connector uses semconv 1.25 that doesn't include "url.template" so use the string value
 			if urlTemplateVal, okURLTemplate := span.Attributes().Get("url.template"); okURLTemplate {
@@ -651,7 +657,7 @@ func inferSpanName(span ptrace.Span) string {
 			return httpRequestMethodVal.AsString()
 		}
 
-		if rpcMethodVal, okRPCMethod := span.Attributes().Get(string(semconv.RPCMethodKey)); okRPCMethod {
+		if rpcMethodVal, ok := span.Attributes().Get(string(semconv.RPCMethodKey)); ok {
 			// https://opentelemetry.io/docs/specs/semconv/rpc/rpc-spans/
 			if rpcServiceVal, okRPCService := span.Attributes().Get(string(semconv.RPCServiceKey)); okRPCService {
 				return rpcServiceVal.AsString() + "/" + rpcMethodVal.AsString()
@@ -659,24 +665,30 @@ func inferSpanName(span ptrace.Span) string {
 			return rpcMethodVal.AsString()
 		}
 
-		if dbSystemName, okDbSystemName := getAttributeValue(span, "db.system.name", "db.system"); okDbSystemName {
+		if dbSystemName, ok := getAttributeValue(span, "db.system.spanName", "db.system"); ok {
 			// https://opentelemetry.io/docs/specs/semconv/database/database-spans/
-			var res = ""
-			if dbOperationNameVal, okDbOperationName := getAttributeValue(span, "db.operation.name", "db.operation"); okDbOperationName {
+			var res string
+			if dbOperationNameVal, okDbOperationName := getAttributeValue(span, "db.operation.spanName", "db.operation"); okDbOperationName {
 				res += dbOperationNameVal.AsString() + " "
 			}
 			if dbNamespaceVal, okDbNamespace := span.Attributes().Get("db.namespace"); okDbNamespace {
 				res += dbNamespaceVal.AsString() + "."
 			}
-			if dbCollectionNameVal, okDbCollectionName := getAttributeValue(span, "db.collection.name", "db.name"); okDbCollectionName {
+			if dbCollectionNameVal, okDbCollectionName := getAttributeValue(span, "db.collection.spanName", "db.spanName"); okDbCollectionName {
 				res += dbCollectionNameVal.AsString()
 			}
 			if res == "" {
-				res = dbSystemName.AsString() // fallback. Showing the db system name may be useful
+				res = dbSystemName.AsString() // fallback. Showing the db system spanName may be useful
 			}
 			return res
 		}
 
+		if _, ok := span.Attributes().Get(string(semconv.MessagingSystemKey)); ok {
+			if messagingSpanName, ok2 := getMessagingSpanName(span); ok2 {
+				return messagingSpanName.AsString()
+			}
+			return "messaging"
+		}
 		// TODO should we use a high cardinality proof default value?
 		return span.Name()
 
@@ -692,6 +704,55 @@ func getAttributeValue(span ptrace.Span, attrNames ...string) (pcommon.Value, bo
 			return val, true
 		}
 	}
+	return pcommon.Value{}, false
+}
+
+func getMessagingSpanName(span ptrace.Span) (pcommon.Value, bool) {
+	var messagingOperationNameVal, okMessagingOperationName = getAttributeValue(span, "messaging.operation.name", string(semconv.MessagingOperationKey))
+	var messagingDestinationVal, okMessagingDestination = getMessagingDestination(span)
+
+	if okMessagingOperationName && okMessagingDestination {
+		// https://opentelemetry.io/docs/specs/semconv/messaging/messaging-spans/
+		return pcommon.NewValueStr(messagingOperationNameVal.AsString() + " " + messagingDestinationVal.AsString()), true
+	}
+
+	if okMessagingDestination {
+		return messagingDestinationVal, true
+	}
+
+	if okMessagingOperationName {
+		return messagingOperationNameVal, true
+	}
+
+	// TODO should we use a high cardinality proof default value?
+	return pcommon.Value{}, false
+}
+
+func getMessagingDestination(span ptrace.Span) (pcommon.Value, bool) {
+	if messagingDestinationTemplate, okMessagingDestinationTemplate := span.Attributes().Get(string(semconv.MessagingDestinationTemplateKey)); okMessagingDestinationTemplate {
+		return messagingDestinationTemplate, true
+	}
+
+	if messagingDestinationTemporaryVal, okMessagingDestinationTemporary := span.Attributes().Get(string(semconv.MessagingDestinationTemporaryKey)); okMessagingDestinationTemporary {
+		if messagingDestinationTemporaryVal.Bool() {
+			return pcommon.NewValueStr("temporary-destination"), true
+		}
+	}
+
+	if messagingDestinationAnonymousVal, okMessagingDestinationAnonymous := span.Attributes().Get(string(semconv.MessagingDestinationAnonymousKey)); okMessagingDestinationAnonymous {
+		if messagingDestinationAnonymousVal.Bool() {
+			return pcommon.NewValueStr("anonymous-destination"), true
+		}
+	}
+
+	if messagingDestinationNameVal, okMessagingDestinationName := getAttributeValue(span, string(semconv.MessagingDestinationNameKey), "messaging.destination"); okMessagingDestinationName {
+		return messagingDestinationNameVal, true
+	}
+
+	if serverAddressVal, okServerAddress := span.Attributes().Get(string(semconv.ServerAddressKey)); okServerAddress {
+		return serverAddressVal, true
+	}
+
 	return pcommon.Value{}, false
 }
 

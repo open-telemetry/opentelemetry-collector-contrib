@@ -2336,16 +2336,16 @@ func TestBuildAttributesWithFeatureGate(t *testing.T) {
 
 func Test_inferSpanName(t *testing.T) {
 	tests := []struct {
-		testDescription string
-		name            string
-		kind            ptrace.SpanKind
-		addAttributes   func(pcommon.Map)
-		want            string
+		name          string
+		spanName      string
+		kind          ptrace.SpanKind
+		addAttributes func(pcommon.Map)
+		want          string
 	}{
 		{
-			testDescription: "HTTP server span with both http.request.method and http.route",
-			name:            "GET /users/123",
-			kind:            ptrace.SpanKindServer,
+			name:     "HTTP server span with both http.request.method and http.route",
+			spanName: "GET /users/123",
+			kind:     ptrace.SpanKindServer,
 			addAttributes: func(attrs pcommon.Map) {
 				attrs.PutStr("http.request.method", "GET")
 				attrs.PutStr("http.route", "/users/:id")
@@ -2353,9 +2353,9 @@ func Test_inferSpanName(t *testing.T) {
 			want: "GET /users/:id",
 		},
 		{
-			testDescription: "HTTP server span with both deprecated http.method and http.route",
-			name:            "GET /users/123",
-			kind:            ptrace.SpanKindServer,
+			name:     "HTTP server span with both deprecated http.method and http.route",
+			spanName: "GET /users/123",
+			kind:     ptrace.SpanKindServer,
 			addAttributes: func(attrs pcommon.Map) {
 				attrs.PutStr("http.method", "GET")
 				attrs.PutStr("http.route", "/users/:id")
@@ -2363,18 +2363,18 @@ func Test_inferSpanName(t *testing.T) {
 			want: "GET /users/:id",
 		},
 		{
-			testDescription: "HTTP server span with just http.request.method",
-			name:            "GET /users/123",
-			kind:            ptrace.SpanKindServer,
+			name:     "HTTP server span with just http.request.method",
+			spanName: "GET /users/123",
+			kind:     ptrace.SpanKindServer,
 			addAttributes: func(attrs pcommon.Map) {
 				attrs.PutStr("http.request.method", "GET")
 			},
 			want: "GET",
 		},
 		{
-			testDescription: "HTTP server span with just deprecated http.method",
-			name:            "GET /users/123",
-			kind:            ptrace.SpanKindServer,
+			name:     "HTTP server span with just deprecated http.method",
+			spanName: "GET /users/123",
+			kind:     ptrace.SpanKindServer,
 			addAttributes: func(attrs pcommon.Map) {
 				attrs.PutStr("http.method", "GET")
 			},
@@ -2382,9 +2382,9 @@ func Test_inferSpanName(t *testing.T) {
 		},
 		// HTTP CLIENT SPANS
 		{
-			testDescription: "HTTP client span with both http.request.method and url.template",
-			name:            "GET /users/123",
-			kind:            ptrace.SpanKindClient,
+			name:     "HTTP client span with both http.request.method and url.template",
+			spanName: "GET /users/123",
+			kind:     ptrace.SpanKindClient,
 			addAttributes: func(attrs pcommon.Map) {
 				attrs.PutStr("http.request.method", "GET")
 				attrs.PutStr("url.template", "/users/:id")
@@ -2392,9 +2392,9 @@ func Test_inferSpanName(t *testing.T) {
 			want: "GET /users/:id",
 		},
 		{
-			testDescription: "HTTP client span with both deprecated http.method and url.template",
-			name:            "GET /users/123",
-			kind:            ptrace.SpanKindClient,
+			name:     "HTTP client span with both deprecated http.method and url.template",
+			spanName: "GET /users/123",
+			kind:     ptrace.SpanKindClient,
 			addAttributes: func(attrs pcommon.Map) {
 				attrs.PutStr("http.method", "GET")
 				attrs.PutStr("url.template", "/users/:id")
@@ -2402,18 +2402,18 @@ func Test_inferSpanName(t *testing.T) {
 			want: "GET /users/:id",
 		},
 		{
-			testDescription: "HTTP client span with just http.request.method",
-			name:            "GET /users/123",
-			kind:            ptrace.SpanKindClient,
+			name:     "HTTP client span with just http.request.method",
+			spanName: "GET /users/123",
+			kind:     ptrace.SpanKindClient,
 			addAttributes: func(attrs pcommon.Map) {
 				attrs.PutStr("http.request.method", "GET")
 			},
 			want: "GET",
 		},
 		{
-			testDescription: "HTTP client span with just deprecated http.method",
-			name:            "GET /users/123",
-			kind:            ptrace.SpanKindClient,
+			name:     "HTTP client span with just deprecated http.method",
+			spanName: "GET /users/123",
+			kind:     ptrace.SpanKindClient,
 			addAttributes: func(attrs pcommon.Map) {
 				attrs.PutStr("http.method", "GET")
 			},
@@ -2421,33 +2421,70 @@ func Test_inferSpanName(t *testing.T) {
 		},
 		// DB CLIENT SPANS
 		{
-			testDescription: "DB client span with db.system and db.operation.name - postgresql",
-			name:            "insert into orders (date_created,status) values (?,?)",
-			kind:            ptrace.SpanKindClient,
+			name:     "DB client span with db.system and db.operation.spanName - postgresql",
+			spanName: "insert into orders (date_created,status) values (?,?)",
+			kind:     ptrace.SpanKindClient,
 			addAttributes: func(attrs pcommon.Map) {
-				attrs.PutStr("db.system.name", "postgresql")
+				attrs.PutStr("db.system.spanName", "postgresql")
 				attrs.PutStr("db.namespace", "webshop")
-				attrs.PutStr("db.operation.name", "INSERT")
-				attrs.PutStr("db.collection.name", "orders")
+				attrs.PutStr("db.operation.spanName", "INSERT")
+				attrs.PutStr("db.collection.spanName", "orders")
 				attrs.PutStr("db.query.text", "insert into orders (date_created,status) values (?,?)")
 			},
 			want: "INSERT webshop.orders",
 		},
 		{
-			testDescription: "DB client span with db.system.name but lacking db.operation.name - io.opentelemetry.lettuce-5.1",
-			name:            "GET",
-			kind:            ptrace.SpanKindClient,
+			name:     "DB client span with db.system.spanName but lacking db.operation.spanName - io.opentelemetry.lettuce-5.1",
+			spanName: "GET",
+			kind:     ptrace.SpanKindClient,
 			addAttributes: func(attrs pcommon.Map) {
-				attrs.PutStr("db.system.name", "redis")
+				attrs.PutStr("db.system.spanName", "redis")
 				attrs.PutStr("db.query.text", "GET productCache::10")
 			},
 			want: "redis",
 		},
+
+		// MESSAGING
+		{
+			name:     "Messaging span with messaging.system, messaging.operation, and messaging.destination.name TODO - io.opentelemetry.rabbitmq-2.7:2.20.0-alpha",
+			spanName: "process ecommerce-exchange",
+			kind:     ptrace.SpanKindConsumer,
+			addAttributes: func(attrs pcommon.Map) {
+				attrs.PutStr("messaging.system", "rabbitmq")
+				attrs.PutStr("messaging.destination.name", "ecommerce-exchange")
+				attrs.PutStr("messaging.operation", "process")
+				attrs.PutStr("messaging.rabbitmq.destination.routing_key", "queue.order")
+			},
+			want: "process ecommerce-exchange",
+		},
+		{
+			name:     "Messaging span with messaging.system and messaging.operation - io.opentelemetry.spring-rabbit-1.0:2.20-alpha",
+			spanName: "process queue.order",
+			kind:     ptrace.SpanKindConsumer,
+			addAttributes: func(attrs pcommon.Map) {
+				attrs.PutStr("messaging.system", "rabbitmq")
+				attrs.PutStr("messaging.destination.name", "queue.order")
+				attrs.PutStr("messaging.operation", "process")
+			},
+			want: "process queue.order",
+		},
+		{
+			name:     "Messaging span with messaging.system and messaging.operation TODO - io.opentelemetry.rabbitmq-2.7:2.20-alpha",
+			spanName: "publish ecommerce-exchange",
+			kind:     ptrace.SpanKindProducer,
+			addAttributes: func(attrs pcommon.Map) {
+				attrs.PutStr("messaging.system", "rabbitmq")
+				attrs.PutStr("messaging.destination.name", "ecommerce-exchange")
+				attrs.PutStr("messaging.operation", "publish")
+				attrs.PutStr("messaging.rabbitmq.destination.routing_key", "queue.order")
+			},
+			want: "publish ecommerce-exchange",
+		},
 	}
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		t.Run(tt.spanName, func(t *testing.T) {
 			span := ptrace.NewSpan()
-			span.SetName(tt.name)
+			span.SetName(tt.spanName)
 			span.SetKind(tt.kind)
 			tt.addAttributes(span.Attributes())
 			assert.Equal(t, tt.want, inferSpanName(span))
@@ -2456,21 +2493,20 @@ func Test_inferSpanName(t *testing.T) {
 }
 
 func Test_getAttributeValue(t *testing.T) {
-
 	tests := []struct {
-		testDescription string
-		name            string
-		kind            ptrace.SpanKind
-		attributeNames  []string
-		addAttributes   func(pcommon.Map)
-		wantVal         string
-		wantOk          bool
+		name           string
+		spanName       string
+		kind           ptrace.SpanKind
+		attributeNames []string
+		addAttributes  func(pcommon.Map)
+		wantVal        string
+		wantOk         bool
 	}{
 		{
-			testDescription: "HTTP server span with both http.request.method and http.route",
-			name:            "GET /users/:id",
-			kind:            ptrace.SpanKindServer,
-			attributeNames:  []string{"http.request.method", "http.method"},
+			name:           "HTTP server span with both http.request.method and http.route",
+			spanName:       "GET /users/:id",
+			kind:           ptrace.SpanKindServer,
+			attributeNames: []string{"http.request.method", "http.method"},
 			addAttributes: func(attrs pcommon.Map) {
 				attrs.PutStr("http.request.method", "GET")
 				attrs.PutStr("http.route", "/users/:id")
@@ -2481,15 +2517,15 @@ func Test_getAttributeValue(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		t.Run(tt.spanName, func(t *testing.T) {
 			span := ptrace.NewSpan()
-			span.SetName(tt.name)
+			span.SetName(tt.spanName)
 			span.SetKind(tt.kind)
 			tt.addAttributes(span.Attributes())
 
 			gotVal, gotOk := getAttributeValue(span, tt.attributeNames...)
-			assert.Equalf(t, tt.wantOk, gotOk, "getAttributeValue(%v, %v)", tt.attributeNames)
-			assert.Equalf(t, tt.wantVal, gotVal.AsString(), "getAttributeValue(%v, %v)", tt.attributeNames)
+			assert.Equalf(t, tt.wantOk, gotOk, "getAttributeValue(%v)", tt.attributeNames)
+			assert.Equalf(t, tt.wantVal, gotVal.AsString(), "getAttributeValue(%v)", tt.attributeNames)
 		})
 	}
 }
