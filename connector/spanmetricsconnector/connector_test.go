@@ -2454,3 +2454,42 @@ func Test_inferSpanName(t *testing.T) {
 		})
 	}
 }
+
+func Test_getAttributeValue(t *testing.T) {
+
+	tests := []struct {
+		testDescription string
+		name            string
+		kind            ptrace.SpanKind
+		attributeNames  []string
+		addAttributes   func(pcommon.Map)
+		wantVal         string
+		wantOk          bool
+	}{
+		{
+			testDescription: "HTTP server span with both http.request.method and http.route",
+			name:            "GET /users/:id",
+			kind:            ptrace.SpanKindServer,
+			attributeNames:  []string{"http.request.method", "http.method"},
+			addAttributes: func(attrs pcommon.Map) {
+				attrs.PutStr("http.request.method", "GET")
+				attrs.PutStr("http.route", "/users/:id")
+			},
+			wantVal: "GET",
+			wantOk:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			span := ptrace.NewSpan()
+			span.SetName(tt.name)
+			span.SetKind(tt.kind)
+			tt.addAttributes(span.Attributes())
+
+			gotVal, gotOk := getAttributeValue(span, tt.attributeNames...)
+			assert.Equalf(t, tt.wantOk, gotOk, "getAttributeValue(%v, %v)", tt.attributeNames)
+			assert.Equalf(t, tt.wantVal, gotVal.AsString(), "getAttributeValue(%v, %v)", tt.attributeNames)
+		})
+	}
+}

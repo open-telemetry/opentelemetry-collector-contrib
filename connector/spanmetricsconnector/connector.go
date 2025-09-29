@@ -622,22 +622,13 @@ func inferSpanName(span ptrace.Span) string {
 
 	switch span.Kind() {
 	case ptrace.SpanKindServer:
-		if httpRequestMethodVal, okHTTPRequestMethod := span.Attributes().Get(string(semconv.HTTPRequestMethodKey)); okHTTPRequestMethod {
+		if httpRequestMethodVal, okHTTPRequestMethod := getAttributeValue(span, string(semconv.HTTPRequestMethodKey), string(semconv.HTTPMethodKey)); okHTTPRequestMethod {
 			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/
 			if httpRouteVal, okHTTPRoute := span.Attributes().Get(string(semconv.HTTPRouteKey)); okHTTPRoute {
 				return httpRequestMethodVal.AsString() + " " + httpRouteVal.AsString()
 			} else {
 				return httpRequestMethodVal.AsString()
 			}
-		}
-
-		if httpMethodVal, okHTTPMethod := span.Attributes().Get(string(semconv.HTTPMethodKey)); okHTTPMethod {
-			// TODO simplify and combine logic for http.request.method and http.method
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/
-			if httpRouteVal, okHttpRoute := span.Attributes().Get(string(semconv.HTTPRouteKey)); okHttpRoute {
-				return httpMethodVal.AsString() + " " + httpRouteVal.AsString()
-			}
-			return httpMethodVal.AsString()
 		}
 
 		if rpcMethodVal, okRPCMethod := span.Attributes().Get(string(semconv.RPCMethodKey)); okRPCMethod {
@@ -652,7 +643,7 @@ func inferSpanName(span ptrace.Span) string {
 		return span.Name()
 
 	case ptrace.SpanKindClient:
-		if httpRequestMethodVal, okHTTPRequestMethod := span.Attributes().Get(string(semconv.HTTPRequestMethodKey)); okHTTPRequestMethod {
+		if httpRequestMethodVal, okHTTPRequestMethod := getAttributeValue(span, string(semconv.HTTPRequestMethodKey), string(semconv.HTTPMethodKey)); okHTTPRequestMethod {
 			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/
 			// the connector uses semconv 1.25 that doesn't include "url.template" so use the string value
 			if urlTemplateVal, okUrlTemplate := span.Attributes().Get("url.template"); okUrlTemplate {
@@ -661,16 +652,8 @@ func inferSpanName(span ptrace.Span) string {
 			return httpRequestMethodVal.AsString()
 
 		}
-		if httpMethodVal, okHTTPRequestMethod := span.Attributes().Get(string(semconv.HTTPMethodKey)); okHTTPRequestMethod {
-			// TODO simplify and combine logic for http.request.method and http.method
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/
-			// the connector uses semconv 1.25 that doesn't include "url.template" so use the string value
-			if urlTemplateVal, okUrlTemplate := span.Attributes().Get("url.template"); okUrlTemplate {
-				return httpMethodVal.AsString() + " " + urlTemplateVal.AsString()
-			}
-			return httpMethodVal.AsString()
 
-		} else if rpcMethodVal, okRPCMethod := span.Attributes().Get(string(semconv.RPCMethodKey)); okRPCMethod {
+		if rpcMethodVal, okRPCMethod := span.Attributes().Get(string(semconv.RPCMethodKey)); okRPCMethod {
 			// https://opentelemetry.io/docs/specs/semconv/rpc/rpc-spans/
 			if rpcServiceVal, okRpcService := span.Attributes().Get(string(semconv.RPCServiceKey)); okRpcService {
 				return rpcServiceVal.AsString() + "/" + rpcMethodVal.AsString()
@@ -678,16 +661,16 @@ func inferSpanName(span ptrace.Span) string {
 			return rpcMethodVal.AsString()
 
 		}
-		if dbSystemName, okDbSystemName := span.Attributes().Get("db.system.name"); okDbSystemName { // TODO or "db.system"
+		if dbSystemName, okDbSystemName := getAttributeValue(span, "db.system.name", "db.system"); okDbSystemName {
 			// https://opentelemetry.io/docs/specs/semconv/database/database-spans/
 			var res = ""
-			if dbOperationNameVal, okDbOperationName := span.Attributes().Get("db.operation.name"); okDbOperationName { // TODO or "db.operation"
+			if dbOperationNameVal, okDbOperationName := getAttributeValue(span, "db.operation.name", "db.operation"); okDbOperationName {
 				res += dbOperationNameVal.AsString() + " "
 			}
 			if dbNamespaceVal, okDbNamespace := span.Attributes().Get("db.namespace"); okDbNamespace {
 				res += dbNamespaceVal.AsString() + "."
 			}
-			if dbCollectionNameVal, okDbCollectionName := span.Attributes().Get("db.collection.name"); okDbCollectionName { // TODO or "db.name"
+			if dbCollectionNameVal, okDbCollectionName := getAttributeValue(span, "db.collection.name", "db.name"); okDbCollectionName {
 				res += dbCollectionNameVal.AsString()
 			}
 			if res == "" {
@@ -701,6 +684,15 @@ func inferSpanName(span ptrace.Span) string {
 	default:
 		return span.Name()
 	}
+}
+
+func getAttributeValue(span ptrace.Span, attrNames ...string) (pcommon.Value, bool) {
+	for _, name := range attrNames {
+		if val, ok := span.Attributes().Get(name); ok {
+			return val, true
+		}
+	}
+	return pcommon.Value{}, false
 }
 
 // buildMetricName builds the namespace prefix for the metric name.
