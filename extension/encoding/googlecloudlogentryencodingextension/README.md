@@ -263,3 +263,7 @@ See the struct of the Cloud Audit Log payload in [AuditLog](https://cloud.google
 | `dest_location.continent` | `gcp.vpc.flow.destination.geo.continent` |
 | `dest_location.country` | `gcp.vpc.flow.destination.geo.country.iso_code.alpha3` |
 | `dest_location.region` | `gcp.vpc.flow.destination.geo.region` |
+| `src_vpc.project_id` | `gcp.vpc.flow.source.project.id` |
+| `src_vpc.subnetwork_name` | `gcp.vpc.flow.source.subnet.name` |
+| `src_vpc.subnetwork_region` | `gcp.vpc.flow.source.subnet.region` |
+| `src_vpc.vpc_name` | `gcp.vpc.flow.source.vpc.name` |
