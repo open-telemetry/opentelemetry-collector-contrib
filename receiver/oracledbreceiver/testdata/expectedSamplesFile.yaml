@@ -3,13 +3,13 @@ resourceLogs:
       attributes:
         - key: oracledb.instance.name
           value:
-            stringValue: ""
+            stringValue: oraclehost:1521/ORCL
         - key: host.name
           value:
             stringValue: ""
         - key: service.instance.id
           value:
-            stringValue: ""
+            stringValue: oraclehost:1521/ORCL
     scopeLogs:
       - logRecords:
           - attributes:
@@ -94,7 +94,7 @@ resourceLogs:
             body: {}
             eventName: db.server.query_sample
             spanId: a7ad6b7169203331
-            timeUnixNano: "1758608929036258000"
+            timeUnixNano: "1759142300369458000"
             traceId: 0af7651916cd43dd8448eb211c80319c
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver

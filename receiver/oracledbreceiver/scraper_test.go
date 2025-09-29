@@ -277,9 +277,10 @@ func TestScraper_ScrapeTopNLogs(t *testing.T) {
 				logsBuilderConfig:    metadata.DefaultLogsBuilderConfig(),
 				metricCache:          lruCache,
 				topQueryCollectCfg:   TopQueryCollection{MaxQuerySampleCount: 5000, TopQueryCount: 200},
-				instanceName:         "oracle-instance-sample-1",
-				hostName:             "oracle-host-sample-1",
+				instanceName:         "oraclehost:1521/ORCL",
+				hostName:             "oraclehost:1521",
 				obfuscator:           newObfuscator(),
+				serviceInstanceID:    getInstanceID("oraclehost:1521/ORCL", zap.NewNop()),
 			}
 
 			scrpr.logsBuilderConfig.Events.DbServerTopQuery.Enabled = true
@@ -364,6 +365,8 @@ func TestSamplesQuery(t *testing.T) {
 				lb:                 metadata.NewLogsBuilder(logsCfg, receivertest.NewNopSettings(metadata.Type)),
 				logsBuilderConfig:  metadata.DefaultLogsBuilderConfig(),
 				obfuscator:         newObfuscator(),
+				instanceName:       "oraclehost:1521/ORCL",
+				serviceInstanceID:  getInstanceID("oraclehost:1521/ORCL", zap.NewNop()),
 			}
 			scrpr.logsBuilderConfig.Events.DbServerTopQuery.Enabled = false
 			scrpr.logsBuilderConfig.Events.DbServerQuerySample.Enabled = true
