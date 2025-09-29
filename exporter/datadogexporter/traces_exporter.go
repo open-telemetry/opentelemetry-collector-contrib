@@ -26,7 +26,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
-	zorkian "gopkg.in/zorkian/go-datadog-api.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/clientutil"
@@ -37,8 +36,6 @@ import (
 	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
 )
 
-var onceZorkianTracesWarning sync.Once
-
 var traceCustomHTTPFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"exporter.datadogexporter.TraceExportUseCustomHTTPClient",
 	featuregate.StageAlpha,
@@ -47,10 +44,10 @@ var traceCustomHTTPFeatureGate = featuregate.GlobalRegistry().MustRegister(
 )
 
 type traceExporter struct {
-	params           exporter.Settings
-	cfg              *datadogconfig.Config
-	ctx              context.Context          // ctx triggers shutdown upon cancellation
-	client           *zorkian.Client          // client sends running metrics to backend & performs API validation
+	params exporter.Settings
+	cfg    *datadogconfig.Config
+	ctx    context.Context // ctx triggers shutdown upon cancellation
+
 	metricsAPI       *datadogV2.MetricsApi    // client sends running metrics to backend
 	scrubber         scrub.Scrubber           // scrubber scrubs sensitive information from error messages
 	onceMetadata     *sync.Once               // onceMetadata ensures that metadata is sent only once across all exporters
@@ -86,21 +83,12 @@ func newTracesExporter(
 	}
 	// client to send running metric to the backend & perform API key validation
 	errchan := make(chan error)
-	if isMetricExportV2Enabled() {
-		apiClient := clientutil.CreateAPIClient(
-			params.BuildInfo,
-			cfg.Metrics.Endpoint,
-			cfg.ClientConfig)
-		go func() { errchan <- clientutil.ValidateAPIKey(ctx, string(cfg.API.Key), params.Logger, apiClient) }()
-		exp.metricsAPI = datadogV2.NewMetricsApi(apiClient)
-	} else {
-		onceZorkianTracesWarning.Do(func() {
-			exp.params.Logger.Warn("You are using the deprecated Zorkian codepath that will be removed in the next release; use the metrics serializer instead: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/exporter/datadogexporter/README.md")
-		})
-		client := clientutil.CreateZorkianClient(string(cfg.API.Key), cfg.Metrics.Endpoint)
-		go func() { errchan <- clientutil.ValidateAPIKeyZorkian(params.Logger, client) }()
-		exp.client = client
-	}
+	apiClient := clientutil.CreateAPIClient(
+		params.BuildInfo,
+		cfg.Metrics.Endpoint,
+		cfg.ClientConfig)
+	go func() { errchan <- clientutil.ValidateAPIKey(ctx, string(cfg.API.Key), params.Logger, apiClient) }()
+	exp.metricsAPI = datadogV2.NewMetricsApi(apiClient)
 	if cfg.API.FailOnInvalidKey {
 		if err := <-errchan; err != nil {
 			return nil, err
@@ -164,46 +152,26 @@ func (exp *traceExporter) exportUsageMetrics(ctx context.Context, hosts, tags ma
 	now := pcommon.NewTimestampFromTime(time.Now())
 	buildTags := metrics.TagsFromBuildInfo(exp.params.BuildInfo)
 	var err error
-	if isMetricExportV2Enabled() {
-		series := make([]datadogV2.MetricSeries, 0, len(hosts)+len(tags))
-		timestamp := uint64(now)
-		for host := range hosts {
-			series = append(series, metrics.DefaultMetrics("traces", host, timestamp, buildTags)...)
-			if exp.gatewayUsage != nil {
-				series = append(series, metrics.GatewayUsageGauge(timestamp, host, buildTags, exp.gatewayUsage))
-			}
+	series := make([]datadogV2.MetricSeries, 0, len(hosts)+len(tags))
+	timestamp := uint64(now)
+	for host := range hosts {
+		series = append(series, metrics.DefaultMetrics("traces", host, timestamp, buildTags)...)
+		if exp.gatewayUsage != nil {
+			series = append(series, metrics.GatewayUsageGauge(timestamp, host, buildTags, exp.gatewayUsage))
 		}
-		for tag := range tags {
-			ms := metrics.DefaultMetrics("traces", "", timestamp, buildTags)
-			for i := range ms {
-				ms[i].Tags = append(ms[i].Tags, tag)
-			}
-			series = append(series, ms...)
-		}
-		_, err = exp.retrier.DoWithRetries(ctx, func(context.Context) error {
-			ctx2 := clientutil.GetRequestContext(ctx, string(exp.cfg.API.Key))
-			_, httpresp, merr := exp.metricsAPI.SubmitMetrics(ctx2, datadogV2.MetricPayload{Series: series}, *clientutil.GZipSubmitMetricsOptionalParameters)
-			return clientutil.WrapError(merr, httpresp)
-		})
-	} else {
-		onceZorkianTracesWarning.Do(func() {
-			exp.params.Logger.Warn("You are using the deprecated Zorkian codepath that will be removed in the next release; use the metrics serializer instead: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/exporter/datadogexporter/README.md")
-		})
-		series := make([]zorkian.Metric, 0, len(hosts)+len(tags))
-		for host := range hosts {
-			series = append(series, metrics.DefaultZorkianMetrics("traces", host, uint64(now), exp.params.BuildInfo)...)
-		}
-		for tag := range tags {
-			ms := metrics.DefaultZorkianMetrics("traces", "", uint64(now), exp.params.BuildInfo)
-			for i := range ms {
-				ms[i].Tags = append(ms[i].Tags, tag)
-			}
-			series = append(series, ms...)
-		}
-		_, err = exp.retrier.DoWithRetries(ctx, func(context.Context) error {
-			return exp.client.PostMetrics(series)
-		})
 	}
+	for tag := range tags {
+		ms := metrics.DefaultMetrics("traces", "", timestamp, buildTags)
+		for i := range ms {
+			ms[i].Tags = append(ms[i].Tags, tag)
+		}
+		series = append(series, ms...)
+	}
+	_, err = exp.retrier.DoWithRetries(ctx, func(context.Context) error {
+		ctx2 := clientutil.GetRequestContext(ctx, string(exp.cfg.API.Key))
+		_, httpresp, merr := exp.metricsAPI.SubmitMetrics(ctx2, datadogV2.MetricPayload{Series: series}, *clientutil.GZipSubmitMetricsOptionalParameters)
+		return clientutil.WrapError(merr, httpresp)
+	})
 	if err != nil {
 		exp.params.Logger.Error("Error posting hostname/tags series", zap.Error(err))
 	}
@@ -239,9 +207,9 @@ func newTraceAgentConfig(ctx context.Context, params exporter.Settings, cfg *dat
 	acfg.PeerTags = cfg.Traces.PeerTags
 	acfg.MaxSenderRetries = 4
 	if traceCustomHTTPFeatureGate.IsEnabled() {
-		params.Logger.Info("Experimental feature: datadog exporter trace export uses a custom HTTP client from the exporter HTTP configs")
-		acfg.HTTPClientFunc = func() *http.Client {
-			return clientutil.NewHTTPClient(cfg.ClientConfig)
+		params.Logger.Info("Experimental feature: datadog exporter trace export uses a custom HTTP transport from the exporter HTTP configs")
+		acfg.HTTPTransportFunc = func() *http.Transport {
+			return clientutil.NewHTTPTransport(cfg.ClientConfig)
 		}
 	}
 	if !datadog.OperationAndResourceNameV2FeatureGate.IsEnabled() {
