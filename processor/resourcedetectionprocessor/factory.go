@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/processor/xprocessor"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/akamai"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ec2"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ecs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/eks"
@@ -27,6 +28,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure/aks"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/consul"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/digitalocean"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/docker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/dynatrace"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/env"
@@ -38,7 +40,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/openshift"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/openstack/nova"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/oraclecloud"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/scaleway"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/system"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/vultr"
 )
 
 var consumerCapabilities = consumer.Capabilities{MutatesData: true}
@@ -55,9 +60,11 @@ type factory struct {
 // NewFactory creates a new factory for ResourceDetection processor.
 func NewFactory() processor.Factory {
 	resourceProviderFactory := internal.NewProviderFactory(map[internal.DetectorType]internal.DetectorFactory{
+		akamai.TypeStr:           akamai.NewDetector,
 		aks.TypeStr:              aks.NewDetector,
 		azure.TypeStr:            azure.NewDetector,
 		consul.TypeStr:           consul.NewDetector,
+		digitalocean.TypeStr:     digitalocean.NewDetector,
 		docker.TypeStr:           docker.NewDetector,
 		ec2.TypeStr:              ec2.NewDetector,
 		ecs.TypeStr:              ecs.NewDetector,
@@ -68,12 +75,15 @@ func NewFactory() processor.Factory {
 		gcp.TypeStr:              gcp.NewDetector,
 		heroku.TypeStr:           heroku.NewDetector,
 		hetzner.TypeStr:          hetzner.NewDetector,
+		scaleway.TypeStr:         scaleway.NewDetector,
 		system.TypeStr:           system.NewDetector,
 		openshift.TypeStr:        openshift.NewDetector,
 		nova.TypeStr:             nova.NewDetector,
+		oraclecloud.TypeStr:      oraclecloud.NewDetector,
 		k8snode.TypeStr:          k8snode.NewDetector,
 		kubeadm.TypeStr:          kubeadm.NewDetector,
 		dynatrace.TypeStr:        dynatrace.NewDetector,
+		vultr.TypeStr:            vultr.NewDetector,
 	})
 
 	f := &factory{
