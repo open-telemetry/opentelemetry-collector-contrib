@@ -235,4 +235,8 @@ See the struct of the Cloud Audit Log payload in [AuditLog](https://cloud.google
 | `src_google_service.service_name` | `gcp.vpc.src.google.service.name` |
 | `src_google_service.connectivity` | `gcp.vpc.src.google.service.connectivity` |
 | `src_google_service.private_domain` | `gcp.vpc.src.google.service.domain.private` |
+| `dest_google_service.type` | `gcp.vpc.dest.google.service.type` |
+| `dest_google_service.service_name` | `gcp.vpc.dest.google.service.name` |
+| `dest_google_service.connectivity` | `gcp.vpc.dest.google.service.connectivity` |
+| `dest_google_service.private_domain` | `gcp.vpc.dest.google.service.domain.private` |
 #### Left off here, good above here.
