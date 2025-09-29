@@ -2336,22 +2336,95 @@ func TestBuildAttributesWithFeatureGate(t *testing.T) {
 
 func Test_inferSpanName(t *testing.T) {
 	tests := []struct {
-		name          string
-		addAttributes func(pcommon.Map)
-		want          string
+		testDescription string
+		name            string
+		kind            ptrace.SpanKind
+		addAttributes   func(pcommon.Map)
+		want            string
 	}{
 		{
-			name: "http method and route",
+			testDescription: "HTTP server span with both http.request.method and http.route",
+			name:            "GET /users/123",
+			kind:            ptrace.SpanKindServer,
+			addAttributes: func(attrs pcommon.Map) {
+				attrs.PutStr("http.request.method", "GET")
+				attrs.PutStr("http.route", "/users/:id")
+			},
+			want: "GET /users/:id",
+		},
+		{
+			testDescription: "HTTP server span with both deprecated http.method and http.route",
+			name:            "GET /users/123",
+			kind:            ptrace.SpanKindServer,
 			addAttributes: func(attrs pcommon.Map) {
 				attrs.PutStr("http.method", "GET")
 				attrs.PutStr("http.route", "/users/:id")
 			},
 			want: "GET /users/:id",
 		},
+		{
+			testDescription: "HTTP server span with just http.request.method",
+			name:            "GET /users/123",
+			kind:            ptrace.SpanKindServer,
+			addAttributes: func(attrs pcommon.Map) {
+				attrs.PutStr("http.request.method", "GET")
+			},
+			want: "GET",
+		},
+		{
+			testDescription: "HTTP server span with just deprecated http.method",
+			name:            "GET /users/123",
+			kind:            ptrace.SpanKindServer,
+			addAttributes: func(attrs pcommon.Map) {
+				attrs.PutStr("http.method", "GET")
+			},
+			want: "GET",
+		},
+		// HTTP CLIENT SPANS
+		{
+			testDescription: "HTTP client span with both http.request.method and url.template",
+			name:            "GET /users/123",
+			kind:            ptrace.SpanKindClient,
+			addAttributes: func(attrs pcommon.Map) {
+				attrs.PutStr("http.request.method", "GET")
+				attrs.PutStr("url.template", "/users/:id")
+			},
+			want: "GET /users/:id",
+		},
+		{
+			testDescription: "HTTP client span with both deprecated http.method and url.template",
+			name:            "GET /users/123",
+			kind:            ptrace.SpanKindClient,
+			addAttributes: func(attrs pcommon.Map) {
+				attrs.PutStr("http.method", "GET")
+				attrs.PutStr("url.template", "/users/:id")
+			},
+			want: "GET /users/:id",
+		},
+		{
+			testDescription: "HTTP client span with just http.request.method",
+			name:            "GET /users/123",
+			kind:            ptrace.SpanKindClient,
+			addAttributes: func(attrs pcommon.Map) {
+				attrs.PutStr("http.request.method", "GET")
+			},
+			want: "GET",
+		},
+		{
+			testDescription: "HTTP client span with just deprecated http.method",
+			name:            "GET /users/123",
+			kind:            ptrace.SpanKindClient,
+			addAttributes: func(attrs pcommon.Map) {
+				attrs.PutStr("http.method", "GET")
+			},
+			want: "GET",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			span := ptrace.NewSpan()
+			span.SetName(tt.name)
+			span.SetKind(tt.kind)
 			tt.addAttributes(span.Attributes())
 			assert.Equal(t, tt.want, inferSpanName(span))
 		})

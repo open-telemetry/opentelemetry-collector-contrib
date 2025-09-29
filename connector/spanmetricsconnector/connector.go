@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.25.0"
 	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
 
@@ -617,10 +618,66 @@ func (p *connectorImp) spanName(span ptrace.Span) string {
 }
 
 func inferSpanName(span ptrace.Span) string {
-	// span is sem conv compliant
-	// return sem conv conv span name
-	// bonus: else infer span name from smart span name sanitizer heuristic
-	return ""
+	// If the span is a server span and follows HTTP semconv, infer a friendly name.
+	if span.Kind() == ptrace.SpanKindServer {
+		if httpRequestMethodVal, okHttpRequestMethod := span.Attributes().Get(string(semconv.HTTPRequestMethodKey)); okHttpRequestMethod {
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/
+			if httpRouteVal, okHttpRoute := span.Attributes().Get(string(semconv.HTTPRouteKey)); okHttpRoute {
+				return httpRequestMethodVal.AsString() + " " + httpRouteVal.AsString()
+			} else {
+				return httpRequestMethodVal.AsString()
+			}
+		} else if httpMethodVal, okHttpMethod := span.Attributes().Get(string(semconv.HTTPMethodKey)); okHttpMethod {
+			// TODO simplify and combine logic for http.request.method and http.method
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/
+			if httpRouteVal, okHttpRoute := span.Attributes().Get(string(semconv.HTTPRouteKey)); okHttpRoute {
+				return httpMethodVal.AsString() + " " + httpRouteVal.AsString()
+			} else {
+				return httpMethodVal.AsString()
+			}
+		} else if rpcMethodVal, okRpcMethod := span.Attributes().Get(string(semconv.RPCMethodKey)); okRpcMethod {
+			// https://opentelemetry.io/docs/specs/semconv/rpc/rpc-spans/
+			if rpcServiceVal, okRpcService := span.Attributes().Get(string(semconv.RPCServiceKey)); okRpcService {
+				return rpcServiceVal.AsString() + "/" + rpcMethodVal.AsString()
+			} else {
+				return rpcMethodVal.AsString()
+			}
+		} else {
+			// TODO
+			return span.Name()
+		}
+	} else if span.Kind() == ptrace.SpanKindClient {
+		if httpRequestMethodVal, okRequestHttpMethod := span.Attributes().Get(string(semconv.HTTPRequestMethodKey)); okRequestHttpMethod {
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/
+			// the connector uses semconv 1.25 that doesn't include "url.template" so use the string value
+			if urlTemplateVal, okUrlTemplate := span.Attributes().Get("url.template"); okUrlTemplate {
+				return httpRequestMethodVal.AsString() + " " + urlTemplateVal.AsString()
+			} else {
+				return httpRequestMethodVal.AsString()
+			}
+		} else if httpMethodVal, okRequestHttpMethod := span.Attributes().Get(string(semconv.HTTPMethodKey)); okRequestHttpMethod {
+			// TODO simplify and combine logic for http.request.method and http.method
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/
+			// the connector uses semconv 1.25 that doesn't include "url.template" so use the string value
+			if urlTemplateVal, okUrlTemplate := span.Attributes().Get("url.template"); okUrlTemplate {
+				return httpMethodVal.AsString() + " " + urlTemplateVal.AsString()
+			} else {
+				return httpMethodVal.AsString()
+			}
+		} else if rpcMethodVal, okRpcMethod := span.Attributes().Get(string(semconv.RPCMethodKey)); okRpcMethod {
+			// https://opentelemetry.io/docs/specs/semconv/rpc/rpc-spans/
+			if rpcServiceVal, okRpcService := span.Attributes().Get(string(semconv.RPCServiceKey)); okRpcService {
+				return rpcServiceVal.AsString() + "/" + rpcMethodVal.AsString()
+			} else {
+				return rpcMethodVal.AsString()
+			}
+		} else {
+			// TODO
+			return span.Name()
+		}
+	} else {
+		return span.Name()
+	}
 }
 
 // buildMetricName builds the namespace prefix for the metric name.
