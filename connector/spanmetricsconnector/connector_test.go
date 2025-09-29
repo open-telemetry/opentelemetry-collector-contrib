@@ -24,7 +24,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest"
@@ -376,7 +376,7 @@ func buildSampleTrace() ptrace.Traces {
 
 func initServiceSpans(serviceSpans serviceSpans, spans ptrace.ResourceSpans) {
 	if serviceSpans.serviceName != "" {
-		spans.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), serviceSpans.serviceName)
+		spans.Resource().Attributes().PutStr(string(semconv.ServiceNameKey), serviceSpans.serviceName)
 	}
 
 	spans.Resource().Attributes().PutStr(regionResourceAttrName, sampleRegion)
@@ -2678,6 +2678,70 @@ func Test_getAttributeValue(t *testing.T) {
 			gotVal, gotOk := getAttributeValue(span, tt.attributeNames...)
 			assert.Equalf(t, tt.wantOk, gotOk, "getAttributeValue(%v)", tt.attributeNames)
 			assert.Equalf(t, tt.wantVal, gotVal.AsString(), "getAttributeValue(%v)", tt.attributeNames)
+		})
+	}
+}
+
+func Test_getMessagingDestination(t *testing.T) {
+	tests := []struct {
+		name           string
+		spanName       string
+		kind           ptrace.SpanKind
+		attributeNames []string
+		addAttributes  func(pcommon.Map)
+		wantVal        string
+		wantOk         bool
+	}{
+		{
+			name:     "Templated queue",
+			spanName: "send /customers/{customerId}",
+			kind:     ptrace.SpanKindProducer,
+			addAttributes: func(attrs pcommon.Map) {
+				attrs.PutStr("messaging.operation.name", "send")
+				attrs.PutStr("messaging.destination.template", "/customers/{customerId}")
+				attrs.PutStr("messaging.destination.name", "/customers/123456")
+			},
+			wantVal: "/customers/{customerId}",
+			wantOk:  true,
+		},
+		{
+			name:     "Temporary queue",
+			spanName: "send (temporary)",
+			kind:     ptrace.SpanKindProducer,
+			addAttributes: func(attrs pcommon.Map) {
+				attrs.PutStr("messaging.operation.name", "send")
+				attrs.PutStr("messaging.destination.name", "amq.gen-JzTY20BRgKO-HjmUJj0wLg")
+				attrs.PutBool("messaging.destination.temporary", true)
+			},
+			wantVal: "(temporary)",
+			wantOk:  true,
+		},
+		{
+			name:     "Anonymous queue",
+			spanName: "send (anonymous)",
+			kind:     ptrace.SpanKindProducer,
+			addAttributes: func(attrs pcommon.Map) {
+				attrs.PutStr("messaging.operation.name", "send")
+				attrs.PutStr("messaging.destination.name", "amq.gen-3j8Jks9dTQWm1y2zLx0r5w")
+				attrs.PutBool("messaging.destination.anonymous", true)
+				// anonymous queues should also have messaging.destination.temporary:true
+				// but we omit it for the unit test to test the robustness of the logic
+			},
+			wantVal: "(anonymous)",
+			wantOk:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			span := ptrace.NewSpan()
+			span.SetName(tt.spanName)
+			span.SetKind(tt.kind)
+			tt.addAttributes(span.Attributes())
+
+			gotVal, gotOk := getMessagingDestination(span)
+			assert.Equalf(t, tt.wantOk, gotOk, "getMessagingDestination(%v)", span)
+			assert.Equalf(t, tt.wantVal, gotVal.AsString(), "getMessagingDestination(%v)", span)
 		})
 	}
 }
