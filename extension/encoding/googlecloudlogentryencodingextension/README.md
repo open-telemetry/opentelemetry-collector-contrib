@@ -253,3 +253,8 @@ See the struct of the Cloud Audit Log payload in [AuditLog](https://cloud.google
 | `dest_instance.managed_instance_group.name` | `gcp.vpc.dest.instance.managedinstancegroup.name` |
 | `dest_instance.managed_instance_group.region` | `gcp.vpc.dest.instance.managedinstancegroup.region` |
 | `dest_instance.managed_instance_group.zone` | `gcp.vpc.dest.instance.managedinstancegroup.zone` |
+| `src_location.asn` | `gcp.vpc.src.asn` |
+| `src_location.city` | `gcp.vpc.src.geo.city` |
+| `src_location.continent` | `gcp.vpc.src.geo.continent` |
+| `src_location.country` | `gcp.vpc.src.geo.country.iso_code.alpha3` |
+| `src_location.region` | `gcp.vpc.src.geo.region` |
