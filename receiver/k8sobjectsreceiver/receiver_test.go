@@ -518,72 +518,72 @@ func TestReceiverWithLeaderElection(t *testing.T) {
 }
 
 func TestWatchWithLeaderElectionStandby(t *testing.T) {
-    t.Parallel()
+	t.Parallel()
 
-    fakeLeaderElection := &k8sleaderelectortest.FakeLeaderElection{}
-    fakeHost := &k8sleaderelectortest.FakeHost{ FakeLeaderElection: fakeLeaderElection }
-    leaderElectorID := component.MustNewID("k8s_leader_elector")
+	fakeLeaderElection := &k8sleaderelectortest.FakeLeaderElection{}
+	fakeHost := &k8sleaderelectortest.FakeHost{FakeLeaderElection: fakeLeaderElection}
+	leaderElectorID := component.MustNewID("k8s_leader_elector")
 
-    mockClient := newMockDynamicClient()
-    mockClient.createPods(
-        generatePod("pod1", "default", map[string]any{"environment": "production"}, "1"),
-    )
+	mockClient := newMockDynamicClient()
+	mockClient.createPods(
+		generatePod("pod1", "default", map[string]any{"environment": "production"}, "1"),
+	)
 
-    rCfg := createDefaultConfig().(*Config)
-    rCfg.makeDynamicClient = mockClient.getMockDynamicClient
-    rCfg.makeDiscoveryClient = getMockDiscoveryClient
-    rCfg.ErrorMode = PropagateError
-    rCfg.IncludeInitialState = false
-    rCfg.Objects = []*K8sObjectsConfig{
-        { Name: "pods", Mode: WatchMode, Namespaces: []string{"default"} },
-    }
-    rCfg.K8sLeaderElector = &leaderElectorID
+	rCfg := createDefaultConfig().(*Config)
+	rCfg.makeDynamicClient = mockClient.getMockDynamicClient
+	rCfg.makeDiscoveryClient = getMockDiscoveryClient
+	rCfg.ErrorMode = PropagateError
+	rCfg.IncludeInitialState = false
+	rCfg.Objects = []*K8sObjectsConfig{
+		{Name: "pods", Mode: WatchMode, Namespaces: []string{"default"}},
+	}
+	rCfg.K8sLeaderElector = &leaderElectorID
 
-    r, err := newReceiver(receivertest.NewNopSettings(metadata.Type), rCfg, consumertest.NewNop())
-    require.NoError(t, err)
-    kr := r.(*k8sobjectsreceiver)
-    sink := new(consumertest.LogsSink)
-    kr.consumer = sink
+	r, err := newReceiver(receivertest.NewNopSettings(metadata.Type), rCfg, consumertest.NewNop())
+	require.NoError(t, err)
+	kr := r.(*k8sobjectsreceiver)
+	sink := new(consumertest.LogsSink)
+	kr.consumer = sink
 
-    require.NoError(t, kr.Start(t.Context(), fakeHost))
+	require.NoError(t, kr.Start(t.Context(), fakeHost))
 
-    // Become leader -> watches will start asynchronously
-    fakeLeaderElection.InvokeOnLeading()
+	// Become leader -> watches will start asynchronously
+	fakeLeaderElection.InvokeOnLeading()
 
-    // Give the watch time to establish (avoid list→watch gap)
-    time.Sleep(150 * time.Millisecond)
+	// Give the watch time to establish (avoid list→watch gap)
+	time.Sleep(150 * time.Millisecond)
 
-    // Now create pods that should be observed by the active watch
-    mockClient.createPods(
-        generatePod("pod2", "default", map[string]any{"environment": "x"}, "2"),
-        generatePod("pod3", "default", map[string]any{"environment": "y"}, "3"),
-    )
+	// Now create pods that should be observed by the active watch
+	mockClient.createPods(
+		generatePod("pod2", "default", map[string]any{"environment": "x"}, "2"),
+		generatePod("pod3", "default", map[string]any{"environment": "y"}, "3"),
+	)
 
-    require.Eventually(t, func() bool {
-        return sink.LogRecordCount() == 2
-    }, 5*time.Second, 50*time.Millisecond, "watch events not collected while leader")
+	require.Eventually(t, func() bool {
+		return sink.LogRecordCount() == 2
+	}, 5*time.Second, 50*time.Millisecond, "watch events not collected while leader")
 
-    // Standby
-    fakeLeaderElection.InvokeOnStopping()
+	// Standby
+	fakeLeaderElection.InvokeOnStopping()
 
-    // Create while in standby -> should NOT be delivered
-    mockClient.createPods(
-        generatePod("pod4", "default", map[string]any{"environment": "standby"}, "4"),
-    )
-    time.Sleep(150 * time.Millisecond)
-    assert.Equal(t, 2, sink.LogRecordCount(), "no events should be received while in standby")
+	// Create while in standby -> should NOT be delivered
+	mockClient.createPods(
+		generatePod("pod4", "default", map[string]any{"environment": "standby"}, "4"),
+	)
+	time.Sleep(150 * time.Millisecond)
+	assert.Equal(t, 2, sink.LogRecordCount(), "no events should be received while in standby")
 
-    // Resume
-    fakeLeaderElection.InvokeOnLeading()
-    time.Sleep(150 * time.Millisecond)
+	// Resume
+	fakeLeaderElection.InvokeOnLeading()
+	time.Sleep(150 * time.Millisecond)
 
-    mockClient.createPods(
-        generatePod("pod5", "default", map[string]any{"environment": "resumed"}, "5"),
-    )
+	mockClient.createPods(
+		generatePod("pod5", "default", map[string]any{"environment": "resumed"}, "5"),
+	)
 
-    require.Eventually(t, func() bool {
-        return sink.LogRecordCount() == 3
-    }, 5*time.Second, 50*time.Millisecond, "watch did not resume after re-leading")
+	require.Eventually(t, func() bool {
+		return sink.LogRecordCount() == 3
+	}, 5*time.Second, 50*time.Millisecond, "watch did not resume after re-leading")
 
-    assert.NoError(t, kr.Shutdown(t.Context()))
+	assert.NoError(t, kr.Shutdown(t.Context()))
 }
