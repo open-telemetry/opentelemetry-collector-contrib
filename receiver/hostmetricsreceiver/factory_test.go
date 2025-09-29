@@ -20,7 +20,6 @@ import (
 var creationSet = receivertest.NewNopSettings(metadata.Type)
 
 func TestCreateDefaultConfig(t *testing.T) {
-	// Bogus change just to trigger `scoped-test`: must be reverted before merging corresponding PR.
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
