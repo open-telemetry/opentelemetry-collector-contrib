@@ -17,7 +17,7 @@ issues: [42402]
 # Use pipe (|) for multiline entries.
 subtext: |
   The `service.instance.id` attribute is added in the format `<host>:<port>/<service>` to uniquely identify 
-  Oracle db hosts.
+  Oracle DB hosts. This resource attribute is enabled by default for metrics and logs.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
