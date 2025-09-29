@@ -23,12 +23,15 @@ type azPartitionClient interface {
 	ReceiveEvents(ctx context.Context, maxBatchSize int, options *azeventhubs.ReceiveEventsOptions) ([]*azeventhubs.ReceivedEventData, error)
 }
 
-func newAzeventhubWrapper(h *eventhubHandler) (*hubWrapperAzeventhubImpl, error) {
-	consumerGroup := h.config.ConsumerGroup
-	// Default the consumer group to $Default
-	if consumerGroup == "" {
-		consumerGroup = "$Default"
+func getConsumerGroup(config *Config) string {
+	if config.ConsumerGroup == "" {
+		return "$Default"
 	}
+	return config.ConsumerGroup
+}
+
+func newAzeventhubWrapper(h *eventhubHandler) (*hubWrapperAzeventhubImpl, error) {
+	consumerGroup := getConsumerGroup(h.config)
 
 	hub, newHubErr := azeventhubs.NewConsumerClientFromConnectionString(
 		h.config.Connection,
