@@ -223,4 +223,12 @@ See the struct of the Cloud Audit Log payload in [AuditLog](https://cloud.google
 | `src_gke_details.pod.pod_workload.workload_type` | `gcp.vpc.src.gke.pod.workload.type` |
 | `src_gke_details.service.service_name` | `gcp.vpc.src.gke.service.name` |
 | `src_gke_details.service.service_namespace` | `gcp.vpc.src.gke.service.namespace` |
+| `dest_gke_details.cluster.cluster_location` | `gcp.vpc.dest.gke.cluster.location` |
+| `dest_gke_details.cluster.cluster_name` | `gcp.vpc.dest.gke.cluster.name` |
+| `dest_gke_details.pod.pod_name` | `gcp.vpc.dest.gke.pod.name` |
+| `dest_gke_details.pod.pod_namespace` | `gcp.vpc.dest.gke.pod.namespace` |
+| `dest_gke_details.pod.pod_workload.workload_name` | `gcp.vpc.dest.gke.pod.workload.name` |
+| `dest_gke_details.pod.pod_workload.workload_type` | `gcp.vpc.dest.gke.pod.workload.type` |
+| `dest_gke_details.service.service_name` | `gcp.vpc.dest.gke.service.name` |
+| `dest_gke_details.service.service_namespace` | `gcp.vpc.dest.gke.service.namespace` |
 #### Left off here, good above here.
