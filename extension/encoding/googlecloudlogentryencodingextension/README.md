@@ -215,4 +215,12 @@ See the struct of the Cloud Audit Log payload in [AuditLog](https://cloud.google
 | `dest_gateway.vpc.vpc_name` | `gcp.vpc.dest.gateway.vpc.name` |
 | `dest_gateway.interconnect_name` | `gcp.vpc.dest.gateway.interconnect.name` |
 | `dest_gateway.interconnect_project_number` | `gcp.vpc.dest.gateway.interconnect.project.number` |
+| `src_gke_details.cluster.cluster_location` | `gcp.vpc.src.gke.cluster.location` |
+| `src_gke_details.cluster.cluster_name` | `gcp.vpc.src.gke.cluster.name` |
+| `src_gke_details.pod.pod_name` | `gcp.vpc.src.gke.pod.name` |
+| `src_gke_details.pod.pod_namespace` | `gcp.vpc.src.gke.pod.namespace` |
+| `src_gke_details.pod.pod_workload.workload_name` | `gcp.vpc.src.gke.pod.workload.name` |
+| `src_gke_details.pod.pod_workload.workload_type` | `gcp.vpc.src.gke.pod.workload.type` |
+| `src_gke_details.service.service_name` | `gcp.vpc.src.gke.service.name` |
+| `src_gke_details.service.service_namespace` | `gcp.vpc.src.gke.service.namespace` |
 #### Left off here, good above here.
