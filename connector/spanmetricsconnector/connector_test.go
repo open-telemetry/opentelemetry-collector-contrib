@@ -531,7 +531,7 @@ func TestBuildKeyExcludeDimensionsAll(t *testing.T) {
 	require.NoError(t, err)
 
 	span0 := ptrace.NewSpan()
-	span0.SetName("semConvSpanName")
+	span0.SetName("spanName")
 	k0 := c.buildKey("serviceName", span0, nil, pcommon.NewMap())
 	assert.Equal(t, metrics.Key(""), k0)
 }
@@ -544,7 +544,7 @@ func TestBuildKeyExcludeWrongDimensions(t *testing.T) {
 	require.NoError(t, err)
 
 	span0 := ptrace.NewSpan()
-	span0.SetName("semConvSpanName")
+	span0.SetName("spanName")
 	k0 := c.buildKey("serviceName", span0, nil, pcommon.NewMap())
 	assert.Equal(t, metrics.Key("serviceName"), k0)
 }
@@ -2455,10 +2455,10 @@ func Test_inferSpanName(t *testing.T) {
 			currentSpanName: "INSERT webshop.orders",
 			kind:            ptrace.SpanKindClient,
 			addAttributes: func(attrs pcommon.Map) {
-				attrs.PutStr("db.system.semConvSpanName", "postgresql")
+				attrs.PutStr("db.system.name", "postgresql")
 				attrs.PutStr("db.namespace", "webshop")
-				attrs.PutStr("db.operation.semConvSpanName", "INSERT")
-				attrs.PutStr("db.collection.semConvSpanName", "orders")
+				attrs.PutStr("db.operation.name", "INSERT")
+				attrs.PutStr("db.collection.name", "orders")
 				attrs.PutStr("db.query.text", "insert into orders (date_created,status) values (?,?)")
 			},
 			want: "INSERT webshop.orders",
