@@ -5,7 +5,7 @@ go 1.24.0
 require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector v0.53.0
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector/googlemanagedprometheus v0.53.0
-	github.com/prometheus/otlptranslator v0.0.2
+	github.com/prometheus/otlptranslator v1.0.0
 	github.com/prometheus/prometheus v0.305.1-0.20250808193045-294f36e80261
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.42.1-0.20250925151503-069408608b28
