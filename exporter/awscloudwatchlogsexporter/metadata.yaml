@@ -6,7 +6,7 @@ status:
     unmaintained: [logs]
   distributions: [contrib]
   codeowners:
-    active: []
+    active: [yaten2302]
     emeritus: [bryan-aguilar, boostchicken, rapphil]
     seeking_new: true
 
