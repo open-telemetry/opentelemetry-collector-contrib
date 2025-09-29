@@ -619,7 +619,9 @@ func (p *connectorImp) spanName(span ptrace.Span) string {
 
 func inferSpanName(span ptrace.Span) string {
 	// If the span is a server span and follows HTTP semconv, infer a friendly name.
-	if span.Kind() == ptrace.SpanKindServer {
+
+	switch span.Kind() {
+	case ptrace.SpanKindServer:
 		if httpRequestMethodVal, okHttpRequestMethod := span.Attributes().Get(string(semconv.HTTPRequestMethodKey)); okHttpRequestMethod {
 			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/
 			if httpRouteVal, okHttpRoute := span.Attributes().Get(string(semconv.HTTPRouteKey)); okHttpRoute {
@@ -646,7 +648,7 @@ func inferSpanName(span ptrace.Span) string {
 			// TODO
 			return span.Name()
 		}
-	} else if span.Kind() == ptrace.SpanKindClient {
+	case ptrace.SpanKindClient:
 		if httpRequestMethodVal, okRequestHttpMethod := span.Attributes().Get(string(semconv.HTTPRequestMethodKey)); okRequestHttpMethod {
 			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/
 			// the connector uses semconv 1.25 that doesn't include "url.template" so use the string value
@@ -691,7 +693,7 @@ func inferSpanName(span ptrace.Span) string {
 			// TODO
 			return span.Name()
 		}
-	} else {
+	default:
 		return span.Name()
 	}
 }
