@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/prometheus/otlptranslator"
 	"github.com/prometheus/prometheus/config"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -55,6 +56,10 @@ type Config struct {
 	// AddMetricSuffixes controls whether unit and type suffixes are added to metrics on export
 	AddMetricSuffixes bool `mapstructure:"add_metric_suffixes"`
 
+	// TranslationStrategy controls how OTLP metric and attribute names are translated into Prometheus metric and label names.
+	// When set, this takes precedence over AddMetricSuffixes.
+	TranslationStrategy otlptranslator.TranslationStrategyOption `mapstructure:"translation_strategy"`
+
 	// SendMetadata controls whether prometheus metadata will be generated and sent, this option is ignored when using PRW 2.0, which always includes metadata.
 	SendMetadata bool `mapstructure:"send_metadata"`
 
@@ -92,7 +97,7 @@ type RemoteWriteQueue struct {
 
 var _ component.Config = (*Config)(nil)
 
-// Validate checks if the exporter configuration is valid
+// Validate checks if the exporter configuration is valid and sets default values as needed.
 func (cfg *Config) Validate() error {
 	if cfg.MaxBatchRequestParallelism != nil && *cfg.MaxBatchRequestParallelism < 1 {
 		return errors.New("max_batch_request_parallelism can't be set to below 1")
@@ -116,6 +121,21 @@ func (cfg *Config) Validate() error {
 	if cfg.MaxBatchSizeBytes == 0 {
 		// Defaults to ~2.81MB
 		cfg.MaxBatchSizeBytes = 3000000
+	}
+
+	if cfg.TranslationStrategy == "" {
+		// If no translation strategy was specified, deduce one based on the
+		// AddMetricSuffixes setting.
+		if cfg.AddMetricSuffixes {
+			cfg.TranslationStrategy = otlptranslator.UnderscoreEscapingWithSuffixes
+		} else {
+			// If the user's config did not specify to add suffixes, ... hmmm
+			cfg.TranslationStrategy = otlptranslator.UnderscoreEscapingWithoutSuffixes
+		}
+		cfg.AddMetricSuffixes = cfg.TranslationStrategy.ShouldAddSuffixes()
+	} else {
+		// If TranslationStrategy was specified, override the AddMetricSuffixes setting.
+		cfg.AddMetricSuffixes = cfg.TranslationStrategy.ShouldAddSuffixes()
 	}
 
 	if len(cfg.ClientConfig.Compression) > 0 && cfg.ClientConfig.Compression != "snappy" {

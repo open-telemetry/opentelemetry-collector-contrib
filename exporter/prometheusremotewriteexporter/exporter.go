@@ -162,6 +162,8 @@ func newPRWTelemetry(set exporter.Settings, endpointURL *url.URL) (prwTelemetry,
 
 // newPRWExporter initializes a new prwExporter instance and sets fields accordingly.
 func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
+	cfg.Validate()
+
 	sanitizedLabels, err := validateAndSanitizeExternalLabels(cfg)
 	if err != nil {
 		return nil, err
@@ -195,6 +197,18 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 	// Set the desired number of consumers as a metric for the exporter.
 	telemetry.setNumberConsumer(context.Background(), int64(concurrency))
 
+	labelNamer := otlptranslator.LabelNamer{UTF8Allowed: !cfg.TranslationStrategy.ShouldEscape()}
+	escapedNamespace := cfg.Namespace
+	if escapedNamespace != "" {
+		var err error
+		// If the namespace needs to be escaped, do that now when creating the new
+		// Collector object. The escaping is not persisted in the Config itself.
+		escapedNamespace, err = labelNamer.Build(escapedNamespace)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	prwe := &prwExporter{
 		endpointURL:         endpointURL,
 		wg:                  new(sync.WaitGroup),
@@ -208,11 +222,12 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 		retryOnHTTP429:      retryOn429FeatureGate.IsEnabled(),
 		RemoteWriteProtoMsg: cfg.RemoteWriteProtoMsg,
 		exporterSettings: prometheusremotewrite.Settings{
-			Namespace:         cfg.Namespace,
-			ExternalLabels:    sanitizedLabels,
-			DisableTargetInfo: !cfg.TargetInfo.Enabled,
-			AddMetricSuffixes: cfg.AddMetricSuffixes,
-			SendMetadata:      cfg.SendMetadata,
+			Namespace:           escapedNamespace,
+			ExternalLabels:      sanitizedLabels,
+			DisableTargetInfo:   !cfg.TargetInfo.Enabled,
+			AddMetricSuffixes:   cfg.AddMetricSuffixes,
+			SendMetadata:        cfg.SendMetadata,
+			TranslationStrategy: cfg.TranslationStrategy,
 		},
 		telemetry:      telemetry,
 		batchStatePool: sync.Pool{New: func() any { return newBatchTimeServicesState() }},
@@ -305,7 +320,9 @@ func (prwe *prwExporter) PushMetrics(ctx context.Context, md pmetric.Metrics) er
 }
 
 func validateAndSanitizeExternalLabels(cfg *Config) (map[string]string, error) {
-	namer := otlptranslator.LabelNamer{}
+	namer := otlptranslator.LabelNamer{
+		UTF8Allowed: !cfg.TranslationStrategy.ShouldEscape(),
+	}
 	sanitizedLabels := make(map[string]string)
 	for key, value := range cfg.ExternalLabels {
 		if key == "" || value == "" {
