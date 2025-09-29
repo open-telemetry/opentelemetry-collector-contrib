@@ -26,6 +26,8 @@ type Config struct {
 	HTTPSDConfig            *PromHTTPSDConfig     `mapstructure:"http_sd_config"`
 	HTTPScrapeConfig        *PromHTTPClientConfig `mapstructure:"http_scrape_config"`
 	ReportTargetSamples     bool                  `mapstructure:"report_target_samples"`
+	// IgnoreHash can be used to disable the hash check and always update the scrape configuration.
+	IgnoreHash              bool                  `mapstructure:"ignore_hash"`
 }
 
 // PromHTTPSDConfig is a redeclaration of promHTTP.SDConfig because we need custom unmarshaling

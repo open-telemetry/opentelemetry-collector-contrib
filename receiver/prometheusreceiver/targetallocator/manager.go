@@ -144,7 +144,7 @@ func (m *Manager) sync(compareHash uint64, httpClient *http.Client) (uint64, err
 		m.settings.Logger.Error("Failed to hash job list", zap.Error(err))
 		return 0, err
 	}
-	if hash == compareHash {
+	if !m.cfg.IgnoreHash && hash == compareHash {
 		// no update needed
 		return hash, nil
 	}
@@ -156,6 +156,8 @@ func (m *Manager) sync(compareHash uint64, httpClient *http.Client) (uint64, err
 	m.promCfg.ScrapeConfigs = initialConfig
 
 	for jobName, scrapeConfig := range scrapeConfigsResponse {
+		m.settings.Logger.Debug("Syncing target allocator job", zap.String("job", jobName), zap.String("collector_id", m.cfg.CollectorID))
+
 		var httpSD promHTTP.SDConfig
 		if m.cfg.HTTPSDConfig == nil {
 			httpSD = promHTTP.SDConfig{
