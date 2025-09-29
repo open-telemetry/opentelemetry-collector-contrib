@@ -105,7 +105,7 @@ func createDefaultConfig() component.Config {
 	if enableMultipleWorkersFeatureGate.IsEnabled() {
 		numConsumers = 1
 	}
-	c := &Config{
+	return &Config{
 		Namespace:         "",
 		ExternalLabels:    map[string]string{},
 		MaxBatchSizeBytes: 3000000,
@@ -127,6 +127,4 @@ func createDefaultConfig() component.Config {
 			Enabled: true,
 		},
 	}
-	c.Validate()
-	return c
 }

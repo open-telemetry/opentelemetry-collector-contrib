@@ -918,6 +918,7 @@ func Test_validateAndSanitizeExternalLabels(t *testing.T) {
 	for _, tt := range tests {
 		cfg := createDefaultConfig().(*Config)
 		cfg.ExternalLabels = tt.inputLabels
+		cfg.Validate()
 		t.Run(tt.name, func(t *testing.T) {
 			newLabels, err := validateAndSanitizeExternalLabels(cfg)
 			if tt.returnErrorOnCreate {
@@ -933,6 +934,7 @@ func Test_validateAndSanitizeExternalLabels(t *testing.T) {
 		cfg := createDefaultConfig().(*Config)
 		// disable sanitizeLabel flag
 		cfg.ExternalLabels = tt.inputLabels
+		cfg.Validate()
 		t.Run(tt.name, func(t *testing.T) {
 			newLabels, err := validateAndSanitizeExternalLabels(cfg)
 			if tt.returnErrorOnCreate {
