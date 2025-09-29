@@ -124,14 +124,16 @@ func TestShouldInitializeStorageClient(t *testing.T) {
 			expected:      true,
 		},
 		{
-			name:      "has storage client and storage ID - should not initialize",
-			storageID: &component.ID{},
-			expected:  false,
+			name:          "has storage client and storage ID - should not initialize",
+			storageClient: &mockStorageClient{},
+			storageID:     &component.ID{},
+			expected:      false,
 		},
 		{
-			name:      "has storage client but no storage ID - should not initialize",
-			storageID: nil,
-			expected:  false,
+			name:          "has storage client but no storage ID - should not initialize",
+			storageClient: &mockStorageClient{},
+			storageID:     nil,
+			expected:      false,
 		},
 	}
 
