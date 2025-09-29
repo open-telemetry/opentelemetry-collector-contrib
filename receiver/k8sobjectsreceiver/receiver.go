@@ -360,6 +360,7 @@ func (kr *k8sobjectsreceiver) sendInitialState(ctx context.Context, config *K8sO
 		zap.Int("object_count", len(objects.Items)))
 }
 
+// doWatch returns true when watching is done, false when watching should be restarted.
 func (kr *k8sobjectsreceiver) doWatch(ctx context.Context, config *K8sObjectsConfig, resourceVersion string, watchFunc func(options metav1.ListOptions) (apiWatch.Interface, error), stopperChan chan struct{}) bool {
 	watcher, err := watch.NewRetryWatcher(resourceVersion, &cache.ListWatch{WatchFunc: watchFunc})
 	if err != nil {
