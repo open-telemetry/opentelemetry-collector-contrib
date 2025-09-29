@@ -850,20 +850,27 @@ func getInstanceID(instanceString string, logger *zap.Logger) string {
 
 	// Replace the host value with machine name if connecting to localhost target
 	if strings.EqualFold(host, "localhost") || net.ParseIP(host).IsLoopback() {
-		host, err = os.Hostname()
+		localhost, err := os.Hostname()
 		if err != nil {
-			logger.Warn("Error getting localhost machine name for generating service.instance.id.")
+			logger.Warn("Failed getting localhost machine name for the service.instance.id.")
+		} else {
+			host = localhost
 		}
 	}
 
 	return constructInstanceID(host, port, service)
 }
 
-func constructInstanceID(host, port, service string) (id string) {
-	if service != "" {
-		id = fmt.Sprintf("%s:%s/%s", host, port, service)
-	} else {
-		id = fmt.Sprintf("%s:%s", host, port)
+func constructInstanceID(host, port, service string) string {
+	if strings.TrimSpace(host) == "" {
+		host = "unknown"
 	}
-	return
+	if strings.TrimSpace(port) == "" {
+		port = "1521"
+	}
+
+	if service != "" {
+		return fmt.Sprintf("%s:%s/%s", host, port, service)
+	}
+	return fmt.Sprintf("%s:%s", host, port)
 }
