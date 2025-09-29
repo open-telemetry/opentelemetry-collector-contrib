@@ -647,6 +647,7 @@ func inferSpanName(span ptrace.Span) string {
 		}
 		// TODO should we use a high cardinality proof default value?
 		return span.Name()
+
 	case ptrace.SpanKindClient:
 		if httpRequestMethodVal, ok := getAttributeValue(span, string(semconv.HTTPRequestMethodKey), string(semconv.HTTPMethodKey)); ok {
 			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/
@@ -665,24 +666,34 @@ func inferSpanName(span ptrace.Span) string {
 			return rpcMethodVal.AsString()
 		}
 
-		if dbSystemName, ok := getAttributeValue(span, "db.system.spanName", "db.system"); ok {
+		if dbSystemName, ok := getAttributeValue(span, "db.system.name", "db.system"); ok {
 			// https://opentelemetry.io/docs/specs/semconv/database/database-spans/
 			res := ""
-			if dbOperationNameVal, okDbOperationName := getAttributeValue(span, "db.operation.spanName", "db.operation"); okDbOperationName {
+			if dbOperationNameVal, okDbOperationName := getAttributeValue(span, "db.operation.name", "db.operation"); okDbOperationName {
 				res += dbOperationNameVal.AsString() + " "
 			}
 			if dbNamespaceVal, okDbNamespace := span.Attributes().Get("db.namespace"); okDbNamespace {
 				res += dbNamespaceVal.AsString() + "."
 			}
-			if dbCollectionNameVal, okDbCollectionName := getAttributeValue(span, "db.collection.spanName", "db.spanName"); okDbCollectionName {
+			if dbCollectionNameVal, okDbCollectionName := getAttributeValue(span, "db.collection.name", "db.name"); okDbCollectionName {
 				res += dbCollectionNameVal.AsString()
 			}
 			if res == "" {
-				res = dbSystemName.AsString() // fallback. Showing the db system spanName may be useful
+				res = dbSystemName.AsString() // fallback. Showing the db system name may be useful
 			}
 			return res
 		}
 
+		if _, ok := span.Attributes().Get(string(semconv.MessagingSystemKey)); ok {
+			if messagingSpanName, ok2 := getMessagingSpanName(span); ok2 {
+				return messagingSpanName.AsString()
+			}
+			return "messaging"
+		}
+		// TODO should we use a high cardinality proof default value?
+		return span.Name()
+
+	case ptrace.SpanKindConsumer:
 		if _, ok := span.Attributes().Get(string(semconv.MessagingSystemKey)); ok {
 			if messagingSpanName, ok2 := getMessagingSpanName(span); ok2 {
 				return messagingSpanName.AsString()

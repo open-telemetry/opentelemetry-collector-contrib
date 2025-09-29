@@ -531,7 +531,7 @@ func TestBuildKeyExcludeDimensionsAll(t *testing.T) {
 	require.NoError(t, err)
 
 	span0 := ptrace.NewSpan()
-	span0.SetName("spanName")
+	span0.SetName("semConvSpanName")
 	k0 := c.buildKey("serviceName", span0, nil, pcommon.NewMap())
 	assert.Equal(t, metrics.Key(""), k0)
 }
@@ -544,7 +544,7 @@ func TestBuildKeyExcludeWrongDimensions(t *testing.T) {
 	require.NoError(t, err)
 
 	span0 := ptrace.NewSpan()
-	span0.SetName("spanName")
+	span0.SetName("semConvSpanName")
 	k0 := c.buildKey("serviceName", span0, nil, pcommon.NewMap())
 	assert.Equal(t, metrics.Key("serviceName"), k0)
 }
@@ -2336,16 +2336,17 @@ func TestBuildAttributesWithFeatureGate(t *testing.T) {
 
 func Test_inferSpanName(t *testing.T) {
 	tests := []struct {
-		name          string
-		spanName      string
-		kind          ptrace.SpanKind
-		addAttributes func(pcommon.Map)
-		want          string
+		name                   string
+		currentSpanName        string // span name currently produced by instrumentation library
+		instrumentationLibrary string // instrumentation library used to produce the test case
+		kind                   ptrace.SpanKind
+		addAttributes          func(pcommon.Map)
+		want                   string
 	}{
 		{
-			name:     "HTTP server span with both http.request.method and http.route",
-			spanName: "GET /users/123",
-			kind:     ptrace.SpanKindServer,
+			name:            "HTTP server span with both http.request.method and http.route",
+			currentSpanName: "GET /users/123",
+			kind:            ptrace.SpanKindServer,
 			addAttributes: func(attrs pcommon.Map) {
 				attrs.PutStr("http.request.method", "GET")
 				attrs.PutStr("http.route", "/users/:id")
@@ -2353,9 +2354,9 @@ func Test_inferSpanName(t *testing.T) {
 			want: "GET /users/:id",
 		},
 		{
-			name:     "HTTP server span with both deprecated http.method and http.route",
-			spanName: "GET /users/123",
-			kind:     ptrace.SpanKindServer,
+			name:            "HTTP server span with both deprecated http.method and http.route",
+			currentSpanName: "GET /users/123",
+			kind:            ptrace.SpanKindServer,
 			addAttributes: func(attrs pcommon.Map) {
 				attrs.PutStr("http.method", "GET")
 				attrs.PutStr("http.route", "/users/:id")
@@ -2363,18 +2364,47 @@ func Test_inferSpanName(t *testing.T) {
 			want: "GET /users/:id",
 		},
 		{
-			name:     "HTTP server span with just http.request.method",
-			spanName: "GET /users/123",
-			kind:     ptrace.SpanKindServer,
+			name:            "HTTP server span with just http.request.method",
+			currentSpanName: "GET /users/123",
+			kind:            ptrace.SpanKindServer,
 			addAttributes: func(attrs pcommon.Map) {
 				attrs.PutStr("http.request.method", "GET")
 			},
 			want: "GET",
 		},
 		{
-			name:     "HTTP server span with just deprecated http.method",
-			spanName: "GET /users/123",
-			kind:     ptrace.SpanKindServer,
+			name:            "Fix for https://github.com/vercel/next.js/issues/54694",
+			currentSpanName: "GET /app/workspaces/7?_rsc=hn5g2",
+			kind:            ptrace.SpanKindServer,
+			addAttributes: func(attrs pcommon.Map) {
+				attrs.PutStr("http.method", "GET")
+				attrs.PutStr("next.span_name", "GET /app/workspaces/7?_rsc=hn5g2")
+				attrs.PutStr("next.span_type", "BaseServer.handleRequest")
+				attrs.PutStr("http.target", "/app/workspaces/7?_rsc=hn5g2")
+				attrs.PutStr("http.status", "200")
+			},
+			want: "GET",
+		},
+		{
+			name:                   "Fix for OTelDemo problem caused by https://github.com/vercel/next.js/issues/54694",
+			currentSpanName:        "GET /api/products/0PUK6V6EV0",
+			instrumentationLibrary: "next.js:0.0.1",
+			kind:                   ptrace.SpanKindServer,
+			addAttributes: func(attrs pcommon.Map) {
+				attrs.PutStr("http.method", "GET")
+				attrs.PutStr("next.span_name", "GET /api/products/0PUK6V6EV0")
+				attrs.PutStr("next.span_type", "BaseServer.handleRequest")
+				attrs.PutBool("next.rsc", false)
+				attrs.PutStr("http.target", "/api/products/0PUK6V6EV0")
+				attrs.PutStr("http.target", "/api/products/0PUK6V6EV0")
+				attrs.PutStr("http.status", "200")
+			},
+			want: "GET",
+		},
+		{
+			name:            "HTTP server span with just deprecated http.method",
+			currentSpanName: "GET /users/123",
+			kind:            ptrace.SpanKindServer,
 			addAttributes: func(attrs pcommon.Map) {
 				attrs.PutStr("http.method", "GET")
 			},
@@ -2382,9 +2412,9 @@ func Test_inferSpanName(t *testing.T) {
 		},
 		// HTTP CLIENT SPANS
 		{
-			name:     "HTTP client span with both http.request.method and url.template",
-			spanName: "GET /users/123",
-			kind:     ptrace.SpanKindClient,
+			name:            "HTTP client span with both http.request.method and url.template",
+			currentSpanName: "GET /users/123",
+			kind:            ptrace.SpanKindClient,
 			addAttributes: func(attrs pcommon.Map) {
 				attrs.PutStr("http.request.method", "GET")
 				attrs.PutStr("url.template", "/users/:id")
@@ -2392,9 +2422,9 @@ func Test_inferSpanName(t *testing.T) {
 			want: "GET /users/:id",
 		},
 		{
-			name:     "HTTP client span with both deprecated http.method and url.template",
-			spanName: "GET /users/123",
-			kind:     ptrace.SpanKindClient,
+			name:            "HTTP client span with both deprecated http.method and url.template",
+			currentSpanName: "GET /users/123",
+			kind:            ptrace.SpanKindClient,
 			addAttributes: func(attrs pcommon.Map) {
 				attrs.PutStr("http.method", "GET")
 				attrs.PutStr("url.template", "/users/:id")
@@ -2402,18 +2432,18 @@ func Test_inferSpanName(t *testing.T) {
 			want: "GET /users/:id",
 		},
 		{
-			name:     "HTTP client span with just http.request.method",
-			spanName: "GET /users/123",
-			kind:     ptrace.SpanKindClient,
+			name:            "HTTP client span with just http.request.method",
+			currentSpanName: "GET /users/123",
+			kind:            ptrace.SpanKindClient,
 			addAttributes: func(attrs pcommon.Map) {
 				attrs.PutStr("http.request.method", "GET")
 			},
 			want: "GET",
 		},
 		{
-			name:     "HTTP client span with just deprecated http.method",
-			spanName: "GET /users/123",
-			kind:     ptrace.SpanKindClient,
+			name:            "HTTP client span with just deprecated http.method",
+			currentSpanName: "GET /users/123",
+			kind:            ptrace.SpanKindClient,
 			addAttributes: func(attrs pcommon.Map) {
 				attrs.PutStr("http.method", "GET")
 			},
@@ -2421,34 +2451,156 @@ func Test_inferSpanName(t *testing.T) {
 		},
 		// DB CLIENT SPANS
 		{
-			name:     "DB client span with db.system and db.operation.spanName - postgresql",
-			spanName: "insert into orders (date_created,status) values (?,?)",
-			kind:     ptrace.SpanKindClient,
+			name:            "DB client span with db.system and db.operation.semConvSpanName - postgresql",
+			currentSpanName: "INSERT webshop.orders",
+			kind:            ptrace.SpanKindClient,
 			addAttributes: func(attrs pcommon.Map) {
-				attrs.PutStr("db.system.spanName", "postgresql")
+				attrs.PutStr("db.system.semConvSpanName", "postgresql")
 				attrs.PutStr("db.namespace", "webshop")
-				attrs.PutStr("db.operation.spanName", "INSERT")
-				attrs.PutStr("db.collection.spanName", "orders")
+				attrs.PutStr("db.operation.semConvSpanName", "INSERT")
+				attrs.PutStr("db.collection.semConvSpanName", "orders")
 				attrs.PutStr("db.query.text", "insert into orders (date_created,status) values (?,?)")
 			},
 			want: "INSERT webshop.orders",
 		},
 		{
-			name:     "DB client span with db.system.spanName but lacking db.operation.spanName - io.opentelemetry.lettuce-5.1",
-			spanName: "GET",
-			kind:     ptrace.SpanKindClient,
+			name:                   "OelDemo - cart - valkey/redis - HGET",
+			currentSpanName:        "HGET",
+			instrumentationLibrary: "OpenTelemetry.Instrumentation.StackExchangeRedis:1.11.0-beta.2",
+			kind:                   ptrace.SpanKindClient,
 			addAttributes: func(attrs pcommon.Map) {
-				attrs.PutStr("db.system.spanName", "redis")
-				attrs.PutStr("db.query.text", "GET productCache::10")
+				attrs.PutInt("db.redis.database_index", 0)
+				attrs.PutStr("db.redis.flags", "None")
+				attrs.PutStr("db.statement", "HGET 7175d9c6-9d66-11f0-b982-3258f881d4e5")
+				attrs.PutStr("db.system", "redis")
+				attrs.PutStr("server.address", "valkey-cart")
 			},
 			want: "redis",
 		},
-
-		// MESSAGING
 		{
-			name:     "Messaging span with messaging.system, messaging.operation, and messaging.destination.name TODO - io.opentelemetry.rabbitmq-2.7:2.20.0-alpha",
-			spanName: "process ecommerce-exchange",
-			kind:     ptrace.SpanKindConsumer,
+			name:                   "DB client - OTel Demo - accounting",
+			currentSpanName:        "otel",
+			instrumentationLibrary: "NpgsqlLibrary:0.1.0",
+			addAttributes: func(attrs pcommon.Map) {
+				attrs.PutStr("db.system", "postgresql")
+				attrs.PutInt("db.connection_id\t\n", 54)
+				attrs.PutStr("db.connection_string\t\n", "Host=postgresql;Username=otelu;Database=otel")
+				attrs.PutStr("db.name\t\n", "otel")
+				attrs.PutStr("db.statement\t\n", `
+INSERT INTO "order" (order_id)
+VALUES (@p0);
+INSERT INTO orderitem (order_id, product_id, item_cost_currency_code, item_cost_nanos, item_cost_units, quantity)
+VALUES (@p1, @p2, @p3, @p4, @p5, @p6);
+INSERT INTO shipping (shipping_tracking_id, city, country, order_id, shipping_cost_currency_code, shipping_cost_nanos, shipping_cost_units, state, street_address, zip_code)
+VALUES (@p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16);
+`)
+				attrs.PutStr("db.user\t\n", "otelu")
+				attrs.PutStr("net.peer.name\t\n", "postgresql")
+			},
+			want: "otel",
+		},
+
+		// RPC - GRPC
+		{
+			name:                   "GRPC OTel Demo - checkout",
+			currentSpanName:        "oteldemo.CartService/GetCart",
+			instrumentationLibrary: "go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc:0.63.0",
+			kind:                   ptrace.SpanKindClient,
+			addAttributes: func(attrs pcommon.Map) {
+				attrs.PutInt("rpc.grpc.status_code", 0)
+				attrs.PutStr("rpc.grpc.method", "GetCart")
+				attrs.PutStr("rpc.grpc.service", "oteldemo.CartService")
+				attrs.PutStr("rpc.system", "grpc")
+				attrs.PutStr("server.address", "127.18.0.18")
+			},
+			want: "oteldemo.CartService/GetCart",
+		},
+		{
+			name:                   "GRPC OTel Demo - ad",
+			currentSpanName:        "oteldemo.AdService/GetAds",
+			instrumentationLibrary: "io.opentelemetry.grpc-1.6:2.20.0-alpha",
+			kind:                   ptrace.SpanKindServer,
+			addAttributes: func(attrs pcommon.Map) {
+				attrs.PutInt("rpc.grpc.status_code", 0)
+				attrs.PutStr("rpc.grpc.method", "GetAds")
+				attrs.PutStr("rpc.grpc.service", "oteldemo.AdService")
+				attrs.PutStr("rpc.system", "grpc")
+				attrs.PutStr("server.address", "ad")
+			},
+			want: "oteldemo.AdService/GetAds",
+		},
+
+		// MESSAGING KAFKA
+		{
+			name:                   "Messaging OTel Demo - accounting - ",
+			currentSpanName:        "orders receive",
+			instrumentationLibrary: "OpenTelemetry.AutoInstrumentation.Kafka",
+			kind:                   ptrace.SpanKindConsumer,
+			addAttributes: func(attrs pcommon.Map) {
+				attrs.PutStr("messaging.client_id", "rdkafka#consumer-1")
+				attrs.PutStr("messaging.destination.name", "orders")
+				attrs.PutStr("messaging.kafka.consumer.group", "accounting")
+				attrs.PutInt("messaging.kafka.destination.partition", 0)
+				attrs.PutStr("messaging.operation", "receive")
+				attrs.PutStr("messaging.system", "kafka")
+			},
+			want: "receive orders",
+		},
+		{
+			name:                   "Messaging OTel Demo - fraud-detection - orders receive",
+			currentSpanName:        "orders receive",
+			instrumentationLibrary: "io.opentelemetry.kafka-clients-0.11:2.20.0-alpha",
+			kind:                   ptrace.SpanKindConsumer,
+			addAttributes: func(attrs pcommon.Map) {
+				attrs.PutInt("messaging.batch.message_count", 4)
+				attrs.PutStr("messaging.client_id", "consumer-fraud-detection-1")
+				attrs.PutStr("messaging.destination.name", "orders")
+				attrs.PutStr("messaging.kafka.consumer.group", "fraud-detection")
+				attrs.PutStr("messaging.operation", "receive")
+				attrs.PutStr("messaging.system", "kafka")
+			},
+			want: "receive orders",
+		},
+		{
+			name:                   "Messaging OTel Demo - fraud-detection - orders process",
+			currentSpanName:        "orders process",
+			instrumentationLibrary: "io.opentelemetry.kafka-clients-0.11:2.20.0-alpha",
+			kind:                   ptrace.SpanKindConsumer,
+			addAttributes: func(attrs pcommon.Map) {
+				attrs.PutInt("kafka.record.queue_time_ms", 3176788)
+				attrs.PutStr("messaging.client_id", "consumer-fraud-detection-1")
+				attrs.PutStr("messaging.destination.name", "orders")
+				attrs.PutStr("messaging.destination.partition.id", "0")
+				attrs.PutStr("messaging.kafka.consumer.group", "fraud-detection")
+				attrs.PutInt("messaging.kafka.message.offset", 34)
+				attrs.PutInt("messaging.message.body.size", 243)
+				attrs.PutStr("messaging.operation", "process")
+				attrs.PutStr("messaging.system", "kafka")
+			},
+			want: "process orders",
+		},
+		{
+			name:                   "Messaging - OTel Demo - checkout - orders publish",
+			currentSpanName:        "orders publish",
+			instrumentationLibrary: "checkout",
+			kind:                   ptrace.SpanKindProducer,
+			addAttributes: func(attrs pcommon.Map) {
+				attrs.PutStr("messaging.destination.name", "orders")
+				attrs.PutInt("messaging.kafka.destination.partition", 0)
+				attrs.PutInt("messaging.kafka.message.offset", 0)
+				attrs.PutInt("messaging.kafka.producer.duration_ms", 0)
+				attrs.PutBool("messaging.kafka.producer.success", true)
+				attrs.PutStr("messaging.operation", "publish")
+				attrs.PutStr("messaging.system", "kafka")
+			},
+			want: "publish orders",
+		},
+
+		// MESSAGING RABBIT MQ
+		{
+			name:            "Messaging span with messaging.system, messaging.operation, and messaging.destination.name TODO - io.opentelemetry.rabbitmq-2.7:2.20.0-alpha",
+			currentSpanName: "process ecommerce-exchange",
+			kind:            ptrace.SpanKindConsumer,
 			addAttributes: func(attrs pcommon.Map) {
 				attrs.PutStr("messaging.system", "rabbitmq")
 				attrs.PutStr("messaging.destination.name", "ecommerce-exchange")
@@ -2458,9 +2610,9 @@ func Test_inferSpanName(t *testing.T) {
 			want: "process ecommerce-exchange",
 		},
 		{
-			name:     "Messaging span with messaging.system and messaging.operation - io.opentelemetry.spring-rabbit-1.0:2.20-alpha",
-			spanName: "process queue.order",
-			kind:     ptrace.SpanKindConsumer,
+			name:            "Messaging span with messaging.system and messaging.operation - io.opentelemetry.spring-rabbit-1.0:2.20-alpha",
+			currentSpanName: "process queue.order",
+			kind:            ptrace.SpanKindConsumer,
 			addAttributes: func(attrs pcommon.Map) {
 				attrs.PutStr("messaging.system", "rabbitmq")
 				attrs.PutStr("messaging.destination.name", "queue.order")
@@ -2469,9 +2621,9 @@ func Test_inferSpanName(t *testing.T) {
 			want: "process queue.order",
 		},
 		{
-			name:     "Messaging span with messaging.system and messaging.operation TODO - io.opentelemetry.rabbitmq-2.7:2.20-alpha",
-			spanName: "publish ecommerce-exchange",
-			kind:     ptrace.SpanKindProducer,
+			name:            "Messaging span with messaging.system and messaging.operation TODO - io.opentelemetry.rabbitmq-2.7:2.20-alpha",
+			currentSpanName: "publish ecommerce-exchange",
+			kind:            ptrace.SpanKindProducer,
 			addAttributes: func(attrs pcommon.Map) {
 				attrs.PutStr("messaging.system", "rabbitmq")
 				attrs.PutStr("messaging.destination.name", "ecommerce-exchange")
@@ -2482,9 +2634,9 @@ func Test_inferSpanName(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		t.Run(tt.spanName, func(t *testing.T) {
+		t.Run(tt.name, func(t *testing.T) {
 			span := ptrace.NewSpan()
-			span.SetName(tt.spanName)
+			span.SetName(tt.currentSpanName)
 			span.SetKind(tt.kind)
 			tt.addAttributes(span.Attributes())
 			assert.Equal(t, tt.want, inferSpanName(span))
