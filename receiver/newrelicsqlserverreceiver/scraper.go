@@ -433,17 +433,31 @@ func (s *sqlServerScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 	}
 
 	// Scrape instance-level buffer pool size metrics
-	s.logger.Debug("Starting instance buffer pool size metrics scraping")
+	// s.logger.Debug("Starting instance buffer pool size metrics scraping")
+	// scrapeCtx, cancel = context.WithTimeout(ctx, s.config.Timeout)
+	// defer cancel()
+	// if err := s.instanceScraper.ScrapeInstanceBufferPoolSize(scrapeCtx, scopeMetrics); err != nil {
+	// 	s.logger.Error("Failed to scrape instance buffer pool size metrics",
+	// 		zap.Error(err),
+	// 		zap.Duration("timeout", s.config.Timeout))
+	// 	scrapeErrors = append(scrapeErrors, err)
+	// 	// Don't return here - continue with other metrics
+	// } else {
+	// 	s.logger.Debug("Successfully scraped instance buffer pool size metrics")
+	// }
+
+	// Scrape instance-level comprehensive statistics
+	s.logger.Debug("Starting instance comprehensive statistics scraping")
 	scrapeCtx, cancel = context.WithTimeout(ctx, s.config.Timeout)
 	defer cancel()
-	if err := s.instanceScraper.ScrapeInstanceBufferPoolSize(scrapeCtx, scopeMetrics); err != nil {
-		s.logger.Error("Failed to scrape instance buffer pool size metrics",
+	if err := s.instanceScraper.ScrapeInstanceComprehensiveStats(scrapeCtx, scopeMetrics); err != nil {
+		s.logger.Error("Failed to scrape instance comprehensive statistics",
 			zap.Error(err),
 			zap.Duration("timeout", s.config.Timeout))
 		scrapeErrors = append(scrapeErrors, err)
 		// Don't return here - continue with other metrics
 	} else {
-		s.logger.Debug("Successfully scraped instance buffer pool size metrics")
+		s.logger.Debug("Successfully scraped instance comprehensive statistics")
 	}
 
 	// Log summary of scraping results
