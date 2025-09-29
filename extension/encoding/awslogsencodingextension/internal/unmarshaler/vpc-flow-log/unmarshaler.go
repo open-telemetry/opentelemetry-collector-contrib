@@ -117,7 +117,7 @@ func (v *vpcFlowLogUnmarshaler) createLogs() (plog.Logs, plog.ResourceLogs, plog
 	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
 	scopeLogs.Scope().SetName(metadata.ScopeName)
 	scopeLogs.Scope().SetVersion(v.buildInfo.Version)
-	scopeLogs.Scope().Attributes().PutStr(constants.FormatIdentificationTag, constants.FormatVPCFlowLog)
+	scopeLogs.Scope().Attributes().PutStr(constants.FormatIdentificationTag, "aws."+constants.FormatVPCFlowLog)
 	return logs, resourceLogs, scopeLogs
 }
 

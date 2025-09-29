@@ -80,7 +80,7 @@ resourceLogs:
             timeUnixNano: "1549411238000000000"
         scope:
           attributes:
-            - key: awslogs_encoding.format
+            - key: encoding.format
               value:
-                stringValue: s3_access_log
+                stringValue: aws.s3access
           name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension
