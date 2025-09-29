@@ -147,23 +147,23 @@ func TestShouldInitializeStorageClient(t *testing.T) {
 
 type mockStorageClient struct{}
 
-func (m *mockStorageClient) Get(ctx context.Context, key string) ([]byte, error) {
+func (*mockStorageClient) Get(_ context.Context, _ string) ([]byte, error) {
 	return nil, nil
 }
 
-func (m *mockStorageClient) Set(ctx context.Context, key string, value []byte) error {
+func (*mockStorageClient) Set(_ context.Context, _ string, _ []byte) error {
 	return nil
 }
 
-func (m *mockStorageClient) Delete(ctx context.Context, key string) error {
+func (*mockStorageClient) Delete(_ context.Context, _ string) error {
 	return nil
 }
 
-func (m *mockStorageClient) Batch(ctx context.Context, ops ...*storage.Operation) error {
+func (*mockStorageClient) Batch(_ context.Context, _ ...*storage.Operation) error {
 	return nil
 }
 
-func (m *mockStorageClient) Close(ctx context.Context) error {
+func (*mockStorageClient) Close(_ context.Context) error {
 	return nil
 }
 
