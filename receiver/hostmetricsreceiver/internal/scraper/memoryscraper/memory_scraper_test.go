@@ -207,8 +207,10 @@ func assertMemoryUsageMetricValid(t *testing.T, metric pmetric.Metric, expectedN
 	assert.GreaterOrEqual(t, metric.Sum().DataPoints().Len(), 2)
 	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "state",
 		pcommon.NewValueStr(metadata.AttributeStateUsed.String()))
+	assert.Positive(t, metric.Sum().DataPoints().At(0).IntValue())
 	internal.AssertSumMetricHasAttributeValue(t, metric, 1, "state",
 		pcommon.NewValueStr(metadata.AttributeStateFree.String()))
+	assert.Positive(t, metric.Sum().DataPoints().At(1).IntValue())
 }
 
 func assertMemoryUtilizationMetricValid(t *testing.T, metric pmetric.Metric, expectedName string) {
@@ -216,8 +218,10 @@ func assertMemoryUtilizationMetricValid(t *testing.T, metric pmetric.Metric, exp
 	assert.GreaterOrEqual(t, metric.Gauge().DataPoints().Len(), 2)
 	internal.AssertGaugeMetricHasAttributeValue(t, metric, 0, "state",
 		pcommon.NewValueStr(metadata.AttributeStateUsed.String()))
+	assert.Positive(t, metric.Gauge().DataPoints().At(0).DoubleValue())
 	internal.AssertGaugeMetricHasAttributeValue(t, metric, 1, "state",
 		pcommon.NewValueStr(metadata.AttributeStateFree.String()))
+	assert.Positive(t, metric.Gauge().DataPoints().At(1).DoubleValue())
 }
 
 func assertMemoryUsageMetricHasLinuxSpecificStateLabels(t *testing.T, metric pmetric.Metric) {
