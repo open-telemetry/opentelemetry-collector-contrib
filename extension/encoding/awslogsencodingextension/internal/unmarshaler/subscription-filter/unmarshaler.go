@@ -95,7 +95,7 @@ func (f *subscriptionFilterUnmarshaler) createLogs(
 	sl := rl.ScopeLogs().AppendEmpty()
 	sl.Scope().SetName(metadata.ScopeName)
 	sl.Scope().SetVersion(f.buildInfo.Version)
-	sl.Scope().Attributes().PutStr(constants.FormatIdentificationTag, constants.FormatCloudWatchLogsSubscriptionFilter)
+	sl.Scope().Attributes().PutStr(constants.FormatIdentificationTag, "aws."+constants.FormatCloudWatchLogsSubscriptionFilter)
 	for _, event := range cwLog.LogEvents {
 		logRecord := sl.LogRecords().AppendEmpty()
 		// pcommon.Timestamp is a time specified as UNIX Epoch time in nanoseconds
