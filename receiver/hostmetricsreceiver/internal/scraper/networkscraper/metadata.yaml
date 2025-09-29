@@ -31,6 +31,8 @@ metrics:
     enabled: true
     description: The number of packets transferred.
     unit: "{packets}"
+    stability:
+      level: development
     sum:
       value_type: int
       aggregation_temporality: cumulative
@@ -40,6 +42,8 @@ metrics:
     enabled: true
     description: The number of packets dropped.
     unit: "{packets}"
+    stability:
+      level: development
     sum:
       value_type: int
       aggregation_temporality: cumulative
@@ -49,6 +53,8 @@ metrics:
     enabled: true
     description: The number of errors encountered.
     unit: "{errors}"
+    stability:
+      level: development
     sum:
       value_type: int
       aggregation_temporality: cumulative
@@ -58,6 +64,8 @@ metrics:
     enabled: true
     description: The number of bytes transmitted and received.
     unit: "By"
+    stability:
+      level: development
     sum:
       value_type: int
       aggregation_temporality: cumulative
@@ -67,6 +75,8 @@ metrics:
     enabled: true
     description: The number of connections.
     unit: "{connections}"
+    stability:
+      level: development
     sum:
       value_type: int
       aggregation_temporality: cumulative
@@ -76,6 +86,8 @@ metrics:
     enabled: false
     description: The count of entries in conntrack table.
     unit: "{entries}"
+    stability:
+      level: development
     sum:
       value_type: int
       aggregation_temporality: cumulative
@@ -84,6 +96,8 @@ metrics:
     enabled: false
     description: The limit for entries in the conntrack table.
     unit: "{entries}"
+    stability:
+      level: development
     sum:
       value_type: int
       aggregation_temporality: cumulative
