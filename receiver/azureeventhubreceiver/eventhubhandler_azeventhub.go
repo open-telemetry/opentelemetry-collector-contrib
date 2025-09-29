@@ -24,10 +24,16 @@ type azPartitionClient interface {
 }
 
 func newAzeventhubWrapper(h *eventhubHandler) (*hubWrapperAzeventhubImpl, error) {
+	consumerGroup := h.config.ConsumerGroup
+	// Default the consumer group to $Default
+	if consumerGroup == "" {
+		consumerGroup = "$Default"
+	}
+
 	hub, newHubErr := azeventhubs.NewConsumerClientFromConnectionString(
 		h.config.Connection,
 		"",
-		h.config.ConsumerGroup,
+		consumerGroup,
 		&azeventhubs.ConsumerClientOptions{},
 	)
 
@@ -124,7 +130,6 @@ func (h *hubWrapperAzeventhubImpl) Receive(ctx context.Context, partitionID stri
 				}
 			}
 		}
-
 		pc, err := h.hub.NewPartitionClient(partitionID, &azeventhubs.PartitionClientOptions{
 			StartPosition: startPos,
 		})
