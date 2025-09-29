@@ -132,11 +132,8 @@ func (cfg *Config) Validate() error {
 			// If the user's config did not specify to add suffixes, ... hmmm
 			cfg.TranslationStrategy = otlptranslator.UnderscoreEscapingWithoutSuffixes
 		}
-		cfg.AddMetricSuffixes = cfg.TranslationStrategy.ShouldAddSuffixes()
-	} else {
-		// If TranslationStrategy was specified, override the AddMetricSuffixes setting.
-		cfg.AddMetricSuffixes = cfg.TranslationStrategy.ShouldAddSuffixes()
 	}
+	cfg.AddMetricSuffixes = cfg.TranslationStrategy.ShouldAddSuffixes()
 
 	if len(cfg.ClientConfig.Compression) > 0 && cfg.ClientConfig.Compression != "snappy" {
 		return errors.New("compression type must be snappy")
