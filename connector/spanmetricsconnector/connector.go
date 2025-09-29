@@ -626,41 +626,39 @@ func inferSpanName(span ptrace.Span) string {
 			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/
 			if httpRouteVal, okHTTPRoute := span.Attributes().Get(string(semconv.HTTPRouteKey)); okHTTPRoute {
 				return httpRequestMethodVal.AsString() + " " + httpRouteVal.AsString()
-			} else {
-				return httpRequestMethodVal.AsString()
 			}
+			return httpRequestMethodVal.AsString()
 		}
 
 		if rpcMethodVal, okRPCMethod := span.Attributes().Get(string(semconv.RPCMethodKey)); okRPCMethod {
 			// https://opentelemetry.io/docs/specs/semconv/rpc/rpc-spans/
-			if rpcServiceVal, okRpcService := span.Attributes().Get(string(semconv.RPCServiceKey)); okRpcService {
+			if rpcServiceVal, okRPCService := span.Attributes().Get(string(semconv.RPCServiceKey)); okRPCService {
 				return rpcServiceVal.AsString() + "/" + rpcMethodVal.AsString()
 			}
 			return rpcMethodVal.AsString()
 		}
 
-		// TODO
+		// TODO should we use a high cardinality proof default value?
 		return span.Name()
 
 	case ptrace.SpanKindClient:
 		if httpRequestMethodVal, okHTTPRequestMethod := getAttributeValue(span, string(semconv.HTTPRequestMethodKey), string(semconv.HTTPMethodKey)); okHTTPRequestMethod {
 			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/
-			// the connector uses semconv 1.25 that doesn't include "url.template" so use the string value
-			if urlTemplateVal, okUrlTemplate := span.Attributes().Get("url.template"); okUrlTemplate {
+			// TODO the connector uses semconv 1.25 that doesn't include "url.template" so use the string value
+			if urlTemplateVal, okURLTemplate := span.Attributes().Get("url.template"); okURLTemplate {
 				return httpRequestMethodVal.AsString() + " " + urlTemplateVal.AsString()
 			}
 			return httpRequestMethodVal.AsString()
-
 		}
 
 		if rpcMethodVal, okRPCMethod := span.Attributes().Get(string(semconv.RPCMethodKey)); okRPCMethod {
 			// https://opentelemetry.io/docs/specs/semconv/rpc/rpc-spans/
-			if rpcServiceVal, okRpcService := span.Attributes().Get(string(semconv.RPCServiceKey)); okRpcService {
+			if rpcServiceVal, okRPCService := span.Attributes().Get(string(semconv.RPCServiceKey)); okRPCService {
 				return rpcServiceVal.AsString() + "/" + rpcMethodVal.AsString()
 			}
 			return rpcMethodVal.AsString()
-
 		}
+
 		if dbSystemName, okDbSystemName := getAttributeValue(span, "db.system.name", "db.system"); okDbSystemName {
 			// https://opentelemetry.io/docs/specs/semconv/database/database-spans/
 			var res = ""
@@ -678,10 +676,12 @@ func inferSpanName(span ptrace.Span) string {
 			}
 			return res
 		}
-		// TODO
+
+		// TODO should we use a high cardinality proof default value?
 		return span.Name()
 
 	default:
+		// TODO should we use a high cardinality proof default value?
 		return span.Name()
 	}
 }
