@@ -26,7 +26,7 @@ resourceLogs:
             timeUnixNano: "1432826855000000000"
         scope:
           attributes:
-            - key: awslogs_encoding.format
+            - key: encoding.format
               value:
-                stringValue: cloudwatch_logs_subscription_filter
+                stringValue: aws.cloudwatch
           name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension
