@@ -271,3 +271,4 @@ See the struct of the Cloud Audit Log payload in [AuditLog](https://cloud.google
 | `dest_vpc.subnetwork_name` | `gcp.vpc.flow.destination.subnet.name` |
 | `dest_vpc.subnetwork_region` | `gcp.vpc.flow.destination.subnet.region` |
 | `dest_vpc.vpc_name` | `gcp.vpc.flow.destination.vpc.name` |
+| `internet_routing_details.egress_as_path.as_details.asn` | `gcp.vpc.flow.egress.as_paths.as_details.asn`
