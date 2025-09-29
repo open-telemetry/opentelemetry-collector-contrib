@@ -57,7 +57,7 @@ func Test_traceDataToSplunk(t *testing.T) {
 			},
 			configFn: func() *Config {
 				cfg := createDefaultConfig().(*Config)
-				cfg.HecToOtelAttrs = splunk.HecToOtelAttrs{
+				cfg.OtelAttrsToHec = splunk.HecToOtelAttrs{
 					Source:     "mysource",
 					SourceType: "mysourcetype",
 					Host:       "myhost",
