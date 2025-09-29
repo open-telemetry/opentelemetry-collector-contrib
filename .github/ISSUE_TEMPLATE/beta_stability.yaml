@@ -137,6 +137,7 @@ body:
       - internal/common
       - internal/core
       - internal/datadog
+      - internal/datadog/e2e
       - internal/docker
       - internal/exp/metrics
       - internal/filter
