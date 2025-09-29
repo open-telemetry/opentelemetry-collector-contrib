@@ -26,9 +26,9 @@ services:
     volumes:
       - ./otel-config.yaml:/etc/otel-config.yaml
     ports:
-      - "4318:4318" # OTLP gRPC for aggregated metrics
-      - "8889:8889" # Prometheus metrics endpoint
-      - "8888:8888" # Collector internal metrics
+      - "4320:4318" # OTLP gRPC for aggregated metrics
+      - "8891:8889" # Prometheus metrics endpoint
+      - "8892:8888" # Collector internal metrics
     networks:
       - demo-network
     depends_on:
@@ -44,9 +44,9 @@ services:
     volumes:
       - ./otel-config-raw.yaml:/etc/otel-config.yaml
     ports:
-      - "4317:4317" # OTLP gRPC for raw metrics
-      - "8890:8890" # Prometheus metrics endpoint
-      - "8887:8887" # Collector internal metrics
+      - "4319:4317" # OTLP gRPC for raw metrics
+      - "8893:8890" # Prometheus metrics endpoint
+      - "8894:8887" # Collector internal metrics
     networks:
       - demo-network
     depends_on:
@@ -86,7 +86,7 @@ services:
       - "--web.enable-remote-write-receiver"
       - "--web.enable-otlp-receiver"
     ports:
-      - "9090:9090"
+      - "9091:9090"
     networks:
       - demo-network
     restart: unless-stopped
@@ -106,7 +106,7 @@ services:
       - GF_AUTH_ANONYMOUS_ENABLED=true
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
     ports:
-      - "3000:3000"
+      - "3001:3000"
     networks:
       - demo-network
     depends_on:
