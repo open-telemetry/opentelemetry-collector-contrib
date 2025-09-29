@@ -20,18 +20,18 @@ import (
 func TestNewRelicOracleReceiverIntegration(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	
+
 	// Use fake datasource for testing
 	cfg.DataSource = "oracle://fake:fake@localhost:1521/XE"
-	
+
 	set := receivertest.NewNopSettings()
 	consumer := consumertest.NewNop()
 
 	// Create receiver with fake client
 	receiver, err := createReceiverFunc(func(dataSourceName string) (*sql.DB, error) {
-		return nil, nil  // We'll use fake client
+		return nil, nil // We'll use fake client
 	}, newFakeDbClient)(context.Background(), set, cfg, consumer)
-	
+
 	require.NoError(t, err)
 	require.NotNil(t, receiver)
 
