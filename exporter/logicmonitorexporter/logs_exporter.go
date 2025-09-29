@@ -87,8 +87,9 @@ func (e *logExporter) PushLogData(ctx context.Context, lg plog.Logs) error {
 					resourceMapperMap[key] = value.AsRaw()
 				}
 
-				e.settings.Logger.Debug("Sending log data", zap.String("body", log.Body().Str()), zap.Any("resourcemap", resourceMapperMap), zap.Any("metadatamap", logMetadataMap))
-				payload = append(payload, translator.ConvertToLMLogInput(log.Body().AsRaw(), timestampFromLogRecord(log).String(), resourceMapperMap, logMetadataMap))
+				loglevel := log.SeverityNumber().String()
+				e.settings.Logger.Debug("Sending log data", zap.String("body", log.Body().Str()), zap.Any("resourcemap", resourceMapperMap), zap.Any("metadatamap", logMetadataMap), zap.String("loglevel", loglevel))
+				payload = append(payload, translator.ConvertToLMLogInput(log.Body().AsRaw(), loglevel, timestampFromLogRecord(log).String(), resourceMapperMap, logMetadataMap))
 			}
 		}
 	}
