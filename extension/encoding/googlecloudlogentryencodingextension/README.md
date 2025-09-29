@@ -205,4 +205,14 @@ See the struct of the Cloud Audit Log payload in [AuditLog](https://cloud.google
 | `src_gateway.vpc.vpc_name` | `gcp.src.gateway.vpc.name` |
 | `src_gateway.interconnect_name` | `gcp.src.gateway.interconnect.name` |
 | `src_gateway.interconnect_project_number` | `gcp.src.gateway.interconnect.project.number` |
+| `dest_gateway.project_id` | `gcp.dest.gateway.project.id` |
+| `dest_gateway.location` | `gcp.dest.gateway.region` |
+| `dest_gateway.name` | `gcp.dest.gateway.name` |
+| `dest_gateway.type` | `gcp.dest.gateway.type` |
+| `dest_gateway.vpc.project_id` | `gcp.dest.gateway.vpc.project.id` |
+| `dest_gateway.vpc.subnetwork_name` | `gcp.dest.gateway.vpc.subnet.name` |
+| `dest_gateway.vpc.subnetwork_region` | `gcp.dest.gateway.vpc.subnet.region` |
+| `dest_gateway.vpc.vpc_name` | `gcp.dest.gateway.vpc.name` |
+| `dest_gateway.interconnect_name` | `gcp.dest.gateway.interconnect.name` |
+| `dest_gateway.interconnect_project_number` | `gcp.dest.gateway.interconnect.project.number` |
 #### Left off here, good above here.
