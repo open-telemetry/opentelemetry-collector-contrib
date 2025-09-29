@@ -35,6 +35,7 @@ func NewFactory() receiver.Factory {
 func createDefaultConfig() component.Config {
 	cfg := scraperhelper.NewDefaultControllerConfig()
 	cfg.CollectionInterval = 10 * time.Second
+	cfg.Timeout = 30 * time.Second // Increased from default to handle Oracle database timeouts
 
 	return &Config{
 		ControllerConfig:     cfg,
