@@ -6,6 +6,8 @@ package opensearchexporter // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -13,7 +15,11 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter/internal/objmodel"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter/internal/pool"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter/internal/serializer"
 )
+
+var errInvalidTypeForBodyMapMode = errors.New("invalid log record body type for 'bodymap' mapping mode")
 
 type mappingModel interface {
 	encodeLog(resource pcommon.Resource,
@@ -24,6 +30,39 @@ type mappingModel interface {
 		scope pcommon.InstrumentationScope,
 		schemaURL string,
 		record ptrace.Span) ([]byte, error)
+}
+
+type bodyMapMappingModel struct {
+	bufferPool *pool.BufferPool
+}
+
+func (*bodyMapMappingModel) encodeTrace(
+	_ pcommon.Resource,
+	_ pcommon.InstrumentationScope,
+	_ string,
+	_ ptrace.Span,
+) ([]byte, error) {
+	return nil, fmt.Errorf("mapping mode '%s' does not support encoding traces", MappingBodyMap.String())
+}
+
+func (m *bodyMapMappingModel) encodeLog(
+	_ pcommon.Resource,
+	_ pcommon.InstrumentationScope,
+	_ string,
+	record plog.LogRecord,
+) ([]byte, error) {
+	body := record.Body()
+	if body.Type() != pcommon.ValueTypeMap {
+		return nil, fmt.Errorf("%w: %q", errInvalidTypeForBodyMapMode, body.Type().String())
+	}
+	pooledBuf := m.bufferPool.NewPooledBuffer()
+	defer pooledBuf.Recycle()
+
+	serializer.Map(body.Map(), pooledBuf.Buffer)
+	// Copy bytes to avoid holding reference to pooled buffer
+	result := make([]byte, pooledBuf.Buffer.Len())
+	copy(result, pooledBuf.Buffer.Bytes())
+	return result, nil
 }
 
 // encodeModel supports multiple encoding OpenTelemetry signals to multiple schemas.
