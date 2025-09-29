@@ -79,8 +79,8 @@ jobs:
         run: make install-tools
 
       - name: Build gotestsum
-        working-directory: ${{ github.workspace }}
-        run: make .tools/gotestsum
+        shell: bash
+        run: make "$PWD/.tools/gotestsum"
 
       - name: Run changed tests
         if: needs.changedfiles.outputs.go_tests
