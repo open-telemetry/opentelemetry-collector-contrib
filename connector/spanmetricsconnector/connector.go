@@ -667,7 +667,7 @@ func inferSpanName(span ptrace.Span) string {
 
 		if dbSystemName, ok := getAttributeValue(span, "db.system.spanName", "db.system"); ok {
 			// https://opentelemetry.io/docs/specs/semconv/database/database-spans/
-			var res string
+			res := ""
 			if dbOperationNameVal, okDbOperationName := getAttributeValue(span, "db.operation.spanName", "db.operation"); okDbOperationName {
 				res += dbOperationNameVal.AsString() + " "
 			}
@@ -708,8 +708,8 @@ func getAttributeValue(span ptrace.Span, attrNames ...string) (pcommon.Value, bo
 }
 
 func getMessagingSpanName(span ptrace.Span) (pcommon.Value, bool) {
-	var messagingOperationNameVal, okMessagingOperationName = getAttributeValue(span, "messaging.operation.name", string(semconv.MessagingOperationKey))
-	var messagingDestinationVal, okMessagingDestination = getMessagingDestination(span)
+	messagingOperationNameVal, okMessagingOperationName := getAttributeValue(span, "messaging.operation.name", string(semconv.MessagingOperationKey))
+	messagingDestinationVal, okMessagingDestination := getMessagingDestination(span)
 
 	if okMessagingOperationName && okMessagingDestination {
 		// https://opentelemetry.io/docs/specs/semconv/messaging/messaging-spans/
