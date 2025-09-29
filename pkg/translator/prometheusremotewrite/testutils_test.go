@@ -39,6 +39,8 @@ var (
 	value41            = "test_value41"
 	label51            = "_test_label51"
 	value51            = "test_value51"
+	label61            = "test#$%^label61"
+	value61            = "test_value61"
 	dirty1             = "%"
 	dirty2             = "?"
 	traceIDValue1      = "4303853f086f4f8c86cf198b6551df84"

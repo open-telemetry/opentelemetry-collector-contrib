@@ -92,7 +92,9 @@ func configureMetricNamer(config *Config) otlptranslator.MetricNamer {
 func configureLabelNamer(config *Config) otlptranslator.LabelNamer {
 	_, utf8Allowed := getTranslationConfiguration(config)
 	return otlptranslator.LabelNamer{
-		UTF8Allowed: utf8Allowed,
+		UTF8Allowed:                 utf8Allowed,
+		UnderscoreLabelSanitization: config.UnderscoreLabelSanitization,
+		PreserveMultipleUnderscores: config.PreserveMultipleUnderscores,
 	}
 }
 

@@ -44,6 +44,20 @@ type Config struct {
 	// TranslationStrategy controls how OTLP metric and attribute names are translated into Prometheus metric and label names.
 	// When set, this takes precedence over AddMetricSuffixes.
 	TranslationStrategy translationStrategy `mapstructure:"translation_strategy"`
+
+	// UnderscoreLabelSanitization, if true, enables prepending 'key' to labels
+	// starting with '_'. Reserved labels starting with `__` are not modified.
+	// Included for compatibility with default previous behavior.
+	//
+	// Deprecated: This will be removed in a future version.
+	UnderscoreLabelSanitization bool `mapstructure:"underscore_label_sanitization"`
+
+	// PreserveMultipleUnderscores enables preserving of multiple
+	// consecutive underscores in label names when UTF8Allowed is false.
+	// This option is discouraged as it violates the OpenTelemetry to Prometheus
+	// specification https://github.com/open-telemetry/opentelemetry-specification/blob/v1.38.0/specification/compatibility/prometheus_and_openmetrics.md#otlp-metric-points-to-prometheus),
+	// but may be needed for compatibility with legacy systems that rely on the old behavior.
+	PreserveMultipleUnderscores bool `mapstructure:"preserve_multiple_underscores"`
 }
 
 var _ component.Config = (*Config)(nil)
