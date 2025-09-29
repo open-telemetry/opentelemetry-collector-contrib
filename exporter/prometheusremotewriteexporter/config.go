@@ -60,6 +60,20 @@ type Config struct {
 
 	// RemoteWriteProtoMsg controls whether prometheus remote write v1 or v2 is sent.
 	RemoteWriteProtoMsg config.RemoteWriteProtoMsg `mapstructure:"protobuf_message,omitempty"`
+
+	// UnderscoreLabelSanitization, if true, enables prepending 'key' to labels
+	// starting with '_'. Reserved labels starting with `__` are not modified.
+	// Included for compatibility with default previous behavior.
+	//
+	// Deprecated: This will be removed in a future version.
+	UnderscoreLabelSanitization bool `mapstructure:"underscore_label_sanitization"`
+
+	// PreserveMultipleUnderscores enables preserving of multiple
+	// consecutive underscores in label names when UTF8Allowed is false.
+	// This option is discouraged as it violates the OpenTelemetry to Prometheus
+	// specification https://github.com/open-telemetry/opentelemetry-specification/blob/v1.38.0/specification/compatibility/prometheus_and_openmetrics.md#otlp-metric-points-to-prometheus),
+	// but may be needed for compatibility with legacy systems that rely on the old behavior.
+	PreserveMultipleUnderscores bool `mapstructure:"preserve_multiple_underscores"`
 }
 
 type TargetInfo struct {

@@ -305,7 +305,10 @@ func (prwe *prwExporter) PushMetrics(ctx context.Context, md pmetric.Metrics) er
 }
 
 func validateAndSanitizeExternalLabels(cfg *Config) (map[string]string, error) {
-	namer := otlptranslator.LabelNamer{}
+	namer := otlptranslator.LabelNamer{
+		UnderscoreLabelSanitization: cfg.UnderscoreLabelSanitization,
+		PreserveMultipleUnderscores: cfg.PreserveMultipleUnderscores,
+	}
 	sanitizedLabels := make(map[string]string)
 	for key, value := range cfg.ExternalLabels {
 		if key == "" || value == "" {

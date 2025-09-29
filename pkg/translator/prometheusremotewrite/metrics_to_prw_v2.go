@@ -57,7 +57,7 @@ func newPrometheusConverterV2(settings Settings) *prometheusConverterV2 {
 		conflicts:   map[uint64][]*writev2.TimeSeries{},
 		symbolTable: writev2.NewSymbolTable(),
 		metricNamer: otlptranslator.MetricNamer{WithMetricSuffixes: settings.AddMetricSuffixes, Namespace: settings.Namespace},
-		labelNamer:  otlptranslator.LabelNamer{},
+		labelNamer:  otlptranslator.LabelNamer{UnderscoreLabelSanitization: settings.UnderscoreLabelSanitization, PreserveMultipleUnderscores: settings.PreserveMultipleUnderscores},
 		unitNamer:   otlptranslator.UnitNamer{},
 	}
 }

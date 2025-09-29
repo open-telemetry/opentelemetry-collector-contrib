@@ -18,11 +18,13 @@ import (
 )
 
 type Settings struct {
-	Namespace         string
-	ExternalLabels    map[string]string
-	DisableTargetInfo bool
-	AddMetricSuffixes bool
-	SendMetadata      bool
+	Namespace                   string
+	ExternalLabels              map[string]string
+	DisableTargetInfo           bool
+	AddMetricSuffixes           bool
+	SendMetadata                bool
+	UnderscoreLabelSanitization bool
+	PreserveMultipleUnderscores bool
 }
 
 // FromMetrics converts pmetric.Metrics to Prometheus remote write format.
@@ -53,7 +55,7 @@ func newPrometheusConverter(settings Settings) *prometheusConverter {
 		unique:      map[uint64]*prompb.TimeSeries{},
 		conflicts:   map[uint64][]*prompb.TimeSeries{},
 		metricNamer: otlptranslator.MetricNamer{WithMetricSuffixes: settings.AddMetricSuffixes, Namespace: settings.Namespace},
-		labelNamer:  otlptranslator.LabelNamer{},
+		labelNamer:  otlptranslator.LabelNamer{UnderscoreLabelSanitization: settings.UnderscoreLabelSanitization, PreserveMultipleUnderscores: settings.PreserveMultipleUnderscores},
 		unitNamer:   otlptranslator.UnitNamer{},
 	}
 }

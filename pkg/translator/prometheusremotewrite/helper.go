@@ -529,7 +529,7 @@ func addResourceTargetInfo(resource pcommon.Resource, settings Settings, timesta
 		name = settings.Namespace + "_" + name
 	}
 
-	labels, err := createAttributes(resource, attributes, settings.ExternalLabels, identifyingAttrs, false, otlptranslator.LabelNamer{}, model.MetricNameLabel, name)
+	labels, err := createAttributes(resource, attributes, settings.ExternalLabels, identifyingAttrs, false, otlptranslator.LabelNamer{UnderscoreLabelSanitization: settings.UnderscoreLabelSanitization, PreserveMultipleUnderscores: settings.PreserveMultipleUnderscores}, model.MetricNameLabel, name)
 	if err != nil {
 		return err
 	}
