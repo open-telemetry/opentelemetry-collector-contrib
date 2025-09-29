@@ -357,7 +357,7 @@ require (
 	github.com/prometheus/common v0.66.1 // indirect
 	github.com/prometheus/common/assets v0.2.0 // indirect
 	github.com/prometheus/exporter-toolkit v0.14.0 // indirect
-	github.com/prometheus/otlptranslator v0.0.2 // indirect
+	github.com/prometheus/otlptranslator v1.0.0 // indirect
 	github.com/prometheus/procfs v0.17.0 // indirect
 	github.com/prometheus/prometheus v0.305.1-0.20250808193045-294f36e80261 // indirect
 	github.com/prometheus/sigv4 v0.2.0 // indirect
