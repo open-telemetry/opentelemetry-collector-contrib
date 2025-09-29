@@ -117,7 +117,7 @@ func (u *CloudTrailLogUnmarshaler) processRecords(records []CloudTrailRecord) (p
 	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
 	scopeLogs.Scope().SetName(metadata.ScopeName)
 	scopeLogs.Scope().SetVersion(u.buildInfo.Version)
-	scopeLogs.Scope().Attributes().PutStr(constants.FormatIdentificationTag, constants.FormatCloudTrailLog)
+	scopeLogs.Scope().Attributes().PutStr(constants.FormatIdentificationTag, "aws."+constants.FormatCloudTrailLog)
 
 	// Set resource attributes based on the first record
 	// (all records have the same account ID and region)
