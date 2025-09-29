@@ -1477,7 +1477,7 @@ func TestDeleteQueue(t *testing.T) {
 	doAssertions(pod1)
 	assert.Len(t, c.Pods, 4)
 
-	// Delete a pod and verify that we can still fund it by all identifiers until 2-2.5 minutes have passed
+	// Delete a pod and verify that we can still found it by all identifiers
 	c.handlePodDelete(pod1)
 	doAssertions(pod1)
 	assert.Len(t, c.Pods, 4)
@@ -1488,15 +1488,18 @@ func TestDeleteQueue(t *testing.T) {
 	doAssertions(pod2)
 	assert.Len(t, c.Pods, 5) // 4 from pod2 + 1 from pod1 (the pod UID identifier)
 
-	// Start a new delete loop that has no grace period and has a short interval. Then, wait long enough for the
-	// delete loop housekeeping processing to have run.
-	go func() {
-		time.Sleep(3 * time.Second)
-		close(c.stopCh)
-	}()
-	c.deleteLoop(1*time.Second, 0*time.Second)
+	c.deleteLoopProcessing(0 * time.Second)
 	assert.Len(t, c.Pods, 4) // Only mappings for pod2 remain
 	doAssertions(pod2)
+
+	// Delete pod2 and verify that it gets removed after the next delete loop housekeeping.
+	c.handlePodDelete(pod2)
+	assert.Len(t, c.Pods, 4) // Only mappings for pod2 remain
+	doAssertions(pod2)
+
+	// Delete loop processing should remove mappings for pod2.
+	c.deleteLoopProcessing(0 * time.Second)
+	assert.Len(t, c.Pods, 0) // No more mappings
 }
 
 func TestNodeExtractionRules(t *testing.T) {
