@@ -243,8 +243,6 @@ github.com/DataDog/datadog-agent/pkg/version v0.72.0-devel/go.mod h1:FYj51C1ib86
 github.com/DataDog/datadog-api-client-go/v2 v2.46.0 h1:sq5GXX//FVtbgd4oNU3NSJX2F1vmhqONHUPrQ8HWwNc=
 github.com/DataDog/datadog-api-client-go/v2 v2.46.0/go.mod h1:d3tOEgUd2kfsr9uuHQdY+nXrWp4uikgTgVCPdKNK30U=
 github.com/DataDog/datadog-go v3.2.0+incompatible/go.mod h1:LButxg5PwREeZtORoXG3tL4fMGNddJ+vMq1mwgfaqoQ=
-github.com/DataDog/datadog-go/v5 v5.7.1 h1:dNhEwKaO3LJhGYKajl2DjobArfa5R9YF72z3Dy+PH3k=
-github.com/DataDog/datadog-go/v5 v5.7.1/go.mod h1:CA9Ih6tb3jtxk+ps1xvTnxmhjr7ldE8TiwrZyrm31ss=
 github.com/DataDog/datadog-go/v5 v5.8.0 h1:pKZtux5CfqkqGYGvKCM3wV5i8sYAzcddK7nkrChUtxo=
 github.com/DataDog/datadog-go/v5 v5.8.0/go.mod h1:K9kcYBlxkcPP8tvvjZZKs/m1edNAUFzBbdpTUKfCsuw=
 github.com/DataDog/go-sqllexer v0.1.6 h1:skEXpWEVCpeZFIiydoIa2f2rf+ymNpjiIMqpW4w3YAk=
