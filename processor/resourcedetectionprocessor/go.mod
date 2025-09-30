@@ -3,8 +3,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/processor/resou
 go 1.24.0
 
 require (
-	cloud.google.com/go/compute/metadata v0.7.0
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.29.0
+	cloud.google.com/go/compute/metadata v0.9.0
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.30.0
 	github.com/aws/aws-sdk-go-v2 v1.37.0
 	github.com/aws/aws-sdk-go-v2/config v1.30.1
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.18.0
@@ -171,7 +171,7 @@ require (
 	golang.org/x/net v0.43.0 // indirect
 	golang.org/x/oauth2 v0.30.0 // indirect
 	golang.org/x/sync v0.17.0 // indirect
-	golang.org/x/sys v0.35.0 // indirect
+	golang.org/x/sys v0.36.0 // indirect
 	golang.org/x/term v0.34.0 // indirect
 	golang.org/x/text v0.29.0 // indirect
 	golang.org/x/time v0.7.0 // indirect
