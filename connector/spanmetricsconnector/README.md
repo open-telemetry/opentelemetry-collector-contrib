@@ -274,14 +274,12 @@ Examples of override of the `span.name` attribute on the generated metrics:
 | `http.request.method` | `GET`            |                                  |
 | `http.route`          | `/users/:id`     |                                  |
 
-
 |               | Before           | Override value for `spanmetrics` |
 |---------------|------------------|----------------------------------|
 | Span kind     | `SERVER`         |                                  |
 | Span name     | `GET /users/123` | `GET`                            |
 | `http.method` | `GET`            |                                  |
 | `http.route`  |                  |                                  |
-
 
 |                      | Before                               | Override value for `spanmetrics` |
 |----------------------|--------------------------------------|----------------------------------|
@@ -291,7 +289,6 @@ Examples of override of the `span.name` attribute on the generated metrics:
 | `db.namespace.name`  | `webshop`                            |                                  |
 | `db.operation.name`  | `SELECT`                             |                                  |
 | `db.collection.name` | `orders`                             |                                  | 
-
 
 ### More Examples
 
