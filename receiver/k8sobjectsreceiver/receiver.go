@@ -225,8 +225,8 @@ func (kr *k8sobjectsreceiver) startPull(ctx context.Context, config *K8sObjectsC
 	stopperChan := make(chan struct{})
 	kr.mu.Lock()
 	kr.stopperChanList = append(kr.stopperChanList, stopperChan)
-	kr.mu.Unlock()
 	kr.wg.Add(1)
+	kr.mu.Unlock()
 	defer kr.wg.Done()
 	ticker := newTicker(ctx, config.Interval)
 	listOption := metav1.ListOptions{
@@ -271,8 +271,8 @@ func (kr *k8sobjectsreceiver) startWatch(ctx context.Context, config *K8sObjects
 	stopperChan := make(chan struct{})
 	kr.mu.Lock()
 	kr.stopperChanList = append(kr.stopperChanList, stopperChan)
-	kr.mu.Unlock()
 	kr.wg.Add(1)
+	kr.mu.Unlock()
 	defer kr.wg.Done()
 
 	if kr.config.IncludeInitialState {
