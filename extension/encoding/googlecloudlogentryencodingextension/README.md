@@ -250,7 +250,7 @@ See the struct of the Cloud Audit Log payload in [AuditLog](https://cloud.google
 | `dest_instance.region` | `gcp.vpc.flow.destination.instance.vm.region` |
 | `dest_instance.vm_name` | `gcp.vpc.flow.destination.instance.vm.name` |
 | `dest_instance.zone` | `gcp.vpc.flow.destination.instance.vm.zone` |
-| `dest_instance.managed_instance_group.name` | `gcp.vpc.flow.destination.instance.managedinstancegroup.name` |
+| `dest_instance.managed_instance_group.name` | `gcp.vpc.flow.destination.instance.managed_instance_group.name` |
 | `dest_instance.managed_instance_group.region` | `gcp.vpc.flow.destination.instance.managedinstancegroup.region` |
 | `dest_instance.managed_instance_group.zone` | `gcp.vpc.flow.destination.instance.managedinstancegroup.zone` |
 | `src_location.asn` | `gcp.vpc.flow.source.asn` |
