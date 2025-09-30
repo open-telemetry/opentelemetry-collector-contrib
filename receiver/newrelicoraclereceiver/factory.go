@@ -35,10 +35,15 @@ func NewFactory() receiver.Factory {
 func createDefaultConfig() component.Config {
 	cfg := scraperhelper.NewDefaultControllerConfig()
 	cfg.CollectionInterval = 10 * time.Second
+	cfg.Timeout = 30 * time.Second // Increased from default to handle Oracle database timeouts
 
 	return &Config{
 		ControllerConfig:     cfg,
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+
+		// Connection Pool Defaults
+		MaxOpenConnections:    5, // Standard default for Oracle connections
+		DisableConnectionPool: false,
 	}
 }
 
@@ -64,7 +69,20 @@ func createReceiverFunc(sqlOpenerFunc sqlOpenerFunc) receiver.CreateMetricsFunc 
 		}
 
 		mp, err := newScraper(metricsBuilder, sqlCfg.MetricsBuilderConfig, sqlCfg.ControllerConfig, settings.Logger, func() (*sql.DB, error) {
-			return sqlOpenerFunc(getDataSource(*sqlCfg))
+			db, err := sqlOpenerFunc(getDataSource(*sqlCfg))
+			if err != nil {
+				return nil, err
+			}
+
+			// Configure connection pool settings
+			if !sqlCfg.DisableConnectionPool {
+				db.SetMaxOpenConns(sqlCfg.MaxOpenConnections)
+			} else {
+				// Disable connection pooling
+				db.SetMaxOpenConns(1)
+			}
+
+			return db, nil
 		}, instanceName, hostName)
 		if err != nil {
 			return nil, err
@@ -99,7 +117,7 @@ func getInstanceName(datasource string) (string, error) {
 	if atIndex := strings.Index(datasource, "@"); atIndex != -1 {
 		return datasource[atIndex+1:], nil
 	}
-	
+
 	// Fallback to URL parsing for oracle:// format
 	datasourceURL, err := url.Parse(datasource)
 	if err != nil {
@@ -120,7 +138,7 @@ func getHostName(datasource string) (string, error) {
 		}
 		return hostPart, nil
 	}
-	
+
 	// Fallback to URL parsing for oracle:// format
 	datasourceURL, err := url.Parse(datasource)
 	if err != nil {

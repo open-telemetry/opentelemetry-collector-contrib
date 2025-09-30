@@ -34,8 +34,8 @@ func TestConfig_Validate(t *testing.T) {
 			expectErr: false,
 		},
 		{
-			name: "invalid config - missing all connection info",
-			config: Config{},
+			name:      "invalid config - missing all connection info",
+			config:    Config{},
 			expectErr: true,
 		},
 		{
@@ -72,6 +72,52 @@ func TestConfig_Validate(t *testing.T) {
 				Username: "user",
 				Password: "password",
 				Service:  "XE",
+			},
+			expectErr: true,
+		},
+		{
+			name: "valid config with connection pool settings",
+			config: Config{
+				Endpoint:              "localhost:1521",
+				Username:              "user",
+				Password:              "password",
+				Service:               "XE",
+				MaxOpenConnections:    10,
+				DisableConnectionPool: false,
+			},
+			expectErr: false,
+		},
+		{
+			name: "valid config with disabled connection pool",
+			config: Config{
+				Endpoint:              "localhost:1521",
+				Username:              "user",
+				Password:              "password",
+				Service:               "XE",
+				MaxOpenConnections:    1,
+				DisableConnectionPool: true,
+			},
+			expectErr: false,
+		},
+		{
+			name: "invalid config - zero max_open_connections",
+			config: Config{
+				Endpoint:           "localhost:1521",
+				Username:           "user",
+				Password:           "password",
+				Service:            "XE",
+				MaxOpenConnections: 0,
+			},
+			expectErr: true,
+		},
+		{
+			name: "invalid config - negative max_open_connections",
+			config: Config{
+				Endpoint:           "localhost:1521",
+				Username:           "user",
+				Password:           "password",
+				Service:            "XE",
+				MaxOpenConnections: -1,
 			},
 			expectErr: true,
 		},

@@ -33,6 +33,18 @@ receivers:
     collection_interval: 10s
 ```
 
+### Advanced Configuration
+
+```yaml
+receivers:
+  newrelicoracledb:
+    datasource: "oracle://username:password@hostname:port/service"
+    collection_interval: 10s
+    timeout: 30s  # Timeout for individual scrape operations
+    max_open_connections: 10  # Maximum number of database connections
+    disable_connection_pool: false  # Enable connection pooling for better performance
+```
+
 ### Configuration Parameters
 
 | Parameter | Description | Required | Default |
@@ -43,6 +55,9 @@ receivers:
 | `password` | Oracle database password | No* | |
 | `service` | Oracle service name | No* | |
 | `collection_interval` | How often to collect metrics | No | 10s |
+| `timeout` | Timeout for individual scrape operations | No | 30s |
+| `max_open_connections` | Maximum number of open database connections | No | 5 |
+| `disable_connection_pool` | Disable connection pooling | No | false |
 
 *Either `datasource` OR all of `endpoint`, `username`, `password`, and `service` must be provided.
 
@@ -100,6 +115,18 @@ service:
 1. **Connection Refused**: Verify Oracle database is running and accessible from the collector host
 2. **Authentication Failed**: Check username and password are correct
 3. **Permission Denied**: Ensure the Oracle user has SELECT permissions on system views
+4. **Context Deadline Exceeded**: If you see timeout errors, increase the `timeout` configuration:
+   ```yaml
+   receivers:
+     newrelicoracledb:
+       timeout: 60s  # Increase timeout for slow queries
+   ```
+5. **High Database Load**: For performance optimization, adjust connection pool settings:
+   ```yaml
+   receivers:
+     newrelicoracledb:
+       max_open_connections: 2  # Reduce connections for lighter load
+   ```
 
 ### Logs
 

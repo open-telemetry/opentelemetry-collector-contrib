@@ -7,6 +7,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"sync"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -26,6 +27,9 @@ const (
 	// keepalive for connection
 	keepAlive = 30 * time.Second
 )
+
+// ScraperFunc represents a function that scrapes metrics and returns errors
+type ScraperFunc func(context.Context) []error
 
 type dbProviderFunc func() (*sql.DB, error)
 
@@ -90,14 +94,75 @@ func (s *newRelicOracleScraper) start(context.Context, component.Host) error {
 func (s *newRelicOracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	s.logger.Debug("Begin New Relic Oracle scrape")
 
-	var scrapeErrors []error
+	// Create context with timeout for the entire scrape operation
+	scrapeCtx, cancel := context.WithTimeout(ctx, s.scrapeCfg.Timeout)
+	defer cancel()
 
-	// Scrape session count, tablespace metrics, core metrics, PDB metrics, and system metrics
-	scrapeErrors = append(scrapeErrors, s.sessionScraper.ScrapeSessionCount(ctx)...)
-	scrapeErrors = append(scrapeErrors, s.tablespaceScraper.ScrapeTablespaceMetrics(ctx)...)
-	scrapeErrors = append(scrapeErrors, s.coreScraper.ScrapeCoreMetrics(ctx)...)
-	scrapeErrors = append(scrapeErrors, s.pdbScraper.ScrapePdbMetrics(ctx)...)
-	scrapeErrors = append(scrapeErrors, s.systemScraper.ScrapeSystemMetrics(ctx)...)
+	// Channel to collect errors from concurrent scrapers
+	const maxErrors = 100 // Buffer size to prevent blocking
+	errChan := make(chan error, maxErrors)
+
+	// WaitGroup to coordinate concurrent scrapers
+	var wg sync.WaitGroup
+
+	// Define all scraper functions
+	scraperFuncs := []ScraperFunc{
+		s.sessionScraper.ScrapeSessionCount,
+		s.tablespaceScraper.ScrapeTablespaceMetrics,
+		s.coreScraper.ScrapeCoreMetrics,
+		s.pdbScraper.ScrapePdbMetrics,
+		s.systemScraper.ScrapeSystemMetrics,
+	}
+
+	// Launch concurrent scrapers
+	for i, scraperFunc := range scraperFuncs {
+		wg.Add(1)
+		go func(index int, fn ScraperFunc) {
+			defer wg.Done()
+
+			s.logger.Debug("Starting scraper", zap.Int("scraper_index", index))
+			startTime := time.Now()
+
+			// Execute the scraper function
+			errs := fn(scrapeCtx)
+
+			duration := time.Since(startTime)
+			s.logger.Debug("Completed scraper",
+				zap.Int("scraper_index", index),
+				zap.Duration("duration", duration),
+				zap.Int("error_count", len(errs)))
+
+			// Send errors to the error channel
+			for _, err := range errs {
+				select {
+				case errChan <- err:
+				case <-scrapeCtx.Done():
+					// Context cancelled, stop sending errors
+					return
+				default:
+					// Channel is full, log and continue
+					s.logger.Warn("Error channel full, dropping error", zap.Error(err))
+				}
+			}
+		}(i, scraperFunc)
+	}
+
+	// Close error channel when all scrapers are done
+	go func() {
+		wg.Wait()
+		close(errChan)
+	}()
+
+	// Collect all errors from the channel
+	var scrapeErrors []error
+	for err := range errChan {
+		scrapeErrors = append(scrapeErrors, err)
+	}
+
+	// Check if context was cancelled
+	if scrapeCtx.Err() != nil {
+		scrapeErrors = append(scrapeErrors, fmt.Errorf("scrape operation timed out or was cancelled: %w", scrapeCtx.Err()))
+	}
 
 	// Build the resource with instance and host information
 	rb := s.mb.NewResourceBuilder()
@@ -105,7 +170,10 @@ func (s *newRelicOracleScraper) scrape(ctx context.Context) (pmetric.Metrics, er
 	rb.SetHostName(s.hostName)
 	out := s.mb.Emit(metadata.WithResource(rb.Emit()))
 
-	s.logger.Debug("Done New Relic Oracle scraping", zap.Int("total_errors", len(scrapeErrors)))
+	s.logger.Debug("Done New Relic Oracle scraping",
+		zap.Int("total_errors", len(scrapeErrors)),
+		zap.Int("scrapers_count", len(scraperFuncs)))
+
 	if len(scrapeErrors) > 0 {
 		return out, scrapererror.NewPartialScrapeError(multierr.Combine(scrapeErrors...), len(scrapeErrors))
 	}

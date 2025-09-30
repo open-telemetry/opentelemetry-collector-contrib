@@ -27,11 +27,16 @@ var (
 )
 
 type Config struct {
-	DataSource                     string `mapstructure:"datasource"`
-	Endpoint                       string `mapstructure:"endpoint"`
-	Password                       string `mapstructure:"password"`
-	Service                        string `mapstructure:"service"`
-	Username                       string `mapstructure:"username"`
+	DataSource string `mapstructure:"datasource"`
+	Endpoint   string `mapstructure:"endpoint"`
+	Password   string `mapstructure:"password"`
+	Service    string `mapstructure:"service"`
+	Username   string `mapstructure:"username"`
+
+	// Connection Pool Configuration
+	MaxOpenConnections    int  `mapstructure:"max_open_connections"`
+	DisableConnectionPool bool `mapstructure:"disable_connection_pool"`
+
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
 	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
 }
@@ -78,6 +83,11 @@ func (c Config) Validate() error {
 		if _, err := url.Parse(c.DataSource); err != nil {
 			allErrs = multierr.Append(allErrs, fmt.Errorf("%w: %s", errBadDataSource, err.Error()))
 		}
+	}
+
+	// Validate connection pool configuration
+	if c.MaxOpenConnections < 1 {
+		allErrs = multierr.Append(allErrs, errors.New("max_open_connections must be at least 1"))
 	}
 
 	return allErrs
