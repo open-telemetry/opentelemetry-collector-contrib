@@ -10,7 +10,7 @@ component: prometheusexporter, prometheusremotewriteexporter
 note: Added new configurations options to restore old name translation behavior for those users whose names are broken by the new default behavior.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: []
+issues: [43077]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
