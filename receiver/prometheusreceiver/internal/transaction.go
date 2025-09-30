@@ -70,6 +70,8 @@ type transaction struct {
 	targetSamplesReporter  TargetSamplesReporter
 	// originalJobName stores the original job name from scrape target, before any relabeling
 	originalJobName string
+	// originalAddress stores the original address from scrape target, before any relabeling
+	originalAddress string
 	// Used as buffer to calculate series ref hash.
 	bufBytes []byte
 }
@@ -502,7 +504,7 @@ func (t *transaction) initTransaction(lbs labels.Labels) (*resourceKey, error) {
 	// This ensures we report the correct job name to the target allocator
 	if t.originalJobName == "" {
 		// Try to get job name from target labels first
-		t.originalJobName = target.GetValue(model.JobLabel)
+		// t.originalJobName = target.GetValue(model.JobLabel)
 
 		// Debug: log target info to understand what's available
 		builder := labels.NewBuilder(labels.EmptyLabels())
@@ -514,6 +516,13 @@ func (t *transaction) initTransaction(lbs labels.Labels) (*resourceKey, error) {
 			zap.String("instance_from_target", target.GetValue(model.InstanceLabel)),
 			zap.String("target_labels", targetLabels.String()),
 			zap.String("discovered_labels", discoveredLabels.String()))
+
+		t.originalJobName = discoveredLabels.Get(model.JobLabel)
+		t.originalAddress = discoveredLabels.Get(model.AddressLabel)
+		t.logger.Info("initTransaction:",
+			zap.String("original_job_name", t.originalJobName),
+			zap.String("original_address", t.originalAddress))
+
 	}
 
 	rKey, err := t.getJobAndInstance(lbs)
@@ -660,6 +669,11 @@ func (t *transaction) reportTargetSamples(totalSamples int) {
 			// Fallback to the job from resource key if original job name is not available
 			jobName = rKey.job
 		}
-		t.targetSamplesReporter.ReportTargetSamples(jobName, rKey.instance, totalSamples)
+		instance := t.originalAddress
+		if instance == "" {
+			// Fallback to the instance from resource key if original address is not available
+			instance = rKey.instance
+		}
+		t.targetSamplesReporter.ReportTargetSamples(jobName, instance, totalSamples)
 	}
 }
