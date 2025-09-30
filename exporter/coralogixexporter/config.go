@@ -28,8 +28,12 @@ type Config struct {
 
 	// Coralogix domain
 	Domain string `mapstructure:"domain"`
+
 	// GRPC Settings used with Domain
 	DomainSettings configgrpc.ClientConfig `mapstructure:"domain_settings"`
+
+	// Use AWS PrivateLink for the domain
+	PrivateLink bool `mapstructure:"private_link"`
 
 	// Coralogix traces ingress endpoint
 	Traces configgrpc.ClientConfig `mapstructure:"traces"`
@@ -142,6 +146,14 @@ func (c *Config) getMetadataFromResource(res pcommon.Resource) (appName, subsyst
 
 func (c *Config) getDomainGrpcSettings() *configgrpc.ClientConfig {
 	settings := c.DomainSettings
-	settings.Endpoint = fmt.Sprintf("ingress.%s:443", c.Domain)
+	domain := c.Domain
+
+	// If PrivateLink is enabled, use the private link endpoint pattern
+	if c.PrivateLink {
+		settings.Endpoint = fmt.Sprintf("ingress.private.%s:443", domain)
+	} else {
+		settings.Endpoint = fmt.Sprintf("ingress.%s:443", domain)
+	}
+
 	return &settings
 }
