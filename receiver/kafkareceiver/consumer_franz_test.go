@@ -208,6 +208,11 @@ func TestConsumerShutdownConsuming(t *testing.T) {
 			}, 10*time.Second, 10*time.Millisecond)
 			require.NoError(tb, kafkaClient.ProduceSync(ctx, rs...).FirstErr())
 
+			// Give the consumer a brief moment to poll both records into the same batch.
+			// Without this, on slower CI, one record can land in a later poll,
+			// which gets cut off by Shutdown → called==3 instead of 4.
+			time.Sleep(100 * time.Millisecond)
+
 			select {
 			case consuming <- struct{}{}:
 				close(consuming) // Close the channel so the rest exit.
