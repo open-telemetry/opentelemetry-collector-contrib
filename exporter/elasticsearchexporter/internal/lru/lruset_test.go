@@ -47,8 +47,8 @@ func TestLRUSetLifeTime(t *testing.T) {
 	// Wait until cache item is expired.
 	time.Sleep(lifetime)
 	err = cache.WithLock(func(lock LockedLRUSet) error {
-		assert.False(t, lock.CheckAndAdd("a"))
 		timeSet = time.Now()
+		assert.False(t, lock.CheckAndAdd("a"))
 		assert.True(t, lock.CheckAndAdd("a"))
 		return nil
 	})
