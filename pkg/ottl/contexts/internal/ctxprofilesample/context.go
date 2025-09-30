@@ -3,7 +3,9 @@
 
 package ctxprofilesample // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxprofilesample"
 
-import "go.opentelemetry.io/collector/pdata/pprofile"
+import (
+	"go.opentelemetry.io/collector/pdata/pprofile"
+)
 
 const (
 	Name   = "profilesample"
