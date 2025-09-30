@@ -643,39 +643,42 @@ func (c *WatchClient) deleteLoop(interval, gracePeriod time.Duration) {
 	for {
 		select {
 		case <-time.After(interval):
-			var cutoff int
-			now := time.Now()
-			c.deleteMut.Lock()
-			for i := range c.deleteQueue {
-				d := c.deleteQueue[i]
-				if d.ts.Add(gracePeriod).After(now) {
-					break
-				}
-				cutoff = i + 1
-			}
-			toDelete := c.deleteQueue[:cutoff]
-			c.deleteQueue = c.deleteQueue[cutoff:]
-			c.deleteMut.Unlock()
-
-			c.m.Lock()
-			for i := range toDelete {
-				d := toDelete[i]
-				if p, ok := c.Pods[d.id]; ok {
-					// Sanity check: make sure we are deleting the same pod
-					// and the underlying state (ip<>pod mapping) has not changed.
-					if p.Name == d.podName {
-						delete(c.Pods, d.id)
-					}
-				}
-			}
-			podTableSize := len(c.Pods)
-			c.telemetryBuilder.OtelsvcK8sPodTableSize.Record(context.Background(), int64(podTableSize))
-			c.m.Unlock()
-
+			c.deleteLoopProcessing(gracePeriod)
 		case <-c.stopCh:
 			return
 		}
 	}
+}
+
+func (c *WatchClient) deleteLoopProcessing(gracePeriod time.Duration) {
+	var cutoff int
+	now := time.Now()
+	c.deleteMut.Lock()
+	for i := range c.deleteQueue {
+		d := c.deleteQueue[i]
+		if d.ts.Add(gracePeriod).After(now) {
+			break
+		}
+		cutoff = i + 1
+	}
+	toDelete := c.deleteQueue[:cutoff]
+	c.deleteQueue = c.deleteQueue[cutoff:]
+	c.deleteMut.Unlock()
+
+	c.m.Lock()
+	for i := range toDelete {
+		d := toDelete[i]
+		if p, ok := c.Pods[d.id]; ok {
+			// Sanity check: make sure we are deleting the same pod
+			// and the underlying state (ip<>pod mapping) has not changed.
+			if p.PodUID == d.podUID {
+				delete(c.Pods, d.id)
+			}
+		}
+	}
+	podTableSize := len(c.Pods)
+	c.telemetryBuilder.OtelsvcK8sPodTableSize.Record(context.Background(), int64(podTableSize))
+	c.m.Unlock()
 }
 
 // GetPod takes an IP address or Pod UID and returns the pod the identifier is associated with.
@@ -1463,18 +1466,18 @@ func (c *WatchClient) forgetPod(pod *api_v1.Pod) {
 		id := identifiers[i]
 		p, ok := c.GetPod(id)
 
-		if ok && p.Name == pod.Name {
-			c.appendDeleteQueue(id, pod.Name)
+		if ok && p.PodUID == string(pod.UID) {
+			c.appendDeleteQueue(id, p.PodUID)
 		}
 	}
 }
 
-func (c *WatchClient) appendDeleteQueue(podID PodIdentifier, podName string) {
+func (c *WatchClient) appendDeleteQueue(podID PodIdentifier, podUID string) {
 	c.deleteMut.Lock()
 	c.deleteQueue = append(c.deleteQueue, deleteRequest{
-		id:      podID,
-		podName: podName,
-		ts:      time.Now(),
+		id:     podID,
+		podUID: podUID,
+		ts:     time.Now(),
 	})
 	c.deleteMut.Unlock()
 }

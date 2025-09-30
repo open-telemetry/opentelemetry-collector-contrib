@@ -125,8 +125,10 @@ receivers:
         enabled: true
       db.server.top_query:
         enabled: true
-      max_rows_per_query: 100 
+    query_sample_collection:
+      max_rows_per_query: 100
     top_query_collection:
+      max_rows_per_query: 100
       top_n_query: 100
 ```
 

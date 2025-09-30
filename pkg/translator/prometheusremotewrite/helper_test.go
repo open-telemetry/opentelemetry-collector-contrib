@@ -300,7 +300,7 @@ func Test_createLabelSet(t *testing.T) {
 			orig:           lbs1Dirty,
 			externalLabels: map[string]string{},
 			extras:         []string{label31 + dirty1, value31, label32, value32},
-			want:           getPromLabels(label11+"_", value11, "key_"+label12, value12, label31+"_", value31, label32, value32),
+			want:           getPromLabels(label11+"_", value11, "_"+label12, value12, label31+"_", value31, label32, value32),
 		},
 		{
 			name:           "no_original_case",
@@ -365,7 +365,7 @@ func Test_createLabelSet(t *testing.T) {
 			orig:           lbs3,
 			externalLabels: exlbs1,
 			extras:         []string{label31, value31, label32, value32},
-			want:           getPromLabels(label11, value11, label12, value12, "key"+label51, value51, label41, value41, label31, value31, label32, value32),
+			want:           getPromLabels(label11, value11, label12, value12, label51, value51, label41, value41, label31, value31, label32, value32),
 		},
 	}
 	// run tests
