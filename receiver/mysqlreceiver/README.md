@@ -103,6 +103,6 @@ Details about the logs produced by this receiver can be found in [documentation.
 | Parameter                                | Value                            | Description                                         |
 |------------------------------------------|----------------------------------|-----------------------------------------------------|
 | `performance_schema`                     | Enabled (Required)               | Enable performance schema                           |
-| `max_digest_length`                      | `4096`  (Recommanded)            | Maximum length of digest text                       |
-| `performance_schema_max_digest_length`   | `4096`  (Recommanded)            | Maximum length of digest text on performance schema |
-| `performance_schema_max_sql_text_length` | `4096`  (Recommanded)            | Maximum length of sql text                          |
+| `max_digest_length`                      | `4096`  (Recommended)            | Maximum length of digest text                       |
+| `performance_schema_max_digest_length`   | `4096`  (Recommended)            | Maximum length of digest text on performance schema |
+| `performance_schema_max_sql_text_length` | `4096`  (Recommended)            | Maximum length of sql text                          |
