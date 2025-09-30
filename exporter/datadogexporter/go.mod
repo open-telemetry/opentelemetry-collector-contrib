@@ -23,7 +23,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/util/log v0.72.0-devel
 	github.com/DataDog/datadog-agent/pkg/util/quantile v0.72.0-devel
 	github.com/DataDog/datadog-api-client-go/v2 v2.46.0
-	github.com/DataDog/datadog-go/v5 v5.7.1
+	github.com/DataDog/datadog-go/v5 v5.8.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.136.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.136.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.136.0
@@ -277,7 +277,7 @@ require (
 	github.com/hashicorp/nomad/api v0.0.0-20241218080744-e3ac00f30eec // indirect
 	github.com/hashicorp/serf v0.10.1 // indirect
 	github.com/hectane/go-acl v0.0.0-20230122075934-ca0b05cb1adb // indirect
-	github.com/hetznercloud/hcloud-go/v2 v2.24.0 // indirect
+	github.com/hetznercloud/hcloud-go/v2 v2.25.1 // indirect
 	github.com/iancoleman/strcase v0.3.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/ionos-cloud/sdk-go/v6 v6.3.4 // indirect
