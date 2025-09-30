@@ -266,9 +266,8 @@ This is disabled by default to preserve backward compatibility. To enable this f
 | Span name             | `GET /users/123` | `GET /users/:id`                 |
 | `http.request.method` | `GET`            |                                  |
 | `http.route`          | `/users/:id`     |                                  |
-         
 
-                                                                              
+TODO: Add more examples here.
 
 ### More Examples
 
