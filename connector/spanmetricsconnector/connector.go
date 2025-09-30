@@ -658,11 +658,9 @@ func semConvSpanName(span ptrace.Span) string {
 		if spanName != "" {
 			return spanName
 		}
-	default: // kind internal, unspecified...
-		return span.Name()
 	}
-
-	return "(" + string(span.Kind()) + ")" // high cardinality safe default value
+	// If no semantic convention defines the span name, default to the original span name
+	return span.Name()
 }
 
 // https://opentelemetry.io/docs/specs/semconv/http/http-spans/
