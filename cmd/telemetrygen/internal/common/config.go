@@ -5,6 +5,7 @@ package common
 
 import (
 	"errors"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -17,7 +18,7 @@ import (
 )
 
 var (
-	errFormatOTLPAttributes       = errors.New("value should be in one of the following formats: key=\"value\", key=true, key=false, or key=<integer>")
+	errFormatOTLPAttributes       = errors.New("value should be in one of the following formats: key=\"value\", key=true, key=false, key=<integer>, or key=[<value1>, <value2>, ...]")
 	errDoubleQuotesOTLPAttributes = errors.New("value should be a string wrapped in double quotes")
 )
 
@@ -34,29 +35,67 @@ func (*KeyValue) String() string {
 	return ""
 }
 
+func parseValue(val string) (any, error) {
+	if val == "true" {
+		return true, nil
+	}
+	if val == "false" {
+		return false, nil
+	}
+	if intVal, err := strconv.Atoi(val); err == nil {
+		return intVal, nil
+	}
+	if len(val) < 2 || !strings.HasPrefix(val, "\"") || !strings.HasSuffix(val, "\"") {
+		return nil, errDoubleQuotesOTLPAttributes
+	}
+	return val[1 : len(val)-1], nil
+}
+
 func (v *KeyValue) Set(s string) error {
 	kv := strings.SplitN(s, "=", 2)
 	if len(kv) != 2 {
 		return errFormatOTLPAttributes
 	}
-	val := kv[1]
-	if val == "true" {
-		(*v)[kv[0]] = true
+	key := kv[0]
+
+	if !(strings.HasPrefix(kv[1], "[") && strings.HasSuffix(kv[1], "]")) {
+		val, err := parseValue(kv[1])
+		if err != nil {
+			return err
+		}
+		(*v)[key] = val
 		return nil
-	}
-	if val == "false" {
-		(*v)[kv[0]] = false
-		return nil
-	}
-	if intVal, err := strconv.Atoi(val); err == nil {
-		(*v)[kv[0]] = intVal
-		return nil
-	}
-	if len(val) < 2 || !strings.HasPrefix(val, "\"") || !strings.HasSuffix(val, "\"") {
-		return errDoubleQuotesOTLPAttributes
 	}
 
-	(*v)[kv[0]] = val[1 : len(val)-1]
+	// List of Values
+	content := strings.TrimSpace(kv[1][1 : len(kv[1])-1])
+	if content == "" {
+		(*v)[key] = []string{}
+		return nil
+	}
+
+	var items []string
+	for item := range strings.SplitSeq(content, ",") {
+		items = append(items, strings.TrimSpace(item))
+	}
+
+	firstItem, err := parseValue(items[0])
+	if err != nil {
+		return err
+	}
+	sliceType := reflect.TypeOf(firstItem)
+	slice := reflect.MakeSlice(reflect.SliceOf(sliceType), len(items), len(items))
+	for i, item := range items {
+		val, err := parseValue(item)
+		if err != nil {
+			return err
+		}
+		if reflect.TypeOf(val) != sliceType {
+			return errFormatOTLPAttributes
+		}
+		slice.Index(i).Set(reflect.ValueOf(val))
+	}
+	(*v)[key] = slice.Interface()
 	return nil
 }
 
