@@ -24,7 +24,7 @@ func NewSettings(tt *componenttest.Telemetry) receiver.Settings {
 func AssertEqualKafkaBrokerClosed(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_kafka_broker_closed",
-		Description: "The total number of connections closed.",
+		Description: "The total number of connections closed. [development]",
 		Unit:        "1",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -40,7 +40,7 @@ func AssertEqualKafkaBrokerClosed(t *testing.T, tt *componenttest.Telemetry, dps
 func AssertEqualKafkaBrokerConnects(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_kafka_broker_connects",
-		Description: "The total number of connections opened.",
+		Description: "The total number of connections opened. [development]",
 		Unit:        "1",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -71,7 +71,7 @@ func AssertEqualKafkaBrokerThrottlingDuration(t *testing.T, tt *componenttest.Te
 func AssertEqualKafkaBrokerThrottlingLatency(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[float64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_kafka_broker_throttling_latency",
-		Description: "The throttling latency in seconds imposed by the broker when receiving records.",
+		Description: "The throttling latency in seconds imposed by the broker when receiving records. [development]",
 		Unit:        "s",
 		Data: metricdata.Histogram[float64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -86,7 +86,7 @@ func AssertEqualKafkaBrokerThrottlingLatency(t *testing.T, tt *componenttest.Tel
 func AssertEqualKafkaReceiverBytes(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_kafka_receiver_bytes",
-		Description: "The size in bytes of received records seen by the broker.",
+		Description: "The size in bytes of received records seen by the broker. [development]",
 		Unit:        "By",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -102,7 +102,7 @@ func AssertEqualKafkaReceiverBytes(t *testing.T, tt *componenttest.Telemetry, dp
 func AssertEqualKafkaReceiverBytesUncompressed(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_kafka_receiver_bytes_uncompressed",
-		Description: "The uncompressed size in bytes of received records seen by the client.",
+		Description: "The uncompressed size in bytes of received records seen by the client. [development]",
 		Unit:        "By",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -118,7 +118,7 @@ func AssertEqualKafkaReceiverBytesUncompressed(t *testing.T, tt *componenttest.T
 func AssertEqualKafkaReceiverCurrentOffset(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_kafka_receiver_current_offset",
-		Description: "Current message offset",
+		Description: "Current message offset [development]",
 		Unit:        "1",
 		Data: metricdata.Gauge[int64]{
 			DataPoints: dps,
@@ -163,7 +163,7 @@ func AssertEqualKafkaReceiverMessages(t *testing.T, tt *componenttest.Telemetry,
 func AssertEqualKafkaReceiverOffsetLag(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_kafka_receiver_offset_lag",
-		Description: "Current offset lag",
+		Description: "Current offset lag [development]",
 		Unit:        "1",
 		Data: metricdata.Gauge[int64]{
 			DataPoints: dps,
@@ -177,7 +177,7 @@ func AssertEqualKafkaReceiverOffsetLag(t *testing.T, tt *componenttest.Telemetry
 func AssertEqualKafkaReceiverPartitionClose(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_kafka_receiver_partition_close",
-		Description: "Number of finished partitions",
+		Description: "Number of finished partitions [development]",
 		Unit:        "1",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -193,7 +193,7 @@ func AssertEqualKafkaReceiverPartitionClose(t *testing.T, tt *componenttest.Tele
 func AssertEqualKafkaReceiverPartitionStart(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_kafka_receiver_partition_start",
-		Description: "Number of started partitions",
+		Description: "Number of started partitions [development]",
 		Unit:        "1",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -209,7 +209,7 @@ func AssertEqualKafkaReceiverPartitionStart(t *testing.T, tt *componenttest.Tele
 func AssertEqualKafkaReceiverReadLatency(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[float64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_kafka_receiver_read_latency",
-		Description: "The time it took in seconds to receive a batch of records.",
+		Description: "The time it took in seconds to receive a batch of records. [development]",
 		Unit:        "s",
 		Data: metricdata.Histogram[float64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -224,7 +224,7 @@ func AssertEqualKafkaReceiverReadLatency(t *testing.T, tt *componenttest.Telemet
 func AssertEqualKafkaReceiverRecords(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_kafka_receiver_records",
-		Description: "The number of received records.",
+		Description: "The number of received records. [development]",
 		Unit:        "1",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -240,7 +240,7 @@ func AssertEqualKafkaReceiverRecords(t *testing.T, tt *componenttest.Telemetry, 
 func AssertEqualKafkaReceiverRecordsDelay(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[float64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_kafka_receiver_records_delay",
-		Description: "The time in seconds between producing and receiving a batch of records.",
+		Description: "The time in seconds between producing and receiving a batch of records. [development]",
 		Unit:        "s",
 		Data: metricdata.Histogram[float64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -255,7 +255,7 @@ func AssertEqualKafkaReceiverRecordsDelay(t *testing.T, tt *componenttest.Teleme
 func AssertEqualKafkaReceiverUnmarshalFailedLogRecords(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_kafka_receiver_unmarshal_failed_log_records",
-		Description: "Number of log records failed to be unmarshaled",
+		Description: "Number of log records failed to be unmarshaled [development]",
 		Unit:        "1",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -271,7 +271,7 @@ func AssertEqualKafkaReceiverUnmarshalFailedLogRecords(t *testing.T, tt *compone
 func AssertEqualKafkaReceiverUnmarshalFailedMetricPoints(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_kafka_receiver_unmarshal_failed_metric_points",
-		Description: "Number of metric points failed to be unmarshaled",
+		Description: "Number of metric points failed to be unmarshaled [development]",
 		Unit:        "1",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -287,7 +287,7 @@ func AssertEqualKafkaReceiverUnmarshalFailedMetricPoints(t *testing.T, tt *compo
 func AssertEqualKafkaReceiverUnmarshalFailedProfiles(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_kafka_receiver_unmarshal_failed_profiles",
-		Description: "Number of profiles failed to be unmarshaled",
+		Description: "Number of profiles failed to be unmarshaled [development]",
 		Unit:        "1",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -303,7 +303,7 @@ func AssertEqualKafkaReceiverUnmarshalFailedProfiles(t *testing.T, tt *component
 func AssertEqualKafkaReceiverUnmarshalFailedSpans(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_kafka_receiver_unmarshal_failed_spans",
-		Description: "Number of spans failed to be unmarshaled",
+		Description: "Number of spans failed to be unmarshaled [development]",
 		Unit:        "1",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,

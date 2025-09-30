@@ -6,6 +6,7 @@ package k8sobjectsreceiver // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"errors"
 	"fmt"
+	"maps"
 	"strings"
 	"time"
 
@@ -176,9 +177,7 @@ func (k *K8sObjectsConfig) DeepCopy() *K8sObjectsConfig {
 	}
 
 	copied.exclude = make(map[apiWatch.EventType]bool)
-	for key, val := range k.exclude {
-		copied.exclude[key] = val
-	}
+	maps.Copy(copied.exclude, k.exclude)
 
 	if k.gvr != nil {
 		copied.gvr = &schema.GroupVersionResource{
