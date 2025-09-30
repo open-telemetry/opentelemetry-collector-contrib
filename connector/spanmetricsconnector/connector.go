@@ -626,26 +626,27 @@ func inferSpanName(span ptrace.Span) string {
 			return httpRequestMethodVal.AsString()
 		}
 
-		if rpcMethodVal, ok := span.Attributes().Get(string(semconv.RPCMethodKey)); ok {
-			// https://opentelemetry.io/docs/specs/semconv/rpc/rpc-spans/
-			if rpcServiceVal, okRPCService := span.Attributes().Get(string(semconv.RPCServiceKey)); okRPCService {
-				return rpcServiceVal.AsString() + "/" + rpcMethodVal.AsString()
+		if rpcSystemVal, ok := span.Attributes().Get(string(semconv.RPCSystemKey)); ok {
+			if rpcSpanName, ok2 := getRPCSpanName(span); ok2 {
+				return rpcSpanName.AsString()
 			}
-			return rpcMethodVal.AsString()
+			return "(" + rpcSystemVal.AsString() + ")"
 		}
 
-		// TODO should we use a high cardinality proof default value?
-		return span.Name()
+		if messagingSystemVal, ok := span.Attributes().Get(string(semconv.MessagingSystemKey)); ok {
+			if rpcSpanName, ok2 := getMessagingSpanName(span); ok2 {
+				return rpcSpanName.AsString()
+			}
+			return "(" + messagingSystemVal.AsString() + ")"
+		}
 
 	case ptrace.SpanKindProducer:
-		if _, ok := span.Attributes().Get(string(semconv.MessagingSystemKey)); ok {
+		if messagingSystemVal, ok := span.Attributes().Get(string(semconv.MessagingSystemKey)); ok {
 			if messagingSpanName, ok2 := getMessagingSpanName(span); ok2 {
 				return messagingSpanName.AsString()
 			}
-			return "messaging"
+			return "(" + messagingSystemVal.AsString() + ")"
 		}
-		// TODO should we use a high cardinality proof default value?
-		return span.Name()
 
 	case ptrace.SpanKindClient:
 		if httpRequestMethodVal, ok := getAttributeValue(span, string(semconv.HTTPRequestMethodKey), "http.method"); ok {
@@ -656,64 +657,72 @@ func inferSpanName(span ptrace.Span) string {
 			return httpRequestMethodVal.AsString()
 		}
 
-		if rpcMethodVal, ok := span.Attributes().Get(string(semconv.RPCMethodKey)); ok {
-			// https://opentelemetry.io/docs/specs/semconv/rpc/rpc-spans/
-			if rpcServiceVal, okRPCService := span.Attributes().Get(string(semconv.RPCServiceKey)); okRPCService {
-				return rpcServiceVal.AsString() + "/" + rpcMethodVal.AsString()
+		if rpcSystemVal, ok := span.Attributes().Get(string(semconv.RPCSystemKey)); ok {
+			if rpcSpanName, ok2 := getRPCSpanName(span); ok2 {
+				return rpcSpanName.AsString()
 			}
-			return rpcMethodVal.AsString()
+			return "(" + rpcSystemVal.AsString() + ")"
 		}
 
 		if dbSystemName, ok := getAttributeValue(span, string(semconv.DBSystemNameKey), "db.system"); ok {
-			// https://opentelemetry.io/docs/specs/semconv/database/database-spans/
-			res := ""
-			if dbOperationNameVal, okDbOperationName := getAttributeValue(span, string(semconv.DBOperationNameKey), "db.operation"); okDbOperationName {
-				res += dbOperationNameVal.AsString() + " "
+			if databaseCallIdentifierVal, ok2 := getDBCallSpanName(span); ok2 {
+				return databaseCallIdentifierVal.AsString()
 			}
-			if dbNamespaceVal, okDbNamespace := span.Attributes().Get(string(semconv.DBNamespaceKey)); okDbNamespace {
-				res += dbNamespaceVal.AsString() + "."
-			}
-			if dbCollectionNameVal, okDbCollectionName := getAttributeValue(span, string(semconv.DBCollectionNameKey), "db.name"); okDbCollectionName {
-				res += dbCollectionNameVal.AsString()
-			}
-			if res == "" {
-				res = dbSystemName.AsString() // fallback. Showing the db system name may be useful
-			}
-			return res
+			return "(" + dbSystemName.AsString() + ")"
 		}
 
-		if _, ok := span.Attributes().Get(string(semconv.MessagingSystemKey)); ok {
+		if messagingSystemNameVal, ok := span.Attributes().Get(string(semconv.MessagingSystemKey)); ok {
 			if messagingSpanName, ok2 := getMessagingSpanName(span); ok2 {
 				return messagingSpanName.AsString()
 			}
-			return "messaging"
+			return "(" + messagingSystemNameVal.AsString() + ")"
 		}
-		// TODO should we use a high cardinality proof default value?
-		return span.Name()
 
 	case ptrace.SpanKindConsumer:
-		if _, ok := span.Attributes().Get(string(semconv.MessagingSystemKey)); ok {
+		if messagingSystemVal, ok := span.Attributes().Get(string(semconv.MessagingSystemKey)); ok {
 			if messagingSpanName, ok2 := getMessagingSpanName(span); ok2 {
 				return messagingSpanName.AsString()
 			}
-			return "messaging"
+			return "(" + messagingSystemVal.AsString() + ")"
 		}
-		// TODO should we use a high cardinality proof default value?
-		return span.Name()
-
-	default:
-		// TODO should we use a high cardinality proof default value?
-		return span.Name()
 	}
+	return "(" + string(span.Kind()) + ")" // high cardinality safe default value
 }
 
-func getAttributeValue(span ptrace.Span, attrNames ...string) (pcommon.Value, bool) {
-	for _, name := range attrNames {
-		if val, ok := span.Attributes().Get(name); ok {
-			return val, true
-		}
+func getDBCallSpanName(span ptrace.Span) (pcommon.Value, bool) {
+	// https://opentelemetry.io/docs/specs/semconv/database/database-spans/
+	databaseCallIdentifier := ""
+	if dbOperationNameVal, okDbOperationName := getAttributeValue(span, string(semconv.DBOperationNameKey), "db.operation"); okDbOperationName {
+		databaseCallIdentifier += dbOperationNameVal.AsString() + " "
 	}
-	return pcommon.Value{}, false
+	if dbNamespaceVal, okDbNamespace := span.Attributes().Get(string(semconv.DBNamespaceKey)); okDbNamespace {
+		databaseCallIdentifier += dbNamespaceVal.AsString() + "."
+	}
+	if dbCollectionNameVal, okDbCollectionName := getAttributeValue(span, string(semconv.DBCollectionNameKey), "db.name"); okDbCollectionName {
+		databaseCallIdentifier += dbCollectionNameVal.AsString()
+	}
+	if databaseCallIdentifier == "" {
+		return pcommon.NewValueStr("(unknown)"), false
+	}
+	return pcommon.NewValueStr(databaseCallIdentifier), true
+}
+
+func getRPCSpanName(span ptrace.Span) (pcommon.Value, bool) {
+	// https://opentelemetry.io/docs/specs/semconv/rpc/rpc-spans/
+	rpcMethodVal, okRPCMethod := getAttributeValue(span, string(semconv.RPCMethodKey), "rpc.grpc.method")
+	rpcServiceVal, okRPCService := getAttributeValue(span, string(semconv.RPCServiceKey), "rpc.grpc.service")
+
+	if okRPCMethod && okRPCService {
+		return pcommon.NewValueStr(rpcServiceVal.AsString() + "/" + rpcMethodVal.AsString()), true
+	}
+
+	if okRPCMethod {
+		return rpcMethodVal, true
+	}
+	if okRPCService {
+		return pcommon.NewValueStr(rpcServiceVal.AsString() + "/*"), true
+	}
+	return pcommon.NewValueStr("(unknown)"), false
 }
 
 func getMessagingSpanName(span ptrace.Span) (pcommon.Value, bool) {
@@ -733,8 +742,7 @@ func getMessagingSpanName(span ptrace.Span) (pcommon.Value, bool) {
 		return messagingOperationNameVal, true
 	}
 
-	// TODO should we use a high cardinality proof default value?
-	return pcommon.Value{}, false
+	return pcommon.NewValueStr("(unknown)"), false
 }
 
 func getMessagingDestination(span ptrace.Span) (pcommon.Value, bool) {
@@ -745,7 +753,8 @@ func getMessagingDestination(span ptrace.Span) (pcommon.Value, bool) {
 	}
 
 	if messagingDestinationAnonymousVal, okMessagingDestinationAnonymous := span.Attributes().Get(string(semconv.MessagingDestinationAnonymousKey)); okMessagingDestinationAnonymous {
-		// anonymous destinations should be lso marked as temporary by the messaging instrumentation
+		// anonymous destinations should also be marked as temporary by the messaging instrumentation
+		// double check in case the instrumentation forgot to mark the anonymous destination as temporary
 		if messagingDestinationAnonymousVal.Bool() {
 			return pcommon.NewValueStr("(anonymous)"), true
 		}
@@ -760,9 +769,22 @@ func getMessagingDestination(span ptrace.Span) (pcommon.Value, bool) {
 	}
 
 	if serverAddressVal, okServerAddress := span.Attributes().Get(string(semconv.ServerAddressKey)); okServerAddress {
+		// TODO get server.port
 		return serverAddressVal, true
 	}
 
+	return pcommon.NewValueStr("(unknown)"), false
+}
+
+func getAttributeValue(span ptrace.Span, attrName string, attrNameAliases ...string) (pcommon.Value, bool) {
+	if val, ok := span.Attributes().Get(attrName); ok {
+		return val, true
+	}
+	for _, name := range attrNameAliases {
+		if val, ok := span.Attributes().Get(name); ok {
+			return val, true
+		}
+	}
 	return pcommon.Value{}, false
 }
 

@@ -2411,12 +2411,12 @@ func Test_inferSpanName(t *testing.T) {
 		},
 		{
 			name:                   "Fix for https://github.com/open-telemetry/opentelemetry-python-contrib/issues/1914",
-			currentSpanName:        "GET /resouce/9ea43cd7-bd77-494d-8fac-209c0dc7a438",
+			currentSpanName:        "GET /resource/9ea43cd7-bd77-494d-8fac-209c0dc7a438",
 			instrumentationLibrary: "opentelemetry.instrumentation.pyramid.callbacks:",
 			kind:                   ptrace.SpanKindServer,
 			addAttributes: func(attrs pcommon.Map) {
 				attrs.PutStr("http.method", "GET")
-				attrs.PutStr("http.target", "/resouce/9ea43cd7-bd77-494d-8fac-209c0dc7a438")
+				attrs.PutStr("http.target", "/resource/9ea43cd7-bd77-494d-8fac-209c0dc7a438")
 			},
 			want: "GET",
 		},
@@ -2486,12 +2486,13 @@ func Test_inferSpanName(t *testing.T) {
 				attrs.PutStr("db.system", "redis")
 				attrs.PutStr("server.address", "valkey-cart")
 			},
-			want: "redis",
+			want: "(redis)",
 		},
 		{
 			name:                   "DB client - OTel Demo - accounting",
 			currentSpanName:        "otel",
 			instrumentationLibrary: "NpgsqlLibrary:0.1.0",
+			kind:                   ptrace.SpanKindClient,
 			addAttributes: func(attrs pcommon.Map) {
 				attrs.PutStr("db.system", "postgresql")
 				attrs.PutInt("db.connection_id", 54)
@@ -2541,7 +2542,7 @@ VALUES (@p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16);
 			want: "oteldemo.AdService/GetAds",
 		},
 
-		// MESSAGING KAFKA
+		// MESSAGING - KAFKA
 		{
 			name:                   "Messaging OTel Demo - accounting - ",
 			currentSpanName:        "orders receive",
@@ -2607,11 +2608,12 @@ VALUES (@p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16);
 			want: "publish orders",
 		},
 
-		// MESSAGING RABBIT MQ
+		// MESSAGING - RABBIT MQ
 		{
-			name:            "Messaging span with messaging.system, messaging.operation, and messaging.destination.name TODO - io.opentelemetry.rabbitmq-2.7:2.20.0-alpha",
-			currentSpanName: "process ecommerce-exchange",
-			kind:            ptrace.SpanKindConsumer,
+			name:                   "Messaging consumer span with messaging.system, messaging.operation, and messaging.destination.name",
+			currentSpanName:        "process ecommerce-exchange",
+			instrumentationLibrary: "io.opentelemetry.rabbitmq-2.7:2.20.0-alpha",
+			kind:                   ptrace.SpanKindConsumer,
 			addAttributes: func(attrs pcommon.Map) {
 				attrs.PutStr("messaging.system", "rabbitmq")
 				attrs.PutStr("messaging.destination.name", "ecommerce-exchange")
@@ -2621,9 +2623,10 @@ VALUES (@p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16);
 			want: "process ecommerce-exchange",
 		},
 		{
-			name:            "Messaging span with messaging.system and messaging.operation - io.opentelemetry.spring-rabbit-1.0:2.20-alpha",
-			currentSpanName: "process queue.order",
-			kind:            ptrace.SpanKindConsumer,
+			name:                   "Messaging consumer span with messaging.system, messaging.operation, and messaging.destination.name",
+			currentSpanName:        "process queue.order",
+			instrumentationLibrary: "io.opentelemetry.spring-rabbit-1.0:2.20-alpha",
+			kind:                   ptrace.SpanKindConsumer,
 			addAttributes: func(attrs pcommon.Map) {
 				attrs.PutStr("messaging.system", "rabbitmq")
 				attrs.PutStr("messaging.destination.name", "queue.order")
@@ -2632,9 +2635,10 @@ VALUES (@p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16);
 			want: "process queue.order",
 		},
 		{
-			name:            "Messaging span with messaging.system and messaging.operation TODO - io.opentelemetry.rabbitmq-2.7:2.20-alpha",
-			currentSpanName: "publish ecommerce-exchange",
-			kind:            ptrace.SpanKindProducer,
+			name:                   "Messaging producer span with messaging.system, messaging.operation, and messaging.destination.name",
+			currentSpanName:        "publish ecommerce-exchange",
+			instrumentationLibrary: "io.opentelemetry.rabbitmq-2.7:2.20.0-alpha",
+			kind:                   ptrace.SpanKindProducer,
 			addAttributes: func(attrs pcommon.Map) {
 				attrs.PutStr("messaging.system", "rabbitmq")
 				attrs.PutStr("messaging.destination.name", "ecommerce-exchange")
@@ -2657,19 +2661,21 @@ VALUES (@p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16);
 
 func Test_getAttributeValue(t *testing.T) {
 	tests := []struct {
-		name           string
-		spanName       string
-		kind           ptrace.SpanKind
-		attributeNames []string
-		addAttributes  func(pcommon.Map)
-		wantVal        string
-		wantOk         bool
+		name                 string
+		spanName             string
+		kind                 ptrace.SpanKind
+		attributeName        string
+		attributeNameAliases []string
+		addAttributes        func(pcommon.Map)
+		wantVal              string
+		wantOk               bool
 	}{
 		{
-			name:           "HTTP server span with both http.request.method and http.route",
-			spanName:       "GET /users/:id",
-			kind:           ptrace.SpanKindServer,
-			attributeNames: []string{"http.request.method", "http.method"},
+			name:                 "HTTP server span with both http.request.method and http.route",
+			spanName:             "GET /users/:id",
+			kind:                 ptrace.SpanKindServer,
+			attributeName:        "http.request.method",
+			attributeNameAliases: []string{"http.method"},
 			addAttributes: func(attrs pcommon.Map) {
 				attrs.PutStr("http.request.method", "GET")
 				attrs.PutStr("http.route", "/users/:id")
@@ -2686,9 +2692,9 @@ func Test_getAttributeValue(t *testing.T) {
 			span.SetKind(tt.kind)
 			tt.addAttributes(span.Attributes())
 
-			gotVal, gotOk := getAttributeValue(span, tt.attributeNames...)
-			assert.Equalf(t, tt.wantOk, gotOk, "getAttributeValue(%v)", tt.attributeNames)
-			assert.Equalf(t, tt.wantVal, gotVal.AsString(), "getAttributeValue(%v)", tt.attributeNames)
+			gotVal, gotOk := getAttributeValue(span, tt.attributeName, tt.attributeNameAliases...)
+			assert.Equalf(t, tt.wantOk, gotOk, "getAttributeValue(%v, %v)", tt.attributeName, tt.attributeNameAliases)
+			assert.Equalf(t, tt.wantVal, gotVal.AsString(), "getAttributeValue(%v, %v)", tt.attributeName, tt.attributeNameAliases)
 		})
 	}
 }
@@ -2753,6 +2759,62 @@ func Test_getMessagingDestination(t *testing.T) {
 			gotVal, gotOk := getMessagingDestination(span)
 			assert.Equalf(t, tt.wantOk, gotOk, "getMessagingDestination(%v)", span)
 			assert.Equalf(t, tt.wantVal, gotVal.AsString(), "getMessagingDestination(%v)", span)
+		})
+	}
+}
+
+func Test_getRPCSpanName(t *testing.T) {
+	tests := []struct {
+		name                   string
+		spanName               string
+		instrumentationLibrary string
+		kind                   ptrace.SpanKind
+		attributeNames         []string
+		addAttributes          func(pcommon.Map)
+		wantVal                string
+		wantOk                 bool
+	}{
+		{
+			name:                   "GRPC OTel Demo - checkout",
+			spanName:               "oteldemo.CartService/GetCart",
+			instrumentationLibrary: "go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc:0.63.0",
+			kind:                   ptrace.SpanKindClient,
+			addAttributes: func(attrs pcommon.Map) {
+				attrs.PutInt("rpc.grpc.status_code", 0)
+				attrs.PutStr("rpc.grpc.method", "GetCart")
+				attrs.PutStr("rpc.grpc.service", "oteldemo.CartService")
+				attrs.PutStr("rpc.system", "grpc")
+				attrs.PutStr("server.address", "127.18.0.18")
+			},
+			wantVal: "oteldemo.CartService/GetCart",
+			wantOk:  true,
+		},
+		{
+			name:                   "GRPC OTel Demo - ad",
+			spanName:               "oteldemo.AdService/GetAds",
+			instrumentationLibrary: "io.opentelemetry.grpc-1.6:2.20.0-alpha",
+			kind:                   ptrace.SpanKindServer,
+			addAttributes: func(attrs pcommon.Map) {
+				attrs.PutInt("rpc.grpc.status_code", 0)
+				attrs.PutStr("rpc.grpc.method", "GetAds")
+				attrs.PutStr("rpc.grpc.service", "oteldemo.AdService")
+				attrs.PutStr("rpc.system", "grpc")
+				attrs.PutStr("server.address", "ad")
+			},
+			wantVal: "oteldemo.AdService/GetAds",
+			wantOk:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			span := ptrace.NewSpan()
+			span.SetName(tt.spanName)
+			span.SetKind(tt.kind)
+			tt.addAttributes(span.Attributes())
+			gotVal, gotOk := getRPCSpanName(span)
+			assert.Equalf(t, tt.wantOk, gotOk, "getRPCSpanName(%v)", span)
+			assert.Equalf(t, tt.wantVal, gotVal.AsString(), "getRPCSpanName(%v)", span)
 		})
 	}
 }
