@@ -501,9 +501,20 @@ func (t *transaction) initTransaction(lbs labels.Labels) (*resourceKey, error) {
 	// Get the original job name from the target labels (before metric relabeling)
 	// This ensures we report the correct job name to the target allocator
 	if t.originalJobName == "" {
+		// Try to get job name from target labels first
 		t.originalJobName = target.GetValue(model.JobLabel)
+
+		// Debug: log target info to understand what's available
+		builder := labels.NewBuilder(labels.EmptyLabels())
+		targetLabels := target.Labels(builder)
+		discoveredLabels := target.DiscoveredLabels(labels.NewBuilder(labels.EmptyLabels()))
+
+		t.logger.Info("initTransaction: target info",
+			zap.String("job_from_target_labels", t.originalJobName),
+			zap.String("instance_from_target", target.GetValue(model.InstanceLabel)),
+			zap.String("target_labels", targetLabels.String()),
+			zap.String("discovered_labels", discoveredLabels.String()))
 	}
-	t.logger.Info("initTransaction: original job name", zap.String("job", t.originalJobName))
 
 	rKey, err := t.getJobAndInstance(lbs)
 	if err != nil {
