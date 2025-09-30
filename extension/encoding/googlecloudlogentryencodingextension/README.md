@@ -272,3 +272,17 @@ See the struct of the Cloud Audit Log payload in [AuditLog](https://cloud.google
 | `dest_vpc.subnetwork_region` | `gcp.vpc.flow.destination.subnet.region` |
 | `dest_vpc.vpc_name` | `gcp.vpc.flow.destination.vpc.name` |
 | `internet_routing_details.egress_as_path.as_details.asn` | `gcp.vpc.flow.egress.as_paths.as_details.asn` |
+| `load_balancing.forwarding_rule_project_id` | `gcp.vpc.flow.load_balancing.forwarding_rule.project.id` |
+| `load_balancing.reporter` | `gcp.vpc.flow.load_balancing.reporter` |
+| `load_balancing.type` | `gcp.vpc.flow.load_balancing.type` |
+| `load_balancing.scheme` | `gcp.vpc.flow.load_balancing.scheme` |
+| `load_balancing.url_map_name` | `gcp.vpc.flow.load_balancing.url_map.name` |
+| `load_balancing.forwarding_rule_name` | `gcp.vpc.flow.load_balancing.forwarding_rule.name` |
+| `load_balancing.backend_service_name` | `gcp.vpc.flow.load_balancing.backend_service.name` |
+| `load_balancing.backend_group_name` | `gcp.vpc.flow.load_balancing.backend_group.name` |
+| `load_balancing.backend_group_type` | `gcp.vpc.flow.load_balancing.backend_group.type` |
+| `load_balancing.backend_group_location` | `gcp.vpc.flow.load_balancing.backend_group.location` |
+| `load_balancing.vpc.project_id` | `gcp.vpc.flow.load_balancing.vpc.project.id` |
+| `load_balancing.vpc.subnetwork_name` | `gcp.vpc.flow.load_balancing.vpc.subnet.name` |
+| `load_balancing.vpc.subnetwork_region` | `gcp.vpc.flow.load_balancing.vpc.subnet.region` |
+| `load_balancing.vpc.vpc_name` | `gcp.vpc.flow.load_balancing.vpc.name` |
