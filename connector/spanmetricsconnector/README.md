@@ -138,9 +138,7 @@ The following settings can be optionally configured:
   - `dimensions`: (mandatory if `enabled`) the list of the span's event attributes to add as dimensions to the `traces.span.metrics.events` metric, which will be included _on top of_ the common and configured `dimensions` for span attributes and resource attributes.
 - `resource_metrics_key_attributes`: Filter the resource attributes used to produce the resource metrics key map hash. Use this in case changing resource attributes (e.g. process id) are breaking counter metrics.
 - `aggregation_cardinality_limit` (default: `0`): Defines the maximum number of unique combinations of dimensions that will be tracked for metrics aggregation. When the limit is reached, additional unique combinations will be dropped but registered under a new entry with `otel.metric.overflow="true"`. A value of `0` means no limit is applied.
-- `span_name_semantic_convention` (default: `false`): When enabled, the connector will use the [OpenTelemetry Semantic Conventions for Span names](https://opentelemetry.io/docs/reference/specification/trace/semantic_conventions/span-general/#span-name) to populate the `span.name` dimension. If disabled, the raw span name will be used.
-  
-  For example, an HTTP server span with the name `GET /api/users` will be converted to `/api/users` when this option is enabled. 
+- `span_name_semantic_convention` (default: `false`): When enabled, the connector will use the [OpenTelemetry Semantic Conventions for Span names](https://opentelemetry.io/docs/reference/specification/trace/semantic_conventions/span-general/#span-name) to populate the `span.name` dimension. If disabled, the raw span name will be used. See [Using `spanmetrics` with semantic conventions for span names](#using-spanmetrics-with-semantic-conventions-for-span-names) for more details.
 
 The feature gate `connector.spanmetrics.legacyMetricNames` (disabled by default) controls the connector to use legacy metric names.
 
@@ -250,6 +248,27 @@ For example:
 target_info{job="shippingservice", instance="...", ...} 1
 calls_total{span_name="/Address", service_name="shippingservice", span_kind="SPAN_KIND_SERVER", status_code="STATUS_CODE_UNSET", ...} 142
 ```
+
+### Using `spanmetrics` with semantic conventions for span names
+
+The `spanmetrics` connector can be configured to use the [OpenTelemetry Semantic Conventions for Span names](https://opentelemetry.io/docs/reference/specification/trace/semantic_conventions/span-general/#span-name) to populate the `span.name` dimension.
+
+This is disabled by default to preserve backward compatibility. To enable this feature, set the `span_name_semantic_convention` option to `true`.
+
+```yamlconnectors:
+  spanmetrics:
+    span_name_semantic_convention: true
+```
+
+|                       | Before           | Override value for `spanmetrics` |
+|-----------------------|------------------|----------------------------------|
+| Span kind             | `SERVER`         |                                  |
+| Span name             | `GET /users/123` | `GET /users/:id`                 |
+| `http.request.method` | `GET`            |                                  |
+| `http.route`          | `/users/:id`     |                                  |
+         
+
+                                                                              
 
 ### More Examples
 
