@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/confmap"
@@ -23,27 +22,11 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "default",
 			want: DefaultMetricsBuilderConfig(),
 		},
-		{
-			name: "all_set",
-			want: MetricsBuilderConfig{
-				Metrics: MetricsConfig{
-					CiscoDeviceConnected: MetricConfig{Enabled: true},
-				},
-			},
-		},
-		{
-			name: "none_set",
-			want: MetricsBuilderConfig{
-				Metrics: MetricsConfig{
-					CiscoDeviceConnected: MetricConfig{Enabled: false},
-				},
-			},
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}))
+			diff := cmp.Diff(tt.want, cfg)
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}

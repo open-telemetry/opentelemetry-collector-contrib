@@ -10,21 +10,6 @@ status:
 
 resource_attributes:
 
-attributes:
-  host:
-    description: The Cisco device hostname or IP address
-    type: string
-    enabled: true
-
-metrics:
-  cisco.device.connected:
-    enabled: true
-    description: Device connectivity status (1=connected, 0=disconnected)
-    unit: "1"
-    gauge:
-      value_type: int
-    attributes: [host]
-
 tests:
   config:
     collection_interval: 60s
