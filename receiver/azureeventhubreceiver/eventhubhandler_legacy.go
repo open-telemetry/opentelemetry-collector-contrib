@@ -69,9 +69,11 @@ func (h *hubWrapperLegacyImpl) Receive(ctx context.Context, partitionID string, 
 	if applyOffset && h.config.Offset != "" {
 		receiverOptions = append(receiverOptions, eventhub.ReceiveWithStartingOffset(h.config.Offset))
 	}
-
 	if h.config.ConsumerGroup != "" {
 		receiverOptions = append(receiverOptions, eventhub.ReceiveWithConsumerGroup(h.config.ConsumerGroup))
+	}
+	if h.config.StorageID == nil && (applyOffset == false || h.config.Offset == "") {
+		receiverOptions = append(receiverOptions, eventhub.ReceiveWithLatestOffset())
 	}
 
 	if h.hub != nil {
