@@ -2655,7 +2655,7 @@ VALUES (@p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16);
 			span.SetName(tt.currentSpanName)
 			span.SetKind(tt.kind)
 			tt.addAttributes(span.Attributes())
-			assert.Equal(t, tt.want, inferSpanName(span))
+			assert.Equal(t, tt.want, semConvSpanName(span))
 		})
 	}
 }
@@ -2693,22 +2693,21 @@ func Test_getAttributeValue(t *testing.T) {
 			span.SetKind(tt.kind)
 			tt.addAttributes(span.Attributes())
 
-			gotVal, gotOk := getAttributeValue(span, tt.attributeName, tt.deprecatedAttributeName)
-			assert.Equalf(t, tt.wantOk, gotOk, "getAttributeValue(%v, %v)", tt.attributeName, tt.deprecatedAttributeName)
-			assert.Equalf(t, tt.wantVal, gotVal.AsString(), "getAttributeValue(%v, %v)", tt.attributeName, tt.deprecatedAttributeName)
+			gotVal, gotOk := attributeValue(span, tt.attributeName, tt.deprecatedAttributeName)
+			assert.Equalf(t, tt.wantOk, gotOk, "attributeValue(%v, %v)", tt.attributeName, tt.deprecatedAttributeName)
+			assert.Equalf(t, tt.wantVal, gotVal.AsString(), "attributeValue(%v, %v)", tt.attributeName, tt.deprecatedAttributeName)
 		})
 	}
 }
 
-func Test_getMessagingDestination(t *testing.T) {
+func Test_messagingDestination(t *testing.T) {
 	tests := []struct {
 		name           string
 		spanName       string
 		kind           ptrace.SpanKind
 		attributeNames []string
 		addAttributes  func(pcommon.Map)
-		wantVal        string
-		wantOk         bool
+		want           string
 	}{
 		{
 			name:     "Templated queue",
@@ -2719,8 +2718,7 @@ func Test_getMessagingDestination(t *testing.T) {
 				attrs.PutStr("messaging.destination.template", "/customers/{customerId}")
 				attrs.PutStr("messaging.destination.name", "/customers/123456")
 			},
-			wantVal: "/customers/{customerId}",
-			wantOk:  true,
+			want: "/customers/{customerId}",
 		},
 		{
 			name:     "Temporary queue",
@@ -2731,8 +2729,7 @@ func Test_getMessagingDestination(t *testing.T) {
 				attrs.PutStr("messaging.destination.name", "amq.gen-JzTY20BRgKO-HjmUJj0wLg")
 				attrs.PutBool("messaging.destination.temporary", true)
 			},
-			wantVal: "(temporary)",
-			wantOk:  true,
+			want: "(temporary)",
 		},
 		{
 			name:     "Anonymous queue",
@@ -2745,8 +2742,7 @@ func Test_getMessagingDestination(t *testing.T) {
 				// anonymous queues should also have messaging.destination.temporary:true
 				// but we omit it for the unit test to test the robustness of the logic
 			},
-			wantVal: "(anonymous)",
-			wantOk:  true,
+			want: "(anonymous)",
 		},
 	}
 
@@ -2757,9 +2753,8 @@ func Test_getMessagingDestination(t *testing.T) {
 			span.SetKind(tt.kind)
 			tt.addAttributes(span.Attributes())
 
-			gotVal, gotOk := getMessagingDestination(span)
-			assert.Equalf(t, tt.wantOk, gotOk, "getMessagingDestination(%v)", span)
-			assert.Equalf(t, tt.wantVal, gotVal.AsString(), "getMessagingDestination(%v)", span)
+			got := messagingDestination(span)
+			assert.Equalf(t, tt.want, got, "messagingDestination(%v)", span)
 		})
 	}
 }
@@ -2772,8 +2767,7 @@ func Test_getRPCSpanName(t *testing.T) {
 		kind                   ptrace.SpanKind
 		attributeNames         []string
 		addAttributes          func(pcommon.Map)
-		wantVal                string
-		wantOk                 bool
+		want                   string
 	}{
 		{
 			name:                   "GRPC OTel Demo - checkout",
@@ -2787,8 +2781,7 @@ func Test_getRPCSpanName(t *testing.T) {
 				attrs.PutStr("rpc.system", "grpc")
 				attrs.PutStr("server.address", "127.18.0.18")
 			},
-			wantVal: "oteldemo.CartService/GetCart",
-			wantOk:  true,
+			want: "oteldemo.CartService/GetCart",
 		},
 		{
 			name:                   "GRPC OTel Demo - ad",
@@ -2802,8 +2795,7 @@ func Test_getRPCSpanName(t *testing.T) {
 				attrs.PutStr("rpc.system", "grpc")
 				attrs.PutStr("server.address", "ad")
 			},
-			wantVal: "oteldemo.AdService/GetAds",
-			wantOk:  true,
+			want: "oteldemo.AdService/GetAds",
 		},
 	}
 
@@ -2813,9 +2805,8 @@ func Test_getRPCSpanName(t *testing.T) {
 			span.SetName(tt.spanName)
 			span.SetKind(tt.kind)
 			tt.addAttributes(span.Attributes())
-			gotVal, gotOk := getRPCSpanName(span)
-			assert.Equalf(t, tt.wantOk, gotOk, "getRPCSpanName(%v)", span)
-			assert.Equalf(t, tt.wantVal, gotVal.AsString(), "getRPCSpanName(%v)", span)
+			got := rpcSpanName(span)
+			assert.Equalf(t, tt.want, got, "getRPCSpanName(%v)", span)
 		})
 	}
 }
