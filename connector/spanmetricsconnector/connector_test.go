@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/otel/attribute"
 	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -2661,21 +2662,21 @@ VALUES (@p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16);
 
 func Test_getAttributeValue(t *testing.T) {
 	tests := []struct {
-		name                 string
-		spanName             string
-		kind                 ptrace.SpanKind
-		attributeName        string
-		attributeNameAliases []string
-		addAttributes        func(pcommon.Map)
-		wantVal              string
-		wantOk               bool
+		name                    string
+		spanName                string
+		kind                    ptrace.SpanKind
+		attributeName           attribute.Key
+		deprecatedAttributeName string
+		addAttributes           func(pcommon.Map)
+		wantVal                 string
+		wantOk                  bool
 	}{
 		{
-			name:                 "HTTP server span with both http.request.method and http.route",
-			spanName:             "GET /users/:id",
-			kind:                 ptrace.SpanKindServer,
-			attributeName:        "http.request.method",
-			attributeNameAliases: []string{"http.method"},
+			name:                    "HTTP server span with both http.request.method and http.route",
+			spanName:                "GET /users/:id",
+			kind:                    ptrace.SpanKindServer,
+			attributeName:           "http.request.method",
+			deprecatedAttributeName: "http.method",
 			addAttributes: func(attrs pcommon.Map) {
 				attrs.PutStr("http.request.method", "GET")
 				attrs.PutStr("http.route", "/users/:id")
@@ -2692,9 +2693,9 @@ func Test_getAttributeValue(t *testing.T) {
 			span.SetKind(tt.kind)
 			tt.addAttributes(span.Attributes())
 
-			gotVal, gotOk := getAttributeValue(span, tt.attributeName, tt.attributeNameAliases...)
-			assert.Equalf(t, tt.wantOk, gotOk, "getAttributeValue(%v, %v)", tt.attributeName, tt.attributeNameAliases)
-			assert.Equalf(t, tt.wantVal, gotVal.AsString(), "getAttributeValue(%v, %v)", tt.attributeName, tt.attributeNameAliases)
+			gotVal, gotOk := getAttributeValue(span, tt.attributeName, tt.deprecatedAttributeName)
+			assert.Equalf(t, tt.wantOk, gotOk, "getAttributeValue(%v, %v)", tt.attributeName, tt.deprecatedAttributeName)
+			assert.Equalf(t, tt.wantVal, gotVal.AsString(), "getAttributeValue(%v, %v)", tt.attributeName, tt.deprecatedAttributeName)
 		})
 	}
 }

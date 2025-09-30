@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/otel/attribute"
 	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 	"go.uber.org/zap"
 
@@ -615,90 +616,102 @@ func (p *connectorImp) spanName(span ptrace.Span) string {
 	return span.Name()
 }
 
+func buildSpanName(span ptrace.Span, operation attribute.Key, deprecatedOperation string, subject attribute.Key) string {
+	if method, ok := getAttributeValue(span, operation, deprecatedOperation); ok {
+		if route, ok := span.Attributes().Get(string(subject)); ok {
+			return method.AsString() + " " + route.AsString()
+		}
+		return method.AsString()
+	}
+	return ""
+}
+
 func inferSpanName(span ptrace.Span) string {
 	switch span.Kind() {
 	case ptrace.SpanKindServer:
-		if method, ok := getAttributeValue(span, string(semconv.HTTPRequestMethodKey), "http.method"); ok {
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/
-			if route, ok := span.Attributes().Get(string(semconv.HTTPRouteKey)); ok {
-				return method.AsString() + " " + route.AsString()
-			}
-			return method.AsString()
+		// https://opentelemetry.io/docs/specs/semconv/http/http-spans/
+		spanName := buildSpanName(span, semconv.HTTPRequestMethodKey, "http.method", semconv.HTTPRouteKey)
+		if spanName != "" {
+			return spanName
 		}
 
-		if system, ok := span.Attributes().Get(string(semconv.RPCSystemKey)); ok {
-			if spanName, ok := getRPCSpanName(span); ok {
-				return spanName.AsString()
-			}
-			return "(" + system.AsString() + ")"
+		spanName = rpcSpanName(span)
+		if spanName != "" {
+			return spanName
 		}
 
-		if system, ok := span.Attributes().Get(string(semconv.MessagingSystemKey)); ok {
-			if spanName, ok := getMessagingSpanName(span); ok {
-				return spanName.AsString()
-			}
-			return "(" + system.AsString() + ")"
+		spanName = messagingSpanName(span)
+		if spanName != "" {
+			return spanName
 		}
-
 	case ptrace.SpanKindProducer:
-		if system, ok := span.Attributes().Get(string(semconv.MessagingSystemKey)); ok {
-			if spanName, ok := getMessagingSpanName(span); ok {
-				return spanName.AsString()
-			}
-			return "(" + system.AsString() + ")"
+		spanName := messagingSpanName(span)
+		if spanName != "" {
+			return spanName
 		}
-
 	case ptrace.SpanKindClient:
-		if method, ok := getAttributeValue(span, string(semconv.HTTPRequestMethodKey), "http.method"); ok {
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/
-			if urlTemplate, okURLTemplate := span.Attributes().Get(string(semconv.URLTemplateKey)); okURLTemplate {
-				return method.AsString() + " " + urlTemplate.AsString()
-			}
-			return method.AsString()
+		// https://opentelemetry.io/docs/specs/semconv/http/http-spans/
+		spanName := buildSpanName(span, semconv.HTTPRequestMethodKey, "http.method", semconv.URLTemplateKey)
+		if spanName != "" {
+			return spanName
 		}
 
-		if system, ok := span.Attributes().Get(string(semconv.RPCSystemKey)); ok {
-			if spanName, ok := getRPCSpanName(span); ok {
-				return spanName.AsString()
-			}
-			return "(" + system.AsString() + ")"
+		spanName = rpcSpanName(span)
+		if spanName != "" {
+			return spanName
 		}
 
-		if system, ok := getAttributeValue(span, string(semconv.DBSystemNameKey), "db.system"); ok {
+		if system, ok := getAttributeValue(span, semconv.DBSystemNameKey, "db.system"); ok {
 			if spanName, ok := getDBCallSpanName(span); ok {
 				return spanName.AsString()
 			}
 			return "(" + system.AsString() + ")"
 		}
 
-		if system, ok := span.Attributes().Get(string(semconv.MessagingSystemKey)); ok {
-			if spanName, ok := getMessagingSpanName(span); ok {
-				return spanName.AsString()
-			}
-			return "(" + system.AsString() + ")"
+		spanName = messagingSpanName(span)
+		if spanName != "" {
+			return spanName
 		}
-
 	case ptrace.SpanKindConsumer:
-		if system, ok := span.Attributes().Get(string(semconv.MessagingSystemKey)); ok {
-			if spanName, ok := getMessagingSpanName(span); ok {
-				return spanName.AsString()
-			}
-			return "(" + system.AsString() + ")"
+		spanName := messagingSpanName(span)
+		if spanName != "" {
+			return spanName
 		}
 	}
 	return "(" + string(span.Kind()) + ")" // high cardinality safe default value
 }
 
+func messagingSpanName(span ptrace.Span) string {
+	if system, ok := span.Attributes().Get(string(semconv.MessagingSystemKey)); ok {
+		if spanName, ok := getMessagingSpanName(span); ok {
+			return spanName.AsString()
+		}
+		return "(" + system.AsString() + ")"
+	}
+	return ""
+}
+
+// https://opentelemetry.io/docs/specs/semconv/rpc/rpc-spans/
+func rpcSpanName(span ptrace.Span) string {
+	if system, ok := span.Attributes().Get(string(semconv.RPCSystemKey)); ok {
+		if spanName, ok := getRPCSpanName(span); ok {
+			return spanName.AsString()
+		}
+		return "(" + system.AsString() + ")"
+	}
+	return ""
+}
+
 func getDBCallSpanName(span ptrace.Span) (pcommon.Value, bool) {
 	// https://opentelemetry.io/docs/specs/semconv/database/database-spans/
 	spanName := ""
-	if operation, ok := getAttributeValue(span, string(semconv.DBOperationNameKey), "db.operation"); ok {
+	if operation, ok := getAttributeValue(span, semconv.DBOperationNameKey, "db.operation"); ok {
 		spanName += operation.AsString() + " "
 	}
 	if namespace, ok := span.Attributes().Get(string(semconv.DBNamespaceKey)); ok {
 		spanName += namespace.AsString() + "."
 	}
-	if collection, ok := getAttributeValue(span, string(semconv.DBCollectionNameKey), "db.name"); ok {
+	if collection, ok := getAttributeValue(span, semconv.DBCollectionNameKey, "db.name"); ok {
 		spanName += collection.AsString()
 	}
 	if spanName == "" {
@@ -709,8 +722,8 @@ func getDBCallSpanName(span ptrace.Span) (pcommon.Value, bool) {
 
 func getRPCSpanName(span ptrace.Span) (pcommon.Value, bool) {
 	// https://opentelemetry.io/docs/specs/semconv/rpc/rpc-spans/
-	method, okMethod := getAttributeValue(span, string(semconv.RPCMethodKey), "rpc.grpc.method")
-	service, okService := getAttributeValue(span, string(semconv.RPCServiceKey), "rpc.grpc.service")
+	method, okMethod := getAttributeValue(span, semconv.RPCMethodKey, "rpc.grpc.method")
+	service, okService := getAttributeValue(span, semconv.RPCServiceKey, "rpc.grpc.service")
 
 	if okMethod && okService {
 		return pcommon.NewValueStr(service.AsString() + "/" + method.AsString()), true
@@ -728,7 +741,7 @@ func getRPCSpanName(span ptrace.Span) (pcommon.Value, bool) {
 func getMessagingSpanName(span ptrace.Span) (pcommon.Value, bool) {
 	// https://opentelemetry.io/docs/specs/semconv/messaging/messaging-spans/#span-name
 
-	operation, okOperation := getAttributeValue(span, string(semconv.MessagingOperationNameKey), "messaging.operation")
+	operation, okOperation := getAttributeValue(span, semconv.MessagingOperationNameKey, "messaging.operation")
 	destination, okDestination := getMessagingDestination(span)
 
 	if okOperation && okDestination {
@@ -767,7 +780,7 @@ func getMessagingDestination(span ptrace.Span) (pcommon.Value, bool) {
 		return destinationTemplate, true
 	}
 
-	if destinationName, ok := getAttributeValue(span, string(semconv.MessagingDestinationNameKey), "messaging.destination"); ok {
+	if destinationName, ok := getAttributeValue(span, semconv.MessagingDestinationNameKey, "messaging.destination"); ok {
 		return destinationName, true
 	}
 
@@ -781,12 +794,12 @@ func getMessagingDestination(span ptrace.Span) (pcommon.Value, bool) {
 	return pcommon.NewValueStr("(unknown)"), false
 }
 
-func getAttributeValue(span ptrace.Span, attrName string, attrNameAliases ...string) (pcommon.Value, bool) {
-	if val, ok := span.Attributes().Get(attrName); ok {
+func getAttributeValue(span ptrace.Span, key attribute.Key, deprecatedKey string) (pcommon.Value, bool) {
+	if val, ok := span.Attributes().Get(string(key)); ok {
 		return val, true
 	}
-	for _, name := range attrNameAliases {
-		if val, ok := span.Attributes().Get(name); ok {
+	if deprecatedKey != "" {
+		if val, ok := span.Attributes().Get(deprecatedKey); ok {
 			return val, true
 		}
 	}
