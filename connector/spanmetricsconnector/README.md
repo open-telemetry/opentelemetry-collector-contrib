@@ -251,14 +251,21 @@ calls_total{span_name="/Address", service_name="shippingservice", span_kind="SPA
 
 ### Using `spanmetrics` with semantic conventions for span names
 
-The `spanmetrics` connector can be configured to use the [OpenTelemetry Semantic Conventions for Span names](https://opentelemetry.io/docs/reference/specification/trace/semantic_conventions/span-general/#span-name) to populate the `span.name` dimension.
+You can configure the `spanmetrics` connector to apply the 
+[OpenTelemetry Semantic Conventions for Span names](https://opentelemetry.io/docs/reference/specification/trace/semantic_conventions/span-general/#span-name) 
+when setting the `span.name` attribute in generated metrics. Note that the `name` of the spans remain unchanged.
 
-This is disabled by default to preserve backward compatibility. To enable this feature, set the `span_name_semantic_convention` option to `true`.
+By default, this feature is turned off. To enable it, set the `span_name_semantic_convention` option to `true`.  
+When enabled, the metrics will retain their existing attributes, but the `span.name` will be set according to the 
+semantic convention. This may affect the cardinality of the metrics if the semantic convention produces different values
+than those used in the original instrumentation.
 
 ```yamlconnectors:
   spanmetrics:
     span_name_semantic_convention: true
 ```
+
+Examples of override of the `span.name` attribute on the generated metrics:
 
 |                       | Before           | Override value for `spanmetrics` |
 |-----------------------|------------------|----------------------------------|
@@ -267,7 +274,24 @@ This is disabled by default to preserve backward compatibility. To enable this f
 | `http.request.method` | `GET`            |                                  |
 | `http.route`          | `/users/:id`     |                                  |
 
-TODO: Add more examples here.
+
+|               | Before           | Override value for `spanmetrics` |
+|---------------|------------------|----------------------------------|
+| Span kind     | `SERVER`         |                                  |
+| Span name     | `GET /users/123` | `GET`                            |
+| `http.method` | `GET`            |                                  |
+| `http.route`  |                  |                                  |
+
+
+|                      | Before                               | Override value for `spanmetrics` |
+|----------------------|--------------------------------------|----------------------------------|
+| Span kind            | `CLIENT`                             |                                  |
+| Span name            | `SELECT * FROM orders where uid=123` | `SELECT webshop.orders`          |
+| `db.system.name`     | `postgresql`                         |                                  |
+| `db.namespace.name`  | `webshop`                            |                                  |
+| `db.operation.name`  | `SELECT`                             |                                  |
+| `db.collection.name` | `orders`                             |                                  | 
+
 
 ### More Examples
 
