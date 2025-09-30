@@ -69,11 +69,3 @@ var MetricsSummaryCreateTable string
 
 //go:embed metrics_summary_insert.sql
 var MetricsSummaryInsert string
-
-// PROFILES
-
-//go:embed profiles_table.sql
-var ProfilesCreateTable string
-
-//go:embed profiles_insert.sql
-var ProfilesInsert string
