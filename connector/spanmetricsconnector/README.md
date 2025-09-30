@@ -251,21 +251,29 @@ calls_total{span_name="/Address", service_name="shippingservice", span_kind="SPA
 
 ### Using `spanmetrics` with semantic conventions for span names
 
-You can configure the `spanmetrics` connector to apply the 
-[OpenTelemetry Semantic Conventions for Span names](https://opentelemetry.io/docs/reference/specification/trace/semantic_conventions/span-general/#span-name) 
-when setting the `span.name` attribute in generated metrics. Note that the `name` of the spans remain unchanged.
+You can configure the `spanmetrics` connector to derive the `span.name` metric attribute from the
+[OpenTelemetry Semantic Conventions for Span names](https://opentelemetry.io/docs/reference/specification/trace/semantic_conventions/span-general/#span-name)
+for span names, rather than using the raw span name. The original span’s name is not modified.
 
-By default, this feature is turned off. To enable it, set the `span_name_semantic_convention` option to `true`.  
-When enabled, the metrics will retain their existing attributes, but the `span.name` will be set according to the 
-semantic convention. This may affect the cardinality of the metrics if the semantic convention produces different values
-than those used in the original instrumentation.
+The primary use case for this feature is to reduce high-cardinality `span.name` values in generated metrics.
+This may drop detail where semantic data is incomplete—an intentional tradeoff for cardinality control.
+
+This feature is disabled by default. To activate it, set `span_name_semantic_convention` to `true`.  
+
+When enabled, existing metric attributes are preserved, and the `span.name` attribute is computed from the applicable 
+semantic convention (e.g., HTTP, RPC, messaging, database). If no convention applies, the original span name is used. 
+Be aware this can change metric cardinality if the semantic name differs from the original.
+
 
 ```yamlconnectors:
   spanmetrics:
     span_name_semantic_convention: true
 ```
 
-Examples of override of the `span.name` attribute on the generated metrics:
+Examples showing how high-cardinality can be reduced, with and without information loss, depending on semantic 
+convention coverage.
+
+Example HTTP server span override without information loss (`http.route` present):
 
 |                       | Before           | Override value for `spanmetrics` |
 |-----------------------|------------------|----------------------------------|
@@ -274,12 +282,17 @@ Examples of override of the `span.name` attribute on the generated metrics:
 | `http.request.method` | `GET`            |                                  |
 | `http.route`          | `/users/:id`     |                                  |
 
+
+Example HTTP server span override with information loss (`http.route` missing):
+
 |               | Before           | Override value for `spanmetrics` |
 |---------------|------------------|----------------------------------|
 | Span kind     | `SERVER`         |                                  |
 | Span name     | `GET /users/123` | `GET`                            |
 | `http.method` | `GET`            |                                  |
 | `http.route`  |                  |                                  |
+
+Example database call override without information loss (`db.namespace.name`, `db.operation.name`, `db.collection.name` present):
 
 |                      | Before                               | Override value for `spanmetrics` |
 |----------------------|--------------------------------------|----------------------------------|
@@ -289,6 +302,13 @@ Examples of override of the `span.name` attribute on the generated metrics:
 | `db.namespace.name`  | `webshop`                            |                                  |
 | `db.operation.name`  | `SELECT`                             |                                  |
 | `db.collection.name` | `orders`                             |                                  | 
+
+Example unchanged span name when no semantic convention applies:
+
+|           | Before       | Override value for `spanmetrics` |
+|-----------|--------------|----------------------------------|
+| Span kind | `INTERNAL`   |                                  |
+| Span name | `doCheckout` | `doCheckout`                     |
 
 ### More Examples
 
