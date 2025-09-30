@@ -49,21 +49,33 @@ type metricFamily struct {
 
 func newCollector(config *Config, logger *zap.Logger) *collector {
 	labelNamer := configureLabelNamer(config)
-	namespace, err := labelNamer.Build(config.Namespace)
-	if err != nil {
-		logger.Error("failed to build namespace, ignoring", zap.Error(err))
-		namespace = ""
-	}
+
 	return &collector{
 		accumulator:      newAccumulator(logger, config.MetricExpiration),
 		logger:           logger,
-		namespace:        namespace,
+		namespace:        normalizeNamespace(config.Namespace, labelNamer, logger),
 		sendTimestamps:   config.SendTimestamps,
 		constLabels:      config.ConstLabels,
 		metricExpiration: config.MetricExpiration,
 		metricNamer:      configureMetricNamer(config),
 		labelNamer:       labelNamer,
 	}
+}
+
+// normalizeNamespace builds and returns the namespace if specified in the config
+// If not specified, it returns an empty string
+// If building the namespace fails, it logs the error and returns an empty string
+func normalizeNamespace(configNamespace string, labelNamer otlptranslator.LabelNamer, logger *zap.Logger) string {
+	namespace := ""
+	if configNamespace != "" {
+		var err error
+		namespace, err = labelNamer.Build(configNamespace)
+		if err != nil {
+			logger.Error("failed to build namespace, ignoring", zap.Error(err))
+			namespace = ""
+		}
+	}
+	return namespace
 }
 
 // configureMetricNamer configures the MetricNamer based on the translation strategy or legacy configuration
