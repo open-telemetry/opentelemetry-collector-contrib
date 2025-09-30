@@ -819,7 +819,7 @@ func (m *mySQLScraper) cacheAndDiff(schemaName, digest, column string, val int64
 		return false, 0
 	}
 
-	key := schemaName + "-" + digest + "-" + column
+	key := schemaName+"-"+digest+"-"+column
 
 	cached, ok := m.cache.Get(key)
 	if !ok {
