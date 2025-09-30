@@ -41,6 +41,8 @@ telemetry:
       description: The total number of connections opened.
       extended_documentation: Only produced when franz-go is enabled.
       optional: true
+      stability:
+        level: development
       unit: "1"
       sum:
         value_type: int
@@ -51,6 +53,8 @@ telemetry:
       description: The total number of connections closed.
       extended_documentation: Only produced when franz-go is enabled.
       optional: true
+      stability:
+        level: development
       unit: "1"
       sum:
         value_type: int
@@ -74,6 +78,8 @@ telemetry:
       description: The throttling latency in seconds imposed by the broker when receiving records.
       extended_documentation: Only produced when franz-go is enabled.
       optional: true
+      stability:
+        level: development
       unit: s
       histogram:
         value_type: double
@@ -95,6 +101,8 @@ telemetry:
     kafka_receiver_records:
       enabled: true
       description: The number of received records.
+      stability:
+        level: development
       unit: "1"
       sum:
         value_type: int
@@ -105,6 +113,8 @@ telemetry:
       description: The size in bytes of received records seen by the broker.
       extended_documentation: Only produced when franz-go is enabled.
       optional: true
+      stability:
+        level: development
       unit: By
       sum:
         value_type: int
@@ -113,6 +123,8 @@ telemetry:
     kafka_receiver_bytes_uncompressed:
       enabled: true
       description: The uncompressed size in bytes of received records seen by the client.
+      stability:
+        level: development
       unit: By
       sum:
         value_type: int
@@ -134,6 +146,8 @@ telemetry:
       enabled: true
       description: The time it took in seconds to receive a batch of records.
       extended_documentation: Only produced when franz-go is enabled.
+      stability:
+        level: development
       unit: s
       histogram:
         value_type: double
@@ -148,6 +162,8 @@ telemetry:
         Note that this metric may slow down high-volume consuming.
         Only produced when franz-go is enabled.
         This metric is reported with an assumption that the exporter and the receiver clocks are synchronized.
+      stability:
+        level: development
       unit: s
       histogram:
         value_type: double
@@ -156,6 +172,8 @@ telemetry:
     kafka_receiver_current_offset:
       enabled: true
       description: Current message offset
+      stability:
+        level: development
       unit: "1"
       gauge:
         value_type: int
@@ -163,6 +181,8 @@ telemetry:
     kafka_receiver_offset_lag:
       enabled: true
       description: Current offset lag
+      stability:
+        level: development
       unit: "1"
       gauge:
         value_type: int
@@ -170,6 +190,8 @@ telemetry:
     kafka_receiver_partition_start:
       enabled: true
       description: Number of started partitions
+      stability:
+        level: development
       unit: "1"
       sum:
         value_type: int
@@ -177,6 +199,8 @@ telemetry:
     kafka_receiver_partition_close:
       enabled: true
       description: Number of finished partitions
+      stability:
+        level: development
       unit: "1"
       sum:
         value_type: int
@@ -184,6 +208,8 @@ telemetry:
     kafka_receiver_unmarshal_failed_metric_points:
       enabled: true
       description: Number of metric points failed to be unmarshaled
+      stability:
+        level: development
       unit: "1"
       sum:
         value_type: int
@@ -192,6 +218,8 @@ telemetry:
     kafka_receiver_unmarshal_failed_log_records:
       enabled: true
       description: Number of log records failed to be unmarshaled
+      stability:
+        level: development
       unit: "1"
       sum:
         value_type: int
@@ -200,6 +228,8 @@ telemetry:
     kafka_receiver_unmarshal_failed_spans:
       enabled: true
       description: Number of spans failed to be unmarshaled
+      stability:
+        level: development
       unit: "1"
       sum:
         value_type: int
@@ -208,6 +238,8 @@ telemetry:
     kafka_receiver_unmarshal_failed_profiles:
       enabled: true
       description: Number of profiles failed to be unmarshaled
+      stability:
+        level: development
       unit: "1"
       sum:
         value_type: int
