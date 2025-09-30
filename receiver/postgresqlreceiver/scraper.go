@@ -298,7 +298,7 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 			}
 			finalValue := float64(0)
 			if valDelta > 0 {
-				p.cache.Add(queryID.(string)+columnName, valDelta)
+				p.cache.Add(queryID.(string)+columnName, valInAtts)
 				finalValue = valDelta
 			}
 			if info.finalConverter != nil {
