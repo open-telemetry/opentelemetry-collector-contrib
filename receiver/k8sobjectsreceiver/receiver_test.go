@@ -516,3 +516,247 @@ func TestReceiverWithLeaderElection(t *testing.T) {
 	}, 20*time.Second, 100*time.Millisecond,
 		"logs not collected")
 }
+
+func TestWatchWithLeaderElectionStandby(t *testing.T) {
+	t.Parallel()
+
+	fakeLeaderElection := &k8sleaderelectortest.FakeLeaderElection{}
+	fakeHost := &k8sleaderelectortest.FakeHost{FakeLeaderElection: fakeLeaderElection}
+	leaderElectorID := component.MustNewID("k8s_leader_elector")
+
+	mockClient := newMockDynamicClient()
+	mockClient.createPods(
+		generatePod("pod1", "default", map[string]any{"environment": "production"}, "1"),
+	)
+
+	rCfg := createDefaultConfig().(*Config)
+	rCfg.makeDynamicClient = mockClient.getMockDynamicClient
+	rCfg.makeDiscoveryClient = getMockDiscoveryClient
+	rCfg.ErrorMode = PropagateError
+	rCfg.IncludeInitialState = false
+	rCfg.Objects = []*K8sObjectsConfig{
+		{Name: "pods", Mode: WatchMode, Namespaces: []string{"default"}},
+	}
+	rCfg.K8sLeaderElector = &leaderElectorID
+
+	r, err := newReceiver(receivertest.NewNopSettings(metadata.Type), rCfg, consumertest.NewNop())
+	require.NoError(t, err)
+	kr := r.(*k8sobjectsreceiver)
+	sink := new(consumertest.LogsSink)
+	kr.consumer = sink
+
+	require.NoError(t, kr.Start(t.Context(), fakeHost))
+
+	// Become leader -> watches will start asynchronously
+	fakeLeaderElection.InvokeOnLeading()
+
+	// Give the watch time to establish (avoid list→watch gap)
+	time.Sleep(150 * time.Millisecond)
+
+	// Now create pods that should be observed by the active watch
+	mockClient.createPods(
+		generatePod("pod2", "default", map[string]any{"environment": "x"}, "2"),
+		generatePod("pod3", "default", map[string]any{"environment": "y"}, "3"),
+	)
+
+	require.Eventually(t, func() bool {
+		return sink.LogRecordCount() == 2
+	}, 5*time.Second, 50*time.Millisecond, "watch events not collected while leader")
+
+	// Standby
+	fakeLeaderElection.InvokeOnStopping()
+
+	// Create while in standby -> should NOT be delivered
+	mockClient.createPods(
+		generatePod("pod4", "default", map[string]any{"environment": "standby"}, "4"),
+	)
+	time.Sleep(150 * time.Millisecond)
+	assert.Equal(t, 2, sink.LogRecordCount(), "no events should be received while in standby")
+
+	// Resume
+	fakeLeaderElection.InvokeOnLeading()
+	time.Sleep(150 * time.Millisecond)
+
+	mockClient.createPods(
+		generatePod("pod5", "default", map[string]any{"environment": "resumed"}, "5"),
+	)
+
+	require.Eventually(t, func() bool {
+		return sink.LogRecordCount() == 3
+	}, 5*time.Second, 50*time.Millisecond, "watch did not resume after re-leading")
+
+	assert.NoError(t, kr.Shutdown(t.Context()))
+}
+
+func TestPullWithLeaderElectionStandby(t *testing.T) {
+	t.Parallel()
+
+	fakeLeaderElection := &k8sleaderelectortest.FakeLeaderElection{}
+	fakeHost := &k8sleaderelectortest.FakeHost{FakeLeaderElection: fakeLeaderElection}
+	leaderElectorID := component.MustNewID("k8s_leader_elector")
+
+	mockClient := newMockDynamicClient()
+	mockClient.createPods(generatePod("pod1", "default", map[string]any{"environment": "production"}, "1"))
+
+	rCfg := createDefaultConfig().(*Config)
+	rCfg.makeDynamicClient = mockClient.getMockDynamicClient
+	rCfg.makeDiscoveryClient = getMockDiscoveryClient
+	rCfg.ErrorMode = PropagateError
+	rCfg.Objects = []*K8sObjectsConfig{
+		{
+			Name:     "pods",
+			Mode:     PullMode,
+			Interval: 10 * time.Millisecond, // fast pull to make the test snappy
+		},
+	}
+	rCfg.K8sLeaderElector = &leaderElectorID
+
+	r, err := newReceiver(receivertest.NewNopSettings(metadata.Type), rCfg, consumertest.NewNop())
+	require.NoError(t, err)
+	kr := r.(*k8sobjectsreceiver)
+	sink := new(consumertest.LogsSink)
+	kr.consumer = sink
+
+	require.NoError(t, kr.Start(t.Context(), fakeHost))
+
+	// Become leader: pulls start
+	fakeLeaderElection.InvokeOnLeading()
+
+	// Expect at least one pull to have happened
+	require.Eventually(t, func() bool { return sink.LogRecordCount() >= 1 },
+		2*time.Second, 20*time.Millisecond, "pulls did not start while leader")
+
+	// Go standby: pulls stop
+	fakeLeaderElection.InvokeOnStopping()
+	countAtStandby := sink.LogRecordCount()
+
+	// Add more pods while in standby—should NOT increase count
+	mockClient.createPods(
+		generatePod("pod2", "default", map[string]any{"environment": "standby"}, "2"),
+	)
+	time.Sleep(100 * time.Millisecond)
+	assert.Equal(t, countAtStandby, sink.LogRecordCount(), "no pulls should occur while in standby")
+
+	// Regain leadership: pulls resume
+	fakeLeaderElection.InvokeOnLeading()
+
+	// Now the next pull should include the new pod(s)
+	require.Eventually(t, func() bool { return sink.LogRecordCount() > countAtStandby },
+		2*time.Second, 20*time.Millisecond, "pulls did not resume after re-leading")
+
+	assert.NoError(t, kr.Shutdown(t.Context()))
+}
+
+func TestWatchLeaderFlapDuringStartup_NoPanic(t *testing.T) {
+	t.Parallel()
+
+	fakeLE := &k8sleaderelectortest.FakeLeaderElection{}
+	fakeHost := &k8sleaderelectortest.FakeHost{FakeLeaderElection: fakeLE}
+	leaderElectorID := component.MustNewID("k8s_leader_elector")
+
+	mockClient := newMockDynamicClient()
+	mockClient.createPods(generatePod("pod1", "default", map[string]any{"env": "prod"}, "1"))
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.makeDynamicClient = mockClient.getMockDynamicClient
+	cfg.makeDiscoveryClient = getMockDiscoveryClient
+	cfg.ErrorMode = PropagateError
+	cfg.IncludeInitialState = false
+	cfg.Objects = []*K8sObjectsConfig{
+		{Name: "pods", Mode: WatchMode, Namespaces: []string{"default"}},
+	}
+	cfg.K8sLeaderElector = &leaderElectorID
+
+	r, err := newReceiver(receivertest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	kr := r.(*k8sobjectsreceiver)
+
+	require.NoError(t, kr.Start(t.Context(), fakeHost))
+
+	// 1) Become leader once and wait until at least one worker is registered
+	fakeLE.InvokeOnLeading()
+	require.Eventually(t, func() bool {
+		kr.mu.Lock()
+		n := len(kr.stopperChanList)
+		kr.mu.Unlock()
+		return n > 0
+	}, 2*time.Second, 10*time.Millisecond, "worker not registered")
+
+	// 2) Flap leadership, but give a *tiny* breathing room between lead/stop
+	const loops = 100
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		for i := 0; i < loops; i++ {
+			fakeLE.InvokeOnStopping()
+			// small gap so stopWatches() can complete and workers exit
+			time.Sleep(1 * time.Millisecond)
+			fakeLE.InvokeOnLeading()
+			// small gap so a worker can get started and reach the watch loop
+			time.Sleep(1 * time.Millisecond)
+		}
+	}()
+
+	select {
+	case <-done:
+	case <-time.After(10 * time.Second):
+		t.Fatal("leader flap goroutine timed out (possible deadlock)")
+	}
+
+	assert.NoError(t, kr.Shutdown(t.Context()))
+}
+
+func TestPullLeaderFlapDuringStartup_NoPanic(t *testing.T) {
+	t.Parallel()
+
+	fakeLE := &k8sleaderelectortest.FakeLeaderElection{}
+	fakeHost := &k8sleaderelectortest.FakeHost{FakeLeaderElection: fakeLE}
+	leaderElectorID := component.MustNewID("k8s_leader_elector")
+
+	mockClient := newMockDynamicClient()
+	mockClient.createPods(generatePod("pod1", "default", map[string]any{"env": "prod"}, "1"))
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.makeDynamicClient = mockClient.getMockDynamicClient
+	cfg.makeDiscoveryClient = getMockDiscoveryClient
+	cfg.ErrorMode = PropagateError
+	cfg.Objects = []*K8sObjectsConfig{
+		{Name: "pods", Mode: PullMode, Interval: 5 * time.Millisecond},
+	}
+	cfg.K8sLeaderElector = &leaderElectorID
+
+	r, err := newReceiver(receivertest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	kr := r.(*k8sobjectsreceiver)
+
+	require.NoError(t, kr.Start(t.Context(), fakeHost))
+
+	// Ensure a worker is registered before flapping
+	fakeLE.InvokeOnLeading()
+	require.Eventually(t, func() bool {
+		kr.mu.Lock()
+		n := len(kr.stopperChanList)
+		kr.mu.Unlock()
+		return n > 0
+	}, 2*time.Second, 10*time.Millisecond)
+
+	const loops = 100
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		for i := 0; i < loops; i++ {
+			fakeLE.InvokeOnStopping()
+			time.Sleep(1 * time.Millisecond)
+			fakeLE.InvokeOnLeading()
+			time.Sleep(1 * time.Millisecond)
+		}
+	}()
+
+	select {
+	case <-done:
+	case <-time.After(10 * time.Second):
+		t.Fatal("leader flap goroutine timed out (possible deadlock)")
+	}
+
+	assert.NoError(t, kr.Shutdown(t.Context()))
+}
