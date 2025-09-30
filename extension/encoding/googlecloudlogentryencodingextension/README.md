@@ -235,7 +235,7 @@ See the struct of the Cloud Audit Log payload in [AuditLog](https://cloud.google
 | `src_google_service.service_name` | `gcp.vpc.flow.source.google.service.name` |
 | `src_google_service.connectivity` | `gcp.vpc.flow.source.google.service.connectivity` |
 | `src_google_service.private_domain` | `gcp.vpc.flow.source.google.service.domain.private` |
-| `dest_google_service.type` | `gcp.vpc.flow.destination.google.service.type` |
+| `dest_google_service.type` | `gcp.vpc.flow.destination.google_service.type` |
 | `dest_google_service.service_name` | `gcp.vpc.flow.destination.google.service.name` |
 | `dest_google_service.connectivity` | `gcp.vpc.flow.destination.google.service.connectivity` |
 | `dest_google_service.private_domain` | `gcp.vpc.flow.destination.google.service.domain.private` |
