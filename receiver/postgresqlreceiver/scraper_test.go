@@ -514,7 +514,7 @@ func TestScrapeTopQueries(t *testing.T) {
 	errs := plogtest.CompareLogs(expectedLogs, actualLogs, plogtest.IgnoreTimestamp())
 	assert.NoError(t, errs)
 
-	//Verify the cache has updated with latest counter
+	// Verify the cache has updated with latest counter
 
 	calls, callsExists := scraper.cache.Get(queryid + callsColumnName)
 	assert.True(t, callsExists)
@@ -525,7 +525,6 @@ func TestScrapeTopQueries(t *testing.T) {
 	planTime, planTimeExists := scraper.cache.Get(queryid + totalPlanTimeColumnName)
 	assert.True(t, planTimeExists)
 	assert.Equal(t, float64(12), planTime)
-
 }
 
 type (
