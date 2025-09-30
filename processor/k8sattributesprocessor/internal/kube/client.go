@@ -279,7 +279,7 @@ func New(
 		c.daemonsetInformer = newDaemonSetSharedInformer(c.kc, c.Filters.Namespace)
 	}
 
-	if c.extractJobLabelsAnnotations() {
+	if c.extractJobLabelsAnnotations() || rules.CronJobUID {
 		c.jobInformer = newJobSharedInformer(c.kc, c.Filters.Namespace)
 	}
 
@@ -643,37 +643,42 @@ func (c *WatchClient) deleteLoop(interval, gracePeriod time.Duration) {
 	for {
 		select {
 		case <-time.After(interval):
-			var cutoff int
-			now := time.Now()
-			c.deleteMut.Lock()
-			for i, d := range c.deleteQueue {
-				if d.ts.Add(gracePeriod).After(now) {
-					break
-				}
-				cutoff = i + 1
-			}
-			toDelete := c.deleteQueue[:cutoff]
-			c.deleteQueue = c.deleteQueue[cutoff:]
-			c.deleteMut.Unlock()
-
-			c.m.Lock()
-			for _, d := range toDelete {
-				if p, ok := c.Pods[d.id]; ok {
-					// Sanity check: make sure we are deleting the same pod
-					// and the underlying state (ip<>pod mapping) has not changed.
-					if p.Name == d.podName {
-						delete(c.Pods, d.id)
-					}
-				}
-			}
-			podTableSize := len(c.Pods)
-			c.telemetryBuilder.OtelsvcK8sPodTableSize.Record(context.Background(), int64(podTableSize))
-			c.m.Unlock()
-
+			c.deleteLoopProcessing(gracePeriod)
 		case <-c.stopCh:
 			return
 		}
 	}
+}
+
+func (c *WatchClient) deleteLoopProcessing(gracePeriod time.Duration) {
+	var cutoff int
+	now := time.Now()
+	c.deleteMut.Lock()
+	for i := range c.deleteQueue {
+		d := c.deleteQueue[i]
+		if d.ts.Add(gracePeriod).After(now) {
+			break
+		}
+		cutoff = i + 1
+	}
+	toDelete := c.deleteQueue[:cutoff]
+	c.deleteQueue = c.deleteQueue[cutoff:]
+	c.deleteMut.Unlock()
+
+	c.m.Lock()
+	for i := range toDelete {
+		d := toDelete[i]
+		if p, ok := c.Pods[d.id]; ok {
+			// Sanity check: make sure we are deleting the same pod
+			// and the underlying state (ip<>pod mapping) has not changed.
+			if p.PodUID == d.podUID {
+				delete(c.Pods, d.id)
+			}
+		}
+	}
+	podTableSize := len(c.Pods)
+	c.telemetryBuilder.OtelsvcK8sPodTableSize.Record(context.Background(), int64(podTableSize))
+	c.m.Unlock()
 }
 
 // GetPod takes an IP address or Pod UID and returns the pod the identifier is associated with.
@@ -719,6 +724,16 @@ func (c *WatchClient) GetDeployment(deploymentUID string) (*Deployment, bool) {
 	c.m.RUnlock()
 	if ok {
 		return deployment, ok
+	}
+	return nil, false
+}
+
+func (c *WatchClient) GetReplicaSet(uid string) (*ReplicaSet, bool) {
+	c.m.RLock()
+	replicaset, ok := c.ReplicaSets[uid]
+	c.m.RUnlock()
+	if ok {
+		return replicaset, ok
 	}
 	return nil, false
 }
@@ -799,7 +814,8 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 		c.Rules.JobUID || c.Rules.JobName ||
 		c.Rules.StatefulSetUID || c.Rules.StatefulSetName ||
 		c.Rules.DeploymentName || c.Rules.DeploymentUID ||
-		c.Rules.CronJobName || c.Rules.ServiceName {
+		c.Rules.CronJobUID || c.Rules.CronJobName ||
+		c.Rules.ServiceName {
 		for _, ref := range pod.OwnerReferences {
 			switch ref.Kind {
 			case "ReplicaSet":
@@ -813,7 +829,7 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 					tags[string(conventions.ServiceNameKey)] = ref.Name
 				}
 				if c.Rules.DeploymentName || c.Rules.ServiceName {
-					if replicaset, ok := c.getReplicaSet(string(ref.UID)); ok {
+					if replicaset, ok := c.GetReplicaSet(string(ref.UID)); ok {
 						name := replicaset.Deployment.Name
 						if name != "" {
 							if c.Rules.DeploymentName {
@@ -827,7 +843,7 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 					}
 				}
 				if c.Rules.DeploymentUID {
-					if replicaset, ok := c.getReplicaSet(string(ref.UID)); ok {
+					if replicaset, ok := c.GetReplicaSet(string(ref.UID)); ok {
 						if replicaset.Deployment.Name != "" {
 							tags[string(conventions.K8SDeploymentUIDKey)] = replicaset.Deployment.UID
 						}
@@ -873,6 +889,13 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 						if c.Rules.ServiceName {
 							// cronjob name wins over job name
 							tags[string(conventions.ServiceNameKey)] = name
+						}
+					}
+				}
+				if c.Rules.CronJobUID {
+					if job, ok := c.GetJob(string(ref.UID)); ok {
+						if job.CronJob.UID != "" {
+							tags[string(conventions.K8SCronJobUIDKey)] = job.CronJob.UID
 						}
 					}
 				}
@@ -976,12 +999,14 @@ func removeUnnecessaryPodData(pod *api_v1.Pod, rules ExtractionRules) *api_v1.Po
 			return transformedContainerStatus
 		}
 
-		for _, containerStatus := range pod.Status.ContainerStatuses {
+		for i := range pod.Status.ContainerStatuses {
+			containerStatus := pod.Status.ContainerStatuses[i]
 			transformedPod.Status.ContainerStatuses = append(
 				transformedPod.Status.ContainerStatuses, removeUnnecessaryContainerStatus(containerStatus),
 			)
 		}
-		for _, containerStatus := range pod.Status.InitContainerStatuses {
+		for i := range pod.Status.InitContainerStatuses {
+			containerStatus := pod.Status.InitContainerStatuses[i]
 			transformedPod.Status.InitContainerStatuses = append(
 				transformedPod.Status.InitContainerStatuses, removeUnnecessaryContainerStatus(containerStatus),
 			)
@@ -996,12 +1021,14 @@ func removeUnnecessaryPodData(pod *api_v1.Pod, rules ExtractionRules) *api_v1.Po
 			return transformedContainer
 		}
 
-		for _, container := range pod.Spec.Containers {
+		for i := range pod.Spec.Containers {
+			container := pod.Spec.Containers[i]
 			transformedPod.Spec.Containers = append(
 				transformedPod.Spec.Containers, removeUnnecessaryContainerData(container),
 			)
 		}
-		for _, container := range pod.Spec.InitContainers {
+		for i := range pod.Spec.InitContainers {
+			container := pod.Spec.InitContainers[i]
 			transformedPod.Spec.InitContainers = append(
 				transformedPod.Spec.InitContainers, removeUnnecessaryContainerData(container),
 			)
@@ -1065,7 +1092,9 @@ func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) PodContain
 	}
 	if c.Rules.ContainerImageName || c.Rules.ContainerImageTag ||
 		c.Rules.ServiceVersion || c.Rules.ServiceInstanceID {
-		for _, spec := range append(pod.Spec.Containers, pod.Spec.InitContainers...) {
+		specs := append(pod.Spec.Containers, pod.Spec.InitContainers...) //nolint:gocritic // appendAssign: append result not assigned to the same slice
+		for i := range specs {
+			spec := &specs[i]
 			container := &Container{}
 			imageRef, err := dcommon.ParseImageName(spec.Image)
 			if err == nil {
@@ -1085,7 +1114,9 @@ func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) PodContain
 			containers.ByName[spec.Name] = container
 		}
 	}
-	for _, apiStatus := range append(pod.Status.ContainerStatuses, pod.Status.InitContainerStatuses...) {
+	apiStatuses := append(pod.Status.ContainerStatuses, pod.Status.InitContainerStatuses...) //nolint:gocritic // appendAssign: append result not assigned to the same slice
+	for i := range apiStatuses {
+		apiStatus := &apiStatuses[i]
 		containerName := apiStatus.Name
 		container, ok := containers.ByName[containerName]
 		if !ok {
@@ -1244,21 +1275,21 @@ func (c *WatchClient) podFromAPI(pod *api_v1.Pod) *Pod {
 		StartTime:      pod.Status.StartTime,
 	}
 
-	if replicaset, ok := c.getReplicaSet(getPodReplicaSetUID(pod)); ok {
+	if replicaset, ok := c.GetReplicaSet(getPodReplicaSetUID(pod)); ok {
 		if replicaset.Deployment.UID != "" {
 			newPod.DeploymentUID = replicaset.Deployment.UID
 		}
 	}
 
-	if statefulset, ok := c.getStatefulSet(getPodStatefulSetUID(pod)); ok {
+	if statefulset, ok := c.GetStatefulSet(getPodStatefulSetUID(pod)); ok {
 		newPod.StatefulSetUID = statefulset.UID
 	}
 
-	if daemonset, ok := c.getDaemonSet(getPodDaemonSetUID(pod)); ok {
+	if daemonset, ok := c.GetDaemonSet(getPodDaemonSetUID(pod)); ok {
 		newPod.DaemonSetUID = daemonset.UID
 	}
 
-	if job, ok := c.getJob(getPodJobUID(pod)); ok {
+	if job, ok := c.GetJob(getPodJobUID(pod)); ok {
 		newPod.JobUID = job.UID
 	}
 
@@ -1412,7 +1443,9 @@ func (c *WatchClient) addOrUpdatePod(pod *api_v1.Pod) {
 	c.m.Lock()
 	defer c.m.Unlock()
 
-	for _, id := range c.getIdentifiersFromAssoc(newPod) {
+	identifiers := c.getIdentifiersFromAssoc(newPod)
+	for i := range identifiers {
+		id := identifiers[i]
 		// compare initial scheduled timestamp for existing pod and new pod with same identifier
 		// and only replace old pod if scheduled time of new pod is newer or equal.
 		// This should fix the case where scheduler has assigned the same attributes (like IP address)
@@ -1428,21 +1461,23 @@ func (c *WatchClient) addOrUpdatePod(pod *api_v1.Pod) {
 
 func (c *WatchClient) forgetPod(pod *api_v1.Pod) {
 	podToRemove := c.podFromAPI(pod)
-	for _, id := range c.getIdentifiersFromAssoc(podToRemove) {
+	identifiers := c.getIdentifiersFromAssoc(podToRemove)
+	for i := range identifiers {
+		id := identifiers[i]
 		p, ok := c.GetPod(id)
 
-		if ok && p.Name == pod.Name {
-			c.appendDeleteQueue(id, pod.Name)
+		if ok && p.PodUID == string(pod.UID) {
+			c.appendDeleteQueue(id, p.PodUID)
 		}
 	}
 }
 
-func (c *WatchClient) appendDeleteQueue(podID PodIdentifier, podName string) {
+func (c *WatchClient) appendDeleteQueue(podID PodIdentifier, podUID string) {
 	c.deleteMut.Lock()
 	c.deleteQueue = append(c.deleteQueue, deleteRequest{
-		id:      podID,
-		podName: podName,
-		ts:      time.Now(),
+		id:     podID,
+		podUID: podUID,
+		ts:     time.Now(),
 	})
 	c.deleteMut.Unlock()
 }
@@ -1688,6 +1723,16 @@ func (c *WatchClient) addOrUpdateJob(job *batch_v1.Job) {
 	}
 	newJob.Attributes = c.extractJobAttributes(job)
 
+	for _, ownerReference := range job.OwnerReferences {
+		if ownerReference.Kind == "CronJob" && ownerReference.Controller != nil && *ownerReference.Controller {
+			newJob.CronJob = CronJob{
+				Name: ownerReference.Name,
+				UID:  string(ownerReference.UID),
+			}
+			break
+		}
+	}
+
 	c.m.Lock()
 	if job.UID != "" {
 		c.Jobs[string(job.UID)] = newJob
@@ -1770,46 +1815,6 @@ func removeUnnecessaryReplicaSetData(replicaset *apps_v1.ReplicaSet) *apps_v1.Re
 	}
 	transformedReplicaset.SetOwnerReferences(replicaset.GetOwnerReferences())
 	return &transformedReplicaset
-}
-
-func (c *WatchClient) getReplicaSet(uid string) (*ReplicaSet, bool) {
-	c.m.RLock()
-	replicaset, ok := c.ReplicaSets[uid]
-	c.m.RUnlock()
-	if ok {
-		return replicaset, ok
-	}
-	return nil, false
-}
-
-func (c *WatchClient) getStatefulSet(uid string) (*StatefulSet, bool) {
-	c.m.RLock()
-	statefulset, ok := c.StatefulSets[uid]
-	c.m.RUnlock()
-	if ok {
-		return statefulset, ok
-	}
-	return nil, false
-}
-
-func (c *WatchClient) getDaemonSet(uid string) (*DaemonSet, bool) {
-	c.m.RLock()
-	daemonset, ok := c.DaemonSets[uid]
-	c.m.RUnlock()
-	if ok {
-		return daemonset, ok
-	}
-	return nil, false
-}
-
-func (c *WatchClient) getJob(uid string) (*Job, bool) {
-	c.m.RLock()
-	job, ok := c.Jobs[uid]
-	c.m.RUnlock()
-	if ok {
-		return job, ok
-	}
-	return nil, false
 }
 
 // runInformerWithDependencies starts the given informer. The second argument is a list of other informers that should complete
