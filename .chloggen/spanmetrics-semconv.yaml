@@ -1,0 +1,10 @@
+change_type: enhancement
+
+component: spanmetricsconnector
+
+note: Add support for semantic conventions in spanmetrics connector
+
+# change to issue when it has been moved to the contrib repo
+issues: [43012]
+
+change_logs: ['user']
