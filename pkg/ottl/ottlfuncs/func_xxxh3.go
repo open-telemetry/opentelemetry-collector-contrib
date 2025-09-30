@@ -38,7 +38,7 @@ func XXH3HashString[K any](target ottl.StringGetter[K]) (ottl.ExprFunc[K], error
 			return nil, err
 		}
 		hash := xxh3.New()
-		_, err = hash.Write([]byte(val))
+		_, err = hash.WriteString(val)
 		if err != nil {
 			return nil, err
 		}
