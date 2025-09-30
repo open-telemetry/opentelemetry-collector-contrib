@@ -727,6 +727,7 @@ func getRPCSpanName(span ptrace.Span) (pcommon.Value, bool) {
 
 func getMessagingSpanName(span ptrace.Span) (pcommon.Value, bool) {
 	// https://opentelemetry.io/docs/specs/semconv/messaging/messaging-spans/#span-name
+
 	messagingOperationNameVal, okMessagingOperationName := getAttributeValue(span, string(semconv.MessagingOperationNameKey), "messaging.operation")
 	messagingDestinationVal, okMessagingDestination := getMessagingDestination(span)
 
@@ -746,6 +747,8 @@ func getMessagingSpanName(span ptrace.Span) (pcommon.Value, bool) {
 }
 
 func getMessagingDestination(span ptrace.Span) (pcommon.Value, bool) {
+	// https://opentelemetry.io/docs/specs/semconv/messaging/messaging-spans/#span-name
+
 	if messagingDestinationTemporaryVal, okMessagingDestinationTemporary := span.Attributes().Get(string(semconv.MessagingDestinationTemporaryKey)); okMessagingDestinationTemporary {
 		if messagingDestinationTemporaryVal.Bool() {
 			return pcommon.NewValueStr("(temporary)"), true
@@ -769,7 +772,9 @@ func getMessagingDestination(span ptrace.Span) (pcommon.Value, bool) {
 	}
 
 	if serverAddressVal, okServerAddress := span.Attributes().Get(string(semconv.ServerAddressKey)); okServerAddress {
-		// TODO get server.port
+		if serverPortVal, okServerPort := span.Attributes().Get(string(semconv.ServerPortKey)); okServerPort {
+			return pcommon.NewValueStr(serverAddressVal.AsString() + ":" + serverPortVal.AsString()), true
+		}
 		return serverAddressVal, true
 	}
 
