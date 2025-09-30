@@ -658,6 +658,8 @@ func semConvSpanName(span ptrace.Span) string {
 		if spanName != "" {
 			return spanName
 		}
+	default: // kind internal, unspecified...
+		return span.Name()
 	}
 
 	return "(" + string(span.Kind()) + ")" // high cardinality safe default value
