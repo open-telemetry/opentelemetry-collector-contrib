@@ -313,3 +313,51 @@ func TestCreateLogsWithPrivateLink(t *testing.T) {
 	err = consumer.Shutdown(t.Context())
 	assert.NoError(t, err)
 }
+
+func TestCreateTracesWithDomainAlreadyContainingPrivate(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.Domain = "private.coralogix.com"
+	cfg.PrivateLink = true
+	cfg.PrivateKey = "test-key"
+	cfg.AppName = "test-app"
+
+	set := exportertest.NewNopSettings(metadata.Type)
+	consumer, err := factory.CreateTraces(t.Context(), set, cfg)
+	require.NoError(t, err)
+	require.NotNil(t, consumer)
+
+	// Verify the endpoint does not duplicate "private"
+	settings := cfg.getDomainGrpcSettings()
+	assert.Equal(t, "ingress.private.coralogix.com:443", settings.Endpoint)
+
+	err = consumer.Start(t.Context(), componenttest.NewNopHost())
+	assert.NoError(t, err)
+
+	err = consumer.Shutdown(t.Context())
+	if err != nil {
+		// Since the endpoint doesn't actually exist, connection may already be closed
+		assert.Contains(t, err.Error(), "grpc: the client connection is closing")
+	}
+}
+
+func TestCreateMetricsWithDomainAlreadyContainingPrivate(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.Domain = "private.eu2.coralogix.com"
+	cfg.PrivateLink = true
+	cfg.PrivateKey = "test-key"
+	cfg.AppName = "test-app"
+
+	set := exportertest.NewNopSettings(metadata.Type)
+	consumer, err := factory.CreateMetrics(t.Context(), set, cfg)
+	require.NoError(t, err)
+	require.NotNil(t, consumer)
+
+	// Verify the endpoint does not duplicate "private"
+	settings := cfg.getDomainGrpcSettings()
+	assert.Equal(t, "ingress.private.eu2.coralogix.com:443", settings.Endpoint)
+
+	err = consumer.Shutdown(t.Context())
+	assert.NoError(t, err)
+}

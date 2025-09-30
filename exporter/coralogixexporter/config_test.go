@@ -341,6 +341,30 @@ func TestGetDomainGrpcSettings(t *testing.T) {
 			privateLink:      true,
 			expectedEndpoint: "ingress.private.coralogix.us:443",
 		},
+		{
+			name:             "Domain already contains private prefix with PrivateLink",
+			domain:           "private.coralogix.com",
+			privateLink:      true,
+			expectedEndpoint: "ingress.private.coralogix.com:443",
+		},
+		{
+			name:             "Domain already contains private prefix without PrivateLink",
+			domain:           "private.coralogix.com",
+			privateLink:      false,
+			expectedEndpoint: "ingress.private.coralogix.com:443",
+		},
+		{
+			name:             "EU2 domain already contains private with PrivateLink",
+			domain:           "private.eu2.coralogix.com",
+			privateLink:      true,
+			expectedEndpoint: "ingress.private.eu2.coralogix.com:443",
+		},
+		{
+			name:             "Domain contains private in middle with PrivateLink",
+			domain:           "eu2.private.coralogix.com",
+			privateLink:      true,
+			expectedEndpoint: "ingress.eu2.private.coralogix.com:443",
+		},
 	}
 
 	for _, tt := range tests {

@@ -6,6 +6,7 @@ package coralogixexporter // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/config/configgrpc"
@@ -148,8 +149,9 @@ func (c *Config) getDomainGrpcSettings() *configgrpc.ClientConfig {
 	settings := c.DomainSettings
 	domain := c.Domain
 
-	// If PrivateLink is enabled, use the private link endpoint pattern
-	if c.PrivateLink {
+	// If PrivateLink is enabled, use the private link endpoint.
+	// However, if the domain already contains "private", don't add it again.
+	if c.PrivateLink && !strings.Contains(domain, "private.") {
 		settings.Endpoint = fmt.Sprintf("ingress.private.%s:443", domain)
 	} else {
 		settings.Endpoint = fmt.Sprintf("ingress.%s:443", domain)
