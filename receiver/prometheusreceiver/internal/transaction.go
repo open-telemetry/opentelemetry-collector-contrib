@@ -68,6 +68,8 @@ type transaction struct {
 	metricAdjuster         MetricsAdjuster
 	obsrecv                *receiverhelper.ObsReport
 	targetSamplesReporter  TargetSamplesReporter
+	// originalJobName stores the original job name from scrape target, before any relabeling
+	originalJobName string
 	// Used as buffer to calculate series ref hash.
 	bufBytes []byte
 }
@@ -496,6 +498,13 @@ func (t *transaction) initTransaction(lbs labels.Labels) (*resourceKey, error) {
 		return nil, errors.New("unable to find MetricMetadataStore in context")
 	}
 
+	// Get the original job name from the target labels (before metric relabeling)
+	// This ensures we report the correct job name to the target allocator
+	if t.originalJobName == "" {
+		t.originalJobName = target.GetValue(model.JobLabel)
+	}
+	t.logger.Info("initTransaction: original job name", zap.String("job", t.originalJobName))
+
 	rKey, err := t.getJobAndInstance(lbs)
 	if err != nil {
 		return nil, err
@@ -632,7 +641,14 @@ func getSeriesRef(bytes []byte, ls labels.Labels, mtype pmetric.MetricType) (uin
 // reportTargetSamples reports the sample count for each target to the target allocator
 func (t *transaction) reportTargetSamples(totalSamples int) {
 	// Report samples for each resource (job/instance combination)
+	// Use the original job name from the target (before metric relabeling) to ensure
+	// it matches the job name used by the target allocator
 	for rKey := range t.families {
-		t.targetSamplesReporter.ReportTargetSamples(rKey.job, rKey.instance, totalSamples)
+		jobName := t.originalJobName
+		if jobName == "" {
+			// Fallback to the job from resource key if original job name is not available
+			jobName = rKey.job
+		}
+		t.targetSamplesReporter.ReportTargetSamples(jobName, rKey.instance, totalSamples)
 	}
 }
