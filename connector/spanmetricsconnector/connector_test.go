@@ -2337,8 +2337,8 @@ func TestBuildAttributesWithFeatureGate(t *testing.T) {
 func Test_inferSpanName(t *testing.T) {
 	tests := []struct {
 		name                   string
-		currentSpanName        string // span name currently produced by instrumentation library
-		instrumentationLibrary string // instrumentation library used to produce the test case
+		currentSpanName        string // span name currently produced by the instrumentation library
+		instrumentationLibrary string // instrumentation library used to produce the test case data
 		kind                   ptrace.SpanKind
 		addAttributes          func(pcommon.Map)
 		want                   string
@@ -2373,6 +2373,15 @@ func Test_inferSpanName(t *testing.T) {
 			want: "GET",
 		},
 		{
+			name:            "HTTP server span with just http.method",
+			currentSpanName: "GET /users/123",
+			kind:            ptrace.SpanKindServer,
+			addAttributes: func(attrs pcommon.Map) {
+				attrs.PutStr("http.method", "GET")
+			},
+			want: "GET",
+		},
+		{
 			name:            "Fix for https://github.com/vercel/next.js/issues/54694",
 			currentSpanName: "GET /app/workspaces/7?_rsc=hn5g2",
 			kind:            ptrace.SpanKindServer,
@@ -2396,20 +2405,22 @@ func Test_inferSpanName(t *testing.T) {
 				attrs.PutStr("next.span_type", "BaseServer.handleRequest")
 				attrs.PutBool("next.rsc", false)
 				attrs.PutStr("http.target", "/api/products/0PUK6V6EV0")
-				attrs.PutStr("http.target", "/api/products/0PUK6V6EV0")
 				attrs.PutStr("http.status", "200")
 			},
 			want: "GET",
 		},
 		{
-			name:            "HTTP server span with just deprecated http.method",
-			currentSpanName: "GET /users/123",
-			kind:            ptrace.SpanKindServer,
+			name:                   "Fix for https://github.com/open-telemetry/opentelemetry-python-contrib/issues/1914",
+			currentSpanName:        "GET /resouce/9ea43cd7-bd77-494d-8fac-209c0dc7a438",
+			instrumentationLibrary: "opentelemetry.instrumentation.pyramid.callbacks:",
+			kind:                   ptrace.SpanKindServer,
 			addAttributes: func(attrs pcommon.Map) {
 				attrs.PutStr("http.method", "GET")
+				attrs.PutStr("http.target", "/resouce/9ea43cd7-bd77-494d-8fac-209c0dc7a438")
 			},
 			want: "GET",
 		},
+
 		// HTTP CLIENT SPANS
 		{
 			name:            "HTTP client span with both http.request.method and url.template",
@@ -2483,10 +2494,10 @@ func Test_inferSpanName(t *testing.T) {
 			instrumentationLibrary: "NpgsqlLibrary:0.1.0",
 			addAttributes: func(attrs pcommon.Map) {
 				attrs.PutStr("db.system", "postgresql")
-				attrs.PutInt("db.connection_id\t\n", 54)
-				attrs.PutStr("db.connection_string\t\n", "Host=postgresql;Username=otelu;Database=otel")
-				attrs.PutStr("db.name\t\n", "otel")
-				attrs.PutStr("db.statement\t\n", `
+				attrs.PutInt("db.connection_id", 54)
+				attrs.PutStr("db.connection_string", "Host=postgresql;Username=otelu;Database=otel")
+				attrs.PutStr("db.name", "otel")
+				attrs.PutStr("db.statement", `
 INSERT INTO "order" (order_id)
 VALUES (@p0);
 INSERT INTO orderitem (order_id, product_id, item_cost_currency_code, item_cost_nanos, item_cost_units, quantity)
@@ -2494,8 +2505,8 @@ VALUES (@p1, @p2, @p3, @p4, @p5, @p6);
 INSERT INTO shipping (shipping_tracking_id, city, country, order_id, shipping_cost_currency_code, shipping_cost_nanos, shipping_cost_units, state, street_address, zip_code)
 VALUES (@p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16);
 `)
-				attrs.PutStr("db.user\t\n", "otelu")
-				attrs.PutStr("net.peer.name\t\n", "postgresql")
+				attrs.PutStr("db.user", "otelu")
+				attrs.PutStr("net.peer.name", "postgresql")
 			},
 			want: "otel",
 		},
