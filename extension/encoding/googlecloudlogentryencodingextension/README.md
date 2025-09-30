@@ -302,3 +302,4 @@ See the struct of the Cloud Audit Log payload in [AuditLog](https://cloud.google
 | `psc.psc_attachment.vpc.subnetwork_name` | `gcp.vpc.flow.private_service_connect.attachment.vpc.subnet.name` |
 | `psc.psc_attachment.vpc.subnetwork_region` | `gcp.vpc.flow.private_service_connect.attachment.vpc.subnet.region` |
 | `psc.psc_attachment.vpc.vpc_name` | `gcp.vpc.flow.private_service_connect.attachment.vpc.name` |
+| `rdma_traffic_type` | `gcp.vpc.flow.remote_direct_memory_access.traffic_type` |
