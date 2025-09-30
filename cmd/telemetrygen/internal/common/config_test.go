@@ -56,6 +56,38 @@ func TestKeyValueSet(t *testing.T) {
 			expected: KeyValue(map[string]any{"key": 0}),
 		},
 		{
+			flag:     "key=[\"value1\"]",
+			expected: KeyValue(map[string]any{"key": []string{"value1"}}),
+		},
+		{
+			flag:     "key=[\"value1\", \"value2\"]",
+			expected: KeyValue(map[string]any{"key": []string{"value1", "value2"}}),
+		},
+		{
+			flag:     "key=[1]",
+			expected: KeyValue(map[string]any{"key": []int{1}}),
+		},
+		{
+			flag:     "key=[1, 2]",
+			expected: KeyValue(map[string]any{"key": []int{1, 2}}),
+		},
+		{
+			flag:     "key=[true]",
+			expected: KeyValue(map[string]any{"key": []bool{true}}),
+		},
+		{
+			flag:     "key=[true, false]",
+			expected: KeyValue(map[string]any{"key": []bool{true, false}}),
+		},
+		{
+			flag: "key=[\"value1\", 2]",
+			err:  errFormatOTLPAttributes,
+		},
+		{
+			flag: "key=[true, \"value2\"]",
+			err:  errFormatOTLPAttributes,
+		},
+		{
 			flag: "key=12.34",
 			err:  errDoubleQuotesOTLPAttributes,
 		},
