@@ -674,25 +674,6 @@ func httpSpanName(span ptrace.Span, subject attribute.Key) string {
 	return ""
 }
 
-func messagingSpanName(span ptrace.Span) string {
-	if system, ok := span.Attributes().Get(string(semconv.MessagingSystemKey)); ok {
-		operation, okOperation := attributeValue(span, semconv.MessagingOperationNameKey, "messaging.operation")
-		destination := messagingDestination(span)
-
-		if okOperation && destination != "" {
-			return operation.AsString() + " " + destination
-		}
-		if destination != "" {
-			return destination
-		}
-		if okOperation {
-			return operation.AsString()
-		}
-		return "(" + system.AsString() + ")"
-	}
-	return ""
-}
-
 // https://opentelemetry.io/docs/specs/semconv/rpc/rpc-spans/
 func rpcSpanName(span ptrace.Span) string {
 	if system, ok := span.Attributes().Get(string(semconv.RPCSystemKey)); ok {
@@ -734,9 +715,28 @@ func dbSpanName(span ptrace.Span) string {
 	return ""
 }
 
-func messagingDestination(span ptrace.Span) string {
-	// https://opentelemetry.io/docs/specs/semconv/messaging/messaging-spans/#span-name
+// https://opentelemetry.io/docs/specs/semconv/messaging/messaging-spans/#span-name
+func messagingSpanName(span ptrace.Span) string {
+	if system, ok := span.Attributes().Get(string(semconv.MessagingSystemKey)); ok {
+		operation, okOperation := attributeValue(span, semconv.MessagingOperationNameKey, "messaging.operation")
+		destination := messagingDestination(span)
 
+		if okOperation && destination != "" {
+			return operation.AsString() + " " + destination
+		}
+		if destination != "" {
+			return destination
+		}
+		if okOperation {
+			return operation.AsString()
+		}
+		return "(" + system.AsString() + ")"
+	}
+	return ""
+}
+
+// https://opentelemetry.io/docs/specs/semconv/messaging/messaging-spans/#span-name
+func messagingDestination(span ptrace.Span) string {
 	if temporaryDestination, ok := span.Attributes().Get(string(semconv.MessagingDestinationTemporaryKey)); ok {
 		if temporaryDestination.Bool() {
 			return "(temporary)"
