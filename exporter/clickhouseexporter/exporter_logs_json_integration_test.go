@@ -42,38 +42,44 @@ func verifyExportLogsJSON(t *testing.T, exporter *logsJSONExporter, mapBody bool
 	})
 
 	type log struct {
-		Timestamp          time.Time `ch:"Timestamp"`
-		TraceID            string    `ch:"TraceId"`
-		SpanID             string    `ch:"SpanId"`
-		TraceFlags         uint8     `ch:"TraceFlags"`
-		SeverityText       string    `ch:"SeverityText"`
-		SeverityNumber     uint8     `ch:"SeverityNumber"`
-		ServiceName        string    `ch:"ServiceName"`
-		Body               string    `ch:"Body"`
-		ResourceSchemaURL  string    `ch:"ResourceSchemaUrl"`
-		ResourceAttributes string    `ch:"ResourceAttributes"`
-		ScopeSchemaURL     string    `ch:"ScopeSchemaUrl"`
-		ScopeName          string    `ch:"ScopeName"`
-		ScopeVersion       string    `ch:"ScopeVersion"`
-		ScopeAttributes    string    `ch:"ScopeAttributes"`
-		LogAttributes      string    `ch:"LogAttributes"`
+		Timestamp              time.Time `ch:"Timestamp"`
+		TraceID                string    `ch:"TraceId"`
+		SpanID                 string    `ch:"SpanId"`
+		TraceFlags             uint8     `ch:"TraceFlags"`
+		SeverityText           string    `ch:"SeverityText"`
+		SeverityNumber         uint8     `ch:"SeverityNumber"`
+		ServiceName            string    `ch:"ServiceName"`
+		Body                   string    `ch:"Body"`
+		ResourceSchemaURL      string    `ch:"ResourceSchemaUrl"`
+		ResourceAttributes     string    `ch:"ResourceAttributes"`
+		ResourceAttributesKeys []string  `ch:"ResourceAttributesKeys"`
+		ScopeSchemaURL         string    `ch:"ScopeSchemaUrl"`
+		ScopeName              string    `ch:"ScopeName"`
+		ScopeVersion           string    `ch:"ScopeVersion"`
+		ScopeAttributes        string    `ch:"ScopeAttributes"`
+		ScopeAttributesKeys    []string  `ch:"ScopeAttributesKeys"`
+		LogAttributes          string    `ch:"LogAttributes"`
+		LogAttributesKeys      []string  `ch:"LogAttributesKeys"`
 	}
 
 	expectedLog := log{
-		Timestamp:          telemetryTimestamp,
-		TraceID:            "01020300000000000000000000000000",
-		SpanID:             "0102030000000000",
-		SeverityText:       "error",
-		SeverityNumber:     18,
-		ServiceName:        "test-service",
-		Body:               "error message",
-		ResourceSchemaURL:  "https://opentelemetry.io/schemas/1.4.0",
-		ResourceAttributes: `{"service":{"name":"test-service"}}`,
-		ScopeName:          "io.opentelemetry.contrib.clickhouse",
-		ScopeVersion:       "1.0.0",
-		ScopeSchemaURL:     "https://opentelemetry.io/schemas/1.7.0",
-		ScopeAttributes:    `{"lib":"clickhouse"}`,
-		LogAttributes:      `{"service":{"namespace":"default"}}`,
+		Timestamp:              telemetryTimestamp,
+		TraceID:                "01020300000000000000000000000000",
+		SpanID:                 "0102030000000000",
+		SeverityText:           "error",
+		SeverityNumber:         18,
+		ServiceName:            "test-service",
+		Body:                   "error message",
+		ResourceSchemaURL:      "https://opentelemetry.io/schemas/1.4.0",
+		ResourceAttributes:     `{"service":{"name":"test-service"}}`,
+		ResourceAttributesKeys: []string{"service.name"},
+		ScopeName:              "io.opentelemetry.contrib.clickhouse",
+		ScopeVersion:           "1.0.0",
+		ScopeSchemaURL:         "https://opentelemetry.io/schemas/1.7.0",
+		ScopeAttributes:        `{"lib":"clickhouse"}`,
+		ScopeAttributesKeys:    []string{"lib"},
+		LogAttributes:          `{"service":{"namespace":"default"}}`,
+		LogAttributesKeys:      []string{"service.namespace"},
 	}
 	if mapBody {
 		expectedLog.Body = `{"error":"message"}`

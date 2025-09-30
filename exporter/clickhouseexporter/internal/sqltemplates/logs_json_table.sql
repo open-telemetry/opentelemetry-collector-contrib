@@ -9,12 +9,18 @@ CREATE TABLE IF NOT EXISTS "%s"."%s" %s (
     Body String CODEC(ZSTD(1)),
     ResourceSchemaUrl LowCardinality(String) CODEC(ZSTD(1)),
     ResourceAttributes JSON CODEC(ZSTD(1)),
+    ResourceAttributesKeys Array(LowCardinality(String)) CODEC(ZSTD(1)),
     ScopeSchemaUrl LowCardinality(String) CODEC(ZSTD(1)),
     ScopeName String CODEC(ZSTD(1)),
     ScopeVersion LowCardinality(String) CODEC(ZSTD(1)),
     ScopeAttributes JSON CODEC(ZSTD(1)),
+    ScopeAttributesKeys Array(LowCardinality(String)) CODEC(ZSTD(1)),
     LogAttributes JSON CODEC(ZSTD(1)),
+    LogAttributesKeys Array(LowCardinality(String)) CODEC(ZSTD(1)),
 
+    INDEX idx_res_attr_key ResourceAttributesKeys TYPE bloom_filter(0.01) GRANULARITY 1,
+    INDEX idx_scope_attr_key ScopeAttributesKeys TYPE bloom_filter(0.01) GRANULARITY 1,
+    INDEX idx_log_attr_key LogAttributesKeys TYPE bloom_filter(0.01) GRANULARITY 1,
     INDEX idx_body Body TYPE tokenbf_v1(32768, 3, 0) GRANULARITY 8
 ) ENGINE = %s
 PARTITION BY toDate(Timestamp)

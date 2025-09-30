@@ -90,6 +90,7 @@ func (e *logsJSONExporter) pushLogsData(ctx context.Context, ld plog.Logs) error
 		resURL := logs.SchemaUrl()
 		resAttr := res.Attributes()
 		serviceName := internal.GetServiceName(resAttr)
+		resAttrKeys := internal.UniqueFlattenedAttributes(resAttr)
 		resAttrBytes, resAttrErr := json.Marshal(resAttr.AsRaw())
 		if resAttrErr != nil {
 			return fmt.Errorf("failed to marshal json log resource attributes: %w", resAttrErr)
@@ -103,7 +104,9 @@ func (e *logsJSONExporter) pushLogsData(ctx context.Context, ld plog.Logs) error
 			scopeName := scopeLogScope.Name()
 			scopeVersion := scopeLogScope.Version()
 			scopeLogRecords := scopeLog.LogRecords()
-			scopeAttrBytes, scopeAttrErr := json.Marshal(scopeLogScope.Attributes().AsRaw())
+			scopeAttr := scopeLogScope.Attributes()
+			scopeAttrKeys := internal.UniqueFlattenedAttributes(scopeAttr)
+			scopeAttrBytes, scopeAttrErr := json.Marshal(scopeAttr.AsRaw())
 			if scopeAttrErr != nil {
 				return fmt.Errorf("failed to marshal json log scope attributes: %w", scopeAttrErr)
 			}
@@ -111,7 +114,9 @@ func (e *logsJSONExporter) pushLogsData(ctx context.Context, ld plog.Logs) error
 			slrLen := scopeLogRecords.Len()
 			for k := 0; k < slrLen; k++ {
 				r := scopeLogRecords.At(k)
-				logAttrBytes, logAttrErr := json.Marshal(r.Attributes().AsRaw())
+				logAttr := r.Attributes()
+				logAttrKeys := internal.UniqueFlattenedAttributes(logAttr)
+				logAttrBytes, logAttrErr := json.Marshal(logAttr.AsRaw())
 				if logAttrErr != nil {
 					return fmt.Errorf("failed to marshal json log attributes: %w", logAttrErr)
 				}
@@ -132,11 +137,14 @@ func (e *logsJSONExporter) pushLogsData(ctx context.Context, ld plog.Logs) error
 					r.Body().AsString(),
 					resURL,
 					resAttrBytes,
+					resAttrKeys,
 					scopeURL,
 					scopeName,
 					scopeVersion,
 					scopeAttrBytes,
+					scopeAttrKeys,
 					logAttrBytes,
+					logAttrKeys,
 				)
 				if appendErr != nil {
 					return fmt.Errorf("failed to append json log row: %w", appendErr)
