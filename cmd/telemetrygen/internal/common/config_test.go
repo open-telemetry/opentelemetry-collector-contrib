@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 func TestKeyValueSet(t *testing.T) {
@@ -153,6 +154,113 @@ func TestEndpoint(t *testing.T) {
 			}
 
 			assert.Equal(t, tc.expected, cfg.Endpoint())
+		})
+	}
+}
+
+func TestGetAttributes(t *testing.T) {
+	tests := []struct {
+		name                        string
+		cfg                         *Config
+		expectedAttributes          []attribute.KeyValue
+		expectedTelemetryAttributes []attribute.KeyValue
+	}{
+		{
+			name: "String Attributes",
+			cfg: &Config{
+				ServiceName:         "test",
+				ResourceAttributes:  KeyValue(map[string]any{"resourceKey": "value1"}),
+				TelemetryAttributes: KeyValue(map[string]any{"telemetryKey": "value2"}),
+			},
+			expectedAttributes: []attribute.KeyValue{
+				attribute.String("service.name", "test"),
+				attribute.String("resourceKey", "value1"),
+			},
+			expectedTelemetryAttributes: []attribute.KeyValue{
+				attribute.String("telemetryKey", "value2"),
+			},
+		},
+		{
+			name: "String Slice Attributes",
+			cfg: &Config{
+				ServiceName:         "test",
+				ResourceAttributes:  KeyValue(map[string]any{"resourceKey": []string{"value1", "value2"}}),
+				TelemetryAttributes: KeyValue(map[string]any{"telemetryKey": []string{"value3", "value4"}}),
+			},
+			expectedAttributes: []attribute.KeyValue{
+				attribute.String("service.name", "test"),
+				attribute.StringSlice("resourceKey", []string{"value1", "value2"}),
+			},
+			expectedTelemetryAttributes: []attribute.KeyValue{
+				attribute.StringSlice("telemetryKey", []string{"value3", "value4"}),
+			},
+		},
+		{
+			name: "Int Attributes",
+			cfg: &Config{
+				ServiceName:         "test",
+				ResourceAttributes:  KeyValue(map[string]any{"resourceKey": 123}),
+				TelemetryAttributes: KeyValue(map[string]any{"telemetryKey": 456}),
+			},
+			expectedAttributes: []attribute.KeyValue{
+				attribute.String("service.name", "test"),
+				attribute.Int("resourceKey", 123),
+			},
+			expectedTelemetryAttributes: []attribute.KeyValue{
+				attribute.Int("telemetryKey", 456),
+			},
+		},
+		{
+			name: "Int Slice Attributes",
+			cfg: &Config{
+				ServiceName:         "test",
+				ResourceAttributes:  KeyValue(map[string]any{"resourceKey": []int{123, 456}}),
+				TelemetryAttributes: KeyValue(map[string]any{"telemetryKey": []int{789, 101}}),
+			},
+			expectedAttributes: []attribute.KeyValue{
+				attribute.String("service.name", "test"),
+				attribute.IntSlice("resourceKey", []int{123, 456}),
+			},
+			expectedTelemetryAttributes: []attribute.KeyValue{
+				attribute.IntSlice("telemetryKey", []int{789, 101}),
+			},
+		},
+		{
+			name: "Bool Attributes",
+			cfg: &Config{
+				ServiceName:         "test",
+				ResourceAttributes:  KeyValue(map[string]any{"resourceKey": true}),
+				TelemetryAttributes: KeyValue(map[string]any{"telemetryKey": false}),
+			},
+			expectedAttributes: []attribute.KeyValue{
+				attribute.String("service.name", "test"),
+				attribute.Bool("resourceKey", true),
+			},
+			expectedTelemetryAttributes: []attribute.KeyValue{
+				attribute.Bool("telemetryKey", false),
+			},
+		},
+		{
+			name: "Bool Slice Attributes",
+			cfg: &Config{
+				ServiceName:         "test",
+				ResourceAttributes:  KeyValue(map[string]any{"resourceKey": []bool{true, false}}),
+				TelemetryAttributes: KeyValue(map[string]any{"telemetryKey": []bool{false, true, false}}),
+			},
+			expectedAttributes: []attribute.KeyValue{
+				attribute.String("service.name", "test"),
+				attribute.BoolSlice("resourceKey", []bool{true, false}),
+			},
+			expectedTelemetryAttributes: []attribute.KeyValue{
+				attribute.BoolSlice("telemetryKey", []bool{false, true, false}),
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expectedAttributes, tt.cfg.GetAttributes())
+			assert.Equal(t, tt.expectedTelemetryAttributes, tt.cfg.GetTelemetryAttributes())
 		})
 	}
 }

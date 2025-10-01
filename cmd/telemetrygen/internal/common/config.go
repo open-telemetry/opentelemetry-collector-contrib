@@ -166,6 +166,12 @@ func (c *Config) GetAttributes() []attribute.KeyValue {
 				attributes = append(attributes, attribute.Bool(k, v))
 			case int:
 				attributes = append(attributes, attribute.Int(k, v))
+			case []string:
+				attributes = append(attributes, attribute.StringSlice(k, v))
+			case []bool:
+				attributes = append(attributes, attribute.BoolSlice(k, v))
+			case []int:
+				attributes = append(attributes, attribute.IntSlice(k, v))
 			}
 		}
 	}
@@ -184,6 +190,12 @@ func (c *Config) GetTelemetryAttributes() []attribute.KeyValue {
 				attributes = append(attributes, attribute.Bool(k, v))
 			case int:
 				attributes = append(attributes, attribute.Int(k, v))
+			case []string:
+				attributes = append(attributes, attribute.StringSlice(k, v))
+			case []bool:
+				attributes = append(attributes, attribute.BoolSlice(k, v))
+			case []int:
+				attributes = append(attributes, attribute.IntSlice(k, v))
 			}
 		}
 	}
