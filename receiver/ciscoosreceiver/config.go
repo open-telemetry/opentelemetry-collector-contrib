@@ -5,7 +5,6 @@ package ciscoosreceiver // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"errors"
-	"time"
 
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
@@ -17,10 +16,8 @@ type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
 	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
 
-	CollectionInterval time.Duration  `mapstructure:"collection_interval"`
-	Devices            []DeviceConfig `mapstructure:"devices"`
-	Timeout            time.Duration  `mapstructure:"timeout"`
-	Scrapers           ScrapersConfig `mapstructure:"scrapers"`
+	Devices  []DeviceConfig `mapstructure:"devices"`
+	Scrapers ScrapersConfig `mapstructure:"scrapers"`
 }
 
 // DeviceConfig represents configuration for a single Cisco device
@@ -68,14 +65,6 @@ func (cfg *Config) Validate() error {
 				return errors.New("device password cannot be empty")
 			}
 		}
-	}
-
-	if cfg.Timeout <= 0 {
-		return errors.New("timeout must be greater than 0")
-	}
-
-	if cfg.CollectionInterval <= 0 {
-		return errors.New("collection_interval must be greater than 0")
 	}
 
 	// Check if at least one scraper is enabled

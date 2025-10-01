@@ -32,13 +32,12 @@ func NewFactory() receiver.Factory {
 func createDefaultConfig() component.Config {
 	cfg := scraperhelper.NewDefaultControllerConfig()
 	cfg.CollectionInterval = defaultCollectionInterval
+	cfg.Timeout = defaultTimeout
 
 	return &Config{
 		ControllerConfig:     cfg,
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
-		CollectionInterval:   defaultCollectionInterval,
 		Devices:              []DeviceConfig{},
-		Timeout:              defaultTimeout,
 		Scrapers: ScrapersConfig{
 			BGP:         true,
 			Environment: true,

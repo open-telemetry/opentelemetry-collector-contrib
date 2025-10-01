@@ -23,7 +23,7 @@ The following settings are available:
 | `devices` | []DeviceConfig | Yes | List of Cisco devices to monitor |
 | `collection_interval` | duration | No | How often to collect metrics (default: 60s) |
 | `timeout` | duration | No | SSH connection and command timeout (default: 30s) |
-| `scrapers` | ScrapersConfig | Yes | Enable/disable specific scrapers |
+| `scrapers` | map | Yes | Scrapers to enable |
 
 ### Device Configuration
 
@@ -38,13 +38,17 @@ The following settings are available:
 
 ### Scrapers Configuration
 
+The scrapers are configured as groups.
+
 | Setting | Type | Description |
 |---------|------|-------------|
-| `bgp` | bool | BGP session metrics |
-| `environment` | bool | Temperature and power metrics |
-| `facts` | bool | System information metrics |
-| `interfaces` | bool | Interface status and statistics |
-| `optics` | bool | Optical transceiver metrics |
+| `bgp` | map | BGP session metrics configuration |
+| `environment` | map | Temperature and power metrics configuration |
+| `facts` | map | System information metrics configuration |
+| `interfaces` | map | Interface status and statistics configuration |
+| `optics` | map | Optical transceiver metrics configuration |
+
+Each scraper can be enabled by simply including it in the configuration, or disabled by omitting it. Future versions may support scraper-specific configuration options within each group.
 
 ## Scrapers
 
@@ -63,20 +67,19 @@ receivers:
   ciscoosreceiver:
     collection_interval: 60s
     timeout: 30s
-    scrapers:
-      bgp: true
-      environment: true
-      facts: true
-      interfaces: true
-      optics: true
     devices:
       - host: "cisco-device:22"
         username: "admin"
         password: "password"
+    scrapers:
+      bgp:
+      environment:
+      facts:
+      interfaces:
+      optics:
 
 exporters:
   debug:
-    verbosity: detailed
 
 service:
   pipelines:
@@ -84,9 +87,3 @@ service:
       receivers: [ciscoosreceiver]
       exporters: [debug]
 ```
-
-## Metrics
-
-| Metric | Type | Description | Attributes |
-|--------|------|-------------|------------|
-| `cisco.device.connected` | Gauge | Device connectivity status (1=connected, 0=disconnected) | `host` |

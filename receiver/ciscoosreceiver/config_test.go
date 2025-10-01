@@ -9,6 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 )
 
 func TestConfigValidate(t *testing.T) {
@@ -20,11 +21,13 @@ func TestConfigValidate(t *testing.T) {
 		{
 			name: "valid config with password auth",
 			config: &Config{
+				ControllerConfig: scraperhelper.ControllerConfig{
+					Timeout:            30 * time.Second,
+					CollectionInterval: 60 * time.Second,
+				},
 				Devices: []DeviceConfig{
 					{Host: "localhost:22", Username: "admin", Password: "password"},
 				},
-				Timeout:            30 * time.Second,
-				CollectionInterval: 60 * time.Second,
 				Scrapers: ScrapersConfig{
 					BGP: true,
 				},
@@ -34,11 +37,13 @@ func TestConfigValidate(t *testing.T) {
 		{
 			name: "valid config with key file auth",
 			config: &Config{
+				ControllerConfig: scraperhelper.ControllerConfig{
+					Timeout:            30 * time.Second,
+					CollectionInterval: 60 * time.Second,
+				},
 				Devices: []DeviceConfig{
 					{Host: "localhost:22", Username: "admin", KeyFile: "/path/to/key"},
 				},
-				Timeout:            30 * time.Second,
-				CollectionInterval: 60 * time.Second,
 				Scrapers: ScrapersConfig{
 					Facts: true,
 				},
@@ -48,9 +53,11 @@ func TestConfigValidate(t *testing.T) {
 		{
 			name: "no devices",
 			config: &Config{
-				Devices:            []DeviceConfig{},
-				Timeout:            30 * time.Second,
-				CollectionInterval: 60 * time.Second,
+				ControllerConfig: scraperhelper.ControllerConfig{
+					Timeout:            30 * time.Second,
+					CollectionInterval: 60 * time.Second,
+				},
+				Devices: []DeviceConfig{},
 				Scrapers: ScrapersConfig{
 					BGP: true,
 				},
@@ -60,11 +67,13 @@ func TestConfigValidate(t *testing.T) {
 		{
 			name: "empty host",
 			config: &Config{
+				ControllerConfig: scraperhelper.ControllerConfig{
+					Timeout:            30 * time.Second,
+					CollectionInterval: 60 * time.Second,
+				},
 				Devices: []DeviceConfig{
 					{Host: "", Username: "admin", Password: "password"},
 				},
-				Timeout:            30 * time.Second,
-				CollectionInterval: 60 * time.Second,
 				Scrapers: ScrapersConfig{
 					BGP: true,
 				},
@@ -74,11 +83,13 @@ func TestConfigValidate(t *testing.T) {
 		{
 			name: "missing username for password auth",
 			config: &Config{
+				ControllerConfig: scraperhelper.ControllerConfig{
+					Timeout:            30 * time.Second,
+					CollectionInterval: 60 * time.Second,
+				},
 				Devices: []DeviceConfig{
 					{Host: "localhost:22", Username: "", Password: "password"},
 				},
-				Timeout:            30 * time.Second,
-				CollectionInterval: 60 * time.Second,
 				Scrapers: ScrapersConfig{
 					BGP: true,
 				},
@@ -88,11 +99,13 @@ func TestConfigValidate(t *testing.T) {
 		{
 			name: "missing password for password auth",
 			config: &Config{
+				ControllerConfig: scraperhelper.ControllerConfig{
+					Timeout:            30 * time.Second,
+					CollectionInterval: 60 * time.Second,
+				},
 				Devices: []DeviceConfig{
 					{Host: "localhost:22", Username: "admin", Password: ""},
 				},
-				Timeout:            30 * time.Second,
-				CollectionInterval: 60 * time.Second,
 				Scrapers: ScrapersConfig{
 					BGP: true,
 				},
@@ -100,41 +113,15 @@ func TestConfigValidate(t *testing.T) {
 			expectedErr: "device password cannot be empty",
 		},
 		{
-			name: "zero timeout",
-			config: &Config{
-				Devices: []DeviceConfig{
-					{Host: "localhost:22", Username: "admin", Password: "password"},
-				},
-				Timeout:            0,
-				CollectionInterval: 60 * time.Second,
-				Scrapers: ScrapersConfig{
-					BGP: true,
-				},
-			},
-			expectedErr: "timeout must be greater than 0",
-		},
-		{
-			name: "zero collection interval",
-			config: &Config{
-				Devices: []DeviceConfig{
-					{Host: "localhost:22", Username: "admin", Password: "password"},
-				},
-				Timeout:            30 * time.Second,
-				CollectionInterval: 0,
-				Scrapers: ScrapersConfig{
-					BGP: true,
-				},
-			},
-			expectedErr: "collection_interval must be greater than 0",
-		},
-		{
 			name: "no scrapers enabled",
 			config: &Config{
+				ControllerConfig: scraperhelper.ControllerConfig{
+					Timeout:            30 * time.Second,
+					CollectionInterval: 60 * time.Second,
+				},
 				Devices: []DeviceConfig{
 					{Host: "localhost:22", Username: "admin", Password: "password"},
 				},
-				Timeout:            30 * time.Second,
-				CollectionInterval: 60 * time.Second,
 				Scrapers: ScrapersConfig{
 					BGP:         false,
 					Environment: false,
