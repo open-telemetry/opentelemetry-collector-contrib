@@ -58,7 +58,7 @@ func (v *KeyValue) Set(s string) error {
 	}
 	key := kv[0]
 
-	if !(strings.HasPrefix(kv[1], "[") && strings.HasSuffix(kv[1], "]")) {
+	if !strings.HasPrefix(kv[1], "[") || !strings.HasSuffix(kv[1], "]") {
 		val, err := parseValue(kv[1])
 		if err != nil {
 			return err
@@ -166,6 +166,12 @@ func (c *Config) GetAttributes() []attribute.KeyValue {
 				attributes = append(attributes, attribute.Bool(k, v))
 			case int:
 				attributes = append(attributes, attribute.Int(k, v))
+			case []string:
+				attributes = append(attributes, attribute.StringSlice(k, v))
+			case []bool:
+				attributes = append(attributes, attribute.BoolSlice(k, v))
+			case []int:
+				attributes = append(attributes, attribute.IntSlice(k, v))
 			}
 		}
 	}
@@ -184,6 +190,12 @@ func (c *Config) GetTelemetryAttributes() []attribute.KeyValue {
 				attributes = append(attributes, attribute.Bool(k, v))
 			case int:
 				attributes = append(attributes, attribute.Int(k, v))
+			case []string:
+				attributes = append(attributes, attribute.StringSlice(k, v))
+			case []bool:
+				attributes = append(attributes, attribute.BoolSlice(k, v))
+			case []int:
+				attributes = append(attributes, attribute.IntSlice(k, v))
 			}
 		}
 	}
