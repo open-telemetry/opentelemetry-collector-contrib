@@ -101,7 +101,7 @@
               {
                 "id": "color",
                 "value": {
-                  "fixedColor": "blue",
+                  "fixedColor": "green",
                   "mode": "fixed"
                 }
               }
@@ -116,7 +116,7 @@
               {
                 "id": "color",
                 "value": {
-                  "fixedColor": "red",
+                  "fixedColor": "yellow",
                   "mode": "fixed"
                 }
               },
@@ -226,7 +226,7 @@
               {
                 "id": "color",
                 "value": {
-                  "fixedColor": "red",
+                  "fixedColor": "yellow",
                   "mode": "fixed"
                 }
               }
@@ -260,7 +260,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "aggregated_temperature_celsius",
+          "expr": "aggregated_temperature_celsius_ratio",
           "legendFormat": "Aggregated Temperature",
           "range": true,
           "refId": "A"

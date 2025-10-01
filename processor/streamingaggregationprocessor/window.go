@@ -11,6 +11,8 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/aggregateutil"
 )
 
 // TimeWindow represents a time window boundary (no aggregators stored here)
@@ -667,6 +669,258 @@ func (a *Aggregator) MergeHistogramWithTemporalityAndGapDetection(dp pmetric.His
 	}
 }
 
+// MergeHistogramWithAggregateUtil merges histogram data points using battle-tested aggregateutil logic
+// This provides enhanced bucket merging, better edge case handling, and standardized aggregation patterns
+func (a *Aggregator) MergeHistogramWithAggregateUtil(dp pmetric.HistogramDataPoint, temporality pmetric.AggregationTemporality, staleThreshold time.Duration) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
+	// Handle gap detection and reset logic (preserve our streaming semantics)
+	if temporality == pmetric.AggregationTemporalityCumulative && staleThreshold > 0 {
+		sourceKey := getSourceKey(dp.Attributes())
+		if a.checkAndHandleGapDetection(sourceKey, staleThreshold) {
+			// Gap detected - reset state and proceed with fresh aggregation
+		}
+	}
+
+	// Create temporary metric to use with aggregateutil
+	tempMetric := pmetric.NewMetric()
+	tempMetric.SetName("temp_histogram")
+	tempHist := tempMetric.SetEmptyHistogram()
+	tempHist.SetAggregationTemporality(temporality)
+
+	// Convert our existing aggregated state to a data point
+	if a.histogramTotalCount > 0 {
+		existingDp := tempHist.DataPoints().AppendEmpty()
+		a.populateHistogramDataPoint(existingDp)
+	}
+
+	// Add the new data point (after delta conversion if cumulative)
+	newDp := tempHist.DataPoints().AppendEmpty()
+	if temporality == pmetric.AggregationTemporalityCumulative {
+		// Convert cumulative to delta before merging
+		a.convertCumulativeToDelta(dp, newDp)
+	} else {
+		// Copy delta data point as-is
+		dp.CopyTo(newDp)
+	}
+
+	// Use aggregateutil to group and merge the data points
+	aggGroups := &aggregateutil.AggGroups{}
+	aggregateutil.GroupDataPoints(tempMetric, aggGroups)
+
+	// Create result metric
+	resultMetric := pmetric.NewMetric()
+	aggregateutil.CopyMetricDetails(tempMetric, resultMetric)
+
+	// Merge using aggregateutil (uses Sum strategy for histograms)
+	aggregateutil.MergeDataPoints(resultMetric, aggregateutil.Sum, *aggGroups)
+
+	// Extract the merged result back to our aggregator state
+	if resultMetric.Histogram().DataPoints().Len() > 0 {
+		mergedDp := resultMetric.Histogram().DataPoints().At(0)
+		a.updateFromHistogramDataPoint(mergedDp)
+	}
+
+	// Update min/max if available (preserve existing logic)
+	if dp.HasMin() {
+		a.updateMinMaxLocked(dp.Min())
+	}
+	if dp.HasMax() {
+		a.updateMinMaxLocked(dp.Max())
+	}
+}
+
+// checkAndHandleGapDetection checks for stale data and resets state if needed
+func (a *Aggregator) checkAndHandleGapDetection(sourceKey string, staleThreshold time.Duration) bool {
+	if a.lastHistogramValues == nil {
+		a.lastHistogramValues = make(map[string]*histogramCumulativeState)
+		return false
+	}
+
+	sourceState, exists := a.lastHistogramValues[sourceKey]
+	if !exists {
+		return false
+	}
+
+	currentTime := time.Now()
+	lastTime := sourceState.lastTimestamp.AsTime()
+	if !lastTime.IsZero() {
+		timeSinceLastData := currentTime.Sub(lastTime)
+		if timeSinceLastData > staleThreshold {
+			// Gap detected - reset all histogram state
+			a.histogramTotalSum = 0
+			a.histogramTotalCount = 0
+			a.histogramTotalBuckets = make(map[float64]uint64)
+			a.histogramBuckets = make(map[float64]uint64)
+			a.lastHistogramValues = make(map[string]*histogramCumulativeState)
+			return true
+		}
+	}
+	return false
+}
+
+// populateHistogramDataPoint populates a data point with current aggregated state
+func (a *Aggregator) populateHistogramDataPoint(dp pmetric.HistogramDataPoint) {
+	dp.SetSum(a.histogramTotalSum)
+	dp.SetCount(a.histogramTotalCount)
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+
+	if a.min != 1e308 {
+		dp.SetMin(a.min)
+	}
+	if a.max != -1e308 {
+		dp.SetMax(a.max)
+	}
+
+	// Set bucket bounds and counts
+	if len(a.histogramTotalBuckets) > 0 {
+		bounds := make([]float64, 0, len(a.histogramTotalBuckets))
+		for bound := range a.histogramTotalBuckets {
+			if bound != 1e308 { // Skip infinity bucket
+				bounds = append(bounds, bound)
+			}
+		}
+		sort.Float64s(bounds)
+
+		dp.ExplicitBounds().FromRaw(bounds)
+
+		// Set bucket counts
+		for _, bound := range bounds {
+			dp.BucketCounts().Append(a.histogramTotalBuckets[bound])
+		}
+		// Add infinity bucket
+		if infCount, ok := a.histogramTotalBuckets[1e308]; ok {
+			dp.BucketCounts().Append(infCount)
+		} else {
+			dp.BucketCounts().Append(0)
+		}
+	}
+}
+
+// convertCumulativeToDelta converts a cumulative histogram to delta using our existing logic
+func (a *Aggregator) convertCumulativeToDelta(cumulativeDp, deltaDp pmetric.HistogramDataPoint) {
+	sourceKey := getSourceKey(cumulativeDp.Attributes())
+
+	// Initialize source state if needed
+	if a.lastHistogramValues == nil {
+		a.lastHistogramValues = make(map[string]*histogramCumulativeState)
+	}
+
+	sourceState, exists := a.lastHistogramValues[sourceKey]
+	if !exists {
+		sourceState = &histogramCumulativeState{
+			lastBuckets:   make(map[float64]uint64),
+			lastTimestamp: pcommon.NewTimestampFromTime(time.Now()),
+		}
+		a.lastHistogramValues[sourceKey] = sourceState
+	}
+
+	// Compute deltas
+	deltaSum := cumulativeDp.Sum() - sourceState.lastSum
+	deltaCount := cumulativeDp.Count() - sourceState.lastCount
+
+	// Handle counter resets
+	if !exists {
+		deltaSum = cumulativeDp.Sum()
+		deltaCount = cumulativeDp.Count()
+	} else if deltaCount < 0 || deltaSum < 0 {
+		deltaSum = cumulativeDp.Sum()
+		deltaCount = cumulativeDp.Count()
+	}
+
+	// Set delta values
+	deltaDp.SetSum(deltaSum)
+	deltaDp.SetCount(deltaCount)
+	deltaDp.SetTimestamp(cumulativeDp.Timestamp())
+
+	// Copy bounds
+	cumulativeDp.ExplicitBounds().CopyTo(deltaDp.ExplicitBounds())
+
+	// Compute delta bucket counts
+	cumulativeBuckets := cumulativeDp.BucketCounts()
+	bounds := cumulativeDp.ExplicitBounds()
+
+	for i := 0; i < cumulativeBuckets.Len(); i++ {
+		var bound float64
+		if i < bounds.Len() {
+			bound = bounds.At(i)
+		} else {
+			bound = 1e308 // Infinity bucket
+		}
+
+		currentBucketCount := cumulativeBuckets.At(i)
+		lastBucketCount := sourceState.lastBuckets[bound]
+		deltaBucketCount := currentBucketCount - lastBucketCount
+
+		if !exists || deltaBucketCount < 0 {
+			deltaBucketCount = currentBucketCount
+		}
+
+		deltaDp.BucketCounts().Append(deltaBucketCount)
+		sourceState.lastBuckets[bound] = currentBucketCount
+	}
+
+	// Update source state
+	sourceState.lastSum = cumulativeDp.Sum()
+	sourceState.lastCount = cumulativeDp.Count()
+	sourceState.lastTimestamp = cumulativeDp.Timestamp()
+
+	// Copy attributes and other metadata
+	cumulativeDp.Attributes().CopyTo(deltaDp.Attributes())
+	if cumulativeDp.HasMin() {
+		deltaDp.SetMin(cumulativeDp.Min())
+	}
+	if cumulativeDp.HasMax() {
+		deltaDp.SetMax(cumulativeDp.Max())
+	}
+}
+
+// updateFromHistogramDataPoint updates aggregator state from a histogram data point
+func (a *Aggregator) updateFromHistogramDataPoint(dp pmetric.HistogramDataPoint) {
+	// Update totals
+	a.histogramTotalSum = dp.Sum()
+	a.histogramTotalCount = dp.Count()
+	a.histogramSum = dp.Sum() // For window-specific tracking
+	a.histogramCount = dp.Count()
+
+	// Initialize buckets if needed
+	if a.histogramTotalBuckets == nil {
+		a.histogramTotalBuckets = make(map[float64]uint64)
+	}
+	if a.histogramBuckets == nil {
+		a.histogramBuckets = make(map[float64]uint64)
+	}
+
+	// Clear existing bucket state and rebuild from data point
+	a.histogramTotalBuckets = make(map[float64]uint64)
+	a.histogramBuckets = make(map[float64]uint64)
+
+	buckets := dp.BucketCounts()
+	bounds := dp.ExplicitBounds()
+
+	for i := 0; i < buckets.Len(); i++ {
+		var bound float64
+		if i < bounds.Len() {
+			bound = bounds.At(i)
+		} else {
+			bound = 1e308 // Infinity bucket
+		}
+
+		bucketCount := buckets.At(i)
+		a.histogramTotalBuckets[bound] = bucketCount
+		a.histogramBuckets[bound] = bucketCount
+	}
+
+	// Update min/max
+	if dp.HasMin() {
+		a.updateMinMaxLocked(dp.Min())
+	}
+	if dp.HasMax() {
+		a.updateMinMaxLocked(dp.Max())
+	}
+}
+
 // MergeExponentialHistogram merges an exponential histogram data point
 func (a *Aggregator) MergeExponentialHistogram(dp pmetric.ExponentialHistogramDataPoint) {
 	a.mu.Lock()
@@ -698,6 +952,146 @@ func (a *Aggregator) MergeExponentialHistogram(dp pmetric.ExponentialHistogramDa
 	for i := 0; i < negativeCounts.Len(); i++ {
 		bucketIndex := int32(i) + negative.Offset()
 		a.expHistogram.negativeBuckets[bucketIndex] += negativeCounts.At(i)
+	}
+}
+
+// MergeExponentialHistogramWithAggregateUtil merges exponential histogram data points using aggregateutil
+// This provides enhanced bucket merging with proper scale handling and offset management
+func (a *Aggregator) MergeExponentialHistogramWithAggregateUtil(dp pmetric.ExponentialHistogramDataPoint, temporality pmetric.AggregationTemporality) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
+	// Create temporary metric to use with aggregateutil
+	tempMetric := pmetric.NewMetric()
+	tempMetric.SetName("temp_exp_histogram")
+	tempExpHist := tempMetric.SetEmptyExponentialHistogram()
+	tempExpHist.SetAggregationTemporality(temporality)
+
+	// Convert our existing aggregated state to a data point if we have data
+	if a.expHistogram != nil && a.expHistogram.count > 0 {
+		existingDp := tempExpHist.DataPoints().AppendEmpty()
+		a.populateExponentialHistogramDataPoint(existingDp)
+	}
+
+	// Add the new data point
+	newDp := tempExpHist.DataPoints().AppendEmpty()
+	dp.CopyTo(newDp)
+
+	// Use aggregateutil to group and merge the data points
+	aggGroups := &aggregateutil.AggGroups{}
+	aggregateutil.GroupDataPoints(tempMetric, aggGroups)
+
+	// Create result metric
+	resultMetric := pmetric.NewMetric()
+	aggregateutil.CopyMetricDetails(tempMetric, resultMetric)
+
+	// Merge using aggregateutil (uses Sum strategy for exponential histograms)
+	aggregateutil.MergeDataPoints(resultMetric, aggregateutil.Sum, *aggGroups)
+
+	// Extract the merged result back to our aggregator state
+	if resultMetric.ExponentialHistogram().DataPoints().Len() > 0 {
+		mergedDp := resultMetric.ExponentialHistogram().DataPoints().At(0)
+		a.updateFromExponentialHistogramDataPoint(mergedDp)
+	}
+}
+
+// populateExponentialHistogramDataPoint populates a data point with current aggregated state
+func (a *Aggregator) populateExponentialHistogramDataPoint(dp pmetric.ExponentialHistogramDataPoint) {
+	if a.expHistogram == nil {
+		return
+	}
+
+	dp.SetScale(a.expHistogram.scale)
+	dp.SetSum(a.expHistogram.sum)
+	dp.SetCount(a.expHistogram.count)
+	dp.SetZeroCount(a.expHistogram.zeroCount)
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+
+	// Set positive buckets
+	if len(a.expHistogram.positiveBuckets) > 0 {
+		positive := dp.Positive()
+		minOffset := int32(1<<31 - 1)
+		maxOffset := int32(-1 << 31)
+
+		for offset := range a.expHistogram.positiveBuckets {
+			if offset < minOffset {
+				minOffset = offset
+			}
+			if offset > maxOffset {
+				maxOffset = offset
+			}
+		}
+
+		positive.SetOffset(minOffset)
+		for i := minOffset; i <= maxOffset; i++ {
+			count := a.expHistogram.positiveBuckets[i]
+			positive.BucketCounts().Append(count)
+		}
+	}
+
+	// Set negative buckets
+	if len(a.expHistogram.negativeBuckets) > 0 {
+		negative := dp.Negative()
+		minOffset := int32(1<<31 - 1)
+		maxOffset := int32(-1 << 31)
+
+		for offset := range a.expHistogram.negativeBuckets {
+			if offset < minOffset {
+				minOffset = offset
+			}
+			if offset > maxOffset {
+				maxOffset = offset
+			}
+		}
+
+		negative.SetOffset(minOffset)
+		for i := minOffset; i <= maxOffset; i++ {
+			count := a.expHistogram.negativeBuckets[i]
+			negative.BucketCounts().Append(count)
+		}
+	}
+}
+
+// updateFromExponentialHistogramDataPoint updates aggregator state from an exponential histogram data point
+func (a *Aggregator) updateFromExponentialHistogramDataPoint(dp pmetric.ExponentialHistogramDataPoint) {
+	if a.expHistogram == nil {
+		a.expHistogram = &ExponentialHistogramState{
+			scale:           dp.Scale(),
+			positiveBuckets: make(map[int32]uint64),
+			negativeBuckets: make(map[int32]uint64),
+		}
+	}
+
+	// Update basic fields
+	a.expHistogram.scale = dp.Scale()
+	a.expHistogram.sum = dp.Sum()
+	a.expHistogram.count = dp.Count()
+	a.expHistogram.zeroCount = dp.ZeroCount()
+
+	// Clear and rebuild positive buckets
+	a.expHistogram.positiveBuckets = make(map[int32]uint64)
+	positive := dp.Positive()
+	positiveCounts := positive.BucketCounts()
+	for i := 0; i < positiveCounts.Len(); i++ {
+		bucketIndex := int32(i) + positive.Offset()
+		a.expHistogram.positiveBuckets[bucketIndex] = positiveCounts.At(i)
+	}
+
+	// Clear and rebuild negative buckets
+	a.expHistogram.negativeBuckets = make(map[int32]uint64)
+	negative := dp.Negative()
+	negativeCounts := negative.BucketCounts()
+	for i := 0; i < negativeCounts.Len(); i++ {
+		bucketIndex := int32(i) + negative.Offset()
+		a.expHistogram.negativeBuckets[bucketIndex] = negativeCounts.At(i)
+	}
+
+	// Update min/max if available
+	if dp.HasMin() {
+		a.updateMinMaxLocked(dp.Min())
+	}
+	if dp.HasMax() {
+		a.updateMinMaxLocked(dp.Max())
 	}
 }
 
@@ -757,22 +1151,22 @@ func (a *Aggregator) ExportTo(metric pmetric.Metric, windowStart, windowEnd time
 func (a *Aggregator) exportGauge(metric pmetric.Metric, labels map[string]string) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
-	
+
+	// For gauges, only export if we have a valid lastValue with timestamp
+	// This prevents computing ratios that cause Prometheus to add _ratio suffix
+	if a.lastTimestamp == 0 {
+		// No valid gauge data yet - don't export anything
+		// This prevents empty or ratio-based gauge exports
+		return
+	}
+
 	gauge := metric.SetEmptyGauge()
 	dp := gauge.DataPoints().AppendEmpty()
-	
-	// Use the appropriate value based on what was aggregated
-	if a.lastTimestamp != 0 {
-		dp.SetDoubleValue(a.lastValue)
-		dp.SetTimestamp(a.lastTimestamp)
-	} else if a.countForMean > 0 {
-		dp.SetDoubleValue(a.sumForMean / float64(a.countForMean))
-		dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
-	} else if a.count > 0 {
-		dp.SetDoubleValue(a.sum / float64(a.count))
-		dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
-	}
-	
+
+	// Use the last value (proper gauge semantics)
+	dp.SetDoubleValue(a.lastValue)
+	dp.SetTimestamp(a.lastTimestamp)
+
 	// Set labels
 	for k, v := range labels {
 		dp.Attributes().PutStr(k, v)

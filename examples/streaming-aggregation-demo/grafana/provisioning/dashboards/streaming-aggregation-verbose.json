@@ -24,45 +24,204 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "palette-classic"
+            "mode": "thresholds"
           },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "barWidthFactor": 0.6,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 0
+      },
+      "id": 11,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "text": {},
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.2.0-17027759091",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "count(count by (__name__)({__name__=~\"raw_.*\"}))",
+          "legendFormat": "Raw Metrics",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Raw Metric Types Count",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 0
+      },
+      "id": 12,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "text": {},
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.2.0-17027759091",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "count(count by (__name__)({__name__=~\"aggregated_.*\"}))",
+          "legendFormat": "Aggregated Metrics",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Aggregated Metric Types Count",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 0
+      },
+      "id": 13,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "text": {},
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.2.0-17027759091",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "30",
+          "legendFormat": "Window Size",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Aggregation Window Size",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
           },
           "mappings": [],
           "thresholds": {
@@ -73,59 +232,58 @@
                 "value": 0
               },
               {
+                "color": "yellow",
+                "value": 50
+              },
+              {
                 "color": "red",
                 "value": 80
               }
             ]
-          }
+          },
+          "unit": "percent"
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
+        "h": 4,
+        "w": 6,
+        "x": 18,
         "y": 0
       },
-      "id": 15,
+      "id": 14,
       "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
         },
-        "tooltip": {
-          "hideZeros": false,
-          "mode": "single",
-          "sort": "none"
-        }
+        "showPercentChange": false,
+        "text": {},
+        "textMode": "auto",
+        "wideLayout": true
       },
       "pluginVersion": "12.2.0-17027759091",
       "targets": [
         {
-          "editorMode": "code",
-          "expr": "rate(aggregated_http_response_time_ms_count[1m])",
-          "legendFormat": "__auto",
-          "range": true,
-          "refId": "A"
-        },
-        {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(raw_http_response_time_ms_milliseconds_count[1m]))",
-          "hide": false,
-          "instant": false,
-          "legendFormat": "__auto",
+          "expr": "100 * (1 - sum(clamp_min(changes(aggregated_http_requests_total[5m]), 1)) / sum(clamp_min(changes(raw_http_requests_total[5m]), 1)))",
+          "legendFormat": "Reduction",
           "range": true,
-          "refId": "B"
+          "refId": "A"
         }
       ],
-      "title": "Histogram Count Catchup",
-      "type": "timeseries"
+      "title": "Data Point Reduction %",
+      "type": "stat"
     },
     {
       "datasource": {
@@ -192,7 +350,7 @@
               {
                 "id": "color",
                 "value": {
-                  "fixedColor": "blue",
+                  "fixedColor": "green",
                   "mode": "fixed"
                 }
               }
@@ -201,13 +359,13 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "aggregated_temperature_celsius"
+              "options": "aggregated_temperature_celsius_ratio"
             },
             "properties": [
               {
                 "id": "color",
                 "value": {
-                  "fixedColor": "red",
+                  "fixedColor": "yellow",
                   "mode": "fixed"
                 }
               },
@@ -223,7 +381,7 @@
         "h": 7,
         "w": 24,
         "x": 0,
-        "y": 8
+        "y": 4
       },
       "id": 1,
       "options": {
@@ -258,13 +416,13 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "aggregated_temperature_celsius",
-          "legendFormat": "aggregated_temperature_celsius",
+          "expr": "aggregated_temperature_celsius_ratio",
+          "legendFormat": "aggregated_temperature_celsius_ratio",
           "range": true,
           "refId": "B"
         }
       ],
-      "title": "Temperature Comparison: RAW (blue, 1s) vs AGGREGATED (red, 30s window)",
+      "title": "Gauge Metric | temperature_celsius",
       "type": "timeseries"
     },
     {
@@ -347,7 +505,7 @@
               {
                 "id": "color",
                 "value": {
-                  "fixedColor": "orange",
+                  "fixedColor": "yellow",
                   "mode": "fixed"
                 }
               },
@@ -363,7 +521,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 15
+        "y": 11
       },
       "id": 4,
       "options": {
@@ -404,7 +562,7 @@
           "refId": "B"
         }
       ],
-      "title": "HTTP Requests Total: RAW (green, cumulative) vs AGGREGATED (orange, 30s windows)",
+      "title": "Counter Metric | http_requests_total",
       "type": "timeseries"
     },
     {
@@ -468,7 +626,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 15
+        "y": 11
       },
       "id": 5,
       "options": {
@@ -524,7 +682,7 @@
           },
           "custom": {
             "axisBorderShow": false,
-            "axisCenteredZero": true,
+            "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "Connections",
             "axisPlacement": "auto",
@@ -577,7 +735,7 @@
               {
                 "id": "color",
                 "value": {
-                  "fixedColor": "purple",
+                  "fixedColor": "green",
                   "mode": "fixed"
                 }
               }
@@ -586,7 +744,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "aggregated_active_connections_total"
+              "options": "aggregated_active_connections_ratio"
             },
             "properties": [
               {
@@ -608,7 +766,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 23
+        "y": 19
       },
       "id": 6,
       "options": {
@@ -643,13 +801,13 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "aggregated_active_connections",
-          "legendFormat": "aggregated_active_connections_total",
+          "expr": "aggregated_active_connections_ratio",
+          "legendFormat": "aggregated_active_connections_ratio",
           "range": true,
           "refId": "B"
         }
       ],
-      "title": "Active Connections: RAW (purple, per second) vs AGGREGATED (yellow, 30s net change)",
+      "title": "UpDownCounter Metric | active_connections",
       "type": "timeseries"
     },
     {
@@ -713,7 +871,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 31
+        "y": 27
       },
       "id": 7,
       "options": {
@@ -771,7 +929,7 @@
             "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
-            "axisLabel": "Sum (ms)",
+            "axisLabel": "Milliseconds",
             "axisPlacement": "auto",
             "barAlignment": 0,
             "barWidthFactor": 0.6,
@@ -807,23 +965,66 @@
               {
                 "color": "green",
                 "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 100
+              },
+              {
+                "color": "red",
+                "value": 500
               }
             ]
           },
           "unit": "ms"
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/raw_.*/"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "green",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/aggregated_.*/"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "yellow",
+                  "mode": "fixed"
+                }
+              },
+              {
+                "id": "custom.lineWidth",
+                "value": 2
+              }
+            ]
+          }
+        ]
       },
       "gridPos": {
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 31
+        "y": 27
       },
-      "id": 8,
+      "id": 16,
       "options": {
         "legend": {
-          "calcs": ["lastNotNull"],
+          "calcs": ["mean", "lastNotNull"],
           "displayMode": "table",
           "placement": "bottom",
           "showLegend": true
@@ -842,8 +1043,8 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "raw_http_response_time_ms_milliseconds_sum",
-          "legendFormat": "raw_http_response_time_ms_sum",
+          "expr": "raw_http_response_time_ms_milliseconds_sum / raw_http_response_time_ms_milliseconds_count",
+          "legendFormat": "raw_{{endpoint}}_avg",
           "range": true,
           "refId": "A"
         },
@@ -853,13 +1054,13 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "aggregated_http_response_time_ms_sum",
-          "legendFormat": "aggregated_http_response_time_ms_sum",
+          "expr": "aggregated_http_response_time_ms_sum / aggregated_http_response_time_ms_count",
+          "legendFormat": "aggregated_avg_response_time",
           "range": true,
           "refId": "B"
         }
       ],
-      "title": "Histogram Sum: RAW vs AGGREGATED",
+      "title": "Average Response Time: sum/count calculation (RAW vs AGGREGATED)",
       "type": "timeseries"
     },
     {
@@ -931,7 +1132,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 39
+        "y": 35
       },
       "id": 9,
       "options": {
@@ -983,7 +1184,7 @@
           "refId": "C"
         }
       ],
-      "title": "RAW Response Time Percentiles (P50, P95, P99)",
+      "title": "RAW Response Time Percentiles | Dropped Labels via query",
       "type": "timeseries"
     },
     {
@@ -1055,7 +1256,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 39
+        "y": 35
       },
       "id": 10,
       "options": {
@@ -1079,7 +1280,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.50, sum(rate(aggregated_http_response_time_ms_bucket[1m])) by (le))",
+          "expr": "histogram_quantile(0.50, rate(aggregated_http_response_time_ms_bucket[1m]))",
           "legendFormat": "AGGREGATED P50",
           "range": true,
           "refId": "A"
@@ -1090,7 +1291,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.95, sum(rate(aggregated_http_response_time_ms_bucket[1m])) by (le))",
+          "expr": "histogram_quantile(0.95, rate(aggregated_http_response_time_ms_bucket[1m]))",
           "legendFormat": "AGGREGATED P95",
           "range": true,
           "refId": "B"
@@ -1101,13 +1302,13 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.99, sum(rate(aggregated_http_response_time_ms_bucket[1m])) by (le))",
+          "expr": "histogram_quantile(0.99, rate(aggregated_http_response_time_ms_bucket[1m]))",
           "legendFormat": "AGGREGATED P99",
           "range": true,
           "refId": "C"
         }
       ],
-      "title": "AGGREGATED Response Time Percentiles (P50, P95, P99)",
+      "title": "AGGREGATED Response Time Percentiles | Dropped Labels via processor",
       "type": "timeseries"
     },
     {
@@ -1115,10 +1316,44 @@
         "type": "prometheus",
         "uid": "${datasource}"
       },
+      "description": "Comparison of percentiles between RAW and AGGREGATED metrics",
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "thresholds"
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Response Time (ms)",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
           },
           "mappings": [],
           "thresholds": {
@@ -1130,32 +1365,29 @@
               }
             ]
           },
-          "unit": "short"
+          "unit": "ms"
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 4,
-        "w": 6,
+        "h": 10,
+        "w": 24,
         "x": 0,
-        "y": 47
+        "y": 43
       },
-      "id": 11,
+      "id": 18,
       "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "percentChangeColorMode": "standard",
-        "reduceOptions": {
+        "legend": {
           "calcs": ["lastNotNull"],
-          "fields": "",
-          "values": false
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true
         },
-        "showPercentChange": false,
-        "text": {},
-        "textMode": "auto",
-        "wideLayout": true
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "none"
+        }
       },
       "pluginVersion": "12.2.0-17027759091",
       "targets": [
@@ -1165,24 +1397,113 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "count(count by (__name__)({__name__=~\"raw_.*\"}))",
-          "legendFormat": "Raw Metrics",
+          "expr": "histogram_quantile(0.50, sum(increase(raw_http_response_time_ms_milliseconds_bucket[5m])) by (le))",
+          "legendFormat": "RAW P50",
           "range": true,
           "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.95, sum(increase(raw_http_response_time_ms_milliseconds_bucket[5m])) by (le))",
+          "legendFormat": "RAW P95",
+          "range": true,
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.99, sum(increase(raw_http_response_time_ms_milliseconds_bucket[5m])) by (le))",
+          "legendFormat": "RAW P99",
+          "range": true,
+          "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.50, increase(aggregated_http_response_time_ms_bucket[5m]))",
+          "legendFormat": "AGGREGATED P50",
+          "range": true,
+          "refId": "D"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.95, increase(aggregated_http_response_time_ms_bucket[5m]))",
+          "legendFormat": "AGGREGATED P95",
+          "range": true,
+          "refId": "E"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.99, increase(aggregated_http_response_time_ms_bucket[5m]))",
+          "legendFormat": "AGGREGATED P99",
+          "range": true,
+          "refId": "F"
         }
       ],
-      "title": "Raw Metric Types Count",
-      "type": "stat"
+      "title": "Percentile Comparison (P50, P95, P99)",
+      "type": "timeseries"
     },
     {
       "datasource": {
         "type": "prometheus",
         "uid": "${datasource}"
       },
+      "description": "Time series view of bucket distributions",
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "thresholds"
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Requests per second",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "bars",
+            "fillOpacity": 70,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "normal"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
           },
           "mappings": [],
           "thresholds": {
@@ -1194,32 +1515,29 @@
               }
             ]
           },
-          "unit": "short"
+          "unit": "reqps"
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 4,
-        "w": 6,
-        "x": 6,
-        "y": 47
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 53
       },
-      "id": 12,
+      "id": 19,
       "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "percentChangeColorMode": "standard",
-        "reduceOptions": {
-          "calcs": ["lastNotNull"],
-          "fields": "",
-          "values": false
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "right",
+          "showLegend": true
         },
-        "showPercentChange": false,
-        "text": {},
-        "textMode": "auto",
-        "wideLayout": true
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "desc"
+        }
       },
       "pluginVersion": "12.2.0-17027759091",
       "targets": [
@@ -1229,24 +1547,58 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "count(count by (__name__)({__name__=~\"aggregated_.*\"}))",
-          "legendFormat": "Aggregated Metrics",
+          "expr": "sum(rate(raw_http_response_time_ms_milliseconds_bucket[5m])) by (le)",
+          "legendFormat": "{{le}}ms",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "Aggregated Metric Types Count",
-      "type": "stat"
+      "title": "RAW Bucket Rate (stacked)",
+      "type": "timeseries"
     },
     {
       "datasource": {
         "type": "prometheus",
         "uid": "${datasource}"
       },
+      "description": "Time series view of bucket distributions",
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "thresholds"
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Requests per second",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "bars",
+            "fillOpacity": 70,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "normal"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
           },
           "mappings": [],
           "thresholds": {
@@ -1258,32 +1610,29 @@
               }
             ]
           },
-          "unit": "s"
+          "unit": "reqps"
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 4,
-        "w": 6,
+        "h": 8,
+        "w": 12,
         "x": 12,
-        "y": 47
+        "y": 53
       },
-      "id": 13,
+      "id": 20,
       "options": {
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "percentChangeColorMode": "standard",
-        "reduceOptions": {
-          "calcs": ["lastNotNull"],
-          "fields": "",
-          "values": false
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "right",
+          "showLegend": true
         },
-        "showPercentChange": false,
-        "text": {},
-        "textMode": "auto",
-        "wideLayout": true
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "desc"
+        }
       },
       "pluginVersion": "12.2.0-17027759091",
       "targets": [
@@ -1293,86 +1642,134 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "30",
-          "legendFormat": "Window Size",
+          "expr": "sum(rate(aggregated_http_response_time_ms_bucket[5m])) by (le)",
+          "legendFormat": "{{le}}ms",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "Aggregation Window Size",
-      "type": "stat"
+      "title": "AGGREGATED Bucket Rate (stacked)",
+      "type": "timeseries"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${datasource}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": 0
-              },
-              {
-                "color": "yellow",
-                "value": 50
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "percent"
-        },
-        "overrides": []
-      },
+      "collapsed": true,
       "gridPos": {
-        "h": 4,
-        "w": 6,
-        "x": 18,
-        "y": 47
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 61
       },
-      "id": 14,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "percentChangeColorMode": "standard",
-        "reduceOptions": {
-          "calcs": ["lastNotNull"],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "text": {},
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "pluginVersion": "12.2.0-17027759091",
-      "targets": [
+      "id": 17,
+      "panels": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${datasource}"
+            "uid": "PBFA97CFB590B2093"
           },
-          "editorMode": "code",
-          "expr": "100 * (1 - sum(clamp_min(changes(aggregated_http_requests_total[5m]), 1)) / sum(clamp_min(changes(raw_http_requests_total[5m]), 1)))",
-          "legendFormat": "Reduction",
-          "range": true,
-          "refId": "A"
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 44
+          },
+          "id": 15,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "12.2.0-17027759091",
+          "targets": [
+            {
+              "editorMode": "code",
+              "expr": "rate(aggregated_http_response_time_ms_count[1m])",
+              "legendFormat": "__auto",
+              "range": true,
+              "refId": "A"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+              },
+              "editorMode": "code",
+              "expr": "sum(rate(raw_http_response_time_ms_milliseconds_count[1m]))",
+              "hide": false,
+              "instant": false,
+              "legendFormat": "__auto",
+              "range": true,
+              "refId": "B"
+            }
+          ],
+          "title": "Histogram Count Catchup",
+          "type": "timeseries"
         }
       ],
-      "title": "Data Point Reduction %",
-      "type": "stat"
+      "title": "MISC",
+      "type": "row"
     }
   ],
   "preload": false,
@@ -1405,5 +1802,5 @@
   "timezone": "",
   "title": "Streaming Aggregation - Verbose Comparison",
   "uid": "streaming-aggregation-verbose",
-  "version": 7
+  "version": 58
 }

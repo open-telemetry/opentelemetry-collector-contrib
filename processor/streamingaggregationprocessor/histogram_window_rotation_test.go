@@ -201,7 +201,7 @@ func TestHistogramStatePreservationAcrossWindows(t *testing.T) {
 	metric.SetName("test.histogram")
 	metric.SetEmptyHistogram()
 	
-	agg.ExportTo(metric, window.start, window.end, map[string]string{}, false)
+	agg.ExportTo(metric, window.start, window.end, map[string]string{})
 	
 	hist := metric.Histogram()
 	if hist.DataPoints().Len() == 0 {

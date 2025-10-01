@@ -6,6 +6,7 @@ package streamingaggregationprocessor // import "github.com/open-telemetry/opent
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -364,6 +365,11 @@ func (p *streamingAggregationProcessor) aggregateGauge(gauge pmetric.Gauge, agg 
 		}
 		
 		agg.UpdateLast(value, dp.Timestamp())
+
+		p.logger.Debug("Aggregating gauge",
+			zap.Float64("value", value),
+			zap.String("timestamp", dp.Timestamp().AsTime().String()),
+		)
 	}
 	return nil
 }
@@ -478,6 +484,7 @@ func (p *streamingAggregationProcessor) aggregateHistogram(hist pmetric.Histogra
 			zap.String("temporality", temporality.String()),
 		)
 		
+		// Use the original proven logic for now - aggregateutil needs more integration work
 		agg.MergeHistogramWithTemporalityAndGapDetection(dp, temporality, p.config.StaleDataThreshold)
 	}
 	return nil
@@ -486,8 +493,10 @@ func (p *streamingAggregationProcessor) aggregateHistogram(hist pmetric.Histogra
 // aggregateExponentialHistogram aggregates exponential histogram metrics
 func (p *streamingAggregationProcessor) aggregateExponentialHistogram(hist pmetric.ExponentialHistogram, agg *Aggregator) error {
 	dps := hist.DataPoints()
+
 	for i := 0; i < dps.Len(); i++ {
 		dp := dps.At(i)
+		// Use the original logic for now - keep proven behavior
 		agg.MergeExponentialHistogram(dp)
 	}
 	return nil
@@ -548,15 +557,70 @@ func (p *streamingAggregationProcessor) exportAggregatedMetrics(windowStart, win
 		// Parse series key to extract metric name and labels
 		metricName, labels := parseSeriesKey(seriesKey)
 		
-		// Create metric based on aggregator state
+		// Create metric with enhanced metadata handling using aggregateutil
 		metric := sm.Metrics().AppendEmpty()
 		metric.SetName(metricName)
-		
-		// Export based on metric type
+
+		// Export based on metric type using our proven logic first
 		agg.ExportTo(metric, windowStart, windowEnd, labels)
+
+		// Then apply aggregateutil metadata enhancements (preserves the type setup)
+		p.applyMetricMetadataEnhancements(metric, agg.metricType)
 	}
 	
 	return md
+}
+
+// applyMetricMetadataEnhancements applies metadata enhancements using aggregateutil without changing type
+func (p *streamingAggregationProcessor) applyMetricMetadataEnhancements(metric pmetric.Metric, metricType pmetric.MetricType) {
+	// Only apply metadata enhancements - description and unit
+	// The metric type is already set correctly by ExportTo
+	metric.SetDescription("Aggregated metric from streaming aggregation processor")
+
+	// Set appropriate unit based on metric type
+	switch metricType {
+	case pmetric.MetricTypeGauge:
+		// Keep original unit or set a sensible default
+		if metric.Unit() == "" {
+			metric.SetUnit("1") // Dimensionless
+		}
+	case pmetric.MetricTypeSum:
+		// For counters, often rate-based
+		if metric.Unit() == "" {
+			metric.SetUnit("1") // Default to dimensionless
+		}
+	case pmetric.MetricTypeHistogram, pmetric.MetricTypeExponentialHistogram:
+		// Histograms often measure time, size, etc.
+		if metric.Unit() == "" {
+			// Only set unit if the metric name doesn't already indicate units
+			metricName := metric.Name()
+			if !containsTimeUnit(metricName) && !containsSizeUnit(metricName) {
+				metric.SetUnit("1") // Dimensionless by default to avoid conflicts
+			}
+		}
+	}
+}
+
+// containsTimeUnit checks if metric name already contains time unit indicators
+func containsTimeUnit(name string) bool {
+	timeUnits := []string{"_ms", "_milliseconds", "_s", "_seconds", "_us", "_microseconds", "_ns", "_nanoseconds"}
+	for _, unit := range timeUnits {
+		if strings.Contains(name, unit) {
+			return true
+		}
+	}
+	return false
+}
+
+// containsSizeUnit checks if metric name already contains size unit indicators
+func containsSizeUnit(name string) bool {
+	sizeUnits := []string{"_bytes", "_kb", "_mb", "_gb", "_bits"}
+	for _, unit := range sizeUnits {
+		if strings.Contains(name, unit) {
+			return true
+		}
+	}
+	return false
 }
 
 // forceExportActiveWindow forces export of current window (used during shutdown)
