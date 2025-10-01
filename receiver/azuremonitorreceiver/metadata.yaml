@@ -12,12 +12,15 @@ resource_attributes:
   azuremonitor.tenant_id:
     description: Azure tenant ID
     type: string
+    enabled: false
   azuremonitor.subscription_id:
     description: Azure subscription ID
     type: string
+    enabled: false
   azuremonitor.subscription:
     description: Azure subscription name
     type: string
+    enabled: false
 
 tests:
   config:
