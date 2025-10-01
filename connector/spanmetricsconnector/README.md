@@ -265,7 +265,8 @@ semantic convention (e.g., HTTP, RPC, messaging, database). If no convention app
 Be aware this can change metric cardinality if the semantic name differs from the original.
 
 
-```yamlconnectors:
+```yaml
+connectors:
   spanmetrics:
     span_name_semantic_convention: true
 ```
