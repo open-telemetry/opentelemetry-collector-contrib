@@ -294,7 +294,7 @@ The behaviour of this bulk indexing can be configured with the following setting
 
 - `num_workers` (DEPRECATED, use `sending_queue::num_consumers` instead): This config is deprecated and will be used to configure `sending_queue::num_consumers` if `sending_queue::num_consumers` is not explicitly defined. Number of workers publishing bulk requests concurrently.
 - `flush` (DEPRECATED, use `sending_queue` instead): This config is deprecated and will be used to configure different options for `sending_queue` if `sending_queue` options are not explicitly defined. Event bulk indexer buffer flush settings
-  - `bytes` (DEPRECATED, use `sending_queue::batch::max_size` instead): This config is deprecated and will be used to configure `sending_queue::batch::max_size` if not explicitly defined. See the `sending_queue::batch::max_size` for more details.
+  - `bytes` (DEPRECATED, use `sending_queue::batch::max_size` instead): This config is deprecated and will be used to configure `sending_queue::batch::max_size` if `sending_queue::batch::max_size` is not explicitly defined. See the `sending_queue::batch::max_size` for more details.
   - `interval` (DEPRECATED, use `sending_queue::batch::flush_timeout` instead): This config is deprecated and will be used to configure `sending_queue::batch::flush_timeout` if not explicitly defind. See the `sending_queue::batch::flush_timeout` for more details.
 - `retry`: Elasticsearch bulk request retry settings
   - `enabled` (default=true): Enable/Disable request retry on error. Failed requests are retried with exponential backoff.
