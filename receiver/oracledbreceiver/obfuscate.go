@@ -7,8 +7,6 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/obfuscate"
 )
 
-var obfuscateSQLConfig = obfuscate.SQLConfig{DBMS: "oracle"}
-
 type obfuscator obfuscate.Obfuscator
 
 func newObfuscator() *obfuscator {
