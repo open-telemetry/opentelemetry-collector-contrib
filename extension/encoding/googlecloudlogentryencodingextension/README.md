@@ -181,125 +181,125 @@ See the struct of the Cloud Audit Log payload in [AuditLog](https://cloud.google
 
 [VPC flow logs](https://cloud.google.com/vpc/docs/about-flow-logs-records) are mapped this way in the resulting OpenTelemetry log:
 
-| Flow log field | Attribute in OpenTelemetry log |
-|---|---|
-| `connection.protocol` | `network.protocol.name` |
-| `connection.src_ip` | `source.address` |
-| `connection.dest_ip` | `destination.address` |
-| `connection.src_port` | `source.port` |
-| `connection.dest_port` | `destination.port` |
-| `reporter` | `gcp.vpc.flow.reporter` |
-| `rtt_msec` | `network.rtt` |
-| `round_trip_time.median_msec` | `gcp.vpc.flow.rtt.median` |
-| `bytes_sent` | `gcp.vpc.flow.bytes_sent` |
-| `packets_sent` | `gcp.vpc.flow.packets_sent` |
-| `start_time` | `gcp.vpc.flow.start_time` |
-| `end_time` | Log timestamp |
-| `src_gateway.project_id` | `gcp.vpc.flow.source.gateway.project.id` |
-| `src_gateway.location` | `gcp.vpc.flow.source.gateway.region` |
-| `src_gateway.name` | `gcp.vpc.flow.source.gateway.name` |
-| `src_gateway.type` | `gcp.vpc.flow.source.gateway.type` |
-| `src_gateway.vpc.project_id` | `gcp.vpc.flow.source.gateway.vpc.project.id` |
-| `src_gateway.vpc.subnetwork_name` | `gcp.vpc.flow.source.gateway.vpc.subnet.name` |
-| `src_gateway.vpc.subnetwork_region` | `gcp.vpc.flow.source.gateway.vpc.subnet.region` |
-| `src_gateway.vpc.vpc_name` | `gcp.vpc.flow.source.gateway.vpc.name` |
-| `src_gateway.interconnect_name` | `gcp.vpc.flow.source.gateway.interconnect.name` |
-| `src_gateway.interconnect_project_number` | `gcp.vpc.flow.source.gateway.interconnect.project.number` |
-| `dest_gateway.project_id` | `gcp.vpc.flow.destination.gateway.project.id` |
-| `dest_gateway.location` | `gcp.vpc.flow.destination.gateway.region` |
-| `dest_gateway.name` | `gcp.vpc.flow.destination.gateway.name` |
-| `dest_gateway.type` | `gcp.vpc.flow.destination.gateway.type` |
-| `dest_gateway.vpc.project_id` | `gcp.vpc.flow.destination.gateway.vpc.project.id` |
-| `dest_gateway.vpc.subnetwork_name` | `gcp.vpc.flow.destination.gateway.vpc.subnet.name` |
-| `dest_gateway.vpc.subnetwork_region` | `gcp.vpc.flow.destination.gateway.vpc.subnet.region` |
-| `dest_gateway.vpc.vpc_name` | `gcp.vpc.flow.destination.gateway.vpc.name` |
-| `dest_gateway.interconnect_name` | `gcp.vpc.flow.destination.gateway.interconnect.name` |
-| `dest_gateway.interconnect_project_number` | `gcp.vpc.flow.destination.gateway.interconnect.project.number` |
-| `src_gke_details.cluster.cluster_location` | `gcp.vpc.flow.source.gke.cluster.location` |
-| `src_gke_details.cluster.cluster_name` | `gcp.vpc.flow.source.gke.cluster.name` |
-| `src_gke_details.pod.pod_name` | `gcp.vpc.flow.source.gke.pod.name` |
-| `src_gke_details.pod.pod_namespace` | `gcp.vpc.flow.source.gke.pod.namespace` |
-| `src_gke_details.pod.pod_workload.workload_name` | `gcp.vpc.flow.source.gke.pod.workload.name` |
-| `src_gke_details.pod.pod_workload.workload_type` | `gcp.vpc.flow.source.gke.pod.workload.type` |
-| `src_gke_details.service.service_name` | `gcp.vpc.flow.source.gke.service.name` |
-| `src_gke_details.service.service_namespace` | `gcp.vpc.flow.source.gke.service.namespace` |
-| `dest_gke_details.cluster.cluster_location` | `gcp.vpc.flow.destination.gke.cluster.location` |
-| `dest_gke_details.cluster.cluster_name` | `gcp.vpc.flow.destination.gke.cluster.name` |
-| `dest_gke_details.pod.pod_name` | `gcp.vpc.flow.destination.gke.pod.name` |
-| `dest_gke_details.pod.pod_namespace` | `gcp.vpc.flow.destination.gke.pod.namespace` |
-| `dest_gke_details.pod.pod_workload.workload_name` | `gcp.vpc.flow.destination.gke.pod.workload.name` |
-| `dest_gke_details.pod.pod_workload.workload_type` | `gcp.vpc.flow.destination.gke.pod.workload.type` |
-| `dest_gke_details.service.service_name` | `gcp.vpc.flow.destination.gke.service.name` |
-| `dest_gke_details.service.service_namespace` | `gcp.vpc.flow.destination.gke.service.namespace` |
-| `src_google_service.type` | `gcp.vpc.flow.source.google_service.type` |
-| `src_google_service.service_name` | `gcp.vpc.flow.source.google_service.name` |
-| `src_google_service.connectivity` | `gcp.vpc.flow.source.google_service.connectivity` |
-| `src_google_service.private_domain` | `gcp.vpc.flow.source.google_service.domain.private` |
-| `dest_google_service.type` | `gcp.vpc.flow.destination.google_service.type` |
-| `dest_google_service.service_name` | `gcp.vpc.flow.destination.google_service.name` |
-| `dest_google_service.connectivity` | `gcp.vpc.flow.destination.google_service.connectivity` |
-| `dest_google_service.private_domain` | `gcp.vpc.flow.destination.google_service.domain.private` |
-| `src_instance.project_id` | `gcp.vpc.flow.source.instance.project.id` |
-| `src_instance.region` | `gcp.vpc.flow.source.instance.vm.region` |
-| `src_instance.vm_name` | `gcp.vpc.flow.source.instance.vm.name` |
-| `src_instance.zone` | `gcp.vpc.flow.source.instance.vm.zone` |
-| `src_instance.managed_instance_group.name` | `gcp.vpc.flow.source.instance.managed_instance_group.name` |
-| `src_instance.managed_instance_group.region` | `gcp.vpc.flow.source.instance.managed_instance_group.region` |
-| `src_instance.managed_instance_group.zone` | `gcp.vpc.flow.source.instance.managed_instance_group.zone` |
-| `dest_instance.project_id` | `gcp.vpc.flow.destination.instance.project.id` |
-| `dest_instance.region` | `gcp.vpc.flow.destination.instance.vm.region` |
-| `dest_instance.vm_name` | `gcp.vpc.flow.destination.instance.vm.name` |
-| `dest_instance.zone` | `gcp.vpc.flow.destination.instance.vm.zone` |
-| `dest_instance.managed_instance_group.name` | `gcp.vpc.flow.destination.instance.managed_instance_group.name` |
-| `dest_instance.managed_instance_group.region` | `gcp.vpc.flow.destination.instance.managed_instance_group.region` |
-| `dest_instance.managed_instance_group.zone` | `gcp.vpc.flow.destination.instance.managed_instance_group.zone` |
-| `src_location.asn` | `gcp.vpc.flow.source.asn` |
-| `src_location.city` | `gcp.vpc.flow.source.geo.city` |
-| `src_location.continent` | `gcp.vpc.flow.source.geo.continent` |
-| `src_location.country` | `gcp.vpc.flow.source.geo.country.iso_code.alpha3` |
-| `src_location.region` | `gcp.vpc.flow.source.geo.region` |
-| `dest_location.asn` | `gcp.vpc.flow.destination.asn` |
-| `dest_location.city` | `gcp.vpc.flow.destination.geo.city` |
-| `dest_location.continent` | `gcp.vpc.flow.destination.geo.continent` |
-| `dest_location.country` | `gcp.vpc.flow.destination.geo.country.iso_code.alpha3` |
-| `dest_location.region` | `gcp.vpc.flow.destination.geo.region` |
-| `src_vpc.project_id` | `gcp.vpc.flow.source.project.id` |
-| `src_vpc.subnetwork_name` | `gcp.vpc.flow.source.subnet.name` |
-| `src_vpc.subnetwork_region` | `gcp.vpc.flow.source.subnet.region` |
-| `src_vpc.vpc_name` | `gcp.vpc.flow.source.vpc.name` |
-| `dest_vpc.project_id` | `gcp.vpc.flow.destination.project.id` |
-| `dest_vpc.subnetwork_name` | `gcp.vpc.flow.destination.subnet.name` |
-| `dest_vpc.subnetwork_region` | `gcp.vpc.flow.destination.subnet.region` |
-| `dest_vpc.vpc_name` | `gcp.vpc.flow.destination.vpc.name` |
-| `internet_routing_details.egress_as_path.as_details.asn` | `gcp.vpc.flow.egress.as_paths.as_details.asn` |
-| `load_balancing.forwarding_rule_project_id` | `gcp.vpc.flow.load_balancing.forwarding_rule.project.id` |
-| `load_balancing.reporter` | `gcp.vpc.flow.load_balancing.reporter` |
-| `load_balancing.type` | `gcp.vpc.flow.load_balancing.type` |
-| `load_balancing.scheme` | `gcp.vpc.flow.load_balancing.scheme` |
-| `load_balancing.url_map_name` | `gcp.vpc.flow.load_balancing.url_map.name` |
-| `load_balancing.forwarding_rule_name` | `gcp.vpc.flow.load_balancing.forwarding_rule.name` |
-| `load_balancing.backend_service_name` | `gcp.vpc.flow.load_balancing.backend_service.name` |
-| `load_balancing.backend_group_name` | `gcp.vpc.flow.load_balancing.backend_group.name` |
-| `load_balancing.backend_group_type` | `gcp.vpc.flow.load_balancing.backend_group.type` |
-| `load_balancing.backend_group_location` | `gcp.vpc.flow.load_balancing.backend_group.location` |
-| `load_balancing.vpc.project_id` | `gcp.vpc.flow.load_balancing.vpc.project.id` |
-| `load_balancing.vpc.subnetwork_name` | `gcp.vpc.flow.load_balancing.vpc.subnet.name` |
-| `load_balancing.vpc.subnetwork_region` | `gcp.vpc.flow.load_balancing.vpc.subnet.region` |
-| `load_balancing.vpc.vpc_name` | `gcp.vpc.flow.load_balancing.vpc.name` |
-| `network_service.dscp` | `gcp.vpc.flow.network_service.dscp` |
-| `psc.reporter` | `gcp.vpc.flow.private_service_connect.reporter` |
-| `psc.psc_endpoint.project_id` | `gcp.vpc.flow.private_service_connect.endpoint.project.id` |
-| `psc.psc_endpoint.region` | `gcp.vpc.flow.private_service_connect.endpoint.region` |
-| `psc.psc_endpoint.psc_connection_id` | `gcp.vpc.flow.private_service_connect.endpoint.private_service_connect.connection.id` |
-| `psc.psc_endpoint.target_service_type` | `gcp.vpc.flow.private_service_connect.endpoint.target_service_type` |
-| `psc.psc_endpoint.vpc.project_id` | `gcp.vpc.flow.private_service_connect.endpoint.vpc.project.id` |
-| `psc.psc_endpoint.vpc.subnetwork_name` | `gcp.vpc.flow.private_service_connect.endpoint.vpc.subnet.name` |
-| `psc.psc_endpoint.vpc.subnetwork_region` | `gcp.vpc.flow.private_service_connect.endpoint.vpc.subnet.region` |
-| `psc.psc_endpoint.vpc.vpc_name` | `gcp.vpc.flow.private_service_connect.endpoint.vpc.name` |
-| `psc.psc_attachment.project_id` | `gcp.vpc.flow.private_service_connect.attachment.project.id` |
-| `psc.psc_attachment.region` | `gcp.vpc.flow.private_service_connect.attachment.region` |
-| `psc.psc_attachment.vpc.project_id` | `gcp.vpc.flow.private_service_connect.attachment.vpc.project.id` |
-| `psc.psc_attachment.vpc.subnetwork_name` | `gcp.vpc.flow.private_service_connect.attachment.vpc.subnet.name` |
-| `psc.psc_attachment.vpc.subnetwork_region` | `gcp.vpc.flow.private_service_connect.attachment.vpc.subnet.region` |
-| `psc.psc_attachment.vpc.vpc_name` | `gcp.vpc.flow.private_service_connect.attachment.vpc.name` |
-| `rdma_traffic_type` | `gcp.vpc.flow.remote_direct_memory_access.traffic_type` |
+| Flow log field | Attribute in OpenTelemetry log | Support |
+|---|---|---|
+| `connection.protocol` | `network.protocol.name` | supported |
+| `connection.src_ip` | `source.address` | supported |
+| `connection.dest_ip` | `destination.address` | supported |
+| `connection.src_port` | `source.port` | supported |
+| `connection.dest_port` | `destination.port` | supported |
+| `reporter` | `gcp.vpc.flow.reporter` | supported |
+| `rtt_msec` | `network.rtt` | not yet supported |
+| `round_trip_time.median_msec` | `gcp.vpc.flow.rtt.median` | not yet supported |
+| `bytes_sent` | `gcp.vpc.flow.bytes_sent` |  supported |
+| `packets_sent` | `gcp.vpc.flow.packets_sent` | supported |
+| `start_time` | `gcp.vpc.flow.start_time` | supported |
+| `end_time` | Log timestamp | supported |
+| `src_gateway.project_id` | `gcp.vpc.flow.source.gateway.project.id` | not yet supported |
+| `src_gateway.location` | `gcp.vpc.flow.source.gateway.region` | not yet supported |
+| `src_gateway.name` | `gcp.vpc.flow.source.gateway.name` | not yet supported |
+| `src_gateway.type` | `gcp.vpc.flow.source.gateway.type` | not yet supported |
+| `src_gateway.vpc.project_id` | `gcp.vpc.flow.source.gateway.vpc.project.id` | not yet supported |
+| `src_gateway.vpc.subnetwork_name` | `gcp.vpc.flow.source.gateway.vpc.subnet.name` | not yet supported |
+| `src_gateway.vpc.subnetwork_region` | `gcp.vpc.flow.source.gateway.vpc.subnet.region` | not yet supported |
+| `src_gateway.vpc.vpc_name` | `gcp.vpc.flow.source.gateway.vpc.name` | not yet supported |
+| `src_gateway.interconnect_name` | `gcp.vpc.flow.source.gateway.interconnect.name` | not yet supported |
+| `src_gateway.interconnect_project_number` | `gcp.vpc.flow.source.gateway.interconnect.project.number` | not yet supported |
+| `dest_gateway.project_id` | `gcp.vpc.flow.destination.gateway.project.id` | not yet supported |
+| `dest_gateway.location` | `gcp.vpc.flow.destination.gateway.region` | not yet supported |
+| `dest_gateway.name` | `gcp.vpc.flow.destination.gateway.name` | not yet supported |
+| `dest_gateway.type` | `gcp.vpc.flow.destination.gateway.type` | not yet supported |
+| `dest_gateway.vpc.project_id` | `gcp.vpc.flow.destination.gateway.vpc.project.id` | not yet supported |
+| `dest_gateway.vpc.subnetwork_name` | `gcp.vpc.flow.destination.gateway.vpc.subnet.name` | not yet supported |
+| `dest_gateway.vpc.subnetwork_region` | `gcp.vpc.flow.destination.gateway.vpc.subnet.region` | not yet supported |
+| `dest_gateway.vpc.vpc_name` | `gcp.vpc.flow.destination.gateway.vpc.name` | not yet supported |
+| `dest_gateway.interconnect_name` | `gcp.vpc.flow.destination.gateway.interconnect.name` | not yet supported |
+| `dest_gateway.interconnect_project_number` | `gcp.vpc.flow.destination.gateway.interconnect.project.number` | not yet supported |
+| `src_gke_details.cluster.cluster_location` | `gcp.vpc.flow.source.gke.cluster.location` | not yet supported |
+| `src_gke_details.cluster.cluster_name` | `gcp.vpc.flow.source.gke.cluster.name` | not yet supported |
+| `src_gke_details.pod.pod_name` | `gcp.vpc.flow.source.gke.pod.name` | not yet supported |
+| `src_gke_details.pod.pod_namespace` | `gcp.vpc.flow.source.gke.pod.namespace` | not yet supported |
+| `src_gke_details.pod.pod_workload.workload_name` | `gcp.vpc.flow.source.gke.pod.workload.name` | not yet supported |
+| `src_gke_details.pod.pod_workload.workload_type` | `gcp.vpc.flow.source.gke.pod.workload.type` | not yet supported |
+| `src_gke_details.service.service_name` | `gcp.vpc.flow.source.gke.service.name` | not yet supported |
+| `src_gke_details.service.service_namespace` | `gcp.vpc.flow.source.gke.service.namespace` | not yet supported |
+| `dest_gke_details.cluster.cluster_location` | `gcp.vpc.flow.destination.gke.cluster.location` | not yet supported |
+| `dest_gke_details.cluster.cluster_name` | `gcp.vpc.flow.destination.gke.cluster.name` | not yet supported |
+| `dest_gke_details.pod.pod_name` | `gcp.vpc.flow.destination.gke.pod.name` | not yet supported |
+| `dest_gke_details.pod.pod_namespace` | `gcp.vpc.flow.destination.gke.pod.namespace` | not yet supported |
+| `dest_gke_details.pod.pod_workload.workload_name` | `gcp.vpc.flow.destination.gke.pod.workload.name` | not yet supported |
+| `dest_gke_details.pod.pod_workload.workload_type` | `gcp.vpc.flow.destination.gke.pod.workload.type` | not yet supported |
+| `dest_gke_details.service.service_name` | `gcp.vpc.flow.destination.gke.service.name` | not yet supported |
+| `dest_gke_details.service.service_namespace` | `gcp.vpc.flow.destination.gke.service.namespace` | not yet supported |
+| `src_google_service.type` | `gcp.vpc.flow.source.google_service.type` | not yet supported |
+| `src_google_service.service_name` | `gcp.vpc.flow.source.google_service.name` | not yet supported |
+| `src_google_service.connectivity` | `gcp.vpc.flow.source.google_service.connectivity` | not yet supported |
+| `src_google_service.private_domain` | `gcp.vpc.flow.source.google_service.domain.private` | not yet supported |
+| `dest_google_service.type` | `gcp.vpc.flow.destination.google_service.type` | not yet supported |
+| `dest_google_service.service_name` | `gcp.vpc.flow.destination.google_service.name` | not yet supported |
+| `dest_google_service.connectivity` | `gcp.vpc.flow.destination.google_service.connectivity` | not yet supported |
+| `dest_google_service.private_domain` | `gcp.vpc.flow.destination.google_service.domain.private` | not yet supported |
+| `src_instance.project_id` | `gcp.vpc.flow.source.instance.project.id` | supported |
+| `src_instance.region` | `gcp.vpc.flow.source.instance.vm.region` | supported |
+| `src_instance.vm_name` | `gcp.vpc.flow.source.instance.vm.name` | supported |
+| `src_instance.zone` | `gcp.vpc.flow.source.instance.vm.zone` | supported |
+| `src_instance.managed_instance_group.name` | `gcp.vpc.flow.source.instance.managed_instance_group.name` | supported |
+| `src_instance.managed_instance_group.region` | `gcp.vpc.flow.source.instance.managed_instance_group.region` | not yet supported |
+| `src_instance.managed_instance_group.zone` | `gcp.vpc.flow.source.instance.managed_instance_group.zone` | supported |
+| `dest_instance.project_id` | `gcp.vpc.flow.destination.instance.project.id` | supported |
+| `dest_instance.region` | `gcp.vpc.flow.destination.instance.vm.region` | supported |
+| `dest_instance.vm_name` | `gcp.vpc.flow.destination.instance.vm.name` | supported |
+| `dest_instance.zone` | `gcp.vpc.flow.destination.instance.vm.zone` | supported |
+| `dest_instance.managed_instance_group.name` | `gcp.vpc.flow.destination.instance.managed_instance_group.name` | supported |
+| `dest_instance.managed_instance_group.region` | `gcp.vpc.flow.destination.instance.managed_instance_group.region` | not yet supported |
+| `dest_instance.managed_instance_group.zone` | `gcp.vpc.flow.destination.instance.managed_instance_group.zone` | supported |
+| `src_location.asn` | `gcp.vpc.flow.source.asn` | supported |
+| `src_location.city` | `gcp.vpc.flow.source.geo.city` | supported |
+| `src_location.continent` | `gcp.vpc.flow.source.geo.continent` | supported |
+| `src_location.country` | `gcp.vpc.flow.source.geo.country.iso_code.alpha3` | supported |
+| `src_location.region` | `gcp.vpc.flow.source.geo.region` | supported |
+| `dest_location.asn` | `gcp.vpc.flow.destination.asn` | supported |
+| `dest_location.city` | `gcp.vpc.flow.destination.geo.city` | supported |
+| `dest_location.continent` | `gcp.vpc.flow.destination.geo.continent` | supported |
+| `dest_location.country` | `gcp.vpc.flow.destination.geo.country.iso_code.alpha3` | supported |
+| `dest_location.region` | `gcp.vpc.flow.destination.geo.region` | supported |
+| `src_vpc.project_id` | `gcp.vpc.flow.source.project.id` | supported |
+| `src_vpc.subnetwork_name` | `gcp.vpc.flow.source.subnet.name` | supported |
+| `src_vpc.subnetwork_region` | `gcp.vpc.flow.source.subnet.region` | supported |
+| `src_vpc.vpc_name` | `gcp.vpc.flow.source.vpc.name` | supported |
+| `dest_vpc.project_id` | `gcp.vpc.flow.destination.project.id` | supported |
+| `dest_vpc.subnetwork_name` | `gcp.vpc.flow.destination.subnet.name` | supported |
+| `dest_vpc.subnetwork_region` | `gcp.vpc.flow.destination.subnet.region` | supported |
+| `dest_vpc.vpc_name` | `gcp.vpc.flow.destination.vpc.name` | supported |
+| `internet_routing_details.egress_as_path.as_details.asn` | `gcp.vpc.flow.egress.as_paths.as_details.asn` | supported |
+| `load_balancing.forwarding_rule_project_id` | `gcp.vpc.flow.load_balancing.forwarding_rule.project.id` | not yet supported |
+| `load_balancing.reporter` | `gcp.vpc.flow.load_balancing.reporter` | not yet supported |
+| `load_balancing.type` | `gcp.vpc.flow.load_balancing.type` | not yet supported |
+| `load_balancing.scheme` | `gcp.vpc.flow.load_balancing.scheme` | not yet supported |
+| `load_balancing.url_map_name` | `gcp.vpc.flow.load_balancing.url_map.name` | not yet supported |
+| `load_balancing.forwarding_rule_name` | `gcp.vpc.flow.load_balancing.forwarding_rule.name` | not yet supported |
+| `load_balancing.backend_service_name` | `gcp.vpc.flow.load_balancing.backend_service.name` | not yet supported |
+| `load_balancing.backend_group_name` | `gcp.vpc.flow.load_balancing.backend_group.name` | not yet supported |
+| `load_balancing.backend_group_type` | `gcp.vpc.flow.load_balancing.backend_group.type` | not yet supported |
+| `load_balancing.backend_group_location` | `gcp.vpc.flow.load_balancing.backend_group.location` | not yet supported |
+| `load_balancing.vpc.project_id` | `gcp.vpc.flow.load_balancing.vpc.project.id` | not yet supported |
+| `load_balancing.vpc.subnetwork_name` | `gcp.vpc.flow.load_balancing.vpc.subnet.name` | not yet supported |
+| `load_balancing.vpc.subnetwork_region` | `gcp.vpc.flow.load_balancing.vpc.subnet.region` | not yet supported |
+| `load_balancing.vpc.vpc_name` | `gcp.vpc.flow.load_balancing.vpc.name` | not yet supported |
+| `network_service.dscp` | `gcp.vpc.flow.network_service.dscp` | supported |
+| `psc.reporter` | `gcp.vpc.flow.private_service_connect.reporter` | not yet supported |
+| `psc.psc_endpoint.project_id` | `gcp.vpc.flow.private_service_connect.endpoint.project.id` | not yet supported |
+| `psc.psc_endpoint.region` | `gcp.vpc.flow.private_service_connect.endpoint.region` | not yet supported |
+| `psc.psc_endpoint.psc_connection_id` | `gcp.vpc.flow.private_service_connect.endpoint.private_service_connect.connection.id` | not yet supported |
+| `psc.psc_endpoint.target_service_type` | `gcp.vpc.flow.private_service_connect.endpoint.target_service_type` | not yet supported |
+| `psc.psc_endpoint.vpc.project_id` | `gcp.vpc.flow.private_service_connect.endpoint.vpc.project.id` | not yet supported |
+| `psc.psc_endpoint.vpc.subnetwork_name` | `gcp.vpc.flow.private_service_connect.endpoint.vpc.subnet.name` | not yet supported |
+| `psc.psc_endpoint.vpc.subnetwork_region` | `gcp.vpc.flow.private_service_connect.endpoint.vpc.subnet.region` | not yet supported |
+| `psc.psc_endpoint.vpc.vpc_name` | `gcp.vpc.flow.private_service_connect.endpoint.vpc.name` | not yet supported |
+| `psc.psc_attachment.project_id` | `gcp.vpc.flow.private_service_connect.attachment.project.id` | not yet supported |
+| `psc.psc_attachment.region` | `gcp.vpc.flow.private_service_connect.attachment.region` | not yet supported |
+| `psc.psc_attachment.vpc.project_id` | `gcp.vpc.flow.private_service_connect.attachment.vpc.project.id` | not yet supported |
+| `psc.psc_attachment.vpc.subnetwork_name` | `gcp.vpc.flow.private_service_connect.attachment.vpc.subnet.name` | not yet supported |
+| `psc.psc_attachment.vpc.subnetwork_region` | `gcp.vpc.flow.private_service_connect.attachment.vpc.subnet.region` | not yet supported |
+| `psc.psc_attachment.vpc.vpc_name` | `gcp.vpc.flow.private_service_connect.attachment.vpc.name` | not yet supported |
+| `rdma_traffic_type` | `gcp.vpc.flow.remote_direct_memory_access.traffic_type` | not yet supported |
