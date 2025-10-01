@@ -11,6 +11,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -131,6 +133,7 @@ type oracleScraper struct {
 	topQueryCollectCfg         TopQueryCollection
 	obfuscator                 *obfuscator
 	querySampleCfg             QuerySample
+	serviceInstanceID          string
 }
 
 func newScraper(metricsBuilder *metadata.MetricsBuilder, metricsBuilderConfig metadata.MetricsBuilderConfig, scrapeCfg scraperhelper.ControllerConfig, logger *zap.Logger, providerFunc dbProviderFunc, clientProviderFunc clientProviderFunc, instanceName, hostName string) (scraper.Metrics, error) {
@@ -143,6 +146,7 @@ func newScraper(metricsBuilder *metadata.MetricsBuilder, metricsBuilderConfig me
 		clientProviderFunc:   clientProviderFunc,
 		instanceName:         instanceName,
 		hostName:             hostName,
+		serviceInstanceID:    getInstanceID(instanceName, logger),
 	}
 	return scraper.NewMetrics(s.scrape, scraper.WithShutdown(s.shutdown), scraper.WithStart(s.start))
 }
@@ -164,6 +168,7 @@ func newLogsScraper(logsBuilder *metadata.LogsBuilder, logsBuilderConfig metadat
 		querySampleCfg:     querySampleCfg,
 		hostName:           hostName,
 		obfuscator:         newObfuscator(),
+		serviceInstanceID:  getInstanceID(instanceName, logger),
 	}
 	return scraper.NewLogs(s.scrapeLogs, scraper.WithShutdown(s.shutdown), scraper.WithStart(s.start))
 }
@@ -502,9 +507,8 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		}
 	}
 
-	rb := s.mb.NewResourceBuilder()
-	rb.SetOracledbInstanceName(s.instanceName)
-	rb.SetHostName(s.hostName)
+	rb := s.setupResourceBuilder(s.mb.NewResourceBuilder())
+
 	out := s.mb.Emit(metadata.WithResource(rb.Emit()))
 	s.logger.Debug("Done scraping")
 	if len(scrapeErrors) > 0 {
@@ -634,9 +638,7 @@ func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Log
 	hits = s.obfuscateCacheHits(hits)
 	childAddressToPlanMap := s.getChildAddressToPlanMap(ctx, hits)
 
-	rb := s.lb.NewResourceBuilder()
-	rb.SetOracledbInstanceName(s.instanceName)
-	rb.SetHostName(s.hostName)
+	rb := s.setupResourceBuilder(s.lb.NewResourceBuilder())
 
 	for _, hit := range hits {
 		planBytes, err := json.Marshal(childAddressToPlanMap[hit.childAddress])
@@ -717,9 +719,7 @@ func (s *oracleScraper) collectQuerySamples(ctx context.Context, logs plog.Logs)
 		scrapeErrors = append(scrapeErrors, fmt.Errorf("error executing %s: %w", samplesQuery, err))
 	}
 
-	rb := s.lb.NewResourceBuilder()
-	rb.SetOracledbInstanceName(s.instanceName)
-	rb.SetHostName(s.hostName)
+	rb := s.setupResourceBuilder(s.lb.NewResourceBuilder())
 
 	for _, row := range rows {
 		if row[sqlText] == "" {
@@ -827,4 +827,50 @@ func (s *oracleScraper) shutdown(_ context.Context) error {
 		return nil
 	}
 	return s.db.Close()
+}
+
+func (s *oracleScraper) setupResourceBuilder(rb *metadata.ResourceBuilder) *metadata.ResourceBuilder {
+	rb.SetOracledbInstanceName(s.instanceName)
+	rb.SetHostName(s.hostName)
+	rb.SetServiceInstanceID(s.serviceInstanceID)
+	return rb
+}
+
+func getInstanceID(instanceString string, logger *zap.Logger) string {
+	hostAndPort, service, found := strings.Cut(instanceString, "/")
+	if !found {
+		logger.Info("No service name found in the connection string", zap.String("instanceString", instanceString))
+	}
+
+	host, port, err := net.SplitHostPort(hostAndPort)
+	if err != nil {
+		logger.Warn("Computing service.instance.id failed. Couldn't extract host and port from the connection data.", zap.Error(err))
+		return constructInstanceID("unknown", "1521", service)
+	}
+
+	// Replace the host value with machine name if connecting to localhost target
+	if strings.EqualFold(host, "localhost") || net.ParseIP(host).IsLoopback() {
+		localhost, err := os.Hostname()
+		if err != nil {
+			logger.Warn("Failed getting localhost machine name for the service.instance.id.")
+		} else {
+			host = localhost
+		}
+	}
+
+	return constructInstanceID(host, port, service)
+}
+
+func constructInstanceID(host, port, service string) string {
+	if strings.TrimSpace(host) == "" {
+		host = "unknown"
+	}
+	if strings.TrimSpace(port) == "" {
+		port = "1521"
+	}
+
+	if service != "" {
+		return fmt.Sprintf("%s:%s/%s", host, port, service)
+	}
+	return fmt.Sprintf("%s:%s", host, port)
 }

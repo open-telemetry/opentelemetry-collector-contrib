@@ -192,8 +192,15 @@ func (p *profileContext) GetProfile() pprofile.Profile {
 	return p.profile
 }
 
+func (p *profileContext) AttributeIndices() pcommon.Int32Slice {
+	return p.profile.AttributeIndices()
+}
+
 func newProfileContext(profile pprofile.Profile, dictionary pprofile.ProfilesDictionary) *profileContext {
-	return &profileContext{profile: profile, dictionary: dictionary}
+	return &profileContext{
+		profile:    profile,
+		dictionary: dictionary,
+	}
 }
 
 func createValueType() pprofile.ValueType {
