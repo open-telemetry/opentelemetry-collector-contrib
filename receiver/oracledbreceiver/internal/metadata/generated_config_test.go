@@ -73,6 +73,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 				ResourceAttributes: ResourceAttributesConfig{
 					HostName:             ResourceAttributeConfig{Enabled: true},
 					OracledbInstanceName: ResourceAttributeConfig{Enabled: true},
+					ServiceInstanceID:    ResourceAttributeConfig{Enabled: true},
 				},
 			},
 		},
@@ -126,6 +127,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 				ResourceAttributes: ResourceAttributesConfig{
 					HostName:             ResourceAttributeConfig{Enabled: false},
 					OracledbInstanceName: ResourceAttributeConfig{Enabled: false},
+					ServiceInstanceID:    ResourceAttributeConfig{Enabled: false},
 				},
 			},
 		},
@@ -173,6 +175,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 			want: ResourceAttributesConfig{
 				HostName:             ResourceAttributeConfig{Enabled: true},
 				OracledbInstanceName: ResourceAttributeConfig{Enabled: true},
+				ServiceInstanceID:    ResourceAttributeConfig{Enabled: true},
 			},
 		},
 		{
@@ -180,6 +183,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 			want: ResourceAttributesConfig{
 				HostName:             ResourceAttributeConfig{Enabled: false},
 				OracledbInstanceName: ResourceAttributeConfig{Enabled: false},
+				ServiceInstanceID:    ResourceAttributeConfig{Enabled: false},
 			},
 		},
 	}

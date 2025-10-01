@@ -16,17 +16,17 @@ metrics:
 
 Elapsed time since the last modification of the file or folder, in seconds since Epoch.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| s | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| s | Sum | Int | Cumulative | false | development |
 
 ### file.size
 
 The size of the file or folder, in bytes.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| b | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| b | Gauge | Int | development |
 
 ## Optional Metrics
 
@@ -42,25 +42,25 @@ metrics:
 
 Elapsed time since last access of the file or folder, in seconds since Epoch.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| s | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| s | Sum | Int | Cumulative | false | development |
 
 ### file.count
 
 The number of files matched
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {file} | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {file} | Gauge | Int | development |
 
 ### file.ctime
 
 Elapsed time since the last change of the file or folder, in seconds since Epoch. In addition to `file.mtime`, this metric tracks metadata changes such as permissions or renaming the file.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| s | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| s | Sum | Int | Cumulative | false | development |
 
 #### Attributes
 
