@@ -53,9 +53,11 @@ type tailSamplingSpanProcessor struct {
 	telemetry *metadata.TelemetryBuilder
 	logger    *zap.Logger
 
-	nextConsumer       consumer.Traces
-	maxNumTraces       uint64
-	policies           []*policy
+	nextConsumer consumer.Traces
+	maxNumTraces uint64
+	policies     []*policy
+	// Policy Mutex
+	policiesMux        sync.RWMutex
 	idToTrace          sync.Map
 	policyTicker       timeutils.TTicker
 	tickerFrequency    time.Duration
@@ -155,12 +157,15 @@ func newTracesProcessor(ctx context.Context, set processor.Settings, nextConsume
 		tsp.tickerFrequency = time.Second
 	}
 
+	tsp.policiesMux.Lock()
 	if tsp.policies == nil {
 		err := tsp.loadSamplingPolicy(cfg.PolicyCfgs)
 		if err != nil {
+			tsp.policiesMux.Unlock()
 			return nil, err
 		}
 	}
+	tsp.policiesMux.Unlock()
 
 	if tsp.decisionBatcher == nil {
 		// this will start a goroutine in the background, so we run it only if everything went
@@ -186,6 +191,8 @@ func withDecisionBatcher(batcher idbatcher.Batcher) Option {
 // withPolicies sets the sampling policies to be used by the processor.
 func withPolicies(policies []*policy) Option {
 	return func(tsp *tailSamplingSpanProcessor) {
+		tsp.policiesMux.Lock()
+		defer tsp.policiesMux.Unlock()
 		tsp.policies = policies
 	}
 }
@@ -252,6 +259,9 @@ func getSharedPolicyEvaluator(settings component.TelemetrySettings, cfg *sharedP
 	case Probabilistic:
 		pCfg := cfg.ProbabilisticCfg
 		return sampling.NewProbabilisticSampler(settings, pCfg.HashSalt, pCfg.SamplingPercentage), nil
+	case StratifiedProbabilistic:
+		pCfg := cfg.StratifiedProbabilisticCfg
+		return sampling.NewStratifiedProbabilisticSampler(settings, pCfg.HashSalt, pCfg.SamplingPercentage), nil
 	case StringAttribute:
 		safCfg := cfg.StringAttributeCfg
 		return sampling.NewStringAttributeFilter(settings, safCfg.Key, safCfg.Values, safCfg.EnabledRegexMatching, safCfg.CacheMaxSize, safCfg.InvertMatch), nil
@@ -392,6 +402,15 @@ func (tsp *tailSamplingSpanProcessor) loadPendingSamplingPolicy() {
 func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 	tsp.logger.Debug("Sampling Policy Evaluation ticked")
 
+	// Re-initialize the time-window if stratified sampling is configured
+	tsp.policiesMux.RLock()
+	for _, p := range tsp.policies {
+		if stratified, ok := p.evaluator.(*sampling.StratifiedProbabilisticSampler); ok {
+			stratified.ResetWindow()
+		}
+	}
+	tsp.policiesMux.RUnlock()
+
 	tsp.loadPendingSamplingPolicy()
 
 	ctx := context.Background()
@@ -467,6 +486,10 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *sa
 	startTime := time.Now()
 
 	// Check all policies before making a final decision.
+
+	tsp.policiesMux.RLock()
+	defer tsp.policiesMux.RUnlock()
+
 	for i, p := range tsp.policies {
 		decision, err := p.evaluator.Evaluate(ctx, id, trace)
 		latency := time.Since(startTime)
