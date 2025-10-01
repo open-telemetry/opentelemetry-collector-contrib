@@ -73,7 +73,7 @@ func (s *s3AccessLogUnmarshaler) createLogs() (plog.Logs, plog.ResourceLogs, plo
 	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
 	scopeLogs.Scope().SetName(metadata.ScopeName)
 	scopeLogs.Scope().SetVersion(s.buildInfo.Version)
-	scopeLogs.Scope().Attributes().PutStr(constants.FormatIdentificationTag, constants.FormatS3AccessLog)
+	scopeLogs.Scope().Attributes().PutStr(constants.FormatIdentificationTag, "aws."+constants.FormatS3AccessLog)
 	return logs, resourceLogs, scopeLogs
 }
 
