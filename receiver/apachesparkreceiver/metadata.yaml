@@ -24,6 +24,7 @@ resource_attributes:
   spark.stage.attempt.id:
     description: The ID of the stage attempt for which the metric was recorded.
     type: int
+    enabled: false
   spark.executor.id:
     description: The ID of the executor for which the metric was recorded.
     type: string
