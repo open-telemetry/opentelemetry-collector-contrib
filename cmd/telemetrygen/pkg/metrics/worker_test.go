@@ -5,6 +5,7 @@ package metrics
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -24,10 +25,14 @@ import (
 )
 
 const (
-	telemetryAttrKeyOne   = "key1"
-	telemetryAttrKeyTwo   = "key2"
-	telemetryAttrValueOne = "value1"
-	telemetryAttrValueTwo = "value2"
+	telemetryAttrKeyOne       = "key1"
+	telemetryAttrKeyTwo       = "key2"
+	telemetryAttrValueOne     = "value1"
+	telemetryAttrValueTwo     = "value2"
+	telemetryAttrIntKeyOne    = "intKey1"
+	telemetryAttrIntValueOne  = 1
+	telemetryAttrBoolKeyOne   = "boolKey1"
+	telemetryAttrBoolValueOne = true
 )
 
 type mockExporter struct {
@@ -362,11 +367,15 @@ func TestSumMultipleTelemetryAttr(t *testing.T) {
 		ms := rms[i].ScopeMetrics[0].Metrics[0]
 		// @note update when telemetrygen allow other metric types
 		attr := ms.Data.(metricdata.Sum[int64]).DataPoints[0].Attributes
-		assert.Equal(t, 2, attr.Len(), "it must have multiple attributes here")
+		assert.Equal(t, 4, attr.Len(), "it must have multiple attributes here")
 		actualValue, _ = attr.Value(telemetryAttrKeyOne)
 		assert.Equal(t, telemetryAttrValueOne, actualValue.AsString(), "it should be "+telemetryAttrValueOne)
 		actualValue, _ = attr.Value(telemetryAttrKeyTwo)
 		assert.Equal(t, telemetryAttrValueTwo, actualValue.AsString(), "it should be "+telemetryAttrValueTwo)
+		actualValue, _ = attr.Value(telemetryAttrIntKeyOne)
+		assert.Equal(t, int64(telemetryAttrIntValueOne), actualValue.AsInt64(), fmt.Sprintf("it should be %d", telemetryAttrIntValueOne))
+		actualValue, _ = attr.Value(telemetryAttrBoolKeyOne)
+		assert.Equal(t, telemetryAttrBoolValueOne, actualValue.AsBool(), fmt.Sprintf("it should be %t", telemetryAttrBoolValueOne))
 	}
 }
 
@@ -394,11 +403,15 @@ func TestGaugeMultipleTelemetryAttr(t *testing.T) {
 		ms := rms[i].ScopeMetrics[0].Metrics[0]
 		// @note update when telemetrygen allow other metric types
 		attr := ms.Data.(metricdata.Gauge[int64]).DataPoints[0].Attributes
-		assert.Equal(t, 2, attr.Len(), "it must have multiple attributes here")
+		assert.Equal(t, 4, attr.Len(), "it must have multiple attributes here")
 		actualValue, _ = attr.Value(telemetryAttrKeyOne)
 		assert.Equal(t, telemetryAttrValueOne, actualValue.AsString(), "it should be "+telemetryAttrValueOne)
 		actualValue, _ = attr.Value(telemetryAttrKeyTwo)
 		assert.Equal(t, telemetryAttrValueTwo, actualValue.AsString(), "it should be "+telemetryAttrValueTwo)
+		actualValue, _ = attr.Value(telemetryAttrIntKeyOne)
+		assert.Equal(t, int64(telemetryAttrIntValueOne), actualValue.AsInt64(), fmt.Sprintf("it should be %d", telemetryAttrIntValueOne))
+		actualValue, _ = attr.Value(telemetryAttrBoolKeyOne)
+		assert.Equal(t, telemetryAttrBoolValueOne, actualValue.AsBool(), fmt.Sprintf("it should be %t", telemetryAttrBoolValueOne))
 	}
 }
 
@@ -494,7 +507,12 @@ func configWithOneAttribute(metric MetricType, qty int) *Config {
 }
 
 func configWithMultipleAttributes(metric MetricType, qty int) *Config {
-	kvs := common.KeyValue{telemetryAttrKeyOne: telemetryAttrValueOne, telemetryAttrKeyTwo: telemetryAttrValueTwo}
+	kvs := common.KeyValue{
+		telemetryAttrKeyOne:     telemetryAttrValueOne,
+		telemetryAttrKeyTwo:     telemetryAttrValueTwo,
+		telemetryAttrIntKeyOne:  telemetryAttrIntValueOne,
+		telemetryAttrBoolKeyOne: telemetryAttrBoolValueOne,
+	}
 	return &Config{
 		Config: common.Config{
 			WorkerCount:         1,

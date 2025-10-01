@@ -22,10 +22,14 @@ import (
 )
 
 const (
-	telemetryAttrKeyOne   = "k1"
-	telemetryAttrKeyTwo   = "k2"
-	telemetryAttrValueOne = "v1"
-	telemetryAttrValueTwo = "v2"
+	telemetryAttrKeyOne       = "k1"
+	telemetryAttrKeyTwo       = "k2"
+	telemetryAttrValueOne     = "v1"
+	telemetryAttrValueTwo     = "v2"
+	telemetryAttrIntKeyOne    = "intKey1"
+	telemetryAttrIntValueOne  = 1
+	telemetryAttrBoolKeyOne   = "boolKey1"
+	telemetryAttrBoolValueOne = true
 )
 
 func TestFixedNumberOfTraces(t *testing.T) {
@@ -320,7 +324,21 @@ func TestSpansWithMultipleAttrs(t *testing.T) {
 	assert.Len(t, syncer.spans, 4) // each trace has two spans
 	for _, span := range syncer.spans {
 		attributes := span.Attributes()
-		assert.Len(t, attributes, 4, "it should have more than 4 attributes")
+		assert.Len(t, attributes, 6, "it must have multiple attributes here")
+		for _, attr := range attributes {
+			if attr.Key == telemetryAttrKeyOne {
+				assert.Equal(t, telemetryAttrValueOne, attr.Value.AsString())
+			}
+			if attr.Key == telemetryAttrKeyTwo {
+				assert.Equal(t, telemetryAttrValueTwo, attr.Value.AsString())
+			}
+			if attr.Key == telemetryAttrIntKeyOne {
+				assert.Equal(t, int64(telemetryAttrIntValueOne), attr.Value.AsInt64())
+			}
+			if attr.Key == telemetryAttrBoolKeyOne {
+				assert.Equal(t, telemetryAttrBoolValueOne, attr.Value.AsBool())
+			}
+		}
 	}
 }
 
@@ -396,7 +414,12 @@ func configWithOneAttribute(qty int, statusCode string) *Config {
 }
 
 func configWithMultipleAttributes(qty int, statusCode string) *Config {
-	kvs := common.KeyValue{telemetryAttrKeyOne: telemetryAttrValueOne, telemetryAttrKeyTwo: telemetryAttrValueTwo}
+	kvs := common.KeyValue{
+		telemetryAttrKeyOne:     telemetryAttrValueOne,
+		telemetryAttrKeyTwo:     telemetryAttrValueTwo,
+		telemetryAttrIntKeyOne:  telemetryAttrIntValueOne,
+		telemetryAttrBoolKeyOne: telemetryAttrBoolValueOne,
+	}
 	return &Config{
 		Config: common.Config{
 			WorkerCount:         1,
