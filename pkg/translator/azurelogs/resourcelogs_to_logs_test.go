@@ -130,12 +130,12 @@ func TestExtractRawAttributes(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		log      azureLogRecord
+		log      *azureLogRecord
 		expected map[string]any
 	}{
 		{
 			name: "minimal",
-			log: azureLogRecord{
+			log: &azureLogRecord{
 				Time:          "",
 				ResourceID:    "resource.id",
 				OperationName: "operation.name",
@@ -149,7 +149,7 @@ func TestExtractRawAttributes(t *testing.T) {
 		},
 		{
 			name: "bad-duration",
-			log: azureLogRecord{
+			log: &azureLogRecord{
 				Time:          "",
 				ResourceID:    "resource.id",
 				OperationName: "operation.name",
@@ -163,7 +163,7 @@ func TestExtractRawAttributes(t *testing.T) {
 		},
 		{
 			name: "everything",
-			log: azureLogRecord{
+			log: &azureLogRecord{
 				Time:              "",
 				ResourceID:        "resource.id",
 				TenantID:          &tenantID,
@@ -199,7 +199,7 @@ func TestExtractRawAttributes(t *testing.T) {
 		},
 		{
 			name: "nil properties",
-			log: azureLogRecord{
+			log: &azureLogRecord{
 				Time:          "",
 				ResourceID:    "resource.id",
 				OperationName: "operation.name",
@@ -214,7 +214,7 @@ func TestExtractRawAttributes(t *testing.T) {
 		},
 		{
 			name: "string properties",
-			log: azureLogRecord{
+			log: &azureLogRecord{
 				Time:          "",
 				ResourceID:    "resource.id",
 				OperationName: "operation.name",
@@ -230,7 +230,7 @@ func TestExtractRawAttributes(t *testing.T) {
 		},
 		{
 			name: "int properties",
-			log: azureLogRecord{
+			log: &azureLogRecord{
 				Time:          "",
 				ResourceID:    "resource.id",
 				OperationName: "operation.name",
@@ -246,7 +246,7 @@ func TestExtractRawAttributes(t *testing.T) {
 		},
 		{
 			name: "json properties",
-			log: azureLogRecord{
+			log: &azureLogRecord{
 				Time:          "",
 				ResourceID:    "resource.id",
 				OperationName: "operation.name",
