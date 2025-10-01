@@ -43,6 +43,9 @@ func TestConvertGaugeToMetrics(t *testing.T) {
 						},
 					},
 				},
+				Metric: &metric.Metric{
+					Labels: map[string]string{"labelKey": "labelValue"},
+				},
 			},
 			fileNameExpected: "TestConvertGaugeToMetrics_ValidGaugePoints.yaml",
 		},

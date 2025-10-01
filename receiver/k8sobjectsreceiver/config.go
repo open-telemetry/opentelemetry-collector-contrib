@@ -6,6 +6,7 @@ package k8sobjectsreceiver // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"errors"
 	"fmt"
+	"maps"
 	"strings"
 	"time"
 
@@ -142,7 +143,8 @@ func (c *Config) getValidObjects() (map[string][]*schema.GroupVersionResource, e
 		if len(split) == 1 && group.GroupVersion == "v1" {
 			split = []string{"", "v1"}
 		}
-		for _, resource := range group.APIResources {
+		for i := range group.APIResources {
+			resource := &group.APIResources[i]
 			validObjects[resource.Name] = append(validObjects[resource.Name], &schema.GroupVersionResource{
 				Group:    split[0],
 				Version:  split[1],
@@ -175,9 +177,7 @@ func (k *K8sObjectsConfig) DeepCopy() *K8sObjectsConfig {
 	}
 
 	copied.exclude = make(map[apiWatch.EventType]bool)
-	for key, val := range k.exclude {
-		copied.exclude[key] = val
-	}
+	maps.Copy(copied.exclude, k.exclude)
 
 	if k.gvr != nil {
 		copied.gvr = &schema.GroupVersionResource{
