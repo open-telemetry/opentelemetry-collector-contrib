@@ -58,7 +58,7 @@ func (v *KeyValue) Set(s string) error {
 	}
 	key := kv[0]
 
-	if !(strings.HasPrefix(kv[1], "[") && strings.HasSuffix(kv[1], "]")) {
+	if !strings.HasPrefix(kv[1], "[") || !strings.HasSuffix(kv[1], "]") {
 		val, err := parseValue(kv[1])
 		if err != nil {
 			return err
