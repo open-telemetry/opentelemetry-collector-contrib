@@ -1,0 +1,42 @@
+type: novadetector
+
+status:
+  class: processor
+  stability:
+    alpha: [traces, metrics, logs, profiles]
+  codeowners:
+    active: [dashpole, paulojmdias]
+
+resource_attributes:
+  cloud.account.id:
+    description: The cloud account id (e.g., OpenStack project or tenant ID)
+    type: string
+    enabled: true
+  cloud.availability_zone:
+    description: The cloud availability zone
+    type: string
+    enabled: true
+  cloud.platform:
+    description: The cloud platform
+    type: string
+    enabled: true
+  cloud.provider:
+    description: The cloud provider
+    type: string
+    enabled: true
+  host.id:
+    description: The host.id
+    type: string
+    enabled: true
+  host.name:
+    description: The hostname
+    type: string
+    enabled: true
+  host.type:
+    description: The host instance type (Nova flavor name or ID)
+    type: string
+    enabled: true
+
+tests:
+  skip_lifecycle: true
+  skip_shutdown: true
