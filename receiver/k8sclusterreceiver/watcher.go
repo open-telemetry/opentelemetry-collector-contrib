@@ -88,6 +88,17 @@ func newResourceWatcher(set receiver.Settings, cfg *Config, metadataStore *metad
 }
 
 func (rw *resourceWatcher) initialize() error {
+	// Reset per-leadership-session state to avoid accumulating informers and
+	// to ensure handlers wait for cache sync again after re-election.
+	// (Old factories tied to the previous context must not be reused.)
+	rw.informerFactories = nil
+	if rw.initialSyncDone != nil {
+		rw.initialSyncDone.Store(false)
+	}
+	if rw.initialSyncTimedOut != nil {
+		rw.initialSyncTimedOut.Store(false)
+	}
+
 	client, err := rw.makeClient(rw.config.APIConfig)
 	if err != nil {
 		return fmt.Errorf("Failed to create Kubernetes client: %w", err)
