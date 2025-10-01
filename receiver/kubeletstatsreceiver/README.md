@@ -17,11 +17,6 @@
 The Kubelet Stats Receiver pulls node, pod, container, and volume metrics from the API server on a kubelet
 and sends it down the metric pipeline for further processing.
 
-> [!WARNING]
-> The `receiver.kubeletstats.enableCPUUsageMetrics` feature gate was moved to stage `Stable`.
-> Deprecated metrics cannot be used anymore.
-> For more information which metrics are affected see [here](#metrics-deprecation).
-
 ## Metrics
 
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml) with further documentation in [documentation.md](./documentation.md)
@@ -332,24 +327,3 @@ rules:
     resources: ["nodes/proxy"]
     verbs: ["get"]
 ```
-
-### Metrics deprecation
-
-The following metrics were deprecated and renamed from version `v0.125.0`:
-
-- `k8s.node.cpu.utilization` (renamed to `k8s.node.cpu.usage`)
-- `k8s.pod.cpu.utilization` (renamed to `k8s.pod.cpu.usage`)
-- `container.cpu.utilization` (renamed to `container.cpu.usage`)
-
-The above metrics show usage counted in CPUs and it's not a percentage of used resources.
-These metrics were previously incorrectly named using the utilization term.
-
-#### `receiver.kubeletstats.enableCPUUsageMetrics` feature gate
-
-- alpha: when enabled it makes the `.cpu.usage` metrics enabled by default, disabling the `.cpu.utilization` metrics
-- beta: `.cpu.usage` metrics are enabled by default and any configuration enabling the deprecated `.cpu.utilization` metrics will be failing. Explicitly disabling the feature gate provides the old (deprecated) behavior.
-- stable: `.cpu.usage` metrics are enabled by default and the deprecated metrics are completely removed.
-- removed three releases after stable.
-
-More information about the deprecation plan and
-the background reasoning can be found at <https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27885>.

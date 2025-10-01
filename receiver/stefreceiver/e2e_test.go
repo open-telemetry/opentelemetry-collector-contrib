@@ -65,13 +65,15 @@ func TestRoundtrip(t *testing.T) {
 	t.Cleanup(func() { require.NoError(t, m.Shutdown(t.Context())) })
 
 	exporter := createExporter(t, endpoint)
-	t.Cleanup(func() { require.NoError(t, exporter.Shutdown(t.Context())) })
 
 	err := exporter.ConsumeMetrics(t.Context(), genMetrics())
 	require.NoError(t, err)
 	assert.EventuallyWithT(t, func(tt *assert.CollectT) {
 		assert.Len(tt, sink.AllMetrics(), 1)
 	}, 1*time.Minute, 10*time.Millisecond)
+
+	err = exporter.Shutdown(t.Context())
+	require.NoError(t, err)
 }
 
 func TestShutdownWhenConnected(t *testing.T) {
