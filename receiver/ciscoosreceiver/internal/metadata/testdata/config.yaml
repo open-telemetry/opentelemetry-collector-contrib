@@ -1,0 +1,9 @@
+default:
+all_set:
+  metrics:
+    cisco.device.connected:
+      enabled: true
+none_set:
+  metrics:
+    cisco.device.connected:
+      enabled: false

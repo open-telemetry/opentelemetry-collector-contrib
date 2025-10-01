@@ -612,6 +612,10 @@ component_management:
     name: receiver_chrony
     paths:
     - receiver/chronyreceiver/**
+  - component_id: receiver_ciscoos
+    name: receiver_ciscoos
+    paths:
+    - receiver/ciscoosreceiver/**
   - component_id: receiver_cloudflare
     name: receiver_cloudflare
     paths:

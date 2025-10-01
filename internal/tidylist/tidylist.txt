@@ -241,6 +241,7 @@ receiver/azureeventhubreceiver
 receiver/azuremonitorreceiver
 receiver/bigipreceiver
 receiver/chronyreceiver
+receiver/ciscoosreceiver
 receiver/cloudflarereceiver
 receiver/cloudfoundryreceiver
 receiver/collectdreceiver
