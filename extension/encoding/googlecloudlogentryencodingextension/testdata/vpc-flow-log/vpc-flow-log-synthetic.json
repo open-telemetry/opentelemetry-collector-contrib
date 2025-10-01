@@ -7,48 +7,193 @@
             "dest_port": 80,
             "protocol": 6
         },
-        "packets_sent": "150",
-        "bytes_sent": "123456",
         "reporter": "SRC",
+        "rtt_msec": 15,
+        "round_trip_time": {
+            "median_msec": 12
+        },
+        "bytes_sent": "123456",
+        "packets_sent": "150",
         "start_time": "2025-09-27T10:00:00.123456789Z",
         "end_time": "2025-09-27T10:00:01.123456789Z",
-        "src_vpc": {
+        "src_gateway": {
             "project_id": "my-gcp-project",
-            "vpc_name": "my-vpc-network",
-            "subnetwork_name": "my-subnet"
+            "location": "us-central1",
+            "name": "my-gateway",
+            "type": "NAT_GATEWAY",
+            "vpc": {
+                "project_id": "my-gcp-project",
+                "subnetwork_name": "my-subnet",
+                "subnetwork_region": "us-central1",
+                "vpc_name": "my-vpc-network"
+            },
+            "interconnect_name": "my-interconnect",
+            "interconnect_project_number": "123456789012"
         },
-        "dest_vpc": {
+        "dest_gateway": {
             "project_id": "another-gcp-project",
-            "vpc_name": "peer-vpc-network",
-            "subnetwork_name": "peer-subnet"
+            "location": "us-east1",
+            "name": "peer-gateway",
+            "type": "VPN_GATEWAY",
+            "vpc": {
+                "project_id": "another-gcp-project",
+                "subnetwork_name": "peer-subnet",
+                "subnetwork_region": "us-east1",
+                "vpc_name": "peer-vpc-network"
+            }
+        },
+        "src_gke_details": {
+            "cluster": {
+                "cluster_location": "us-central1-a",
+                "cluster_name": "my-gke-cluster"
+            },
+            "pod": {
+                "pod_name": "my-pod-12345",
+                "pod_namespace": "default",
+                "pod_workload": {
+                    "workload_name": "my-deployment",
+                    "workload_type": "DEPLOYMENT"
+                }
+            },
+            "service": {
+                "service_name": "my-service",
+                "service_namespace": "default"
+            }
+        },
+        "dest_gke_details": {
+            "cluster": {
+                "cluster_location": "us-east1-b",
+                "cluster_name": "peer-gke-cluster"
+            },
+            "pod": {
+                "pod_name": "peer-pod-67890",
+                "pod_namespace": "production",
+                "pod_workload": {
+                    "workload_name": "peer-deployment",
+                    "workload_type": "STATEFUL_SET"
+                }
+            }
+        },
+        "src_google_service": {
+            "type": "GOOGLE_API",
+            "service_name": "storage.googleapis.com",
+            "connectivity": "PRIVATE_GOOGLE_ACCESS",
+            "private_domain": "private.googleapis.com"
+        },
+        "dest_google_service": {
+            "type": "GOOGLE_VPC_HOSTED_SERVICE",
+            "service_name": "bigquery.googleapis.com",
+            "connectivity": "PUBLIC_IP"
         },
         "src_instance": {
             "project_id": "my-gcp-project",
+            "region": "us-central1",
             "vm_name": "my-vm-instance",
-            "zone": "us-central1-a"
+            "zone": "us-central1-a",
+            "managed_instance_group": {
+                "name": "my-mig",
+                "region": "us-central1",
+                "zone": "us-central1-a"
+            }
         },
         "dest_instance": {
             "project_id": "another-gcp-project",
+            "region": "us-east1",
             "vm_name": "peer-vm-instance",
-            "zone": "us-east1-b"
+            "zone": "us-east1-b",
+            "managed_instance_group": {
+                "name": "peer-mig",
+                "region": "us-east1",
+                "zone": "us-east1-b"
+            }
         },
-        "src_gke_details": {
-            "cluster": "my-gke-cluster",
-            "pod_namespace": "default",
-            "pod_name": "my-pod-12345",
-            "service_name": "my-service"
+        "src_location": {
+            "asn": 15169,
+            "city": "Mountain View",
+            "continent": "North America",
+            "country": "usa",
+            "region": "California"
         },
-        "dest_gke_details": {},
-        "geographic_details": {
-            "source_continent": "North America",
-            "source_country": "USA",
-            "source_region": "California",
-            "source_city": "Mountain View",
-            "destination_continent": "Europe",
-            "destination_country": "Netherlands",
-            "destination_region": "North Holland",
-            "destination_city": "Amsterdam"
-        }
+        "dest_location": {
+            "asn": 12345,
+            "city": "Amsterdam",
+            "continent": "Europe",
+            "country": "nld",
+            "region": "North Holland"
+        },
+        "src_vpc": {
+            "project_id": "my-gcp-project",
+            "subnetwork_name": "my-subnet",
+            "subnetwork_region": "us-central1",
+            "vpc_name": "my-vpc-network"
+        },
+        "dest_vpc": {
+            "project_id": "another-gcp-project",
+            "subnetwork_name": "peer-subnet",
+            "subnetwork_region": "us-east1",
+            "vpc_name": "peer-vpc-network"
+        },
+        "internet_routing_details": {
+            "egress_as_path": [
+                {
+                    "as_details": [
+                        {
+                            "asn": 15169
+                        },
+                        {
+                            "asn": 12345
+                        }
+                    ]
+                }
+            ]
+        },
+        "load_balancing": {
+            "forwarding_rule_project_id": "my-gcp-project",
+            "reporter": "BACKEND",
+            "type": "PASSTHROUGH_NETWORK_LOAD_BALANCER",
+            "scheme": "EXTERNAL",
+            "url_map_name": "my-url-map",
+            "forwarding_rule_name": "my-forwarding-rule",
+            "backend_service_name": "my-backend-service",
+            "backend_group_name": "my-backend-group",
+            "backend_group_type": "NETWORK_ENDPOINT_GROUP",
+            "backend_group_location": "us-central1",
+            "vpc": {
+                "project_id": "my-gcp-project",
+                "subnetwork_name": "my-subnet",
+                "subnetwork_region": "us-central1",
+                "vpc_name": "my-vpc-network"
+            }
+        },
+        "network_service": {
+            "dscp": 0
+        },
+        "psc": {
+            "reporter": "CONSUMER",
+            "psc_endpoint": {
+                "project_id": "my-gcp-project",
+                "region": "us-central1",
+                "psc_connection_id": "my-psc-connection",
+                "target_service_type": "PUBLISHED_SERVICE",
+                "vpc": {
+                    "project_id": "my-gcp-project",
+                    "subnetwork_name": "my-subnet",
+                    "subnetwork_region": "us-central1",
+                    "vpc_name": "my-vpc-network"
+                }
+            },
+            "psc_attachment": {
+                "project_id": "my-gcp-project",
+                "region": "us-central1",
+                "vpc": {
+                    "project_id": "my-gcp-project",
+                    "subnetwork_name": "my-subnet",
+                    "subnetwork_region": "us-central1",
+                    "vpc_name": "my-vpc-network"
+                }
+            }
+        },
+        "rdma_traffic_type": "RoCE"
     },
     "insertId": "12345abcde",
     "resource": {
