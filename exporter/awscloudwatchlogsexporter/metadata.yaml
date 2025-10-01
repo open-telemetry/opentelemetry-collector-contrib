@@ -3,7 +3,7 @@ type: awscloudwatchlogs
 status:
   class: exporter
   stability:
-    unmaintained: [logs]
+    alpha: [logs]
   distributions: [contrib]
   codeowners:
     active: [yaten2302]
