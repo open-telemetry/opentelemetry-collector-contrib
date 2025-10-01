@@ -145,14 +145,15 @@ func (fe *faroExporter) consume(ctx context.Context, fp []faro.Payload) error {
 	var wg sync.WaitGroup
 	wg.Add(len(fp))
 	var mu sync.Mutex
-	for _, p := range fp {
-		go func() {
+	for i := range fp {
+		p := &fp[i]
+		go func(p *faro.Payload) {
 			defer wg.Done()
-			err := fe.export(ctx, &p)
+			err := fe.export(ctx, p)
 			mu.Lock()
 			errs = multierr.Append(errs, err)
 			mu.Unlock()
-		}()
+		}(p)
 	}
 	wg.Wait()
 	return errs

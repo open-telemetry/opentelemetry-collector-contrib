@@ -97,7 +97,7 @@ func (cfg *Config) Validate() error {
 			string(conventions.K8SDaemonSetNameKey), string(conventions.K8SDaemonSetUIDKey),
 			string(conventions.K8SStatefulSetNameKey), string(conventions.K8SStatefulSetUIDKey),
 			string(conventions.K8SJobNameKey), string(conventions.K8SJobUIDKey),
-			string(conventions.K8SCronJobNameKey),
+			string(conventions.K8SCronJobNameKey), string(conventions.K8SCronJobUIDKey),
 			string(conventions.K8SNodeNameKey), string(conventions.K8SNodeUIDKey),
 			string(conventions.K8SContainerNameKey), string(conventions.ContainerIDKey),
 			string(conventions.ContainerImageNameKey), string(conventions.ContainerImageTagKey),
@@ -139,7 +139,8 @@ type ExtractConfig struct {
 	//   k8s.node.name, k8s.namespace.name, k8s.pod.start_time,
 	//   k8s.replicaset.name, k8s.replicaset.uid,
 	//   k8s.daemonset.name, k8s.daemonset.uid,
-	//   k8s.job.name, k8s.job.uid, k8s.cronjob.name,
+	//   k8s.job.name, k8s.job.uid,
+	//   k8s.cronjob.name, k8s.cronjob.uid,
 	//   k8s.statefulset.name, k8s.statefulset.uid,
 	//   k8s.container.name, container.id, container.image.name,
 	//   container.image.tag, container.image.repo_digests

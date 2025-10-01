@@ -65,6 +65,8 @@ metrics:
   redis.maxmemory:
     enabled: false
     description: The value of the maxmemory configuration directive
+    stability:
+      level: development
     unit: By
     gauge:
       value_type: int
@@ -72,6 +74,8 @@ metrics:
   redis.role:
     enabled: false
     description: Redis node's role
+    stability:
+      level: development
     unit: "{role}"
     sum:
       value_type: int
@@ -82,6 +86,8 @@ metrics:
   redis.cmd.calls:
     enabled: false
     description: Total number of calls for a command
+    stability:
+      level: development
     unit: "{call}"
     sum:
       value_type: int
@@ -92,6 +98,8 @@ metrics:
   redis.cmd.usec:
     enabled: false
     description: Total time for all executions of this command
+    stability:
+      level: development
     unit: us
     sum:
       value_type: int
@@ -102,6 +110,8 @@ metrics:
   redis.cmd.latency:
     enabled: false
     description: Command execution latency
+    stability:
+      level: development
     unit: s
     gauge:
       value_type: double
@@ -110,6 +120,8 @@ metrics:
   redis.uptime:
     enabled: true
     description: Number of seconds since Redis server start
+    stability:
+      level: development
     unit: s
     sum:
       value_type: int
@@ -119,6 +131,8 @@ metrics:
   redis.cpu.time:
     enabled: true
     description: System CPU consumed by the Redis server in seconds since server start
+    stability:
+      level: development
     unit: s
     sum:
       value_type: double
@@ -129,6 +143,8 @@ metrics:
   redis.clients.connected:
     enabled: true
     description: Number of client connections (excluding connections from replicas)
+    stability:
+      level: development
     unit: "{client}"
     sum:
       value_type: int
@@ -138,6 +154,8 @@ metrics:
   redis.clients.max_input_buffer:
     enabled: true
     description: Biggest input buffer among current client connections
+    stability:
+      level: development
     unit: "By"
     gauge:
       value_type: int
@@ -145,6 +163,8 @@ metrics:
   redis.clients.max_output_buffer:
     enabled: true
     description: Longest output list among current client connections
+    stability:
+      level: development
     unit: "By"
     gauge:
       value_type: int
@@ -152,6 +172,8 @@ metrics:
   redis.clients.blocked:
     enabled: true
     description: Number of clients pending on a blocking call
+    stability:
+      level: development
     unit: "{client}"
     sum:
       value_type: int
@@ -161,6 +183,8 @@ metrics:
   redis.keys.expired:
     enabled: true
     description: Total number of key expiration events
+    stability:
+      level: development
     unit: "{event}"
     sum:
       value_type: int
@@ -171,6 +195,8 @@ metrics:
   redis.keys.evicted:
     enabled: true
     description: Number of evicted keys due to maxmemory limit
+    stability:
+      level: development
     unit: "{key}"
     sum:
       value_type: int
@@ -180,6 +206,8 @@ metrics:
   redis.connections.received:
     enabled: true
     description: Total number of connections accepted by the server
+    stability:
+      level: development
     unit: "{connection}"
     sum:
       value_type: int
@@ -189,6 +217,8 @@ metrics:
   redis.connections.rejected:
     enabled: true
     description: Number of connections rejected because of maxclients limit
+    stability:
+      level: development
     unit: "{connection}"
     sum:
       value_type: int
@@ -198,6 +228,8 @@ metrics:
   redis.memory.used:
     enabled: true
     description: Total number of bytes allocated by Redis using its allocator
+    stability:
+      level: development
     unit: By
     gauge:
      value_type: int
@@ -205,6 +237,8 @@ metrics:
   redis.memory.peak:
     enabled: true
     description: Peak memory consumed by Redis (in bytes)
+    stability:
+      level: development
     unit: By
     gauge:
       value_type: int
@@ -212,6 +246,8 @@ metrics:
   redis.memory.rss:
     enabled: true
     description: Number of bytes that Redis allocated as seen by the operating system
+    stability:
+      level: development
     unit: By
     gauge:
       value_type: int
@@ -219,6 +255,8 @@ metrics:
   redis.memory.lua:
     enabled: true
     description: Number of bytes used by the Lua engine
+    stability:
+      level: development
     unit: By
     gauge:
       value_type: int
@@ -226,6 +264,8 @@ metrics:
   redis.memory.fragmentation_ratio:
     enabled: true
     description: Ratio between used_memory_rss and used_memory
+    stability:
+      level: development
     unit: "1"
     gauge:
       value_type: double
@@ -233,6 +273,8 @@ metrics:
   redis.rdb.changes_since_last_save:
     enabled: true
     description: Number of changes since the last dump
+    stability:
+      level: development
     unit: "{change}"
     sum:
       value_type: int
@@ -242,6 +284,8 @@ metrics:
   redis.commands:
     enabled: true
     description: Number of commands processed per second
+    stability:
+      level: development
     unit: "{ops}/s"
     gauge:
       value_type: int
@@ -249,6 +293,8 @@ metrics:
   redis.commands.processed:
     enabled: true
     description: Total number of commands processed by the server
+    stability:
+      level: development
     unit: "{command}"
     sum:
       value_type: int
@@ -258,6 +304,8 @@ metrics:
   redis.net.input:
     enabled: true
     description: The total number of bytes read from the network
+    stability:
+      level: development
     unit: By
     sum:
       value_type: int
@@ -267,6 +315,8 @@ metrics:
   redis.net.output:
     enabled: true
     description: The total number of bytes written to the network
+    stability:
+      level: development
     unit: By
     sum:
       value_type: int
@@ -276,6 +326,8 @@ metrics:
   redis.keyspace.hits:
     enabled: true
     description: Number of successful lookup of keys in the main dictionary
+    stability:
+      level: development
     unit: "{hit}"
     sum:
       value_type: int
@@ -285,6 +337,8 @@ metrics:
   redis.keyspace.misses:
     enabled: true
     description: Number of failed lookup of keys in the main dictionary
+    stability:
+      level: development
     unit: "{miss}"
     sum:
       value_type: int
@@ -294,6 +348,8 @@ metrics:
   redis.latest_fork:
     enabled: true
     description: Duration of the latest fork operation in microseconds
+    stability:
+      level: development
     unit: us
     gauge:
       value_type: int
@@ -301,6 +357,8 @@ metrics:
   redis.slaves.connected:
     enabled: true
     description: Number of connected replicas
+    stability:
+      level: development
     unit: "{replica}"
     sum:
       value_type: int
@@ -310,6 +368,8 @@ metrics:
   redis.replication.backlog_first_byte_offset:
     enabled: true
     description: The master offset of the replication backlog buffer
+    stability:
+      level: development
     unit: "By"
     gauge:
       value_type: int
@@ -317,6 +377,8 @@ metrics:
   redis.replication.offset:
     enabled: true
     description: The server's current replication offset
+    stability:
+      level: development
     unit: "By"
     gauge:
       value_type: int
@@ -324,6 +386,8 @@ metrics:
   redis.db.keys:
     enabled: true
     description: "Number of keyspace keys"
+    stability:
+      level: development
     unit: "{key}"
     gauge:
       value_type: int
@@ -332,6 +396,8 @@ metrics:
   redis.db.expires:
     enabled: true
     description: "Number of keyspace keys with an expiration"
+    stability:
+      level: development
     unit: "{key}"
     gauge:
       value_type: int
@@ -340,6 +406,8 @@ metrics:
   redis.db.avg_ttl:
     enabled: true
     description: "Average keyspace keys TTL"
+    stability:
+      level: development
     unit: ms
     gauge:
       value_type: int
@@ -348,6 +416,8 @@ metrics:
   redis.replication.replica_offset:
     enabled: false
     description: "Offset for redis replica"
+    stability:
+      level: development
     unit: "By"
     gauge:
       value_type: int
