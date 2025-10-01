@@ -100,18 +100,50 @@ func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice)
 	pointIsStale := value.IsStaleNaN(mg.sum) || value.IsStaleNaN(mg.count)
 	point := dest.AppendEmpty()
 
-	if mg.isNHCB && !pointIsStale {
-		bounds = make([]float64, len(mg.complexValue)-1)
-		bucketCounts = make([]uint64, len(mg.complexValue))
+	if mg.isNHCB {
+		switch {
+		case mg.hValue != nil:
+			h := mg.hValue
+			bounds = append(bounds, h.CustomValues...)
+			b := point.BucketCounts()
+			if len(h.PositiveSpans) > 0 {
+				for i := int32(0); i < h.PositiveSpans[0].Offset; i++ {
+					b.Append(0)
+				}
+				convertDeltaBuckets(h.PositiveSpans, h.PositiveBuckets, b)
+			} else {
+				cumulative := uint64(0)
+				for _, v := range h.PositiveBuckets {
+					cumulative += uint64(v)
+					b.Append(cumulative)
+				}
+			}
+			b.CopyTo(point.BucketCounts())
 
-		convertDeltaBuckets(mg.hValue.PositiveSpans, mg.hValue.PositiveBuckets, point.BucketCounts())
-
+		case mg.fhValue != nil:
+			fh := mg.fhValue
+			bounds = append(bounds, fh.CustomValues...)
+			b := point.BucketCounts()
+			if len(fh.PositiveSpans) > 0 {
+				for i := int32(0); i < fh.PositiveSpans[0].Offset; i++ {
+					b.Append(0)
+				}
+				convertAbsoluteBuckets(fh.PositiveSpans, fh.PositiveBuckets, b)
+			} else {
+				for _, c := range fh.PositiveBuckets {
+					b.Append(uint64(c))
+				}
+			}
+			b.CopyTo(point.BucketCounts())
+		}
 	} else {
 		bucketCount := len(mg.complexValue) + 1
+		// if the final bucket is +Inf, we ignore it
 		if bucketCount > 1 && mg.complexValue[bucketCount-2].boundary == math.Inf(1) {
 			bucketCount--
 		}
 
+		// for OTLP the bounds won't include +inf
 		bounds = make([]float64, bucketCount-1)
 		bucketCounts = make([]uint64, bucketCount)
 		var adjustedCount float64
@@ -120,6 +152,9 @@ func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice)
 			bounds[i] = mg.complexValue[i].boundary
 			adjustedCount = mg.complexValue[i].value
 
+			// Buckets still need to be sent to know to set them as stale,
+			// but a staleness NaN converted to uint64 would be an extremely large number.
+			// Setting to 0 instead.
 			if pointIsStale {
 				adjustedCount = 0
 			} else if i != 0 {
@@ -128,6 +163,7 @@ func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice)
 			bucketCounts[i] = uint64(adjustedCount)
 		}
 
+		// Add the final bucket based on the total count
 		adjustedCount = mg.count
 		if pointIsStale {
 			adjustedCount = 0
@@ -135,7 +171,7 @@ func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice)
 			adjustedCount -= mg.complexValue[bucketCount-2].value
 		}
 		bucketCounts[bucketCount-1] = uint64(adjustedCount)
-		
+
 		point.BucketCounts().FromRaw(bucketCounts)
 	}
 
@@ -481,32 +517,15 @@ func (mf *metricFamily) addNHCBSeries(seriesRef uint64, metricName string, ls la
 	}
 	mg.isNHCB = true
 
-	var bounds []float64
-	var counts []float64
-
 	switch {
 	case h != nil:
-		bounds = h.CustomValues
-		expandedBuckets := make([]int64, len(h.PositiveBuckets))
-		for i, v := range h.PositiveSpans {
-			for j := uint32(0); j < v.Length; j++ {
-				expandedBuckets[int(v.Offset)+int(j)] = h.PositiveBuckets[i]
-			}
-		}
-		counts = make([]float64, len(h.PositiveBuckets))
-		cumulative := 0.0
-		for i, v := range h.PositiveBuckets {
-			currDelta := float64(v)
-			cumulative += currDelta
-			counts[i] = cumulative
-		}
+		mg.hValue = h
 		mg.count = float64(h.Count)
 		mg.hasCount = true
 		mg.sum = h.Sum
 		mg.hasSum = true
 	case fh != nil:
-		bounds = fh.CustomValues
-		counts = fh.PositiveBuckets
+		mg.fhValue = fh
 		mg.count = fh.Count
 		mg.hasCount = true
 		mg.sum = fh.Sum
@@ -515,18 +534,6 @@ func (mf *metricFamily) addNHCBSeries(seriesRef uint64, metricName string, ls la
 		return fmt.Errorf("NHCB metric %v has no histogram data", metricName)
 	}
 
-	for i := range counts {
-		boundary := 0.0
-		if i < len(bounds) {
-			boundary = bounds[i]
-		} else {
-			boundary = math.Inf(1)
-		}
-		mg.complexValue = append(mg.complexValue, &dataPoint{
-			value:    counts[i],
-			boundary: boundary,
-		})
-	}
 	return nil
 }
 
