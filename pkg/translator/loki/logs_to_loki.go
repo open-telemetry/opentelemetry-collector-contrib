@@ -5,12 +5,14 @@ package loki // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/grafana/loki/pkg/push"
 	"github.com/prometheus/common/model"
-	"github.com/prometheus/otlptranslator"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+
+	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
 type PushRequest struct {
@@ -72,7 +74,10 @@ func LogsToLokiRequests(ld plog.Logs, defaultLabelsEnabled map[string]bool) map[
 				entry, err := LogToLokiEntry(log, resource, scope, defaultLabelsEnabled)
 				if err != nil {
 					// Couldn't convert so dropping log.
-					group.report.Errors = append(group.report.Errors, fmt.Errorf("failed to convert, dropping log: %w", err))
+					group.report.Errors = append(
+						group.report.Errors,
+						fmt.Errorf("failed to convert, dropping log: %w", err),
+					)
 					group.report.NumDropped++
 					continue
 				}
@@ -120,7 +125,12 @@ type PushEntry struct {
 }
 
 // LogToLokiEntry converts LogRecord into Loki log entry enriched with normalized labels
-func LogToLokiEntry(lr plog.LogRecord, rl pcommon.Resource, scope pcommon.InstrumentationScope, defaultLabelsEnabled map[string]bool) (*PushEntry, error) {
+func LogToLokiEntry(
+	lr plog.LogRecord,
+	rl pcommon.Resource,
+	scope pcommon.InstrumentationScope,
+	defaultLabelsEnabled map[string]bool,
+) (*PushEntry, error) {
 	// we may remove attributes, so change only our version
 	log := plog.NewLogRecord()
 	lr.CopyTo(log)
@@ -136,7 +146,20 @@ func LogToLokiEntry(lr plog.LogRecord, rl pcommon.Resource, scope pcommon.Instru
 
 	format := getFormatFromFormatHint(log.Attributes(), resource.Attributes())
 
-	mergedLabels := convertAttributesAndMerge(log.Attributes(), resource.Attributes(), defaultLabelsEnabled)
+	// SAWMILLS specific code changes done to support all attributes to be converted to labels
+	// We are getting all the attributes that are to be converted to labels
+	logAttrs, resAttrs := getFilteredAttributeNames(log.Attributes(), resource.Attributes())
+
+	// Update the hints with the new attributes to be converted to labels
+	log.Attributes().PutStr(hintAttributes, strings.Join(logAttrs, ","))
+	resource.Attributes().PutStr(hintResources, strings.Join(resAttrs, ","))
+
+	mergedLabels := convertAttributesAndMerge(
+		log.Attributes(),
+		resource.Attributes(),
+		defaultLabelsEnabled,
+	)
+
 	// remove the attributes that were promoted to labels
 	removeAttributes(log.Attributes(), mergedLabels)
 	removeAttributes(resource.Attributes(), mergedLabels)
@@ -147,14 +170,10 @@ func LogToLokiEntry(lr plog.LogRecord, rl pcommon.Resource, scope pcommon.Instru
 	}
 
 	labels := model.LabelSet{}
-	namer := otlptranslator.LabelNamer{}
 	for label := range mergedLabels {
 		// Loki doesn't support dots in label names
 		// labelName is normalized label name to follow Prometheus label names standard
-		labelName, err := namer.Build(string(label))
-		if err != nil {
-			return nil, err
-		}
+		labelName := prometheustranslator.NormalizeLabel(string(label))
 		labels[model.LabelName(labelName)] = mergedLabels[label]
 	}
 
@@ -164,7 +183,7 @@ func LogToLokiEntry(lr plog.LogRecord, rl pcommon.Resource, scope pcommon.Instru
 	}, nil
 }
 
-func getFormatFromFormatHint(logAttr, resourceAttr pcommon.Map) string {
+func getFormatFromFormatHint(logAttr pcommon.Map, resourceAttr pcommon.Map) string {
 	format := formatJSON
 	formatVal, found := resourceAttr.Get(hintFormat)
 	if !found {
@@ -180,7 +199,7 @@ func getFormatFromFormatHint(logAttr, resourceAttr pcommon.Map) string {
 // GetTenantFromTenantHint extract an attribute based on the tenant hint.
 // it looks up for the attribute first in resource attributes and fallbacks to
 // record attributes if it is not found.
-func GetTenantFromTenantHint(logAttr, resourceAttr pcommon.Map) string {
+func GetTenantFromTenantHint(logAttr pcommon.Map, resourceAttr pcommon.Map) string {
 	var tenant string
 	hintAttr, found := resourceAttr.Get(hintTenant)
 	if !found {
@@ -221,7 +240,8 @@ func addHint(log plog.LogRecord) {
 		case pcommon.ValueTypeSlice:
 			value.Slice().AppendEmpty().SetStr(levelAttributeName)
 		case pcommon.ValueTypeStr:
-			log.Attributes().PutStr(hintAttributes, fmt.Sprintf("%s,%s", value.AsString(), levelAttributeName))
+			log.Attributes().
+				PutStr(hintAttributes, fmt.Sprintf("%s,%s", value.AsString(), levelAttributeName))
 		}
 	} else {
 		log.Attributes().PutStr(hintAttributes, levelAttributeName)

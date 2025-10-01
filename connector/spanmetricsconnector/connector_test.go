@@ -50,7 +50,7 @@ const (
 	resourceMetricsCacheSize = 5
 
 	sampleRegion   = "us-east-1"
-	sampleDuration = float64(11)
+	sampleDuration = 11 * time.Millisecond
 
 	instanceID = "0044953a-2946-449f-a5c8-2971f2a63928"
 )
@@ -231,7 +231,7 @@ func verifyExplicitHistogramDataPoints(tb testing.TB, dps pmetric.HistogramDataP
 		dp := dps.At(dpi)
 		assert.Equal(
 			tb,
-			sampleDuration*float64(numCumulativeConsumptions),
+			sampleDuration.Seconds()*float64(numCumulativeConsumptions),
 			dp.Sum(),
 			"Should be a 11ms duration measurement, multiplied by the number of stateful accumulations.")
 		assert.NotZero(tb, dp.Timestamp(), "Timestamp should be set")
@@ -245,7 +245,7 @@ func verifyExplicitHistogramDataPoints(tb testing.TB, dps pmetric.HistogramDataP
 		// Find the bucket index where the 11ms duration should belong in.
 		var foundDurationIndex int
 		for foundDurationIndex = 0; foundDurationIndex < dp.ExplicitBounds().Len(); foundDurationIndex++ {
-			if dp.ExplicitBounds().At(foundDurationIndex) > sampleDuration {
+			if dp.ExplicitBounds().At(foundDurationIndex) > sampleDuration.Seconds() {
 				break
 			}
 		}
@@ -270,7 +270,7 @@ func verifyExponentialHistogramDataPoints(tb testing.TB, dps pmetric.Exponential
 		dp := dps.At(dpi)
 		assert.Equal(
 			tb,
-			sampleDuration*float64(numCumulativeConsumptions),
+			sampleDuration.Seconds()*float64(numCumulativeConsumptions),
 			dp.Sum(),
 			"Should be a 11ms duration measurement, multiplied by the number of stateful accumulations.")
 		assert.Equal(tb, uint64(numCumulativeConsumptions), dp.Count())
@@ -325,7 +325,7 @@ func buildBadSampleTrace() ptrace.Traces {
 	// Flipping timestamp for a bad duration
 	span.SetEndTimestamp(pcommon.NewTimestampFromTime(now))
 	span.SetStartTimestamp(
-		pcommon.NewTimestampFromTime(now.Add(time.Duration(sampleDuration) * time.Millisecond)))
+		pcommon.NewTimestampFromTime(now.Add(sampleDuration)))
 	return badTrace
 }
 
@@ -394,7 +394,7 @@ func initSpan(span span, s ptrace.Span) {
 	now := time.Now()
 	s.SetStartTimestamp(pcommon.NewTimestampFromTime(now))
 	s.SetEndTimestamp(
-		pcommon.NewTimestampFromTime(now.Add(time.Duration(sampleDuration) * time.Millisecond)))
+		pcommon.NewTimestampFromTime(now.Add(sampleDuration)))
 
 	s.Attributes().PutStr(stringAttrName, "stringAttrValue")
 	s.Attributes().PutInt(intAttrName, 99)
@@ -1371,7 +1371,7 @@ func TestConnector_durationsToUnits(t *testing.T) {
 				3 * time.Second,
 			},
 			unit: defaultUnit,
-			want: []float64{0.000003, 0.003, 3, 3000},
+			want: []float64{3e-09, 3e-06, 0.003, 3},
 		},
 		{
 			input: []time.Duration{

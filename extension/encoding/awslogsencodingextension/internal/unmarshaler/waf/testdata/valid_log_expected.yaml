@@ -107,7 +107,7 @@ resourceLogs:
             timeUnixNano: "1748208718574000000"
         scope:
           attributes:
-            - key: awslogs_encoding.format
+            - key: encoding.format
               value:
-                stringValue: waf_log
+                stringValue: aws.waf
           name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension

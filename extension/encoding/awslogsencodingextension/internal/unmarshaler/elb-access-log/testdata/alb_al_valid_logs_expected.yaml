@@ -47,7 +47,7 @@ resourceLogs:
             timeUnixNano: "1530570180186641000"
         scope:
           attributes:
-            - key: awslogs_encoding.format
+            - key: encoding.format
               value:
-                stringValue: elb_access_log
+                stringValue: aws.elbaccess
           name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension

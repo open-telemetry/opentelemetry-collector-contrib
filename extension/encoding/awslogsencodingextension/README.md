@@ -29,7 +29,7 @@ Example for Amazon CloudWatch Logs Subscription Filters:
 ```yaml
 extensions:
   awslogs_encoding/cloudwatch:
-    format: cloudwatch_logs_subscription_filter
+    format: cloudwatch
 
 receivers:
   awsfirehose:
@@ -40,9 +40,9 @@ receivers:
 Example for VPC flow logs:
 ```yaml
 extensions:
-  awslogs_encoding/vpc_flow_log:
-    format: vpc_flow_log
-    vpc_flow_log:
+  awslogs_encoding/vpcflow:
+    format: vpcflow
+    vpcflow:
       # options [parquet, plain-text]. 
       # parquet option still needs to be implemented.
       file_format: plain-text 
@@ -51,29 +51,70 @@ extensions:
 Example for S3 access logs:
 ```yaml
 extensions:
-  awslogs_encoding/s3_access_log:
-    format: s3_access_log
+  awslogs_encoding/s3access:
+    format: s3access
 ```
 
 Example for CloudTrail logs:
 ```yaml
 extensions:
   awslogs_encoding/cloudtrail:
-    format: cloudtrail_log
+    format: cloudtrail
 ```
 
 Example for ELB access logs:
 ```yaml
 extensions:
-  awslogs_encoding/elb_access_log:
-    format: elb_access_log
+  awslogs_encoding/elbaccess:
+    format: elbaccess
 ```
 
 ## Log Format Identification
 
-All logs processed by this extension are automatically tagged with an `awslogs_encoding.format` attribute at the scope level to identify the source format.
+All logs processed by this extension are automatically tagged with an `encoding.format` attribute at the scope level to identify the source format. This allows you to easily filter and route logs based on their AWS service origin.
 
-#### VPC flow log record fields
+The pattern used is `aws.<format_name>`.
+
+Examples:
+- VPC Flow Logs: `encoding.format:"aws.vpcflow"`
+- ELB Access Logs: `encoding.format:"aws.elbaccess"`
+
+## Format Values
+
+The following format values are supported in the `awslogsencodingextension` to identify different AWS log types:
+
+| **AWS Log Type** | **Format Value** | **Description** |
+|------------------|------------------|-----------------|
+| VPC Flow Logs | `vpcflow` | Virtual Private Cloud flow log records |
+| ELB Access Logs | `elbaccess` | Elastic Load Balancer access logs (ALB, NLB, CLB) |
+| S3 Access Logs | `s3access` | Amazon S3 server access logs |
+| CloudTrail Logs | `cloudtrail` | AWS CloudTrail API call logs |
+| WAF Logs | `waf` | AWS Web Application Firewall logs |
+| CloudWatch Logs | `cloudwatch` | CloudWatch Logs Subscription Filter events |
+
+### Breaking Change Notice
+
+**Format values have been simplified in v0.137.0**
+
+**The old format values are deprecated and will be unsupported in v0.138.0.**
+
+| **AWS Log Type** | **Old Format Value (Deprecated)** | **New Format Value** |
+|------------------|-----------------------------------|---------------------|
+| VPC Flow Logs | `vpc_flow_log` | `vpcflow` |
+| ELB Access Logs | `elb_access_log` | `elbaccess` |
+| S3 Access Logs | `s3_access_log` | `s3access` |
+| CloudTrail Logs | `cloudtrail_log` | `cloudtrail` |
+| WAF Logs | `waf_log` | `waf` |
+| CloudWatch Logs | `cloudwatch_logs_subscription_filter` | `cloudwatch` |
+
+#### Migration Path
+
+If you're using the old format values you should update the encoding extension configuration with the new format values.
+
+
+## Produced Records per Format
+
+### VPC flow log record fields
 
 [VPC flow log record fields](https://docs.aws.amazon.com/vpc/latest/userguide/flow-log-records.html#flow-logs-fields) are mapped this way in the resulting OpenTelemetry log:
 
@@ -120,7 +161,7 @@ All logs processed by this extension are automatically tagged with an `awslogs_e
 | `ecs-task-id`                | `aws.ecs.task.id`                                                                                     |
 | `reject-reason`              | `aws.vpc.flow.reject_reason`                                                                          |
 
-#### S3 access log record fields
+### S3 access log record fields
 
 [S3 access log record fields](https://docs.aws.amazon.com/AmazonS3/latest/userguide/LogFormat.html) are mapped this way in the resulting OpenTelemetry log:
 
@@ -153,7 +194,7 @@ All logs processed by this extension are automatically tagged with an `awslogs_e
 | TLS version         | `tls.protocol.version`                                                                                                                                                                                                                                                                                  |
 | Access point ARN    | `aws.s3.access_point.arn`                                                                                                                                                                                                                                                                               |
 | aclRequired         | `aws.s3.acl_required`                                                                                                                                                                                                                                                                                   |
-#### AWS WAF log record fields
+### AWS WAF log record fields
 
 [AWS WAF log record fields](https://docs.aws.amazon.com/waf/latest/developerguide/logging-fields.html) are mapped this way in the resulting OpenTelemetry log:
 
@@ -192,7 +233,7 @@ All logs processed by this extension are automatically tagged with an `awslogs_e
 | `challengeResponse`           | _Currently not supported_                                                                        |
 | `oversizeFields`              | _Currently not supported_                                                                        |
 
-#### CloudTrail log record fields
+### CloudTrail log record fields
 
 [CloudTrail log record fields](https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-event-reference-record-contents.html) are mapped this way in the resulting OpenTelemetry log:
 
@@ -232,11 +273,11 @@ All logs processed by this extension are automatically tagged with an `awslogs_e
 
 All request parameters and response elements are included directly as nested maps in the attributes, preserving their original structure.
 
-#### ELB Access Log Fields
+### ELB Access Log Fields
 
 ELB access log record fields are mapped this way in the resulting OpenTelemetry log:
 
-##### Application Load Balancer (ALB)
+#### Application Load Balancer (ALB)
 
 > AWS Fields are according to [documentation](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-access-logs.html).
 
@@ -274,7 +315,7 @@ ELB access log record fields are mapped this way in the resulting OpenTelemetry 
 | "classification_reason"      | _Currently not supported_                                |
 | conn_trace_id                | _Currently not supported_                                |
 
-##### Network Load Balancer (NLB)
+#### Network Load Balancer (NLB)
 
 > AWS Fields are according to [documentation](https://docs.aws.amazon.com/elasticloadbalancing/latest//network/load-balancer-access-logs.html#access-log-entry-format).
 
@@ -303,7 +344,7 @@ ELB access log record fields are mapped this way in the resulting OpenTelemetry 
 | alpn_client_preference_list  | _Currently not supported_                                   |
 | tls_connection_creation_time | _Currently not supported_                                   |
 
-##### Classic Load Balancer (CLB)
+#### Classic Load Balancer (CLB)
 
 > AWS Fields are according to [documentation](https://docs.aws.amazon.com/elasticloadbalancing/latest/classic/access-log-collection.html)
 
