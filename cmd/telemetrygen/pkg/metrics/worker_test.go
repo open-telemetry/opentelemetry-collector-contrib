@@ -5,7 +5,6 @@ package metrics
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -369,13 +368,13 @@ func TestSumMultipleTelemetryAttr(t *testing.T) {
 		attr := ms.Data.(metricdata.Sum[int64]).DataPoints[0].Attributes
 		assert.Equal(t, 4, attr.Len(), "it must have multiple attributes here")
 		actualValue, _ = attr.Value(telemetryAttrKeyOne)
-		assert.Equal(t, telemetryAttrValueOne, actualValue.AsString(), "it should be "+telemetryAttrValueOne)
+		assert.Equal(t, telemetryAttrValueOne, actualValue.AsString(), "it should be %s", telemetryAttrValueOne)
 		actualValue, _ = attr.Value(telemetryAttrKeyTwo)
-		assert.Equal(t, telemetryAttrValueTwo, actualValue.AsString(), "it should be "+telemetryAttrValueTwo)
+		assert.Equal(t, telemetryAttrValueTwo, actualValue.AsString(), "it should be %s", telemetryAttrValueTwo)
 		actualValue, _ = attr.Value(telemetryAttrIntKeyOne)
-		assert.Equal(t, int64(telemetryAttrIntValueOne), actualValue.AsInt64(), fmt.Sprintf("it should be %d", telemetryAttrIntValueOne))
+		assert.Equal(t, int64(telemetryAttrIntValueOne), actualValue.AsInt64(), "it should be %d", telemetryAttrIntValueOne)
 		actualValue, _ = attr.Value(telemetryAttrBoolKeyOne)
-		assert.Equal(t, telemetryAttrBoolValueOne, actualValue.AsBool(), fmt.Sprintf("it should be %t", telemetryAttrBoolValueOne))
+		assert.Equal(t, telemetryAttrBoolValueOne, actualValue.AsBool(), "it should be %t", telemetryAttrBoolValueOne)
 	}
 }
 
@@ -409,9 +408,9 @@ func TestGaugeMultipleTelemetryAttr(t *testing.T) {
 		actualValue, _ = attr.Value(telemetryAttrKeyTwo)
 		assert.Equal(t, telemetryAttrValueTwo, actualValue.AsString(), "it should be "+telemetryAttrValueTwo)
 		actualValue, _ = attr.Value(telemetryAttrIntKeyOne)
-		assert.Equal(t, int64(telemetryAttrIntValueOne), actualValue.AsInt64(), fmt.Sprintf("it should be %d", telemetryAttrIntValueOne))
+		assert.Equal(t, int64(telemetryAttrIntValueOne), actualValue.AsInt64(), "it should be %d", telemetryAttrIntValueOne)
 		actualValue, _ = attr.Value(telemetryAttrBoolKeyOne)
-		assert.Equal(t, telemetryAttrBoolValueOne, actualValue.AsBool(), fmt.Sprintf("it should be %t", telemetryAttrBoolValueOne))
+		assert.Equal(t, telemetryAttrBoolValueOne, actualValue.AsBool(), "it should be %t", telemetryAttrBoolValueOne)
 	}
 }
 
