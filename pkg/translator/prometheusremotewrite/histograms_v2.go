@@ -12,20 +12,27 @@ import (
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.uber.org/multierr"
 )
 
 func (c *prometheusConverterV2) addExponentialHistogramDataPoints(dataPoints pmetric.ExponentialHistogramDataPointSlice,
 	resource pcommon.Resource, settings Settings, name string, metadata metadata,
 ) error {
+	var errs error
 	for x := 0; x < dataPoints.Len(); x++ {
 		pt := dataPoints.At(x)
 
 		histogram, err := exponentialToNativeHistogramV2(pt)
 		if err != nil {
-			return err
+			errs = multierr.Append(errs, err)
+			continue
 		}
 
-		lbls := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nil, false, c.labelNamer, model.MetricNameLabel, name)
+		lbls, err := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nil, false, c.labelNamer, model.MetricNameLabel, name)
+		if err != nil {
+			errs = multierr.Append(errs, err)
+			continue
+		}
 
 		ts := c.getOrCreateTimeSeries(lbls, metadata)
 		ts.Histograms = append(ts.Histograms, histogram)
@@ -33,7 +40,7 @@ func (c *prometheusConverterV2) addExponentialHistogramDataPoints(dataPoints pme
 		// TODO handle exemplars
 	}
 
-	return nil
+	return errs
 }
 
 // exponentialToNativeHistogramV2 translates OTel Exponential Histogram data point

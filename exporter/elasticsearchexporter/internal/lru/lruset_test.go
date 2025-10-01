@@ -47,8 +47,8 @@ func TestLRUSetLifeTime(t *testing.T) {
 	// Wait until cache item is expired.
 	time.Sleep(lifetime)
 	err = cache.WithLock(func(lock LockedLRUSet) error {
-		assert.False(t, lock.CheckAndAdd("a"))
 		timeSet = time.Now()
+		assert.False(t, lock.CheckAndAdd("a"))
 		assert.True(t, lock.CheckAndAdd("a"))
 		return nil
 	})
@@ -74,7 +74,7 @@ func BenchmarkLRUSetCheck(b *testing.B) {
 	_ = cache.WithLock(func(lock LockedLRUSet) error {
 		b.ReportAllocs()
 		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			lock.CheckAndAdd("a")
 		}
 

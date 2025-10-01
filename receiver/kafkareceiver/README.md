@@ -23,7 +23,7 @@ If used in conjunction with the `kafkaexporter` configured with `include_metadat
 ## Getting Started
 
 > [!NOTE]
-> You can opt-in to use [`franz-go`](https://github.com/twmb/franz-go) client by enabling the feature gate
+> You can opt out of using the [`franz-go`](https://github.com/twmb/franz-go) client by disabling the feature gate
 > `receiver.kafkareceiver.UseFranzGo` when you run the OpenTelemetry Collector. See the following page
 > for more details: [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/tree/main/featuregate#controlling-gates)
 >
@@ -60,6 +60,7 @@ The following settings can be optionally configured:
 - `group_id` (default = otel-collector): The consumer group that receiver will be consuming messages from
 - `client_id` (default = otel-collector): The consumer client ID that receiver will use
 - `rack_id` (default = ""): The rack identifier for this client. When set and brokers are configured with a rack-aware replica selector, the client will prefer fetching from the closest replica.
+- `use_leader_epoch` (default = true): (Experimental) When enabled, the consumer uses the leader epoch returned by brokers (KIP-320) to detect log truncation. Setting this to false clears the leader epoch from fetch offsets, disabling KIP-320. Disabling can improve compatibility with brokers that don’t fully support leader epochs (e.g., Azure Event Hubs), at the cost of losing automatic log-truncation safety.
 - `initial_offset` (default = latest): The initial offset to use if no offset was previously committed. Must be `latest` or `earliest`.
 - `session_timeout` (default = `10s`): The request timeout for detecting client failures when using Kafka’s group management facilities.
 - `heartbeat_interval` (default = `3s`): The expected time between heartbeats to the consumer coordinator when using Kafka’s group management facilities.
