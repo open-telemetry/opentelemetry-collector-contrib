@@ -16,10 +16,6 @@ type Dimension struct {
 	Default *string `mapstructure:"default"`
 }
 
-type Exemplars struct {
-	Enabled bool `mapstructure:"enabled"`
-}
-
 // Config defines the configuration options for exceptionsconnector
 type Config struct {
 	// Threshold of slow sql. default 500ms.
