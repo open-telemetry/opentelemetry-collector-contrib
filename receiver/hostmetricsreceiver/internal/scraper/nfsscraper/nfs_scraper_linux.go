@@ -379,11 +379,6 @@ func parseNfsCallStats(nfsVersion int64, names []string, values []uint64) ([]cal
 	return stats, nil
 }
 
-func debugLine(prefix, line string) {
-	fmt.Fprintf(os.Stderr, "%s: %s\n", prefix, line)
-}
-
-
 func parseNfsStats(f io.Reader) (*NfsStats, error) {
 	nfsStats := &NfsStats{}
 
