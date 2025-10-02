@@ -24,3 +24,16 @@ func MakeResponse(eventErrs []int) []ResponseInBatch {
 	}
 	return responses
 }
+
+// MakeSuccessResponse creates a response array with all events marked as accepted
+func MakeSuccessResponse(numEvents int) []ResponseInBatch {
+	if numEvents <= 0 {
+		return []ResponseInBatch{{Status: http.StatusAccepted}}
+	}
+
+	responses := make([]ResponseInBatch, numEvents)
+	for i := 0; i < numEvents; i++ {
+		responses[i] = ResponseInBatch{Status: http.StatusAccepted}
+	}
+	return responses
+}

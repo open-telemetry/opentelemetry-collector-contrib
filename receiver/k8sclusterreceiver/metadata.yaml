@@ -247,66 +247,88 @@ metrics:
     enabled: true
     description: Resource requested for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
     unit: "{cpu}"
+    stability:
+      level: development
     gauge:
       value_type: double
   k8s.container.cpu_limit:
     enabled: true
     description: Maximum resource limit set for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
     unit: "{cpu}"
+    stability:
+      level: development
     gauge:
       value_type: double
   k8s.container.memory_request:
     enabled: true
     description: Resource requested for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
     unit: "By"
+    stability:
+      level: development
     gauge:
       value_type: int
   k8s.container.memory_limit:
     enabled: true
     description: Maximum resource limit set for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
     unit: "By"
+    stability:
+      level: development
     gauge:
       value_type: int
   k8s.container.storage_request:
     enabled: true
     description: Resource requested for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
     unit: "By"
+    stability:
+      level: development
     gauge:
       value_type: int
   k8s.container.storage_limit:
     enabled: true
     description: Maximum resource limit set for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
     unit: "By"
+    stability:
+      level: development
     gauge:
       value_type: int
   k8s.container.ephemeralstorage_request:
     enabled: true
     description: Resource requested for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
     unit: "By"
+    stability:
+      level: development
     gauge:
       value_type: int
   k8s.container.ephemeralstorage_limit:
     enabled: true
     description: Maximum resource limit set for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
     unit: "By"
+    stability:
+      level: development
     gauge:
       value_type: int
   k8s.container.restarts:
     enabled: true
     description: How many times the container has restarted in the recent past. This value is pulled directly from the K8s API and the value can go indefinitely high and be reset to 0 at any time depending on how your kubelet is configured to prune dead containers. It is best to not depend too much on the exact value but rather look at it as either == 0, in which case you can conclude there were no restarts in the recent past, or > 0, in which case you can conclude there were restarts in the recent past, and not try and analyze the value beyond that.
     unit: "{restart}"
+    stability:
+      level: development
     gauge:
       value_type: int
   k8s.container.ready:
     enabled: true
     description: Whether a container has passed its readiness probe (0 for no, 1 for yes)
     unit: ""
+    stability:
+      level: development
     gauge:
       value_type: int
   k8s.container.status.state:
     enabled: false
     description: Experimental metric, may experience breaking changes. Describes the number of K8s containers that are currently in a given state. All possible container states will be reported at each time interval to avoid missing metrics. Only the value corresponding to the current state will be non-zero.
     unit: "{container}"
+    stability:
+      level: development
     sum:
       aggregation_temporality: cumulative
       monotonic: false
@@ -317,6 +339,8 @@ metrics:
     enabled: false
     description: Experimental metric, may experience breaking changes. Describes the number of K8s containers that are currently in a state for a given reason. All possible container state reasons will be reported at each time interval to avoid missing metrics. Only the value corresponding to the current state reason will be non-zero.
     unit: "{container}"
+    stability:
+      level: development
     sum:
       aggregation_temporality: cumulative
       monotonic: false
@@ -327,12 +351,16 @@ metrics:
     enabled: true
     description: Current phase of the pod (1 - Pending, 2 - Running, 3 - Succeeded, 4 - Failed, 5 - Unknown)
     unit: ""
+    stability:
+      level: development
     gauge:
       value_type: int
   k8s.pod.status_reason:
     enabled: false
     description: Current status reason of the pod (1 - Evicted, 2 - NodeAffinity, 3 - NodeLost, 4 - Shutdown, 5 - UnexpectedAdmissionError, 6 - Unknown)
     unit: ""
+    stability:
+      level: development
     gauge:
       value_type: int
 
@@ -340,12 +368,16 @@ metrics:
     enabled: true
     description: Number of desired pods in this deployment
     unit: "{pod}"
+    stability:
+      level: development
     gauge:
       value_type: int
   k8s.deployment.available:
     enabled: true
     description: Total number of available pods (ready for at least minReadySeconds) targeted by this deployment
     unit: "{pod}"
+    stability:
+      level: development
     gauge:
      value_type: int
 
@@ -353,6 +385,8 @@ metrics:
     enabled: true
     description: The number of actively running jobs for a cronjob
     unit: "{job}"
+    stability:
+      level: development
     gauge:
       value_type: int
 
@@ -360,24 +394,32 @@ metrics:
     enabled: true
     description: Number of nodes that are running at least 1 daemon pod and are supposed to run the daemon pod
     unit: "{node}"
+    stability:
+      level: development
     gauge:
       value_type: int
   k8s.daemonset.desired_scheduled_nodes:
     enabled: true
     description: Number of nodes that should be running the daemon pod (including nodes currently running the daemon pod)
     unit: "{node}"
+    stability:
+      level: development
     gauge:
       value_type: int
   k8s.daemonset.misscheduled_nodes:
     enabled: true
     description: Number of nodes that are running the daemon pod, but are not supposed to run the daemon pod
     unit: "{node}"
+    stability:
+      level: development
     gauge:
       value_type: int
   k8s.daemonset.ready_nodes:
     enabled: true
     description: Number of nodes that should be running the daemon pod and have one or more of the daemon pod running and ready
     unit: "{node}"
+    stability:
+      level: development
     gauge:
       value_type: int
 
@@ -385,6 +427,8 @@ metrics:
     enabled: true
     description: Maximum number of replicas to which the autoscaler can scale up.
     unit: "{pod}"
+    stability:
+      level: development
     gauge:
       value_type: int
 
@@ -392,6 +436,8 @@ metrics:
     enabled: true
     description: Minimum number of replicas to which the autoscaler can scale up.
     unit: "{pod}"
+    stability:
+      level: development
     gauge:
       value_type: int
 
@@ -399,6 +445,8 @@ metrics:
     enabled: true
     description: Current number of pod replicas managed by this autoscaler.
     unit: "{pod}"
+    stability:
+      level: development
     gauge:
       value_type: int
 
@@ -406,6 +454,8 @@ metrics:
     enabled: true
     description: Desired number of pod replicas managed by this autoscaler.
     unit: "{pod}"
+    stability:
+      level: development
     gauge:
       value_type: int
 
@@ -413,30 +463,40 @@ metrics:
     enabled: true
     description: The number of actively running pods for a job
     unit: "{pod}"
+    stability:
+      level: development
     gauge:
       value_type: int
   k8s.job.desired_successful_pods:
     enabled: true
     description: The desired number of successfully finished pods the job should be run with
     unit: "{pod}"
+    stability:
+      level: development
     gauge:
       value_type: int
   k8s.job.failed_pods:
     enabled: true
     description: The number of pods which reached phase Failed for a job
     unit: "{pod}"
+    stability:
+      level: development
     gauge:
       value_type: int
   k8s.job.max_parallel_pods:
     enabled: true
     description: The max desired number of pods the job should run at any given time
     unit: "{pod}"
+    stability:
+      level: development
     gauge:
       value_type: int
   k8s.job.successful_pods:
     enabled: true
     description: The number of pods which reached phase Succeeded for a job
     unit: "{pod}"
+    stability:
+      level: development
     gauge:
       value_type: int
 
@@ -444,6 +504,8 @@ metrics:
     enabled: true
     description: The current phase of namespaces (1 for active and 0 for terminating)
     unit: ""
+    stability:
+      level: development
     gauge:
       value_type: int
 
@@ -451,12 +513,16 @@ metrics:
     enabled: true
     description: Number of desired pods in this replicaset
     unit: "{pod}"
+    stability:
+      level: development
     gauge:
       value_type: int
   k8s.replicaset.available:
     enabled: true
     description: Total number of available pods (ready for at least minReadySeconds) targeted by this replicaset
     unit: "{pod}"
+    stability:
+      level: development
     gauge:
       value_type: int
 
@@ -464,12 +530,16 @@ metrics:
     enabled: true
     description: Number of desired pods in this replication_controller
     unit: "{pod}"
+    stability:
+      level: development
     gauge:
       value_type: int
   k8s.replication_controller.available:
     enabled: true
     description: Total number of available pods (ready for at least minReadySeconds) targeted by this replication_controller
     unit: "{pod}"
+    stability:
+      level: development
     gauge:
       value_type: int
 
@@ -477,6 +547,8 @@ metrics:
     enabled: true
     description: The upper limit for a particular resource in a specific namespace. Will only be sent if a quota is specified. CPU requests/limits will be sent as millicores
     unit: "{resource}"
+    stability:
+      level: development
     gauge:
       value_type: int
     attributes:
@@ -485,6 +557,8 @@ metrics:
     enabled: true
     description: The usage for a particular resource in a specific namespace. Will only be sent if a quota is specified. CPU requests/limits will be sent as millicores
     unit: "{resource}"
+    stability:
+      level: development
     gauge:
       value_type: int
     attributes:
@@ -494,6 +568,8 @@ metrics:
     enabled: true
     description: Number of desired pods in the stateful set (the `spec.replicas` field)
     unit: "{pod}"
+    stability:
+      level: development
     gauge:
       value_type: int
 
@@ -501,6 +577,8 @@ metrics:
     enabled: true
     description: Number of pods created by the stateful set that have the `Ready` condition
     unit: "{pod}"
+    stability:
+      level: development
     gauge:
       value_type: int
 
@@ -508,6 +586,8 @@ metrics:
     enabled: true
     description: The number of pods created by the StatefulSet controller from the StatefulSet version
     unit: "{pod}"
+    stability:
+      level: development
     gauge:
       value_type: int
 
@@ -515,6 +595,8 @@ metrics:
     enabled: true
     description: Number of pods created by the StatefulSet controller from the StatefulSet version
     unit: "{pod}"
+    stability:
+      level: development
     gauge:
       value_type: int
 
@@ -522,6 +604,8 @@ metrics:
     enabled: true
     description: The configured upper limit for a particular resource.
     unit: "{resource}"
+    stability:
+      level: development
     gauge:
       value_type: int
     attributes:
@@ -530,6 +614,8 @@ metrics:
     enabled: true
     description: The usage for a particular resource with a configured limit.
     unit: "{resource}"
+    stability:
+      level: development
     gauge:
       value_type: int
     attributes:
@@ -538,6 +624,8 @@ metrics:
     enabled: true
     description: The upper limit for a particular resource in a specific namespace.
     unit: "{resource}"
+    stability:
+      level: development
     gauge:
       value_type: int
     attributes:
@@ -547,6 +635,8 @@ metrics:
     enabled: true
     description: The usage for a particular resource in a specific namespace.
     unit: "{resource}"
+    stability:
+      level: development
     gauge:
       value_type: int
     attributes:
@@ -556,6 +646,8 @@ metrics:
     enabled: false
     description: The condition of a particular Node.
     unit: "{condition}"
+    stability:
+      level: development
     gauge:
       value_type: int
     attributes:
