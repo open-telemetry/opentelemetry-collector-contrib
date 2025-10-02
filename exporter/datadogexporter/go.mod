@@ -22,7 +22,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/trace v0.72.0-devel
 	github.com/DataDog/datadog-agent/pkg/util/log v0.72.0-devel
 	github.com/DataDog/datadog-agent/pkg/util/quantile v0.72.0-devel
-	github.com/DataDog/datadog-api-client-go/v2 v2.46.0
+	github.com/DataDog/datadog-api-client-go/v2 v2.47.0
 	github.com/DataDog/datadog-go/v5 v5.8.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.136.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.136.0
