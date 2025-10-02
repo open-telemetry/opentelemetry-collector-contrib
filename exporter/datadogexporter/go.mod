@@ -22,8 +22,8 @@ require (
 	github.com/DataDog/datadog-agent/pkg/trace v0.72.0-devel
 	github.com/DataDog/datadog-agent/pkg/util/log v0.72.0-devel
 	github.com/DataDog/datadog-agent/pkg/util/quantile v0.72.0-devel
-	github.com/DataDog/datadog-api-client-go/v2 v2.46.0
-	github.com/DataDog/datadog-go/v5 v5.7.1
+	github.com/DataDog/datadog-api-client-go/v2 v2.47.0
+	github.com/DataDog/datadog-go/v5 v5.8.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.136.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.136.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.136.0
@@ -69,7 +69,7 @@ require (
 require (
 	cloud.google.com/go/auth v0.16.2 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.8 // indirect
-	cloud.google.com/go/compute/metadata v0.7.0 // indirect
+	cloud.google.com/go/compute/metadata v0.9.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.18.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.10.1 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.11.1 // indirect
@@ -161,7 +161,7 @@ require (
 	github.com/DataDog/viper v1.14.1-0.20250612143030-1b15c8822ed4 // indirect
 	github.com/DataDog/zstd v1.5.7 // indirect
 	github.com/DataDog/zstd_0 v0.0.0-20210310093942-586c1286621f // indirect
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.29.0 // indirect
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.30.0 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/Showmax/go-fqdn v1.0.0 // indirect
 	github.com/alecthomas/participle/v2 v2.1.4 // indirect
@@ -277,7 +277,7 @@ require (
 	github.com/hashicorp/nomad/api v0.0.0-20241218080744-e3ac00f30eec // indirect
 	github.com/hashicorp/serf v0.10.1 // indirect
 	github.com/hectane/go-acl v0.0.0-20230122075934-ca0b05cb1adb // indirect
-	github.com/hetznercloud/hcloud-go/v2 v2.24.0 // indirect
+	github.com/hetznercloud/hcloud-go/v2 v2.25.1 // indirect
 	github.com/iancoleman/strcase v0.3.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/ionos-cloud/sdk-go/v6 v6.3.4 // indirect

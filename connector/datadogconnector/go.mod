@@ -10,7 +10,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics v0.72.0-devel
 	github.com/DataDog/datadog-agent/pkg/proto v0.72.0-devel
 	github.com/DataDog/datadog-agent/pkg/trace v0.72.0-devel
-	github.com/DataDog/datadog-go/v5 v5.7.1
+	github.com/DataDog/datadog-go/v5 v5.8.0
 	github.com/google/go-cmp v0.7.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter v0.136.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog v0.136.0
@@ -42,7 +42,7 @@ require (
 )
 
 require (
-	cloud.google.com/go/compute/metadata v0.7.0 // indirect
+	cloud.google.com/go/compute/metadata v0.9.0 // indirect
 	github.com/DataDog/agent-payload/v5 v5.0.165 // indirect
 	github.com/DataDog/datadog-agent/comp/core/config v0.72.0-devel // indirect
 	github.com/DataDog/datadog-agent/comp/core/flare/builder v0.72.0-devel // indirect
@@ -130,7 +130,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/util/system/socket v0.72.0-devel // indirect
 	github.com/DataDog/datadog-agent/pkg/util/winutil v0.72.0-devel // indirect
 	github.com/DataDog/datadog-agent/pkg/version v0.72.0-devel // indirect
-	github.com/DataDog/datadog-api-client-go/v2 v2.46.0 // indirect
+	github.com/DataDog/datadog-api-client-go/v2 v2.47.0 // indirect
 	github.com/DataDog/go-sqllexer v0.1.6 // indirect
 	github.com/DataDog/go-tuf v1.1.1-0.5.2 // indirect
 	github.com/DataDog/gohai v0.0.0-20230524154621-4316413895ee // indirect
@@ -139,7 +139,7 @@ require (
 	github.com/DataDog/viper v1.14.1-0.20250612143030-1b15c8822ed4 // indirect
 	github.com/DataDog/zstd v1.5.7 // indirect
 	github.com/DataDog/zstd_0 v0.0.0-20210310093942-586c1286621f // indirect
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.29.0 // indirect
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.30.0 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/alecthomas/participle/v2 v2.1.4 // indirect
 	github.com/antchfx/xmlquery v1.4.4 // indirect
