@@ -41,7 +41,7 @@ func newNfsScraper(settings scraper.Settings, cfg *Config) *nfsScraper {
 		settings:     settings,
 		config:       cfg,
 		getNfsStats:  getOSNfsStats,
-		getNfsdStats: getOSnfsdStats,
+		getNfsdStats: getOSNfsdStats,
 	}
 }
 

@@ -243,7 +243,7 @@ func getOSNfsStats() (*NfsStats, error) {
 	return parseNfsStats(f)
 }
 
-func getOSnfsdStats() (*nfsdStats, error) {
+func getOSNfsdStats() (*nfsdStats, error) {
 	f, err := os.Open(nfsdProcFile)
 	if err != nil {
 		return nil, err

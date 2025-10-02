@@ -9,7 +9,7 @@ func getOSNfsStats() (*NfsStats, error) {
 	return nil, nil
 }
 
-func getOSnfsdStats() (*nfsdStats, error) {
+func getOSNfsdStats() (*nfsdStats, error) {
 	return nil, nil
 }
 
