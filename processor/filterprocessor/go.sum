@@ -124,10 +124,14 @@ go.opentelemetry.io/collector/pdata/testdata v0.136.1-0.20250925151503-069408608
 go.opentelemetry.io/collector/pdata/testdata v0.136.1-0.20250925151503-069408608b28/go.mod h1:KlNRkMO7MZdbGjNJGFS0+yc2gpuraJg6F6gkuqaqA8Y=
 go.opentelemetry.io/collector/pipeline v1.42.1-0.20250925151503-069408608b28 h1:eR+f4nbWM9xs4KSfAvhYdOdmTsQV3IYlEr5irDfivok=
 go.opentelemetry.io/collector/pipeline v1.42.1-0.20250925151503-069408608b28/go.mod h1:xUrAqiebzYbrgxyoXSkk6/Y3oi5Sy3im2iCA51LwUAI=
+go.opentelemetry.io/collector/pipeline/xpipeline v0.136.1-0.20250925151503-069408608b28 h1:3pBeOJ0iRjQqELWMkt0gNilxWHsl33pJwXInNF+U4F4=
+go.opentelemetry.io/collector/pipeline/xpipeline v0.136.1-0.20250925151503-069408608b28/go.mod h1:0trVl/7QYhPyIohE+n+hL0F0DdiceghKPG2olvZqipc=
 go.opentelemetry.io/collector/processor v1.42.1-0.20250925151503-069408608b28 h1:1U25gmrX7PO6VqqypLcRNuKtTSUEOAhcdBPuKaLA9Ks=
 go.opentelemetry.io/collector/processor v1.42.1-0.20250925151503-069408608b28/go.mod h1:Iac4YQ2DZHWYxGs4YJf4Vy4bgfXPV8nsRzD3MfXcY4E=
 go.opentelemetry.io/collector/processor/processorhelper v0.136.1-0.20250925151503-069408608b28 h1:hzxxbo6/oZIc1O2OdjQwr02lwGo4/TYy9Qjrp1hfDnI=
 go.opentelemetry.io/collector/processor/processorhelper v0.136.1-0.20250925151503-069408608b28/go.mod h1:bZgwB5EqFQF0VvYsuFR0H6ZSMCzNztMQgzEt/5ZVLdg=
+go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper v0.136.1-0.20250925151503-069408608b28 h1:FB5HXKnfZWYujgAkkA0nbu52U9LcGaT7dHLFvMBTegw=
+go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper v0.136.1-0.20250925151503-069408608b28/go.mod h1:zE/vGhAXEq5pYCvI+hFmiLI8j8hGrV1qz3kGGsi9ZuA=
 go.opentelemetry.io/collector/processor/processortest v0.136.1-0.20250925151503-069408608b28 h1:iNTdjSu3Ro/20zUIWLLYomR1NqitJvaWGG17f5+uvds=
 go.opentelemetry.io/collector/processor/processortest v0.136.1-0.20250925151503-069408608b28/go.mod h1:PGQYBQOipBBnJw/xmM/xH5iiw+fOk3Ah5D+d9X165HI=
 go.opentelemetry.io/collector/processor/xprocessor v0.136.1-0.20250925151503-069408608b28 h1:dE8UhS8cX+XIMvmYPKDBdWlgswkS2x/uo4bZgoVbYyE=
