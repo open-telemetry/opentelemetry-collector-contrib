@@ -64,32 +64,32 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	var err, errs error
 	builder.LoadbalancerBackendLatency, err = builder.meter.Int64Histogram(
 		"otelcol_loadbalancer_backend_latency",
-		metric.WithDescription("Response latency in ms for the backends."),
+		metric.WithDescription("Response latency in ms for the backends. [development]"),
 		metric.WithUnit("ms"),
 		metric.WithExplicitBucketBoundaries([]float64{5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000}...),
 	)
 	errs = errors.Join(errs, err)
 	builder.LoadbalancerBackendOutcome, err = builder.meter.Int64Counter(
 		"otelcol_loadbalancer_backend_outcome",
-		metric.WithDescription("Number of successes and failures for each endpoint."),
+		metric.WithDescription("Number of successes and failures for each endpoint. [development]"),
 		metric.WithUnit("{outcomes}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.LoadbalancerNumBackendUpdates, err = builder.meter.Int64Counter(
 		"otelcol_loadbalancer_num_backend_updates",
-		metric.WithDescription("Number of times the list of backends was updated."),
+		metric.WithDescription("Number of times the list of backends was updated. [development]"),
 		metric.WithUnit("{updates}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.LoadbalancerNumBackends, err = builder.meter.Int64Gauge(
 		"otelcol_loadbalancer_num_backends",
-		metric.WithDescription("Current number of backends in use."),
+		metric.WithDescription("Current number of backends in use. [development]"),
 		metric.WithUnit("{backends}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.LoadbalancerNumResolutions, err = builder.meter.Int64Counter(
 		"otelcol_loadbalancer_num_resolutions",
-		metric.WithDescription("Number of times the resolver has triggered new resolutions."),
+		metric.WithDescription("Number of times the resolver has triggered new resolutions. [development]"),
 		metric.WithUnit("{resolutions}"),
 	)
 	errs = errors.Join(errs, err)
