@@ -30,6 +30,14 @@ type attr struct {
 	unitStrIdx int32
 }
 
+// fn is a helper struct to build pprofile.ProfilesDictionary.function_table.
+type fn struct {
+	name       string
+	systemName string
+	fileName   string
+	startLine  int64
+}
+
 // lookupTables is a helper struct around pprofile.ProfilesDictionary.
 type lookupTables struct {
 	stringTable        map[string]int32
@@ -37,6 +45,9 @@ type lookupTables struct {
 
 	attributeTable        map[attr]int32
 	lastAttributeTableIdx int32
+
+	functionTable        map[fn]int32
+	lastFunctionTableIdx int32
 }
 
 func convertPprofToPprofile(src *profile.Profile) (*pprofile.Profiles, error) {
@@ -53,15 +64,11 @@ func convertPprofToPprofile(src *profile.Profile) (*pprofile.Profiles, error) {
 	dst.Dictionary().LocationTable().AppendEmpty()
 	lastLocationTableIdx := int32(0)
 
-	// function_table[0] must always be zero value (Function{}) and present.
-	dst.Dictionary().FunctionTable().AppendEmpty()
-	lastFunctionTableIdx := int32(0)
-
 	// stack_table[0] must always be zero value (Stack{}) and present.
 	dst.Dictionary().StackTable().AppendEmpty()
 	lastStackTableIdx := int32(0)
 
-	// Initialize remaining lookup tables of pprofile.ProfilesDictionary in initCache.
+	// Initialize remaining lookup tables of pprofile.ProfilesDictionary in initLookupTables.
 	lts := initLookupTables()
 
 	// Add envelope messages
@@ -157,25 +164,11 @@ func convertPprofToPprofile(src *profile.Profile) (*pprofile.Profiles, error) {
 
 					// pprof.Line.function_id
 					if line.Function != nil {
-						fn := dst.Dictionary().FunctionTable().AppendEmpty()
-						lastFunctionTableIdx++
-
-						// pprof.Function.id
-						// TODO
-
-						// pprof.Function.name
-						fn.SetNameStrindex(getIdxForString(lts, line.Function.Name))
-
-						// pprof.Function.system_name
-						fn.SetSystemNameStrindex(getIdxForString(lts, line.Function.SystemName))
-
-						// pprof.Function.filename
-						fn.SetFilenameStrindex(getIdxForString(lts, line.Function.Filename))
-
-						// pprof.Function.start_line
-						fn.SetStartLine(line.Function.StartLine)
-
-						ln.SetFunctionIndex(lastFunctionTableIdx)
+						ln.SetFunctionIndex(getIdxForFunction(lts,
+							line.Function.Name,
+							line.Function.SystemName,
+							line.Function.Filename,
+							line.Function.StartLine))
 					}
 
 					// pprof.Line.line
@@ -293,6 +286,23 @@ func convertPprofToPprofile(src *profile.Profile) (*pprofile.Profiles, error) {
 	return &dst, nil
 }
 
+// getIdxForFunction returns the corresponding index for the function.
+// If the function does not yet exist in the cache, it will be adedd.
+func getIdxForFunction(lts lookupTables, name, systemName, fileName string, startLine int64) int32 {
+	key := fn{
+		name:       name,
+		systemName: systemName,
+		fileName:   fileName,
+		startLine:  startLine,
+	}
+	if idx, exists := lts.functionTable[key]; exists {
+		return idx
+	}
+	lts.lastFunctionTableIdx++
+	lts.functionTable[key] = lts.lastFunctionTableIdx
+	return lts.lastFunctionTableIdx
+}
+
 // getIdxForString returns the corresponding index for the string.
 // If the string does not yet exist in the cache, it will be adedd.
 func getIdxForString(lts lookupTables, s string) int32 {
@@ -351,6 +361,7 @@ func initLookupTables() lookupTables {
 	lts := lookupTables{
 		stringTable:    make(map[string]int32),
 		attributeTable: make(map[attr]int32),
+		functionTable:  make(map[fn]int32),
 	}
 
 	// string_table[0] must always be "" and present.
@@ -361,12 +372,25 @@ func initLookupTables() lookupTables {
 	lts.lastAttributeTableIdx = 0
 	lts.attributeTable[attr{}] = lts.lastAttributeTableIdx
 
+	// function_table[0] must always be zero value (Function{}) and present.
+	lts.lastFunctionTableIdx = 0
+	lts.functionTable[fn{}] = lts.lastFunctionTableIdx
 	return lts
 }
 
 // dumpLookupTables fills pprofile.ProfilesDictionary with the content of
-// the supporting cache.
+// the supporting lookup tables.
 func dumpLookupTables(dic pprofile.ProfilesDictionary, lts lookupTables) error {
+	for i := 0; i < len(lts.functionTable); i++ {
+		dic.FunctionTable().AppendEmpty()
+	}
+	for fn, id := range lts.functionTable {
+		dic.FunctionTable().At(int(id)).SetNameStrindex(getIdxForString(lts, fn.name))
+		dic.FunctionTable().At(int(id)).SetSystemNameStrindex(getIdxForString(lts, fn.systemName))
+		dic.FunctionTable().At(int(id)).SetFilenameStrindex(getIdxForString(lts, fn.fileName))
+		dic.FunctionTable().At(int(id)).SetStartLine(fn.startLine)
+	}
+
 	for i := 0; i < len(lts.stringTable); i++ {
 		dic.StringTable().Append("")
 	}
@@ -386,5 +410,6 @@ func dumpLookupTables(dic pprofile.ProfilesDictionary, lts lookupTables) error {
 			dic.AttributeTable().At(int(id)).SetUnitStrindex(a.unitStrIdx)
 		}
 	}
+
 	return nil
 }
