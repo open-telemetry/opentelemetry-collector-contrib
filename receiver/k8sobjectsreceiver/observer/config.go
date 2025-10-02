@@ -1,4 +1,4 @@
-package observer
+package observer // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/observer"
 
 import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
