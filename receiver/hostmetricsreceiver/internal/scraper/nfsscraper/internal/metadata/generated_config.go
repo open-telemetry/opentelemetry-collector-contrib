@@ -27,33 +27,22 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for nfs metrics.
 type MetricsConfig struct {
-	NfsClientNetCount              MetricConfig `mapstructure:"nfs.client.net.count"`
-	NfsClientNetTCPConnectionCount MetricConfig `mapstructure:"nfs.client.net.tcp.connection.count"`
-	NfsClientNetTCPCount           MetricConfig `mapstructure:"nfs.client.net.tcp.count"`
-	NfsClientNetUDPCount           MetricConfig `mapstructure:"nfs.client.net.udp.count"`
-	NfsClientOperationCount        MetricConfig `mapstructure:"nfs.client.operation.count"`
-	NfsClientProcedureCount        MetricConfig `mapstructure:"nfs.client.procedure.count"`
-	NfsClientRPCAuthrefreshCount   MetricConfig `mapstructure:"nfs.client.rpc.authrefresh.count"`
-	NfsClientRPCCount              MetricConfig `mapstructure:"nfs.client.rpc.count"`
-	NfsClientRPCRetransmitCount    MetricConfig `mapstructure:"nfs.client.rpc.retransmit.count"`
-	NfsServerFhStaleCount          MetricConfig `mapstructure:"nfs.server.fh.stale.count"`
-	NfsServerIoReadCount           MetricConfig `mapstructure:"nfs.server.io.read.count"`
-	NfsServerIoWriteCount          MetricConfig `mapstructure:"nfs.server.io.write.count"`
-	NfsServerNetCount              MetricConfig `mapstructure:"nfs.server.net.count"`
-	NfsServerNetTCPConnectionCount MetricConfig `mapstructure:"nfs.server.net.tcp.connection.count"`
-	NfsServerNetTCPCount           MetricConfig `mapstructure:"nfs.server.net.tcp.count"`
-	NfsServerNetUDPCount           MetricConfig `mapstructure:"nfs.server.net.udp.count"`
-	NfsServerOperationCount        MetricConfig `mapstructure:"nfs.server.operation.count"`
-	NfsServerProcedureCount        MetricConfig `mapstructure:"nfs.server.procedure.count"`
-	NfsServerRepcacheHits          MetricConfig `mapstructure:"nfs.server.repcache.hits"`
-	NfsServerRepcacheMisses        MetricConfig `mapstructure:"nfs.server.repcache.misses"`
-	NfsServerRepcacheNocache       MetricConfig `mapstructure:"nfs.server.repcache.nocache"`
-	NfsServerRPCBadCount           MetricConfig `mapstructure:"nfs.server.rpc.bad.count"`
-	NfsServerRPCBadauthCount       MetricConfig `mapstructure:"nfs.server.rpc.badauth.count"`
-	NfsServerRPCBadclientCount     MetricConfig `mapstructure:"nfs.server.rpc.badclient.count"`
-	NfsServerRPCBadfmtCount        MetricConfig `mapstructure:"nfs.server.rpc.badfmt.count"`
-	NfsServerRPCCount              MetricConfig `mapstructure:"nfs.server.rpc.count"`
-	NfsServerThreadCount           MetricConfig `mapstructure:"nfs.server.thread.count"`
+	NfsClientNetCount                 MetricConfig `mapstructure:"nfs.client.net.count"`
+	NfsClientNetTCPConnectionAccepted MetricConfig `mapstructure:"nfs.client.net.tcp.connection.accepted"`
+	NfsClientOperationCount           MetricConfig `mapstructure:"nfs.client.operation.count"`
+	NfsClientProcedureCount           MetricConfig `mapstructure:"nfs.client.procedure.count"`
+	NfsClientRPCAuthrefreshCount      MetricConfig `mapstructure:"nfs.client.rpc.authrefresh.count"`
+	NfsClientRPCCount                 MetricConfig `mapstructure:"nfs.client.rpc.count"`
+	NfsClientRPCRetransmitCount       MetricConfig `mapstructure:"nfs.client.rpc.retransmit.count"`
+	NfsServerFhStaleCount             MetricConfig `mapstructure:"nfs.server.fh.stale.count"`
+	NfsServerIo                       MetricConfig `mapstructure:"nfs.server.io"`
+	NfsServerNetCount                 MetricConfig `mapstructure:"nfs.server.net.count"`
+	NfsServerNetTCPConnectionAccepted MetricConfig `mapstructure:"nfs.server.net.tcp.connection.accepted"`
+	NfsServerOperationCount           MetricConfig `mapstructure:"nfs.server.operation.count"`
+	NfsServerProcedureCount           MetricConfig `mapstructure:"nfs.server.procedure.count"`
+	NfsServerRepcacheRequests         MetricConfig `mapstructure:"nfs.server.repcache.requests"`
+	NfsServerRPCCount                 MetricConfig `mapstructure:"nfs.server.rpc.count"`
+	NfsServerThreadCount              MetricConfig `mapstructure:"nfs.server.thread.count"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -61,13 +50,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		NfsClientNetCount: MetricConfig{
 			Enabled: true,
 		},
-		NfsClientNetTCPConnectionCount: MetricConfig{
-			Enabled: true,
-		},
-		NfsClientNetTCPCount: MetricConfig{
-			Enabled: true,
-		},
-		NfsClientNetUDPCount: MetricConfig{
+		NfsClientNetTCPConnectionAccepted: MetricConfig{
 			Enabled: true,
 		},
 		NfsClientOperationCount: MetricConfig{
@@ -88,22 +71,13 @@ func DefaultMetricsConfig() MetricsConfig {
 		NfsServerFhStaleCount: MetricConfig{
 			Enabled: true,
 		},
-		NfsServerIoReadCount: MetricConfig{
-			Enabled: true,
-		},
-		NfsServerIoWriteCount: MetricConfig{
+		NfsServerIo: MetricConfig{
 			Enabled: true,
 		},
 		NfsServerNetCount: MetricConfig{
 			Enabled: true,
 		},
-		NfsServerNetTCPConnectionCount: MetricConfig{
-			Enabled: true,
-		},
-		NfsServerNetTCPCount: MetricConfig{
-			Enabled: true,
-		},
-		NfsServerNetUDPCount: MetricConfig{
+		NfsServerNetTCPConnectionAccepted: MetricConfig{
 			Enabled: true,
 		},
 		NfsServerOperationCount: MetricConfig{
@@ -112,25 +86,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		NfsServerProcedureCount: MetricConfig{
 			Enabled: true,
 		},
-		NfsServerRepcacheHits: MetricConfig{
-			Enabled: true,
-		},
-		NfsServerRepcacheMisses: MetricConfig{
-			Enabled: true,
-		},
-		NfsServerRepcacheNocache: MetricConfig{
-			Enabled: true,
-		},
-		NfsServerRPCBadCount: MetricConfig{
-			Enabled: true,
-		},
-		NfsServerRPCBadauthCount: MetricConfig{
-			Enabled: true,
-		},
-		NfsServerRPCBadclientCount: MetricConfig{
-			Enabled: true,
-		},
-		NfsServerRPCBadfmtCount: MetricConfig{
+		NfsServerRepcacheRequests: MetricConfig{
 			Enabled: true,
 		},
 		NfsServerRPCCount: MetricConfig{

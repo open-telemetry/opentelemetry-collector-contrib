@@ -14,13 +14,19 @@ metrics:
 
 ### nfs.client.net.count
 
-Reports the count of kernel NFS client network requests handled
+Reports the count of kernel NFS client TCP segments and UDP datagrams handled.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| {request} | Gauge | Int |
+| {record} | Gauge | Int |
 
-### nfs.client.net.tcp.connection.count
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| network.transport | OSI transport layer or inter-process communication method. | Any Str |
+
+### nfs.client.net.tcp.connection.accepted
 
 Reports the count of kernel NFS client TCP connections accepted
 
@@ -28,36 +34,20 @@ Reports the count of kernel NFS client TCP connections accepted
 | ---- | ----------- | ---------- |
 | {connection} | Gauge | Int |
 
-### nfs.client.net.tcp.count
-
-Reports the count of kernel NFS client TCP segments handled
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {segment} | Gauge | Int |
-
-### nfs.client.net.udp.count
-
-Reports the count of kernel NFS client UDP datagrams handled
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {datagram} | Gauge | Int |
-
 ### nfs.client.operation.count
 
 Reports the count of kernel NFSv4+ client operations
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| {procedure} | Gauge | Int |
+| {operation} | Gauge | Int |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
-| ---- | ----------- | ------ | -------- |
-| rpc.onc.version | ONC/Sun RPC program version | Any Int | false |
-| rpc.nfs.operation.name | NFSv4+ operation name | Any Str | false |
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| onc_rpc.version | ONC/Sun RPC program version. | Any Int |
+| nfs.operation.name | NFSv4+ operation name. | Any Str |
 
 ### nfs.client.procedure.count
 
@@ -69,10 +59,10 @@ Reports the count of kernel NFS client procedures
 
 #### Attributes
 
-| Name | Description | Values | Optional |
-| ---- | ----------- | ------ | -------- |
-| rpc.onc.version | ONC/Sun RPC program version | Any Int | false |
-| rpc.onc.procedure.name | ONC/Sun RPC procedure name | Any Str | false |
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| onc_rpc.version | ONC/Sun RPC program version. | Any Int |
+| onc_rpc.procedure.name | ONC/Sun RPC procedure name. | Any Str |
 
 ### nfs.client.rpc.authrefresh.count
 
@@ -84,7 +74,7 @@ Reports the count of kernel NFS client RPC authentication refreshes
 
 ### nfs.client.rpc.count
 
-Reports the count of kernel NFS client RPCs handled
+Reports the count of kernel NFS client RPCs sent, regardless of whether they're accepted/rejected by the server.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -100,59 +90,47 @@ Reports the count of kernel NFS client RPC retransmits
 
 ### nfs.server.fh.stale.count
 
-Reports the count of kernel NFS server stale file handles
+Reports the count of kernel NFS server stale file handles.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | {fh} | Gauge | Int |
 
-### nfs.server.io.read.count
+### nfs.server.io
 
-Reports the count of kernel NFS server bytes returned to read requests
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| By | Gauge | Int |
-
-### nfs.server.io.write.count
-
-Reports the count of kernel NFS server bytes passed to write requests
+Reports the count of kernel NFS server bytes returned to receive and transmit (read and write) requests.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | By | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| network.io.direction | The network IO operation direction. | Str: ``transmit``, ``receive`` |
 
 ### nfs.server.net.count
 
-Reports the count of kernel NFS server network requests handled
+Reports the count of kernel NFS server TCP segments and UDP datagrams handled.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | {request} | Gauge | Int |
 
-### nfs.server.net.tcp.connection.count
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| network.transport | OSI transport layer or inter-process communication method. | Any Str |
+
+### nfs.server.net.tcp.connection.accepted
 
 Reports the count of kernel NFS server TCP connections accepted
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | {connection} | Gauge | Int |
-
-### nfs.server.net.tcp.count
-
-Reports the count of kernel NFS server TCP segments handled
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {segment} | Gauge | Int |
-
-### nfs.server.net.udp.count
-
-Reports the count of kernel NFS server UDP datagrams handled
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {datagram} | Gauge | Int |
 
 ### nfs.server.operation.count
 
@@ -164,14 +142,14 @@ Reports the count of kernel NFSv4+ server operations
 
 #### Attributes
 
-| Name | Description | Values | Optional |
-| ---- | ----------- | ------ | -------- |
-| rpc.onc.version | ONC/Sun RPC program version | Any Int | false |
-| rpc.nfs.operation.name | NFSv4+ operation name | Any Str | false |
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| onc_rpc.version | ONC/Sun RPC program version. | Any Int |
+| nfs.operation.name | NFSv4+ operation name. | Any Str |
 
 ### nfs.server.procedure.count
 
-Reports the count of kernel NFS client procedures
+Reports the count of kernel NFS server procedures
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -179,74 +157,38 @@ Reports the count of kernel NFS client procedures
 
 #### Attributes
 
-| Name | Description | Values | Optional |
-| ---- | ----------- | ------ | -------- |
-| rpc.onc.version | ONC/Sun RPC program version | Any Int | false |
-| rpc.onc.procedure.name | ONC/Sun RPC procedure name | Any Str | false |
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| onc_rpc.version | ONC/Sun RPC program version. | Any Int |
+| onc_rpc.procedure.name | ONC/Sun RPC procedure name. | Any Str |
 
-### nfs.server.repcache.hits
+### nfs.server.repcache.requests
 
-Reports the kernel NFS server request reply cache hit count
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {hit} | Gauge | Int |
-
-### nfs.server.repcache.misses
-
-Reports the kernel NFS server request reply cache miss count
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {miss} | Gauge | Int |
-
-### nfs.server.repcache.nocache
-
-Reports the count of kernel NFS server request replies that are uncacheable
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {miss} | Gauge | Int |
-
-### nfs.server.rpc.bad.count
-
-Reports the total count of kernel NFS server bad RPCs
+Reports the kernel NFS server reply cache request count by cache hit status.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | {request} | Gauge | Int |
 
-### nfs.server.rpc.badauth.count
+#### Attributes
 
-Reports the total count of kernel NFS server badly authenticated RPCs
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {request} | Gauge | Int |
-
-### nfs.server.rpc.badclient.count
-
-Reports the total count of kernel NFS server unauthorized client RPCs
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {request} | Gauge | Int |
-
-### nfs.server.rpc.badfmt.count
-
-Reports the total count of kernel NFS server badly formatted RPCs
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {request} | Gauge | Int |
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| nfs.server.repcache.status | NFS Server replies check a Reply Cache (repcache), which can have one of 3 result states: 'hit', 'miss', or 'nocache'. | Any Str |
 
 ### nfs.server.rpc.count
 
-Reports the count of kernel NFS server RPCs handled
+Reports the count of kernel NFS server RPCs handled.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | {request} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| error.type | Describes a class of error the operation ended with. | Any Str |
 
 ### nfs.server.thread.count
 

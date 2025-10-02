@@ -9,21 +9,41 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/scraper"
-	conventions "go.opentelemetry.io/otel/semconv/v1.9.0"
+	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 )
+
+// AttributeNetworkIoDirection specifies the value network.io.direction attribute.
+type AttributeNetworkIoDirection int
+
+const (
+	_ AttributeNetworkIoDirection = iota
+	AttributeNetworkIoDirectionTransmit
+	AttributeNetworkIoDirectionReceive
+)
+
+// String returns the string representation of the AttributeNetworkIoDirection.
+func (av AttributeNetworkIoDirection) String() string {
+	switch av {
+	case AttributeNetworkIoDirectionTransmit:
+		return "transmit"
+	case AttributeNetworkIoDirectionReceive:
+		return "receive"
+	}
+	return ""
+}
+
+// MapAttributeNetworkIoDirection is a helper map of string to AttributeNetworkIoDirection attribute value.
+var MapAttributeNetworkIoDirection = map[string]AttributeNetworkIoDirection{
+	"transmit": AttributeNetworkIoDirectionTransmit,
+	"receive":  AttributeNetworkIoDirectionReceive,
+}
 
 var MetricsInfo = metricsInfo{
 	NfsClientNetCount: metricInfo{
 		Name: "nfs.client.net.count",
 	},
-	NfsClientNetTCPConnectionCount: metricInfo{
-		Name: "nfs.client.net.tcp.connection.count",
-	},
-	NfsClientNetTCPCount: metricInfo{
-		Name: "nfs.client.net.tcp.count",
-	},
-	NfsClientNetUDPCount: metricInfo{
-		Name: "nfs.client.net.udp.count",
+	NfsClientNetTCPConnectionAccepted: metricInfo{
+		Name: "nfs.client.net.tcp.connection.accepted",
 	},
 	NfsClientOperationCount: metricInfo{
 		Name: "nfs.client.operation.count",
@@ -43,23 +63,14 @@ var MetricsInfo = metricsInfo{
 	NfsServerFhStaleCount: metricInfo{
 		Name: "nfs.server.fh.stale.count",
 	},
-	NfsServerIoReadCount: metricInfo{
-		Name: "nfs.server.io.read.count",
-	},
-	NfsServerIoWriteCount: metricInfo{
-		Name: "nfs.server.io.write.count",
+	NfsServerIo: metricInfo{
+		Name: "nfs.server.io",
 	},
 	NfsServerNetCount: metricInfo{
 		Name: "nfs.server.net.count",
 	},
-	NfsServerNetTCPConnectionCount: metricInfo{
-		Name: "nfs.server.net.tcp.connection.count",
-	},
-	NfsServerNetTCPCount: metricInfo{
-		Name: "nfs.server.net.tcp.count",
-	},
-	NfsServerNetUDPCount: metricInfo{
-		Name: "nfs.server.net.udp.count",
+	NfsServerNetTCPConnectionAccepted: metricInfo{
+		Name: "nfs.server.net.tcp.connection.accepted",
 	},
 	NfsServerOperationCount: metricInfo{
 		Name: "nfs.server.operation.count",
@@ -67,26 +78,8 @@ var MetricsInfo = metricsInfo{
 	NfsServerProcedureCount: metricInfo{
 		Name: "nfs.server.procedure.count",
 	},
-	NfsServerRepcacheHits: metricInfo{
-		Name: "nfs.server.repcache.hits",
-	},
-	NfsServerRepcacheMisses: metricInfo{
-		Name: "nfs.server.repcache.misses",
-	},
-	NfsServerRepcacheNocache: metricInfo{
-		Name: "nfs.server.repcache.nocache",
-	},
-	NfsServerRPCBadCount: metricInfo{
-		Name: "nfs.server.rpc.bad.count",
-	},
-	NfsServerRPCBadauthCount: metricInfo{
-		Name: "nfs.server.rpc.badauth.count",
-	},
-	NfsServerRPCBadclientCount: metricInfo{
-		Name: "nfs.server.rpc.badclient.count",
-	},
-	NfsServerRPCBadfmtCount: metricInfo{
-		Name: "nfs.server.rpc.badfmt.count",
+	NfsServerRepcacheRequests: metricInfo{
+		Name: "nfs.server.repcache.requests",
 	},
 	NfsServerRPCCount: metricInfo{
 		Name: "nfs.server.rpc.count",
@@ -97,33 +90,22 @@ var MetricsInfo = metricsInfo{
 }
 
 type metricsInfo struct {
-	NfsClientNetCount              metricInfo
-	NfsClientNetTCPConnectionCount metricInfo
-	NfsClientNetTCPCount           metricInfo
-	NfsClientNetUDPCount           metricInfo
-	NfsClientOperationCount        metricInfo
-	NfsClientProcedureCount        metricInfo
-	NfsClientRPCAuthrefreshCount   metricInfo
-	NfsClientRPCCount              metricInfo
-	NfsClientRPCRetransmitCount    metricInfo
-	NfsServerFhStaleCount          metricInfo
-	NfsServerIoReadCount           metricInfo
-	NfsServerIoWriteCount          metricInfo
-	NfsServerNetCount              metricInfo
-	NfsServerNetTCPConnectionCount metricInfo
-	NfsServerNetTCPCount           metricInfo
-	NfsServerNetUDPCount           metricInfo
-	NfsServerOperationCount        metricInfo
-	NfsServerProcedureCount        metricInfo
-	NfsServerRepcacheHits          metricInfo
-	NfsServerRepcacheMisses        metricInfo
-	NfsServerRepcacheNocache       metricInfo
-	NfsServerRPCBadCount           metricInfo
-	NfsServerRPCBadauthCount       metricInfo
-	NfsServerRPCBadclientCount     metricInfo
-	NfsServerRPCBadfmtCount        metricInfo
-	NfsServerRPCCount              metricInfo
-	NfsServerThreadCount           metricInfo
+	NfsClientNetCount                 metricInfo
+	NfsClientNetTCPConnectionAccepted metricInfo
+	NfsClientOperationCount           metricInfo
+	NfsClientProcedureCount           metricInfo
+	NfsClientRPCAuthrefreshCount      metricInfo
+	NfsClientRPCCount                 metricInfo
+	NfsClientRPCRetransmitCount       metricInfo
+	NfsServerFhStaleCount             metricInfo
+	NfsServerIo                       metricInfo
+	NfsServerNetCount                 metricInfo
+	NfsServerNetTCPConnectionAccepted metricInfo
+	NfsServerOperationCount           metricInfo
+	NfsServerProcedureCount           metricInfo
+	NfsServerRepcacheRequests         metricInfo
+	NfsServerRPCCount                 metricInfo
+	NfsServerThreadCount              metricInfo
 }
 
 type metricInfo struct {
@@ -139,12 +121,13 @@ type metricNfsClientNetCount struct {
 // init fills nfs.client.net.count metric with initial data.
 func (m *metricNfsClientNetCount) init() {
 	m.data.SetName("nfs.client.net.count")
-	m.data.SetDescription("Reports the count of kernel NFS client network requests handled")
-	m.data.SetUnit("{request}")
+	m.data.SetDescription("Reports the count of kernel NFS client TCP segments and UDP datagrams handled.")
+	m.data.SetUnit("{record}")
 	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricNfsClientNetCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricNfsClientNetCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, networkTransportAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -152,6 +135,7 @@ func (m *metricNfsClientNetCount) recordDataPoint(start pcommon.Timestamp, ts pc
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
+	dp.Attributes().PutStr("network.transport", networkTransportAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -179,21 +163,21 @@ func newMetricNfsClientNetCount(cfg MetricConfig) metricNfsClientNetCount {
 	return m
 }
 
-type metricNfsClientNetTCPConnectionCount struct {
+type metricNfsClientNetTCPConnectionAccepted struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills nfs.client.net.tcp.connection.count metric with initial data.
-func (m *metricNfsClientNetTCPConnectionCount) init() {
-	m.data.SetName("nfs.client.net.tcp.connection.count")
+// init fills nfs.client.net.tcp.connection.accepted metric with initial data.
+func (m *metricNfsClientNetTCPConnectionAccepted) init() {
+	m.data.SetName("nfs.client.net.tcp.connection.accepted")
 	m.data.SetDescription("Reports the count of kernel NFS client TCP connections accepted")
 	m.data.SetUnit("{connection}")
 	m.data.SetEmptyGauge()
 }
 
-func (m *metricNfsClientNetTCPConnectionCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricNfsClientNetTCPConnectionAccepted) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -204,14 +188,14 @@ func (m *metricNfsClientNetTCPConnectionCount) recordDataPoint(start pcommon.Tim
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricNfsClientNetTCPConnectionCount) updateCapacity() {
+func (m *metricNfsClientNetTCPConnectionAccepted) updateCapacity() {
 	if m.data.Gauge().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricNfsClientNetTCPConnectionCount) emit(metrics pmetric.MetricSlice) {
+func (m *metricNfsClientNetTCPConnectionAccepted) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -219,106 +203,8 @@ func (m *metricNfsClientNetTCPConnectionCount) emit(metrics pmetric.MetricSlice)
 	}
 }
 
-func newMetricNfsClientNetTCPConnectionCount(cfg MetricConfig) metricNfsClientNetTCPConnectionCount {
-	m := metricNfsClientNetTCPConnectionCount{config: cfg}
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricNfsClientNetTCPCount struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills nfs.client.net.tcp.count metric with initial data.
-func (m *metricNfsClientNetTCPCount) init() {
-	m.data.SetName("nfs.client.net.tcp.count")
-	m.data.SetDescription("Reports the count of kernel NFS client TCP segments handled")
-	m.data.SetUnit("{segment}")
-	m.data.SetEmptyGauge()
-}
-
-func (m *metricNfsClientNetTCPCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricNfsClientNetTCPCount) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricNfsClientNetTCPCount) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricNfsClientNetTCPCount(cfg MetricConfig) metricNfsClientNetTCPCount {
-	m := metricNfsClientNetTCPCount{config: cfg}
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricNfsClientNetUDPCount struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills nfs.client.net.udp.count metric with initial data.
-func (m *metricNfsClientNetUDPCount) init() {
-	m.data.SetName("nfs.client.net.udp.count")
-	m.data.SetDescription("Reports the count of kernel NFS client UDP datagrams handled")
-	m.data.SetUnit("{datagram}")
-	m.data.SetEmptyGauge()
-}
-
-func (m *metricNfsClientNetUDPCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricNfsClientNetUDPCount) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricNfsClientNetUDPCount) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricNfsClientNetUDPCount(cfg MetricConfig) metricNfsClientNetUDPCount {
-	m := metricNfsClientNetUDPCount{config: cfg}
+func newMetricNfsClientNetTCPConnectionAccepted(cfg MetricConfig) metricNfsClientNetTCPConnectionAccepted {
+	m := metricNfsClientNetTCPConnectionAccepted{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -336,12 +222,12 @@ type metricNfsClientOperationCount struct {
 func (m *metricNfsClientOperationCount) init() {
 	m.data.SetName("nfs.client.operation.count")
 	m.data.SetDescription("Reports the count of kernel NFSv4+ client operations")
-	m.data.SetUnit("{procedure}")
+	m.data.SetUnit("{operation}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricNfsClientOperationCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, rpcOncVersionAttributeValue int64, rpcNfsOperationNameAttributeValue string) {
+func (m *metricNfsClientOperationCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oncRPCVersionAttributeValue int64, nfsOperationNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -349,8 +235,8 @@ func (m *metricNfsClientOperationCount) recordDataPoint(start pcommon.Timestamp,
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutInt("rpc.onc.version", rpcOncVersionAttributeValue)
-	dp.Attributes().PutStr("rpc.nfs.operation.name", rpcNfsOperationNameAttributeValue)
+	dp.Attributes().PutInt("onc_rpc.version", oncRPCVersionAttributeValue)
+	dp.Attributes().PutStr("nfs.operation.name", nfsOperationNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -393,7 +279,7 @@ func (m *metricNfsClientProcedureCount) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricNfsClientProcedureCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, rpcOncVersionAttributeValue int64, rpcOncProcedureNameAttributeValue string) {
+func (m *metricNfsClientProcedureCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oncRPCVersionAttributeValue int64, oncRPCProcedureNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -401,8 +287,8 @@ func (m *metricNfsClientProcedureCount) recordDataPoint(start pcommon.Timestamp,
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutInt("rpc.onc.version", rpcOncVersionAttributeValue)
-	dp.Attributes().PutStr("rpc.onc.procedure.name", rpcOncProcedureNameAttributeValue)
+	dp.Attributes().PutInt("onc_rpc.version", oncRPCVersionAttributeValue)
+	dp.Attributes().PutStr("onc_rpc.procedure.name", oncRPCProcedureNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -488,7 +374,7 @@ type metricNfsClientRPCCount struct {
 // init fills nfs.client.rpc.count metric with initial data.
 func (m *metricNfsClientRPCCount) init() {
 	m.data.SetName("nfs.client.rpc.count")
-	m.data.SetDescription("Reports the count of kernel NFS client RPCs handled")
+	m.data.SetDescription("Reports the count of kernel NFS client RPCs sent, regardless of whether they're accepted/rejected by the server.")
 	m.data.SetUnit("{request}")
 	m.data.SetEmptyGauge()
 }
@@ -586,7 +472,7 @@ type metricNfsServerFhStaleCount struct {
 // init fills nfs.server.fh.stale.count metric with initial data.
 func (m *metricNfsServerFhStaleCount) init() {
 	m.data.SetName("nfs.server.fh.stale.count")
-	m.data.SetDescription("Reports the count of kernel NFS server stale file handles")
+	m.data.SetDescription("Reports the count of kernel NFS server stale file handles.")
 	m.data.SetUnit("{fh}")
 	m.data.SetEmptyGauge()
 }
@@ -626,21 +512,22 @@ func newMetricNfsServerFhStaleCount(cfg MetricConfig) metricNfsServerFhStaleCoun
 	return m
 }
 
-type metricNfsServerIoReadCount struct {
+type metricNfsServerIo struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills nfs.server.io.read.count metric with initial data.
-func (m *metricNfsServerIoReadCount) init() {
-	m.data.SetName("nfs.server.io.read.count")
-	m.data.SetDescription("Reports the count of kernel NFS server bytes returned to read requests")
+// init fills nfs.server.io metric with initial data.
+func (m *metricNfsServerIo) init() {
+	m.data.SetName("nfs.server.io")
+	m.data.SetDescription("Reports the count of kernel NFS server bytes returned to receive and transmit (read and write) requests.")
 	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricNfsServerIoReadCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricNfsServerIo) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, networkIoDirectionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -648,17 +535,18 @@ func (m *metricNfsServerIoReadCount) recordDataPoint(start pcommon.Timestamp, ts
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
+	dp.Attributes().PutStr("network.io.direction", networkIoDirectionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricNfsServerIoReadCount) updateCapacity() {
+func (m *metricNfsServerIo) updateCapacity() {
 	if m.data.Gauge().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricNfsServerIoReadCount) emit(metrics pmetric.MetricSlice) {
+func (m *metricNfsServerIo) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -666,57 +554,8 @@ func (m *metricNfsServerIoReadCount) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricNfsServerIoReadCount(cfg MetricConfig) metricNfsServerIoReadCount {
-	m := metricNfsServerIoReadCount{config: cfg}
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricNfsServerIoWriteCount struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills nfs.server.io.write.count metric with initial data.
-func (m *metricNfsServerIoWriteCount) init() {
-	m.data.SetName("nfs.server.io.write.count")
-	m.data.SetDescription("Reports the count of kernel NFS server bytes passed to write requests")
-	m.data.SetUnit("By")
-	m.data.SetEmptyGauge()
-}
-
-func (m *metricNfsServerIoWriteCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricNfsServerIoWriteCount) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricNfsServerIoWriteCount) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricNfsServerIoWriteCount(cfg MetricConfig) metricNfsServerIoWriteCount {
-	m := metricNfsServerIoWriteCount{config: cfg}
+func newMetricNfsServerIo(cfg MetricConfig) metricNfsServerIo {
+	m := metricNfsServerIo{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -733,12 +572,13 @@ type metricNfsServerNetCount struct {
 // init fills nfs.server.net.count metric with initial data.
 func (m *metricNfsServerNetCount) init() {
 	m.data.SetName("nfs.server.net.count")
-	m.data.SetDescription("Reports the count of kernel NFS server network requests handled")
+	m.data.SetDescription("Reports the count of kernel NFS server TCP segments and UDP datagrams handled.")
 	m.data.SetUnit("{request}")
 	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricNfsServerNetCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricNfsServerNetCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, networkTransportAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -746,6 +586,7 @@ func (m *metricNfsServerNetCount) recordDataPoint(start pcommon.Timestamp, ts pc
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
+	dp.Attributes().PutStr("network.transport", networkTransportAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -773,21 +614,21 @@ func newMetricNfsServerNetCount(cfg MetricConfig) metricNfsServerNetCount {
 	return m
 }
 
-type metricNfsServerNetTCPConnectionCount struct {
+type metricNfsServerNetTCPConnectionAccepted struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills nfs.server.net.tcp.connection.count metric with initial data.
-func (m *metricNfsServerNetTCPConnectionCount) init() {
-	m.data.SetName("nfs.server.net.tcp.connection.count")
+// init fills nfs.server.net.tcp.connection.accepted metric with initial data.
+func (m *metricNfsServerNetTCPConnectionAccepted) init() {
+	m.data.SetName("nfs.server.net.tcp.connection.accepted")
 	m.data.SetDescription("Reports the count of kernel NFS server TCP connections accepted")
 	m.data.SetUnit("{connection}")
 	m.data.SetEmptyGauge()
 }
 
-func (m *metricNfsServerNetTCPConnectionCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricNfsServerNetTCPConnectionAccepted) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -798,14 +639,14 @@ func (m *metricNfsServerNetTCPConnectionCount) recordDataPoint(start pcommon.Tim
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricNfsServerNetTCPConnectionCount) updateCapacity() {
+func (m *metricNfsServerNetTCPConnectionAccepted) updateCapacity() {
 	if m.data.Gauge().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricNfsServerNetTCPConnectionCount) emit(metrics pmetric.MetricSlice) {
+func (m *metricNfsServerNetTCPConnectionAccepted) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -813,106 +654,8 @@ func (m *metricNfsServerNetTCPConnectionCount) emit(metrics pmetric.MetricSlice)
 	}
 }
 
-func newMetricNfsServerNetTCPConnectionCount(cfg MetricConfig) metricNfsServerNetTCPConnectionCount {
-	m := metricNfsServerNetTCPConnectionCount{config: cfg}
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricNfsServerNetTCPCount struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills nfs.server.net.tcp.count metric with initial data.
-func (m *metricNfsServerNetTCPCount) init() {
-	m.data.SetName("nfs.server.net.tcp.count")
-	m.data.SetDescription("Reports the count of kernel NFS server TCP segments handled")
-	m.data.SetUnit("{segment}")
-	m.data.SetEmptyGauge()
-}
-
-func (m *metricNfsServerNetTCPCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricNfsServerNetTCPCount) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricNfsServerNetTCPCount) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricNfsServerNetTCPCount(cfg MetricConfig) metricNfsServerNetTCPCount {
-	m := metricNfsServerNetTCPCount{config: cfg}
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricNfsServerNetUDPCount struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills nfs.server.net.udp.count metric with initial data.
-func (m *metricNfsServerNetUDPCount) init() {
-	m.data.SetName("nfs.server.net.udp.count")
-	m.data.SetDescription("Reports the count of kernel NFS server UDP datagrams handled")
-	m.data.SetUnit("{datagram}")
-	m.data.SetEmptyGauge()
-}
-
-func (m *metricNfsServerNetUDPCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricNfsServerNetUDPCount) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricNfsServerNetUDPCount) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricNfsServerNetUDPCount(cfg MetricConfig) metricNfsServerNetUDPCount {
-	m := metricNfsServerNetUDPCount{config: cfg}
+func newMetricNfsServerNetTCPConnectionAccepted(cfg MetricConfig) metricNfsServerNetTCPConnectionAccepted {
+	m := metricNfsServerNetTCPConnectionAccepted{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -935,7 +678,7 @@ func (m *metricNfsServerOperationCount) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricNfsServerOperationCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, rpcOncVersionAttributeValue int64, rpcNfsOperationNameAttributeValue string) {
+func (m *metricNfsServerOperationCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oncRPCVersionAttributeValue int64, nfsOperationNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -943,8 +686,8 @@ func (m *metricNfsServerOperationCount) recordDataPoint(start pcommon.Timestamp,
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutInt("rpc.onc.version", rpcOncVersionAttributeValue)
-	dp.Attributes().PutStr("rpc.nfs.operation.name", rpcNfsOperationNameAttributeValue)
+	dp.Attributes().PutInt("onc_rpc.version", oncRPCVersionAttributeValue)
+	dp.Attributes().PutStr("nfs.operation.name", nfsOperationNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -981,13 +724,13 @@ type metricNfsServerProcedureCount struct {
 // init fills nfs.server.procedure.count metric with initial data.
 func (m *metricNfsServerProcedureCount) init() {
 	m.data.SetName("nfs.server.procedure.count")
-	m.data.SetDescription("Reports the count of kernel NFS client procedures")
+	m.data.SetDescription("Reports the count of kernel NFS server procedures")
 	m.data.SetUnit("{procedure}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricNfsServerProcedureCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, rpcOncVersionAttributeValue int64, rpcOncProcedureNameAttributeValue string) {
+func (m *metricNfsServerProcedureCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oncRPCVersionAttributeValue int64, oncRPCProcedureNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -995,8 +738,8 @@ func (m *metricNfsServerProcedureCount) recordDataPoint(start pcommon.Timestamp,
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutInt("rpc.onc.version", rpcOncVersionAttributeValue)
-	dp.Attributes().PutStr("rpc.onc.procedure.name", rpcOncProcedureNameAttributeValue)
+	dp.Attributes().PutInt("onc_rpc.version", oncRPCVersionAttributeValue)
+	dp.Attributes().PutStr("onc_rpc.procedure.name", oncRPCProcedureNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1024,168 +767,22 @@ func newMetricNfsServerProcedureCount(cfg MetricConfig) metricNfsServerProcedure
 	return m
 }
 
-type metricNfsServerRepcacheHits struct {
+type metricNfsServerRepcacheRequests struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills nfs.server.repcache.hits metric with initial data.
-func (m *metricNfsServerRepcacheHits) init() {
-	m.data.SetName("nfs.server.repcache.hits")
-	m.data.SetDescription("Reports the kernel NFS server request reply cache hit count")
-	m.data.SetUnit("{hit}")
-	m.data.SetEmptyGauge()
-}
-
-func (m *metricNfsServerRepcacheHits) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricNfsServerRepcacheHits) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricNfsServerRepcacheHits) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricNfsServerRepcacheHits(cfg MetricConfig) metricNfsServerRepcacheHits {
-	m := metricNfsServerRepcacheHits{config: cfg}
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricNfsServerRepcacheMisses struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills nfs.server.repcache.misses metric with initial data.
-func (m *metricNfsServerRepcacheMisses) init() {
-	m.data.SetName("nfs.server.repcache.misses")
-	m.data.SetDescription("Reports the kernel NFS server request reply cache miss count")
-	m.data.SetUnit("{miss}")
-	m.data.SetEmptyGauge()
-}
-
-func (m *metricNfsServerRepcacheMisses) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricNfsServerRepcacheMisses) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricNfsServerRepcacheMisses) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricNfsServerRepcacheMisses(cfg MetricConfig) metricNfsServerRepcacheMisses {
-	m := metricNfsServerRepcacheMisses{config: cfg}
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricNfsServerRepcacheNocache struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills nfs.server.repcache.nocache metric with initial data.
-func (m *metricNfsServerRepcacheNocache) init() {
-	m.data.SetName("nfs.server.repcache.nocache")
-	m.data.SetDescription("Reports the count of kernel NFS server request replies that are uncacheable")
-	m.data.SetUnit("{miss}")
-	m.data.SetEmptyGauge()
-}
-
-func (m *metricNfsServerRepcacheNocache) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricNfsServerRepcacheNocache) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricNfsServerRepcacheNocache) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricNfsServerRepcacheNocache(cfg MetricConfig) metricNfsServerRepcacheNocache {
-	m := metricNfsServerRepcacheNocache{config: cfg}
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricNfsServerRPCBadCount struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills nfs.server.rpc.bad.count metric with initial data.
-func (m *metricNfsServerRPCBadCount) init() {
-	m.data.SetName("nfs.server.rpc.bad.count")
-	m.data.SetDescription("Reports the total count of kernel NFS server bad RPCs")
+// init fills nfs.server.repcache.requests metric with initial data.
+func (m *metricNfsServerRepcacheRequests) init() {
+	m.data.SetName("nfs.server.repcache.requests")
+	m.data.SetDescription("Reports the kernel NFS server reply cache request count by cache hit status.")
 	m.data.SetUnit("{request}")
 	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricNfsServerRPCBadCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricNfsServerRepcacheRequests) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, nfsServerRepcacheStatusAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1193,17 +790,18 @@ func (m *metricNfsServerRPCBadCount) recordDataPoint(start pcommon.Timestamp, ts
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
+	dp.Attributes().PutStr("nfs.server.repcache.status", nfsServerRepcacheStatusAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricNfsServerRPCBadCount) updateCapacity() {
+func (m *metricNfsServerRepcacheRequests) updateCapacity() {
 	if m.data.Gauge().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricNfsServerRPCBadCount) emit(metrics pmetric.MetricSlice) {
+func (m *metricNfsServerRepcacheRequests) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -1211,155 +809,8 @@ func (m *metricNfsServerRPCBadCount) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricNfsServerRPCBadCount(cfg MetricConfig) metricNfsServerRPCBadCount {
-	m := metricNfsServerRPCBadCount{config: cfg}
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricNfsServerRPCBadauthCount struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills nfs.server.rpc.badauth.count metric with initial data.
-func (m *metricNfsServerRPCBadauthCount) init() {
-	m.data.SetName("nfs.server.rpc.badauth.count")
-	m.data.SetDescription("Reports the total count of kernel NFS server badly authenticated RPCs")
-	m.data.SetUnit("{request}")
-	m.data.SetEmptyGauge()
-}
-
-func (m *metricNfsServerRPCBadauthCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricNfsServerRPCBadauthCount) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricNfsServerRPCBadauthCount) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricNfsServerRPCBadauthCount(cfg MetricConfig) metricNfsServerRPCBadauthCount {
-	m := metricNfsServerRPCBadauthCount{config: cfg}
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricNfsServerRPCBadclientCount struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills nfs.server.rpc.badclient.count metric with initial data.
-func (m *metricNfsServerRPCBadclientCount) init() {
-	m.data.SetName("nfs.server.rpc.badclient.count")
-	m.data.SetDescription("Reports the total count of kernel NFS server unauthorized client RPCs")
-	m.data.SetUnit("{request}")
-	m.data.SetEmptyGauge()
-}
-
-func (m *metricNfsServerRPCBadclientCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricNfsServerRPCBadclientCount) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricNfsServerRPCBadclientCount) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricNfsServerRPCBadclientCount(cfg MetricConfig) metricNfsServerRPCBadclientCount {
-	m := metricNfsServerRPCBadclientCount{config: cfg}
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricNfsServerRPCBadfmtCount struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills nfs.server.rpc.badfmt.count metric with initial data.
-func (m *metricNfsServerRPCBadfmtCount) init() {
-	m.data.SetName("nfs.server.rpc.badfmt.count")
-	m.data.SetDescription("Reports the total count of kernel NFS server badly formatted RPCs")
-	m.data.SetUnit("{request}")
-	m.data.SetEmptyGauge()
-}
-
-func (m *metricNfsServerRPCBadfmtCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricNfsServerRPCBadfmtCount) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricNfsServerRPCBadfmtCount) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricNfsServerRPCBadfmtCount(cfg MetricConfig) metricNfsServerRPCBadfmtCount {
-	m := metricNfsServerRPCBadfmtCount{config: cfg}
+func newMetricNfsServerRepcacheRequests(cfg MetricConfig) metricNfsServerRepcacheRequests {
+	m := metricNfsServerRepcacheRequests{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1376,12 +827,13 @@ type metricNfsServerRPCCount struct {
 // init fills nfs.server.rpc.count metric with initial data.
 func (m *metricNfsServerRPCCount) init() {
 	m.data.SetName("nfs.server.rpc.count")
-	m.data.SetDescription("Reports the count of kernel NFS server RPCs handled")
+	m.data.SetDescription("Reports the count of kernel NFS server RPCs handled.")
 	m.data.SetUnit("{request}")
 	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricNfsServerRPCCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricNfsServerRPCCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, errorTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1389,6 +841,7 @@ func (m *metricNfsServerRPCCount) recordDataPoint(start pcommon.Timestamp, ts pc
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
+	dp.Attributes().PutStr("error.type", errorTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1468,38 +921,27 @@ func newMetricNfsServerThreadCount(cfg MetricConfig) metricNfsServerThreadCount 
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	config                               MetricsBuilderConfig // config of the metrics builder.
-	startTime                            pcommon.Timestamp    // start time that will be applied to all recorded data points.
-	metricsCapacity                      int                  // maximum observed number of metrics per resource.
-	metricsBuffer                        pmetric.Metrics      // accumulates metrics data before emitting.
-	buildInfo                            component.BuildInfo  // contains version information.
-	metricNfsClientNetCount              metricNfsClientNetCount
-	metricNfsClientNetTCPConnectionCount metricNfsClientNetTCPConnectionCount
-	metricNfsClientNetTCPCount           metricNfsClientNetTCPCount
-	metricNfsClientNetUDPCount           metricNfsClientNetUDPCount
-	metricNfsClientOperationCount        metricNfsClientOperationCount
-	metricNfsClientProcedureCount        metricNfsClientProcedureCount
-	metricNfsClientRPCAuthrefreshCount   metricNfsClientRPCAuthrefreshCount
-	metricNfsClientRPCCount              metricNfsClientRPCCount
-	metricNfsClientRPCRetransmitCount    metricNfsClientRPCRetransmitCount
-	metricNfsServerFhStaleCount          metricNfsServerFhStaleCount
-	metricNfsServerIoReadCount           metricNfsServerIoReadCount
-	metricNfsServerIoWriteCount          metricNfsServerIoWriteCount
-	metricNfsServerNetCount              metricNfsServerNetCount
-	metricNfsServerNetTCPConnectionCount metricNfsServerNetTCPConnectionCount
-	metricNfsServerNetTCPCount           metricNfsServerNetTCPCount
-	metricNfsServerNetUDPCount           metricNfsServerNetUDPCount
-	metricNfsServerOperationCount        metricNfsServerOperationCount
-	metricNfsServerProcedureCount        metricNfsServerProcedureCount
-	metricNfsServerRepcacheHits          metricNfsServerRepcacheHits
-	metricNfsServerRepcacheMisses        metricNfsServerRepcacheMisses
-	metricNfsServerRepcacheNocache       metricNfsServerRepcacheNocache
-	metricNfsServerRPCBadCount           metricNfsServerRPCBadCount
-	metricNfsServerRPCBadauthCount       metricNfsServerRPCBadauthCount
-	metricNfsServerRPCBadclientCount     metricNfsServerRPCBadclientCount
-	metricNfsServerRPCBadfmtCount        metricNfsServerRPCBadfmtCount
-	metricNfsServerRPCCount              metricNfsServerRPCCount
-	metricNfsServerThreadCount           metricNfsServerThreadCount
+	config                                  MetricsBuilderConfig // config of the metrics builder.
+	startTime                               pcommon.Timestamp    // start time that will be applied to all recorded data points.
+	metricsCapacity                         int                  // maximum observed number of metrics per resource.
+	metricsBuffer                           pmetric.Metrics      // accumulates metrics data before emitting.
+	buildInfo                               component.BuildInfo  // contains version information.
+	metricNfsClientNetCount                 metricNfsClientNetCount
+	metricNfsClientNetTCPConnectionAccepted metricNfsClientNetTCPConnectionAccepted
+	metricNfsClientOperationCount           metricNfsClientOperationCount
+	metricNfsClientProcedureCount           metricNfsClientProcedureCount
+	metricNfsClientRPCAuthrefreshCount      metricNfsClientRPCAuthrefreshCount
+	metricNfsClientRPCCount                 metricNfsClientRPCCount
+	metricNfsClientRPCRetransmitCount       metricNfsClientRPCRetransmitCount
+	metricNfsServerFhStaleCount             metricNfsServerFhStaleCount
+	metricNfsServerIo                       metricNfsServerIo
+	metricNfsServerNetCount                 metricNfsServerNetCount
+	metricNfsServerNetTCPConnectionAccepted metricNfsServerNetTCPConnectionAccepted
+	metricNfsServerOperationCount           metricNfsServerOperationCount
+	metricNfsServerProcedureCount           metricNfsServerProcedureCount
+	metricNfsServerRepcacheRequests         metricNfsServerRepcacheRequests
+	metricNfsServerRPCCount                 metricNfsServerRPCCount
+	metricNfsServerThreadCount              metricNfsServerThreadCount
 }
 
 // MetricBuilderOption applies changes to default metrics builder.
@@ -1521,37 +963,26 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 }
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings scraper.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		config:                               mbc,
-		startTime:                            pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:                        pmetric.NewMetrics(),
-		buildInfo:                            settings.BuildInfo,
-		metricNfsClientNetCount:              newMetricNfsClientNetCount(mbc.Metrics.NfsClientNetCount),
-		metricNfsClientNetTCPConnectionCount: newMetricNfsClientNetTCPConnectionCount(mbc.Metrics.NfsClientNetTCPConnectionCount),
-		metricNfsClientNetTCPCount:           newMetricNfsClientNetTCPCount(mbc.Metrics.NfsClientNetTCPCount),
-		metricNfsClientNetUDPCount:           newMetricNfsClientNetUDPCount(mbc.Metrics.NfsClientNetUDPCount),
-		metricNfsClientOperationCount:        newMetricNfsClientOperationCount(mbc.Metrics.NfsClientOperationCount),
-		metricNfsClientProcedureCount:        newMetricNfsClientProcedureCount(mbc.Metrics.NfsClientProcedureCount),
-		metricNfsClientRPCAuthrefreshCount:   newMetricNfsClientRPCAuthrefreshCount(mbc.Metrics.NfsClientRPCAuthrefreshCount),
-		metricNfsClientRPCCount:              newMetricNfsClientRPCCount(mbc.Metrics.NfsClientRPCCount),
-		metricNfsClientRPCRetransmitCount:    newMetricNfsClientRPCRetransmitCount(mbc.Metrics.NfsClientRPCRetransmitCount),
-		metricNfsServerFhStaleCount:          newMetricNfsServerFhStaleCount(mbc.Metrics.NfsServerFhStaleCount),
-		metricNfsServerIoReadCount:           newMetricNfsServerIoReadCount(mbc.Metrics.NfsServerIoReadCount),
-		metricNfsServerIoWriteCount:          newMetricNfsServerIoWriteCount(mbc.Metrics.NfsServerIoWriteCount),
-		metricNfsServerNetCount:              newMetricNfsServerNetCount(mbc.Metrics.NfsServerNetCount),
-		metricNfsServerNetTCPConnectionCount: newMetricNfsServerNetTCPConnectionCount(mbc.Metrics.NfsServerNetTCPConnectionCount),
-		metricNfsServerNetTCPCount:           newMetricNfsServerNetTCPCount(mbc.Metrics.NfsServerNetTCPCount),
-		metricNfsServerNetUDPCount:           newMetricNfsServerNetUDPCount(mbc.Metrics.NfsServerNetUDPCount),
-		metricNfsServerOperationCount:        newMetricNfsServerOperationCount(mbc.Metrics.NfsServerOperationCount),
-		metricNfsServerProcedureCount:        newMetricNfsServerProcedureCount(mbc.Metrics.NfsServerProcedureCount),
-		metricNfsServerRepcacheHits:          newMetricNfsServerRepcacheHits(mbc.Metrics.NfsServerRepcacheHits),
-		metricNfsServerRepcacheMisses:        newMetricNfsServerRepcacheMisses(mbc.Metrics.NfsServerRepcacheMisses),
-		metricNfsServerRepcacheNocache:       newMetricNfsServerRepcacheNocache(mbc.Metrics.NfsServerRepcacheNocache),
-		metricNfsServerRPCBadCount:           newMetricNfsServerRPCBadCount(mbc.Metrics.NfsServerRPCBadCount),
-		metricNfsServerRPCBadauthCount:       newMetricNfsServerRPCBadauthCount(mbc.Metrics.NfsServerRPCBadauthCount),
-		metricNfsServerRPCBadclientCount:     newMetricNfsServerRPCBadclientCount(mbc.Metrics.NfsServerRPCBadclientCount),
-		metricNfsServerRPCBadfmtCount:        newMetricNfsServerRPCBadfmtCount(mbc.Metrics.NfsServerRPCBadfmtCount),
-		metricNfsServerRPCCount:              newMetricNfsServerRPCCount(mbc.Metrics.NfsServerRPCCount),
-		metricNfsServerThreadCount:           newMetricNfsServerThreadCount(mbc.Metrics.NfsServerThreadCount),
+		config:                                  mbc,
+		startTime:                               pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:                           pmetric.NewMetrics(),
+		buildInfo:                               settings.BuildInfo,
+		metricNfsClientNetCount:                 newMetricNfsClientNetCount(mbc.Metrics.NfsClientNetCount),
+		metricNfsClientNetTCPConnectionAccepted: newMetricNfsClientNetTCPConnectionAccepted(mbc.Metrics.NfsClientNetTCPConnectionAccepted),
+		metricNfsClientOperationCount:           newMetricNfsClientOperationCount(mbc.Metrics.NfsClientOperationCount),
+		metricNfsClientProcedureCount:           newMetricNfsClientProcedureCount(mbc.Metrics.NfsClientProcedureCount),
+		metricNfsClientRPCAuthrefreshCount:      newMetricNfsClientRPCAuthrefreshCount(mbc.Metrics.NfsClientRPCAuthrefreshCount),
+		metricNfsClientRPCCount:                 newMetricNfsClientRPCCount(mbc.Metrics.NfsClientRPCCount),
+		metricNfsClientRPCRetransmitCount:       newMetricNfsClientRPCRetransmitCount(mbc.Metrics.NfsClientRPCRetransmitCount),
+		metricNfsServerFhStaleCount:             newMetricNfsServerFhStaleCount(mbc.Metrics.NfsServerFhStaleCount),
+		metricNfsServerIo:                       newMetricNfsServerIo(mbc.Metrics.NfsServerIo),
+		metricNfsServerNetCount:                 newMetricNfsServerNetCount(mbc.Metrics.NfsServerNetCount),
+		metricNfsServerNetTCPConnectionAccepted: newMetricNfsServerNetTCPConnectionAccepted(mbc.Metrics.NfsServerNetTCPConnectionAccepted),
+		metricNfsServerOperationCount:           newMetricNfsServerOperationCount(mbc.Metrics.NfsServerOperationCount),
+		metricNfsServerProcedureCount:           newMetricNfsServerProcedureCount(mbc.Metrics.NfsServerProcedureCount),
+		metricNfsServerRepcacheRequests:         newMetricNfsServerRepcacheRequests(mbc.Metrics.NfsServerRepcacheRequests),
+		metricNfsServerRPCCount:                 newMetricNfsServerRPCCount(mbc.Metrics.NfsServerRPCCount),
+		metricNfsServerThreadCount:              newMetricNfsServerThreadCount(mbc.Metrics.NfsServerThreadCount),
 	}
 
 	for _, op := range options {
@@ -1619,30 +1050,19 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricNfsClientNetCount.emit(ils.Metrics())
-	mb.metricNfsClientNetTCPConnectionCount.emit(ils.Metrics())
-	mb.metricNfsClientNetTCPCount.emit(ils.Metrics())
-	mb.metricNfsClientNetUDPCount.emit(ils.Metrics())
+	mb.metricNfsClientNetTCPConnectionAccepted.emit(ils.Metrics())
 	mb.metricNfsClientOperationCount.emit(ils.Metrics())
 	mb.metricNfsClientProcedureCount.emit(ils.Metrics())
 	mb.metricNfsClientRPCAuthrefreshCount.emit(ils.Metrics())
 	mb.metricNfsClientRPCCount.emit(ils.Metrics())
 	mb.metricNfsClientRPCRetransmitCount.emit(ils.Metrics())
 	mb.metricNfsServerFhStaleCount.emit(ils.Metrics())
-	mb.metricNfsServerIoReadCount.emit(ils.Metrics())
-	mb.metricNfsServerIoWriteCount.emit(ils.Metrics())
+	mb.metricNfsServerIo.emit(ils.Metrics())
 	mb.metricNfsServerNetCount.emit(ils.Metrics())
-	mb.metricNfsServerNetTCPConnectionCount.emit(ils.Metrics())
-	mb.metricNfsServerNetTCPCount.emit(ils.Metrics())
-	mb.metricNfsServerNetUDPCount.emit(ils.Metrics())
+	mb.metricNfsServerNetTCPConnectionAccepted.emit(ils.Metrics())
 	mb.metricNfsServerOperationCount.emit(ils.Metrics())
 	mb.metricNfsServerProcedureCount.emit(ils.Metrics())
-	mb.metricNfsServerRepcacheHits.emit(ils.Metrics())
-	mb.metricNfsServerRepcacheMisses.emit(ils.Metrics())
-	mb.metricNfsServerRepcacheNocache.emit(ils.Metrics())
-	mb.metricNfsServerRPCBadCount.emit(ils.Metrics())
-	mb.metricNfsServerRPCBadauthCount.emit(ils.Metrics())
-	mb.metricNfsServerRPCBadclientCount.emit(ils.Metrics())
-	mb.metricNfsServerRPCBadfmtCount.emit(ils.Metrics())
+	mb.metricNfsServerRepcacheRequests.emit(ils.Metrics())
 	mb.metricNfsServerRPCCount.emit(ils.Metrics())
 	mb.metricNfsServerThreadCount.emit(ils.Metrics())
 
@@ -1667,33 +1087,23 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 }
 
 // RecordNfsClientNetCountDataPoint adds a data point to nfs.client.net.count metric.
-func (mb *MetricsBuilder) RecordNfsClientNetCountDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricNfsClientNetCount.recordDataPoint(mb.startTime, ts, val)
+func (mb *MetricsBuilder) RecordNfsClientNetCountDataPoint(ts pcommon.Timestamp, val int64, networkTransportAttributeValue string) {
+	mb.metricNfsClientNetCount.recordDataPoint(mb.startTime, ts, val, networkTransportAttributeValue)
 }
 
-// RecordNfsClientNetTCPConnectionCountDataPoint adds a data point to nfs.client.net.tcp.connection.count metric.
-func (mb *MetricsBuilder) RecordNfsClientNetTCPConnectionCountDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricNfsClientNetTCPConnectionCount.recordDataPoint(mb.startTime, ts, val)
-}
-
-// RecordNfsClientNetTCPCountDataPoint adds a data point to nfs.client.net.tcp.count metric.
-func (mb *MetricsBuilder) RecordNfsClientNetTCPCountDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricNfsClientNetTCPCount.recordDataPoint(mb.startTime, ts, val)
-}
-
-// RecordNfsClientNetUDPCountDataPoint adds a data point to nfs.client.net.udp.count metric.
-func (mb *MetricsBuilder) RecordNfsClientNetUDPCountDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricNfsClientNetUDPCount.recordDataPoint(mb.startTime, ts, val)
+// RecordNfsClientNetTCPConnectionAcceptedDataPoint adds a data point to nfs.client.net.tcp.connection.accepted metric.
+func (mb *MetricsBuilder) RecordNfsClientNetTCPConnectionAcceptedDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricNfsClientNetTCPConnectionAccepted.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordNfsClientOperationCountDataPoint adds a data point to nfs.client.operation.count metric.
-func (mb *MetricsBuilder) RecordNfsClientOperationCountDataPoint(ts pcommon.Timestamp, val int64, rpcOncVersionAttributeValue int64, rpcNfsOperationNameAttributeValue string) {
-	mb.metricNfsClientOperationCount.recordDataPoint(mb.startTime, ts, val, rpcOncVersionAttributeValue, rpcNfsOperationNameAttributeValue)
+func (mb *MetricsBuilder) RecordNfsClientOperationCountDataPoint(ts pcommon.Timestamp, val int64, oncRPCVersionAttributeValue int64, nfsOperationNameAttributeValue string) {
+	mb.metricNfsClientOperationCount.recordDataPoint(mb.startTime, ts, val, oncRPCVersionAttributeValue, nfsOperationNameAttributeValue)
 }
 
 // RecordNfsClientProcedureCountDataPoint adds a data point to nfs.client.procedure.count metric.
-func (mb *MetricsBuilder) RecordNfsClientProcedureCountDataPoint(ts pcommon.Timestamp, val int64, rpcOncVersionAttributeValue int64, rpcOncProcedureNameAttributeValue string) {
-	mb.metricNfsClientProcedureCount.recordDataPoint(mb.startTime, ts, val, rpcOncVersionAttributeValue, rpcOncProcedureNameAttributeValue)
+func (mb *MetricsBuilder) RecordNfsClientProcedureCountDataPoint(ts pcommon.Timestamp, val int64, oncRPCVersionAttributeValue int64, oncRPCProcedureNameAttributeValue string) {
+	mb.metricNfsClientProcedureCount.recordDataPoint(mb.startTime, ts, val, oncRPCVersionAttributeValue, oncRPCProcedureNameAttributeValue)
 }
 
 // RecordNfsClientRPCAuthrefreshCountDataPoint adds a data point to nfs.client.rpc.authrefresh.count metric.
@@ -1716,84 +1126,39 @@ func (mb *MetricsBuilder) RecordNfsServerFhStaleCountDataPoint(ts pcommon.Timest
 	mb.metricNfsServerFhStaleCount.recordDataPoint(mb.startTime, ts, val)
 }
 
-// RecordNfsServerIoReadCountDataPoint adds a data point to nfs.server.io.read.count metric.
-func (mb *MetricsBuilder) RecordNfsServerIoReadCountDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricNfsServerIoReadCount.recordDataPoint(mb.startTime, ts, val)
-}
-
-// RecordNfsServerIoWriteCountDataPoint adds a data point to nfs.server.io.write.count metric.
-func (mb *MetricsBuilder) RecordNfsServerIoWriteCountDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricNfsServerIoWriteCount.recordDataPoint(mb.startTime, ts, val)
+// RecordNfsServerIoDataPoint adds a data point to nfs.server.io metric.
+func (mb *MetricsBuilder) RecordNfsServerIoDataPoint(ts pcommon.Timestamp, val int64, networkIoDirectionAttributeValue AttributeNetworkIoDirection) {
+	mb.metricNfsServerIo.recordDataPoint(mb.startTime, ts, val, networkIoDirectionAttributeValue.String())
 }
 
 // RecordNfsServerNetCountDataPoint adds a data point to nfs.server.net.count metric.
-func (mb *MetricsBuilder) RecordNfsServerNetCountDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricNfsServerNetCount.recordDataPoint(mb.startTime, ts, val)
+func (mb *MetricsBuilder) RecordNfsServerNetCountDataPoint(ts pcommon.Timestamp, val int64, networkTransportAttributeValue string) {
+	mb.metricNfsServerNetCount.recordDataPoint(mb.startTime, ts, val, networkTransportAttributeValue)
 }
 
-// RecordNfsServerNetTCPConnectionCountDataPoint adds a data point to nfs.server.net.tcp.connection.count metric.
-func (mb *MetricsBuilder) RecordNfsServerNetTCPConnectionCountDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricNfsServerNetTCPConnectionCount.recordDataPoint(mb.startTime, ts, val)
-}
-
-// RecordNfsServerNetTCPCountDataPoint adds a data point to nfs.server.net.tcp.count metric.
-func (mb *MetricsBuilder) RecordNfsServerNetTCPCountDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricNfsServerNetTCPCount.recordDataPoint(mb.startTime, ts, val)
-}
-
-// RecordNfsServerNetUDPCountDataPoint adds a data point to nfs.server.net.udp.count metric.
-func (mb *MetricsBuilder) RecordNfsServerNetUDPCountDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricNfsServerNetUDPCount.recordDataPoint(mb.startTime, ts, val)
+// RecordNfsServerNetTCPConnectionAcceptedDataPoint adds a data point to nfs.server.net.tcp.connection.accepted metric.
+func (mb *MetricsBuilder) RecordNfsServerNetTCPConnectionAcceptedDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricNfsServerNetTCPConnectionAccepted.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordNfsServerOperationCountDataPoint adds a data point to nfs.server.operation.count metric.
-func (mb *MetricsBuilder) RecordNfsServerOperationCountDataPoint(ts pcommon.Timestamp, val int64, rpcOncVersionAttributeValue int64, rpcNfsOperationNameAttributeValue string) {
-	mb.metricNfsServerOperationCount.recordDataPoint(mb.startTime, ts, val, rpcOncVersionAttributeValue, rpcNfsOperationNameAttributeValue)
+func (mb *MetricsBuilder) RecordNfsServerOperationCountDataPoint(ts pcommon.Timestamp, val int64, oncRPCVersionAttributeValue int64, nfsOperationNameAttributeValue string) {
+	mb.metricNfsServerOperationCount.recordDataPoint(mb.startTime, ts, val, oncRPCVersionAttributeValue, nfsOperationNameAttributeValue)
 }
 
 // RecordNfsServerProcedureCountDataPoint adds a data point to nfs.server.procedure.count metric.
-func (mb *MetricsBuilder) RecordNfsServerProcedureCountDataPoint(ts pcommon.Timestamp, val int64, rpcOncVersionAttributeValue int64, rpcOncProcedureNameAttributeValue string) {
-	mb.metricNfsServerProcedureCount.recordDataPoint(mb.startTime, ts, val, rpcOncVersionAttributeValue, rpcOncProcedureNameAttributeValue)
+func (mb *MetricsBuilder) RecordNfsServerProcedureCountDataPoint(ts pcommon.Timestamp, val int64, oncRPCVersionAttributeValue int64, oncRPCProcedureNameAttributeValue string) {
+	mb.metricNfsServerProcedureCount.recordDataPoint(mb.startTime, ts, val, oncRPCVersionAttributeValue, oncRPCProcedureNameAttributeValue)
 }
 
-// RecordNfsServerRepcacheHitsDataPoint adds a data point to nfs.server.repcache.hits metric.
-func (mb *MetricsBuilder) RecordNfsServerRepcacheHitsDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricNfsServerRepcacheHits.recordDataPoint(mb.startTime, ts, val)
-}
-
-// RecordNfsServerRepcacheMissesDataPoint adds a data point to nfs.server.repcache.misses metric.
-func (mb *MetricsBuilder) RecordNfsServerRepcacheMissesDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricNfsServerRepcacheMisses.recordDataPoint(mb.startTime, ts, val)
-}
-
-// RecordNfsServerRepcacheNocacheDataPoint adds a data point to nfs.server.repcache.nocache metric.
-func (mb *MetricsBuilder) RecordNfsServerRepcacheNocacheDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricNfsServerRepcacheNocache.recordDataPoint(mb.startTime, ts, val)
-}
-
-// RecordNfsServerRPCBadCountDataPoint adds a data point to nfs.server.rpc.bad.count metric.
-func (mb *MetricsBuilder) RecordNfsServerRPCBadCountDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricNfsServerRPCBadCount.recordDataPoint(mb.startTime, ts, val)
-}
-
-// RecordNfsServerRPCBadauthCountDataPoint adds a data point to nfs.server.rpc.badauth.count metric.
-func (mb *MetricsBuilder) RecordNfsServerRPCBadauthCountDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricNfsServerRPCBadauthCount.recordDataPoint(mb.startTime, ts, val)
-}
-
-// RecordNfsServerRPCBadclientCountDataPoint adds a data point to nfs.server.rpc.badclient.count metric.
-func (mb *MetricsBuilder) RecordNfsServerRPCBadclientCountDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricNfsServerRPCBadclientCount.recordDataPoint(mb.startTime, ts, val)
-}
-
-// RecordNfsServerRPCBadfmtCountDataPoint adds a data point to nfs.server.rpc.badfmt.count metric.
-func (mb *MetricsBuilder) RecordNfsServerRPCBadfmtCountDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricNfsServerRPCBadfmtCount.recordDataPoint(mb.startTime, ts, val)
+// RecordNfsServerRepcacheRequestsDataPoint adds a data point to nfs.server.repcache.requests metric.
+func (mb *MetricsBuilder) RecordNfsServerRepcacheRequestsDataPoint(ts pcommon.Timestamp, val int64, nfsServerRepcacheStatusAttributeValue string) {
+	mb.metricNfsServerRepcacheRequests.recordDataPoint(mb.startTime, ts, val, nfsServerRepcacheStatusAttributeValue)
 }
 
 // RecordNfsServerRPCCountDataPoint adds a data point to nfs.server.rpc.count metric.
-func (mb *MetricsBuilder) RecordNfsServerRPCCountDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricNfsServerRPCCount.recordDataPoint(mb.startTime, ts, val)
+func (mb *MetricsBuilder) RecordNfsServerRPCCountDataPoint(ts pcommon.Timestamp, val int64, errorTypeAttributeValue string) {
+	mb.metricNfsServerRPCCount.recordDataPoint(mb.startTime, ts, val, errorTypeAttributeValue)
 }
 
 // RecordNfsServerThreadCountDataPoint adds a data point to nfs.server.thread.count metric.

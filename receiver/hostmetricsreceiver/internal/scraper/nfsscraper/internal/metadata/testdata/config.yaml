@@ -3,11 +3,7 @@ all_set:
   metrics:
     nfs.client.net.count:
       enabled: true
-    nfs.client.net.tcp.connection.count:
-      enabled: true
-    nfs.client.net.tcp.count:
-      enabled: true
-    nfs.client.net.udp.count:
+    nfs.client.net.tcp.connection.accepted:
       enabled: true
     nfs.client.operation.count:
       enabled: true
@@ -21,35 +17,17 @@ all_set:
       enabled: true
     nfs.server.fh.stale.count:
       enabled: true
-    nfs.server.io.read.count:
-      enabled: true
-    nfs.server.io.write.count:
+    nfs.server.io:
       enabled: true
     nfs.server.net.count:
       enabled: true
-    nfs.server.net.tcp.connection.count:
-      enabled: true
-    nfs.server.net.tcp.count:
-      enabled: true
-    nfs.server.net.udp.count:
+    nfs.server.net.tcp.connection.accepted:
       enabled: true
     nfs.server.operation.count:
       enabled: true
     nfs.server.procedure.count:
       enabled: true
-    nfs.server.repcache.hits:
-      enabled: true
-    nfs.server.repcache.misses:
-      enabled: true
-    nfs.server.repcache.nocache:
-      enabled: true
-    nfs.server.rpc.bad.count:
-      enabled: true
-    nfs.server.rpc.badauth.count:
-      enabled: true
-    nfs.server.rpc.badclient.count:
-      enabled: true
-    nfs.server.rpc.badfmt.count:
+    nfs.server.repcache.requests:
       enabled: true
     nfs.server.rpc.count:
       enabled: true
@@ -59,11 +37,7 @@ none_set:
   metrics:
     nfs.client.net.count:
       enabled: false
-    nfs.client.net.tcp.connection.count:
-      enabled: false
-    nfs.client.net.tcp.count:
-      enabled: false
-    nfs.client.net.udp.count:
+    nfs.client.net.tcp.connection.accepted:
       enabled: false
     nfs.client.operation.count:
       enabled: false
@@ -77,35 +51,17 @@ none_set:
       enabled: false
     nfs.server.fh.stale.count:
       enabled: false
-    nfs.server.io.read.count:
-      enabled: false
-    nfs.server.io.write.count:
+    nfs.server.io:
       enabled: false
     nfs.server.net.count:
       enabled: false
-    nfs.server.net.tcp.connection.count:
-      enabled: false
-    nfs.server.net.tcp.count:
-      enabled: false
-    nfs.server.net.udp.count:
+    nfs.server.net.tcp.connection.accepted:
       enabled: false
     nfs.server.operation.count:
       enabled: false
     nfs.server.procedure.count:
       enabled: false
-    nfs.server.repcache.hits:
-      enabled: false
-    nfs.server.repcache.misses:
-      enabled: false
-    nfs.server.repcache.nocache:
-      enabled: false
-    nfs.server.rpc.bad.count:
-      enabled: false
-    nfs.server.rpc.badauth.count:
-      enabled: false
-    nfs.server.rpc.badclient.count:
-      enabled: false
-    nfs.server.rpc.badfmt.count:
+    nfs.server.repcache.requests:
       enabled: false
     nfs.server.rpc.count:
       enabled: false
