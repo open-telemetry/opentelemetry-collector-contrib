@@ -45,6 +45,22 @@ func baseTestConfig(t *testing.T) *Config {
 	return cfg
 }
 
+// NEW: Base test config with adaptive window enabled
+func baseTestConfigWithAdaptive(t *testing.T) *Config {
+	cfg := baseTestConfig(t)
+	cfg.AdaptiveWindow = &AdaptiveWindowConfig{
+		Enabled:                true,
+		MinWindowSize:          10,
+		MaxWindowSize:          200,
+		MemoryLimitMB:          32,
+		AdaptationRate:         0.2,
+		VelocityThreshold:      5.0,
+		StabilityCheckInterval: "30s",
+	}
+	require.NoError(t, cfg.Validate())
+	return cfg
+}
+
 func makeTrace() ptrace.Traces {
 	td := ptrace.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
@@ -105,6 +121,133 @@ func Test_newIsolationForestProcessor_Basic(t *testing.T) {
 
 	// Sanity: single-model by default unless models configured
 	assert.False(t, cfg.IsMultiModelMode())
+}
+
+// NEW: Test processor creation with adaptive window
+func Test_newIsolationForestProcessor_WithAdaptive(t *testing.T) {
+	cfg := baseTestConfigWithAdaptive(t)
+	logger := zaptest.NewLogger(t)
+
+	p, err := newIsolationForestProcessor(cfg, logger)
+	require.NoError(t, err)
+	require.NotNil(t, p)
+
+	t.Cleanup(func() {
+		shutdownErr := p.Shutdown(context.WithoutCancel(t.Context()))
+		require.NoError(t, shutdownErr)
+	})
+
+	// Verify adaptive window is enabled
+	assert.True(t, cfg.IsAdaptiveWindowEnabled())
+
+	// Verify default forest uses adaptive configuration
+	require.NotNil(t, p.defaultForest)
+	stats := p.defaultForest.GetStatistics()
+	assert.True(t, stats.AdaptiveEnabled, "Default forest should have adaptive enabled")
+	assert.Equal(t, 10, stats.CurrentWindowSize, "Should start with min window size")
+}
+
+// NEW: Test processor creation with disabled adaptive window
+func Test_newIsolationForestProcessor_WithDisabledAdaptive(t *testing.T) {
+	cfg := baseTestConfig(t)
+	cfg.AdaptiveWindow = &AdaptiveWindowConfig{
+		Enabled: false, // Explicitly disabled
+	}
+	logger := zaptest.NewLogger(t)
+
+	p, err := newIsolationForestProcessor(cfg, logger)
+	require.NoError(t, err)
+	require.NotNil(t, p)
+
+	t.Cleanup(func() {
+		shutdownErr := p.Shutdown(context.WithoutCancel(t.Context()))
+		require.NoError(t, shutdownErr)
+	})
+
+	// Verify adaptive window is disabled
+	assert.False(t, cfg.IsAdaptiveWindowEnabled())
+
+	// Verify default forest uses regular configuration
+	require.NotNil(t, p.defaultForest)
+	stats := p.defaultForest.GetStatistics()
+	assert.False(t, stats.AdaptiveEnabled, "Default forest should not have adaptive enabled")
+	assert.Equal(t, 64, stats.CurrentWindowSize, "Should use batch size as window size")
+}
+
+// NEW: Test multi-model processor with adaptive window
+func Test_newIsolationForestProcessor_MultiModelWithAdaptive(t *testing.T) {
+	cfg := baseTestConfigWithAdaptive(t)
+	cfg.Models = []ModelConfig{
+		{
+			Name:          "test-model-1",
+			ForestSize:    5,
+			SubsampleSize: 16,
+			Selector: map[string]string{
+				"service.name": "service-1",
+			},
+		},
+		{
+			Name:          "test-model-2",
+			ForestSize:    8,
+			SubsampleSize: 24,
+			Selector: map[string]string{
+				"service.name": "service-2",
+			},
+		},
+	}
+	logger := zaptest.NewLogger(t)
+
+	p, err := newIsolationForestProcessor(cfg, logger)
+	require.NoError(t, err)
+	require.NotNil(t, p)
+
+	t.Cleanup(func() {
+		shutdownErr := p.Shutdown(context.WithoutCancel(t.Context()))
+		require.NoError(t, shutdownErr)
+	})
+
+	// Verify multi-model mode
+	assert.True(t, cfg.IsMultiModelMode())
+	assert.Len(t, p.modelForests, 2)
+
+	// Verify each model has adaptive configuration
+	for name, forest := range p.modelForests {
+		stats := forest.GetStatistics()
+		assert.True(t, stats.AdaptiveEnabled, "Model %s should have adaptive enabled", name)
+		assert.Equal(t, 10, stats.CurrentWindowSize, "Model %s should start with min window size", name)
+	}
+}
+
+// NEW: Test enhanced logging with adaptive statistics
+func Test_performModelUpdate_WithAdaptiveStatistics(t *testing.T) {
+	cfg := baseTestConfigWithAdaptive(t)
+	logger := zaptest.NewLogger(t)
+
+	p, err := newIsolationForestProcessor(cfg, logger)
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		shutdownErr := p.Shutdown(context.WithoutCancel(t.Context()))
+		require.NoError(t, shutdownErr)
+	})
+
+	// Process some samples to generate statistics
+	features := map[string][]float64{"duration": {50.0}}
+	attrs := map[string]any{"service.name": "test"}
+
+	for i := 0; i < 5; i++ {
+		p.processFeatures(features, attrs)
+		time.Sleep(10 * time.Millisecond) // Create some velocity
+	}
+
+	// Call performModelUpdate to test enhanced logging
+	p.performModelUpdate()
+
+	// Verify statistics are reasonable
+	stats := p.defaultForest.GetStatistics()
+	assert.True(t, stats.AdaptiveEnabled)
+	assert.GreaterOrEqual(t, stats.VelocitySamples, 0.0)
+	assert.GreaterOrEqual(t, stats.MemoryUsageMB, 0.0)
 }
 
 func Test_processFeatures_SaneOutputs(t *testing.T) {
