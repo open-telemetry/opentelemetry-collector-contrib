@@ -4,7 +4,6 @@
 package nfsscraper
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -168,10 +167,10 @@ func TestScrape(t *testing.T) {
 				getNfsdStats: mockGetNfsdStats,
 			}
 
-			err := scraper.start(context.Background(), componenttest.NewNopHost())
+			err := scraper.start(t.Context(), componenttest.NewNopHost())
 			require.NoError(t, err, "Failed to initialize process scraper: %v", err)
 
-			md, err := scraper.scrape(context.Background())
+			md, err := scraper.scrape(t.Context())
 			require.NoError(t, err)
 
 			noAttrs := pcommon.NewMap()
