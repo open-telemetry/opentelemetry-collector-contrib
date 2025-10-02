@@ -28,8 +28,8 @@ CREATE TABLE IF NOT EXISTS "%s"."%s" %s (
         Attributes JSON
     ) CODEC(ZSTD(1)),
 
-    INDEX idx_res_attr_key ResourceAttributesKeys TYPE bloom_filter(0.01) GRANULARITY 1,
-    INDEX idx_span_attr_key SpanAttributesKeys TYPE bloom_filter(0.01) GRANULARITY 1,
+    INDEX idx_res_attr_keys ResourceAttributesKeys TYPE bloom_filter(0.01) GRANULARITY 1,
+    INDEX idx_span_attr_keys SpanAttributesKeys TYPE bloom_filter(0.01) GRANULARITY 1,
     INDEX idx_duration Duration TYPE minmax GRANULARITY 1
 ) ENGINE = %s
 PARTITION BY toDate(Timestamp)

@@ -9,14 +9,12 @@ INSERT INTO "%s"."%s" (
     Body,
     ResourceSchemaUrl,
     ResourceAttributes,
-    ResourceAttributesKeys,
     ScopeSchemaUrl,
     ScopeName,
     ScopeVersion,
     ScopeAttributes,
-    ScopeAttributesKeys,
-    LogAttributes,
-    LogAttributesKeys
+    LogAttributes
+    %s
 ) VALUES (
      ?,
      ?,
@@ -32,8 +30,6 @@ INSERT INTO "%s"."%s" (
      ?,
      ?,
      ?,
-     ?,
-     ?,
-     ?,
      ?
+     %s
  )

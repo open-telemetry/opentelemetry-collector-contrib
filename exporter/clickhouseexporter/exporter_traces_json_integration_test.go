@@ -6,6 +6,7 @@
 package clickhouseexporter
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -20,20 +21,37 @@ func testTracesJSONExporter(t *testing.T, endpoint string) {
 	overrideTracesTableName := func(config *Config) {
 		config.TracesTableName = "otel_traces_json"
 	}
-	exporter := newTestTracesJSONExporter(t, endpoint, overrideJSONStringSetting, overrideTracesTableName)
-	verifyExportTracesJSON(t, exporter)
+	exporter := newTestTracesJSONExporter(t, endpoint, false, overrideJSONStringSetting, overrideTracesTableName)
+	verifyExportTracesJSON(t, exporter, false)
 }
 
-func newTestTracesJSONExporter(t *testing.T, dsn string, fns ...func(*Config)) *tracesJSONExporter {
+func testTracesJSONExporterSchemaFeatures(t *testing.T, endpoint string) {
+	overrideJSONStringSetting := func(config *Config) {
+		config.ConnectionParams["output_format_native_write_json_as_string"] = "1"
+	}
+	overrideTracesTableName := func(config *Config) {
+		config.TracesTableName = "otel_traces_json_schema_features"
+	}
+	exporter := newTestTracesJSONExporter(t, endpoint, true, overrideJSONStringSetting, overrideTracesTableName)
+	verifyExportTracesJSON(t, exporter, true)
+}
+
+func newTestTracesJSONExporter(t *testing.T, dsn string, testSchemaFeatures bool, fns ...func(*Config)) *tracesJSONExporter {
 	exporter := newTracesJSONExporter(zaptest.NewLogger(t), withTestExporterConfig(fns...)(dsn))
 
 	require.NoError(t, exporter.start(t.Context(), nil))
+
+	// Tests the schema feature flags by removing newer columns. The insert logic should adapt.
+	if testSchemaFeatures {
+		exporter.schemaFeatures.AttributeKeys = false
+		exporter.renderInsertTracesJSONSQL()
+	}
 
 	t.Cleanup(func() { _ = exporter.shutdown(t.Context()) })
 	return exporter
 }
 
-func verifyExportTracesJSON(t *testing.T, exporter *tracesJSONExporter) {
+func verifyExportTracesJSON(t *testing.T, exporter *tracesJSONExporter, testSchemaFeatures bool) {
 	pushConcurrentlyNoError(t, func() error {
 		return exporter.pushTraceData(t.Context(), simpleTraces(5000))
 	})
@@ -48,11 +66,9 @@ func verifyExportTracesJSON(t *testing.T, exporter *tracesJSONExporter) {
 		SpanKind               string      `ch:"SpanKind"`
 		ServiceName            string      `ch:"ServiceName"`
 		ResourceAttributes     string      `ch:"ResourceAttributes"`
-		ResourceAttributesKeys []string    `ch:"ResourceAttributesKeys"`
 		ScopeName              string      `ch:"ScopeName"`
 		ScopeVersion           string      `ch:"ScopeVersion"`
 		SpanAttributes         string      `ch:"SpanAttributes"`
-		SpanAttributesKeys     []string    `ch:"SpanAttributesKeys"`
 		Duration               uint64      `ch:"Duration"`
 		StatusCode             string      `ch:"StatusCode"`
 		StatusMessage          string      `ch:"StatusMessage"`
@@ -63,26 +79,26 @@ func verifyExportTracesJSON(t *testing.T, exporter *tracesJSONExporter) {
 		LinksSpanID            []string    `ch:"Links.SpanId"`
 		LinksTraceState        []string    `ch:"Links.TraceState"`
 		LinksAttributes        []string    `ch:"Links.Attributes"`
+		ResourceAttributesKeys []string    `ch:"ResourceAttributesKeys"`
+		SpanAttributesKeys     []string    `ch:"SpanAttributesKeys"`
 	}
 
 	expectedTrace := trace{
-		Timestamp:              telemetryTimestamp,
-		TraceID:                "01020300000000000000000000000000",
-		SpanID:                 "0102030000000000",
-		ParentSpanID:           "0102040000000000",
-		TraceState:             "trace state",
-		SpanName:               "call db",
-		SpanKind:               "Internal",
-		ServiceName:            "test-service",
-		ResourceAttributes:     `{"service":{"name":"test-service"}}`,
-		ResourceAttributesKeys: []string{"service.name"},
-		ScopeName:              "io.opentelemetry.contrib.clickhouse",
-		ScopeVersion:           "1.0.0",
-		SpanAttributes:         `{"service":{"name":"v"}}`,
-		SpanAttributesKeys:     []string{"service.name"},
-		Duration:               60000000000,
-		StatusCode:             "Error",
-		StatusMessage:          "error",
+		Timestamp:          telemetryTimestamp,
+		TraceID:            "01020300000000000000000000000000",
+		SpanID:             "0102030000000000",
+		ParentSpanID:       "0102040000000000",
+		TraceState:         "trace state",
+		SpanName:           "call db",
+		SpanKind:           "Internal",
+		ServiceName:        "test-service",
+		ResourceAttributes: `{"service":{"name":"test-service"}}`,
+		ScopeName:          "io.opentelemetry.contrib.clickhouse",
+		ScopeVersion:       "1.0.0",
+		SpanAttributes:     `{"service":{"name":"v"}}`,
+		Duration:           60000000000,
+		StatusCode:         "Error",
+		StatusMessage:      "error",
 		EventsTimestamp: []time.Time{
 			telemetryTimestamp,
 		},
@@ -102,9 +118,16 @@ func verifyExportTracesJSON(t *testing.T, exporter *tracesJSONExporter) {
 		LinksAttributes: []string{
 			`{"k":"v"}`,
 		},
+		ResourceAttributesKeys: []string{"service.name"},
+		SpanAttributesKeys:     []string{"service.name"},
 	}
 
-	row := exporter.db.QueryRow(t.Context(), "SELECT * FROM otel_int_test.otel_traces_json")
+	if testSchemaFeatures {
+		expectedTrace.ResourceAttributesKeys = []string{}
+		expectedTrace.SpanAttributesKeys = []string{}
+	}
+
+	row := exporter.db.QueryRow(t.Context(), fmt.Sprintf("SELECT * FROM %q.%q", exporter.cfg.database(), exporter.cfg.TracesTableName))
 	require.NoError(t, row.Err())
 
 	var actualTrace trace

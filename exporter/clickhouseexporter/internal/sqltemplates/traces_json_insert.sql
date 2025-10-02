@@ -8,11 +8,9 @@ INSERT INTO "%s"."%s" (
     SpanKind,
     ServiceName,
     ResourceAttributes,
-    ResourceAttributesKeys,
     ScopeName,
     ScopeVersion,
     SpanAttributes,
-    SpanAttributesKeys,
     Duration,
     StatusCode,
     StatusMessage,
@@ -23,6 +21,7 @@ INSERT INTO "%s"."%s" (
     Links.SpanId,
     Links.TraceState,
     Links.Attributes
+    %s
 ) VALUES (
     ?,
     ?,
@@ -45,7 +44,6 @@ INSERT INTO "%s"."%s" (
     ?,
     ?,
     ?,
-    ?,
-    ?,
     ?
+    %s
 )
