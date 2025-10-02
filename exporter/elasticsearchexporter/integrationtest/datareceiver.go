@@ -294,7 +294,8 @@ func (es *mockESReceiver) Start(ctx context.Context, host component.Host) error 
 		var itemCount int
 		_, response := docappendertest.DecodeBulkRequest(r)
 		for _, itemMap := range response.Items {
-			for _, item := range itemMap {
+			for k := range itemMap {
+				item := itemMap[k]
 				if index == "" {
 					index = item.Index
 				} else if item.Index != index {
@@ -349,7 +350,8 @@ func (es *mockESReceiver) Start(ctx context.Context, host component.Host) error 
 			}
 			response.HasErrors = true
 			for _, itemMap := range response.Items {
-				for k, item := range itemMap {
+				for k := range itemMap {
+					item := itemMap[k]
 					item.Status = errES.httpDocStatus
 					item.Error.Type = "simulated_es_error"
 					item.Error.Reason = consumeErr.Error()

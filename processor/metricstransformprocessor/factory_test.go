@@ -241,14 +241,14 @@ func TestCreateProcessorsFilledData(t *testing.T) {
 			NewName:             "new-name",
 			Operations: []internalOperation{
 				{
-					configOperation: operation{
+					configOperation: &operation{
 						Action:   addLabel,
 						NewLabel: "new-label",
 						NewValue: "new-value v0.0.1",
 					},
 				},
 				{
-					configOperation: operation{
+					configOperation: &operation{
 						Action:   updateLabel,
 						Label:    "label",
 						NewLabel: "new-label",
@@ -262,7 +262,7 @@ func TestCreateProcessorsFilledData(t *testing.T) {
 					valueActionsMapping: map[string]string{"value": "new/value v0.0.1"},
 				},
 				{
-					configOperation: operation{
+					configOperation: &operation{
 						Action:          aggregateLabels,
 						LabelSet:        []string{"label1", "label2"},
 						AggregationType: aggregateutil.Sum,
@@ -273,7 +273,7 @@ func TestCreateProcessorsFilledData(t *testing.T) {
 					},
 				},
 				{
-					configOperation: operation{
+					configOperation: &operation{
 						Action:           aggregateLabelValues,
 						Label:            "label",
 						AggregatedValues: []string{"value1", "value2"},

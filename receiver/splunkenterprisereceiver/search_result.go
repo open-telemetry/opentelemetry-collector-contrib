@@ -181,7 +181,7 @@ type dispatchArtifactContent struct {
 	AdhocSize          string `json:"adhoc_size_mb"`
 	ScheduledSize      string `json:"scheduled_size_mb"`
 	CompletedSize      string `json:"completed_size_mb"`
-	IncompleteSize     string `json:"incomplete_size_mb"`
+	IncompleteSize     string `json:"incomple_size_mb"`
 }
 
 // '/services/server/health/splunkd/details'

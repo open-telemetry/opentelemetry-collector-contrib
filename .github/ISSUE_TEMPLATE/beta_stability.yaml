@@ -207,8 +207,10 @@ body:
       - processor/resource
       - processor/resourcedetection
       - processor/resourcedetection/internal/akamai
+      - processor/resourcedetection/internal/digitalocean
       - processor/resourcedetection/internal/dynatrace
       - processor/resourcedetection/internal/hetzner
+      - processor/resourcedetection/internal/oraclecloud
       - processor/resourcedetection/internal/scaleway
       - processor/resourcedetection/internal/vultr
       - processor/schema
@@ -216,6 +218,7 @@ body:
       - processor/sumologic
       - processor/tailsampling
       - processor/transform
+      - processor/unroll
       - receiver/activedirectoryds
       - receiver/aerospike
       - receiver/apache
@@ -232,6 +235,7 @@ body:
       - receiver/bigip
       - receiver/carbon
       - receiver/chrony
+      - receiver/ciscoos
       - receiver/cloudflare
       - receiver/cloudfoundry
       - receiver/collectd

@@ -5,6 +5,7 @@ package xk8stest // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"bytes"
+	"maps"
 	"os"
 	"path/filepath"
 	"testing"
@@ -39,9 +40,7 @@ func CreateCollectorObjects(t *testing.T, client *K8sClient, testID, manifestsDi
 			"HostEndpoint": host,
 			"TestID":       testID,
 		}
-		for key, value := range templateValues {
-			defaultTemplateValues[key] = value
-		}
+		maps.Copy(defaultTemplateValues, templateValues)
 		require.NoError(t, tmpl.Execute(manifest, defaultTemplateValues))
 		obj, err := CreateObject(client, manifest.Bytes())
 		require.NoErrorf(t, err, "failed to create collector object from manifest %s", manifestFile.Name())
@@ -77,7 +76,8 @@ func WaitForCollectorToStart(t *testing.T, client *K8sClient, podNamespace strin
 		err = runtime.DefaultUnstructuredConverter.FromUnstructured(list.UnstructuredContent(), &pods)
 		require.NoError(t, err, "failed to convert unstructured to podList")
 
-		for _, pod := range pods.Items {
+		for i := range pods.Items {
+			pod := &pods.Items[i]
 			podReady := false
 			if pod.Status.Phase != v1.PodRunning {
 				t.Logf("pod %v is not running, current phase: %v", pod.Name, pod.Status.Phase)
@@ -91,7 +91,8 @@ func WaitForCollectorToStart(t *testing.T, client *K8sClient, podNamespace strin
 			}
 			// Add some debug logs for crashing pods
 			if !podReady {
-				for _, cs := range pod.Status.ContainerStatuses {
+				for i := range pod.Status.ContainerStatuses {
+					cs := &pod.Status.ContainerStatuses[i]
 					restartCount := cs.RestartCount
 					if restartCount > 0 && cs.LastTerminationState.Terminated != nil {
 						t.Logf("restart count = %d for container %s in pod %s, last terminated reason: %s", restartCount, cs.Name, pod.Name, cs.LastTerminationState.Terminated.Reason)
