@@ -191,11 +191,11 @@ func lazyInitObfuscator() *obfuscate.Obfuscator {
 
 // obfuscateSQL obfuscates & normalizes the provided SQL query, writing the error into errResult if the operation fails.
 func obfuscateSQL(rawQuery string) (string, error) {
-	oq, err := lazyInitObfuscator().ObfuscateSQLString(rawQuery)
+	obfuscatedQuery, err := lazyInitObfuscator().ObfuscateSQLString(rawQuery)
 	if err != nil {
 		return "", err
 	}
-	return oq.Query, nil
+	return obfuscatedQuery.Query, nil
 }
 
 // obfuscateSQLExecPlan obfuscates the provided json query execution plan, writing the error into errResult if the
