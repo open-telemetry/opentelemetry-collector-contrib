@@ -8,72 +8,72 @@ The following telemetry is emitted by this component.
 
 ### otelcol_processor_groupbyattrs_log_groups
 
-Distribution of groups extracted for logs
+Distribution of groups extracted for logs [development]
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Histogram | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Histogram | Int | development |
 
 ### otelcol_processor_groupbyattrs_metric_groups
 
-Distribution of groups extracted for metrics
+Distribution of groups extracted for metrics [development]
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Histogram | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Histogram | Int | development |
 
 ### otelcol_processor_groupbyattrs_num_grouped_logs
 
-Number of logs that had attributes grouped
+Number of logs that had attributes grouped [development]
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | development |
 
 ### otelcol_processor_groupbyattrs_num_grouped_metrics
 
-Number of metrics that had attributes grouped
+Number of metrics that had attributes grouped [development]
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | development |
 
 ### otelcol_processor_groupbyattrs_num_grouped_spans
 
-Number of spans that had attributes grouped
+Number of spans that had attributes grouped [development]
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | development |
 
 ### otelcol_processor_groupbyattrs_num_non_grouped_logs
 
-Number of logs that did not have attributes grouped
+Number of logs that did not have attributes grouped [development]
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | development |
 
 ### otelcol_processor_groupbyattrs_num_non_grouped_metrics
 
-Number of metrics that did not have attributes grouped
+Number of metrics that did not have attributes grouped [development]
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | development |
 
 ### otelcol_processor_groupbyattrs_num_non_grouped_spans
 
-Number of spans that did not have attributes grouped
+Number of spans that did not have attributes grouped [development]
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | development |
 
 ### otelcol_processor_groupbyattrs_span_groups
 
-Distribution of groups extracted for spans
+Distribution of groups extracted for spans [development]
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Histogram | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Histogram | Int | development |
