@@ -6,6 +6,7 @@ package coralogixexporter // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/config/configgrpc"
@@ -28,8 +29,12 @@ type Config struct {
 
 	// Coralogix domain
 	Domain string `mapstructure:"domain"`
+
 	// GRPC Settings used with Domain
 	DomainSettings configgrpc.ClientConfig `mapstructure:"domain_settings"`
+
+	// Use AWS PrivateLink for the domain
+	PrivateLink bool `mapstructure:"private_link"`
 
 	// Coralogix traces ingress endpoint
 	Traces configgrpc.ClientConfig `mapstructure:"traces"`
@@ -142,6 +147,15 @@ func (c *Config) getMetadataFromResource(res pcommon.Resource) (appName, subsyst
 
 func (c *Config) getDomainGrpcSettings() *configgrpc.ClientConfig {
 	settings := c.DomainSettings
-	settings.Endpoint = fmt.Sprintf("ingress.%s:443", c.Domain)
+	domain := c.Domain
+
+	// If PrivateLink is enabled, use the private link endpoint.
+	// However, if the domain already contains "private", don't add it again.
+	if c.PrivateLink && !strings.Contains(domain, "private.") {
+		settings.Endpoint = fmt.Sprintf("ingress.private.%s:443", domain)
+	} else {
+		settings.Endpoint = fmt.Sprintf("ingress.%s:443", domain)
+	}
+
 	return &settings
 }
