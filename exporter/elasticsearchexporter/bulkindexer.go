@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	semconv "go.opentelemetry.io/otel/semconv/v1.25.0"
@@ -115,8 +116,16 @@ func newSyncBulkIndexer(
 	tb *metadata.TelemetryBuilder,
 	logger *zap.Logger,
 ) *syncBulkIndexer {
+	var maxFlushBytes int64
+	if config.QueueBatchConfig.Batch.HasValue() {
+		batch := config.QueueBatchConfig.Batch.Get()
+		if batch.Sizer == exporterhelper.RequestSizerTypeBytes {
+			maxFlushBytes = batch.MaxSize
+		}
+	}
 	return &syncBulkIndexer{
 		config:                bulkIndexerConfig(client, config, requireDataStream),
+		maxFlushBytes:         maxFlushBytes,
 		flushTimeout:          config.Timeout,
 		retryConfig:           config.Retry,
 		metadataKeys:          config.MetadataKeys,
@@ -128,6 +137,7 @@ func newSyncBulkIndexer(
 
 type syncBulkIndexer struct {
 	config                docappender.BulkIndexerConfig
+	maxFlushBytes         int64
 	flushTimeout          time.Duration
 	retryConfig           RetrySettings
 	metadataKeys          []string
@@ -180,6 +190,12 @@ func (s *syncBulkIndexerSession) Add(ctx context.Context, index, docID, pipeline
 			getAttributesFromMetadataKeys(ctx, s.s.metadataKeys)...),
 		),
 	)
+	// sending_queue operates on flush sizes based on pdata model whereas bulk
+	// indexers operate on ndjson. Force a flush if the ndjson size is too large.
+	// when the uncompressed length exceeds the configured max flush size.
+	if s.s.maxFlushBytes > 0 && int64(s.bi.UncompressedLen()) >= s.s.maxFlushBytes {
+		return s.Flush(ctx)
+	}
 	return nil
 }
 

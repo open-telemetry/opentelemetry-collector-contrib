@@ -312,7 +312,7 @@ The behaviour of this bulk indexing can be configured with the following setting
   - `queue_size` (default=10): Maximum size the queue can accept.
   - `batch`:
     - `flush_timeout` (default=10s): Time after which batch is exported irrespective of other settings.
-    - `sizer` (default=bytes): Size batches by bytes.
+    - `sizer` (default=bytes): Size batches by bytes. Note that bytes here are based on the pdata model and not on the NDJSON docs that will constitute the bulk indexer requests. To address this discrepency the bulk indexers could also flush when their size exceeds the configured max_size due to size of pdata model being smaller than their corresponding NDJSON encoding.
     - `min_size` (default=1MB): Min size of the batch.
     - `max_size` (default=5MB): Max size of the batch. This value should be much lower than [Elasticsearch's `http.max_content_length`](https://www.elastic.co/guide/en/elasticsearch/reference/current/modules-network.html#http-settings) config to avoid HTTP 413 Entity Too Large error. It is recommended to keep this value under 5MB.
 
