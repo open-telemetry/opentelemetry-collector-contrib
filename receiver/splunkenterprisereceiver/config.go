@@ -28,6 +28,10 @@ type Config struct {
 	SHEndpoint                     confighttp.ClientConfig `mapstructure:"search_head"`
 	CMEndpoint                     confighttp.ClientConfig `mapstructure:"cluster_master"`
 	VersionInfo                    bool                    `mapstructure:"build_version_info"`
+	// Enable recursive reading of Splunk features for `splunk.health` metric.
+	// This means when the `splunk.health` metric is enabled, the scraper will
+	// recursively check each subfeature a feature contains. Default: false
+	EnableHealthFeatureRecursion bool `mapstructure:"enable_health_feature_recursion"`
 }
 
 func (cfg *Config) Validate() (errors error) {

@@ -438,7 +438,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["splunk.health"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The status ('red', 'yellow', or 'green') of the Splunk server. Health of 'red' produces a 0 while all other colors produce a 1.", ms.At(i).Description())
+					assert.Equal(t, "Gauge tracking each health color (`green`, `yellow`, and `red`) for each feature of the Splunk server. `1` if that is the current color and `0` if not.", ms.At(i).Description())
 					assert.Equal(t, "{status}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
