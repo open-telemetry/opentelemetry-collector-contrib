@@ -6,6 +6,7 @@ package targetallocator // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"hash/fnv"
@@ -31,6 +32,15 @@ import (
 	"go.uber.org/zap"
 )
 
+// TargetSamplesRequest represents the data sent to target allocator's /target_samples endpoint
+type TargetSamplesRequest struct {
+	Job         string `json:"job"`
+	Instance    string `json:"instance"`
+	CollectorID string `json:"collector_id"`
+	SampleCount int    `json:"sample_count"`
+	Timestamp   int64  `json:"timestamp"`
+}
+
 type Manager struct {
 	settings               receiver.Settings
 	shutdown               chan struct{}
@@ -40,6 +50,7 @@ type Manager struct {
 	scrapeManager          *scrape.Manager
 	discoveryManager       *discovery.Manager
 	enableNativeHistograms bool
+	httpClient             *http.Client
 
 	// configUpdateCount tracks how many times the config has changed, for
 	// testing.
@@ -75,6 +86,7 @@ func (m *Manager) Start(ctx context.Context, host component.Host, sm *scrape.Man
 		m.settings.Logger.Error("Failed to create http client", zap.Error(err))
 		return err
 	}
+	m.httpClient = httpClient
 	m.settings.Logger.Info("Starting target allocator discovery")
 
 	operation := func() (uint64, error) {
@@ -132,7 +144,7 @@ func (m *Manager) sync(compareHash uint64, httpClient *http.Client) (uint64, err
 		m.settings.Logger.Error("Failed to hash job list", zap.Error(err))
 		return 0, err
 	}
-	if hash == compareHash {
+	if !m.cfg.IgnoreHash && hash == compareHash {
 		// no update needed
 		return hash, nil
 	}
@@ -144,6 +156,8 @@ func (m *Manager) sync(compareHash uint64, httpClient *http.Client) (uint64, err
 	m.promCfg.ScrapeConfigs = initialConfig
 
 	for jobName, scrapeConfig := range scrapeConfigsResponse {
+		m.settings.Logger.Debug("Syncing target allocator job", zap.String("job", jobName), zap.String("collector_id", m.cfg.CollectorID))
+
 		var httpSD promHTTP.SDConfig
 		if m.cfg.HTTPSDConfig == nil {
 			httpSD = promHTTP.SDConfig{
@@ -285,4 +299,54 @@ func getScrapeConfigHash(jobToScrapeConfig map[string]*promconfig.ScrapeConfig) 
 	}
 	yamlEncoder.Close()
 	return hash.Sum64(), err
+}
+
+// ReportTargetSamples sends target sample count to the target allocator
+func (m *Manager) ReportTargetSamples(job, instance string, sampleCount int) {
+	if m.cfg == nil || !m.cfg.ReportTargetSamples || m.httpClient == nil {
+		return
+	}
+
+	m.settings.Logger.Info("Reporting target samples to target allocator",
+		zap.String("job", job),
+		zap.String("instance", instance),
+		zap.String("collector_id", m.cfg.CollectorID),
+		zap.Int("sample_count", sampleCount))
+
+	// Send the request asynchronously to avoid blocking the scrape process
+	go func() {
+		request := TargetSamplesRequest{
+			Job:         job,
+			Instance:    instance,
+			CollectorID: m.cfg.CollectorID,
+			SampleCount: sampleCount,
+			Timestamp:   time.Now().Unix(),
+		}
+
+		jsonData, err := json.Marshal(request)
+		if err != nil {
+			m.settings.Logger.Warn("Failed to marshal target samples request", zap.Error(err))
+			return
+		}
+
+		targetSamplesURL := m.cfg.Endpoint + "/target_samples"
+		resp, err := m.httpClient.Post(targetSamplesURL, "application/json", bytes.NewBuffer(jsonData))
+		if err != nil {
+			m.settings.Logger.Warn("Failed to send target samples to target allocator",
+				zap.Error(err),
+				zap.String("job", job),
+				zap.String("instance", instance),
+				zap.Int("sample_count", sampleCount))
+			return
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusAccepted {
+			m.settings.Logger.Warn("Target allocator returned non-success status for target samples",
+				zap.Int("status_code", resp.StatusCode),
+				zap.String("job", job),
+				zap.String("instance", instance),
+				zap.Int("sample_count", sampleCount))
+		}
+	}()
 }

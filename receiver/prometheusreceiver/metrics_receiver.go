@@ -179,6 +179,7 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, logger *slog.L
 		enableNativeHistogramsGate.IsEnabled(),
 		r.cfg.PrometheusConfig.GlobalConfig.ExternalLabels,
 		r.cfg.TrimMetricSuffixes,
+		r.targetAllocatorManager,
 	)
 	if err != nil {
 		return err
