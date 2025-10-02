@@ -82,7 +82,7 @@ OpenTelemetry *Attributes* are converted to Prometheus labels and normalized to 
 The following transformations are performed on OpenTelemetry *Attributes* to produce Prometheus labels:
 
 * Drop unsupported characters and replace with underscores (`_`)
-* Prefix label with `key_` if it doesn't start with a letter, except if it's already prefixed with double-underscore (`__`)
+* Prefix label with `key_` if it doesn't start with a letter, except if it's already prefixed with double-underscore (`__`). This is to provide compatibility with OpenMetrics 1.0.
 
 By default, labels that start with a simple underscore (`_`) are prefixed with `key`, which is strictly unnecessary to follow Prometheus labels naming rules. This behavior can be disabled with the feature `pkg.translator.prometheus.PermissiveLabelSanitization`, which must be activated with the feature gate option of the collector:
 
