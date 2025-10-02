@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
@@ -101,6 +102,69 @@ func TestEventhubHandler_Start(t *testing.T) {
 
 	assert.NoError(t, ehHandler.run(t.Context(), componenttest.NewNopHost()))
 	assert.NoError(t, ehHandler.close(t.Context()))
+}
+
+func TestShouldInitializeStorageClient(t *testing.T) {
+	testCases := []struct {
+		name          string
+		storageClient storage.Client
+		storageID     *component.ID
+		expected      bool
+	}{
+		{
+			name:          "no storage client and no storage ID - should not initialize",
+			storageClient: nil,
+			storageID:     nil,
+			expected:      false,
+		},
+		{
+			name:          "no storage client but has storage ID - should initialize",
+			storageClient: nil,
+			storageID:     &component.ID{},
+			expected:      true,
+		},
+		{
+			name:          "has storage client and storage ID - should not initialize",
+			storageClient: &mockStorageClient{},
+			storageID:     &component.ID{},
+			expected:      false,
+		},
+		{
+			name:          "has storage client but no storage ID - should not initialize",
+			storageClient: &mockStorageClient{},
+			storageID:     nil,
+			expected:      false,
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			result := shouldInitializeStorageClient(test.storageClient, test.storageID)
+			assert.Equal(t, test.expected, result)
+		})
+	}
+}
+
+type mockStorageClient struct{}
+
+func (*mockStorageClient) Get(_ context.Context, _ string) ([]byte, error) {
+	return nil, nil
+}
+
+func (*mockStorageClient) Set(_ context.Context, _ string, _ []byte) error {
+	return nil
+}
+
+func (*mockStorageClient) Delete(_ context.Context, _ string) error {
+	return nil
+}
+
+func (*mockStorageClient) Batch(_ context.Context, _ ...*storage.Operation) error {
+	return nil
+}
+
+func (*mockStorageClient) Close(_ context.Context) error {
+	return nil
 }
 
 func TestEventhubHandler_newAzeventhubsMessageHandler(t *testing.T) {
