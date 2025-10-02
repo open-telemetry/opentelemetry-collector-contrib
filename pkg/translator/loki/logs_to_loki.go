@@ -11,8 +11,6 @@ import (
 	"github.com/prometheus/otlptranslator"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-
-	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
 type PushRequest struct {
@@ -149,9 +147,7 @@ func LogToLokiEntry(lr plog.LogRecord, rl pcommon.Resource, scope pcommon.Instru
 	}
 
 	labels := model.LabelSet{}
-	namer := otlptranslator.LabelNamer{
-		PreserveMultipleUnderscores: !prometheustranslator.DropSanitizationGate.IsEnabled(),
-	}
+	namer := otlptranslator.LabelNamer{}
 	for label := range mergedLabels {
 		// Loki doesn't support dots in label names
 		// labelName is normalized label name to follow Prometheus label names standard
