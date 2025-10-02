@@ -12,6 +12,8 @@ metrics:
   process.runtime.memstats.total_alloc:
     enabled: false
     description: Cumulative bytes allocated for heap objects.
+    stability:
+      level: development
     extended_documentation: As defined by https://pkg.go.dev/runtime#MemStats
     unit: By
     sum:
@@ -22,6 +24,8 @@ metrics:
   process.runtime.memstats.sys:
     enabled: true
     description: Total bytes of memory obtained from the OS.
+    stability:
+      level: development
     extended_documentation: As defined by https://pkg.go.dev/runtime#MemStats
     unit: By
     sum:
@@ -32,6 +36,8 @@ metrics:
   process.runtime.memstats.lookups:
     enabled: false
     description: Number of pointer lookups performed by the runtime.
+    stability:
+      level: development
     extended_documentation: As defined by https://pkg.go.dev/runtime#MemStats
     unit: "{lookups}"
     sum:
@@ -42,6 +48,8 @@ metrics:
   process.runtime.memstats.mallocs:
     enabled: true
     description: Cumulative count of heap objects allocated.
+    stability:
+      level: development
     extended_documentation: As defined by https://pkg.go.dev/runtime#MemStats
     unit: "{objects}"
     sum:
@@ -52,6 +60,8 @@ metrics:
   process.runtime.memstats.frees:
     enabled: true
     description: Cumulative count of heap objects freed.
+    stability:
+      level: development
     extended_documentation: As defined by https://pkg.go.dev/runtime#MemStats
     unit: "{objects}"
     sum:
@@ -62,6 +72,8 @@ metrics:
   process.runtime.memstats.heap_alloc:
     enabled: true
     description: Bytes of allocated heap objects.
+    stability:
+      level: development
     extended_documentation: As defined by https://pkg.go.dev/runtime#MemStats
     unit: By
     sum:
@@ -72,6 +84,8 @@ metrics:
   process.runtime.memstats.heap_sys:
     enabled: true
     description: Bytes of heap memory obtained by the OS.
+    stability:
+      level: development
     extended_documentation: As defined by https://pkg.go.dev/runtime#MemStats
     unit: By
     sum:
@@ -82,6 +96,8 @@ metrics:
   process.runtime.memstats.heap_idle:
     enabled: true
     description: Bytes in idle (unused) spans.
+    stability:
+      level: development
     extended_documentation: As defined by https://pkg.go.dev/runtime#MemStats
     unit: By
     sum:
@@ -92,6 +108,8 @@ metrics:
   process.runtime.memstats.heap_inuse:
     enabled: true
     description: Bytes in in-use spans.
+    stability:
+      level: development
     extended_documentation: As defined by https://pkg.go.dev/runtime#MemStats
     unit: By
     sum:
@@ -102,6 +120,8 @@ metrics:
   process.runtime.memstats.heap_released:
     enabled: true
     description: Bytes of physical memory returned to the OS.
+    stability:
+      level: development
     extended_documentation: As defined by https://pkg.go.dev/runtime#MemStats
     unit: By
     sum:
@@ -112,6 +132,8 @@ metrics:
   process.runtime.memstats.heap_objects:
     enabled: true
     description: Number of allocated heap objects.
+    stability:
+      level: development
     extended_documentation: As defined by https://pkg.go.dev/runtime#MemStats
     unit: "{objects}"
     sum:
@@ -122,6 +144,8 @@ metrics:
   process.runtime.memstats.stack_inuse:
     enabled: true
     description: Bytes in stack spans.
+    stability:
+      level: development
     extended_documentation: As defined by https://pkg.go.dev/runtime#MemStats
     unit: By
     sum:
@@ -132,6 +156,8 @@ metrics:
   process.runtime.memstats.stack_sys:
     enabled: true
     description: Bytes of stack memory obtained from the OS.
+    stability:
+      level: development
     extended_documentation: As defined by https://pkg.go.dev/runtime#MemStats
     unit: By
     sum:
@@ -142,6 +168,8 @@ metrics:
   process.runtime.memstats.mspan_inuse:
     enabled: true
     description: Bytes of allocated mspan structures.
+    stability:
+      level: development
     extended_documentation: As defined by https://pkg.go.dev/runtime#MemStats
     unit: By
     sum:
@@ -152,6 +180,8 @@ metrics:
   process.runtime.memstats.mspan_sys:
     enabled: true
     description: Bytes of memory obtained from the OS for mspan structures.
+    stability:
+      level: development
     extended_documentation: As defined by https://pkg.go.dev/runtime#MemStats
     unit: By
     sum:
@@ -162,6 +192,8 @@ metrics:
   process.runtime.memstats.mcache_inuse:
     enabled: true
     description: Bytes of allocated mcache structures.
+    stability:
+      level: development
     extended_documentation: As defined by https://pkg.go.dev/runtime#MemStats
     unit: By
     sum:
@@ -172,6 +204,8 @@ metrics:
   process.runtime.memstats.mcache_sys:
     enabled: true
     description: Bytes of memory obtained from the OS for mcache structures.
+    stability:
+      level: development
     extended_documentation: As defined by https://pkg.go.dev/runtime#MemStats
     unit: By
     sum:
@@ -182,6 +216,8 @@ metrics:
   process.runtime.memstats.buck_hash_sys:
     enabled: true
     description: Bytes of memory in profiling bucket hash tables.
+    stability:
+      level: development
     extended_documentation: As defined by https://pkg.go.dev/runtime#MemStats
     unit: By
     sum:
@@ -192,6 +228,8 @@ metrics:
   process.runtime.memstats.gc_sys:
     enabled: true
     description: Bytes of memory in garbage collection metadata.
+    stability:
+      level: development
     extended_documentation: As defined by https://pkg.go.dev/runtime#MemStats
     unit: By
     sum:
@@ -202,6 +240,8 @@ metrics:
   process.runtime.memstats.other_sys:
     enabled: true
     description: Bytes of memory in miscellaneous off-heap runtime allocations.
+    stability:
+      level: development
     extended_documentation: As defined by https://pkg.go.dev/runtime#MemStats
     unit: By
     sum:
@@ -212,6 +252,8 @@ metrics:
   process.runtime.memstats.next_gc:
     enabled: true
     description: The target heap size of the next GC cycle.
+    stability:
+      level: development
     extended_documentation: As defined by https://pkg.go.dev/runtime#MemStats
     unit: By
     sum:
@@ -222,6 +264,8 @@ metrics:
   process.runtime.memstats.pause_total:
     enabled: true
     description: The cumulative nanoseconds in GC stop-the-world pauses since the program started.
+    stability:
+      level: development
     extended_documentation: As defined by https://pkg.go.dev/runtime#MemStats
     unit: By
     sum:
@@ -232,6 +276,8 @@ metrics:
   process.runtime.memstats.last_pause:
     enabled: true
     description: The most recent stop-the-world pause time.
+    stability:
+      level: development
     extended_documentation: As defined by https://pkg.go.dev/runtime#MemStats
     unit: ns
     gauge:
@@ -240,6 +286,8 @@ metrics:
   process.runtime.memstats.num_gc:
     enabled: true
     description: Number of completed GC cycles.
+    stability:
+      level: development
     extended_documentation: As defined by https://pkg.go.dev/runtime#MemStats
     unit: By
     sum:
@@ -250,6 +298,8 @@ metrics:
   process.runtime.memstats.num_forced_gc:
     enabled: true
     description: Number of GC cycles that were forced by the application calling the GC function.
+    stability:
+      level: development
     extended_documentation: As defined by https://pkg.go.dev/runtime#MemStats
     unit: By
     sum:
@@ -260,6 +310,8 @@ metrics:
   process.runtime.memstats.gc_cpu_fraction:
     enabled: true
     description: The fraction of this program's available CPU time used by the GC since the program started.
+    stability:
+      level: development
     extended_documentation: As defined by https://pkg.go.dev/runtime#MemStats
     unit: "1"
     gauge:

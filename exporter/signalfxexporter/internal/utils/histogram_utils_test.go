@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
@@ -144,6 +145,63 @@ func TestHistogramsAreRetrieved(t *testing.T) {
 				rm := out.ResourceMetrics().AppendEmpty()
 				res := rm.Resource()
 				res.Attributes().PutStr("kr0", "vr0")
+				ilm := rm.ScopeMetrics().AppendEmpty()
+				ilm.SetSchemaUrl("Scope SchemaUrl")
+				ilm.Scope().Attributes().PutStr("ks0", "vs0")
+				ilm.Scope().SetName("Scope name")
+				ilm.Scope().SetVersion("Scope version")
+				ilm.Metrics().EnsureCapacity(2)
+				{
+					m := ilm.Metrics().AppendEmpty()
+					buildHistogram(m, "histogram_1", ts, 5)
+				}
+				{
+					m := ilm.Metrics().AppendEmpty()
+					buildHistogram(m, "histogram_2", ts, 1)
+				}
+				return out
+			},
+		},
+		{
+			name: "histograms_with_host_id",
+			inMetricsFunc: func() pmetric.Metrics {
+				out := pmetric.NewMetrics()
+				rm := out.ResourceMetrics().AppendEmpty()
+				res := rm.Resource()
+				res.Attributes().PutStr("kr0", "vr0")
+				res.Attributes().PutStr(string(conventions.CloudAccountIDKey), "1234")
+				res.Attributes().PutStr(string(conventions.CloudRegionKey), "us-west-2")
+				res.Attributes().PutStr(string(conventions.HostIDKey), "i-abcd")
+				res.Attributes().PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAWS.Value.AsString())
+				ilms := rm.ScopeMetrics()
+				ilms.EnsureCapacity(3)
+				ilm := ilms.AppendEmpty()
+				ilm.SetSchemaUrl("Scope SchemaUrl")
+				ilm.Scope().Attributes().PutStr("ks0", "vs0")
+				ilm.Scope().SetName("Scope name")
+				ilm.Scope().SetVersion("Scope version")
+				ilm.Metrics().EnsureCapacity(2)
+				{
+					m := ilm.Metrics().AppendEmpty()
+					buildHistogram(m, "histogram_1", ts, 5)
+				}
+				{
+					m := ilm.Metrics().AppendEmpty()
+					buildHistogram(m, "histogram_2", ts, 1)
+				}
+				return out
+			},
+			wantMetricCount: 2,
+			wantMetrics: func() pmetric.Metrics {
+				out := pmetric.NewMetrics()
+				rm := out.ResourceMetrics().AppendEmpty()
+				res := rm.Resource()
+				res.Attributes().PutStr("kr0", "vr0")
+				res.Attributes().PutStr(string(conventions.CloudAccountIDKey), "1234")
+				res.Attributes().PutStr(string(conventions.CloudRegionKey), "us-west-2")
+				res.Attributes().PutStr(string(conventions.HostIDKey), "i-abcd")
+				res.Attributes().PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAWS.Value.AsString())
+				res.Attributes().PutStr("AWSUniqueId", "i-abcd_us-west-2_1234")
 				ilm := rm.ScopeMetrics().AppendEmpty()
 				ilm.SetSchemaUrl("Scope SchemaUrl")
 				ilm.Scope().Attributes().PutStr("ks0", "vs0")

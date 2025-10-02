@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/otel/semconv/v1.25.0"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
@@ -48,16 +49,33 @@ type metricFamily struct {
 
 func newCollector(config *Config, logger *zap.Logger) *collector {
 	labelNamer := configureLabelNamer(config)
+
 	return &collector{
 		accumulator:      newAccumulator(logger, config.MetricExpiration),
 		logger:           logger,
-		namespace:        labelNamer.Build(config.Namespace),
+		namespace:        normalizeNamespace(config.Namespace, labelNamer, logger),
 		sendTimestamps:   config.SendTimestamps,
 		constLabels:      config.ConstLabels,
 		metricExpiration: config.MetricExpiration,
 		metricNamer:      configureMetricNamer(config),
 		labelNamer:       labelNamer,
 	}
+}
+
+// normalizeNamespace builds and returns the namespace if specified in the config
+// If not specified, it returns an empty string
+// If building the namespace fails, it logs the error and returns an empty string
+func normalizeNamespace(configNamespace string, labelNamer otlptranslator.LabelNamer, logger *zap.Logger) string {
+	namespace := ""
+	if configNamespace != "" {
+		var err error
+		namespace, err = labelNamer.Build(configNamespace)
+		if err != nil {
+			logger.Error("failed to build namespace, ignoring", zap.Error(err))
+			namespace = ""
+		}
+	}
+	return namespace
 }
 
 // configureMetricNamer configures the MetricNamer based on the translation strategy or legacy configuration
@@ -170,7 +188,10 @@ func (c *collector) convertMetric(metric pmetric.Metric, resourceAttrs pcommon.M
 }
 
 func (c *collector) getMetricMetadata(metric pmetric.Metric, mType *dto.MetricType, attributes, resourceAttrs pcommon.Map, scopeName, scopeVersion, scopeSchemaURL string, scopeAttributes pcommon.Map) (*prometheus.Desc, []string, error) {
-	name := c.metricNamer.Build(prom.TranslatorMetricFromOtelMetric(metric))
+	name, err := c.metricNamer.Build(prom.TranslatorMetricFromOtelMetric(metric))
+	if err != nil {
+		return nil, nil, err
+	}
 	help, err := c.validateMetrics(name, metric.Description(), mType)
 	if err != nil {
 		return nil, nil, err
@@ -179,13 +200,24 @@ func (c *collector) getMetricMetadata(metric pmetric.Metric, mType *dto.MetricTy
 	keys := make([]string, 0, attributes.Len()+scopeAttributes.Len()+5) // +2 for job and instance labels, +3 for scope name, version and schema url
 	values := make([]string, 0, attributes.Len()+scopeAttributes.Len()+5)
 
+	var multiErrs error
 	for k, v := range attributes.All() {
-		keys = append(keys, c.labelNamer.Build(k))
+		labelName, err := c.labelNamer.Build(k)
+		if err != nil {
+			multiErrs = multierr.Append(multiErrs, err)
+			continue
+		}
+		keys = append(keys, labelName)
 		values = append(values, v.AsString())
 	}
 
 	for k, v := range scopeAttributes.All() {
-		keys = append(keys, c.labelNamer.Build("otel_scope_"+k))
+		labelName, err := c.labelNamer.Build("otel_scope_" + k)
+		if err != nil {
+			multiErrs = multierr.Append(multiErrs, err)
+			continue
+		}
+		keys = append(keys, labelName)
 		values = append(values, v.AsString())
 	}
 
@@ -204,7 +236,9 @@ func (c *collector) getMetricMetadata(metric pmetric.Metric, mType *dto.MetricTy
 		keys = append(keys, model.InstanceLabel)
 		values = append(values, instance)
 	}
-
+	if multiErrs != nil {
+		return nil, nil, multiErrs
+	}
 	return prometheus.NewDesc(name, help, keys, c.constLabels), values, nil
 }
 
@@ -414,13 +448,21 @@ func (c *collector) createTargetInfoMetrics(resourceAttrs []pcommon.Map) ([]prom
 			}
 		})
 
+		var multiErrs error
 		for k, v := range attributes.All() {
-			finalKey := c.labelNamer.Build(k)
+			finalKey, err := c.labelNamer.Build(k)
+			if err != nil {
+				multiErrs = multierr.Append(multiErrs, err)
+				continue
+			}
 			if existingVal, ok := labels[finalKey]; ok {
 				labels[finalKey] = existingVal + ";" + v.AsString()
 			} else {
 				labels[finalKey] = v.AsString()
 			}
+		}
+		if multiErrs != nil {
+			return nil, multiErrs
 		}
 
 		// Map service.name + service.namespace to job

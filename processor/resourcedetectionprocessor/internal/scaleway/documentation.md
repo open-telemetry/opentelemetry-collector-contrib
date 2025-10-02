@@ -12,5 +12,7 @@
 | cloud.provider | The cloud provider | Any Str | true |
 | cloud.region | The cloud region | Any Str | true |
 | host.id | The host.id | Any Str | true |
+| host.image.id | The host image id | Any Str | true |
+| host.image.name | The host image name | Any Str | true |
 | host.name | The hostname | Any Str | true |
 | host.type | The host instance type | Any Str | true |

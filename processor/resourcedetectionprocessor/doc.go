@@ -10,6 +10,7 @@
 //go:generate mdatagen internal/azure/aks/metadata.yaml
 //go:generate mdatagen internal/azure/metadata.yaml
 //go:generate mdatagen internal/consul/metadata.yaml
+//go:generate mdatagen internal/digitalocean/metadata.yaml
 //go:generate mdatagen internal/docker/metadata.yaml
 //go:generate mdatagen internal/gcp/metadata.yaml
 //go:generate mdatagen internal/heroku/metadata.yaml
