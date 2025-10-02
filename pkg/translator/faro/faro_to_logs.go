@@ -77,7 +77,8 @@ func TranslateToLogs(ctx context.Context, payload faroTypes.Payload) (plog.Logs,
 	defer span.End()
 	var kvList []*kvTime
 
-	for _, logItem := range payload.Logs {
+	for i := range payload.Logs {
+		logItem := &payload.Logs[i]
 		kvList = append(kvList, &kvTime{
 			kv:    logToKeyVal(logItem),
 			ts:    logItem.Timestamp,
@@ -85,7 +86,8 @@ func TranslateToLogs(ctx context.Context, payload faroTypes.Payload) (plog.Logs,
 			trace: logItem.Trace,
 		})
 	}
-	for _, exception := range payload.Exceptions {
+	for i := range payload.Exceptions {
+		exception := &payload.Exceptions[i]
 		kvList = append(kvList, &kvTime{
 			kv:    exceptionToKeyVal(exception),
 			ts:    exception.Timestamp,
@@ -94,7 +96,8 @@ func TranslateToLogs(ctx context.Context, payload faroTypes.Payload) (plog.Logs,
 			trace: exception.Trace,
 		})
 	}
-	for _, measurement := range payload.Measurements {
+	for i := range payload.Measurements {
+		measurement := &payload.Measurements[i]
 		kvList = append(kvList, &kvTime{
 			kv:    measurementToKeyVal(measurement),
 			ts:    measurement.Timestamp,
@@ -102,7 +105,8 @@ func TranslateToLogs(ctx context.Context, payload faroTypes.Payload) (plog.Logs,
 			trace: measurement.Trace,
 		})
 	}
-	for _, event := range payload.Events {
+	for i := range payload.Events {
+		event := &payload.Events[i]
 		kvList = append(kvList, &kvTime{
 			kv:    eventToKeyVal(event),
 			ts:    event.Timestamp,

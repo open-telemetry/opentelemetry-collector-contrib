@@ -150,7 +150,8 @@ func (c *metadataClient) GetInstanceMetadata(ctx context.Context) (InstanceMetad
 
 func getClusterNameTagFromReservations(reservations []types.Reservation) string {
 	for _, reservation := range reservations {
-		for _, instance := range reservation.Instances {
+		for i := range reservation.Instances {
+			instance := reservation.Instances[i]
 			for _, tag := range instance.Tags {
 				key := aws.ToString(tag.Key)
 				if key == "" {

@@ -16,6 +16,7 @@ import (
 	"github.com/prometheus/prometheus/prompb"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
@@ -129,7 +130,8 @@ func TestPrometheusConverterV2_addGaugeNumberDataPoints(t *testing.T) {
 				Help: metric.Description(),
 				Unit: unitNamer.Build(metric.Unit()),
 			}
-			converter.addGaugeNumberDataPoints(metric.Gauge().DataPoints(), pcommon.NewResource(), settings, metric.Name(), m)
+			err := converter.addGaugeNumberDataPoints(metric.Gauge().DataPoints(), pcommon.NewResource(), settings, metric.Name(), m)
+			require.NoError(t, err)
 			w := tt.want()
 
 			diff := cmp.Diff(w, converter.unique, cmpopts.EquateNaNs())
@@ -185,14 +187,16 @@ func TestPrometheusConverterV2_addGaugeNumberDataPointsDuplicate(t *testing.T) {
 		Help: metric1.Description(),
 		Unit: unitNamer.Build(metric1.Unit()),
 	}
-	converter.addGaugeNumberDataPoints(metric1.Gauge().DataPoints(), pcommon.NewResource(), settings, metric1.Name(), m1)
+	err := converter.addGaugeNumberDataPoints(metric1.Gauge().DataPoints(), pcommon.NewResource(), settings, metric1.Name(), m1)
+	require.NoError(t, err)
 
 	m2 := metadata{
 		Type: otelMetricTypeToPromMetricTypeV2(metric2),
 		Help: metric2.Description(),
 		Unit: unitNamer.Build(metric2.Unit()),
 	}
-	converter.addGaugeNumberDataPoints(metric2.Gauge().DataPoints(), pcommon.NewResource(), settings, metric2.Name(), m2)
+	err = converter.addGaugeNumberDataPoints(metric2.Gauge().DataPoints(), pcommon.NewResource(), settings, metric2.Name(), m2)
+	require.NoError(t, err)
 
 	assert.Equal(t, want(), converter.unique)
 	assert.Empty(t, converter.conflicts)
@@ -379,7 +383,7 @@ func TestPrometheusConverterV2_addSumNumberDataPoints(t *testing.T) {
 				Unit: unitNamer.Build(metric.Unit()),
 			}
 
-			converter.addSumNumberDataPoints(
+			err := converter.addSumNumberDataPoints(
 				metric.Sum().DataPoints(),
 				pcommon.NewResource(),
 				metric,
@@ -387,7 +391,7 @@ func TestPrometheusConverterV2_addSumNumberDataPoints(t *testing.T) {
 				metric.Name(),
 				m,
 			)
-
+			require.NoError(t, err)
 			assert.Equal(t, tt.want(), converter.unique)
 			assert.Empty(t, converter.conflicts)
 		})

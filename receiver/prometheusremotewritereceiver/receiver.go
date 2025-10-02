@@ -19,6 +19,7 @@ import (
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/value"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
+	"github.com/prometheus/prometheus/schema"
 	promremote "github.com/prometheus/prometheus/storage/remote"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
@@ -247,9 +248,11 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		metricCache = make(map[uint64]pmetric.Metric)
 	)
 
-	for _, ts := range req.Timeseries {
+	for i := range req.Timeseries {
+		ts := &req.Timeseries[i]
 		ls := ts.ToLabels(&labelsBuilder, req.Symbols)
-		if !ls.Has(labels.MetricName) {
+		metadata := schema.NewMetadataFromLabels(ls)
+		if metadata.Name == "" {
 			badRequestErrors = errors.Join(badRequestErrors, errors.New("missing metric name in labels"))
 			continue
 		} else if duplicateLabel, hasDuplicate := ls.HasDuplicateLabelNames(); hasDuplicate {
@@ -259,7 +262,7 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 
 		// If the metric name is equal to target_info, we use its labels as attributes of the resource
 		// Ref: https://opentelemetry.io/docs/specs/otel/compatibility/prometheus_and_openmetrics/#resource-attributes-1
-		if ls.Get(labels.MetricName) == "target_info" {
+		if metadata.Name == "target_info" {
 			var rm pmetric.ResourceMetrics
 			hashedLabels := xxhash.Sum64String(ls.Get("job") + string([]byte{'\xff'}) + ls.Get("instance"))
 
@@ -274,7 +277,7 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 
 			// Add the remaining labels as resource attributes
 			for labelName, labelValue := range ls.Map() {
-				if labelName != "job" && labelName != "instance" && labelName != labels.MetricName {
+				if labelName != "job" && labelName != "instance" && !schema.IsMetadataLabel(labelName) {
 					attrs.PutStr(labelName, labelValue)
 				}
 			}
@@ -283,7 +286,7 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		}
 
 		scopeName, scopeVersion := prw.extractScopeInfo(ls)
-		metricName := ls.Get(labels.MetricName)
+		metricName := metadata.Name
 		if ts.Metadata.UnitRef >= uint32(len(req.Symbols)) {
 			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("unit ref %d is out of bounds of symbolsTable", ts.Metadata.UnitRef))
 			continue
@@ -396,7 +399,7 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 	otelMetrics pmetric.Metrics,
 	ls labels.Labels,
-	ts writev2.TimeSeries,
+	ts *writev2.TimeSeries,
 	scopeName, scopeVersion, metricName, unit, description string,
 	metricCache map[uint64]pmetric.Metric,
 	stats *promremote.WriteResponseStats,
@@ -413,7 +416,8 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 	var resourceID identity.Resource
 	var scope pmetric.ScopeMetrics
 
-	for _, histogram := range ts.Histograms {
+	for i := range ts.Histograms {
+		histogram := &ts.Histograms[i]
 		if histogram.ResetHint == writev2.Histogram_RESET_HINT_GAUGE {
 			continue
 		}
@@ -525,7 +529,7 @@ func parseJobAndInstance(dest pcommon.Map, job, instance string) {
 }
 
 // addNumberDatapoints adds the labels to the datapoints attributes.
-func addNumberDatapoints(datapoints pmetric.NumberDataPointSlice, ls labels.Labels, ts writev2.TimeSeries, stats *promremote.WriteResponseStats) {
+func addNumberDatapoints(datapoints pmetric.NumberDataPointSlice, ls labels.Labels, ts *writev2.TimeSeries, stats *promremote.WriteResponseStats) {
 	// Add samples from the timeseries
 	for _, sample := range ts.Samples {
 		dp := datapoints.AppendEmpty()
@@ -540,7 +544,7 @@ func addNumberDatapoints(datapoints pmetric.NumberDataPointSlice, ls labels.Labe
 	stats.Samples += len(ts.Samples)
 }
 
-func (prw *prometheusRemoteWriteReceiver) addExponentialHistogramDatapoint(datapoints pmetric.ExponentialHistogramDataPointSlice, histogram writev2.Histogram, ls labels.Labels, createdTimestamp int64, stats *promremote.WriteResponseStats) {
+func (prw *prometheusRemoteWriteReceiver) addExponentialHistogramDatapoint(datapoints pmetric.ExponentialHistogramDataPointSlice, histogram *writev2.Histogram, ls labels.Labels, createdTimestamp int64, stats *promremote.WriteResponseStats) {
 	// Drop Native Histogram with negative counts
 	if hasNegativeCounts(histogram) {
 		prw.settings.Logger.Info("Dropping Native Histogram series with negative counts",
@@ -592,7 +596,7 @@ func (prw *prometheusRemoteWriteReceiver) addExponentialHistogramDatapoint(datap
 }
 
 // hasNegativeCounts checks if a histogram has any negative counts
-func hasNegativeCounts(histogram writev2.Histogram) bool {
+func hasNegativeCounts(histogram *writev2.Histogram) bool {
 	if histogram.IsFloatHistogram() {
 		// Check overall count
 		if histogram.GetCountFloat() < 0 {
@@ -720,7 +724,7 @@ func (prw *prometheusRemoteWriteReceiver) extractScopeInfo(ls labels.Labels) (st
 }
 
 // addNHCBDatapoint converts a single Native Histogram Custom Buckets (NHCB) to OpenTelemetry histogram datapoints
-func (*prometheusRemoteWriteReceiver) addNHCBDatapoint(datapoints pmetric.HistogramDataPointSlice, histogram writev2.Histogram, ls labels.Labels, createdTimestamp int64, stats *promremote.WriteResponseStats) {
+func (*prometheusRemoteWriteReceiver) addNHCBDatapoint(datapoints pmetric.HistogramDataPointSlice, histogram *writev2.Histogram, ls labels.Labels, createdTimestamp int64, stats *promremote.WriteResponseStats) {
 	if len(histogram.CustomValues) == 0 {
 		return
 	}
@@ -744,7 +748,7 @@ func (*prometheusRemoteWriteReceiver) addNHCBDatapoint(datapoints pmetric.Histog
 }
 
 // convertNHCBBuckets converts NHCB bucket data to OpenTelemetry bucket counts
-func convertNHCBBuckets(histogram writev2.Histogram) []uint64 {
+func convertNHCBBuckets(histogram *writev2.Histogram) []uint64 {
 	// For NHCB, we need numExplicitBounds + 1 buckets (including the final +inf bucket)
 	bucketCounts := make([]uint64, len(histogram.CustomValues)+1)
 
@@ -800,7 +804,7 @@ type countSumSetter interface {
 	SetCount(uint64)
 }
 
-func setCountAndSum(histogram writev2.Histogram, dp countSumSetter) {
+func setCountAndSum(histogram *writev2.Histogram, dp countSumSetter) {
 	dp.SetSum(histogram.Sum)
 
 	if histogram.IsFloatHistogram() {
