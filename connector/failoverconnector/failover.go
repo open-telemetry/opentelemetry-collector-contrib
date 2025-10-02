@@ -27,17 +27,27 @@ type baseFailoverRouter[C any] struct {
 	errTryLock  *state.TryLock
 	notifyRetry chan struct{}
 	done        chan struct{}
+
+	//pS        *state.PipelineSelector
+	//errTryLock  *state.TryLock
+	//notifyRetry chan struct{}
+	//done        chan struct{}
 }
 
-// getCurrentConsumer returns the consumer for the current healthy level
-func (f *baseFailoverRouter[C]) getCurrentConsumer() (C, int) {
-	var nilConsumer C
-	pl := f.pS.CurrentPipeline()
-	if pl >= len(f.cfg.PipelinePriority) {
-		return nilConsumer, pl
-	}
-	return f.consumers[pl], pl
-}
+//// getNotifyRetryChannel returns the retry notification channel for strategies to use
+//func (f *baseFailoverRouter[C]) getNotifyRetryChannel() <-chan struct{} {
+//	return f.notifyRetry
+//}
+
+//// getCurrentConsumer returns the consumer for the current healthy level
+//func (f *baseFailoverRouter[C]) getCurrentConsumer() (C, int) {
+//	var nilConsumer C
+//	pl := f.pS.CurrentPipeline()
+//	if pl >= len(f.cfg.PipelinePriority) {
+//		return nilConsumer, pl
+//	}
+//	return f.consumers[pl], pl
+//}
 
 // getConsumerAtIndex returns the consumer at a specific index
 func (f *baseFailoverRouter[C]) getConsumerAtIndex(idx int) C {

@@ -15,6 +15,7 @@ import (
 
 type logsRouter struct {
 	*baseFailoverRouter[consumer.Logs]
+	strategy LogsFailoverStrategy
 }
 
 func newLogsRouter(provider consumerProvider[consumer.Logs], cfg *Config) (*logsRouter, error) {
@@ -22,51 +23,20 @@ func newLogsRouter(provider consumerProvider[consumer.Logs], cfg *Config) (*logs
 	if err != nil {
 		return nil, err
 	}
-	return &logsRouter{baseFailoverRouter: failover}, nil
+	
+	// Create the appropriate strategy based on the failover mode
+	factory := GetFailoverStrategyFactory(cfg.FailoverMode)
+	strategy := factory.CreateLogsStrategy(failover)
+	
+	return &logsRouter{
+		baseFailoverRouter: failover,
+		strategy:          strategy,
+	}, nil
 }
 
 // Consume is the logs-specific consumption method
 func (f *logsRouter) Consume(ctx context.Context, ld plog.Logs) error {
-	select {
-	case <-f.notifyRetry:
-		if !f.sampleRetryConsumers(ctx, ld) {
-			return f.consumeByHealthyPipeline(ctx, ld)
-		}
-		return nil
-	default:
-		return f.consumeByHealthyPipeline(ctx, ld)
-	}
-}
-
-// consumeByHealthyPipeline will consume the logs by the current healthy level
-func (f *logsRouter) consumeByHealthyPipeline(ctx context.Context, ld plog.Logs) error {
-	for {
-		tc, idx := f.getCurrentConsumer()
-		if idx >= len(f.cfg.PipelinePriority) {
-			return errNoValidPipeline
-		}
-
-		if err := tc.ConsumeLogs(ctx, ld); err != nil {
-			f.reportConsumerError(idx)
-			continue
-		}
-
-		return nil
-	}
-}
-
-// sampleRetryConsumers iterates through all unhealthy consumers to re-establish a healthy connection
-func (f *logsRouter) sampleRetryConsumers(ctx context.Context, ld plog.Logs) bool {
-	stableIndex := f.pS.CurrentPipeline()
-	for i := 0; i < stableIndex; i++ {
-		consumer := f.getConsumerAtIndex(i)
-		err := consumer.ConsumeLogs(ctx, ld)
-		if err == nil {
-			f.pS.ResetHealthyPipeline(i)
-			return true
-		}
-	}
-	return false
+	return f.strategy.ConsumeLogs(ctx, ld)
 }
 
 type logsFailover struct {
@@ -90,6 +60,9 @@ func (f *logsFailover) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 func (f *logsFailover) Shutdown(context.Context) error {
 	if f.failover != nil {
 		f.failover.Shutdown()
+		if f.failover.strategy != nil {
+			f.failover.strategy.Shutdown()
+		}
 	}
 	return nil
 }

@@ -83,7 +83,10 @@ func TestMetricsWithValidFailover(t *testing.T) {
 	require.NoError(t, err)
 
 	failoverConnector := conn.(*metricsFailover)
-	failoverConnector.failover.ModifyConsumerAtIndex(0, consumertest.NewErr(errMetricsConsumer))
+	mRouter := failoverConnector.failover
+
+	mRouter.ModifyConsumerAtIndex(0, consumertest.NewErr(errMetricsConsumer))
+	//failoverConnector.failover.ModifyConsumerAtIndex(0, consumertest.NewErr(errMetricsConsumer))
 	defer func() {
 		assert.NoError(t, failoverConnector.Shutdown(t.Context()))
 	}()
@@ -91,7 +94,7 @@ func TestMetricsWithValidFailover(t *testing.T) {
 	md := sampleMetric()
 
 	require.Eventually(t, func() bool {
-		return consumeMetricsAndCheckStable(failoverConnector, 1, md)
+		return consumeMetricsAndCheckStable(mRouter, 1, md)
 	}, 3*time.Second, 5*time.Millisecond)
 }
 
@@ -167,9 +170,10 @@ func TestMetricsWithQueue(t *testing.T) {
 	assert.NoError(t, conn.ConsumeMetrics(t.Context(), md))
 }
 
-func consumeMetricsAndCheckStable(conn *metricsFailover, idx int, mr pmetric.Metrics) bool {
-	_ = conn.ConsumeMetrics(context.Background(), mr)
-	stableIndex := conn.failover.pS.CurrentPipeline()
+func consumeMetricsAndCheckStable(router *metricsRouter, idx int, mr pmetric.Metrics) bool {
+	strategy := router.strategy.(*standardMetricsStrategy)
+	_ = router.Consume(context.Background(), mr)
+	stableIndex := strategy.pS.CurrentPipeline()
 	return stableIndex == idx
 }
 
