@@ -16,14 +16,6 @@ attributes:
     enabled: true
     description: ONC/Sun RPC program version.
     type: int
-  onc_rpc.program.name:
-    enabled: true
-    description: ONC/Sun RPC program name.
-    type: string
-  onc_rpc.procedure.number:
-    enabled: true
-    description: ONC/Sun RPC procedure number.
-    type: int
   onc_rpc.procedure.name:
     enabled: true
     description: ONC/Sun RPC procedure name.
@@ -34,7 +26,7 @@ attributes:
     type: string
   nfs.server.repcache.status:
     enabled: true
-    description: NFS Server replies check a Reply Cache (repcache), which can have one of 3 result states: 'hit', 'miss', or 'nocache'.
+    description: "NFS Server replies check a Reply Cache (repcache), which can have one of 3 result states: 'hit', 'miss', or 'nocache'."
     type: string
   network.transport:
     enabled: true
@@ -173,15 +165,6 @@ metrics:
     enabled: true
     description: Reports the count of kernel NFS server TCP connections accepted
     unit: '{connection}'
-    gauge:
-      value_type: int
-    stability:
-      level: development
-
-  nfs.server.rpc.count:
-    enabled: true
-    description: Reports the count of kernel NFS server RPCs handled
-    unit: '{request}'
     gauge:
       value_type: int
     stability:
