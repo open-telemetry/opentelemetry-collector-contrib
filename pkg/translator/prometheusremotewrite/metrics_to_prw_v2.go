@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 	"github.com/prometheus/otlptranslator"
 	"github.com/prometheus/prometheus/prompb"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
@@ -57,7 +58,7 @@ func newPrometheusConverterV2(settings Settings) *prometheusConverterV2 {
 		conflicts:   map[uint64][]*writev2.TimeSeries{},
 		symbolTable: writev2.NewSymbolTable(),
 		metricNamer: otlptranslator.MetricNamer{WithMetricSuffixes: settings.AddMetricSuffixes, Namespace: settings.Namespace},
-		labelNamer:  otlptranslator.LabelNamer{},
+		labelNamer:  otlptranslator.LabelNamer{UnderscoreLabelSanitization: !prometheus.DropSanitizationGate.IsEnabled()},
 		unitNamer:   otlptranslator.UnitNamer{},
 	}
 }

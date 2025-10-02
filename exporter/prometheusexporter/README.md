@@ -68,7 +68,7 @@ Given the example, metrics will be available at `https://1.2.3.4:1234/metrics`.
 
 There are also flags that control translation behavior:
 
-- `pkg.translator.prometheus.PermissiveLabelSanitization`: (default = `false`): If true, changes labels starting with `_` to `key_` for compatibility with OpenMetrics 1.0 specification.
+- `pkg.translator.prometheus.PermissiveLabelSanitization`: (default = `false`): when false, changes labels starting with `_` to `key_` for compatibility with OpenMetrics 1.0 specification.
 - `pkg.translator.prometheus.NormalizeName`: **Deprecated and unused**: Use `translation_strategy` configuration described above instead.
 
 ## Metric names and labels normalization

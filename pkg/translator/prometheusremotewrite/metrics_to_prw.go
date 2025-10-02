@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strconv"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 	"github.com/prometheus/otlptranslator"
 	"github.com/prometheus/prometheus/prompb"
 	prom "github.com/prometheus/prometheus/storage/remote/otlptranslator/prometheusremotewrite"
@@ -53,7 +54,7 @@ func newPrometheusConverter(settings Settings) *prometheusConverter {
 		unique:      map[uint64]*prompb.TimeSeries{},
 		conflicts:   map[uint64][]*prompb.TimeSeries{},
 		metricNamer: otlptranslator.MetricNamer{WithMetricSuffixes: settings.AddMetricSuffixes, Namespace: settings.Namespace},
-		labelNamer:  otlptranslator.LabelNamer{},
+		labelNamer:  otlptranslator.LabelNamer{UnderscoreLabelSanitization: !prometheus.DropSanitizationGate.IsEnabled()},
 		unitNamer:   otlptranslator.UnitNamer{},
 	}
 }
