@@ -184,9 +184,7 @@ metrics:
     enabled: true
     description: Reports the count of kernel NFSv4+ server operations
     unit: '{operation}'
-    attributes:
-    - onc_rpc.version
-    - nfs.operation.name
+    attributes: [onc_rpc.version, nfs.operation.name]
     gauge:
       value_type: int
     stability:
@@ -196,9 +194,7 @@ metrics:
     enabled: true
     description: Reports the count of kernel NFS server procedures
     unit: '{procedure}'
-    attributes:
-    - onc_rpc.version
-    - onc_rpc.procedure.name
+    attributes: [onc_rpc.version, onc_rpc.procedure.name]
     gauge:
       value_type: int
     stability:

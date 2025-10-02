@@ -77,10 +77,9 @@ func (s *nfsScraper) recordNfsMetrics(now pcommon.Timestamp) {
 	}
 
 	if s.nfsStats.nfsNetStats != nil {
-		s.mb.RecordNfsClientNetCountDataPoint(now, int64(s.nfsStats.nfsNetStats.netCount))
-		s.mb.RecordNfsClientNetUDPCountDataPoint(now, int64(s.nfsStats.nfsNetStats.udpCount))
-		s.mb.RecordNfsClientNetTCPCountDataPoint(now, int64(s.nfsStats.nfsNetStats.tcpCount))
-		s.mb.RecordNfsClientNetTCPConnectionCountDataPoint(now, int64(s.nfsStats.nfsNetStats.tcpConnectionCount))
+		s.mb.RecordNfsClientNetCountDataPoint(now, int64(s.nfsStats.nfsNetStats.udpCount), metadata.AttributeNetworkTransportUDP)
+		s.mb.RecordNfsClientNetCountDataPoint(now, int64(s.nfsStats.nfsNetStats.tcpCount), metadata.AttributeNetworkTransportTCP)
+		s.mb.RecordNfsClientNetTCPConnectionAcceptedDataPoint(now, int64(s.nfsStats.nfsNetStats.tcpConnectionCount))
 	}
 
 	if s.nfsStats.nfsRPCStats != nil {
@@ -114,9 +113,9 @@ func (s *nfsScraper) recordNfsdMetrics(now pcommon.Timestamp) {
 	}
 
 	if s.nfsdStats.nfsdRepcacheStats != nil {
-		s.mb.RecordNfsServerRepcacheHitsDataPoint(now, int64(s.nfsdStats.nfsdRepcacheStats.hits))
-		s.mb.RecordNfsServerRepcacheMissesDataPoint(now, int64(s.nfsdStats.nfsdRepcacheStats.misses))
-		s.mb.RecordNfsServerRepcacheNocacheDataPoint(now, int64(s.nfsdStats.nfsdRepcacheStats.nocache))
+		s.mb.RecordNfsServerRepcacheRequestsDataPoint(now, int64(s.nfsdStats.nfsdRepcacheStats.hits), metadata.AttributeNfsServerRepcacheStatusHit)
+		s.mb.RecordNfsServerRepcacheRequestsDataPoint(now, int64(s.nfsdStats.nfsdRepcacheStats.misses), metadata.AttributeNfsServerRepcacheStatusMiss)
+		s.mb.RecordNfsServerRepcacheRequestsDataPoint(now, int64(s.nfsdStats.nfsdRepcacheStats.nocache), metadata.AttributeNfsServerRepcacheStatusNocache)
 	}
 
 	if s.nfsdStats.nfsdFhStats != nil {
@@ -124,8 +123,8 @@ func (s *nfsScraper) recordNfsdMetrics(now pcommon.Timestamp) {
 	}
 
 	if s.nfsdStats.nfsdIoStats != nil {
-		s.mb.RecordNfsServerIoReadCountDataPoint(now, int64(s.nfsdStats.nfsdIoStats.read))
-		s.mb.RecordNfsServerIoWriteCountDataPoint(now, int64(s.nfsdStats.nfsdIoStats.write))
+		s.mb.RecordNfsServerIoDataPoint(now, int64(s.nfsdStats.nfsdIoStats.read), metadata.AttributeNetworkIoDirectionReceive)
+		s.mb.RecordNfsServerIoDataPoint(now, int64(s.nfsdStats.nfsdIoStats.write), metadata.AttributeNetworkIoDirectionTransmit)
 	}
 
 	if s.nfsdStats.nfsdThreadStats != nil {
@@ -133,18 +132,15 @@ func (s *nfsScraper) recordNfsdMetrics(now pcommon.Timestamp) {
 	}
 
 	if s.nfsdStats.nfsdNetStats != nil {
-		s.mb.RecordNfsServerNetCountDataPoint(now, int64(s.nfsdStats.nfsdNetStats.netCount))
-		s.mb.RecordNfsServerNetUDPCountDataPoint(now, int64(s.nfsdStats.nfsdNetStats.udpCount))
-		s.mb.RecordNfsServerNetTCPCountDataPoint(now, int64(s.nfsdStats.nfsdNetStats.tcpCount))
-		s.mb.RecordNfsServerNetTCPConnectionCountDataPoint(now, int64(s.nfsdStats.nfsdNetStats.tcpConnectionCount))
+		s.mb.RecordNfsServerNetCountDataPoint(now, int64(s.nfsdStats.nfsdNetStats.udpCount), metadata.AttributeNetworkTransportUDP)
+		s.mb.RecordNfsServerNetCountDataPoint(now, int64(s.nfsdStats.nfsdNetStats.tcpCount), metadata.AttributeNetworkTransportTCP)
+		s.mb.RecordNfsServerNetTCPConnectionAcceptedDataPoint(now, int64(s.nfsdStats.nfsdNetStats.tcpConnectionCount))
 	}
 
 	if s.nfsdStats.nfsdRPCStats != nil {
-		s.mb.RecordNfsServerRPCCountDataPoint(now, int64(s.nfsdStats.nfsdRPCStats.rpcCount))
-		s.mb.RecordNfsServerRPCBadCountDataPoint(now, int64(s.nfsdStats.nfsdRPCStats.badCount))
-		s.mb.RecordNfsServerRPCBadfmtCountDataPoint(now, int64(s.nfsdStats.nfsdRPCStats.badFmtCount))
-		s.mb.RecordNfsServerRPCBadauthCountDataPoint(now, int64(s.nfsdStats.nfsdRPCStats.badAuthCount))
-		s.mb.RecordNfsServerRPCBadclientCountDataPoint(now, int64(s.nfsdStats.nfsdRPCStats.badClientCount))
+		s.mb.RecordNfsServerRPCCountDataPoint(now, int64(s.nfsdStats.nfsdRPCStats.badFmtCount), "format")
+		s.mb.RecordNfsServerRPCCountDataPoint(now, int64(s.nfsdStats.nfsdRPCStats.badAuthCount), "auth")
+		s.mb.RecordNfsServerRPCCountDataPoint(now, int64(s.nfsdStats.nfsdRPCStats.badClientCount), "client")
 	}
 
 	if s.nfsdStats.nfsdV3ProcedureStats != nil {
