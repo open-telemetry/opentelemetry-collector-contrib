@@ -1,7 +1,7 @@
 # Use this changelog template to create an entry for release notes.
 
 # One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
-change_type: enhancement
+change_type: breaking
 
 # The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
 component: clickhouseexporter
@@ -18,6 +18,7 @@ issues: []
 subtext: |
   The JSON columns now include a helper column for keeping track of what keys are inside of the JSON object.
   This change also introduces schema detection logic to reduce breaking changes whenever a column is added.
+  Existing users can enable these features by manually adding all the new columns to their table.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
