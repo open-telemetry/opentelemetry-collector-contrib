@@ -41,7 +41,7 @@ func newTestTracesJSONExporter(t *testing.T, dsn string, testSchemaFeatures bool
 
 	require.NoError(t, exporter.start(t.Context(), nil))
 
-	// Tests the schema feature flags by removing newer columns. The insert logic should adapt.
+	// Tests the schema feature flags by disabling newer columns. The insert logic should adapt.
 	if testSchemaFeatures {
 		exporter.schemaFeatures.AttributeKeys = false
 		exporter.renderInsertTracesJSONSQL()

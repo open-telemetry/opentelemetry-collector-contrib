@@ -62,6 +62,8 @@ func (e *logsJSONExporter) start(ctx context.Context, _ component.Host) error {
 		return fmt.Errorf("schema detection: %w", err)
 	}
 
+	e.renderInsertLogsJSONSQL()
+
 	return nil
 }
 
@@ -87,8 +89,6 @@ func (e *logsJSONExporter) detectSchemaFeatures(ctx context.Context) error {
 			e.schemaFeatures.AttributeKeys = true
 		}
 	}
-
-	e.renderInsertLogsJSONSQL()
 
 	return nil
 }

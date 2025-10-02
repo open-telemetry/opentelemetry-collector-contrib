@@ -62,6 +62,8 @@ func (e *tracesJSONExporter) start(ctx context.Context, _ component.Host) error 
 		return fmt.Errorf("schema detection: %w", err)
 	}
 
+	e.renderInsertTracesJSONSQL()
+
 	return nil
 }
 
@@ -84,8 +86,6 @@ func (e *tracesJSONExporter) detectSchemaFeatures(ctx context.Context) error {
 			e.schemaFeatures.AttributeKeys = true
 		}
 	}
-
-	e.renderInsertTracesJSONSQL()
 
 	return nil
 }
