@@ -244,6 +244,12 @@ func getOSNfsStats() (*NfsStats, error) {
 }
 
 func getOSNfsdStats() (*nfsdStats, error) {
+	data := strings.NewReader(nfsProcFileOut)
+
+	rv, err := parseNfsStats(data)
+	fmt.Fprintf(os.Stderr, "%#v\n", rv)
+	return rv, err
+
 	f, err := os.Open(nfsdProcFile)
 	if err != nil {
 		return nil, err
@@ -255,6 +261,12 @@ func getOSNfsdStats() (*nfsdStats, error) {
 }
 
 func parseNfsNetStats(values []uint64) (*nfsNetStats, error) {
+	data := strings.NewReader(nfsProcFileOut)
+
+	rv, err := parseNfsStats(data)
+	fmt.Fprintf(os.Stderr, "%#v\n", rv)
+	return rv, err
+
 	if len(values) < 4 {
 		return nil, errors.New("parsing nfs client network stats: unexpected field count")
 	}
