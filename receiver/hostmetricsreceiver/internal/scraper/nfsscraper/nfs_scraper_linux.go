@@ -327,7 +327,7 @@ func parseNfsdIoStats(values []uint64) (*nfsdIoStats, error) {
 
 func parseNfsdThreadStats(values []uint64) (*nfsdThreadStats, error) {
 	if len(values) < 1 {
-		return nil, errors.New("parsing nfs server io stats: unexpected field count")
+		return nil, errors.New("parsing nfs server thread stats: unexpected field count")
 	}
 
 	return &nfsdThreadStats{

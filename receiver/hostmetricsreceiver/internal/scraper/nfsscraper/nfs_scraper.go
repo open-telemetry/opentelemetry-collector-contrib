@@ -16,9 +16,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/nfsscraper/internal/metadata"
 )
 
+
 const (
-	nfsMetricsLen  = 97
-	nfsdMetricsLen = 113
+	// 3 net metrics + 3 rpc metrics + len(nfsV3Procedures) + len(nfsV4Procedures) = 97 metrics
+	nfsMetricsLen = 3 + 3 + len(nfsV3Procedures) + len(nfsV4Procedures)
+	// 3 repcache metrics + 1 fh metric + 2 io metrics + 1 thread metric + 3 net metrics + 5 rpc metrics + len(nfsdV3Procedures) + len(nfsdV4Procedures) + len(nfsdV4Operations) = 115 metrics
+	nfsdMetricsLen = 3 + 1 + 2 + 1 + 3 + 5 + len(nfsdV3Procedures) + len(nfsdV4Procedures) + len(nfsdV4Operations)
 )
 
 // nfsScraper for NFS Metrics
