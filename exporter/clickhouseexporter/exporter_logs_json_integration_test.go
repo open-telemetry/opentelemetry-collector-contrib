@@ -51,7 +51,7 @@ func newTestLogsJSONExporter(t *testing.T, dsn string, testSchemaFeatures bool, 
 	return exporter
 }
 
-func verifyExportLogsJSON(t *testing.T, exporter *logsJSONExporter, mapBody bool, testSchemaFeatures bool) {
+func verifyExportLogsJSON(t *testing.T, exporter *logsJSONExporter, mapBody, testSchemaFeatures bool) {
 	tableName := fmt.Sprintf("%q.%q", exporter.cfg.database(), exporter.cfg.LogsTableName)
 
 	// Clear table for when mapBody test runs under same table name
