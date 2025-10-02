@@ -195,6 +195,7 @@ func obfuscateSQL(rawQuery string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	return obfuscatedQuery.Query, nil
 }
 
