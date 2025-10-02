@@ -17,7 +17,9 @@ type Config struct {
 
 type bucketConfig struct {
 	// ProjectID defines the project where the bucket will be created or
-	// where it exists.
+	// where it exists. If it is left empty, it will query the metadata
+	// endpoint. It requires the collector to be running in a Google Cloud
+	// environment.
 	ProjectID string `mapstructure:"project_id"`
 
 	// Name for the bucket storage.
@@ -37,7 +39,9 @@ type bucketConfig struct {
 	// used.
 	ReuseIfExists bool `mapstructure:"reuse_if_exists"`
 
-	// Region where bucket will be created or where it exists.
+	// Region where bucket will be created or where it exists. If it is left
+	// empty, it will query the metadata endpoint. It requires the collector
+	// to be running in a Google Cloud environment.
 	Region string `mapstructure:"region"`
 }
 
@@ -53,17 +57,10 @@ func createDefaultConfig() component.Config {
 }
 
 func (c *bucketConfig) Validate() error {
-	var errs []error
-	if c.ProjectID == "" {
-		errs = append(errs, errors.New("project_id is required"))
-	}
 	if c.Name == "" {
-		errs = append(errs, errors.New("name is required"))
+		return errors.New("name is required")
 	}
-	if c.Region == "" {
-		errs = append(errs, errors.New("region is required"))
-	}
-	return errors.Join(errs...)
+	return nil
 }
 
 func (c *Config) Validate() error {

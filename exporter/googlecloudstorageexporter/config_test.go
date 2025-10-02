@@ -45,14 +45,6 @@ func TestValidate(t *testing.T) {
 			expectedErr: "bucket: name is required",
 		},
 		{
-			id:          component.NewIDWithName(metadata.Type, "empty_bucket_region"),
-			expectedErr: "bucket: region is required",
-		},
-		{
-			id:          component.NewIDWithName(metadata.Type, "empty_bucket_project_id"),
-			expectedErr: "bucket: project_id is required",
-		},
-		{
 			id:          component.NewIDWithName(metadata.Type, "empty_encoding"),
 			expectedErr: "encoding is required",
 		},

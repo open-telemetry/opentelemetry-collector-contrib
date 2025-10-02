@@ -11,18 +11,6 @@ googlecloudstorage/empty_bucket_name:
     region: test-region
     project_id: test-project-id
 
-googlecloudstorage/empty_bucket_region:
-  encoding: test
-  bucket:
-    name: test-bucket
-    project_id: test-project-id
-
-googlecloudstorage/empty_bucket_project_id:
-  encoding: test
-  bucket:
-    region: test-region
-    name: test-bucket
-
 googlecloudstorage/empty_encoding:
   bucket:
     region: test-region
