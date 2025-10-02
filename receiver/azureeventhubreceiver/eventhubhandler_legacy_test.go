@@ -25,7 +25,12 @@ func (h *mockLegacyHub) GetRuntimeInformation(_ context.Context) (*eventhub.HubR
 	return &h.eventHubProperties, nil
 }
 
-func (h *mockLegacyHub) Receive(_ context.Context, partitionID string, _ eventhub.Handler, opts ...eventhub.ReceiveOption) (*eventhub.ListenerHandle, error) {
+func (h *mockLegacyHub) Receive(
+	_ context.Context,
+	partitionID string,
+	_ eventhub.Handler,
+	opts ...eventhub.ReceiveOption,
+) (*eventhub.ListenerHandle, error) {
 	h.receiveCalls++
 	h.receiveOptions = opts
 	h.receivePartitionID = partitionID
@@ -77,7 +82,7 @@ func TestHubWrapperLegacyImpl_Receive(t *testing.T) {
 	}{
 		{
 			name:                "simple",
-			expectedOptionCount: 0,
+			expectedOptionCount: 1, // Default to latest offset when no storage and no offset
 			shouldCallReceive:   true,
 		},
 		{
@@ -85,6 +90,7 @@ func TestHubWrapperLegacyImpl_Receive(t *testing.T) {
 			partitionID:         "partition1",
 			expectedPartitionID: "partition1",
 			shouldCallReceive:   true,
+			expectedOptionCount: 1, // Default to latest offset when no storage and no offset
 		},
 		{
 			name:                "offset with apply",
@@ -98,14 +104,14 @@ func TestHubWrapperLegacyImpl_Receive(t *testing.T) {
 			offset:              "1",
 			applyOffset:         false,
 			shouldCallReceive:   true,
-			expectedOptionCount: 0,
+			expectedOptionCount: 1, // Default to latest offset when no storage and no offset
 		},
 		{
 			name:                "no offset with apply",
 			offset:              "",
 			applyOffset:         true,
 			shouldCallReceive:   true,
-			expectedOptionCount: 0,
+			expectedOptionCount: 1, // Default to latest offset when no storage and no offset
 		},
 		{
 			name:                "offset with partition id",
@@ -120,7 +126,7 @@ func TestHubWrapperLegacyImpl_Receive(t *testing.T) {
 			name:                "consumer group",
 			consumerGroup:       "cg1",
 			shouldCallReceive:   true,
-			expectedOptionCount: 1,
+			expectedOptionCount: 2, // Consumer group + latest offset
 		},
 		{
 			name:                "consumer group and offset",
@@ -145,9 +151,14 @@ func TestHubWrapperLegacyImpl_Receive(t *testing.T) {
 				},
 			}
 
-			_, err := mockHubWrapper.Receive(t.Context(), test.partitionID, func(_ context.Context, _ *azureEvent) error {
-				return nil
-			}, test.applyOffset)
+			_, err := mockHubWrapper.Receive(
+				t.Context(),
+				test.partitionID,
+				func(_ context.Context, _ *azureEvent) error {
+					return nil
+				},
+				test.applyOffset,
+			)
 			require.NoError(t, err)
 
 			if test.shouldCallReceive {

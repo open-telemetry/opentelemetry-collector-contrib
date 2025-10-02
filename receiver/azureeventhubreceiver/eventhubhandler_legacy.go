@@ -13,19 +13,30 @@ import (
 
 type legacyHubWrapper interface {
 	GetRuntimeInformation(ctx context.Context) (*eventhub.HubRuntimeInformation, error)
-	Receive(ctx context.Context, partitionID string, handler eventhub.Handler, opts ...eventhub.ReceiveOption) (*eventhub.ListenerHandle, error)
+	Receive(
+		ctx context.Context,
+		partitionID string,
+		handler eventhub.Handler,
+		opts ...eventhub.ReceiveOption,
+	) (*eventhub.ListenerHandle, error)
 	Close(ctx context.Context) error
 }
 
 func newLegacyHubWrapper(h *eventhubHandler) (*hubWrapperLegacyImpl, error) {
+	options := []eventhub.HubOption{}
+	if h.storageClient != nil {
+		options = append(options,
+			eventhub.HubWithOffsetPersistence(
+				&storageCheckpointPersister[persist.Checkpoint]{
+					storageClient: h.storageClient,
+					defaultValue:  persist.NewCheckpointFromStartOfStream(),
+				},
+			),
+		)
+	}
 	hub, newHubErr := eventhub.NewHubFromConnectionString(
 		h.config.Connection,
-		eventhub.HubWithOffsetPersistence(
-			&storageCheckpointPersister[persist.Checkpoint]{
-				storageClient: h.storageClient,
-				defaultValue:  persist.NewCheckpointFromStartOfStream(),
-			},
-		),
+		options...,
 	)
 	if newHubErr != nil {
 		h.settings.Logger.Debug("Error connecting to Event Hub", zap.Error(newHubErr))
@@ -58,14 +69,21 @@ func (h *hubWrapperLegacyImpl) GetRuntimeInformation(ctx context.Context) (*hubR
 	return nil, errNoConfig
 }
 
-func (h *hubWrapperLegacyImpl) Receive(ctx context.Context, partitionID string, handler hubHandler, applyOffset bool) (listenerHandleWrapper, error) {
+func (h *hubWrapperLegacyImpl) Receive(
+	ctx context.Context,
+	partitionID string,
+	handler hubHandler,
+	applyOffset bool,
+) (listenerHandleWrapper, error) {
 	receiverOptions := []eventhub.ReceiveOption{}
 	if applyOffset && h.config.Offset != "" {
 		receiverOptions = append(receiverOptions, eventhub.ReceiveWithStartingOffset(h.config.Offset))
 	}
-
 	if h.config.ConsumerGroup != "" {
 		receiverOptions = append(receiverOptions, eventhub.ReceiveWithConsumerGroup(h.config.ConsumerGroup))
+	}
+	if h.config.StorageID == nil && (!applyOffset || h.config.Offset == "") {
+		receiverOptions = append(receiverOptions, eventhub.ReceiveWithLatestOffset())
 	}
 
 	if h.hub != nil {
