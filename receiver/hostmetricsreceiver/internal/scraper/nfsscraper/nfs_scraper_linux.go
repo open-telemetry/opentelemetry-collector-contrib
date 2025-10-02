@@ -233,6 +233,8 @@ var nfsdV4Operations = []string{
 }
 
 func getOSNfsStats() (*NfsStats, error) {
+	debugDump("nfs", nfsProcFile)
+
 	f, err := os.Open(nfsProcFile)
 	if err != nil {
 		return nil, err
@@ -244,6 +246,8 @@ func getOSNfsStats() (*NfsStats, error) {
 }
 
 func getOSNfsdStats() (*nfsdStats, error) {
+	debugDump("nfsd", nfsdProcFile)
+
 	f, err := os.Open(nfsdProcFile)
 	if err != nil {
 		return nil, err
