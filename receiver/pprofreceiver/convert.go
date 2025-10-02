@@ -18,7 +18,7 @@ import (
 var errInvalPprof = errors.New("invalid pprof data")
 
 const (
-	// noAttrUnit is a helper to indicate that no
+	// noAttrUnit is an internal helper to indicate that no
 	// unit is associated to this Attribute.
 	noAttrUnit = int32(-1)
 )
@@ -30,8 +30,8 @@ type attr struct {
 	unitStrIdx int32
 }
 
-// cache is a helper struct around pprofile.ProfilesDictionary.
-type cache struct {
+// lookupTables is a helper struct around pprofile.ProfilesDictionary.
+type lookupTables struct {
 	stringTable        map[string]int32
 	lastStringTableIdx int32
 
@@ -62,7 +62,7 @@ func convertPprofToPprofile(src *profile.Profile) (*pprofile.Profiles, error) {
 	lastStackTableIdx := int32(0)
 
 	// Initialize remaining lookup tables of pprofile.ProfilesDictionary in initCache.
-	transformCache := initCache()
+	lts := initLookupTables()
 
 	// Add envelope messages
 	rp := dst.ResourceProfiles().AppendEmpty()
@@ -76,8 +76,8 @@ func convertPprofToPprofile(src *profile.Profile) (*pprofile.Profiles, error) {
 		p := sp.Profiles().AppendEmpty()
 
 		// pprof.Profile.sample_type
-		p.SampleType().SetTypeStrindex(getIdxForString(transformCache, st.Type))
-		p.SampleType().SetUnitStrindex(getIdxForString(transformCache, st.Unit))
+		p.SampleType().SetTypeStrindex(getIdxForString(lts, st.Type))
+		p.SampleType().SetUnitStrindex(getIdxForString(lts, st.Unit))
 
 		// pprof.Profile.sample
 		for _, sample := range src.Sample {
@@ -114,11 +114,11 @@ func convertPprofToPprofile(src *profile.Profile) (*pprofile.Profiles, error) {
 					m.SetFileOffset(loc.Mapping.Offset)
 
 					// pprof.Mapping.filename
-					m.SetFilenameStrindex(getIdxForString(transformCache, loc.Mapping.File))
+					m.SetFilenameStrindex(getIdxForString(lts, loc.Mapping.File))
 
 					// pprof.Mapping.build_id
 					// Assume all build_ids are GNU build IDs
-					buildIDIdx := getIdxForAttribute(transformCache,
+					buildIDIdx := getIdxForAttribute(lts,
 						string(semconv.ProcessExecutableBuildIDGNUKey), loc.Mapping.BuildID)
 					m.AttributeIndices().Append(buildIDIdx)
 
@@ -127,22 +127,22 @@ func convertPprofToPprofile(src *profile.Profile) (*pprofile.Profiles, error) {
 					// https://github.com/open-telemetry/semantic-conventions/pull/2522
 					// Therefore hardcode the values in the meantime.
 					if loc.Mapping.HasFunctions {
-						idx := getIdxForAttribute(transformCache, "pprof.mapping.has_functions", true)
+						idx := getIdxForAttribute(lts, "pprof.mapping.has_functions", true)
 						m.AttributeIndices().Append(idx)
 					}
 
 					if loc.Mapping.HasFilenames {
-						idx := getIdxForAttribute(transformCache, "pprof.mapping.has_filenames", true)
+						idx := getIdxForAttribute(lts, "pprof.mapping.has_filenames", true)
 						m.AttributeIndices().Append(idx)
 					}
 
 					if loc.Mapping.HasLineNumbers {
-						idx := getIdxForAttribute(transformCache, "pprof.mapping.has_line_numbers", true)
+						idx := getIdxForAttribute(lts, "pprof.mapping.has_line_numbers", true)
 						m.AttributeIndices().Append(idx)
 					}
 
 					if loc.Mapping.HasInlineFrames {
-						idx := getIdxForAttribute(transformCache, "pprof.mapping.has_inline_frames", true)
+						idx := getIdxForAttribute(lts, "pprof.mapping.has_inline_frames", true)
 						m.AttributeIndices().Append(idx)
 					}
 					l.SetMappingIndex(lastMappingTableIdx)
@@ -164,13 +164,13 @@ func convertPprofToPprofile(src *profile.Profile) (*pprofile.Profiles, error) {
 						// TODO
 
 						// pprof.Function.name
-						fn.SetNameStrindex(getIdxForString(transformCache, line.Function.Name))
+						fn.SetNameStrindex(getIdxForString(lts, line.Function.Name))
 
 						// pprof.Function.system_name
-						fn.SetSystemNameStrindex(getIdxForString(transformCache, line.Function.SystemName))
+						fn.SetSystemNameStrindex(getIdxForString(lts, line.Function.SystemName))
 
 						// pprof.Function.filename
-						fn.SetFilenameStrindex(getIdxForString(transformCache, line.Function.Filename))
+						fn.SetFilenameStrindex(getIdxForString(lts, line.Function.Filename))
 
 						// pprof.Function.start_line
 						fn.SetStartLine(line.Function.StartLine)
@@ -187,7 +187,7 @@ func convertPprofToPprofile(src *profile.Profile) (*pprofile.Profiles, error) {
 
 				// pprof.Location.is_folded
 				if loc.IsFolded {
-					idx := getIdxForAttribute(transformCache, "pprof.location.is_folded", true)
+					idx := getIdxForAttribute(lts, "pprof.location.is_folded", true)
 					l.AttributeIndices().Append(idx)
 				}
 			}
@@ -213,9 +213,9 @@ func convertPprofToPprofile(src *profile.Profile) (*pprofile.Profiles, error) {
 				var idx int32
 				lu, exist := sample.NumUnit[lk]
 				if !exist {
-					idx = getIdxForAttribute(transformCache, lk, lv)
+					idx = getIdxForAttribute(lts, lk, lv)
 				} else {
-					idx = getIdxForAttributeWithUnit(transformCache, lk, lu[0], lv)
+					idx = getIdxForAttributeWithUnit(lts, lk, lu[0], lv)
 				}
 				s.AttributeIndices().Append(idx)
 			}
@@ -228,9 +228,9 @@ func convertPprofToPprofile(src *profile.Profile) (*pprofile.Profiles, error) {
 				var idx int32
 				lu, exist := sample.NumUnit[lk]
 				if !exist {
-					idx = getIdxForAttribute(transformCache, lk, lv)
+					idx = getIdxForAttribute(lts, lk, lv)
 				} else {
-					idx = getIdxForAttributeWithUnit(transformCache, lk, lu[0], lv)
+					idx = getIdxForAttributeWithUnit(lts, lk, lu[0], lv)
 				}
 				s.AttributeIndices().Append(idx)
 			}
@@ -253,11 +253,11 @@ func convertPprofToPprofile(src *profile.Profile) (*pprofile.Profiles, error) {
 		// is no 1 to 1 mapping here.
 
 		// pprof.Profile.drop_frames
-		dropFramesIdx := getIdxForAttribute(transformCache, "drop_frames", src.DropFrames)
+		dropFramesIdx := getIdxForAttribute(lts, "drop_frames", src.DropFrames)
 		p.AttributeIndices().Append(dropFramesIdx)
 
 		// pprof.Profile.keep_frames
-		keepFramesIdx := getIdxForAttribute(transformCache, "keep_frames", src.KeepFrames)
+		keepFramesIdx := getIdxForAttribute(lts, "keep_frames", src.KeepFrames)
 		p.AttributeIndices().Append(keepFramesIdx)
 
 		// pprof.Profile.time_nanos
@@ -267,15 +267,15 @@ func convertPprofToPprofile(src *profile.Profile) (*pprofile.Profiles, error) {
 		p.SetDuration(pcommon.Timestamp(src.DurationNanos))
 
 		// pprof.Profile.period_type
-		p.PeriodType().SetTypeStrindex(getIdxForString(transformCache, src.PeriodType.Type))
-		p.PeriodType().SetUnitStrindex(getIdxForString(transformCache, src.PeriodType.Unit))
+		p.PeriodType().SetTypeStrindex(getIdxForString(lts, src.PeriodType.Type))
+		p.PeriodType().SetUnitStrindex(getIdxForString(lts, src.PeriodType.Unit))
 
 		// pprof.Profile.period
 		p.SetPeriod(src.Period)
 
 		// pprof.Profile.comment
 		for _, c := range src.Comments {
-			idx := getIdxForString(transformCache, c)
+			idx := getIdxForString(lts, c)
 			p.CommentStrindices().Append(idx)
 		}
 
@@ -283,11 +283,11 @@ func convertPprofToPprofile(src *profile.Profile) (*pprofile.Profiles, error) {
 		// As OTel pprofile uses a single Sample Type, it is implicit its default type.
 
 		// pprof.Profile.doc_url
-		docURLIdx := getIdxForAttribute(transformCache, "doc_url", src.DocURL)
+		docURLIdx := getIdxForAttribute(lts, "doc_url", src.DocURL)
 		p.AttributeIndices().Append(docURLIdx)
 	}
 
-	if err := dumpTransformCache(dst.Dictionary(), transformCache); err != nil {
+	if err := dumpLookupTables(dst.Dictionary(), lts); err != nil {
 		return nil, err
 	}
 	return &dst, nil
@@ -295,32 +295,32 @@ func convertPprofToPprofile(src *profile.Profile) (*pprofile.Profiles, error) {
 
 // getIdxForString returns the corresponding index for the string.
 // If the string does not yet exist in the cache, it will be adedd.
-func getIdxForString(c cache, s string) int32 {
-	if idx, exists := c.stringTable[s]; exists {
+func getIdxForString(lts lookupTables, s string) int32 {
+	if idx, exists := lts.stringTable[s]; exists {
 		return idx
 	}
-	c.lastStringTableIdx++
-	c.stringTable[s] = c.lastStringTableIdx
-	return c.lastStringTableIdx
+	lts.lastStringTableIdx++
+	lts.stringTable[s] = lts.lastStringTableIdx
+	return lts.lastStringTableIdx
 }
 
 // getIdxForAttribute returns the corresponding index for the attribute.
 // If the attribute does not yet exist in the cache, it will be added.
-func getIdxForAttribute(c cache, key string, value any) int32 {
-	return getIdxForAttributeWithUnit(c, key, "", value)
+func getIdxForAttribute(lts lookupTables, key string, value any) int32 {
+	return getIdxForAttributeWithUnit(lts, key, "", value)
 }
 
 // getIdxForAttributeWithUnit returns the corresponding index for the attribute.
 // If the attribute does not yet exist in the cache, it will be added.
-func getIdxForAttributeWithUnit(c cache, key, unit string, value any) int32 {
-	keyStrIdx := getIdxForString(c, key)
+func getIdxForAttributeWithUnit(lts lookupTables, key, unit string, value any) int32 {
+	keyStrIdx := getIdxForString(lts, key)
 
 	unitStrIdx := noAttrUnit
 	if unit != "" {
-		unitStrIdx = getIdxForString(c, unit)
+		unitStrIdx = getIdxForString(lts, unit)
 	}
 
-	for attr, idx := range c.attributeTable {
+	for attr, idx := range lts.attributeTable {
 		if attr.keyStrIdx != keyStrIdx {
 			continue
 		}
@@ -333,51 +333,51 @@ func getIdxForAttributeWithUnit(c cache, key, unit string, value any) int32 {
 		return idx
 	}
 
-	c.lastAttributeTableIdx++
-	c.attributeTable[attr{
+	lts.lastAttributeTableIdx++
+	lts.attributeTable[attr{
 		keyStrIdx:  keyStrIdx,
 		value:      value,
 		unitStrIdx: unitStrIdx,
-	}] = c.lastAttributeTableIdx
-	return c.lastAttributeTableIdx
+	}] = lts.lastAttributeTableIdx
+	return lts.lastAttributeTableIdx
 }
 
 func isEqualValue(a, b any) bool {
 	return reflect.DeepEqual(a, b)
 }
 
-// initCache returns a supporting elements to construct pprofile.ProfilesDictionary.
-func initCache() cache {
-	c := cache{
+// initLookupTables returns a supporting elements to construct pprofile.ProfilesDictionary.
+func initLookupTables() lookupTables {
+	lts := lookupTables{
 		stringTable:    make(map[string]int32),
 		attributeTable: make(map[attr]int32),
 	}
 
 	// string_table[0] must always be "" and present.
-	c.lastStringTableIdx = 0
-	c.stringTable[""] = c.lastStringTableIdx
+	lts.lastStringTableIdx = 0
+	lts.stringTable[""] = lts.lastStringTableIdx
 
 	// attribute_table[0] must always be zero value (KeyValueAndUnit{}) and present.
-	c.lastAttributeTableIdx = 0
-	c.attributeTable[attr{}] = c.lastAttributeTableIdx
+	lts.lastAttributeTableIdx = 0
+	lts.attributeTable[attr{}] = lts.lastAttributeTableIdx
 
-	return c
+	return lts
 }
 
-// dumpTransformCache fills pprofile.ProfilesDictionary with the content of
+// dumpLookupTables fills pprofile.ProfilesDictionary with the content of
 // the supporting cache.
-func dumpTransformCache(dic pprofile.ProfilesDictionary, c cache) error {
-	for i := 0; i < len(c.stringTable); i++ {
+func dumpLookupTables(dic pprofile.ProfilesDictionary, lts lookupTables) error {
+	for i := 0; i < len(lts.stringTable); i++ {
 		dic.StringTable().Append("")
 	}
-	for s, id := range c.stringTable {
+	for s, id := range lts.stringTable {
 		dic.StringTable().SetAt(int(id), s)
 	}
 
-	for i := 0; i < len(c.attributeTable); i++ {
+	for i := 0; i < len(lts.attributeTable); i++ {
 		dic.AttributeTable().AppendEmpty()
 	}
-	for a, id := range c.attributeTable {
+	for a, id := range lts.attributeTable {
 		dic.AttributeTable().At(int(id)).SetKeyStrindex(a.keyStrIdx)
 		if err := dic.AttributeTable().At(int(id)).Value().FromRaw(a.value); err != nil {
 			return err
