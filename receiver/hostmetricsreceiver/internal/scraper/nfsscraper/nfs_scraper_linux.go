@@ -233,8 +233,6 @@ var nfsdV4Operations = []string{
 }
 
 func getOSNfsStats() (*NfsStats, error) {
-	debugDump("nfs", nfsProcFile)
-
 	f, err := os.Open(nfsProcFile)
 	if err != nil {
 		return nil, err
@@ -246,8 +244,6 @@ func getOSNfsStats() (*NfsStats, error) {
 }
 
 func getOSNfsdStats() (*nfsdStats, error) {
-	debugDump("nfsd", nfsdProcFile)
-
 	f, err := os.Open(nfsdProcFile)
 	if err != nil {
 		return nil, err
@@ -383,6 +379,11 @@ func parseNfsCallStats(nfsVersion int64, names []string, values []uint64) ([]cal
 	return stats, nil
 }
 
+func debugLine(prefix, line string) {
+	fmt.Fprintf(os.Stderr, "%s: %s\n", prefix, line)
+}
+
+
 func parseNfsStats(f io.Reader) (*NfsStats, error) {
 	nfsStats := &NfsStats{}
 
@@ -390,6 +391,8 @@ func parseNfsStats(f io.Reader) (*NfsStats, error) {
 	for scanner.Scan() {
 		line := scanner.Text()
 		fields := strings.Fields(line)
+
+		debugLine("nfs", line);
 
 		if len(fields) < 2 {
 			return nil, fmt.Errorf("Invalid line (<2 fields) in %v: %v", nfsProcFile, line)
@@ -452,6 +455,8 @@ func parseNfsdStats(f io.Reader) (*nfsdStats, error) {
 	for scanner.Scan() {
 		line := scanner.Text()
 		fields := strings.Fields(line)
+
+		debugLine("nfsd", line);
 
 		if len(fields) < 2 {
 			return nil, fmt.Errorf("Invalid line (<2 fields) in %v: %v", nfsdProcFile, line)
