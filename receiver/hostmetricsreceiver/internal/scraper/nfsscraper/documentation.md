@@ -24,7 +24,7 @@ Reports the count of kernel NFS client TCP segments and UDP datagrams handled.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| network.transport | OSI transport layer or inter-process communication method. | Any Str |
+| network.transport | OSI transport layer or inter-process communication method. | Str: ``udp``, ``tcp`` |
 
 ### nfs.client.net.tcp.connection.accepted
 
@@ -122,7 +122,7 @@ Reports the count of kernel NFS server TCP segments and UDP datagrams handled.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| network.transport | OSI transport layer or inter-process communication method. | Any Str |
+| network.transport | OSI transport layer or inter-process communication method. | Str: ``udp``, ``tcp`` |
 
 ### nfs.server.net.tcp.connection.accepted
 
@@ -174,7 +174,7 @@ Reports the kernel NFS server reply cache request count by cache hit status.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| nfs.server.repcache.status | NFS Server replies check a Reply Cache (repcache), which can have one of 3 result states: 'hit', 'miss', or 'nocache'. | Any Str |
+| nfs.server.repcache.status | NFS Server replies check a Reply Cache (repcache), which can have one of 3 result states: 'hit', 'miss', or 'nocache'. | Str: ``hit``, ``miss``, ``nocache`` |
 
 ### nfs.server.rpc.count
 
@@ -188,7 +188,7 @@ Reports the count of kernel NFS server RPCs handled.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| error.type | Describes a class of error the operation ended with. | Any Str |
+| error.type | Describes a class of error the operation ended with. | Str: ``format``, ``auth``, ``client`` |
 
 ### nfs.server.thread.count
 

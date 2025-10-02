@@ -77,8 +77,8 @@ func (s *nfsScraper) recordNfsMetrics(now pcommon.Timestamp) {
 	}
 
 	if s.nfsStats.nfsNetStats != nil {
-		s.mb.RecordNfsClientNetCountDataPoint(now, int64(s.nfsStats.nfsNetStats.udpCount), metadata.AttributeNetworkTransportUDP)
-		s.mb.RecordNfsClientNetCountDataPoint(now, int64(s.nfsStats.nfsNetStats.tcpCount), metadata.AttributeNetworkTransportTCP)
+		s.mb.RecordNfsClientNetCountDataPoint(now, int64(s.nfsStats.nfsNetStats.udpCount), metadata.AttributeNetworkTransportUdp)
+		s.mb.RecordNfsClientNetCountDataPoint(now, int64(s.nfsStats.nfsNetStats.tcpCount), metadata.AttributeNetworkTransportTcp)
 		s.mb.RecordNfsClientNetTCPConnectionAcceptedDataPoint(now, int64(s.nfsStats.nfsNetStats.tcpConnectionCount))
 	}
 
@@ -132,15 +132,15 @@ func (s *nfsScraper) recordNfsdMetrics(now pcommon.Timestamp) {
 	}
 
 	if s.nfsdStats.nfsdNetStats != nil {
-		s.mb.RecordNfsServerNetCountDataPoint(now, int64(s.nfsdStats.nfsdNetStats.udpCount), metadata.AttributeNetworkTransportUDP)
-		s.mb.RecordNfsServerNetCountDataPoint(now, int64(s.nfsdStats.nfsdNetStats.tcpCount), metadata.AttributeNetworkTransportTCP)
+		s.mb.RecordNfsServerNetCountDataPoint(now, int64(s.nfsdStats.nfsdNetStats.udpCount), metadata.AttributeNetworkTransportUdp)
+		s.mb.RecordNfsServerNetCountDataPoint(now, int64(s.nfsdStats.nfsdNetStats.tcpCount), metadata.AttributeNetworkTransportTcp)
 		s.mb.RecordNfsServerNetTCPConnectionAcceptedDataPoint(now, int64(s.nfsdStats.nfsdNetStats.tcpConnectionCount))
 	}
 
 	if s.nfsdStats.nfsdRPCStats != nil {
-		s.mb.RecordNfsServerRPCCountDataPoint(now, int64(s.nfsdStats.nfsdRPCStats.badFmtCount), "format")
-		s.mb.RecordNfsServerRPCCountDataPoint(now, int64(s.nfsdStats.nfsdRPCStats.badAuthCount), "auth")
-		s.mb.RecordNfsServerRPCCountDataPoint(now, int64(s.nfsdStats.nfsdRPCStats.badClientCount), "client")
+		s.mb.RecordNfsServerRPCCountDataPoint(now, int64(s.nfsdStats.nfsdRPCStats.badFmtCount), metadata.AttributeErrorTypeFormat)
+		s.mb.RecordNfsServerRPCCountDataPoint(now, int64(s.nfsdStats.nfsdRPCStats.badAuthCount), metadata.AttributeErrorTypeAuth)
+		s.mb.RecordNfsServerRPCCountDataPoint(now, int64(s.nfsdStats.nfsdRPCStats.badClientCount), metadata.AttributeErrorTypeClient)
 	}
 
 	if s.nfsdStats.nfsdV3ProcedureStats != nil {

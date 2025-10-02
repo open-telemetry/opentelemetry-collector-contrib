@@ -12,6 +12,36 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 )
 
+// AttributeErrorType specifies the value error.type attribute.
+type AttributeErrorType int
+
+const (
+	_ AttributeErrorType = iota
+	AttributeErrorTypeFormat
+	AttributeErrorTypeAuth
+	AttributeErrorTypeClient
+)
+
+// String returns the string representation of the AttributeErrorType.
+func (av AttributeErrorType) String() string {
+	switch av {
+	case AttributeErrorTypeFormat:
+		return "format"
+	case AttributeErrorTypeAuth:
+		return "auth"
+	case AttributeErrorTypeClient:
+		return "client"
+	}
+	return ""
+}
+
+// MapAttributeErrorType is a helper map of string to AttributeErrorType attribute value.
+var MapAttributeErrorType = map[string]AttributeErrorType{
+	"format": AttributeErrorTypeFormat,
+	"auth":   AttributeErrorTypeAuth,
+	"client": AttributeErrorTypeClient,
+}
+
 // AttributeNetworkIoDirection specifies the value network.io.direction attribute.
 type AttributeNetworkIoDirection int
 
@@ -36,6 +66,62 @@ func (av AttributeNetworkIoDirection) String() string {
 var MapAttributeNetworkIoDirection = map[string]AttributeNetworkIoDirection{
 	"transmit": AttributeNetworkIoDirectionTransmit,
 	"receive":  AttributeNetworkIoDirectionReceive,
+}
+
+// AttributeNetworkTransport specifies the value network.transport attribute.
+type AttributeNetworkTransport int
+
+const (
+	_ AttributeNetworkTransport = iota
+	AttributeNetworkTransportUdp
+	AttributeNetworkTransportTcp
+)
+
+// String returns the string representation of the AttributeNetworkTransport.
+func (av AttributeNetworkTransport) String() string {
+	switch av {
+	case AttributeNetworkTransportUdp:
+		return "udp"
+	case AttributeNetworkTransportTcp:
+		return "tcp"
+	}
+	return ""
+}
+
+// MapAttributeNetworkTransport is a helper map of string to AttributeNetworkTransport attribute value.
+var MapAttributeNetworkTransport = map[string]AttributeNetworkTransport{
+	"udp": AttributeNetworkTransportUdp,
+	"tcp": AttributeNetworkTransportTcp,
+}
+
+// AttributeNfsServerRepcacheStatus specifies the value nfs.server.repcache.status attribute.
+type AttributeNfsServerRepcacheStatus int
+
+const (
+	_ AttributeNfsServerRepcacheStatus = iota
+	AttributeNfsServerRepcacheStatusHit
+	AttributeNfsServerRepcacheStatusMiss
+	AttributeNfsServerRepcacheStatusNocache
+)
+
+// String returns the string representation of the AttributeNfsServerRepcacheStatus.
+func (av AttributeNfsServerRepcacheStatus) String() string {
+	switch av {
+	case AttributeNfsServerRepcacheStatusHit:
+		return "hit"
+	case AttributeNfsServerRepcacheStatusMiss:
+		return "miss"
+	case AttributeNfsServerRepcacheStatusNocache:
+		return "nocache"
+	}
+	return ""
+}
+
+// MapAttributeNfsServerRepcacheStatus is a helper map of string to AttributeNfsServerRepcacheStatus attribute value.
+var MapAttributeNfsServerRepcacheStatus = map[string]AttributeNfsServerRepcacheStatus{
+	"hit":     AttributeNfsServerRepcacheStatusHit,
+	"miss":    AttributeNfsServerRepcacheStatusMiss,
+	"nocache": AttributeNfsServerRepcacheStatusNocache,
 }
 
 var MetricsInfo = metricsInfo{
@@ -1087,8 +1173,8 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 }
 
 // RecordNfsClientNetCountDataPoint adds a data point to nfs.client.net.count metric.
-func (mb *MetricsBuilder) RecordNfsClientNetCountDataPoint(ts pcommon.Timestamp, val int64, networkTransportAttributeValue string) {
-	mb.metricNfsClientNetCount.recordDataPoint(mb.startTime, ts, val, networkTransportAttributeValue)
+func (mb *MetricsBuilder) RecordNfsClientNetCountDataPoint(ts pcommon.Timestamp, val int64, networkTransportAttributeValue AttributeNetworkTransport) {
+	mb.metricNfsClientNetCount.recordDataPoint(mb.startTime, ts, val, networkTransportAttributeValue.String())
 }
 
 // RecordNfsClientNetTCPConnectionAcceptedDataPoint adds a data point to nfs.client.net.tcp.connection.accepted metric.
@@ -1132,8 +1218,8 @@ func (mb *MetricsBuilder) RecordNfsServerIoDataPoint(ts pcommon.Timestamp, val i
 }
 
 // RecordNfsServerNetCountDataPoint adds a data point to nfs.server.net.count metric.
-func (mb *MetricsBuilder) RecordNfsServerNetCountDataPoint(ts pcommon.Timestamp, val int64, networkTransportAttributeValue string) {
-	mb.metricNfsServerNetCount.recordDataPoint(mb.startTime, ts, val, networkTransportAttributeValue)
+func (mb *MetricsBuilder) RecordNfsServerNetCountDataPoint(ts pcommon.Timestamp, val int64, networkTransportAttributeValue AttributeNetworkTransport) {
+	mb.metricNfsServerNetCount.recordDataPoint(mb.startTime, ts, val, networkTransportAttributeValue.String())
 }
 
 // RecordNfsServerNetTCPConnectionAcceptedDataPoint adds a data point to nfs.server.net.tcp.connection.accepted metric.
@@ -1152,13 +1238,13 @@ func (mb *MetricsBuilder) RecordNfsServerProcedureCountDataPoint(ts pcommon.Time
 }
 
 // RecordNfsServerRepcacheRequestsDataPoint adds a data point to nfs.server.repcache.requests metric.
-func (mb *MetricsBuilder) RecordNfsServerRepcacheRequestsDataPoint(ts pcommon.Timestamp, val int64, nfsServerRepcacheStatusAttributeValue string) {
-	mb.metricNfsServerRepcacheRequests.recordDataPoint(mb.startTime, ts, val, nfsServerRepcacheStatusAttributeValue)
+func (mb *MetricsBuilder) RecordNfsServerRepcacheRequestsDataPoint(ts pcommon.Timestamp, val int64, nfsServerRepcacheStatusAttributeValue AttributeNfsServerRepcacheStatus) {
+	mb.metricNfsServerRepcacheRequests.recordDataPoint(mb.startTime, ts, val, nfsServerRepcacheStatusAttributeValue.String())
 }
 
 // RecordNfsServerRPCCountDataPoint adds a data point to nfs.server.rpc.count metric.
-func (mb *MetricsBuilder) RecordNfsServerRPCCountDataPoint(ts pcommon.Timestamp, val int64, errorTypeAttributeValue string) {
-	mb.metricNfsServerRPCCount.recordDataPoint(mb.startTime, ts, val, errorTypeAttributeValue)
+func (mb *MetricsBuilder) RecordNfsServerRPCCountDataPoint(ts pcommon.Timestamp, val int64, errorTypeAttributeValue AttributeErrorType) {
+	mb.metricNfsServerRPCCount.recordDataPoint(mb.startTime, ts, val, errorTypeAttributeValue.String())
 }
 
 // RecordNfsServerThreadCountDataPoint adds a data point to nfs.server.thread.count metric.

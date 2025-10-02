@@ -61,7 +61,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordNfsClientNetCountDataPoint(ts, 1, "network.transport-val")
+			mb.RecordNfsClientNetCountDataPoint(ts, 1, AttributeNetworkTransportUdp)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -97,7 +97,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordNfsServerNetCountDataPoint(ts, 1, "network.transport-val")
+			mb.RecordNfsServerNetCountDataPoint(ts, 1, AttributeNetworkTransportUdp)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -113,11 +113,11 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordNfsServerRepcacheRequestsDataPoint(ts, 1, "nfs.server.repcache.status-val")
+			mb.RecordNfsServerRepcacheRequestsDataPoint(ts, 1, AttributeNfsServerRepcacheStatusHit)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordNfsServerRPCCountDataPoint(ts, 1, "error.type-val")
+			mb.RecordNfsServerRPCCountDataPoint(ts, 1, AttributeErrorTypeFormat)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -159,7 +159,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("network.transport")
 					assert.True(t, ok)
-					assert.Equal(t, "network.transport-val", attrVal.Str())
+					assert.Equal(t, "udp", attrVal.Str())
 				case "nfs.client.net.tcp.connection.accepted":
 					assert.False(t, validatedMetrics["nfs.client.net.tcp.connection.accepted"], "Found a duplicate in the metrics slice: nfs.client.net.tcp.connection.accepted")
 					validatedMetrics["nfs.client.net.tcp.connection.accepted"] = true
@@ -285,7 +285,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("network.transport")
 					assert.True(t, ok)
-					assert.Equal(t, "network.transport-val", attrVal.Str())
+					assert.Equal(t, "udp", attrVal.Str())
 				case "nfs.server.net.tcp.connection.accepted":
 					assert.False(t, validatedMetrics["nfs.server.net.tcp.connection.accepted"], "Found a duplicate in the metrics slice: nfs.server.net.tcp.connection.accepted")
 					validatedMetrics["nfs.server.net.tcp.connection.accepted"] = true
@@ -348,7 +348,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("nfs.server.repcache.status")
 					assert.True(t, ok)
-					assert.Equal(t, "nfs.server.repcache.status-val", attrVal.Str())
+					assert.Equal(t, "hit", attrVal.Str())
 				case "nfs.server.rpc.count":
 					assert.False(t, validatedMetrics["nfs.server.rpc.count"], "Found a duplicate in the metrics slice: nfs.server.rpc.count")
 					validatedMetrics["nfs.server.rpc.count"] = true
@@ -363,7 +363,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("error.type")
 					assert.True(t, ok)
-					assert.Equal(t, "error.type-val", attrVal.Str())
+					assert.Equal(t, "format", attrVal.Str())
 				case "nfs.server.thread.count":
 					assert.False(t, validatedMetrics["nfs.server.thread.count"], "Found a duplicate in the metrics slice: nfs.server.thread.count")
 					validatedMetrics["nfs.server.thread.count"] = true
