@@ -24,7 +24,7 @@ func NewSettings(tt *componenttest.Telemetry) connector.Settings {
 func AssertEqualConnectorServicegraphDroppedSpans(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_connector_servicegraph_dropped_spans",
-		Description: "Number of spans dropped when trying to add edges",
+		Description: "Number of spans dropped when trying to add edges [development]",
 		Unit:        "1",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -40,7 +40,7 @@ func AssertEqualConnectorServicegraphDroppedSpans(t *testing.T, tt *componenttes
 func AssertEqualConnectorServicegraphExpiredEdges(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_connector_servicegraph_expired_edges",
-		Description: "Number of edges that expired before finding its matching span",
+		Description: "Number of edges that expired before finding its matching span [development]",
 		Unit:        "1",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -56,7 +56,7 @@ func AssertEqualConnectorServicegraphExpiredEdges(t *testing.T, tt *componenttes
 func AssertEqualConnectorServicegraphTotalEdges(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_connector_servicegraph_total_edges",
-		Description: "Total number of unique edges",
+		Description: "Total number of unique edges [development]",
 		Unit:        "1",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
