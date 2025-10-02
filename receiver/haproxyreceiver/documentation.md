@@ -228,14 +228,6 @@ Average connect time in ms over the 1024 last requests. Corresponds to HAProxy's
 | ---- | ----------- | ---------- | --------- |
 | ms | Gauge | Double | development |
 
-### haproxy.connections.average_time
-
-Average connect time in ms over the 1024 last requests. Corresponds to HAProxy's `ctime` metric.
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| ms | Gauge | Double |
-
 ### haproxy.connections.total
 
 Cumulative number of connections (frontend). Corresponds to HAProxy's `conn_tot` metric.
@@ -284,30 +276,6 @@ Configured session limit. Corresponds to HAProxy's `slim` metric.
 | ---- | ----------- | ---------- | --------- |
 | {sessions} | Gauge | Int | development |
 
-### haproxy.requests.average_time
-
-Average queue time in ms over the 1024 last requests. Corresponds to HAProxy's `qtime` metric.
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| ms | Gauge | Double |
-
-### haproxy.responses.average_time
-
-Average response time in ms over the 1024 last requests. Corresponds to HAProxy's `rtime` metric.
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| ms | Gauge | Double |
-
-### haproxy.sessions.limit
-
-Configured session limit. Corresponds to HAProxy's `slim` metric.
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {sessions} | Gauge | Int |
-
 ### haproxy.sessions.total
 
 Cumulative number of sessions. Corresponds to HAProxy's `stot` metric.
@@ -323,14 +291,6 @@ Total effective weight (backend) or effective weight (server). Corresponds to HA
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | 1 | Gauge | Int | development |
-
-### haproxy.weight
-
-Total effective weight (backend) or effective weight (server). Corresponds to HAProxy's `weight` metric.
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
 
 ## Resource Attributes
 
