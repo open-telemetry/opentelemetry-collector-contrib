@@ -1,0 +1,19 @@
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: new_component
+
+# The name of the component (path or short name is acceptable)
+component: receiver/ciscoosreceiver
+
+# A brief description of the change
+note: "Add initial skeleton of Cisco OS receiver (README, config, factory, metadata) with In Development stability."
+
+# Mandatory: tracking issues (use PR number if no issue exists)
+issues: [42647]
+
+# Optional: additional lines shown under the main note
+subtext: |
+  This PR adds structure only (no scraping implementation yet).
+  Scrapers and SSH-based collection logic (BGP, Environment, Facts, Interfaces, Optics) will be added in follow-up PRs.
+
+# Change logs where this entry should appear
+change_logs: [user]
