@@ -8,9 +8,11 @@ CREATE TABLE IF NOT EXISTS "%s"."%s" %s (
     SpanKind LowCardinality(String) CODEC(ZSTD(1)),
     ServiceName LowCardinality(String) CODEC(ZSTD(1)),
     ResourceAttributes JSON CODEC(ZSTD(1)),
+    ResourceAttributesKeys Array(LowCardinality(String)) CODEC(ZSTD(1)),
     ScopeName String CODEC(ZSTD(1)),
     ScopeVersion String CODEC(ZSTD(1)),
     SpanAttributes JSON CODEC(ZSTD(1)),
+    SpanAttributesKeys Array(LowCardinality(String)) CODEC(ZSTD(1)),
     Duration UInt64 CODEC(ZSTD(1)),
     StatusCode LowCardinality(String) CODEC(ZSTD(1)),
     StatusMessage String CODEC(ZSTD(1)),
@@ -25,6 +27,9 @@ CREATE TABLE IF NOT EXISTS "%s"."%s" %s (
         TraceState String,
         Attributes JSON
     ) CODEC(ZSTD(1)),
+
+    INDEX idx_res_attr_key ResourceAttributesKeys TYPE bloom_filter(0.01) GRANULARITY 1,
+    INDEX idx_span_attr_key SpanAttributesKeys TYPE bloom_filter(0.01) GRANULARITY 1,
     INDEX idx_duration Duration TYPE minmax GRANULARITY 1
 ) ENGINE = %s
 PARTITION BY toDate(Timestamp)

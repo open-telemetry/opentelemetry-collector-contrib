@@ -39,46 +39,50 @@ func verifyExportTracesJSON(t *testing.T, exporter *tracesJSONExporter) {
 	})
 
 	type trace struct {
-		Timestamp          time.Time   `ch:"Timestamp"`
-		TraceID            string      `ch:"TraceId"`
-		SpanID             string      `ch:"SpanId"`
-		ParentSpanID       string      `ch:"ParentSpanId"`
-		TraceState         string      `ch:"TraceState"`
-		SpanName           string      `ch:"SpanName"`
-		SpanKind           string      `ch:"SpanKind"`
-		ServiceName        string      `ch:"ServiceName"`
-		ResourceAttributes string      `ch:"ResourceAttributes"`
-		ScopeName          string      `ch:"ScopeName"`
-		ScopeVersion       string      `ch:"ScopeVersion"`
-		SpanAttributes     string      `ch:"SpanAttributes"`
-		Duration           uint64      `ch:"Duration"`
-		StatusCode         string      `ch:"StatusCode"`
-		StatusMessage      string      `ch:"StatusMessage"`
-		EventsTimestamp    []time.Time `ch:"Events.Timestamp"`
-		EventsName         []string    `ch:"Events.Name"`
-		EventsAttributes   []string    `ch:"Events.Attributes"`
-		LinksTraceID       []string    `ch:"Links.TraceId"`
-		LinksSpanID        []string    `ch:"Links.SpanId"`
-		LinksTraceState    []string    `ch:"Links.TraceState"`
-		LinksAttributes    []string    `ch:"Links.Attributes"`
+		Timestamp              time.Time   `ch:"Timestamp"`
+		TraceID                string      `ch:"TraceId"`
+		SpanID                 string      `ch:"SpanId"`
+		ParentSpanID           string      `ch:"ParentSpanId"`
+		TraceState             string      `ch:"TraceState"`
+		SpanName               string      `ch:"SpanName"`
+		SpanKind               string      `ch:"SpanKind"`
+		ServiceName            string      `ch:"ServiceName"`
+		ResourceAttributes     string      `ch:"ResourceAttributes"`
+		ResourceAttributesKeys []string    `ch:"ResourceAttributesKeys"`
+		ScopeName              string      `ch:"ScopeName"`
+		ScopeVersion           string      `ch:"ScopeVersion"`
+		SpanAttributes         string      `ch:"SpanAttributes"`
+		SpanAttributesKeys     []string    `ch:"SpanAttributesKeys"`
+		Duration               uint64      `ch:"Duration"`
+		StatusCode             string      `ch:"StatusCode"`
+		StatusMessage          string      `ch:"StatusMessage"`
+		EventsTimestamp        []time.Time `ch:"Events.Timestamp"`
+		EventsName             []string    `ch:"Events.Name"`
+		EventsAttributes       []string    `ch:"Events.Attributes"`
+		LinksTraceID           []string    `ch:"Links.TraceId"`
+		LinksSpanID            []string    `ch:"Links.SpanId"`
+		LinksTraceState        []string    `ch:"Links.TraceState"`
+		LinksAttributes        []string    `ch:"Links.Attributes"`
 	}
 
 	expectedTrace := trace{
-		Timestamp:          telemetryTimestamp,
-		TraceID:            "01020300000000000000000000000000",
-		SpanID:             "0102030000000000",
-		ParentSpanID:       "0102040000000000",
-		TraceState:         "trace state",
-		SpanName:           "call db",
-		SpanKind:           "Internal",
-		ServiceName:        "test-service",
-		ResourceAttributes: `{"service":{"name":"test-service"}}`,
-		ScopeName:          "io.opentelemetry.contrib.clickhouse",
-		ScopeVersion:       "1.0.0",
-		SpanAttributes:     `{"service":{"name":"v"}}`,
-		Duration:           60000000000,
-		StatusCode:         "Error",
-		StatusMessage:      "error",
+		Timestamp:              telemetryTimestamp,
+		TraceID:                "01020300000000000000000000000000",
+		SpanID:                 "0102030000000000",
+		ParentSpanID:           "0102040000000000",
+		TraceState:             "trace state",
+		SpanName:               "call db",
+		SpanKind:               "Internal",
+		ServiceName:            "test-service",
+		ResourceAttributes:     `{"service":{"name":"test-service"}}`,
+		ResourceAttributesKeys: []string{"service.name"},
+		ScopeName:              "io.opentelemetry.contrib.clickhouse",
+		ScopeVersion:           "1.0.0",
+		SpanAttributes:         `{"service":{"name":"v"}}`,
+		SpanAttributesKeys:     []string{"service.name"},
+		Duration:               60000000000,
+		StatusCode:             "Error",
+		StatusMessage:          "error",
 		EventsTimestamp: []time.Time{
 			telemetryTimestamp,
 		},

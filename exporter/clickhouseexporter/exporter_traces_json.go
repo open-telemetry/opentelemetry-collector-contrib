@@ -88,6 +88,7 @@ func (e *tracesJSONExporter) pushTraceData(ctx context.Context, td ptrace.Traces
 		res := spans.Resource()
 		resAttr := res.Attributes()
 		serviceName := internal.GetServiceName(resAttr)
+		resAttrKeys := internal.UniqueFlattenedAttributes(resAttr)
 		resAttrBytes, resAttrErr := json.Marshal(resAttr.AsRaw())
 		if resAttrErr != nil {
 			return fmt.Errorf("failed to marshal json trace resource attributes: %w", resAttrErr)
@@ -106,7 +107,9 @@ func (e *tracesJSONExporter) pushTraceData(ctx context.Context, td ptrace.Traces
 				span := scopeSpans.At(k)
 				spanStatus := span.Status()
 				spanDurationNanos := span.EndTimestamp() - span.StartTimestamp()
-				spanAttrBytes, spanAttrErr := json.Marshal(span.Attributes().AsRaw())
+				spanAttr := span.Attributes()
+				spanAttrKeys := internal.UniqueFlattenedAttributes(spanAttr)
+				spanAttrBytes, spanAttrErr := json.Marshal(spanAttr.AsRaw())
 				if spanAttrErr != nil {
 					return fmt.Errorf("failed to marshal json trace span attributes: %w", spanAttrErr)
 				}
@@ -130,9 +133,11 @@ func (e *tracesJSONExporter) pushTraceData(ctx context.Context, td ptrace.Traces
 					span.Kind().String(),
 					serviceName,
 					resAttrBytes,
+					resAttrKeys,
 					scopeName,
 					scopeVersion,
 					spanAttrBytes,
+					spanAttrKeys,
 					spanDurationNanos,
 					spanStatus.Code().String(),
 					spanStatus.Message(),
