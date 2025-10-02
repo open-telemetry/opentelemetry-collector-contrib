@@ -775,6 +775,8 @@ processors:
 detectors: [ <string> ]
 # determines if existing resource attributes should be overridden or preserved, defaults to true
 override: <bool>
+# how often resource detection should be refreshed; if unset, detection runs only once at startup
+refresh_interval: <duration>
 # [DEPRECATED] When included, only attributes in the list will be appended.  Applies to all detectors.
 attributes: [ <string> ]
 ```
