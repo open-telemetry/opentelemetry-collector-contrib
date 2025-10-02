@@ -513,6 +513,18 @@ func TestScrapeTopQueries(t *testing.T) {
 	// golden.WriteLogs(t, expectedFile, actualLogs)
 	errs := plogtest.CompareLogs(expectedLogs, actualLogs, plogtest.IgnoreTimestamp())
 	assert.NoError(t, errs)
+
+	// Verify the cache has updated with latest counter
+
+	calls, callsExists := scraper.cache.Get(queryid + callsColumnName)
+	assert.True(t, callsExists)
+	assert.Equal(t, float64(123), calls)
+	execTime, execTimeExists := scraper.cache.Get(queryid + totalExecTimeColumnName)
+	assert.True(t, execTimeExists)
+	assert.Equal(t, float64(11), execTime)
+	planTime, planTimeExists := scraper.cache.Get(queryid + totalPlanTimeColumnName)
+	assert.True(t, planTimeExists)
+	assert.Equal(t, float64(12), planTime)
 }
 
 type (
