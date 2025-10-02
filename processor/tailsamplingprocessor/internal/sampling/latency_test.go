@@ -18,7 +18,7 @@ import (
 func TestEvaluate_Latency(t *testing.T) {
 	filter := NewLatency(componenttest.NewNopTelemetrySettings(), 5000, 0)
 
-	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	testTraceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 	now := time.Now()
 
 	cases := []struct {
@@ -64,7 +64,7 @@ func TestEvaluate_Latency(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.Desc, func(t *testing.T) {
-			decision, err := filter.Evaluate(t.Context(), traceID, newTraceWithSpans(c.Spans))
+			decision, err := filter.Evaluate(t.Context(), testTraceID, newTraceWithSpans(c.Spans))
 
 			assert.NoError(t, err)
 			assert.Equal(t, decision, c.Decision)
@@ -75,7 +75,7 @@ func TestEvaluate_Latency(t *testing.T) {
 func TestEvaluate_Bounded_Latency(t *testing.T) {
 	filter := NewLatency(componenttest.NewNopTelemetrySettings(), 5000, 10000)
 
-	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	testTraceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 	now := time.Now()
 
 	cases := []struct {
@@ -151,7 +151,7 @@ func TestEvaluate_Bounded_Latency(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.Desc, func(t *testing.T) {
-			decision, err := filter.Evaluate(t.Context(), traceID, newTraceWithSpans(c.Spans))
+			decision, err := filter.Evaluate(t.Context(), testTraceID, newTraceWithSpans(c.Spans))
 
 			assert.NoError(t, err)
 			assert.Equal(t, decision, c.Decision)
