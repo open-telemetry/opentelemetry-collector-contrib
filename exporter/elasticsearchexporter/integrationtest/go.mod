@@ -140,6 +140,7 @@ require (
 	github.com/ua-parser/uap-go v0.0.0-20240611065828-3a4781585db6 // indirect
 	github.com/valyala/fastjson v1.6.4 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
+	github.com/zeebo/xxh3 v1.0.2 // indirect
 	go.elastic.co/apm/module/apmelasticsearch/v2 v2.7.1 // indirect
 	go.elastic.co/apm/module/apmhttp/v2 v2.7.1 // indirect
 	go.elastic.co/apm/v2 v2.7.1 // indirect
