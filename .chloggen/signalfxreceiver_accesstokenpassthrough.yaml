@@ -17,7 +17,7 @@ issues: [43048]
 # Use pipe (|) for multiline entries.
 subtext: |
   As access token passthrough option is no longer supported, to achieve similar behavior configure your collector
-  to use `headers_setter` extension to pass the access token.
+  to use the `headers_setter` extension to pass the access token.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

@@ -70,4 +70,4 @@ service:
 ## Access token passthrough
 
 Access token passthrough is no longer supported, to achieve similar behavior configure your collector
-to use `headers_setter` extension to pass the access token. 
+to use the `headers_setter` extension to pass the access token. 
