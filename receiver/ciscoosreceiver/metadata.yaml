@@ -1,0 +1,26 @@
+type: ciscoosreceiver
+
+status:
+  class: receiver
+  stability:
+    development: [metrics]
+  distributions: []
+  codeowners:
+    active: [dmitryax]
+
+resource_attributes:
+
+tests:
+  config:
+    collection_interval: 60s
+    timeout: 30s
+    scrapers:
+      bgp: true
+      environment: true
+      facts: true
+      interfaces: true
+      optics: true
+    devices:
+      - host: "localhost:2222"
+        username: "admin"
+        password: "admin"
