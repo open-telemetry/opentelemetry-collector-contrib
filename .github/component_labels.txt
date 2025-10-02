@@ -213,6 +213,7 @@ receiver/azureblobreceiver receiver/azureblob
 receiver/azureeventhubreceiver receiver/azureeventhub
 receiver/azuremonitorreceiver receiver/azuremonitor
 receiver/chronyreceiver receiver/chrony
+receiver/ciscoosreceiver receiver/ciscoos
 receiver/cloudflarereceiver receiver/cloudflare
 receiver/cloudfoundryreceiver receiver/cloudfoundry
 receiver/collectdreceiver receiver/collectd
