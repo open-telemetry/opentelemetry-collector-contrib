@@ -5,10 +5,8 @@ package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
-	"math/rand/v2"
 	"net/http"
 	"time"
 
@@ -129,11 +127,6 @@ func newElasticsearchClient(
 		componentHost:   host,
 	}
 
-	maxRetries := defaultMaxRetries
-	if config.Retry.MaxRetries != 0 {
-		maxRetries = config.Retry.MaxRetries
-	}
-
 	return elasticsearchv8.NewClient(elasticsearchv8.Config{
 		Transport: httpClient.Transport,
 
@@ -145,13 +138,9 @@ func newElasticsearchClient(
 		Header:    headers,
 
 		// configure retry behavior
-		RetryOnStatus: config.Retry.RetryOnStatus,
-		DisableRetry:  !config.Retry.Enabled,
-		RetryOnError: func(_ *http.Request, err error) bool {
-			return !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded)
-		},
-		MaxRetries:   maxRetries,
-		RetryBackoff: createElasticsearchBackoffFunc(&config.Retry),
+		RetryOnStatus: []int{0},
+		MaxRetries:    0,
+		DisableRetry:  true,
 
 		// configure sniffing
 		DiscoverNodesOnStart:  config.Discovery.OnStart,
@@ -166,18 +155,6 @@ func newElasticsearchClient(
 		),
 		Logger: esLogger,
 	})
-}
-
-func createElasticsearchBackoffFunc(config *RetrySettings) func(int) time.Duration {
-	if !config.Enabled {
-		return nil
-	}
-
-	return func(attempts int) time.Duration {
-		next := min(config.MaxInterval, config.InitialInterval*(1<<(attempts-1)))
-		nextWithJitter := next/2 + time.Duration(rand.Float64()*float64(next/2))
-		return nextWithJitter
-	}
 }
 
 func httpRecoverableErrorStatus(statusCode int) bool {
