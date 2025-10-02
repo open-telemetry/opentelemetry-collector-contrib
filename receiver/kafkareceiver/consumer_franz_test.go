@@ -214,6 +214,14 @@ func TestConsumerShutdownConsuming(t *testing.T) {
 			case <-time.After(time.Second):
 				tb.Fatal("expected to consume a message")
 			}
+
+			// Only ensure consumption has started (at least one message processed)
+			// before shutting down. The remaining messages on the same partition are
+			// processed *after* Shutdown unblocks ctx.Done() in the handler.
+			require.EventuallyWithT(tb, func(c *assert.CollectT) {
+				assert.GreaterOrEqual(c, called.Load(), int64(1))
+			}, 2*time.Second, 20*time.Millisecond)
+
 			require.NoError(tb, consumer.Shutdown(ctx))
 			wg.Wait() // Wait for the consume functions to exit.
 			// Ensure that the consume function was called twice.
