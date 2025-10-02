@@ -5,13 +5,15 @@ package pull
 
 import (
 	"context"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/observer"
+	"sync"
+	"time"
+
 	"go.uber.org/zap"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/dynamic"
-	"sync"
-	"time"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/observer"
 )
 
 type Config struct {
@@ -39,7 +41,7 @@ func New(client dynamic.Interface, config Config, logger *zap.Logger, handlePull
 	return o, nil
 }
 
-func (o *Observer) Start(ctx context.Context) chan struct{} {
+func (o *Observer) Start(ctx context.Context, wg *sync.WaitGroup) chan struct{} {
 	resource := o.client.Resource(o.config.Gvr)
 	o.logger.Info("Started collecting",
 		zap.Any("gvr", o.config.Gvr),
@@ -49,17 +51,19 @@ func (o *Observer) Start(ctx context.Context) chan struct{} {
 	stopperChan := make(chan struct{})
 
 	if len(o.config.Namespaces) == 0 {
-		go o.startPull(ctx, resource, stopperChan)
+		go o.startPull(ctx, resource, stopperChan, wg)
 	} else {
 		for _, ns := range o.config.Namespaces {
-			go o.startPull(ctx, resource.Namespace(ns), stopperChan)
+			go o.startPull(ctx, resource.Namespace(ns), stopperChan, wg)
 		}
 	}
 
 	return stopperChan
 }
 
-func (o *Observer) startPull(ctx context.Context, resource dynamic.ResourceInterface, stopperChan chan struct{}) {
+func (o *Observer) startPull(ctx context.Context, resource dynamic.ResourceInterface, stopperChan chan struct{}, wg *sync.WaitGroup) {
+	defer wg.Done()
+
 	ticker := newTicker(ctx, o.config.Interval)
 	listOption := metav1.ListOptions{
 		FieldSelector: o.config.FieldSelector,
@@ -86,6 +90,8 @@ func (o *Observer) startPull(ctx context.Context, resource dynamic.ResourceInter
 				}
 			}
 		case <-stopperChan:
+			return
+		case <-ctx.Done():
 			return
 		}
 	}

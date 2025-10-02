@@ -4,7 +4,6 @@
 package k8sobjectsreceiver
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/observer"
 	"path/filepath"
 	"testing"
 	"time"
@@ -18,6 +17,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/observer"
 )
 
 func TestLoadConfig(t *testing.T) {

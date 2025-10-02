@@ -7,10 +7,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/observer"
-	pullobserver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/observer/pull"
-	watchobserver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/observer/watch"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"net/http"
 	"sync"
 	"time"
@@ -22,6 +18,7 @@ import (
 	"go.uber.org/zap"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/wait"
 	apiWatch "k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/dynamic"
@@ -30,6 +27,9 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/observer"
+	pullobserver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/observer/pull"
+	watchobserver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/observer/watch"
 )
 
 type k8sobjectsreceiver struct {
@@ -44,7 +44,7 @@ type k8sobjectsreceiver struct {
 	cancel          context.CancelFunc
 
 	observerFunc func(ctx context.Context, object *K8sObjectsConfig) (observer.Observer, error)
-	wg              sync.WaitGroup
+	wg           sync.WaitGroup
 }
 
 func newReceiver(params receiver.Settings, config *Config, consumer consumer.Logs) (receiver.Logs, error) {
@@ -206,7 +206,9 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, host component.Host) er
 				cctx, cancel := context.WithCancel(ctx)
 				kr.cancel = cancel
 				for _, object := range validConfigs {
-					kr.start(cctx, object)
+					if err := kr.start(cctx, object); err != nil {
+						kr.setting.Logger.Error("Could not start receiver for object type", zap.String("object", object.Name))
+					}
 				}
 				kr.setting.Logger.Info("Object Receiver started as leader")
 			},
@@ -270,11 +272,10 @@ func (kr *k8sobjectsreceiver) start(ctx context.Context, object *K8sObjectsConfi
 		return err
 	}
 
-	stopChan := obs.Start(ctx)
+	kr.wg.Add(1)
 
-	kr.mu.Lock()
+	stopChan := obs.Start(ctx, &kr.wg)
 	kr.stopperChanList = append(kr.stopperChanList, stopChan)
-	kr.mu.Unlock()
 
 	return nil
 }

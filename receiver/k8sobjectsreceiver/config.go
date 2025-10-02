@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"maps"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/observer"
 	"strings"
 	"time"
 
@@ -18,9 +17,8 @@ import (
 	"k8s.io/client-go/dynamic"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/observer"
 )
-
-type mode string
 
 const (
 	defaultPullInterval    time.Duration = time.Hour

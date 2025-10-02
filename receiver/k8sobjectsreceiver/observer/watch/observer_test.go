@@ -5,7 +5,10 @@ package watch
 
 import (
 	"context"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/observer"
+	"sync"
+	"testing"
+	"time"
+
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -15,8 +18,8 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/dynamic/fake"
-	"testing"
-	"time"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/observer"
 )
 
 func TestObserver(t *testing.T) {
@@ -46,7 +49,10 @@ func TestObserver(t *testing.T) {
 
 	require.Nil(t, err)
 
-	stopChan := obs.Start(t.Context())
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+
+	stopChan := obs.Start(t.Context(), &wg)
 
 	time.Sleep(time.Millisecond * 100)
 
@@ -63,6 +69,8 @@ func TestObserver(t *testing.T) {
 	)
 
 	verifyReceivedEvents(t, 2, receivedEventsChan, stopChan)
+
+	wg.Wait()
 }
 
 func TestObserverWithInitialState(t *testing.T) {
@@ -93,9 +101,14 @@ func TestObserverWithInitialState(t *testing.T) {
 
 	require.Nil(t, err)
 
-	stopChan := obs.Start(t.Context())
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+
+	stopChan := obs.Start(t.Context(), &wg)
 
 	verifyReceivedEvents(t, 1, receivedEventsChan, stopChan)
+
+	wg.Wait()
 }
 
 func TestObserverExcludeDelete(t *testing.T) {
@@ -124,7 +137,10 @@ func TestObserverExcludeDelete(t *testing.T) {
 
 	require.Nil(t, err)
 
-	stopChan := obs.Start(t.Context())
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+
+	stopChan := obs.Start(t.Context(), &wg)
 
 	<-time.After(time.Millisecond * 100)
 
@@ -137,6 +153,8 @@ func TestObserverExcludeDelete(t *testing.T) {
 	mockClient.deletePods(pod)
 
 	verifyReceivedEvents(t, 1, receivedEventsChan, stopChan)
+
+	wg.Wait()
 }
 
 func verifyReceivedEvents(t *testing.T, numEvents int, receivedEventsChan chan *watch.Event, stopChan chan struct{}) {

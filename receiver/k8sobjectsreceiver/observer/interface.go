@@ -1,7 +1,10 @@
 package observer
 
-import "context"
+import (
+	"context"
+	"sync"
+)
 
 type Observer interface {
-	Start(ctx context.Context) chan struct{}
+	Start(ctx context.Context, wg *sync.WaitGroup) chan struct{}
 }

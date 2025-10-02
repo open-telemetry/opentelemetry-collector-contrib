@@ -7,18 +7,19 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/observer"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/util/wait"
-	apiWatch "k8s.io/apimachinery/pkg/watch"
-	"k8s.io/client-go/tools/cache"
-	"k8s.io/client-go/tools/watch"
 	"net/http"
 	"sync"
 
 	"go.uber.org/zap"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
+	apiWatch "k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/tools/watch"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/observer"
 )
 
 const defaultResourceVersion = "1"
@@ -49,7 +50,7 @@ func New(client dynamic.Interface, config Config, logger *zap.Logger, handleWatc
 	return o, nil
 }
 
-func (o *Observer) Start(ctx context.Context) chan struct{} {
+func (o *Observer) Start(ctx context.Context, wg *sync.WaitGroup) chan struct{} {
 	resource := o.client.Resource(o.config.Gvr)
 	o.logger.Info("Started collecting",
 		zap.Any("gvr", o.config.Gvr),
@@ -59,17 +60,19 @@ func (o *Observer) Start(ctx context.Context) chan struct{} {
 	stopperChan := make(chan struct{})
 
 	if len(o.config.Namespaces) == 0 {
-		go o.startWatch(ctx, resource, stopperChan)
+		go o.startWatch(ctx, resource, stopperChan, wg)
 	} else {
 		for _, ns := range o.config.Namespaces {
-			go o.startWatch(ctx, resource.Namespace(ns), stopperChan)
+			go o.startWatch(ctx, resource.Namespace(ns), stopperChan, wg)
 		}
 	}
 
 	return stopperChan
 }
 
-func (o *Observer) startWatch(ctx context.Context, resource dynamic.ResourceInterface, stopperChan chan struct{}) {
+func (o *Observer) startWatch(ctx context.Context, resource dynamic.ResourceInterface, stopperChan chan struct{}, wg *sync.WaitGroup) {
+	defer wg.Done()
+
 	if o.config.IncludeInitialState {
 		o.sendInitialState(ctx, resource)
 	}

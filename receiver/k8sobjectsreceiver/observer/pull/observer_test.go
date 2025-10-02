@@ -2,7 +2,10 @@ package pull
 
 import (
 	"context"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/observer"
+	"sync"
+	"testing"
+	"time"
+
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -11,9 +14,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/dynamic/fake"
-	"sync"
-	"testing"
-	"time"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/observer"
 )
 
 func TestObserver(t *testing.T) {
@@ -37,7 +39,10 @@ func TestObserver(t *testing.T) {
 
 	require.Nil(t, err)
 
-	stopChan := obs.Start(t.Context())
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+
+	stopChan := obs.Start(t.Context(), &wg)
 
 	mockClient.createPods(
 		generatePod("pod2", "default", map[string]any{
@@ -56,6 +61,8 @@ func TestObserver(t *testing.T) {
 	}, 5*time.Second, 10*time.Millisecond, "Observer should receive events")
 
 	stopChan <- struct{}{}
+
+	wg.Wait()
 }
 
 type testSink struct {
