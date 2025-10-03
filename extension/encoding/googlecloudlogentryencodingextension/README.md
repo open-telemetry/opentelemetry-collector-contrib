@@ -271,7 +271,7 @@ See the struct of the Cloud Audit Log payload in [AuditLog](https://cloud.google
 | `dest_vpc.subnetwork_name` | `gcp.vpc.flow.destination.subnet.name` | supported |
 | `dest_vpc.subnetwork_region` | `gcp.vpc.flow.destination.subnet.region` | supported |
 | `dest_vpc.vpc_name` | `gcp.vpc.flow.destination.vpc.name` | supported |
-| `internet_routing_details.egress_as_path.as_details.asn` | `gcp.vpc.flow.egress.as_paths.as_details.asn` | supported |
+| `internet_routing_details.egress_as_path.as_details.asn` | `gcp.vpc.flow.egress.as_paths` Each element has a nested `as_details` array containing `asn` attributes | supported |
 | `load_balancing.forwarding_rule_project_id` | `gcp.vpc.flow.load_balancing.forwarding_rule.project.id` | not yet supported |
 | `load_balancing.reporter` | `gcp.vpc.flow.load_balancing.reporter` | not yet supported |
 | `load_balancing.type` | `gcp.vpc.flow.load_balancing.type` | not yet supported |
