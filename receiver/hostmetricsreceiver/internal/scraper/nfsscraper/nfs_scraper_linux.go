@@ -233,11 +233,13 @@ var nfsdV4Operations = []string{
 }
 
 func getOSNfsStats() (*NfsStats, error) {
-	/* data := strings.NewReader(nfsdProcFileOut)
+	/* for testing: (nfsProcFileOut from nfs_scraper_linux_test.go)
+	data := strings.NewReader(nfsProcFileOut)
 
-	rv, err := parseNfsdStats(data)
+	rv, err := parseNfsStats(data)
 	fmt.Fprintf(os.Stderr, "%#v\n", rv)
-	return rv, err */
+	return rv, err
+	*/
 
 	f, err := os.Open(nfsProcFile)
 	if err != nil {
@@ -250,11 +252,13 @@ func getOSNfsStats() (*NfsStats, error) {
 }
 
 func getOSNfsdStats() (*nfsdStats, error) {
-	/*	data := strings.NewReader(nfsProcFileOut)
+	/* for testing: (nfsdProcFileOut from nfs_scraper_linux_test.go)
+	data := strings.NewReader(nfsdProcFileOut)
 
-	rv, err := parseNfsStats(data)
+	rv, err := parseNfsdStats(data)
 	fmt.Fprintf(os.Stderr, "%#v\n", rv)
-	return rv, err */
+	return rv, err
+	*/
 
 	f, err := os.Open(nfsdProcFile)
 	if err != nil {
@@ -281,7 +285,7 @@ func parseNfsNetStats(values []uint64) (*nfsNetStats, error) {
 
 func parseNfsRPCStats(values []uint64) (*nfsRPCStats, error) {
 	if len(values) < 3 {
-		return nil, errors.New("parsing nfs client RPC stats: unexpected field count")
+		return nil, fmt.Errorf("parsing nfs client RPC stats: unexpected field count: %d", len(values))
 	}
 
 	return &nfsRPCStats{
@@ -349,7 +353,7 @@ func parseNfsdThreadStats(values []uint64) (*nfsdThreadStats, error) {
 
 func parseNfsdRPCStats(values []uint64) (*nfsdRPCStats, error) {
 	if len(values) < 5 {
-		return nil, errors.New("parsing nfs server RPC stats: unexpected field count")
+		return nil, fmt.Errorf("parsing nfs client RPC stats: unexpected field count: %d", len(values))
 	}
 
 	return &nfsdRPCStats{
