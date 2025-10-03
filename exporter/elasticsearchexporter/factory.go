@@ -9,14 +9,12 @@ import (
 	"compress/gzip"
 	"context"
 	"maps"
-	"net/http"
 	"slices"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -25,8 +23,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/metadata"
 )
-
-var defaultBatcherMinSizeItems = int64(5000)
 
 // NewFactory creates a factory for Elastic exporter.
 func NewFactory() exporter.Factory {
@@ -41,31 +37,18 @@ func NewFactory() exporter.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	qs := exporterhelper.NewDefaultQueueConfig()
-	qs.Enabled = false
-
 	httpClientConfig := confighttp.NewDefaultClientConfig()
 	httpClientConfig.Timeout = 90 * time.Second
 	httpClientConfig.Compression = configcompression.TypeGzip
 	httpClientConfig.CompressionParams.Level = gzip.BestSpeed
 
 	return &Config{
-		QueueBatchConfig: qs,
-		ClientConfig:     httpClientConfig,
+		ClientConfig: httpClientConfig,
 		LogsDynamicID: DynamicIDSettings{
 			Enabled: false,
 		},
 		LogsDynamicPipeline: DynamicPipelineSettings{
 			Enabled: false,
-		},
-		Retry: RetrySettings{
-			Enabled:         true,
-			MaxRetries:      0, // default is set in exporter code
-			InitialInterval: 100 * time.Millisecond,
-			MaxInterval:     1 * time.Minute,
-			RetryOnStatus: []int{
-				http.StatusTooManyRequests,
-			},
 		},
 		Mapping: MappingsSettings{
 			Mode:         "otel",
@@ -83,15 +66,6 @@ func createDefaultConfig() component.Config {
 			LogFailedDocsInputRateLimit: time.Second,
 		},
 		IncludeSourceOnError: nil,
-		Batcher: BatcherConfig{
-			FlushTimeout: 10 * time.Second,
-			Sizer:        exporterhelper.RequestSizerTypeItems,
-			MinSize:      defaultBatcherMinSizeItems,
-		},
-		Flush: FlushSettings{
-			Bytes:    5e+6,
-			Interval: 10 * time.Second,
-		},
 	}
 }
 
@@ -224,48 +198,13 @@ func exporterhelperOptions(
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithStart(start),
 		exporterhelper.WithShutdown(shutdown),
+		exporterhelper.WithRetry(cfg.BackOffConfig),
+		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: cfg.Timeout}),
 	}
 	qbc := cfg.QueueBatchConfig
-	switch {
-	case qbc.Batch.HasValue():
-		// Latest queue batch settings are used, prioritize them even if sending queue is disabled
+	if qbc.Batch.HasValue() {
 		opts = append(opts, xexporterhelper.WithQueueBatch(qbc, qbs))
-
-		// Effectively disable timeout_sender because timeout is enforced in bulk indexer.
-		//
-		// We keep timeout_sender enabled in the async mode (sending_queue not enabled OR sending
-		// queue enabled but batching not enabled OR based on the deprecated batcher setting), to
-		// ensure sending data to the background workers will not block indefinitely.
-		if qbc.Enabled {
-			opts = append(opts, exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}))
-		}
-	case cfg.Batcher.enabledSet:
-		if cfg.Batcher.Enabled {
-			qbc.Batch = configoptional.Some(exporterhelper.BatchConfig{
-				FlushTimeout: cfg.Batcher.FlushTimeout,
-				MinSize:      cfg.Batcher.MinSize,
-				MaxSize:      cfg.Batcher.MaxSize,
-				Sizer:        cfg.Batcher.Sizer,
-			})
-
-			// If the deprecated batcher is enabled without a queue, enable blocking queue to replicate the
-			// behavior of the deprecated batcher.
-			if !qbc.Enabled {
-				qbc.Enabled = true
-				qbc.WaitForResult = true
-			}
-		}
-
-		opts = append(
-			opts,
-			// Effectively disable timeout_sender because timeout is enforced in bulk indexer.
-			//
-			// We keep timeout_sender enabled in the async mode (Batcher.Enabled == nil),
-			// to ensure sending data to the background workers will not block indefinitely.
-			exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
-			exporterhelper.WithQueue(qbc),
-		)
-	default:
+	} else {
 		opts = append(opts, exporterhelper.WithQueue(qbc))
 	}
 	return opts
