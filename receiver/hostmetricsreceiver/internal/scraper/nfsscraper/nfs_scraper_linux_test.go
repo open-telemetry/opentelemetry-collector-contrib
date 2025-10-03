@@ -231,9 +231,9 @@ func getExpectedOSnfsdStats() *nfsdStats {
 	}
 
 	nfsdV4OperationStats := []callStats{
-		{nfsVersion: 4, nfsCallName: "UNUSED0", nfsCallCount: 7250},
-		{nfsVersion: 4, nfsCallName: "UNUSED1", nfsCallCount: 607},
-		{nfsVersion: 4, nfsCallName: "UNUSED2", nfsCallCount: 978},
+		{nfsVersion: 4, nfsCallName: "UNUSED_IGNORE0", nfsCallCount: 7250},
+		{nfsVersion: 4, nfsCallName: "UNUSED_IGNORE1", nfsCallCount: 607},
+		{nfsVersion: 4, nfsCallName: "UNUSED_IGNORE2", nfsCallCount: 978},
 		{nfsVersion: 4, nfsCallName: "ACCESS", nfsCallCount: 86},
 		{nfsVersion: 4, nfsCallName: "CLOSE", nfsCallCount: 442},
 		{nfsVersion: 4, nfsCallName: "COMMIT", nfsCallCount: 8780},

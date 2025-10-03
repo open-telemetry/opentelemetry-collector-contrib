@@ -154,9 +154,9 @@ var nfsdV4Procedures = []string{
 
 // from linux/include/linux/nfs4.h:nfs_opnum4 v6.12
 var nfsdV4Operations = []string{
-	"UNUSED0",
-	"UNUSED1",
-	"UNUSED2",
+	"UNUSED_IGNORE0",
+	"UNUSED_IGNORE1",
+	"UNUSED_IGNORE2",
 	"ACCESS",
 	"CLOSE",
 	"COMMIT",
@@ -403,7 +403,7 @@ func parseNfsStats(f io.Reader) (*NfsStats, error) {
 		line := scanner.Text()
 		fields := strings.Fields(line)
 
-		debugLine("nfs", line);
+		debugLine("/proc/net/rpc/nfs", line);
 
 		if len(fields) < 2 {
 			return nil, fmt.Errorf("Invalid line (<2 fields) in %v: %v", nfsProcFile, line)
@@ -467,7 +467,7 @@ func parseNfsdStats(f io.Reader) (*nfsdStats, error) {
 		line := scanner.Text()
 		fields := strings.Fields(line)
 
-		debugLine("nfsd", line);
+		debugLine("/proc/net/rpc/nfsd", line);
 
 		if len(fields) < 2 {
 			return nil, fmt.Errorf("Invalid line (<2 fields) in %v: %v", nfsdProcFile, line)

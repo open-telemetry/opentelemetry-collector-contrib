@@ -5,6 +5,7 @@ package nfsscraper // import "github.com/open-telemetry/opentelemetry-collector-
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -158,7 +159,9 @@ func (s *nfsScraper) recordNfsdMetrics(now pcommon.Timestamp) {
 
 	if s.nfsdStats.nfsdV4OperationStats != nil {
 		for _, callStat := range s.nfsdStats.nfsdV4OperationStats {
-			s.mb.RecordNfsServerOperationCountDataPoint(now, int64(callStat.nfsCallCount), callStat.nfsVersion, callStat.nfsCallName)
+			if !strings.HasPrefix(callStat.nfsCallName, "UNUSED_IGNORE") {
+				s.mb.RecordNfsServerOperationCountDataPoint(now, int64(callStat.nfsCallCount), callStat.nfsVersion, callStat.nfsCallName)
+			}
 		}
 	}
 }
