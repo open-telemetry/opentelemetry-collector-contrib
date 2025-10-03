@@ -57,6 +57,27 @@ func TestFromMetricsV2(t *testing.T) {
 	require.ElementsMatch(t, wantedSymbols, symbolsTable.Symbols())
 }
 
+func TestFromMetricsV2WithScopeProcessing(t *testing.T) {
+	settings := Settings{
+		Namespace:         "",
+		ExternalLabels:    nil,
+		DisableTargetInfo: false,
+		DisableScopeInfo:  false, // Enable scope info processing
+		AddMetricSuffixes: false,
+		SendMetadata:      false,
+	}
+
+	ts := uint64(time.Now().UnixNano())
+	payload := createExportRequest(1, 0, 1, 1, 0, pcommon.Timestamp(ts))
+	
+	tsMap, symbolsTable, err := FromMetricsV2(payload.Metrics(), settings)
+	require.NoError(t, err)
+	
+	// Verify that scope processing doesn't break the conversion
+	require.NotEmpty(t, tsMap)
+	require.NotEmpty(t, symbolsTable.Symbols())
+}
+
 func TestIsSameMetricV2(t *testing.T) {
 	tests := []struct {
 		name string

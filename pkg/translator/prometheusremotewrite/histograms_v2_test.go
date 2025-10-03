@@ -750,6 +750,8 @@ func TestPrometheusConverterV2_addExponentialHistogramDataPoints(t *testing.T) {
 				Settings{},
 				metricName,
 				m,
+				"", // scopeName
+				"", // scopeVersion
 			))
 
 			x := tt.wantSeries()

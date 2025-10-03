@@ -16,7 +16,7 @@ import (
 )
 
 func (c *prometheusConverterV2) addGaugeNumberDataPoints(dataPoints pmetric.NumberDataPointSlice,
-	resource pcommon.Resource, settings Settings, name string, metadata metadata,
+	resource pcommon.Resource, settings Settings, name string, metadata metadata, scopeName, scopeVersion string,
 ) error {
 	var errs error
 	for x := 0; x < dataPoints.Len(); x++ {
@@ -27,6 +27,14 @@ func (c *prometheusConverterV2) addGaugeNumberDataPoints(dataPoints pmetric.Numb
 			errs = multierr.Append(errs, err)
 			continue
 		}
+
+		// Add scope labels to the data point
+		scopeLabels, err := createScopeLabels(scopeName, scopeVersion, c.labelNamer)
+		if err != nil {
+			errs = multierr.Append(errs, err)
+			continue
+		}
+		labels = append(labels, scopeLabels...)
 		sample := &writev2.Sample{
 			// convert ns to ms
 			Timestamp: convertTimeStamp(pt.Timestamp()),
@@ -46,7 +54,7 @@ func (c *prometheusConverterV2) addGaugeNumberDataPoints(dataPoints pmetric.Numb
 }
 
 func (c *prometheusConverterV2) addSumNumberDataPoints(dataPoints pmetric.NumberDataPointSlice,
-	resource pcommon.Resource, _ pmetric.Metric, settings Settings, name string, metadata metadata,
+	resource pcommon.Resource, _ pmetric.Metric, settings Settings, name string, metadata metadata, scopeName, scopeVersion string,
 ) error {
 	var errs error
 	for x := 0; x < dataPoints.Len(); x++ {
@@ -56,6 +64,14 @@ func (c *prometheusConverterV2) addSumNumberDataPoints(dataPoints pmetric.Number
 			errs = multierr.Append(errs, err)
 			continue
 		}
+
+		// Add scope labels to the data point
+		scopeLabels, err := createScopeLabels(scopeName, scopeVersion, c.labelNamer)
+		if err != nil {
+			errs = multierr.Append(errs, err)
+			continue
+		}
+		lbls = append(lbls, scopeLabels...)
 
 		sample := &writev2.Sample{
 			// convert ns to ms
