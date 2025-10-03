@@ -8,11 +8,15 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka v0.136.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka v0.136.0
 	github.com/stretchr/testify v1.11.1
+	github.com/twmb/franz-go v1.19.5
+	github.com/twmb/franz-go/pkg/kadm v1.16.1
+	github.com/twmb/franz-go/pkg/kfake v0.0.0-20250729165834-29dc44e616cd
 	go.opentelemetry.io/collector/component v1.42.1-0.20250925151503-069408608b28
 	go.opentelemetry.io/collector/component/componenttest v0.136.1-0.20250925151503-069408608b28
 	go.opentelemetry.io/collector/confmap v1.42.1-0.20250925151503-069408608b28
 	go.opentelemetry.io/collector/consumer v1.42.1-0.20250925151503-069408608b28
 	go.opentelemetry.io/collector/consumer/consumertest v0.136.1-0.20250925151503-069408608b28
+	go.opentelemetry.io/collector/featuregate v1.42.1-0.20250925151503-069408608b28
 	go.opentelemetry.io/collector/filter v0.136.1-0.20250925151503-069408608b28
 	go.opentelemetry.io/collector/pdata v1.42.1-0.20250925151503-069408608b28
 	go.opentelemetry.io/collector/receiver v1.42.1-0.20250925151503-069408608b28
@@ -73,7 +77,6 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20250401214520-65e299d6c5c9 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
-	github.com/twmb/franz-go v1.19.5 // indirect
 	github.com/twmb/franz-go/pkg/kmsg v1.11.2 // indirect
 	github.com/twmb/franz-go/pkg/sasl/kerberos v1.1.0 // indirect
 	github.com/twmb/franz-go/plugin/kzap v1.1.2 // indirect
@@ -86,7 +89,6 @@ require (
 	go.opentelemetry.io/collector/config/configtls v1.42.1-0.20250925151503-069408608b28 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.136.1-0.20250925151503-069408608b28 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.136.1-0.20250925151503-069408608b28 // indirect
-	go.opentelemetry.io/collector/featuregate v1.42.1-0.20250925151503-069408608b28 // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.136.1-0.20250925151503-069408608b28 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.136.1-0.20250925151503-069408608b28 // indirect
 	go.opentelemetry.io/collector/pipeline v1.42.1-0.20250925151503-069408608b28 // indirect
