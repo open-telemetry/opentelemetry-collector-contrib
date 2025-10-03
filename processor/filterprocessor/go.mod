@@ -62,7 +62,7 @@ require (
 	github.com/twmb/murmur3 v1.1.8 // indirect
 	github.com/ua-parser/uap-go v0.0.0-20240611065828-3a4781585db6 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/client v1.39.0 // indirect
+	go.opentelemetry.io/collector/client v1.42.1-0.20251002223229-5ec1466578ef // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.136.1-0.20251002223229-5ec1466578ef // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.136.1-0.20251002223229-5ec1466578ef // indirect
 	go.opentelemetry.io/collector/featuregate v1.42.1-0.20251002223229-5ec1466578ef // indirect
