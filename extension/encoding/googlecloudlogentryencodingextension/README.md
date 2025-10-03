@@ -194,7 +194,7 @@ See the struct of the Cloud Audit Log payload in [AuditLog](https://cloud.google
 | `bytes_sent` | `gcp.vpc.flow.bytes_sent` |  supported |
 | `packets_sent` | `gcp.vpc.flow.packets_sent` | supported |
 | `start_time` | `gcp.vpc.flow.start_time` | supported |
-| `end_time` | Log timestamp | supported |
+| `end_time` | `gcp.vpc.flow.end_time` | supported |
 | `src_gateway.project_id` | `gcp.vpc.flow.source.gateway.project.id` | not yet supported |
 | `src_gateway.location` | `gcp.vpc.flow.source.gateway.region` | not yet supported |
 | `src_gateway.name` | `gcp.vpc.flow.source.gateway.name` | not yet supported |
