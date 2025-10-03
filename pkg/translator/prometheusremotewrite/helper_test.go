@@ -737,6 +737,277 @@ func TestAddResourceTargetInfo(t *testing.T) {
 	}
 }
 
+func TestAddScopeInfo(t *testing.T) {
+	resourceAttrMap := map[string]any{
+		string(conventions.ServiceNameKey):       "service-name",
+		string(conventions.ServiceInstanceIDKey): "service-instance-id",
+	}
+	resource := pcommon.NewResource()
+	require.NoError(t, resource.Attributes().FromRaw(resourceAttrMap))
+
+	// Create scope attributes for testing
+	scopeAttrs := pcommon.NewMap()
+	scopeAttrs.PutStr("custom_attr", "custom-value")
+	scopeAttrs.PutStr("version_info", "1.0.0")
+
+	emptyScopeAttrs := pcommon.NewMap()
+
+	for _, tc := range []struct {
+		desc         string
+		scopeName    string
+		scopeVersion string
+		scopeAttrs   pcommon.Map
+		resource     pcommon.Resource
+		settings     Settings
+		timestamp    pcommon.Timestamp
+		wantLabels   []prompb.Label
+	}{
+		{
+			desc:         "scope info disabled",
+			scopeName:    "test-scope",
+			scopeVersion: "1.0.0",
+			scopeAttrs:   scopeAttrs,
+			resource:     resource,
+			settings:     Settings{DisableScopeInfo: true},
+			timestamp:    testdata.TestMetricStartTimestamp,
+		},
+		{
+			desc:         "no timestamp",
+			scopeName:    "test-scope",
+			scopeVersion: "1.0.0",
+			scopeAttrs:   scopeAttrs,
+			resource:     resource,
+			settings:     Settings{},
+			timestamp:    0,
+		},
+		{
+			desc:         "no scope attributes",
+			scopeName:    "test-scope",
+			scopeVersion: "1.0.0",
+			scopeAttrs:   emptyScopeAttrs,
+			resource:     resource,
+			settings:     Settings{},
+			timestamp:    testdata.TestMetricStartTimestamp,
+		},
+		{
+			desc:         "valid scope info",
+			scopeName:    "test-scope",
+			scopeVersion: "1.0.0",
+			scopeAttrs:   scopeAttrs,
+			resource:     resource,
+			settings:     Settings{},
+			timestamp:    testdata.TestMetricStartTimestamp,
+			wantLabels: []prompb.Label{
+				{Name: model.MetricNameLabel, Value: "otel_scope_info"},
+				{Name: model.InstanceLabel, Value: "service-instance-id"},
+				{Name: model.JobLabel, Value: "service-name"},
+				{Name: "custom_attr", Value: "custom-value"},
+				{Name: "otel_scope_name", Value: "test-scope"},
+				{Name: "otel_scope_version", Value: "1.0.0"},
+				{Name: "version_info", Value: "1.0.0"},
+			},
+		},
+		{
+			desc:         "scope info with namespace",
+			scopeName:    "test-scope",
+			scopeVersion: "1.0.0",
+			scopeAttrs:   scopeAttrs,
+			resource:     resource,
+			settings:     Settings{Namespace: "foo"},
+			timestamp:    testdata.TestMetricStartTimestamp,
+			wantLabels: []prompb.Label{
+				{Name: model.MetricNameLabel, Value: "foo_otel_scope_info"},
+				{Name: model.InstanceLabel, Value: "service-instance-id"},
+				{Name: model.JobLabel, Value: "service-name"},
+				{Name: "custom_attr", Value: "custom-value"},
+				{Name: "otel_scope_name", Value: "test-scope"},
+				{Name: "otel_scope_version", Value: "1.0.0"},
+				{Name: "version_info", Value: "1.0.0"},
+			},
+		},
+		{
+			desc:         "empty scope name and version",
+			scopeName:    "",
+			scopeVersion: "",
+			scopeAttrs:   scopeAttrs,
+			resource:     resource,
+			settings:     Settings{},
+			timestamp:    testdata.TestMetricStartTimestamp,
+			wantLabels: []prompb.Label{
+				{Name: model.MetricNameLabel, Value: "otel_scope_info"},
+				{Name: model.InstanceLabel, Value: "service-instance-id"},
+				{Name: model.JobLabel, Value: "service-name"},
+				{Name: "custom_attr", Value: "custom-value"},
+				{Name: "version_info", Value: "1.0.0"},
+			},
+		},
+		{
+			desc:         "resource without identifiers",
+			scopeName:    "test-scope",
+			scopeVersion: "1.0.0",
+			scopeAttrs:   scopeAttrs,
+			resource:     pcommon.NewResource(),
+			settings:     Settings{},
+			timestamp:    testdata.TestMetricStartTimestamp,
+		},
+	} {
+		t.Run(tc.desc, func(t *testing.T) {
+			converter := newPrometheusConverter(tc.settings)
+
+			err := addScopeInfo(tc.scopeName, tc.scopeVersion, tc.scopeAttrs, tc.resource, tc.settings, tc.timestamp, converter)
+			require.NoError(t, err)
+
+			if len(tc.wantLabels) == 0 {
+				assert.Empty(t, converter.timeSeries())
+				return
+			}
+
+			expected := map[uint64]*prompb.TimeSeries{
+				timeSeriesSignature(tc.wantLabels): {
+					Labels: tc.wantLabels,
+					Samples: []prompb.Sample{
+						{
+							Value:     1,
+							Timestamp: 1581452772000,
+						},
+					},
+				},
+			}
+			assert.Exactly(t, expected, converter.unique)
+			assert.Empty(t, converter.conflicts)
+		})
+	}
+}
+
+func TestGetScopeSignature(t *testing.T) {
+	resource1 := pcommon.NewResource()
+	resource1.Attributes().PutStr(string(conventions.ServiceNameKey), "service1")
+
+	resource2 := pcommon.NewResource()
+	resource2.Attributes().PutStr(string(conventions.ServiceNameKey), "service2")
+
+	attrs1 := pcommon.NewMap()
+	attrs1.PutStr("key1", "value1")
+	attrs1.PutStr("key2", "value2")
+
+	attrs2 := pcommon.NewMap()
+	attrs2.PutStr("key2", "value2")
+	attrs2.PutStr("key1", "value1") // Same attributes, different order
+
+	attrs3 := pcommon.NewMap()
+	attrs3.PutStr("key1", "different-value")
+
+	// Test that same scope info produces same signature
+	sig1 := getScopeSignature("scope1", "1.0.0", attrs1, resource1)
+	sig2 := getScopeSignature("scope1", "1.0.0", attrs2, resource1) // Same attrs, different order
+	assert.Equal(t, sig1, sig2, "Same scope info should produce same signature regardless of attribute order")
+
+	// Test that different scope names produce different signatures
+	sig3 := getScopeSignature("scope2", "1.0.0", attrs1, resource1)
+	assert.NotEqual(t, sig1, sig3, "Different scope names should produce different signatures")
+
+	// Test that different scope versions produce different signatures
+	sig4 := getScopeSignature("scope1", "2.0.0", attrs1, resource1)
+	assert.NotEqual(t, sig1, sig4, "Different scope versions should produce different signatures")
+
+	// Test that different scope attributes produce different signatures
+	sig5 := getScopeSignature("scope1", "1.0.0", attrs3, resource1)
+	assert.NotEqual(t, sig1, sig5, "Different scope attributes should produce different signatures")
+
+	// Test that different resources produce different signatures
+	sig6 := getScopeSignature("scope1", "1.0.0", attrs1, resource2)
+	assert.NotEqual(t, sig1, sig6, "Different resources should produce different signatures")
+}
+
+func TestCreateScopeLabels(t *testing.T) {
+	labelNamer := otlptranslator.LabelNamer{}
+
+	tests := []struct {
+		name         string
+		scopeName    string
+		scopeVersion string
+		expected     []prompb.Label
+	}{
+		{
+			name:         "both name and version",
+			scopeName:    "test-scope",
+			scopeVersion: "1.0.0",
+			expected: []prompb.Label{
+				{Name: "otel_scope_name", Value: "test-scope"},
+				{Name: "otel_scope_version", Value: "1.0.0"},
+			},
+		},
+		{
+			name:      "only name",
+			scopeName: "test-scope",
+			expected: []prompb.Label{
+				{Name: "otel_scope_name", Value: "test-scope"},
+			},
+		},
+		{
+			name:         "only version",
+			scopeVersion: "1.0.0",
+			expected: []prompb.Label{
+				{Name: "otel_scope_version", Value: "1.0.0"},
+			},
+		},
+		{
+			name:     "empty name and version",
+			expected: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := createScopeLabels(tt.scopeName, tt.scopeVersion, labelNamer)
+			require.NoError(t, err)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestCreateScopeInfoLabels(t *testing.T) {
+	labelNamer := otlptranslator.LabelNamer{}
+
+	baseLabels := []prompb.Label{
+		{Name: model.JobLabel, Value: "test-job"},
+		{Name: model.InstanceLabel, Value: "test-instance"},
+	}
+
+	scopeAttrs := pcommon.NewMap()
+	scopeAttrs.PutStr("custom_attr", "custom-value")
+	scopeAttrs.PutStr("another_attr", "another-value")
+
+	result, err := createScopeInfoLabels("test-scope", "1.0.0", scopeAttrs, baseLabels, labelNamer)
+	require.NoError(t, err)
+
+	// Check that base labels are included
+	assert.Contains(t, result, prompb.Label{Name: model.JobLabel, Value: "test-job"})
+	assert.Contains(t, result, prompb.Label{Name: model.InstanceLabel, Value: "test-instance"})
+
+	// Check that scope labels are included
+	assert.Contains(t, result, prompb.Label{Name: "otel_scope_name", Value: "test-scope"})
+	assert.Contains(t, result, prompb.Label{Name: "otel_scope_version", Value: "1.0.0"})
+
+	// Check that scope attributes are included
+	assert.Contains(t, result, prompb.Label{Name: "custom_attr", Value: "custom-value"})
+	assert.Contains(t, result, prompb.Label{Name: "another_attr", Value: "another-value"})
+
+	// Test with empty scope name and version
+	result2, err := createScopeInfoLabels("", "", scopeAttrs, baseLabels, labelNamer)
+	require.NoError(t, err)
+
+	// Should not contain scope name/version labels
+	for _, label := range result2 {
+		assert.NotEqual(t, "otel_scope_name", label.Name)
+		assert.NotEqual(t, "otel_scope_version", label.Name)
+	}
+
+	// But should still contain base labels and scope attributes
+	assert.Contains(t, result2, prompb.Label{Name: model.JobLabel, Value: "test-job"})
+	assert.Contains(t, result2, prompb.Label{Name: "custom_attr", Value: "custom-value"})
+}
+
 func TestMostRecentTimestampInMetric(t *testing.T) {
 	laterTimestamp := pcommon.NewTimestampFromTime(testdata.TestMetricTime.Add(1 * time.Minute))
 	metricMultipleTimestamps := testdata.GenerateMetricsOneMetric().ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)

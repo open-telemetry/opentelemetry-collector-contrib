@@ -46,6 +46,16 @@ prometheusremotewrite/disabled_target_info:
   target_info:
     enabled: false
 
+prometheusremotewrite/disabled_scope_info:
+  endpoint: "localhost:8888"
+  scope_info:
+    enabled: false
+
+prometheusremotewrite/enabled_scope_info:
+  endpoint: "localhost:8888"
+  scope_info:
+    enabled: true
+
 prometheusremotewrite/disabled_queue:
   endpoint: "localhost:8888"
   remote_write_queue:

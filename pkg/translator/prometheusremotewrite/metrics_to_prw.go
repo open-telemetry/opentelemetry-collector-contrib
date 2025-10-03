@@ -23,6 +23,7 @@ type Settings struct {
 	Namespace         string
 	ExternalLabels    map[string]string
 	DisableTargetInfo bool
+	DisableScopeInfo  bool
 	AddMetricSuffixes bool
 	SendMetadata      bool
 }
@@ -40,6 +41,15 @@ func FromMetrics(md pmetric.Metrics, settings Settings) (map[string]*prompb.Time
 	return out, errs
 }
 
+// scopeInfo holds scope information for later processing
+type scopeInfo struct {
+	name       string
+	version    string
+	attributes pcommon.Map
+	resource   pcommon.Resource
+	timestamp  pcommon.Timestamp
+}
+
 // prometheusConverter converts from OTel write format to Prometheus write format.
 type prometheusConverter struct {
 	unique    map[uint64]*prompb.TimeSeries
@@ -48,6 +58,9 @@ type prometheusConverter struct {
 	metricNamer otlptranslator.MetricNamer
 	labelNamer  otlptranslator.LabelNamer
 	unitNamer   otlptranslator.UnitNamer
+
+	// Track scopes for otel_scope_info generation
+	scopes map[uint64]scopeInfo
 }
 
 func newPrometheusConverter(settings Settings) *prometheusConverter {
@@ -57,6 +70,7 @@ func newPrometheusConverter(settings Settings) *prometheusConverter {
 		metricNamer: otlptranslator.MetricNamer{WithMetricSuffixes: settings.AddMetricSuffixes, Namespace: settings.Namespace},
 		labelNamer:  otlptranslator.LabelNamer{UnderscoreLabelSanitization: !prometheus.DropSanitizationGate.IsEnabled()},
 		unitNamer:   otlptranslator.UnitNamer{},
+		scopes:      map[uint64]scopeInfo{},
 	}
 }
 
@@ -70,13 +84,50 @@ func (c *prometheusConverter) fromMetrics(md pmetric.Metrics, settings Settings)
 		// keep track of the most recent timestamp in the ResourceMetrics for
 		// use with the "target" info metric
 		var mostRecentTimestamp pcommon.Timestamp
-		for j := 0; j < scopeMetricsSlice.Len(); j++ {
-			metricSlice := scopeMetricsSlice.At(j).Metrics()
 
-			// TODO: decide if instrumentation library information should be exported as labels
+		// Track unique scopes per resource to avoid duplicate otel_scope_info metrics
+		processedScopes := make(map[uint64]bool)
+
+		for j := 0; j < scopeMetricsSlice.Len(); j++ {
+			scopeMetrics := scopeMetricsSlice.At(j)
+			metricSlice := scopeMetrics.Metrics()
+
+			// Extract scope information from the current scope
+			scope := scopeMetrics.Scope()
+
+			// Handle scope information gracefully - scope fields might be empty
+			scopeName := scope.Name()
+			scopeVersion := scope.Version()
+			scopeAttrs := scope.Attributes()
+
+			// Generate scope signature for deduplication
+			scopeSignature := getScopeSignature(scopeName, scopeVersion, scopeAttrs, resource)
+
+			// Store scope information for later processing (otel_scope_info generation)
+			// Only track if we haven't seen this scope signature before for this resource
+			if !processedScopes[scopeSignature] {
+				processedScopes[scopeSignature] = true
+
+				// Store scope info for later processing in addScopeInfo function
+				c.scopes[scopeSignature] = scopeInfo{
+					name:       scopeName,
+					version:    scopeVersion,
+					attributes: scopeAttrs,
+					resource:   resource,
+					timestamp:  0, // Will be updated with most recent timestamp
+				}
+			}
+
 			for k := 0; k < metricSlice.Len(); k++ {
 				metric := metricSlice.At(k)
-				mostRecentTimestamp = max(mostRecentTimestamp, mostRecentTimestampInMetric(metric))
+				metricTimestamp := mostRecentTimestampInMetric(metric)
+				mostRecentTimestamp = max(mostRecentTimestamp, metricTimestamp)
+
+				// Update the scope's most recent timestamp
+				if scopeInfo, exists := c.scopes[scopeSignature]; exists {
+					scopeInfo.timestamp = max(scopeInfo.timestamp, metricTimestamp)
+					c.scopes[scopeSignature] = scopeInfo
+				}
 
 				if !isValidAggregationTemporality(metric) {
 					errs = multierr.Append(errs, fmt.Errorf("invalid temporality and type combination for metric %q", metric.Name()))
@@ -137,6 +188,21 @@ func (c *prometheusConverter) fromMetrics(md pmetric.Metrics, settings Settings)
 				}
 			}
 		}
+
+		// Generate otel_scope_info metrics for each unique scope in this resource
+		for signature, processed := range processedScopes {
+			if processed {
+				// Find the corresponding scope info
+				if storedScopeInfo, exists := c.scopes[signature]; exists {
+					err := addScopeInfo(storedScopeInfo.name, storedScopeInfo.version, storedScopeInfo.attributes,
+						resource, settings, storedScopeInfo.timestamp, c)
+					if err != nil {
+						errs = multierr.Append(errs, fmt.Errorf("failed to add scope info for scope %q: %w", storedScopeInfo.name, err))
+					}
+				}
+			}
+		}
+
 		errs = multierr.Append(errs, addResourceTargetInfo(resource, settings, mostRecentTimestamp, c))
 	}
 

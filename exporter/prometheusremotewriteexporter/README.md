@@ -65,6 +65,8 @@ The following settings can be optionally configured:
   - `lag_record_frequency` (default = `15s`): Frequency for how often the exporter will record the lag of the WAL. 
 - `target_info`: customize `target_info` metric
   - `enabled` (default = true): If `enabled` is `true`, a `target_info` metric will be generated for each resource metric (see https://github.com/open-telemetry/opentelemetry-specification/pull/2381).
+- `scope_info`: customize `otel_scope_info` metric
+  - `enabled` (default = false): If `enabled` is `true`, a `otel_scope_info` metric will be generated for each instrumentation scope metric (see https://github.com/open-telemetry/opentelemetry-specification/pull/2703).
 - `max_batch_size_bytes` (default = `3000000` -> `~2.861 mb`): Maximum size of a batch of samples to be sent to the remote 
   write endpoint. If the batch size is larger than this value, it will be split into multiple batches. This option is ignored
   when using the wal and where the wal buffer_size / truncate_frequency will be used.

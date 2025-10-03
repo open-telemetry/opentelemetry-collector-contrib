@@ -212,6 +212,7 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 			Namespace:         cfg.Namespace,
 			ExternalLabels:    sanitizedLabels,
 			DisableTargetInfo: !cfg.TargetInfo.Enabled,
+			DisableScopeInfo:  !cfg.ScopeInfo.Enabled,
 			AddMetricSuffixes: cfg.AddMetricSuffixes,
 			SendMetadata:      cfg.SendMetadata,
 		},

@@ -1401,3 +1401,38 @@ func benchmarkPushMetrics(b *testing.B, numMetrics, numConsumers int) {
 		require.NoError(b, err)
 	}
 }
+
+// TestScopeInfoConfigurationFlow verifies that the ScopeInfo configuration
+// flows correctly from Config to Settings struct
+func TestScopeInfoConfigurationFlow(t *testing.T) {
+	tests := []struct {
+		name                    string
+		scopeInfoEnabled        bool
+		expectedDisableScopeInfo bool
+	}{
+		{
+			name:                    "scope_info_enabled_true",
+			scopeInfoEnabled:        true,
+			expectedDisableScopeInfo: false,
+		},
+		{
+			name:                    "scope_info_enabled_false",
+			scopeInfoEnabled:        false,
+			expectedDisableScopeInfo: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.ScopeInfo.Enabled = tt.scopeInfoEnabled
+			cfg.ClientConfig.Endpoint = "http://example.com:9090/api/v1/write"
+
+			set := exportertest.NewNopSettings(metadata.Type)
+			prwe, err := newPRWExporter(cfg, set)
+			require.NoError(t, err)
+
+			assert.Equal(t, tt.expectedDisableScopeInfo, prwe.exporterSettings.DisableScopeInfo)
+		})
+	}
+}

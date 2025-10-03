@@ -41,6 +41,9 @@ const (
 	// https://github.com/prometheus/OpenMetrics/blob/v1.0.0/specification/OpenMetrics.md#exemplars
 	maxExemplarRunes = 128
 	infoType         = "info"
+	scopeMetricName  = "otel_scope_info"
+	scopeAttrName    = "otel_scope_name"
+	scopeAttrVersion = "otel_scope_version"
 )
 
 type bucketBoundsData struct {
@@ -557,7 +560,184 @@ func addResourceTargetInfo(resource pcommon.Resource, settings Settings, timesta
 	return nil
 }
 
+// addScopeInfo generates otel_scope_info metrics for each unique scope per resource.
+// It only generates the metric when the scope has additional attributes beyond name and version,
+// following the same pattern as addResourceTargetInfo.
+func addScopeInfo(scopeName, scopeVersion string, scopeAttrs pcommon.Map, resource pcommon.Resource,
+	settings Settings, timestamp pcommon.Timestamp, converter *prometheusConverter) error {
+
+	if settings.DisableScopeInfo || timestamp == 0 {
+		return nil
+	}
+
+	// Only generate otel_scope_info if scope has additional attributes beyond name and version
+	if scopeAttrs.Len() == 0 {
+		return nil
+	}
+
+	// Build the metric name with namespace prefix if configured
+	name := scopeMetricName
+	if settings.Namespace != "" {
+		name = settings.Namespace + "_" + name
+	}
+
+	// Create base labels from resource attributes and external labels
+	baseLabels, err := createAttributes(resource, pcommon.NewMap(), settings.ExternalLabels, nil, false, converter.labelNamer)
+	if err != nil {
+		return fmt.Errorf("failed to create base labels for scope info: %w", err)
+	}
+
+	// Create scope info labels including scope name, version, and all scope attributes
+	labels, err := createScopeInfoLabels(scopeName, scopeVersion, scopeAttrs, baseLabels, converter.labelNamer)
+	if err != nil {
+		return fmt.Errorf("failed to create scope info labels: %w", err)
+	}
+
+	// Add the metric name label
+	labels = append(labels, prompb.Label{Name: model.MetricNameLabel, Value: name})
+
+	haveIdentifier := false
+	for _, l := range labels {
+		if l.Name == model.JobLabel || l.Name == model.InstanceLabel {
+			haveIdentifier = true
+			break
+		}
+	}
+
+	if !haveIdentifier {
+		// We need at least one identifying label to generate scope_info, similar to target_info
+		return nil
+	}
+
+	sample := &prompb.Sample{
+		Value:     float64(1),
+		Timestamp: convertTimeStamp(timestamp),
+	}
+
+	converter.addSample(sample, labels)
+	return nil
+}
+
 // convertTimeStamp converts OTLP timestamp in ns to timestamp in ms
 func convertTimeStamp(timestamp pcommon.Timestamp) int64 {
 	return timestamp.AsTime().UnixNano() / (int64(time.Millisecond) / int64(time.Nanosecond))
+}
+
+// getScopeSignature creates a unique signature for scopes to avoid duplicate otel_scope_info metrics.
+// The signature is based on scope name, version, attributes, and resource identifiers to ensure
+// proper deduplication per resource+scope combination.
+func getScopeSignature(scopeName, scopeVersion string, scopeAttrs pcommon.Map, resource pcommon.Resource) uint64 {
+	h := xxhash.New()
+
+	// Include scope name and version
+	_, _ = h.WriteString(scopeName)
+	_, _ = h.Write(seps)
+	_, _ = h.WriteString(scopeVersion)
+	_, _ = h.Write(seps)
+
+	// Include resource identifiers for proper scoping
+	resourceAttrs := resource.Attributes()
+	if serviceName, ok := resourceAttrs.Get(string(conventions.ServiceNameKey)); ok {
+		_, _ = h.WriteString(serviceName.AsString())
+	}
+	_, _ = h.Write(seps)
+	if serviceNamespace, ok := resourceAttrs.Get(string(conventions.ServiceNamespaceKey)); ok {
+		_, _ = h.WriteString(serviceNamespace.AsString())
+	}
+	_, _ = h.Write(seps)
+	if instanceID, ok := resourceAttrs.Get(string(conventions.ServiceInstanceIDKey)); ok {
+		_, _ = h.WriteString(instanceID.AsString())
+	}
+	_, _ = h.Write(seps)
+
+	// Include scope attributes in sorted order for consistent hashing
+	if scopeAttrs.Len() > 0 {
+		// Create sorted slice of attribute keys for consistent hashing
+		keys := make([]string, 0, scopeAttrs.Len())
+		scopeAttrs.Range(func(k string, _ pcommon.Value) bool {
+			keys = append(keys, k)
+			return true
+		})
+		sort.Strings(keys)
+
+		for _, key := range keys {
+			if value, ok := scopeAttrs.Get(key); ok {
+				_, _ = h.WriteString(key)
+				_, _ = h.Write(seps)
+				_, _ = h.WriteString(value.AsString())
+				_, _ = h.Write(seps)
+			}
+		}
+	}
+
+	return h.Sum64()
+}
+
+// createScopeLabels creates scope-related labels (otel_scope_name and otel_scope_version)
+// to be added to metric data points. Empty scope name or version are omitted.
+func createScopeLabels(scopeName, scopeVersion string, labelNamer otlptranslator.LabelNamer) ([]prompb.Label, error) {
+	var scopeLabels []prompb.Label
+
+	if scopeName != "" {
+		nameLabel, err := labelNamer.Build(scopeAttrName)
+		if err != nil {
+			return nil, fmt.Errorf("failed to sanitize scope name label: %w", err)
+		}
+		scopeLabels = append(scopeLabels, prompb.Label{
+			Name:  nameLabel,
+			Value: scopeName,
+		})
+	}
+
+	if scopeVersion != "" {
+		versionLabel, err := labelNamer.Build(scopeAttrVersion)
+		if err != nil {
+			return nil, fmt.Errorf("failed to sanitize scope version label: %w", err)
+		}
+		scopeLabels = append(scopeLabels, prompb.Label{
+			Name:  versionLabel,
+			Value: scopeVersion,
+		})
+	}
+
+	return scopeLabels, nil
+}
+
+// createScopeInfoLabels creates labels for the otel_scope_info metric, including
+// scope name, version, and all additional scope attributes as labels.
+func createScopeInfoLabels(scopeName, scopeVersion string, scopeAttrs pcommon.Map,
+	baseLabels []prompb.Label, labelNamer otlptranslator.LabelNamer) ([]prompb.Label, error) {
+
+	labels := make([]prompb.Label, len(baseLabels))
+	copy(labels, baseLabels)
+
+	// Add scope name and version labels for joining
+	scopeLabels, err := createScopeLabels(scopeName, scopeVersion, labelNamer)
+	if err != nil {
+		return nil, err
+	}
+	labels = append(labels, scopeLabels...)
+
+	// Add all scope attributes as additional labels
+	if scopeAttrs.Len() > 0 {
+		attrLabels := make([]prompb.Label, 0, scopeAttrs.Len())
+		scopeAttrs.Range(func(key string, value pcommon.Value) bool {
+			sanitizedKey, err := labelNamer.Build(key)
+			if err != nil {
+				// Log warning but continue processing other attributes
+				log.Printf("Warning: failed to sanitize scope attribute key %q: %v", key, err)
+				return true
+			}
+			attrLabels = append(attrLabels, prompb.Label{
+				Name:  sanitizedKey,
+				Value: value.AsString(),
+			})
+			return true
+		})
+
+		sort.Sort(ByLabelName(attrLabels))
+		labels = append(labels, attrLabels...)
+	}
+
+	return labels, nil
 }
