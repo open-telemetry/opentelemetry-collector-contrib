@@ -91,7 +91,6 @@ func convertPprofToPprofile(src *profile.Profile) (*pprofile.Profiles, error) {
 			s := p.Sample().AppendEmpty()
 
 			// pprof.Sample.location_id
-			// TODO: deduplicate inserts to pprofile.ProfilesDictionary.
 			var locTableIDs []int32
 			for _, loc := range sample.Location {
 				l := dst.Dictionary().LocationTable().AppendEmpty()
@@ -99,17 +98,11 @@ func convertPprofToPprofile(src *profile.Profile) (*pprofile.Profiles, error) {
 
 				locTableIDs = append(locTableIDs, lastLocationTableIdx)
 
-				// pprof.Location.id
-				// TODO
-
 				// pprof.Location.mapping_id
 				if loc.Mapping != nil {
 					// Insert the backing mapping information first.
 					m := dst.Dictionary().MappingTable().AppendEmpty()
 					lastMappingTableIdx++
-
-					// pprof.Mapping.id
-					// TODO
 
 					// pprof.Mapping.memory_start
 					m.SetMemoryStart(loc.Mapping.Start)

@@ -5,6 +5,7 @@ package pprofreceiver // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"bytes"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -33,11 +34,17 @@ func TestConvertPprofToPprofile(t *testing.T) {
 			}
 
 			pprofile, err := convertPprofToPprofile(p)
+			switch {
+			case errors.Is(err, tc.expectedError):
+				// The expected error equals the returned error,
+				// so we can just continue.
+			default:
+				t.Fatalf("expected error '%s' but got '%s'", tc.expectedError, err)
+			}
 			if err != nil {
 				t.Fatalf("%s: %s", name, err)
 			}
 			_ = pprofile
-			_ = tc.expectedError
 		})
 	}
 }
