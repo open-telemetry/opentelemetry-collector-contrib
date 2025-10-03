@@ -13,8 +13,8 @@ import (
 
 const (
 	nfsProcFileOut = `net 8 843 666 157
-rpc 220 789 662
-proc3 22 191 360 118 397 455 77 581 182 333 767 235 558 371 872 877 652 265 463 416 200 942 235
+rpc 220 790 662
+proc3 997 191 360 118 397 455 77 581 182 333 767 235 558 371 873 877 652 265 463 416 200 942 235
 proc4 69 32 829 218 185 789 767 813 512 615 355 207 211 992 234 736 629 862 860 117 752 128 200 494 372 158 420 757 783 46 725 180 301 305 856 965 416 653 340 500 650 545 155 620 354 959 965 986 526 367 388 373 786 890 459 810 679 939 583 790 333 455 115 155 884 571 409 540 293 721
 `
 
@@ -24,7 +24,7 @@ io 111 464
 th 261 966 860 728 589 845 366 825 913 257 789 77
 ra 579 364 872 902 542 886 245 835 517 437 593 152
 net 1 43 26 597
-rpc 872 367 960 94 748
+rpc 874 367 960 94 748
 proc3 22 124 554 529 64 928 316 531 43 724 822 237 665 620 22 335 137 236 222 658 654 209 382
 proc4 2 512 878
 proc4ops 76 725 607 978 86 442 878 262 489 962 909 563 468 722 104 47 214 305 564 776 373 444 6 265 163 397 817 73 90 630 664 984 981 502 682 210 639 484 924 337 857 667 984 498 76 515 657 596 31 781 437 23 846 867 241 648 169 64 151 447 848 625 185 586 890 446 317 503 32 935 459 386 291 817 74 592 562
@@ -54,7 +54,7 @@ func getExpectedOSNfsStats() *NfsStats {
 
 	nfsRPCStats := &nfsRPCStats{
 		rpcCount:         220,
-		retransmitCount:  789,
+		retransmitCount:  790,
 		authRefreshCount: 662,
 	}
 
@@ -72,7 +72,7 @@ func getExpectedOSNfsStats() *NfsStats {
 		{nfsVersion: 3, nfsCallName: "SYMLINK", nfsCallCount: 235},
 		{nfsVersion: 3, nfsCallName: "MKNOD", nfsCallCount: 558},
 		{nfsVersion: 3, nfsCallName: "REMOVE", nfsCallCount: 371},
-		{nfsVersion: 3, nfsCallName: "RMDIR", nfsCallCount: 872},
+		{nfsVersion: 3, nfsCallName: "RMDIR", nfsCallCount: 873},
 		{nfsVersion: 3, nfsCallName: "RENAME", nfsCallCount: 877},
 		{nfsVersion: 3, nfsCallName: "LINK", nfsCallCount: 652},
 		{nfsVersion: 3, nfsCallName: "READDIR", nfsCallCount: 265},
@@ -191,7 +191,7 @@ func getExpectedOSnfsdStats() *nfsdStats {
 	}
 
 	rpcStats := &nfsdRPCStats{
-		rpcCount:       872,
+		rpcCount:       874,
 		badCount:       367,
 		badFmtCount:    960,
 		badAuthCount:   94,
@@ -279,7 +279,7 @@ func getExpectedOSnfsdStats() *nfsdStats {
 		{nfsVersion: 4, nfsCallName: "GETDEVICEINFO", nfsCallCount: 31},
 		{nfsVersion: 4, nfsCallName: "GETDEVICELIST", nfsCallCount: 781},
 		{nfsVersion: 4, nfsCallName: "LAYOUTCOMMIT", nfsCallCount: 437},
-		{nfsVersion: 4, nfsCallName: "LAYOUTGET", nfsCallCount: 23},
+		{nfsVersion: 4, nfsCallName: "LAYOUTGET", nfsCallCount: 997},
 		{nfsVersion: 4, nfsCallName: "LAYOUTRETURN", nfsCallCount: 846},
 		{nfsVersion: 4, nfsCallName: "SECINFO_NO_NAME", nfsCallCount: 867},
 		{nfsVersion: 4, nfsCallName: "SEQUENCE", nfsCallCount: 241},
