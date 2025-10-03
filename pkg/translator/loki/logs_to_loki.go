@@ -5,7 +5,6 @@ package loki // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/grafana/loki/pkg/push"
 	"github.com/prometheus/common/model"
@@ -148,11 +147,11 @@ func LogToLokiEntry(
 
 	// SAWMILLS specific code changes done to support all attributes to be converted to labels
 	// We are getting all the attributes that are to be converted to labels
-	logAttrs, resAttrs := getFilteredAttributeNames(log.Attributes(), resource.Attributes())
+	logAttrs, resAttrs := filteredAttributeNames(log.Attributes(), resource.Attributes(), defaultLabelsEnabled)
 
-	// Update the hints with the new attributes to be converted to labels
-	log.Attributes().PutStr(hintAttributes, strings.Join(logAttrs, ","))
-	resource.Attributes().PutStr(hintResources, strings.Join(resAttrs, ","))
+	// Update the hints with the new attributes to be converted to labels, merging with existing hints
+	updateHintsWithFilteredAttributes(log.Attributes(), logAttrs, hintAttributes)
+	updateHintsWithFilteredAttributes(resource.Attributes(), resAttrs, hintResources)
 
 	mergedLabels := convertAttributesAndMerge(
 		log.Attributes(),
@@ -173,10 +172,7 @@ func LogToLokiEntry(
 	for label := range mergedLabels {
 		// Loki doesn't support dots in label names
 		// labelName is normalized label name to follow Prometheus label names standard
-		labelName, err := namer.Build(string(label))
-		if err != nil {
-			return nil, err
-		}
+		labelName := prometheustranslator.NormalizeLabel(string(label))
 		labels[model.LabelName(labelName)] = mergedLabels[label]
 	}
 
@@ -186,7 +182,7 @@ func LogToLokiEntry(
 	}, nil
 }
 
-func getFormatFromFormatHint(logAttr pcommon.Map, resourceAttr pcommon.Map) string {
+func getFormatFromFormatHint(logAttr, resourceAttr pcommon.Map) string {
 	format := formatJSON
 	formatVal, found := resourceAttr.Get(hintFormat)
 	if !found {
@@ -202,7 +198,7 @@ func getFormatFromFormatHint(logAttr pcommon.Map, resourceAttr pcommon.Map) stri
 // GetTenantFromTenantHint extract an attribute based on the tenant hint.
 // it looks up for the attribute first in resource attributes and fallbacks to
 // record attributes if it is not found.
-func GetTenantFromTenantHint(logAttr pcommon.Map, resourceAttr pcommon.Map) string {
+func GetTenantFromTenantHint(logAttr, resourceAttr pcommon.Map) string {
 	var tenant string
 	hintAttr, found := resourceAttr.Get(hintTenant)
 	if !found {

@@ -13,21 +13,16 @@ import (
 
 type legacyHubWrapper interface {
 	GetRuntimeInformation(ctx context.Context) (*eventhub.HubRuntimeInformation, error)
-	Receive(ctx context.Context, partitionID string, handler eventhub.Handler, opts ...eventhub.ReceiveOption) (*eventhub.ListenerHandle, error)
+	Receive(
+		ctx context.Context,
+		partitionID string,
+		handler eventhub.Handler,
+		opts ...eventhub.ReceiveOption,
+	) (*eventhub.ListenerHandle, error)
 	Close(ctx context.Context) error
 }
 
 func newLegacyHubWrapper(h *eventhubHandler) (*hubWrapperLegacyImpl, error) {
-<<<<<<< HEAD
-	hub, newHubErr := eventhub.NewHubFromConnectionString(
-		h.config.Connection,
-		eventhub.HubWithOffsetPersistence(
-			&storageCheckpointPersister[persist.Checkpoint]{
-				storageClient: h.storageClient,
-				defaultValue:  persist.NewCheckpointFromStartOfStream(),
-			},
-		),
-=======
 	options := []eventhub.HubOption{}
 	if h.storageClient != nil {
 		options = append(options,
@@ -42,7 +37,6 @@ func newLegacyHubWrapper(h *eventhubHandler) (*hubWrapperLegacyImpl, error) {
 	hub, newHubErr := eventhub.NewHubFromConnectionString(
 		h.config.Connection,
 		options...,
->>>>>>> df00ae3d478fa1bae7881b20a68abb0a6619a841
 	)
 	if newHubErr != nil {
 		h.settings.Logger.Debug("Error connecting to Event Hub", zap.Error(newHubErr))
@@ -75,24 +69,22 @@ func (h *hubWrapperLegacyImpl) GetRuntimeInformation(ctx context.Context) (*hubR
 	return nil, errNoConfig
 }
 
-func (h *hubWrapperLegacyImpl) Receive(ctx context.Context, partitionID string, handler hubHandler, applyOffset bool) (listenerHandleWrapper, error) {
+func (h *hubWrapperLegacyImpl) Receive(
+	ctx context.Context,
+	partitionID string,
+	handler hubHandler,
+	applyOffset bool,
+) (listenerHandleWrapper, error) {
 	receiverOptions := []eventhub.ReceiveOption{}
 	if applyOffset && h.config.Offset != "" {
 		receiverOptions = append(receiverOptions, eventhub.ReceiveWithStartingOffset(h.config.Offset))
 	}
-<<<<<<< HEAD
-
-	if h.config.ConsumerGroup != "" {
-		receiverOptions = append(receiverOptions, eventhub.ReceiveWithConsumerGroup(h.config.ConsumerGroup))
-	}
-=======
 	if h.config.ConsumerGroup != "" {
 		receiverOptions = append(receiverOptions, eventhub.ReceiveWithConsumerGroup(h.config.ConsumerGroup))
 	}
 	if h.config.StorageID == nil && (!applyOffset || h.config.Offset == "") {
 		receiverOptions = append(receiverOptions, eventhub.ReceiveWithLatestOffset())
 	}
->>>>>>> df00ae3d478fa1bae7881b20a68abb0a6619a841
 
 	if h.hub != nil {
 		l, err := h.hub.Receive(ctx, partitionID, func(ctx context.Context, event *eventhub.Event) error {

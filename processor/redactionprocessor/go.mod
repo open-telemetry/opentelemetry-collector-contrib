@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor
 
-go 1.24.0
+go 1.25.1
 
 require (
 	github.com/DataDog/datadog-agent/pkg/obfuscate v0.70.2

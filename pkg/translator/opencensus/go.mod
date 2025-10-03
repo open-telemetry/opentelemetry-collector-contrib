@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus
 
-go 1.24.0
+go 1.25.1
 
 require (
 	github.com/census-instrumentation/opencensus-proto v0.4.1
@@ -13,7 +13,7 @@ require (
 	go.opentelemetry.io/collector/pdata v1.42.1-0.20250925151503-069408608b28
 	go.opentelemetry.io/otel v1.38.0
 	go.uber.org/goleak v1.3.0
-	google.golang.org/protobuf v1.36.9
+	google.golang.org/protobuf v1.36.10
 )
 
 require (
@@ -32,11 +32,11 @@ require (
 	go.opentelemetry.io/collector/pdata/pprofile v0.136.1-0.20250925151503-069408608b28 // indirect
 	go.opentelemetry.io/otel/trace v1.38.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/net v0.41.0 // indirect
+	golang.org/x/net v0.44.0 // indirect
 	golang.org/x/sys v0.36.0 // indirect
 	golang.org/x/text v0.29.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250707201910-8d1bb00bc6a7 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250707201910-8d1bb00bc6a7 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250929231259-57b25ae835d4 // indirect
 	google.golang.org/grpc v1.75.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

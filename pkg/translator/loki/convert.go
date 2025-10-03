@@ -38,8 +38,10 @@ const (
 	skipServiceNamespace string = "service.namespace"
 	skipServiceInstance  string = "service.instance.id"
 	skipTenant           string = "tenant.id"
-	skipProcessedBy      string = "processed_by"
+	skipProcessedBy      string = "processed.by"
+	skipHTTPStatus       string = "http.status"
 	skipExporter         string = "exporter"
+	skipRegionAZ         string = "region.az"
 )
 
 var excludedLogAttributes = []string{
@@ -47,11 +49,19 @@ var excludedLogAttributes = []string{
 	hintResources,
 	hintTenant,
 	hintFormat,
+}
+
+// SAWMILLS: These attributes are excluded from being automatically converted to labels
+// but can still be converted if explicitly specified in hints
+var skipAttributes = []string{
 	skipServiceName,
 	skipServiceNamespace,
 	skipServiceInstance,
+	skipHTTPStatus,
 	skipTenant,
 	skipExporter,
+	skipRegionAZ,
+	skipProcessedBy,
 }
 
 const attrSeparator = "."
@@ -86,30 +96,89 @@ func convertAttributesAndMerge(
 
 // SAWMILLS custom function to get the names of the attributes that will be used as labels
 // and the names of the attributes that will be used as log attributes
-func getFilteredAttributeNames(
-	logAttrs pcommon.Map,
-	resAttrs pcommon.Map,
-) ([]string, []string) {
-	var logAttrNames, resAttrNames []string
-
-	// Get resource attributes, excluding maps and skipped attributes
+func filteredAttributeNames(
+	logAttrs, resAttrs pcommon.Map,
+	defaultLabelsEnabled map[string]bool,
+) (logAttrNames, resAttrNames []string) {
+	// Get resource attributes, excluding maps, excluded attributes, and skip attributes
 	resAttrs.Range(func(k string, v pcommon.Value) bool {
-		if v.Type() != pcommon.ValueTypeMap && !slices.Contains(excludedLogAttributes, k) {
-			resAttrNames = append(resAttrNames, k)
+		if v.Type() != pcommon.ValueTypeMap &&
+			!slices.Contains(excludedLogAttributes, k) &&
+			!slices.Contains(skipAttributes, k) {
+			// Respect defaultLabelsEnabled for level label
+			if k == levelLabel {
+				if enabled, ok := defaultLabelsEnabled[levelLabel]; !ok || enabled {
+					resAttrNames = append(resAttrNames, k)
+				}
+			} else {
+				resAttrNames = append(resAttrNames, k)
+			}
 		}
 		return true
 	})
 
-	// Get log attributes, excluding maps and skipped attributes
+	// Get log attributes, excluding maps, excluded attributes, and skip attributes
 	logAttrs.Range(func(k string, v pcommon.Value) bool {
 		if v.Type() != pcommon.ValueTypeMap &&
-			!slices.Contains(excludedLogAttributes, k) {
-			logAttrNames = append(logAttrNames, k)
+			!slices.Contains(excludedLogAttributes, k) &&
+			!slices.Contains(skipAttributes, k) {
+			// Respect defaultLabelsEnabled for level label
+			if k == levelLabel {
+				if enabled, ok := defaultLabelsEnabled[levelLabel]; !ok || enabled {
+					logAttrNames = append(logAttrNames, k)
+				}
+			} else {
+				logAttrNames = append(logAttrNames, k)
+			}
 		}
 		return true
 	})
 
 	return logAttrNames, resAttrNames
+}
+
+// updateHintsWithFilteredAttributes updates the hints with filtered attributes, respecting existing hints
+func updateHintsWithFilteredAttributes(attrs pcommon.Map, filteredAttrs []string, hintKey string) {
+	if len(filteredAttrs) == 0 {
+		return
+	}
+
+	// Check if there are existing hints
+	if existingHint, found := attrs.Get(hintKey); found {
+		// Merge with existing hints
+		var existingAttrs []string
+		switch existingHint.Type() {
+		case pcommon.ValueTypeStr:
+			existingAttrs = strings.Split(existingHint.AsString(), ",")
+		case pcommon.ValueTypeSlice:
+			as := existingHint.Slice().AsRaw()
+			for _, a := range as {
+				existingAttrs = append(existingAttrs, fmt.Sprintf("%v", a))
+			}
+		}
+
+		// Combine existing and new attributes, removing duplicates
+		allAttrs := make(map[string]bool)
+		for _, attr := range existingAttrs {
+			allAttrs[strings.TrimSpace(attr)] = true
+		}
+		for _, attr := range filteredAttrs {
+			allAttrs[strings.TrimSpace(attr)] = true
+		}
+
+		// Convert back to slice
+		var combinedAttrs []string
+		for attr := range allAttrs {
+			if attr != "" {
+				combinedAttrs = append(combinedAttrs, attr)
+			}
+		}
+
+		attrs.PutStr(hintKey, strings.Join(combinedAttrs, ","))
+	} else {
+		// No existing hints, just set the new ones
+		attrs.PutStr(hintKey, strings.Join(filteredAttrs, ","))
+	}
 }
 
 func getDefaultLabels(resAttrs pcommon.Map, defaultLabelsEnabled map[string]bool) model.LabelSet {

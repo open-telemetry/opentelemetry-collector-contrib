@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudmonitoringreceiver
 
-go 1.24.0
+go 1.25.1
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.136.0
@@ -80,7 +80,7 @@ require (
 	google.golang.org/api v0.251.0
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250929231259-57b25ae835d4 // indirect
 	google.golang.org/grpc v1.75.1 // indirect
-	google.golang.org/protobuf v1.36.9
+	google.golang.org/protobuf v1.36.10
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 

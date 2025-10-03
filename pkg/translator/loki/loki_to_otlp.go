@@ -10,6 +10,7 @@ import (
 
 	"github.com/grafana/loki/pkg/push"
 	"github.com/prometheus/common/model"
+	"github.com/prometheus/prometheus/model/labels"
 	promql_parser "github.com/prometheus/prometheus/promql/parser"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -44,13 +45,13 @@ func PushRequestToLogs(pushRequest *push.PushRequest, keepTimestamp bool) (plog.
 
 		// Convert to model.LabelSet
 		filtered := model.LabelSet{}
-		for _, label := range ls {
+		ls.Range(func(label labels.Label) {
 			// Labels started from __ are considered internal and should be ignored
 			if strings.HasPrefix(label.Name, "__") {
-				continue
+				return
 			}
 			filtered[model.LabelName(label.Name)] = model.LabelValue(label.Value)
-		}
+		})
 
 		for i := range stream.Entries {
 			lr := logSlice.AppendEmpty()

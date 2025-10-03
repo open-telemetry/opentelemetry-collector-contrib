@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogsemanticsprocessor
 
-go 1.24.0
+go 1.25.1
 
 require (
 	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.72.0-devel

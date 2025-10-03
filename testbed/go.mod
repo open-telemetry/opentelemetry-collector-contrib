@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/testbed
 
-go 1.24.0
+go 1.25.1
 
 require (
 	github.com/fluent/fluent-logger-golang v1.10.1
@@ -393,8 +393,8 @@ require (
 	gonum.org/v1/gonum v0.16.0 // indirect
 	google.golang.org/api v0.239.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250825161204-c5933d9347a5 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250825161204-c5933d9347a5 // indirect
-	google.golang.org/protobuf v1.36.9 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250929231259-57b25ae835d4 // indirect
+	google.golang.org/protobuf v1.36.10 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect

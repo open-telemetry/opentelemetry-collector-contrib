@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension
 
-go 1.24.0
+go 1.25.1
 
 require (
 	github.com/DataDog/datadog-agent/comp/forwarder/defaultforwarder v0.72.0-devel

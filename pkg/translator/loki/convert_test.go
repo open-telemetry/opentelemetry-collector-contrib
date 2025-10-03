@@ -413,25 +413,25 @@ func TestConvertLogToLogRawEntry(t *testing.T) {
 func TestGetFilteredAttributeNames(t *testing.T) {
 	tests := []struct {
 		name         string
-		logAttrs     map[string]interface{}
-		resAttrs     map[string]interface{}
+		logAttrs     map[string]any
+		resAttrs     map[string]any
 		wantLogNames []string
 		wantResNames []string
 	}{
 		{
 			name:         "empty maps",
-			logAttrs:     map[string]interface{}{},
-			resAttrs:     map[string]interface{}{},
+			logAttrs:     map[string]any{},
+			resAttrs:     map[string]any{},
 			wantLogNames: make([]string, 0),
 			wantResNames: make([]string, 0),
 		},
 		{
 			name: "basic attributes",
-			logAttrs: map[string]interface{}{
+			logAttrs: map[string]any{
 				"log.level": "error",
 				"message":   "test message",
 			},
-			resAttrs: map[string]interface{}{
+			resAttrs: map[string]any{
 				"host.name":    "localhost",
 				"service.type": "web",
 			},
@@ -440,14 +440,14 @@ func TestGetFilteredAttributeNames(t *testing.T) {
 		},
 		{
 			name: "filtered hint attributes",
-			logAttrs: map[string]interface{}{
+			logAttrs: map[string]any{
 				"message":               "test",
 				"loki.tenant":           "tenant1",
 				"loki.format":           "json",
 				"loki.resource.labels":  "host.name",
 				"loki.attribute.labels": "severity",
 			},
-			resAttrs: map[string]interface{}{
+			resAttrs: map[string]any{
 				"host.name":   "localhost",
 				"loki.tenant": "tenant1",
 				"loki.format": "json",
@@ -457,10 +457,10 @@ func TestGetFilteredAttributeNames(t *testing.T) {
 		},
 		{
 			name: "filtered skip attributes",
-			logAttrs: map[string]interface{}{
+			logAttrs: map[string]any{
 				"message": "test",
 			},
-			resAttrs: map[string]interface{}{
+			resAttrs: map[string]any{
 				"host.name":           "localhost",
 				"service.name":        "myapp",
 				"service.namespace":   "prod",
@@ -471,15 +471,15 @@ func TestGetFilteredAttributeNames(t *testing.T) {
 		},
 		{
 			name: "filtered map type attributes",
-			logAttrs: map[string]interface{}{
+			logAttrs: map[string]any{
 				"message": "test",
-				"metadata": map[string]interface{}{
+				"metadata": map[string]any{
 					"nested": "value",
 				},
 			},
-			resAttrs: map[string]interface{}{
+			resAttrs: map[string]any{
 				"host.name": "localhost",
-				"labels": map[string]interface{}{
+				"labels": map[string]any{
 					"app": "service",
 				},
 			},
@@ -488,12 +488,12 @@ func TestGetFilteredAttributeNames(t *testing.T) {
 		},
 		{
 			name: "filtered processed_by and exporter",
-			logAttrs: map[string]interface{}{
+			logAttrs: map[string]any{
 				"message":      "test",
 				"processed_by": "sawmills-otelcol",
 				"exporter":     "exp1",
 			},
-			resAttrs: map[string]interface{}{
+			resAttrs: map[string]any{
 				"host.name":    "localhost",
 				"processed_by": "sawmills-otelcol",
 				"exporter":     "exp2",
@@ -516,7 +516,11 @@ func TestGetFilteredAttributeNames(t *testing.T) {
 				insertValue(resMap, k, v)
 			}
 
-			gotLogNames, gotResNames := getFilteredAttributeNames(logMap, resMap)
+			// Use default settings for testing
+			defaultLabelsEnabled := map[string]bool{
+				levelLabel: true,
+			}
+			gotLogNames, gotResNames := filteredAttributeNames(logMap, resMap, defaultLabelsEnabled)
 
 			// Initialize empty slices if nil to match expected empty slices
 			if gotLogNames == nil {
@@ -539,11 +543,11 @@ func TestGetFilteredAttributeNames(t *testing.T) {
 }
 
 // Helper function to insert values into pcommon.Map
-func insertValue(m pcommon.Map, k string, v interface{}) {
+func insertValue(m pcommon.Map, k string, v any) {
 	switch val := v.(type) {
 	case string:
 		m.PutStr(k, val)
-	case map[string]interface{}:
+	case map[string]any:
 		nested := m.PutEmptyMap(k)
 		for nk, nv := range val {
 			insertValue(nested, nk, nv)

@@ -470,7 +470,7 @@ func TestLogsToLokiRequestWithoutTenant(t *testing.T) {
 							attrs = tt.attrs
 						}
 
-						if len(tt.levelAttribute) > 0 {
+						if tt.levelAttribute != "" {
 							attrs[levelAttributeName] = tt.levelAttribute
 						}
 						if val, ok := tt.hints[hintAttributes]; ok {
@@ -706,7 +706,7 @@ func TestLogToLokiEntry(t *testing.T) {
 				resource.Attributes().PutStr(k, fmt.Sprintf("%v", v))
 			}
 			lr.SetSeverityNumber(tt.severity)
-			if len(tt.levelAttribute) > 0 {
+			if tt.levelAttribute != "" {
 				lr.Attributes().PutStr(levelAttributeName, tt.levelAttribute)
 			}
 
@@ -805,14 +805,13 @@ func TestLokiEntry(t *testing.T) {
 			expected: &PushEntry{
 				Entry: &push.Entry{
 					Timestamp: time.Unix(0, 1677592916000000000),
-					Line:      `{}`,
+					Line:      `{"attributes":{"http.status":200}}`,
 				},
 				Labels: model.LabelSet{
 					"exporter":       "OTLP",
-					"host_name":      "guarana",
-					"http_status":    "200",
 					"aws_account_id": "1234567890",
 					"aws_region":     "us-east-1",
+					"host_name":      "guarana",
 				},
 			},
 			err: nil,
@@ -855,7 +854,7 @@ func TestLokiEntry(t *testing.T) {
 				resource.Attributes().PutStr(k, fmt.Sprintf("%v", v))
 			}
 			lr.SetSeverityNumber(tt.severity)
-			if len(tt.levelAttribute) > 0 {
+			if tt.levelAttribute != "" {
 				lr.Attributes().PutStr(levelAttributeName, tt.levelAttribute)
 			}
 
