@@ -5,35 +5,121 @@ package googlecloudstorageexporter // import "github.com/open-telemetry/opentele
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"net/http"
 
+	"cloud.google.com/go/compute/metadata"
+	"cloud.google.com/go/storage"
+	"github.com/google/uuid"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
+	"google.golang.org/api/googleapi"
 )
 
 type storageExporter struct {
-	// TODO
+	cfg           *Config
+	logsEncoding  plog.Marshaler
+	storageClient *storage.Client
+	bucketHandle  *storage.BucketHandle
+	logger        *zap.Logger
 }
 
 var _ exporter.Logs = (*storageExporter)(nil)
 
-func newStorageExporter(
-	_ context.Context,
-	_ *Config,
-	_ *zap.Logger,
-) *storageExporter {
-	// TODO
-	return &storageExporter{}
+func newGCSExporter(
+	ctx context.Context,
+	cfg *Config,
+	logger *zap.Logger,
+) (*storageExporter, error) {
+	return newStorageExporter(
+		ctx,
+		cfg,
+		metadata.ZoneWithContext,
+		metadata.ProjectIDWithContext,
+		logger,
+	)
 }
 
-func (*storageExporter) Start(_ context.Context, _ component.Host) error {
-	// TODO
+func newStorageExporter(
+	ctx context.Context,
+	cfg *Config,
+	getZone func(context.Context) (string, error),
+	getProjectID func(context.Context) (string, error),
+	logger *zap.Logger,
+) (*storageExporter, error) {
+	if cfg.Bucket.Region == "" {
+		var err error
+		if cfg.Bucket.Region, err = getZone(ctx); err != nil {
+			return nil, fmt.Errorf("failed to get region from metadata: %w", err)
+		}
+	}
+
+	if cfg.Bucket.ProjectID == "" {
+		var err error
+		if cfg.Bucket.ProjectID, err = getProjectID(ctx); err != nil {
+			return nil, fmt.Errorf("failed to get project ID from metadata: %w", err)
+		}
+	}
+
+	return &storageExporter{
+		cfg:    cfg,
+		logger: logger,
+	}, nil
+}
+
+func isBucketConflictError(err error) bool {
+	var gErr *googleapi.Error
+	if !errors.As(err, &gErr) {
+		return false
+	}
+	return gErr.Code == http.StatusConflict
+}
+
+func (s *storageExporter) Start(ctx context.Context, host component.Host) error {
+	if s.cfg.Encoding == nil {
+		// this should never happen as Validate() already prevents this
+		return errors.New("encoding is not set")
+	}
+
+	encoding, err := loadExtension[plog.Marshaler](host, *s.cfg.Encoding, "logs marshaler")
+	if err != nil {
+		return fmt.Errorf("failed to load logs extension: %w", err)
+	}
+	s.logsEncoding = encoding
+
+	// TODO Add option for authenticator
+	client, err := storage.NewClient(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to create storage client: %w", err)
+	}
+	err = client.Bucket(s.cfg.Bucket.Name).Create(ctx, s.cfg.Bucket.ProjectID, &storage.BucketAttrs{
+		Location: s.cfg.Bucket.Region,
+	})
+	if err != nil {
+		if !s.cfg.Bucket.ReuseIfExists {
+			return fmt.Errorf("failed to create storage bucket %q: %w", s.cfg.Bucket.Name, err)
+		}
+		if !isBucketConflictError(err) {
+			return fmt.Errorf("failed to create storage bucket %q: %w", s.cfg.Bucket.Name, err)
+		}
+		// otherwise bucket exists and will be reused
+		s.logger.Info("existent bucket will be used", zap.String("bucket", s.cfg.Bucket.Name))
+	} else {
+		s.logger.Info("created bucket", zap.String("bucket", s.cfg.Bucket.Name))
+	}
+	s.bucketHandle = client.Bucket(s.cfg.Bucket.Name)
+	s.storageClient = client
 	return nil
 }
 
-func (*storageExporter) Shutdown(_ context.Context) error {
+func (s *storageExporter) Shutdown(_ context.Context) error {
+	if s.storageClient != nil {
+		return s.storageClient.Close()
+	}
 	return nil
 }
 
@@ -41,7 +127,61 @@ func (*storageExporter) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
-func (*storageExporter) ConsumeLogs(_ context.Context, _ plog.Logs) error {
-	// TODO
+func (s *storageExporter) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
+	buf, err := s.logsEncoding.MarshalLogs(ld)
+	if err != nil {
+		return fmt.Errorf("failed to marshal logs: %w", err)
+	}
+
+	if err = s.uploadFile(ctx, buf); err != nil {
+		return fmt.Errorf("failed to upload logs: %w", err)
+	}
 	return nil
+}
+
+func (s *storageExporter) uploadFile(ctx context.Context, content []byte) (err error) {
+	if len(content) == 0 {
+		s.logger.Info("no content to upload")
+		return nil
+	}
+
+	// if we have multiple files coming, we need to make sure the name is unique so they do
+	// not overwrite each other
+	filename := fmt.Sprintf("%s_%s", s.cfg.Bucket.FilePrefix, uuid.New().String())
+	writer := s.bucketHandle.Object(filename).NewWriter(ctx)
+	defer func() {
+		err = writer.Close()
+		if err != nil {
+			s.logger.Error(
+				"failed to close file writer",
+				zap.Error(err),
+				zap.String("filename", filename),
+				zap.String("bucket", s.cfg.Bucket.Name),
+			)
+		}
+	}()
+	if _, err = writer.Write(content); err != nil {
+		return fmt.Errorf("failed to write to file: %w", err)
+	}
+	s.logger.Info(
+		"new file uploaded",
+		zap.String("filename", filename),
+		zap.String("bucket", s.cfg.Bucket.Name),
+		zap.Int("size", len(content)),
+	)
+	return nil
+}
+
+// loadExtension tries to load an available extension for the given id.
+func loadExtension[T any](host component.Host, id component.ID, extensionType string) (T, error) {
+	var zero T
+	ext, ok := host.GetExtensions()[id]
+	if !ok {
+		return zero, fmt.Errorf("unknown extension %q", id)
+	}
+	extT, ok := ext.(T)
+	if !ok {
+		return zero, fmt.Errorf("extension %q is not a %s", id, extensionType)
+	}
+	return extT, nil
 }
