@@ -59,6 +59,8 @@ func TestPrometheusConverter_addGaugeNumberDataPoints(t *testing.T) {
 				pcommon.NewResource(),
 				Settings{},
 				metric.Name(),
+				"", // scopeName
+				"", // scopeVersion
 			)
 			require.NoError(t, err)
 			assert.Equal(t, tt.want(), converter.unique)
@@ -226,6 +228,8 @@ func TestPrometheusConverter_addSumNumberDataPoints(t *testing.T) {
 				metric,
 				Settings{},
 				metric.Name(),
+				"", // scopeName
+				"", // scopeVersion
 			)
 			require.NoError(t, err)
 			assert.Equal(t, tt.want(), converter.unique)

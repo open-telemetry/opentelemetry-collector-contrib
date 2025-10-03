@@ -216,7 +216,7 @@ func isValidAggregationTemporality(metric pmetric.Metric) bool {
 }
 
 func (c *prometheusConverter) addHistogramDataPoints(dataPoints pmetric.HistogramDataPointSlice,
-	resource pcommon.Resource, settings Settings, baseName string,
+	resource pcommon.Resource, settings Settings, baseName string, scopeName, scopeVersion string,
 ) error {
 	var errs error
 	for x := 0; x < dataPoints.Len(); x++ {
@@ -227,6 +227,14 @@ func (c *prometheusConverter) addHistogramDataPoints(dataPoints pmetric.Histogra
 			errs = multierr.Append(errs, err)
 			continue
 		}
+
+		// Add scope labels to the base labels
+		scopeLabels, err := createScopeLabels(scopeName, scopeVersion, c.labelNamer)
+		if err != nil {
+			errs = multierr.Append(errs, err)
+			continue
+		}
+		baseLabels = append(baseLabels, scopeLabels...)
 
 		// If the sum is unset, it indicates the _sum metric point should be
 		// omitted
@@ -399,7 +407,7 @@ func mostRecentTimestampInMetric(metric pmetric.Metric) pcommon.Timestamp {
 }
 
 func (c *prometheusConverter) addSummaryDataPoints(dataPoints pmetric.SummaryDataPointSlice, resource pcommon.Resource,
-	settings Settings, baseName string,
+	settings Settings, baseName string, scopeName, scopeVersion string,
 ) error {
 	var errs error
 	for x := 0; x < dataPoints.Len(); x++ {
@@ -410,6 +418,14 @@ func (c *prometheusConverter) addSummaryDataPoints(dataPoints pmetric.SummaryDat
 			errs = multierr.Append(errs, err)
 			continue
 		}
+
+		// Add scope labels to the base labels
+		scopeLabels, err := createScopeLabels(scopeName, scopeVersion, c.labelNamer)
+		if err != nil {
+			errs = multierr.Append(errs, err)
+			continue
+		}
+		baseLabels = append(baseLabels, scopeLabels...)
 
 		// treat sum as a sample in an individual TimeSeries
 		sum := &prompb.Sample{

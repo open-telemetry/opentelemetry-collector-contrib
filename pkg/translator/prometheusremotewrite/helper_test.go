@@ -1125,6 +1125,8 @@ func TestPrometheusConverter_AddSummaryDataPoints(t *testing.T) {
 				pcommon.NewResource(),
 				Settings{},
 				metric.Name(),
+				"", // scopeName
+				"", // scopeVersion
 			)
 			require.NoError(t, err)
 
@@ -1225,6 +1227,8 @@ func TestPrometheusConverter_AddHistogramDataPoints(t *testing.T) {
 				pcommon.NewResource(),
 				Settings{},
 				metric.Name(),
+				"", // scopeName
+				"", // scopeVersion
 			)
 			require.NoError(t, err)
 
