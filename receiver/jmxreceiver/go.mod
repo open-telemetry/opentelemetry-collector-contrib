@@ -155,7 +155,3 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
-
-// TODO: Remove this when github.com/stretchr/testify is fixed.
-// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42459
-replace github.com/stretchr/testify => github.com/stretchr/testify v1.11.1

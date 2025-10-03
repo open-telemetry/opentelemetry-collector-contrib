@@ -199,6 +199,13 @@ func TestConsumerShutdownConsuming(t *testing.T) {
 			consumer, e := newFranzKafkaConsumer(cfg, settings, []string{topic}, consumeFn)
 			require.NoError(tb, e)
 			require.NoError(tb, consumer.Start(ctx, componenttest.NewNopHost()))
+			// Wait until the group has assigned at least one partition.
+			require.Eventually(tb, func() bool {
+				consumer.mu.RLock()
+				n := len(consumer.assignments)
+				consumer.mu.RUnlock()
+				return n > 0
+			}, 10*time.Second, 10*time.Millisecond)
 			require.NoError(tb, kafkaClient.ProduceSync(ctx, rs...).FirstErr())
 
 			select {
@@ -207,6 +214,14 @@ func TestConsumerShutdownConsuming(t *testing.T) {
 			case <-time.After(time.Second):
 				tb.Fatal("expected to consume a message")
 			}
+
+			// Only ensure consumption has started (at least one message processed)
+			// before shutting down. The remaining messages on the same partition are
+			// processed *after* Shutdown unblocks ctx.Done() in the handler.
+			require.EventuallyWithT(tb, func(c *assert.CollectT) {
+				assert.GreaterOrEqual(c, called.Load(), int64(1))
+			}, 2*time.Second, 20*time.Millisecond)
+
 			require.NoError(tb, consumer.Shutdown(ctx))
 			wg.Wait() // Wait for the consume functions to exit.
 			// Ensure that the consume function was called twice.
@@ -239,9 +254,12 @@ func TestConsumerShutdownNotStarted(t *testing.T) {
 	require.NoError(t, err)
 
 	for range 2 {
-		require.EqualError(t, c.Shutdown(t.Context()),
-			"kafka consumer: consumer isn't running")
+		require.NoError(t, c.Shutdown(t.Context()))
 	}
+
+	// Verify internal signal that there's nothing to shut down.
+	// (Same package, so we can call the unexported helper.)
+	require.False(t, c.triggerShutdown(), "triggerShutdown should indicate no-op when never started")
 }
 
 // TestRaceLostVsConsume verifies no data race occurs between concurrent
