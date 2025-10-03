@@ -65,6 +65,8 @@ metrics:
   splunk.license.index.usage:
     enabled: false
     description: Gauge tracking the indexed license usage per index
+    stability:
+      level: development
     unit: By
     gauge:
       value_type: int 
@@ -72,6 +74,8 @@ metrics:
   splunk.scheduler.avg.execution.latency:
     enabled: false
     description: Gauge tracking the average execution latency of scheduled searches
+    stability:
+      level: development
     unit: '{ms}'
     gauge:
       value_type: double 
@@ -79,6 +83,8 @@ metrics:
   splunk.scheduler.completion.ratio:
     enabled: false
     description: Gauge tracking the ratio of completed to skipped scheduled searches
+    stability:
+      level: development
     unit: '{%}'
     gauge:
       value_type: double 
@@ -86,6 +92,8 @@ metrics:
   splunk.indexer.avg.rate:
     enabled: false
     description: Gauge tracking the average rate of indexed data. **Note:** Search is best run against a Cluster Manager.
+    stability:
+      level: development
     unit: KBy
     gauge:
       value_type: double 
@@ -93,6 +101,8 @@ metrics:
   splunk.pipeline.set.count:
     enabled: false
     description: Gauge tracking the number of pipeline sets per indexer. **Note:** Search is best run against a Cluster Manager.
+    stability:
+      level: development
     unit: KBy
     gauge:
       value_type: int 
@@ -100,6 +110,8 @@ metrics:
   splunk.parse.queue.ratio:
     enabled: false
     description: Gauge tracking the average indexer parser queue ration (%). *Note:** Search is best run against a Cluster Manager.
+    stability:
+      level: development
     unit: '{%}'
     gauge:
       value_type: double 
@@ -107,6 +119,8 @@ metrics:
   splunk.aggregation.queue.ratio:
     enabled: false
     description: Gauge tracking the average indexer aggregation queue ration (%). *Note:** Search is best run against a Cluster Manager.
+    stability:
+      level: development
     unit: '{%}'
     gauge:
       value_type: double 
@@ -114,6 +128,8 @@ metrics:
   splunk.typing.queue.ratio:
     enabled: false
     description: Gauge tracking the average indexer typing queue ration (%). *Note:** Search is best run against a Cluster Manager.
+    stability:
+      level: development
     unit: '{%}'
     gauge:
       value_type: double 
@@ -121,6 +137,8 @@ metrics:
   splunk.indexer.queue.ratio:
     enabled: false
     description: Gauge tracking the average indexer index queue ration (%). *Note:** Search is best run against a Cluster Manager.
+    stability:
+      level: development
     unit: '{%}'
     gauge:
       value_type: double 
@@ -128,6 +146,8 @@ metrics:
   splunk.scheduler.avg.run.time:
     enabled: false
     description: Gauge tracking the average runtime of scheduled searches
+    stability:
+      level: development
     unit: '{ms}'
     gauge:
       value_type: double 
@@ -135,6 +155,8 @@ metrics:
   splunk.indexer.raw.write.time:
     enabled: false
     description: Gauge tracking the number of raw write seconds per instance
+    stability:
+      level: development
     unit: '{s}'
     gauge:
       value_type: double 
@@ -142,6 +164,8 @@ metrics:
   splunk.indexer.cpu.time:
     enabled: false
     description: Gauge tracking the number of indexing process cpu seconds per instance
+    stability:
+      level: development
     unit: '{s}'
     gauge:
       value_type: double 
@@ -149,6 +173,8 @@ metrics:
   splunk.io.avg.iops:
     enabled: false
     description: Gauge tracking the average IOPs used per instance
+    stability:
+      level: development
     unit: '{iops}'
     gauge:
       value_type: int 
@@ -156,6 +182,8 @@ metrics:
   splunk.buckets.searchable.status:
     enabled: false
     description: Gauge tracking the number of buckets and their searchable status. *Note:** Search is best run against a Cluster Manager.
+    stability:
+      level: development
     unit: '{count}'
     gauge:
       value_type: int 
@@ -163,6 +191,8 @@ metrics:
   splunk.indexes.bucket.count:
     enabled: false
     description: Gauge tracking the indexes and their bucket counts. *Note:** Search is best run against a Cluster Manager.
+    stability:
+      level: development
     unit: '{count}'
     gauge:
       value_type: int 
@@ -170,6 +200,8 @@ metrics:
   splunk.indexes.size:
     enabled: false
     description: Gauge tracking the indexes and their total size (gb). *Note:** Search is best run against a Cluster Manager.
+    stability:
+      level: development
     unit: Gb
     gauge:
       value_type: double 
@@ -177,6 +209,8 @@ metrics:
   splunk.indexes.avg.size:
     enabled: false
     description: Gauge tracking the indexes and their average size (gb). *Note:** Search is best run against a Cluster Manager.
+    stability:
+      level: development
     unit: Gb
     gauge:
       value_type: double 
@@ -184,6 +218,8 @@ metrics:
   splunk.indexes.avg.usage:
     enabled: false
     description: Gauge tracking the indexes and their average usage (%). *Note:** Search is best run against a Cluster Manager.
+    stability:
+      level: development
     unit: '{%}'
     gauge:
       value_type: double 
@@ -191,6 +227,8 @@ metrics:
   splunk.indexes.median.data.age:
     enabled: false
     description: Gauge tracking the indexes and their median data age (days). *Note:** Search is best run against a Cluster Manager.
+    stability:
+      level: development
     unit: '{days}'
     gauge:
       value_type: int 
@@ -200,6 +238,8 @@ metrics:
   splunk.indexer.throughput:
     enabled: false
     description: Gauge tracking average bytes per second throughput of indexer. *Note:** Must be pointed at specific indexer `endpoint` and gathers metrics from only that indexer.
+    stability:
+      level: development
     unit: By/s
     gauge:
       value_type: double
@@ -209,6 +249,8 @@ metrics:
   splunk.data.indexes.extended.total.size:
     enabled: false
     description: Size in bytes on disk of this index *Note:** Must be pointed at specific indexer `endpoint` and gathers metrics from only that indexer.
+    stability:
+      level: development
     unit: By
     gauge:
       value_type: int
@@ -216,6 +258,8 @@ metrics:
   splunk.data.indexes.extended.event.count:
     enabled: false
     description: Count of events for index, excluding frozen events. Approximately equal to the event_count sum of all buckets. *Note:** Must be pointed at specific indexer `endpoint` and gathers metrics from only that indexer.
+    stability:
+      level: development
     unit: '{events}'
     gauge:
       value_type: int
@@ -223,6 +267,8 @@ metrics:
   splunk.data.indexes.extended.bucket.count:
     enabled: false
     description: Count of buckets per index
+    stability:
+      level: development
     unit: '{buckets}'
     gauge:
       value_type: int
@@ -230,6 +276,8 @@ metrics:
   splunk.data.indexes.extended.raw.size:
     enabled: false
     description: Size in bytes on disk of the <bucket>/rawdata/ directories of all buckets in this index, excluding frozen *Note:** Must be pointed at specific indexer `endpoint` and gathers metrics from only that indexer.
+    stability:
+      level: development
     unit: By
     gauge:
       value_type: int
@@ -238,6 +286,8 @@ metrics:
   splunk.data.indexes.extended.bucket.event.count:
     enabled: false
     description: Count of events in this bucket super-directory. *Note:** Must be pointed at specific indexer `endpoint`.
+    stability:
+      level: development
     unit: '{events}'
     gauge:
       value_type: int
@@ -245,6 +295,8 @@ metrics:
   splunk.data.indexes.extended.bucket.hot.count:
     enabled: false
     description: (If size > 0) Number of hot buckets. *Note:** Must be pointed at specific indexer `endpoint`.
+    stability:
+      level: development
     unit: '{buckets}'
     gauge:
       value_type: int
@@ -252,6 +304,8 @@ metrics:
   splunk.data.indexes.extended.bucket.warm.count:
     enabled: false
     description: (If size > 0) Number of warm buckets. *Note:** Must be pointed at specific indexer `endpoint` and gathers metrics from only that indexer.
+    stability:
+      level: development
     unit: '{buckets}'
     gauge:
       value_type: int
@@ -260,6 +314,8 @@ metrics:
   splunk.server.introspection.queues.current:
     enabled: false
     description: Gauge tracking current length of queue. *Note:** Must be pointed at specific indexer `endpoint` and gathers metrics from only that indexer.
+    stability:
+      level: development
     unit: '{queues}'
     gauge:
       value_type: int
@@ -267,6 +323,8 @@ metrics:
   splunk.server.introspection.queues.current.bytes:
     enabled: false
     description: Gauge tracking current bytes waiting in queue. *Note:** Must be pointed at specific indexer `endpoint` and gathers metrics from only that indexer.
+    stability:
+      level: development
     unit: By
     gauge:
       value_type: int
@@ -275,6 +333,8 @@ metrics:
   splunk.kvstore.status:
     enabled: false
     description: This is the overall status of the kvstore for the given deployment.
+    stability:
+      level: development
     unit: '{status}'
     gauge:
       value_type: int
@@ -282,6 +342,8 @@ metrics:
   splunk.kvstore.replication.status:
     enabled: false
     description: Replication status of the KV store.
+    stability:
+      level: development
     unit: '{status}'
     gauge:
       value_type: int
@@ -289,6 +351,8 @@ metrics:
   splunk.kvstore.backup.status:
     enabled: false
     description: Backup and restore status of the KV store.
+    stability:
+      level: development
     unit: '{status}'
     gauge:
       value_type: int
@@ -297,6 +361,8 @@ metrics:
   splunk.server.searchartifacts.adhoc:
     enabled: false
     description: Gauge tracking number of ad hoc search artifacts currently on disk. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.
+    stability:
+      level: development
     unit: "{search_artifacts}"
     gauge:
       monotonic: false
@@ -306,6 +372,8 @@ metrics:
   splunk.server.searchartifacts.scheduled:
     enabled: false
     description: Gauge tracking number of scheduled search artifacts currently on disk. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.
+    stability:
+      level: development
     unit: "{search_artifacts}"
     gauge:
       monotonic: false
@@ -315,6 +383,8 @@ metrics:
   splunk.server.searchartifacts.completed:
     enabled: false
     description: Gauge tracking number of artifacts currently on disk that belong to finished searches. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.
+    stability:
+      level: development
     unit: "{search_artifacts}"
     gauge:
       monotonic: false
@@ -324,6 +394,8 @@ metrics:
   splunk.server.searchartifacts.incomplete:
     enabled: false
     description: Gauge tracking number of artifacts currently on disk that belong to unfinished/running searches. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.
+    stability:
+      level: development
     unit: "{search_artifacts}"
     gauge:
       monotonic: false
@@ -333,6 +405,8 @@ metrics:
   splunk.server.searchartifacts.invalid:
     enabled: false
     description: Gauge tracking number of artifacts currently on disk that are not in a valid state, such as missing info.csv file, etc. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.
+    stability:
+      level: development
     unit: "{search_artifacts}"
     gauge:
       monotonic: false
@@ -342,6 +416,8 @@ metrics:
   splunk.server.searchartifacts.savedsearches:
     enabled: false
     description: Gauge tracking, for the `splunk.server.searchartifacts.scheduled` number of scheduled search artifacts, how many different saved-searches they belong to. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.
+    stability:
+      level: development
     unit: "{search_artifacts}"
     gauge:
       monotonic: false
@@ -351,6 +427,8 @@ metrics:
   splunk.server.searchartifacts.job.cache.size:
     enabled: false
     description: Gauge tracking, in megabytes, memory used to cache job status and job info of all search artifacts, available in builds 9.1.2312.207+ and 9.3.x+.
+    stability:
+      level: development
     unit: "{mb}"
     gauge:
       monotonic: false
@@ -360,6 +438,8 @@ metrics:
   splunk.server.searchartifacts.job.cache.count:
     enabled: false
     description: Gauge tracking number search artifacts metadata stored in memory, available in builds 9.1.2312.207+ and 9.3.x+.
+    stability:
+      level: development
     unit: "{search_artifacts}"
     gauge:
       monotonic: false
@@ -369,6 +449,8 @@ metrics:
   splunk.server.searchartifacts.adhoc.size:
     enabled: false
     description: Gauge total size (MB) of ad hoc search artifacts currently on disk. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.
+    stability:
+      level: development
     unit: "{search_artifacts}"
     gauge:
       monotonic: false
@@ -378,6 +460,8 @@ metrics:
   splunk.server.searchartifacts.scheduled.size:
     enabled: false
     description: Gauge total size (MB) of scheduled search artifacts currently on disk. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.
+    stability:
+      level: development
     unit: "{search_artifacts}"
     gauge:
       monotonic: false
@@ -387,6 +471,8 @@ metrics:
   splunk.server.searchartifacts.completed.size:
     enabled: false
     description: Gauge total size (MB) of artifacts currently on disk that belong to finished searches. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.
+    stability:
+      level: development
     unit: "{search_artifacts}"
     gauge:
       monotonic: false
@@ -396,6 +482,8 @@ metrics:
   splunk.server.searchartifacts.incomplete.size:
     enabled: false
     description: Gauge total size (MB) of artifacts currently on disk that belong to unfinished/running searches. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.
+    stability:
+      level: development
     unit: "{search_artifacts}"
     gauge:
       monotonic: false
@@ -406,6 +494,8 @@ metrics:
   splunk.health:
     enabled: true
     description: The status ('red', 'yellow', or 'green') of the Splunk server. Health of 'red' produces a 0 while all other colors produce a 1.
+    stability:
+      level: development
     unit: "{status}"
     gauge:
       value_type: int
@@ -414,6 +504,8 @@ metrics:
   splunk.indexer.rollingrestart.status:
     enabled: false
     description: The status of a rolling restart.
+    stability:
+      level: development
     unit: "{status}"
     gauge:
       value_type: int
@@ -423,6 +515,8 @@ metrics:
   splunk.search.duration:
     enabled: false
     description: Gauge tracking the duration in seconds of the last search probe call.
+    stability:
+      level: development
     unit: "{status}"
     gauge:
       value_type: double
@@ -430,6 +524,8 @@ metrics:
   splunk.search.initiation:
     enabled: false
     description: Gauge tracking whether the last search probe successfully initiated a search.
+    stability:
+      level: development
     unit: "{status}"
     gauge:
       value_type: int
@@ -437,6 +533,8 @@ metrics:
   splunk.search.status:
     enabled: false
     description: Gauge tracking the dispatch status of the last search probe.
+    stability:
+      level: development
     unit: "{status}"
     gauge:
       value_type: int
@@ -444,6 +542,8 @@ metrics:
   splunk.search.success:
     enabled: false
     description: Gauge tracking whether the last search probe call was successful with the dispatch state 'DONE'.
+    stability:
+      level: development
     unit: "{status}"
     gauge:
       value_type: int
