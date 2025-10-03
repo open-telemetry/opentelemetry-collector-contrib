@@ -57,7 +57,7 @@ jobs:
 
   publish-latest:
     runs-on: ubuntu-24.04
-    if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.repository == 'open-telemetry/opentelemetry-collector-contrib'
+    if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && (github.repository == 'open-telemetry/opentelemetry-collector-contrib' || github.repository == 'sawmills/sawmills-contrib')
     permissions:
       packages: write
     steps:
@@ -97,7 +97,7 @@ jobs:
 
   publish-stable:
     runs-on: ubuntu-24.04
-    if: startsWith(github.ref, 'refs/tags/v') && github.repository == 'open-telemetry/opentelemetry-collector-contrib'
+    if: startsWith(github.ref, 'refs/tags/v') && (github.repository == 'open-telemetry/opentelemetry-collector-contrib' || github.repository == 'sawmills/sawmills-contrib')
     permissions:
       packages: write
     steps:
