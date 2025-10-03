@@ -35,6 +35,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/ptracetest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
 func TestTracesPusher(t *testing.T) {
@@ -569,6 +570,50 @@ func TestMetricsPusher_partitioning(t *testing.T) {
 		assert.Equal(t, keys[0], keys[1])
 		assert.NotEqual(t, keys[0], keys[2])
 	})
+	t.Run("topic_partitioning_with_topic_from_attribute", func(t *testing.T) {
+		config := createDefaultConfig().(*Config)
+		config.TopicFromAttribute = "kafka_topic"
+		exp, producer := newMockMetricsExporter(t, *config, componenttest.NewNopHost())
+
+		input := pmetric.NewMetrics()
+		topics := []string{"metrics-topic-1", "metrics-topic-1", "metrics-topic-2"}
+		for i, topic := range topics {
+			resourceMetrics := testdata.GenerateMetrics(1).ResourceMetrics().At(0)
+			resourceMetrics.Resource().Attributes().PutStr("service.name", fmt.Sprintf("service%d", i+1))
+			resourceMetrics.Resource().Attributes().PutStr("kafka_topic", topic)
+			resourceMetrics.CopyTo(input.ResourceMetrics().AppendEmpty())
+		}
+
+		var keys [][]byte
+		for i := 0; i < 3; i++ {
+			producer.ExpectSendMessageWithMessageCheckerFunctionAndSucceed(
+				func(msg *sarama.ProducerMessage) error {
+					value, err := msg.Value.Encode()
+					require.NoError(t, err)
+
+					output, err := (&pmetric.ProtoUnmarshaler{}).UnmarshalMetrics(value)
+					require.NoError(t, err)
+
+					require.Equal(t, 1, output.ResourceMetrics().Len())
+
+					key, err := msg.Key.Encode()
+					require.NoError(t, err)
+					keys = append(keys, key)
+					return nil
+				},
+			)
+		}
+
+		err := exp.exportData(t.Context(), input)
+		require.NoError(t, err)
+
+		require.Len(t, keys, 3)
+		assert.NotEmpty(t, keys[0])
+		// Keys for same topic should be equal
+		assert.Equal(t, keys[0], keys[1])
+		// Keys for different topics should be different
+		assert.NotEqual(t, keys[0], keys[2])
+	})
 }
 
 func TestMetricsDataPusher_Kgo(t *testing.T) {
@@ -634,7 +679,8 @@ func TestMetricsDataPusher_attr_Kgo(t *testing.T) {
 
 	assert.NotEmpty(t, record.Value)
 	assert.Empty(t, record.Headers, "expected no headers for this test case")
-	assert.Nil(t, record.Key, "expected nil key for this test case")
+	expectedKeyHash := pdatautil.ValueHash(pcommon.NewValueStr(expectedTopicFromAttribute))
+	assert.Equal(t, expectedKeyHash[:], record.Key, "expected nil key for this test case")
 }
 
 func TestMetricsDataPusher_ctx_Kgo(t *testing.T) {
@@ -809,7 +855,8 @@ func TestLogsDataPusher_attr_Kgo(t *testing.T) {
 
 	assert.NotEmpty(t, record.Value)
 	assert.Empty(t, record.Headers, "expected no headers for this test case")
-	assert.Nil(t, record.Key, "expected nil key for this test case")
+	expectedKeyHash := pdatautil.ValueHash(pcommon.NewValueStr(expectedTopicFromAttribute))
+	assert.Equal(t, expectedKeyHash[:], record.Key, "expected key mismatch")
 }
 
 func TestLogsDataPusher_ctx_Kgo(t *testing.T) {
@@ -980,6 +1027,50 @@ func TestLogsPusher_partitioning(t *testing.T) {
 		require.Len(t, keys, 3)
 		assert.NotEmpty(t, keys[0])
 		assert.Equal(t, keys[0], keys[1])
+		assert.NotEqual(t, keys[0], keys[2])
+	})
+	t.Run("topic_partitioning_with_topic_from_attribute", func(t *testing.T) {
+		config := createDefaultConfig().(*Config)
+		config.TopicFromAttribute = "kafka_topic"
+		exp, producer := newMockLogsExporter(t, *config, componenttest.NewNopHost())
+
+		input := plog.NewLogs()
+		topics := []string{"logs-topic-1", "logs-topic-1", "logs-topic-2"}
+		for i, topic := range topics {
+			resourceLogs := testdata.GenerateLogs(1).ResourceLogs().At(0)
+			resourceLogs.Resource().Attributes().PutStr("service.name", fmt.Sprintf("service%d", i+1))
+			resourceLogs.Resource().Attributes().PutStr("kafka_topic", topic)
+			resourceLogs.CopyTo(input.ResourceLogs().AppendEmpty())
+		}
+
+		var keys [][]byte
+		for i := 0; i < 3; i++ {
+			producer.ExpectSendMessageWithMessageCheckerFunctionAndSucceed(
+				func(msg *sarama.ProducerMessage) error {
+					value, err := msg.Value.Encode()
+					require.NoError(t, err)
+
+					output, err := (&plog.ProtoUnmarshaler{}).UnmarshalLogs(value)
+					require.NoError(t, err)
+
+					require.Equal(t, 1, output.ResourceLogs().Len())
+
+					key, err := msg.Key.Encode()
+					require.NoError(t, err)
+					keys = append(keys, key)
+					return nil
+				},
+			)
+		}
+
+		err := exp.exportData(t.Context(), input)
+		require.NoError(t, err)
+
+		require.Len(t, keys, 3)
+		assert.NotEmpty(t, keys[0])
+		// Keys for same topic should be equal
+		assert.Equal(t, keys[0], keys[1])
+		// Keys for different topics should be different
 		assert.NotEqual(t, keys[0], keys[2])
 	})
 }
