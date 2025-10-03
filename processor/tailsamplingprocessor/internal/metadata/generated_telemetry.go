@@ -31,7 +31,6 @@ type TelemetryBuilder struct {
 	ProcessorTailSamplingEarlyReleasesFromCacheDecision metric.Int64Counter
 	ProcessorTailSamplingGlobalCountTracesSampled       metric.Int64Counter
 	ProcessorTailSamplingNewTraceIDReceived             metric.Int64Counter
-	ProcessorTailSamplingSamplingDecisionLatency        metric.Int64Histogram
 	ProcessorTailSamplingSamplingDecisionTimerLatency   metric.Int64Histogram
 	ProcessorTailSamplingSamplingLateSpanAge            metric.Int64Histogram
 	ProcessorTailSamplingSamplingPolicyEvaluationError  metric.Int64Counter
@@ -97,13 +96,6 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		"otelcol_processor_tail_sampling_new_trace_id_received",
 		metric.WithDescription("Counts the arrival of new traces"),
 		metric.WithUnit("{traces}"),
-	)
-	errs = errors.Join(errs, err)
-	builder.ProcessorTailSamplingSamplingDecisionLatency, err = builder.meter.Int64Histogram(
-		"otelcol_processor_tail_sampling_sampling_decision_latency",
-		metric.WithDescription("Latency (in microseconds) of a given sampling policy"),
-		metric.WithUnit("µs"),
-		metric.WithExplicitBucketBoundaries([]float64{1, 2, 5, 10, 25, 50, 75, 100, 150, 200, 300, 400, 500, 750, 1000, 2000, 3000, 4000, 5000, 10000, 20000, 30000, 50000}...),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorTailSamplingSamplingDecisionTimerLatency, err = builder.meter.Int64Histogram(

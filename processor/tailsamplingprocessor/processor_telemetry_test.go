@@ -70,7 +70,7 @@ func TestMetricsAfterOneEvaluation(t *testing.T) {
 	// verify
 	var md metricdata.ResourceMetrics
 	require.NoError(t, s.reader.Collect(t.Context(), &md))
-	require.Equal(t, 8, s.len(md))
+	require.Equal(t, 7, s.len(md))
 
 	for _, tt := range []struct {
 		opts []metricdatatest.Option
@@ -114,24 +114,6 @@ func TestMetricsAfterOneEvaluation(t *testing.T) {
 								attribute.String("decision", "sampled"),
 							),
 							Value: 1,
-						},
-					},
-				},
-			},
-		},
-		{
-			opts: []metricdatatest.Option{metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue()},
-			m: metricdata.Metrics{
-				Name:        "otelcol_processor_tail_sampling_sampling_decision_latency",
-				Description: "Latency (in microseconds) of a given sampling policy",
-				Unit:        "µs",
-				Data: metricdata.Histogram[int64]{
-					Temporality: metricdata.CumulativeTemporality,
-					DataPoints: []metricdata.HistogramDataPoint[int64]{
-						{
-							Attributes: attribute.NewSet(
-								attribute.String("policy", "always"),
-							),
 						},
 					},
 				},
@@ -269,7 +251,7 @@ func TestMetricsWithComponentID(t *testing.T) {
 	// verify
 	var md metricdata.ResourceMetrics
 	require.NoError(t, s.reader.Collect(t.Context(), &md))
-	require.Equal(t, 8, s.len(md))
+	require.Equal(t, 7, s.len(md))
 
 	for _, tt := range []struct {
 		opts []metricdatatest.Option
@@ -292,24 +274,6 @@ func TestMetricsWithComponentID(t *testing.T) {
 								attribute.String("decision", "sampled"),
 							),
 							Value: 1,
-						},
-					},
-				},
-			},
-		},
-		{
-			opts: []metricdatatest.Option{metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue()},
-			m: metricdata.Metrics{
-				Name:        "otelcol_processor_tail_sampling_sampling_decision_latency",
-				Description: "Latency (in microseconds) of a given sampling policy",
-				Unit:        "µs",
-				Data: metricdata.Histogram[int64]{
-					Temporality: metricdata.CumulativeTemporality,
-					DataPoints: []metricdata.HistogramDataPoint[int64]{
-						{
-							Attributes: attribute.NewSet(
-								attribute.String("policy", "unique_id.always"),
-							),
 						},
 					},
 				},
@@ -596,7 +560,7 @@ func TestMetricsCountSampled(t *testing.T) {
 			// verify
 			var md metricdata.ResourceMetrics
 			require.NoError(t, s.reader.Collect(t.Context(), &md))
-			require.Equal(t, 9, s.len(md))
+			require.Equal(t, 8, s.len(md))
 
 			for _, m := range tt.m {
 				t.Run(m.Name, func(t *testing.T) {
