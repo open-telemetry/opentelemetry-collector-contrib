@@ -98,43 +98,23 @@ func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice)
 	var bounds []float64
 	var bucketCounts []uint64
 	pointIsStale := value.IsStaleNaN(mg.sum) || value.IsStaleNaN(mg.count)
-	point := dest.AppendEmpty()
 
 	if mg.isNHCB {
 		switch {
 		case mg.hValue != nil:
-			h := mg.hValue
-			bounds = append(bounds, h.CustomValues...)
-			b := point.BucketCounts()
-			if len(h.PositiveSpans) > 0 {
-				for i := int32(0); i < h.PositiveSpans[0].Offset; i++ {
-					b.Append(0)
-				}
-				convertDeltaBuckets(h.PositiveSpans, h.PositiveBuckets, b)
-			} else {
-				cumulative := uint64(0)
-				for _, v := range h.PositiveBuckets {
-					cumulative += uint64(v)
-					b.Append(cumulative)
-				}
+			if len(mg.hValue.CustomValues) == 0 {
+				return
 			}
-			b.CopyTo(point.BucketCounts())
-
+			bounds = make([]float64, len(mg.hValue.CustomValues))
+			copy(bounds, mg.hValue.CustomValues)
+			bucketCounts = convertNHCBBDeltBuckets(mg.hValue)
 		case mg.fhValue != nil:
-			fh := mg.fhValue
-			bounds = append(bounds, fh.CustomValues...)
-			b := point.BucketCounts()
-			if len(fh.PositiveSpans) > 0 {
-				for i := int32(0); i < fh.PositiveSpans[0].Offset; i++ {
-					b.Append(0)
-				}
-				convertAbsoluteBuckets(fh.PositiveSpans, fh.PositiveBuckets, b)
-			} else {
-				for _, c := range fh.PositiveBuckets {
-					b.Append(uint64(c))
-				}
+			if len(mg.fhValue.CustomValues) == 0 {
+				return
 			}
-			b.CopyTo(point.BucketCounts())
+			bounds = make([]float64, len(mg.fhValue.CustomValues))
+			copy(bounds, mg.fhValue.CustomValues)
+			bucketCounts = convertNHCBAbsoluteBuckets(mg.fhValue)
 		}
 	} else {
 		bucketCount := len(mg.complexValue) + 1
@@ -171,9 +151,9 @@ func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice)
 			adjustedCount -= mg.complexValue[bucketCount-2].value
 		}
 		bucketCounts[bucketCount-1] = uint64(adjustedCount)
-
-		point.BucketCounts().FromRaw(bucketCounts)
 	}
+
+	point := dest.AppendEmpty()
 
 	if pointIsStale {
 		point.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
@@ -185,6 +165,7 @@ func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice)
 	}
 
 	point.ExplicitBounds().FromRaw(bounds)
+	point.BucketCounts().FromRaw(bucketCounts)
 
 	// The timestamp MUST be in retrieved from milliseconds and converted to nanoseconds.
 	tsNanos := timestampFromMs(mg.ts)
@@ -309,6 +290,52 @@ func convertAbsoluteBuckets(spans []histogram.Span, counts []float64, buckets pc
 			bucketIdx++
 		}
 	}
+}
+
+// convertNHCBBDeltBuckets converts NHCB delta buckets to otel bucket counts.
+func convertNHCBBDeltBuckets(histogram *histogram.Histogram) []uint64 {
+	bucketCounts := make([]uint64, len(histogram.CustomValues)+1)
+	if len(histogram.PositiveSpans) == 0 {
+		return bucketCounts
+	}
+	bucketIdx := 0
+	bucketCount := int64(0)
+	deltaIdx := 0
+
+	for _, span := range histogram.PositiveSpans {
+		bucketIdx += int(span.Offset)
+
+		for i := uint32(0); i < span.Length && bucketIdx < len(bucketCounts) && deltaIdx < len(histogram.PositiveBuckets); i++ {
+			bucketCount += histogram.PositiveBuckets[deltaIdx]
+			deltaIdx++
+
+			if bucketIdx >= 0 && bucketIdx < len(bucketCounts) {
+				bucketCounts[bucketIdx] = uint64(bucketCount)
+			}
+			bucketIdx++
+		}
+	}
+	return bucketCounts
+}
+
+// convertNHCBAbsoluteBuckets converts NHCB absolute buckets to otel bucket counts.
+func convertNHCBAbsoluteBuckets(histogram *histogram.FloatHistogram) []uint64 {
+	bucketCounts := make([]uint64, len(histogram.CustomValues)+1)
+	if len(histogram.PositiveSpans) == 0 {
+		return bucketCounts
+	}
+	bucketIdx := 0
+	for _, span := range histogram.PositiveSpans {
+		bucketIdx += int(span.Offset)
+
+		for i := uint32(0); i < span.Length && bucketIdx < len(bucketCounts) && i < uint32(len(histogram.PositiveBuckets)); i++ {
+			if bucketIdx >= 0 && bucketIdx < len(bucketCounts) {
+				bucketCounts[bucketIdx] = uint64(histogram.PositiveBuckets[i])
+			}
+			bucketIdx++
+		}
+	}
+	return bucketCounts
 }
 
 func (mg *metricGroup) setExemplars(exemplars pmetric.ExemplarSlice) {
@@ -507,6 +534,7 @@ func (mf *metricFamily) addExponentialHistogramSeries(seriesRef uint64, metricNa
 	return nil
 }
 
+// addNHCBSeries adds a Native Histogram Custom Buckets (NHCB) series to the metric family.
 func (mf *metricFamily) addNHCBSeries(seriesRef uint64, metricName string, ls labels.Labels, t int64, h *histogram.Histogram, fh *histogram.FloatHistogram) error {
 	mg := mf.loadMetricGroupOrCreate(seriesRef, ls, t)
 	if mg.ts != t {
