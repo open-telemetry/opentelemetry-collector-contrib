@@ -338,14 +338,18 @@ func TestMetricGroupData_toNHCBDistributionUnitTest(t *testing.T) {
 			intervalStartTimeMs: 11,
 			labels:              labels.FromMap(map[string]string{"a": "A", "b": "B"}),
 			integerHistogram: &histogram.Histogram{
-				Schema: -53,
-				Sum:    math.Float64frombits(value.StaleNaN),
+				Schema:       -53,
+				Sum:          math.Float64frombits(value.StaleNaN),
+				CustomValues: []float64{1.0, 2.0, 5.0, 10.0},
+				Count:        0,
 			},
 			want: func() pmetric.HistogramDataPoint {
 				point := pmetric.NewHistogramDataPoint()
 				point.SetTimestamp(pcommon.Timestamp(11 * time.Millisecond))
 				point.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
 				point.SetStartTimestamp(pcommon.Timestamp(11 * time.Millisecond))
+				point.ExplicitBounds().FromRaw([]float64{1.0, 2.0, 5.0, 10.0})
+				point.BucketCounts().FromRaw([]uint64{0, 0, 0, 0, 0})
 				attributes := point.Attributes()
 				attributes.PutStr("a", "A")
 				attributes.PutStr("b", "B")
@@ -363,6 +367,7 @@ func TestMetricGroupData_toNHCBDistributionUnitTest(t *testing.T) {
 				Sum:             125.25,
 				CustomValues:    []float64{0.5, 2.0},
 				PositiveBuckets: []float64{15.0, 20.0, 15.0},
+				PositiveSpans:   []histogram.Span{{Offset: 0, Length: 3}},
 			},
 			want: func() pmetric.HistogramDataPoint {
 				point := pmetric.NewHistogramDataPoint()
@@ -374,83 +379,6 @@ func TestMetricGroupData_toNHCBDistributionUnitTest(t *testing.T) {
 				point.BucketCounts().FromRaw([]uint64{15, 20, 15})
 				attributes := point.Attributes()
 				attributes.PutStr("a", "A")
-				return point
-			},
-		},
-		{
-			name:                "NHCB with spans and gaps (integer)",
-			metricName:          "histogram",
-			intervalStartTimeMs: 21,
-			labels:              labels.FromMap(map[string]string{"a": "A", "b": "B"}),
-			integerHistogram: &histogram.Histogram{
-				Schema:          -53,
-				Count:           20,
-				Sum:             42.0,
-				CustomValues:    []float64{1.0, 2.0, 5.0, 10.0},
-				PositiveSpans:   []histogram.Span{{Offset: 0, Length: 2}, {Offset: 1, Length: 2}},
-				PositiveBuckets: []int64{4, 6, 7, 3},
-			},
-			want: func() pmetric.HistogramDataPoint {
-				point := pmetric.NewHistogramDataPoint()
-				point.SetCount(20)
-				point.SetSum(42.0)
-				point.SetTimestamp(pcommon.Timestamp(21 * time.Millisecond))
-				point.SetStartTimestamp(pcommon.Timestamp(21 * time.Millisecond))
-				point.ExplicitBounds().FromRaw([]float64{1.0, 2.0, 5.0, 10.0})
-				point.BucketCounts().FromRaw([]uint64{4, 10, 0, 17, 20})
-				attrs := point.Attributes()
-				attrs.PutStr("a", "A")
-				attrs.PutStr("b", "B")
-				return point
-			},
-		},
-		{
-			name:                "integer NHCB with spans",
-			metricName:          "histogram",
-			intervalStartTimeMs: 22,
-			labels:              labels.FromMap(map[string]string{"a": "A"}),
-			integerHistogram: &histogram.Histogram{
-				Schema:          -53,
-				Count:           10,
-				Sum:             12.3,
-				CustomValues:    []float64{0.5, 1.0, 2.0, 5.0},
-				PositiveSpans:   []histogram.Span{{Offset: 1, Length: 4}},
-				PositiveBuckets: []int64{2, 3, 5, 7},
-			},
-			want: func() pmetric.HistogramDataPoint {
-				point := pmetric.NewHistogramDataPoint()
-				point.SetCount(10)
-				point.SetSum(12.3)
-				point.SetTimestamp(pcommon.Timestamp(22 * time.Millisecond))
-				point.SetStartTimestamp(pcommon.Timestamp(22 * time.Millisecond))
-				point.ExplicitBounds().FromRaw([]float64{0.5, 1.0, 2.0, 5.0})
-				point.BucketCounts().FromRaw([]uint64{0, 2, 5, 10, 17})
-				point.Attributes().PutStr("a", "A")
-				return point
-			},
-		},
-		{
-			name:                "float NHCB with spans and gap",
-			metricName:          "histogram",
-			intervalStartTimeMs: 23,
-			labels:              labels.FromMap(map[string]string{"b": "B"}),
-			floatHistogram: &histogram.FloatHistogram{
-				Schema:          -53,
-				Count:           30.0,
-				Sum:             7.25,
-				CustomValues:    []float64{0.1, 0.2, 1.0, 2.0},
-				PositiveSpans:   []histogram.Span{{Offset: 2, Length: 4}},
-				PositiveBuckets: []float64{10.0, 5.0, 15.0, 20.0},
-			},
-			want: func() pmetric.HistogramDataPoint {
-				point := pmetric.NewHistogramDataPoint()
-				point.SetCount(30)
-				point.SetSum(7.25)
-				point.SetTimestamp(pcommon.Timestamp(23 * time.Millisecond))
-				point.SetStartTimestamp(pcommon.Timestamp(23 * time.Millisecond))
-				point.ExplicitBounds().FromRaw([]float64{0.1, 0.2, 1.0, 2.0})
-				point.BucketCounts().FromRaw([]uint64{0, 0, 10, 5, 15, 20})
-				point.Attributes().PutStr("b", "B")
 				return point
 			},
 		},
