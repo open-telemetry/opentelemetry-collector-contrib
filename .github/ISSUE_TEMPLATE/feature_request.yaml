@@ -57,6 +57,7 @@ body:
       - exporter/file
       - exporter/googlecloud
       - exporter/googlecloudpubsub
+      - exporter/googlecloudstorage
       - exporter/googlemanagedprometheus
       - exporter/honeycombmarker
       - exporter/influxdb
@@ -232,6 +233,7 @@ body:
       - receiver/bigip
       - receiver/carbon
       - receiver/chrony
+      - receiver/ciscoos
       - receiver/cloudflare
       - receiver/cloudfoundry
       - receiver/collectd
