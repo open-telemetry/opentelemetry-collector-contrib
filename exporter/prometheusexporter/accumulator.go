@@ -173,7 +173,11 @@ func (a *lastValueAccumulator) accumulateSum(metric pmetric.Metric, scopeName, s
 
 	// Drop non-monotonic and non-cumulative metrics
 	if doubleSum.AggregationTemporality() == pmetric.AggregationTemporalityDelta && !doubleSum.IsMonotonic() {
-		return
+		a.logger.Debug("refusing non-monotonic delta sum metric",
+			zap.String("metric_name", metric.Name()),
+			zap.Int("data_points_refused", doubleSum.DataPoints().Len()),
+			zap.String("reason", "non-monotonic sum with delta aggregation temporality is not supported"))
+		return 0
 	}
 
 	dps := doubleSum.DataPoints()

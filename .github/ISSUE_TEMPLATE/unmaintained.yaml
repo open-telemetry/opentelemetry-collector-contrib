@@ -62,6 +62,7 @@ body:
       - exporter/file
       - exporter/googlecloud
       - exporter/googlecloudpubsub
+      - exporter/googlecloudstorage
       - exporter/googlemanagedprometheus
       - exporter/honeycombmarker
       - exporter/influxdb
@@ -70,7 +71,6 @@ body:
       - exporter/logicmonitor
       - exporter/logzio
       - exporter/mezmo
-      - exporter/opencensus
       - exporter/opensearch
       - exporter/otelarrow
       - exporter/prometheus
@@ -144,6 +144,7 @@ body:
       - internal/exp/metrics
       - internal/filter
       - internal/grpcutil
+      - internal/healthcheck
       - internal/k8sconfig
       - internal/kafka
       - internal/kubelet
@@ -208,12 +209,19 @@ body:
       - processor/remotetap
       - processor/resource
       - processor/resourcedetection
+      - processor/resourcedetection/internal/akamai
+      - processor/resourcedetection/internal/digitalocean
       - processor/resourcedetection/internal/dynatrace
+      - processor/resourcedetection/internal/hetzner
+      - processor/resourcedetection/internal/oraclecloud
+      - processor/resourcedetection/internal/scaleway
+      - processor/resourcedetection/internal/vultr
       - processor/schema
       - processor/span
       - processor/sumologic
       - processor/tailsampling
       - processor/transform
+      - processor/unroll
       - receiver/activedirectoryds
       - receiver/aerospike
       - receiver/apache
@@ -230,6 +238,7 @@ body:
       - receiver/bigip
       - receiver/carbon
       - receiver/chrony
+      - receiver/ciscoos
       - receiver/cloudflare
       - receiver/cloudfoundry
       - receiver/collectd
@@ -287,7 +296,6 @@ body:
       - receiver/nginx
       - receiver/nsxt
       - receiver/ntp
-      - receiver/opencensus
       - receiver/oracledb
       - receiver/osquery
       - receiver/otelarrow
@@ -305,7 +313,6 @@ body:
       - receiver/redis
       - receiver/riak
       - receiver/saphana
-      - receiver/sapm
       - receiver/signalfx
       - receiver/simpleprometheus
       - receiver/skywalking

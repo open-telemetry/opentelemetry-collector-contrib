@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"github.com/Azure/azure-amqp-common-go/v4/conn"
+	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs/v2"
 	"go.opentelemetry.io/collector/component"
 )
 
@@ -20,8 +21,9 @@ const (
 )
 
 var (
-	validFormats         = []logFormat{defaultLogFormat, rawLogFormat, azureLogFormat}
-	errMissingConnection = errors.New("missing connection")
+	validFormats           = []logFormat{defaultLogFormat, rawLogFormat, azureLogFormat}
+	errMissingConnection   = errors.New("missing connection")
+	errFeatureGateRequired = fmt.Errorf("poll_rate and max_poll_events can only be used with %s enabled", azEventHubFeatureGateName)
 )
 
 type Config struct {
@@ -33,6 +35,10 @@ type Config struct {
 	ConsumerGroup            string        `mapstructure:"group"`
 	ApplySemanticConventions bool          `mapstructure:"apply_semantic_conventions"`
 	TimeFormats              TimeFormat    `mapstructure:"time_formats"`
+
+	// azeventhub lib specific
+	PollRate      int `mapstructure:"poll_rate"`
+	MaxPollEvents int `mapstructure:"max_poll_events"`
 }
 
 type TimeFormat struct {
@@ -52,11 +58,21 @@ func isValidFormat(format string) bool {
 
 // Validate config
 func (config *Config) Validate() error {
+	if !azEventHubFeatureGate.IsEnabled() &&
+		(config.PollRate != 0 || config.MaxPollEvents != 0) {
+		return errFeatureGateRequired
+	}
 	if config.Connection == "" {
 		return errMissingConnection
 	}
-	if _, err := conn.ParsedConnectionFromStr(config.Connection); err != nil {
-		return err
+	if azEventHubFeatureGate.IsEnabled() {
+		if _, err := azeventhubs.ParseConnectionString(config.Connection); err != nil {
+			return err
+		}
+	} else {
+		if _, err := conn.ParsedConnectionFromStr(config.Connection); err != nil {
+			return err
+		}
 	}
 	if !isValidFormat(config.Format) {
 		return fmt.Errorf("invalid format; must be one of %#v", validFormats)

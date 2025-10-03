@@ -33,6 +33,18 @@ const (
 	containerStatusTerminated = "terminated"
 )
 
+var allContainerStatusReasons = []metadata.AttributeK8sContainerStatusReason{
+	metadata.AttributeK8sContainerStatusReasonContainerCreating,
+	metadata.AttributeK8sContainerStatusReasonCrashLoopBackOff,
+	metadata.AttributeK8sContainerStatusReasonCreateContainerConfigError,
+	metadata.AttributeK8sContainerStatusReasonErrImagePull,
+	metadata.AttributeK8sContainerStatusReasonImagePullBackOff,
+	metadata.AttributeK8sContainerStatusReasonOOMKilled,
+	metadata.AttributeK8sContainerStatusReasonCompleted,
+	metadata.AttributeK8sContainerStatusReasonError,
+	metadata.AttributeK8sContainerStatusReasonContainerCannotRun,
+}
+
 // RecordSpecMetrics metricizes values from the container spec.
 // This includes values like resource requests and limits.
 func RecordSpecMetrics(logger *zap.Logger, mb *metadata.MetricsBuilder, c corev1.Container, pod *corev1.Pod, ts pcommon.Timestamp) {
@@ -70,7 +82,8 @@ func RecordSpecMetrics(logger *zap.Logger, mb *metadata.MetricsBuilder, c corev1
 	rb := mb.NewResourceBuilder()
 	var containerID string
 	var imageStr string
-	for _, cs := range pod.Status.ContainerStatuses {
+	for i := range pod.Status.ContainerStatuses {
+		cs := pod.Status.ContainerStatuses[i]
 		if cs.Name != c.Name {
 			continue
 		}
@@ -94,6 +107,25 @@ func RecordSpecMetrics(logger *zap.Logger, mb *metadata.MetricsBuilder, c corev1
 			mb.RecordK8sContainerStatusStateDataPoint(ts, 0, metadata.AttributeK8sContainerStatusStateRunning)
 			mb.RecordK8sContainerStatusStateDataPoint(ts, 1, metadata.AttributeK8sContainerStatusStateWaiting)
 			mb.RecordK8sContainerStatusStateDataPoint(ts, 0, metadata.AttributeK8sContainerStatusStateTerminated)
+		}
+
+		// Record k8s.container.status.reason metric: for each known reason emit 1 for the current one, 0 otherwise.
+		var reason string
+		switch {
+		case cs.State.Terminated != nil:
+			reason = cs.State.Terminated.Reason
+		case cs.State.Waiting != nil:
+			reason = cs.State.Waiting.Reason
+		default:
+			reason = ""
+		}
+		// Emit in deterministic order for test stability.
+		for _, attrVal := range allContainerStatusReasons {
+			val := int64(0)
+			if reason != "" && reason == attrVal.String() {
+				val = 1
+			}
+			mb.RecordK8sContainerStatusReasonDataPoint(ts, val, attrVal)
 		}
 		break
 	}

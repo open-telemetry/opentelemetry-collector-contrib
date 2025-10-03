@@ -131,9 +131,6 @@ receivers:
       grpc:
       http:
 
-processors:
-  batch:
-
 exporters:
   tinybird:
     endpoint: ${OTEL_TINYBIRD_API_HOST}
@@ -156,14 +153,11 @@ service:
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [batch]
       exporters: [tinybird]
     metrics:
       receivers: [otlp]
-      processors: [batch]
       exporters: [tinybird]
     logs:
       receivers: [otlp]
-      processors: [batch]
       exporters: [tinybird]
 ```
