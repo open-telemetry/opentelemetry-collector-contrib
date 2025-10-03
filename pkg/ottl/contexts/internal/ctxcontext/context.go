@@ -95,7 +95,7 @@ func accessClientAddr[K any](path ottl.Path[K]) (ottl.GetSetter[K], error) {
 			return cl.Addr.String(), nil
 		},
 		Setter: func(_ context.Context, _ K, _ any) error {
-			return errors.New("cannot set value in context.client.addr")
+			return errors.New("context.client.addr is read-only and cannot be modified")
 		},
 	}, nil
 }
@@ -112,17 +112,30 @@ func convertStringArrToValueSlice(vals []string) pcommon.Value {
 
 func convertGRPCMetadataToMap(md metadata.MD) pcommon.Map {
 	mdMap := pcommon.NewMap()
+	mdMap.EnsureCapacity(len(md))
 	for k, v := range md {
-		sl := mdMap.PutEmptySlice(k)
-		mdSl := convertStringArrToValueSlice(v)
-		mdSl.Slice().CopyTo(sl)
+		convertStringArrToValueSlice(v).MoveTo(mdMap.PutEmpty(k))
 	}
 	return mdMap
 }
 
 func getIndexableValueFromStringArr[K any](ctx context.Context, tCtx K, keys []ottl.Key[K], strArr []string) (any, error) {
-	val := convertStringArrToValueSlice(strArr)
-	return ctxutil.GetIndexableValue[K](ctx, tCtx, val, keys[1:])
+	if len(keys) == 0 {
+		slice := pcommon.NewSlice()
+		slice.EnsureCapacity(len(strSlice))
+		for _, str := range strSlice {
+			slice.AppendEmpty().SetStr(str)
+		}
+		return slice, nil
+	}
+	if len(keys) > 1 {
+		return nil, errors.New("cannot index into string slice more than once")
+	}
+	index, err := ctxutil.GetSliceIndexFromKeys(ctx, tCtx, len(strSlice), keys)
+	if err != nil {
+		return nil, err
+	}
+	return strSlice[index], nil
 }
 
 func accessGRPCMetadataKeys[K any]() ottl.StandardGetSetter[K] {
@@ -158,7 +171,7 @@ func accessGRPCMetadataKey[K any](keys []ottl.Key[K]) ottl.StandardGetSetter[K] 
 			if len(mdVal) == 0 {
 				return nil, nil
 			}
-			return getIndexableValueFromStringArr(ctx, tCtx, keys, mdVal)
+			return getIndexableValueFromStringArr(ctx, tCtx, keys[1:], mdVal)
 		},
 		Setter: func(_ context.Context, _ K, _ any) error {
 			return errors.New("cannot set value in context.grpc.metadata")
@@ -203,6 +216,7 @@ func convertAuthDataToMap(authData client.AuthData) (pcommon.Map, error) {
 		return authMap, nil
 	}
 	names := authData.GetAttributeNames()
+	authMap.EnsureCapacity(len(names))
 	for _, name := range names {
 		attrVal := authData.GetAttribute(name)
 		attrStr, err := getAuthAttributeValue(attrVal)
