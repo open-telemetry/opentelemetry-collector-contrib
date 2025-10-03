@@ -40,7 +40,7 @@ func TestObserver(t *testing.T) {
 
 	obs, err := New(mockClient, cfg, zap.NewNop(), ts.receive)
 
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	wg := sync.WaitGroup{}
 	wg.Add(1)
@@ -69,9 +69,8 @@ func TestObserver(t *testing.T) {
 }
 
 type testSink struct {
-	receivedObjectsChan chan *unstructured.UnstructuredList
-	numReceivedEvents   int
-	mtx                 sync.RWMutex
+	numReceivedEvents int
+	mtx               sync.RWMutex
 }
 
 func (t *testSink) receive(objs *unstructured.UnstructuredList) {
@@ -115,16 +114,6 @@ func (c mockDynamicClient) createPods(objects ...*unstructured.Unstructured) {
 	})
 	for _, pod := range objects {
 		_, _ = pods.Namespace(pod.GetNamespace()).Create(context.Background(), pod, v1.CreateOptions{})
-	}
-}
-
-func (c mockDynamicClient) deletePods(objects ...*unstructured.Unstructured) {
-	pods := c.client.Resource(schema.GroupVersionResource{
-		Version:  "v1",
-		Resource: "pods",
-	})
-	for _, pod := range objects {
-		_ = pods.Namespace(pod.GetNamespace()).Delete(context.Background(), pod.GetName(), v1.DeleteOptions{})
 	}
 }
 

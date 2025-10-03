@@ -35,7 +35,6 @@ type Observer struct {
 
 	client dynamic.Interface
 	logger *zap.Logger
-	mu     sync.Mutex
 
 	handleWatchEventFunc func(event *apiWatch.Event)
 }

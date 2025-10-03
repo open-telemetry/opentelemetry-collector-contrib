@@ -26,7 +26,6 @@ type Observer struct {
 
 	client dynamic.Interface
 	logger *zap.Logger
-	mu     sync.Mutex
 
 	handlePullObjectsFunc func(objects *unstructured.UnstructuredList)
 }

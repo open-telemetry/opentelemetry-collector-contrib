@@ -47,7 +47,7 @@ func TestObserver(t *testing.T) {
 		receivedEventsChan <- event
 	})
 
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	wg := sync.WaitGroup{}
 	wg.Add(1)
@@ -99,7 +99,7 @@ func TestObserverWithInitialState(t *testing.T) {
 		receivedEventsChan <- event
 	})
 
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	wg := sync.WaitGroup{}
 	wg.Add(1)
@@ -135,7 +135,7 @@ func TestObserverExcludeDelete(t *testing.T) {
 		receivedEventsChan <- event
 	})
 
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	wg := sync.WaitGroup{}
 	wg.Add(1)
