@@ -274,6 +274,8 @@ func TestPrometheusConverterV2_AddSummaryDataPoints(t *testing.T) {
 				Settings{},
 				metric.Name(),
 				m,
+				"", // scopeName
+				"", // scopeVersion
 			)
 			require.NoError(t, err)
 			assert.Equal(t, tt.want(), converter.unique)
@@ -395,6 +397,8 @@ func TestPrometheusConverterV2_AddHistogramDataPoints(t *testing.T) {
 				Settings{},
 				metric.Name(),
 				m,
+				"", // scopeName
+				"", // scopeVersion
 			)
 			require.NoError(t, err)
 			assert.Equal(t, tt.want(), converter.unique)

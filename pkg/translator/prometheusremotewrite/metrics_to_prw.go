@@ -85,17 +85,14 @@ func (c *prometheusConverter) fromMetrics(md pmetric.Metrics, settings Settings)
 		// use with the "target" info metric
 		var mostRecentTimestamp pcommon.Timestamp
 
-		// Track unique scopes per resource to avoid duplicate otel_scope_info metrics
-		processedScopes := make(map[uint64]bool)
+		// Track scope signatures for this resource to generate scope info later
+		resourceScopeSignatures := make(map[uint64]bool)
 
 		for j := 0; j < scopeMetricsSlice.Len(); j++ {
 			scopeMetrics := scopeMetricsSlice.At(j)
 			metricSlice := scopeMetrics.Metrics()
 
-			// Extract scope information from the current scope
 			scope := scopeMetrics.Scope()
-
-			// Handle scope information gracefully - scope fields might be empty
 			scopeName := scope.Name()
 			scopeVersion := scope.Version()
 			scopeAttrs := scope.Attributes()
@@ -103,12 +100,10 @@ func (c *prometheusConverter) fromMetrics(md pmetric.Metrics, settings Settings)
 			// Generate scope signature for deduplication
 			scopeSignature := getScopeSignature(scopeName, scopeVersion, scopeAttrs, resource)
 
-			// Store scope information for later processing (otel_scope_info generation)
-			// Only track if we haven't seen this scope signature before for this resource
-			if !processedScopes[scopeSignature] {
-				processedScopes[scopeSignature] = true
+			resourceScopeSignatures[scopeSignature] = true
 
-				// Store scope info for later processing in addScopeInfo function
+			// Store scope information for later processing (otel_scope_info generation)
+			if _, exists := c.scopes[scopeSignature]; !exists {
 				c.scopes[scopeSignature] = scopeInfo{
 					name:       scopeName,
 					version:    scopeVersion,
@@ -124,9 +119,9 @@ func (c *prometheusConverter) fromMetrics(md pmetric.Metrics, settings Settings)
 				mostRecentTimestamp = max(mostRecentTimestamp, metricTimestamp)
 
 				// Update the scope's most recent timestamp
-				if scopeInfo, exists := c.scopes[scopeSignature]; exists {
-					scopeInfo.timestamp = max(scopeInfo.timestamp, metricTimestamp)
-					c.scopes[scopeSignature] = scopeInfo
+				if storedScopeInfo, exists := c.scopes[scopeSignature]; exists {
+					storedScopeInfo.timestamp = max(storedScopeInfo.timestamp, metricTimestamp)
+					c.scopes[scopeSignature] = storedScopeInfo
 				}
 
 				if !isValidAggregationTemporality(metric) {
@@ -192,15 +187,12 @@ func (c *prometheusConverter) fromMetrics(md pmetric.Metrics, settings Settings)
 		}
 
 		// Generate otel_scope_info metrics for each unique scope in this resource
-		for signature, processed := range processedScopes {
-			if processed {
-				// Find the corresponding scope info
-				if storedScopeInfo, exists := c.scopes[signature]; exists {
-					err := addScopeInfo(storedScopeInfo.name, storedScopeInfo.version, storedScopeInfo.attributes,
-						resource, settings, storedScopeInfo.timestamp, c)
-					if err != nil {
-						errs = multierr.Append(errs, fmt.Errorf("failed to add scope info for scope %q: %w", storedScopeInfo.name, err))
-					}
+		for signature := range resourceScopeSignatures {
+			if storedScopeInfo, exists := c.scopes[signature]; exists {
+				err := addScopeInfo(storedScopeInfo.name, storedScopeInfo.version, storedScopeInfo.attributes,
+					resource, settings, storedScopeInfo.timestamp, c)
+				if err != nil {
+					errs = multierr.Append(errs, fmt.Errorf("failed to add scope info for scope %q: %w", storedScopeInfo.name, err))
 				}
 			}
 		}

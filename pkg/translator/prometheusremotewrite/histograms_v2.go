@@ -16,7 +16,7 @@ import (
 )
 
 func (c *prometheusConverterV2) addExponentialHistogramDataPoints(dataPoints pmetric.ExponentialHistogramDataPointSlice,
-	resource pcommon.Resource, settings Settings, name string, metadata metadata,
+	resource pcommon.Resource, settings Settings, name string, metadata metadata, scopeName, scopeVersion string,
 ) error {
 	var errs error
 	for x := 0; x < dataPoints.Len(); x++ {
@@ -33,6 +33,14 @@ func (c *prometheusConverterV2) addExponentialHistogramDataPoints(dataPoints pme
 			errs = multierr.Append(errs, err)
 			continue
 		}
+
+		// Add scope labels to the data point
+		scopeLabels, err := createScopeLabels(scopeName, scopeVersion, c.labelNamer)
+		if err != nil {
+			errs = multierr.Append(errs, err)
+			continue
+		}
+		lbls = append(lbls, scopeLabels...)
 
 		ts := c.getOrCreateTimeSeries(lbls, metadata)
 		ts.Histograms = append(ts.Histograms, histogram)

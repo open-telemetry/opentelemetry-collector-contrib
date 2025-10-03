@@ -4,6 +4,7 @@
 package prometheusremotewrite // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite"
 
 import (
+	"fmt"
 	"math"
 	"strconv"
 
@@ -77,6 +78,66 @@ func (c *prometheusConverterV2) addResourceTargetInfoV2(resource pcommon.Resourc
 	return nil
 }
 
+// addScopeInfoV2 generates otel_scope_info metrics for each unique scope per resource.
+// It only generates the metric when the scope has additional attributes beyond name and version,
+// following the same pattern as addResourceTargetInfoV2.
+func (c *prometheusConverterV2) addScopeInfoV2(scopeName, scopeVersion string, scopeAttrs pcommon.Map, resource pcommon.Resource,
+	settings Settings, timestamp pcommon.Timestamp) error {
+
+	if settings.DisableScopeInfo || timestamp == 0 {
+		return nil
+	}
+
+	// Only generate otel_scope_info if scope has additional attributes beyond name and version
+	if scopeAttrs.Len() == 0 {
+		return nil
+	}
+
+	// Build the metric name with namespace prefix if configured
+	name := scopeMetricName
+	if settings.Namespace != "" {
+		name = settings.Namespace + "_" + name
+	}
+
+	baseLabels, err := createAttributes(resource, pcommon.NewMap(), settings.ExternalLabels, nil, false, c.labelNamer)
+	if err != nil {
+		return fmt.Errorf("failed to create base labels for scope info: %w", err)
+	}
+
+	// Create scope info labels including scope name, version, and all scope attributes
+	labels, err := createScopeInfoLabels(scopeName, scopeVersion, scopeAttrs, baseLabels, c.labelNamer)
+	if err != nil {
+		return fmt.Errorf("failed to create scope info labels: %w", err)
+	}
+
+	// Add the metric name label
+	labels = append(labels, prompb.Label{Name: model.MetricNameLabel, Value: name})
+
+	haveIdentifier := false
+	for _, l := range labels {
+		if l.Name == model.JobLabel || l.Name == model.InstanceLabel {
+			haveIdentifier = true
+			break
+		}
+	}
+
+	if !haveIdentifier {
+		// We need at least one identifying label to generate scope_info, similar to target_info
+		return nil
+	}
+
+	sample := &writev2.Sample{
+		Value:     float64(1),
+		Timestamp: convertTimeStamp(timestamp),
+	}
+
+	c.addSample(sample, labels, metadata{
+		Type: writev2.Metadata_METRIC_TYPE_GAUGE,
+		Help: "Scope metadata",
+	})
+	return nil
+}
+
 // addSampleWithLabels is a helper function to create and add a sample with labels
 func (c *prometheusConverterV2) addSampleWithLabels(sampleValue float64, timestamp int64, noRecordedValue bool,
 	baseName string, baseLabels []prompb.Label, labelName, labelValue string, metadata metadata,
@@ -96,7 +157,7 @@ func (c *prometheusConverterV2) addSampleWithLabels(sampleValue float64, timesta
 }
 
 func (c *prometheusConverterV2) addSummaryDataPoints(dataPoints pmetric.SummaryDataPointSlice, resource pcommon.Resource,
-	settings Settings, baseName string, metadata metadata,
+	settings Settings, baseName string, metadata metadata, scopeName, scopeVersion string,
 ) error {
 	var errs error
 	for x := 0; x < dataPoints.Len(); x++ {
@@ -107,6 +168,14 @@ func (c *prometheusConverterV2) addSummaryDataPoints(dataPoints pmetric.SummaryD
 			errs = multierr.Append(errs, err)
 			continue
 		}
+
+		// Add scope labels to the base labels
+		scopeLabels, err := createScopeLabels(scopeName, scopeVersion, c.labelNamer)
+		if err != nil {
+			errs = multierr.Append(errs, err)
+			continue
+		}
+		baseLabels = append(baseLabels, scopeLabels...)
 		noRecordedValue := pt.Flags().NoRecordedValue()
 
 		// Add sum and count samples
@@ -124,7 +193,7 @@ func (c *prometheusConverterV2) addSummaryDataPoints(dataPoints pmetric.SummaryD
 }
 
 func (c *prometheusConverterV2) addHistogramDataPoints(dataPoints pmetric.HistogramDataPointSlice,
-	resource pcommon.Resource, settings Settings, baseName string, metadata metadata,
+	resource pcommon.Resource, settings Settings, baseName string, metadata metadata, scopeName, scopeVersion string,
 ) error {
 	var errs error
 	for x := 0; x < dataPoints.Len(); x++ {
@@ -135,6 +204,14 @@ func (c *prometheusConverterV2) addHistogramDataPoints(dataPoints pmetric.Histog
 			errs = multierr.Append(errs, err)
 			continue
 		}
+
+		// Add scope labels to the base labels
+		scopeLabels, err := createScopeLabels(scopeName, scopeVersion, c.labelNamer)
+		if err != nil {
+			errs = multierr.Append(errs, err)
+			continue
+		}
+		baseLabels = append(baseLabels, scopeLabels...)
 		noRecordedValue := pt.Flags().NoRecordedValue()
 
 		// If the sum is unset, it indicates the _sum metric point should be
