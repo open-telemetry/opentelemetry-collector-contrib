@@ -74,7 +74,7 @@ var systemSpecificMetrics = map[string][]string{
 }
 
 var systemSpecificMetricsNFS = map[string][]string{
-	"linux": {"nfs.client.net.count", "nfs.client.net.count", "nfs.client.net.tcp.connection.accepted", "nfs.client.rpc.count", "nfs.client.rpc.retransmit.count", "nfs.client.rpc.authrefresh.count", "nfs.client.procedure.count", "nfs.client.operation.count", "nfs.server.repcache.hits", "nfs.server.repcache.misses", "nfs.server.repcache.nocache", "nfs.server.fh.stale.count", "nfs.server.io", "nfs.server.thread.count", "nfs.server.net.count", "nfs.server.net.count", "nfs.server.net.tcp.connection.accepted", "nfs.server.rpc.count", "nfs.server.rpc.count", "nfs.server.procedure.count", "nfs.server.operation.count"},
+	"linux": {"nfs.client.net.count", "nfs.client.net.tcp.connection.accepted", "nfs.client.rpc.count", "nfs.client.rpc.retransmit.count", "nfs.client.rpc.authrefresh.count", "nfs.client.procedure.count", "nfs.client.operation.count", "nfs.server.repcache.requests", "nfs.server.fh.stale.count", "nfs.server.io", "nfs.server.thread.count", "nfs.server.net.count", "nfs.server.net.count", "nfs.server.net.tcp.connection.accepted", "nfs.server.rpc.count", "nfs.server.rpc.count", "nfs.server.procedure.count", "nfs.server.operation.count"},
 }
 
 func TestGatherMetrics_EndToEnd(t *testing.T) {
