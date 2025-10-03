@@ -9,9 +9,9 @@ status:
     seeking_new: true
 
 tests:
-  # we skip the generated tests since and implement our own, since we make requests to google
+  # we skip the generated tests since and implement our own, as we make requests to google
   # API on new GCS exporter
   skip_shutdown: true
-  # we skip the generated tests since and implement our own, since we make requests to google
+  # we skip the generated tests since and implement our own, as we make requests to google
   # API on new GCS exporter
   skip_lifecycle: true
