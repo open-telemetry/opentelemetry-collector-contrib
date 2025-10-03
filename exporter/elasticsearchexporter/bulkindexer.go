@@ -53,13 +53,6 @@ type bulkIndexerSession interface {
 	End()
 
 	// Flush flushes any documents added to the bulk indexing session.
-	//
-	// The behavior of Flush depends on whether the bulk indexer is
-	// synchronous or asynchronous. Calling Flush on an asynchronous bulk
-	// indexer session is effectively a no-op; flushing will be done in
-	// the background. Calling Flush on a synchronous bulk indexer session
-	// will wait for bulk indexing of added documents to complete,
-	// successfully or not.
 	Flush(context.Context) error
 }
 
@@ -472,7 +465,7 @@ type bulkIndexers struct {
 	// wg tracks active sessions
 	wg sync.WaitGroup
 
-	// NOTE(axw) when we get rid of the async bulk indexer there would be
+	// NOTE(axw) we have removed async bulk indexer and there should be
 	// no reason for having one per mode or for different document types.
 	// Instead, the caller can create separate sessions as needed, and we
 	// can either have one for required_data_stream=true and one for false,
