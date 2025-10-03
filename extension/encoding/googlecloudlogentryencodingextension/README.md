@@ -183,7 +183,7 @@ See the struct of the Cloud Audit Log payload in [AuditLog](https://cloud.google
 
 | Flow log field | Attribute in OpenTelemetry log | Support |
 |---|---|---|
-| `connection.protocol` | `network.protocol.name` | supported |
+| `connection.protocol` | `network.transport` | supported |
 | `connection.src_ip` | `source.address` | supported |
 | `connection.dest_ip` | `destination.address` | supported |
 | `connection.src_port` | `source.port` | supported |
