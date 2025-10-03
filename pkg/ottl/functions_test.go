@@ -947,276 +947,6 @@ func Test_NewFunctionCall(t *testing.T) {
 			want: 2,
 		},
 		{
-			name: "literalpslicegetter arg",
-			inv: editor{
-				Function: "testing_literalpslicegetter",
-				Arguments: []argument{
-					{
-						Value: value{
-							List: &list{
-								Values: []value{
-									{
-										String: ottltest.Strp("test"),
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			want: testSlice,
-		},
-		{
-			name: "literalpslicegetter arg with invalid value (path)",
-			inv: editor{
-				Function: "testing_literalpslicegetter",
-				Arguments: []argument{
-					{
-						Value: value{
-							List: &list{
-								Values: []value{
-									{
-										Literal: &mathExprLiteral{
-											Path: &path{
-												Fields: []field{
-													{
-														Name: "name",
-													},
-												},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			wantError: "StandardPSliceGetter value is not a literal",
-		},
-		{
-			name: "literalstringgetter arg",
-			inv: editor{
-				Function: "testing_literalstringgetter",
-				Arguments: []argument{
-					{
-						Value: value{
-							String: ottltest.Strp("test"),
-						},
-					},
-				},
-			},
-			want: "test",
-		},
-		{
-			name: "literalstringgetter arg with invalid value (path)",
-			inv: editor{
-				Function: "testing_literalstringgetter",
-				Arguments: []argument{
-					{
-						Value: value{
-							Literal: &mathExprLiteral{
-								Path: &path{
-									Fields: []field{
-										{
-											Name: "name",
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			wantError: "StandardStringGetter value is not a literal",
-		},
-		{
-			name: "literalintgetter arg",
-			inv: editor{
-				Function: "testing_literalintgetter",
-				Arguments: []argument{
-					{
-						Value: value{
-							Literal: &mathExprLiteral{
-								Int: ottltest.Intp(1),
-							},
-						},
-					},
-				},
-			},
-			want: int64(1),
-		},
-		{
-			name: "literalintgetter arg with invalid value (path)",
-			inv: editor{
-				Function: "testing_literalintgetter",
-				Arguments: []argument{
-					{
-						Value: value{
-							Literal: &mathExprLiteral{
-								Path: &path{
-									Fields: []field{
-										{
-											Name: "name",
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			wantError: "StandardIntGetter value is not a literal",
-		},
-		{
-			name: "literalfloatgetter arg",
-			inv: editor{
-				Function: "testing_literalfloatgetter",
-				Arguments: []argument{
-					{
-						Value: value{
-							Literal: &mathExprLiteral{
-								Float: ottltest.Floatp(1),
-							},
-						},
-					},
-				},
-			},
-			want: float64(1),
-		},
-		{
-			name: "literalfloatgetter arg with invalid value (path)",
-			inv: editor{
-				Function: "testing_literalfloatgetter",
-				Arguments: []argument{
-					{
-						Value: value{
-							Literal: &mathExprLiteral{
-								Path: &path{
-									Fields: []field{
-										{
-											Name: "name",
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			wantError: "StandardFloatGetter value is not a literal",
-		},
-		{
-			name: "literalboolgetter arg",
-			inv: editor{
-				Function: "testing_literalboolgetter",
-				Arguments: []argument{
-					{
-						Value: value{
-							Bool: (*boolean)(ottltest.Boolp(true)),
-						},
-					},
-				},
-			},
-			want: true,
-		},
-		{
-			name: "literalboolgetter arg with invalid value (path)",
-			inv: editor{
-				Function: "testing_literalboolgetter",
-				Arguments: []argument{
-					{
-						Value: value{
-							Literal: &mathExprLiteral{
-								Path: &path{
-									Fields: []field{
-										{
-											Name: "name",
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			wantError: "StandardBoolGetter value is not a literal",
-		},
-		{
-			name: "literalpmapgetter arg",
-			inv: editor{
-				Function: "testing_literalpmapgetter",
-				Arguments: []argument{
-					{
-						Value: value{
-							Map: &mapValue{
-								Values: []mapItem{
-									{
-										Key:   ottltest.Strp("foo"),
-										Value: &value{String: ottltest.Strp("bar")},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			want: testMap,
-		},
-		{
-			name: "literalpmapgetter arg with invalid value (path)",
-			inv: editor{
-				Function: "testing_literalpmapgetter",
-				Arguments: []argument{
-					{
-						Value: value{
-							Map: &mapValue{
-								Values: []mapItem{
-									{
-										Key: ottltest.Strp("foo"),
-										Value: &value{
-											Literal: &mathExprLiteral{
-												Path: &path{
-													Fields: []field{
-														{
-															Name: "name",
-														},
-													},
-												},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			wantError: "StandardPMapGetter value is not a literal",
-		},
-		{
-			name: "optional literal getter with value",
-			inv: editor{
-				Function: "testing_literalstringoptional",
-				Arguments: []argument{
-					{
-						Value: value{
-							String: ottltest.Strp("foo"),
-						},
-					},
-				},
-			},
-			want: "foo",
-		},
-		{
-			name: "optional literal getter without value",
-			inv: editor{
-				Function:  "testing_literalstringoptional",
-				Arguments: []argument{},
-			},
-			want: "",
-		},
-		{
 			name: "pslicegetter slice arg",
 			inv: editor{
 				Function: "testing_pslicegetter_slice",
@@ -2107,128 +1837,6 @@ func Test_ArgumentsNotMutated(t *testing.T) {
 	assert.Zero(t, args.OptionalFloatArg)
 }
 
-func Test_LiteralGetter_getWrappedValue(t *testing.T) {
-	tests := []struct {
-		name      string
-		value     any
-		wantError string
-	}{
-		{
-			name: "pass expected type",
-			value: &mockLiteralGetter[any, string]{
-				valueGetter: func(_ context.Context, _ any) (string, error) {
-					return "foo", nil
-				},
-			},
-		},
-		{
-			name:      "pass invalid type",
-			value:     "invalid",
-			wantError: "cannot set value of type string to a Getter of type *ottl.mockLiteralGetter[interface {},string]",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			l := LiteralGetter[any, string, *mockLiteralGetter[any, string]]{}
-			err := l.setWrappedValue(reflect.ValueOf(tt.value))
-			if tt.wantError == "" {
-				require.NoError(t, err)
-			} else {
-				require.ErrorContains(t, err, tt.wantError)
-			}
-		})
-	}
-}
-
-func Test_LiteralGetter_IsLiteral(t *testing.T) {
-	tests := []struct {
-		name   string
-		getter typedGetter[any, any]
-		want   bool
-	}{
-		{
-			name: "not a literal",
-			getter: &mockLiteralGetter[any, any]{
-				literal: false,
-			},
-			want: false,
-		},
-		{
-			name: "literal",
-			getter: &mockLiteralGetter[any, any]{
-				literal: true,
-			},
-			want: true,
-		},
-		{
-			name:   "literal interface not implemented",
-			getter: &mockedGetter[any]{},
-			want:   false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			l := LiteralGetter[any, any, typedGetter[any, any]]{
-				getter: tt.getter,
-			}
-			require.Equal(t, tt.want, l.IsLiteral())
-		})
-	}
-}
-
-func Test_LiteralGetter_GetLiteral(t *testing.T) {
-	tests := []struct {
-		name      string
-		getter    typedGetter[any, any]
-		want      any
-		wantError string
-	}{
-		{
-			name: "literal",
-			getter: &mockLiteralGetter[any, any]{
-				valueGetter: func(_ context.Context, _ any) (any, error) {
-					return "foo", nil
-				},
-			},
-			want: "foo",
-		},
-		{
-			name: "literal implementation returns an error",
-			getter: &mockLiteralGetter[any, any]{
-				valueGetter: func(_ context.Context, _ any) (any, error) {
-					return nil, errors.New("error")
-				},
-			},
-			wantError: "error",
-		},
-		{
-			name:      "literal interface not implemented",
-			getter:    &mockedGetter[any]{},
-			wantError: "getter of type *ottl.mockedGetter[interface {}] is not a literal getter",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			l := LiteralGetter[any, any, typedGetter[any, any]]{
-				getter: tt.getter,
-			}
-
-			got, err := l.GetLiteral()
-
-			if tt.wantError != "" {
-				require.Nil(t, got)
-				require.ErrorContains(t, err, tt.wantError)
-			} else {
-				require.NoError(t, err)
-				require.Equal(t, tt.want, got)
-			}
-		})
-	}
-}
-
 func functionWithNoArguments() (ExprFunc[any], error) {
 	return func(context.Context, any) (any, error) {
 		return nil, nil
@@ -2551,65 +2159,6 @@ func functionWithPSliceGetter(PSliceGetter[any]) (ExprFunc[any], error) {
 	}, nil
 }
 
-type literalPSliceArguments struct {
-	LiteralGetter[any, pcommon.Slice, PSliceGetter[any]]
-}
-
-func functionWithLiteralPSliceGetter(getter LiteralGetter[any, pcommon.Slice, PSliceGetter[any]]) (ExprFunc[any], error) {
-	return func(context.Context, any) (any, error) { return getter.GetLiteral() }, nil
-}
-
-type literalStringGetterArguments struct {
-	LiteralGetter[any, string, StringGetter[any]]
-}
-
-func functionWithLiteralStringGetter(getter LiteralGetter[any, string, StringGetter[any]]) (ExprFunc[any], error) {
-	return func(context.Context, any) (any, error) { return getter.GetLiteral() }, nil
-}
-
-type literalIntGetterArguments struct {
-	LiteralGetter[any, int64, IntGetter[any]]
-}
-
-func functionWithLiteralIntGetter(getter LiteralGetter[any, int64, IntGetter[any]]) (ExprFunc[any], error) {
-	return func(context.Context, any) (any, error) { return getter.GetLiteral() }, nil
-}
-
-type literalFloatGetterArguments struct {
-	LiteralGetter[any, float64, FloatGetter[any]]
-}
-
-func functionWithLiteralFloatGetter(getter LiteralGetter[any, float64, FloatGetter[any]]) (ExprFunc[any], error) {
-	return func(context.Context, any) (any, error) { return getter.GetLiteral() }, nil
-}
-
-type literalBoolGetterArguments struct {
-	LiteralGetter[any, bool, BoolGetter[any]]
-}
-
-func functionWithLiteralBoolGetter(getter LiteralGetter[any, bool, BoolGetter[any]]) (ExprFunc[any], error) {
-	return func(context.Context, any) (any, error) { return getter.GetLiteral() }, nil
-}
-
-type literalPMapGetterArguments struct {
-	LiteralGetter[any, pcommon.Map, PMapGetter[any]]
-}
-
-func functionWithLiteralPMapGetter(getter LiteralGetter[any, pcommon.Map, PMapGetter[any]]) (ExprFunc[any], error) {
-	return func(context.Context, any) (any, error) { return getter.GetLiteral() }, nil
-}
-
-type literalStringGetterOptionalArguments struct {
-	Optional[LiteralGetter[any, string, StringGetter[any]]]
-}
-
-func functionWithLiteralStringOptionalGetter(getter Optional[LiteralGetter[any, string, StringGetter[any]]]) (ExprFunc[any], error) {
-	return func(context.Context, any) (any, error) {
-		val := getter.Get()
-		return val.GetLiteral()
-	}, nil
-}
-
 type stringArguments struct {
 	StringArg string
 }
@@ -2910,41 +2459,6 @@ func defaultFunctionsForTests() map[string]Factory[any] {
 			"testing_pslicegetter",
 			&pSliceGetterArguments{},
 			functionWithPSliceGetter,
-		),
-		createFactory[any](
-			"testing_literalpslicegetter",
-			&literalPSliceArguments{},
-			functionWithLiteralPSliceGetter,
-		),
-		createFactory[any](
-			"testing_literalstringgetter",
-			&literalStringGetterArguments{},
-			functionWithLiteralStringGetter,
-		),
-		createFactory[any](
-			"testing_literalintgetter",
-			&literalIntGetterArguments{},
-			functionWithLiteralIntGetter,
-		),
-		createFactory[any](
-			"testing_literalfloatgetter",
-			&literalFloatGetterArguments{},
-			functionWithLiteralFloatGetter,
-		),
-		createFactory[any](
-			"testing_literalboolgetter",
-			&literalBoolGetterArguments{},
-			functionWithLiteralBoolGetter,
-		),
-		createFactory[any](
-			"testing_literalpmapgetter",
-			&literalPMapGetterArguments{},
-			functionWithLiteralPMapGetter,
-		),
-		createFactory[any](
-			"testing_literalstringoptional",
-			&literalStringGetterOptionalArguments{},
-			functionWithLiteralStringOptionalGetter,
 		),
 		createFactory[any](
 			"testing_string",
@@ -3335,4 +2849,46 @@ func Test_Optional_GetOr(t *testing.T) {
 
 	setOpt := NewTestingOptional[string]("foo")
 	assert.Equal(t, "foo", setOpt.GetOr("bar"))
+}
+
+// nonLiteralStringGetter implements typedGetter but NOT literalGetter.
+// Used to verify GetLiteralValue returns false when literalGetter isn't implemented.
+type nonLiteralStringGetter[K any] struct{ v string }
+
+func (g nonLiteralStringGetter[K]) Get(_ context.Context, _ K) (string, error) { return g.v, nil }
+
+func TestGetLiteralValue(t *testing.T) {
+	t.Run("getter does not implement literalGetter", func(t *testing.T) {
+		val, ok := GetLiteralValue[any, string](nonLiteralStringGetter[any]{v: "val"})
+		require.False(t, ok)
+		require.Equal(t, "", val)
+	})
+
+	t.Run("getter does not contain literal", func(t *testing.T) {
+		g := mockLiteralGetter[any, any]{
+			valueGetter: func(context.Context, any) (any, error) { return "value", nil },
+			literal:     false,
+		}
+		val, ok := GetLiteralValue[any, any](g)
+		require.False(t, ok)
+		require.Nil(t, val)
+	})
+	t.Run("getter contains literal", func(t *testing.T) {
+		g := mockLiteralGetter[any, any]{
+			valueGetter: func(context.Context, any) (any, error) { return "value", nil },
+			literal:     true,
+		}
+		val, ok := GetLiteralValue[any, any](g)
+		require.True(t, ok)
+		require.Equal(t, "value", val)
+	})
+	t.Run("getter returns error", func(t *testing.T) {
+		g := mockLiteralGetter[any, any]{
+			valueGetter: func(context.Context, any) (any, error) { return nil, errors.New("err") },
+			literal:     true,
+		}
+		val, ok := GetLiteralValue[any, any](g)
+		require.False(t, ok)
+		require.Nil(t, val)
+	})
 }
