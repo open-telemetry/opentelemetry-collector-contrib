@@ -58,10 +58,11 @@ func TestConfig(t *testing.T) {
 			id:         component.NewIDWithName(metadata.Type, "trace"),
 			expected: &Config{
 				QueueBatchConfig: exporterhelper.QueueBatchConfig{
-					Enabled:      true,
-					NumConsumers: 10,
-					QueueSize:    10,
-					Sizer:        exporterhelper.RequestSizerTypeRequests,
+					Enabled:         true,
+					NumConsumers:    10,
+					QueueSize:       10,
+					BlockOnOverflow: true,
+					Sizer:           exporterhelper.RequestSizerTypeRequests,
 					Batch: configoptional.Some(exporterhelper.BatchConfig{
 						FlushTimeout: 10 * time.Second,
 						Sizer:        exporterhelper.RequestSizerTypeBytes,
@@ -141,10 +142,11 @@ func TestConfig(t *testing.T) {
 			configFile: "config.yaml",
 			expected: &Config{
 				QueueBatchConfig: exporterhelper.QueueBatchConfig{
-					Enabled:      true,
-					NumConsumers: 10,
-					QueueSize:    10,
-					Sizer:        exporterhelper.RequestSizerTypeRequests,
+					Enabled:         true,
+					NumConsumers:    10,
+					QueueSize:       10,
+					BlockOnOverflow: true,
+					Sizer:           exporterhelper.RequestSizerTypeRequests,
 					Batch: configoptional.Some(exporterhelper.BatchConfig{
 						FlushTimeout: 10 * time.Second,
 						Sizer:        exporterhelper.RequestSizerTypeBytes,
@@ -214,10 +216,11 @@ func TestConfig(t *testing.T) {
 			configFile: "config.yaml",
 			expected: &Config{
 				QueueBatchConfig: exporterhelper.QueueBatchConfig{
-					Enabled:      true,
-					NumConsumers: 10,
-					QueueSize:    10,
-					Sizer:        exporterhelper.RequestSizerTypeRequests,
+					Enabled:         true,
+					NumConsumers:    10,
+					QueueSize:       10,
+					BlockOnOverflow: true,
+					Sizer:           exporterhelper.RequestSizerTypeRequests,
 					Batch: configoptional.Some(exporterhelper.BatchConfig{
 						FlushTimeout: 10 * time.Second,
 						Sizer:        exporterhelper.RequestSizerTypeBytes,
