@@ -158,7 +158,6 @@ func assertIncludesExpectedMetrics(t *testing.T, got pmetric.Metrics) {
 
 	assert.Len(t, returnedMetrics, len(expectedMetrics))
 	for _, expected := range expectedMetrics {
-		
 		assert.Contains(t, returnedMetrics, expected)
 	}
 
