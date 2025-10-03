@@ -126,7 +126,7 @@ func TestInputJournald(t *testing.T) {
 	}
 }
 
-func TestBuildConfig(t *testing.T) {
+func TestBuildConfigArgs(t *testing.T) {
 	testCases := []struct {
 		Name          string
 		Config        func(_ *Config)
@@ -243,6 +243,50 @@ func TestBuildConfig(t *testing.T) {
 			}
 			require.NoError(t, err)
 			assert.Equal(t, tt.Expected, args)
+		})
+	}
+}
+
+func TestBuildConfigCmd(t *testing.T) {
+	testCases := []struct {
+		Name          string
+		Config        func(_ *Config)
+		RequireCmd    func(*exec.Cmd)
+		ExpectedError string
+	}{
+		{
+			Name:   "empty config",
+			Config: func(_ *Config) {},
+			RequireCmd: func(cmd *exec.Cmd) {
+				require.Nil(t, cmd.SysProcAttr)
+			},
+		},
+		{
+			Name: "custom chroot",
+			Config: func(cfg *Config) {
+				cfg.RootPath = "/host"
+			},
+			RequireCmd: func(cmd *exec.Cmd) {
+				require.NotNil(t, cmd.SysProcAttr)
+				assert.Equal(t, "/host", cmd.SysProcAttr.Chroot)
+			},
+		},
+	}
+
+	for _, tt := range testCases {
+		t.Run(tt.Name, func(t *testing.T) {
+			cfg := NewConfigWithID("my_journald_input")
+			tt.Config(cfg)
+			newCmdFunc, err := cfg.buildNewCmdFunc()
+
+			if tt.ExpectedError != "" {
+				require.Error(t, err)
+				require.ErrorContains(t, err, tt.ExpectedError)
+				return
+			}
+			require.NoError(t, err)
+			cmd := newCmdFunc(t.Context(), nil).(*exec.Cmd)
+			tt.RequireCmd(cmd)
 		})
 	}
 }

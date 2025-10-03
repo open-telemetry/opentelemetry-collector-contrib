@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"regexp"
 	"sort"
+	"syscall"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -31,22 +32,14 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 		return nil, err
 	}
 
-	args, err := c.buildArgs()
+	newCmdFunc, err := c.buildNewCmdFunc()
 	if err != nil {
 		return nil, err
 	}
 
 	return &Input{
-		InputOperator: inputOperator,
-		newCmd: func(ctx context.Context, cursor []byte) cmd {
-			// Copy args and if needed, add the cursor flag
-			journalArgs := append([]string{}, args...)
-			if cursor != nil {
-				journalArgs = append(journalArgs, "--after-cursor", string(cursor))
-			}
-			return exec.CommandContext(ctx, "journalctl", journalArgs...) // #nosec - ...
-			// journalctl is an executable that is required for this operator to function
-		},
+		InputOperator:       inputOperator,
+		newCmd:              newCmdFunc,
 		convertMessageBytes: c.ConvertMessageBytes,
 	}, nil
 }
@@ -155,4 +148,27 @@ func (c Config) buildMatchesConfig() ([]string, error) {
 	}
 
 	return matches, nil
+}
+
+func (c Config) buildNewCmdFunc() (func(ctx context.Context, cursor []byte) cmd, error) {
+	args, err := c.buildArgs()
+	if err != nil {
+		return nil, err
+	}
+
+	return func(ctx context.Context, cursor []byte) cmd {
+		// Copy args and if needed, add the cursor flag
+		journalArgs := append([]string{}, args...)
+		if cursor != nil {
+			journalArgs = append(journalArgs, "--after-cursor", string(cursor))
+		}
+		cmd := exec.CommandContext(ctx, "journalctl", journalArgs...) // #nosec - ...
+		// journalctl is an executable that is required for this operator to function
+		if c.RootPath != "" {
+			cmd.SysProcAttr = &syscall.SysProcAttr{
+				Chroot: c.RootPath,
+			}
+		}
+		return cmd
+	}, nil
 }
