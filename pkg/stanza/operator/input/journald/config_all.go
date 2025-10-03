@@ -27,6 +27,7 @@ func NewConfigWithID(operatorID string) *Config {
 type Config struct {
 	helper.InputConfig `mapstructure:",squash"`
 
+	RootPath            string        `mapstructure:"root_path,omitempty"`
 	Directory           *string       `mapstructure:"directory,omitempty"`
 	Files               []string      `mapstructure:"files,omitempty"`
 	StartAt             string        `mapstructure:"start_at,omitempty"`
