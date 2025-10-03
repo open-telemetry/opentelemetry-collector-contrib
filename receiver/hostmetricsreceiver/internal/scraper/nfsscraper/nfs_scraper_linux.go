@@ -403,7 +403,7 @@ func parseNfsStats(f io.Reader) (*NfsStats, error) {
 		line := scanner.Text()
 		fields := strings.Fields(line)
 
-		debugLine("/proc/net/rpc/nfs", line);
+		debugLine("/proc/net/rpc/nfs", line)
 
 		if len(fields) < 2 {
 			return nil, fmt.Errorf("Invalid line (<2 fields) in %v: %v", nfsProcFile, line)
@@ -467,7 +467,7 @@ func parseNfsdStats(f io.Reader) (*nfsdStats, error) {
 		line := scanner.Text()
 		fields := strings.Fields(line)
 
-		debugLine("/proc/net/rpc/nfsd", line);
+		debugLine("/proc/net/rpc/nfsd", line)
 
 		if len(fields) < 2 {
 			return nil, fmt.Errorf("Invalid line (<2 fields) in %v: %v", nfsdProcFile, line)
