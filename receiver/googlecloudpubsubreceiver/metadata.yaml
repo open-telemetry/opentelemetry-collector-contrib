@@ -12,6 +12,8 @@ telemetry:
   metrics:
     receiver.googlecloudpubsub.stream_restarts:
       enabled: true
+      stability:
+        level: development
       description: Number of times the stream (re)starts due to a Pub/Sub servers connection close
       unit: "1"
       sum:
@@ -23,6 +25,8 @@ telemetry:
         counts the number of the resets that occurred during the lifetime of the container.
     receiver.googlecloudpubsub.encoding_error:
       enabled: true
+      stability:
+        level: development
       description: Number of times a message couldn't be decoded by the configured encoder
       unit: "1"
       sum:
