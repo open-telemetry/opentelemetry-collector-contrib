@@ -4,6 +4,8 @@
 package nfsscraper
 
 import (
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"strings"
 	"testing"
 
@@ -14,20 +16,20 @@ import (
 const (
 	nfsProcFileOut = `net 8 843 666 157
 rpc 220 790 662
-proc3 997 191 360 118 397 455 77 581 182 333 767 235 558 371 873 877 652 265 463 416 200 942 235
-proc4 69 32 829 218 185 789 767 813 512 615 355 207 211 992 234 736 629 862 860 117 752 128 200 494 372 158 420 757 783 46 725 180 301 305 856 965 416 653 340 500 650 545 155 620 354 959 965 986 526 367 388 373 786 890 459 810 679 939 583 790 333 455 115 155 884 571 409 540 293 721
+proc3 22 191 360 118 3970 4550 77 581 182 3330 767 2350 558 371 873 877 652 2650 463 4160 2000 942 235
+proc4 69 320 829 218 1850 789 7670 813 5120 615 355 207 211 992 234 736 629 862 860 117 752 128 200 494 372 158 420 757 783 46 725 180 301 3050 856 965 416 653 340 500 650 545 1550 6200 354 959 9650 986 526 3670 388 3730 786 890 4590 810 679 939 583 7900 333 455 115 155 884 571 409 540 293 7210
 `
 
 	nfsdProcFileOut = `rc 795 819 351
 fh 709 9 178 461 14
 io 111 464
-th 261 966 860 728 589 845 366 825 913 257 789 77
-ra 579 364 872 902 542 886 245 835 517 437 593 152
-net 1 43 26 597
+th 261 966 8600 728 589 845 366 825 913 257 7890 770
+ra 579 364 872 902 542 886 245 835 517 4370 593 152
+net 1 430 26 597
 rpc 874 367 960 94 748
-proc3 22 124 554 529 64 928 316 531 43 724 822 237 665 620 22 335 137 236 222 658 654 209 382
+proc3 22 124 554 529 640 928 316 531 43 724 822 237 665 620 22 335 137 236 222 658 654 209 382
 proc4 2 512 878
-proc4ops 76 725 607 978 86 442 878 262 489 962 909 563 468 722 104 47 214 305 564 776 373 444 6 265 163 397 817 73 90 630 664 984 981 502 682 210 639 484 924 337 857 667 984 498 76 515 657 596 31 781 437 23 846 867 241 648 169 64 151 447 848 625 185 586 890 446 317 503 32 935 459 386 291 817 74 592 562
+proc4ops 76 7250 607 978 86 442 8780 262 489 962 909 563 468 722 104 47 214 305 564 776 373 444 6 265 163 397 817 73 90 630 664 984 981 502 682 210 639 484 924 337 857 667 985 498 760 515 657 596 31 781 437 997 846 867 241 648 169 64 151 447 848 625 185 586 8900 446 317 503 32 935 459 386 291 8170 74 592 562
 wdeleg_getattr 901
 `
 )
@@ -62,36 +64,36 @@ func getExpectedOSNfsStats() *NfsStats {
 		{nfsVersion: 3, nfsCallName: "NULL", nfsCallCount: 191},
 		{nfsVersion: 3, nfsCallName: "GETATTR", nfsCallCount: 360},
 		{nfsVersion: 3, nfsCallName: "SETATTR", nfsCallCount: 118},
-		{nfsVersion: 3, nfsCallName: "LOOKUP", nfsCallCount: 397},
-		{nfsVersion: 3, nfsCallName: "ACCESS", nfsCallCount: 455},
+		{nfsVersion: 3, nfsCallName: "LOOKUP", nfsCallCount: 3970},
+		{nfsVersion: 3, nfsCallName: "ACCESS", nfsCallCount: 4550},
 		{nfsVersion: 3, nfsCallName: "READLINK", nfsCallCount: 77},
 		{nfsVersion: 3, nfsCallName: "READ", nfsCallCount: 581},
 		{nfsVersion: 3, nfsCallName: "WRITE", nfsCallCount: 182},
-		{nfsVersion: 3, nfsCallName: "CREATE", nfsCallCount: 333},
+		{nfsVersion: 3, nfsCallName: "CREATE", nfsCallCount: 3330},
 		{nfsVersion: 3, nfsCallName: "MKDIR", nfsCallCount: 767},
-		{nfsVersion: 3, nfsCallName: "SYMLINK", nfsCallCount: 235},
+		{nfsVersion: 3, nfsCallName: "SYMLINK", nfsCallCount: 2350},
 		{nfsVersion: 3, nfsCallName: "MKNOD", nfsCallCount: 558},
 		{nfsVersion: 3, nfsCallName: "REMOVE", nfsCallCount: 371},
 		{nfsVersion: 3, nfsCallName: "RMDIR", nfsCallCount: 873},
 		{nfsVersion: 3, nfsCallName: "RENAME", nfsCallCount: 877},
 		{nfsVersion: 3, nfsCallName: "LINK", nfsCallCount: 652},
-		{nfsVersion: 3, nfsCallName: "READDIR", nfsCallCount: 265},
+		{nfsVersion: 3, nfsCallName: "READDIR", nfsCallCount: 2650},
 		{nfsVersion: 3, nfsCallName: "READDIRPLUS", nfsCallCount: 463},
-		{nfsVersion: 3, nfsCallName: "FSSTAT", nfsCallCount: 416},
-		{nfsVersion: 3, nfsCallName: "FSINFO", nfsCallCount: 200},
+		{nfsVersion: 3, nfsCallName: "FSSTAT", nfsCallCount: 4160},
+		{nfsVersion: 3, nfsCallName: "FSINFO", nfsCallCount: 2000},
 		{nfsVersion: 3, nfsCallName: "PATHCONF", nfsCallCount: 942},
 		{nfsVersion: 3, nfsCallName: "COMMIT", nfsCallCount: 235},
 	}
 
 	nfsV4OperationStats := []callStats{
-		{nfsVersion: 4, nfsCallName: "NULL", nfsCallCount: 32},
+		{nfsVersion: 4, nfsCallName: "NULL", nfsCallCount: 320},
 		{nfsVersion: 4, nfsCallName: "READ", nfsCallCount: 829},
 		{nfsVersion: 4, nfsCallName: "WRITE", nfsCallCount: 218},
-		{nfsVersion: 4, nfsCallName: "COMMIT", nfsCallCount: 185},
+		{nfsVersion: 4, nfsCallName: "COMMIT", nfsCallCount: 1850},
 		{nfsVersion: 4, nfsCallName: "OPEN", nfsCallCount: 789},
-		{nfsVersion: 4, nfsCallName: "OPEN_CONFIRM", nfsCallCount: 767},
+		{nfsVersion: 4, nfsCallName: "OPEN_CONFIRM", nfsCallCount: 7670},
 		{nfsVersion: 4, nfsCallName: "OPEN_NOATTR", nfsCallCount: 813},
-		{nfsVersion: 4, nfsCallName: "OPEN_DOWNGRADE", nfsCallCount: 512},
+		{nfsVersion: 4, nfsCallName: "OPEN_DOWNGRADE", nfsCallCount: 5120},
 		{nfsVersion: 4, nfsCallName: "CLOSE", nfsCallCount: 615},
 		{nfsVersion: 4, nfsCallName: "SETATTR", nfsCallCount: 355},
 		{nfsVersion: 4, nfsCallName: "FSINFO", nfsCallCount: 207},
@@ -116,7 +118,7 @@ func getExpectedOSNfsStats() *NfsStats {
 		{nfsVersion: 4, nfsCallName: "READDIR", nfsCallCount: 725},
 		{nfsVersion: 4, nfsCallName: "SERVER_CAPS", nfsCallCount: 180},
 		{nfsVersion: 4, nfsCallName: "DELEGRETURN", nfsCallCount: 301},
-		{nfsVersion: 4, nfsCallName: "GETACL", nfsCallCount: 305},
+		{nfsVersion: 4, nfsCallName: "GETACL", nfsCallCount: 3050},
 		{nfsVersion: 4, nfsCallName: "SETACL", nfsCallCount: 856},
 		{nfsVersion: 4, nfsCallName: "FS_LOCATIONS", nfsCallCount: 965},
 		{nfsVersion: 4, nfsCallName: "RELEASE_LOCKOWNER", nfsCallCount: 416},
@@ -125,24 +127,24 @@ func getExpectedOSNfsStats() *NfsStats {
 		{nfsVersion: 4, nfsCallName: "EXCHANGE_ID", nfsCallCount: 500},
 		{nfsVersion: 4, nfsCallName: "CREATE_SESSION", nfsCallCount: 650},
 		{nfsVersion: 4, nfsCallName: "DESTROY_SESSION", nfsCallCount: 545},
-		{nfsVersion: 4, nfsCallName: "SEQUENCE", nfsCallCount: 155},
-		{nfsVersion: 4, nfsCallName: "GET_LEASE_TIME", nfsCallCount: 620},
+		{nfsVersion: 4, nfsCallName: "SEQUENCE", nfsCallCount: 1550},
+		{nfsVersion: 4, nfsCallName: "GET_LEASE_TIME", nfsCallCount: 6200},
 		{nfsVersion: 4, nfsCallName: "RECLAIM_COMPLETE", nfsCallCount: 354},
 		{nfsVersion: 4, nfsCallName: "GETDEVICEINFO", nfsCallCount: 959},
-		{nfsVersion: 4, nfsCallName: "LAYOUTGET", nfsCallCount: 965},
+		{nfsVersion: 4, nfsCallName: "LAYOUTGET", nfsCallCount: 9650},
 		{nfsVersion: 4, nfsCallName: "LAYOUTCOMMIT", nfsCallCount: 986},
 		{nfsVersion: 4, nfsCallName: "LAYOUTRETURN", nfsCallCount: 526},
-		{nfsVersion: 4, nfsCallName: "SECINFO_NO_NAME", nfsCallCount: 367},
+		{nfsVersion: 4, nfsCallName: "SECINFO_NO_NAME", nfsCallCount: 3670},
 		{nfsVersion: 4, nfsCallName: "TEST_STATEID", nfsCallCount: 388},
-		{nfsVersion: 4, nfsCallName: "FREE_STATEID", nfsCallCount: 373},
+		{nfsVersion: 4, nfsCallName: "FREE_STATEID", nfsCallCount: 3730},
 		{nfsVersion: 4, nfsCallName: "GETDEVICELIST", nfsCallCount: 786},
 		{nfsVersion: 4, nfsCallName: "BIND_CONN_TO_SESSION", nfsCallCount: 890},
-		{nfsVersion: 4, nfsCallName: "DESTROY_CLIENTID", nfsCallCount: 459},
+		{nfsVersion: 4, nfsCallName: "DESTROY_CLIENTID", nfsCallCount: 4590},
 		{nfsVersion: 4, nfsCallName: "SEEK", nfsCallCount: 810},
 		{nfsVersion: 4, nfsCallName: "ALLOCATE", nfsCallCount: 679},
 		{nfsVersion: 4, nfsCallName: "DEALLOCATE", nfsCallCount: 939},
 		{nfsVersion: 4, nfsCallName: "LAYOUTSTATS", nfsCallCount: 583},
-		{nfsVersion: 4, nfsCallName: "CLONE", nfsCallCount: 790},
+		{nfsVersion: 4, nfsCallName: "CLONE", nfsCallCount: 7900},
 		{nfsVersion: 4, nfsCallName: "COPY", nfsCallCount: 333},
 		{nfsVersion: 4, nfsCallName: "OFFLOAD_CANCEL", nfsCallCount: 455},
 		{nfsVersion: 4, nfsCallName: "COPY_NOTIFY", nfsCallCount: 115},
@@ -152,7 +154,7 @@ func getExpectedOSNfsStats() *NfsStats {
 		{nfsVersion: 4, nfsCallName: "SETXATTR", nfsCallCount: 409},
 		{nfsVersion: 4, nfsCallName: "LISTXATTRS", nfsCallCount: 540},
 		{nfsVersion: 4, nfsCallName: "REMOVEXATTR", nfsCallCount: 293},
-		{nfsVersion: 4, nfsCallName: "READ_PLUS", nfsCallCount: 721},
+		{nfsVersion: 4, nfsCallName: "READ_PLUS", nfsCallCount: 7210},
 	}
 
 	return &NfsStats{
@@ -185,7 +187,7 @@ func getExpectedOSnfsdStats() *nfsdStats {
 
 	netStats := &nfsdNetStats{
 		netCount:           1,
-		udpCount:           43,
+		udpCount:           430,
 		tcpCount:           26,
 		tcpConnectionCount: 597,
 	}
@@ -202,7 +204,7 @@ func getExpectedOSnfsdStats() *nfsdStats {
 		{nfsVersion: 3, nfsCallName: "NULL", nfsCallCount: 124},
 		{nfsVersion: 3, nfsCallName: "GETATTR", nfsCallCount: 554},
 		{nfsVersion: 3, nfsCallName: "SETATTR", nfsCallCount: 529},
-		{nfsVersion: 3, nfsCallName: "LOOKUP", nfsCallCount: 64},
+		{nfsVersion: 3, nfsCallName: "LOOKUP", nfsCallCount: 640},
 		{nfsVersion: 3, nfsCallName: "ACCESS", nfsCallCount: 928},
 		{nfsVersion: 3, nfsCallName: "READLINK", nfsCallCount: 316},
 		{nfsVersion: 3, nfsCallName: "READ", nfsCallCount: 531},
@@ -229,12 +231,12 @@ func getExpectedOSnfsdStats() *nfsdStats {
 	}
 
 	nfsdV4OperationStats := []callStats{
-		{nfsVersion: 4, nfsCallName: "UNUSED0", nfsCallCount: 725},
+		{nfsVersion: 4, nfsCallName: "UNUSED0", nfsCallCount: 7250},
 		{nfsVersion: 4, nfsCallName: "UNUSED1", nfsCallCount: 607},
 		{nfsVersion: 4, nfsCallName: "UNUSED2", nfsCallCount: 978},
 		{nfsVersion: 4, nfsCallName: "ACCESS", nfsCallCount: 86},
 		{nfsVersion: 4, nfsCallName: "CLOSE", nfsCallCount: 442},
-		{nfsVersion: 4, nfsCallName: "COMMIT", nfsCallCount: 878},
+		{nfsVersion: 4, nfsCallName: "COMMIT", nfsCallCount: 8780},
 		{nfsVersion: 4, nfsCallName: "CREATE", nfsCallCount: 262},
 		{nfsVersion: 4, nfsCallName: "DELEGPURGE", nfsCallCount: 489},
 		{nfsVersion: 4, nfsCallName: "DELEGRETURN", nfsCallCount: 962},
@@ -270,9 +272,9 @@ func getExpectedOSnfsdStats() *nfsdStats {
 		{nfsVersion: 4, nfsCallName: "WRITE", nfsCallCount: 337},
 		{nfsVersion: 4, nfsCallName: "RELEASE_LOCKOWNER", nfsCallCount: 857},
 		{nfsVersion: 4, nfsCallName: "BACKCHANNEL_CTL", nfsCallCount: 667},
-		{nfsVersion: 4, nfsCallName: "BIND_CONN_TO_SESSION", nfsCallCount: 984},
+		{nfsVersion: 4, nfsCallName: "BIND_CONN_TO_SESSION", nfsCallCount: 985},
 		{nfsVersion: 4, nfsCallName: "EXCHANGE_ID", nfsCallCount: 498},
-		{nfsVersion: 4, nfsCallName: "CREATE_SESSION", nfsCallCount: 76},
+		{nfsVersion: 4, nfsCallName: "CREATE_SESSION", nfsCallCount: 760},
 		{nfsVersion: 4, nfsCallName: "DESTROY_SESSION", nfsCallCount: 515},
 		{nfsVersion: 4, nfsCallName: "FREE_STATEID", nfsCallCount: 657},
 		{nfsVersion: 4, nfsCallName: "GET_DIR_DELEGATION", nfsCallCount: 596},
@@ -292,7 +294,7 @@ func getExpectedOSnfsdStats() *nfsdStats {
 		{nfsVersion: 4, nfsCallName: "COPY", nfsCallCount: 625},
 		{nfsVersion: 4, nfsCallName: "COPY_NOTIFY", nfsCallCount: 185},
 		{nfsVersion: 4, nfsCallName: "DEALLOCATE", nfsCallCount: 586},
-		{nfsVersion: 4, nfsCallName: "IO_ADVISE", nfsCallCount: 890},
+		{nfsVersion: 4, nfsCallName: "IO_ADVISE", nfsCallCount: 8900},
 		{nfsVersion: 4, nfsCallName: "LAYOUTERROR", nfsCallCount: 446},
 		{nfsVersion: 4, nfsCallName: "LAYOUTSTATS", nfsCallCount: 317},
 		{nfsVersion: 4, nfsCallName: "OFFLOAD_CANCEL", nfsCallCount: 503},
@@ -301,7 +303,7 @@ func getExpectedOSnfsdStats() *nfsdStats {
 		{nfsVersion: 4, nfsCallName: "SEEK", nfsCallCount: 459},
 		{nfsVersion: 4, nfsCallName: "WRITE_SAME", nfsCallCount: 386},
 		{nfsVersion: 4, nfsCallName: "CLONE", nfsCallCount: 291},
-		{nfsVersion: 4, nfsCallName: "GETXATTR", nfsCallCount: 817},
+		{nfsVersion: 4, nfsCallName: "GETXATTR", nfsCallCount: 8170},
 		{nfsVersion: 4, nfsCallName: "SETXATTR", nfsCallCount: 74},
 		{nfsVersion: 4, nfsCallName: "LISTXATTRS", nfsCallCount: 592},
 		{nfsVersion: 4, nfsCallName: "REMOVEXATTR", nfsCallCount: 562},
@@ -348,9 +350,27 @@ func TestOSScrape(t *testing.T) {
 			nfsdStats, err := mockGetOSnfsdStats()
 			require.NoError(t, err)
 
-			assert.Equal(t, expectedNfsStats.nfsNetStats.netCount, nfsStats.nfsNetStats.netCount)
+			if diff := cmp.Diff(*expectedNfsStats.nfsNetStats, *nfsStats.nfsNetStats, cmpopts.EquateComparable(nfsNetStats{})); diff != "" {
+				t.Errorf("nfsStats.nfsNetStats mismatch (-want +got):\n%s", diff)
+			}
 
-			assert.Equal(t, expectedNfsdStats.nfsdNetStats.netCount, nfsdStats.nfsdNetStats.netCount)
+			if diff := cmp.Diff(*expectedNfsStats.nfsRPCStats, *nfsStats.nfsRPCStats, cmpopts.EquateComparable(nfsRPCStats{})); diff != "" {
+				t.Errorf("nfsStats.nfsRPCStats mismatch (-want +got):\n%s", diff)
+			}
+
+			assert.ElementsMatch(t, expectedNfsStats.nfsV3ProcedureStats, nfsStats.nfsV3ProcedureStats)
+			assert.ElementsMatch(t, expectedNfsStats.nfsV4OperationStats, nfsStats.nfsV4OperationStats)
+
+			if diff := cmp.Diff(*expectedNfsdStats.nfsdNetStats, *nfsdStats.nfsdNetStats, cmpopts.EquateComparable(nfsdNetStats{})); diff != "" {
+				t.Errorf("nfsdStats.nfsdNetStats mismatch (-want +got):\n%s", diff)
+			}
+
+			if diff := cmp.Diff(*expectedNfsdStats.nfsdRPCStats, *nfsdStats.nfsdRPCStats, cmpopts.EquateComparable(nfsdRPCStats{})); diff != "" {
+				t.Errorf("nfsdStats.nfsdRPCStats mismatch (-want +got):\n%s", diff)
+			}
+
+			assert.ElementsMatch(t, expectedNfsdStats.nfsdV3ProcedureStats, nfsdStats.nfsdV3ProcedureStats)
+			assert.ElementsMatch(t, expectedNfsdStats.nfsdV4OperationStats, nfsdStats.nfsdV4OperationStats)
 		})
 	}
 }

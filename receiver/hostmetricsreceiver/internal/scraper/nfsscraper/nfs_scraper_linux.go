@@ -233,6 +233,12 @@ var nfsdV4Operations = []string{
 }
 
 func getOSNfsStats() (*NfsStats, error) {
+	/* data := strings.NewReader(nfsdProcFileOut)
+
+	rv, err := parseNfsdStats(data)
+	fmt.Fprintf(os.Stderr, "%#v\n", rv)
+	return rv, err */
+
 	f, err := os.Open(nfsProcFile)
 	if err != nil {
 		return nil, err
@@ -244,11 +250,11 @@ func getOSNfsStats() (*NfsStats, error) {
 }
 
 func getOSNfsdStats() (*nfsdStats, error) {
-	data := strings.NewReader(nfsProcFileOut)
+	/*	data := strings.NewReader(nfsProcFileOut)
 
 	rv, err := parseNfsStats(data)
 	fmt.Fprintf(os.Stderr, "%#v\n", rv)
-	return rv, err
+	return rv, err */
 
 	f, err := os.Open(nfsdProcFile)
 	if err != nil {
@@ -261,12 +267,6 @@ func getOSNfsdStats() (*nfsdStats, error) {
 }
 
 func parseNfsNetStats(values []uint64) (*nfsNetStats, error) {
-	data := strings.NewReader(nfsProcFileOut)
-
-	rv, err := parseNfsStats(data)
-	fmt.Fprintf(os.Stderr, "%#v\n", rv)
-	return rv, err
-
 	if len(values) < 4 {
 		return nil, errors.New("parsing nfs client network stats: unexpected field count")
 	}
@@ -438,7 +438,7 @@ func parseNfsStats(f io.Reader) (*NfsStats, error) {
 		if parse != nil {
 			values, err := parseStringsToUint64s(fields[1:])
 			if err != nil {
-				return nil, fmt.Errorf("error parsing line in %v: %v: %w", nfsdProcFile, line, err)
+				return nil, fmt.Errorf("error parsing line to Uint64 in %v: %v: %w", nfsdProcFile, line, err)
 			}
 
 			err = parse(values)
@@ -539,7 +539,7 @@ func parseNfsdStats(f io.Reader) (*nfsdStats, error) {
 			}
 
 			if err != nil {
-				return nil, fmt.Errorf("error parsing line in %v: %v: %w", nfsdProcFile, line, err)
+				return nil, fmt.Errorf("error parsing line to Uint64 in %v: %v: %w", nfsdProcFile, line, err)
 			}
 
 			err = parse(values)
