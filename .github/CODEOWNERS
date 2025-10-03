@@ -62,6 +62,7 @@ exporter/faroexporter/                                           @open-telemetry
 exporter/fileexporter/                                           @open-telemetry/collector-contrib-approvers @atingchen
 exporter/googlecloudexporter/                                    @open-telemetry/collector-contrib-approvers @aabmass @dashpole @braydonk @jsuereth @psx95 @ridwanmsharif
 exporter/googlecloudpubsubexporter/                              @open-telemetry/collector-contrib-approvers @alexvanboxel
+exporter/googlecloudstorageexporter/                             @open-telemetry/collector-contrib-approvers @constanca-m @braydonk
 exporter/googlemanagedprometheusexporter/                        @open-telemetry/collector-contrib-approvers @aabmass @dashpole @braydonk @jsuereth @psx95 @ridwanmsharif
 exporter/honeycombmarkerexporter/                                @open-telemetry/collector-contrib-approvers @TylerHelmuth @fchikwekwe
 exporter/influxdbexporter/                                       @open-telemetry/collector-contrib-approvers @jacobmarble
@@ -216,7 +217,7 @@ processor/resourceprocessor/                                     @open-telemetry
 processor/schemaprocessor/                                       @open-telemetry/collector-contrib-approvers @MovieStoreGuy @ankitpatel96 @dineshg13
 processor/spanprocessor/                                         @open-telemetry/collector-contrib-approvers @boostchicken
 processor/sumologicprocessor/                                    @open-telemetry/collector-contrib-approvers @rnishtala-sumo @chan-tim-sumo @echlebek @amdprophet
-processor/tailsamplingprocessor/                                 @open-telemetry/collector-contrib-approvers @portertech
+processor/tailsamplingprocessor/                                 @open-telemetry/collector-contrib-approvers @portertech @Logiraptor
 processor/transformprocessor/                                    @open-telemetry/collector-contrib-approvers @TylerHelmuth @evan-bradley @edmocosta
 processor/unrollprocessor/                                       @open-telemetry/collector-contrib-approvers @axw @schmikei @rnishtala-sumo
 receiver/activedirectorydsreceiver/                              @open-telemetry/collector-contrib-approvers @pjanotti

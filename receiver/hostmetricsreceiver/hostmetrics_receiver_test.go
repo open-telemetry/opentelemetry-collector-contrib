@@ -6,6 +6,8 @@ package hostmetricsreceiver
 import (
 	"context"
 	"errors"
+	"fmt"
+	"os"
 	"runtime"
 	"testing"
 	"time"
@@ -74,7 +76,7 @@ var systemSpecificMetrics = map[string][]string{
 }
 
 var systemSpecificMetricsNFS = map[string][]string{
-	"linux": {"nfs.client.net.count", "nfs.client.net.tcp.connection.accepted", "nfs.client.rpc.count", "nfs.client.rpc.retransmit.count", "nfs.client.rpc.authrefresh.count", "nfs.client.procedure.count", "nfs.client.operation.count", "nfs.server.repcache.requests", "nfs.server.fh.stale.count", "nfs.server.io", "nfs.server.thread.count", "nfs.server.net.count", "nfs.server.net.count", "nfs.server.net.tcp.connection.accepted", "nfs.server.rpc.count", "nfs.server.rpc.count", "nfs.server.procedure.count", "nfs.server.operation.count"},
+	"linux": {"nfs.client.net.count", "nfs.client.net.tcp.connection.accepted", "nfs.client.rpc.count", "nfs.client.rpc.retransmit.count", "nfs.client.rpc.authrefresh.count", "nfs.client.procedure.count", "nfs.client.operation.count", "nfs.server.repcache.requests", "nfs.server.fh.stale.count", "nfs.server.io", "nfs.server.thread.count", "nfs.server.net.count", "nfs.server.net.count", "nfs.server.net.tcp.connection.accepted", "nfs.server.rpc.count", "nfs.server.procedure.count", "nfs.server.operation.count"},
 }
 
 func TestGatherMetrics_EndToEnd(t *testing.T) {
@@ -158,6 +160,7 @@ func assertIncludesExpectedMetrics(t *testing.T, got pmetric.Metrics) {
 
 	assert.Len(t, returnedMetrics, len(expectedMetrics))
 	for _, expected := range expectedMetrics {
+		
 		assert.Contains(t, returnedMetrics, expected)
 	}
 
@@ -169,7 +172,15 @@ func assertIncludesExpectedMetrics(t *testing.T, got pmetric.Metrics) {
 	var expectedResourceMetrics []string
 	expectedResourceMetrics = append(expectedResourceMetrics, resourceMetrics...)
 	assert.Len(t, returnedResourceMetrics, len(expectedResourceMetrics))
+	fmt.Fprintf(os.Stderr, "returnedMetrics: %#v\n", returnedMetrics)
+	fmt.Fprintf(os.Stderr, "expectedMetrics: %#v\n", expectedMetrics)
 	for _, expected := range expectedResourceMetrics {
+		if !assert.Contains(t, returnedMetrics, expected) {
+			// This t.Logf will only execute if the assertion fails and will be
+			// included in the standard test output (stdout/stderr based on runner)
+			// as part of the failed test log.
+			t.Logf("DEBUG: Expected metric '%s' was NOT found in the list.", expected)
+		}
 		assert.Contains(t, returnedResourceMetrics, expected)
 	}
 }
