@@ -28,7 +28,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/errorutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver/internal/metadata"
 )
@@ -269,8 +268,6 @@ func (r *sfxReceiver) handleDatapointReq(resp http.ResponseWriter, req *http.Req
 		return
 	}
 
-	r.addAccessTokenLabel(md, req)
-
 	err := r.metricsConsumer.ConsumeMetrics(ctx, md)
 	r.obsrecv.EndMetricsOp(ctx, metadata.Type.String(), dataPointCount, err)
 
@@ -317,12 +314,6 @@ func (r *sfxReceiver) handleEventReq(resp http.ResponseWriter, req *http.Request
 	sl := rl.ScopeLogs().AppendEmpty()
 	signalFxV2EventsToLogRecords(msg.Events, sl.LogRecords())
 
-	if r.config.AccessTokenPassthrough {
-		if accessToken := req.Header.Get(splunk.SFxAccessTokenHeader); accessToken != "" {
-			rl.Resource().Attributes().PutStr(splunk.SFxAccessTokenLabel, accessToken)
-		}
-	}
-
 	err := r.logsConsumer.ConsumeLogs(ctx, ld)
 	r.obsrecv.EndMetricsOp(
 		ctx,
@@ -362,18 +353,6 @@ func (r *sfxReceiver) failRequest(
 		zap.String("msg", msg),
 		zap.Error(err), // It handles nil error
 	)
-}
-
-func (r *sfxReceiver) addAccessTokenLabel(md pmetric.Metrics, req *http.Request) {
-	if r.config.AccessTokenPassthrough {
-		if accessToken := req.Header.Get(splunk.SFxAccessTokenHeader); accessToken != "" {
-			for i := 0; i < md.ResourceMetrics().Len(); i++ {
-				rm := md.ResourceMetrics().At(i)
-				res := rm.Resource()
-				res.Attributes().PutStr(splunk.SFxAccessTokenLabel, accessToken)
-			}
-		}
-	}
 }
 
 func initJSONResponse(s string) []byte {
