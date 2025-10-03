@@ -17,7 +17,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/nfsscraper/internal/metadata"
 )
 
-
 // 3 net metrics + 3 rpc metrics + len(nfsV3Procedures) + len(nfsV4Procedures) = 97 metrics
 var nfsMetricsLen = 3 + 3 + len(nfsV3Procedures) + len(nfsV4Procedures)
 // 3 repcache metrics + 1 fh metric + 2 io metrics + 1 thread metric + 3 net metrics + 5 rpc metrics + len(nfsdV3Procedures) + len(nfsdV4Procedures) + len(nfsdV4Operations) = 115 metrics
