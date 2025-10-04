@@ -55,7 +55,7 @@ func GetSliceValue[K any](ctx context.Context, tCtx K, s pcommon.Slice, keys []o
 		return nil, err
 	}
 
-	return getIndexableValue[K](ctx, tCtx, s.At(idx), keys[1:])
+	return GetIndexableValue[K](ctx, tCtx, s.At(idx), keys[1:])
 }
 
 func SetSliceValue[K any](ctx context.Context, tCtx K, s pcommon.Slice, keys []ottl.Key[K], val any) error {

@@ -80,10 +80,14 @@ github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9dec
 github.com/yuin/goldmark v1.4.13/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5taEt/CY=
 go.opentelemetry.io/auto/sdk v1.1.0 h1:cH53jehLUN6UFLY71z+NDOiNJqDdPRaXzTel0sJySYA=
 go.opentelemetry.io/auto/sdk v1.1.0/go.mod h1:3wSPjt5PWp2RhlCcmmOial7AvC4DQqZb7a7wCow3W8A=
+go.opentelemetry.io/collector/client v1.42.1-0.20251002223229-5ec1466578ef h1:u7CATTnbyDNQwPRT49mKVcrpdbVcuiceb6wOe8drh0Q=
+go.opentelemetry.io/collector/client v1.42.1-0.20251002223229-5ec1466578ef/go.mod h1:GbBP2Ztn1xeeaAX6hIus0NOH/J0HcRgHP7SU8VDxwP0=
 go.opentelemetry.io/collector/component v1.42.1-0.20251002223229-5ec1466578ef h1:507fR1vFMfDZUoqKwKXv5WVPmupZV/gEWjhUgspQNvE=
 go.opentelemetry.io/collector/component v1.42.1-0.20251002223229-5ec1466578ef/go.mod h1:MK8AOgsH13rQFYgruF1uqLmpgwoymYhBYZDzAqmSnwY=
 go.opentelemetry.io/collector/component/componenttest v0.136.1-0.20251002223229-5ec1466578ef h1:uUyKzzOOalzGFpJry/MNWjGrns/IN+s713LaXv1qJz0=
 go.opentelemetry.io/collector/component/componenttest v0.136.1-0.20251002223229-5ec1466578ef/go.mod h1:vCV42h1wuT2JCpRZEXsXZH5UwRrOJNH6p4upNP/BY1Y=
+go.opentelemetry.io/collector/consumer v1.42.1-0.20251002223229-5ec1466578ef h1:MP/sTOtoxOtYp/FH6K7LJ6u3f3Pi2254zj77pMQYo70=
+go.opentelemetry.io/collector/consumer v1.42.1-0.20251002223229-5ec1466578ef/go.mod h1:jKcMYx9LXWMK4dupP2NhiAuHK063JiVMlyAC+ZMqlD0=
 go.opentelemetry.io/collector/featuregate v1.42.1-0.20251002223229-5ec1466578ef h1:4RSYgYupsoRxRdmTvrDytkXxPvxmVSfZfqZifkLjnWA=
 go.opentelemetry.io/collector/featuregate v1.42.1-0.20251002223229-5ec1466578ef/go.mod h1:d0tiRzVYrytB6LkcYgz2ESFTv7OktRPQe0QEQcPt1L4=
 go.opentelemetry.io/collector/internal/telemetry v0.136.1-0.20251002223229-5ec1466578ef h1:uyVZxCpUjCqBhG55ilyWC7HJQUDUVblIH+ZOGg6f3pM=
