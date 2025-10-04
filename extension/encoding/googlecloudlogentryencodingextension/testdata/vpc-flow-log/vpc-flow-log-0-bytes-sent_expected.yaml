@@ -19,6 +19,9 @@ resourceLogs:
         - key: gcp.label.resource_container
           value:
             stringValue: projects/774712120909
+        - key: gcp.label.target_resource_name
+          value:
+            stringValue: projects/774712120909/global/networks/default
     scopeLogs:
       - logRecords:
           - attributes:
@@ -90,7 +93,7 @@ resourceLogs:
                 value:
                   intValue: "32"
             body: {}
-            observedTimeUnixNano: "1727500331539677207"
-            timeUnixNano: "1727500331539677207"
+            observedTimeUnixNano: "1759007531539677207"
+            timeUnixNano: "1759007531539677207"
         scope: {}
 
