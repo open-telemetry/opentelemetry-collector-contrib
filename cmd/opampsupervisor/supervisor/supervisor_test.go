@@ -5,6 +5,7 @@ package supervisor
 
 import (
 	"context"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"io"
@@ -146,14 +147,14 @@ func newNopTelemetrySettings() telemetrySettings {
 
 func Test_NewSupervisor(t *testing.T) {
 	cfg := setupSupervisorConfig(t, configTemplate)
-	supervisor, err := NewSupervisor(zap.L(), cfg)
+	supervisor, err := NewSupervisor(t.Context(), zap.L(), cfg)
 	require.NoError(t, err)
 	require.NotNil(t, supervisor)
 }
 
 func Test_NewSupervisorWithTelemetrySettings(t *testing.T) {
 	cfg := setupSupervisorConfig(t, configTemplateWithTelemetrySettings)
-	supervisor, err := NewSupervisor(zap.L(), cfg)
+	supervisor, err := NewSupervisor(t.Context(), zap.L(), cfg)
 	require.NoError(t, err)
 	require.NotNil(t, supervisor)
 	require.NotEmpty(t, supervisor.telemetrySettings)
@@ -161,6 +162,8 @@ func Test_NewSupervisorWithTelemetrySettings(t *testing.T) {
 	require.NotNil(t, supervisor.telemetrySettings.TracerProvider)
 	require.NotNil(t, supervisor.telemetrySettings.Logger)
 	require.NotNil(t, supervisor.telemetrySettings.loggerProvider)
+
+	supervisor.runCtx, supervisor.runCtxCancel = context.WithCancel(t.Context())
 
 	supervisor.Shutdown()
 }
@@ -174,7 +177,7 @@ func Test_NewSupervisorFailedStorageCreation(t *testing.T) {
 	dir := filepath.Dir(cfg.Storage.Directory)
 	require.NoError(t, os.Chmod(dir, 0o500))
 
-	supervisor, err := NewSupervisor(zap.L(), cfg)
+	supervisor, err := NewSupervisor(t.Context(), zap.L(), cfg)
 	require.Error(t, err)
 	require.ErrorContains(t, err, "error creating storage dir")
 	require.Nil(t, supervisor)
@@ -799,11 +802,20 @@ service:
 		assert.Nil(t, s.cfgState.Load())
 		assert.True(t, remoteConfigStatusUpdated)
 	})
-	t.Run("RemoteConfig - Don't report status if config is not changed", func(t *testing.T) {
-		const testConfigMessage = `receivers:
-  debug:`
-
-		const expectedMergedConfig = `extensions:
+	t.Run("RemoteConfig - Report applied status if config is not changed", func(t *testing.T) {
+		const initialConfigMessage = `receivers:
+  debug:
+  exporters:
+    nop:`
+		const remoteConfigMessage = `exporters:
+  nop:
+receivers:
+  debug:
+`
+		// mergedConfig should be the result of creating the config for both the initial and remote config messages
+		const mergedConfig = `exporters:
+    nop: null
+extensions:
     opamp:
         capabilities:
             reports_available_components: false
@@ -830,28 +842,48 @@ service:
         resource: null
 `
 
+		// store the initial remote config message so the supervisor is initialized with it
+		configStorageDir := t.TempDir()
+		err := os.WriteFile(filepath.Join(configStorageDir, lastRecvRemoteConfigFile), []byte(initialConfigMessage), 0o600)
+		require.NoError(t, err)
+
 		// the remote config message we will send that will get merged and compared with the initial config
+		remoteConfigHash := sha256.Sum256([]byte(remoteConfigMessage))
 		remoteConfig := &protobufs.AgentRemoteConfig{
 			Config: &protobufs.AgentConfigMap{
 				ConfigMap: map[string]*protobufs.AgentConfigFile{
 					"": {
-						Body: []byte(testConfigMessage),
+						Body: []byte(remoteConfigMessage),
 					},
 				},
 			},
-			ConfigHash: []byte("hash"),
+			ConfigHash: remoteConfigHash[:],
 		}
 
 		remoteConfigStatusUpdated := false
 		mc := &mockOpAMPClient{
-			setRemoteConfigStatusFunc: func(*protobufs.RemoteConfigStatus) error {
+			setRemoteConfigStatusFunc: func(rcs *protobufs.RemoteConfigStatus) error {
 				remoteConfigStatusUpdated = true
+				// assert the Supervisor reports the new hash as applied
+				assert.Equal(t, remoteConfig.ConfigHash, rcs.LastRemoteConfigHash)
+				assert.Equal(t, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED, rcs.Status)
+				assert.Empty(t, rcs.ErrorMessage)
+				return nil
+			},
+			updateEffectiveConfigFunc: func(context.Context) error {
 				return nil
 			},
 		}
 
+		// initial persistent state should be the result of the initial config message
 		testUUID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
-		configStorageDir := t.TempDir()
+		initialRemoteConfigHash := sha256.Sum256([]byte(initialConfigMessage))
+		startingPersistentState := &persistentState{InstanceID: testUUID, LastRemoteConfigStatus: &RemoteConfigStatus{
+			LastRemoteConfigHash: string(initialRemoteConfigHash[:]),
+			Status:               protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED,
+			ErrorMessage:         "",
+		}}
+
 		s := Supervisor{
 			telemetrySettings: newNopTelemetrySettings(),
 			pidProvider:       staticPIDProvider(88888),
@@ -862,7 +894,7 @@ service:
 				},
 			},
 			hasNewConfig:                   make(chan struct{}, 1),
-			persistentState:                &persistentState{InstanceID: testUUID},
+			persistentState:                startingPersistentState,
 			agentConfigOwnTelemetrySection: &atomic.Value{},
 			effectiveConfig:                &atomic.Value{},
 			opampClient:                    mc,
@@ -880,12 +912,9 @@ service:
 			NonIdentifyingAttributes: []*protobufs.KeyValue{},
 		})
 
-		// initially write & store config so that we have the same config when we send the remote config message
-		err := os.WriteFile(filepath.Join(configStorageDir, lastRecvRemoteConfigFile), []byte(testConfigMessage), 0o600)
-		require.NoError(t, err)
-
+		// store the initial merged config
 		s.cfgState.Store(&configState{
-			mergedConfig:     expectedMergedConfig,
+			mergedConfig:     mergedConfig,
 			configMapIsEmpty: false,
 		})
 
@@ -893,13 +922,14 @@ service:
 			RemoteConfig: remoteConfig,
 		})
 
-		// assert the remote config status callback was not called
-		assert.False(t, remoteConfigStatusUpdated)
-		// assert the config file and stored data are still the same
+		// assert the remote config status callback was called
+		assert.True(t, remoteConfigStatusUpdated)
+
+		// assert the config file and stored data are updated
 		fileContent, err := os.ReadFile(filepath.Join(configStorageDir, lastRecvRemoteConfigFile))
 		require.NoError(t, err)
-		assert.Contains(t, string(fileContent), testConfigMessage)
-		assert.Equal(t, expectedMergedConfig, s.cfgState.Load().(*configState).mergedConfig)
+		assert.Contains(t, string(fileContent), remoteConfigMessage)
+		assert.Equal(t, mergedConfig, s.cfgState.Load().(*configState).mergedConfig)
 	})
 
 	t.Run("RemoteConfig - do nothing if not capable of accepting remote config", func(t *testing.T) {
@@ -1026,6 +1056,7 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 		}
 
 		testUUID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
+		runCtx, runCtxCancel := context.WithCancel(t.Context())
 		s := Supervisor{
 			telemetrySettings:              newNopTelemetrySettings(),
 			pidProvider:                    defaultPIDProvider{},
@@ -1040,6 +1071,8 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 			doneChan:                       make(chan struct{}),
 			agentReadyChan:                 make(chan struct{}),
 			agentReady:                     atomic.Bool{},
+			runCtx:                         runCtx,
+			runCtxCancel:                   runCtxCancel,
 		}
 
 		loopDoneChan := make(chan struct{})
@@ -1080,6 +1113,7 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 		}
 
 		testUUID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
+		runCtx, runCtxCancel := context.WithCancel(t.Context())
 		s := Supervisor{
 			telemetrySettings:              newNopTelemetrySettings(),
 			pidProvider:                    defaultPIDProvider{},
@@ -1092,6 +1126,8 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 			opampClient:                    client,
 			customMessageToServer:          make(chan *protobufs.CustomMessage, 10),
 			doneChan:                       make(chan struct{}),
+			runCtx:                         runCtx,
+			runCtxCancel:                   runCtxCancel,
 		}
 
 		s.handleAgentOpAMPMessage(&mockConn{}, &protobufs.AgentToServer{
@@ -1109,6 +1145,7 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 		}
 
 		testUUID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
+		runCtx, runCtxCancel := context.WithCancel(t.Context())
 		s := Supervisor{
 			telemetrySettings:              newNopTelemetrySettings(),
 			pidProvider:                    defaultPIDProvider{},
@@ -1121,6 +1158,8 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 			opampClient:                    mc,
 			customMessageToServer:          make(chan *protobufs.CustomMessage, 10),
 			doneChan:                       make(chan struct{}),
+			runCtx:                         runCtx,
+			runCtxCancel:                   runCtxCancel,
 		}
 
 		s.handleAgentOpAMPMessage(&mockConn{}, &protobufs.AgentToServer{
@@ -1148,6 +1187,7 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 		}
 
 		testUUID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
+		runCtx, runCtxCancel := context.WithCancel(t.Context())
 		s := Supervisor{
 			telemetrySettings:              newNopTelemetrySettings(),
 			pidProvider:                    defaultPIDProvider{},
@@ -1160,6 +1200,8 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 			opampClient:                    mc,
 			customMessageToServer:          make(chan *protobufs.CustomMessage, 10),
 			doneChan:                       make(chan struct{}),
+			runCtx:                         runCtx,
+			runCtxCancel:                   runCtxCancel,
 		}
 
 		s.handleAgentOpAMPMessage(&mockConn{}, &protobufs.AgentToServer{
@@ -1187,6 +1229,7 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 		}
 
 		testUUID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
+		runCtx, runCtxCancel := context.WithCancel(t.Context())
 		s := Supervisor{
 			telemetrySettings:              newNopTelemetrySettings(),
 			pidProvider:                    defaultPIDProvider{},
@@ -1199,6 +1242,8 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 			opampClient:                    mc,
 			customMessageToServer:          make(chan *protobufs.CustomMessage, 10),
 			doneChan:                       make(chan struct{}),
+			runCtx:                         runCtx,
+			runCtxCancel:                   runCtxCancel,
 		}
 
 		s.handleAgentOpAMPMessage(&mockConn{}, &protobufs.AgentToServer{
@@ -1228,6 +1273,7 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 		defer func() {
 			_ = mp.Shutdown(t.Context())
 		}()
+		runCtx, runCtxCancel := context.WithCancel(t.Context())
 		s := Supervisor{
 			telemetrySettings:              newNopTelemetrySettings(),
 			pidProvider:                    defaultPIDProvider{},
@@ -1243,6 +1289,8 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 			agentReadyChan:                 make(chan struct{}),
 			agentReady:                     atomic.Bool{},
 			metrics:                        metrics,
+			runCtx:                         runCtx,
+			runCtxCancel:                   runCtxCancel,
 		}
 
 		s.handleAgentOpAMPMessage(&mockConn{}, &protobufs.AgentToServer{
@@ -1917,7 +1965,7 @@ telemetry:
 `
 
 	cfg := setupSupervisorConfig(t, template)
-	supervisor, err := NewSupervisor(zap.NewNop(), cfg)
+	supervisor, err := NewSupervisor(t.Context(), zap.NewNop(), cfg)
 	require.NoError(t, err)
 
 	path := filepath.Join(t.TempDir(), "output.txt")
@@ -2039,12 +2087,14 @@ func TestSupervisor_addSpecialConfigFiles(t *testing.T) {
 
 func TestSupervisor_HealthCheckServer(t *testing.T) {
 	testUUID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
-
+	runCtx, runCtxCancel := context.WithCancel(t.Context())
 	s := &Supervisor{
 		telemetrySettings: newNopTelemetrySettings(),
 		persistentState:   &persistentState{InstanceID: testUUID},
 		cfgState:          &atomic.Value{},
 		doneChan:          make(chan struct{}),
+		runCtx:            runCtx,
+		runCtxCancel:      runCtxCancel,
 	}
 
 	healthyConfig := &configState{

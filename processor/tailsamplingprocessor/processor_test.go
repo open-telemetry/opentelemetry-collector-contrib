@@ -15,6 +15,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -28,7 +29,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/idbatcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/pkg/samplingpolicy"
 )
 
 const (
@@ -52,10 +53,10 @@ var (
 type TestPolicyEvaluator struct {
 	Started       chan struct{}
 	CouldContinue chan struct{}
-	pe            sampling.PolicyEvaluator
+	pe            samplingpolicy.Evaluator
 }
 
-func (t *TestPolicyEvaluator) Evaluate(ctx context.Context, traceID pcommon.TraceID, trace *sampling.TraceData) (sampling.Decision, error) {
+func (t *TestPolicyEvaluator) Evaluate(ctx context.Context, traceID pcommon.TraceID, trace *samplingpolicy.TraceData) (samplingpolicy.Decision, error) {
 	close(t.Started)
 	<-t.CouldContinue
 	return t.pe.Evaluate(ctx, traceID, trace)
@@ -146,7 +147,7 @@ func TestTraceIntegrity(t *testing.T) {
 		require.NoError(t, p.Shutdown(t.Context()))
 	}()
 
-	mpe1.NextDecision = sampling.Sampled
+	mpe1.NextDecision = samplingpolicy.Sampled
 
 	// Generate and deliver first span
 	require.NoError(t, p.ConsumeTraces(t.Context(), traces))
@@ -211,7 +212,7 @@ func TestSequentialTraceArrival(t *testing.T) {
 	for i := range traceIDs {
 		d, ok := tsp.idToTrace.Load(traceIDs[i])
 		require.True(t, ok, "Missing expected traceId")
-		v := d.(*sampling.TraceData)
+		v := d.(*samplingpolicy.TraceData)
 		require.Equal(t, int64(i+1), v.SpanCount.Load(), "Incorrect number of spans for entry %d", i)
 	}
 }
@@ -266,7 +267,7 @@ func TestConcurrentTraceArrival(t *testing.T) {
 	for i := range traceIDs {
 		d, ok := tsp.idToTrace.Load(traceIDs[i])
 		require.True(t, ok, "Missing expected traceId")
-		v := d.(*sampling.TraceData)
+		v := d.(*samplingpolicy.TraceData)
 		require.Equal(t, int64(i+1)*2, v.SpanCount.Load(), "Incorrect number of spans for entry %d", i)
 	}
 }
@@ -700,7 +701,7 @@ func TestPolicyLoggerAddsPolicyName(t *testing.T) {
 		Type: AlwaysSample, // we test only one evaluator
 	}
 
-	evaluator, err := getSharedPolicyEvaluator(set, cfg)
+	evaluator, err := getSharedPolicyEvaluator(set, cfg, nil)
 	require.NoError(t, err)
 
 	// test
@@ -721,7 +722,7 @@ func TestDuplicatePolicyName(t *testing.T) {
 		Type: AlwaysSample,
 	}
 
-	_, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), msp, Config{
+	p, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), msp, Config{
 		DecisionWait: defaultTestDecisionWait,
 		NumTraces:    defaultNumTraces,
 		PolicyCfgs: []PolicyCfg{
@@ -729,6 +730,12 @@ func TestDuplicatePolicyName(t *testing.T) {
 			{sharedPolicyCfg: alwaysSample},
 		},
 	})
+	require.NoError(t, err)
+	err = p.Start(t.Context(), componenttest.NewNopHost())
+	defer func() {
+		err = p.Shutdown(t.Context())
+		require.NoError(t, err)
+	}()
 
 	// verify
 	assert.Equal(t, err, errors.New(`duplicate policy name "always_sample"`))
@@ -760,7 +767,7 @@ func TestDecisionPolicyMetrics(t *testing.T) {
 	metrics := newPolicyMetrics(len(policy))
 
 	for i, id := range traceIDs {
-		sb := &sampling.TraceData{
+		sb := &samplingpolicy.TraceData{
 			ArrivalTime:     time.Now(),
 			ReceivedBatches: batches[i],
 			SpanCount:       &atomic.Int64{},
@@ -803,6 +810,12 @@ func TestDropPolicyIsFirstInPolicyList(t *testing.T) {
 	}
 	p, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), msp, cfg)
 	require.NoError(t, err)
+	err = p.Start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		err := p.Shutdown(t.Context())
+		require.NoError(t, err)
+	}()
 
 	tsp := p.(*tailSamplingSpanProcessor)
 	require.GreaterOrEqual(t, len(tsp.policies), 2)
@@ -875,14 +888,14 @@ func uInt64ToSpanID(id uint64) pcommon.SpanID {
 }
 
 type mockPolicyEvaluator struct {
-	NextDecision    sampling.Decision
+	NextDecision    samplingpolicy.Decision
 	NextError       error
 	EvaluationCount int
 }
 
-var _ sampling.PolicyEvaluator = (*mockPolicyEvaluator)(nil)
+var _ samplingpolicy.Evaluator = (*mockPolicyEvaluator)(nil)
 
-func (m *mockPolicyEvaluator) Evaluate(context.Context, pcommon.TraceID, *sampling.TraceData) (sampling.Decision, error) {
+func (m *mockPolicyEvaluator) Evaluate(context.Context, pcommon.TraceID, *samplingpolicy.TraceData) (samplingpolicy.Decision, error) {
 	m.EvaluationCount++
 	return m.NextDecision, m.NextError
 }
@@ -938,7 +951,7 @@ func TestNumericAttributeCases(t *testing.T) {
 		minValue       int64
 		maxValue       int64
 		testValue      int64
-		expectedResult sampling.Decision
+		expectedResult samplingpolicy.Decision
 		description    string
 	}{
 		{
@@ -946,7 +959,7 @@ func TestNumericAttributeCases(t *testing.T) {
 			minValue:       400,
 			maxValue:       0, // not set (default)
 			testValue:      500,
-			expectedResult: sampling.Sampled,
+			expectedResult: samplingpolicy.Sampled,
 			description:    "Should sample when value >= min_value and max_value not set",
 		},
 		{
@@ -954,7 +967,7 @@ func TestNumericAttributeCases(t *testing.T) {
 			minValue:       -100,
 			maxValue:       0, // not set (default)
 			testValue:      50,
-			expectedResult: sampling.Sampled,
+			expectedResult: samplingpolicy.Sampled,
 			description:    "Should sample when value >= min_value (negative) and max_value not set",
 		},
 		{
@@ -962,7 +975,7 @@ func TestNumericAttributeCases(t *testing.T) {
 			minValue:       0, // not set (default)
 			maxValue:       1000,
 			testValue:      500,
-			expectedResult: sampling.Sampled,
+			expectedResult: samplingpolicy.Sampled,
 			description:    "Should sample when value <= max_value and min_value not set",
 		},
 		{
@@ -970,7 +983,7 @@ func TestNumericAttributeCases(t *testing.T) {
 			minValue:       100,
 			maxValue:       200,
 			testValue:      150,
-			expectedResult: sampling.Sampled,
+			expectedResult: samplingpolicy.Sampled,
 			description:    "Should sample when min_value <= value <= max_value",
 		},
 		{
@@ -978,7 +991,7 @@ func TestNumericAttributeCases(t *testing.T) {
 			minValue:       400,
 			maxValue:       0, // not set (default)
 			testValue:      300,
-			expectedResult: sampling.NotSampled,
+			expectedResult: samplingpolicy.NotSampled,
 			description:    "Should not sample when value < min_value",
 		},
 		{
@@ -986,7 +999,7 @@ func TestNumericAttributeCases(t *testing.T) {
 			minValue:       0, // not set (default)
 			maxValue:       100,
 			testValue:      200,
-			expectedResult: sampling.NotSampled,
+			expectedResult: samplingpolicy.NotSampled,
 			description:    "Should not sample when value > max_value",
 		},
 	}
@@ -1005,12 +1018,12 @@ func TestNumericAttributeCases(t *testing.T) {
 				Name:                "test-policy",
 				Type:                NumericAttribute,
 				NumericAttributeCfg: cfg,
-			})
+			}, nil)
 			require.NoError(t, err)
 			require.NotNil(t, evaluator)
 
 			// Create test trace data
-			trace := &sampling.TraceData{}
+			trace := &samplingpolicy.TraceData{}
 			trace.ReceivedBatches = ptrace.NewTraces()
 
 			rs := trace.ReceivedBatches.ResourceSpans().AppendEmpty()
@@ -1024,4 +1037,80 @@ func TestNumericAttributeCases(t *testing.T) {
 			assert.Equal(t, tt.expectedResult, decision, tt.description)
 		})
 	}
+}
+
+func TestExtension(t *testing.T) {
+	idb := newSyncIDBatcher()
+	msp := new(consumertest.TracesSink)
+
+	cfg := Config{
+		DecisionWait: defaultTestDecisionWait,
+		NumTraces:    defaultNumTraces,
+		PolicyCfgs: []PolicyCfg{
+			{
+				sharedPolicyCfg: sharedPolicyCfg{
+					Name: "extension",
+					Type: "my_extension",
+					ExtensionCfg: map[string]map[string]any{
+						"my_extension": {
+							"foo": "bar",
+						},
+					},
+				},
+			},
+		},
+		Options: []Option{
+			withDecisionBatcher(idb),
+		},
+	}
+	p, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), msp, cfg)
+	require.NoError(t, err)
+
+	host := &extensionHost{}
+	require.NoError(t, p.Start(t.Context(), host))
+	defer func() {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}()
+
+	tsp := p.(*tailSamplingSpanProcessor)
+	assert.Len(t, tsp.policies, 1)
+	assert.Equal(t, "extension", host.extension.policyName)
+	assert.Equal(t, map[string]any{"foo": "bar"}, host.extension.cfg)
+}
+
+type extensionHost struct {
+	extension *extension
+}
+
+func (h *extensionHost) GetExtensions() map[component.ID]component.Component {
+	if h.extension == nil {
+		h.extension = &extension{}
+	}
+	return map[component.ID]component.Component{
+		component.MustNewID("my_extension"): h.extension,
+	}
+}
+
+type extension struct {
+	policyName string
+	cfg        map[string]any
+}
+
+var _ samplingpolicy.Extension = &extension{}
+
+// NewEvaluator implements samplingpolicy.Extension.
+func (e *extension) NewEvaluator(policyName string, cfg map[string]any) (samplingpolicy.Evaluator, error) {
+	e.policyName = policyName
+	e.cfg = cfg
+	return nil, nil
+}
+
+// Start implements component.Component.
+func (*extension) Start(_ context.Context, _ component.Host) error {
+	return nil
+}
+
+// Shutdown implements component.Component.
+func (*extension) Shutdown(_ context.Context) error {
+	return nil
 }

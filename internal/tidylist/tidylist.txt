@@ -114,6 +114,7 @@ extension/encoding/otlpencodingextension
 exporter/fileexporter
 exporter/googlecloudexporter
 exporter/googlecloudpubsubexporter
+exporter/googlecloudstorageexporter
 exporter/googlemanagedprometheusexporter
 exporter/honeycombmarkerexporter
 exporter/influxdbexporter
@@ -226,6 +227,7 @@ processor/resourceprocessor
 processor/schemaprocessor
 processor/spanprocessor
 processor/sumologicprocessor
+processor/unrollprocessor
 receiver/activedirectorydsreceiver
 receiver/aerospikereceiver
 receiver/apachereceiver
@@ -241,6 +243,7 @@ receiver/azureeventhubreceiver
 receiver/azuremonitorreceiver
 receiver/bigipreceiver
 receiver/chronyreceiver
+receiver/ciscoosreceiver
 receiver/cloudflarereceiver
 receiver/cloudfoundryreceiver
 receiver/collectdreceiver
@@ -297,7 +300,6 @@ receiver/receivercreator
 receiver/redisreceiver
 receiver/riakreceiver
 receiver/saphanareceiver
-receiver/sapmreceiver
 receiver/simpleprometheusreceiver/examples/federation/prom-counter
 receiver/simpleprometheusreceiver
 receiver/skywalkingreceiver

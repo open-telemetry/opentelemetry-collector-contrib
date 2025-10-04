@@ -845,7 +845,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["container.memory.percent"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Percentage of memory used.", ms.At(i).Description())
+					assert.Equal(t, "Percentage of memory used. Not supported on Windows.", ms.At(i).Description())
 					assert.Equal(t, "1", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -969,7 +969,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["container.memory.total_cache"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Total amount of memory used by the processes of this cgroup (and descendants) that can be associated with a block on a block device. Also accounts for memory used by tmpfs (Only available with cgroups v1).", ms.At(i).Description())
+					assert.Equal(t, "Total amount of memory used by the processes of this cgroup (and descendants) that can be associated with a block on a block device. Also accounts for memory used by tmpfs (Only available with cgroups v1). Not supported on Windows.", ms.At(i).Description())
 					assert.Equal(t, "By", ms.At(i).Unit())
 					assert.False(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
@@ -1165,7 +1165,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["container.memory.usage.limit"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Memory limit of the container.", ms.At(i).Description())
+					assert.Equal(t, "Memory limit of the container. Not supported on Windows.", ms.At(i).Description())
 					assert.Equal(t, "By", ms.At(i).Unit())
 					assert.False(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
@@ -1255,7 +1255,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["container.network.io.usage.rx_errors"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Received errors.", ms.At(i).Description())
+					assert.Equal(t, "Received errors. Not supported on Windows.", ms.At(i).Description())
 					assert.Equal(t, "{errors}", ms.At(i).Unit())
 					assert.True(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
@@ -1323,7 +1323,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["container.network.io.usage.tx_errors"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Sent errors.", ms.At(i).Description())
+					assert.Equal(t, "Sent errors. Not supported on Windows.", ms.At(i).Description())
 					assert.Equal(t, "{errors}", ms.At(i).Unit())
 					assert.True(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())

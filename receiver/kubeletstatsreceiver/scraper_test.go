@@ -354,9 +354,6 @@ func TestScraperWithPercentMetrics(t *testing.T) {
 			ContainerCPUTime: metadata.MetricConfig{
 				Enabled: false,
 			},
-			ContainerCPUUtilization: metadata.MetricConfig{
-				Enabled: false,
-			},
 			ContainerFilesystemAvailable: metadata.MetricConfig{
 				Enabled: false,
 			},
@@ -399,9 +396,6 @@ func TestScraperWithPercentMetrics(t *testing.T) {
 			K8sNodeCPUTime: metadata.MetricConfig{
 				Enabled: false,
 			},
-			K8sNodeCPUUtilization: metadata.MetricConfig{
-				Enabled: false,
-			},
 			K8sNodeFilesystemAvailable: metadata.MetricConfig{
 				Enabled: false,
 			},
@@ -436,9 +430,6 @@ func TestScraperWithPercentMetrics(t *testing.T) {
 				Enabled: false,
 			},
 			K8sPodCPUTime: metadata.MetricConfig{
-				Enabled: false,
-			},
-			K8sPodCPUUtilization: metadata.MetricConfig{
 				Enabled: false,
 			},
 			K8sPodFilesystemAvailable: metadata.MetricConfig{

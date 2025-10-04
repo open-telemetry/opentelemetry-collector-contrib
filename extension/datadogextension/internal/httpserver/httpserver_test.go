@@ -450,43 +450,6 @@ func TestServerStop(t *testing.T) {
 			expectedLogs:  []string{},
 			expectTimeout: false,
 		},
-		{
-			name: "Context cancelled before shutdown completes",
-			setupServer: func() (*Server, *observer.ObservedLogs) {
-				core, logs := observer.New(zapcore.InfoLevel)
-				logger := zap.New(core)
-
-				// Create a test server with a blocking handler
-				mux := http.NewServeMux()
-				blockCh = make(chan struct{})
-				mux.HandleFunc("/block", func(w http.ResponseWriter, _ *http.Request) {
-					<-blockCh // block until closed
-					w.WriteHeader(http.StatusOK)
-				})
-				mux.HandleFunc("/test", func(w http.ResponseWriter, _ *http.Request) {
-					w.WriteHeader(http.StatusOK)
-				})
-
-				server := &http.Server{
-					Addr:              "127.0.0.1:0",
-					Handler:           mux,
-					ReadHeaderTimeout: 10 * time.Millisecond,
-				}
-
-				srv := &Server{
-					logger: logger,
-					server: server,
-				}
-
-				return srv, logs
-			},
-			contextSetup: func() (context.Context, context.CancelFunc) {
-				return context.WithCancel(t.Context())
-			},
-			expectedLogs:     []string{"Context cancelled while waiting for server shutdown"},
-			expectTimeout:    true,
-			simulateSlowStop: true,
-		},
 	}
 
 	for _, tt := range tests {

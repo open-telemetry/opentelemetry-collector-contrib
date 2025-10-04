@@ -24,6 +24,7 @@ connector/spanmetricsconnector connector/spanmetrics
 connector/sumconnector connector/sum
 exporter/alertmanagerexporter exporter/alertmanager
 exporter/alibabacloudlogserviceexporter exporter/alibabacloudlogservice
+exporter/awscloudwatchlogsexporter exporter/awscloudwatchlogs
 exporter/awsemfexporter exporter/awsemf
 exporter/awskinesisexporter exporter/awskinesis
 exporter/awss3exporter exporter/awss3
@@ -43,6 +44,7 @@ exporter/faroexporter exporter/faro
 exporter/fileexporter exporter/file
 exporter/googlecloudexporter exporter/googlecloud
 exporter/googlecloudpubsubexporter exporter/googlecloudpubsub
+exporter/googlecloudstorageexporter exporter/googlecloudstorage
 exporter/googlemanagedprometheusexporter exporter/googlemanagedprometheus
 exporter/honeycombmarkerexporter exporter/honeycombmarker
 exporter/influxdbexporter exporter/influxdb
@@ -186,13 +188,21 @@ processor/probabilisticsamplerprocessor processor/probabilisticsampler
 processor/redactionprocessor processor/redaction
 processor/remotetapprocessor processor/remotetap
 processor/resourcedetectionprocessor processor/resourcedetection
+processor/resourcedetectionprocessor/internal/akamai processor/resourcedetection/internal/akamai
+processor/resourcedetectionprocessor/internal/digitalocean processor/resourcedetection/internal/digitalocean
 processor/resourcedetectionprocessor/internal/dynatrace processor/resourcedetection/internal/dynatrace
+processor/resourcedetectionprocessor/internal/hetzner processor/resourcedetection/internal/hetzner
+processor/resourcedetectionprocessor/internal/oraclecloud processor/resourcedetection/internal/oraclecloud
+processor/resourcedetectionprocessor/internal/scaleway processor/resourcedetection/internal/scaleway
+processor/resourcedetectionprocessor/internal/upcloud processor/resourcedetection/internal/upcloud
+processor/resourcedetectionprocessor/internal/vultr processor/resourcedetection/internal/vultr
 processor/resourceprocessor processor/resource
 processor/schemaprocessor processor/schema
 processor/spanprocessor processor/span
 processor/sumologicprocessor processor/sumologic
 processor/tailsamplingprocessor processor/tailsampling
 processor/transformprocessor processor/transform
+processor/unrollprocessor processor/unroll
 receiver/activedirectorydsreceiver receiver/activedirectoryds
 receiver/aerospikereceiver receiver/aerospike
 receiver/apachereceiver receiver/apache
@@ -207,6 +217,7 @@ receiver/azureblobreceiver receiver/azureblob
 receiver/azureeventhubreceiver receiver/azureeventhub
 receiver/azuremonitorreceiver receiver/azuremonitor
 receiver/chronyreceiver receiver/chrony
+receiver/ciscoosreceiver receiver/ciscoos
 receiver/cloudflarereceiver receiver/cloudflare
 receiver/cloudfoundryreceiver receiver/cloudfoundry
 receiver/collectdreceiver receiver/collectd
@@ -281,7 +292,6 @@ receiver/receivercreator receiver/receivercreator
 receiver/redisreceiver receiver/redis
 receiver/riakreceiver receiver/riak
 receiver/saphanareceiver receiver/saphana
-receiver/sapmreceiver receiver/sapm
 receiver/signalfxreceiver receiver/signalfx
 receiver/simpleprometheusreceiver receiver/simpleprometheus
 receiver/skywalkingreceiver receiver/skywalking
@@ -316,7 +326,6 @@ reports/distributions/core.yaml reports/distributions/core.yaml
 reports/distributions/contrib.yaml reports/distributions/contrib.yaml
 reports/distributions/k8s.yaml reports/distributions/k8s.yaml
 reports/distributions/otlp.yaml reports/distributions/otlp.yaml
-exporter/awscloudwatchlogsexporter exporter/awscloudwatchlogs
 exporter/carbonexporter exporter/carbon
 extension/healthcheckextension extension/healthcheck
 extension/observer/ecstaskobserver extension/observer/ecstaskobserver

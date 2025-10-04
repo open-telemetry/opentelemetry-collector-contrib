@@ -118,6 +118,7 @@ The following settings can be optionally configured:
       - `snappy`
         No compression levels supported yet
   - `flush_max_messages` (default = 0) The maximum number of messages the producer will send in a single broker request.
+  - `allow_auto_topic_creation` (default = true) whether the broker is allowed to automatically create topics when they are referenced but do not already exist.
 
 ### Supported encodings
 

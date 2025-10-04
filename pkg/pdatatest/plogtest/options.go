@@ -212,3 +212,22 @@ func sortLogRecordSlices(ls plog.Logs) {
 		}
 	}
 }
+
+// IgnoreScopeLogsVersion is a CompareLogsOption that ignores the version of scope logs.
+func IgnoreScopeLogsVersion() CompareLogsOption {
+	return compareLogsOptionFunc(func(expected, actual plog.Logs) {
+		version := "latest"
+		maskScopeLogsVersion(expected, version)
+		maskScopeLogsVersion(actual, version)
+	})
+}
+
+func maskScopeLogsVersion(logs plog.Logs, version string) {
+	rls := logs.ResourceLogs()
+	for i := 0; i < logs.ResourceLogs().Len(); i++ {
+		sls := rls.At(i).ScopeLogs()
+		for j := 0; j < sls.Len(); j++ {
+			sls.At(j).Scope().SetVersion(version)
+		}
+	}
+}

@@ -252,7 +252,8 @@ func (s *sparkScraper) recordCluster(clusterStats *models.ClusterProperties, now
 }
 
 func (s *sparkScraper) recordStages(stageStats []models.Stage, now pcommon.Timestamp, appID, appName string) {
-	for _, stage := range stageStats {
+	for i := range stageStats {
+		stage := &stageStats[i]
 		switch stage.Status {
 		case "ACTIVE":
 			s.mb.RecordSparkStageStatusDataPoint(now, 0, true, false, false, false)
@@ -303,7 +304,8 @@ func (s *sparkScraper) recordStages(stageStats []models.Stage, now pcommon.Times
 }
 
 func (s *sparkScraper) recordExecutors(executorStats []models.Executor, now pcommon.Timestamp, appID, appName string) {
-	for _, executor := range executorStats {
+	for i := range executorStats {
+		executor := &executorStats[i]
 		s.mb.RecordSparkExecutorMemoryUsageDataPoint(now, executor.MemoryUsed)
 		s.mb.RecordSparkExecutorDiskUsageDataPoint(now, executor.DiskUsed)
 		s.mb.RecordSparkExecutorTaskLimitDataPoint(now, executor.MaxTasks)

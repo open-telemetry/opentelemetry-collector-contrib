@@ -159,3 +159,11 @@ SQL Server docker users may run into an issue that the collector fails to parse 
 references:
 1. https://pkg.go.dev/crypto/x509#ParseCertificate
 2. https://github.com/microsoft/mssql-docker/issues/895
+
+## Troubleshooting
+
+### `service.instance.id` is `unknown:1433`
+
+In a rare case, the `service.instance.id` resource attribute is set to `unknown:1433`. This is because the receiver is unable to parse and compute the `service.instance.id` resource attribute.
+
+You can file an issue that includes your configuration to help us investigate the issue.
