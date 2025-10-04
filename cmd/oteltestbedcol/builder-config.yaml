@@ -21,6 +21,7 @@ exporters:
   - gomod: go.opentelemetry.io/collector/exporter/otlphttpexporter v0.136.1-0.20251002223229-5ec1466578ef
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter v0.136.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter v0.136.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/otelarrowexporter v0.136.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter v0.136.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter v0.136.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter v0.136.0
@@ -43,6 +44,7 @@ receivers:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver v0.136.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver v0.136.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver v0.136.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver v0.136.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.136.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver v0.136.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver v0.136.0
