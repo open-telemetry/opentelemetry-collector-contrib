@@ -113,6 +113,7 @@ extension/encoding/otlpencodingextension
 exporter/fileexporter
 exporter/googlecloudexporter
 exporter/googlecloudpubsubexporter
+extension/encoding/textencodingextension
 exporter/googlecloudstorageexporter
 exporter/googlemanagedprometheusexporter
 exporter/honeycombmarkerexporter
@@ -161,7 +162,6 @@ extension/encoding/jaegerencodingextension
 extension/encoding/jsonlogencodingextension
 pkg/translator/skywalking
 extension/encoding/skywalkingencodingextension
-extension/encoding/textencodingextension
 extension/encoding/zipkinencodingextension
 extension/googleclientauthextension
 extension/headerssetterextension
