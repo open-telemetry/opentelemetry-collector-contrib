@@ -5,7 +5,6 @@ package metrics // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -102,16 +101,13 @@ func (s *sumMetrics) insert(ctx context.Context, db driver.Conn) error {
 	return nil
 }
 
-func (s *sumMetrics) Add(resAttr pcommon.Map, resURL string, scopeInstr pcommon.InstrumentationScope, scopeURL string, metrics any, name, description, unit string) error {
-	sum, ok := metrics.(pmetric.Sum)
-	if !ok {
-		return errors.New("metrics param is not type of Sum")
-	}
+func (s *sumMetrics) Add(resAttr pcommon.Map, resURL string, scopeInstr pcommon.InstrumentationScope, scopeURL string, metrics pmetric.Metric) {
+	sum := metrics.Sum()
 	s.count += sum.DataPoints().Len()
 	s.sumModel = append(s.sumModel, &sumModel{
-		metricName:        name,
-		metricDescription: description,
-		metricUnit:        unit,
+		metricName:        metrics.Name(),
+		metricDescription: metrics.Description(),
+		metricUnit:        metrics.Unit(),
 		metadata: &MetricsMetaData{
 			ResAttr:    resAttr,
 			ResURL:     resURL,
@@ -120,5 +116,4 @@ func (s *sumMetrics) Add(resAttr pcommon.Map, resURL string, scopeInstr pcommon.
 		},
 		sum: sum,
 	})
-	return nil
 }
