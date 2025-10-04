@@ -71,3 +71,30 @@ func CreateDatabase(ctx context.Context, db driver.Conn, database, clusterStr st
 
 	return nil
 }
+
+// GetTableColumns returns the column names on a table for schema detection
+func GetTableColumns(ctx context.Context, db driver.Conn, database, table string) ([]string, error) {
+	descTable := fmt.Sprintf("DESC TABLE %q.%q", database, table)
+	rows, err := db.Query(ctx, descTable)
+	if err != nil {
+		return nil, fmt.Errorf("get table columns: %w", err)
+	}
+
+	var columnNames []string
+	for rows.Next() {
+		var columnName, skip string
+		scanErr := rows.Scan(&columnName, &skip, &skip, &skip, &skip, &skip, &skip)
+		if scanErr != nil {
+			return nil, fmt.Errorf("scan table column: %w", scanErr)
+		}
+
+		columnNames = append(columnNames, columnName)
+	}
+
+	err = rows.Close()
+	if err != nil {
+		return nil, fmt.Errorf("get table columns rows close: %w", err)
+	}
+
+	return columnNames, nil
+}
