@@ -244,13 +244,14 @@ func Test_timeSeriesSignature(t *testing.T) {
 // collision happens. It does not check whether labels are not sorted
 func Test_createLabelSet(t *testing.T) {
 	tests := []struct {
-		name           string
-		resource       pcommon.Resource
-		orig           pcommon.Map
-		externalLabels map[string]string
-		extras         []string
-		want           []prompb.Label
-		expectErr      bool
+		name                        string
+		resource                    pcommon.Resource
+		orig                        pcommon.Map
+		externalLabels              map[string]string
+		extras                      []string
+		want                        []prompb.Label
+		expectErr                   bool
+		underscoreLabelSanitization bool
 	}{
 		{
 			name:           "labels_clean",
@@ -301,6 +302,15 @@ func Test_createLabelSet(t *testing.T) {
 			externalLabels: map[string]string{},
 			extras:         []string{label31 + dirty1, value31, label32, value32},
 			want:           getPromLabels(label11+"_", value11, "_"+label12, value12, label31+"_", value31, label32, value32),
+		},
+		{
+			name:                        "labels_dirty_with_sanitization",
+			resource:                    pcommon.NewResource(),
+			orig:                        lbs1Dirty,
+			externalLabels:              map[string]string{},
+			extras:                      []string{label31 + dirty1, value31, label32, value32},
+			want:                        getPromLabels(label11+"_", value11, "key_"+label12, value12, label31+"_", value31, label32, value32),
+			underscoreLabelSanitization: true,
 		},
 		{
 			name:           "no_original_case",
@@ -367,11 +377,22 @@ func Test_createLabelSet(t *testing.T) {
 			extras:         []string{label31, value31, label32, value32},
 			want:           getPromLabels(label11, value11, label12, value12, label51, value51, label41, value41, label31, value31, label32, value32),
 		},
+		{
+			name:                        "sanitize_labels_starts_with_underscore_with_sanitization",
+			resource:                    pcommon.NewResource(),
+			orig:                        lbs3,
+			externalLabels:              exlbs1,
+			extras:                      []string{label31, value31, label32, value32},
+			want:                        getPromLabels(label11, value11, label12, value12, "key"+label51, value51, label41, value41, label31, value31, label32, value32),
+			underscoreLabelSanitization: true,
+		},
 	}
-	// run tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := createAttributes(tt.resource, tt.orig, tt.externalLabels, nil, true, otlptranslator.LabelNamer{}, tt.extras...)
+			labelNamer := otlptranslator.LabelNamer{
+				UnderscoreLabelSanitization: tt.underscoreLabelSanitization,
+			}
+			got, err := createAttributes(tt.resource, tt.orig, tt.externalLabels, nil, true, labelNamer, tt.extras...)
 			if tt.expectErr {
 				require.Error(t, err)
 				return
