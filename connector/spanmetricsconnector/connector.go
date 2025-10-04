@@ -17,7 +17,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
+	"go.opentelemetry.io/otel/attribute"
+	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/cache"
@@ -28,7 +29,7 @@ import (
 )
 
 const (
-	serviceNameKey                 = string(conventions.ServiceNameKey)
+	serviceNameKey                 = string(semconv.ServiceNameKey)
 	spanNameKey                    = "span.name"                          // OpenTelemetry non-standard constant.
 	spanKindKey                    = "span.kind"                          // OpenTelemetry non-standard constant.
 	statusCodeKey                  = "status.code"                        // OpenTelemetry non-standard constant.
@@ -379,7 +380,7 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 	for i := 0; i < traces.ResourceSpans().Len(); i++ {
 		rspans := traces.ResourceSpans().At(i)
 		resourceAttr := rspans.Resource().Attributes()
-		serviceAttr, ok := resourceAttr.Get(string(conventions.ServiceNameKey))
+		serviceAttr, ok := resourceAttr.Get(string(semconv.ServiceNameKey))
 		if !ok {
 			continue
 		}
@@ -537,7 +538,7 @@ func (p *connectorImp) buildAttributes(
 		attr.PutStr(serviceNameKey, serviceName)
 	}
 	if !contains(p.config.ExcludeDimensions, spanNameKey) {
-		attr.PutStr(spanNameKey, span.Name())
+		attr.PutStr(spanNameKey, p.spanName(span))
 	}
 	if !contains(p.config.ExcludeDimensions, spanKindKey) {
 		attr.PutStr(spanKindKey, traceutil.SpanKindStr(span.Kind()))
@@ -590,7 +591,7 @@ func (p *connectorImp) buildKey(serviceName string, span ptrace.Span, optionalDi
 		concatDimensionValue(p.keyBuf, serviceName, false)
 	}
 	if !contains(p.config.ExcludeDimensions, spanNameKey) {
-		concatDimensionValue(p.keyBuf, span.Name(), true)
+		concatDimensionValue(p.keyBuf, p.spanName(span), true)
 	}
 	if !contains(p.config.ExcludeDimensions, spanKindKey) {
 		concatDimensionValue(p.keyBuf, traceutil.SpanKindStr(span.Kind()), true)
@@ -606,6 +607,173 @@ func (p *connectorImp) buildKey(serviceName string, span ptrace.Span, optionalDi
 	}
 
 	return metrics.Key(p.keyBuf.String())
+}
+
+func (p *connectorImp) spanName(span ptrace.Span) string {
+	if p.config.SpanNameSemanticConvention {
+		return semConvSpanName(span)
+	}
+	return span.Name()
+}
+
+func semConvSpanName(span ptrace.Span) string {
+	switch span.Kind() {
+	case ptrace.SpanKindServer:
+		spanName := httpSpanName(span, semconv.HTTPRouteKey)
+		if spanName != "" {
+			return spanName
+		}
+		spanName = rpcSpanName(span)
+		if spanName != "" {
+			return spanName
+		}
+		spanName = messagingSpanName(span)
+		if spanName != "" {
+			return spanName
+		}
+	case ptrace.SpanKindConsumer:
+		spanName := messagingSpanName(span)
+		if spanName != "" {
+			return spanName
+		}
+	case ptrace.SpanKindClient:
+		spanName := httpSpanName(span, semconv.URLTemplateKey)
+		if spanName != "" {
+			return spanName
+		}
+		spanName = rpcSpanName(span)
+		if spanName != "" {
+			return spanName
+		}
+		spanName = dbSpanName(span)
+		if spanName != "" {
+			return spanName
+		}
+		spanName = messagingSpanName(span)
+		if spanName != "" {
+			return spanName
+		}
+	case ptrace.SpanKindProducer:
+		spanName := messagingSpanName(span)
+		if spanName != "" {
+			return spanName
+		}
+	}
+	// If no semantic convention defines the span name, default to the original span name
+	return span.Name()
+}
+
+// https://opentelemetry.io/docs/specs/semconv/http/http-spans/
+func httpSpanName(span ptrace.Span, subject attribute.Key) string {
+	if method, ok := attributeValue(span, semconv.HTTPRequestMethodKey, "http.method"); ok {
+		if subjectVal, ok := span.Attributes().Get(string(subject)); ok {
+			return method.AsString() + " " + subjectVal.AsString()
+		}
+		return method.AsString()
+	}
+	return ""
+}
+
+// https://opentelemetry.io/docs/specs/semconv/rpc/rpc-spans/
+func rpcSpanName(span ptrace.Span) string {
+	if system, ok := span.Attributes().Get(string(semconv.RPCSystemKey)); ok {
+		method, okMethod := attributeValue(span, semconv.RPCMethodKey, "rpc.grpc.method")
+		service, okService := attributeValue(span, semconv.RPCServiceKey, "rpc.grpc.service")
+
+		if okMethod && okService {
+			return service.AsString() + "/" + method.AsString()
+		}
+		if okMethod {
+			return method.AsString()
+		}
+		if okService {
+			return service.AsString() + "/*"
+		}
+		return "(" + system.AsString() + ")"
+	}
+	return ""
+}
+
+// https://opentelemetry.io/docs/specs/semconv/database/database-spans/
+func dbSpanName(span ptrace.Span) string {
+	if system, ok := attributeValue(span, semconv.DBSystemNameKey, "db.system"); ok {
+		spanName := ""
+		if operation, ok := attributeValue(span, semconv.DBOperationNameKey, "db.operation"); ok {
+			spanName += operation.AsString() + " "
+		}
+		if namespace, ok := span.Attributes().Get(string(semconv.DBNamespaceKey)); ok {
+			spanName += namespace.AsString() + "."
+		}
+		if collection, ok := attributeValue(span, semconv.DBCollectionNameKey, "db.name"); ok {
+			spanName += collection.AsString()
+		}
+		if spanName == "" {
+			return "(" + system.AsString() + ")"
+		}
+		return spanName
+	}
+	return ""
+}
+
+// https://opentelemetry.io/docs/specs/semconv/messaging/messaging-spans/#span-name
+func messagingSpanName(span ptrace.Span) string {
+	if system, ok := span.Attributes().Get(string(semconv.MessagingSystemKey)); ok {
+		operation, okOperation := attributeValue(span, semconv.MessagingOperationNameKey, "messaging.operation")
+		destination := messagingDestination(span)
+
+		if okOperation && destination != "" {
+			return operation.AsString() + " " + destination
+		}
+		if destination != "" {
+			return destination
+		}
+		if okOperation {
+			return operation.AsString()
+		}
+		return "(" + system.AsString() + ")"
+	}
+	return ""
+}
+
+// https://opentelemetry.io/docs/specs/semconv/messaging/messaging-spans/#span-name
+func messagingDestination(span ptrace.Span) string {
+	if temporaryDestination, ok := span.Attributes().Get(string(semconv.MessagingDestinationTemporaryKey)); ok {
+		if temporaryDestination.Bool() {
+			return "(temporary)"
+		}
+	}
+	if anonymousDestination, ok := span.Attributes().Get(string(semconv.MessagingDestinationAnonymousKey)); ok {
+		// anonymous destinations should also be marked as temporary by the messaging instrumentation
+		// double check in case the instrumentation forgot to mark the anonymous destination as temporary
+		if anonymousDestination.Bool() {
+			return "(anonymous)"
+		}
+	}
+	if destinationTemplate, ok := span.Attributes().Get(string(semconv.MessagingDestinationTemplateKey)); ok {
+		return destinationTemplate.AsString()
+	}
+	if destinationName, ok := attributeValue(span, semconv.MessagingDestinationNameKey, "messaging.destination"); ok {
+		return destinationName.AsString()
+	}
+	if serverAddress, ok := span.Attributes().Get(string(semconv.ServerAddressKey)); ok {
+		if serverPort, ok := span.Attributes().Get(string(semconv.ServerPortKey)); ok {
+			return serverAddress.AsString() + ":" + serverPort.AsString()
+		}
+		return serverAddress.AsString()
+	}
+	return ""
+}
+
+func attributeValue(span ptrace.Span, name attribute.Key, alias string) (pcommon.Value, bool) {
+	if val, ok := span.Attributes().Get(string(name)); ok {
+		return val, true
+	}
+	if alias != "" {
+		if val, ok := span.Attributes().Get(alias); ok {
+			return val, true
+		}
+	}
+	return pcommon.Value{}, false
 }
 
 // buildMetricName builds the namespace prefix for the metric name.

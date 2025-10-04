@@ -79,6 +79,7 @@ func createDefaultConfig() component.Config {
 		}()},
 		Namespace:                   DefaultNamespace,
 		AggregationCardinalityLimit: 0,
+		SpanNameSemanticConvention:  false,
 		Exemplars: ExemplarsConfig{
 			MaxPerDataPoint: defaultMaxPerDatapoint,
 		},
