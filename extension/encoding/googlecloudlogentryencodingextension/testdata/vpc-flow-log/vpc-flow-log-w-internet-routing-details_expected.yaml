@@ -1,0 +1,114 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: gcp.project
+          value:
+            stringValue: elastic-obs-integrations-dev
+        - key: cloud.resource_id
+          value:
+            stringValue: networkmanagement.googleapis.com%2Fvpc_flows
+        - key: gcp.resource_type
+          value:
+            stringValue: vpc_flow_logs_config
+        - key: gcp.label.name
+          value:
+            stringValue: "joe-test-flow-logs-default"
+        - key: gcp.label.location
+          value:
+            stringValue: global
+        - key: gcp.label.resource_container
+          value:
+            stringValue: projects/774712120909
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: log.record.uid
+                value:
+                  stringValue: 79c1kvepzqvr
+              - key: network.transport
+                value:
+                  stringValue: icmp
+              - key: source.address
+                value:
+                  stringValue: 10.160.0.36
+              - key: destination.address
+                value:
+                  stringValue: 54.172.3.217
+              - key: gcp.vpc.flow.reporter
+                value:
+                  stringValue: SRC
+              - key: gcp.vpc.flow.bytes_sent
+                value:
+                  intValue: "800"
+              - key: gcp.vpc.flow.packets_sent
+                value:
+                  intValue: "20"
+              - key: gcp.vpc.flow.start_time
+                value:
+                  stringValue: "2025-09-27T21:13:05.056628399Z"
+              - key: gcp.vpc.flow.end_time
+                value:
+                  stringValue: "2025-09-27T21:13:05.056628399Z"
+              - key: gcp.vpc.flow.egress.as_paths
+                value:
+                  arrayValue:
+                    values:
+                      - kvlistValue:
+                          values:
+                            - key: as_details
+                              value:
+                                arrayValue:
+                                  values:
+                                    - kvlistValue:
+                                        values:
+                                          - key: asn
+                                            value:
+                                              intValue: "16509"
+                                    - kvlistValue:
+                                        values:
+                                          - key: asn
+                                            value:
+                                              intValue: "14618"
+              - key: gcp.vpc.flow.source.instance.project.id
+                value:
+                  stringValue: elastic-obs-integrations-dev
+              - key: gcp.vpc.flow.source.instance.vm.region
+                value:
+                  stringValue: asia-south1
+              - key: gcp.vpc.flow.source.instance.vm.name
+                value:
+                  stringValue: service-integration-dev-idc-ubuntu25-4
+              - key: gcp.vpc.flow.source.instance.vm.zone
+                value:
+                  stringValue: asia-south1-c
+              - key: gcp.vpc.flow.source.project.id
+                value:
+                  stringValue: elastic-obs-integrations-dev
+              - key: gcp.vpc.flow.source.subnet.name
+                value:
+                  stringValue: default
+              - key: gcp.vpc.flow.source.subnet.region
+                value:
+                  stringValue: asia-south1
+              - key: gcp.vpc.flow.source.vpc.name
+                value:
+                  stringValue: default
+              - key: gcp.vpc.flow.destination.asn
+                value:
+                  intValue: "14618"
+              - key: gcp.vpc.flow.destination.geo.city
+                value:
+                  stringValue: Ashburn
+              - key: gcp.vpc.flow.destination.geo.continent
+                value:
+                  stringValue: America
+              - key: gcp.vpc.flow.destination.geo.country.iso_code.alpha3
+                value:
+                  stringValue: usa
+              - key: gcp.vpc.flow.destination.geo.region
+                value:
+                  stringValue: Virginia
+            body: {}
+            observedTimeUnixNano: "1727500396799966252"
+            timeUnixNano: "1727500396799966252"
+        scope: {}

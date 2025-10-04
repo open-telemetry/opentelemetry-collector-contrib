@@ -1,0 +1,103 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: gcp.project
+          value:
+            stringValue: elastic-obs-integrations-dev
+        - key: cloud.resource_id
+          value:
+            stringValue: networkmanagement.googleapis.com%2Fvpc_flows
+        - key: gcp.resource_type
+          value:
+            stringValue: vpc_flow_logs_config
+        - key: gcp.label.name
+          value:
+            stringValue: "joe-test-flow-logs-default"
+        - key: gcp.label.resource_container
+          value:
+            stringValue: projects/774712120909
+        - key: gcp.label.location
+          value:
+            stringValue: global
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: log.record.uid
+                value:
+                  stringValue: 29gom3ewhg88
+              - key: network.transport
+                value:
+                  stringValue: tcp
+              - key: source.address
+                value:
+                  stringValue: 122.168.194.41
+              - key: destination.address
+                value:
+                  stringValue: 10.160.0.36
+              - key: source.port
+                value:
+                  intValue: "45004"
+              - key: destination.port
+                value:
+                  intValue: "22"
+              - key: gcp.vpc.flow.reporter
+                value:
+                  stringValue: DEST
+              - key: gcp.vpc.flow.bytes_sent
+                value:
+                  intValue: "11590"
+              - key: gcp.vpc.flow.packets_sent
+                value:
+                  intValue: "90"
+              - key: gcp.vpc.flow.start_time
+                value:
+                  stringValue: "2025-09-27T21:13:15.686128981Z"
+              - key: gcp.vpc.flow.end_time
+                value:
+                  stringValue: "2025-09-27T21:13:15.943125002Z"
+              - key: network.rtt
+                value:
+                  intValue: "22"
+              - key: gcp.vpc.flow.destination.instance.project.id
+                value:
+                  stringValue: elastic-obs-integrations-dev
+              - key: gcp.vpc.flow.destination.instance.vm.region
+                value:
+                  stringValue: asia-south1
+              - key: gcp.vpc.flow.destination.instance.vm.name
+                value:
+                  stringValue: service-integration-dev-idc-ubuntu25-4
+              - key: gcp.vpc.flow.destination.instance.vm.zone
+                value:
+                  stringValue: asia-south1-c
+              - key: gcp.vpc.flow.destination.project.id
+                value:
+                  stringValue: elastic-obs-integrations-dev
+              - key: gcp.vpc.flow.destination.subnet.name
+                value:
+                  stringValue: default
+              - key: gcp.vpc.flow.destination.subnet.region
+                value:
+                  stringValue: asia-south1
+              - key: gcp.vpc.flow.destination.vpc.name
+                value:
+                  stringValue: default
+              - key: gcp.vpc.flow.source.asn
+                value:
+                  intValue: "24560"
+              - key: gcp.vpc.flow.source.geo.city
+                value:
+                  stringValue: Indore
+              - key: gcp.vpc.flow.source.geo.continent
+                value:
+                  stringValue: Asia
+              - key: gcp.vpc.flow.source.geo.country.iso_code.alpha3
+                value:
+                  stringValue: ind
+              - key: gcp.vpc.flow.source.geo.region
+                value:
+                  stringValue: Madhya Pradesh
+            body: {}
+            observedTimeUnixNano: "1727500408314589494"
+            timeUnixNano: "1727500408314589494"
+        scope: {}

@@ -1,0 +1,48 @@
+{
+  "insertId": "x1ty6xe56du7",
+  "jsonPayload": {
+    "dest_vpc": {
+      "subnetwork_region": "us-central1",
+      "project_id": "elastic-obs-integrations-dev",
+      "vpc_name": "default",
+      "subnetwork_name": "default"
+    },
+    "bytes_sent": "0",
+    "start_time": "2025-09-27T21:34:39.250342106Z",
+    "end_time": "2025-09-27T21:34:39.250342106Z",
+    "connection": {
+      "dest_port": 443,
+      "src_ip": "35.191.240.44",
+      "src_port": 55524,
+      "dest_ip": "10.128.0.43",
+      "protocol": 6
+    },
+    "packets_sent": "16",
+    "dest_instance": {
+      "managed_instance_group": {
+        "name": "proxy-crest-new-group",
+        "zone": "us-central1-a"
+      },
+      "project_id": "elastic-obs-integrations-dev",
+      "vm_name": "proxy-crest-new-group-892l",
+      "region": "us-central1",
+      "zone": "us-central1-a"
+    },
+    "network_service": {
+      "dscp": 32
+    },
+    "reporter": "DEST"
+  },
+  "resource": {
+    "type": "gce_subnetwork",
+    "labels": {
+      "subnetwork_id": "2319928369511802306",
+      "subnetwork_name": "default",
+      "project_id": "elastic-obs-integrations-dev",
+      "location": "us-central1"
+    }
+  },
+  "timestamp": "2025-09-27T21:34:41.615575788Z",
+  "logName": "projects/elastic-obs-integrations-dev/logs/compute.googleapis.com%2Fvpc_flows",
+  "receiveTimestamp": "2025-09-27T21:34:41.615575788Z"
+}
