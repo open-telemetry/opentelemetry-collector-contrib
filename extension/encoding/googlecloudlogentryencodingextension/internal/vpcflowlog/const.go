@@ -6,7 +6,7 @@ package vpcflowlog
 // protocolNames are needed to know the name of the protocol number given by the field
 // protocol in a flow log record.
 // See https://www.iana.org/assignments/protocol-numbers/protocol-numbers.xhtml.
-var protocolNames = map[int]string{
+var protocolNames = map[uint32]string{
 	0:   "hopopt",
 	1:   "icmp",
 	2:   "igmp",
