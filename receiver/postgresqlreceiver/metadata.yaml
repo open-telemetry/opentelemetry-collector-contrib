@@ -398,7 +398,7 @@ metrics:
       value_type: int
   postgresql.table.autovacuum.count:
     description: Number of times a table has manually been autovacuumed.
-    enabled: true
+    enabled: false
     unit: "{autovacuums}"
     sum:
       aggregation_temporality: cumulative
