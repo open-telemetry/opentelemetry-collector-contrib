@@ -58,6 +58,7 @@ extensions:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension v0.136.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector v0.136.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/cgroupruntimeextension v0.136.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/statusreporterextension v0.136.0
 
 exporters:
   - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.136.1-0.20251002223229-5ec1466578ef
