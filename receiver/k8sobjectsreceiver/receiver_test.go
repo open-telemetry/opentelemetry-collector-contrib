@@ -18,6 +18,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector/k8sleaderelectortest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/observer"
 )
 
 func TestErrorModes(t *testing.T) {
@@ -76,7 +77,7 @@ func TestErrorModes(t *testing.T) {
 			rCfg.Objects = []*K8sObjectsConfig{
 				{
 					Name: tt.objectName,
-					Mode: PullMode,
+					Mode: observer.PullMode,
 				},
 			}
 
@@ -117,7 +118,7 @@ func TestNewReceiver(t *testing.T) {
 	rCfg.Objects = []*K8sObjectsConfig{
 		{
 			Name: "pods",
-			Mode: PullMode,
+			Mode: observer.PullMode,
 		},
 	}
 
@@ -156,7 +157,7 @@ func TestPullObject(t *testing.T) {
 	rCfg.Objects = []*K8sObjectsConfig{
 		{
 			Name:          "pods",
-			Mode:          PullMode,
+			Mode:          observer.PullMode,
 			Interval:      time.Second * 30,
 			LabelSelector: "environment=production",
 		},
@@ -194,7 +195,7 @@ func TestWatchObject(t *testing.T) {
 	rCfg.Objects = []*K8sObjectsConfig{
 		{
 			Name:       "pods",
-			Mode:       WatchMode,
+			Mode:       observer.WatchMode,
 			Namespaces: []string{"default"},
 		},
 	}
@@ -295,7 +296,7 @@ func TestIncludeInitialState(t *testing.T) {
 			rCfg.Objects = []*K8sObjectsConfig{
 				{
 					Name:       "pods",
-					Mode:       WatchMode,
+					Mode:       observer.WatchMode,
 					Namespaces: []string{"default"},
 				},
 			}
@@ -372,7 +373,7 @@ func TestIncludeInitialStateWithPullMode(t *testing.T) {
 	rCfg.Objects = []*K8sObjectsConfig{
 		{
 			Name: "pods",
-			Mode: PullMode,
+			Mode: observer.PullMode,
 		},
 	}
 
@@ -405,7 +406,7 @@ func TestExcludeDeletedTrue(t *testing.T) {
 	rCfg.Objects = []*K8sObjectsConfig{
 		{
 			Name:       "pods",
-			Mode:       WatchMode,
+			Mode:       observer.WatchMode,
 			Namespaces: []string{"default"},
 			ExcludeWatchType: []apiWatch.EventType{
 				apiWatch.Deleted,
@@ -456,7 +457,7 @@ func TestReceiverWithLeaderElection(t *testing.T) {
 	rCfg.Objects = []*K8sObjectsConfig{
 		{
 			Name: "pods",
-			Mode: PullMode,
+			Mode: observer.PullMode,
 		},
 	}
 	rCfg.K8sLeaderElector = &leaderElectorID
@@ -535,7 +536,7 @@ func TestWatchWithLeaderElectionStandby(t *testing.T) {
 	rCfg.ErrorMode = PropagateError
 	rCfg.IncludeInitialState = false
 	rCfg.Objects = []*K8sObjectsConfig{
-		{Name: "pods", Mode: WatchMode, Namespaces: []string{"default"}},
+		{Name: "pods", Mode: observer.WatchMode, Namespaces: []string{"default"}},
 	}
 	rCfg.K8sLeaderElector = &leaderElectorID
 
@@ -605,7 +606,7 @@ func TestPullWithLeaderElectionStandby(t *testing.T) {
 	rCfg.Objects = []*K8sObjectsConfig{
 		{
 			Name:     "pods",
-			Mode:     PullMode,
+			Mode:     observer.PullMode,
 			Interval: 10 * time.Millisecond, // fast pull to make the test snappy
 		},
 	}
@@ -663,7 +664,7 @@ func TestWatchLeaderFlapDuringStartup_NoPanic(t *testing.T) {
 	cfg.ErrorMode = PropagateError
 	cfg.IncludeInitialState = false
 	cfg.Objects = []*K8sObjectsConfig{
-		{Name: "pods", Mode: WatchMode, Namespaces: []string{"default"}},
+		{Name: "pods", Mode: observer.WatchMode, Namespaces: []string{"default"}},
 	}
 	cfg.K8sLeaderElector = &leaderElectorID
 
@@ -721,7 +722,7 @@ func TestPullLeaderFlapDuringStartup_NoPanic(t *testing.T) {
 	cfg.makeDiscoveryClient = getMockDiscoveryClient
 	cfg.ErrorMode = PropagateError
 	cfg.Objects = []*K8sObjectsConfig{
-		{Name: "pods", Mode: PullMode, Interval: 5 * time.Millisecond},
+		{Name: "pods", Mode: observer.PullMode, Interval: 5 * time.Millisecond},
 	}
 	cfg.K8sLeaderElector = &leaderElectorID
 
