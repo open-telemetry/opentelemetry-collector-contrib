@@ -3,7 +3,7 @@
 
 //go:build debug
 
-package nfsscraper
+package nfsscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/nfsscraper"
 
 import (
 	"fmt"
