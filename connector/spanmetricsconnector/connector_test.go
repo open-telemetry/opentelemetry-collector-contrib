@@ -50,7 +50,7 @@ const (
 	resourceMetricsCacheSize = 5
 
 	sampleRegion   = "us-east-1"
-	sampleDuration = float64(11)
+	sampleDuration = 11 * time.Millisecond
 
 	instanceID = "0044953a-2946-449f-a5c8-2971f2a63928"
 )
@@ -162,16 +162,8 @@ func verifyConsumeMetricsInput(tb testing.TB, input pmetric.Metrics, expectedTem
 	for i := 0; i < input.ResourceMetrics().Len(); i++ {
 		rm := input.ResourceMetrics().At(i)
 
-		var numDataPoints int
-		val, ok := rm.Resource().Attributes().Get(serviceNameKey)
-		require.True(tb, ok)
-		serviceName := val.AsString()
-		switch serviceName {
-		case "service-a":
-			numDataPoints = 2
-		case "service-b":
-			numDataPoints = 1
-		}
+		// validate no Resource
+		assert.Empty(tb, rm.Resource().Attributes().Len())
 
 		ilm := rm.ScopeMetrics()
 		require.Equal(tb, 1, ilm.Len())
@@ -188,6 +180,16 @@ func verifyConsumeMetricsInput(tb testing.TB, input pmetric.Metrics, expectedTem
 
 		seenMetricIDs := make(map[metricID]bool)
 		callsDps := metric.Sum().DataPoints()
+		var numDataPoints int
+		val, _ := callsDps.At(0).Attributes().Get(serviceNameKey)
+		serviceName := val.AsString()
+		switch serviceName {
+		case "service-a":
+			numDataPoints = 2
+		case "service-b":
+			numDataPoints = 1
+		}
+
 		require.Equal(tb, numDataPoints, callsDps.Len())
 		for dpi := 0; dpi < numDataPoints; dpi++ {
 			dp := callsDps.At(dpi)
@@ -231,7 +233,7 @@ func verifyExplicitHistogramDataPoints(tb testing.TB, dps pmetric.HistogramDataP
 		dp := dps.At(dpi)
 		assert.Equal(
 			tb,
-			sampleDuration*float64(numCumulativeConsumptions),
+			sampleDuration.Seconds()*float64(numCumulativeConsumptions),
 			dp.Sum(),
 			"Should be a 11ms duration measurement, multiplied by the number of stateful accumulations.")
 		assert.NotZero(tb, dp.Timestamp(), "Timestamp should be set")
@@ -245,7 +247,7 @@ func verifyExplicitHistogramDataPoints(tb testing.TB, dps pmetric.HistogramDataP
 		// Find the bucket index where the 11ms duration should belong in.
 		var foundDurationIndex int
 		for foundDurationIndex = 0; foundDurationIndex < dp.ExplicitBounds().Len(); foundDurationIndex++ {
-			if dp.ExplicitBounds().At(foundDurationIndex) > sampleDuration {
+			if dp.ExplicitBounds().At(foundDurationIndex) > sampleDuration.Seconds() {
 				break
 			}
 		}
@@ -270,7 +272,7 @@ func verifyExponentialHistogramDataPoints(tb testing.TB, dps pmetric.Exponential
 		dp := dps.At(dpi)
 		assert.Equal(
 			tb,
-			sampleDuration*float64(numCumulativeConsumptions),
+			sampleDuration.Seconds()*float64(numCumulativeConsumptions),
 			dp.Sum(),
 			"Should be a 11ms duration measurement, multiplied by the number of stateful accumulations.")
 		assert.Equal(tb, uint64(numCumulativeConsumptions), dp.Count())
@@ -325,7 +327,7 @@ func buildBadSampleTrace() ptrace.Traces {
 	// Flipping timestamp for a bad duration
 	span.SetEndTimestamp(pcommon.NewTimestampFromTime(now))
 	span.SetStartTimestamp(
-		pcommon.NewTimestampFromTime(now.Add(time.Duration(sampleDuration) * time.Millisecond)))
+		pcommon.NewTimestampFromTime(now.Add(sampleDuration)))
 	return badTrace
 }
 
@@ -394,7 +396,7 @@ func initSpan(span span, s ptrace.Span) {
 	now := time.Now()
 	s.SetStartTimestamp(pcommon.NewTimestampFromTime(now))
 	s.SetEndTimestamp(
-		pcommon.NewTimestampFromTime(now.Add(time.Duration(sampleDuration) * time.Millisecond)))
+		pcommon.NewTimestampFromTime(now.Add(sampleDuration)))
 
 	s.Attributes().PutStr(stringAttrName, "stringAttrValue")
 	s.Attributes().PutInt(intAttrName, 99)
@@ -765,6 +767,12 @@ func TestConsumeMetricsErrors(t *testing.T) {
 }
 
 func TestConsumeTraces(t *testing.T) {
+	// enable it
+	require.NoError(t, featuregate.GlobalRegistry().Set(excludeResourceMetrics.ID(), true))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(legacyMetricNamesFeatureGate.ID(), false))
+	}()
+
 	t.Parallel()
 
 	testcases := []struct {
@@ -1371,7 +1379,7 @@ func TestConnector_durationsToUnits(t *testing.T) {
 				3 * time.Second,
 			},
 			unit: defaultUnit,
-			want: []float64{0.000003, 0.003, 3, 3000},
+			want: []float64{3e-09, 3e-06, 0.003, 3},
 		},
 		{
 			input: []time.Duration{
@@ -1680,6 +1688,12 @@ func assertDataPointsHaveExactlyOneExemplarForTrace(t *testing.T, metrics pmetri
 }
 
 func TestTimestampsForUninterruptedStream(t *testing.T) {
+	// enable it
+	require.NoError(t, featuregate.GlobalRegistry().Set(excludeResourceMetrics.ID(), true))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(legacyMetricNamesFeatureGate.ID(), false))
+	}()
+
 	tests := []struct {
 		temporality      string
 		verifyTimestamps func(startTime1, timestamp1, startTime2, timestamp2 pcommon.Timestamp)
@@ -1757,7 +1771,7 @@ func verifyAndCollectCommonTimestamps(t *testing.T, m pmetric.Metrics) (start, t
 	for i := 0; i < m.ResourceMetrics().Len(); i++ {
 		rm := m.ResourceMetrics().At(i)
 
-		serviceName, _ := rm.Resource().Attributes().Get("service.name")
+		serviceName, _ := rm.ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().Get("service.name")
 		if serviceName.Str() == "unrelated-service" {
 			continue
 		}

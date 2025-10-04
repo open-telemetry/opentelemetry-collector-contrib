@@ -12,6 +12,7 @@ resource_attributes:
   ssh.endpoint:
     description: Full SSH endpoint
     type: string
+    enabled: false
 
 attributes:
   error.message:
