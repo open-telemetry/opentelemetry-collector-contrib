@@ -28,41 +28,53 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for redis metrics.
 type MetricsConfig struct {
-	RedisClientsBlocked                    MetricConfig `mapstructure:"redis.clients.blocked"`
-	RedisClientsConnected                  MetricConfig `mapstructure:"redis.clients.connected"`
-	RedisClientsMaxInputBuffer             MetricConfig `mapstructure:"redis.clients.max_input_buffer"`
-	RedisClientsMaxOutputBuffer            MetricConfig `mapstructure:"redis.clients.max_output_buffer"`
-	RedisCmdCalls                          MetricConfig `mapstructure:"redis.cmd.calls"`
-	RedisCmdLatency                        MetricConfig `mapstructure:"redis.cmd.latency"`
-	RedisCmdUsec                           MetricConfig `mapstructure:"redis.cmd.usec"`
-	RedisCommands                          MetricConfig `mapstructure:"redis.commands"`
-	RedisCommandsProcessed                 MetricConfig `mapstructure:"redis.commands.processed"`
-	RedisConnectionsReceived               MetricConfig `mapstructure:"redis.connections.received"`
-	RedisConnectionsRejected               MetricConfig `mapstructure:"redis.connections.rejected"`
-	RedisCPUTime                           MetricConfig `mapstructure:"redis.cpu.time"`
-	RedisDbAvgTTL                          MetricConfig `mapstructure:"redis.db.avg_ttl"`
-	RedisDbExpires                         MetricConfig `mapstructure:"redis.db.expires"`
-	RedisDbKeys                            MetricConfig `mapstructure:"redis.db.keys"`
-	RedisKeysEvicted                       MetricConfig `mapstructure:"redis.keys.evicted"`
-	RedisKeysExpired                       MetricConfig `mapstructure:"redis.keys.expired"`
-	RedisKeyspaceHits                      MetricConfig `mapstructure:"redis.keyspace.hits"`
-	RedisKeyspaceMisses                    MetricConfig `mapstructure:"redis.keyspace.misses"`
-	RedisLatestFork                        MetricConfig `mapstructure:"redis.latest_fork"`
-	RedisMaxmemory                         MetricConfig `mapstructure:"redis.maxmemory"`
-	RedisMemoryFragmentationRatio          MetricConfig `mapstructure:"redis.memory.fragmentation_ratio"`
-	RedisMemoryLua                         MetricConfig `mapstructure:"redis.memory.lua"`
-	RedisMemoryPeak                        MetricConfig `mapstructure:"redis.memory.peak"`
-	RedisMemoryRss                         MetricConfig `mapstructure:"redis.memory.rss"`
-	RedisMemoryUsed                        MetricConfig `mapstructure:"redis.memory.used"`
-	RedisNetInput                          MetricConfig `mapstructure:"redis.net.input"`
-	RedisNetOutput                         MetricConfig `mapstructure:"redis.net.output"`
-	RedisRdbChangesSinceLastSave           MetricConfig `mapstructure:"redis.rdb.changes_since_last_save"`
-	RedisReplicationBacklogFirstByteOffset MetricConfig `mapstructure:"redis.replication.backlog_first_byte_offset"`
-	RedisReplicationOffset                 MetricConfig `mapstructure:"redis.replication.offset"`
-	RedisReplicationReplicaOffset          MetricConfig `mapstructure:"redis.replication.replica_offset"`
-	RedisRole                              MetricConfig `mapstructure:"redis.role"`
-	RedisSlavesConnected                   MetricConfig `mapstructure:"redis.slaves.connected"`
-	RedisUptime                            MetricConfig `mapstructure:"redis.uptime"`
+	RedisClientsBlocked                              MetricConfig `mapstructure:"redis.clients.blocked"`
+	RedisClientsConnected                            MetricConfig `mapstructure:"redis.clients.connected"`
+	RedisClientsMaxInputBuffer                       MetricConfig `mapstructure:"redis.clients.max_input_buffer"`
+	RedisClientsMaxOutputBuffer                      MetricConfig `mapstructure:"redis.clients.max_output_buffer"`
+	RedisClusterCurrentEpoch                         MetricConfig `mapstructure:"redis.cluster.current_epoch"`
+	RedisClusterKnownNodes                           MetricConfig `mapstructure:"redis.cluster.known_nodes"`
+	RedisClusterMyEpoch                              MetricConfig `mapstructure:"redis.cluster.my_epoch"`
+	RedisClusterSize                                 MetricConfig `mapstructure:"redis.cluster.size"`
+	RedisClusterSlotsAssigned                        MetricConfig `mapstructure:"redis.cluster.slots_assigned"`
+	RedisClusterSlotsFail                            MetricConfig `mapstructure:"redis.cluster.slots_fail"`
+	RedisClusterSlotsOk                              MetricConfig `mapstructure:"redis.cluster.slots_ok"`
+	RedisClusterSlotsPfail                           MetricConfig `mapstructure:"redis.cluster.slots_pfail"`
+	RedisClusterState                                MetricConfig `mapstructure:"redis.cluster.state"`
+	RedisClusterStatsMessagesReceived                MetricConfig `mapstructure:"redis.cluster.stats_messages_received"`
+	RedisClusterStatsMessagesSent                    MetricConfig `mapstructure:"redis.cluster.stats_messages_sent"`
+	RedisClusterTotalClusterLinksBufferLimitExceeded MetricConfig `mapstructure:"redis.cluster.total_cluster_links_buffer_limit_exceeded"`
+	RedisCmdCalls                                    MetricConfig `mapstructure:"redis.cmd.calls"`
+	RedisCmdLatency                                  MetricConfig `mapstructure:"redis.cmd.latency"`
+	RedisCmdUsec                                     MetricConfig `mapstructure:"redis.cmd.usec"`
+	RedisCommands                                    MetricConfig `mapstructure:"redis.commands"`
+	RedisCommandsProcessed                           MetricConfig `mapstructure:"redis.commands.processed"`
+	RedisConnectionsReceived                         MetricConfig `mapstructure:"redis.connections.received"`
+	RedisConnectionsRejected                         MetricConfig `mapstructure:"redis.connections.rejected"`
+	RedisCPUTime                                     MetricConfig `mapstructure:"redis.cpu.time"`
+	RedisDbAvgTTL                                    MetricConfig `mapstructure:"redis.db.avg_ttl"`
+	RedisDbExpires                                   MetricConfig `mapstructure:"redis.db.expires"`
+	RedisDbKeys                                      MetricConfig `mapstructure:"redis.db.keys"`
+	RedisKeysEvicted                                 MetricConfig `mapstructure:"redis.keys.evicted"`
+	RedisKeysExpired                                 MetricConfig `mapstructure:"redis.keys.expired"`
+	RedisKeyspaceHits                                MetricConfig `mapstructure:"redis.keyspace.hits"`
+	RedisKeyspaceMisses                              MetricConfig `mapstructure:"redis.keyspace.misses"`
+	RedisLatestFork                                  MetricConfig `mapstructure:"redis.latest_fork"`
+	RedisMaxmemory                                   MetricConfig `mapstructure:"redis.maxmemory"`
+	RedisMemoryFragmentationRatio                    MetricConfig `mapstructure:"redis.memory.fragmentation_ratio"`
+	RedisMemoryLua                                   MetricConfig `mapstructure:"redis.memory.lua"`
+	RedisMemoryPeak                                  MetricConfig `mapstructure:"redis.memory.peak"`
+	RedisMemoryRss                                   MetricConfig `mapstructure:"redis.memory.rss"`
+	RedisMemoryUsed                                  MetricConfig `mapstructure:"redis.memory.used"`
+	RedisNetInput                                    MetricConfig `mapstructure:"redis.net.input"`
+	RedisNetOutput                                   MetricConfig `mapstructure:"redis.net.output"`
+	RedisRdbChangesSinceLastSave                     MetricConfig `mapstructure:"redis.rdb.changes_since_last_save"`
+	RedisReplicationBacklogFirstByteOffset           MetricConfig `mapstructure:"redis.replication.backlog_first_byte_offset"`
+	RedisReplicationOffset                           MetricConfig `mapstructure:"redis.replication.offset"`
+	RedisReplicationReplicaOffset                    MetricConfig `mapstructure:"redis.replication.replica_offset"`
+	RedisRole                                        MetricConfig `mapstructure:"redis.role"`
+	RedisSlavesConnected                             MetricConfig `mapstructure:"redis.slaves.connected"`
+	RedisUptime                                      MetricConfig `mapstructure:"redis.uptime"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -78,6 +90,42 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		RedisClientsMaxOutputBuffer: MetricConfig{
 			Enabled: true,
+		},
+		RedisClusterCurrentEpoch: MetricConfig{
+			Enabled: false,
+		},
+		RedisClusterKnownNodes: MetricConfig{
+			Enabled: false,
+		},
+		RedisClusterMyEpoch: MetricConfig{
+			Enabled: false,
+		},
+		RedisClusterSize: MetricConfig{
+			Enabled: false,
+		},
+		RedisClusterSlotsAssigned: MetricConfig{
+			Enabled: false,
+		},
+		RedisClusterSlotsFail: MetricConfig{
+			Enabled: false,
+		},
+		RedisClusterSlotsOk: MetricConfig{
+			Enabled: false,
+		},
+		RedisClusterSlotsPfail: MetricConfig{
+			Enabled: false,
+		},
+		RedisClusterState: MetricConfig{
+			Enabled: false,
+		},
+		RedisClusterStatsMessagesReceived: MetricConfig{
+			Enabled: false,
+		},
+		RedisClusterStatsMessagesSent: MetricConfig{
+			Enabled: false,
+		},
+		RedisClusterTotalClusterLinksBufferLimitExceeded: MetricConfig{
+			Enabled: false,
 		},
 		RedisCmdCalls: MetricConfig{
 			Enabled: false,
