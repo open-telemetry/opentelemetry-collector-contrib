@@ -175,67 +175,137 @@ func (s *QueryPerformanceScraper) ScrapeSlowQueryMetrics(ctx context.Context, sc
     return nil
 }
 
-// processSlowQueryMetrics processes slow query metrics and creates OpenTelemetry metrics
+// processSlowQueryMetrics processes slow query metrics and creates separate OpenTelemetry metrics for each measurement
 func (s *QueryPerformanceScraper) processSlowQueryMetrics(result models.SlowQuery, scopeMetrics pmetric.ScopeMetrics, index int) error {
-    // Create a single gauge metric for the slow query event
-    metric := scopeMetrics.Metrics().AppendEmpty()
-    metric.SetName("MSSQLTopSlowQueries")
-    metric.SetDescription("SQL Server top slow query details")
-    metric.SetUnit("1")
-
-    // Create gauge metric
-    gauge := metric.SetEmptyGauge()
-    dataPoint := gauge.DataPoints().AppendEmpty()
-    dataPoint.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
-    dataPoint.SetStartTimestamp(s.startTime)
+    timestamp := pcommon.NewTimestampFromTime(time.Now())
     
-    // Set a dummy value for the gauge (1 = presence of slow query)
-    dataPoint.SetIntValue(1)
+    // Helper function to create common attributes for all metrics
+    createCommonAttributes := func() pcommon.Map {
+        attrs := pcommon.NewMap()
+        if result.DatabaseName != nil {
+            attrs.PutStr("DatabaseName", *result.DatabaseName)
+        }
+        if result.QueryID != nil {
+            attrs.PutStr("QueryID", fmt.Sprintf("%x", *result.QueryID))
+        }
+        if result.StatementType != nil {
+            attrs.PutStr("statment_type", *result.StatementType) // Note: keeping original typo as specified
+        }
+        if result.CollectionTimestamp != nil {
+            attrs.PutStr("CollectionTimestamp", *result.CollectionTimestamp)
+        }
+        return attrs
+    }
 
-    // Set all slow query attributes in nri-mssql format
-    attrs := dataPoint.Attributes()
-    
-    // Core slow query data
-    if result.QueryID != nil {
-        attrs.PutStr("query_id", fmt.Sprintf("%x", *result.QueryID))
-    }
-    if result.QueryText != nil {
-        attrs.PutStr("query_text", *result.QueryText)
-    }
-    if result.DatabaseName != nil {
-        attrs.PutStr("database_name", *result.DatabaseName)
-    }
-    if result.LastExecutionTimestamp != nil {
-        attrs.PutStr("last_execution_timestamp", *result.LastExecutionTimestamp)
-    }
-    if result.ExecutionCount != nil {
-        attrs.PutInt("execution_count", *result.ExecutionCount)
-    }
+    // Create avg_cpu_time_ms metric
     if result.AvgCPUTimeMS != nil {
-        attrs.PutDouble("avg_cpu_time_ms", *result.AvgCPUTimeMS)
+        metric := scopeMetrics.Metrics().AppendEmpty()
+        metric.SetName("sqlserver.slowquery.avg_cpu_time_ms")
+        metric.SetDescription("Average CPU time in milliseconds for slow query")
+        metric.SetUnit("ms")
+        
+        gauge := metric.SetEmptyGauge()
+        dataPoint := gauge.DataPoints().AppendEmpty()
+        dataPoint.SetTimestamp(timestamp)
+        dataPoint.SetStartTimestamp(s.startTime)
+        dataPoint.SetDoubleValue(*result.AvgCPUTimeMS)
+        createCommonAttributes().CopyTo(dataPoint.Attributes())
     }
-    if result.AvgElapsedTimeMS != nil {
-        attrs.PutDouble("avg_elapsed_time_ms", *result.AvgElapsedTimeMS)
-    }
+
+    // Create avg_disk_reads metric
     if result.AvgDiskReads != nil {
-        attrs.PutDouble("avg_disk_reads", *result.AvgDiskReads)
+        metric := scopeMetrics.Metrics().AppendEmpty()
+        metric.SetName("sqlserver.slowquery.avg_disk_reads")
+        metric.SetDescription("Average disk reads for slow query")
+        metric.SetUnit("1")
+        
+        gauge := metric.SetEmptyGauge()
+        dataPoint := gauge.DataPoints().AppendEmpty()
+        dataPoint.SetTimestamp(timestamp)
+        dataPoint.SetStartTimestamp(s.startTime)
+        dataPoint.SetDoubleValue(*result.AvgDiskReads)
+        createCommonAttributes().CopyTo(dataPoint.Attributes())
     }
+
+    // Create avg_disk_writes metric
     if result.AvgDiskWrites != nil {
-        attrs.PutDouble("avg_disk_writes", *result.AvgDiskWrites)
-    }
-    if result.StatementType != nil {
-        attrs.PutStr("statement_type", *result.StatementType)
-    }
-    if result.CollectionTimestamp != nil {
-        attrs.PutStr("collection_timestamp", *result.CollectionTimestamp)
+        metric := scopeMetrics.Metrics().AppendEmpty()
+        metric.SetName("sqlserver.slowquery.avg_disk_writes")
+        metric.SetDescription("Average disk writes for slow query")
+        metric.SetUnit("1")
+        
+        gauge := metric.SetEmptyGauge()
+        dataPoint := gauge.DataPoints().AppendEmpty()
+        dataPoint.SetTimestamp(timestamp)
+        dataPoint.SetStartTimestamp(s.startTime)
+        dataPoint.SetDoubleValue(*result.AvgDiskWrites)
+        createCommonAttributes().CopyTo(dataPoint.Attributes())
     }
 
-    // Set the event type to match nri-mssql format
-    attrs.PutStr("event_type", "MSSQLTopSlowQueries")
-    
+    // Create avg_elapsed_time_ms metric
+    if result.AvgElapsedTimeMS != nil {
+        metric := scopeMetrics.Metrics().AppendEmpty()
+        metric.SetName("sqlserver.slowquery.avg_elapsed_time_ms")
+        metric.SetDescription("Average elapsed time in milliseconds for slow query")
+        metric.SetUnit("ms")
+        
+        gauge := metric.SetEmptyGauge()
+        dataPoint := gauge.DataPoints().AppendEmpty()
+        dataPoint.SetTimestamp(timestamp)
+        dataPoint.SetStartTimestamp(s.startTime)
+        dataPoint.SetDoubleValue(*result.AvgElapsedTimeMS)
+        createCommonAttributes().CopyTo(dataPoint.Attributes())
+    }
 
-    s.logger.Debug("Processed slow query event",
-        zap.String("event_type", "MSSQLTopSlowQueries"),
+    // Create execution_count metric
+    if result.ExecutionCount != nil {
+        metric := scopeMetrics.Metrics().AppendEmpty()
+        metric.SetName("sqlserver.slowquery.execution_count")
+        metric.SetDescription("Execution count for slow query")
+        metric.SetUnit("1")
+        
+        gauge := metric.SetEmptyGauge()
+        dataPoint := gauge.DataPoints().AppendEmpty()
+        dataPoint.SetTimestamp(timestamp)
+        dataPoint.SetStartTimestamp(s.startTime)
+        dataPoint.SetIntValue(*result.ExecutionCount)
+        createCommonAttributes().CopyTo(dataPoint.Attributes())
+    }
+
+    // Create query_text metric (as string attribute with dummy numeric value)
+    if result.QueryText != nil {
+        metric := scopeMetrics.Metrics().AppendEmpty()
+        metric.SetName("sqlserver.slowquery.query_text")
+        metric.SetDescription("Query text for slow query")
+        metric.SetUnit("1")
+        
+        gauge := metric.SetEmptyGauge()
+        dataPoint := gauge.DataPoints().AppendEmpty()
+        dataPoint.SetTimestamp(timestamp)
+        dataPoint.SetStartTimestamp(s.startTime)
+        dataPoint.SetIntValue(1) // Dummy value since this is primarily for the string attribute
+        
+        attrs := createCommonAttributes()
+        attrs.PutStr("query_text", *result.QueryText)
+        attrs.CopyTo(dataPoint.Attributes())
+    }
+
+    // Create query_id metric (separate metric for query ID)
+    if result.QueryID != nil {
+        metric := scopeMetrics.Metrics().AppendEmpty()
+        metric.SetName("sqlserver.slowquery.query_id")
+        metric.SetDescription("Query ID for slow query")
+        metric.SetUnit("1")
+        
+        gauge := metric.SetEmptyGauge()
+        dataPoint := gauge.DataPoints().AppendEmpty()
+        dataPoint.SetTimestamp(timestamp)
+        dataPoint.SetStartTimestamp(s.startTime)
+        dataPoint.SetIntValue(1) // Dummy value since this is primarily for the ID attribute
+        createCommonAttributes().CopyTo(dataPoint.Attributes())
+    }
+
+    s.logger.Debug("Processed slow query metrics as separate metrics",
         zap.Any("query_id", result.QueryID),
         zap.Any("database_name", result.DatabaseName),
         zap.Any("avg_elapsed_time_ms", result.AvgElapsedTimeMS),
