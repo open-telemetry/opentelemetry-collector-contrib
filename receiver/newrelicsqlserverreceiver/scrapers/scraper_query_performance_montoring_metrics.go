@@ -314,67 +314,84 @@ func (s *QueryPerformanceScraper) processSlowQueryMetrics(result models.SlowQuer
     return nil
 }
 
-// processBlockingSessionMetrics processes blocking session metrics and creates OpenTelemetry metrics
+// processBlockingSessionMetrics processes blocking session metrics and creates separate OpenTelemetry metrics for BlockingSPID and BlockedSPID
 func (s *QueryPerformanceScraper) processBlockingSessionMetrics(result models.BlockingSession, scopeMetrics pmetric.ScopeMetrics, index int) error {
-    // Create a single gauge metric for the blocking session event
-    metric := scopeMetrics.Metrics().AppendEmpty()
-    metric.SetName("MSSQLBlockingSessionQueries")
-    metric.SetDescription("SQL Server blocking session query details")
-    metric.SetUnit("1")
-
-    // Create gauge metric
-    gauge := metric.SetEmptyGauge()
-    dataPoint := gauge.DataPoints().AppendEmpty()
-    dataPoint.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
-    dataPoint.SetStartTimestamp(s.startTime)
+    timestamp := pcommon.NewTimestampFromTime(time.Now())
     
-    // Set a dummy value for the gauge (1 = presence of blocking session)
-    dataPoint.SetIntValue(1)
-
-    // Set all blocking session attributes in nri-mssql format
-    attrs := dataPoint.Attributes()
-    
-    // Core blocking session data
+    // Create BlockingSPID metric
     if result.BlockingSPID != nil {
-        attrs.PutInt("BlockingSPID", *result.BlockingSPID)
+        metric := scopeMetrics.Metrics().AppendEmpty()
+        metric.SetName("sqlserver.blockingsession.blocking_spid")
+        metric.SetDescription("Blocking session SPID")
+        metric.SetUnit("1")
+        
+        gauge := metric.SetEmptyGauge()
+        dataPoint := gauge.DataPoints().AppendEmpty()
+        dataPoint.SetTimestamp(timestamp)
+        dataPoint.SetStartTimestamp(s.startTime)
+        dataPoint.SetIntValue(int64(*result.BlockingSPID))
+        
+        // Set BlockingSPID attributes
+        attrs := dataPoint.Attributes()
+        if result.BlockingStatus != nil {
+            attrs.PutStr("BlockingStatus", *result.BlockingStatus)
+        }
+        if result.WaitType != nil {
+            attrs.PutStr("WaitType", *result.WaitType)
+        }
+        if result.WaitTimeInSeconds != nil {
+            attrs.PutDouble("WaitTimeInSeconds", *result.WaitTimeInSeconds)
+        }
+        if result.DatabaseName != nil {
+            attrs.PutStr("DatabaseName", *result.DatabaseName)
+        }
+        if result.CommandType != nil {
+            attrs.PutStr("CommandType", *result.CommandType)
+        }
+        if result.BlockingQueryText != nil {
+            attrs.PutStr("BlockingQueryText", *result.BlockingQueryText)
+        }
     }
-    if result.BlockingStatus != nil {
-        attrs.PutStr("BlockingStatus", *result.BlockingStatus)
-    }
+
+    // Create BlockedSPID metric
     if result.BlockedSPID != nil {
-        attrs.PutInt("BlockedSPID", *result.BlockedSPID)
-    }
-    if result.BlockedStatus != nil {
-        attrs.PutStr("BlockedStatus", *result.BlockedStatus)
-    }
-    if result.WaitType != nil {
-        attrs.PutStr("WaitType", *result.WaitType)
-    }
-    if result.WaitTimeInSeconds != nil {
-        attrs.PutDouble("WaitTimeInSeconds", *result.WaitTimeInSeconds)
-    }
-    if result.CommandType != nil {
-        attrs.PutStr("CommandType", *result.CommandType)
-    }
-    if result.DatabaseName != nil {
-        attrs.PutStr("DatabaseName", *result.DatabaseName)
-    }
-    if result.BlockingQueryText != nil {
-        attrs.PutStr("BlockingQueryText", *result.BlockingQueryText)
-    }
-    if result.BlockedQueryText != nil {
-        attrs.PutStr("BlockedQueryText", *result.BlockedQueryText)
-    }
-    if result.BlockedQueryStartTime != nil {
-        attrs.PutStr("BlockedQueryStartTime", *result.BlockedQueryStartTime)
+        metric := scopeMetrics.Metrics().AppendEmpty()
+        metric.SetName("sqlserver.blockingsession.blocked_spid")
+        metric.SetDescription("Blocked session SPID")
+        metric.SetUnit("1")
+        
+        gauge := metric.SetEmptyGauge()
+        dataPoint := gauge.DataPoints().AppendEmpty()
+        dataPoint.SetTimestamp(timestamp)
+        dataPoint.SetStartTimestamp(s.startTime)
+        dataPoint.SetIntValue(int64(*result.BlockedSPID))
+        
+        // Set BlockedSPID attributes
+        attrs := dataPoint.Attributes()
+        if result.BlockedStatus != nil {
+            attrs.PutStr("BlockedStatus", *result.BlockedStatus)
+        }
+        if result.WaitType != nil {
+            attrs.PutStr("WaitType", *result.WaitType)
+        }
+        if result.WaitTimeInSeconds != nil {
+            attrs.PutDouble("WaitTimeInSeconds", *result.WaitTimeInSeconds)
+        }
+        if result.DatabaseName != nil {
+            attrs.PutStr("DatabaseName", *result.DatabaseName)
+        }
+        if result.CommandType != nil {
+            attrs.PutStr("CommandType", *result.CommandType)
+        }
+        if result.BlockedQueryText != nil {
+            attrs.PutStr("BlockedQueryText", *result.BlockedQueryText)
+        }
+        if result.BlockedQueryStartTime != nil {
+            attrs.PutStr("BlockedQueryStartTime", *result.BlockedQueryStartTime)
+        }
     }
 
-    // Set the event type to match nri-mssql format
-    attrs.PutStr("event_type", "MSSQLBlockingSessionQueries")
-    
-
-    s.logger.Debug("Processed blocking session event",
-        zap.String("event_type", "MSSQLBlockingSessionQueries"),
+    s.logger.Debug("Processed blocking session metrics as separate metrics",
         zap.Any("blocking_spid", result.BlockingSPID),
         zap.Any("blocked_spid", result.BlockedSPID),
         zap.Any("wait_type", result.WaitType),
