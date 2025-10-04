@@ -1,0 +1,18 @@
+# default configuration
+slowsql/default:
+
+# configuration with all possible parameters
+slowsql/full:
+  # Additional list of dimensions on top of:
+  # - service.name
+  # - span.name
+  # - span.kind
+  # - status.code
+  dimensions:
+    threshold: 600ms
+    db_system:
+      - h2
+      - mysql
+    dimensions:
+      - name: k8s.namespace.name
+      - name: k8s.pod.name
