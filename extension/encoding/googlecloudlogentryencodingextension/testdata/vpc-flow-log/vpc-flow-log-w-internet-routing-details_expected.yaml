@@ -19,15 +19,15 @@ resourceLogs:
         - key: gcp.label.resource_container
           value:
             stringValue: projects/774712120909
-        - key: gcp.label.target_resource_name
-          value:
-            stringValue: projects/774712120909/global/networks/default
     scopeLogs:
       - logRecords:
           - attributes:
               - key: log.record.uid
                 value:
                   stringValue: 79c1kvepzqvr
+              - key: gcp.label.target_resource_name
+                value:
+                  stringValue: projects/774712120909/global/networks/default
               - key: network.transport
                 value:
                   stringValue: icmp

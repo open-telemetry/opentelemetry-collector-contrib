@@ -16,9 +16,6 @@ resourceLogs:
         - key: gcp.label.resource_container
           value:
             stringValue: projects/774712120909
-        - key: gcp.label.target_resource_name
-          value:
-            stringValue: projects/774712120909/global/networks/default
         - key: gcp.label.location
           value:
             stringValue: global
@@ -28,6 +25,9 @@ resourceLogs:
               - key: log.record.uid
                 value:
                   stringValue: 29gom3ewhg88
+              - key: gcp.label.target_resource_name
+                value:
+                  stringValue: projects/774712120909/global/networks/default
               - key: network.transport
                 value:
                   stringValue: tcp
