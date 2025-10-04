@@ -4,6 +4,7 @@
 package alertmanagerexporter
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -25,6 +26,15 @@ func TestCreateTraces(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 
 	te, err := factory.CreateTraces(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
+	assert.NoError(t, err)
+	assert.NotNil(t, te)
+}
+
+func TestCreateLogs(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	te, err := factory.CreateLogs(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, te)
 }
