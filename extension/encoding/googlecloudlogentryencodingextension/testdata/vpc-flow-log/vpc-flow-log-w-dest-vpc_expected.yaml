@@ -16,6 +16,9 @@ resourceLogs:
         - key: gcp.label.resource_container
           value:
             stringValue: projects/774712120909
+        - key: gcp.label.target_resource_name
+          value:
+            stringValue: projects/774712120909/global/networks/default
         - key: gcp.label.location
           value:
             stringValue: global
@@ -98,6 +101,6 @@ resourceLogs:
                 value:
                   stringValue: Madhya Pradesh
             body: {}
-            observedTimeUnixNano: "1727500408314589494"
-            timeUnixNano: "1727500408314589494"
+            observedTimeUnixNano: "1759007608314589494"
+            timeUnixNano: "1759007608314589494"
         scope: {}

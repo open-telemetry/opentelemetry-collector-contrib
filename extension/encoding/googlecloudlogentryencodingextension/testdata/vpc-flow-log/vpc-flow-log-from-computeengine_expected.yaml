@@ -92,6 +92,6 @@ resourceLogs:
                 value:
                   intValue: "32"
             body: {}
-            observedTimeUnixNano: "1727500481615575788"
-            timeUnixNano: "1727500481615575788"
+            observedTimeUnixNano: "1759008881615575788"
+            timeUnixNano: "1759008881615575788"
         scope: {}
