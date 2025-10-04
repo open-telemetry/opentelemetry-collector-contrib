@@ -330,6 +330,9 @@ var MetricsInfo = metricsInfo{
 	PostgresqlSequentialScans: metricInfo{
 		Name: "postgresql.sequential_scans",
 	},
+	PostgresqlTableAutovacuumCount: metricInfo{
+		Name: "postgresql.table.autovacuum.count",
+	},
 	PostgresqlTableCount: metricInfo{
 		Name: "postgresql.table.count",
 	},
@@ -395,6 +398,7 @@ type metricsInfo struct {
 	PostgresqlRollbacks                metricInfo
 	PostgresqlRows                     metricInfo
 	PostgresqlSequentialScans          metricInfo
+	PostgresqlTableAutovacuumCount     metricInfo
 	PostgresqlTableCount               metricInfo
 	PostgresqlTableSize                metricInfo
 	PostgresqlTableVacuumCount         metricInfo
@@ -1599,6 +1603,57 @@ func newMetricPostgresqlSequentialScans(cfg MetricConfig) metricPostgresqlSequen
 	return m
 }
 
+type metricPostgresqlTableAutovacuumCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills postgresql.table.autovacuum.count metric with initial data.
+func (m *metricPostgresqlTableAutovacuumCount) init() {
+	m.data.SetName("postgresql.table.autovacuum.count")
+	m.data.SetDescription("Number of times a table has manually been autovacuumed.")
+	m.data.SetUnit("{autovacuums}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricPostgresqlTableAutovacuumCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricPostgresqlTableAutovacuumCount) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricPostgresqlTableAutovacuumCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricPostgresqlTableAutovacuumCount(cfg MetricConfig) metricPostgresqlTableAutovacuumCount {
+	m := metricPostgresqlTableAutovacuumCount{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricPostgresqlTableCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -2295,6 +2350,7 @@ type MetricsBuilder struct {
 	metricPostgresqlRollbacks                metricPostgresqlRollbacks
 	metricPostgresqlRows                     metricPostgresqlRows
 	metricPostgresqlSequentialScans          metricPostgresqlSequentialScans
+	metricPostgresqlTableAutovacuumCount     metricPostgresqlTableAutovacuumCount
 	metricPostgresqlTableCount               metricPostgresqlTableCount
 	metricPostgresqlTableSize                metricPostgresqlTableSize
 	metricPostgresqlTableVacuumCount         metricPostgresqlTableVacuumCount
@@ -2356,6 +2412,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricPostgresqlRollbacks:                newMetricPostgresqlRollbacks(mbc.Metrics.PostgresqlRollbacks),
 		metricPostgresqlRows:                     newMetricPostgresqlRows(mbc.Metrics.PostgresqlRows),
 		metricPostgresqlSequentialScans:          newMetricPostgresqlSequentialScans(mbc.Metrics.PostgresqlSequentialScans),
+		metricPostgresqlTableAutovacuumCount:     newMetricPostgresqlTableAutovacuumCount(mbc.Metrics.PostgresqlTableAutovacuumCount),
 		metricPostgresqlTableCount:               newMetricPostgresqlTableCount(mbc.Metrics.PostgresqlTableCount),
 		metricPostgresqlTableSize:                newMetricPostgresqlTableSize(mbc.Metrics.PostgresqlTableSize),
 		metricPostgresqlTableVacuumCount:         newMetricPostgresqlTableVacuumCount(mbc.Metrics.PostgresqlTableVacuumCount),
@@ -2488,6 +2545,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricPostgresqlRollbacks.emit(ils.Metrics())
 	mb.metricPostgresqlRows.emit(ils.Metrics())
 	mb.metricPostgresqlSequentialScans.emit(ils.Metrics())
+	mb.metricPostgresqlTableAutovacuumCount.emit(ils.Metrics())
 	mb.metricPostgresqlTableCount.emit(ils.Metrics())
 	mb.metricPostgresqlTableSize.emit(ils.Metrics())
 	mb.metricPostgresqlTableVacuumCount.emit(ils.Metrics())
@@ -2645,6 +2703,11 @@ func (mb *MetricsBuilder) RecordPostgresqlRowsDataPoint(ts pcommon.Timestamp, va
 // RecordPostgresqlSequentialScansDataPoint adds a data point to postgresql.sequential_scans metric.
 func (mb *MetricsBuilder) RecordPostgresqlSequentialScansDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricPostgresqlSequentialScans.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordPostgresqlTableAutovacuumCountDataPoint adds a data point to postgresql.table.autovacuum.count metric.
+func (mb *MetricsBuilder) RecordPostgresqlTableAutovacuumCountDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricPostgresqlTableAutovacuumCount.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordPostgresqlTableCountDataPoint adds a data point to postgresql.table.count metric.
