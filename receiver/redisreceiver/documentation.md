@@ -278,7 +278,7 @@ metrics:
     enabled: true
 ```
 
-### redis.clusterInfo.cluster_current_epoch
+### redis.cluster.current_epoch
 
 Current epoch of the cluster
 
@@ -286,7 +286,7 @@ Current epoch of the cluster
 | ---- | ----------- | ---------- |
 | {epoch} | Gauge | Int |
 
-### redis.clusterInfo.cluster_known_nodes
+### redis.cluster.known_nodes
 
 Number of known nodes in the cluster
 
@@ -294,7 +294,7 @@ Number of known nodes in the cluster
 | ---- | ----------- | ---------- |
 | {node} | Gauge | Int |
 
-### redis.clusterInfo.cluster_my_epoch
+### redis.cluster.my_epoch
 
 The node's current epoch
 
@@ -302,7 +302,7 @@ The node's current epoch
 | ---- | ----------- | ---------- |
 | {epoch} | Gauge | Int |
 
-### redis.clusterInfo.cluster_size
+### redis.cluster.size
 
 Number of master nodes in the cluster
 
@@ -310,7 +310,7 @@ Number of master nodes in the cluster
 | ---- | ----------- | ---------- |
 | {master} | Gauge | Int |
 
-### redis.clusterInfo.cluster_slots_assigned
+### redis.cluster.slots_assigned
 
 Number of slots assigned in the cluster
 
@@ -318,7 +318,7 @@ Number of slots assigned in the cluster
 | ---- | ----------- | ---------- |
 | {slot} | Gauge | Int |
 
-### redis.clusterInfo.cluster_slots_fail
+### redis.cluster.slots_fail
 
 Number of slots in the cluster that are in a failing state
 
@@ -326,7 +326,7 @@ Number of slots in the cluster that are in a failing state
 | ---- | ----------- | ---------- |
 | {slot} | Gauge | Int |
 
-### redis.clusterInfo.cluster_slots_ok
+### redis.cluster.slots_ok
 
 Number of slots in the cluster that are ok
 
@@ -334,7 +334,7 @@ Number of slots in the cluster that are ok
 | ---- | ----------- | ---------- |
 | {slot} | Gauge | Int |
 
-### redis.clusterInfo.cluster_slots_pfail
+### redis.cluster.slots_pfail
 
 Number of slots in the cluster that are in a 'potentially failing' state
 
@@ -342,7 +342,7 @@ Number of slots in the cluster that are in a 'potentially failing' state
 | ---- | ----------- | ---------- |
 | {slot} | Gauge | Int |
 
-### redis.clusterInfo.cluster_state
+### redis.cluster.state
 
 State of the cluster
 
@@ -356,7 +356,7 @@ State of the cluster
 | ---- | ----------- | ------ | -------- |
 | cluster_state | State of the cluster | Str: ``ok``, ``fail`` | false |
 
-### redis.clusterInfo.cluster_stats_messages_received
+### redis.cluster.stats_messages_received
 
 Total number of messages received by the cluster
 
@@ -364,7 +364,7 @@ Total number of messages received by the cluster
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {message} | Sum | Int | Cumulative | true |
 
-### redis.clusterInfo.cluster_stats_messages_sent
+### redis.cluster.stats_messages_sent
 
 Total number of messages sent by the cluster
 
@@ -372,7 +372,7 @@ Total number of messages sent by the cluster
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {message} | Sum | Int | Cumulative | true |
 
-### redis.clusterInfo.total_cluster_links_buffer_limit_exceeded
+### redis.cluster.total_cluster_links_buffer_limit_exceeded
 
 Total number of times the cluster links buffer limit was exceeded
 
