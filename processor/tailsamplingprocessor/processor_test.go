@@ -15,6 +15,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -700,7 +701,7 @@ func TestPolicyLoggerAddsPolicyName(t *testing.T) {
 		Type: AlwaysSample, // we test only one evaluator
 	}
 
-	evaluator, err := getSharedPolicyEvaluator(set, cfg)
+	evaluator, err := getSharedPolicyEvaluator(set, cfg, nil)
 	require.NoError(t, err)
 
 	// test
@@ -721,7 +722,7 @@ func TestDuplicatePolicyName(t *testing.T) {
 		Type: AlwaysSample,
 	}
 
-	_, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), msp, Config{
+	p, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), msp, Config{
 		DecisionWait: defaultTestDecisionWait,
 		NumTraces:    defaultNumTraces,
 		PolicyCfgs: []PolicyCfg{
@@ -729,6 +730,12 @@ func TestDuplicatePolicyName(t *testing.T) {
 			{sharedPolicyCfg: alwaysSample},
 		},
 	})
+	require.NoError(t, err)
+	err = p.Start(t.Context(), componenttest.NewNopHost())
+	defer func() {
+		err = p.Shutdown(t.Context())
+		require.NoError(t, err)
+	}()
 
 	// verify
 	assert.Equal(t, err, errors.New(`duplicate policy name "always_sample"`))
@@ -803,6 +810,12 @@ func TestDropPolicyIsFirstInPolicyList(t *testing.T) {
 	}
 	p, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), msp, cfg)
 	require.NoError(t, err)
+	err = p.Start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		err := p.Shutdown(t.Context())
+		require.NoError(t, err)
+	}()
 
 	tsp := p.(*tailSamplingSpanProcessor)
 	require.GreaterOrEqual(t, len(tsp.policies), 2)
@@ -1005,7 +1018,7 @@ func TestNumericAttributeCases(t *testing.T) {
 				Name:                "test-policy",
 				Type:                NumericAttribute,
 				NumericAttributeCfg: cfg,
-			})
+			}, nil)
 			require.NoError(t, err)
 			require.NotNil(t, evaluator)
 
@@ -1024,4 +1037,80 @@ func TestNumericAttributeCases(t *testing.T) {
 			assert.Equal(t, tt.expectedResult, decision, tt.description)
 		})
 	}
+}
+
+func TestExtension(t *testing.T) {
+	idb := newSyncIDBatcher()
+	msp := new(consumertest.TracesSink)
+
+	cfg := Config{
+		DecisionWait: defaultTestDecisionWait,
+		NumTraces:    defaultNumTraces,
+		PolicyCfgs: []PolicyCfg{
+			{
+				sharedPolicyCfg: sharedPolicyCfg{
+					Name: "extension",
+					Type: "my_extension",
+					ExtensionCfg: map[string]map[string]any{
+						"my_extension": {
+							"foo": "bar",
+						},
+					},
+				},
+			},
+		},
+		Options: []Option{
+			withDecisionBatcher(idb),
+		},
+	}
+	p, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), msp, cfg)
+	require.NoError(t, err)
+
+	host := &extensionHost{}
+	require.NoError(t, p.Start(t.Context(), host))
+	defer func() {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}()
+
+	tsp := p.(*tailSamplingSpanProcessor)
+	assert.Len(t, tsp.policies, 1)
+	assert.Equal(t, "extension", host.extension.policyName)
+	assert.Equal(t, map[string]any{"foo": "bar"}, host.extension.cfg)
+}
+
+type extensionHost struct {
+	extension *extension
+}
+
+func (h *extensionHost) GetExtensions() map[component.ID]component.Component {
+	if h.extension == nil {
+		h.extension = &extension{}
+	}
+	return map[component.ID]component.Component{
+		component.MustNewID("my_extension"): h.extension,
+	}
+}
+
+type extension struct {
+	policyName string
+	cfg        map[string]any
+}
+
+var _ samplingpolicy.Extension = &extension{}
+
+// NewEvaluator implements samplingpolicy.Extension.
+func (e *extension) NewEvaluator(policyName string, cfg map[string]any) (samplingpolicy.Evaluator, error) {
+	e.policyName = policyName
+	e.cfg = cfg
+	return nil, nil
+}
+
+// Start implements component.Component.
+func (*extension) Start(_ context.Context, _ component.Host) error {
+	return nil
+}
+
+// Shutdown implements component.Component.
+func (*extension) Shutdown(_ context.Context) error {
+	return nil
 }
