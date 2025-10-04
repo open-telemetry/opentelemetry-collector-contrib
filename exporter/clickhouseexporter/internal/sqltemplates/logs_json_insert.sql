@@ -13,8 +13,10 @@ INSERT INTO "%s"."%s" (
     ScopeName,
     ScopeVersion,
     ScopeAttributes,
-    LogAttributes
+    LogAttributes,
+    EventName
 ) VALUES (
+     ?,
      ?,
      ?,
      ?,

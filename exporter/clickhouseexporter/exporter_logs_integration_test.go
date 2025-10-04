@@ -55,6 +55,7 @@ func verifyExportLogs(t *testing.T, exporter *logsExporter, mapBody bool) {
 		ScopeVersion       string            `ch:"ScopeVersion"`
 		ScopeAttributes    map[string]string `ch:"ScopeAttributes"`
 		LogAttributes      map[string]string `ch:"LogAttributes"`
+		EventName          string            `ch:"EventName"`
 	}
 
 	expectedLog := log{
@@ -79,6 +80,7 @@ func verifyExportLogs(t *testing.T, exporter *logsExporter, mapBody bool) {
 		LogAttributes: map[string]string{
 			"service.namespace": "default",
 		},
+		EventName: "event",
 	}
 	if mapBody {
 		expectedLog.Body = `{"error":"message"}`
@@ -111,6 +113,7 @@ func simpleLogs(count int, mapBody bool) plog.Logs {
 		r.SetObservedTimestamp(pcommon.NewTimestampFromTime(timestamp))
 		r.SetSeverityNumber(plog.SeverityNumberError2)
 		r.SetSeverityText("error")
+		r.SetEventName("event")
 
 		if mapBody {
 			r.Body().SetEmptyMap()
