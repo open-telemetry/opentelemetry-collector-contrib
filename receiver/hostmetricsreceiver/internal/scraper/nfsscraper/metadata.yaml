@@ -13,36 +13,29 @@ sem_conv_version: 1.9.0
 
 attributes:
   onc_rpc.version:
-    enabled: true
     description: ONC/Sun RPC program version.
     type: int
   onc_rpc.procedure.name:
-    enabled: true
     description: ONC/Sun RPC procedure name.
     type: string
   nfs.operation.name:
-    enabled: true
     description: NFSv4+ operation name.
     type: string
   nfs.server.repcache.status:
-    enabled: true
     description: "NFS Server replies check a Reply Cache (repcache), which can have one of 3 result states: 'hit', 'miss', or 'nocache'."
     type: string
     enum: [hit, miss, nocache]
   network.transport:
-    enabled: true
     description: OSI transport layer or inter-process communication method.
     type: string
     enum: [udp, tcp]
   network.io.direction:
-    enabled: true
     description: The network IO operation direction.
     type: string
     enum:
       - transmit
       - receive
   error.type:
-    enabled: true
     description: Describes a class of error the operation ended with.
     type: string
     enum: [format, auth, client]
