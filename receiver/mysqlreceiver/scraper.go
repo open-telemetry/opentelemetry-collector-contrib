@@ -692,7 +692,7 @@ func (m *mySQLScraper) scrapeTopQueries(ctx context.Context, now pcommon.Timesta
 
 		var obfuscatedPlan string
 		var ok bool
-		if obfuscatedPlan, ok = m.queryPlanCache.Get(q.schemaName+"-"+q.digest); !ok {
+		if obfuscatedPlan, ok = m.queryPlanCache.Get(q.schemaName + "-" + q.digest); !ok {
 			obfuscatedPlan, err = m.obfuscator.obfuscatePlan(queryPlan)
 			if err != nil {
 				m.logger.Error("Failed to obfuscate query", zap.Error(err))
@@ -819,7 +819,7 @@ func (m *mySQLScraper) cacheAndDiff(schemaName, digest, column string, val int64
 		return false, 0
 	}
 
-	key := schemaName+"-"+digest+"-"+column
+	key := schemaName + "-" + digest + "-" + column
 
 	cached, ok := m.cache.Get(key)
 	if !ok {
