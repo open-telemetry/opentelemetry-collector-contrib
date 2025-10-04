@@ -64,6 +64,7 @@ func newDNSResolver(
 	port string,
 	interval time.Duration,
 	timeout time.Duration,
+	server string,
 	tb *metadata.TelemetryBuilder,
 ) (*dnsResolver, error) {
 	if hostname == "" {
@@ -75,12 +76,26 @@ func newDNSResolver(
 	if timeout == 0 {
 		timeout = defaultResTimeout
 	}
+	var resolver *net.Resolver
+	if server == "" {
+		resolver = net.DefaultResolver
+	} else {
+		resolver = &net.Resolver{
+			PreferGo: true,
+			Dial: func(ctx context.Context, network, _ string) (net.Conn, error) {
+				d := net.Dialer{
+					Timeout: timeout,
+				}
+				return d.DialContext(ctx, network, server)
+			},
+		}
+	}
 
 	return &dnsResolver{
 		logger:      logger,
 		hostname:    hostname,
 		port:        port,
-		resolver:    &net.Resolver{},
+		resolver:    resolver,
 		resInterval: interval,
 		resTimeout:  timeout,
 		stopCh:      make(chan struct{}),
