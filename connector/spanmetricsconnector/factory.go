@@ -26,12 +26,14 @@ const (
 	legacyMetricNamesFeatureGateID             = "connector.spanmetrics.legacyMetricNames"
 	includeCollectorInstanceIDFeatureGateID    = "connector.spanmetrics.includeCollectorInstanceID"
 	useSecondAsDefaultMetricsUnitFeatureGateID = "connector.spanmetrics.useSecondAsDefaultMetricsUnit"
+	excludeResourceMetricsFeatureGate          = "connector.spanmetrics.excludeResourceMetrics"
 )
 
 var (
 	legacyMetricNamesFeatureGate  *featuregate.Gate
 	includeCollectorInstanceID    *featuregate.Gate
 	useSecondAsDefaultMetricsUnit *featuregate.Gate
+	excludeResourceMetrics        *featuregate.Gate
 )
 
 func init() {
@@ -52,6 +54,12 @@ func init() {
 		useSecondAsDefaultMetricsUnitFeatureGateID,
 		featuregate.StageAlpha,
 		featuregate.WithRegisterDescription("When enabled, connector use second as default unit for duration metrics."),
+		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42462"),
+	)
+	excludeResourceMetrics = featuregate.GlobalRegistry().MustRegister(
+		excludeResourceMetricsFeatureGate,
+		featuregate.StageAlpha,
+		featuregate.WithRegisterDescription("When enabled, connector will exclude all resource attributes."),
 		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42103"),
 	)
 }
