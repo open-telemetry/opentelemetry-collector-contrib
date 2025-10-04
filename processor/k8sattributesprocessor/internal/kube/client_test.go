@@ -7,6 +7,7 @@ import (
 	"errors"
 	"maps"
 	"regexp"
+	"sync"
 	"testing"
 	"time"
 
@@ -731,6 +732,15 @@ func TestExtractionRules(t *testing.T) {
 			attributes: map[string]string{
 				"k8s.deployment.name": "auth-service",
 				"k8s.deployment.uid":  "ffff-gggg-hhhh-iiii-eeeeeeeeeeee",
+			},
+		},
+		{
+			name: "deployment-from-replicaset-name",
+			rules: ExtractionRules{
+				DeploymentName: true,
+			},
+			attributes: map[string]string{
+				"k8s.deployment.name": "auth-service",
 			},
 		},
 		{
@@ -1729,6 +1739,47 @@ func TestDeploymentExtractionRules(t *testing.T) {
 				assert.Equal(t, v, got)
 			}
 		})
+	}
+}
+
+func TestDeploymentNameFromReplicaSet(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+	c.Rules = ExtractionRules{
+		DeploymentName:               true,
+		DeploymentNameFromReplicaSet: true,
+	}
+
+	pod := &api_v1.Pod{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      "auth-service-abc12-xyz3",
+			UID:       "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+			Namespace: "ns1",
+			OwnerReferences: []meta_v1.OwnerReference{
+				{
+					APIVersion: "apps/v1",
+					Kind:       "ReplicaSet",
+					Name:       "auth-service-66f5996c7c",
+					UID:        "207ea729-c779-401d-8347-008ecbc137e3",
+				},
+			},
+		},
+		Status: api_v1.PodStatus{
+			PodIP: "1.1.1.1",
+		},
+	}
+
+	c.handlePodAdd(pod)
+	p, ok := c.GetPod(newPodIdentifier("connection", "", pod.Status.PodIP))
+	require.True(t, ok)
+
+	attributes := map[string]string{
+		"k8s.deployment.name": "auth-service",
+	}
+	assert.Len(t, p.Attributes, len(attributes))
+	for k, v := range attributes {
+		got, ok := p.Attributes[k]
+		assert.True(t, ok)
+		assert.Equal(t, v, got)
 	}
 }
 
@@ -3427,6 +3478,340 @@ func TestCronJobExtractionRules_FromJobOwner(t *testing.T) {
 				assert.True(t, ok, "expected attribute %s", k)
 				assert.Equal(t, v, got)
 			}
+		})
+	}
+}
+
+func TestExtractDeploymentNameFromReplicaSet(t *testing.T) {
+	tests := []struct {
+		name           string
+		replicaSetName string
+		expected       string
+	}{
+		{
+			name:           "valid replicaset name with pod template hash",
+			replicaSetName: "my-deployment-7b9f4c8d5e",
+			expected:       "my-deployment",
+		},
+		{
+			name:           "complex deployment name with dashes",
+			replicaSetName: "my-complex-deployment-name-7b9f4c8d5e",
+			expected:       "my-complex-deployment-name",
+		},
+		{
+			name:           "single word deployment",
+			replicaSetName: "nginx-7b9f4c8d5e",
+			expected:       "nginx",
+		},
+		{
+			name:           "replicaset name without valid pod template hash",
+			replicaSetName: "my-deployment-invalidhash",
+			expected:       "",
+		},
+		{
+			name:           "replicaset name with short hash",
+			replicaSetName: "my-deployment-7b9f4c",
+			expected:       "",
+		},
+		{
+			name:           "replicaset name with long hash",
+			replicaSetName: "my-deployment-7b9f4c8d5e123",
+			expected:       "",
+		},
+		{
+			name:           "replicaset name with uppercase in hash",
+			replicaSetName: "my-deployment-7B9F4C8D5E",
+			expected:       "",
+		},
+		{
+			name:           "replicaset name with special characters in hash",
+			replicaSetName: "my-deployment-7b9f4c8d5_",
+			expected:       "",
+		},
+		{
+			name:           "empty replicaset name",
+			replicaSetName: "",
+			expected:       "",
+		},
+		{
+			name:           "replicaset name without dashes",
+			replicaSetName: "deployment7b9f4c8d5e",
+			expected:       "",
+		},
+		{
+			name:           "replicaset name with only hash part",
+			replicaSetName: "7b9f4c8d5e",
+			expected:       "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := extractDeploymentNameFromReplicaSet(tt.replicaSetName)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+// trackableInformer is a mock informer that tracks if Run has been called.
+type trackableInformer struct {
+	cache.SharedInformer
+	runCalled bool
+	mutex     sync.Mutex
+}
+
+func (i *trackableInformer) Run(stopCh <-chan struct{}) {
+	i.mutex.Lock()
+	i.runCalled = true
+	i.mutex.Unlock()
+	i.SharedInformer.Run(stopCh)
+}
+
+func (i *trackableInformer) hasRun() bool {
+	i.mutex.Lock()
+	defer i.mutex.Unlock()
+	return i.runCalled
+}
+
+func newTrackableInformer(client kubernetes.Interface, namespace string, labelSelector labels.Selector, fieldSelector fields.Selector) cache.SharedInformer {
+	return &trackableInformer{
+		SharedInformer: NewFakeInformer(client, namespace, labelSelector, fieldSelector),
+	}
+}
+
+func TestReplicaSetInformerConditionalStart(t *testing.T) {
+	tests := []struct {
+		name      string
+		rules     ExtractionRules
+		expectRun bool
+	}{
+		{
+			name:      "start informer if deployment UID is requested",
+			rules:     ExtractionRules{DeploymentUID: true},
+			expectRun: true,
+		},
+		{
+			name:      "start informer if deployment name is requested",
+			rules:     ExtractionRules{DeploymentName: true},
+			expectRun: true,
+		},
+		{
+			name:      "don't start informer if deployment name from replicaset is requested",
+			rules:     ExtractionRules{DeploymentName: true, DeploymentNameFromReplicaSet: true},
+			expectRun: false,
+		},
+		{
+			name:      "start informer if deployment UID and name are requested",
+			rules:     ExtractionRules{DeploymentName: true, DeploymentUID: true},
+			expectRun: true,
+		},
+		{
+			name:      "start informer if deployment UID and name from replicaset are requested",
+			rules:     ExtractionRules{DeploymentName: true, DeploymentUID: true, DeploymentNameFromReplicaSet: true},
+			expectRun: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			factory := InformersFactoryList{
+				newInformer:          NewFakeInformer,
+				newNamespaceInformer: NewFakeNamespaceInformer,
+				newReplicaSetInformer: func(kc kubernetes.Interface, ns string) cache.SharedInformer {
+					return newTrackableInformer(kc, ns, labels.Everything(), fields.Everything())
+				},
+			}
+
+			c, err := New(componenttest.NewNopTelemetrySettings(), k8sconfig.APIConfig{}, tt.rules, Filters{}, []Association{}, Excludes{}, newFakeAPIClientset, factory, false, 10*time.Second)
+			require.NoError(t, err)
+			wc := c.(*WatchClient)
+
+			err = wc.Start()
+			require.NoError(t, err)
+			defer wc.Stop()
+
+			// Allow time for the informer goroutine to start
+			time.Sleep(100 * time.Millisecond)
+
+			informer := wc.replicasetInformer.(*trackableInformer)
+			assert.Equal(t, tt.expectRun, informer.hasRun())
+		})
+	}
+}
+
+func TestDeploymentNameFromReplicaSetFeature(t *testing.T) {
+	// Test the DeploymentNameFromReplicaSet flag functionality with extractPodAttributes
+
+	tests := []struct {
+		name                                string
+		deploymentNameFromReplicaSetEnabled bool
+		replicaSetInCache                   bool
+		deploymentInRS                      bool
+		replicaSetName                      string
+		expectedDeploymentName              string
+	}{
+		{
+			name:                                "flag disabled - no deployment name extraction from replicaset name",
+			deploymentNameFromReplicaSetEnabled: false,
+			replicaSetInCache:                   false,
+			deploymentInRS:                      false,
+			replicaSetName:                      "my-deployment-7b9f4c8d5e",
+			expectedDeploymentName:              "",
+		},
+		{
+			name:                                "flag enabled - replicaset not in cache",
+			deploymentNameFromReplicaSetEnabled: true,
+			replicaSetInCache:                   false,
+			deploymentInRS:                      false,
+			replicaSetName:                      "my-deployment-7b9f4c8d5e",
+			expectedDeploymentName:              "my-deployment",
+		},
+		{
+			name:                                "flag enabled - replicaset in cache but no deployment",
+			deploymentNameFromReplicaSetEnabled: true,
+			replicaSetInCache:                   true,
+			deploymentInRS:                      false,
+			replicaSetName:                      "my-deployment-7b9f4c8d5e",
+			expectedDeploymentName:              "my-deployment",
+		},
+		{
+			name:                                "flag enabled - replicaset in cache with deployment (should prefer existing)",
+			deploymentNameFromReplicaSetEnabled: true,
+			replicaSetInCache:                   true,
+			deploymentInRS:                      true,
+			replicaSetName:                      "my-deployment-7b9f4c8d5e",
+			expectedDeploymentName:              "my-deployment",
+		},
+		{
+			name:                                "flag enabled - invalid replicaset name",
+			deploymentNameFromReplicaSetEnabled: true,
+			replicaSetInCache:                   false,
+			deploymentInRS:                      false,
+			replicaSetName:                      "invalid-name",
+			expectedDeploymentName:              "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+			c.Rules.DeploymentName = true
+			if tt.deploymentNameFromReplicaSetEnabled {
+				c.Rules.DeploymentNameFromReplicaSet = true
+			}
+
+			// Create a replicaset if needed
+			if tt.replicaSetInCache {
+				replicaset := &apps_v1.ReplicaSet{
+					ObjectMeta: meta_v1.ObjectMeta{
+						Name:      tt.replicaSetName,
+						Namespace: "default",
+						UID:       "rs-uid-123",
+					},
+				}
+
+				if tt.deploymentInRS {
+					isController := true
+					replicaset.OwnerReferences = []meta_v1.OwnerReference{
+						{
+							Kind:       "Deployment",
+							Name:       "real-deployment-name",
+							UID:        "deploy-uid-123",
+							Controller: &isController,
+						},
+					}
+				}
+
+				c.handleReplicaSetAdd(replicaset)
+			}
+
+			// Create a pod with replicaset owner reference
+			pod := &api_v1.Pod{
+				ObjectMeta: meta_v1.ObjectMeta{
+					Name:      "test-pod",
+					Namespace: "default",
+					UID:       "pod-uid-123",
+					OwnerReferences: []meta_v1.OwnerReference{
+						{
+							Kind: "ReplicaSet",
+							Name: tt.replicaSetName,
+							UID:  "rs-uid-123",
+						},
+					},
+				},
+				Status: api_v1.PodStatus{
+					PodIP: "1.2.3.4",
+				},
+			}
+
+			// Extract attributes
+			attributes := c.extractPodAttributes(pod)
+
+			// Check the result
+			if tt.expectedDeploymentName != "" {
+				deploymentName, exists := attributes[string(conventions.K8SDeploymentNameKey)]
+				assert.True(t, exists, "Expected deployment name to be extracted")
+				assert.Equal(t, tt.expectedDeploymentName, deploymentName)
+			} else {
+				_, exists := attributes[string(conventions.K8SDeploymentNameKey)]
+				assert.False(t, exists, "Expected no deployment name to be extracted")
+			}
+		})
+	}
+}
+
+func TestDeploymentHashSuffixPattern(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected bool
+	}{
+		{
+			name:     "valid pod template hash",
+			input:    "7b9f4c8d5e",
+			expected: true,
+		},
+		{
+			name:     "valid all digits",
+			input:    "1234567890",
+			expected: true,
+		},
+		{
+			name:     "valid all letters",
+			input:    "abcdefghij",
+			expected: true,
+		},
+		{
+			name:     "too short",
+			input:    "7b9f4c8d5",
+			expected: false,
+		},
+		{
+			name:     "too long",
+			input:    "7b9f4c8d5e1",
+			expected: false,
+		},
+		{
+			name:     "contains uppercase",
+			input:    "7B9F4C8D5E",
+			expected: false,
+		},
+		{
+			name:     "contains special character",
+			input:    "7b9f4c8d5-",
+			expected: false,
+		},
+		{
+			name:     "empty string",
+			input:    "",
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := deploymentHashSuffixPattern.MatchString(tt.input)
+			assert.Equal(t, tt.expected, result)
 		})
 	}
 }
