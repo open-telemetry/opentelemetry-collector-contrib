@@ -46,7 +46,7 @@ resourceLogs:
               - key: gcp.vpc.flow.reporter
                 value:
                   stringValue: DEST
-              - key: network.rtt
+              - key: gcp.vpc.flow.network.rtt_msec
                 value:
                   intValue: "22"
               - key: gcp.vpc.flow.bytes_sent
