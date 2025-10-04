@@ -14,7 +14,7 @@ resourceMetrics:
                 - asInt: "0"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            unit: '{client}'
+            unit: "{client}"
           - description: Number of client connections (excluding connections from replicas)
             name: redis.clients.connected
             sum:
@@ -23,7 +23,7 @@ resourceMetrics:
                 - asInt: "2"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            unit: '{client}'
+            unit: "{client}"
           - description: Biggest input buffer among current client connections
             gauge:
               dataPoints:
@@ -47,7 +47,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: redis.commands
-            unit: '{ops}/s'
+            unit: "{ops}/s"
           - description: Total number of commands processed by the server
             name: redis.commands.processed
             sum:
@@ -57,7 +57,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
-            unit: '{command}'
+            unit: "{command}"
           - description: Total number of connections accepted by the server
             name: redis.connections.received
             sum:
@@ -67,7 +67,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
-            unit: '{connection}'
+            unit: "{connection}"
           - description: Number of connections rejected because of maxclients limit
             name: redis.connections.rejected
             sum:
@@ -77,7 +77,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
-            unit: '{connection}'
+            unit: "{connection}"
           - description: System CPU consumed by the Redis server in seconds since server start
             name: redis.cpu.time
             sum:
@@ -136,7 +136,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
-            unit: '{key}'
+            unit: "{key}"
           - description: Total number of key expiration events
             name: redis.keys.expired
             sum:
@@ -146,7 +146,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
-            unit: '{event}'
+            unit: "{event}"
           - description: Number of successful lookup of keys in the main dictionary
             name: redis.keyspace.hits
             sum:
@@ -156,7 +156,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
-            unit: '{hit}'
+            unit: "{hit}"
           - description: Number of failed lookup of keys in the main dictionary
             name: redis.keyspace.misses
             sum:
@@ -166,7 +166,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
-            unit: '{miss}'
+            unit: "{miss}"
           - description: Duration of the latest fork operation in microseconds
             gauge:
               dataPoints:
@@ -215,6 +215,18 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: redis.memory.used
             unit: By
+          - description: Redis server mode
+            gauge:
+              dataPoints:
+                - asInt: "1"
+                  attributes:
+                    - key: mode
+                      value:
+                        stringValue: cluster
+                  startTimeUnixNano: "1687339331739210000"
+                  timeUnixNano: "1687339332739210000"
+            name: redis.mode
+            unit: "{mode}"
           - description: The total number of bytes read from the network
             name: redis.net.input
             sum:
@@ -243,7 +255,7 @@ resourceMetrics:
                 - asInt: "0"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            unit: '{change}'
+            unit: "{change}"
           - description: The master offset of the replication backlog buffer
             gauge:
               dataPoints:
@@ -276,7 +288,7 @@ resourceMetrics:
                 - asInt: "0"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            unit: '{replica}'
+            unit: "{replica}"
           - description: Number of seconds since Redis server start
             name: redis.uptime
             sum:
