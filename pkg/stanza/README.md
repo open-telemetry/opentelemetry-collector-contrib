@@ -99,11 +99,11 @@ Operators that support batching:
 - `trace_parser`
 - `unquote`
 - `uri_parser`
+- `csv_parser`
 
 Operators that do not support batching:
 
 - `container`
-- `csv_parser`
 - `filter`
 - `recombine`
 - `router`
