@@ -5,6 +5,8 @@ go 1.24.0
 require (
 	github.com/IBM/sarama v1.46.1
 	github.com/aws/aws-msk-iam-sasl-signer-go v1.0.4
+	github.com/golang-jwt/jwt/v5 v5.2.0
+	github.com/google/uuid v1.6.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka v0.136.0
 	github.com/rcrowley/go-metrics v0.0.0-20250401214520-65e299d6c5c9
 	github.com/stretchr/testify v1.11.1
@@ -15,6 +17,7 @@ require (
 	go.opentelemetry.io/collector/config/configopaque v1.42.1-0.20251002223229-5ec1466578ef
 	go.opentelemetry.io/collector/config/configtls v1.42.1-0.20251002223229-5ec1466578ef
 	go.uber.org/goleak v1.3.0
+	golang.org/x/oauth2 v0.30.0
 )
 
 require (
