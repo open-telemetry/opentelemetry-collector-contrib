@@ -18,10 +18,10 @@ import (
 )
 
 var (
-	// 3 net metrics + 3 rpc metrics + len(nfsV3Procedures) + len(nfsV4Procedures) = 97 metrics
-	nfsMetricsLen = 3 + 3 + len(nfsV3Procedures) + len(nfsV4Procedures)
-	// 3 repcache metrics + 1 fh metric + 2 io metrics + 1 thread metric + 3 net metrics + 5 rpc metrics + len(nfsdV3Procedures) + len(nfsdV4Procedures) + len(nfsdV4Operations) = 115 metrics
-	nfsdMetricsLen = 3 + 1 + 2 + 1 + 3 + 5 + len(nfsdV3Procedures) + len(nfsdV4Procedures) + len(nfsdV4Operations)
+	// 3 net metrics + 3 rpc metrics + len(nfs_scraper_linux.go:nfsV3Procedures) + len(nfs_scraper_linux.go:nfsV4Procedures) = 97 metrics
+	nfsMetricsLen = 97
+	// 3 repcache metrics + 1 fh metric + 2 io metrics + 1 thread metric + 3 net metrics + 5 rpc metrics + len(nfs_scraper_linux.go:nfsdV3Procedures) + len(nfs_scraper_linux.go:nfsdV4Procedures) + len(nfs_scraper_linux.go:nfsdV4Operations) = 115 metrics
+	nfsdMetricsLen = 115
 )
 
 // nfsScraper for NFS Metrics
