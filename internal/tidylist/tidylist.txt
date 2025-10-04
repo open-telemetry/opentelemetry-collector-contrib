@@ -172,6 +172,8 @@ extension/healthcheckv2extension
 extension/httpforwarderextension
 extension/jaegerremotesampling
 extension/k8sleaderelector
+pkg/lookup
+extension/lookup/nooplookupextension
 extension/oauth2clientauthextension
 extension/observer
 extension/observer/cfgardenobserver
@@ -217,6 +219,7 @@ processor/intervalprocessor
 processor/isolationforestprocessor
 processor/logdedupprocessor
 processor/logstransformprocessor
+processor/lookupprocessor
 processor/metricsgenerationprocessor
 processor/metricstarttimeprocessor
 processor/metricstransformprocessor
