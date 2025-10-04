@@ -19,10 +19,14 @@ import (
 )
 
 const (
-	telemetryAttrKeyOne   = "k1"
-	telemetryAttrKeyTwo   = "k2"
-	telemetryAttrValueOne = "v1"
-	telemetryAttrValueTwo = "v2"
+	telemetryAttrKeyOne       = "k1"
+	telemetryAttrKeyTwo       = "k2"
+	telemetryAttrValueOne     = "v1"
+	telemetryAttrValueTwo     = "v2"
+	telemetryAttrIntKeyOne    = "intKey1"
+	telemetryAttrIntValueOne  = 1
+	telemetryAttrBoolKeyOne   = "boolKey1"
+	telemetryAttrBoolValueOne = true
 )
 
 type mockExporter struct {
@@ -220,7 +224,22 @@ func TestLogsWithMultipleTelemetryAttributes(t *testing.T) {
 	// verify
 	require.Len(t, m.logs, qty)
 	for _, l := range m.logs {
-		assert.Equal(t, 3, l.AttributesLen(), "shouldn't have less than 3 attributes")
+		assert.Equal(t, 5, l.AttributesLen(), "it must have multiple attributes here")
+		l.WalkAttributes(func(attr log.KeyValue) bool {
+			if attr.Key == telemetryAttrKeyOne {
+				assert.Equal(t, telemetryAttrValueOne, attr.Value.AsString())
+			}
+			if attr.Key == telemetryAttrKeyTwo {
+				assert.Equal(t, telemetryAttrValueTwo, attr.Value.AsString())
+			}
+			if attr.Key == telemetryAttrIntKeyOne {
+				assert.Equal(t, int64(telemetryAttrIntValueOne), attr.Value.AsInt64())
+			}
+			if attr.Key == telemetryAttrBoolKeyOne {
+				assert.Equal(t, telemetryAttrBoolValueOne, attr.Value.AsBool())
+			}
+			return true
+		})
 	}
 }
 
@@ -337,7 +356,12 @@ func configWithOneAttribute(qty int, body string) *Config {
 }
 
 func configWithMultipleAttributes(qty int, body string) *Config {
-	kvs := common.KeyValue{telemetryAttrKeyOne: telemetryAttrValueOne, telemetryAttrKeyTwo: telemetryAttrValueTwo}
+	kvs := common.KeyValue{
+		telemetryAttrKeyOne:     telemetryAttrValueOne,
+		telemetryAttrKeyTwo:     telemetryAttrValueTwo,
+		telemetryAttrIntKeyOne:  telemetryAttrIntValueOne,
+		telemetryAttrBoolKeyOne: telemetryAttrBoolValueOne,
+	}
 	return &Config{
 		Body:    body,
 		NumLogs: qty,
