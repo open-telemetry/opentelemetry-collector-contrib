@@ -187,6 +187,7 @@ body:
       - processor/deltatocumulative
       - processor/deltatorate
       - processor/dnslookup
+      - processor/enrichment
       - processor/filter
       - processor/geoip
       - processor/groupbyattrs
