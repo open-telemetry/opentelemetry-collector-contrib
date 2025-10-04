@@ -12,6 +12,7 @@ require (
 	github.com/google/go-cmp v0.7.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.136.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.136.0
+	github.com/orcaman/concurrent-map/v2 v2.0.1
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.42.1-0.20251002223229-5ec1466578ef
 	go.opentelemetry.io/collector/component/componenttest v0.136.1-0.20251002223229-5ec1466578ef
