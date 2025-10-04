@@ -28,6 +28,7 @@ var (
 	percent0 = []float64{10, 50, 90}
 
 	sum1                  = "sum1"
+	sum2                  = "sum2"
 	gauge1                = "gauge1"
 	histogram1            = "histogram1"
 	summary1              = "summary1"
@@ -291,6 +292,7 @@ func TestMultiMetrics(t *testing.T) {
 				testhelper.SumMetric("example_process_start_time_seconds", testhelper.DoublePoint(nil, startTime, currentTime, matchBuilderStartTime)),
 				testhelper.GaugeMetric(gauge1, testhelper.DoublePoint(k1v1k2v2, t1, t1, 44)),
 				testhelper.SumMetric(sum1, testhelper.DoublePoint(k1v1k2v2, t1, t1, 44)),
+				testhelper.SumMetric(sum2, testhelper.IntPoint(k1v1k2v2, t1, t1, 44)),
 				testhelper.HistogramMetric(histogram1, testhelper.HistogramPoint(k1v1k2v2, t1, t1, bounds0, []uint64{4, 2, 3, 7})),
 				testhelper.ExponentialHistogramMetric(exponentialHistogram1, testhelper.ExponentialHistogramPoint(k1v1k2v2, t1, t1, 3, 1, 0, []uint64{}, -2, []uint64{4, 2, 3, 7})),
 				testhelper.SummaryMetric(summary1, testhelper.SummaryPoint(k1v1k2v2, t1, t1, 10, 40, percent0, []float64{1, 5, 8})),
@@ -299,6 +301,7 @@ func TestMultiMetrics(t *testing.T) {
 				testhelper.SumMetric("example_process_start_time_seconds", testhelper.DoublePoint(nil, matchedStartTimeStamp, currentTime, matchBuilderStartTime)),
 				testhelper.GaugeMetric(gauge1, testhelper.DoublePoint(k1v1k2v2, t1, t1, 44)),
 				testhelper.SumMetric(sum1, testhelper.DoublePoint(k1v1k2v2, matchedStartTimeStamp, t1, 44)),
+				testhelper.SumMetric(sum2, testhelper.IntPoint(k1v1k2v2, matchedStartTimeStamp, t1, 44)),
 				testhelper.HistogramMetric(histogram1, testhelper.HistogramPoint(k1v1k2v2, matchedStartTimeStamp, t1, bounds0, []uint64{4, 2, 3, 7})),
 				testhelper.ExponentialHistogramMetric(exponentialHistogram1, testhelper.ExponentialHistogramPoint(k1v1k2v2, matchedStartTimeStamp, t1, 3, 1, 0, []uint64{}, -2, []uint64{4, 2, 3, 7})),
 				testhelper.SummaryMetric(summary1, testhelper.SummaryPoint(k1v1k2v2, matchedStartTimeStamp, t1, 10, 40, percent0, []float64{1, 5, 8})),
@@ -310,6 +313,7 @@ func TestMultiMetrics(t *testing.T) {
 				testhelper.SumMetric("example_process_start_time_seconds", testhelper.DoublePoint(nil, startTime, currentTime, matchBuilderStartTime)),
 				testhelper.GaugeMetric(gauge1, testhelper.DoublePoint(k1v1k2v2, t2, t2, 66)),
 				testhelper.SumMetric(sum1, testhelper.DoublePoint(k1v1k2v2, t2, t2, 66)),
+				testhelper.SumMetric(sum2, testhelper.IntPoint(k1v1k2v2, t2, t2, 66)),
 				testhelper.HistogramMetric(histogram1, testhelper.HistogramPoint(k1v1k2v2, t2, t2, bounds0, []uint64{6, 3, 4, 8})),
 				testhelper.ExponentialHistogramMetric(exponentialHistogram1, testhelper.ExponentialHistogramPoint(k1v1k2v2, t2, t2, 3, 1, 0, []uint64{}, -2, []uint64{6, 2, 3, 7})),
 				testhelper.SummaryMetric(summary1, testhelper.SummaryPoint(k1v1k2v2, t2, t2, 15, 70, percent0, []float64{7, 44, 9})),
@@ -318,6 +322,7 @@ func TestMultiMetrics(t *testing.T) {
 				testhelper.SumMetric("example_process_start_time_seconds", testhelper.DoublePoint(nil, matchedStartTimeStamp, currentTime, matchBuilderStartTime)),
 				testhelper.GaugeMetric(gauge1, testhelper.DoublePoint(k1v1k2v2, t2, t2, 66)),
 				testhelper.SumMetric(sum1, testhelper.DoublePoint(k1v1k2v2, matchedStartTimeStamp, t2, 66)),
+				testhelper.SumMetric(sum2, testhelper.IntPoint(k1v1k2v2, matchedStartTimeStamp, t2, 66)),
 				testhelper.HistogramMetric(histogram1, testhelper.HistogramPoint(k1v1k2v2, matchedStartTimeStamp, t2, bounds0, []uint64{6, 3, 4, 8})),
 				testhelper.ExponentialHistogramMetric(exponentialHistogram1, testhelper.ExponentialHistogramPoint(k1v1k2v2, matchedStartTimeStamp, t2, 3, 1, 0, []uint64{}, -2, []uint64{6, 2, 3, 7})),
 				testhelper.SummaryMetric(summary1, testhelper.SummaryPoint(k1v1k2v2, matchedStartTimeStamp, t2, 15, 70, percent0, []float64{7, 44, 9})),
@@ -329,6 +334,7 @@ func TestMultiMetrics(t *testing.T) {
 				testhelper.SumMetric("example_process_start_time_seconds", testhelper.DoublePoint(nil, startTime, currentTime, matchBuilderStartTime)),
 				testhelper.GaugeMetric(gauge1, testhelper.DoublePoint(k1v1k2v2, t3, t3, 55)),
 				testhelper.SumMetric(sum1, testhelper.DoublePoint(k1v1k2v2, t3, t3, 55)),
+				testhelper.SumMetric(sum2, testhelper.IntPoint(k1v1k2v2, t3, t3, 55)),
 				testhelper.HistogramMetric(histogram1, testhelper.HistogramPoint(k1v1k2v2, t3, t3, bounds0, []uint64{5, 3, 2, 7})),
 				testhelper.ExponentialHistogramMetric(exponentialHistogram1, testhelper.ExponentialHistogramPoint(k1v1k2v2, t3, t3, 3, 1, 0, []uint64{}, -2, []uint64{5, 1, 2, 6})),
 				testhelper.SummaryMetric(summary1, testhelper.SummaryPoint(k1v1k2v2, t3, t3, 12, 66, percent0, []float64{3, 22, 5})),
@@ -337,6 +343,7 @@ func TestMultiMetrics(t *testing.T) {
 				testhelper.SumMetric("example_process_start_time_seconds", testhelper.DoublePoint(nil, matchedStartTimeStamp, currentTime, matchBuilderStartTime)),
 				testhelper.GaugeMetric(gauge1, testhelper.DoublePoint(k1v1k2v2, t3, t3, 55)),
 				testhelper.SumMetric(sum1, testhelper.DoublePoint(k1v1k2v2, t2, t3, 55)),
+				testhelper.SumMetric(sum2, testhelper.IntPoint(k1v1k2v2, t2, t3, 55)),
 				testhelper.HistogramMetric(histogram1, testhelper.HistogramPoint(k1v1k2v2, t2, t3, bounds0, []uint64{5, 3, 2, 7})),
 				testhelper.ExponentialHistogramMetric(exponentialHistogram1, testhelper.ExponentialHistogramPoint(k1v1k2v2, t2, t3, 3, 1, 0, []uint64{}, -2, []uint64{5, 1, 2, 6})),
 				testhelper.SummaryMetric(summary1, testhelper.SummaryPoint(k1v1k2v2, t2, t3, 12, 66, percent0, []float64{3, 22, 5})),
@@ -347,6 +354,7 @@ func TestMultiMetrics(t *testing.T) {
 			Metrics: testhelper.Metrics(
 				testhelper.SumMetric("example_process_start_time_seconds", testhelper.DoublePoint(nil, startTime, currentTime, matchBuilderStartTime)),
 				testhelper.SumMetric(sum1, testhelper.DoublePoint(k1v1k2v2, t4, t4, 72)),
+				testhelper.SumMetric(sum2, testhelper.IntPoint(k1v1k2v2, t4, t4, 72)),
 				testhelper.HistogramMetric(histogram1, testhelper.HistogramPoint(k1v1k2v2, t4, t4, bounds0, []uint64{7, 4, 2, 12})),
 				testhelper.ExponentialHistogramMetric(exponentialHistogram1, testhelper.ExponentialHistogramPoint(k1v1k2v2, t4, t4, 3, 1, 0, []uint64{}, -2, []uint64{6, 2, 3, 7})),
 				testhelper.SummaryMetric(summary1, testhelper.SummaryPoint(k1v1k2v2, t4, t4, 14, 96, percent0, []float64{9, 47, 8})),
@@ -354,6 +362,7 @@ func TestMultiMetrics(t *testing.T) {
 			Adjusted: testhelper.Metrics(
 				testhelper.SumMetric("example_process_start_time_seconds", testhelper.DoublePoint(nil, matchedStartTimeStamp, currentTime, matchBuilderStartTime)),
 				testhelper.SumMetric(sum1, testhelper.DoublePoint(k1v1k2v2, t2, t4, 72)),
+				testhelper.SumMetric(sum2, testhelper.IntPoint(k1v1k2v2, t2, t4, 72)),
 				testhelper.HistogramMetric(histogram1, testhelper.HistogramPoint(k1v1k2v2, t2, t4, bounds0, []uint64{7, 4, 2, 12})),
 				testhelper.ExponentialHistogramMetric(exponentialHistogram1, testhelper.ExponentialHistogramPoint(k1v1k2v2, t2, t4, 3, 1, 0, []uint64{}, -2, []uint64{6, 2, 3, 7})),
 				testhelper.SummaryMetric(summary1, testhelper.SummaryPoint(k1v1k2v2, t2, t4, 14, 96, percent0, []float64{9, 47, 8})),
@@ -364,6 +373,7 @@ func TestMultiMetrics(t *testing.T) {
 			Metrics: testhelper.Metrics(
 				testhelper.SumMetric("example_process_start_time_seconds", testhelper.DoublePoint(nil, startTime, currentTime, matchBuilderStartTime)),
 				testhelper.SumMetric(sum1, testhelper.DoublePoint(k1v1k2v2, t5, t5, 71)),
+				testhelper.SumMetric(sum2, testhelper.IntPoint(k1v1k2v2, t5, t5, 71)),
 				testhelper.HistogramMetric(histogram1, testhelper.HistogramPoint(k1v1k2v2, t5, t5, bounds0, []uint64{7, 4, 20, 11})),
 				testhelper.ExponentialHistogramMetric(exponentialHistogram1, testhelper.ExponentialHistogramPoint(k1v1k2v2, t5, t5, 3, 1, 0, []uint64{}, -2, []uint64{6, 2, 3, 6})),
 				testhelper.SummaryMetric(summary1, testhelper.SummaryPoint(k1v1k2v2, t5, t5, 14, 95, percent0, []float64{9, 47, 8})),
@@ -371,6 +381,7 @@ func TestMultiMetrics(t *testing.T) {
 			Adjusted: testhelper.Metrics(
 				testhelper.SumMetric("example_process_start_time_seconds", testhelper.DoublePoint(nil, matchedStartTimeStamp, currentTime, matchBuilderStartTime)),
 				testhelper.SumMetric(sum1, testhelper.DoublePoint(k1v1k2v2, t4, t5, 71)),
+				testhelper.SumMetric(sum2, testhelper.IntPoint(k1v1k2v2, t4, t5, 71)),
 				testhelper.HistogramMetric(histogram1, testhelper.HistogramPoint(k1v1k2v2, t4, t5, bounds0, []uint64{7, 4, 20, 11})),
 				testhelper.ExponentialHistogramMetric(exponentialHistogram1, testhelper.ExponentialHistogramPoint(k1v1k2v2, t4, t5, 3, 1, 0, []uint64{}, -2, []uint64{6, 2, 3, 6})),
 				testhelper.SummaryMetric(summary1, testhelper.SummaryPoint(k1v1k2v2, t4, t5, 14, 95, percent0, []float64{9, 47, 8})),
