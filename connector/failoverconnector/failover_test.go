@@ -55,8 +55,7 @@ func TestFailoverRecovery(t *testing.T) {
 		defer func() {
 			resetConsumers(tRouter, &sinkFirst, &sinkSecond, &sinkThird, &sinkFourth)
 		}()
-		// failoverConnector.failover.ModifyConsumerAtIndex(0, consumertest.NewErr(errTracesConsumer))
-		// tRouter.ModifyConsumerAtIndex(0, consumertest.NewErr(errTracesConsumer))
+
 		strategy.router.ModifyConsumerAtIndex(0, consumertest.NewErr(errTracesConsumer))
 		require.NoError(t, conn.ConsumeTraces(t.Context(), tr))
 		idx := strategy.TestGetCurrentConsumerIndex()
@@ -73,8 +72,6 @@ func TestFailoverRecovery(t *testing.T) {
 		defer func() {
 			resetConsumers(tRouter, &sinkFirst, &sinkSecond, &sinkThird, &sinkFourth)
 		}()
-		// failoverConnector.failover.ModifyConsumerAtIndex(0, consumertest.NewErr(errTracesConsumer))
-		// failoverConnector.failover.ModifyConsumerAtIndex(1, consumertest.NewErr(errTracesConsumer))
 
 		strategy.router.ModifyConsumerAtIndex(0, consumertest.NewErr(errTracesConsumer))
 		strategy.router.ModifyConsumerAtIndex(1, consumertest.NewErr(errTracesConsumer))
@@ -83,8 +80,7 @@ func TestFailoverRecovery(t *testing.T) {
 			return consumeTracesAndCheckStable(tRouter, 2, tr)
 		}, 3*time.Second, 5*time.Millisecond)
 
-		//// Simulate recovery of exporter
-		//failoverConnector.failover.ModifyConsumerAtIndex(1, &sinkSecond)
+		// Simulate recovery of exporter
 		strategy.router.ModifyConsumerAtIndex(1, &sinkSecond)
 
 		require.Eventually(t, func() bool {
@@ -92,7 +88,6 @@ func TestFailoverRecovery(t *testing.T) {
 		}, 3*time.Second, 5*time.Millisecond)
 
 		strategy.router.ModifyConsumerAtIndex(0, &sinkFirst)
-		// failoverConnector.failover.ModifyConsumerAtIndex(0, &sinkFirst)
 
 		require.Eventually(t, func() bool {
 			return consumeTracesAndCheckStable(tRouter, 0, tr)

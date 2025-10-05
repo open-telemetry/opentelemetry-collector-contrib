@@ -89,8 +89,6 @@ func TestLogsWithValidFailover(t *testing.T) {
 	strategy := lRouter.strategy.(*standardLogsStrategy)
 
 	strategy.router.ModifyConsumerAtIndex(0, consumertest.NewErr(errLogsConsumer))
-
-	// failoverConnector.failover.ModifyConsumerAtIndex(0, consumertest.NewErr(errLogsConsumer))
 	defer func() {
 		assert.NoError(t, failoverConnector.Shutdown(t.Context()))
 	}()

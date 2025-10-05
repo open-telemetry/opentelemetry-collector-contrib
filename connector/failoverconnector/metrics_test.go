@@ -86,7 +86,6 @@ func TestMetricsWithValidFailover(t *testing.T) {
 	mRouter := failoverConnector.failover
 
 	mRouter.ModifyConsumerAtIndex(0, consumertest.NewErr(errMetricsConsumer))
-	// failoverConnector.failover.ModifyConsumerAtIndex(0, consumertest.NewErr(errMetricsConsumer))
 	defer func() {
 		assert.NoError(t, failoverConnector.Shutdown(t.Context()))
 	}()
