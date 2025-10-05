@@ -370,6 +370,9 @@ func (a *lastValueAccumulator) accumulateNativeHistogram(metric pmetric.Metric, 
 			continue
 		}
 
+		// Store the updated metric and advance count
+		a.registeredMetrics.Store(signature, &accumulatedValue{value: m, resourceAttrs: resourceAttrs, scopeName: scopeName, scopeVersion: scopeVersion, scopeSchemaURL: scopeSchemaURL, scopeAttributes: scopeAttributes, updated: now})
+		n++
 	}
 	return
 }
