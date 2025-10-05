@@ -643,6 +643,171 @@ func TestAccumulateDroppedMetrics(t *testing.T) {
 	}
 }
 
+func TestAccumulateDeltaToCumulativeExponentialHistogram(t *testing.T) {
+	appendDeltaNative := func(startTs, ts time.Time, scale int32, posOff int32, pos []uint64, negOff int32, neg []uint64,
+		zeroCount uint64, count uint64, sum float64, minSet bool, min float64, maxSet bool, max float64, metrics pmetric.MetricSlice) pmetric.Metric {
+		metric := metrics.AppendEmpty()
+		metric.SetName("test_native_hist")
+		metric.SetEmptyExponentialHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+		dp := metric.ExponentialHistogram().DataPoints().AppendEmpty()
+		dp.SetScale(scale)
+		dp.Positive().SetOffset(posOff)
+		dp.Positive().BucketCounts().FromRaw(pos)
+		dp.Negative().SetOffset(negOff)
+		dp.Negative().BucketCounts().FromRaw(neg)
+		dp.SetZeroCount(zeroCount)
+		dp.SetCount(count)
+		dp.SetZeroThreshold(0)
+		if minSet {
+			dp.SetMin(min)
+		}
+		if maxSet {
+			dp.SetMax(max)
+		}
+		dp.SetSum(sum)
+		dp.Attributes().PutStr("label_1", "1")
+		dp.Attributes().PutStr("label_2", "2")
+		dp.SetStartTimestamp(pcommon.NewTimestampFromTime(startTs))
+		dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
+		return metric
+	}
+
+	t.Run("AccumulateAlignedMergesAndDownscales", func(t *testing.T) {
+		// Two aligned deltas with different scales; verify downscale to min scale and merge.
+		startTs := time.Now().Add(-6 * time.Second)
+		ts1 := time.Now().Add(-5 * time.Second)
+		ts2 := time.Now().Add(-4 * time.Second)
+
+		rm := pmetric.NewResourceMetrics()
+		ilm := rm.ScopeMetrics().AppendEmpty()
+		ilm.Scope().SetName("test")
+
+		// First delta: scale=2, positive offset -2 counts [1,2,3]; negative offset 0 counts [4]
+		m1 := appendDeltaNative(startTs, ts1, 2, -2, []uint64{1, 2, 3}, 0, []uint64{4}, 1, 6, 3.5, true, 0.9, true, 9.0, ilm.Metrics())
+		_ = m1
+		// Second delta: scale=1, positive offset -1 counts [4,5]; negative offset 0 counts [1,1]
+		m2 := appendDeltaNative(ts1, ts2, 1, -1, []uint64{4, 5}, 0, []uint64{1, 1}, 2, 7, 4.5, true, 0.5, false, 0, ilm.Metrics())
+
+		a := newAccumulator(zap.NewNop(), 1*time.Hour).(*lastValueAccumulator)
+		n := a.Accumulate(rm)
+		require.Equal(t, 2, n)
+
+		// Build signature using attributes of second metric
+		sig := timeseriesSignature(ilm.Scope().Name(), ilm.Scope().Version(), ilm.SchemaUrl(), ilm.Scope().Attributes(), ilm.Metrics().At(0), m2.ExponentialHistogram().DataPoints().At(0).Attributes(), pcommon.NewMap())
+		got, ok := a.registeredMetrics.Load(sig)
+		require.True(t, ok)
+		dp := got.(*accumulatedValue).value.ExponentialHistogram().DataPoints().At(0)
+
+		// Expect scale = min(2,1) = 1
+		require.Equal(t, int32(1), dp.Scale())
+
+		// Positive buckets: prev downscales by factor 2 -> offset -1, counts [-2,-1,0] => [1+2, 3] => [3,3]; merge with current [-1:4,0:5] => [-1:7, 0:8]
+		require.Equal(t, int32(-1), dp.Positive().Offset())
+		require.Equal(t, 2, dp.Positive().BucketCounts().Len())
+		require.Equal(t, uint64(7), dp.Positive().BucketCounts().At(0))
+		require.Equal(t, uint64(8), dp.Positive().BucketCounts().At(1))
+
+		// Negative buckets: prev scale=2 offset 0 counts [4] downscale to scale 1 with factor 2 -> offset 0, counts [4]; merge with current offset 0 counts [1,1] -> [5,1]
+		require.Equal(t, int32(0), dp.Negative().Offset())
+		require.Equal(t, 2, dp.Negative().BucketCounts().Len())
+		require.Equal(t, uint64(5), dp.Negative().BucketCounts().At(0))
+		require.Equal(t, uint64(1), dp.Negative().BucketCounts().At(1))
+
+		// Count, ZeroCount, Sum, Min, Max
+		require.Equal(t, uint64(6+7), dp.Count())
+		require.Equal(t, uint64(1+2), dp.ZeroCount())
+		require.InDelta(t, 3.5+4.5, dp.Sum(), 1e-12)
+		require.True(t, dp.HasMin())
+		require.InDelta(t, 0.5, dp.Min(), 1e-12) // min of 0.9 and 0.5
+		require.True(t, dp.HasMax())
+		require.InDelta(t, 9.0, dp.Max(), 1e-12) // max from first since second had no max
+		require.Equal(t, ts2.Unix(), dp.Timestamp().AsTime().Unix())
+	})
+
+	t.Run("CumulativeKeepLatest", func(t *testing.T) {
+		rm := pmetric.NewResourceMetrics()
+		ilm := rm.ScopeMetrics().AppendEmpty()
+		ilm.Scope().SetName("test")
+
+		metric := ilm.Metrics().AppendEmpty()
+		metric.SetName("test_native_hist")
+		metric.SetEmptyExponentialHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+		dp1 := metric.ExponentialHistogram().DataPoints().AppendEmpty()
+		dp1.SetScale(1)
+		dp1.Positive().SetOffset(0)
+		dp1.Positive().BucketCounts().FromRaw([]uint64{1, 2})
+		dp1.Negative().SetOffset(0)
+		dp1.Negative().BucketCounts().FromRaw([]uint64{0})
+		dp1.SetCount(3)
+		dp1.SetZeroCount(0)
+		dp1.SetSum(10)
+		dp1.SetTimestamp(pcommon.NewTimestampFromTime(time.Now().Add(-3 * time.Second)))
+		dp1.Attributes().PutStr("label_1", "1")
+
+		dp2 := metric.ExponentialHistogram().DataPoints().AppendEmpty()
+		dp2.SetScale(1)
+		dp2.Positive().SetOffset(0)
+		dp2.Positive().BucketCounts().FromRaw([]uint64{4, 5})
+		dp2.Negative().SetOffset(0)
+		dp2.Negative().BucketCounts().FromRaw([]uint64{0})
+		dp2.SetCount(9)
+		dp2.SetZeroCount(0)
+		dp2.SetSum(20)
+		now := time.Now().Add(-2 * time.Second)
+		dp2.SetTimestamp(pcommon.NewTimestampFromTime(now))
+		dp2.Attributes().PutStr("label_1", "1")
+
+		a := newAccumulator(zap.NewNop(), 1*time.Hour).(*lastValueAccumulator)
+		n := a.Accumulate(rm)
+		require.Equal(t, 2, n)
+
+		sig := timeseriesSignature(ilm.Scope().Name(), ilm.Scope().Version(), ilm.SchemaUrl(), ilm.Scope().Attributes(), metric, dp2.Attributes(), pcommon.NewMap())
+		got, ok := a.registeredMetrics.Load(sig)
+		require.True(t, ok)
+		dp := got.(*accumulatedValue).value.ExponentialHistogram().DataPoints().At(0)
+		require.Equal(t, uint64(9), dp.Count())
+		require.Equal(t, uint64(0), dp.ZeroCount())
+		require.InDelta(t, 20.0, dp.Sum(), 1e-12)
+		require.Equal(t, now.Unix(), dp.Timestamp().AsTime().Unix())
+		require.Equal(t, uint64(4), dp.Positive().BucketCounts().At(0))
+		require.Equal(t, uint64(5), dp.Positive().BucketCounts().At(1))
+	})
+
+	t.Run("DeltaMisalignedDropOrReset", func(t *testing.T) {
+		// First: ts1; Second: start before prev end -> drop; Third: start after prev end -> reset
+		start1 := time.Now().Add(-6 * time.Second)
+		ts1 := time.Now().Add(-5 * time.Second)
+		start2 := time.Now().Add(-6 * time.Second) // not equal to prev end; and NOT after prev end -> drop
+		ts2 := time.Now().Add(-4 * time.Second)
+		start3 := time.Now().Add(-3 * time.Second) // strictly after prev end -> reset
+		ts3 := time.Now().Add(-2 * time.Second)
+
+		rm := pmetric.NewResourceMetrics()
+		ilm := rm.ScopeMetrics().AppendEmpty()
+		ilm.Scope().SetName("test")
+		m1 := appendDeltaNative(start1, ts1, 1, 0, []uint64{1}, 0, nil, 0, 1, 1.0, false, 0, false, 0, ilm.Metrics())
+		_ = m1
+		m2 := appendDeltaNative(start2, ts2, 1, 0, []uint64{2}, 0, nil, 0, 2, 2.0, false, 0, false, 0, ilm.Metrics())
+		m3 := appendDeltaNative(start3, ts3, 1, 0, []uint64{3}, 0, nil, 0, 3, 3.0, false, 0, false, 0, ilm.Metrics())
+		_ = m2
+		_ = m3
+
+		a := newAccumulator(zap.NewNop(), 1*time.Hour).(*lastValueAccumulator)
+		n := a.Accumulate(rm)
+		// First stored, second dropped, third reset and stored: total 2
+		require.Equal(t, 2, n)
+
+		sig := timeseriesSignature(ilm.Scope().Name(), ilm.Scope().Version(), ilm.SchemaUrl(), ilm.Scope().Attributes(), ilm.Metrics().At(0), m3.ExponentialHistogram().DataPoints().At(0).Attributes(), pcommon.NewMap())
+		got, ok := a.registeredMetrics.Load(sig)
+		require.True(t, ok)
+		dp := got.(*accumulatedValue).value.ExponentialHistogram().DataPoints().At(0)
+		require.Equal(t, uint64(3), dp.Count())
+		require.InDelta(t, 3.0, dp.Sum(), 1e-12)
+		require.Equal(t, uint64(3), dp.Positive().BucketCounts().At(0))
+		require.Equal(t, ts3.Unix(), dp.Timestamp().AsTime().Unix())
+	})
+}
+
 func TestTimeseriesSignatureNotMutating(t *testing.T) {
 	attrs := pcommon.NewMap()
 	attrs.PutStr("label_2", "2")
