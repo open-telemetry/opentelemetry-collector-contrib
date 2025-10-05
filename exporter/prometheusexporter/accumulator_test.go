@@ -645,7 +645,7 @@ func TestAccumulateDroppedMetrics(t *testing.T) {
 
 func TestAccumulateDeltaToCumulativeExponentialHistogram(t *testing.T) {
 	appendDeltaNative := func(startTs, ts time.Time, scale int32, posOff int32, pos []uint64, negOff int32, neg []uint64,
-		zeroCount uint64, count uint64, sum float64, minSet bool, min float64, maxSet bool, max float64, metrics pmetric.MetricSlice) pmetric.Metric {
+		zeroCount uint64, count uint64, sum float64, minSet bool, minim float64, maxSet bool, maxim float64, metrics pmetric.MetricSlice) pmetric.Metric {
 		metric := metrics.AppendEmpty()
 		metric.SetName("test_native_hist")
 		metric.SetEmptyExponentialHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
@@ -659,10 +659,10 @@ func TestAccumulateDeltaToCumulativeExponentialHistogram(t *testing.T) {
 		dp.SetCount(count)
 		dp.SetZeroThreshold(0)
 		if minSet {
-			dp.SetMin(min)
+			dp.SetMin(minim)
 		}
 		if maxSet {
-			dp.SetMax(max)
+			dp.SetMax(maxim)
 		}
 		dp.SetSum(sum)
 		dp.Attributes().PutStr("label_1", "1")
