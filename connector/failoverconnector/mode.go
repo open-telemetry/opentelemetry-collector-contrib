@@ -46,6 +46,13 @@ type FailoverStrategyFactory interface {
 }
 
 // GetFailoverStrategyFactory returns the appropriate factory for the given mode
-func GetFailoverStrategyFactory(_ FailoverMode) FailoverStrategyFactory {
-	return &standardFailoverFactory{}
+func GetFailoverStrategyFactory(mode FailoverMode) FailoverStrategyFactory {
+	switch mode {
+	case FailoverModeProgressive:
+		return &progressiveFailoverFactory{}
+	case FailoverModeStandard:
+		fallthrough
+	default:
+		return &standardFailoverFactory{}
+	}
 }
