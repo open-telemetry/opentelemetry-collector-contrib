@@ -22,7 +22,6 @@ type PipelineSelector struct {
 
 // HandleError is called when an error is returned on a healthy pipeline
 func (p *PipelineSelector) HandleError(idx int) {
-	// fmt.Println("Calling HandleError")
 	if idx != p.currentPipeline {
 		return
 	}
