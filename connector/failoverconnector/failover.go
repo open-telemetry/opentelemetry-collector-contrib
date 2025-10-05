@@ -28,10 +28,10 @@ type baseFailoverRouter[C any] struct {
 	notifyRetry chan struct{}
 	done        chan struct{}
 
-	//pS        *state.PipelineSelector
-	//errTryLock  *state.TryLock
-	//notifyRetry chan struct{}
-	//done        chan struct{}
+	// pS        *state.PipelineSelector
+	// errTryLock  *state.TryLock
+	// notifyRetry chan struct{}
+	// done        chan struct{}
 }
 
 //// getNotifyRetryChannel returns the retry notification channel for strategies to use

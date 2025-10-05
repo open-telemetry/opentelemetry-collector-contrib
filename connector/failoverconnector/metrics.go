@@ -23,14 +23,14 @@ func newMetricsRouter(provider consumerProvider[consumer.Metrics], cfg *Config) 
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Create the appropriate strategy based on the failover mode
 	factory := GetFailoverStrategyFactory(cfg.FailoverMode)
 	strategy := factory.CreateMetricsStrategy(failover)
-	
+
 	return &metricsRouter{
 		baseFailoverRouter: failover,
-		strategy:          strategy,
+		strategy:           strategy,
 	}, nil
 }
 

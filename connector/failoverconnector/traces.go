@@ -6,6 +6,7 @@ package failoverconnector // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"context"
 	"errors"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
@@ -36,7 +37,7 @@ func newTracesRouter(provider consumerProvider[consumer.Traces], cfg *Config) (*
 
 // Consume is the traces-specific consumption method
 func (f *tracesRouter) Consume(ctx context.Context, td ptrace.Traces) error {
-	//fmt.Println("Consume called")
+	// fmt.Println("Consume called")
 	return f.strategy.ConsumeTraces(ctx, td)
 }
 

@@ -5,6 +5,7 @@ package failoverconnector // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector/internal/state"
 
 	"go.opentelemetry.io/collector/consumer"
@@ -105,7 +106,7 @@ func (s *standardStrategy[C]) getCurrentConsumer() (C, int) {
 
 // reportConsumerError ensures only one consumer is reporting an error at a time to avoid multiple failovers
 func (s *standardStrategy[C]) reportConsumerError(idx int) {
-	//fmt.Println("Calling reportConsumerError")
+	// fmt.Println("Calling reportConsumerError")
 	s.errTryLock.TryExecute(s.pS.HandleError, idx)
 }
 
@@ -137,7 +138,7 @@ type standardTracesStrategy struct {
 }
 
 func (s *standardTracesStrategy) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
-	//fmt.Println("Calling ConsumeTraces")
+	// fmt.Println("Calling ConsumeTraces")
 	select {
 	case <-s.getNotifyRetryChannel():
 		if !s.sampleRetryConsumers(ctx, td) {
@@ -150,7 +151,7 @@ func (s *standardTracesStrategy) ConsumeTraces(ctx context.Context, td ptrace.Tr
 }
 
 func (s *standardTracesStrategy) consumeByHealthyPipeline(ctx context.Context, td ptrace.Traces) error {
-	//fmt.Println("Calling consumeByHealthyPipeline")
+	// fmt.Println("Calling consumeByHealthyPipeline")
 	for {
 		tc, idx := s.getCurrentConsumer()
 		if idx >= len(s.router.cfg.PipelinePriority) {
@@ -167,7 +168,7 @@ func (s *standardTracesStrategy) consumeByHealthyPipeline(ctx context.Context, t
 }
 
 func (s *standardTracesStrategy) sampleRetryConsumers(ctx context.Context, td ptrace.Traces) bool {
-	//fmt.Println("Calling sampleRetryConsumers")
+	// fmt.Println("Calling sampleRetryConsumers")
 	stableIndex := s.pS.CurrentPipeline()
 	for i := 0; i < stableIndex; i++ {
 		consumer := s.router.getConsumerAtIndex(i)
