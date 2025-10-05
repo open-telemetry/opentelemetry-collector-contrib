@@ -58,11 +58,8 @@ func (f *metricsFailover) ConsumeMetrics(ctx context.Context, md pmetric.Metrics
 }
 
 func (f *metricsFailover) Shutdown(context.Context) error {
-	if f.failover != nil {
-		f.failover.Shutdown()
-		if f.failover.strategy != nil {
-			f.failover.strategy.Shutdown()
-		}
+	if f.failover != nil && f.failover.strategy != nil {
+		f.failover.strategy.Shutdown()
 	}
 	return nil
 }

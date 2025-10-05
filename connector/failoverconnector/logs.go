@@ -58,11 +58,8 @@ func (f *logsFailover) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 }
 
 func (f *logsFailover) Shutdown(context.Context) error {
-	if f.failover != nil {
-		f.failover.Shutdown()
-		if f.failover.strategy != nil {
-			f.failover.strategy.Shutdown()
-		}
+	if f.failover != nil && f.failover.strategy != nil {
+		f.failover.strategy.Shutdown()
 	}
 	return nil
 }

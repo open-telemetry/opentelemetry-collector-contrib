@@ -34,7 +34,6 @@ func (p *PipelineSelector) NextStableLevel() {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 	p.currentPipeline++
-	// fmt.Printf("current pipeline %d\n", p.currentPipeline)
 }
 
 // TryEnableRetry checks if a retry is already in effect and if not starts the retry goroutine

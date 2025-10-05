@@ -6,18 +6,18 @@ package failoverconnector // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"context"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector/internal/state"
-
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector/internal/state"
 )
 
 // standardFailoverFactory creates standard failover strategies
 type standardFailoverFactory struct{}
 
-func (f *standardFailoverFactory) CreateTracesStrategy(router *baseFailoverRouter[consumer.Traces]) TracesFailoverStrategy {
+func (*standardFailoverFactory) CreateTracesStrategy(router *baseFailoverRouter[consumer.Traces]) TracesFailoverStrategy {
 	cfg := router.cfg
 	done := make(chan struct{})
 	notifyRetry := make(chan struct{}, 1)
@@ -38,7 +38,7 @@ func (f *standardFailoverFactory) CreateTracesStrategy(router *baseFailoverRoute
 	return &standardTracesStrategy{strategy}
 }
 
-func (f *standardFailoverFactory) CreateMetricsStrategy(router *baseFailoverRouter[consumer.Metrics]) MetricsFailoverStrategy {
+func (*standardFailoverFactory) CreateMetricsStrategy(router *baseFailoverRouter[consumer.Metrics]) MetricsFailoverStrategy {
 	cfg := router.cfg
 	done := make(chan struct{})
 	notifyRetry := make(chan struct{}, 1)
@@ -59,7 +59,7 @@ func (f *standardFailoverFactory) CreateMetricsStrategy(router *baseFailoverRout
 	return &standardMetricsStrategy{strategy}
 }
 
-func (f *standardFailoverFactory) CreateLogsStrategy(router *baseFailoverRouter[consumer.Logs]) LogsFailoverStrategy {
+func (*standardFailoverFactory) CreateLogsStrategy(router *baseFailoverRouter[consumer.Logs]) LogsFailoverStrategy {
 	cfg := router.cfg
 	done := make(chan struct{})
 	notifyRetry := make(chan struct{}, 1)
@@ -106,7 +106,6 @@ func (s *standardStrategy[C]) getCurrentConsumer() (C, int) {
 
 // reportConsumerError ensures only one consumer is reporting an error at a time to avoid multiple failovers
 func (s *standardStrategy[C]) reportConsumerError(idx int) {
-	// fmt.Println("Calling reportConsumerError")
 	s.errTryLock.TryExecute(s.pS.HandleError, idx)
 }
 
@@ -128,17 +127,11 @@ func (s *standardStrategy[C]) TestSetStableConsumerIndex(idx int) {
 	s.pS.TestSetCurrentPipeline(idx)
 }
 
-//// standardTracesStrategy implements the current standard failover logic for traces
-//type standardTracesStrategy struct {
-//	router *baseFailoverRouter[consumer.Traces]
-//}
-
 type standardTracesStrategy struct {
 	*standardStrategy[consumer.Traces]
 }
 
 func (s *standardTracesStrategy) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
-	// fmt.Println("Calling ConsumeTraces")
 	select {
 	case <-s.getNotifyRetryChannel():
 		if !s.sampleRetryConsumers(ctx, td) {
@@ -151,7 +144,6 @@ func (s *standardTracesStrategy) ConsumeTraces(ctx context.Context, td ptrace.Tr
 }
 
 func (s *standardTracesStrategy) consumeByHealthyPipeline(ctx context.Context, td ptrace.Traces) error {
-	// fmt.Println("Calling consumeByHealthyPipeline")
 	for {
 		tc, idx := s.getCurrentConsumer()
 		if idx >= len(s.router.cfg.PipelinePriority) {
@@ -168,7 +160,6 @@ func (s *standardTracesStrategy) consumeByHealthyPipeline(ctx context.Context, t
 }
 
 func (s *standardTracesStrategy) sampleRetryConsumers(ctx context.Context, td ptrace.Traces) bool {
-	// fmt.Println("Calling sampleRetryConsumers")
 	stableIndex := s.pS.CurrentPipeline()
 	for i := 0; i < stableIndex; i++ {
 		consumer := s.router.getConsumerAtIndex(i)
@@ -184,11 +175,6 @@ func (s *standardTracesStrategy) sampleRetryConsumers(ctx context.Context, td pt
 func (s *standardTracesStrategy) Shutdown() {
 	s.standardStrategy.Shutdown()
 }
-
-//// standardMetricsStrategy implements the current standard failover logic for metrics
-//type standardMetricsStrategy struct {
-//	router *baseFailoverRouter[consumer.Metrics]
-//}
 
 type standardMetricsStrategy struct {
 	*standardStrategy[consumer.Metrics]
@@ -228,7 +214,7 @@ func (s *standardMetricsStrategy) sampleRetryConsumers(ctx context.Context, md p
 		consumer := s.router.getConsumerAtIndex(i)
 		err := consumer.ConsumeMetrics(ctx, md)
 		if err == nil {
-			s.router.pS.ResetHealthyPipeline(i)
+			s.pS.ResetHealthyPipeline(i)
 			return true
 		}
 	}
@@ -238,11 +224,6 @@ func (s *standardMetricsStrategy) sampleRetryConsumers(ctx context.Context, md p
 func (s *standardMetricsStrategy) Shutdown() {
 	s.standardStrategy.Shutdown()
 }
-
-//// standardLogsStrategy implements the current standard failover logic for logs
-//type standardLogsStrategy struct {
-//	router *baseFailoverRouter[consumer.Logs]
-//}
 
 type standardLogsStrategy struct {
 	*standardStrategy[consumer.Logs]

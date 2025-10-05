@@ -7,8 +7,6 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/pipeline"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector/internal/state"
 )
 
 var (
@@ -21,12 +19,7 @@ type consumerProvider[C any] func(...pipeline.ID) (C, error)
 // baseFailoverRouter provides the common infrastructure for failover routing
 type baseFailoverRouter[C any] struct {
 	cfg       *Config
-	pS        *state.PipelineSelector
 	consumers []C
-
-	errTryLock  *state.TryLock
-	notifyRetry chan struct{}
-	done        chan struct{}
 }
 
 // getConsumerAtIndex returns the consumer at a specific index
@@ -34,28 +27,7 @@ func (f *baseFailoverRouter[C]) getConsumerAtIndex(idx int) C {
 	return f.consumers[idx]
 }
 
-// reportConsumerError ensures only one consumer is reporting an error at a time to avoid multiple failovers
-func (f *baseFailoverRouter[C]) reportConsumerError(idx int) {
-	f.errTryLock.TryExecute(f.pS.HandleError, idx)
-}
-
-func (f *baseFailoverRouter[C]) Shutdown() {
-	select {
-	case <-f.done:
-	default:
-		close(f.done)
-	}
-}
-
 func newBaseFailoverRouter[C any](provider consumerProvider[C], cfg *Config) (*baseFailoverRouter[C], error) {
-	done := make(chan struct{})
-	notifyRetry := make(chan struct{}, 1)
-	pSConstants := state.PSConstants{
-		RetryInterval: cfg.RetryInterval,
-		RetryGap:      cfg.RetryGap,
-		MaxRetries:    cfg.MaxRetries,
-	}
-
 	consumers := make([]C, 0)
 	for _, pipelines := range cfg.PipelinePriority {
 		baseConsumer, err := provider(pipelines...)
@@ -65,28 +37,15 @@ func newBaseFailoverRouter[C any](provider consumerProvider[C], cfg *Config) (*b
 		consumers = append(consumers, baseConsumer)
 	}
 
-	selector := state.NewPipelineSelector(notifyRetry, done, pSConstants)
 	return &baseFailoverRouter[C]{
-		consumers:   consumers,
-		cfg:         cfg,
-		pS:          selector,
-		errTryLock:  state.NewTryLock(),
-		done:        done,
-		notifyRetry: notifyRetry,
+		consumers: consumers,
+		cfg:       cfg,
 	}, nil
 }
 
 // For Testing
 func (f *baseFailoverRouter[C]) ModifyConsumerAtIndex(idx int, c C) {
 	f.consumers[idx] = c
-}
-
-func (f *baseFailoverRouter[C]) TestGetCurrentConsumerIndex() int {
-	return f.pS.CurrentPipeline()
-}
-
-func (f *baseFailoverRouter[C]) TestSetStableConsumerIndex(idx int) {
-	f.pS.TestSetCurrentPipeline(idx)
 }
 
 func (f *baseFailoverRouter[C]) TestGetConsumerAtIndex(idx int) C {

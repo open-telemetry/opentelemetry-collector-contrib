@@ -60,11 +60,8 @@ func (f *tracesFailover) ConsumeTraces(ctx context.Context, td ptrace.Traces) er
 }
 
 func (f *tracesFailover) Shutdown(context.Context) error {
-	if f.failover != nil {
-		f.failover.Shutdown()
-		if f.failover.strategy != nil {
-			f.failover.strategy.Shutdown()
-		}
+	if f.failover != nil && f.failover.strategy != nil {
+		f.failover.strategy.Shutdown()
 	}
 	return nil
 }
