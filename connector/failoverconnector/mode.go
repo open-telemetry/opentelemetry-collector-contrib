@@ -16,8 +16,7 @@ import (
 type FailoverMode string
 
 const (
-	FailoverModeStandard    FailoverMode = "standard"
-	FailoverModeProgressive FailoverMode = "progressive"
+	FailoverModeStandard FailoverMode = "standard"
 )
 
 // TracesFailoverStrategy defines the interface for traces failover strategies
