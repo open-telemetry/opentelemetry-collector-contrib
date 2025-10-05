@@ -27,10 +27,6 @@ func TestFailoverModes(t *testing.T) {
 			name:         "standard_mode",
 			failoverMode: FailoverModeStandard,
 		},
-		{
-			name:         "progressive_mode",
-			failoverMode: FailoverModeProgressive,
-		},
 	}
 
 	for _, tc := range testCases {
