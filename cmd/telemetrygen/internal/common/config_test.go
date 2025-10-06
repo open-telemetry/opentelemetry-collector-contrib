@@ -89,6 +89,10 @@ func TestKeyValueSet(t *testing.T) {
 			err:  errFormatOTLPAttributes,
 		},
 		{
+			flag:     "key=[true,]",
+			expected: KeyValue(map[string]any{"key": []bool{true}}),
+		},
+		{
 			flag: "key=12.34",
 			err:  errDoubleQuotesOTLPAttributes,
 		},

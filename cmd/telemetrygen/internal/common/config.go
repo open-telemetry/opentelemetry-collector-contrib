@@ -76,7 +76,9 @@ func (v *KeyValue) Set(s string) error {
 
 	var items []string
 	for item := range strings.SplitSeq(content, ",") {
-		items = append(items, strings.TrimSpace(item))
+		if i := strings.TrimSpace(item); i != "" {
+			items = append(items, i)
+		}
 	}
 
 	firstItem, err := parseValue(items[0])
