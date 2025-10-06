@@ -5,6 +5,7 @@ package profiles
 
 import (
 	"fmt"
+	"iter"
 	"net/http"
 	"reflect"
 	"testing"
@@ -15,7 +16,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pprofile"
-	"iter"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlprofile"

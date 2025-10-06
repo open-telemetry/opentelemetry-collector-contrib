@@ -415,8 +415,7 @@ func (p *Parser[K]) buildArgs(ed editor, argsVal reflect.Value) error {
 			default:
 				return errors.New("invalid function name given")
 			}
-			var f Factory[K]
-			f, ok = p.functions[name]
+			f, ok := p.functions[name]
 			if !ok {
 				return fmt.Errorf("undefined function %s", name)
 			}
@@ -683,20 +682,6 @@ func (p *Parser[K]) buildArg(argVal value, argType reflect.Type) (any, error) {
 	}
 }
 
-// optionalManager provides a way for the parser to handle Optional[T] structs
-// without needing to know the concrete type of T, which is inaccessible through
-// the reflect package.
-// Would likely be resolved by https://github.com/golang/go/issues/54393.
-type optionalManager interface {
-	// set takes a non-reflection value and returns a reflect.Value of
-	// an Optional[T] struct with this value set.
-	set(val any) reflect.Value
-
-	// get returns a reflect.Value value of the value contained within
-	// an Optional[T]. This allows obtaining a reflect.Type for T.
-	get() reflect.Value
-}
-
 type buildArgFunc func(value, reflect.Type) (any, error)
 
 func buildSlice[T any](argVal value, argType reflect.Type, buildArg buildArgFunc, name string) (any, error) {
@@ -722,6 +707,20 @@ func buildSlice[T any](argVal value, argType reflect.Type, buildArg buildArgFunc
 	}
 
 	return vals, nil
+}
+
+// optionalManager provides a way for the parser to handle Optional[T] structs
+// without needing to know the concrete type of T, which is inaccessible through
+// the reflect package.
+// Would likely be resolved by https://github.com/golang/go/issues/54393.
+type optionalManager interface {
+	// set takes a non-reflection value and returns a reflect.Value of
+	// an Optional[T] struct with this value set.
+	set(val any) reflect.Value
+
+	// get returns a reflect.Value value of the value contained within
+	// an Optional[T]. This allows obtaining a reflect.Type for T.
+	get() reflect.Value
 }
 
 // Optional is used to represent an optional function argument
