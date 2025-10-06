@@ -15,19 +15,19 @@ import (
 // progressiveFailoverFactory creates progressive failover strategies
 type progressiveFailoverFactory struct{}
 
-func (f *progressiveFailoverFactory) CreateTracesStrategy(router *baseFailoverRouter[consumer.Traces]) TracesFailoverStrategy {
+func (*progressiveFailoverFactory) CreateTracesStrategy(router *baseFailoverRouter[consumer.Traces]) TracesFailoverStrategy {
 	return &progressiveTracesStrategy{
 		router: router,
 	}
 }
 
-func (f *progressiveFailoverFactory) CreateMetricsStrategy(router *baseFailoverRouter[consumer.Metrics]) MetricsFailoverStrategy {
+func (*progressiveFailoverFactory) CreateMetricsStrategy(router *baseFailoverRouter[consumer.Metrics]) MetricsFailoverStrategy {
 	return &progressiveMetricsStrategy{
 		router: router,
 	}
 }
 
-func (f *progressiveFailoverFactory) CreateLogsStrategy(router *baseFailoverRouter[consumer.Logs]) LogsFailoverStrategy {
+func (*progressiveFailoverFactory) CreateLogsStrategy(router *baseFailoverRouter[consumer.Logs]) LogsFailoverStrategy {
 	return &progressiveLogsStrategy{
 		router: router,
 	}
@@ -48,7 +48,7 @@ func (p *progressiveTracesStrategy) ConsumeTraces(ctx context.Context, td ptrace
 	return errNoValidPipeline
 }
 
-func (p *progressiveTracesStrategy) Shutdown() {
+func (*progressiveTracesStrategy) Shutdown() {
 }
 
 type progressiveMetricsStrategy struct {
@@ -66,7 +66,7 @@ func (p *progressiveMetricsStrategy) ConsumeMetrics(ctx context.Context, md pmet
 	return errNoValidPipeline
 }
 
-func (p *progressiveMetricsStrategy) Shutdown() {
+func (*progressiveMetricsStrategy) Shutdown() {
 }
 
 type progressiveLogsStrategy struct {
@@ -84,5 +84,5 @@ func (p *progressiveLogsStrategy) ConsumeLogs(ctx context.Context, ld plog.Logs)
 	return errNoValidPipeline
 }
 
-func (p *progressiveLogsStrategy) Shutdown() {
+func (*progressiveLogsStrategy) Shutdown() {
 }

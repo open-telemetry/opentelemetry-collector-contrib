@@ -50,8 +50,6 @@ func GetFailoverStrategyFactory(mode FailoverMode) FailoverStrategyFactory {
 	switch mode {
 	case FailoverModeProgressive:
 		return &progressiveFailoverFactory{}
-	case FailoverModeStandard:
-		fallthrough
 	default:
 		return &standardFailoverFactory{}
 	}

@@ -118,5 +118,5 @@ func TestProgressiveModeAlwaysTriesAllConsumers(t *testing.T) {
 	err = conn.ConsumeTraces(t.Context(), tr)
 	assert.NoError(t, err)
 	assert.Len(t, sinkFirst.AllTraces(), 1)
-	assert.Len(t, sinkSecond.AllTraces(), 0)
+	assert.Empty(t, sinkSecond.AllTraces())
 }
