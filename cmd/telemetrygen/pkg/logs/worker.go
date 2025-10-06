@@ -61,8 +61,8 @@ func (w worker) simulateLogs(res *resource.Resource, exporter sdklog.Exporter, t
 		}
 
 		attrs := []log.KeyValue{log.String("app", "server")}
-		for i, attr := range telemetryAttributes {
-			attrs = append(attrs, log.String(string(attr.Key), telemetryAttributes[i].Value.AsString()))
+		for _, attr := range telemetryAttributes {
+			attrs = append(attrs, log.KeyValueFromAttribute(attr))
 		}
 
 		// Add load size attributes if specified

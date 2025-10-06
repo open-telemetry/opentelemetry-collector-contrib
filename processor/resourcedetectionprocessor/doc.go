@@ -22,6 +22,8 @@
 //go:generate mdatagen internal/dynatrace/metadata.yaml
 //go:generate mdatagen internal/akamai/metadata.yaml
 //go:generate mdatagen internal/scaleway/metadata.yaml
+//go:generate mdatagen internal/upcloud/metadata.yaml
+//go:generate mdatagen internal/vultr/metadata.yaml
 
 // package resourcedetectionprocessor implements a processor
 // which can be used to detect resource information from the host,

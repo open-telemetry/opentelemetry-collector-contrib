@@ -159,26 +159,36 @@ type Attribute struct {
 	Key          string `mapstructure:"key"`
 	Optional     bool   `mapstructure:"optional"`
 	DefaultValue any    `mapstructure:"default_value"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type Histogram struct {
 	Buckets []float64 `mapstructure:"buckets"`
 	Count   string    `mapstructure:"count"`
 	Value   string    `mapstructure:"value"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type ExponentialHistogram struct {
 	MaxSize int32  `mapstructure:"max_size"`
 	Count   string `mapstructure:"count"`
 	Value   string `mapstructure:"value"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type Sum struct {
 	Value string `mapstructure:"value"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type Gauge struct {
 	Value string `mapstructure:"value"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // MetricInfo defines the structure of the metric produced by the connector.
