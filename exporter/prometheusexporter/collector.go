@@ -185,7 +185,7 @@ func bucketsToNativeMap(buckets pmetric.ExponentialHistogramDataPointBuckets, sc
 	for i := 0; i < counts.Len(); i++ {
 		// Effective bucket index after downscaling: ((offset + i) >> scaleDown) + 1
 		idx := (int32(i) + baseOffset) >> scaleDown
-		idx += 1
+		idx++
 		out[int(idx)] += int64(counts.At(i))
 	}
 	return out
