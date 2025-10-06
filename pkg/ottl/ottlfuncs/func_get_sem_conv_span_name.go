@@ -6,12 +6,13 @@ package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-c
 import (
 	"context"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/semconv/v1.37.0"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 )
 
 func NewGetSemConvSpanNameFactory() ottl.Factory[ottlspan.TransformContext] {
@@ -19,10 +20,9 @@ func NewGetSemConvSpanNameFactory() ottl.Factory[ottlspan.TransformContext] {
 }
 
 func createGetSemConvSpanNameFunction(_ ottl.FunctionContext, _ ottl.Arguments) (ottl.ExprFunc[ottlspan.TransformContext], error) {
-	var r error = nil
 	return func(_ context.Context, tCtx ottlspan.TransformContext) (any, error) {
 		return SemConvSpanName(tCtx.GetSpan()), nil
-	}, r
+	}, nil
 }
 
 func SemConvSpanName(span ptrace.Span) string {
