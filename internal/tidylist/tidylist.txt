@@ -113,6 +113,7 @@ extension/encoding/otlpencodingextension
 exporter/fileexporter
 exporter/googlecloudexporter
 exporter/googlecloudpubsubexporter
+exporter/googlecloudstorageexporter
 exporter/googlemanagedprometheusexporter
 exporter/honeycombmarkerexporter
 exporter/influxdbexporter
@@ -241,6 +242,7 @@ receiver/azureeventhubreceiver
 receiver/azuremonitorreceiver
 receiver/bigipreceiver
 receiver/chronyreceiver
+receiver/ciscoosreceiver
 receiver/cloudflarereceiver
 receiver/cloudfoundryreceiver
 receiver/collectdreceiver
