@@ -51,6 +51,38 @@ func parseValue(val string) (any, error) {
 	return val[1 : len(val)-1], nil
 }
 
+// splitItems splits the content into a list of items separated by commas
+func splitItems(content string) []string {
+	var items []string
+	for item := range strings.SplitSeq(content, ",") {
+		if i := strings.TrimSpace(item); i != "" {
+			items = append(items, i)
+		}
+	}
+	return items
+}
+
+// sliceFrom converts items into a slice of a single type
+func sliceFrom(items []string) (any, error) {
+	firstItem, err := parseValue(items[0])
+	if err != nil {
+		return nil, err
+	}
+	sliceType := reflect.TypeOf(firstItem)
+	slice := reflect.MakeSlice(reflect.SliceOf(sliceType), len(items), len(items))
+	for i, item := range items {
+		val, err := parseValue(item)
+		if err != nil {
+			return nil, err
+		}
+		if reflect.TypeOf(val) != sliceType {
+			return nil, errFormatOTLPAttributes
+		}
+		slice.Index(i).Set(reflect.ValueOf(val))
+	}
+	return slice.Interface(), nil
+}
+
 func (v *KeyValue) Set(s string) error {
 	kv := strings.SplitN(s, "=", 2)
 	if len(kv) != 2 {
@@ -74,30 +106,12 @@ func (v *KeyValue) Set(s string) error {
 		return nil
 	}
 
-	var items []string
-	for item := range strings.SplitSeq(content, ",") {
-		if i := strings.TrimSpace(item); i != "" {
-			items = append(items, i)
-		}
-	}
-
-	firstItem, err := parseValue(items[0])
+	items := splitItems(content)
+	slice, err := sliceFrom(items)
 	if err != nil {
 		return err
 	}
-	sliceType := reflect.TypeOf(firstItem)
-	slice := reflect.MakeSlice(reflect.SliceOf(sliceType), len(items), len(items))
-	for i, item := range items {
-		val, err := parseValue(item)
-		if err != nil {
-			return err
-		}
-		if reflect.TypeOf(val) != sliceType {
-			return errFormatOTLPAttributes
-		}
-		slice.Index(i).Set(reflect.ValueOf(val))
-	}
-	(*v)[key] = slice.Interface()
+	(*v)[key] = slice
 	return nil
 }
 
