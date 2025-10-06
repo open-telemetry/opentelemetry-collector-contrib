@@ -118,6 +118,11 @@ type ConsumerConfig struct {
 	// The maximum amount of time to wait for MinFetchSize bytes to be
 	// available before the broker returns a response (default 250ms)
 	MaxFetchWait time.Duration `mapstructure:"max_fetch_wait"`
+
+	// MaxPartitionFetchSize defines the maximum number of bytes to fetch
+	// per partition (default "1048576")
+	MaxPartitionFetchSize int32 `mapstructure:"max_partition_fetch_size"`
+
 	// RebalanceStrategy specifies the strategy to use for partition assignment.
 	// Possible values are "range", "roundrobin", and "sticky".
 	// Defaults to "range".
@@ -137,10 +142,11 @@ func NewDefaultConsumerConfig() ConsumerConfig {
 			Enable:   true,
 			Interval: time.Second,
 		},
-		MinFetchSize:     1,
-		MaxFetchSize:     0,
-		MaxFetchWait:     250 * time.Millisecond,
-		DefaultFetchSize: 1048576,
+		MinFetchSize:          1,
+		MaxFetchSize:          0,
+		MaxFetchWait:          250 * time.Millisecond,
+		DefaultFetchSize:      1048576,
+		MaxPartitionFetchSize: 1048576,
 	}
 }
 
