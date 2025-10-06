@@ -176,6 +176,12 @@ var defaultSQLPlanObfuscateSettings = obfuscate.JSONConfig{
 func lazyInitObfuscator() *obfuscate.Obfuscator {
 	obfuscatorLoader.Do(func() {
 		obfuscator = obfuscate.NewObfuscator(obfuscate.Config{
+			SQL: obfuscate.SQLConfig{
+				DBMS:         "postgresql",
+				KeepSQLAlias: true,
+				KeepBoolean:  true,
+				KeepNull:     true,
+			},
 			SQLExecPlan:          defaultSQLPlanObfuscateSettings,
 			SQLExecPlanNormalize: defaultSQLPlanNormalizeSettings,
 		})
@@ -185,12 +191,7 @@ func lazyInitObfuscator() *obfuscate.Obfuscator {
 
 // obfuscateSQL obfuscates & normalizes the provided SQL query, writing the error into errResult if the operation fails.
 func obfuscateSQL(rawQuery string) (string, error) {
-	obfuscatedQuery, err := lazyInitObfuscator().ObfuscateSQLStringWithOptions(rawQuery, &obfuscate.SQLConfig{
-		// the information is need to be kept to prepare statement for explain.
-		KeepSQLAlias: true,
-		KeepBoolean:  true,
-		KeepNull:     true,
-	}, "")
+	obfuscatedQuery, err := lazyInitObfuscator().ObfuscateSQLString(rawQuery)
 	if err != nil {
 		return "", err
 	}
