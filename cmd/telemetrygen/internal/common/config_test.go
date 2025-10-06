@@ -82,11 +82,11 @@ func TestKeyValueSet(t *testing.T) {
 		},
 		{
 			flag: "key=[\"value1\", 2]",
-			err:  errFormatOTLPAttributes,
+			err:  errMixedTypeSlice,
 		},
 		{
 			flag: "key=[true, \"value2\"]",
-			err:  errFormatOTLPAttributes,
+			err:  errMixedTypeSlice,
 		},
 		{
 			flag:     "key=[]",

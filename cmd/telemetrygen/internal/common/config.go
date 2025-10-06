@@ -20,6 +20,7 @@ import (
 var (
 	errFormatOTLPAttributes       = errors.New("value should be in one of the following formats: key=\"value\", key=true, key=false, key=<integer>, or key=[<value1>, <value2>, ...]")
 	errDoubleQuotesOTLPAttributes = errors.New("value should be a string wrapped in double quotes")
+	errMixedTypeSlice             = errors.New("all items in a slice should be of the same type")
 )
 
 const (
@@ -76,7 +77,7 @@ func sliceFrom(items []string) (any, error) {
 			return nil, err
 		}
 		if reflect.TypeOf(val) != sliceType {
-			return nil, errFormatOTLPAttributes
+			return nil, errMixedTypeSlice
 		}
 		slice.Index(i).Set(reflect.ValueOf(val))
 	}
