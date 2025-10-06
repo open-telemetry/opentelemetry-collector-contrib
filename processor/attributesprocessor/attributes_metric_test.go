@@ -4,7 +4,6 @@
 package attributesprocessor
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -33,7 +32,7 @@ type metricTestCase struct {
 func runIndividualMetricTestCase(t *testing.T, mt metricTestCase, mp processor.Metrics) {
 	t.Run(mt.name, func(t *testing.T) {
 		md := generateMetricData(mt.name, mt.inputAttributes)
-		assert.NoError(t, mp.ConsumeMetrics(context.Background(), md))
+		assert.NoError(t, mp.ConsumeMetrics(t.Context(), md))
 		require.NoError(t, pmetrictest.CompareMetrics(generateMetricData(mt.name, mt.expectedAttributes), md))
 	})
 }
@@ -89,13 +88,13 @@ func TestMetricProcessor_NilEmptyData(t *testing.T) {
 		{Key: "attribute1", Action: attraction.DELETE},
 	}
 
-	mp, err := factory.CreateMetrics(context.Background(), processortest.NewNopSettings(metadata.Type), oCfg, consumertest.NewNop())
+	mp, err := factory.CreateMetrics(t.Context(), processortest.NewNopSettings(metadata.Type), oCfg, consumertest.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, mp)
 	for i := range metricTestCases {
 		tc := metricTestCases[i]
 		t.Run(tc.name, func(t *testing.T) {
-			assert.NoError(t, mp.ConsumeMetrics(context.Background(), tc.input))
+			assert.NoError(t, mp.ConsumeMetrics(t.Context(), tc.input))
 			assert.Equal(t, tc.output, tc.input)
 		})
 	}
@@ -153,7 +152,7 @@ func TestAttributes_FilterMetrics(t *testing.T) {
 		},
 		Config: *createConfig(filterset.Strict),
 	}
-	mp, err := factory.CreateMetrics(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	mp, err := factory.CreateMetrics(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, mp)
 
@@ -217,7 +216,7 @@ func TestAttributes_FilterMetricsByNameStrict(t *testing.T) {
 		Resources: []filterconfig.Attribute{{Key: "name", Value: "dont_apply"}},
 		Config:    *createConfig(filterset.Strict),
 	}
-	mp, err := factory.CreateMetrics(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	mp, err := factory.CreateMetrics(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, mp)
 
@@ -281,7 +280,7 @@ func TestAttributes_FilterMetricsByNameRegexp(t *testing.T) {
 		Resources: []filterconfig.Attribute{{Key: "name", Value: ".*dont_apply$"}},
 		Config:    *createConfig(filterset.Regexp),
 	}
-	mp, err := factory.CreateMetrics(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	mp, err := factory.CreateMetrics(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, mp)
 
@@ -340,7 +339,7 @@ func TestMetricAttributes_Hash(t *testing.T) {
 		{Key: "user.authenticated", Action: attraction.HASH},
 	}
 
-	mp, err := factory.CreateMetrics(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	mp, err := factory.CreateMetrics(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, mp)
 
@@ -398,7 +397,7 @@ func TestMetricAttributes_Convert(t *testing.T) {
 		{Key: "to.string", Action: attraction.CONVERT, ConvertedType: "string"},
 	}
 
-	tp, err := factory.CreateMetrics(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	tp, err := factory.CreateMetrics(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, tp)
 
@@ -443,7 +442,7 @@ func BenchmarkAttributes_FilterMetricsByName(b *testing.B) {
 		Config:    *createConfig(filterset.Regexp),
 		Resources: []filterconfig.Attribute{{Key: "name", Value: "^apply.*"}},
 	}
-	mp, err := factory.CreateMetrics(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	mp, err := factory.CreateMetrics(b.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	require.NoError(b, err)
 	require.NotNil(b, mp)
 
@@ -452,7 +451,7 @@ func BenchmarkAttributes_FilterMetricsByName(b *testing.B) {
 
 		b.Run(tc.name, func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
-				assert.NoError(b, mp.ConsumeMetrics(context.Background(), md))
+				assert.NoError(b, mp.ConsumeMetrics(b.Context(), md))
 			}
 		})
 

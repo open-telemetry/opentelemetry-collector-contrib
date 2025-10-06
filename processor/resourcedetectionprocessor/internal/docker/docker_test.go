@@ -40,7 +40,7 @@ func TestDetect(t *testing.T) {
 	detector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig())
 	require.NoError(t, err)
 	detector.(*Detector).provider = md
-	res, schemaURL, err := detector.Detect(context.Background())
+	res, schemaURL, err := detector.Detect(t.Context())
 	require.NoError(t, err)
 	assert.Equal(t, conventions.SchemaURL, schemaURL)
 	md.AssertExpectations(t)

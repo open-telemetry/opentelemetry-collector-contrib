@@ -5,7 +5,6 @@ package healthcheckextension
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -24,12 +23,12 @@ func Test_SimpleHealthCheck(t *testing.T) {
 	port := testutil.GetAvailablePort(t)
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.Endpoint = fmt.Sprintf("localhost:%d", port)
-	e, err := f.Create(context.Background(), extensiontest.NewNopSettings(f.Type()), cfg)
+	e, err := f.Create(t.Context(), extensiontest.NewNopSettings(f.Type()), cfg)
 	require.NoError(t, err)
-	err = e.Start(context.Background(), componenttest.NewNopHost())
+	err = e.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		require.NoError(t, e.Shutdown(context.Background()))
+		require.NoError(t, e.Shutdown(t.Context()))
 	})
 	resp, err := http.DefaultClient.Get(fmt.Sprintf("http://localhost:%d/", port))
 	require.NoError(t, err)

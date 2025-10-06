@@ -30,7 +30,7 @@ func TestBrokerShutdown(t *testing.T) {
 		settings: receivertest.NewNopSettings(metadata.Type),
 		config:   Config{},
 	}
-	_ = scraper.shutdown(context.Background())
+	_ = scraper.shutdown(t.Context())
 	client.AssertExpectations(t)
 }
 
@@ -44,33 +44,33 @@ func TestBrokerShutdown_closed(t *testing.T) {
 		settings: receivertest.NewNopSettings(metadata.Type),
 		config:   Config{},
 	}
-	_ = scraper.shutdown(context.Background())
+	_ = scraper.shutdown(t.Context())
 	client.AssertExpectations(t)
 }
 
 func TestBrokerScraper_createBrokerScraper(t *testing.T) {
 	newSaramaClient = mockNewSaramaClient
-	bs, err := createBrokerScraper(context.Background(), Config{}, receivertest.NewNopSettings(metadata.Type))
+	bs, err := createBrokerScraper(t.Context(), Config{}, receivertest.NewNopSettings(metadata.Type))
 	assert.NoError(t, err)
 	assert.NotNil(t, bs)
 }
 
 func TestBrokerScraperStart(t *testing.T) {
 	newSaramaClient = mockNewSaramaClient
-	bs, err := createBrokerScraper(context.Background(), Config{}, receivertest.NewNopSettings(metadata.Type))
+	bs, err := createBrokerScraper(t.Context(), Config{}, receivertest.NewNopSettings(metadata.Type))
 	assert.NoError(t, err)
 	assert.NotNil(t, bs)
-	assert.NoError(t, bs.Start(context.Background(), nil))
+	assert.NoError(t, bs.Start(t.Context(), nil))
 }
 
 func TestBrokerScraper_scrape_handles_client_error(t *testing.T) {
 	newSaramaClient = func(context.Context, configkafka.ClientConfig) (sarama.Client, error) {
 		return nil, errors.New("new client failed")
 	}
-	bs, err := createBrokerScraper(context.Background(), Config{}, receivertest.NewNopSettings(metadata.Type))
+	bs, err := createBrokerScraper(t.Context(), Config{}, receivertest.NewNopSettings(metadata.Type))
 	assert.NoError(t, err)
 	assert.NotNil(t, bs)
-	_, err = bs.ScrapeMetrics(context.Background())
+	_, err = bs.ScrapeMetrics(t.Context())
 	assert.Error(t, err)
 }
 
@@ -78,16 +78,17 @@ func TestBrokerScraper_shutdown_handles_nil_client(t *testing.T) {
 	newSaramaClient = func(context.Context, configkafka.ClientConfig) (sarama.Client, error) {
 		return nil, errors.New("new client failed")
 	}
-	bs, err := createBrokerScraper(context.Background(), Config{}, receivertest.NewNopSettings(metadata.Type))
+	bs, err := createBrokerScraper(t.Context(), Config{}, receivertest.NewNopSettings(metadata.Type))
 	assert.NoError(t, err)
 	assert.NotNil(t, bs)
-	err = bs.Shutdown(context.Background())
+	err = bs.Shutdown(t.Context())
 	assert.NoError(t, err)
 }
 
 func TestBrokerScraper_empty_resource_attribute(t *testing.T) {
 	client := newMockClient()
 	client.Mock.On("Brokers").Return(testBrokers)
+	client.Mock.On("Closed").Return(false)
 	bs := brokerScraper{
 		client:   client,
 		settings: receivertest.NewNopSettings(metadata.Type),
@@ -96,8 +97,8 @@ func TestBrokerScraper_empty_resource_attribute(t *testing.T) {
 		},
 		clusterAdmin: newMockClusterAdmin(),
 	}
-	require.NoError(t, bs.start(context.Background(), componenttest.NewNopHost()))
-	md, err := bs.scrape(context.Background())
+	require.NoError(t, bs.start(t.Context(), componenttest.NewNopHost()))
+	md, err := bs.scrape(t.Context())
 	assert.NoError(t, err)
 	require.Equal(t, 1, md.ResourceMetrics().Len())
 	require.Equal(t, 1, md.ResourceMetrics().At(0).ScopeMetrics().Len())
@@ -108,6 +109,7 @@ func TestBrokerScraper_empty_resource_attribute(t *testing.T) {
 func TestBrokerScraper_scrape(t *testing.T) {
 	client := newMockClient()
 	client.Mock.On("Brokers").Return(testBrokers)
+	client.Mock.On("Closed").Return(false)
 	bs := brokerScraper{
 		client:   client,
 		settings: receivertest.NewNopSettings(metadata.Type),
@@ -117,8 +119,8 @@ func TestBrokerScraper_scrape(t *testing.T) {
 		},
 		clusterAdmin: newMockClusterAdmin(),
 	}
-	require.NoError(t, bs.start(context.Background(), componenttest.NewNopHost()))
-	md, err := bs.scrape(context.Background())
+	require.NoError(t, bs.start(t.Context(), componenttest.NewNopHost()))
+	md, err := bs.scrape(t.Context())
 	assert.NoError(t, err)
 	require.Equal(t, 1, md.ResourceMetrics().Len())
 	require.Equal(t, 1, md.ResourceMetrics().At(0).ScopeMetrics().Len())
@@ -139,7 +141,7 @@ func TestBrokerScraper_scrape(t *testing.T) {
 
 func TestBrokersScraper_createBrokerScraper(t *testing.T) {
 	newSaramaClient = mockNewSaramaClient
-	bs, err := createBrokerScraper(context.Background(), Config{}, receivertest.NewNopSettings(metadata.Type))
+	bs, err := createBrokerScraper(t.Context(), Config{}, receivertest.NewNopSettings(metadata.Type))
 	assert.NoError(t, err)
 	assert.NotNil(t, bs)
 }

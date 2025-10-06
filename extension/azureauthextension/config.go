@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 )
 
 var (
@@ -27,10 +28,11 @@ var (
 )
 
 type Config struct {
-	Managed          *ManagedIdentity  `mapstructure:"managed_identity"`
-	Workload         *WorkloadIdentity `mapstructure:"workload_identity"`
-	ServicePrincipal *ServicePrincipal `mapstructure:"service_principal"`
-	UseDefault       bool              `mapstructure:"use_default"`
+	Managed          configoptional.Optional[ManagedIdentity]  `mapstructure:"managed_identity"`
+	Workload         configoptional.Optional[WorkloadIdentity] `mapstructure:"workload_identity"`
+	ServicePrincipal configoptional.Optional[ServicePrincipal] `mapstructure:"service_principal"`
+	UseDefault       bool                                      `mapstructure:"use_default"`
+	Scopes           []string                                  `mapstructure:"scopes"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -104,12 +106,8 @@ func (cfg *ServicePrincipal) Validate() error {
 }
 
 func (cfg *Config) Validate() error {
-	var errs []error
-	if !cfg.UseDefault && cfg.ServicePrincipal == nil && cfg.Workload == nil && cfg.Managed == nil {
-		errs = append(errs, errEmptyAuthentication)
-	}
-	if len(errs) > 0 {
-		return errors.Join(errs...)
+	if !cfg.UseDefault && !cfg.ServicePrincipal.HasValue() && !cfg.Workload.HasValue() && !cfg.Managed.HasValue() {
+		return errEmptyAuthentication
 	}
 	return nil
 }

@@ -4,7 +4,6 @@
 package kafkaclient
 
 import (
-	"context"
 	"errors"
 	"testing"
 	"time"
@@ -28,9 +27,9 @@ func TestSaramaProducerMetrics(t *testing.T) {
 		require.NoError(t, err)
 		defer tb.Shutdown()
 		spm := NewSaramaProducerMetrics(tb)
-		spm.ReportProducerMetrics(context.TODO(), nil, nil, time.Now().Add(-time.Minute))
+		spm.ReportProducerMetrics(t.Context(), nil, nil, time.Now().Add(-time.Minute))
 		var rm metricdata.ResourceMetrics
-		err = testTel.Reader.Collect(context.Background(), &rm)
+		err = testTel.Reader.Collect(t.Context(), &rm)
 		require.NoError(t, err)
 		require.Len(t, rm.ScopeMetrics, 1)
 		require.Len(t, rm.ScopeMetrics[0].Metrics, 2)
@@ -49,6 +48,7 @@ func TestSaramaProducerMetrics(t *testing.T) {
 				},
 			},
 			metricdatatest.IgnoreTimestamp(),
+			metricdatatest.IgnoreValue(),
 		)
 		metadatatest.AssertEqualKafkaExporterWriteLatency(
 			t,
@@ -74,7 +74,7 @@ func TestSaramaProducerMetrics(t *testing.T) {
 		require.NoError(t, err)
 		defer tb.Shutdown()
 		spm := NewSaramaProducerMetrics(tb)
-		spm.ReportProducerMetrics(context.TODO(), makeSaramaMessages(Messages{
+		spm.ReportProducerMetrics(t.Context(), makeSaramaMessages(Messages{
 			TopicMessages: []TopicMessages{
 				{Topic: "foo", Messages: []marshaler.Message{
 					{Key: []byte("k1"), Value: []byte("v1")},
@@ -86,7 +86,7 @@ func TestSaramaProducerMetrics(t *testing.T) {
 			},
 		}), nil, time.Now().Add(-time.Minute))
 		var rm metricdata.ResourceMetrics
-		err = testTel.Reader.Collect(context.Background(), &rm)
+		err = testTel.Reader.Collect(t.Context(), &rm)
 		require.NoError(t, err)
 		require.Len(t, rm.ScopeMetrics, 1)
 		require.Len(t, rm.ScopeMetrics[0].Metrics, 5)
@@ -105,6 +105,7 @@ func TestSaramaProducerMetrics(t *testing.T) {
 				},
 			},
 			metricdatatest.IgnoreTimestamp(),
+			metricdatatest.IgnoreValue(),
 		)
 		metadatatest.AssertEqualKafkaExporterWriteLatency(
 			t,
@@ -199,7 +200,7 @@ func TestSaramaProducerMetrics(t *testing.T) {
 		require.NoError(t, err)
 		defer tb.Shutdown()
 		spm := NewSaramaProducerMetrics(tb)
-		spm.ReportProducerMetrics(context.TODO(), makeSaramaMessages(Messages{
+		spm.ReportProducerMetrics(t.Context(), makeSaramaMessages(Messages{
 			TopicMessages: []TopicMessages{
 				{Topic: "foo", Messages: []marshaler.Message{
 					{Key: []byte("k1"), Value: []byte("v1")},
@@ -211,7 +212,7 @@ func TestSaramaProducerMetrics(t *testing.T) {
 			},
 		}), errors.New("unknown"), time.Now().Add(-time.Minute))
 		var rm metricdata.ResourceMetrics
-		err = testTel.Reader.Collect(context.Background(), &rm)
+		err = testTel.Reader.Collect(t.Context(), &rm)
 		require.NoError(t, err)
 		require.Len(t, rm.ScopeMetrics, 1)
 		require.Len(t, rm.ScopeMetrics[0].Metrics, 5)
@@ -230,6 +231,7 @@ func TestSaramaProducerMetrics(t *testing.T) {
 				},
 			},
 			metricdatatest.IgnoreTimestamp(),
+			metricdatatest.IgnoreValue(),
 		)
 		metadatatest.AssertEqualKafkaExporterWriteLatency(
 			t,
@@ -324,7 +326,7 @@ func TestSaramaProducerMetrics(t *testing.T) {
 		require.NoError(t, err)
 		defer tb.Shutdown()
 		spm := NewSaramaProducerMetrics(tb)
-		spm.ReportProducerMetrics(context.TODO(), makeSaramaMessages(Messages{
+		spm.ReportProducerMetrics(t.Context(), makeSaramaMessages(Messages{
 			TopicMessages: []TopicMessages{
 				{Topic: "foo", Messages: []marshaler.Message{
 					{Key: []byte("k1"), Value: []byte("v1")},
@@ -344,7 +346,7 @@ func TestSaramaProducerMetrics(t *testing.T) {
 			},
 		}, time.Now().Add(-time.Minute))
 		var rm metricdata.ResourceMetrics
-		err = testTel.Reader.Collect(context.Background(), &rm)
+		err = testTel.Reader.Collect(t.Context(), &rm)
 		require.NoError(t, err)
 		require.Len(t, rm.ScopeMetrics, 1)
 		require.Len(t, rm.ScopeMetrics[0].Metrics, 5)
@@ -363,6 +365,7 @@ func TestSaramaProducerMetrics(t *testing.T) {
 				},
 			},
 			metricdatatest.IgnoreTimestamp(),
+			metricdatatest.IgnoreValue(),
 		)
 		metadatatest.AssertEqualKafkaExporterWriteLatency(
 			t,

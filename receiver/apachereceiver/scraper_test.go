@@ -4,7 +4,6 @@
 package apachereceiver
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -38,10 +37,10 @@ func TestScraper(t *testing.T) {
 	require.NoError(t, err)
 	scraper := newApacheScraper(receivertest.NewNopSettings(metadata.Type), cfg, serverName, port)
 
-	err = scraper.start(context.Background(), componenttest.NewNopHost())
+	err = scraper.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
-	actualMetrics, err := scraper.scrape(context.Background())
+	actualMetrics, err := scraper.scrape(t.Context())
 	require.NoError(t, err)
 
 	expectedFile := filepath.Join("testdata", "scraper", "expected.yaml")
@@ -70,7 +69,7 @@ func TestScraperFailedStart(t *testing.T) {
 	},
 		"localhost",
 		"8080")
-	err := sc.start(context.Background(), componenttest.NewNopHost())
+	err := sc.start(t.Context(), componenttest.NewNopHost())
 	require.Error(t, err)
 }
 
@@ -146,12 +145,18 @@ ReqPerSec: 719.771
 IdleWorkers: 227
 ConnsTotal: 110
 BytesPerSec: 73.12
+ConnsAsyncWriting: 2
+ConnsAsyncKeepAlive: 1
+ConnsAsyncClosing: 1
 		`
 		want := map[string]string{
-			"ReqPerSec":   "719.771",
-			"IdleWorkers": "227",
-			"ConnsTotal":  "110",
-			"BytesPerSec": "73.12",
+			"ReqPerSec":           "719.771",
+			"IdleWorkers":         "227",
+			"ConnsTotal":          "110",
+			"BytesPerSec":         "73.12",
+			"ConnsAsyncWriting":   "2",
+			"ConnsAsyncKeepAlive": "1",
+			"ConnsAsyncClosing":   "1",
 		}
 		require.Equal(t, want, parseStats(got))
 	})
@@ -162,7 +167,7 @@ func TestScraperError(t *testing.T) {
 		sc := newApacheScraper(receivertest.NewNopSettings(metadata.Type), &Config{}, "", "")
 		sc.httpClient = nil
 
-		_, err := sc.scrape(context.Background())
+		_, err := sc.scrape(t.Context())
 		require.Error(t, err)
 		require.Equal(t, errors.New("failed to connect to Apache HTTPd"), err)
 	})
@@ -186,6 +191,9 @@ CPULoad: 0.66
 Load1: 0.9
 Load5: 0.4
 Load15: 0.3
+ConnsAsyncWriting: 2
+ConnsAsyncKeepAlive: 1
+ConnsAsyncClosing: 1
 Total Duration: 1501
 Scoreboard: S_DD_L_GGG_____W__IIII_C________________W__________________________________.........................____WR______W____W________________________C______________________________________W_W____W______________R_________R________C_________WK_W________K_____W__C__________W___R______.............................................................................................................................
 `))

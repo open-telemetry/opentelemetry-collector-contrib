@@ -4,7 +4,6 @@
 package ottlspan
 
 import (
-	"context"
 	"encoding/hex"
 	"fmt"
 	"slices"
@@ -679,11 +678,11 @@ func Test_newPathGetSetter(t *testing.T) {
 
 			tCtx := NewTransformContext(span, il, resource, ptrace.NewScopeSpans(), ptrace.NewResourceSpans())
 
-			got, err := accessor.Get(context.Background(), tCtx)
+			got, err := accessor.Get(t.Context(), tCtx)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
-			err = accessor.Set(context.Background(), tCtx, tt.newVal)
+			err = accessor.Set(t.Context(), tCtx, tt.newVal)
 			assert.NoError(t, err)
 
 			exSpan, exIl, exRes := createTelemetry()
@@ -760,7 +759,7 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 			accessor, err := pathExpressionParser(getCache)(tt.path)
 			require.NoError(t, err)
 
-			got, err := accessor.Get(context.Background(), ctx)
+			got, err := accessor.Get(t.Context(), ctx)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, got)
 		})

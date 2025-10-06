@@ -4,7 +4,6 @@
 package jmxreceiver
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -28,7 +27,7 @@ func TestWithValidConfig(t *testing.T) {
 	cfg.(*Config).TargetSystem = "jvm"
 
 	params := receivertest.NewNopSettings(metadata.Type)
-	r, err := f.CreateMetrics(context.Background(), params, cfg, consumertest.NewNop())
+	r, err := f.CreateMetrics(t.Context(), params, cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, r)
 	receiver := r.(*jmxMetricReceiver)

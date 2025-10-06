@@ -4,7 +4,6 @@
 package azureblobreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver"
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -38,7 +37,7 @@ func TestConsumeLogsJSON(t *testing.T) {
 
 	logsConsumer.setNextLogsConsumer(logsSink)
 
-	err := logsConsumer.consumeLogsJSON(context.Background(), logsJSON)
+	err := logsConsumer.consumeLogsJSON(t.Context(), logsJSON)
 	require.NoError(t, err)
 	assert.Equal(t, 1, logsSink.LogRecordCount())
 }
@@ -52,7 +51,7 @@ func TestConsumeTracesJSON(t *testing.T) {
 
 	tracesConsumer.setNextTracesConsumer(tracesSink)
 
-	err := tracesConsumer.consumeTracesJSON(context.Background(), tracesJSON)
+	err := tracesConsumer.consumeTracesJSON(t.Context(), tracesJSON)
 	require.NoError(t, err)
 	assert.Equal(t, 2, tracesSink.SpanCount())
 }

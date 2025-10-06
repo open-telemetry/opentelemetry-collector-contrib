@@ -59,7 +59,7 @@ func TestEC2Metadata(t *testing.T) {
 				instanceIDReadyC: make(chan bool),
 				instanceIPReadyC: make(chan bool),
 			}
-			e.refresh(context.Background())
+			e.refresh(t.Context())
 
 			assert.Equal(t, test.expectedInstanceID, e.getInstanceID())
 			assert.Equal(t, test.expectedInstanceType, e.getInstanceType())

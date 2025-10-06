@@ -4,7 +4,6 @@
 package expvarreceiver
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -105,10 +104,10 @@ func TestAllMetrics(t *testing.T) {
 	cfg.Metrics = allMetricsEnabled
 
 	scraper := newExpVarScraper(cfg, receivertest.NewNopSettings(metadata.Type))
-	err := scraper.start(context.Background(), componenttest.NewNopHost())
+	err := scraper.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
-	actualMetrics, err := scraper.scrape(context.Background())
+	actualMetrics, err := scraper.scrape(t.Context())
 	require.NoError(t, err)
 
 	expectedFile := filepath.Join("testdata", "metrics", "expected_all_metrics.yaml")
@@ -125,11 +124,11 @@ func TestNoMetrics(t *testing.T) {
 	cfg.Endpoint = ms.URL + defaultPath
 	cfg.Metrics = allMetricsDisabled
 	scraper := newExpVarScraper(cfg, receivertest.NewNopSettings(metadata.Type))
-	err := scraper.start(context.Background(), componenttest.NewNopHost())
+	err := scraper.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	expectedMetrics := pmetric.NewMetrics() // empty
-	actualMetrics, err := scraper.scrape(context.Background())
+	actualMetrics, err := scraper.scrape(t.Context())
 	require.NoError(t, err)
 	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics))
 }
@@ -140,9 +139,9 @@ func TestNotFoundResponse(t *testing.T) {
 	cfg := newDefaultConfig().(*Config)
 	cfg.Endpoint = ms.URL + "/nonexistent/path"
 	scraper := newExpVarScraper(cfg, receivertest.NewNopSettings(metadata.Type))
-	err := scraper.start(context.Background(), componenttest.NewNopHost())
+	err := scraper.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
-	_, err = scraper.scrape(context.Background())
+	_, err = scraper.scrape(t.Context())
 	require.EqualError(t, err, "expected 200 but received 404 status code")
 }
 
@@ -152,9 +151,9 @@ func TestBadTypeInReturnedData(t *testing.T) {
 	cfg := newDefaultConfig().(*Config)
 	cfg.Endpoint = ms.URL + defaultPath
 	scraper := newExpVarScraper(cfg, receivertest.NewNopSettings(metadata.Type))
-	err := scraper.start(context.Background(), componenttest.NewNopHost())
+	err := scraper.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
-	_, err = scraper.scrape(context.Background())
+	_, err = scraper.scrape(t.Context())
 	require.EqualError(t, err, "could not decode response body to JSON: json: cannot unmarshal string into Go struct field MemStats.memstats.Alloc of type uint64")
 }
 
@@ -164,9 +163,9 @@ func TestJSONParseError(t *testing.T) {
 	cfg := newDefaultConfig().(*Config)
 	cfg.Endpoint = ms.URL + defaultPath
 	scraper := newExpVarScraper(cfg, receivertest.NewNopSettings(metadata.Type))
-	err := scraper.start(context.Background(), componenttest.NewNopHost())
+	err := scraper.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
-	_, err = scraper.scrape(context.Background())
+	_, err = scraper.scrape(t.Context())
 	require.Error(t, err)
 }
 
@@ -177,11 +176,11 @@ func TestEmptyResponseBodyError(t *testing.T) {
 	cfg.Endpoint = ms.URL + defaultPath
 	cfg.Metrics = allMetricsDisabled
 	scraper := newExpVarScraper(cfg, receivertest.NewNopSettings(metadata.Type))
-	err := scraper.start(context.Background(), componenttest.NewNopHost())
+	err := scraper.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	expectedMetrics := pmetric.NewMetrics() // empty
-	actualMetrics, err := scraper.scrape(context.Background())
+	actualMetrics, err := scraper.scrape(t.Context())
 	require.EqualError(t, err, "could not decode response body to JSON: EOF")
 	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics))
 }

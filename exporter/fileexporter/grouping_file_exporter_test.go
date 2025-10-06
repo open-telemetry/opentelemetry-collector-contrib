@@ -5,7 +5,6 @@ package fileexporter
 import (
 	"bufio"
 	"bytes"
-	"context"
 	"fmt"
 	"os"
 	"testing"
@@ -163,11 +162,11 @@ func TestGroupingFileTracesExporter(t *testing.T) {
 			}
 			td := testSpans()
 
-			assert.NoError(t, gfe.Start(context.Background(), componenttest.NewNopHost()))
-			require.NoError(t, gfe.consumeTraces(context.Background(), td))
+			assert.NoError(t, gfe.Start(t.Context(), componenttest.NewNopHost()))
+			require.NoError(t, gfe.consumeTraces(t.Context(), td))
 			assert.LessOrEqual(t, gfe.writers.Len(), conf.GroupBy.MaxOpenFiles)
 
-			assert.NoError(t, gfe.Shutdown(context.Background()))
+			assert.NoError(t, gfe.Shutdown(t.Context()))
 
 			// make sure the exporter did not modify any data
 			assert.Equal(t, testSpans(), td)
@@ -240,11 +239,11 @@ func TestGroupingFileLogsExporter(t *testing.T) {
 			}
 			td := testLogs()
 
-			assert.NoError(t, gfe.Start(context.Background(), componenttest.NewNopHost()))
-			require.NoError(t, gfe.consumeLogs(context.Background(), td))
+			assert.NoError(t, gfe.Start(t.Context(), componenttest.NewNopHost()))
+			require.NoError(t, gfe.consumeLogs(t.Context(), td))
 			assert.LessOrEqual(t, gfe.writers.Len(), conf.GroupBy.MaxOpenFiles)
 
-			assert.NoError(t, gfe.Shutdown(context.Background()))
+			assert.NoError(t, gfe.Shutdown(t.Context()))
 
 			// make sure the exporter did not modify any data
 			assert.Equal(t, testLogs(), td)
@@ -318,11 +317,11 @@ func TestGroupingFileMetricsExporter(t *testing.T) {
 			}
 			td := testMetrics()
 
-			assert.NoError(t, gfe.Start(context.Background(), componenttest.NewNopHost()))
-			require.NoError(t, gfe.consumeMetrics(context.Background(), td))
+			assert.NoError(t, gfe.Start(t.Context(), componenttest.NewNopHost()))
+			require.NoError(t, gfe.consumeMetrics(t.Context(), td))
 			assert.LessOrEqual(t, gfe.writers.Len(), conf.GroupBy.MaxOpenFiles)
 
-			assert.NoError(t, gfe.Shutdown(context.Background()))
+			assert.NoError(t, gfe.Shutdown(t.Context()))
 
 			// make sure the exporter did not modify any data
 			assert.Equal(t, testMetrics(), td)
@@ -492,19 +491,19 @@ func BenchmarkExporters(b *testing.B) {
 			fExp.marshaller = marshaller
 		}
 
-		require.NoError(b, fe.Start(context.Background(), componenttest.NewNopHost()))
+		require.NoError(b, fe.Start(b.Context(), componenttest.NewNopHost()))
 
 		b.Run(tc.name, func(b *testing.B) {
 			b.ReportAllocs()
 			b.ResetTimer()
 
-			ctx := context.Background()
+			ctx := b.Context()
 			for i := 0; i < b.N; i++ {
 				require.NoError(b, fe.consumeTraces(ctx, traces[i%len(traces)]))
 				require.NoError(b, fe.consumeLogs(ctx, logs[i%len(logs)]))
 			}
 		})
 
-		assert.NoError(b, fe.Shutdown(context.Background()))
+		assert.NoError(b, fe.Shutdown(b.Context()))
 	}
 }

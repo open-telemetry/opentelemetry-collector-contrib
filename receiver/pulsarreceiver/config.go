@@ -9,6 +9,7 @@ import (
 	"github.com/apache/pulsar-client-go/pulsar"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 )
 
 type Config struct {
@@ -31,10 +32,10 @@ type Config struct {
 }
 
 type Authentication struct {
-	TLS    *TLS    `mapstructure:"tls"`
-	Token  *Token  `mapstructure:"token"`
-	Athenz *Athenz `mapstructure:"athenz"`
-	OAuth2 *OAuth2 `mapstructure:"oauth2"`
+	TLS    configoptional.Optional[TLS]    `mapstructure:"tls"`
+	Token  configoptional.Optional[Token]  `mapstructure:"token"`
+	Athenz configoptional.Optional[Athenz] `mapstructure:"athenz"`
+	OAuth2 configoptional.Optional[OAuth2] `mapstructure:"oauth2"`
 }
 
 type TLS struct {
@@ -71,28 +72,32 @@ func (*Config) Validate() error {
 
 func (cfg *Config) auth() pulsar.Authentication {
 	authentication := cfg.Authentication
-	if authentication.TLS != nil {
-		return pulsar.NewAuthenticationTLS(authentication.TLS.CertFile, authentication.TLS.KeyFile)
+	if authentication.TLS.HasValue() {
+		tls := authentication.TLS.Get()
+		return pulsar.NewAuthenticationTLS(tls.CertFile, tls.KeyFile)
 	}
-	if authentication.Token != nil {
-		return pulsar.NewAuthenticationToken(string(authentication.Token.Token))
+	if authentication.Token.HasValue() {
+		token := authentication.Token.Get()
+		return pulsar.NewAuthenticationToken(string(token.Token))
 	}
-	if authentication.OAuth2 != nil {
+	if authentication.OAuth2.HasValue() {
+		oauth2 := authentication.OAuth2.Get()
 		return pulsar.NewAuthenticationOAuth2(map[string]string{
-			"issuerUrl": authentication.OAuth2.IssuerURL,
-			"clientId":  authentication.OAuth2.ClientID,
-			"audience":  authentication.OAuth2.Audience,
+			"issuerUrl": oauth2.IssuerURL,
+			"clientId":  oauth2.ClientID,
+			"audience":  oauth2.Audience,
 		})
 	}
-	if authentication.Athenz != nil {
+	if authentication.Athenz.HasValue() {
+		athenz := authentication.Athenz.Get()
 		return pulsar.NewAuthenticationAthenz(map[string]string{
-			"providerDomain":  authentication.Athenz.ProviderDomain,
-			"tenantDomain":    authentication.Athenz.TenantDomain,
-			"tenantService":   authentication.Athenz.TenantService,
-			"privateKey":      string(authentication.Athenz.PrivateKey),
-			"keyId":           authentication.Athenz.KeyID,
-			"principalHeader": authentication.Athenz.PrincipalHeader,
-			"ztsUrl":          authentication.Athenz.ZtsURL,
+			"providerDomain":  athenz.ProviderDomain,
+			"tenantDomain":    athenz.TenantDomain,
+			"tenantService":   athenz.TenantService,
+			"privateKey":      string(athenz.PrivateKey),
+			"keyId":           athenz.KeyID,
+			"principalHeader": athenz.PrincipalHeader,
+			"ztsUrl":          athenz.ZtsURL,
 		})
 	}
 

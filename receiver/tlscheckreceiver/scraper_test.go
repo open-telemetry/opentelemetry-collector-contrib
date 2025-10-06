@@ -4,7 +4,6 @@
 package tlscheckreceiver
 
 import (
-	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/tls"
@@ -126,7 +125,7 @@ func TestScrape_ExpiredEndpointCertificate(t *testing.T) {
 	settings := receivertest.NewNopSettings(factory.Type())
 	s := newScraper(cfg, settings, mockGetConnectionStateExpired)
 
-	metrics, err := s.scrape(context.Background())
+	metrics, err := s.scrape(t.Context())
 	require.NoError(t, err)
 
 	assert.Equal(t, 1, metrics.DataPointCount())
@@ -163,7 +162,7 @@ func TestScrape_NotYetValidEndpointCertificate(t *testing.T) {
 	settings := receivertest.NewNopSettings(factory.Type())
 	s := newScraper(cfg, settings, mockGetConnectionStateNotYetValid)
 
-	metrics, err := s.scrape(context.Background())
+	metrics, err := s.scrape(t.Context())
 	require.NoError(t, err)
 
 	assert.Equal(t, 1, metrics.DataPointCount())
@@ -210,7 +209,7 @@ func TestScrape_MultipleEndpoints(t *testing.T) {
 	settings := receivertest.NewNopSettings(factory.Type())
 	s := newScraper(cfg, settings, mockGetConnectionStateValid)
 
-	metrics, err := s.scrape(context.Background())
+	metrics, err := s.scrape(t.Context())
 	require.NoError(t, err)
 
 	// Verify we have metrics for all endpoints
@@ -282,7 +281,7 @@ func TestScrape_ExpiredFilepathCertificate(t *testing.T) {
 	settings := receivertest.NewNopSettings(factory.Type())
 	s := newScraper(cfg, settings, mockGetConnectionStateValid)
 
-	metrics, err := s.scrape(context.Background())
+	metrics, err := s.scrape(t.Context())
 	require.NoError(t, err)
 	assert.Equal(t, 1, metrics.ResourceMetrics().Len())
 
@@ -313,7 +312,7 @@ func TestScrape_ValidFilepathCertificate(t *testing.T) {
 	settings := receivertest.NewNopSettings(factory.Type())
 	s := newScraper(cfg, settings, mockGetConnectionStateValid)
 
-	metrics, err := s.scrape(context.Background())
+	metrics, err := s.scrape(t.Context())
 	require.NoError(t, err)
 	assert.Equal(t, 1, metrics.ResourceMetrics().Len())
 

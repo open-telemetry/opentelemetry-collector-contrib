@@ -130,3 +130,5 @@ func (*WriterOperator) findOperator(operators []operator.Operator, operatorID st
 	}
 	return nil, false
 }
+
+type WriteFunction = func(context.Context, *entry.Entry) error

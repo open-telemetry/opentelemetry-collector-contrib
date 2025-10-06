@@ -75,7 +75,7 @@ func TestStart(t *testing.T) {
 	for name, testCase := range testCases {
 		t.Run(name, func(t *testing.T) {
 			cfg := &Config{}
-			ctx := context.TODO()
+			ctx := t.Context()
 			r := testFirehoseReceiver(cfg, &nopFirehoseConsumer{})
 			got := r.Start(ctx, testCase.host)
 			require.Equal(t, testCase.wantErr, got)
@@ -95,7 +95,7 @@ func TestStart(t *testing.T) {
 				Endpoint: listener.Addr().String(),
 			},
 		}
-		ctx := context.TODO()
+		ctx := t.Context()
 		r := testFirehoseReceiver(cfg, &nopFirehoseConsumer{})
 		got := r.Start(ctx, componenttest.NewNopHost())
 		require.Error(t, got)

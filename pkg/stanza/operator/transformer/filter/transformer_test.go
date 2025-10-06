@@ -4,7 +4,6 @@
 package filter
 
 import (
-	"context"
 	"io"
 	"math/big"
 	"testing"
@@ -191,7 +190,7 @@ func TestTransformer(t *testing.T) {
 			})
 
 			op.(*Transformer).OutputOperators = []operator.Operator{mockOutput}
-			err = op.ProcessBatch(context.Background(), []*entry.Entry{tc.input})
+			err = op.ProcessBatch(t.Context(), []*entry.Entry{tc.input})
 			require.NoError(t, err)
 
 			require.Equal(t, tc.filtered, filtered)
@@ -233,12 +232,12 @@ func TestFilterDropRatio(t *testing.T) {
 	}
 
 	for i := 1; i < 11; i++ {
-		err = filterOperator.ProcessBatch(context.Background(), []*entry.Entry{testEntry})
+		err = filterOperator.ProcessBatch(t.Context(), []*entry.Entry{testEntry})
 		require.NoError(t, err)
 	}
 
 	for i := 1; i < 11; i++ {
-		err = filterOperator.ProcessBatch(context.Background(), []*entry.Entry{testEntry})
+		err = filterOperator.ProcessBatch(t.Context(), []*entry.Entry{testEntry})
 		require.NoError(t, err)
 	}
 

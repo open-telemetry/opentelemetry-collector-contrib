@@ -145,16 +145,16 @@ func TestScrape_CollectClusterMetrics(t *testing.T) {
 		},
 	}
 
-	require.NoError(t, receiver.start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, receiver.start(t.Context(), componenttest.NewNopHost()))
 
-	actualMetrics, err := receiver.scrape(context.Background())
+	actualMetrics, err := receiver.scrape(t.Context())
 	require.EqualError(t, err, "failed to parse int64 for AerospikeNamespaceMemoryUsage, value was badval: strconv.ParseInt: parsing \"badval\": invalid syntax")
 
 	expectedMetrics := expectedMB.Emit()
 	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceMetricsOrder(),
 		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 
-	require.NoError(t, receiver.shutdown(context.Background()))
+	require.NoError(t, receiver.shutdown(t.Context()))
 
 	initialClient.AssertExpectations(t)
 
@@ -169,7 +169,7 @@ func TestScrape_CollectClusterMetrics(t *testing.T) {
 
 	initialClient.AssertNumberOfCalls(t, "Close", 1)
 
-	err = receiverConnErr.start(context.Background(), componenttest.NewNopHost())
+	err = receiverConnErr.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	require.Nil(t, receiverConnErr.client, "client should be set to nil because of connection error")
 }

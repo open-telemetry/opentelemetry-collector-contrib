@@ -201,6 +201,7 @@ data:
         endpoint: <OTLP_ENDPOINT>
 
     service:
+      extensions: [k8s_observer]
       pipelines:
         metrics:
           receivers: [receiver_creator]

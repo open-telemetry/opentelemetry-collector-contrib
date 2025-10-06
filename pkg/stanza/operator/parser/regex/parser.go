@@ -27,7 +27,7 @@ func (p *Parser) Stop() error {
 }
 
 func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
-	return p.ProcessBatchWith(ctx, entries, p.Process)
+	return p.ProcessBatchWith(ctx, entries, p.parse)
 }
 
 // Process will parse an entry for regex.

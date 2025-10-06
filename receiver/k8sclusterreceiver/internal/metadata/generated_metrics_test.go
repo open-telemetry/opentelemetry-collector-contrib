@@ -100,6 +100,12 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordK8sContainerRestartsDataPoint(ts, 1)
 
+			allMetricsCount++
+			mb.RecordK8sContainerStatusReasonDataPoint(ts, 1, AttributeK8sContainerStatusReasonContainerCreating)
+
+			allMetricsCount++
+			mb.RecordK8sContainerStatusStateDataPoint(ts, 1, AttributeK8sContainerStatusStateTerminated)
+
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sContainerStorageLimitDataPoint(ts, 1)
@@ -401,6 +407,40 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.container.status.reason":
+					assert.False(t, validatedMetrics["k8s.container.status.reason"], "Found a duplicate in the metrics slice: k8s.container.status.reason")
+					validatedMetrics["k8s.container.status.reason"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Experimental metric, may experience breaking changes. Describes the number of K8s containers that are currently in a state for a given reason. All possible container state reasons will be reported at each time interval to avoid missing metrics. Only the value corresponding to the current state reason will be non-zero.", ms.At(i).Description())
+					assert.Equal(t, "{container}", ms.At(i).Unit())
+					assert.False(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("k8s.container.status.reason")
+					assert.True(t, ok)
+					assert.Equal(t, "ContainerCreating", attrVal.Str())
+				case "k8s.container.status.state":
+					assert.False(t, validatedMetrics["k8s.container.status.state"], "Found a duplicate in the metrics slice: k8s.container.status.state")
+					validatedMetrics["k8s.container.status.state"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Experimental metric, may experience breaking changes. Describes the number of K8s containers that are currently in a given state. All possible container states will be reported at each time interval to avoid missing metrics. Only the value corresponding to the current state will be non-zero.", ms.At(i).Description())
+					assert.Equal(t, "{container}", ms.At(i).Unit())
+					assert.False(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("k8s.container.status.state")
+					assert.True(t, ok)
+					assert.Equal(t, "terminated", attrVal.Str())
 				case "k8s.container.storage_limit":
 					assert.False(t, validatedMetrics["k8s.container.storage_limit"], "Found a duplicate in the metrics slice: k8s.container.storage_limit")
 					validatedMetrics["k8s.container.storage_limit"] = true

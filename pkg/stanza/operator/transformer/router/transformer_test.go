@@ -4,7 +4,6 @@
 package router
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/mock"
@@ -215,7 +214,7 @@ func TestTransformer(t *testing.T) {
 			err = op.SetOutputs([]operator.Operator{mock1, mock2})
 			require.NoError(t, err)
 
-			err = op.ProcessBatch(context.Background(), []*entry.Entry{tc.input})
+			err = op.ProcessBatch(t.Context(), []*entry.Entry{tc.input})
 			require.NoError(t, err)
 
 			require.Equal(t, tc.expectedCounts, results)

@@ -1,0 +1,63 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: gcp.project
+          value:
+            stringValue: elastic-observability
+        - key: cloud.resource_id
+          value:
+            stringValue: cloudaudit.googleapis.com%2Fsystem_event
+        - key: gcp.resource_type
+          value:
+            stringValue: gce_instance
+        - key: gcp.label.project_id
+          value:
+            stringValue: elastic-observability
+        - key: gcp.label.zone
+          value:
+            stringValue: us-central1-a
+        - key: gcp.label.instance_id
+          value:
+            stringValue: "0"
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: log.record.uid
+                value:
+                  stringValue: -m6k3fkd2idw
+              - key: gcp.audit.service.name
+                value:
+                  stringValue: compute.googleapis.com
+              - key: gcp.audit.method.name
+                value:
+                  stringValue: compute.instances.repair.recreateInstance
+              - key: gcp.audit.resource.name
+                value:
+                  stringValue: projects/elastic-observability/zones/us-central1-a/instances/instance-group-1-p327
+              - key: rpc.jsonrpc.error_message
+                value:
+                  stringValue: 'Instance Group Manager ''instance-group-1'' initiated recreateInstance on instance ''projects/8560181848/zones/us-central1-a/instances/instance-group-1-p327''. Reason: Instance eligible for repair: instance should be RUNNING, but it doesn''t exist.'
+              - key: user.email
+                value:
+                  stringValue: system@google.com
+              - key: gcp.label.compute.googleapis.com/root_trigger_id
+                value:
+                  stringValue: ZONE:2000/PROJECT:8560181848/FLOW:1158713090673680788
+              - key: gcp.operation.id
+                value:
+                  stringValue: repair-1755227272017-63c5eb20c7673-0a62f994-ae971b31
+              - key: gcp.operation.producer
+                value:
+                  stringValue: compute.instances.repair.recreateInstance
+              - key: gcp.operation.first
+                value:
+                  boolValue: true
+              - key: gcp.operation.last
+                value:
+                  boolValue: true
+            body: {}
+            observedTimeUnixNano: "1755227272930498717"
+            severityNumber: 9
+            severityText: INFO
+            timeUnixNano: "1755227272101671000"
+        scope: {}

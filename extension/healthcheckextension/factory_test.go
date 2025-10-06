@@ -4,7 +4,6 @@
 package healthcheckextension
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -27,7 +26,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	}, cfg)
 
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
-	ext, err := createExtension(context.Background(), extensiontest.NewNopSettings(extensiontest.NopType), cfg)
+	ext, err := createExtension(t.Context(), extensiontest.NewNopSettings(extensiontest.NopType), cfg)
 	require.NoError(t, err)
 	require.NotNil(t, ext)
 }
@@ -36,7 +35,7 @@ func TestFactory_Create(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = testutil.GetAvailableLocalAddress(t)
 
-	ext, err := createExtension(context.Background(), extensiontest.NewNopSettings(extensiontest.NopType), cfg)
+	ext, err := createExtension(t.Context(), extensiontest.NewNopSettings(extensiontest.NopType), cfg)
 	require.NoError(t, err)
 	require.NotNil(t, ext)
 }

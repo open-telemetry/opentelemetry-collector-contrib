@@ -306,11 +306,11 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 			if tt.sendCmd != nil {
 				z.sendCmd = tt.sendCmd
 			}
-			require.NoError(t, z.Start(context.Background(), componenttest.NewNopHost()))
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			require.NoError(t, z.Start(t.Context(), componenttest.NewNopHost()))
+			ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 			defer cancel()
 			actualMetrics, err := z.ScrapeMetrics(ctx)
-			require.NoError(t, z.Shutdown(context.Background()))
+			require.NoError(t, z.Shutdown(t.Context()))
 
 			require.Equal(t, len(tt.expectedLogs), observedLogs.Len())
 			for i, log := range tt.expectedLogs {
@@ -323,7 +323,7 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 					require.Error(t, err)
 					require.Equal(t, pmetric.NewMetrics(), actualMetrics)
 				}
-				require.NoError(t, z.Shutdown(context.Background()))
+				require.NoError(t, z.Shutdown(t.Context()))
 				return
 			}
 
@@ -340,8 +340,8 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 func TestZookeeperShutdownBeforeScrape(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	z := newZookeeperMetricsScraper(scrapertest.NewNopSettings(metadata.Type), cfg)
-	require.NoError(t, z.Start(context.Background(), componenttest.NewNopHost()))
-	require.NoError(t, z.Shutdown(context.Background()))
+	require.NoError(t, z.Start(t.Context(), componenttest.NewNopHost()))
+	require.NoError(t, z.Shutdown(t.Context()))
 }
 
 type mockedServer struct {

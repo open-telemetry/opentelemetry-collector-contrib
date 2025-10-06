@@ -43,7 +43,7 @@ func TestLoadConfig(t *testing.T) {
 					config.MaxElapsedTime = 10 * time.Minute
 					return config
 				}(),
-				QueueSettings: exporterhelper.QueueBatchConfig{
+				QueueBatchConfig: exporterhelper.QueueBatchConfig{
 					Enabled:      true,
 					NumConsumers: 2,
 					QueueSize:    10,
@@ -85,11 +85,11 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "legacy_topic"),
 			expected: &Config{
-				TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
-				BackOffConfig:   configretry.NewDefaultBackOffConfig(),
-				QueueSettings:   exporterhelper.NewDefaultQueueConfig(),
-				ClientConfig:    configkafka.NewDefaultClientConfig(),
-				Producer:        configkafka.NewDefaultProducerConfig(),
+				TimeoutSettings:  exporterhelper.NewDefaultTimeoutConfig(),
+				BackOffConfig:    configretry.NewDefaultBackOffConfig(),
+				QueueBatchConfig: exporterhelper.NewDefaultQueueConfig(),
+				ClientConfig:     configkafka.NewDefaultClientConfig(),
+				Producer:         configkafka.NewDefaultProducerConfig(),
 				Logs: SignalConfig{
 					Topic:                "legacy_topic",
 					Encoding:             "otlp_proto",
@@ -113,11 +113,11 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "legacy_encoding"),
 			expected: &Config{
-				TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
-				BackOffConfig:   configretry.NewDefaultBackOffConfig(),
-				QueueSettings:   exporterhelper.NewDefaultQueueConfig(),
-				ClientConfig:    configkafka.NewDefaultClientConfig(),
-				Producer:        configkafka.NewDefaultProducerConfig(),
+				TimeoutSettings:  exporterhelper.NewDefaultTimeoutConfig(),
+				BackOffConfig:    configretry.NewDefaultBackOffConfig(),
+				QueueBatchConfig: exporterhelper.NewDefaultQueueConfig(),
+				ClientConfig:     configkafka.NewDefaultClientConfig(),
+				Producer:         configkafka.NewDefaultProducerConfig(),
 				Logs: SignalConfig{
 					Topic:    "otlp_logs",
 					Encoding: "legacy_encoding",

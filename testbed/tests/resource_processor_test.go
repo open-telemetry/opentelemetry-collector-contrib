@@ -4,7 +4,6 @@
 package tests
 
 import (
-	"context"
 	"path/filepath"
 	"testing"
 
@@ -144,7 +143,7 @@ func TestMetricResourceProcessor(t *testing.T) {
 			sender, ok := tc.LoadGenerator.(*testbed.ProviderSender).Sender.(testbed.MetricDataSender)
 			require.True(t, ok, "unsupported metric sender")
 
-			require.NoError(t, sender.ConsumeMetrics(context.Background(), test.mockedConsumedMetrics))
+			require.NoError(t, sender.ConsumeMetrics(t.Context(), test.mockedConsumedMetrics))
 
 			// We bypass the load generator in this test, but make sure to increment the
 			// counter since it is used in final reports.

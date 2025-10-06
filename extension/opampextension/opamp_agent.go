@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/extension/extensioncapabilities"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/service"
+	"go.opentelemetry.io/collector/service/hostcapabilities"
 	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
@@ -101,15 +102,6 @@ var (
 	}
 )
 
-// moduleInfo exposes the internal collector moduleInfo interface
-// This functionality will be exposed in the collector by https://github.com/open-telemetry/opentelemetry-collector/pull/12375,
-// and once it is merged, this interface should be replaced by the new non-internal interface
-type moduleInfo interface {
-	// GetModuleInfos returns the module information for the host
-	// i.e. Receivers, Processors, Exporters, Extensions, and Connectors
-	GetModuleInfos() service.ModuleInfos
-}
-
 func (o *opampAgent) Start(ctx context.Context, host component.Host) error {
 	o.reportFunc = func(event *componentstatus.Event) {
 		componentstatus.ReportStatus(host, event)
@@ -166,7 +158,7 @@ func (o *opampAgent) Start(ctx context.Context, host component.Host) error {
 		return err
 	}
 
-	if mi, ok := host.(moduleInfo); ok {
+	if mi, ok := host.(hostcapabilities.ModuleInfo); ok {
 		o.initAvailableComponents(mi.GetModuleInfos())
 	} else if o.capabilities.ReportsAvailableComponents {
 		// init empty availableComponents to not get an error when starting the opampClient

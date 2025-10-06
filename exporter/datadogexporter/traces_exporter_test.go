@@ -17,10 +17,10 @@ import (
 	"time"
 
 	"github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil"
+	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes"
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	tracelog "github.com/DataDog/datadog-agent/pkg/trace/log"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
-	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -124,12 +124,7 @@ func testTracesSource(t *testing.T, enableReceiveResourceSpansV2 bool) {
 
 	reqs := make(chan []byte, 1)
 	metricsServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var expectedMetricEndpoint string
-		if isMetricExportV2Enabled() {
-			expectedMetricEndpoint = testutil.MetricV2Endpoint
-		} else {
-			expectedMetricEndpoint = testutil.MetricV1Endpoint
-		}
+		expectedMetricEndpoint := testutil.MetricV2Endpoint
 		if r.URL.Path != expectedMetricEndpoint {
 			// we only want to capture series payloads
 			return
@@ -168,24 +163,10 @@ func testTracesSource(t *testing.T, enableReceiveResourceSpansV2 bool) {
 	assert := assert.New(t)
 	params := exportertest.NewNopSettings(metadata.Type)
 	f := NewFactory()
-	exporter, err := f.CreateTraces(context.Background(), params, &cfg)
+	ctx := context.Background() //nolint:usetesting
+	exporter, err := f.CreateTraces(ctx, params, &cfg)
 	assert.NoError(err)
 
-	// Payload specifies a sub-set of a Zorkian metrics series payload.
-	type Payload struct {
-		Series []struct {
-			Host string   `json:"host,omitempty"`
-			Tags []string `json:"tags,omitempty"`
-		} `json:"series"`
-	}
-	// getHostTags extracts the host and tags from the Zorkian metrics series payload
-	// body found in data.
-	getHostTags := func(data []byte) (host string, tags []string) {
-		var p Payload
-		assert.NoError(json.Unmarshal(data, &p))
-		assert.Len(p.Series, 1)
-		return p.Series[0].Host, p.Series[0].Tags
-	}
 	// getHostTagsV2 extracts the host and tags from the native DatadogV2 metrics series payload
 	// body found in data.
 	getHostTagsV2 := func(data []byte) (host string, tags []string) {
@@ -230,7 +211,7 @@ func testTracesSource(t *testing.T, enableReceiveResourceSpansV2 bool) {
 		},
 	} {
 		t.Run("", func(t *testing.T) {
-			ctx := context.Background()
+			ctx := t.Context()
 			err = exporter.ConsumeTraces(ctx, simpleTraces(tt.attrs, nil, ptrace.SpanKindInternal))
 			assert.NoError(err)
 			timeout := time.After(time.Second)
@@ -238,11 +219,7 @@ func testTracesSource(t *testing.T, enableReceiveResourceSpansV2 bool) {
 			case data := <-reqs:
 				var host string
 				var tags []string
-				if isMetricExportV2Enabled() {
-					host, tags = getHostTagsV2(data)
-				} else {
-					host, tags = getHostTags(data)
-				}
+				host, tags = getHostTagsV2(data)
 				assert.Equal(tt.host, host)
 				assert.Equal(tt.tags, tags)
 			case <-timeout:
@@ -305,10 +282,10 @@ func testTraceExporter(t *testing.T, enableReceiveResourceSpansV2 bool) {
 
 	params := exportertest.NewNopSettings(metadata.Type)
 	f := NewFactory()
-	exporter, err := f.CreateTraces(context.Background(), params, &cfg)
+	exporter, err := f.CreateTraces(t.Context(), params, &cfg)
 	assert.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	err = exporter.ConsumeTraces(ctx, simpleTraces(nil, nil, ptrace.SpanKindInternal))
 	assert.NoError(t, err)
 	timeout := time.After(2 * time.Second)
@@ -318,7 +295,7 @@ func testTraceExporter(t *testing.T, enableReceiveResourceSpansV2 bool) {
 	case <-timeout:
 		t.Fatal("Timed out")
 	}
-	require.NoError(t, exporter.Shutdown(context.Background()))
+	require.NoError(t, exporter.Shutdown(t.Context()))
 }
 
 func TestNewTracesExporter(t *testing.T) {
@@ -332,7 +309,7 @@ func TestNewTracesExporter(t *testing.T) {
 
 	// The client should have been created correctly
 	f := NewFactory()
-	exp, err := f.CreateTraces(context.Background(), params, cfg)
+	exp, err := f.CreateTraces(t.Context(), params, cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)
 }
@@ -376,12 +353,12 @@ func testPushTraceData(t *testing.T, enableReceiveResourceSpansV2 bool) {
 
 	params := exportertest.NewNopSettings(metadata.Type)
 	f := NewFactory()
-	exp, err := f.CreateTraces(context.Background(), params, cfg)
+	exp, err := f.CreateTraces(t.Context(), params, cfg)
 	assert.NoError(t, err)
 
 	testTraces := ptrace.NewTraces()
 	testutil.TestTraces.CopyTo(testTraces)
-	err = exp.ConsumeTraces(context.Background(), testTraces)
+	err = exp.ConsumeTraces(t.Context(), testTraces)
 	assert.NoError(t, err)
 
 	recvMetadata := <-server.MetadataChan
@@ -426,10 +403,10 @@ func testPushTraceDataNewEnvConvention(t *testing.T, enableReceiveResourceSpansV
 
 	params := exportertest.NewNopSettings(metadata.Type)
 	f := NewFactory()
-	exp, err := f.CreateTraces(context.Background(), params, cfg)
+	exp, err := f.CreateTraces(t.Context(), params, cfg)
 	assert.NoError(t, err)
 
-	err = exp.ConsumeTraces(context.Background(), simpleTraces(map[string]any{string(conventions127.DeploymentEnvironmentNameKey): "new_env"}, nil, ptrace.SpanKindInternal))
+	err = exp.ConsumeTraces(t.Context(), simpleTraces(map[string]any{string(conventions127.DeploymentEnvironmentNameKey): "new_env"}, nil, ptrace.SpanKindInternal))
 	assert.NoError(t, err)
 
 	reqBytes := <-tracesRec.ReqChan
@@ -484,10 +461,10 @@ func subtestPushTraceDataOperationAndResourceName(t *testing.T, enableOperationA
 
 	params := exportertest.NewNopSettings(metadata.Type)
 	f := NewFactory()
-	exp, err := f.CreateTraces(context.Background(), params, cfg)
+	exp, err := f.CreateTraces(t.Context(), params, cfg)
 	assert.NoError(t, err)
 
-	err = exp.ConsumeTraces(context.Background(), simpleTraces(map[string]any{string(conventions127.DeploymentEnvironmentNameKey): "new_env"}, nil, ptrace.SpanKindServer))
+	err = exp.ConsumeTraces(t.Context(), simpleTraces(map[string]any{string(conventions127.DeploymentEnvironmentNameKey): "new_env"}, nil, ptrace.SpanKindServer))
 	assert.NoError(t, err)
 
 	reqBytes := <-tracesRec.ReqChan
@@ -535,7 +512,7 @@ func TestResRelatedAttributesInSpanAttributes_ReceiveResourceSpansV2Enabled(t *t
 
 	params := exportertest.NewNopSettings(metadata.Type)
 	f := NewFactory()
-	exp, err := f.CreateTraces(context.Background(), params, cfg)
+	exp, err := f.CreateTraces(t.Context(), params, cfg)
 	assert.NoError(t, err)
 
 	sattr := map[string]any{
@@ -546,7 +523,7 @@ func TestResRelatedAttributesInSpanAttributes_ReceiveResourceSpansV2Enabled(t *t
 		"service.name":                "do-not-use",
 		"service.version":             "do-not-use",
 	}
-	err = exp.ConsumeTraces(context.Background(), simpleTraces(nil, sattr, ptrace.SpanKindInternal))
+	err = exp.ConsumeTraces(t.Context(), simpleTraces(nil, sattr, ptrace.SpanKindInternal))
 	assert.NoError(t, err)
 
 	reqBytes := <-tracesRec.ReqChan

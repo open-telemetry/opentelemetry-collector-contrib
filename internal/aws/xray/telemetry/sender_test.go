@@ -45,7 +45,7 @@ func TestRotateRace(t *testing.T) {
 		},
 	}
 	sender := newSender(client, WithInterval(100*time.Millisecond))
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 	sender.Start(ctx)
 	defer sender.Stop()
@@ -71,17 +71,17 @@ func TestIncludeMetadata(t *testing.T) {
 	cfg := Config{IncludeMetadata: false}
 	awsConfig := aws.Config{}
 	set := &awsutil.AWSSessionSettings{ResourceARN: "session_arn"}
-	opts := ToOptions(context.Background(), cfg, awsConfig, set)
+	opts := ToOptions(t.Context(), cfg, awsConfig, set)
 	assert.Empty(t, opts)
 	cfg.IncludeMetadata = true
-	opts = ToOptions(context.Background(), cfg, awsConfig, set)
+	opts = ToOptions(t.Context(), cfg, awsConfig, set)
 	sender := newSender(&mockXRayClient{}, opts...)
 	assert.Empty(t, sender.hostname)
 	assert.Empty(t, sender.instanceID)
 	assert.Equal(t, "session_arn", sender.resourceARN)
 	t.Setenv(envAWSHostname, "env_hostname")
 	t.Setenv(envAWSInstanceID, "env_instance_id")
-	opts = ToOptions(context.Background(), cfg, awsConfig, &awsutil.AWSSessionSettings{})
+	opts = ToOptions(t.Context(), cfg, awsConfig, &awsutil.AWSSessionSettings{})
 	sender = newSender(&mockXRayClient{}, opts...)
 	assert.Equal(t, "env_hostname", sender.hostname)
 	assert.Equal(t, "env_instance_id", sender.instanceID)
@@ -89,7 +89,7 @@ func TestIncludeMetadata(t *testing.T) {
 	cfg.Hostname = "cfg_hostname"
 	cfg.InstanceID = "cfg_instance_id"
 	cfg.ResourceARN = "cfg_arn"
-	opts = ToOptions(context.Background(), cfg, awsConfig, &awsutil.AWSSessionSettings{})
+	opts = ToOptions(t.Context(), cfg, awsConfig, &awsutil.AWSSessionSettings{})
 	sender = newSender(&mockXRayClient{}, opts...)
 	assert.Equal(t, "cfg_hostname", sender.hostname)
 	assert.Equal(t, "cfg_instance_id", sender.instanceID)
@@ -123,7 +123,7 @@ func TestQueueOverflow(t *testing.T) {
 	// number of dropped records
 	assert.Equal(t, 5, logs.Len())
 	assert.Len(t, sender.queue, 20)
-	sender.send(context.Background())
+	sender.send(t.Context())
 	// only one batch succeeded
 	assert.Len(t, sender.queue, 15)
 	// verify that sent back of queue

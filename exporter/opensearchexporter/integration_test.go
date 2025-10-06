@@ -4,7 +4,6 @@
 package opensearchexporter
 
 import (
-	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -132,11 +131,11 @@ func TestOpenSearchTraceExporter(t *testing.T) {
 
 		// Create exporter
 		f := NewFactory()
-		exporter, err := f.CreateTraces(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
+		exporter, err := f.CreateTraces(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
 		require.NoError(t, err)
 
 		// Initialize the exporter
-		err = exporter.Start(context.Background(), componenttest.NewNopHost())
+		err = exporter.Start(t.Context(), componenttest.NewNopHost())
 		require.NoError(t, err)
 
 		// Load sample data
@@ -144,9 +143,9 @@ func TestOpenSearchTraceExporter(t *testing.T) {
 		require.NoError(t, err)
 
 		// Send it
-		err = exporter.ConsumeTraces(context.Background(), traces)
+		err = exporter.ConsumeTraces(t.Context(), traces)
 		tc.ValidateExporterReturn(err)
-		err = exporter.Shutdown(context.Background())
+		err = exporter.Shutdown(t.Context())
 		require.NoError(t, err)
 		ts.Close()
 	}
@@ -262,11 +261,11 @@ func TestOpenSearchLogExporter(t *testing.T) {
 
 		// Create exporter
 		f := NewFactory()
-		exporter, err := f.CreateLogs(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
+		exporter, err := f.CreateLogs(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
 		require.NoError(t, err)
 
 		// Initialize the exporter
-		err = exporter.Start(context.Background(), componenttest.NewNopHost())
+		err = exporter.Start(t.Context(), componenttest.NewNopHost())
 		require.NoError(t, err)
 
 		// Load sample data
@@ -274,9 +273,9 @@ func TestOpenSearchLogExporter(t *testing.T) {
 		require.NoError(t, err)
 
 		// Send it
-		err = exporter.ConsumeLogs(context.Background(), logs)
+		err = exporter.ConsumeLogs(t.Context(), logs)
 		tc.ValidateExporterReturn(err)
-		err = exporter.Shutdown(context.Background())
+		err = exporter.Shutdown(t.Context())
 		require.NoError(t, err)
 		ts.Close()
 	}

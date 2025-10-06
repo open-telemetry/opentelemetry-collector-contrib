@@ -6,7 +6,6 @@ package awsfirehosereceiver
 import (
 	"bytes"
 	"compress/gzip"
-	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -39,17 +38,17 @@ func BenchmarkLogsConsumer_cwlogs(b *testing.B) {
 				config := createDefaultConfig().(*Config)
 				config.Endpoint = "localhost:0"
 				r, err := createLogsReceiver(
-					context.Background(),
+					b.Context(),
 					receivertest.NewNopSettings(metadata.Type),
 					config,
 					consumertest.NewNop(),
 				)
 				require.NoError(b, err)
 
-				err = r.Start(context.Background(), componenttest.NewNopHost())
+				err = r.Start(b.Context(), componenttest.NewNopHost())
 				require.NoError(b, err)
 				b.Cleanup(func() {
-					err = r.Shutdown(context.Background())
+					err = r.Shutdown(b.Context())
 					assert.NoError(b, err)
 				})
 
@@ -94,17 +93,17 @@ func BenchmarkMetricsConsumer_cwmetrics(b *testing.B) {
 				config := createDefaultConfig().(*Config)
 				config.Endpoint = "localhost:0"
 				r, err := createMetricsReceiver(
-					context.Background(),
+					b.Context(),
 					receivertest.NewNopSettings(metadata.Type),
 					config,
 					consumertest.NewNop(),
 				)
 				require.NoError(b, err)
 
-				err = r.Start(context.Background(), componenttest.NewNopHost())
+				err = r.Start(b.Context(), componenttest.NewNopHost())
 				require.NoError(b, err)
 				b.Cleanup(func() {
-					err = r.Shutdown(context.Background())
+					err = r.Shutdown(b.Context())
 					assert.NoError(b, err)
 				})
 

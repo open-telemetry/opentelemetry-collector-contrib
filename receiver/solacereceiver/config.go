@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 )
 
@@ -48,13 +49,13 @@ type Config struct {
 // Validate checks the receiver configuration is valid
 func (cfg *Config) Validate() error {
 	authMethod := 0
-	if cfg.Auth.PlainText != nil {
+	if cfg.Auth.PlainText.HasValue() {
 		authMethod++
 	}
-	if cfg.Auth.External != nil {
+	if cfg.Auth.External.HasValue() {
 		authMethod++
 	}
-	if cfg.Auth.XAuth2 != nil {
+	if cfg.Auth.XAuth2.HasValue() {
 		authMethod++
 	}
 	if authMethod == 0 {
@@ -66,9 +67,9 @@ func (cfg *Config) Validate() error {
 	if strings.TrimSpace(cfg.Queue) == "" {
 		return errMissingQueueName
 	}
-	if cfg.Flow.DelayedRetry == nil {
+	if !cfg.Flow.DelayedRetry.HasValue() {
 		return errMissingFlowControl
-	} else if cfg.Flow.DelayedRetry.Delay <= 0 {
+	} else if cfg.Flow.DelayedRetry.Get().Delay <= 0 {
 		return errInvalidDelayedRetryDelay
 	}
 	return nil
@@ -76,9 +77,9 @@ func (cfg *Config) Validate() error {
 
 // Authentication defines authentication strategies.
 type Authentication struct {
-	PlainText *SaslPlainTextConfig `mapstructure:"sasl_plain"`
-	XAuth2    *SaslXAuth2Config    `mapstructure:"sasl_xauth2"`
-	External  *SaslExternalConfig  `mapstructure:"sasl_external"`
+	PlainText configoptional.Optional[SaslPlainTextConfig] `mapstructure:"sasl_plain"`
+	XAuth2    configoptional.Optional[SaslXAuth2Config]    `mapstructure:"sasl_xauth2"`
+	External  configoptional.Optional[SaslExternalConfig]  `mapstructure:"sasl_external"`
 
 	// prevent unkeyed literal initialization
 	_ struct{}
@@ -107,7 +108,7 @@ type SaslExternalConfig struct{}
 
 // FlowControl defines the configuration for what to do in backpressure scenarios, e.g. memorylimiter errors
 type FlowControl struct {
-	DelayedRetry *FlowControlDelayedRetry `mapstructure:"delayed_retry"`
+	DelayedRetry configoptional.Optional[FlowControlDelayedRetry] `mapstructure:"delayed_retry"`
 
 	// prevent unkeyed literal initialization
 	_ struct{}

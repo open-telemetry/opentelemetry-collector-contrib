@@ -93,7 +93,7 @@ func Test_toUpperCaseRuntimeError(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			exprFunc := toUpperCase[any](tt.target)
-			_, err := exprFunc(context.Background(), nil)
+			_, err := exprFunc(t.Context(), nil)
 			assert.ErrorContains(t, err, tt.expectedError)
 		})
 	}

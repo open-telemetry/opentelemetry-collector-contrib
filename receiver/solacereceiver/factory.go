@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pipeline"
@@ -43,9 +44,9 @@ func createDefaultConfig() component.Config {
 			Insecure:           false,
 		},
 		Flow: FlowControl{
-			DelayedRetry: &FlowControlDelayedRetry{
+			DelayedRetry: configoptional.Some(FlowControlDelayedRetry{
 				Delay: 10 * time.Millisecond,
-			},
+			}),
 		},
 	}
 }

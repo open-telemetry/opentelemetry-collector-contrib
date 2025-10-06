@@ -4,7 +4,6 @@
 package ecstaskobserver
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -18,7 +17,7 @@ func TestFactoryCreatedExtensionIsEndpointsLister(t *testing.T) {
 	cfg := etoFactory.CreateDefaultConfig()
 	cfg.(*Config).Endpoint = "http://localhost:1234/mock/endpoint"
 
-	eto, err := etoFactory.Create(context.Background(), extensiontest.NewNopSettings(etoFactory.Type()), cfg)
+	eto, err := etoFactory.Create(t.Context(), extensiontest.NewNopSettings(etoFactory.Type()), cfg)
 	require.NoError(t, err)
 	require.NotNil(t, eto)
 	require.Implements(t, (*endpointswatcher.EndpointsLister)(nil), eto)

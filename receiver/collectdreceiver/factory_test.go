@@ -4,7 +4,6 @@
 package collectdreceiver
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -27,7 +26,7 @@ func TestCreateReceiver(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 
 	params := receivertest.NewNopSettings(metadata.Type)
-	tReceiver, err := factory.CreateMetrics(context.Background(), params, cfg, consumertest.NewNop())
+	tReceiver, err := factory.CreateMetrics(t.Context(), params, cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, tReceiver, "receiver creation failed")
 }

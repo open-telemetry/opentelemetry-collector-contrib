@@ -1732,7 +1732,7 @@ func Test_NewFunctionCall(t *testing.T) {
 			assert.NoError(t, err)
 
 			if tt.want != nil {
-				result, _ := fn.Eval(context.Background(), nil)
+				result, _ := fn.Eval(t.Context(), nil)
 				assert.Equal(t, tt.want, result)
 			}
 		})
@@ -1815,12 +1815,12 @@ func Test_ArgumentsNotMutated(t *testing.T) {
 
 	fn, err := p.newFunctionCall(invWithOptArg)
 	require.NoError(t, err)
-	res, _ := fn.Eval(context.Background(), nil)
+	res, _ := fn.Eval(t.Context(), nil)
 	require.Equal(t, 4, res)
 
 	fn, err = p.newFunctionCall(invWithoutOptArg)
 	require.NoError(t, err)
-	res, _ = fn.Eval(context.Background(), nil)
+	res, _ = fn.Eval(t.Context(), nil)
 	require.Equal(t, 2, res)
 
 	assert.Zero(t, args.OptionalArg)
@@ -2658,10 +2658,10 @@ func Test_newPath(t *testing.T) {
 	assert.Equal(t, "body.string[key]", p.String())
 	assert.Nil(t, p.Next())
 	assert.Len(t, p.Keys(), 1)
-	v, err := p.Keys()[0].String(context.Background(), struct{}{})
+	v, err := p.Keys()[0].String(t.Context(), struct{}{})
 	assert.NoError(t, err)
 	assert.Equal(t, "key", *v)
-	i, err := p.Keys()[0].Int(context.Background(), struct{}{})
+	i, err := p.Keys()[0].Int(t.Context(), struct{}{})
 	assert.NoError(t, err)
 	assert.Nil(t, i)
 }
@@ -2760,10 +2760,10 @@ func Test_newPath_WithPathContextNames(t *testing.T) {
 			}
 			assert.Nil(t, p.Next())
 			assert.Len(t, p.Keys(), 1)
-			v, err := p.Keys()[0].String(context.Background(), struct{}{})
+			v, err := p.Keys()[0].String(t.Context(), struct{}{})
 			assert.NoError(t, err)
 			assert.Equal(t, "key", *v)
-			i, err := p.Keys()[0].Int(context.Background(), struct{}{})
+			i, err := p.Keys()[0].Int(t.Context(), struct{}{})
 			assert.NoError(t, err)
 			assert.Nil(t, i)
 		})
@@ -2774,7 +2774,7 @@ func Test_baseKey_String(t *testing.T) {
 	bp := baseKey[any]{
 		s: ottltest.Strp("test"),
 	}
-	s, err := bp.String(context.Background(), nil)
+	s, err := bp.String(t.Context(), nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, s)
 	assert.Equal(t, "test", *s)
@@ -2784,7 +2784,7 @@ func Test_baseKey_Int(t *testing.T) {
 	bp := baseKey[any]{
 		i: ottltest.Intp(1),
 	}
-	i, err := bp.Int(context.Background(), nil)
+	i, err := bp.Int(t.Context(), nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, i)
 	assert.Equal(t, int64(1), *i)
@@ -2810,11 +2810,11 @@ func Test_newKey(t *testing.T) {
 
 	assert.Len(t, ks, 2)
 
-	s, err := ks[0].String(context.Background(), nil)
+	s, err := ks[0].String(t.Context(), nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, s)
 	assert.Equal(t, "foo", *s)
-	s, err = ks[1].String(context.Background(), nil)
+	s, err = ks[1].String(t.Context(), nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, s)
 	assert.Equal(t, "bar", *s)

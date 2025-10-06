@@ -75,11 +75,11 @@ func (it *IntegrationTest) Run(t *testing.T) {
 	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
 	settings.Logger = zap.New(observedZapCore)
 
-	rcvr, err := it.factory.CreateMetrics(context.Background(), settings, cfg, sink)
+	rcvr, err := it.factory.CreateMetrics(t.Context(), settings, cfg, sink)
 	require.NoError(t, err, "failed creating metrics receiver")
-	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, rcvr.Start(t.Context(), componenttest.NewNopHost()))
 	defer func() {
-		require.NoError(t, rcvr.Shutdown(context.Background()))
+		require.NoError(t, rcvr.Shutdown(t.Context()))
 	}()
 
 	var expected pmetric.Metrics
@@ -95,7 +95,9 @@ func (it *IntegrationTest) Run(t *testing.T) {
 			t.Error(validateErr.Error())
 
 			logs := strings.Builder{}
-			for _, e := range observedLogs.All() {
+			allLogs := observedLogs.All()
+			for i := range allLogs {
+				e := &allLogs[i]
 				logs.WriteString(e.Message + "\n")
 			}
 			t.Errorf("full log:\n%s", logs.String())
@@ -118,7 +120,9 @@ func (it *IntegrationTest) Run(t *testing.T) {
 			}
 			if it.failOnErrorLogs && len(observedLogs.All()) > 0 {
 				logs := strings.Builder{}
-				for _, e := range observedLogs.All() {
+				allLogs := observedLogs.All()
+				for i := range allLogs {
+					e := &allLogs[i]
 					logs.WriteString(e.Message + "\n")
 				}
 				t.Errorf("full log:\n%s", logs.String())
@@ -140,12 +144,13 @@ func (it *IntegrationTest) createContainers(t *testing.T) *ContainerInfo {
 		containers: make(map[string]testcontainers.Container, len(it.containerRequests)),
 	}
 	wg.Add(len(it.containerRequests))
-	for _, cr := range it.containerRequests {
+	for i := range it.containerRequests {
+		cr := it.containerRequests[i]
 		go func(req testcontainers.ContainerRequest) {
 			var errs error
 			assert.Eventuallyf(t, func() bool {
 				c, err := testcontainers.GenericContainer(
-					context.Background(),
+					t.Context(),
 					testcontainers.GenericContainerRequest{
 						ContainerRequest: req,
 						Started:          true,
@@ -166,7 +171,8 @@ func (it *IntegrationTest) createContainers(t *testing.T) *ContainerInfo {
 
 func (it *IntegrationTest) validate(t *testing.T) {
 	containerNames := make(map[string]bool, len(it.containerRequests))
-	for _, cr := range it.containerRequests {
+	for i := range it.containerRequests {
+		cr := &it.containerRequests[i]
 		if _, ok := containerNames[cr.Name]; ok {
 			require.False(t, ok, "duplicate container name: %q", cr.Name)
 		} else {
@@ -253,7 +259,7 @@ func (ci *ContainerInfo) Host(t *testing.T) string {
 
 func (ci *ContainerInfo) HostForNamedContainer(t *testing.T, containerName string) string {
 	c := ci.container(t, containerName)
-	h, err := c.Host(context.Background())
+	h, err := c.Host(t.Context())
 	require.NoErrorf(t, err, "get host for container %q: %v", containerName, err)
 	return h
 }
@@ -264,7 +270,7 @@ func (ci *ContainerInfo) MappedPort(t *testing.T, port string) string {
 
 func (ci *ContainerInfo) MappedPortForNamedContainer(t *testing.T, containerName, port string) string {
 	c := ci.container(t, containerName)
-	p, err := c.MappedPort(context.Background(), nat.Port(port))
+	p, err := c.MappedPort(t.Context(), nat.Port(port))
 	require.NoErrorf(t, err, "get port %q for container %q: %v", port, containerName, err)
 	return p.Port()
 }
@@ -284,7 +290,7 @@ func (ci *ContainerInfo) add(name string, c testcontainers.Container) {
 
 func (ci *ContainerInfo) terminate(t *testing.T) {
 	for name, c := range ci.containers {
-		require.NoError(t, c.Terminate(context.Background()), "terminate container %q", name)
+		require.NoError(t, c.Terminate(t.Context()), "terminate container %q", name)
 	}
 }
 

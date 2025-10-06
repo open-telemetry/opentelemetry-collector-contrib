@@ -28,7 +28,7 @@ import (
 )
 
 func setupServer(t *testing.T) (func() net.Conn, *consumertest.LogsSink, *observer.ObservedLogs, context.CancelFunc) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 
 	next := new(consumertest.LogsSink)
 	logCore, logObserver := observer.New(zap.DebugLevel)
@@ -326,7 +326,7 @@ func TestForwardPackedCompressedEvent(t *testing.T) {
 }
 
 func TestUnixEndpoint(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
 	next := new(consumertest.LogsSink)

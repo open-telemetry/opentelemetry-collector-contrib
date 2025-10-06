@@ -236,7 +236,7 @@ func Test_receiveBytes_traces(t *testing.T) {
 					consumer: tracesConsumer,
 				},
 			}
-			if err := r.receiveBytes(context.Background(), tt.args.key, tt.args.data); (err != nil) != tt.wantErr {
+			if err := r.receiveBytes(t.Context(), tt.args.key, tt.args.data); (err != nil) != tt.wantErr {
 				t.Errorf("receiveBytes() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -370,7 +370,7 @@ func Test_receiveBytes_metrics(t *testing.T) {
 					consumer: tracesConsumer,
 				},
 			}
-			if err := r.receiveBytes(context.Background(), tt.args.key, tt.args.data); (err != nil) != tt.wantErr {
+			if err := r.receiveBytes(t.Context(), tt.args.key, tt.args.data); (err != nil) != tt.wantErr {
 				t.Errorf("receiveBytes() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -504,7 +504,7 @@ func Test_receiveBytes_logs(t *testing.T) {
 					consumer: tracesConsumer,
 				},
 			}
-			if err := r.receiveBytes(context.Background(), tt.args.key, tt.args.data); (err != nil) != tt.wantErr {
+			if err := r.receiveBytes(t.Context(), tt.args.key, tt.args.data); (err != nil) != tt.wantErr {
 				t.Errorf("receiveBytes() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

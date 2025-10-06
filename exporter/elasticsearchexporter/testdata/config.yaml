@@ -124,5 +124,7 @@ elasticsearch/queuebatch_enabled:
   endpoint: https://elastic.example.com:9200
   sending_queue:
     enabled: true
+    sizer: "items"
     num_consumers: 100
-    batch: {}
+    batch:
+      flush_timeout: 10s

@@ -17,7 +17,7 @@ var _ component.Config = (*Config)(nil)
 // Config defines configuration for Kafka exporter.
 type Config struct {
 	TimeoutSettings           exporterhelper.TimeoutConfig    `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	QueueSettings             exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
+	QueueBatchConfig          exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 	configkafka.ClientConfig  `mapstructure:",squash"`
 	Producer                  configkafka.ProducerConfig `mapstructure:"producer"`

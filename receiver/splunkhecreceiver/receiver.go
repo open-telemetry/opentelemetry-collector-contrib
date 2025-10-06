@@ -6,7 +6,6 @@ package splunkhecreceiver // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"compress/gzip"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -16,9 +15,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/goccy/go-json"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
-	jsoniter "github.com/json-iterator/go"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer"
@@ -414,8 +413,7 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	dec := jsoniter.NewDecoder(bodyReader)
-
+	dec := json.NewDecoder(bodyReader)
 	var events []*splunk.Event
 	var metricEvents []*splunk.Event
 

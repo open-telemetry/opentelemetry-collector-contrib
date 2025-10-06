@@ -4,7 +4,6 @@
 package ottlprofile
 
 import (
-	"context"
 	"slices"
 	"testing"
 	"time"
@@ -121,12 +120,12 @@ func Test_newPathGetSetter(t *testing.T) {
 			profile := createProfileTelemetry()
 
 			tCtx := NewTransformContext(profile, pprofile.NewProfilesDictionary(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pprofile.NewScopeProfiles(), pprofile.NewResourceProfiles())
-			got, err := accessor.Get(context.Background(), tCtx)
+			got, err := accessor.Get(t.Context(), tCtx)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
 			tCtx = NewTransformContext(profile, pprofile.NewProfilesDictionary(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pprofile.NewScopeProfiles(), pprofile.NewResourceProfiles())
-			err = accessor.Set(context.Background(), tCtx, tt.newVal)
+			err = accessor.Set(t.Context(), tCtx, tt.newVal)
 			assert.NoError(t, err)
 
 			exProfile := createProfileTelemetry()
@@ -205,7 +204,7 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 			accessor, err := pathExpressionParser(cacheGetter)(tt.path)
 			assert.NoError(t, err)
 
-			got, err := accessor.Get(context.Background(), ctx)
+			got, err := accessor.Get(t.Context(), ctx)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, got)
 		})

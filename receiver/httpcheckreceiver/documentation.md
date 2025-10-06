@@ -16,9 +16,9 @@ metrics:
 
 Measures the duration of the HTTP check.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| ms | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| ms | Gauge | Int | development |
 
 #### Attributes
 
@@ -30,9 +30,9 @@ Measures the duration of the HTTP check.
 
 Records errors occurring during HTTP check.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {error} | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {error} | Sum | Int | Cumulative | false | development |
 
 #### Attributes
 
@@ -45,9 +45,9 @@ Records errors occurring during HTTP check.
 
 1 if the check resulted in status_code matching the status_class, otherwise 0.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| 1 | Sum | Int | Cumulative | false | development |
 
 #### Attributes
 
@@ -72,9 +72,9 @@ metrics:
 
 Time spent establishing TCP connection to the endpoint.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| ms | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| ms | Gauge | Int | development |
 
 #### Attributes
 
@@ -87,9 +87,9 @@ Time spent establishing TCP connection to the endpoint.
 
 Time spent sending the HTTP request to the endpoint.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| ms | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| ms | Gauge | Int | development |
 
 #### Attributes
 
@@ -101,9 +101,9 @@ Time spent sending the HTTP request to the endpoint.
 
 Time spent performing DNS lookup for the endpoint.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| ms | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| ms | Gauge | Int | development |
 
 #### Attributes
 
@@ -115,9 +115,23 @@ Time spent performing DNS lookup for the endpoint.
 
 Time spent receiving the HTTP response from the endpoint.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| ms | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| ms | Gauge | Int | development |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| http.url | Full HTTP request URL. | Any Str | false |
+
+### httpcheck.response.size
+
+Size of response body in bytes.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | development |
 
 #### Attributes
 
@@ -129,9 +143,9 @@ Time spent receiving the HTTP response from the endpoint.
 
 Time in seconds until certificate expiry, as specified by `NotAfter` field in the x.509 certificate. Negative values represent time in seconds since expiration.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| s | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Gauge | Int | development |
 
 #### Attributes
 
@@ -146,12 +160,42 @@ Time in seconds until certificate expiry, as specified by `NotAfter` field in th
 
 Time spent performing TLS handshake with the endpoint.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| ms | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| ms | Gauge | Int | development |
 
 #### Attributes
 
 | Name | Description | Values | Optional |
 | ---- | ----------- | ------ | -------- |
 | http.url | Full HTTP request URL. | Any Str | false |
+
+### httpcheck.validation.failed
+
+Number of response validations that failed.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {validation} | Sum | Int | Cumulative | false | development |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| http.url | Full HTTP request URL. | Any Str | false |
+| validation.type | Type of validation performed (contains, json_path, size, regex) | Any Str | false |
+
+### httpcheck.validation.passed
+
+Number of response validations that passed.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {validation} | Sum | Int | Cumulative | false | development |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| http.url | Full HTTP request URL. | Any Str | false |
+| validation.type | Type of validation performed (contains, json_path, size, regex) | Any Str | false |

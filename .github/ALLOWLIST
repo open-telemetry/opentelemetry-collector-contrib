@@ -29,12 +29,9 @@ internal/common
 
 # Start unmaintained components list
 
-exporter/awscloudwatchlogsexporter
 exporter/carbonexporter
 extension/healthcheckextension
 extension/observer/ecstaskobserver
-processor/routingprocessor
-receiver/awscloudwatchmetricsreceiver
 receiver/bigipreceiver
 receiver/carbonreceiver
 

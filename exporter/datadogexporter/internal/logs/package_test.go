@@ -10,9 +10,12 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	// We have to ignore seelog because of upstream issue
-	// https://github.com/cihub/seelog/issues/182
 	goleak.VerifyTestMain(m,
+		// We have to ignore seelog because of upstream issue
+		// https://github.com/cihub/seelog/issues/182
 		goleak.IgnoreAnyFunction("github.com/cihub/seelog.(*asyncLoopLogger).processQueue"),
+
+		// known goroutine leak http://github.com/DataDog/datadog-agent/issues/40071
+		goleak.IgnoreAnyFunction("github.com/DataDog/datadog-agent/pkg/config/viperconfig.(*safeConfig).processNotifications"),
 	)
 }

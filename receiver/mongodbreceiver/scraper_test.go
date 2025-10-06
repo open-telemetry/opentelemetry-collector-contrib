@@ -4,7 +4,6 @@
 package mongodbreceiver
 
 import (
-	"context"
 	"errors"
 	"path/filepath"
 	"sort"
@@ -52,8 +51,8 @@ func TestScraperLifecycle(t *testing.T) {
 	cfg.DirectConnection = true
 
 	scraper := newMongodbScraper(receivertest.NewNopSettings(metadata.Type), cfg)
-	require.NoError(t, scraper.start(context.Background(), componenttest.NewNopHost()))
-	require.NoError(t, scraper.shutdown(context.Background()))
+	require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()))
+	require.NoError(t, scraper.shutdown(t.Context()))
 
 	require.Less(t, time.Since(now), 200*time.Millisecond, "component start and stop should be very fast")
 }
@@ -310,7 +309,7 @@ func TestScraperScrape(t *testing.T) {
 				scraper.client = mc
 			}
 
-			actualMetrics, err := scraper.scrape(context.Background())
+			actualMetrics, err := scraper.scrape(t.Context())
 			if tc.expectedErr == nil {
 				require.NoError(t, err)
 			} else {
@@ -363,7 +362,7 @@ func TestTopMetricsAggregation(t *testing.T) {
 		logger: zap.NewNop(),
 	}
 	var doc bson.M
-	doc, err = client.TopStats(context.Background())
+	doc, err = client.TopStats(t.Context())
 	require.NoError(t, err)
 
 	collectionPathNames, err := digForCollectionPathNames(doc)

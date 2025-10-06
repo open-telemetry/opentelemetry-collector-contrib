@@ -9,9 +9,45 @@ import (
 	"testing"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
+	"github.com/aws/aws-sdk-go-v2/service/sts/types"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 )
+
+type mockSTS struct{}
+
+func TestGetAWSConfig(t *testing.T) {
+	logger := zap.NewNop()
+	settings := &AWSSessionSettings{
+		Region:   "us-mock-1",
+		RoleARN:  "arn:aws:iam::123456789012:role/TestRole",
+		Endpoint: "http://localhost:4566",
+	}
+
+	mockSTS := &mockSTS{}
+
+	cfg, err := getAWSConfig(t.Context(), logger, settings, func(_ aws.Config) stscreds.AssumeRoleAPIClient {
+		return mockSTS
+	})
+
+	assert.NoError(t, err)
+	assert.Equal(t, "us-mock-1", cfg.Region)
+	assert.Equal(t, "http://localhost:4566", *cfg.BaseEndpoint)
+	assert.NotNil(t, cfg.Credentials)
+}
+
+func (*mockSTS) AssumeRole(_ context.Context, _ *sts.AssumeRoleInput, _ ...func(*sts.Options)) (*sts.AssumeRoleOutput, error) {
+	return &sts.AssumeRoleOutput{
+		Credentials: &types.Credentials{
+			AccessKeyId:     aws.String("mockAccessKey"),
+			SecretAccessKey: aws.String("mockSecret"),
+			SessionToken:    aws.String("mockToken"),
+		},
+	}, nil
+}
 
 // Test fetching region value from environment variable
 func TestRegionEnv(t *testing.T) {
@@ -20,7 +56,7 @@ func TestRegionEnv(t *testing.T) {
 	region := "us-east-1"
 	t.Setenv("AWS_REGION", region)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	cfg, err := GetAWSConfig(ctx, logger, &sessionCfg)
 	assert.NoError(t, err)
 	assert.Equal(t, region, cfg.Region, "Region value should be fetched from environment")
@@ -32,7 +68,7 @@ func TestGetAWSConfigWithExplicitRegion(t *testing.T) {
 	sessionCfg := CreateDefaultSessionConfig()
 	sessionCfg.Region = "eu-west-1"
 
-	ctx := context.Background()
+	ctx := t.Context()
 	cfg, err := GetAWSConfig(ctx, logger, &sessionCfg)
 	assert.NoError(t, err)
 	assert.Equal(t, "eu-west-1", cfg.Region, "Region value should match the explicitly set region")
@@ -45,7 +81,7 @@ func TestGetAWSConfigWithCustomEndpoint(t *testing.T) {
 	sessionCfg.Region = "us-west-2"
 	sessionCfg.Endpoint = "https://custom.endpoint.com"
 
-	ctx := context.Background()
+	ctx := t.Context()
 	cfg, err := GetAWSConfig(ctx, logger, &sessionCfg)
 	assert.NoError(t, err)
 	assert.Equal(t, "us-west-2", cfg.Region)
@@ -60,7 +96,7 @@ func TestGetAWSConfigWithRetries(t *testing.T) {
 	sessionCfg.Region = "us-west-2"
 	sessionCfg.MaxRetries = 5
 
-	ctx := context.Background()
+	ctx := t.Context()
 	cfg, err := GetAWSConfig(ctx, logger, &sessionCfg)
 	assert.NoError(t, err)
 	assert.Equal(t, 5, cfg.RetryMaxAttempts)

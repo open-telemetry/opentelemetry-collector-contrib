@@ -4,11 +4,15 @@
 package prometheusremotewrite
 
 import (
+	"math"
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/otlptranslator"
+	"github.com/prometheus/prometheus/model/value"
 	"github.com/prometheus/prometheus/prompb"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 	"github.com/stretchr/testify/assert"
@@ -127,7 +131,8 @@ func TestAddResourceTargetInfoV2(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			converter := newPrometheusConverterV2(Settings{})
 
-			converter.addResourceTargetInfoV2(tc.resource, tc.settings, tc.timestamp)
+			err := converter.addResourceTargetInfoV2(tc.resource, tc.settings, tc.timestamp)
+			require.NoError(t, err)
 
 			if len(tc.wantLabels) == 0 || tc.settings.DisableTargetInfo {
 				assert.Empty(t, converter.timeSeries())
@@ -151,8 +156,7 @@ func TestAddResourceTargetInfoV2(t *testing.T) {
 				},
 			}
 			assert.Exactly(t, expected, converter.unique)
-			// TODO check when conflicts handling is implemented
-			// assert.Empty(t, converter.conflicts)
+			assert.Empty(t, converter.conflicts)
 		})
 	}
 }
@@ -264,17 +268,16 @@ func TestPrometheusConverterV2_AddSummaryDataPoints(t *testing.T) {
 				Unit: unitNamer.Build(metric.Unit()),
 			}
 
-			converter.addSummaryDataPoints(
+			err := converter.addSummaryDataPoints(
 				metric.Summary().DataPoints(),
 				pcommon.NewResource(),
 				Settings{},
 				metric.Name(),
 				m,
 			)
-
+			require.NoError(t, err)
 			assert.Equal(t, tt.want(), converter.unique)
-			// TODO check when conflicts handling is implemented
-			// assert.Empty(t, converter.conflicts)
+			assert.Empty(t, converter.conflicts)
 		})
 	}
 }
@@ -386,17 +389,226 @@ func TestPrometheusConverterV2_AddHistogramDataPoints(t *testing.T) {
 				Help: metric.Description(),
 				Unit: unitNamer.Build(metric.Unit()),
 			}
-			converter.addHistogramDataPoints(
+			err := converter.addHistogramDataPoints(
 				metric.Histogram().DataPoints(),
 				pcommon.NewResource(),
 				Settings{},
 				metric.Name(),
 				m,
 			)
-
+			require.NoError(t, err)
 			assert.Equal(t, tt.want(), converter.unique)
-			// TODO check when conflicts handling is implemented
-			// assert.Empty(t, converter.conflicts)
+			assert.Empty(t, converter.conflicts)
+		})
+	}
+}
+
+func TestPrometheusConverterV2_AddSampleWithLabels(t *testing.T) {
+	tests := []struct {
+		name            string
+		sampleValue     float64
+		timestamp       int64
+		noRecordedValue bool
+		baseName        string
+		baseLabels      []prompb.Label
+		labelName       string
+		labelValue      string
+		metadata        metadata
+		want            func() map[uint64]*writev2.TimeSeries
+	}{
+		{
+			name:        "normal sample with additional label",
+			sampleValue: 42.5,
+			timestamp:   1234567890000,
+			baseName:    "test_metric",
+			baseLabels: []prompb.Label{
+				{Name: "base_label", Value: "base_value"},
+			},
+			labelName:  "extra_label",
+			labelValue: "extra_value",
+			metadata: metadata{
+				Type: writev2.Metadata_METRIC_TYPE_GAUGE,
+				Help: "Test metric",
+				Unit: "bytes",
+			},
+			want: func() map[uint64]*writev2.TimeSeries {
+				labels := []prompb.Label{
+					{Name: "base_label", Value: "base_value"},
+					{Name: "extra_label", Value: "extra_value"},
+					{Name: model.MetricNameLabel, Value: "test_metric"},
+				}
+				return map[uint64]*writev2.TimeSeries{
+					timeSeriesSignature(labels): {
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+						Samples: []writev2.Sample{
+							{Value: 42.5, Timestamp: 1234567890000},
+						},
+						Metadata: writev2.Metadata{
+							Type:    writev2.Metadata_METRIC_TYPE_GAUGE,
+							HelpRef: 7,
+							UnitRef: 8,
+						},
+					},
+				}
+			},
+		},
+		{
+			name:        "normal sample without additional label",
+			sampleValue: 100.0,
+			timestamp:   1234567890000,
+			baseName:    "test_metric_no_extra",
+			baseLabels: []prompb.Label{
+				{Name: "base_label", Value: "base_value"},
+			},
+			labelName:  "",
+			labelValue: "",
+			metadata: metadata{
+				Type: writev2.Metadata_METRIC_TYPE_COUNTER,
+				Help: "Test counter",
+			},
+			want: func() map[uint64]*writev2.TimeSeries {
+				labels := []prompb.Label{
+					{Name: "base_label", Value: "base_value"},
+					{Name: model.MetricNameLabel, Value: "test_metric_no_extra"},
+				}
+				return map[uint64]*writev2.TimeSeries{
+					timeSeriesSignature(labels): {
+						LabelsRefs: []uint32{1, 2, 3, 4},
+						Samples: []writev2.Sample{
+							{Value: 100.0, Timestamp: 1234567890000},
+						},
+						Metadata: writev2.Metadata{
+							Type:    writev2.Metadata_METRIC_TYPE_COUNTER,
+							HelpRef: 5,
+							UnitRef: 0,
+						},
+					},
+				}
+			},
+		},
+		{
+			name:            "stale sample with noRecordedValue true",
+			sampleValue:     50.0,
+			timestamp:       1234567890000,
+			noRecordedValue: true,
+			baseName:        "test_stale_metric",
+			baseLabels: []prompb.Label{
+				{Name: "instance", Value: "localhost:8080"},
+			},
+			labelName:  "job",
+			labelValue: "test_job",
+			metadata: metadata{
+				Type: writev2.Metadata_METRIC_TYPE_GAUGE,
+				Help: "Test stale metric",
+			},
+			want: func() map[uint64]*writev2.TimeSeries {
+				labels := []prompb.Label{
+					{Name: "instance", Value: "localhost:8080"},
+					{Name: "job", Value: "test_job"},
+					{Name: model.MetricNameLabel, Value: "test_stale_metric"},
+				}
+				return map[uint64]*writev2.TimeSeries{
+					timeSeriesSignature(labels): {
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+						Samples: []writev2.Sample{
+							{Value: math.Float64frombits(value.StaleNaN), Timestamp: 1234567890000},
+						},
+						Metadata: writev2.Metadata{
+							Type:    writev2.Metadata_METRIC_TYPE_GAUGE,
+							HelpRef: 7,
+							UnitRef: 0,
+						},
+					},
+				}
+			},
+		},
+		{
+			name:        "empty base labels",
+			sampleValue: 15.0,
+			timestamp:   1234567890000,
+			baseName:    "simple_metric",
+			baseLabels:  []prompb.Label{},
+			labelName:   "service",
+			labelValue:  "my_service",
+			metadata: metadata{
+				Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM,
+				Help: "Simple histogram",
+			},
+			want: func() map[uint64]*writev2.TimeSeries {
+				labels := []prompb.Label{
+					{Name: "service", Value: "my_service"},
+					{Name: model.MetricNameLabel, Value: "simple_metric"},
+				}
+				return map[uint64]*writev2.TimeSeries{
+					timeSeriesSignature(labels): {
+						LabelsRefs: []uint32{1, 2, 3, 4},
+						Samples: []writev2.Sample{
+							{Value: 15.0, Timestamp: 1234567890000},
+						},
+						Metadata: writev2.Metadata{
+							Type:    writev2.Metadata_METRIC_TYPE_HISTOGRAM,
+							HelpRef: 5,
+							UnitRef: 0,
+						},
+					},
+				}
+			},
+		},
+		{
+			name:        "partial label name only",
+			sampleValue: 25.5,
+			timestamp:   1234567890000,
+			baseName:    "partial_metric",
+			baseLabels: []prompb.Label{
+				{Name: "region", Value: "us-west-1"},
+			},
+			labelName:  "environment",
+			labelValue: "", // empty value should not add the label
+			metadata: metadata{
+				Type: writev2.Metadata_METRIC_TYPE_SUMMARY,
+				Help: "Partial label test",
+			},
+			want: func() map[uint64]*writev2.TimeSeries {
+				labels := []prompb.Label{
+					{Name: "region", Value: "us-west-1"},
+					{Name: model.MetricNameLabel, Value: "partial_metric"},
+				}
+				return map[uint64]*writev2.TimeSeries{
+					timeSeriesSignature(labels): {
+						LabelsRefs: []uint32{1, 2, 3, 4},
+						Samples: []writev2.Sample{
+							{Value: 25.5, Timestamp: 1234567890000},
+						},
+						Metadata: writev2.Metadata{
+							Type:    writev2.Metadata_METRIC_TYPE_SUMMARY,
+							HelpRef: 5,
+							UnitRef: 0,
+						},
+					},
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			converter := newPrometheusConverterV2(Settings{})
+
+			converter.addSampleWithLabels(
+				tt.sampleValue,
+				tt.timestamp,
+				tt.noRecordedValue,
+				tt.baseName,
+				tt.baseLabels,
+				tt.labelName,
+				tt.labelValue,
+				tt.metadata,
+			)
+
+			w := tt.want()
+			diff := cmp.Diff(w, converter.unique, cmpopts.EquateNaNs())
+			assert.Empty(t, diff)
+			assert.Empty(t, converter.conflicts)
 		})
 	}
 }

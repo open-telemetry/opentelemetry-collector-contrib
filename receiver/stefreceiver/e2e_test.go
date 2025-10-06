@@ -4,7 +4,6 @@
 package stefreceiver
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -42,8 +41,8 @@ func createReceiver(t *testing.T, endpoint string) (receiver.Metrics, *consumert
 	settings.Logger, _ = zap.NewDevelopment()
 	rcvCfg := createDefaultConfig()
 	rcvCfg.(*Config).NetAddr.Endpoint = endpoint
-	m, err := NewFactory().CreateMetrics(context.Background(), settings, rcvCfg, sink)
-	require.NoError(t, m.Start(context.Background(), componenttest.NewNopHost()))
+	m, err := NewFactory().CreateMetrics(t.Context(), settings, rcvCfg, sink)
+	require.NoError(t, m.Start(t.Context(), componenttest.NewNopHost()))
 	require.NoError(t, err)
 	return m, sink
 }
@@ -54,25 +53,27 @@ func createExporter(t *testing.T, endpoint string) exporter.Metrics {
 	cfg.TLS.Insecure = true
 	settings := exportertest.NewNopSettings(metadata.Type)
 	settings.Logger, _ = zap.NewDevelopment()
-	exp, err := stefexporter.NewFactory().CreateMetrics(context.Background(), settings, cfg)
+	exp, err := stefexporter.NewFactory().CreateMetrics(t.Context(), settings, cfg)
 	require.NoError(t, err)
-	require.NoError(t, exp.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, exp.Start(t.Context(), componenttest.NewNopHost()))
 	return exp
 }
 
 func TestRoundtrip(t *testing.T) {
 	endpoint := testutil.GetAvailableLocalAddress(t)
 	m, sink := createReceiver(t, endpoint)
-	t.Cleanup(func() { require.NoError(t, m.Shutdown(context.Background())) })
+	t.Cleanup(func() { require.NoError(t, m.Shutdown(t.Context())) })
 
 	exporter := createExporter(t, endpoint)
-	t.Cleanup(func() { require.NoError(t, exporter.Shutdown(context.Background())) })
 
-	err := exporter.ConsumeMetrics(context.Background(), genMetrics())
+	err := exporter.ConsumeMetrics(t.Context(), genMetrics())
 	require.NoError(t, err)
 	assert.EventuallyWithT(t, func(tt *assert.CollectT) {
 		assert.Len(tt, sink.AllMetrics(), 1)
 	}, 1*time.Minute, 10*time.Millisecond)
+
+	err = exporter.Shutdown(t.Context())
+	require.NoError(t, err)
 }
 
 func TestShutdownWhenConnected(t *testing.T) {
@@ -80,7 +81,7 @@ func TestShutdownWhenConnected(t *testing.T) {
 	receiver, sink := createReceiver(t, endpoint)
 	exporter := createExporter(t, endpoint)
 
-	require.NoError(t, exporter.ConsumeMetrics(context.Background(), genMetrics()))
+	require.NoError(t, exporter.ConsumeMetrics(t.Context(), genMetrics()))
 
 	assert.EventuallyWithT(
 		t, func(tt *assert.CollectT) {
@@ -92,7 +93,7 @@ func TestShutdownWhenConnected(t *testing.T) {
 	// This means there is an active connection at the receiver.
 	// Previously we had a bug causing the receiver Shutdown to hang forever
 	// in this situation.
-	require.NoError(t, receiver.Shutdown(context.Background()))
+	require.NoError(t, receiver.Shutdown(t.Context()))
 
-	require.NoError(t, exporter.Shutdown(context.Background()))
+	require.NoError(t, exporter.Shutdown(t.Context()))
 }

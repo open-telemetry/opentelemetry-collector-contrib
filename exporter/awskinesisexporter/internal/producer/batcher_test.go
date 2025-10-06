@@ -92,7 +92,7 @@ func TestBatchedExporter(t *testing.T) {
 			require.NoError(t, err, "Must not error when creating BatchedExporter")
 			require.NotNil(t, be, "Must have a valid client to use")
 
-			err = be.Put(context.Background(), bt)
+			err = be.Put(t.Context(), bt)
 			if !tc.shouldErr {
 				assert.NoError(t, err, "Must not have returned an error for this test case")
 				return

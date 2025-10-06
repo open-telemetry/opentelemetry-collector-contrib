@@ -582,7 +582,7 @@ func TestPodStore_RefreshTick(t *testing.T) {
 	defer require.NoError(t, podStore.Shutdown())
 	podStore.podClient = &mockPodClient{}
 	podStore.lastRefreshed = time.Now().Add(-time.Minute)
-	podStore.RefreshTick(context.Background())
+	podStore.RefreshTick(t.Context())
 
 	assert.Equal(t, uint64(10), podStore.nodeInfo.nodeStats.cpuReq)
 	assert.Equal(t, uint64(50*1024*1024), podStore.nodeInfo.nodeStats.memReq)
@@ -686,7 +686,7 @@ func TestPodStore_Decorate(t *testing.T) {
 	metric := &mockCIMetric{
 		tags: tags,
 	}
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 	podStore := getPodStore()
 	defer require.NoError(t, podStore.Shutdown())

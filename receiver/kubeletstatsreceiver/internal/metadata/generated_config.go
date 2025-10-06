@@ -30,7 +30,6 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 type MetricsConfig struct {
 	ContainerCPUTime                     MetricConfig `mapstructure:"container.cpu.time"`
 	ContainerCPUUsage                    MetricConfig `mapstructure:"container.cpu.usage"`
-	ContainerCPUUtilization              MetricConfig `mapstructure:"container.cpu.utilization"`
 	ContainerFilesystemAvailable         MetricConfig `mapstructure:"container.filesystem.available"`
 	ContainerFilesystemCapacity          MetricConfig `mapstructure:"container.filesystem.capacity"`
 	ContainerFilesystemUsage             MetricConfig `mapstructure:"container.filesystem.usage"`
@@ -49,7 +48,6 @@ type MetricsConfig struct {
 	K8sContainerMemoryRequestUtilization MetricConfig `mapstructure:"k8s.container.memory_request_utilization"`
 	K8sNodeCPUTime                       MetricConfig `mapstructure:"k8s.node.cpu.time"`
 	K8sNodeCPUUsage                      MetricConfig `mapstructure:"k8s.node.cpu.usage"`
-	K8sNodeCPUUtilization                MetricConfig `mapstructure:"k8s.node.cpu.utilization"`
 	K8sNodeFilesystemAvailable           MetricConfig `mapstructure:"k8s.node.filesystem.available"`
 	K8sNodeFilesystemCapacity            MetricConfig `mapstructure:"k8s.node.filesystem.capacity"`
 	K8sNodeFilesystemUsage               MetricConfig `mapstructure:"k8s.node.filesystem.usage"`
@@ -65,7 +63,6 @@ type MetricsConfig struct {
 	K8sPodCPUNodeUtilization             MetricConfig `mapstructure:"k8s.pod.cpu.node.utilization"`
 	K8sPodCPUTime                        MetricConfig `mapstructure:"k8s.pod.cpu.time"`
 	K8sPodCPUUsage                       MetricConfig `mapstructure:"k8s.pod.cpu.usage"`
-	K8sPodCPUUtilization                 MetricConfig `mapstructure:"k8s.pod.cpu.utilization"`
 	K8sPodCPULimitUtilization            MetricConfig `mapstructure:"k8s.pod.cpu_limit_utilization"`
 	K8sPodCPURequestUtilization          MetricConfig `mapstructure:"k8s.pod.cpu_request_utilization"`
 	K8sPodFilesystemAvailable            MetricConfig `mapstructure:"k8s.pod.filesystem.available"`
@@ -83,6 +80,7 @@ type MetricsConfig struct {
 	K8sPodNetworkErrors                  MetricConfig `mapstructure:"k8s.pod.network.errors"`
 	K8sPodNetworkIo                      MetricConfig `mapstructure:"k8s.pod.network.io"`
 	K8sPodUptime                         MetricConfig `mapstructure:"k8s.pod.uptime"`
+	K8sPodVolumeUsage                    MetricConfig `mapstructure:"k8s.pod.volume.usage"`
 	K8sVolumeAvailable                   MetricConfig `mapstructure:"k8s.volume.available"`
 	K8sVolumeCapacity                    MetricConfig `mapstructure:"k8s.volume.capacity"`
 	K8sVolumeInodes                      MetricConfig `mapstructure:"k8s.volume.inodes"`
@@ -97,9 +95,6 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		ContainerCPUUsage: MetricConfig{
 			Enabled: true,
-		},
-		ContainerCPUUtilization: MetricConfig{
-			Enabled: false,
 		},
 		ContainerFilesystemAvailable: MetricConfig{
 			Enabled: true,
@@ -155,9 +150,6 @@ func DefaultMetricsConfig() MetricsConfig {
 		K8sNodeCPUUsage: MetricConfig{
 			Enabled: true,
 		},
-		K8sNodeCPUUtilization: MetricConfig{
-			Enabled: false,
-		},
 		K8sNodeFilesystemAvailable: MetricConfig{
 			Enabled: true,
 		},
@@ -202,9 +194,6 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		K8sPodCPUUsage: MetricConfig{
 			Enabled: true,
-		},
-		K8sPodCPUUtilization: MetricConfig{
-			Enabled: false,
 		},
 		K8sPodCPULimitUtilization: MetricConfig{
 			Enabled: false,
@@ -255,6 +244,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		K8sPodUptime: MetricConfig{
+			Enabled: false,
+		},
+		K8sPodVolumeUsage: MetricConfig{
 			Enabled: false,
 		},
 		K8sVolumeAvailable: MetricConfig{

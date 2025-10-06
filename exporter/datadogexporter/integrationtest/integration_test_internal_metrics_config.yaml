@@ -30,6 +30,7 @@ service:
             exporter:
               otlp:
                 protocol: http/protobuf
+                insecure: true
                 endpoint: ${env:OTLP_HTTP_SERVER}
   pipelines:
     traces:

@@ -4,7 +4,6 @@
 package purefbreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefbreceiver"
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -25,6 +24,6 @@ func TestStartAndShutdown(t *testing.T) {
 	recv := newReceiver(cfg, receivertest.NewNopSettings(metadata.Type), sink)
 
 	// verify
-	assert.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()))
-	assert.NoError(t, recv.Shutdown(context.Background()))
+	assert.NoError(t, recv.Start(t.Context(), componenttest.NewNopHost()))
+	assert.NoError(t, recv.Shutdown(t.Context()))
 }

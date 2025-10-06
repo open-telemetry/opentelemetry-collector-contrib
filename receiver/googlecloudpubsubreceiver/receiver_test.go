@@ -67,7 +67,7 @@ func (fakeHost) GetExtensions() map[component.ID]component.Component {
 }
 
 func TestStartReceiverNoSubscription(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	srv, receiver := createBaseReceiver()
 	defer func() {
 		assert.NoError(t, srv.Close())
@@ -83,7 +83,7 @@ func TestStartReceiverNoSubscription(t *testing.T) {
 }
 
 func TestReceiver(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	// Start a fake server running locally.
 	srv := pstest.NewServer()
 	defer srv.Close()
@@ -170,21 +170,12 @@ func TestReceiver(t *testing.T) {
 		return len(logSink.AllLogs()) == 1
 	}, time.Second, 10*time.Millisecond)
 
-	// Test a plain log message
-	logSink.Reset()
-	srv.Publish("projects/my-project/topics/otlp", testdata.CreateTextExport(), map[string]string{
-		"content-type": "text/plain",
-	})
-	assert.Eventually(t, func() bool {
-		return len(logSink.AllLogs()) == 1
-	}, time.Second, 10*time.Millisecond)
-
 	assert.NoError(t, receiver.Shutdown(ctx))
 	assert.NoError(t, receiver.Shutdown(ctx))
 }
 
 func TestEncodingMultipleConsumersForAnEncoding(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	srv, receiver := createBaseReceiver()
 	defer func() {
 		assert.NoError(t, srv.Close())
@@ -199,7 +190,7 @@ func TestEncodingMultipleConsumersForAnEncoding(t *testing.T) {
 }
 
 func TestEncodingBuildInProtoTrace(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	srv, receiver := createBaseReceiver()
 	defer func() {
 		assert.NoError(t, srv.Close())
@@ -216,7 +207,7 @@ func TestEncodingBuildInProtoTrace(t *testing.T) {
 }
 
 func TestEncodingBuildInProtoMetric(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	srv, receiver := createBaseReceiver()
 	defer func() {
 		assert.NoError(t, srv.Close())
@@ -233,7 +224,7 @@ func TestEncodingBuildInProtoMetric(t *testing.T) {
 }
 
 func TestEncodingBuildInProtoLog(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	srv, receiver := createBaseReceiver()
 	defer func() {
 		assert.NoError(t, srv.Close())
@@ -250,7 +241,7 @@ func TestEncodingBuildInProtoLog(t *testing.T) {
 }
 
 func TestEncodingConsumerMismatch(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	srv, receiver := createBaseReceiver()
 	defer func() {
 		assert.NoError(t, srv.Close())
@@ -264,7 +255,7 @@ func TestEncodingConsumerMismatch(t *testing.T) {
 }
 
 func TestEncodingNotFound(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	srv, receiver := createBaseReceiver()
 	defer func() {
 		assert.NoError(t, srv.Close())
@@ -276,8 +267,34 @@ func TestEncodingNotFound(t *testing.T) {
 	assert.ErrorContains(t, receiver.Start(ctx, fakeHost{}), "extension \"foo\" not found")
 }
 
+func TestEncodingRemovedRawText(t *testing.T) {
+	ctx := t.Context()
+	srv, receiver := createBaseReceiver()
+	defer func() {
+		assert.NoError(t, srv.Close())
+		assert.NoError(t, receiver.Shutdown(ctx))
+	}()
+
+	receiver.logsConsumer = consumertest.NewNop()
+	receiver.config.Encoding = "raw_text"
+	assert.ErrorContains(t, receiver.Start(ctx, fakeHost{}), "build-in raw_text encoding is removed since v0.132.0")
+}
+
+func TestEncodingRemovedCloudLogging(t *testing.T) {
+	ctx := t.Context()
+	srv, receiver := createBaseReceiver()
+	defer func() {
+		assert.NoError(t, srv.Close())
+		assert.NoError(t, receiver.Shutdown(ctx))
+	}()
+
+	receiver.logsConsumer = consumertest.NewNop()
+	receiver.config.Encoding = "cloud_logging"
+	assert.ErrorContains(t, receiver.Start(ctx, fakeHost{}), "build-in cloud_logging encoding is removed since v0.132.0")
+}
+
 func TestEncodingExtension(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	srv, receiver := createBaseReceiver()
 	defer func() {
 		assert.NoError(t, srv.Close())
@@ -290,7 +307,7 @@ func TestEncodingExtension(t *testing.T) {
 }
 
 func TestEncodingExtensionMismatch(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	srv, receiver := createBaseReceiver()
 	defer func() {
 		assert.NoError(t, srv.Close())

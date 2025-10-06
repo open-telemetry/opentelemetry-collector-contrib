@@ -4,7 +4,6 @@
 package metricstransformprocessor
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -30,7 +29,7 @@ func TestMetricsTransformProcessor(t *testing.T) {
 			}
 
 			mtp, err := processorhelper.NewMetrics(
-				context.Background(),
+				t.Context(),
 				processortest.NewNopSettings(metadata.Type),
 				&Config{},
 				next,
@@ -47,7 +46,7 @@ func TestMetricsTransformProcessor(t *testing.T) {
 			for _, m := range test.in {
 				m.MoveTo(inMetricsSlice.AppendEmpty())
 			}
-			cErr := mtp.ConsumeMetrics(context.Background(), inMetrics)
+			cErr := mtp.ConsumeMetrics(t.Context(), inMetrics)
 			assert.NoError(t, cErr)
 
 			// get and check results

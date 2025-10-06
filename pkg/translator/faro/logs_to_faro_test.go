@@ -4,7 +4,6 @@
 package faro // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/faro"
 
 import (
-	"context"
 	"fmt"
 	"path/filepath"
 	"testing"
@@ -125,7 +124,7 @@ func TestTranslateFromLogs(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			plogs, err := golden.ReadLogs(tt.plogsFile)
 			require.NoError(t, err)
-			faroPayloads, err := TranslateFromLogs(context.TODO(), plogs)
+			faroPayloads, err := TranslateFromLogs(t.Context(), plogs)
 			tt.wantErr(t, err)
 			assert.ElementsMatch(t, tt.wantPayloads, faroPayloads)
 		})

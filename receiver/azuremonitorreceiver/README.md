@@ -37,6 +37,7 @@ The following settings are optional:
 - `cloud` (default = `AzureCloud`): defines which Azure cloud to use. Valid values: `AzureCloud`, `AzureUSGovernment`, `AzureChinaCloud`.
 - `dimensions.enabled` (default = `true`): allows to opt out from automatically split by all the dimensions of the resource type.
 - `dimensions.overrides` (default = `{}`): if dimensions are enabled, it allows you to specify a set of dimensions for a particular metric. This is a two levels map with first key being the resource type and second key being the metric name. Programmatic value should be used for metric name https://learn.microsoft.com/en-us/azure/azure-monitor/reference/metrics-index
+- `append_tags_as_attributes` (default = `[]`): Controls which Azure resource tags are added as resource attributes to the metrics. Can be a list of specific tag names or `["*"]` to include all tags.
 - `use_batch_api` (default = `false`): Use the batch API to fetch metrics. This is useful when the number of subscriptions is high and the API calls are rate limited.
 - `maximum_resources_per_batch` (default = 50): If batch is enabled, the maximum number of unique resource IDs to fetch per API call, current limit is 50 (as of 06/16/2025) https://learn.microsoft.com/en-us/azure/azure-monitor/metrics/migrate-to-batch-api?tabs=individual-response
 
@@ -180,6 +181,18 @@ receivers:
           # Note here that the metric display name is ``Network rules hit count`` but it's programmatic value is ``NetworkRuleHit``
           # Ref: https://learn.microsoft.com/en-us/azure/azure-monitor/reference/supported-metrics/microsoft-network-azurefirewalls-metrics
           "NetworkRuleHit": [Reason, Status]
+```
+
+Selectively including resource tags as attributes:
+
+```yaml
+receivers:
+  azuremonitor:
+    # Include all tags
+    append_tags_as_attributes: ["*"]
+    
+    # Or include only specific tags
+    append_tags_as_attributes: ["service", "environment"]
 ```
 
 ## Metrics

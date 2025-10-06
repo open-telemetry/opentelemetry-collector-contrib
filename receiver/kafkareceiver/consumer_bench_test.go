@@ -4,7 +4,6 @@
 package kafkareceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver"
 
 import (
-	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -88,21 +87,21 @@ func runBenchmark(b *testing.B, topic string, data []byte,
 	rcv component.Component, client *kgo.Client,
 ) {
 	require.NoError(b,
-		rcv.Start(context.Background(), componenttest.NewNopHost()),
+		rcv.Start(b.Context(), componenttest.NewNopHost()),
 	)
-	defer func() { require.NoError(b, rcv.Shutdown(context.Background())) }()
+	defer func() { require.NoError(b, rcv.Shutdown(b.Context())) }()
 
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			client.Produce(context.Background(), &kgo.Record{
+			client.Produce(b.Context(), &kgo.Record{
 				Topic: topic, Value: data,
 			}, func(_ *kgo.Record, err error) {
 				require.NoError(b, err)
 			})
 		}
 	})
-	client.Flush(context.Background())
+	client.Flush(b.Context())
 }
 
 func BenchmarkTracesReceiver(b *testing.B) {

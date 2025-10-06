@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 package googlecloudlogentryencodingextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension"
+
 import (
 	"fmt"
 

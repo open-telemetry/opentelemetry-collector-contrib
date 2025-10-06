@@ -6,6 +6,7 @@ package k8sobjectsreceiver // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"errors"
 	"fmt"
+	"maps"
 	"strings"
 	"time"
 
@@ -59,8 +60,9 @@ type K8sObjectsConfig struct {
 type Config struct {
 	k8sconfig.APIConfig `mapstructure:",squash"`
 
-	Objects   []*K8sObjectsConfig `mapstructure:"objects"`
-	ErrorMode ErrorMode           `mapstructure:"error_mode"`
+	Objects             []*K8sObjectsConfig `mapstructure:"objects"`
+	ErrorMode           ErrorMode           `mapstructure:"error_mode"`
+	IncludeInitialState bool                `mapstructure:"include_initial_state"`
 
 	K8sLeaderElector *component.ID `mapstructure:"k8s_leader_elector"`
 
@@ -89,6 +91,10 @@ func (c *Config) Validate() error {
 
 		if object.Mode == PullMode && len(object.ExcludeWatchType) != 0 {
 			return errors.New("the Exclude config can only be used with watch mode")
+		}
+
+		if object.Mode == PullMode && c.IncludeInitialState {
+			return errors.New("include_initial_state can only be used with watch mode")
 		}
 	}
 	return nil
@@ -137,7 +143,8 @@ func (c *Config) getValidObjects() (map[string][]*schema.GroupVersionResource, e
 		if len(split) == 1 && group.GroupVersion == "v1" {
 			split = []string{"", "v1"}
 		}
-		for _, resource := range group.APIResources {
+		for i := range group.APIResources {
+			resource := &group.APIResources[i]
 			validObjects[resource.Name] = append(validObjects[resource.Name], &schema.GroupVersionResource{
 				Group:    split[0],
 				Version:  split[1],
@@ -170,9 +177,7 @@ func (k *K8sObjectsConfig) DeepCopy() *K8sObjectsConfig {
 	}
 
 	copied.exclude = make(map[apiWatch.EventType]bool)
-	for key, val := range k.exclude {
-		copied.exclude[key] = val
-	}
+	maps.Copy(copied.exclude, k.exclude)
 
 	if k.gvr != nil {
 		copied.gvr = &schema.GroupVersionResource{

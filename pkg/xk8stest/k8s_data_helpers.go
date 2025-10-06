@@ -22,8 +22,8 @@ func HostEndpoint(t *testing.T) string {
 
 	client, err := docker.NewClientWithOpts(docker.FromEnv)
 	require.NoError(t, err)
-	client.NegotiateAPIVersion(context.Background())
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	client.NegotiateAPIVersion(t.Context())
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
 	defer cancel()
 	network, err := client.NetworkInspect(ctx, "kind", network2.InspectOptions{})
 	require.NoError(t, err)

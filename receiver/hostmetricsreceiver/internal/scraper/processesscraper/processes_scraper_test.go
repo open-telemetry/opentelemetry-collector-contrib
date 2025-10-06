@@ -64,10 +64,10 @@ func TestScrape(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper := newProcessesScraper(context.Background(), scrapertest.NewNopSettings(metadata.Type), &Config{
+			scraper := newProcessesScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), &Config{
 				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			})
-			err := scraper.start(context.Background(), componenttest.NewNopHost())
+			err := scraper.start(t.Context(), componenttest.NewNopHost())
 			assert.NoError(t, err, "Failed to initialize processes scraper: %v", err)
 
 			// Override scraper methods if we are mocking out for this test case
@@ -78,7 +78,7 @@ func TestScrape(t *testing.T) {
 				scraper.getProcesses = test.getProcesses
 			}
 
-			md, err := scraper.scrape(context.Background())
+			md, err := scraper.scrape(t.Context())
 
 			expectedMetricCount := 0
 			if expectProcessesCountMetric {

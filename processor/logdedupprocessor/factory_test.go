@@ -4,7 +4,6 @@
 package logdedupprocessor
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -73,7 +72,7 @@ func TestCreateLogs(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			f := NewFactory()
-			p, err := f.CreateLogs(context.Background(), processortest.NewNopSettings(metadata.Type), tc.cfg, nil)
+			p, err := f.CreateLogs(t.Context(), processortest.NewNopSettings(metadata.Type), tc.cfg, nil)
 			if tc.expectedErr == "" {
 				require.NoError(t, err)
 				require.IsType(t, &logDedupProcessor{}, p)

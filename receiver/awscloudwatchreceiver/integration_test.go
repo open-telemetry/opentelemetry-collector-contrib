@@ -6,7 +6,6 @@
 package awscloudwatchreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscloudwatchreceiver"
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -42,7 +41,7 @@ func TestLoggingIntegration(t *testing.T) {
 		Limit: 1,
 	}
 	recv, err := NewFactory().CreateLogs(
-		context.Background(),
+		t.Context(),
 		receivertest.NewNopSettings(metadata.Type),
 		cfg,
 		sink,
@@ -53,14 +52,14 @@ func TestLoggingIntegration(t *testing.T) {
 	require.True(t, ok)
 	rcvr.client = mc
 
-	err = recv.Start(context.Background(), componenttest.NewNopHost())
+	err = recv.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	require.Eventually(t, func() bool {
 		return sink.LogRecordCount() > 0
 	}, 5*time.Second, 10*time.Millisecond)
 
-	err = recv.Shutdown(context.Background())
+	err = recv.Shutdown(t.Context())
 	require.NoError(t, err)
 
 	logs := sink.AllLogs()[0]

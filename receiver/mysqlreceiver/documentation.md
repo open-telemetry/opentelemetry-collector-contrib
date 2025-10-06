@@ -454,6 +454,14 @@ This metric is specific for MySQL working as Document Store (X-Plugin). [more do
 | ---- | ----------- | ------ | -------- |
 | kind | The worker thread count kind. | Str: ``available``, ``active`` | false |
 
+### mysql.page_size
+
+InnoDB page size.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
 ### mysql.query.client.count
 
 The number of statements executed by the server. This includes only statements sent to the server by clients.

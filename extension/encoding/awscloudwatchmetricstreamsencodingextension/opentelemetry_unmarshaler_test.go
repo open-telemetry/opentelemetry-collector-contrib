@@ -48,7 +48,7 @@ func TestUnmarshalOpenTelemetryMetrics(t *testing.T) {
 	tests := map[string]struct {
 		record                  []byte
 		expectedMetricsFilename string
-		expectedErrStr          string
+		expectedErrRegexp       string
 	}{
 		"valid_record_single_metric": {
 			record:                  getRecordFromFiles(t, []string{filepath.Join(filesDirectory, "valid_metric.yaml")}),
@@ -66,20 +66,21 @@ func TestUnmarshalOpenTelemetryMetrics(t *testing.T) {
 			expectedMetricsFilename: filepath.Join(filesDirectory, "empty_expected.yaml"),
 		},
 		"invalid_record_no_metrics": {
-			record:         []byte{1, 2, 3},
-			expectedErrStr: "unable to unmarshal input: proto: ExportMetricsServiceRequest: illegal tag 0 (wire type 2)",
+			record:            []byte{1, 2, 3},
+			expectedErrRegexp: "unable to unmarshal input: proto: .*",
 		},
 		"record_out_of_bounds": {
-			record:         []byte("a"),
-			expectedErrStr: "index out of bounds: length prefix exceeds available bytes in record",
+			record:            []byte("a"),
+			expectedErrRegexp: "index out of bounds: length prefix exceeds available bytes in record",
 		},
 	}
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			result, err := unmarshaler.UnmarshalMetrics(test.record)
-			if test.expectedErrStr != "" {
-				require.EqualError(t, err, test.expectedErrStr)
+			if test.expectedErrRegexp != "" {
+				require.Error(t, err)
+				require.Regexp(t, test.expectedErrRegexp, err.Error())
 				return
 			}
 

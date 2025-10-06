@@ -13,7 +13,7 @@ import (
 )
 
 func BenchmarkTest(b *testing.B) {
-	name := "testdata/real_log.json"
+	name := "testdata/log_entry.json"
 	data, err := os.ReadFile(name)
 	require.NoError(b, err)
 

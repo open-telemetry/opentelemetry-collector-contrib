@@ -4,7 +4,6 @@
 package k8sobjectsreceiver
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -13,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	apiWatch "k8s.io/apimachinery/pkg/watch"
 
@@ -72,6 +72,7 @@ func TestErrorModes(t *testing.T) {
 			rCfg.makeDynamicClient = mockClient.getMockDynamicClient
 			rCfg.makeDiscoveryClient = getMockDiscoveryClient
 			rCfg.ErrorMode = tt.errorMode
+			// include_initial_state defaults to false, no override needed
 			rCfg.Objects = []*K8sObjectsConfig{
 				{
 					Name: tt.objectName,
@@ -86,7 +87,7 @@ func TestErrorModes(t *testing.T) {
 			)
 			require.NoError(t, err)
 			require.NotNil(t, r)
-			err = r.Start(context.Background(), componenttest.NewNopHost())
+			err = r.Start(t.Context(), componenttest.NewNopHost())
 			if tt.expectError {
 				assert.Error(t, err)
 				if tt.expectedError != "" {
@@ -128,8 +129,8 @@ func TestNewReceiver(t *testing.T) {
 
 	require.NoError(t, err)
 	require.NotNil(t, r)
-	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
-	assert.NoError(t, r.Shutdown(context.Background()))
+	require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()))
+	assert.NoError(t, r.Shutdown(t.Context()))
 }
 
 func TestPullObject(t *testing.T) {
@@ -152,7 +153,6 @@ func TestPullObject(t *testing.T) {
 	rCfg.makeDynamicClient = mockClient.getMockDynamicClient
 	rCfg.makeDiscoveryClient = getMockDiscoveryClient
 	rCfg.ErrorMode = PropagateError
-
 	rCfg.Objects = []*K8sObjectsConfig{
 		{
 			Name:          "pods",
@@ -170,11 +170,11 @@ func TestPullObject(t *testing.T) {
 	)
 	require.NoError(t, err)
 	require.NotNil(t, r)
-	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()))
 	time.Sleep(time.Second)
 	assert.Len(t, consumer.Logs(), 1)
 	assert.Equal(t, 2, consumer.Count())
-	assert.NoError(t, r.Shutdown(context.Background()))
+	assert.NoError(t, r.Shutdown(t.Context()))
 }
 
 func TestWatchObject(t *testing.T) {
@@ -191,7 +191,6 @@ func TestWatchObject(t *testing.T) {
 	rCfg.makeDynamicClient = mockClient.getMockDynamicClient
 	rCfg.makeDiscoveryClient = getMockDiscoveryClient
 	rCfg.ErrorMode = PropagateError
-
 	rCfg.Objects = []*K8sObjectsConfig{
 		{
 			Name:       "pods",
@@ -207,7 +206,7 @@ func TestWatchObject(t *testing.T) {
 		consumer,
 	)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	require.NoError(t, err)
 	require.NotNil(t, r)
 	require.NoError(t, r.Start(ctx, componenttest.NewNopHost()))
@@ -243,6 +242,152 @@ func TestWatchObject(t *testing.T) {
 	assert.NoError(t, r.Shutdown(ctx))
 }
 
+func TestIncludeInitialState(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		desc                string
+		includeInitialState *bool
+		expectedInitialLogs int
+		expectedWatchLogs   int
+	}{
+		{
+			desc:                "include_initial_state true sends initial state",
+			includeInitialState: func() *bool { b := true; return &b }(),
+			expectedInitialLogs: 2, // 2 pods created initially
+			expectedWatchLogs:   1, // 1 new pod created during watch
+		},
+		{
+			desc:                "include_initial_state false skips initial state",
+			includeInitialState: func() *bool { b := false; return &b }(),
+			expectedInitialLogs: 0, // no initial state
+			expectedWatchLogs:   1, // 1 new pod created during watch
+		},
+		{
+			desc:                "include_initial_state nil defaults to false",
+			includeInitialState: nil,
+			expectedInitialLogs: 0, // default is false now
+			expectedWatchLogs:   1, // 1 new pod created during watch
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.desc, func(t *testing.T) {
+			mockClient := newMockDynamicClient()
+			// Create initial pods
+			mockClient.createPods(
+				generatePod("pod1", "default", map[string]any{
+					"environment": "production",
+				}, "1"),
+				generatePod("pod2", "default", map[string]any{
+					"environment": "test",
+				}, "2"),
+			)
+
+			rCfg := createDefaultConfig().(*Config)
+			rCfg.makeDynamicClient = mockClient.getMockDynamicClient
+			rCfg.makeDiscoveryClient = getMockDiscoveryClient
+			rCfg.ErrorMode = PropagateError
+			if tt.includeInitialState != nil {
+				rCfg.IncludeInitialState = *tt.includeInitialState
+			}
+
+			rCfg.Objects = []*K8sObjectsConfig{
+				{
+					Name:       "pods",
+					Mode:       WatchMode,
+					Namespaces: []string{"default"},
+				},
+			}
+
+			consumer := newMockLogConsumer()
+			r, err := newReceiver(
+				receivertest.NewNopSettings(metadata.Type),
+				rCfg,
+				consumer,
+			)
+
+			ctx := t.Context()
+			require.NoError(t, err)
+			require.NotNil(t, r)
+			require.NoError(t, r.Start(ctx, componenttest.NewNopHost()))
+
+			time.Sleep(time.Millisecond * 100)
+			assert.Equal(t, tt.expectedInitialLogs, consumer.Count())
+
+			mockClient.createPods(
+				generatePod("pod3", "default", map[string]any{
+					"environment": "production",
+				}, "3"),
+			)
+
+			time.Sleep(time.Millisecond * 100)
+			assert.Equal(t, tt.expectedInitialLogs+tt.expectedWatchLogs, consumer.Count())
+
+			logs := consumer.Logs()
+			assert.NotEmpty(t, logs)
+
+			for _, log := range logs {
+				for i := 0; i < log.ResourceLogs().Len(); i++ {
+					rl := log.ResourceLogs().At(i)
+					for j := 0; j < rl.ScopeLogs().Len(); j++ {
+						sl := rl.ScopeLogs().At(j)
+						for k := 0; k < sl.LogRecords().Len(); k++ {
+							record := sl.LogRecords().At(k)
+							body := record.Body()
+							assert.Equal(t, pcommon.ValueTypeMap, body.Type())
+
+							bodyMap := body.Map()
+							// Verify consistent structure: should have "type" and "object" fields
+							_, hasType := bodyMap.Get("type")
+							_, hasObject := bodyMap.Get("object")
+							assert.True(t, hasType)
+							assert.True(t, hasObject)
+
+							// Verify event attributes are present
+							attrs := record.Attributes()
+							_, hasEventDomain := attrs.Get("event.domain")
+							_, hasEventName := attrs.Get("event.name")
+							assert.True(t, hasEventDomain)
+							assert.True(t, hasEventName)
+						}
+					}
+				}
+			}
+
+			assert.NoError(t, r.Shutdown(ctx))
+		})
+	}
+}
+
+func TestIncludeInitialStateWithPullMode(t *testing.T) {
+	t.Parallel()
+
+	rCfg := createDefaultConfig().(*Config)
+	rCfg.makeDynamicClient = newMockDynamicClient().getMockDynamicClient
+	rCfg.makeDiscoveryClient = getMockDiscoveryClient
+	rCfg.IncludeInitialState = true
+	rCfg.ErrorMode = PropagateError
+
+	rCfg.Objects = []*K8sObjectsConfig{
+		{
+			Name: "pods",
+			Mode: PullMode,
+		},
+	}
+
+	r, err := newReceiver(
+		receivertest.NewNopSettings(metadata.Type),
+		rCfg,
+		consumertest.NewNop(),
+	)
+	require.NoError(t, err)
+
+	err = r.Start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	_ = r.Shutdown(t.Context())
+}
+
 func TestExcludeDeletedTrue(t *testing.T) {
 	t.Parallel()
 
@@ -257,7 +402,6 @@ func TestExcludeDeletedTrue(t *testing.T) {
 	rCfg.makeDynamicClient = mockClient.getMockDynamicClient
 	rCfg.makeDiscoveryClient = getMockDiscoveryClient
 	rCfg.ErrorMode = PropagateError
-
 	rCfg.Objects = []*K8sObjectsConfig{
 		{
 			Name:       "pods",
@@ -276,7 +420,7 @@ func TestExcludeDeletedTrue(t *testing.T) {
 		consumer,
 	)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	require.NoError(t, err)
 	require.NotNil(t, r)
 	require.NoError(t, r.Start(ctx, componenttest.NewNopHost()))
@@ -334,7 +478,7 @@ func TestReceiverWithLeaderElection(t *testing.T) {
 		}, "1"),
 	)
 
-	err = kr.Start(context.Background(), fakeHost)
+	err = kr.Start(t.Context(), fakeHost)
 	require.NoError(t, err)
 
 	// elected leader
@@ -371,4 +515,248 @@ func TestReceiverWithLeaderElection(t *testing.T) {
 		return sink.LogRecordCount() == 2
 	}, 20*time.Second, 100*time.Millisecond,
 		"logs not collected")
+}
+
+func TestWatchWithLeaderElectionStandby(t *testing.T) {
+	t.Parallel()
+
+	fakeLeaderElection := &k8sleaderelectortest.FakeLeaderElection{}
+	fakeHost := &k8sleaderelectortest.FakeHost{FakeLeaderElection: fakeLeaderElection}
+	leaderElectorID := component.MustNewID("k8s_leader_elector")
+
+	mockClient := newMockDynamicClient()
+	mockClient.createPods(
+		generatePod("pod1", "default", map[string]any{"environment": "production"}, "1"),
+	)
+
+	rCfg := createDefaultConfig().(*Config)
+	rCfg.makeDynamicClient = mockClient.getMockDynamicClient
+	rCfg.makeDiscoveryClient = getMockDiscoveryClient
+	rCfg.ErrorMode = PropagateError
+	rCfg.IncludeInitialState = false
+	rCfg.Objects = []*K8sObjectsConfig{
+		{Name: "pods", Mode: WatchMode, Namespaces: []string{"default"}},
+	}
+	rCfg.K8sLeaderElector = &leaderElectorID
+
+	r, err := newReceiver(receivertest.NewNopSettings(metadata.Type), rCfg, consumertest.NewNop())
+	require.NoError(t, err)
+	kr := r.(*k8sobjectsreceiver)
+	sink := new(consumertest.LogsSink)
+	kr.consumer = sink
+
+	require.NoError(t, kr.Start(t.Context(), fakeHost))
+
+	// Become leader -> watches will start asynchronously
+	fakeLeaderElection.InvokeOnLeading()
+
+	// Give the watch time to establish (avoid list→watch gap)
+	time.Sleep(150 * time.Millisecond)
+
+	// Now create pods that should be observed by the active watch
+	mockClient.createPods(
+		generatePod("pod2", "default", map[string]any{"environment": "x"}, "2"),
+		generatePod("pod3", "default", map[string]any{"environment": "y"}, "3"),
+	)
+
+	require.Eventually(t, func() bool {
+		return sink.LogRecordCount() == 2
+	}, 5*time.Second, 50*time.Millisecond, "watch events not collected while leader")
+
+	// Standby
+	fakeLeaderElection.InvokeOnStopping()
+
+	// Create while in standby -> should NOT be delivered
+	mockClient.createPods(
+		generatePod("pod4", "default", map[string]any{"environment": "standby"}, "4"),
+	)
+	time.Sleep(150 * time.Millisecond)
+	assert.Equal(t, 2, sink.LogRecordCount(), "no events should be received while in standby")
+
+	// Resume
+	fakeLeaderElection.InvokeOnLeading()
+	time.Sleep(150 * time.Millisecond)
+
+	mockClient.createPods(
+		generatePod("pod5", "default", map[string]any{"environment": "resumed"}, "5"),
+	)
+
+	require.Eventually(t, func() bool {
+		return sink.LogRecordCount() == 3
+	}, 5*time.Second, 50*time.Millisecond, "watch did not resume after re-leading")
+
+	assert.NoError(t, kr.Shutdown(t.Context()))
+}
+
+func TestPullWithLeaderElectionStandby(t *testing.T) {
+	t.Parallel()
+
+	fakeLeaderElection := &k8sleaderelectortest.FakeLeaderElection{}
+	fakeHost := &k8sleaderelectortest.FakeHost{FakeLeaderElection: fakeLeaderElection}
+	leaderElectorID := component.MustNewID("k8s_leader_elector")
+
+	mockClient := newMockDynamicClient()
+	mockClient.createPods(generatePod("pod1", "default", map[string]any{"environment": "production"}, "1"))
+
+	rCfg := createDefaultConfig().(*Config)
+	rCfg.makeDynamicClient = mockClient.getMockDynamicClient
+	rCfg.makeDiscoveryClient = getMockDiscoveryClient
+	rCfg.ErrorMode = PropagateError
+	rCfg.Objects = []*K8sObjectsConfig{
+		{
+			Name:     "pods",
+			Mode:     PullMode,
+			Interval: 10 * time.Millisecond, // fast pull to make the test snappy
+		},
+	}
+	rCfg.K8sLeaderElector = &leaderElectorID
+
+	r, err := newReceiver(receivertest.NewNopSettings(metadata.Type), rCfg, consumertest.NewNop())
+	require.NoError(t, err)
+	kr := r.(*k8sobjectsreceiver)
+	sink := new(consumertest.LogsSink)
+	kr.consumer = sink
+
+	require.NoError(t, kr.Start(t.Context(), fakeHost))
+
+	// Become leader: pulls start
+	fakeLeaderElection.InvokeOnLeading()
+
+	// Expect at least one pull to have happened
+	require.Eventually(t, func() bool { return sink.LogRecordCount() >= 1 },
+		2*time.Second, 20*time.Millisecond, "pulls did not start while leader")
+
+	// Go standby: pulls stop
+	fakeLeaderElection.InvokeOnStopping()
+	countAtStandby := sink.LogRecordCount()
+
+	// Add more pods while in standby—should NOT increase count
+	mockClient.createPods(
+		generatePod("pod2", "default", map[string]any{"environment": "standby"}, "2"),
+	)
+	time.Sleep(100 * time.Millisecond)
+	assert.Equal(t, countAtStandby, sink.LogRecordCount(), "no pulls should occur while in standby")
+
+	// Regain leadership: pulls resume
+	fakeLeaderElection.InvokeOnLeading()
+
+	// Now the next pull should include the new pod(s)
+	require.Eventually(t, func() bool { return sink.LogRecordCount() > countAtStandby },
+		2*time.Second, 20*time.Millisecond, "pulls did not resume after re-leading")
+
+	assert.NoError(t, kr.Shutdown(t.Context()))
+}
+
+func TestWatchLeaderFlapDuringStartup_NoPanic(t *testing.T) {
+	t.Parallel()
+
+	fakeLE := &k8sleaderelectortest.FakeLeaderElection{}
+	fakeHost := &k8sleaderelectortest.FakeHost{FakeLeaderElection: fakeLE}
+	leaderElectorID := component.MustNewID("k8s_leader_elector")
+
+	mockClient := newMockDynamicClient()
+	mockClient.createPods(generatePod("pod1", "default", map[string]any{"env": "prod"}, "1"))
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.makeDynamicClient = mockClient.getMockDynamicClient
+	cfg.makeDiscoveryClient = getMockDiscoveryClient
+	cfg.ErrorMode = PropagateError
+	cfg.IncludeInitialState = false
+	cfg.Objects = []*K8sObjectsConfig{
+		{Name: "pods", Mode: WatchMode, Namespaces: []string{"default"}},
+	}
+	cfg.K8sLeaderElector = &leaderElectorID
+
+	r, err := newReceiver(receivertest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	kr := r.(*k8sobjectsreceiver)
+
+	require.NoError(t, kr.Start(t.Context(), fakeHost))
+
+	// 1) Become leader once and wait until at least one worker is registered
+	fakeLE.InvokeOnLeading()
+	require.Eventually(t, func() bool {
+		kr.mu.Lock()
+		n := len(kr.stopperChanList)
+		kr.mu.Unlock()
+		return n > 0
+	}, 2*time.Second, 10*time.Millisecond, "worker not registered")
+
+	// 2) Flap leadership, but give a *tiny* breathing room between lead/stop
+	const loops = 100
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		for i := 0; i < loops; i++ {
+			fakeLE.InvokeOnStopping()
+			// small gap so stopWatches() can complete and workers exit
+			time.Sleep(1 * time.Millisecond)
+			fakeLE.InvokeOnLeading()
+			// small gap so a worker can get started and reach the watch loop
+			time.Sleep(1 * time.Millisecond)
+		}
+	}()
+
+	select {
+	case <-done:
+	case <-time.After(10 * time.Second):
+		t.Fatal("leader flap goroutine timed out (possible deadlock)")
+	}
+
+	assert.NoError(t, kr.Shutdown(t.Context()))
+}
+
+func TestPullLeaderFlapDuringStartup_NoPanic(t *testing.T) {
+	t.Parallel()
+
+	fakeLE := &k8sleaderelectortest.FakeLeaderElection{}
+	fakeHost := &k8sleaderelectortest.FakeHost{FakeLeaderElection: fakeLE}
+	leaderElectorID := component.MustNewID("k8s_leader_elector")
+
+	mockClient := newMockDynamicClient()
+	mockClient.createPods(generatePod("pod1", "default", map[string]any{"env": "prod"}, "1"))
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.makeDynamicClient = mockClient.getMockDynamicClient
+	cfg.makeDiscoveryClient = getMockDiscoveryClient
+	cfg.ErrorMode = PropagateError
+	cfg.Objects = []*K8sObjectsConfig{
+		{Name: "pods", Mode: PullMode, Interval: 5 * time.Millisecond},
+	}
+	cfg.K8sLeaderElector = &leaderElectorID
+
+	r, err := newReceiver(receivertest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	kr := r.(*k8sobjectsreceiver)
+
+	require.NoError(t, kr.Start(t.Context(), fakeHost))
+
+	// Ensure a worker is registered before flapping
+	fakeLE.InvokeOnLeading()
+	require.Eventually(t, func() bool {
+		kr.mu.Lock()
+		n := len(kr.stopperChanList)
+		kr.mu.Unlock()
+		return n > 0
+	}, 2*time.Second, 10*time.Millisecond)
+
+	const loops = 100
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		for i := 0; i < loops; i++ {
+			fakeLE.InvokeOnStopping()
+			time.Sleep(1 * time.Millisecond)
+			fakeLE.InvokeOnLeading()
+			time.Sleep(1 * time.Millisecond)
+		}
+	}()
+
+	select {
+	case <-done:
+	case <-time.After(10 * time.Second):
+		t.Fatal("leader flap goroutine timed out (possible deadlock)")
+	}
+
+	assert.NoError(t, kr.Shutdown(t.Context()))
 }

@@ -13,6 +13,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 func TestAccumulateMetrics(t *testing.T) {
@@ -226,6 +228,7 @@ func TestAccumulateMetrics(t *testing.T) {
 			ilm2 := resourceMetrics2.ScopeMetrics().AppendEmpty()
 			ilm2.Scope().SetName("test")
 			tt.metric(ts2, 21, ilm2.Metrics())
+
 			tt.metric(ts1, 13, ilm2.Metrics())
 
 			a := newAccumulator(zap.NewNop(), 1*time.Hour).(*lastValueAccumulator)
@@ -697,4 +700,61 @@ func getMetricProperties(metric pmetric.Metric) (
 	}
 
 	return
+}
+
+func TestAccumulateSum_RefusedNonMonotonicDelta_Logging(t *testing.T) {
+	// Setup logger to capture log entries
+	observedZapCore, observedLogs := observer.New(zap.DebugLevel)
+	logger := zap.New(observedZapCore)
+
+	accumulator := &lastValueAccumulator{
+		logger:           logger,
+		metricExpiration: 5 * time.Minute,
+	}
+
+	// Create non-monotonic delta sum (will be refused)
+	metric := pmetric.NewMetric()
+	metric.SetName("test_refused_metric")
+	sum := metric.SetEmptySum()
+	sum.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+	sum.SetIsMonotonic(false)
+
+	// Add 2 data points
+	for i := 0; i < 2; i++ {
+		dp := sum.DataPoints().AppendEmpty()
+		dp.SetDoubleValue(42.0)
+		dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+	}
+
+	// Call accumulateSum - should refuse and log
+	result := accumulator.accumulateSum(metric, "test", "", "", pcommon.NewMap(), pcommon.NewMap(), time.Now())
+	require.Equal(t, 0, result)
+
+	// Verify debug log was written
+	logs := observedLogs.All()
+	require.Len(t, logs, 1, "Expected exactly one debug log entry")
+
+	logEntry := logs[0]
+	require.Equal(t, zap.DebugLevel, logEntry.Level)
+	require.Equal(t, "refusing non-monotonic delta sum metric", logEntry.Message)
+
+	// Verify log fields
+	fields := logEntry.Context
+	require.Len(t, fields, 3, "Expected 3 log fields")
+
+	fieldMap := make(map[string]any)
+	for _, field := range fields {
+		switch field.Type {
+		case zapcore.StringType:
+			fieldMap[field.Key] = field.String
+		case zapcore.Int64Type:
+			fieldMap[field.Key] = field.Integer
+		default:
+			fieldMap[field.Key] = field.Interface
+		}
+	}
+
+	require.Equal(t, "test_refused_metric", fieldMap["metric_name"])
+	require.Equal(t, "non-monotonic sum with delta aggregation temporality is not supported", fieldMap["reason"])
+	require.Equal(t, int64(2), fieldMap["data_points_refused"])
 }

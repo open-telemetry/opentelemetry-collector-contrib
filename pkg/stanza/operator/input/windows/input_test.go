@@ -6,7 +6,6 @@
 package windows // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/windows"
 
 import (
-	"context"
 	"errors"
 	"testing"
 	"time"
@@ -149,6 +148,46 @@ func TestInputStart_BadChannelName(t *testing.T) {
 	assert.ErrorContains(t, err, "The specified channel could not be found")
 }
 
+func TestInputStart_RemoteSessionWithDomain(t *testing.T) {
+	persister := testutil.NewMockPersister("")
+
+	// Mock EvtOpenSession to capture the login struct and verify Domain handling
+	originalOpenSessionProc := openSessionProc
+	var capturedDomain string
+	var domainWasNil bool
+	openSessionProc = MockProc{
+		call: func(a ...uintptr) (uintptr, uintptr, error) {
+			// a[0] = loginClass, a[1] = login pointer, a[2] = timeout, a[3] = flags
+			if len(a) >= 4 && a[1] != 0 {
+				capturedDomain = "remote-domain"
+				domainWasNil = false
+			} else {
+				domainWasNil = true
+			}
+			return 1, 0, nil
+		},
+	}
+	defer func() { openSessionProc = originalOpenSessionProc }()
+
+	input := newTestInput()
+	input.ignoreChannelErrors = true
+	input.channel = "test-channel"
+	input.startAt = "beginning"
+	input.pollInterval = 1 * time.Second
+	input.remote = RemoteConfig{
+		Server:   "remote-server",
+		Username: "test-user",
+		Password: "test-pass",
+		Domain:   "remote-domain",
+	}
+
+	err := input.Start(persister)
+	require.NoError(t, err)
+
+	require.False(t, domainWasNil)
+	require.Equal(t, "remote-domain", capturedDomain)
+}
+
 // TestInputRead_RPCInvalidBound tests that the Input handles RPC_S_INVALID_BOUND errors properly
 func TestInputRead_RPCInvalidBound(t *testing.T) {
 	// Save original procs and restore after test
@@ -213,8 +252,7 @@ func TestInputRead_RPCInvalidBound(t *testing.T) {
 	}
 
 	// Call the method under test
-	ctx := context.Background()
-	input.read(ctx)
+	input.read(t.Context())
 
 	// Verify the correct number of calls to each mock
 	assert.Equal(t, 2, nextCalls, "nextProc should be called twice (initial failure and retry)")
@@ -244,7 +282,6 @@ func TestInputIncludeLogRecordOriginal(t *testing.T) {
 		},
 	}
 
-	ctx := context.Background()
 	persister := testutil.NewMockPersister("")
 	fake := testutil.NewFakeOutput(t)
 	input.OutputOperators = []operator.Operator{fake}
@@ -252,7 +289,7 @@ func TestInputIncludeLogRecordOriginal(t *testing.T) {
 	err := input.Start(persister)
 	require.NoError(t, err)
 
-	err = input.sendEvent(ctx, eventXML)
+	err = input.sendEvent(t.Context(), eventXML)
 	require.NoError(t, err)
 
 	expectedEntry := &entry.Entry{
@@ -310,7 +347,6 @@ func TestInputIncludeLogRecordOriginalFalse(t *testing.T) {
 		},
 	}
 
-	ctx := context.Background()
 	persister := testutil.NewMockPersister("")
 	fake := testutil.NewFakeOutput(t)
 	input.OutputOperators = []operator.Operator{fake}
@@ -318,7 +354,7 @@ func TestInputIncludeLogRecordOriginalFalse(t *testing.T) {
 	err := input.Start(persister)
 	require.NoError(t, err)
 
-	err = input.sendEvent(ctx, eventXML)
+	err = input.sendEvent(t.Context(), eventXML)
 	require.NoError(t, err)
 
 	expectedEntry := &entry.Entry{

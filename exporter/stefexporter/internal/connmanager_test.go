@@ -99,7 +99,7 @@ func doTest(t *testing.T, test testDef) {
 
 		test.test(cm)
 
-		assert.NoError(t, cm.Stop(context.Background()))
+		assert.NoError(t, cm.Stop(t.Context()))
 
 		for _, conn := range connCreator.conns {
 			require.True(t, conn.closed)
@@ -119,10 +119,10 @@ func TestConnManagerAcquireRelease(t *testing.T) {
 	doTest(
 		t, testDef{
 			test: func(cm *ConnManager) {
-				conn, err := cm.Acquire(context.Background())
+				conn, err := cm.Acquire(t.Context())
 				require.NoError(t, err)
 				require.NotNil(t, conn)
-				cm.Release(context.Background(), conn)
+				cm.Release(t.Context(), conn)
 			},
 		},
 	)
@@ -135,13 +135,13 @@ func TestConnManagerAcquireReleaseMany(t *testing.T) {
 			test: func(cm *ConnManager) {
 				conns = nil
 				for i := uint(0); i < cm.targetConnCount; i++ {
-					conn, err := cm.Acquire(context.Background())
+					conn, err := cm.Acquire(t.Context())
 					require.NoError(t, err)
 					require.NotNil(t, conn)
 					conns = append(conns, conn)
 				}
 				for _, conn := range conns {
-					cm.Release(context.Background(), conn)
+					cm.Release(t.Context(), conn)
 				}
 			},
 			afterStopFunc: func(_ *mockConnCreator, _ uint) {
@@ -161,7 +161,7 @@ func TestConnManagerAcquireDiscardAcquire(t *testing.T) {
 			test: func(cm *ConnManager) {
 				conns = nil
 
-				conn, err := cm.Acquire(context.Background())
+				conn, err := cm.Acquire(t.Context())
 				require.NoError(t, err)
 
 				// Discard the connection. This should restart in a replacement
@@ -171,13 +171,13 @@ func TestConnManagerAcquireDiscardAcquire(t *testing.T) {
 				// Make sure we ask for maximum number of possible connections
 				// so that we guarantee the discarded connection is replaced.
 				for i := uint(0); i < cm.targetConnCount; i++ {
-					conn, err := cm.Acquire(context.Background())
+					conn, err := cm.Acquire(t.Context())
 					require.NoError(t, err)
 					require.NotNil(t, conn)
 					conns = append(conns, conn)
 				}
 				for _, conn := range conns {
-					cm.Release(context.Background(), conn)
+					cm.Release(t.Context(), conn)
 				}
 			},
 			afterStopFunc: func(creator *mockConnCreator, connCount uint) {
@@ -197,11 +197,11 @@ func TestConnManagerAcquireReleaseConcurrent(t *testing.T) {
 					wg.Add(1)
 					go func() {
 						defer wg.Done()
-						conn, err := cm.Acquire(context.Background())
+						conn, err := cm.Acquire(t.Context())
 						if err != nil {
 							return
 						}
-						cm.Release(context.Background(), conn)
+						cm.Release(t.Context(), conn)
 					}()
 				}
 				wg.Wait()
@@ -214,7 +214,7 @@ func TestConnManagerAcquireDiscard(t *testing.T) {
 	doTest(
 		t, testDef{
 			test: func(cm *ConnManager) {
-				conn, err := cm.Acquire(context.Background())
+				conn, err := cm.Acquire(t.Context())
 				require.NoError(t, err)
 				cm.DiscardAndClose(conn)
 			},
@@ -231,7 +231,7 @@ func TestConnManagerAcquireDiscardConcurrent(t *testing.T) {
 					wg.Add(1)
 					go func() {
 						defer wg.Done()
-						conn, err := cm.Acquire(context.Background())
+						conn, err := cm.Acquire(t.Context())
 						if err != nil {
 							return
 						}
@@ -257,7 +257,7 @@ func TestConnManagerFlush(t *testing.T) {
 			test: func(cm *ConnManager) {
 				// First test the scenario where the flush is done immediately
 				// by Release().
-				conn, err := cm.Acquire(context.Background())
+				conn, err := cm.Acquire(t.Context())
 				require.NoError(t, err)
 
 				// Make sure the flush is not done yet.
@@ -265,7 +265,7 @@ func TestConnManagerFlush(t *testing.T) {
 
 				// Advance the clock so that Release() trigger flush.
 				cm.clock.(*clockwork.FakeClock).Advance(flushPeriod)
-				cm.Release(context.Background(), conn)
+				cm.Release(t.Context(), conn)
 
 				// Make sure the flush is done.
 				assert.Eventually(
@@ -277,7 +277,7 @@ func TestConnManagerFlush(t *testing.T) {
 				)
 
 				// Try one more time, but now with flushing happening after Release()
-				conn, err = cm.Acquire(context.Background())
+				conn, err = cm.Acquire(t.Context())
 				require.NoError(t, err)
 
 				// It is the same connection which was already flushed.
@@ -288,10 +288,14 @@ func TestConnManagerFlush(t *testing.T) {
 				assert.False(t, conn.conn.(*mockConn).Flushed())
 
 				// Release the connection first.
-				cm.Release(context.Background(), conn)
+				cm.Release(t.Context(), conn)
 
 				// Advance the clock so that the connection is flush in the background.
-				cm.clock.(*clockwork.FakeClock).Advance(flushPeriod)
+				// We advance the clock twice the reconnect period to guarantee that
+				// all connections are flushed (all connections are expected to be flushed
+				// in one reconnect period, but that's on the edge, we want a guarantee,
+				// that's why double).
+				cm.clock.(*clockwork.FakeClock).Advance(reconnectPeriod * 2)
 
 				// Make sure the flush is done.
 				assert.Eventually(
@@ -311,10 +315,10 @@ func TestConnManagerReconnector(t *testing.T) {
 		t, testDef{
 			clock: clockwork.NewFakeClock(),
 			test: func(cm *ConnManager) {
-				conn, err := cm.Acquire(context.Background())
+				conn, err := cm.Acquire(t.Context())
 				require.NoError(t, err)
 				require.NotNil(t, conn)
-				cm.Release(context.Background(), conn)
+				cm.Release(t.Context(), conn)
 
 				assert.Eventually(
 					t, func() bool {

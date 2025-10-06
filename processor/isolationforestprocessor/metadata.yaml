@@ -1,0 +1,9 @@
+type: isolationforest
+
+status:
+  class: processor
+  stability:
+    alpha: [traces, metrics, logs]
+  distributions: [contrib]
+  codeowners:
+    active: [atoulme]

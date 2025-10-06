@@ -78,6 +78,7 @@ func NewInfo(containerOrchestrator string, refreshInterval time.Duration, logger
 	if err != nil {
 		return nil, fmt.Errorf("failed to create aws session: %w", err)
 	}
+	mInfo.awsConfig = cfg
 
 	mInfo.ec2Metadata = mInfo.ec2MetadataCreator(ctx, cfg, refreshInterval, mInfo.instanceIDReadyC, mInfo.instanceIPReadyC, logger)
 

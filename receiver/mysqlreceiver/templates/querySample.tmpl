@@ -7,7 +7,7 @@ SELECT
     COALESCE(thread.processlist_state, ''),
     COALESCE(statement.sql_text, COALESCE(thread.PROCESSLIST_info, '')) AS sql_text,
     COALESCE(statement.digest, ''),
-    COALESCE(wait.event_id, statement.event_id, ''),
+    COALESCE(wait.event_id, statement.event_id, 0),
     IF(wait.thread_id IS NULL,
         'other',
         COALESCE(

@@ -90,7 +90,7 @@ func TestChainCluster(t *testing.T) {
 				return
 			}
 
-			clusterName, err := provider.ClusterName(context.Background())
+			clusterName, err := provider.ClusterName(t.Context())
 			if err != nil || testInstance.queryErr != "" {
 				assert.EqualError(t, err, testInstance.queryErr)
 			} else {

@@ -5,7 +5,6 @@ package tcpcheckreceiver // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"bufio"
-	"context"
 	"fmt"
 	"net"
 	"path/filepath"
@@ -161,7 +160,7 @@ func TestScraper(t *testing.T) {
 			settings := receivertest.NewNopSettings(metadata.Type)
 
 			scraper := newScraper(cfg, settings)
-			actualMetrics, err := scraper.scrape(context.Background())
+			actualMetrics, err := scraper.scrape(t.Context())
 			actualMetrics.ResourceMetrics()
 			require.NoError(t, err, "failed scrape")
 			require.NoError(
@@ -221,7 +220,7 @@ func TestScraper_TCPErrorMetrics(t *testing.T) {
 			// Initialize metrics builder
 			scraper.mb = metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), settings)
 
-			actualMetrics, err := scraper.scrape(context.Background())
+			actualMetrics, err := scraper.scrape(t.Context())
 			require.Error(t, err, "expected connection refused error")
 
 			for i := 0; i < actualMetrics.ResourceMetrics().Len(); i++ {
@@ -319,7 +318,7 @@ func TestScraper_ErrorEnumCounts(t *testing.T) {
 	scraper.mb = metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), settings)
 
 	// Run a single scrape to collect all errors
-	actualMetrics, err := scraper.scrape(context.Background())
+	actualMetrics, err := scraper.scrape(t.Context())
 	require.Error(t, err, "expected errors from scrape")
 
 	// Print all metrics for debugging
@@ -417,7 +416,7 @@ func TestScraper_MultipleEndpoints_ErrorSum(t *testing.T) {
 
 	// Simulate 5 failed scrapes
 	for idx := 0; idx < 5; idx++ {
-		metrics, err := scraper.scrape(context.Background())
+		metrics, err := scraper.scrape(t.Context())
 		require.Error(t, err)
 		require.NotNil(t, metrics)
 

@@ -4,7 +4,6 @@
 package servicegraphconnector // import "github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector"
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -45,7 +44,7 @@ func TestNewConnector(t *testing.T) {
 			cfg.LatencyHistogramBuckets = tc.latencyHistogramBuckets
 
 			// Test
-			conn, err := factory.CreateTracesToMetrics(context.Background(), creationParams, cfg, consumertest.NewNop())
+			conn, err := factory.CreateTracesToMetrics(t.Context(), creationParams, cfg, consumertest.NewNop())
 			smc := conn.(*serviceGraphConnector)
 
 			// Verify

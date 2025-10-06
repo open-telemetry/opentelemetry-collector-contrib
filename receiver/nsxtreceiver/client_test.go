@@ -4,7 +4,6 @@
 package nsxtreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver"
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -27,7 +26,7 @@ const (
 )
 
 func TestNewClientFailureToParse(t *testing.T) {
-	_, err := newClient(context.Background(), &Config{
+	_, err := newClient(t.Context(), &Config{
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: "http://\x00",
 		},
@@ -39,13 +38,13 @@ func TestTransportNodes(t *testing.T) {
 	nsxMock := mockServer(t)
 	defer nsxMock.Close()
 
-	client, err := newClient(context.Background(), &Config{
+	client, err := newClient(t.Context(), &Config{
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: nsxMock.URL,
 		},
 	}, componenttest.NewNopTelemetrySettings(), componenttest.NewNopHost(), zap.NewNop())
 	require.NoError(t, err)
-	nodes, err := client.TransportNodes(context.Background())
+	nodes, err := client.TransportNodes(t.Context())
 	require.NoError(t, err)
 	require.NotEmpty(t, nodes)
 }
@@ -54,13 +53,13 @@ func TestClusterNodes(t *testing.T) {
 	nsxMock := mockServer(t)
 	defer nsxMock.Close()
 
-	client, err := newClient(context.Background(), &Config{
+	client, err := newClient(t.Context(), &Config{
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: nsxMock.URL,
 		},
 	}, componenttest.NewNopTelemetrySettings(), componenttest.NewNopHost(), zap.NewNop())
 	require.NoError(t, err)
-	nodes, err := client.ClusterNodes(context.Background())
+	nodes, err := client.ClusterNodes(t.Context())
 	require.NoError(t, err)
 	require.NotEmpty(t, nodes)
 }
@@ -69,13 +68,13 @@ func TestClusterNodeInterface(t *testing.T) {
 	nsxMock := mockServer(t)
 	defer nsxMock.Close()
 
-	client, err := newClient(context.Background(), &Config{
+	client, err := newClient(t.Context(), &Config{
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: nsxMock.URL,
 		},
 	}, componenttest.NewNopTelemetrySettings(), componenttest.NewNopHost(), zap.NewNop())
 	require.NoError(t, err)
-	iFaces, err := client.Interfaces(context.Background(), managerNode1, managerClass)
+	iFaces, err := client.Interfaces(t.Context(), managerNode1, managerClass)
 	require.NoError(t, err)
 	require.NotEmpty(t, iFaces)
 }
@@ -84,13 +83,13 @@ func TestTransportNodeInterface(t *testing.T) {
 	nsxMock := mockServer(t)
 	defer nsxMock.Close()
 
-	client, err := newClient(context.Background(), &Config{
+	client, err := newClient(t.Context(), &Config{
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: nsxMock.URL,
 		},
 	}, componenttest.NewNopTelemetrySettings(), componenttest.NewNopHost(), zap.NewNop())
 	require.NoError(t, err)
-	iFaces, err := client.Interfaces(context.Background(), transportNode1, transportClass)
+	iFaces, err := client.Interfaces(t.Context(), transportNode1, transportClass)
 	require.NoError(t, err)
 	require.NotEmpty(t, iFaces)
 }
@@ -99,13 +98,13 @@ func TestTransportNodeStatus(t *testing.T) {
 	nsxMock := mockServer(t)
 	defer nsxMock.Close()
 
-	client, err := newClient(context.Background(), &Config{
+	client, err := newClient(t.Context(), &Config{
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: nsxMock.URL,
 		},
 	}, componenttest.NewNopTelemetrySettings(), componenttest.NewNopHost(), zap.NewNop())
 	require.NoError(t, err)
-	transportStatus, err := client.NodeStatus(context.Background(), transportNode1, transportClass)
+	transportStatus, err := client.NodeStatus(t.Context(), transportNode1, transportClass)
 	require.NoError(t, err)
 	require.NotZero(t, transportStatus.SystemStatus.MemTotal)
 }
@@ -114,13 +113,13 @@ func TestClusterNodeStatus(t *testing.T) {
 	nsxMock := mockServer(t)
 	defer nsxMock.Close()
 
-	client, err := newClient(context.Background(), &Config{
+	client, err := newClient(t.Context(), &Config{
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: nsxMock.URL,
 		},
 	}, componenttest.NewNopTelemetrySettings(), componenttest.NewNopHost(), zap.NewNop())
 	require.NoError(t, err)
-	transportStatus, err := client.NodeStatus(context.Background(), managerNode1, managerClass)
+	transportStatus, err := client.NodeStatus(t.Context(), managerNode1, managerClass)
 	require.NoError(t, err)
 	require.NotZero(t, transportStatus.SystemStatus.MemTotal)
 }
@@ -129,13 +128,13 @@ func TestTransportNodeInterfaceStatus(t *testing.T) {
 	nsxMock := mockServer(t)
 	defer nsxMock.Close()
 
-	client, err := newClient(context.Background(), &Config{
+	client, err := newClient(t.Context(), &Config{
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: nsxMock.URL,
 		},
 	}, componenttest.NewNopTelemetrySettings(), componenttest.NewNopHost(), zap.NewNop())
 	require.NoError(t, err)
-	iStats, err := client.InterfaceStatus(context.Background(), transportNode1, transportNodeNic1, transportClass)
+	iStats, err := client.InterfaceStatus(t.Context(), transportNode1, transportNodeNic1, transportClass)
 	require.NoError(t, err)
 	require.NotZero(t, iStats.RxBytes)
 }
@@ -144,13 +143,13 @@ func TestManagerNodeInterfaceStatus(t *testing.T) {
 	nsxMock := mockServer(t)
 	defer nsxMock.Close()
 
-	client, err := newClient(context.Background(), &Config{
+	client, err := newClient(t.Context(), &Config{
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: nsxMock.URL,
 		},
 	}, componenttest.NewNopTelemetrySettings(), componenttest.NewNopHost(), zap.NewNop())
 	require.NoError(t, err)
-	iStats, err := client.InterfaceStatus(context.Background(), managerNode1, managerNodeNic1, managerClass)
+	iStats, err := client.InterfaceStatus(t.Context(), managerNode1, managerNodeNic1, managerClass)
 	require.NoError(t, err)
 	require.NotZero(t, iStats.RxBytes)
 }
@@ -159,14 +158,14 @@ func TestDoRequestBadUrl(t *testing.T) {
 	nsxMock := mockServer(t)
 	defer nsxMock.Close()
 
-	client, err := newClient(context.Background(), &Config{
+	client, err := newClient(t.Context(), &Config{
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: nsxMock.URL,
 		},
 	}, componenttest.NewNopTelemetrySettings(), componenttest.NewNopHost(), zap.NewNop())
 	require.NoError(t, err)
 
-	_, err = client.doRequest(context.Background(), "\x00")
+	_, err = client.doRequest(t.Context(), "\x00")
 	require.ErrorContains(t, err, "parse")
 }
 
@@ -174,7 +173,7 @@ func TestPermissionDenied_ClusterNodes(t *testing.T) {
 	nsxMock := mockServer(t)
 	defer nsxMock.Close()
 
-	client, err := newClient(context.Background(), &Config{
+	client, err := newClient(t.Context(), &Config{
 		Password: badPassword,
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: nsxMock.URL,
@@ -182,7 +181,7 @@ func TestPermissionDenied_ClusterNodes(t *testing.T) {
 	}, componenttest.NewNopTelemetrySettings(), componenttest.NewNopHost(), zap.NewNop())
 	require.NoError(t, err)
 
-	_, err = client.ClusterNodes(context.Background())
+	_, err = client.ClusterNodes(t.Context())
 	require.ErrorContains(t, err, errUnauthorized.Error())
 }
 
@@ -190,7 +189,7 @@ func TestPermissionDenied_Interfaces(t *testing.T) {
 	nsxMock := mockServer(t)
 	defer nsxMock.Close()
 
-	client, err := newClient(context.Background(), &Config{
+	client, err := newClient(t.Context(), &Config{
 		Password: badPassword,
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: nsxMock.URL,
@@ -198,7 +197,7 @@ func TestPermissionDenied_Interfaces(t *testing.T) {
 	}, componenttest.NewNopTelemetrySettings(), componenttest.NewNopHost(), zap.NewNop())
 	require.NoError(t, err)
 
-	_, err = client.Interfaces(context.Background(), managerNode1, managerClass)
+	_, err = client.Interfaces(t.Context(), managerNode1, managerClass)
 	require.ErrorContains(t, err, errUnauthorized.Error())
 }
 
@@ -206,7 +205,7 @@ func TestPermissionDenied_InterfaceStatus(t *testing.T) {
 	nsxMock := mockServer(t)
 	defer nsxMock.Close()
 
-	client, err := newClient(context.Background(), &Config{
+	client, err := newClient(t.Context(), &Config{
 		Password: badPassword,
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: nsxMock.URL,
@@ -214,7 +213,7 @@ func TestPermissionDenied_InterfaceStatus(t *testing.T) {
 	}, componenttest.NewNopTelemetrySettings(), componenttest.NewNopHost(), zap.NewNop())
 	require.NoError(t, err)
 
-	_, err = client.InterfaceStatus(context.Background(), managerNode1, managerNodeNic1, managerClass)
+	_, err = client.InterfaceStatus(t.Context(), managerNode1, managerNodeNic1, managerClass)
 	require.ErrorContains(t, err, errUnauthorized.Error())
 }
 
@@ -222,7 +221,7 @@ func TestPermissionDenied_NodeStatus(t *testing.T) {
 	nsxMock := mockServer(t)
 	defer nsxMock.Close()
 
-	client, err := newClient(context.Background(), &Config{
+	client, err := newClient(t.Context(), &Config{
 		Password: badPassword,
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: nsxMock.URL,
@@ -230,7 +229,7 @@ func TestPermissionDenied_NodeStatus(t *testing.T) {
 	}, componenttest.NewNopTelemetrySettings(), componenttest.NewNopHost(), zap.NewNop())
 	require.NoError(t, err)
 
-	_, err = client.NodeStatus(context.Background(), managerNode1, managerClass)
+	_, err = client.NodeStatus(t.Context(), managerNode1, managerClass)
 	require.ErrorContains(t, err, errUnauthorized.Error())
 }
 
@@ -238,7 +237,7 @@ func TestPermissionDenied_TransportNodes(t *testing.T) {
 	nsxMock := mockServer(t)
 	defer nsxMock.Close()
 
-	client, err := newClient(context.Background(), &Config{
+	client, err := newClient(t.Context(), &Config{
 		Password: badPassword,
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: nsxMock.URL,
@@ -246,7 +245,7 @@ func TestPermissionDenied_TransportNodes(t *testing.T) {
 	}, componenttest.NewNopTelemetrySettings(), componenttest.NewNopHost(), zap.NewNop())
 	require.NoError(t, err)
 
-	_, err = client.TransportNodes(context.Background())
+	_, err = client.TransportNodes(t.Context())
 	require.ErrorContains(t, err, errUnauthorized.Error())
 }
 
@@ -254,7 +253,7 @@ func TestInternalServerError(t *testing.T) {
 	nsxMock := mockServer(t)
 	defer nsxMock.Close()
 
-	client, err := newClient(context.Background(), &Config{
+	client, err := newClient(t.Context(), &Config{
 		Username: user500,
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: nsxMock.URL,
@@ -262,7 +261,7 @@ func TestInternalServerError(t *testing.T) {
 	}, componenttest.NewNopTelemetrySettings(), componenttest.NewNopHost(), zap.NewNop())
 	require.NoError(t, err)
 
-	_, err = client.ClusterNodes(context.Background())
+	_, err = client.ClusterNodes(t.Context())
 	require.ErrorContains(t, err, "500")
 }
 

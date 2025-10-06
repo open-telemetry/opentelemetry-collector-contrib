@@ -13,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	cerrdefs "github.com/containerd/errdefs"
 	dtypes "github.com/docker/docker/api/types"
 	ctypes "github.com/docker/docker/api/types/container"
 	etypes "github.com/docker/docker/api/types/events"
@@ -111,9 +112,10 @@ func (dc *Client) LoadContainerList(ctx context.Context) error {
 	}
 
 	wg := sync.WaitGroup{}
-	for _, c := range containerList {
+	for i := range containerList {
+		c := &containerList[i]
 		wg.Add(1)
-		go func(container ctypes.Summary) {
+		go func(container *ctypes.Summary) {
 			if !dc.shouldBeExcluded(container.Image) {
 				dc.InspectAndPersistContainer(ctx, container.ID)
 			} else {
@@ -160,7 +162,7 @@ func (dc *Client) FetchContainerStats(
 	containerStats, err := dc.client.ContainerStats(statsCtx, container.ID, false)
 	defer cancel()
 	if err != nil {
-		if docker.IsErrNotFound(err) {
+		if cerrdefs.IsNotFound(err) {
 			dc.logger.Debug(
 				"Daemon reported container doesn't exist. Will no longer monitor.",
 				zap.String("id", container.ID),

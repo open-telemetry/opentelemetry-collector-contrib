@@ -4,7 +4,6 @@
 package resourceprocessor
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -32,19 +31,19 @@ func TestCreateProcessor(t *testing.T) {
 		},
 	}
 
-	tp, err := factory.CreateTraces(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, tp)
 
-	mp, err := factory.CreateMetrics(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	mp, err := factory.CreateMetrics(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, mp)
 
-	lp, err := factory.CreateLogs(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	lp, err := factory.CreateLogs(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, lp)
 
-	pp, err := factory.(xprocessor.Factory).CreateProfiles(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	pp, err := factory.(xprocessor.Factory).CreateProfiles(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, pp)
 }
@@ -57,15 +56,15 @@ func TestInvalidAttributeActions(t *testing.T) {
 		},
 	}
 
-	_, err := factory.CreateTraces(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, nil)
+	_, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, nil)
 	assert.Error(t, err)
 
-	_, err = factory.CreateMetrics(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, nil)
+	_, err = factory.CreateMetrics(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, nil)
 	assert.Error(t, err)
 
-	_, err = factory.CreateLogs(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, nil)
+	_, err = factory.CreateLogs(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, nil)
 	assert.Error(t, err)
 
-	_, err = factory.(xprocessor.Factory).CreateProfiles(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, nil)
+	_, err = factory.(xprocessor.Factory).CreateProfiles(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, nil)
 	assert.Error(t, err)
 }

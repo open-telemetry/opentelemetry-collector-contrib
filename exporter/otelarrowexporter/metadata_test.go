@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"sync"
 	"testing"
 	"time"
 
@@ -52,29 +53,29 @@ func TestSendTracesWithMetadata(t *testing.T) {
 	set := exportertest.NewNopSettings(metadata.Type)
 	set.BuildInfo.Description = "Collector"
 	set.BuildInfo.Version = "1.2.3test"
-	bg := context.Background()
+	bg := t.Context()
 	exp, err := factory.CreateTraces(bg, set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	defer func() {
-		assert.NoError(t, exp.Shutdown(context.Background()))
+		assert.NoError(t, exp.Shutdown(t.Context()))
 	}()
 
 	host := componenttest.NewNopHost()
 
-	assert.NoError(t, exp.Start(context.Background(), host))
+	assert.NoError(t, exp.Start(t.Context(), host))
 
 	// Ensure that initially there is no data in the receiver.
 	assert.EqualValues(t, 0, rcv.requestCount.Load())
 
 	callCtxs := []context.Context{
-		client.NewContext(context.Background(), client.Info{
+		client.NewContext(t.Context(), client.Info{
 			Metadata: client.NewMetadata(map[string][]string{
 				"key1": {"first"},
 				"key2": {"second"},
 			}),
 		}),
-		client.NewContext(context.Background(), client.Info{
+		client.NewContext(t.Context(), client.Info{
 			Metadata: client.NewMetadata(map[string][]string{
 				"key1": {"third"},
 				"key2": {"fourth"},
@@ -86,6 +87,8 @@ func TestSendTracesWithMetadata(t *testing.T) {
 
 	requestCount := 3
 	spansPerRequest := 33
+	var wg sync.WaitGroup
+	wg.Add(requestCount)
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		td := testdata.GenerateTraces(spansPerRequest)
 		spans := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans()
@@ -96,21 +99,18 @@ func TestSendTracesWithMetadata(t *testing.T) {
 		num := requestNum % len(callCtxs)
 		expectByContext[num] += spansPerRequest
 		go func(n int) {
+			defer wg.Done()
 			assert.NoError(t, exp.ConsumeTraces(callCtxs[n], td))
 		}(num)
 	}
+	wg.Wait()
 
-	assert.Eventually(t, func() bool {
-		return rcv.requestCount.Load() == int32(requestCount)
-	}, 1*time.Second, 5*time.Millisecond)
-	assert.Eventually(t, func() bool {
-		return rcv.totalItems.Load() == int32(requestCount*spansPerRequest)
-	}, 1*time.Second, 5*time.Millisecond)
-	assert.Eventually(t, func() bool {
-		rcv.mux.Lock()
-		defer rcv.mux.Unlock()
-		return len(callCtxs) == len(rcv.spanCountByMetadata)
-	}, 1*time.Second, 5*time.Millisecond)
+	rcv.mux.Lock()
+	defer rcv.mux.Unlock()
+
+	assert.Equal(t, rcv.requestCount.Load(), int32(requestCount))
+	assert.Equal(t, rcv.totalItems.Load(), int32(requestCount*spansPerRequest))
+	assert.Len(t, rcv.spanCountByMetadata, len(callCtxs))
 
 	for idx, ctx := range callCtxs {
 		md := client.FromContext(ctx).Metadata
@@ -158,17 +158,17 @@ func TestMetadataExporterCardinalityLimit(t *testing.T) {
 	cfg.MetadataCardinalityLimit = cardLimit
 	cfg.MetadataKeys = []string{"key1", "key2"}
 	set := exportertest.NewNopSettings(metadata.Type)
-	bg := context.Background()
+	bg := t.Context()
 	exp, err := factory.CreateTraces(bg, set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	defer func() {
-		assert.NoError(t, exp.Shutdown(context.Background()))
+		assert.NoError(t, exp.Shutdown(t.Context()))
 	}()
 
 	host := componenttest.NewNopHost()
 
-	assert.NoError(t, exp.Start(context.Background(), host))
+	assert.NoError(t, exp.Start(t.Context(), host))
 
 	// Ensure that initially there is no data in the receiver.
 	assert.EqualValues(t, 0, rcv.requestCount.Load())

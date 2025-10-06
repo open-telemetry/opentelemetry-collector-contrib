@@ -18,7 +18,7 @@ type Transformer struct {
 }
 
 func (t *Transformer) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
-	return t.ProcessBatchWith(ctx, entries, t.Process)
+	return t.ProcessBatchWithTransform(ctx, entries, t.Transform)
 }
 
 // Process will process an entry with a remove transformation.

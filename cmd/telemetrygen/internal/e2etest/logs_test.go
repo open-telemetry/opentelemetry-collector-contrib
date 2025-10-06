@@ -4,7 +4,6 @@
 package e2etest
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -17,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
+	types "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/pkg"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/pkg/logs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 )
@@ -40,17 +40,17 @@ func TestGenerateLogs(t *testing.T) {
 	rCfg := f.CreateDefaultConfig()
 	endpoint := testutil.GetAvailableLocalAddress(t)
 	getOrInsertDefault(t, &rCfg.(*otlpreceiver.Config).GRPC).NetAddr.Endpoint = endpoint
-	r, err := f.CreateLogs(context.Background(), receivertest.NewNopSettings(f.Type()), rCfg, sink)
+	r, err := f.CreateLogs(t.Context(), receivertest.NewNopSettings(f.Type()), rCfg, sink)
 	require.NoError(t, err)
-	err = r.Start(context.Background(), componenttest.NewNopHost())
+	err = r.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	defer func() {
-		require.NoError(t, r.Shutdown(context.Background()))
+		require.NoError(t, r.Shutdown(t.Context()))
 	}()
 	cfg := logs.NewConfig()
 	cfg.WorkerCount = 10
 	cfg.Rate = 10
-	cfg.TotalDuration = 10 * time.Second
+	cfg.TotalDuration = types.DurationWithInf(10 * time.Second)
 	cfg.ReportingInterval = 10
 	cfg.CustomEndpoint = endpoint
 	cfg.Insecure = true

@@ -4,7 +4,6 @@
 package logdedupprocessor
 
 import (
-	"context"
 	"testing"
 
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -28,6 +27,6 @@ func FuzzConsumeLogs(f *testing.F) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		_ = lp.ConsumeLogs(context.Background(), logs)
+		_ = lp.ConsumeLogs(t.Context(), logs)
 	})
 }

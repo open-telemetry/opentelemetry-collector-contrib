@@ -4,10 +4,11 @@
 package splunk // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 
 import (
-	"encoding/json"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/goccy/go-json"
 )
 
 // Constants for Splunk components.
@@ -35,7 +36,7 @@ const (
 
 	// https://docs.splunk.com/Documentation/Splunk/9.2.1/Metrics/Overview#What_is_a_metric_data_point.3F
 	// metric name can contain letters, numbers, underscore, dot or colon. cannot start with number or underscore, or contain metric_name
-	metricNamePattern = `^metric_name:([A-Za-z.:][A-Za-z0-9_.:]*)$`
+	metricNamePattern = `^metric_name:([A-Za-z.:][A-Za-z0-9_.:\\-]*)$`
 )
 
 var metricNameRegexp = regexp.MustCompile(metricNamePattern)
