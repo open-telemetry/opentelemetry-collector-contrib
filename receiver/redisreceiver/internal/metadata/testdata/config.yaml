@@ -9,13 +9,11 @@ all_set:
       enabled: true
     redis.clients.max_output_buffer:
       enabled: true
-    redis.cluster.current_epoch:
-      enabled: true
     redis.cluster.known_nodes:
       enabled: true
-    redis.cluster.my_epoch:
+    redis.cluster.node.count:
       enabled: true
-    redis.cluster.size:
+    redis.cluster.node.uptime:
       enabled: true
     redis.cluster.slots_assigned:
       enabled: true
@@ -32,6 +30,8 @@ all_set:
     redis.cluster.stats_messages_sent:
       enabled: true
     redis.cluster.total_cluster_links_buffer_limit_exceeded:
+      enabled: true
+    redis.cluster.uptime:
       enabled: true
     redis.cmd.calls:
       enabled: true
@@ -112,13 +112,11 @@ none_set:
       enabled: false
     redis.clients.max_output_buffer:
       enabled: false
-    redis.cluster.current_epoch:
-      enabled: false
     redis.cluster.known_nodes:
       enabled: false
-    redis.cluster.my_epoch:
+    redis.cluster.node.count:
       enabled: false
-    redis.cluster.size:
+    redis.cluster.node.uptime:
       enabled: false
     redis.cluster.slots_assigned:
       enabled: false
@@ -135,6 +133,8 @@ none_set:
     redis.cluster.stats_messages_sent:
       enabled: false
     redis.cluster.total_cluster_links_buffer_limit_exceeded:
+      enabled: false
+    redis.cluster.uptime:
       enabled: false
     redis.cmd.calls:
       enabled: false

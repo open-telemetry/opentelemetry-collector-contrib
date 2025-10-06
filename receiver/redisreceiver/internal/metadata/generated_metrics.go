@@ -149,17 +149,14 @@ var MetricsInfo = metricsInfo{
 	RedisClientsMaxOutputBuffer: metricInfo{
 		Name: "redis.clients.max_output_buffer",
 	},
-	RedisClusterCurrentEpoch: metricInfo{
-		Name: "redis.cluster.current_epoch",
-	},
 	RedisClusterKnownNodes: metricInfo{
 		Name: "redis.cluster.known_nodes",
 	},
-	RedisClusterMyEpoch: metricInfo{
-		Name: "redis.cluster.my_epoch",
+	RedisClusterNodeCount: metricInfo{
+		Name: "redis.cluster.node.count",
 	},
-	RedisClusterSize: metricInfo{
-		Name: "redis.cluster.size",
+	RedisClusterNodeUptime: metricInfo{
+		Name: "redis.cluster.node.uptime",
 	},
 	RedisClusterSlotsAssigned: metricInfo{
 		Name: "redis.cluster.slots_assigned",
@@ -184,6 +181,9 @@ var MetricsInfo = metricsInfo{
 	},
 	RedisClusterTotalClusterLinksBufferLimitExceeded: metricInfo{
 		Name: "redis.cluster.total_cluster_links_buffer_limit_exceeded",
+	},
+	RedisClusterUptime: metricInfo{
+		Name: "redis.cluster.uptime",
 	},
 	RedisCmdCalls: metricInfo{
 		Name: "redis.cmd.calls",
@@ -285,10 +285,9 @@ type metricsInfo struct {
 	RedisClientsConnected                            metricInfo
 	RedisClientsMaxInputBuffer                       metricInfo
 	RedisClientsMaxOutputBuffer                      metricInfo
-	RedisClusterCurrentEpoch                         metricInfo
 	RedisClusterKnownNodes                           metricInfo
-	RedisClusterMyEpoch                              metricInfo
-	RedisClusterSize                                 metricInfo
+	RedisClusterNodeCount                            metricInfo
+	RedisClusterNodeUptime                           metricInfo
 	RedisClusterSlotsAssigned                        metricInfo
 	RedisClusterSlotsFail                            metricInfo
 	RedisClusterSlotsOk                              metricInfo
@@ -297,6 +296,7 @@ type metricsInfo struct {
 	RedisClusterStatsMessagesReceived                metricInfo
 	RedisClusterStatsMessagesSent                    metricInfo
 	RedisClusterTotalClusterLinksBufferLimitExceeded metricInfo
+	RedisClusterUptime                               metricInfo
 	RedisCmdCalls                                    metricInfo
 	RedisCmdLatency                                  metricInfo
 	RedisCmdUsec                                     metricInfo
@@ -534,55 +534,6 @@ func newMetricRedisClientsMaxOutputBuffer(cfg MetricConfig) metricRedisClientsMa
 	return m
 }
 
-type metricRedisClusterCurrentEpoch struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills redis.cluster.current_epoch metric with initial data.
-func (m *metricRedisClusterCurrentEpoch) init() {
-	m.data.SetName("redis.cluster.current_epoch")
-	m.data.SetDescription("Current epoch of the cluster")
-	m.data.SetUnit("{epoch}")
-	m.data.SetEmptyGauge()
-}
-
-func (m *metricRedisClusterCurrentEpoch) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricRedisClusterCurrentEpoch) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricRedisClusterCurrentEpoch) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricRedisClusterCurrentEpoch(cfg MetricConfig) metricRedisClusterCurrentEpoch {
-	m := metricRedisClusterCurrentEpoch{config: cfg}
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
 type metricRedisClusterKnownNodes struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -632,21 +583,21 @@ func newMetricRedisClusterKnownNodes(cfg MetricConfig) metricRedisClusterKnownNo
 	return m
 }
 
-type metricRedisClusterMyEpoch struct {
+type metricRedisClusterNodeCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills redis.cluster.my_epoch metric with initial data.
-func (m *metricRedisClusterMyEpoch) init() {
-	m.data.SetName("redis.cluster.my_epoch")
-	m.data.SetDescription("The node's current epoch")
-	m.data.SetUnit("{epoch}")
+// init fills redis.cluster.node.count metric with initial data.
+func (m *metricRedisClusterNodeCount) init() {
+	m.data.SetName("redis.cluster.node.count")
+	m.data.SetDescription("Number of master nodes in the cluster")
+	m.data.SetUnit("{node}")
 	m.data.SetEmptyGauge()
 }
 
-func (m *metricRedisClusterMyEpoch) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricRedisClusterNodeCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -657,14 +608,14 @@ func (m *metricRedisClusterMyEpoch) recordDataPoint(start pcommon.Timestamp, ts 
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricRedisClusterMyEpoch) updateCapacity() {
+func (m *metricRedisClusterNodeCount) updateCapacity() {
 	if m.data.Gauge().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricRedisClusterMyEpoch) emit(metrics pmetric.MetricSlice) {
+func (m *metricRedisClusterNodeCount) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -672,8 +623,8 @@ func (m *metricRedisClusterMyEpoch) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRedisClusterMyEpoch(cfg MetricConfig) metricRedisClusterMyEpoch {
-	m := metricRedisClusterMyEpoch{config: cfg}
+func newMetricRedisClusterNodeCount(cfg MetricConfig) metricRedisClusterNodeCount {
+	m := metricRedisClusterNodeCount{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -681,21 +632,21 @@ func newMetricRedisClusterMyEpoch(cfg MetricConfig) metricRedisClusterMyEpoch {
 	return m
 }
 
-type metricRedisClusterSize struct {
+type metricRedisClusterNodeUptime struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills redis.cluster.size metric with initial data.
-func (m *metricRedisClusterSize) init() {
-	m.data.SetName("redis.cluster.size")
-	m.data.SetDescription("Number of master nodes in the cluster")
-	m.data.SetUnit("{master}")
+// init fills redis.cluster.node.uptime metric with initial data.
+func (m *metricRedisClusterNodeUptime) init() {
+	m.data.SetName("redis.cluster.node.uptime")
+	m.data.SetDescription("The node's current epoch")
+	m.data.SetUnit("s")
 	m.data.SetEmptyGauge()
 }
 
-func (m *metricRedisClusterSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricRedisClusterNodeUptime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -706,14 +657,14 @@ func (m *metricRedisClusterSize) recordDataPoint(start pcommon.Timestamp, ts pco
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricRedisClusterSize) updateCapacity() {
+func (m *metricRedisClusterNodeUptime) updateCapacity() {
 	if m.data.Gauge().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricRedisClusterSize) emit(metrics pmetric.MetricSlice) {
+func (m *metricRedisClusterNodeUptime) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -721,8 +672,8 @@ func (m *metricRedisClusterSize) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRedisClusterSize(cfg MetricConfig) metricRedisClusterSize {
-	m := metricRedisClusterSize{config: cfg}
+func newMetricRedisClusterNodeUptime(cfg MetricConfig) metricRedisClusterNodeUptime {
+	m := metricRedisClusterNodeUptime{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1089,7 +1040,7 @@ type metricRedisClusterTotalClusterLinksBufferLimitExceeded struct {
 func (m *metricRedisClusterTotalClusterLinksBufferLimitExceeded) init() {
 	m.data.SetName("redis.cluster.total_cluster_links_buffer_limit_exceeded")
 	m.data.SetDescription("Total number of times the cluster links buffer limit was exceeded")
-	m.data.SetUnit("{exceed}")
+	m.data.SetUnit("{count}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -1123,6 +1074,55 @@ func (m *metricRedisClusterTotalClusterLinksBufferLimitExceeded) emit(metrics pm
 
 func newMetricRedisClusterTotalClusterLinksBufferLimitExceeded(cfg MetricConfig) metricRedisClusterTotalClusterLinksBufferLimitExceeded {
 	m := metricRedisClusterTotalClusterLinksBufferLimitExceeded{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricRedisClusterUptime struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills redis.cluster.uptime metric with initial data.
+func (m *metricRedisClusterUptime) init() {
+	m.data.SetName("redis.cluster.uptime")
+	m.data.SetDescription("Current epoch of the cluster")
+	m.data.SetUnit("s")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricRedisClusterUptime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricRedisClusterUptime) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricRedisClusterUptime) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricRedisClusterUptime(cfg MetricConfig) metricRedisClusterUptime {
+	m := metricRedisClusterUptime{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2712,10 +2712,9 @@ type MetricsBuilder struct {
 	metricRedisClientsConnected                            metricRedisClientsConnected
 	metricRedisClientsMaxInputBuffer                       metricRedisClientsMaxInputBuffer
 	metricRedisClientsMaxOutputBuffer                      metricRedisClientsMaxOutputBuffer
-	metricRedisClusterCurrentEpoch                         metricRedisClusterCurrentEpoch
 	metricRedisClusterKnownNodes                           metricRedisClusterKnownNodes
-	metricRedisClusterMyEpoch                              metricRedisClusterMyEpoch
-	metricRedisClusterSize                                 metricRedisClusterSize
+	metricRedisClusterNodeCount                            metricRedisClusterNodeCount
+	metricRedisClusterNodeUptime                           metricRedisClusterNodeUptime
 	metricRedisClusterSlotsAssigned                        metricRedisClusterSlotsAssigned
 	metricRedisClusterSlotsFail                            metricRedisClusterSlotsFail
 	metricRedisClusterSlotsOk                              metricRedisClusterSlotsOk
@@ -2724,6 +2723,7 @@ type MetricsBuilder struct {
 	metricRedisClusterStatsMessagesReceived                metricRedisClusterStatsMessagesReceived
 	metricRedisClusterStatsMessagesSent                    metricRedisClusterStatsMessagesSent
 	metricRedisClusterTotalClusterLinksBufferLimitExceeded metricRedisClusterTotalClusterLinksBufferLimitExceeded
+	metricRedisClusterUptime                               metricRedisClusterUptime
 	metricRedisCmdCalls                                    metricRedisCmdCalls
 	metricRedisCmdLatency                                  metricRedisCmdLatency
 	metricRedisCmdUsec                                     metricRedisCmdUsec
@@ -2784,10 +2784,9 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricRedisClientsConnected:                            newMetricRedisClientsConnected(mbc.Metrics.RedisClientsConnected),
 		metricRedisClientsMaxInputBuffer:                       newMetricRedisClientsMaxInputBuffer(mbc.Metrics.RedisClientsMaxInputBuffer),
 		metricRedisClientsMaxOutputBuffer:                      newMetricRedisClientsMaxOutputBuffer(mbc.Metrics.RedisClientsMaxOutputBuffer),
-		metricRedisClusterCurrentEpoch:                         newMetricRedisClusterCurrentEpoch(mbc.Metrics.RedisClusterCurrentEpoch),
 		metricRedisClusterKnownNodes:                           newMetricRedisClusterKnownNodes(mbc.Metrics.RedisClusterKnownNodes),
-		metricRedisClusterMyEpoch:                              newMetricRedisClusterMyEpoch(mbc.Metrics.RedisClusterMyEpoch),
-		metricRedisClusterSize:                                 newMetricRedisClusterSize(mbc.Metrics.RedisClusterSize),
+		metricRedisClusterNodeCount:                            newMetricRedisClusterNodeCount(mbc.Metrics.RedisClusterNodeCount),
+		metricRedisClusterNodeUptime:                           newMetricRedisClusterNodeUptime(mbc.Metrics.RedisClusterNodeUptime),
 		metricRedisClusterSlotsAssigned:                        newMetricRedisClusterSlotsAssigned(mbc.Metrics.RedisClusterSlotsAssigned),
 		metricRedisClusterSlotsFail:                            newMetricRedisClusterSlotsFail(mbc.Metrics.RedisClusterSlotsFail),
 		metricRedisClusterSlotsOk:                              newMetricRedisClusterSlotsOk(mbc.Metrics.RedisClusterSlotsOk),
@@ -2796,6 +2795,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricRedisClusterStatsMessagesReceived:                newMetricRedisClusterStatsMessagesReceived(mbc.Metrics.RedisClusterStatsMessagesReceived),
 		metricRedisClusterStatsMessagesSent:                    newMetricRedisClusterStatsMessagesSent(mbc.Metrics.RedisClusterStatsMessagesSent),
 		metricRedisClusterTotalClusterLinksBufferLimitExceeded: newMetricRedisClusterTotalClusterLinksBufferLimitExceeded(mbc.Metrics.RedisClusterTotalClusterLinksBufferLimitExceeded),
+		metricRedisClusterUptime:                               newMetricRedisClusterUptime(mbc.Metrics.RedisClusterUptime),
 		metricRedisCmdCalls:                                    newMetricRedisCmdCalls(mbc.Metrics.RedisCmdCalls),
 		metricRedisCmdLatency:                                  newMetricRedisCmdLatency(mbc.Metrics.RedisCmdLatency),
 		metricRedisCmdUsec:                                     newMetricRedisCmdUsec(mbc.Metrics.RedisCmdUsec),
@@ -2921,10 +2921,9 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricRedisClientsConnected.emit(ils.Metrics())
 	mb.metricRedisClientsMaxInputBuffer.emit(ils.Metrics())
 	mb.metricRedisClientsMaxOutputBuffer.emit(ils.Metrics())
-	mb.metricRedisClusterCurrentEpoch.emit(ils.Metrics())
 	mb.metricRedisClusterKnownNodes.emit(ils.Metrics())
-	mb.metricRedisClusterMyEpoch.emit(ils.Metrics())
-	mb.metricRedisClusterSize.emit(ils.Metrics())
+	mb.metricRedisClusterNodeCount.emit(ils.Metrics())
+	mb.metricRedisClusterNodeUptime.emit(ils.Metrics())
 	mb.metricRedisClusterSlotsAssigned.emit(ils.Metrics())
 	mb.metricRedisClusterSlotsFail.emit(ils.Metrics())
 	mb.metricRedisClusterSlotsOk.emit(ils.Metrics())
@@ -2933,6 +2932,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricRedisClusterStatsMessagesReceived.emit(ils.Metrics())
 	mb.metricRedisClusterStatsMessagesSent.emit(ils.Metrics())
 	mb.metricRedisClusterTotalClusterLinksBufferLimitExceeded.emit(ils.Metrics())
+	mb.metricRedisClusterUptime.emit(ils.Metrics())
 	mb.metricRedisCmdCalls.emit(ils.Metrics())
 	mb.metricRedisCmdLatency.emit(ils.Metrics())
 	mb.metricRedisCmdUsec.emit(ils.Metrics())
@@ -3015,24 +3015,19 @@ func (mb *MetricsBuilder) RecordRedisClientsMaxOutputBufferDataPoint(ts pcommon.
 	mb.metricRedisClientsMaxOutputBuffer.recordDataPoint(mb.startTime, ts, val)
 }
 
-// RecordRedisClusterCurrentEpochDataPoint adds a data point to redis.cluster.current_epoch metric.
-func (mb *MetricsBuilder) RecordRedisClusterCurrentEpochDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricRedisClusterCurrentEpoch.recordDataPoint(mb.startTime, ts, val)
-}
-
 // RecordRedisClusterKnownNodesDataPoint adds a data point to redis.cluster.known_nodes metric.
 func (mb *MetricsBuilder) RecordRedisClusterKnownNodesDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricRedisClusterKnownNodes.recordDataPoint(mb.startTime, ts, val)
 }
 
-// RecordRedisClusterMyEpochDataPoint adds a data point to redis.cluster.my_epoch metric.
-func (mb *MetricsBuilder) RecordRedisClusterMyEpochDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricRedisClusterMyEpoch.recordDataPoint(mb.startTime, ts, val)
+// RecordRedisClusterNodeCountDataPoint adds a data point to redis.cluster.node.count metric.
+func (mb *MetricsBuilder) RecordRedisClusterNodeCountDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricRedisClusterNodeCount.recordDataPoint(mb.startTime, ts, val)
 }
 
-// RecordRedisClusterSizeDataPoint adds a data point to redis.cluster.size metric.
-func (mb *MetricsBuilder) RecordRedisClusterSizeDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricRedisClusterSize.recordDataPoint(mb.startTime, ts, val)
+// RecordRedisClusterNodeUptimeDataPoint adds a data point to redis.cluster.node.uptime metric.
+func (mb *MetricsBuilder) RecordRedisClusterNodeUptimeDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricRedisClusterNodeUptime.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordRedisClusterSlotsAssignedDataPoint adds a data point to redis.cluster.slots_assigned metric.
@@ -3073,6 +3068,11 @@ func (mb *MetricsBuilder) RecordRedisClusterStatsMessagesSentDataPoint(ts pcommo
 // RecordRedisClusterTotalClusterLinksBufferLimitExceededDataPoint adds a data point to redis.cluster.total_cluster_links_buffer_limit_exceeded metric.
 func (mb *MetricsBuilder) RecordRedisClusterTotalClusterLinksBufferLimitExceededDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricRedisClusterTotalClusterLinksBufferLimitExceeded.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordRedisClusterUptimeDataPoint adds a data point to redis.cluster.uptime metric.
+func (mb *MetricsBuilder) RecordRedisClusterUptimeDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricRedisClusterUptime.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordRedisCmdCallsDataPoint adds a data point to redis.cmd.calls metric.

@@ -278,14 +278,6 @@ metrics:
     enabled: true
 ```
 
-### redis.cluster.current_epoch
-
-Current epoch of the cluster
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {epoch} | Gauge | Int |
-
 ### redis.cluster.known_nodes
 
 Number of known nodes in the cluster
@@ -294,21 +286,21 @@ Number of known nodes in the cluster
 | ---- | ----------- | ---------- |
 | {node} | Gauge | Int |
 
-### redis.cluster.my_epoch
-
-The node's current epoch
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {epoch} | Gauge | Int |
-
-### redis.cluster.size
+### redis.cluster.node.count
 
 Number of master nodes in the cluster
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| {master} | Gauge | Int |
+| {node} | Gauge | Int |
+
+### redis.cluster.node.uptime
+
+The node's current epoch
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| s | Gauge | Int |
 
 ### redis.cluster.slots_assigned
 
@@ -378,7 +370,15 @@ Total number of times the cluster links buffer limit was exceeded
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| {exceed} | Sum | Int | Cumulative | true |
+| {count} | Sum | Int | Cumulative | true |
+
+### redis.cluster.uptime
+
+Current epoch of the cluster
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| s | Gauge | Int |
 
 ### redis.cmd.calls
 

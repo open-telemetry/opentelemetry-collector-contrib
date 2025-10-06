@@ -32,10 +32,9 @@ type MetricsConfig struct {
 	RedisClientsConnected                            MetricConfig `mapstructure:"redis.clients.connected"`
 	RedisClientsMaxInputBuffer                       MetricConfig `mapstructure:"redis.clients.max_input_buffer"`
 	RedisClientsMaxOutputBuffer                      MetricConfig `mapstructure:"redis.clients.max_output_buffer"`
-	RedisClusterCurrentEpoch                         MetricConfig `mapstructure:"redis.cluster.current_epoch"`
 	RedisClusterKnownNodes                           MetricConfig `mapstructure:"redis.cluster.known_nodes"`
-	RedisClusterMyEpoch                              MetricConfig `mapstructure:"redis.cluster.my_epoch"`
-	RedisClusterSize                                 MetricConfig `mapstructure:"redis.cluster.size"`
+	RedisClusterNodeCount                            MetricConfig `mapstructure:"redis.cluster.node.count"`
+	RedisClusterNodeUptime                           MetricConfig `mapstructure:"redis.cluster.node.uptime"`
 	RedisClusterSlotsAssigned                        MetricConfig `mapstructure:"redis.cluster.slots_assigned"`
 	RedisClusterSlotsFail                            MetricConfig `mapstructure:"redis.cluster.slots_fail"`
 	RedisClusterSlotsOk                              MetricConfig `mapstructure:"redis.cluster.slots_ok"`
@@ -44,6 +43,7 @@ type MetricsConfig struct {
 	RedisClusterStatsMessagesReceived                MetricConfig `mapstructure:"redis.cluster.stats_messages_received"`
 	RedisClusterStatsMessagesSent                    MetricConfig `mapstructure:"redis.cluster.stats_messages_sent"`
 	RedisClusterTotalClusterLinksBufferLimitExceeded MetricConfig `mapstructure:"redis.cluster.total_cluster_links_buffer_limit_exceeded"`
+	RedisClusterUptime                               MetricConfig `mapstructure:"redis.cluster.uptime"`
 	RedisCmdCalls                                    MetricConfig `mapstructure:"redis.cmd.calls"`
 	RedisCmdLatency                                  MetricConfig `mapstructure:"redis.cmd.latency"`
 	RedisCmdUsec                                     MetricConfig `mapstructure:"redis.cmd.usec"`
@@ -91,16 +91,13 @@ func DefaultMetricsConfig() MetricsConfig {
 		RedisClientsMaxOutputBuffer: MetricConfig{
 			Enabled: true,
 		},
-		RedisClusterCurrentEpoch: MetricConfig{
-			Enabled: false,
-		},
 		RedisClusterKnownNodes: MetricConfig{
 			Enabled: false,
 		},
-		RedisClusterMyEpoch: MetricConfig{
+		RedisClusterNodeCount: MetricConfig{
 			Enabled: false,
 		},
-		RedisClusterSize: MetricConfig{
+		RedisClusterNodeUptime: MetricConfig{
 			Enabled: false,
 		},
 		RedisClusterSlotsAssigned: MetricConfig{
@@ -125,6 +122,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		RedisClusterTotalClusterLinksBufferLimitExceeded: MetricConfig{
+			Enabled: false,
+		},
+		RedisClusterUptime: MetricConfig{
 			Enabled: false,
 		},
 		RedisCmdCalls: MetricConfig{

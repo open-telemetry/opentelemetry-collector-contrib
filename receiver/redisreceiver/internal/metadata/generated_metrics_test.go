@@ -85,16 +85,13 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordRedisClientsMaxOutputBufferDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordRedisClusterCurrentEpochDataPoint(ts, 1)
-
-			allMetricsCount++
 			mb.RecordRedisClusterKnownNodesDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordRedisClusterMyEpochDataPoint(ts, 1)
+			mb.RecordRedisClusterNodeCountDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordRedisClusterSizeDataPoint(ts, 1)
+			mb.RecordRedisClusterNodeUptimeDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordRedisClusterSlotsAssignedDataPoint(ts, 1)
@@ -119,6 +116,9 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordRedisClusterTotalClusterLinksBufferLimitExceededDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordRedisClusterUptimeDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordRedisCmdCallsDataPoint(ts, 1, "cmd-val")
@@ -316,18 +316,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-				case "redis.cluster.current_epoch":
-					assert.False(t, validatedMetrics["redis.cluster.current_epoch"], "Found a duplicate in the metrics slice: redis.cluster.current_epoch")
-					validatedMetrics["redis.cluster.current_epoch"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Current epoch of the cluster", ms.At(i).Description())
-					assert.Equal(t, "{epoch}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
 				case "redis.cluster.known_nodes":
 					assert.False(t, validatedMetrics["redis.cluster.known_nodes"], "Found a duplicate in the metrics slice: redis.cluster.known_nodes")
 					validatedMetrics["redis.cluster.known_nodes"] = true
@@ -340,25 +328,25 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-				case "redis.cluster.my_epoch":
-					assert.False(t, validatedMetrics["redis.cluster.my_epoch"], "Found a duplicate in the metrics slice: redis.cluster.my_epoch")
-					validatedMetrics["redis.cluster.my_epoch"] = true
+				case "redis.cluster.node.count":
+					assert.False(t, validatedMetrics["redis.cluster.node.count"], "Found a duplicate in the metrics slice: redis.cluster.node.count")
+					validatedMetrics["redis.cluster.node.count"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The node's current epoch", ms.At(i).Description())
-					assert.Equal(t, "{epoch}", ms.At(i).Unit())
+					assert.Equal(t, "Number of master nodes in the cluster", ms.At(i).Description())
+					assert.Equal(t, "{node}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-				case "redis.cluster.size":
-					assert.False(t, validatedMetrics["redis.cluster.size"], "Found a duplicate in the metrics slice: redis.cluster.size")
-					validatedMetrics["redis.cluster.size"] = true
+				case "redis.cluster.node.uptime":
+					assert.False(t, validatedMetrics["redis.cluster.node.uptime"], "Found a duplicate in the metrics slice: redis.cluster.node.uptime")
+					validatedMetrics["redis.cluster.node.uptime"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Number of master nodes in the cluster", ms.At(i).Description())
-					assert.Equal(t, "{master}", ms.At(i).Unit())
+					assert.Equal(t, "The node's current epoch", ms.At(i).Description())
+					assert.Equal(t, "s", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -461,10 +449,22 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "Total number of times the cluster links buffer limit was exceeded", ms.At(i).Description())
-					assert.Equal(t, "{exceed}", ms.At(i).Unit())
+					assert.Equal(t, "{count}", ms.At(i).Unit())
 					assert.True(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "redis.cluster.uptime":
+					assert.False(t, validatedMetrics["redis.cluster.uptime"], "Found a duplicate in the metrics slice: redis.cluster.uptime")
+					validatedMetrics["redis.cluster.uptime"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Current epoch of the cluster", ms.At(i).Description())
+					assert.Equal(t, "s", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
