@@ -13,6 +13,96 @@ import (
 )
 
 var MetricsInfo = metricsInfo{
+	NewrelicoracledbConnectionActiveSessions: metricInfo{
+		Name: "newrelicoracledb.connection.active_sessions",
+	},
+	NewrelicoracledbConnectionBlockingSessions: metricInfo{
+		Name: "newrelicoracledb.connection.blocking_sessions",
+	},
+	NewrelicoracledbConnectionBytesReceived: metricInfo{
+		Name: "newrelicoracledb.connection.bytes_received",
+	},
+	NewrelicoracledbConnectionBytesSent: metricInfo{
+		Name: "newrelicoracledb.connection.bytes_sent",
+	},
+	NewrelicoracledbConnectionCircuits: metricInfo{
+		Name: "newrelicoracledb.connection.circuits",
+	},
+	NewrelicoracledbConnectionDispatchers: metricInfo{
+		Name: "newrelicoracledb.connection.dispatchers",
+	},
+	NewrelicoracledbConnectionExecuteCount: metricInfo{
+		Name: "newrelicoracledb.connection.execute_count",
+	},
+	NewrelicoracledbConnectionInactiveSessions: metricInfo{
+		Name: "newrelicoracledb.connection.inactive_sessions",
+	},
+	NewrelicoracledbConnectionLogonsCumulative: metricInfo{
+		Name: "newrelicoracledb.connection.logons_cumulative",
+	},
+	NewrelicoracledbConnectionLogonsCurrent: metricInfo{
+		Name: "newrelicoracledb.connection.logons_current",
+	},
+	NewrelicoracledbConnectionParseCountHard: metricInfo{
+		Name: "newrelicoracledb.connection.parse_count_hard",
+	},
+	NewrelicoracledbConnectionParseCountTotal: metricInfo{
+		Name: "newrelicoracledb.connection.parse_count_total",
+	},
+	NewrelicoracledbConnectionResourceCurrentUtilization: metricInfo{
+		Name: "newrelicoracledb.connection.resource_current_utilization",
+	},
+	NewrelicoracledbConnectionResourceLimit: metricInfo{
+		Name: "newrelicoracledb.connection.resource_limit",
+	},
+	NewrelicoracledbConnectionResourceMaxUtilization: metricInfo{
+		Name: "newrelicoracledb.connection.resource_max_utilization",
+	},
+	NewrelicoracledbConnectionSessionCPUUsage: metricInfo{
+		Name: "newrelicoracledb.connection.session_cpu_usage",
+	},
+	NewrelicoracledbConnectionSessionIdleTime: metricInfo{
+		Name: "newrelicoracledb.connection.session_idle_time",
+	},
+	NewrelicoracledbConnectionSessionLogicalReads: metricInfo{
+		Name: "newrelicoracledb.connection.session_logical_reads",
+	},
+	NewrelicoracledbConnectionSessionPgaMemory: metricInfo{
+		Name: "newrelicoracledb.connection.session_pga_memory",
+	},
+	NewrelicoracledbConnectionSessionsByStatus: metricInfo{
+		Name: "newrelicoracledb.connection.sessions_by_status",
+	},
+	NewrelicoracledbConnectionSessionsByType: metricInfo{
+		Name: "newrelicoracledb.connection.sessions_by_type",
+	},
+	NewrelicoracledbConnectionSharedServers: metricInfo{
+		Name: "newrelicoracledb.connection.shared_servers",
+	},
+	NewrelicoracledbConnectionSqlnetRoundtrips: metricInfo{
+		Name: "newrelicoracledb.connection.sqlnet_roundtrips",
+	},
+	NewrelicoracledbConnectionTotalSessions: metricInfo{
+		Name: "newrelicoracledb.connection.total_sessions",
+	},
+	NewrelicoracledbConnectionUserCommits: metricInfo{
+		Name: "newrelicoracledb.connection.user_commits",
+	},
+	NewrelicoracledbConnectionUserRollbacks: metricInfo{
+		Name: "newrelicoracledb.connection.user_rollbacks",
+	},
+	NewrelicoracledbConnectionWaitEventAvgWaitTime: metricInfo{
+		Name: "newrelicoracledb.connection.wait_event_avg_wait_time",
+	},
+	NewrelicoracledbConnectionWaitEventTimeWaited: metricInfo{
+		Name: "newrelicoracledb.connection.wait_event_time_waited",
+	},
+	NewrelicoracledbConnectionWaitEventTotalWaits: metricInfo{
+		Name: "newrelicoracledb.connection.wait_event_total_waits",
+	},
+	NewrelicoracledbConnectionWaitEvents: metricInfo{
+		Name: "newrelicoracledb.connection.wait_events",
+	},
 	NewrelicoracledbDbID: metricInfo{
 		Name: "newrelicoracledb.db_id",
 	},
@@ -733,6 +823,36 @@ var MetricsInfo = metricsInfo{
 }
 
 type metricsInfo struct {
+	NewrelicoracledbConnectionActiveSessions                           metricInfo
+	NewrelicoracledbConnectionBlockingSessions                         metricInfo
+	NewrelicoracledbConnectionBytesReceived                            metricInfo
+	NewrelicoracledbConnectionBytesSent                                metricInfo
+	NewrelicoracledbConnectionCircuits                                 metricInfo
+	NewrelicoracledbConnectionDispatchers                              metricInfo
+	NewrelicoracledbConnectionExecuteCount                             metricInfo
+	NewrelicoracledbConnectionInactiveSessions                         metricInfo
+	NewrelicoracledbConnectionLogonsCumulative                         metricInfo
+	NewrelicoracledbConnectionLogonsCurrent                            metricInfo
+	NewrelicoracledbConnectionParseCountHard                           metricInfo
+	NewrelicoracledbConnectionParseCountTotal                          metricInfo
+	NewrelicoracledbConnectionResourceCurrentUtilization               metricInfo
+	NewrelicoracledbConnectionResourceLimit                            metricInfo
+	NewrelicoracledbConnectionResourceMaxUtilization                   metricInfo
+	NewrelicoracledbConnectionSessionCPUUsage                          metricInfo
+	NewrelicoracledbConnectionSessionIdleTime                          metricInfo
+	NewrelicoracledbConnectionSessionLogicalReads                      metricInfo
+	NewrelicoracledbConnectionSessionPgaMemory                         metricInfo
+	NewrelicoracledbConnectionSessionsByStatus                         metricInfo
+	NewrelicoracledbConnectionSessionsByType                           metricInfo
+	NewrelicoracledbConnectionSharedServers                            metricInfo
+	NewrelicoracledbConnectionSqlnetRoundtrips                         metricInfo
+	NewrelicoracledbConnectionTotalSessions                            metricInfo
+	NewrelicoracledbConnectionUserCommits                              metricInfo
+	NewrelicoracledbConnectionUserRollbacks                            metricInfo
+	NewrelicoracledbConnectionWaitEventAvgWaitTime                     metricInfo
+	NewrelicoracledbConnectionWaitEventTimeWaited                      metricInfo
+	NewrelicoracledbConnectionWaitEventTotalWaits                      metricInfo
+	NewrelicoracledbConnectionWaitEvents                               metricInfo
 	NewrelicoracledbDbID                                               metricInfo
 	NewrelicoracledbDiskBlocksRead                                     metricInfo
 	NewrelicoracledbDiskBlocksWritten                                  metricInfo
@@ -976,6 +1096,1595 @@ type metricsInfo struct {
 
 type metricInfo struct {
 	Name string
+}
+
+type metricNewrelicoracledbConnectionActiveSessions struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.connection.active_sessions metric with initial data.
+func (m *metricNewrelicoracledbConnectionActiveSessions) init() {
+	m.data.SetName("newrelicoracledb.connection.active_sessions")
+	m.data.SetDescription("Number of active Oracle database sessions")
+	m.data.SetUnit("{sessions}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbConnectionActiveSessions) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbConnectionActiveSessions) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbConnectionActiveSessions) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbConnectionActiveSessions(cfg MetricConfig) metricNewrelicoracledbConnectionActiveSessions {
+	m := metricNewrelicoracledbConnectionActiveSessions{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbConnectionBlockingSessions struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.connection.blocking_sessions metric with initial data.
+func (m *metricNewrelicoracledbConnectionBlockingSessions) init() {
+	m.data.SetName("newrelicoracledb.connection.blocking_sessions")
+	m.data.SetDescription("Sessions blocked by other sessions")
+	m.data.SetUnit("s")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbConnectionBlockingSessions) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, sessionIDAttributeValue string, blockingSessionIDAttributeValue string, usernameAttributeValue string, waitEventAttributeValue string, programAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("session.id", sessionIDAttributeValue)
+	dp.Attributes().PutStr("blocking.session.id", blockingSessionIDAttributeValue)
+	dp.Attributes().PutStr("username", usernameAttributeValue)
+	dp.Attributes().PutStr("wait.event", waitEventAttributeValue)
+	dp.Attributes().PutStr("program", programAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbConnectionBlockingSessions) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbConnectionBlockingSessions) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbConnectionBlockingSessions(cfg MetricConfig) metricNewrelicoracledbConnectionBlockingSessions {
+	m := metricNewrelicoracledbConnectionBlockingSessions{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbConnectionBytesReceived struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.connection.bytes_received metric with initial data.
+func (m *metricNewrelicoracledbConnectionBytesReceived) init() {
+	m.data.SetName("newrelicoracledb.connection.bytes_received")
+	m.data.SetDescription("Bytes received via SQL*Net from client")
+	m.data.SetUnit("By")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbConnectionBytesReceived) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbConnectionBytesReceived) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbConnectionBytesReceived) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbConnectionBytesReceived(cfg MetricConfig) metricNewrelicoracledbConnectionBytesReceived {
+	m := metricNewrelicoracledbConnectionBytesReceived{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbConnectionBytesSent struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.connection.bytes_sent metric with initial data.
+func (m *metricNewrelicoracledbConnectionBytesSent) init() {
+	m.data.SetName("newrelicoracledb.connection.bytes_sent")
+	m.data.SetDescription("Bytes sent via SQL*Net to client")
+	m.data.SetUnit("By")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbConnectionBytesSent) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbConnectionBytesSent) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbConnectionBytesSent) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbConnectionBytesSent(cfg MetricConfig) metricNewrelicoracledbConnectionBytesSent {
+	m := metricNewrelicoracledbConnectionBytesSent{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbConnectionCircuits struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.connection.circuits metric with initial data.
+func (m *metricNewrelicoracledbConnectionCircuits) init() {
+	m.data.SetName("newrelicoracledb.connection.circuits")
+	m.data.SetDescription("Number of active circuits")
+	m.data.SetUnit("{circuits}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbConnectionCircuits) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbConnectionCircuits) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbConnectionCircuits) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbConnectionCircuits(cfg MetricConfig) metricNewrelicoracledbConnectionCircuits {
+	m := metricNewrelicoracledbConnectionCircuits{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbConnectionDispatchers struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.connection.dispatchers metric with initial data.
+func (m *metricNewrelicoracledbConnectionDispatchers) init() {
+	m.data.SetName("newrelicoracledb.connection.dispatchers")
+	m.data.SetDescription("Number of dispatchers")
+	m.data.SetUnit("{dispatchers}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbConnectionDispatchers) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbConnectionDispatchers) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbConnectionDispatchers) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbConnectionDispatchers(cfg MetricConfig) metricNewrelicoracledbConnectionDispatchers {
+	m := metricNewrelicoracledbConnectionDispatchers{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbConnectionExecuteCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.connection.execute_count metric with initial data.
+func (m *metricNewrelicoracledbConnectionExecuteCount) init() {
+	m.data.SetName("newrelicoracledb.connection.execute_count")
+	m.data.SetDescription("Number of SQL executions")
+	m.data.SetUnit("{executions}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbConnectionExecuteCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbConnectionExecuteCount) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbConnectionExecuteCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbConnectionExecuteCount(cfg MetricConfig) metricNewrelicoracledbConnectionExecuteCount {
+	m := metricNewrelicoracledbConnectionExecuteCount{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbConnectionInactiveSessions struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.connection.inactive_sessions metric with initial data.
+func (m *metricNewrelicoracledbConnectionInactiveSessions) init() {
+	m.data.SetName("newrelicoracledb.connection.inactive_sessions")
+	m.data.SetDescription("Number of inactive Oracle database sessions")
+	m.data.SetUnit("{sessions}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbConnectionInactiveSessions) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbConnectionInactiveSessions) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbConnectionInactiveSessions) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbConnectionInactiveSessions(cfg MetricConfig) metricNewrelicoracledbConnectionInactiveSessions {
+	m := metricNewrelicoracledbConnectionInactiveSessions{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbConnectionLogonsCumulative struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.connection.logons_cumulative metric with initial data.
+func (m *metricNewrelicoracledbConnectionLogonsCumulative) init() {
+	m.data.SetName("newrelicoracledb.connection.logons_cumulative")
+	m.data.SetDescription("Cumulative number of logons since instance startup")
+	m.data.SetUnit("{logons}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbConnectionLogonsCumulative) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbConnectionLogonsCumulative) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbConnectionLogonsCumulative) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbConnectionLogonsCumulative(cfg MetricConfig) metricNewrelicoracledbConnectionLogonsCumulative {
+	m := metricNewrelicoracledbConnectionLogonsCumulative{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbConnectionLogonsCurrent struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.connection.logons_current metric with initial data.
+func (m *metricNewrelicoracledbConnectionLogonsCurrent) init() {
+	m.data.SetName("newrelicoracledb.connection.logons_current")
+	m.data.SetDescription("Current number of active logons")
+	m.data.SetUnit("{logons}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbConnectionLogonsCurrent) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbConnectionLogonsCurrent) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbConnectionLogonsCurrent) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbConnectionLogonsCurrent(cfg MetricConfig) metricNewrelicoracledbConnectionLogonsCurrent {
+	m := metricNewrelicoracledbConnectionLogonsCurrent{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbConnectionParseCountHard struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.connection.parse_count_hard metric with initial data.
+func (m *metricNewrelicoracledbConnectionParseCountHard) init() {
+	m.data.SetName("newrelicoracledb.connection.parse_count_hard")
+	m.data.SetDescription("Number of hard parse calls")
+	m.data.SetUnit("{parses}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbConnectionParseCountHard) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbConnectionParseCountHard) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbConnectionParseCountHard) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbConnectionParseCountHard(cfg MetricConfig) metricNewrelicoracledbConnectionParseCountHard {
+	m := metricNewrelicoracledbConnectionParseCountHard{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbConnectionParseCountTotal struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.connection.parse_count_total metric with initial data.
+func (m *metricNewrelicoracledbConnectionParseCountTotal) init() {
+	m.data.SetName("newrelicoracledb.connection.parse_count_total")
+	m.data.SetDescription("Total number of parse calls")
+	m.data.SetUnit("{parses}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbConnectionParseCountTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbConnectionParseCountTotal) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbConnectionParseCountTotal) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbConnectionParseCountTotal(cfg MetricConfig) metricNewrelicoracledbConnectionParseCountTotal {
+	m := metricNewrelicoracledbConnectionParseCountTotal{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbConnectionResourceCurrentUtilization struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.connection.resource_current_utilization metric with initial data.
+func (m *metricNewrelicoracledbConnectionResourceCurrentUtilization) init() {
+	m.data.SetName("newrelicoracledb.connection.resource_current_utilization")
+	m.data.SetDescription("Current utilization of Oracle resources")
+	m.data.SetUnit("{resources}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbConnectionResourceCurrentUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, resourceNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("resource.name", resourceNameAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbConnectionResourceCurrentUtilization) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbConnectionResourceCurrentUtilization) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbConnectionResourceCurrentUtilization(cfg MetricConfig) metricNewrelicoracledbConnectionResourceCurrentUtilization {
+	m := metricNewrelicoracledbConnectionResourceCurrentUtilization{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbConnectionResourceLimit struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.connection.resource_limit metric with initial data.
+func (m *metricNewrelicoracledbConnectionResourceLimit) init() {
+	m.data.SetName("newrelicoracledb.connection.resource_limit")
+	m.data.SetDescription("Limit value for Oracle resources")
+	m.data.SetUnit("{resources}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbConnectionResourceLimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, resourceNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("resource.name", resourceNameAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbConnectionResourceLimit) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbConnectionResourceLimit) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbConnectionResourceLimit(cfg MetricConfig) metricNewrelicoracledbConnectionResourceLimit {
+	m := metricNewrelicoracledbConnectionResourceLimit{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbConnectionResourceMaxUtilization struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.connection.resource_max_utilization metric with initial data.
+func (m *metricNewrelicoracledbConnectionResourceMaxUtilization) init() {
+	m.data.SetName("newrelicoracledb.connection.resource_max_utilization")
+	m.data.SetDescription("Maximum utilization of Oracle resources since startup")
+	m.data.SetUnit("{resources}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbConnectionResourceMaxUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, resourceNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("resource.name", resourceNameAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbConnectionResourceMaxUtilization) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbConnectionResourceMaxUtilization) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbConnectionResourceMaxUtilization(cfg MetricConfig) metricNewrelicoracledbConnectionResourceMaxUtilization {
+	m := metricNewrelicoracledbConnectionResourceMaxUtilization{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbConnectionSessionCPUUsage struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.connection.session_cpu_usage metric with initial data.
+func (m *metricNewrelicoracledbConnectionSessionCPUUsage) init() {
+	m.data.SetName("newrelicoracledb.connection.session_cpu_usage")
+	m.data.SetDescription("CPU usage by session in seconds")
+	m.data.SetUnit("s")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbConnectionSessionCPUUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, sessionIDAttributeValue string, usernameAttributeValue string, sessionStatusAttributeValue string, programAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("session.id", sessionIDAttributeValue)
+	dp.Attributes().PutStr("username", usernameAttributeValue)
+	dp.Attributes().PutStr("session.status", sessionStatusAttributeValue)
+	dp.Attributes().PutStr("program", programAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbConnectionSessionCPUUsage) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbConnectionSessionCPUUsage) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbConnectionSessionCPUUsage(cfg MetricConfig) metricNewrelicoracledbConnectionSessionCPUUsage {
+	m := metricNewrelicoracledbConnectionSessionCPUUsage{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbConnectionSessionIdleTime struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.connection.session_idle_time metric with initial data.
+func (m *metricNewrelicoracledbConnectionSessionIdleTime) init() {
+	m.data.SetName("newrelicoracledb.connection.session_idle_time")
+	m.data.SetDescription("Session idle time in seconds")
+	m.data.SetUnit("s")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbConnectionSessionIdleTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, sessionIDAttributeValue string, usernameAttributeValue string, sessionStatusAttributeValue string, programAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("session.id", sessionIDAttributeValue)
+	dp.Attributes().PutStr("username", usernameAttributeValue)
+	dp.Attributes().PutStr("session.status", sessionStatusAttributeValue)
+	dp.Attributes().PutStr("program", programAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbConnectionSessionIdleTime) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbConnectionSessionIdleTime) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbConnectionSessionIdleTime(cfg MetricConfig) metricNewrelicoracledbConnectionSessionIdleTime {
+	m := metricNewrelicoracledbConnectionSessionIdleTime{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbConnectionSessionLogicalReads struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.connection.session_logical_reads metric with initial data.
+func (m *metricNewrelicoracledbConnectionSessionLogicalReads) init() {
+	m.data.SetName("newrelicoracledb.connection.session_logical_reads")
+	m.data.SetDescription("Logical reads by session")
+	m.data.SetUnit("{reads}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbConnectionSessionLogicalReads) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, sessionIDAttributeValue string, usernameAttributeValue string, sessionStatusAttributeValue string, programAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("session.id", sessionIDAttributeValue)
+	dp.Attributes().PutStr("username", usernameAttributeValue)
+	dp.Attributes().PutStr("session.status", sessionStatusAttributeValue)
+	dp.Attributes().PutStr("program", programAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbConnectionSessionLogicalReads) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbConnectionSessionLogicalReads) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbConnectionSessionLogicalReads(cfg MetricConfig) metricNewrelicoracledbConnectionSessionLogicalReads {
+	m := metricNewrelicoracledbConnectionSessionLogicalReads{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbConnectionSessionPgaMemory struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.connection.session_pga_memory metric with initial data.
+func (m *metricNewrelicoracledbConnectionSessionPgaMemory) init() {
+	m.data.SetName("newrelicoracledb.connection.session_pga_memory")
+	m.data.SetDescription("PGA memory usage by session")
+	m.data.SetUnit("By")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbConnectionSessionPgaMemory) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, sessionIDAttributeValue string, usernameAttributeValue string, sessionStatusAttributeValue string, programAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("session.id", sessionIDAttributeValue)
+	dp.Attributes().PutStr("username", usernameAttributeValue)
+	dp.Attributes().PutStr("session.status", sessionStatusAttributeValue)
+	dp.Attributes().PutStr("program", programAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbConnectionSessionPgaMemory) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbConnectionSessionPgaMemory) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbConnectionSessionPgaMemory(cfg MetricConfig) metricNewrelicoracledbConnectionSessionPgaMemory {
+	m := metricNewrelicoracledbConnectionSessionPgaMemory{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbConnectionSessionsByStatus struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.connection.sessions_by_status metric with initial data.
+func (m *metricNewrelicoracledbConnectionSessionsByStatus) init() {
+	m.data.SetName("newrelicoracledb.connection.sessions_by_status")
+	m.data.SetDescription("Number of sessions grouped by status")
+	m.data.SetUnit("{sessions}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbConnectionSessionsByStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, sessionStatusAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("session.status", sessionStatusAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbConnectionSessionsByStatus) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbConnectionSessionsByStatus) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbConnectionSessionsByStatus(cfg MetricConfig) metricNewrelicoracledbConnectionSessionsByStatus {
+	m := metricNewrelicoracledbConnectionSessionsByStatus{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbConnectionSessionsByType struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.connection.sessions_by_type metric with initial data.
+func (m *metricNewrelicoracledbConnectionSessionsByType) init() {
+	m.data.SetName("newrelicoracledb.connection.sessions_by_type")
+	m.data.SetDescription("Number of sessions grouped by type")
+	m.data.SetUnit("{sessions}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbConnectionSessionsByType) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, sessionTypeAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("session.type", sessionTypeAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbConnectionSessionsByType) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbConnectionSessionsByType) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbConnectionSessionsByType(cfg MetricConfig) metricNewrelicoracledbConnectionSessionsByType {
+	m := metricNewrelicoracledbConnectionSessionsByType{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbConnectionSharedServers struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.connection.shared_servers metric with initial data.
+func (m *metricNewrelicoracledbConnectionSharedServers) init() {
+	m.data.SetName("newrelicoracledb.connection.shared_servers")
+	m.data.SetDescription("Number of shared servers")
+	m.data.SetUnit("{servers}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbConnectionSharedServers) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbConnectionSharedServers) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbConnectionSharedServers) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbConnectionSharedServers(cfg MetricConfig) metricNewrelicoracledbConnectionSharedServers {
+	m := metricNewrelicoracledbConnectionSharedServers{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbConnectionSqlnetRoundtrips struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.connection.sqlnet_roundtrips metric with initial data.
+func (m *metricNewrelicoracledbConnectionSqlnetRoundtrips) init() {
+	m.data.SetName("newrelicoracledb.connection.sqlnet_roundtrips")
+	m.data.SetDescription("Number of SQL*Net roundtrips to/from client")
+	m.data.SetUnit("{roundtrips}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbConnectionSqlnetRoundtrips) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbConnectionSqlnetRoundtrips) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbConnectionSqlnetRoundtrips) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbConnectionSqlnetRoundtrips(cfg MetricConfig) metricNewrelicoracledbConnectionSqlnetRoundtrips {
+	m := metricNewrelicoracledbConnectionSqlnetRoundtrips{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbConnectionTotalSessions struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.connection.total_sessions metric with initial data.
+func (m *metricNewrelicoracledbConnectionTotalSessions) init() {
+	m.data.SetName("newrelicoracledb.connection.total_sessions")
+	m.data.SetDescription("Total number of Oracle database sessions")
+	m.data.SetUnit("{sessions}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbConnectionTotalSessions) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbConnectionTotalSessions) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbConnectionTotalSessions) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbConnectionTotalSessions(cfg MetricConfig) metricNewrelicoracledbConnectionTotalSessions {
+	m := metricNewrelicoracledbConnectionTotalSessions{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbConnectionUserCommits struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.connection.user_commits metric with initial data.
+func (m *metricNewrelicoracledbConnectionUserCommits) init() {
+	m.data.SetName("newrelicoracledb.connection.user_commits")
+	m.data.SetDescription("Number of user commits")
+	m.data.SetUnit("{commits}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbConnectionUserCommits) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbConnectionUserCommits) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbConnectionUserCommits) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbConnectionUserCommits(cfg MetricConfig) metricNewrelicoracledbConnectionUserCommits {
+	m := metricNewrelicoracledbConnectionUserCommits{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbConnectionUserRollbacks struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.connection.user_rollbacks metric with initial data.
+func (m *metricNewrelicoracledbConnectionUserRollbacks) init() {
+	m.data.SetName("newrelicoracledb.connection.user_rollbacks")
+	m.data.SetDescription("Number of user rollbacks")
+	m.data.SetUnit("{rollbacks}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbConnectionUserRollbacks) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbConnectionUserRollbacks) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbConnectionUserRollbacks) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbConnectionUserRollbacks(cfg MetricConfig) metricNewrelicoracledbConnectionUserRollbacks {
+	m := metricNewrelicoracledbConnectionUserRollbacks{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbConnectionWaitEventAvgWaitTime struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.connection.wait_event_avg_wait_time metric with initial data.
+func (m *metricNewrelicoracledbConnectionWaitEventAvgWaitTime) init() {
+	m.data.SetName("newrelicoracledb.connection.wait_event_avg_wait_time")
+	m.data.SetDescription("Average wait time for each wait event")
+	m.data.SetUnit("ms")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbConnectionWaitEventAvgWaitTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, waitEventAttributeValue string, waitClassAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("wait.event", waitEventAttributeValue)
+	dp.Attributes().PutStr("wait.class", waitClassAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbConnectionWaitEventAvgWaitTime) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbConnectionWaitEventAvgWaitTime) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbConnectionWaitEventAvgWaitTime(cfg MetricConfig) metricNewrelicoracledbConnectionWaitEventAvgWaitTime {
+	m := metricNewrelicoracledbConnectionWaitEventAvgWaitTime{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbConnectionWaitEventTimeWaited struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.connection.wait_event_time_waited metric with initial data.
+func (m *metricNewrelicoracledbConnectionWaitEventTimeWaited) init() {
+	m.data.SetName("newrelicoracledb.connection.wait_event_time_waited")
+	m.data.SetDescription("Total time waited for each wait event")
+	m.data.SetUnit("ms")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbConnectionWaitEventTimeWaited) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, waitEventAttributeValue string, waitClassAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("wait.event", waitEventAttributeValue)
+	dp.Attributes().PutStr("wait.class", waitClassAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbConnectionWaitEventTimeWaited) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbConnectionWaitEventTimeWaited) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbConnectionWaitEventTimeWaited(cfg MetricConfig) metricNewrelicoracledbConnectionWaitEventTimeWaited {
+	m := metricNewrelicoracledbConnectionWaitEventTimeWaited{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbConnectionWaitEventTotalWaits struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.connection.wait_event_total_waits metric with initial data.
+func (m *metricNewrelicoracledbConnectionWaitEventTotalWaits) init() {
+	m.data.SetName("newrelicoracledb.connection.wait_event_total_waits")
+	m.data.SetDescription("Total number of waits for each wait event")
+	m.data.SetUnit("{waits}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbConnectionWaitEventTotalWaits) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, waitEventAttributeValue string, waitClassAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("wait.event", waitEventAttributeValue)
+	dp.Attributes().PutStr("wait.class", waitClassAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbConnectionWaitEventTotalWaits) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbConnectionWaitEventTotalWaits) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbConnectionWaitEventTotalWaits(cfg MetricConfig) metricNewrelicoracledbConnectionWaitEventTotalWaits {
+	m := metricNewrelicoracledbConnectionWaitEventTotalWaits{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricNewrelicoracledbConnectionWaitEvents struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills newrelicoracledb.connection.wait_events metric with initial data.
+func (m *metricNewrelicoracledbConnectionWaitEvents) init() {
+	m.data.SetName("newrelicoracledb.connection.wait_events")
+	m.data.SetDescription("Current wait events and wait time")
+	m.data.SetUnit("s")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricNewrelicoracledbConnectionWaitEvents) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, sessionIDAttributeValue string, usernameAttributeValue string, waitEventAttributeValue string, waitStateAttributeValue string, waitClassAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("newrelic.entity_name", newrelicEntityNameAttributeValue)
+	dp.Attributes().PutStr("session.id", sessionIDAttributeValue)
+	dp.Attributes().PutStr("username", usernameAttributeValue)
+	dp.Attributes().PutStr("wait.event", waitEventAttributeValue)
+	dp.Attributes().PutStr("wait.state", waitStateAttributeValue)
+	dp.Attributes().PutStr("wait.class", waitClassAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricNewrelicoracledbConnectionWaitEvents) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricNewrelicoracledbConnectionWaitEvents) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricNewrelicoracledbConnectionWaitEvents(cfg MetricConfig) metricNewrelicoracledbConnectionWaitEvents {
+	m := metricNewrelicoracledbConnectionWaitEvents{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
 }
 
 type metricNewrelicoracledbDbID struct {
@@ -13417,6 +15126,36 @@ type MetricsBuilder struct {
 	buildInfo                                                                component.BuildInfo  // contains version information.
 	resourceAttributeIncludeFilter                                           map[string]filter.Filter
 	resourceAttributeExcludeFilter                                           map[string]filter.Filter
+	metricNewrelicoracledbConnectionActiveSessions                           metricNewrelicoracledbConnectionActiveSessions
+	metricNewrelicoracledbConnectionBlockingSessions                         metricNewrelicoracledbConnectionBlockingSessions
+	metricNewrelicoracledbConnectionBytesReceived                            metricNewrelicoracledbConnectionBytesReceived
+	metricNewrelicoracledbConnectionBytesSent                                metricNewrelicoracledbConnectionBytesSent
+	metricNewrelicoracledbConnectionCircuits                                 metricNewrelicoracledbConnectionCircuits
+	metricNewrelicoracledbConnectionDispatchers                              metricNewrelicoracledbConnectionDispatchers
+	metricNewrelicoracledbConnectionExecuteCount                             metricNewrelicoracledbConnectionExecuteCount
+	metricNewrelicoracledbConnectionInactiveSessions                         metricNewrelicoracledbConnectionInactiveSessions
+	metricNewrelicoracledbConnectionLogonsCumulative                         metricNewrelicoracledbConnectionLogonsCumulative
+	metricNewrelicoracledbConnectionLogonsCurrent                            metricNewrelicoracledbConnectionLogonsCurrent
+	metricNewrelicoracledbConnectionParseCountHard                           metricNewrelicoracledbConnectionParseCountHard
+	metricNewrelicoracledbConnectionParseCountTotal                          metricNewrelicoracledbConnectionParseCountTotal
+	metricNewrelicoracledbConnectionResourceCurrentUtilization               metricNewrelicoracledbConnectionResourceCurrentUtilization
+	metricNewrelicoracledbConnectionResourceLimit                            metricNewrelicoracledbConnectionResourceLimit
+	metricNewrelicoracledbConnectionResourceMaxUtilization                   metricNewrelicoracledbConnectionResourceMaxUtilization
+	metricNewrelicoracledbConnectionSessionCPUUsage                          metricNewrelicoracledbConnectionSessionCPUUsage
+	metricNewrelicoracledbConnectionSessionIdleTime                          metricNewrelicoracledbConnectionSessionIdleTime
+	metricNewrelicoracledbConnectionSessionLogicalReads                      metricNewrelicoracledbConnectionSessionLogicalReads
+	metricNewrelicoracledbConnectionSessionPgaMemory                         metricNewrelicoracledbConnectionSessionPgaMemory
+	metricNewrelicoracledbConnectionSessionsByStatus                         metricNewrelicoracledbConnectionSessionsByStatus
+	metricNewrelicoracledbConnectionSessionsByType                           metricNewrelicoracledbConnectionSessionsByType
+	metricNewrelicoracledbConnectionSharedServers                            metricNewrelicoracledbConnectionSharedServers
+	metricNewrelicoracledbConnectionSqlnetRoundtrips                         metricNewrelicoracledbConnectionSqlnetRoundtrips
+	metricNewrelicoracledbConnectionTotalSessions                            metricNewrelicoracledbConnectionTotalSessions
+	metricNewrelicoracledbConnectionUserCommits                              metricNewrelicoracledbConnectionUserCommits
+	metricNewrelicoracledbConnectionUserRollbacks                            metricNewrelicoracledbConnectionUserRollbacks
+	metricNewrelicoracledbConnectionWaitEventAvgWaitTime                     metricNewrelicoracledbConnectionWaitEventAvgWaitTime
+	metricNewrelicoracledbConnectionWaitEventTimeWaited                      metricNewrelicoracledbConnectionWaitEventTimeWaited
+	metricNewrelicoracledbConnectionWaitEventTotalWaits                      metricNewrelicoracledbConnectionWaitEventTotalWaits
+	metricNewrelicoracledbConnectionWaitEvents                               metricNewrelicoracledbConnectionWaitEvents
 	metricNewrelicoracledbDbID                                               metricNewrelicoracledbDbID
 	metricNewrelicoracledbDiskBlocksRead                                     metricNewrelicoracledbDiskBlocksRead
 	metricNewrelicoracledbDiskBlocksWritten                                  metricNewrelicoracledbDiskBlocksWritten
@@ -13677,13 +15416,43 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 }
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		config:                                  mbc,
-		startTime:                               pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:                           pmetric.NewMetrics(),
-		buildInfo:                               settings.BuildInfo,
-		metricNewrelicoracledbDbID:              newMetricNewrelicoracledbDbID(mbc.Metrics.NewrelicoracledbDbID),
-		metricNewrelicoracledbDiskBlocksRead:    newMetricNewrelicoracledbDiskBlocksRead(mbc.Metrics.NewrelicoracledbDiskBlocksRead),
-		metricNewrelicoracledbDiskBlocksWritten: newMetricNewrelicoracledbDiskBlocksWritten(mbc.Metrics.NewrelicoracledbDiskBlocksWritten),
+		config:        mbc,
+		startTime:     pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer: pmetric.NewMetrics(),
+		buildInfo:     settings.BuildInfo,
+		metricNewrelicoracledbConnectionActiveSessions:                           newMetricNewrelicoracledbConnectionActiveSessions(mbc.Metrics.NewrelicoracledbConnectionActiveSessions),
+		metricNewrelicoracledbConnectionBlockingSessions:                         newMetricNewrelicoracledbConnectionBlockingSessions(mbc.Metrics.NewrelicoracledbConnectionBlockingSessions),
+		metricNewrelicoracledbConnectionBytesReceived:                            newMetricNewrelicoracledbConnectionBytesReceived(mbc.Metrics.NewrelicoracledbConnectionBytesReceived),
+		metricNewrelicoracledbConnectionBytesSent:                                newMetricNewrelicoracledbConnectionBytesSent(mbc.Metrics.NewrelicoracledbConnectionBytesSent),
+		metricNewrelicoracledbConnectionCircuits:                                 newMetricNewrelicoracledbConnectionCircuits(mbc.Metrics.NewrelicoracledbConnectionCircuits),
+		metricNewrelicoracledbConnectionDispatchers:                              newMetricNewrelicoracledbConnectionDispatchers(mbc.Metrics.NewrelicoracledbConnectionDispatchers),
+		metricNewrelicoracledbConnectionExecuteCount:                             newMetricNewrelicoracledbConnectionExecuteCount(mbc.Metrics.NewrelicoracledbConnectionExecuteCount),
+		metricNewrelicoracledbConnectionInactiveSessions:                         newMetricNewrelicoracledbConnectionInactiveSessions(mbc.Metrics.NewrelicoracledbConnectionInactiveSessions),
+		metricNewrelicoracledbConnectionLogonsCumulative:                         newMetricNewrelicoracledbConnectionLogonsCumulative(mbc.Metrics.NewrelicoracledbConnectionLogonsCumulative),
+		metricNewrelicoracledbConnectionLogonsCurrent:                            newMetricNewrelicoracledbConnectionLogonsCurrent(mbc.Metrics.NewrelicoracledbConnectionLogonsCurrent),
+		metricNewrelicoracledbConnectionParseCountHard:                           newMetricNewrelicoracledbConnectionParseCountHard(mbc.Metrics.NewrelicoracledbConnectionParseCountHard),
+		metricNewrelicoracledbConnectionParseCountTotal:                          newMetricNewrelicoracledbConnectionParseCountTotal(mbc.Metrics.NewrelicoracledbConnectionParseCountTotal),
+		metricNewrelicoracledbConnectionResourceCurrentUtilization:               newMetricNewrelicoracledbConnectionResourceCurrentUtilization(mbc.Metrics.NewrelicoracledbConnectionResourceCurrentUtilization),
+		metricNewrelicoracledbConnectionResourceLimit:                            newMetricNewrelicoracledbConnectionResourceLimit(mbc.Metrics.NewrelicoracledbConnectionResourceLimit),
+		metricNewrelicoracledbConnectionResourceMaxUtilization:                   newMetricNewrelicoracledbConnectionResourceMaxUtilization(mbc.Metrics.NewrelicoracledbConnectionResourceMaxUtilization),
+		metricNewrelicoracledbConnectionSessionCPUUsage:                          newMetricNewrelicoracledbConnectionSessionCPUUsage(mbc.Metrics.NewrelicoracledbConnectionSessionCPUUsage),
+		metricNewrelicoracledbConnectionSessionIdleTime:                          newMetricNewrelicoracledbConnectionSessionIdleTime(mbc.Metrics.NewrelicoracledbConnectionSessionIdleTime),
+		metricNewrelicoracledbConnectionSessionLogicalReads:                      newMetricNewrelicoracledbConnectionSessionLogicalReads(mbc.Metrics.NewrelicoracledbConnectionSessionLogicalReads),
+		metricNewrelicoracledbConnectionSessionPgaMemory:                         newMetricNewrelicoracledbConnectionSessionPgaMemory(mbc.Metrics.NewrelicoracledbConnectionSessionPgaMemory),
+		metricNewrelicoracledbConnectionSessionsByStatus:                         newMetricNewrelicoracledbConnectionSessionsByStatus(mbc.Metrics.NewrelicoracledbConnectionSessionsByStatus),
+		metricNewrelicoracledbConnectionSessionsByType:                           newMetricNewrelicoracledbConnectionSessionsByType(mbc.Metrics.NewrelicoracledbConnectionSessionsByType),
+		metricNewrelicoracledbConnectionSharedServers:                            newMetricNewrelicoracledbConnectionSharedServers(mbc.Metrics.NewrelicoracledbConnectionSharedServers),
+		metricNewrelicoracledbConnectionSqlnetRoundtrips:                         newMetricNewrelicoracledbConnectionSqlnetRoundtrips(mbc.Metrics.NewrelicoracledbConnectionSqlnetRoundtrips),
+		metricNewrelicoracledbConnectionTotalSessions:                            newMetricNewrelicoracledbConnectionTotalSessions(mbc.Metrics.NewrelicoracledbConnectionTotalSessions),
+		metricNewrelicoracledbConnectionUserCommits:                              newMetricNewrelicoracledbConnectionUserCommits(mbc.Metrics.NewrelicoracledbConnectionUserCommits),
+		metricNewrelicoracledbConnectionUserRollbacks:                            newMetricNewrelicoracledbConnectionUserRollbacks(mbc.Metrics.NewrelicoracledbConnectionUserRollbacks),
+		metricNewrelicoracledbConnectionWaitEventAvgWaitTime:                     newMetricNewrelicoracledbConnectionWaitEventAvgWaitTime(mbc.Metrics.NewrelicoracledbConnectionWaitEventAvgWaitTime),
+		metricNewrelicoracledbConnectionWaitEventTimeWaited:                      newMetricNewrelicoracledbConnectionWaitEventTimeWaited(mbc.Metrics.NewrelicoracledbConnectionWaitEventTimeWaited),
+		metricNewrelicoracledbConnectionWaitEventTotalWaits:                      newMetricNewrelicoracledbConnectionWaitEventTotalWaits(mbc.Metrics.NewrelicoracledbConnectionWaitEventTotalWaits),
+		metricNewrelicoracledbConnectionWaitEvents:                               newMetricNewrelicoracledbConnectionWaitEvents(mbc.Metrics.NewrelicoracledbConnectionWaitEvents),
+		metricNewrelicoracledbDbID:                                               newMetricNewrelicoracledbDbID(mbc.Metrics.NewrelicoracledbDbID),
+		metricNewrelicoracledbDiskBlocksRead:                                     newMetricNewrelicoracledbDiskBlocksRead(mbc.Metrics.NewrelicoracledbDiskBlocksRead),
+		metricNewrelicoracledbDiskBlocksWritten:                                  newMetricNewrelicoracledbDiskBlocksWritten(mbc.Metrics.NewrelicoracledbDiskBlocksWritten),
 		metricNewrelicoracledbDiskReadTimeMilliseconds:                           newMetricNewrelicoracledbDiskReadTimeMilliseconds(mbc.Metrics.NewrelicoracledbDiskReadTimeMilliseconds),
 		metricNewrelicoracledbDiskReads:                                          newMetricNewrelicoracledbDiskReads(mbc.Metrics.NewrelicoracledbDiskReads),
 		metricNewrelicoracledbDiskWriteTimeMilliseconds:                          newMetricNewrelicoracledbDiskWriteTimeMilliseconds(mbc.Metrics.NewrelicoracledbDiskWriteTimeMilliseconds),
@@ -14004,6 +15773,36 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
+	mb.metricNewrelicoracledbConnectionActiveSessions.emit(ils.Metrics())
+	mb.metricNewrelicoracledbConnectionBlockingSessions.emit(ils.Metrics())
+	mb.metricNewrelicoracledbConnectionBytesReceived.emit(ils.Metrics())
+	mb.metricNewrelicoracledbConnectionBytesSent.emit(ils.Metrics())
+	mb.metricNewrelicoracledbConnectionCircuits.emit(ils.Metrics())
+	mb.metricNewrelicoracledbConnectionDispatchers.emit(ils.Metrics())
+	mb.metricNewrelicoracledbConnectionExecuteCount.emit(ils.Metrics())
+	mb.metricNewrelicoracledbConnectionInactiveSessions.emit(ils.Metrics())
+	mb.metricNewrelicoracledbConnectionLogonsCumulative.emit(ils.Metrics())
+	mb.metricNewrelicoracledbConnectionLogonsCurrent.emit(ils.Metrics())
+	mb.metricNewrelicoracledbConnectionParseCountHard.emit(ils.Metrics())
+	mb.metricNewrelicoracledbConnectionParseCountTotal.emit(ils.Metrics())
+	mb.metricNewrelicoracledbConnectionResourceCurrentUtilization.emit(ils.Metrics())
+	mb.metricNewrelicoracledbConnectionResourceLimit.emit(ils.Metrics())
+	mb.metricNewrelicoracledbConnectionResourceMaxUtilization.emit(ils.Metrics())
+	mb.metricNewrelicoracledbConnectionSessionCPUUsage.emit(ils.Metrics())
+	mb.metricNewrelicoracledbConnectionSessionIdleTime.emit(ils.Metrics())
+	mb.metricNewrelicoracledbConnectionSessionLogicalReads.emit(ils.Metrics())
+	mb.metricNewrelicoracledbConnectionSessionPgaMemory.emit(ils.Metrics())
+	mb.metricNewrelicoracledbConnectionSessionsByStatus.emit(ils.Metrics())
+	mb.metricNewrelicoracledbConnectionSessionsByType.emit(ils.Metrics())
+	mb.metricNewrelicoracledbConnectionSharedServers.emit(ils.Metrics())
+	mb.metricNewrelicoracledbConnectionSqlnetRoundtrips.emit(ils.Metrics())
+	mb.metricNewrelicoracledbConnectionTotalSessions.emit(ils.Metrics())
+	mb.metricNewrelicoracledbConnectionUserCommits.emit(ils.Metrics())
+	mb.metricNewrelicoracledbConnectionUserRollbacks.emit(ils.Metrics())
+	mb.metricNewrelicoracledbConnectionWaitEventAvgWaitTime.emit(ils.Metrics())
+	mb.metricNewrelicoracledbConnectionWaitEventTimeWaited.emit(ils.Metrics())
+	mb.metricNewrelicoracledbConnectionWaitEventTotalWaits.emit(ils.Metrics())
+	mb.metricNewrelicoracledbConnectionWaitEvents.emit(ils.Metrics())
 	mb.metricNewrelicoracledbDbID.emit(ils.Metrics())
 	mb.metricNewrelicoracledbDiskBlocksRead.emit(ils.Metrics())
 	mb.metricNewrelicoracledbDiskBlocksWritten.emit(ils.Metrics())
@@ -14272,6 +16071,156 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 	metrics := mb.metricsBuffer
 	mb.metricsBuffer = pmetric.NewMetrics()
 	return metrics
+}
+
+// RecordNewrelicoracledbConnectionActiveSessionsDataPoint adds a data point to newrelicoracledb.connection.active_sessions metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbConnectionActiveSessionsDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string) {
+	mb.metricNewrelicoracledbConnectionActiveSessions.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue)
+}
+
+// RecordNewrelicoracledbConnectionBlockingSessionsDataPoint adds a data point to newrelicoracledb.connection.blocking_sessions metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbConnectionBlockingSessionsDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, sessionIDAttributeValue string, blockingSessionIDAttributeValue string, usernameAttributeValue string, waitEventAttributeValue string, programAttributeValue string) {
+	mb.metricNewrelicoracledbConnectionBlockingSessions.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, sessionIDAttributeValue, blockingSessionIDAttributeValue, usernameAttributeValue, waitEventAttributeValue, programAttributeValue)
+}
+
+// RecordNewrelicoracledbConnectionBytesReceivedDataPoint adds a data point to newrelicoracledb.connection.bytes_received metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbConnectionBytesReceivedDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string) {
+	mb.metricNewrelicoracledbConnectionBytesReceived.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue)
+}
+
+// RecordNewrelicoracledbConnectionBytesSentDataPoint adds a data point to newrelicoracledb.connection.bytes_sent metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbConnectionBytesSentDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string) {
+	mb.metricNewrelicoracledbConnectionBytesSent.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue)
+}
+
+// RecordNewrelicoracledbConnectionCircuitsDataPoint adds a data point to newrelicoracledb.connection.circuits metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbConnectionCircuitsDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string) {
+	mb.metricNewrelicoracledbConnectionCircuits.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue)
+}
+
+// RecordNewrelicoracledbConnectionDispatchersDataPoint adds a data point to newrelicoracledb.connection.dispatchers metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbConnectionDispatchersDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string) {
+	mb.metricNewrelicoracledbConnectionDispatchers.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue)
+}
+
+// RecordNewrelicoracledbConnectionExecuteCountDataPoint adds a data point to newrelicoracledb.connection.execute_count metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbConnectionExecuteCountDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string) {
+	mb.metricNewrelicoracledbConnectionExecuteCount.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue)
+}
+
+// RecordNewrelicoracledbConnectionInactiveSessionsDataPoint adds a data point to newrelicoracledb.connection.inactive_sessions metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbConnectionInactiveSessionsDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string) {
+	mb.metricNewrelicoracledbConnectionInactiveSessions.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue)
+}
+
+// RecordNewrelicoracledbConnectionLogonsCumulativeDataPoint adds a data point to newrelicoracledb.connection.logons_cumulative metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbConnectionLogonsCumulativeDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string) {
+	mb.metricNewrelicoracledbConnectionLogonsCumulative.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue)
+}
+
+// RecordNewrelicoracledbConnectionLogonsCurrentDataPoint adds a data point to newrelicoracledb.connection.logons_current metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbConnectionLogonsCurrentDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string) {
+	mb.metricNewrelicoracledbConnectionLogonsCurrent.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue)
+}
+
+// RecordNewrelicoracledbConnectionParseCountHardDataPoint adds a data point to newrelicoracledb.connection.parse_count_hard metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbConnectionParseCountHardDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string) {
+	mb.metricNewrelicoracledbConnectionParseCountHard.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue)
+}
+
+// RecordNewrelicoracledbConnectionParseCountTotalDataPoint adds a data point to newrelicoracledb.connection.parse_count_total metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbConnectionParseCountTotalDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string) {
+	mb.metricNewrelicoracledbConnectionParseCountTotal.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue)
+}
+
+// RecordNewrelicoracledbConnectionResourceCurrentUtilizationDataPoint adds a data point to newrelicoracledb.connection.resource_current_utilization metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbConnectionResourceCurrentUtilizationDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, resourceNameAttributeValue string) {
+	mb.metricNewrelicoracledbConnectionResourceCurrentUtilization.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, resourceNameAttributeValue)
+}
+
+// RecordNewrelicoracledbConnectionResourceLimitDataPoint adds a data point to newrelicoracledb.connection.resource_limit metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbConnectionResourceLimitDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, resourceNameAttributeValue string) {
+	mb.metricNewrelicoracledbConnectionResourceLimit.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, resourceNameAttributeValue)
+}
+
+// RecordNewrelicoracledbConnectionResourceMaxUtilizationDataPoint adds a data point to newrelicoracledb.connection.resource_max_utilization metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbConnectionResourceMaxUtilizationDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, resourceNameAttributeValue string) {
+	mb.metricNewrelicoracledbConnectionResourceMaxUtilization.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, resourceNameAttributeValue)
+}
+
+// RecordNewrelicoracledbConnectionSessionCPUUsageDataPoint adds a data point to newrelicoracledb.connection.session_cpu_usage metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbConnectionSessionCPUUsageDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, sessionIDAttributeValue string, usernameAttributeValue string, sessionStatusAttributeValue string, programAttributeValue string) {
+	mb.metricNewrelicoracledbConnectionSessionCPUUsage.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, sessionIDAttributeValue, usernameAttributeValue, sessionStatusAttributeValue, programAttributeValue)
+}
+
+// RecordNewrelicoracledbConnectionSessionIdleTimeDataPoint adds a data point to newrelicoracledb.connection.session_idle_time metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbConnectionSessionIdleTimeDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, sessionIDAttributeValue string, usernameAttributeValue string, sessionStatusAttributeValue string, programAttributeValue string) {
+	mb.metricNewrelicoracledbConnectionSessionIdleTime.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, sessionIDAttributeValue, usernameAttributeValue, sessionStatusAttributeValue, programAttributeValue)
+}
+
+// RecordNewrelicoracledbConnectionSessionLogicalReadsDataPoint adds a data point to newrelicoracledb.connection.session_logical_reads metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbConnectionSessionLogicalReadsDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, sessionIDAttributeValue string, usernameAttributeValue string, sessionStatusAttributeValue string, programAttributeValue string) {
+	mb.metricNewrelicoracledbConnectionSessionLogicalReads.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, sessionIDAttributeValue, usernameAttributeValue, sessionStatusAttributeValue, programAttributeValue)
+}
+
+// RecordNewrelicoracledbConnectionSessionPgaMemoryDataPoint adds a data point to newrelicoracledb.connection.session_pga_memory metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbConnectionSessionPgaMemoryDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, sessionIDAttributeValue string, usernameAttributeValue string, sessionStatusAttributeValue string, programAttributeValue string) {
+	mb.metricNewrelicoracledbConnectionSessionPgaMemory.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, sessionIDAttributeValue, usernameAttributeValue, sessionStatusAttributeValue, programAttributeValue)
+}
+
+// RecordNewrelicoracledbConnectionSessionsByStatusDataPoint adds a data point to newrelicoracledb.connection.sessions_by_status metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbConnectionSessionsByStatusDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, sessionStatusAttributeValue string) {
+	mb.metricNewrelicoracledbConnectionSessionsByStatus.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, sessionStatusAttributeValue)
+}
+
+// RecordNewrelicoracledbConnectionSessionsByTypeDataPoint adds a data point to newrelicoracledb.connection.sessions_by_type metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbConnectionSessionsByTypeDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, sessionTypeAttributeValue string) {
+	mb.metricNewrelicoracledbConnectionSessionsByType.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, sessionTypeAttributeValue)
+}
+
+// RecordNewrelicoracledbConnectionSharedServersDataPoint adds a data point to newrelicoracledb.connection.shared_servers metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbConnectionSharedServersDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string) {
+	mb.metricNewrelicoracledbConnectionSharedServers.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue)
+}
+
+// RecordNewrelicoracledbConnectionSqlnetRoundtripsDataPoint adds a data point to newrelicoracledb.connection.sqlnet_roundtrips metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbConnectionSqlnetRoundtripsDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string) {
+	mb.metricNewrelicoracledbConnectionSqlnetRoundtrips.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue)
+}
+
+// RecordNewrelicoracledbConnectionTotalSessionsDataPoint adds a data point to newrelicoracledb.connection.total_sessions metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbConnectionTotalSessionsDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string) {
+	mb.metricNewrelicoracledbConnectionTotalSessions.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue)
+}
+
+// RecordNewrelicoracledbConnectionUserCommitsDataPoint adds a data point to newrelicoracledb.connection.user_commits metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbConnectionUserCommitsDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string) {
+	mb.metricNewrelicoracledbConnectionUserCommits.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue)
+}
+
+// RecordNewrelicoracledbConnectionUserRollbacksDataPoint adds a data point to newrelicoracledb.connection.user_rollbacks metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbConnectionUserRollbacksDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string) {
+	mb.metricNewrelicoracledbConnectionUserRollbacks.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue)
+}
+
+// RecordNewrelicoracledbConnectionWaitEventAvgWaitTimeDataPoint adds a data point to newrelicoracledb.connection.wait_event_avg_wait_time metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbConnectionWaitEventAvgWaitTimeDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, waitEventAttributeValue string, waitClassAttributeValue string) {
+	mb.metricNewrelicoracledbConnectionWaitEventAvgWaitTime.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, waitEventAttributeValue, waitClassAttributeValue)
+}
+
+// RecordNewrelicoracledbConnectionWaitEventTimeWaitedDataPoint adds a data point to newrelicoracledb.connection.wait_event_time_waited metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbConnectionWaitEventTimeWaitedDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, waitEventAttributeValue string, waitClassAttributeValue string) {
+	mb.metricNewrelicoracledbConnectionWaitEventTimeWaited.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, waitEventAttributeValue, waitClassAttributeValue)
+}
+
+// RecordNewrelicoracledbConnectionWaitEventTotalWaitsDataPoint adds a data point to newrelicoracledb.connection.wait_event_total_waits metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbConnectionWaitEventTotalWaitsDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, waitEventAttributeValue string, waitClassAttributeValue string) {
+	mb.metricNewrelicoracledbConnectionWaitEventTotalWaits.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, waitEventAttributeValue, waitClassAttributeValue)
+}
+
+// RecordNewrelicoracledbConnectionWaitEventsDataPoint adds a data point to newrelicoracledb.connection.wait_events metric.
+func (mb *MetricsBuilder) RecordNewrelicoracledbConnectionWaitEventsDataPoint(ts pcommon.Timestamp, val float64, newrelicEntityNameAttributeValue string, sessionIDAttributeValue string, usernameAttributeValue string, waitEventAttributeValue string, waitStateAttributeValue string, waitClassAttributeValue string) {
+	mb.metricNewrelicoracledbConnectionWaitEvents.recordDataPoint(mb.startTime, ts, val, newrelicEntityNameAttributeValue, sessionIDAttributeValue, usernameAttributeValue, waitEventAttributeValue, waitStateAttributeValue, waitClassAttributeValue)
 }
 
 // RecordNewrelicoracledbDbIDDataPoint adds a data point to newrelicoracledb.db_id metric.

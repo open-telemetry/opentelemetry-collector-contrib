@@ -34,6 +34,36 @@ attributes:
   db.id:
     description: Oracle database ID
     type: string
+  session.status:
+    description: Oracle session status (ACTIVE, INACTIVE, etc.)
+    type: string
+  session.type:
+    description: Oracle session type (USER, BACKGROUND, etc.)
+    type: string
+  session.id:
+    description: Oracle session identifier (SID)
+    type: string
+  username:
+    description: Oracle database username
+    type: string
+  program:
+    description: Program or application name
+    type: string
+  wait.event:
+    description: Oracle wait event name
+    type: string
+  wait.state:
+    description: Oracle wait event state
+    type: string
+  wait.class:
+    description: Oracle wait event class
+    type: string
+  blocking.session.id:
+    description: Oracle blocking session identifier
+    type: string
+  resource.name:
+    description: Oracle resource name
+    type: string
 
 metrics:
   newrelicoracledb.sessions.count:
@@ -2427,6 +2457,343 @@ metrics:
     attributes:
       - newrelic.entity_name
       - instance.id
+
+  # Core Connection Metrics
+  newrelicoracledb.connection.total_sessions:
+    description: Total number of Oracle database sessions
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "{sessions}"
+    attributes:
+      - newrelic.entity_name
+
+  newrelicoracledb.connection.active_sessions:
+    description: Number of active Oracle database sessions
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "{sessions}"
+    attributes:
+      - newrelic.entity_name
+
+  newrelicoracledb.connection.inactive_sessions:
+    description: Number of inactive Oracle database sessions
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "{sessions}"
+    attributes:
+      - newrelic.entity_name
+
+  newrelicoracledb.connection.sessions_by_status:
+    description: Number of sessions grouped by status
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "{sessions}"
+    attributes:
+      - newrelic.entity_name
+      - session.status
+
+  newrelicoracledb.connection.sessions_by_type:
+    description: Number of sessions grouped by type
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "{sessions}"
+    attributes:
+      - newrelic.entity_name
+      - session.type
+
+  # Logon Statistics
+  newrelicoracledb.connection.logons_cumulative:
+    description: Cumulative number of logons since instance startup
+    enabled: true
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: double
+    unit: "{logons}"
+    attributes:
+      - newrelic.entity_name
+
+  newrelicoracledb.connection.logons_current:
+    description: Current number of active logons
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "{logons}"
+    attributes:
+      - newrelic.entity_name
+
+  # Session Resource Consumption
+  newrelicoracledb.connection.session_cpu_usage:
+    description: CPU usage by session in seconds
+    enabled: true
+    gauge:
+      value_type: double
+    unit: s
+    attributes:
+      - newrelic.entity_name
+      - session.id
+      - username
+      - session.status
+      - program
+
+  newrelicoracledb.connection.session_pga_memory:
+    description: PGA memory usage by session
+    enabled: true
+    gauge:
+      value_type: double
+    unit: By
+    attributes:
+      - newrelic.entity_name
+      - session.id
+      - username
+      - session.status
+      - program
+
+  newrelicoracledb.connection.session_logical_reads:
+    description: Logical reads by session
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "{reads}"
+    attributes:
+      - newrelic.entity_name
+      - session.id
+      - username
+      - session.status
+      - program
+
+  newrelicoracledb.connection.session_idle_time:
+    description: Session idle time in seconds
+    enabled: true
+    gauge:
+      value_type: double
+    unit: s
+    attributes:
+      - newrelic.entity_name
+      - session.id
+      - username
+      - session.status
+      - program
+
+  # Wait Events
+  newrelicoracledb.connection.wait_events:
+    description: Current wait events and wait time
+    enabled: true
+    gauge:
+      value_type: double
+    unit: s
+    attributes:
+      - newrelic.entity_name
+      - session.id
+      - username
+      - wait.event
+      - wait.state
+      - wait.class
+
+  newrelicoracledb.connection.blocking_sessions:
+    description: Sessions blocked by other sessions
+    enabled: true
+    gauge:
+      value_type: double
+    unit: s
+    attributes:
+      - newrelic.entity_name
+      - session.id
+      - blocking.session.id
+      - username
+      - wait.event
+      - program
+
+  # Wait Event Summary
+  newrelicoracledb.connection.wait_event_total_waits:
+    description: Total number of waits for each wait event
+    enabled: true
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: double
+    unit: "{waits}"
+    attributes:
+      - newrelic.entity_name
+      - wait.event
+      - wait.class
+
+  newrelicoracledb.connection.wait_event_time_waited:
+    description: Total time waited for each wait event
+    enabled: true
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: double
+    unit: ms
+    attributes:
+      - newrelic.entity_name
+      - wait.event
+      - wait.class
+
+  newrelicoracledb.connection.wait_event_avg_wait_time:
+    description: Average wait time for each wait event
+    enabled: true
+    gauge:
+      value_type: double
+    unit: ms
+    attributes:
+      - newrelic.entity_name
+      - wait.event
+      - wait.class
+
+  # Connection Pool Metrics
+  newrelicoracledb.connection.shared_servers:
+    description: Number of shared servers
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "{servers}"
+    attributes:
+      - newrelic.entity_name
+
+  newrelicoracledb.connection.dispatchers:
+    description: Number of dispatchers
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "{dispatchers}"
+    attributes:
+      - newrelic.entity_name
+
+  newrelicoracledb.connection.circuits:
+    description: Number of active circuits
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "{circuits}"
+    attributes:
+      - newrelic.entity_name
+
+  # Resource Limits
+  newrelicoracledb.connection.resource_current_utilization:
+    description: Current utilization of Oracle resources
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "{resources}"
+    attributes:
+      - newrelic.entity_name
+      - resource.name
+
+  newrelicoracledb.connection.resource_max_utilization:
+    description: Maximum utilization of Oracle resources since startup
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "{resources}"
+    attributes:
+      - newrelic.entity_name
+      - resource.name
+
+  newrelicoracledb.connection.resource_limit:
+    description: Limit value for Oracle resources
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "{resources}"
+    attributes:
+      - newrelic.entity_name
+      - resource.name
+
+  # Connection Quality Metrics
+  newrelicoracledb.connection.user_commits:
+    description: Number of user commits
+    enabled: true
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: double
+    unit: "{commits}"
+    attributes:
+      - newrelic.entity_name
+
+  newrelicoracledb.connection.user_rollbacks:
+    description: Number of user rollbacks
+    enabled: true
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: double
+    unit: "{rollbacks}"
+    attributes:
+      - newrelic.entity_name
+
+  newrelicoracledb.connection.parse_count_total:
+    description: Total number of parse calls
+    enabled: true
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: double
+    unit: "{parses}"
+    attributes:
+      - newrelic.entity_name
+
+  newrelicoracledb.connection.parse_count_hard:
+    description: Number of hard parse calls
+    enabled: true
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: double
+    unit: "{parses}"
+    attributes:
+      - newrelic.entity_name
+
+  newrelicoracledb.connection.execute_count:
+    description: Number of SQL executions
+    enabled: true
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: double
+    unit: "{executions}"
+    attributes:
+      - newrelic.entity_name
+
+  newrelicoracledb.connection.sqlnet_roundtrips:
+    description: Number of SQL*Net roundtrips to/from client
+    enabled: true
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: double
+    unit: "{roundtrips}"
+    attributes:
+      - newrelic.entity_name
+
+  newrelicoracledb.connection.bytes_sent:
+    description: Bytes sent via SQL*Net to client
+    enabled: true
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: double
+    unit: By
+    attributes:
+      - newrelic.entity_name
+
+  newrelicoracledb.connection.bytes_received:
+    description: Bytes received via SQL*Net from client
+    enabled: true
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: double
+    unit: By
+    attributes:
+      - newrelic.entity_name
 
 tests:
   config:

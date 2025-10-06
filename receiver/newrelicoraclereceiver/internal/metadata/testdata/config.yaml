@@ -1,6 +1,66 @@
 default:
 all_set:
   metrics:
+    newrelicoracledb.connection.active_sessions:
+      enabled: true
+    newrelicoracledb.connection.blocking_sessions:
+      enabled: true
+    newrelicoracledb.connection.bytes_received:
+      enabled: true
+    newrelicoracledb.connection.bytes_sent:
+      enabled: true
+    newrelicoracledb.connection.circuits:
+      enabled: true
+    newrelicoracledb.connection.dispatchers:
+      enabled: true
+    newrelicoracledb.connection.execute_count:
+      enabled: true
+    newrelicoracledb.connection.inactive_sessions:
+      enabled: true
+    newrelicoracledb.connection.logons_cumulative:
+      enabled: true
+    newrelicoracledb.connection.logons_current:
+      enabled: true
+    newrelicoracledb.connection.parse_count_hard:
+      enabled: true
+    newrelicoracledb.connection.parse_count_total:
+      enabled: true
+    newrelicoracledb.connection.resource_current_utilization:
+      enabled: true
+    newrelicoracledb.connection.resource_limit:
+      enabled: true
+    newrelicoracledb.connection.resource_max_utilization:
+      enabled: true
+    newrelicoracledb.connection.session_cpu_usage:
+      enabled: true
+    newrelicoracledb.connection.session_idle_time:
+      enabled: true
+    newrelicoracledb.connection.session_logical_reads:
+      enabled: true
+    newrelicoracledb.connection.session_pga_memory:
+      enabled: true
+    newrelicoracledb.connection.sessions_by_status:
+      enabled: true
+    newrelicoracledb.connection.sessions_by_type:
+      enabled: true
+    newrelicoracledb.connection.shared_servers:
+      enabled: true
+    newrelicoracledb.connection.sqlnet_roundtrips:
+      enabled: true
+    newrelicoracledb.connection.total_sessions:
+      enabled: true
+    newrelicoracledb.connection.user_commits:
+      enabled: true
+    newrelicoracledb.connection.user_rollbacks:
+      enabled: true
+    newrelicoracledb.connection.wait_event_avg_wait_time:
+      enabled: true
+    newrelicoracledb.connection.wait_event_time_waited:
+      enabled: true
+    newrelicoracledb.connection.wait_event_total_waits:
+      enabled: true
+    newrelicoracledb.connection.wait_events:
+      enabled: true
     newrelicoracledb.db_id:
       enabled: true
     newrelicoracledb.disk.blocks_read:
@@ -486,6 +546,66 @@ all_set:
       enabled: true
 none_set:
   metrics:
+    newrelicoracledb.connection.active_sessions:
+      enabled: false
+    newrelicoracledb.connection.blocking_sessions:
+      enabled: false
+    newrelicoracledb.connection.bytes_received:
+      enabled: false
+    newrelicoracledb.connection.bytes_sent:
+      enabled: false
+    newrelicoracledb.connection.circuits:
+      enabled: false
+    newrelicoracledb.connection.dispatchers:
+      enabled: false
+    newrelicoracledb.connection.execute_count:
+      enabled: false
+    newrelicoracledb.connection.inactive_sessions:
+      enabled: false
+    newrelicoracledb.connection.logons_cumulative:
+      enabled: false
+    newrelicoracledb.connection.logons_current:
+      enabled: false
+    newrelicoracledb.connection.parse_count_hard:
+      enabled: false
+    newrelicoracledb.connection.parse_count_total:
+      enabled: false
+    newrelicoracledb.connection.resource_current_utilization:
+      enabled: false
+    newrelicoracledb.connection.resource_limit:
+      enabled: false
+    newrelicoracledb.connection.resource_max_utilization:
+      enabled: false
+    newrelicoracledb.connection.session_cpu_usage:
+      enabled: false
+    newrelicoracledb.connection.session_idle_time:
+      enabled: false
+    newrelicoracledb.connection.session_logical_reads:
+      enabled: false
+    newrelicoracledb.connection.session_pga_memory:
+      enabled: false
+    newrelicoracledb.connection.sessions_by_status:
+      enabled: false
+    newrelicoracledb.connection.sessions_by_type:
+      enabled: false
+    newrelicoracledb.connection.shared_servers:
+      enabled: false
+    newrelicoracledb.connection.sqlnet_roundtrips:
+      enabled: false
+    newrelicoracledb.connection.total_sessions:
+      enabled: false
+    newrelicoracledb.connection.user_commits:
+      enabled: false
+    newrelicoracledb.connection.user_rollbacks:
+      enabled: false
+    newrelicoracledb.connection.wait_event_avg_wait_time:
+      enabled: false
+    newrelicoracledb.connection.wait_event_time_waited:
+      enabled: false
+    newrelicoracledb.connection.wait_event_total_waits:
+      enabled: false
+    newrelicoracledb.connection.wait_events:
+      enabled: false
     newrelicoracledb.db_id:
       enabled: false
     newrelicoracledb.disk.blocks_read:

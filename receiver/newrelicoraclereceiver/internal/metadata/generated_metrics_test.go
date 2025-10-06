@@ -70,6 +70,126 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
+			mb.RecordNewrelicoracledbConnectionActiveSessionsDataPoint(ts, 1, "newrelic.entity_name-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordNewrelicoracledbConnectionBlockingSessionsDataPoint(ts, 1, "newrelic.entity_name-val", "session.id-val", "blocking.session.id-val", "username-val", "wait.event-val", "program-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordNewrelicoracledbConnectionBytesReceivedDataPoint(ts, 1, "newrelic.entity_name-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordNewrelicoracledbConnectionBytesSentDataPoint(ts, 1, "newrelic.entity_name-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordNewrelicoracledbConnectionCircuitsDataPoint(ts, 1, "newrelic.entity_name-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordNewrelicoracledbConnectionDispatchersDataPoint(ts, 1, "newrelic.entity_name-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordNewrelicoracledbConnectionExecuteCountDataPoint(ts, 1, "newrelic.entity_name-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordNewrelicoracledbConnectionInactiveSessionsDataPoint(ts, 1, "newrelic.entity_name-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordNewrelicoracledbConnectionLogonsCumulativeDataPoint(ts, 1, "newrelic.entity_name-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordNewrelicoracledbConnectionLogonsCurrentDataPoint(ts, 1, "newrelic.entity_name-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordNewrelicoracledbConnectionParseCountHardDataPoint(ts, 1, "newrelic.entity_name-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordNewrelicoracledbConnectionParseCountTotalDataPoint(ts, 1, "newrelic.entity_name-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordNewrelicoracledbConnectionResourceCurrentUtilizationDataPoint(ts, 1, "newrelic.entity_name-val", "resource.name-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordNewrelicoracledbConnectionResourceLimitDataPoint(ts, 1, "newrelic.entity_name-val", "resource.name-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordNewrelicoracledbConnectionResourceMaxUtilizationDataPoint(ts, 1, "newrelic.entity_name-val", "resource.name-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordNewrelicoracledbConnectionSessionCPUUsageDataPoint(ts, 1, "newrelic.entity_name-val", "session.id-val", "username-val", "session.status-val", "program-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordNewrelicoracledbConnectionSessionIdleTimeDataPoint(ts, 1, "newrelic.entity_name-val", "session.id-val", "username-val", "session.status-val", "program-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordNewrelicoracledbConnectionSessionLogicalReadsDataPoint(ts, 1, "newrelic.entity_name-val", "session.id-val", "username-val", "session.status-val", "program-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordNewrelicoracledbConnectionSessionPgaMemoryDataPoint(ts, 1, "newrelic.entity_name-val", "session.id-val", "username-val", "session.status-val", "program-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordNewrelicoracledbConnectionSessionsByStatusDataPoint(ts, 1, "newrelic.entity_name-val", "session.status-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordNewrelicoracledbConnectionSessionsByTypeDataPoint(ts, 1, "newrelic.entity_name-val", "session.type-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordNewrelicoracledbConnectionSharedServersDataPoint(ts, 1, "newrelic.entity_name-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordNewrelicoracledbConnectionSqlnetRoundtripsDataPoint(ts, 1, "newrelic.entity_name-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordNewrelicoracledbConnectionTotalSessionsDataPoint(ts, 1, "newrelic.entity_name-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordNewrelicoracledbConnectionUserCommitsDataPoint(ts, 1, "newrelic.entity_name-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordNewrelicoracledbConnectionUserRollbacksDataPoint(ts, 1, "newrelic.entity_name-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordNewrelicoracledbConnectionWaitEventAvgWaitTimeDataPoint(ts, 1, "newrelic.entity_name-val", "wait.event-val", "wait.class-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordNewrelicoracledbConnectionWaitEventTimeWaitedDataPoint(ts, 1, "newrelic.entity_name-val", "wait.event-val", "wait.class-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordNewrelicoracledbConnectionWaitEventTotalWaitsDataPoint(ts, 1, "newrelic.entity_name-val", "wait.event-val", "wait.class-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordNewrelicoracledbConnectionWaitEventsDataPoint(ts, 1, "newrelic.entity_name-val", "session.id-val", "username-val", "wait.event-val", "wait.state-val", "wait.class-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
 			mb.RecordNewrelicoracledbDbIDDataPoint(ts, 1, "newrelic.entity_name-val", "instance.id-val", "db.id-val")
 
 			defaultMetricsCount++
@@ -1049,6 +1169,589 @@ func TestMetricsBuilder(t *testing.T) {
 			validatedMetrics := make(map[string]bool)
 			for i := 0; i < ms.Len(); i++ {
 				switch ms.At(i).Name() {
+				case "newrelicoracledb.connection.active_sessions":
+					assert.False(t, validatedMetrics["newrelicoracledb.connection.active_sessions"], "Found a duplicate in the metrics slice: newrelicoracledb.connection.active_sessions")
+					validatedMetrics["newrelicoracledb.connection.active_sessions"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of active Oracle database sessions", ms.At(i).Description())
+					assert.Equal(t, "{sessions}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					attrVal, ok := dp.Attributes().Get("newrelic.entity_name")
+					assert.True(t, ok)
+					assert.Equal(t, "newrelic.entity_name-val", attrVal.Str())
+				case "newrelicoracledb.connection.blocking_sessions":
+					assert.False(t, validatedMetrics["newrelicoracledb.connection.blocking_sessions"], "Found a duplicate in the metrics slice: newrelicoracledb.connection.blocking_sessions")
+					validatedMetrics["newrelicoracledb.connection.blocking_sessions"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Sessions blocked by other sessions", ms.At(i).Description())
+					assert.Equal(t, "s", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					attrVal, ok := dp.Attributes().Get("newrelic.entity_name")
+					assert.True(t, ok)
+					assert.Equal(t, "newrelic.entity_name-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("session.id")
+					assert.True(t, ok)
+					assert.Equal(t, "session.id-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("blocking.session.id")
+					assert.True(t, ok)
+					assert.Equal(t, "blocking.session.id-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("username")
+					assert.True(t, ok)
+					assert.Equal(t, "username-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("wait.event")
+					assert.True(t, ok)
+					assert.Equal(t, "wait.event-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("program")
+					assert.True(t, ok)
+					assert.Equal(t, "program-val", attrVal.Str())
+				case "newrelicoracledb.connection.bytes_received":
+					assert.False(t, validatedMetrics["newrelicoracledb.connection.bytes_received"], "Found a duplicate in the metrics slice: newrelicoracledb.connection.bytes_received")
+					validatedMetrics["newrelicoracledb.connection.bytes_received"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Bytes received via SQL*Net from client", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					attrVal, ok := dp.Attributes().Get("newrelic.entity_name")
+					assert.True(t, ok)
+					assert.Equal(t, "newrelic.entity_name-val", attrVal.Str())
+				case "newrelicoracledb.connection.bytes_sent":
+					assert.False(t, validatedMetrics["newrelicoracledb.connection.bytes_sent"], "Found a duplicate in the metrics slice: newrelicoracledb.connection.bytes_sent")
+					validatedMetrics["newrelicoracledb.connection.bytes_sent"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Bytes sent via SQL*Net to client", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					attrVal, ok := dp.Attributes().Get("newrelic.entity_name")
+					assert.True(t, ok)
+					assert.Equal(t, "newrelic.entity_name-val", attrVal.Str())
+				case "newrelicoracledb.connection.circuits":
+					assert.False(t, validatedMetrics["newrelicoracledb.connection.circuits"], "Found a duplicate in the metrics slice: newrelicoracledb.connection.circuits")
+					validatedMetrics["newrelicoracledb.connection.circuits"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of active circuits", ms.At(i).Description())
+					assert.Equal(t, "{circuits}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					attrVal, ok := dp.Attributes().Get("newrelic.entity_name")
+					assert.True(t, ok)
+					assert.Equal(t, "newrelic.entity_name-val", attrVal.Str())
+				case "newrelicoracledb.connection.dispatchers":
+					assert.False(t, validatedMetrics["newrelicoracledb.connection.dispatchers"], "Found a duplicate in the metrics slice: newrelicoracledb.connection.dispatchers")
+					validatedMetrics["newrelicoracledb.connection.dispatchers"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of dispatchers", ms.At(i).Description())
+					assert.Equal(t, "{dispatchers}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					attrVal, ok := dp.Attributes().Get("newrelic.entity_name")
+					assert.True(t, ok)
+					assert.Equal(t, "newrelic.entity_name-val", attrVal.Str())
+				case "newrelicoracledb.connection.execute_count":
+					assert.False(t, validatedMetrics["newrelicoracledb.connection.execute_count"], "Found a duplicate in the metrics slice: newrelicoracledb.connection.execute_count")
+					validatedMetrics["newrelicoracledb.connection.execute_count"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of SQL executions", ms.At(i).Description())
+					assert.Equal(t, "{executions}", ms.At(i).Unit())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					attrVal, ok := dp.Attributes().Get("newrelic.entity_name")
+					assert.True(t, ok)
+					assert.Equal(t, "newrelic.entity_name-val", attrVal.Str())
+				case "newrelicoracledb.connection.inactive_sessions":
+					assert.False(t, validatedMetrics["newrelicoracledb.connection.inactive_sessions"], "Found a duplicate in the metrics slice: newrelicoracledb.connection.inactive_sessions")
+					validatedMetrics["newrelicoracledb.connection.inactive_sessions"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of inactive Oracle database sessions", ms.At(i).Description())
+					assert.Equal(t, "{sessions}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					attrVal, ok := dp.Attributes().Get("newrelic.entity_name")
+					assert.True(t, ok)
+					assert.Equal(t, "newrelic.entity_name-val", attrVal.Str())
+				case "newrelicoracledb.connection.logons_cumulative":
+					assert.False(t, validatedMetrics["newrelicoracledb.connection.logons_cumulative"], "Found a duplicate in the metrics slice: newrelicoracledb.connection.logons_cumulative")
+					validatedMetrics["newrelicoracledb.connection.logons_cumulative"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Cumulative number of logons since instance startup", ms.At(i).Description())
+					assert.Equal(t, "{logons}", ms.At(i).Unit())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					attrVal, ok := dp.Attributes().Get("newrelic.entity_name")
+					assert.True(t, ok)
+					assert.Equal(t, "newrelic.entity_name-val", attrVal.Str())
+				case "newrelicoracledb.connection.logons_current":
+					assert.False(t, validatedMetrics["newrelicoracledb.connection.logons_current"], "Found a duplicate in the metrics slice: newrelicoracledb.connection.logons_current")
+					validatedMetrics["newrelicoracledb.connection.logons_current"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Current number of active logons", ms.At(i).Description())
+					assert.Equal(t, "{logons}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					attrVal, ok := dp.Attributes().Get("newrelic.entity_name")
+					assert.True(t, ok)
+					assert.Equal(t, "newrelic.entity_name-val", attrVal.Str())
+				case "newrelicoracledb.connection.parse_count_hard":
+					assert.False(t, validatedMetrics["newrelicoracledb.connection.parse_count_hard"], "Found a duplicate in the metrics slice: newrelicoracledb.connection.parse_count_hard")
+					validatedMetrics["newrelicoracledb.connection.parse_count_hard"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of hard parse calls", ms.At(i).Description())
+					assert.Equal(t, "{parses}", ms.At(i).Unit())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					attrVal, ok := dp.Attributes().Get("newrelic.entity_name")
+					assert.True(t, ok)
+					assert.Equal(t, "newrelic.entity_name-val", attrVal.Str())
+				case "newrelicoracledb.connection.parse_count_total":
+					assert.False(t, validatedMetrics["newrelicoracledb.connection.parse_count_total"], "Found a duplicate in the metrics slice: newrelicoracledb.connection.parse_count_total")
+					validatedMetrics["newrelicoracledb.connection.parse_count_total"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Total number of parse calls", ms.At(i).Description())
+					assert.Equal(t, "{parses}", ms.At(i).Unit())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					attrVal, ok := dp.Attributes().Get("newrelic.entity_name")
+					assert.True(t, ok)
+					assert.Equal(t, "newrelic.entity_name-val", attrVal.Str())
+				case "newrelicoracledb.connection.resource_current_utilization":
+					assert.False(t, validatedMetrics["newrelicoracledb.connection.resource_current_utilization"], "Found a duplicate in the metrics slice: newrelicoracledb.connection.resource_current_utilization")
+					validatedMetrics["newrelicoracledb.connection.resource_current_utilization"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Current utilization of Oracle resources", ms.At(i).Description())
+					assert.Equal(t, "{resources}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					attrVal, ok := dp.Attributes().Get("newrelic.entity_name")
+					assert.True(t, ok)
+					assert.Equal(t, "newrelic.entity_name-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("resource.name")
+					assert.True(t, ok)
+					assert.Equal(t, "resource.name-val", attrVal.Str())
+				case "newrelicoracledb.connection.resource_limit":
+					assert.False(t, validatedMetrics["newrelicoracledb.connection.resource_limit"], "Found a duplicate in the metrics slice: newrelicoracledb.connection.resource_limit")
+					validatedMetrics["newrelicoracledb.connection.resource_limit"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Limit value for Oracle resources", ms.At(i).Description())
+					assert.Equal(t, "{resources}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					attrVal, ok := dp.Attributes().Get("newrelic.entity_name")
+					assert.True(t, ok)
+					assert.Equal(t, "newrelic.entity_name-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("resource.name")
+					assert.True(t, ok)
+					assert.Equal(t, "resource.name-val", attrVal.Str())
+				case "newrelicoracledb.connection.resource_max_utilization":
+					assert.False(t, validatedMetrics["newrelicoracledb.connection.resource_max_utilization"], "Found a duplicate in the metrics slice: newrelicoracledb.connection.resource_max_utilization")
+					validatedMetrics["newrelicoracledb.connection.resource_max_utilization"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Maximum utilization of Oracle resources since startup", ms.At(i).Description())
+					assert.Equal(t, "{resources}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					attrVal, ok := dp.Attributes().Get("newrelic.entity_name")
+					assert.True(t, ok)
+					assert.Equal(t, "newrelic.entity_name-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("resource.name")
+					assert.True(t, ok)
+					assert.Equal(t, "resource.name-val", attrVal.Str())
+				case "newrelicoracledb.connection.session_cpu_usage":
+					assert.False(t, validatedMetrics["newrelicoracledb.connection.session_cpu_usage"], "Found a duplicate in the metrics slice: newrelicoracledb.connection.session_cpu_usage")
+					validatedMetrics["newrelicoracledb.connection.session_cpu_usage"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "CPU usage by session in seconds", ms.At(i).Description())
+					assert.Equal(t, "s", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					attrVal, ok := dp.Attributes().Get("newrelic.entity_name")
+					assert.True(t, ok)
+					assert.Equal(t, "newrelic.entity_name-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("session.id")
+					assert.True(t, ok)
+					assert.Equal(t, "session.id-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("username")
+					assert.True(t, ok)
+					assert.Equal(t, "username-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("session.status")
+					assert.True(t, ok)
+					assert.Equal(t, "session.status-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("program")
+					assert.True(t, ok)
+					assert.Equal(t, "program-val", attrVal.Str())
+				case "newrelicoracledb.connection.session_idle_time":
+					assert.False(t, validatedMetrics["newrelicoracledb.connection.session_idle_time"], "Found a duplicate in the metrics slice: newrelicoracledb.connection.session_idle_time")
+					validatedMetrics["newrelicoracledb.connection.session_idle_time"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Session idle time in seconds", ms.At(i).Description())
+					assert.Equal(t, "s", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					attrVal, ok := dp.Attributes().Get("newrelic.entity_name")
+					assert.True(t, ok)
+					assert.Equal(t, "newrelic.entity_name-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("session.id")
+					assert.True(t, ok)
+					assert.Equal(t, "session.id-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("username")
+					assert.True(t, ok)
+					assert.Equal(t, "username-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("session.status")
+					assert.True(t, ok)
+					assert.Equal(t, "session.status-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("program")
+					assert.True(t, ok)
+					assert.Equal(t, "program-val", attrVal.Str())
+				case "newrelicoracledb.connection.session_logical_reads":
+					assert.False(t, validatedMetrics["newrelicoracledb.connection.session_logical_reads"], "Found a duplicate in the metrics slice: newrelicoracledb.connection.session_logical_reads")
+					validatedMetrics["newrelicoracledb.connection.session_logical_reads"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Logical reads by session", ms.At(i).Description())
+					assert.Equal(t, "{reads}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					attrVal, ok := dp.Attributes().Get("newrelic.entity_name")
+					assert.True(t, ok)
+					assert.Equal(t, "newrelic.entity_name-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("session.id")
+					assert.True(t, ok)
+					assert.Equal(t, "session.id-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("username")
+					assert.True(t, ok)
+					assert.Equal(t, "username-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("session.status")
+					assert.True(t, ok)
+					assert.Equal(t, "session.status-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("program")
+					assert.True(t, ok)
+					assert.Equal(t, "program-val", attrVal.Str())
+				case "newrelicoracledb.connection.session_pga_memory":
+					assert.False(t, validatedMetrics["newrelicoracledb.connection.session_pga_memory"], "Found a duplicate in the metrics slice: newrelicoracledb.connection.session_pga_memory")
+					validatedMetrics["newrelicoracledb.connection.session_pga_memory"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "PGA memory usage by session", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					attrVal, ok := dp.Attributes().Get("newrelic.entity_name")
+					assert.True(t, ok)
+					assert.Equal(t, "newrelic.entity_name-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("session.id")
+					assert.True(t, ok)
+					assert.Equal(t, "session.id-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("username")
+					assert.True(t, ok)
+					assert.Equal(t, "username-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("session.status")
+					assert.True(t, ok)
+					assert.Equal(t, "session.status-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("program")
+					assert.True(t, ok)
+					assert.Equal(t, "program-val", attrVal.Str())
+				case "newrelicoracledb.connection.sessions_by_status":
+					assert.False(t, validatedMetrics["newrelicoracledb.connection.sessions_by_status"], "Found a duplicate in the metrics slice: newrelicoracledb.connection.sessions_by_status")
+					validatedMetrics["newrelicoracledb.connection.sessions_by_status"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of sessions grouped by status", ms.At(i).Description())
+					assert.Equal(t, "{sessions}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					attrVal, ok := dp.Attributes().Get("newrelic.entity_name")
+					assert.True(t, ok)
+					assert.Equal(t, "newrelic.entity_name-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("session.status")
+					assert.True(t, ok)
+					assert.Equal(t, "session.status-val", attrVal.Str())
+				case "newrelicoracledb.connection.sessions_by_type":
+					assert.False(t, validatedMetrics["newrelicoracledb.connection.sessions_by_type"], "Found a duplicate in the metrics slice: newrelicoracledb.connection.sessions_by_type")
+					validatedMetrics["newrelicoracledb.connection.sessions_by_type"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of sessions grouped by type", ms.At(i).Description())
+					assert.Equal(t, "{sessions}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					attrVal, ok := dp.Attributes().Get("newrelic.entity_name")
+					assert.True(t, ok)
+					assert.Equal(t, "newrelic.entity_name-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("session.type")
+					assert.True(t, ok)
+					assert.Equal(t, "session.type-val", attrVal.Str())
+				case "newrelicoracledb.connection.shared_servers":
+					assert.False(t, validatedMetrics["newrelicoracledb.connection.shared_servers"], "Found a duplicate in the metrics slice: newrelicoracledb.connection.shared_servers")
+					validatedMetrics["newrelicoracledb.connection.shared_servers"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of shared servers", ms.At(i).Description())
+					assert.Equal(t, "{servers}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					attrVal, ok := dp.Attributes().Get("newrelic.entity_name")
+					assert.True(t, ok)
+					assert.Equal(t, "newrelic.entity_name-val", attrVal.Str())
+				case "newrelicoracledb.connection.sqlnet_roundtrips":
+					assert.False(t, validatedMetrics["newrelicoracledb.connection.sqlnet_roundtrips"], "Found a duplicate in the metrics slice: newrelicoracledb.connection.sqlnet_roundtrips")
+					validatedMetrics["newrelicoracledb.connection.sqlnet_roundtrips"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of SQL*Net roundtrips to/from client", ms.At(i).Description())
+					assert.Equal(t, "{roundtrips}", ms.At(i).Unit())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					attrVal, ok := dp.Attributes().Get("newrelic.entity_name")
+					assert.True(t, ok)
+					assert.Equal(t, "newrelic.entity_name-val", attrVal.Str())
+				case "newrelicoracledb.connection.total_sessions":
+					assert.False(t, validatedMetrics["newrelicoracledb.connection.total_sessions"], "Found a duplicate in the metrics slice: newrelicoracledb.connection.total_sessions")
+					validatedMetrics["newrelicoracledb.connection.total_sessions"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Total number of Oracle database sessions", ms.At(i).Description())
+					assert.Equal(t, "{sessions}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					attrVal, ok := dp.Attributes().Get("newrelic.entity_name")
+					assert.True(t, ok)
+					assert.Equal(t, "newrelic.entity_name-val", attrVal.Str())
+				case "newrelicoracledb.connection.user_commits":
+					assert.False(t, validatedMetrics["newrelicoracledb.connection.user_commits"], "Found a duplicate in the metrics slice: newrelicoracledb.connection.user_commits")
+					validatedMetrics["newrelicoracledb.connection.user_commits"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of user commits", ms.At(i).Description())
+					assert.Equal(t, "{commits}", ms.At(i).Unit())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					attrVal, ok := dp.Attributes().Get("newrelic.entity_name")
+					assert.True(t, ok)
+					assert.Equal(t, "newrelic.entity_name-val", attrVal.Str())
+				case "newrelicoracledb.connection.user_rollbacks":
+					assert.False(t, validatedMetrics["newrelicoracledb.connection.user_rollbacks"], "Found a duplicate in the metrics slice: newrelicoracledb.connection.user_rollbacks")
+					validatedMetrics["newrelicoracledb.connection.user_rollbacks"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of user rollbacks", ms.At(i).Description())
+					assert.Equal(t, "{rollbacks}", ms.At(i).Unit())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					attrVal, ok := dp.Attributes().Get("newrelic.entity_name")
+					assert.True(t, ok)
+					assert.Equal(t, "newrelic.entity_name-val", attrVal.Str())
+				case "newrelicoracledb.connection.wait_event_avg_wait_time":
+					assert.False(t, validatedMetrics["newrelicoracledb.connection.wait_event_avg_wait_time"], "Found a duplicate in the metrics slice: newrelicoracledb.connection.wait_event_avg_wait_time")
+					validatedMetrics["newrelicoracledb.connection.wait_event_avg_wait_time"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Average wait time for each wait event", ms.At(i).Description())
+					assert.Equal(t, "ms", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					attrVal, ok := dp.Attributes().Get("newrelic.entity_name")
+					assert.True(t, ok)
+					assert.Equal(t, "newrelic.entity_name-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("wait.event")
+					assert.True(t, ok)
+					assert.Equal(t, "wait.event-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("wait.class")
+					assert.True(t, ok)
+					assert.Equal(t, "wait.class-val", attrVal.Str())
+				case "newrelicoracledb.connection.wait_event_time_waited":
+					assert.False(t, validatedMetrics["newrelicoracledb.connection.wait_event_time_waited"], "Found a duplicate in the metrics slice: newrelicoracledb.connection.wait_event_time_waited")
+					validatedMetrics["newrelicoracledb.connection.wait_event_time_waited"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Total time waited for each wait event", ms.At(i).Description())
+					assert.Equal(t, "ms", ms.At(i).Unit())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					attrVal, ok := dp.Attributes().Get("newrelic.entity_name")
+					assert.True(t, ok)
+					assert.Equal(t, "newrelic.entity_name-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("wait.event")
+					assert.True(t, ok)
+					assert.Equal(t, "wait.event-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("wait.class")
+					assert.True(t, ok)
+					assert.Equal(t, "wait.class-val", attrVal.Str())
+				case "newrelicoracledb.connection.wait_event_total_waits":
+					assert.False(t, validatedMetrics["newrelicoracledb.connection.wait_event_total_waits"], "Found a duplicate in the metrics slice: newrelicoracledb.connection.wait_event_total_waits")
+					validatedMetrics["newrelicoracledb.connection.wait_event_total_waits"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Total number of waits for each wait event", ms.At(i).Description())
+					assert.Equal(t, "{waits}", ms.At(i).Unit())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					attrVal, ok := dp.Attributes().Get("newrelic.entity_name")
+					assert.True(t, ok)
+					assert.Equal(t, "newrelic.entity_name-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("wait.event")
+					assert.True(t, ok)
+					assert.Equal(t, "wait.event-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("wait.class")
+					assert.True(t, ok)
+					assert.Equal(t, "wait.class-val", attrVal.Str())
+				case "newrelicoracledb.connection.wait_events":
+					assert.False(t, validatedMetrics["newrelicoracledb.connection.wait_events"], "Found a duplicate in the metrics slice: newrelicoracledb.connection.wait_events")
+					validatedMetrics["newrelicoracledb.connection.wait_events"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Current wait events and wait time", ms.At(i).Description())
+					assert.Equal(t, "s", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					attrVal, ok := dp.Attributes().Get("newrelic.entity_name")
+					assert.True(t, ok)
+					assert.Equal(t, "newrelic.entity_name-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("session.id")
+					assert.True(t, ok)
+					assert.Equal(t, "session.id-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("username")
+					assert.True(t, ok)
+					assert.Equal(t, "username-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("wait.event")
+					assert.True(t, ok)
+					assert.Equal(t, "wait.event-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("wait.state")
+					assert.True(t, ok)
+					assert.Equal(t, "wait.state-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("wait.class")
+					assert.True(t, ok)
+					assert.Equal(t, "wait.class-val", attrVal.Str())
 				case "newrelicoracledb.db_id":
 					assert.False(t, validatedMetrics["newrelicoracledb.db_id"], "Found a duplicate in the metrics slice: newrelicoracledb.db_id")
 					validatedMetrics["newrelicoracledb.db_id"] = true

@@ -12,6 +12,463 @@ metrics:
     enabled: false
 ```
 
+### newrelicoracledb.connection.active_sessions
+
+Number of active Oracle database sessions
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {sessions} | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+
+### newrelicoracledb.connection.blocking_sessions
+
+Sessions blocked by other sessions
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| s | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+| session.id | Oracle session identifier (SID) | Any Str | false |
+| blocking.session.id | Oracle blocking session identifier | Any Str | false |
+| username | Oracle database username | Any Str | false |
+| wait.event | Oracle wait event name | Any Str | false |
+| program | Program or application name | Any Str | false |
+
+### newrelicoracledb.connection.bytes_received
+
+Bytes received via SQL*Net from client
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Double | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+
+### newrelicoracledb.connection.bytes_sent
+
+Bytes sent via SQL*Net to client
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Double | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+
+### newrelicoracledb.connection.circuits
+
+Number of active circuits
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {circuits} | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+
+### newrelicoracledb.connection.dispatchers
+
+Number of dispatchers
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {dispatchers} | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+
+### newrelicoracledb.connection.execute_count
+
+Number of SQL executions
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {executions} | Sum | Double | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+
+### newrelicoracledb.connection.inactive_sessions
+
+Number of inactive Oracle database sessions
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {sessions} | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+
+### newrelicoracledb.connection.logons_cumulative
+
+Cumulative number of logons since instance startup
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {logons} | Sum | Double | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+
+### newrelicoracledb.connection.logons_current
+
+Current number of active logons
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {logons} | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+
+### newrelicoracledb.connection.parse_count_hard
+
+Number of hard parse calls
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {parses} | Sum | Double | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+
+### newrelicoracledb.connection.parse_count_total
+
+Total number of parse calls
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {parses} | Sum | Double | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+
+### newrelicoracledb.connection.resource_current_utilization
+
+Current utilization of Oracle resources
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {resources} | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+| resource.name | Oracle resource name | Any Str | false |
+
+### newrelicoracledb.connection.resource_limit
+
+Limit value for Oracle resources
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {resources} | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+| resource.name | Oracle resource name | Any Str | false |
+
+### newrelicoracledb.connection.resource_max_utilization
+
+Maximum utilization of Oracle resources since startup
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {resources} | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+| resource.name | Oracle resource name | Any Str | false |
+
+### newrelicoracledb.connection.session_cpu_usage
+
+CPU usage by session in seconds
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| s | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+| session.id | Oracle session identifier (SID) | Any Str | false |
+| username | Oracle database username | Any Str | false |
+| session.status | Oracle session status (ACTIVE, INACTIVE, etc.) | Any Str | false |
+| program | Program or application name | Any Str | false |
+
+### newrelicoracledb.connection.session_idle_time
+
+Session idle time in seconds
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| s | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+| session.id | Oracle session identifier (SID) | Any Str | false |
+| username | Oracle database username | Any Str | false |
+| session.status | Oracle session status (ACTIVE, INACTIVE, etc.) | Any Str | false |
+| program | Program or application name | Any Str | false |
+
+### newrelicoracledb.connection.session_logical_reads
+
+Logical reads by session
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {reads} | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+| session.id | Oracle session identifier (SID) | Any Str | false |
+| username | Oracle database username | Any Str | false |
+| session.status | Oracle session status (ACTIVE, INACTIVE, etc.) | Any Str | false |
+| program | Program or application name | Any Str | false |
+
+### newrelicoracledb.connection.session_pga_memory
+
+PGA memory usage by session
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+| session.id | Oracle session identifier (SID) | Any Str | false |
+| username | Oracle database username | Any Str | false |
+| session.status | Oracle session status (ACTIVE, INACTIVE, etc.) | Any Str | false |
+| program | Program or application name | Any Str | false |
+
+### newrelicoracledb.connection.sessions_by_status
+
+Number of sessions grouped by status
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {sessions} | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+| session.status | Oracle session status (ACTIVE, INACTIVE, etc.) | Any Str | false |
+
+### newrelicoracledb.connection.sessions_by_type
+
+Number of sessions grouped by type
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {sessions} | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+| session.type | Oracle session type (USER, BACKGROUND, etc.) | Any Str | false |
+
+### newrelicoracledb.connection.shared_servers
+
+Number of shared servers
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {servers} | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+
+### newrelicoracledb.connection.sqlnet_roundtrips
+
+Number of SQL*Net roundtrips to/from client
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {roundtrips} | Sum | Double | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+
+### newrelicoracledb.connection.total_sessions
+
+Total number of Oracle database sessions
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {sessions} | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+
+### newrelicoracledb.connection.user_commits
+
+Number of user commits
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {commits} | Sum | Double | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+
+### newrelicoracledb.connection.user_rollbacks
+
+Number of user rollbacks
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {rollbacks} | Sum | Double | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+
+### newrelicoracledb.connection.wait_event_avg_wait_time
+
+Average wait time for each wait event
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| ms | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+| wait.event | Oracle wait event name | Any Str | false |
+| wait.class | Oracle wait event class | Any Str | false |
+
+### newrelicoracledb.connection.wait_event_time_waited
+
+Total time waited for each wait event
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| ms | Sum | Double | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+| wait.event | Oracle wait event name | Any Str | false |
+| wait.class | Oracle wait event class | Any Str | false |
+
+### newrelicoracledb.connection.wait_event_total_waits
+
+Total number of waits for each wait event
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {waits} | Sum | Double | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+| wait.event | Oracle wait event name | Any Str | false |
+| wait.class | Oracle wait event class | Any Str | false |
+
+### newrelicoracledb.connection.wait_events
+
+Current wait events and wait time
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| s | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+| session.id | Oracle session identifier (SID) | Any Str | false |
+| username | Oracle database username | Any Str | false |
+| wait.event | Oracle wait event name | Any Str | false |
+| wait.state | Oracle wait event state | Any Str | false |
+| wait.class | Oracle wait event class | Any Str | false |
+
 ### newrelicoracledb.db_id
 
 Oracle database ID information
