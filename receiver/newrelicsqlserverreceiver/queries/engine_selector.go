@@ -98,6 +98,8 @@ const (
 	InstanceQueries = iota
 	DatabaseQueries
 	PerformanceQueries
+	FailoverClusterQueries
+	DatabasePrincipalsQueries
 )
 
 // QueryDefinition represents a SQL query with metadata
@@ -376,6 +378,105 @@ var databaseQueriesAzureManagedInstance = []*QueryDefinition{
 	},
 }
 
+// Failover cluster query definitions for Default SQL Server
+var failoverClusterQueriesDefault = []*QueryDefinition{
+	{
+		Query:       FailoverClusterReplicaQuery,
+		MetricName:  "sqlserver.failover_cluster.replica_metrics",
+		Description: "Always On Availability Group replica performance metrics",
+	},
+	{
+		Query:       FailoverClusterReplicaStateQuery,
+		MetricName:  "sqlserver.failover_cluster.replica_state_metrics",
+		Description: "Always On Availability Group database replica state metrics",
+	},
+}
+
+// Failover cluster query definitions for Azure SQL Database
+var failoverClusterQueriesAzureManagedDatabase = []*QueryDefinition{
+	{
+		Query:       FailoverClusterReplicaQueryAzureSQL,
+		MetricName:  "sqlserver.failover_cluster.replica_metrics",
+		Description: "Always On Availability Group replica metrics (not applicable for Azure SQL Database)",
+	},
+	{
+		Query:       FailoverClusterReplicaStateQueryAzureSQL,
+		MetricName:  "sqlserver.failover_cluster.replica_state_metrics",
+		Description: "Always On Availability Group replica state metrics (not applicable for Azure SQL Database)",
+	},
+}
+
+// Failover cluster query definitions for Azure SQL Managed Instance
+var failoverClusterQueriesAzureManagedInstance = []*QueryDefinition{
+	{
+		Query:       FailoverClusterReplicaQueryAzureMI,
+		MetricName:  "sqlserver.failover_cluster.replica_metrics",
+		Description: "Always On Availability Group replica metrics (limited support for Azure SQL Managed Instance)",
+	},
+	{
+		Query:       FailoverClusterReplicaStateQueryAzureMI,
+		MetricName:  "sqlserver.failover_cluster.replica_state_metrics",
+		Description: "Always On Availability Group replica state metrics (Azure SQL Managed Instance)",
+	},
+}
+
+// Database principals query definitions for Standard SQL Server
+var databasePrincipalsQueriesDefault = []*QueryDefinition{
+	{
+		Query:       DatabasePrincipalsQuery,
+		MetricName:  "sqlserver.database.principals.details",
+		Description: "Database security principals information",
+	},
+	{
+		Query:       DatabasePrincipalsSummaryQuery,
+		MetricName:  "sqlserver.database.principals.summary",
+		Description: "Database principals summary statistics",
+	},
+	{
+		Query:       DatabasePrincipalActivityQuery,
+		MetricName:  "sqlserver.database.principals.activity",
+		Description: "Database principals activity and lifecycle metrics",
+	},
+}
+
+// Database principals query definitions for Azure SQL Database
+var databasePrincipalsQueriesAzureDatabase = []*QueryDefinition{
+	{
+		Query:       DatabasePrincipalsQueryAzureSQL,
+		MetricName:  "sqlserver.database.principals.details",
+		Description: "Database security principals information (Azure SQL Database)",
+	},
+	{
+		Query:       DatabasePrincipalsSummaryQueryAzureSQL,
+		MetricName:  "sqlserver.database.principals.summary",
+		Description: "Database principals summary statistics (Azure SQL Database)",
+	},
+	{
+		Query:       DatabasePrincipalActivityQueryAzureSQL,
+		MetricName:  "sqlserver.database.principals.activity",
+		Description: "Database principals activity and lifecycle metrics (Azure SQL Database)",
+	},
+}
+
+// Database principals query definitions for Azure SQL Managed Instance
+var databasePrincipalsQueriesAzureManagedInstance = []*QueryDefinition{
+	{
+		Query:       DatabasePrincipalsQueryAzureMI,
+		MetricName:  "sqlserver.database.principals.details",
+		Description: "Database security principals information (Azure SQL Managed Instance)",
+	},
+	{
+		Query:       DatabasePrincipalsSummaryQueryAzureMI,
+		MetricName:  "sqlserver.database.principals.summary",
+		Description: "Database principals summary statistics (Azure SQL Managed Instance)",
+	},
+	{
+		Query:       DatabasePrincipalActivityQueryAzureMI,
+		MetricName:  "sqlserver.database.principals.activity",
+		Description: "Database principals activity and lifecycle metrics (Azure SQL Managed Instance)",
+	},
+}
+
 // queryDefinitionSets maps query types to engine-specific query sets
 var queryDefinitionSets = map[QueryDefinitionType]EngineSet[[]*QueryDefinition]{
 	InstanceQueries: {
@@ -387,6 +488,16 @@ var queryDefinitionSets = map[QueryDefinitionType]EngineSet[[]*QueryDefinition]{
 		Default:                 databaseQueriesDefault,
 		AzureSQLDatabase:        databaseQueriesAzureManagedDatabase,
 		AzureSQLManagedInstance: databaseQueriesAzureManagedInstance,
+	},
+	FailoverClusterQueries: {
+		Default:                 failoverClusterQueriesDefault,
+		AzureSQLDatabase:        failoverClusterQueriesAzureManagedDatabase,
+		AzureSQLManagedInstance: failoverClusterQueriesAzureManagedInstance,
+	},
+	DatabasePrincipalsQueries: {
+		Default:                 databasePrincipalsQueriesDefault,
+		AzureSQLDatabase:        databasePrincipalsQueriesAzureDatabase,
+		AzureSQLManagedInstance: databasePrincipalsQueriesAzureManagedInstance,
 	},
 }
 

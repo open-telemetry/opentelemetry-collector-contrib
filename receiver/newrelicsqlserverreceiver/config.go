@@ -40,17 +40,22 @@ type Config struct {
 
 	// Performance and feature toggles
 	EnableDatabaseSampleMetrics  bool `mapstructure:"enable_database_sample_metrics"`
-	EnableBufferMetrics          bool `mapstructure:"enable_buffer_metrics"`
-	EnableDatabaseReserveMetrics bool `mapstructure:"enable_database_reserve_metrics"`
-	EnableDiskMetricsInBytes     bool `mapstructure:"enable_disk_metrics_in_bytes"`
-	EnableIOMetrics              bool `mapstructure:"enable_io_metrics"`
-	EnableLogGrowthMetrics       bool `mapstructure:"enable_log_growth_metrics"`
-	EnablePageFileMetrics        bool `mapstructure:"enable_page_file_metrics"`
-	EnablePageFileTotalMetrics   bool `mapstructure:"enable_page_file_total_metrics"`
-	EnableMemoryMetrics          bool `mapstructure:"enable_memory_metrics"`
-	EnableMemoryTotalMetrics     bool `mapstructure:"enable_memory_total_metrics"`
-	EnableMemoryAvailableMetrics bool `mapstructure:"enable_memory_available_metrics"`
-	EnableMemoryUtilizationMetrics bool `mapstructure:"enable_memory_utilization_metrics"`
+	EnableFailoverClusterMetrics bool `mapstructure:"enable_failover_cluster_metrics"`
+
+	// Database security metrics configuration
+	EnableDatabasePrincipalsMetrics     bool `mapstructure:"enable_database_principals_metrics"`
+	EnableDatabaseRoleMembershipMetrics bool `mapstructure:"enable_database_role_membership_metrics"`
+	EnableBufferMetrics                 bool `mapstructure:"enable_buffer_metrics"`
+	EnableDatabaseReserveMetrics        bool `mapstructure:"enable_database_reserve_metrics"`
+	EnableDiskMetricsInBytes            bool `mapstructure:"enable_disk_metrics_in_bytes"`
+	EnableIOMetrics                     bool `mapstructure:"enable_io_metrics"`
+	EnableLogGrowthMetrics              bool `mapstructure:"enable_log_growth_metrics"`
+	EnablePageFileMetrics               bool `mapstructure:"enable_page_file_metrics"`
+	EnablePageFileTotalMetrics          bool `mapstructure:"enable_page_file_total_metrics"`
+	EnableMemoryMetrics                 bool `mapstructure:"enable_memory_metrics"`
+	EnableMemoryTotalMetrics            bool `mapstructure:"enable_memory_total_metrics"`
+	EnableMemoryAvailableMetrics        bool `mapstructure:"enable_memory_available_metrics"`
+	EnableMemoryUtilizationMetrics      bool `mapstructure:"enable_memory_utilization_metrics"`
 
 	// Concurrency and timeouts
 	MaxConcurrentWorkers int           `mapstructure:"max_concurrent_workers"`
@@ -81,17 +86,22 @@ func DefaultConfig() component.Config {
 
 		// Default feature toggles (matching nri-mssql defaults)
 		EnableDatabaseSampleMetrics:  false, // Master toggle - when true, enables all database metrics
-		EnableBufferMetrics:          true,
-		EnableDatabaseReserveMetrics: true,
-		EnableDiskMetricsInBytes:     true,
-		EnableIOMetrics:              true,
-		EnableLogGrowthMetrics:       true,
-		EnablePageFileMetrics:        true,
-		EnablePageFileTotalMetrics:   true,
-		EnableMemoryMetrics:          true,
-		EnableMemoryTotalMetrics:     true,
-		EnableMemoryAvailableMetrics: true,
-		EnableMemoryUtilizationMetrics: true,
+		EnableFailoverClusterMetrics: false, // Failover cluster and Always On metrics
+
+		// Database security metrics defaults
+		EnableDatabasePrincipalsMetrics:     false, // Database principals and users information
+		EnableDatabaseRoleMembershipMetrics: false, // Database role membership and security hierarchy
+		EnableBufferMetrics:                 true,
+		EnableDatabaseReserveMetrics:        true,
+		EnableDiskMetricsInBytes:            true,
+		EnableIOMetrics:                     true,
+		EnableLogGrowthMetrics:              true,
+		EnablePageFileMetrics:               true,
+		EnablePageFileTotalMetrics:          true,
+		EnableMemoryMetrics:                 true,
+		EnableMemoryTotalMetrics:            true,
+		EnableMemoryAvailableMetrics:        true,
+		EnableMemoryUtilizationMetrics:      true,
 
 		// Default concurrency and timeout
 		MaxConcurrentWorkers: 10,
@@ -320,4 +330,19 @@ func (cfg *Config) IsMemoryAvailableMetricsEnabled() bool {
 // IsMemoryUtilizationMetricsEnabled checks if memory utilization metrics should be collected
 func (cfg *Config) IsMemoryUtilizationMetricsEnabled() bool {
 	return cfg.EnableDatabaseSampleMetrics || cfg.EnableMemoryUtilizationMetrics
+}
+
+// IsFailoverClusterMetricsEnabled checks if failover cluster metrics should be collected
+func (cfg *Config) IsFailoverClusterMetricsEnabled() bool {
+	return cfg.EnableFailoverClusterMetrics
+}
+
+// IsDatabasePrincipalsMetricsEnabled checks if database principals metrics should be collected
+func (cfg *Config) IsDatabasePrincipalsMetricsEnabled() bool {
+	return cfg.EnableDatabasePrincipalsMetrics
+}
+
+// IsDatabaseRoleMembershipMetricsEnabled checks if database role membership metrics should be collected
+func (cfg *Config) IsDatabaseRoleMembershipMetricsEnabled() bool {
+	return cfg.EnableDatabaseRoleMembershipMetrics
 }
