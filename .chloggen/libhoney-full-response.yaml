@@ -1,8 +1,0 @@
-change_type: bug_fix
-component: libhoneyreceiver
-note: return full array of statuses per event
-issues: [42272]
-subtext:
-  Libhoney has a per-event-within-each-batch response code array for each batch received.
-  This has now been implemented for both initial parsing errors as well as downstream consumer errors.
-change_logs: [user]
