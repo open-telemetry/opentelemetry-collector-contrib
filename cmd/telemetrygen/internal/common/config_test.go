@@ -97,6 +97,14 @@ func TestKeyValueSet(t *testing.T) {
 			expected: KeyValue(map[string]any{"key": []bool{true}}),
 		},
 		{
+			flag:     "key=[\"value1\",\"value-with,comma\"]",
+			expected: KeyValue(map[string]any{"key": []string{"value1", "value-with,comma"}}),
+		},
+		{
+			flag:     "key=[2,3,,1]",
+			expected: KeyValue(map[string]any{"key": []int{2, 3, 1}}),
+		},
+		{
 			flag: "key=12.34",
 			err:  errDoubleQuotesOTLPAttributes,
 		},

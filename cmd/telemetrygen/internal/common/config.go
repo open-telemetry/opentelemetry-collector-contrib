@@ -52,13 +52,33 @@ func parseValue(val string) (any, error) {
 	return val[1 : len(val)-1], nil
 }
 
-// splitItems splits the content into a list of items separated by commas
+// splitItems splits the pre-trimmed content into a list of items separated by commas, respecting quotes
 func splitItems(content string) []string {
 	var items []string
-	for item := range strings.SplitSeq(content, ",") {
-		if i := strings.TrimSpace(item); i != "" {
-			items = append(items, i)
+	var current strings.Builder
+	inQuotes := false
+
+	for _, char := range content {
+		switch char {
+		case '"':
+			inQuotes = !inQuotes
+			current.WriteRune(char)
+		case ',':
+			if !inQuotes {
+				if item := strings.TrimSpace(current.String()); item != "" {
+					items = append(items, item)
+				}
+				current.Reset()
+			} else {
+				current.WriteRune(char)
+			}
+		default:
+			current.WriteRune(char)
 		}
+	}
+	// Add the last item
+	if item := strings.TrimSpace(current.String()); item != "" {
+		items = append(items, item)
 	}
 	return items
 }
