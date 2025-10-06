@@ -937,7 +937,7 @@ func TestConvertExponentialHistogramInvalidScale(t *testing.T) {
 	c := newCollector(&Config{}, zap.NewNop())
 	_, err := c.convertExponentialHistogram(metric, pcommon.NewMap(), "", "", "", pcommon.NewMap())
 	require.Error(t, err)
-	require.True(t, strings.Contains(err.Error(), "scale must be >= -4"))
+	require.Contains(t, err.Error(), "scale must be >= -4")
 }
 
 func TestAccumulateSummary(t *testing.T) {

@@ -91,7 +91,7 @@ func (a *lastValueAccumulator) addMetric(metric pmetric.Metric, scopeName, scope
 	case pmetric.MetricTypeSummary:
 		return a.accumulateSummary(metric, scopeName, scopeVersion, scopeSchemaURL, scopeAttributes, resourceAttrs, now)
 	case pmetric.MetricTypeExponentialHistogram:
-		return a.accumulateNativeHistogram(metric, scopeName, scopeVersion, scopeSchemaURL, scopeAttributes, resourceAttrs, now)
+		return a.accumulateExponentialHistogram(metric, scopeName, scopeVersion, scopeSchemaURL, scopeAttributes, resourceAttrs, now)
 	default:
 		a.logger.With(
 			zap.String("data_type", metric.Type().String()),
@@ -299,19 +299,15 @@ func (a *lastValueAccumulator) accumulateHistogram(metric pmetric.Metric, scopeN
 	return n
 }
 
-func (a *lastValueAccumulator) accumulateNativeHistogram(metric pmetric.Metric, scopeName, scopeVersion, scopeSchemaURL string, scopeAttributes, resourceAttrs pcommon.Map, now time.Time) (n int) {
-	nativeHistogram := metric.ExponentialHistogram()
+func (a *lastValueAccumulator) accumulateExponentialHistogram(metric pmetric.Metric, scopeName, scopeVersion, scopeSchemaURL string, scopeAttributes, resourceAttrs pcommon.Map, now time.Time) (n int) {
+	expHistogram := metric.ExponentialHistogram()
 	a.logger.Debug("Accumulate native histogram.....")
-	dps := nativeHistogram.DataPoints()
+	dps := expHistogram.DataPoints()
 
 	for i := 0; i < dps.Len(); i++ {
 		ip := dps.At(i)
-		a.logger.Debug("Native histogram datapoint: ", zap.Any("native histogram datapoint", ip))
 		signature := timeseriesSignature(scopeName, scopeVersion, scopeSchemaURL, scopeAttributes, metric, ip.Attributes(), resourceAttrs) // uniquely identify this time series you are accumulating for
-		a.logger.Debug("Native histogram datapoint signature: ", zap.Any("signature", signature))
-		flags := ip.Flags()
-		a.logger.Debug("Native histogram datapoint flags: ", zap.Any("flags", flags))
-		if flags.NoRecordedValue() {
+		if ip.Flags().NoRecordedValue() {
 			a.registeredMetrics.Delete(signature)
 			return 0
 		}
@@ -320,22 +316,18 @@ func (a *lastValueAccumulator) accumulateNativeHistogram(metric pmetric.Metric, 
 		if !ok {
 			// first data point
 			m := copyMetricMetadata(metric)
-			a.logger.Debug("Native histogram datapoint metric metadata: ", zap.Any("metric", m))
 			ip.CopyTo(m.SetEmptyExponentialHistogram().DataPoints().AppendEmpty())
 			m.ExponentialHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-			a.logger.Debug("Native histogram datapoint metric metadata: ", zap.Any("metric", m))
 			a.registeredMetrics.Store(signature, &accumulatedValue{value: m, resourceAttrs: resourceAttrs, scopeName: scopeName, scopeVersion: scopeVersion, scopeSchemaURL: scopeSchemaURL, scopeAttributes: scopeAttributes, updated: now})
-			a.logger.Debug("Native histogram registered: ", zap.Any("scopeName", scopeName), zap.Any("scopeVersion", scopeVersion), zap.Any("scopeSchemaURL", scopeSchemaURL), zap.Any("scopeAttributes", scopeAttributes), zap.Any("resourceAttrs", resourceAttrs))
 			n++
 			continue
 		}
 		mv := v.(*accumulatedValue)
-		a.logger.Debug("Native histogram datapoint accumulated valud: ", zap.Any("mv", mv))
 
 		m := copyMetricMetadata(metric)
 		m.SetEmptyExponentialHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 
-		switch nativeHistogram.AggregationTemporality() {
+		switch expHistogram.AggregationTemporality() {
 		case pmetric.AggregationTemporalityDelta:
 			pp := mv.value.ExponentialHistogram().DataPoints().At(0) // previous aggregated value for time range
 			if ip.StartTimestamp().AsTime() != pp.Timestamp().AsTime() {
@@ -352,11 +344,11 @@ func (a *lastValueAccumulator) accumulateNativeHistogram(metric pmetric.Metric, 
 					).Warn("Dropped misaligned histogram datapoint")
 					continue
 				}
-				a.logger.Debug("treating it like reset")
+				a.logger.Debug("Treating it like reset")
 				ip.CopyTo(m.ExponentialHistogram().DataPoints().AppendEmpty())
 			} else {
 				a.logger.Debug("Accumulate another histogram datapoint")
-				accumulateNativeHistogramValues(pp, ip, m.ExponentialHistogram().DataPoints().AppendEmpty())
+				accumulateExponentialHistogramValues(pp, ip, m.ExponentialHistogram().DataPoints().AppendEmpty())
 			}
 		case pmetric.AggregationTemporalityCumulative:
 			if ip.Timestamp().AsTime().Before(mv.value.ExponentialHistogram().DataPoints().At(0).Timestamp().AsTime()) {
@@ -487,7 +479,7 @@ func accumulateHistogramValues(prev, current, dest pmetric.HistogramDataPoint) {
 	dest.ExplicitBounds().FromRaw(newer.ExplicitBounds().AsRaw())
 }
 
-func accumulateNativeHistogramValues(prev, current, dest pmetric.ExponentialHistogramDataPoint) {
+func accumulateExponentialHistogramValues(prev, current, dest pmetric.ExponentialHistogramDataPoint) {
 	older := prev
 	newer := current
 	if current.Timestamp().AsTime().Before(prev.Timestamp().AsTime()) {
