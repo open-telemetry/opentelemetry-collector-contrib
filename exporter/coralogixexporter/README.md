@@ -93,33 +93,20 @@ exporters:
     domain: "coralogix.com"
 ```
 
-### Coralogix's Domain 
+### Coralogix's Domain
 
-Depending on your region, you might need to use a different domain. Here are the available domains:
+Depending on your region and, you might need to use a different domain. For an up-to-date list of domains, please refer to [the official Coralogix's Domain documentation](https://coralogix.com/docs/user-guides/account-management/account-settings/coralogix-domain/#domains).
 
-| Region  | Domain                  |
-|---------|-------------------------|
-| USA1    | `coralogix.us`          |
-| USA2    | `cx498.coralogix.com`   |
-| APAC1   | `coralogix.in`          |
-| APAC2   | `coralogixsg.com`       |
-| APAC3   | `ap3.coralogix.com`     |
-| EUROPE1 | `coralogix.com`         |
-| EUROPE2 | `eu2.coralogix.com`     |
+Additionally, Coralogix supports AWS PrivateLink, which provides private connectivity between virtual private clouds (VPCs), supported AWS services, and your on-premises networks without exposing your traffic to the public internet. For an up-to-date list of AWS PrivateLink domains, please refer to [Coralogix's official AWS PrivateLink documentation](https://coralogix.com/docs/integrations/aws/aws-privatelink/aws-privatelink/#privatelink-endpoints).
 
-Additionally, Coralogix supports AWS PrivateLink, which provides private connectivity between virtual private clouds (VPCs), supported AWS services, and your on-premises networks without exposing your traffic to the public internet.
+To automatically use the PrivateLink endpoint that corresponds to the configured domain, you can set the `private_link` configuration field to `true`. For example:
 
-Here are available AWS PrivateLink domains:
-
-| Region  | Domain                                              |
-|---------|-----------------------------------------------------|
-| USA1    | `private.us1.coralogix.com`                             |
-| USA2    | `private.us2.coralogix.com` |
-| APAC1   | `private.coralogix.in`                              |
-| APAC2   | `private.coralogixsg.com`                           |
-| EUROPE1 | `private.coralogix.com`                             |
-| EUROPE2 | `private.eu2.coralogix.com`                         |
-Learn more about [AWS PrivateLink in the documentation page](https://coralogix.com/docs/coralogix-amazon-web-services-aws-privatelink-endpoints/).
+```yaml
+exporters:
+  coralogix:
+    domain: "eu2.coralogix.com"
+    private_link: true
+```
 
 ### Application and SubSystem attributes
 
