@@ -147,21 +147,6 @@ func verifyOtelStatusCode(tb testing.TB, input pmetric.Metrics) bool {
 	for i := 0; i < input.ResourceMetrics().Len(); i++ {
 		rm := input.ResourceMetrics().At(i)
 
-		var expectedStatusCode string
-		val, ok := rm.Resource().Attributes().Get(serviceNameKey)
-		require.True(tb, ok)
-		serviceName := val.AsString()
-		switch serviceName {
-		case "service-a":
-			expectedStatusCode = "OK"
-		case "service-b":
-			expectedStatusCode = "ERROR"
-		case "service-c":
-			expectedStatusCode = ""
-		default:
-			require.Fail(tb, fmt.Sprintf("Unexpected service name: %s", serviceName))
-		}
-
 		ilm := rm.ScopeMetrics()
 		require.Equal(tb, 1, ilm.Len())
 		assert.Equal(tb, "spanmetricsconnector", ilm.At(0).Scope().Name())
@@ -175,8 +160,29 @@ func verifyOtelStatusCode(tb testing.TB, input pmetric.Metrics) bool {
 		seenMetricIDs := make(map[metricID]bool)
 
 		dataPoints := metric.Sum().DataPoints()
+		var expectedStatusCode string
+		var serviceName string
+
 		for dpi := 0; dpi < dataPoints.Len(); dpi++ {
 			dp := dataPoints.At(dpi)
+
+			val, ok := dp.Attributes().Get(serviceNameKey)
+			require.True(tb, ok)
+			if serviceName == "" {
+				serviceName = val.AsString()
+				switch serviceName {
+				case "service-a":
+					expectedStatusCode = "OK"
+				case "service-b":
+					expectedStatusCode = "ERROR"
+				case "service-c":
+					expectedStatusCode = ""
+				default:
+					require.Fail(tb, fmt.Sprintf("Unexpected service name: %s", serviceName))
+				}
+			}
+			require.Equal(tb, serviceName, val.AsString())
+
 			statusCode, ok := dp.Attributes().Get(otelStatusCodeKey)
 			if expectedStatusCode == "" {
 				require.False(tb, ok)
