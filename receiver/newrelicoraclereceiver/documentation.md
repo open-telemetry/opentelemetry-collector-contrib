@@ -12,6 +12,51 @@ metrics:
     enabled: false
 ```
 
+### newrelicoracledb.asm.diskgroup.free_mb
+
+Available free space in the ASM disk group in MB
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| MB | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+| diskgroup.name | ASM disk group name | Any Str | false |
+
+### newrelicoracledb.asm.diskgroup.offline_disks
+
+Number of offline disks in the ASM disk group
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {disks} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+| diskgroup.name | ASM disk group name | Any Str | false |
+
+### newrelicoracledb.asm.diskgroup.total_mb
+
+Total capacity of the ASM disk group in MB
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| MB | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+| diskgroup.name | ASM disk group name | Any Str | false |
+
 ### newrelicoracledb.connection.active_sessions
 
 Number of active Oracle database sessions
@@ -1460,6 +1505,280 @@ Database wait time ratio in PDB
 | ---- | ----------- | ------ | -------- |
 | newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
 | instance.id | Oracle database instance ID | Any Str | false |
+
+### newrelicoracledb.rac.instance.active_state
+
+Instance active state indicator (1=NORMAL, 0=other)
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+| instance.id | Oracle database instance ID | Any Str | false |
+| rac.instance.name | Oracle RAC instance name | Any Str | false |
+| host.name.rac | Oracle RAC host name | Any Str | false |
+| active.state | Oracle instance active state (NORMAL, QUIESCING, etc.) | Any Str | false |
+
+### newrelicoracledb.rac.instance.archiver_started
+
+Archiver status indicator (1=STARTED, 0=STOPPED)
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+| instance.id | Oracle database instance ID | Any Str | false |
+| rac.instance.name | Oracle RAC instance name | Any Str | false |
+| host.name.rac | Oracle RAC host name | Any Str | false |
+| archiver.status | Oracle archiver status (STARTED, STOPPED) | Any Str | false |
+
+### newrelicoracledb.rac.instance.database_status
+
+Database status indicator (1=ACTIVE, 0=other)
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+| instance.id | Oracle database instance ID | Any Str | false |
+| rac.instance.name | Oracle RAC instance name | Any Str | false |
+| host.name.rac | Oracle RAC host name | Any Str | false |
+| database.status | Oracle database status (ACTIVE, SUSPENDED, etc.) | Any Str | false |
+
+### newrelicoracledb.rac.instance.logins_allowed
+
+Instance login status indicator (1=ALLOWED, 0=RESTRICTED)
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+| instance.id | Oracle database instance ID | Any Str | false |
+| rac.instance.name | Oracle RAC instance name | Any Str | false |
+| host.name.rac | Oracle RAC host name | Any Str | false |
+| logins.status | Oracle instance login status (ALLOWED, RESTRICTED) | Any Str | false |
+
+### newrelicoracledb.rac.instance.status
+
+RAC instance status (1=OPEN, 0=other)
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+| instance.id | Oracle database instance ID | Any Str | false |
+| rac.instance.name | Oracle RAC instance name | Any Str | false |
+| host.name.rac | Oracle RAC host name | Any Str | false |
+| instance.status | Oracle RAC instance status | Any Str | false |
+
+### newrelicoracledb.rac.instance.uptime_seconds
+
+Instance uptime in seconds since startup
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+| instance.id | Oracle database instance ID | Any Str | false |
+| rac.instance.name | Oracle RAC instance name | Any Str | false |
+| host.name.rac | Oracle RAC host name | Any Str | false |
+
+### newrelicoracledb.rac.instance.version_info
+
+Oracle database version information (always 1, version in attributes)
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+| instance.id | Oracle database instance ID | Any Str | false |
+| rac.instance.name | Oracle RAC instance name | Any Str | false |
+| host.name.rac | Oracle RAC host name | Any Str | false |
+| oracle.version | Oracle database version | Any Str | false |
+
+### newrelicoracledb.rac.service.clb_config
+
+Connection load balancing configuration (always 1, config in attributes)
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+| service.name | Oracle database service name | Any Str | false |
+| instance.id | Oracle database instance ID | Any Str | false |
+| clb.goal | Oracle service connection load balancing goal | Any Str | false |
+
+### newrelicoracledb.rac.service.creation_age_days
+
+Service age in days since creation
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| d | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+| service.name | Oracle database service name | Any Str | false |
+| instance.id | Oracle database instance ID | Any Str | false |
+
+### newrelicoracledb.rac.service.failover_config
+
+Service failover configuration indicator (always 1, config in attributes)
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+| service.name | Oracle database service name | Any Str | false |
+| instance.id | Oracle database instance ID | Any Str | false |
+| failover.method | Oracle service failover method | Any Str | false |
+| failover.type | Oracle service failover type | Any Str | false |
+| service.goal | Oracle service goal (THROUGHPUT, SERVICE_TIME, etc.) | Any Str | false |
+
+### newrelicoracledb.rac.service.failover_delay_seconds
+
+Failover delay in seconds configured for the service
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+| service.name | Oracle database service name | Any Str | false |
+| instance.id | Oracle database instance ID | Any Str | false |
+
+### newrelicoracledb.rac.service.failover_retries
+
+Number of failover retries configured for the service
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {retries} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+| service.name | Oracle database service name | Any Str | false |
+| instance.id | Oracle database instance ID | Any Str | false |
+
+### newrelicoracledb.rac.service.instance_id
+
+Instance ID where the service is currently running
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+| service.name | Oracle database service name | Any Str | false |
+| instance.id | Oracle database instance ID | Any Str | false |
+
+### newrelicoracledb.rac.service.network_config
+
+Service network configuration (always 1, config in attributes)
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+| service.name | Oracle database service name | Any Str | false |
+| instance.id | Oracle database instance ID | Any Str | false |
+| network.name | Oracle service network name | Any Str | false |
+
+### newrelicoracledb.rac.total_waits
+
+Total number of cluster wait events
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {waits} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+| instance.id | Oracle database instance ID | Any Str | false |
+| wait.event | Oracle wait event name | Any Str | false |
+
+### newrelicoracledb.rac.wait_time
+
+Rate of cluster wait time in microseconds per second
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| us/s | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| newrelic.entity_name | New Relic entity name for the metric | Any Str | false |
+| instance.id | Oracle database instance ID | Any Str | false |
+| wait.event | Oracle wait event name | Any Str | false |
 
 ### newrelicoracledb.redo_log_parallel_write_waits
 
