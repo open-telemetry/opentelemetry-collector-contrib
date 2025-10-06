@@ -20,7 +20,24 @@ The `sqlserver` receiver grabs metrics/logs about a Microsoft SQL Server instanc
 Windows Performance Counters, or by directly connecting to the instance and querying it. Windows Performance Counters
 are only available when running on Windows.
 
-Make sure to run the collector as administrator in order to collect all performance counters for metrics. 
+## Required Permissions
+
+### Windows Performance Counters
+
+Make sure to run the collector as administrator in order to collect all performance counters for metrics.
+
+### Direct Connection
+
+When configured to directly connect to the SQL Server instance, the user must have the following permissions:
+
+1. At least one of the following permissions:
+- `CREATE DATABASE`
+- `ALTER ANY DATABASE`
+- `VIEW ANY DATABASE`
+
+2. Permission to view server state:
+   - SQL Server pre-2022: `VIEW SERVER STATE`
+   - SQL Server 2022 and later: `VIEW SERVER PERFORMANCE STATE`
 
 ## Configuration
 
