@@ -54,6 +54,8 @@ type APIConfig struct {
 	// FailOnInvalidKey states whether to exit at startup on invalid API key.
 	// The default value is false.
 	FailOnInvalidKey bool `mapstructure:"fail_on_invalid_key"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // TagsConfig defines the tag-related configuration
@@ -66,6 +68,8 @@ type TagsConfig struct {
 	// Prefer using the `datadog.host.name` resource attribute over using this setting.
 	// See https://docs.datadoghq.com/opentelemetry/schema_semantics/hostname/?tab=datadogexporter#general-hostname-semantic-conventions for details.
 	Hostname string `mapstructure:"hostname"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // Config defines configuration for the Datadog exporter.
