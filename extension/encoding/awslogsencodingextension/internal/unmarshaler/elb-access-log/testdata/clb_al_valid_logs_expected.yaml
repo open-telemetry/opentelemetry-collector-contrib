@@ -46,6 +46,9 @@ resourceLogs:
               - key: aws.elb.backend.status.code
                 value:
                   intValue: "200"
+              - key: user_agent.original
+                value:
+                  stringValue: curl/7.38.0
             body: {}
             timeUnixNano: "1431560383945958000"
         scope:

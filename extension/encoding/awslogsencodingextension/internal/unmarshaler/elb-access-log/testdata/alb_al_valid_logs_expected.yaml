@@ -43,6 +43,12 @@ resourceLogs:
               - key: tls.cipher
                 value:
                   stringValue: ECDHE-RSA-AES128-GCM-SHA256
+              - key: user_agent.original
+                value:
+                  stringValue: curl/7.46.0
+              - key: url.domain
+                value:
+                  stringValue: www.example.com
             body: {}
             timeUnixNano: "1530570180186641000"
         scope:

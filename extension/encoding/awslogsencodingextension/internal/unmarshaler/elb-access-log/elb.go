@@ -121,7 +121,8 @@ type NLBAccessLogRecord struct {
 	Listener                  string // Resource ID of the TLS listener for the connection
 	ClientIP                  string // Client IP
 	ClientPort                int64  // Client  port
-	DestinationIPPort         string // The destination IP and port of the target
+	DestinationIP             string // Destination IP
+	DestinationPort           int64  // Destination port
 	ConnectionTime            int64  // Total time for the connection to complete, in milliseconds
 	TLSHandshakeTime          int64  // Time for the TLS handshake to complete, in milliseconds, or -
 	ReceivedBytes             int64  // Count of bytes received by the load balancer from the client, after decryption
@@ -156,7 +157,6 @@ func convertTextToNLBAccessLogRecord(fields []string) (NLBAccessLogRecord, error
 		Time:                      fields[2],  // Timestamp
 		ELB:                       fields[3],  // Load balancer resource ID
 		Listener:                  fields[4],  // Listener ID
-		DestinationIPPort:         fields[6],  // Destination IP and port
 		TLSHandshakeTime:          0,          // TLSHandshakeTime placeholder value
 		IncomingTLSAlert:          fields[11], // Incoming TLS alert
 		ChosenCertARN:             fields[12], // Chosen certificate ARN
@@ -175,6 +175,11 @@ func convertTextToNLBAccessLogRecord(fields []string) (NLBAccessLogRecord, error
 	record.ClientIP = strings.Split(fields[5], ":")[0]
 	if record.ClientPort, err = safeConvertStrToInt(strings.Split(fields[5], ":")[1]); err != nil {
 		return record, fmt.Errorf("could not convert client port to integer: %w", err)
+	}
+
+	record.DestinationIP = strings.Split(fields[6], ":")[0]
+	if record.DestinationPort, err = safeConvertStrToInt(strings.Split(fields[6], ":")[1]); err != nil {
+		return record, fmt.Errorf("could not convert destination port to integer: %w", err)
 	}
 
 	if record.ConnectionTime, err = safeConvertStrToInt(fields[7]); err != nil {
