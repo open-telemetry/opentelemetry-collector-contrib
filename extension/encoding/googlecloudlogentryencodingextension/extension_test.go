@@ -156,6 +156,46 @@ func TestPayloads(t *testing.T) {
 			logFilename:      "testdata/auditlog/system_event.json",
 			expectedFilename: "testdata/auditlog/system_event_expected.yaml",
 		},
+		{
+			name:             "vpc flow log - 0 bytes sent",
+			logFilename:      "testdata/vpc-flow-log/vpc-flow-log-0-bytes-sent.json",
+			expectedFilename: "testdata/vpc-flow-log/vpc-flow-log-0-bytes-sent_expected.yaml",
+		},
+		{
+			name:             "vpc flow log - 19kb sent",
+			logFilename:      "testdata/vpc-flow-log/vpc-flow-log-19kb-sent.json",
+			expectedFilename: "testdata/vpc-flow-log/vpc-flow-log-19kb-sent_expected.yaml",
+		},
+		{
+			name:             "vpc flow log - 800 bytes sent",
+			logFilename:      "testdata/vpc-flow-log/vpc-flow-log-800-bytes-sent.json",
+			expectedFilename: "testdata/vpc-flow-log/vpc-flow-log-800-bytes-sent_expected.yaml",
+		},
+		{
+			name:             "vpc flow log - from compute engine",
+			logFilename:      "testdata/vpc-flow-log/vpc-flow-log-from-computeengine.json",
+			expectedFilename: "testdata/vpc-flow-log/vpc-flow-log-from-computeengine_expected.yaml",
+		},
+		{
+			name:             "vpc flow log - from compute engine 2",
+			logFilename:      "testdata/vpc-flow-log/vpc-flow-log-from-computeengine-2.json",
+			expectedFilename: "testdata/vpc-flow-log/vpc-flow-log-from-computeengine-2_expected.yaml",
+		},
+		{
+			name:             "vpc flow log - from compute engine 3",
+			logFilename:      "testdata/vpc-flow-log/vpc-flow-log-from-computeengine-3.json",
+			expectedFilename: "testdata/vpc-flow-log/vpc-flow-log-from-computeengine-3_expected.yaml",
+		},
+		{
+			name:             "vpc flow log - with dest vpc",
+			logFilename:      "testdata/vpc-flow-log/vpc-flow-log-w-dest-vpc.json",
+			expectedFilename: "testdata/vpc-flow-log/vpc-flow-log-w-dest-vpc_expected.yaml",
+		},
+		{
+			name:             "vpc flow log - with internet routing details",
+			logFilename:      "testdata/vpc-flow-log/vpc-flow-log-w-internet-routing-details.json",
+			expectedFilename: "testdata/vpc-flow-log/vpc-flow-log-w-internet-routing-details_expected.yaml",
+		},
 	}
 
 	extension := newTestExtension(t, Config{})
