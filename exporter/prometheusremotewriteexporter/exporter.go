@@ -33,6 +33,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter/internal/metadata"
+	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite"
 )
 
@@ -305,7 +306,9 @@ func (prwe *prwExporter) PushMetrics(ctx context.Context, md pmetric.Metrics) er
 }
 
 func validateAndSanitizeExternalLabels(cfg *Config) (map[string]string, error) {
-	namer := otlptranslator.LabelNamer{}
+	namer := otlptranslator.LabelNamer{
+		UnderscoreLabelSanitization: !prometheustranslator.DropSanitizationGate.IsEnabled(),
+	}
 	sanitizedLabels := make(map[string]string)
 	for key, value := range cfg.ExternalLabels {
 		if key == "" || value == "" {
