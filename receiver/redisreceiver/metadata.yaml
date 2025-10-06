@@ -471,24 +471,24 @@ metrics:
     gauge:
       value_type: int
 
-  redis.cluster.size:
+  redis.cluster.node.count:
     enabled: false
     description: "Number of master nodes in the cluster"
-    unit: "{master}"
+    unit: "{node}"
     gauge:
       value_type: int
 
-  redis.cluster.current_epoch:
+  redis.cluster.uptime:
     enabled: false
     description: "Current epoch of the cluster"
-    unit: "{epoch}"
+    unit: "s"
     gauge:
       value_type: int
 
-  redis.cluster.my_epoch:
+  redis.cluster.node.uptime:
     enabled: false
     description: "The node's current epoch"
-    unit: "{epoch}"
+    unit: "s"
     gauge:
       value_type: int
 
@@ -513,7 +513,7 @@ metrics:
   redis.cluster.total_cluster_links_buffer_limit_exceeded:
     enabled: false
     description: "Total number of times the cluster links buffer limit was exceeded"
-    unit: "{exceed}"
+    unit: "{count}"
     sum:
       value_type: int
       monotonic: true
