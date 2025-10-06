@@ -15,12 +15,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
-	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 	"google.golang.org/api/googleapi"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/textencodingextension"
 )
 
 func TestNewStorageExporter(t *testing.T) {
@@ -105,11 +102,10 @@ func TestStart(t *testing.T) {
 
 	encodingSucceedsID := "id_success"
 	encodingFailsID := "id_fail"
-	encodingExt := newTextEncodingExtension(t)
 	mHost := &mockHost{
 		extensions: map[component.ID]component.Component{
 			component.MustNewID(encodingFailsID):    nil,
-			component.MustNewID(encodingSucceedsID): encodingExt,
+			component.MustNewID(encodingSucceedsID): &mockLogMarshaler{},
 		},
 	}
 
@@ -162,10 +158,9 @@ func TestUploadFile(t *testing.T) {
 	newTestStorageEmulator(t, bucketExistsName, uploadBucketName)
 
 	encodingSucceedsID := "id_success"
-	encodingExt := newTextEncodingExtension(t)
 	mHost := &mockHost{
 		extensions: map[component.ID]component.Component{
-			component.MustNewID(encodingSucceedsID): encodingExt,
+			component.MustNewID(encodingSucceedsID): &mockLogMarshaler{},
 		},
 	}
 	id := component.MustNewID(encodingSucceedsID)
@@ -194,10 +189,9 @@ func TestConsumeLogs(t *testing.T) {
 	newTestStorageEmulator(t, "", uploadBucketName)
 
 	encodingSucceedsID := "id_success"
-	encodingExt := newTextEncodingExtension(t)
 	mHost := &mockHost{
 		extensions: map[component.ID]component.Component{
-			component.MustNewID(encodingSucceedsID): encodingExt,
+			component.MustNewID(encodingSucceedsID): &mockLogMarshaler{},
 		},
 	}
 	id := component.MustNewID(encodingSucceedsID)
@@ -262,13 +256,12 @@ func (m *mockHost) GetExtensions() map[component.ID]component.Component {
 	return m.extensions
 }
 
-func newTextEncodingExtension(t *testing.T) extension.Extension {
-	f := textencodingextension.NewFactory()
-	ext, err := f.Create(
-		t.Context(),
-		extensiontest.NewNopSettings(component.MustNewType("text_encoding")),
-		f.CreateDefaultConfig(),
-	)
-	require.NoError(t, err)
-	return ext
+type mockLogMarshaler struct {
+	extension.Extension
 }
+
+func (*mockLogMarshaler) MarshalLogs(_ plog.Logs) ([]byte, error) {
+	return nil, nil
+}
+
+var _ plog.Marshaler = (*mockLogMarshaler)(nil)
