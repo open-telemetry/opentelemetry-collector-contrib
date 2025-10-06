@@ -213,6 +213,7 @@ body:
       - processor/resourcedetection/internal/hetzner
       - processor/resourcedetection/internal/oraclecloud
       - processor/resourcedetection/internal/scaleway
+      - processor/resourcedetection/internal/upcloud
       - processor/resourcedetection/internal/vultr
       - processor/schema
       - processor/span
