@@ -15,6 +15,8 @@ telemetry:
       description: Number of open files
       unit: "1"
       enabled: true
+      stability:
+        level: development
       sum:
         value_type: int
         monotonic: false
@@ -22,6 +24,8 @@ telemetry:
       description: Number of open files that are being read
       unit: "1"
       enabled: true
+      stability:
+        level: development
       sum:
         value_type: int
         monotonic: false

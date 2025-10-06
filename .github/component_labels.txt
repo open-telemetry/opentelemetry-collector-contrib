@@ -23,6 +23,7 @@ connector/spanmetricsconnector connector/spanmetrics
 connector/sumconnector connector/sum
 exporter/alertmanagerexporter exporter/alertmanager
 exporter/alibabacloudlogserviceexporter exporter/alibabacloudlogservice
+exporter/awscloudwatchlogsexporter exporter/awscloudwatchlogs
 exporter/awsemfexporter exporter/awsemf
 exporter/awskinesisexporter exporter/awskinesis
 exporter/awss3exporter exporter/awss3
@@ -42,6 +43,7 @@ exporter/faroexporter exporter/faro
 exporter/fileexporter exporter/file
 exporter/googlecloudexporter exporter/googlecloud
 exporter/googlecloudpubsubexporter exporter/googlecloudpubsub
+exporter/googlecloudstorageexporter exporter/googlecloudstorage
 exporter/googlemanagedprometheusexporter exporter/googlemanagedprometheus
 exporter/honeycombmarkerexporter exporter/honeycombmarker
 exporter/influxdbexporter exporter/influxdb
@@ -191,6 +193,7 @@ processor/resourcedetectionprocessor/internal/dynatrace processor/resourcedetect
 processor/resourcedetectionprocessor/internal/hetzner processor/resourcedetection/internal/hetzner
 processor/resourcedetectionprocessor/internal/oraclecloud processor/resourcedetection/internal/oraclecloud
 processor/resourcedetectionprocessor/internal/scaleway processor/resourcedetection/internal/scaleway
+processor/resourcedetectionprocessor/internal/upcloud processor/resourcedetection/internal/upcloud
 processor/resourcedetectionprocessor/internal/vultr processor/resourcedetection/internal/vultr
 processor/resourceprocessor processor/resource
 processor/schemaprocessor processor/schema
@@ -322,7 +325,6 @@ reports/distributions/core.yaml reports/distributions/core.yaml
 reports/distributions/contrib.yaml reports/distributions/contrib.yaml
 reports/distributions/k8s.yaml reports/distributions/k8s.yaml
 reports/distributions/otlp.yaml reports/distributions/otlp.yaml
-exporter/awscloudwatchlogsexporter exporter/awscloudwatchlogs
 exporter/carbonexporter exporter/carbon
 extension/healthcheckextension extension/healthcheck
 extension/observer/ecstaskobserver extension/observer/ecstaskobserver
