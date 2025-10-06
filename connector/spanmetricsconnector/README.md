@@ -136,7 +136,8 @@ The following settings can be optionally configured:
 - `events`: Use to configure the events metric.
   - `enabled`: (default: `false`): enabling will add the events metric.
   - `dimensions`: (mandatory if `enabled`) the list of the span's event attributes to add as dimensions to the `traces.span.metrics.events` metric, which will be included _on top of_ the common and configured `dimensions` for span attributes and resource attributes.
-- `resource_metrics_key_attributes`: Filter the resource attributes used to produce the resource metrics key map hash. Use this in case changing resource attributes (e.g. process id) are breaking counter metrics.
+- `resource_metrics_key_attributes`: Filter the resource attributes used to produce the resource metrics key map hash(It's only used to build the hash key, not copy the attributes to metrics resource attributes). 
+   Use this in case changing resource attributes (e.g. process id) are breaking counter metrics.
 - `aggregation_cardinality_limit` (default: `0`): Defines the maximum number of unique combinations of dimensions that will be tracked for metrics aggregation. When the limit is reached, additional unique combinations will be dropped but registered under a new entry with `otel.metric.overflow="true"`. A value of `0` means no limit is applied.
 
 The feature gate `connector.spanmetrics.legacyMetricNames` (disabled by default) controls the connector to use legacy metric names.
@@ -289,7 +290,7 @@ More context is available in [GitHub issue #21101](https://github.com/open-telem
 
 ### About `resource_metrics_key_attributes`
 
-The `resource_metrics_key_attributes` setting controls which resource attributes are included in the metric stream identity. These attributes are used to build the key map that determines how metrics are grouped.
+The `resource_metrics_key_attributes` setting are used to build the key map that determines how metrics are grouped.
 
 If this field is left empty, the connector will use **all** available attributes to compute the resource metric hash.
 

@@ -18,14 +18,20 @@ type legacyHubWrapper interface {
 }
 
 func newLegacyHubWrapper(h *eventhubHandler) (*hubWrapperLegacyImpl, error) {
+	options := []eventhub.HubOption{}
+	if h.storageClient != nil {
+		options = append(options,
+			eventhub.HubWithOffsetPersistence(
+				&storageCheckpointPersister[persist.Checkpoint]{
+					storageClient: h.storageClient,
+					defaultValue:  persist.NewCheckpointFromStartOfStream(),
+				},
+			),
+		)
+	}
 	hub, newHubErr := eventhub.NewHubFromConnectionString(
 		h.config.Connection,
-		eventhub.HubWithOffsetPersistence(
-			&storageCheckpointPersister[persist.Checkpoint]{
-				storageClient: h.storageClient,
-				defaultValue:  persist.NewCheckpointFromStartOfStream(),
-			},
-		),
+		options...,
 	)
 	if newHubErr != nil {
 		h.settings.Logger.Debug("Error connecting to Event Hub", zap.Error(newHubErr))
@@ -63,9 +69,11 @@ func (h *hubWrapperLegacyImpl) Receive(ctx context.Context, partitionID string, 
 	if applyOffset && h.config.Offset != "" {
 		receiverOptions = append(receiverOptions, eventhub.ReceiveWithStartingOffset(h.config.Offset))
 	}
-
 	if h.config.ConsumerGroup != "" {
 		receiverOptions = append(receiverOptions, eventhub.ReceiveWithConsumerGroup(h.config.ConsumerGroup))
+	}
+	if h.config.StorageID == nil && (!applyOffset || h.config.Offset == "") {
+		receiverOptions = append(receiverOptions, eventhub.ReceiveWithLatestOffset())
 	}
 
 	if h.hub != nil {
