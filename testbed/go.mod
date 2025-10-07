@@ -85,23 +85,23 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4 v4.3.0 // indirect
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.4.2 // indirect
 	github.com/Code-Hex/go-generics-cache v1.5.1 // indirect
-	github.com/DataDog/agent-payload/v5 v5.0.165 // indirect
-	github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.72.0-devel // indirect
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.72.0-devel // indirect
-	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.72.0-devel // indirect
-	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics v0.72.0-devel // indirect
-	github.com/DataDog/datadog-agent/pkg/proto v0.72.0-devel // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.72.0-devel // indirect
-	github.com/DataDog/datadog-agent/pkg/trace v0.72.0-devel // indirect
+	github.com/DataDog/agent-payload/v5 v5.0.167 // indirect
+	github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.72.0-rc.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.72.0-rc.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.72.0-rc.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics v0.72.0-rc.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/proto v0.72.0-rc.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.72.0-rc.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace v0.72.0-rc.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.72.0-devel // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.72.0-devel // indirect
-	github.com/DataDog/datadog-agent/pkg/util/quantile v0.72.0-devel // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.72.0-devel // indirect
-	github.com/DataDog/datadog-agent/pkg/version v0.72.0-devel // indirect
+	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.72.0-rc.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.72.0-rc.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/quantile v0.72.0-rc.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.72.0-rc.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/version v0.72.0-rc.1 // indirect
 	github.com/DataDog/datadog-api-client-go/v2 v2.47.0 // indirect
 	github.com/DataDog/datadog-go/v5 v5.6.0 // indirect
-	github.com/DataDog/go-sqllexer v0.1.6 // indirect
+	github.com/DataDog/go-sqllexer v0.1.8 // indirect
 	github.com/DataDog/go-tuf v1.1.1-0.5.2 // indirect
 	github.com/DataDog/sketches-go v1.4.7 // indirect
 	github.com/DataDog/zstd v1.5.6 // indirect
@@ -325,7 +325,7 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	github.com/zeebo/xxh3 v1.0.2 // indirect
 	go.mongodb.org/mongo-driver v1.14.0 // indirect
-	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
+	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector v0.137.0 // indirect
 	go.opentelemetry.io/collector/client v1.43.0 // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.137.0 // indirect
@@ -394,20 +394,22 @@ require (
 	go.yaml.in/yaml/v2 v2.4.2 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/crypto v0.42.0 // indirect
-	golang.org/x/exp v0.0.0-20250819193227-8b4c13bb791b // indirect
-	golang.org/x/mod v0.27.0 // indirect
+	golang.org/x/exp v0.0.0-20250911091902-df9299821621 // indirect
+	golang.org/x/mod v0.28.0 // indirect
 	golang.org/x/net v0.44.0 // indirect
 	golang.org/x/oauth2 v0.30.0 // indirect
 	golang.org/x/sync v0.17.0 // indirect
 	golang.org/x/sys v0.36.0 // indirect
+	golang.org/x/telemetry v0.0.0-20250908211612-aef8a434d053 // indirect
 	golang.org/x/term v0.35.0 // indirect
 	golang.org/x/time v0.12.0 // indirect
-	golang.org/x/tools v0.36.0 // indirect
+	golang.org/x/tools v0.37.0 // indirect
+	golang.org/x/tools/godoc v0.1.0-deprecated // indirect
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da // indirect
 	gonum.org/v1/gonum v0.16.0 // indirect
 	google.golang.org/api v0.239.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250825161204-c5933d9347a5 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250825161204-c5933d9347a5 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250922171735-9219d122eba9 // indirect
 	google.golang.org/protobuf v1.36.10 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
