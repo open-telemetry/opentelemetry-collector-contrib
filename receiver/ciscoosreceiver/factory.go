@@ -119,7 +119,7 @@ func (s *connectionScraper) establishConnection(_ context.Context, device Device
 	// Build SSH config
 	sshConfig := &cryptossh.ClientConfig{
 		User:            device.Auth.Username,
-		HostKeyCallback: cryptossh.InsecureIgnoreHostKey(),
+		HostKeyCallback: cryptossh.InsecureIgnoreHostKey(), // nolint: gosec // G106: acceptable for alpha
 		Timeout:         10 * time.Second,
 	}
 
