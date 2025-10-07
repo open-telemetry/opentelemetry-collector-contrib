@@ -49,6 +49,7 @@ components:
     - exporter/file
     - exporter/googlecloud
     - exporter/googlecloudpubsub
+    - exporter/googlecloudstorage
     - exporter/googlemanagedprometheus
     - exporter/honeycombmarker
     - exporter/influxdb
@@ -194,6 +195,7 @@ components:
     - processor/metricsgeneration
     - processor/metricstarttime
     - processor/metricstransform
+    - processor/novadetector
     - processor/probabilistic_sampler
     - processor/redaction
     - processor/remotetap
@@ -207,6 +209,7 @@ components:
     - processor/tail_sampling
     - processor/transform
     - processor/unroll
+    - processor/upclouddetector
     - processor/vultrdetector
     - provider/aes
     - provider/googlesecretmanager
@@ -228,6 +231,7 @@ components:
     - receiver/bigip
     - receiver/carbon
     - receiver/chrony
+    - receiver/ciscoosreceiver
     - receiver/cloudflare
     - receiver/cloudfoundry
     - receiver/collectd
