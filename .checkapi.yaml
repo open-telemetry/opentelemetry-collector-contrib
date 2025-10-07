@@ -36,6 +36,7 @@ ignored_paths:
   - receiver/pulsarreceiver # 38930
   - exporter/pulsarexporter # 38929
   - exporter/elasticsearchexporter/integrationtest
+  - scraper/zookeeperscraper
   - testbed/mockdatasenders/mockdatadogagentexporter
   - extension/sumologicextension # 40655
 allowed_functions:
@@ -63,10 +64,6 @@ allowed_functions:
     classes:
       - receiver
     return_types: [receiver.Factory]
-  - name: NewFactory
-    classes:
-      - scraper
-    return_types: [scraper.Factory]
 
 ignored_functions:
   - ^Test.*

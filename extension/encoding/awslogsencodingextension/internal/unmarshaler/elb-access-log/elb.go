@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net"
 	"strconv"
 	"strings"
 	"time"
@@ -31,9 +30,7 @@ type CLBAccessLogRecord struct {
 	ELB                    string  // The name of the load balancer
 	ClientIP               string  // Client IP
 	ClientPort             int64   // Client  port
-	BackendIPPort          string  // Backend IP:Port or -
-	BackendIP              string  // Backend IP split from BackendIPPort
-	BackendPort            int64   // Backend port split from BackendIPPort
+	BackendIPPort          string  // The IP address and port of the registered instance that processed this request, or -
 	RequestProcessingTime  float64 // Time taken to process the request in seconds (HTTP/TCP)
 	BackendProcessingTime  float64 // Time taken for the registered instance to respond
 	ResponseProcessingTime float64 // Time taken to send the response to the client
@@ -62,7 +59,7 @@ func convertTextToCLBAccessLogRecord(fields []string) (CLBAccessLogRecord, error
 	record := CLBAccessLogRecord{
 		Time:              fields[0],  // Timestamp
 		ELB:               fields[1],  // Load balancer name
-		BackendIPPort:     fields[3],  // Backend IP:Port or -
+		BackendIPPort:     fields[3],  // Backend IP:Port
 		ELBStatusCode:     0,          // Placeholder for ELB status code
 		BackendStatusCode: 0,          // Placeholder for Backend status code
 		UserAgent:         fields[12], // User-Agent
@@ -71,25 +68,10 @@ func convertTextToCLBAccessLogRecord(fields []string) (CLBAccessLogRecord, error
 	}
 
 	// Process the fields for numerical values (convenient to parse from string)
-	var clientPort string
-	if record.ClientIP, clientPort, err = net.SplitHostPort(fields[2]); err != nil {
-		return record, fmt.Errorf("could not parse client IP:Port %s: %w", fields[2], err)
-	}
-	if record.ClientPort, err = safeConvertStrToInt(clientPort); err != nil {
+	record.ClientIP = strings.Split(fields[2], ":")[0]
+	if record.ClientPort, err = safeConvertStrToInt(strings.Split(fields[2], ":")[1]); err != nil {
 		return record, fmt.Errorf("could not convert client port to integer: %w", err)
 	}
-
-	// Parse BackendIPPort into BackendIP and BackendPort
-	if record.BackendIPPort != unknownField {
-		var backendPort string
-		if record.BackendIP, backendPort, err = net.SplitHostPort(record.BackendIPPort); err != nil {
-			return record, fmt.Errorf("could not parse backend IP:Port %s: %w", record.BackendIPPort, err)
-		}
-		if record.BackendPort, err = safeConvertStrToInt(backendPort); err != nil {
-			return record, fmt.Errorf("could not convert backend port to integer: %w", err)
-		}
-	}
-
 	if record.RequestProcessingTime, err = safeConvertStrToFloat(fields[4]); err != nil {
 		return record, fmt.Errorf("could not convert request processing time to float: %w", err)
 	}
@@ -139,8 +121,7 @@ type NLBAccessLogRecord struct {
 	Listener                  string // Resource ID of the TLS listener for the connection
 	ClientIP                  string // Client IP
 	ClientPort                int64  // Client  port
-	DestinationIP             string // Destination IP
-	DestinationPort           int64  // Destination port
+	DestinationIPPort         string // The destination IP and port of the target
 	ConnectionTime            int64  // Total time for the connection to complete, in milliseconds
 	TLSHandshakeTime          int64  // Time for the TLS handshake to complete, in milliseconds, or -
 	ReceivedBytes             int64  // Count of bytes received by the load balancer from the client, after decryption
@@ -175,6 +156,7 @@ func convertTextToNLBAccessLogRecord(fields []string) (NLBAccessLogRecord, error
 		Time:                      fields[2],  // Timestamp
 		ELB:                       fields[3],  // Load balancer resource ID
 		Listener:                  fields[4],  // Listener ID
+		DestinationIPPort:         fields[6],  // Destination IP and port
 		TLSHandshakeTime:          0,          // TLSHandshakeTime placeholder value
 		IncomingTLSAlert:          fields[11], // Incoming TLS alert
 		ChosenCertARN:             fields[12], // Chosen certificate ARN
@@ -190,20 +172,9 @@ func convertTextToNLBAccessLogRecord(fields []string) (NLBAccessLogRecord, error
 	}
 
 	// Processing additional fields if applicable
-	var clientPort string
-	if record.ClientIP, clientPort, err = net.SplitHostPort(fields[5]); err != nil {
-		return record, fmt.Errorf("could not parse client IP:Port %s: %w", fields[5], err)
-	}
-	if record.ClientPort, err = safeConvertStrToInt(clientPort); err != nil {
+	record.ClientIP = strings.Split(fields[5], ":")[0]
+	if record.ClientPort, err = safeConvertStrToInt(strings.Split(fields[5], ":")[1]); err != nil {
 		return record, fmt.Errorf("could not convert client port to integer: %w", err)
-	}
-
-	var destinationPort string
-	if record.DestinationIP, destinationPort, err = net.SplitHostPort(fields[6]); err != nil {
-		return record, fmt.Errorf("could not parse destination IP:Port %s: %w", fields[6], err)
-	}
-	if record.DestinationPort, err = safeConvertStrToInt(destinationPort); err != nil {
-		return record, fmt.Errorf("could not convert destination port to integer: %w", err)
 	}
 
 	if record.ConnectionTime, err = safeConvertStrToInt(fields[7]); err != nil {
@@ -234,9 +205,7 @@ type ALBAccessLogRecord struct {
 	ELB                    string // Load balancer resource ID
 	ClientIP               string // Client IP
 	ClientPort             int64  // Client  port
-	TargetIPPort           string // Target IP:Port or -
-	TargetIP               string // Target IP
-	TargetPort             int64  // Target port
+	TargetIPPort           string // Target IP and port
 	RequestProcessingTime  string // Time taken to process the request in seconds
 	TargetProcessingTime   string // Time taken for the target to process the request in seconds
 	ResponseProcessingTime string // Time taken to send the response to the client in seconds
@@ -300,25 +269,10 @@ func convertTextToALBAccessLogRecord(fields []string) (ALBAccessLogRecord, error
 		Classification:         fields[27],
 		ClassificationReason:   fields[28],
 	}
-	var clientPort string
-	if record.ClientIP, clientPort, err = net.SplitHostPort(fields[3]); err != nil {
-		return record, fmt.Errorf("could not parse client IP:Port %s: %w", fields[3], err)
-	}
-	if record.ClientPort, err = safeConvertStrToInt(clientPort); err != nil {
+	record.ClientIP = strings.Split(fields[3], ":")[0]
+	if record.ClientPort, err = safeConvertStrToInt(strings.Split(fields[3], ":")[1]); err != nil {
 		return record, fmt.Errorf("could not convert client port to integer: %w", err)
 	}
-
-	// Parse TargetIPPort into TargetIP and TargetPort
-	if record.TargetIPPort != unknownField {
-		var targetPort string
-		if record.TargetIP, targetPort, err = net.SplitHostPort(record.TargetIPPort); err != nil {
-			return record, fmt.Errorf("could not parse target IP:Port %s: %w", record.TargetIPPort, err)
-		}
-		if record.TargetPort, err = safeConvertStrToInt(targetPort); err != nil {
-			return record, fmt.Errorf("could not convert target port to integer: %w", err)
-		}
-	}
-
 	if record.ELBStatusCode, err = safeConvertStrToInt(fields[8]); err != nil {
 		return record, fmt.Errorf("could not convert elb status code to integer: %w", err)
 	}

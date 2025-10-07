@@ -791,8 +791,8 @@ func BenchmarkRecombine(b *testing.B) {
 	require.NoError(b, op.SetOutputs([]operator.Operator{fake}))
 
 	go func() {
-		for range fake.Received { //nolint:revive
-			// Nothing to do
+		for {
+			<-fake.Received
 		}
 	}()
 
@@ -818,10 +818,6 @@ func BenchmarkRecombine(b *testing.B) {
 		}
 		op.(*Transformer).flushAllSources(ctx)
 	}
-	b.StopTimer()
-
-	require.NoError(b, op.Stop())
-	close(fake.Received)
 }
 
 func BenchmarkRecombineLimitTrigger(b *testing.B) {
@@ -839,8 +835,8 @@ func BenchmarkRecombineLimitTrigger(b *testing.B) {
 	require.NoError(b, op.Start(nil))
 
 	go func() {
-		for range fake.Received { //nolint:revive
-			// Nothing to do
+		for {
+			<-fake.Received
 		}
 	}()
 
@@ -859,10 +855,6 @@ func BenchmarkRecombineLimitTrigger(b *testing.B) {
 		require.NoError(b, op.ProcessBatch(ctx, []*entry.Entry{start, next}))
 		op.(*Transformer).flushAllSources(ctx)
 	}
-	b.StopTimer()
-
-	require.NoError(b, op.Stop())
-	close(fake.Received)
 }
 
 func TestTimeout(t *testing.T) {
