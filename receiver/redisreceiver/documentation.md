@@ -278,6 +278,108 @@ metrics:
     enabled: true
 ```
 
+### redis.cluster.known_nodes
+
+Number of known nodes in the cluster
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {node} | Gauge | Int | development |
+
+### redis.cluster.links_buffer_limit_exceeded.count
+
+Total number of times the cluster links buffer limit was exceeded
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {count} | Sum | Int | Cumulative | true | development |
+
+### redis.cluster.node.count
+
+Number of master nodes in the cluster
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {node} | Gauge | Int | development |
+
+### redis.cluster.node.uptime
+
+The node's current epoch
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Gauge | Int | development |
+
+### redis.cluster.slots_assigned
+
+Number of slots assigned in the cluster
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {slot} | Gauge | Int | development |
+
+### redis.cluster.slots_fail
+
+Number of slots in the cluster that are in a failing state
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {slot} | Gauge | Int | development |
+
+### redis.cluster.slots_ok
+
+Number of slots in the cluster that are ok
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {slot} | Gauge | Int | development |
+
+### redis.cluster.slots_pfail
+
+Number of slots in the cluster that are in a 'potentially failing' state
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {slot} | Gauge | Int | development |
+
+### redis.cluster.state
+
+State of the cluster
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {state} | Gauge | Int | development |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| cluster_state | State of the cluster | Str: ``ok``, ``fail`` | false |
+
+### redis.cluster.stats_messages_received
+
+Total number of messages received by the cluster
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {message} | Sum | Int | Cumulative | true | development |
+
+### redis.cluster.stats_messages_sent
+
+Total number of messages sent by the cluster
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {message} | Sum | Int | Cumulative | true | development |
+
+### redis.cluster.uptime
+
+Current epoch of the cluster
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Gauge | Int | development |
+
 ### redis.cmd.calls
 
 Total number of calls for a command

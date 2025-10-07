@@ -13,6 +13,8 @@ import (
 type client interface {
 	// retrieves a string of key/value pairs of redis metadata
 	retrieveInfo() (string, error)
+	// retrieves a string of key/value pairs of redis cluster metadata
+	retrieveClusterInfo() (string, error)
 	// line delimiter
 	// redis lines are delimited by \r\n, files (for testing) by \n
 	delimiter() string
@@ -42,6 +44,11 @@ func (*redisClient) delimiter() string {
 // Retrieve Redis INFO. We retrieve all of the 'sections'.
 func (c *redisClient) retrieveInfo() (string, error) {
 	return c.client.Info(context.Background(), "all").Result()
+}
+
+// Retrieve Redis CLUSTER INFO.
+func (c *redisClient) retrieveClusterInfo() (string, error) {
+	return c.client.ClusterInfo(context.Background()).Result()
 }
 
 // close client to release connection pool.

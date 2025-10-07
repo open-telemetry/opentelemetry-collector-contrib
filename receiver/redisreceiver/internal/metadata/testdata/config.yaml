@@ -9,6 +9,30 @@ all_set:
       enabled: true
     redis.clients.max_output_buffer:
       enabled: true
+    redis.cluster.known_nodes:
+      enabled: true
+    redis.cluster.links_buffer_limit_exceeded.count:
+      enabled: true
+    redis.cluster.node.count:
+      enabled: true
+    redis.cluster.node.uptime:
+      enabled: true
+    redis.cluster.slots_assigned:
+      enabled: true
+    redis.cluster.slots_fail:
+      enabled: true
+    redis.cluster.slots_ok:
+      enabled: true
+    redis.cluster.slots_pfail:
+      enabled: true
+    redis.cluster.state:
+      enabled: true
+    redis.cluster.stats_messages_received:
+      enabled: true
+    redis.cluster.stats_messages_sent:
+      enabled: true
+    redis.cluster.uptime:
+      enabled: true
     redis.cmd.calls:
       enabled: true
     redis.cmd.latency:
@@ -87,6 +111,30 @@ none_set:
     redis.clients.max_input_buffer:
       enabled: false
     redis.clients.max_output_buffer:
+      enabled: false
+    redis.cluster.known_nodes:
+      enabled: false
+    redis.cluster.links_buffer_limit_exceeded.count:
+      enabled: false
+    redis.cluster.node.count:
+      enabled: false
+    redis.cluster.node.uptime:
+      enabled: false
+    redis.cluster.slots_assigned:
+      enabled: false
+    redis.cluster.slots_fail:
+      enabled: false
+    redis.cluster.slots_ok:
+      enabled: false
+    redis.cluster.slots_pfail:
+      enabled: false
+    redis.cluster.state:
+      enabled: false
+    redis.cluster.stats_messages_received:
+      enabled: false
+    redis.cluster.stats_messages_sent:
+      enabled: false
+    redis.cluster.uptime:
       enabled: false
     redis.cmd.calls:
       enabled: false
