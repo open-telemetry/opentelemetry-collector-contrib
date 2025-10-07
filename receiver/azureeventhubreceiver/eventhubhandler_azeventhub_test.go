@@ -225,3 +225,33 @@ func TestPartitionListener_SetErr(t *testing.T) {
 	p.setErr(errors.New("test"))
 	assert.Equal(t, "test", p.err.Error())
 }
+
+func TestGetConsumerGroup(t *testing.T) {
+	testCases := []struct {
+		name          string
+		consumerGroup string
+		expectedGroup string
+	}{
+		{
+			name:          "empty consumer group defaults to $Default",
+			consumerGroup: "",
+			expectedGroup: "$Default",
+		},
+		{
+			name:          "custom consumer group is preserved",
+			consumerGroup: "custom-group",
+			expectedGroup: "custom-group",
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			config := &Config{
+				ConsumerGroup: test.consumerGroup,
+			}
+
+			result := getConsumerGroup(config)
+			assert.Equal(t, test.expectedGroup, result)
+		})
+	}
+}
