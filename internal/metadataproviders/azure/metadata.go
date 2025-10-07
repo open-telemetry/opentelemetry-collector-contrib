@@ -51,6 +51,7 @@ type ComputeMetadata struct {
 	SubscriptionID    string                    `json:"subscriptionID"`
 	ResourceGroupName string                    `json:"resourceGroupName"`
 	VMScaleSetName    string                    `json:"vmScaleSetName"`
+	AvailabilityZone  string                    `json:"zone"`
 	TagsList          []ComputeTagsListMetadata `json:"tagsList"`
 }
 
