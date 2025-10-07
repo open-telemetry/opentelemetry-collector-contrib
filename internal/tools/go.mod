@@ -1,6 +1,8 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/internal/tools
 
-go 1.24.2
+go 1.24.4
+
+toolchain go1.24.7
 
 require (
 	github.com/Khan/genqlient v0.8.1
@@ -12,13 +14,13 @@ require (
 	github.com/jstemmer/go-junit-report v1.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/cmd/codecovgen v0.137.0
 	github.com/rhysd/actionlint v1.7.7
-	go.opentelemetry.io/build-tools/checkapi v0.26.2
-	go.opentelemetry.io/build-tools/checkfile v0.28.0
-	go.opentelemetry.io/build-tools/chloggen v0.28.0
-	go.opentelemetry.io/build-tools/crosslink v0.28.0
-	go.opentelemetry.io/build-tools/githubgen v0.28.0
-	go.opentelemetry.io/build-tools/issuegenerator v0.28.0
-	go.opentelemetry.io/build-tools/multimod v0.28.0
+	go.opentelemetry.io/build-tools/checkapi v0.28.1
+	go.opentelemetry.io/build-tools/checkfile v0.28.1
+	go.opentelemetry.io/build-tools/chloggen v0.28.1
+	go.opentelemetry.io/build-tools/crosslink v0.28.1
+	go.opentelemetry.io/build-tools/githubgen v0.28.1
+	go.opentelemetry.io/build-tools/issuegenerator v0.28.1
+	go.opentelemetry.io/build-tools/multimod v0.28.1
 	go.opentelemetry.io/collector/cmd/builder v0.137.0
 	go.opentelemetry.io/collector/cmd/mdatagen v0.137.0
 	go.uber.org/goleak v1.3.0
@@ -80,7 +82,7 @@ require (
 	github.com/ckaznocha/intrange v0.3.1 // indirect
 	github.com/cloudflare/circl v1.6.1 // indirect
 	github.com/curioswitch/go-reassign v0.3.0 // indirect
-	github.com/cyphar/filepath-securejoin v0.4.1 // indirect
+	github.com/cyphar/filepath-securejoin v0.5.0 // indirect
 	github.com/dave/dst v0.27.3 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/denis-tingaikin/go-header v0.5.0 // indirect
@@ -98,6 +100,7 @@ require (
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
 	github.com/go-git/go-billy/v5 v5.6.2 // indirect
 	github.com/go-git/go-git/v5 v5.16.2 // indirect
+	github.com/go-json-experiment/json v0.0.0-20250813233538-9b1f9ea2e11b // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-toolsmith/astcast v1.1.0 // indirect
@@ -110,6 +113,8 @@ require (
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
 	github.com/go-xmlfmt/xmlfmt v1.1.3 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
+	github.com/goccy/go-json v0.10.5 // indirect
+	github.com/goccy/go-yaml v1.18.0 // indirect
 	github.com/gofrs/flock v0.12.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 // indirect
@@ -124,6 +129,7 @@ require (
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/google/go-github v17.0.0+incompatible // indirect
 	github.com/google/go-github/v74 v74.0.0 // indirect
+	github.com/google/go-github/v75 v75.0.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
 	github.com/google/uuid v1.6.0 // indirect
@@ -146,6 +152,9 @@ require (
 	github.com/joshdk/go-junit v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/julz/importas v0.2.0 // indirect
+	github.com/kaptinlin/go-i18n v0.1.6 // indirect
+	github.com/kaptinlin/jsonschema v0.4.12 // indirect
+	github.com/kaptinlin/messageformat-go v0.4.0 // indirect
 	github.com/karamaru-alpha/copyloopvar v1.2.1 // indirect
 	github.com/kevinburke/ssh_config v1.4.0 // indirect
 	github.com/kisielk/errcheck v1.9.0 // indirect
@@ -254,7 +263,7 @@ require (
 	go-simpler.org/sloglint v0.11.0 // indirect
 	go.augendre.info/fatcontext v0.8.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/build-tools v0.28.0 // indirect
+	go.opentelemetry.io/build-tools v0.28.1 // indirect
 	go.opentelemetry.io/collector/component v1.43.0 // indirect
 	go.opentelemetry.io/collector/confmap v1.43.0 // indirect
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.43.0 // indirect
