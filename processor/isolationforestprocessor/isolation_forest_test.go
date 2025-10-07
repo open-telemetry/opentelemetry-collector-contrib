@@ -23,7 +23,7 @@ func TestOnlineIsolationForestCreation(t *testing.T) {
 	assert.Equal(t, 100, forest.windowSize, "Should set specified window size")
 	assert.Len(t, forest.trees, 10, "Should initialize correct number of trees")
 
-	// NEW: Verify adaptive components are nil by default
+	// Verify adaptive components are nil by default
 	assert.Nil(t, forest.adaptiveConfig, "Should not have adaptive config by default")
 	assert.Nil(t, forest.velocityTracker, "Should not have velocity tracker by default")
 	assert.Nil(t, forest.memoryMonitor, "Should not have memory monitor by default")
