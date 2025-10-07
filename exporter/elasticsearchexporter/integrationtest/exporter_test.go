@@ -5,6 +5,7 @@ package integrationtest
 
 import (
 	"fmt"
+	"net"
 	"net/http"
 	"sync/atomic"
 	"testing"
@@ -79,12 +80,22 @@ func runner(t *testing.T, eventType string, restartCollector bool, mockESErr err
 		t.Fatalf("failed to create data sender for type: %s", eventType)
 	}
 
+	// The port used by the sender is not yet active and can be detected as a
+	// available port by another call to testutil#GetAvailablePort in an attempt
+	// to create a new datareceiver. To prevent the conflict occupy the port
+	// temporarily.
+	testListner, err := net.Listen("tcp", fmt.Sprintf("localhost:%d", port))
+	require.NoError(t, err, "port is expected to be free")
+
 	receiver := newElasticsearchDataReceiver(t, opts...)
 	loadOpts := testbed.LoadOptions{
 		DataItemsPerSecond: 1_000,
 		ItemsPerBatch:      10,
 	}
 	provider := testbed.NewPerfTestDataProvider(loadOpts)
+
+	// Stop the listener so that collector can start correctly.
+	require.NoError(t, testListner.Close())
 
 	cfg := createConfigYaml(t, sender, receiver, nil, nil, eventType, getDebugFlag(t))
 	t.Log("test otel collector configuration:", cfg)
