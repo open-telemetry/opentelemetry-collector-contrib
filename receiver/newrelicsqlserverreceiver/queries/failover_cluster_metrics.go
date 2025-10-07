@@ -161,3 +161,67 @@ JOIN
     sys.availability_replicas AS ar ON drs.replica_id = ar.replica_id
 JOIN
     sys.databases AS d ON drs.database_id = d.database_id;`
+
+// FailoverClusterNodeQuery returns the SQL query for cluster node information
+// This query retrieves information about cluster nodes including their status and ownership
+//
+// The query returns:
+// - nodename: Name of the server node in the cluster
+// - status_description: Health state of the node (Up, Down, Paused, etc.)
+// - is_current_owner: 1 if this is the active node running SQL Server, 0 if passive
+const FailoverClusterNodeQuery = `SELECT
+    nodename,
+    status_description,
+    is_current_owner
+FROM sys.dm_os_cluster_nodes;`
+
+// FailoverClusterNodeQueryAzureSQL returns empty result for Azure SQL Database
+// Cluster nodes are not applicable in Azure SQL Database (single database model)
+const FailoverClusterNodeQueryAzureSQL = `SELECT 
+    CAST(NULL AS NVARCHAR(256)) AS nodename,
+    CAST(NULL AS NVARCHAR(128)) AS status_description,
+    CAST(NULL AS BIT) AS is_current_owner
+WHERE 1=0` // Always returns empty result set
+
+// FailoverClusterNodeQueryAzureMI returns the same query for Azure SQL Managed Instance
+// Azure SQL Managed Instance has built-in clustering but may have limited access to cluster node details
+const FailoverClusterNodeQueryAzureMI = `SELECT
+    nodename,
+    status_description,
+    is_current_owner
+FROM sys.dm_os_cluster_nodes;`
+
+// FailoverClusterAvailabilityGroupHealthQuery returns the SQL query for Availability Group health status
+// This query retrieves health and role information for all availability group replicas
+//
+// The query returns:
+// - replica_server_name: Name of the server instance hosting the availability replica
+// - role_desc: Current role of the replica (PRIMARY, SECONDARY)
+// - synchronization_health_desc: Health of data synchronization (HEALTHY, PARTIALLY_HEALTHY, NOT_HEALTHY)
+const FailoverClusterAvailabilityGroupHealthQuery = `SELECT
+    ar.replica_server_name,
+    ars.role_desc,
+    ars.synchronization_health_desc
+FROM
+    sys.dm_hadr_availability_replica_states AS ars
+INNER JOIN
+    sys.availability_replicas AS ar ON ars.replica_id = ar.replica_id;`
+
+// FailoverClusterAvailabilityGroupHealthQueryAzureSQL returns empty result for Azure SQL Database
+// Always On Availability Groups are not supported in Azure SQL Database
+const FailoverClusterAvailabilityGroupHealthQueryAzureSQL = `SELECT 
+    CAST(NULL AS NVARCHAR(256)) AS replica_server_name,
+    CAST(NULL AS NVARCHAR(60)) AS role_desc,
+    CAST(NULL AS NVARCHAR(60)) AS synchronization_health_desc
+WHERE 1=0` // Always returns empty result set
+
+// FailoverClusterAvailabilityGroupHealthQueryAzureMI returns the same query for Azure SQL Managed Instance
+// Azure SQL Managed Instance supports Always On AG and should have access to these DMVs
+const FailoverClusterAvailabilityGroupHealthQueryAzureMI = `SELECT
+    ar.replica_server_name,
+    ars.role_desc,
+    ars.synchronization_health_desc
+FROM
+    sys.dm_hadr_availability_replica_states AS ars
+INNER JOIN
+    sys.availability_replicas AS ar ON ars.replica_id = ar.replica_id;`

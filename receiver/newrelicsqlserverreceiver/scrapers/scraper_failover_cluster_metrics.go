@@ -217,6 +217,24 @@ func (s *FailoverClusterScraper) getQueryForMetric(metricName string) (string, b
 		default:
 			return queries.FailoverClusterReplicaStateQuery, true
 		}
+	case "sqlserver.failover_cluster.node_metrics":
+		switch s.engineEdition {
+		case queries.AzureSQLDatabaseEngineEdition:
+			return queries.FailoverClusterNodeQueryAzureSQL, true
+		case queries.AzureSQLManagedInstanceEngineEdition:
+			return queries.FailoverClusterNodeQueryAzureMI, true
+		default:
+			return queries.FailoverClusterNodeQuery, true
+		}
+	case "sqlserver.failover_cluster.availability_group_health_metrics":
+		switch s.engineEdition {
+		case queries.AzureSQLDatabaseEngineEdition:
+			return queries.FailoverClusterAvailabilityGroupHealthQueryAzureSQL, true
+		case queries.AzureSQLManagedInstanceEngineEdition:
+			return queries.FailoverClusterAvailabilityGroupHealthQueryAzureMI, true
+		default:
+			return queries.FailoverClusterAvailabilityGroupHealthQuery, true
+		}
 	default:
 		return "", false
 	}
@@ -345,6 +363,194 @@ func (s *FailoverClusterScraper) processFailoverClusterReplicaStateMetrics(resul
 	return nil
 }
 
+// ScrapeFailoverClusterNodeMetrics collects cluster node information and status
+// This method retrieves information about Windows Server Failover Cluster nodes
+func (s *FailoverClusterScraper) ScrapeFailoverClusterNodeMetrics(ctx context.Context, scopeMetrics pmetric.ScopeMetrics) error {
+	s.logger.Debug("Scraping SQL Server failover cluster node metrics")
+
+	// Get the appropriate query for this engine edition
+	query, found := s.getQueryForMetric("sqlserver.failover_cluster.node_metrics")
+	if !found {
+		return fmt.Errorf("no failover cluster node metrics query available for engine edition %d", s.engineEdition)
+	}
+
+	s.logger.Debug("Executing failover cluster node metrics query",
+		zap.String("query", queries.TruncateQuery(query, 100)),
+		zap.String("engine_type", queries.GetEngineTypeName(s.engineEdition)))
+
+	var results []models.FailoverClusterNodeMetrics
+	if err := s.connection.Query(ctx, &results, query); err != nil {
+		s.logger.Error("Failed to execute failover cluster node query",
+			zap.Error(err),
+			zap.String("query", queries.TruncateQuery(query, 100)),
+			zap.Int("engine_edition", s.engineEdition))
+		return fmt.Errorf("failed to execute failover cluster node query: %w", err)
+	}
+
+	// If no results, this SQL Server instance may not be in a cluster
+	if len(results) == 0 {
+		s.logger.Debug("No cluster node metrics found - SQL Server may not be part of a Windows Server Failover Cluster")
+		return nil
+	}
+
+	s.logger.Debug("Processing failover cluster node metrics results",
+		zap.Int("result_count", len(results)),
+		zap.String("engine_type", queries.GetEngineTypeName(s.engineEdition)))
+
+	// Process each node result
+	for _, result := range results {
+		if err := s.processFailoverClusterNodeMetrics(result, scopeMetrics); err != nil {
+			s.logger.Error("Failed to process failover cluster node metrics",
+				zap.Error(err),
+				zap.String("node_name", result.NodeName))
+			return err
+		}
+	}
+
+	return nil
+}
+
+// processFailoverClusterNodeMetrics processes cluster node metrics and creates OpenTelemetry metrics
+func (s *FailoverClusterScraper) processFailoverClusterNodeMetrics(result models.FailoverClusterNodeMetrics, scopeMetrics pmetric.ScopeMetrics) error {
+	// Process IsCurrentOwner as a gauge metric
+	if result.IsCurrentOwner != nil {
+		metric := scopeMetrics.Metrics().AppendEmpty()
+		metric.SetName("sqlserver.failover_cluster.node_is_current_owner")
+		metric.SetUnit("1")
+		metric.SetDescription("Indicates if this is the active node currently running the SQL Server instance (1=active, 0=passive)")
+
+		gauge := metric.SetEmptyGauge()
+		dataPoint := gauge.DataPoints().AppendEmpty()
+		dataPoint.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+		dataPoint.SetStartTimestamp(s.startTime)
+		dataPoint.SetIntValue(*result.IsCurrentOwner)
+
+		// Add attributes
+		dataPoint.Attributes().PutStr("node_name", result.NodeName)
+		dataPoint.Attributes().PutStr("status_description", result.StatusDescription)
+		dataPoint.Attributes().PutStr("metric.source", "sys.dm_os_cluster_nodes")
+		dataPoint.Attributes().PutStr("metric.category", "failover_cluster_node")
+		dataPoint.Attributes().PutStr("engine_edition", queries.GetEngineTypeName(s.engineEdition))
+		dataPoint.Attributes().PutInt("engine_edition_id", int64(s.engineEdition))
+	}
+
+	// Process StatusDescription as an info metric (gauge with value 1)
+	statusMetric := scopeMetrics.Metrics().AppendEmpty()
+	statusMetric.SetName("sqlserver.failover_cluster.node_status")
+	statusMetric.SetUnit("1")
+	statusMetric.SetDescription("Health state of the cluster node")
+
+	statusGauge := statusMetric.SetEmptyGauge()
+	statusDataPoint := statusGauge.DataPoints().AppendEmpty()
+	statusDataPoint.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+	statusDataPoint.SetStartTimestamp(s.startTime)
+	statusDataPoint.SetIntValue(1) // Info metric always has value 1
+
+	// Add attributes for status metric
+	statusDataPoint.Attributes().PutStr("node_name", result.NodeName)
+	statusDataPoint.Attributes().PutStr("status_description", result.StatusDescription)
+	statusDataPoint.Attributes().PutStr("metric.source", "sys.dm_os_cluster_nodes")
+	statusDataPoint.Attributes().PutStr("metric.category", "failover_cluster_node")
+	statusDataPoint.Attributes().PutStr("engine_edition", queries.GetEngineTypeName(s.engineEdition))
+	statusDataPoint.Attributes().PutInt("engine_edition_id", int64(s.engineEdition))
+
+	return nil
+}
+
+// ScrapeFailoverClusterAvailabilityGroupHealthMetrics collects Availability Group health status
+// This method retrieves health and role information for all availability group replicas
+func (s *FailoverClusterScraper) ScrapeFailoverClusterAvailabilityGroupHealthMetrics(ctx context.Context, scopeMetrics pmetric.ScopeMetrics) error {
+	s.logger.Debug("Scraping SQL Server Availability Group health metrics")
+
+	// Get the appropriate query for this engine edition
+	query, found := s.getQueryForMetric("sqlserver.failover_cluster.availability_group_health_metrics")
+	if !found {
+		return fmt.Errorf("no availability group health metrics query available for engine edition %d", s.engineEdition)
+	}
+
+	s.logger.Debug("Executing availability group health metrics query",
+		zap.String("query", queries.TruncateQuery(query, 100)),
+		zap.String("engine_type", queries.GetEngineTypeName(s.engineEdition)))
+
+	var results []models.FailoverClusterAvailabilityGroupHealthMetrics
+	if err := s.connection.Query(ctx, &results, query); err != nil {
+		s.logger.Error("Failed to execute availability group health query",
+			zap.Error(err),
+			zap.String("query", queries.TruncateQuery(query, 100)),
+			zap.Int("engine_edition", s.engineEdition))
+		return fmt.Errorf("failed to execute availability group health query: %w", err)
+	}
+
+	// If no results, this SQL Server instance may not have Always On AG configured
+	if len(results) == 0 {
+		s.logger.Debug("No availability group health metrics found - SQL Server may not have Always On Availability Groups configured")
+		return nil
+	}
+
+	s.logger.Debug("Processing availability group health metrics results",
+		zap.Int("result_count", len(results)),
+		zap.String("engine_type", queries.GetEngineTypeName(s.engineEdition)))
+
+	// Process each availability group health result
+	for _, result := range results {
+		if err := s.processFailoverClusterAvailabilityGroupHealthMetrics(result, scopeMetrics); err != nil {
+			s.logger.Error("Failed to process availability group health metrics",
+				zap.Error(err),
+				zap.String("replica_server_name", result.ReplicaServerName))
+			return err
+		}
+	}
+
+	return nil
+}
+
+// processFailoverClusterAvailabilityGroupHealthMetrics processes availability group health metrics and creates OpenTelemetry metrics
+func (s *FailoverClusterScraper) processFailoverClusterAvailabilityGroupHealthMetrics(result models.FailoverClusterAvailabilityGroupHealthMetrics, scopeMetrics pmetric.ScopeMetrics) error {
+	// Process RoleDesc as an info metric (gauge with value 1)
+	roleMetric := scopeMetrics.Metrics().AppendEmpty()
+	roleMetric.SetName("sqlserver.failover_cluster.ag_replica_role")
+	roleMetric.SetUnit("1")
+	roleMetric.SetDescription("Current role of the replica within the Availability Group (PRIMARY or SECONDARY)")
+
+	roleGauge := roleMetric.SetEmptyGauge()
+	roleDataPoint := roleGauge.DataPoints().AppendEmpty()
+	roleDataPoint.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+	roleDataPoint.SetStartTimestamp(s.startTime)
+	roleDataPoint.SetIntValue(1) // Info metric always has value 1
+
+	// Add attributes for role metric
+	roleDataPoint.Attributes().PutStr("replica_server_name", result.ReplicaServerName)
+	roleDataPoint.Attributes().PutStr("role_desc", result.RoleDesc)
+	roleDataPoint.Attributes().PutStr("synchronization_health_desc", result.SynchronizationHealthDesc)
+	roleDataPoint.Attributes().PutStr("metric.source", "sys.dm_hadr_availability_replica_states")
+	roleDataPoint.Attributes().PutStr("metric.category", "availability_group_health")
+	roleDataPoint.Attributes().PutStr("engine_edition", queries.GetEngineTypeName(s.engineEdition))
+	roleDataPoint.Attributes().PutInt("engine_edition_id", int64(s.engineEdition))
+
+	// Process SynchronizationHealthDesc as an info metric (gauge with value 1)
+	healthMetric := scopeMetrics.Metrics().AppendEmpty()
+	healthMetric.SetName("sqlserver.failover_cluster.ag_synchronization_health")
+	healthMetric.SetUnit("1")
+	healthMetric.SetDescription("Health of data synchronization between primary and secondary replica (HEALTHY, PARTIALLY_HEALTHY, NOT_HEALTHY)")
+
+	healthGauge := healthMetric.SetEmptyGauge()
+	healthDataPoint := healthGauge.DataPoints().AppendEmpty()
+	healthDataPoint.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+	healthDataPoint.SetStartTimestamp(s.startTime)
+	healthDataPoint.SetIntValue(1) // Info metric always has value 1
+
+	// Add attributes for health metric
+	healthDataPoint.Attributes().PutStr("replica_server_name", result.ReplicaServerName)
+	healthDataPoint.Attributes().PutStr("role_desc", result.RoleDesc)
+	healthDataPoint.Attributes().PutStr("synchronization_health_desc", result.SynchronizationHealthDesc)
+	healthDataPoint.Attributes().PutStr("metric.source", "sys.dm_hadr_availability_replica_states")
+	healthDataPoint.Attributes().PutStr("metric.category", "availability_group_health")
+	healthDataPoint.Attributes().PutStr("engine_edition", queries.GetEngineTypeName(s.engineEdition))
+	healthDataPoint.Attributes().PutInt("engine_edition_id", int64(s.engineEdition))
+
+	return nil
+}
+
 // getMetricUnit returns the appropriate unit for each metric
 func (s *FailoverClusterScraper) getMetricUnit(metricName string) string {
 	switch metricName {
@@ -360,6 +566,14 @@ func (s *FailoverClusterScraper) getMetricUnit(metricName string) string {
 		return "KBy"
 	case "sqlserver.failover_cluster.redo_rate_kb_sec":
 		return "KBy/s"
+	case "sqlserver.failover_cluster.node_is_current_owner":
+		return "1"
+	case "sqlserver.failover_cluster.node_status":
+		return "1"
+	case "sqlserver.failover_cluster.ag_replica_role":
+		return "1"
+	case "sqlserver.failover_cluster.ag_synchronization_health":
+		return "1"
 	default:
 		return "1"
 	}
@@ -380,6 +594,14 @@ func (s *FailoverClusterScraper) getMetricDescription(metricName string) string 
 		return "Amount of log records in the redo queue waiting to be redone on the secondary replica in kilobytes"
 	case "sqlserver.failover_cluster.redo_rate_kb_sec":
 		return "Rate at which log records are being redone on the secondary replica in kilobytes per second"
+	case "sqlserver.failover_cluster.node_is_current_owner":
+		return "Indicates if this is the active node currently running the SQL Server instance (1=active, 0=passive)"
+	case "sqlserver.failover_cluster.node_status":
+		return "Health state of the cluster node"
+	case "sqlserver.failover_cluster.ag_replica_role":
+		return "Current role of the replica within the Availability Group (PRIMARY or SECONDARY)"
+	case "sqlserver.failover_cluster.ag_synchronization_health":
+		return "Health of data synchronization between primary and secondary replica (HEALTHY, PARTIALLY_HEALTHY, NOT_HEALTHY)"
 	default:
 		return fmt.Sprintf("SQL Server Always On failover cluster %s metric", metricName)
 	}

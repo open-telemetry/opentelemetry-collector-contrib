@@ -500,6 +500,34 @@ func (s *sqlServerScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 		} else {
 			s.logger.Debug("Successfully scraped failover cluster replica state metrics")
 		}
+
+		// Scrape failover cluster node metrics
+		s.logger.Debug("Starting failover cluster node metrics scraping")
+		scrapeCtx, cancel = context.WithTimeout(ctx, s.config.Timeout)
+		defer cancel()
+		if err := s.failoverClusterScraper.ScrapeFailoverClusterNodeMetrics(scrapeCtx, scopeMetrics); err != nil {
+			s.logger.Error("Failed to scrape failover cluster node metrics",
+				zap.Error(err),
+				zap.Duration("timeout", s.config.Timeout))
+			scrapeErrors = append(scrapeErrors, err)
+			// Don't return here - continue with other metrics
+		} else {
+			s.logger.Debug("Successfully scraped failover cluster node metrics")
+		}
+
+		// Scrape availability group health metrics
+		s.logger.Debug("Starting availability group health metrics scraping")
+		scrapeCtx, cancel = context.WithTimeout(ctx, s.config.Timeout)
+		defer cancel()
+		if err := s.failoverClusterScraper.ScrapeFailoverClusterAvailabilityGroupHealthMetrics(scrapeCtx, scopeMetrics); err != nil {
+			s.logger.Error("Failed to scrape availability group health metrics",
+				zap.Error(err),
+				zap.Duration("timeout", s.config.Timeout))
+			scrapeErrors = append(scrapeErrors, err)
+			// Don't return here - continue with other metrics
+		} else {
+			s.logger.Debug("Successfully scraped availability group health metrics")
+		}
 	} else {
 		s.logger.Debug("Failover cluster metrics disabled in configuration")
 	}

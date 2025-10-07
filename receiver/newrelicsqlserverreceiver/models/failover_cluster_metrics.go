@@ -90,3 +90,39 @@ type FailoverClusterReplicaStateMetrics struct {
 	// Query source: sys.dm_hadr_database_replica_states.redo_rate
 	RedoRateKBSec *int64 `db:"redo_rate_kb_sec" metric_name:"sqlserver.failover_cluster.redo_rate_kb_sec" source_type:"gauge"`
 }
+
+// FailoverClusterNodeMetrics represents cluster node information and status
+// This model captures the server node details in a Windows Server Failover Cluster
+type FailoverClusterNodeMetrics struct {
+	// NodeName represents the name of the server node in the cluster
+	// Query source: sys.dm_os_cluster_nodes.nodename
+	NodeName string `db:"nodename" source_type:"attribute"`
+
+	// StatusDescription represents the health state of the cluster node
+	// Query source: sys.dm_os_cluster_nodes.status_description
+	// Expected values: "Up", "Down", "Paused", etc.
+	StatusDescription string `db:"status_description" metric_name:"sqlserver.failover_cluster.node_status" source_type:"info"`
+
+	// IsCurrentOwner indicates if this is the active node currently running the SQL Server instance
+	// Query source: sys.dm_os_cluster_nodes.is_current_owner
+	// Value: 1 = active node, 0 = passive node
+	IsCurrentOwner *int64 `db:"is_current_owner" metric_name:"sqlserver.failover_cluster.node_is_current_owner" source_type:"gauge"`
+}
+
+// FailoverClusterAvailabilityGroupHealthMetrics represents Always On Availability Group health status
+// This model captures the health and role information for availability group replicas
+type FailoverClusterAvailabilityGroupHealthMetrics struct {
+	// ReplicaServerName represents the name of the server instance hosting the availability replica
+	// Query source: sys.availability_replicas.replica_server_name
+	ReplicaServerName string `db:"replica_server_name" source_type:"attribute"`
+
+	// RoleDesc describes the current role of the replica within the Availability Group
+	// Query source: sys.dm_hadr_availability_replica_states.role_desc
+	// Expected values: "PRIMARY", "SECONDARY"
+	RoleDesc string `db:"role_desc" metric_name:"sqlserver.failover_cluster.ag_replica_role" source_type:"info"`
+
+	// SynchronizationHealthDesc indicates the health of data synchronization between primary and secondary
+	// Query source: sys.dm_hadr_availability_replica_states.synchronization_health_desc
+	// Expected values: "HEALTHY", "PARTIALLY_HEALTHY", "NOT_HEALTHY"
+	SynchronizationHealthDesc string `db:"synchronization_health_desc" metric_name:"sqlserver.failover_cluster.ag_synchronization_health" source_type:"info"`
+}
