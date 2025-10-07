@@ -66,6 +66,8 @@ func (d *Detector) Detect(_ context.Context) (pcommon.Resource, string, error) {
 		d.rb.SetCloudRegion(region)
 	}
 	d.rb.SetHostID(md.ID)
+	d.rb.SetHostImageID(md.Image.ID)
+	d.rb.SetHostImageName(md.Image.Name)
 	d.rb.SetHostName(md.Name)
 	d.rb.SetHostType(md.CommercialType)
 

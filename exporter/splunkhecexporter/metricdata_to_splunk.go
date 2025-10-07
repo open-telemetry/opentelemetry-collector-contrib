@@ -52,10 +52,10 @@ func sanitizeFloat(value float64) any {
 }
 
 func mapMetricToSplunkEvent(res pcommon.Resource, m pmetric.Metric, config *Config, logger *zap.Logger) []*splunk.Event {
-	sourceKey := config.HecToOtelAttrs.Source
-	sourceTypeKey := config.HecToOtelAttrs.SourceType
-	indexKey := config.HecToOtelAttrs.Index
-	hostKey := config.HecToOtelAttrs.Host
+	sourceKey := config.OtelAttrsToHec.Source
+	sourceTypeKey := config.OtelAttrsToHec.SourceType
+	indexKey := config.OtelAttrsToHec.Index
+	hostKey := config.OtelAttrsToHec.Host
 	host := unknownHostName
 	source := config.Source
 	sourceType := config.SourceType

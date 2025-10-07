@@ -130,7 +130,7 @@ func TestExporterLogs(t *testing.T) {
 					body := pcommon.NewValueMap()
 					m := body.Map()
 					s := m.PutEmptySlice("a")
-					for i := 0; i < 2; i++ {
+					for i := range 2 {
 						s.AppendEmpty().SetInt(int64(i))
 					}
 					return body
@@ -826,7 +826,7 @@ func TestExporterLogs(t *testing.T) {
 			cfg.Retry.InitialInterval = 1 * time.Millisecond
 			cfg.Retry.MaxInterval = 10 * time.Millisecond
 		})
-		for i := 0; i < 3; i++ {
+		for i := range 3 {
 			logRecord := plog.NewLogRecord()
 			logRecord.Attributes().PutInt("idx", int64(i))
 			mustSendLogRecords(t, exporter, logRecord)

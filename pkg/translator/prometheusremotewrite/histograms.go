@@ -12,6 +12,7 @@ import (
 	"github.com/prometheus/prometheus/prompb"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.uber.org/multierr"
 )
 
 const defaultZeroThreshold = 1e-128
@@ -19,23 +20,20 @@ const defaultZeroThreshold = 1e-128
 func (c *prometheusConverter) addExponentialHistogramDataPoints(dataPoints pmetric.ExponentialHistogramDataPointSlice,
 	resource pcommon.Resource, settings Settings, baseName string,
 ) error {
+	var errs error
 	for x := 0; x < dataPoints.Len(); x++ {
 		pt := dataPoints.At(x)
-		lbls := createAttributes(
-			resource,
-			pt.Attributes(),
-			settings.ExternalLabels,
-			nil,
-			true,
-			c.labelNamer,
-			model.MetricNameLabel,
-			baseName,
-		)
+		lbls, err := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nil, true, c.labelNamer, model.MetricNameLabel, baseName)
+		if err != nil {
+			errs = multierr.Append(errs, err)
+			continue
+		}
 		ts, _ := c.getOrCreateTimeSeries(lbls)
 
 		histogram, err := exponentialToNativeHistogram(pt)
 		if err != nil {
-			return err
+			errs = multierr.Append(errs, err)
+			continue
 		}
 		ts.Histograms = append(ts.Histograms, histogram)
 
@@ -43,7 +41,7 @@ func (c *prometheusConverter) addExponentialHistogramDataPoints(dataPoints pmetr
 		ts.Exemplars = append(ts.Exemplars, exemplars...)
 	}
 
-	return nil
+	return errs
 }
 
 // exponentialToNativeHistogram  translates OTel Exponential Histogram data point

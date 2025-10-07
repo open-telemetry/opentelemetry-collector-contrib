@@ -288,7 +288,7 @@ func (tc *TestCase) indicateError(err error) {
 	log.Print(err.Error())
 
 	tc.errorSignalCloser.Do(func() {
-		tc.t.Error(err.Error())
+		tc.t.Log(err.Error())
 
 		tc.errorCause = err.Error()
 

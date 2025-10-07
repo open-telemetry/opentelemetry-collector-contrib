@@ -16,265 +16,265 @@ metrics:
 
 Maximum resource limit set for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {cpu} | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {cpu} | Gauge | Double | development |
 
 ### k8s.container.cpu_request
 
 Resource requested for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {cpu} | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {cpu} | Gauge | Double | development |
 
 ### k8s.container.ephemeralstorage_limit
 
 Maximum resource limit set for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| By | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | development |
 
 ### k8s.container.ephemeralstorage_request
 
 Resource requested for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| By | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | development |
 
 ### k8s.container.memory_limit
 
 Maximum resource limit set for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| By | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | development |
 
 ### k8s.container.memory_request
 
 Resource requested for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| By | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | development |
 
 ### k8s.container.ready
 
 Whether a container has passed its readiness probe (0 for no, 1 for yes)
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-|  | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+|  | Gauge | Int | development |
 
 ### k8s.container.restarts
 
 How many times the container has restarted in the recent past. This value is pulled directly from the K8s API and the value can go indefinitely high and be reset to 0 at any time depending on how your kubelet is configured to prune dead containers. It is best to not depend too much on the exact value but rather look at it as either == 0, in which case you can conclude there were no restarts in the recent past, or > 0, in which case you can conclude there were restarts in the recent past, and not try and analyze the value beyond that.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {restart} | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {restart} | Gauge | Int | development |
 
 ### k8s.container.storage_limit
 
 Maximum resource limit set for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| By | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | development |
 
 ### k8s.container.storage_request
 
 Resource requested for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| By | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | development |
 
 ### k8s.cronjob.active_jobs
 
 The number of actively running jobs for a cronjob
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {job} | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {job} | Gauge | Int | development |
 
 ### k8s.daemonset.current_scheduled_nodes
 
 Number of nodes that are running at least 1 daemon pod and are supposed to run the daemon pod
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {node} | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {node} | Gauge | Int | development |
 
 ### k8s.daemonset.desired_scheduled_nodes
 
 Number of nodes that should be running the daemon pod (including nodes currently running the daemon pod)
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {node} | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {node} | Gauge | Int | development |
 
 ### k8s.daemonset.misscheduled_nodes
 
 Number of nodes that are running the daemon pod, but are not supposed to run the daemon pod
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {node} | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {node} | Gauge | Int | development |
 
 ### k8s.daemonset.ready_nodes
 
 Number of nodes that should be running the daemon pod and have one or more of the daemon pod running and ready
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {node} | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {node} | Gauge | Int | development |
 
 ### k8s.deployment.available
 
 Total number of available pods (ready for at least minReadySeconds) targeted by this deployment
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {pod} | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {pod} | Gauge | Int | development |
 
 ### k8s.deployment.desired
 
 Number of desired pods in this deployment
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {pod} | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {pod} | Gauge | Int | development |
 
 ### k8s.hpa.current_replicas
 
 Current number of pod replicas managed by this autoscaler.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {pod} | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {pod} | Gauge | Int | development |
 
 ### k8s.hpa.desired_replicas
 
 Desired number of pod replicas managed by this autoscaler.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {pod} | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {pod} | Gauge | Int | development |
 
 ### k8s.hpa.max_replicas
 
 Maximum number of replicas to which the autoscaler can scale up.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {pod} | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {pod} | Gauge | Int | development |
 
 ### k8s.hpa.min_replicas
 
 Minimum number of replicas to which the autoscaler can scale up.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {pod} | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {pod} | Gauge | Int | development |
 
 ### k8s.job.active_pods
 
 The number of actively running pods for a job
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {pod} | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {pod} | Gauge | Int | development |
 
 ### k8s.job.desired_successful_pods
 
 The desired number of successfully finished pods the job should be run with
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {pod} | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {pod} | Gauge | Int | development |
 
 ### k8s.job.failed_pods
 
 The number of pods which reached phase Failed for a job
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {pod} | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {pod} | Gauge | Int | development |
 
 ### k8s.job.max_parallel_pods
 
 The max desired number of pods the job should run at any given time
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {pod} | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {pod} | Gauge | Int | development |
 
 ### k8s.job.successful_pods
 
 The number of pods which reached phase Succeeded for a job
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {pod} | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {pod} | Gauge | Int | development |
 
 ### k8s.namespace.phase
 
 The current phase of namespaces (1 for active and 0 for terminating)
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-|  | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+|  | Gauge | Int | development |
 
 ### k8s.pod.phase
 
 Current phase of the pod (1 - Pending, 2 - Running, 3 - Succeeded, 4 - Failed, 5 - Unknown)
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-|  | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+|  | Gauge | Int | development |
 
 ### k8s.replicaset.available
 
 Total number of available pods (ready for at least minReadySeconds) targeted by this replicaset
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {pod} | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {pod} | Gauge | Int | development |
 
 ### k8s.replicaset.desired
 
 Number of desired pods in this replicaset
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {pod} | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {pod} | Gauge | Int | development |
 
 ### k8s.replication_controller.available
 
 Total number of available pods (ready for at least minReadySeconds) targeted by this replication_controller
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {pod} | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {pod} | Gauge | Int | development |
 
 ### k8s.replication_controller.desired
 
 Number of desired pods in this replication_controller
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {pod} | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {pod} | Gauge | Int | development |
 
 ### k8s.resource_quota.hard_limit
 
 The upper limit for a particular resource in a specific namespace. Will only be sent if a quota is specified. CPU requests/limits will be sent as millicores
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {resource} | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {resource} | Gauge | Int | development |
 
 #### Attributes
 
@@ -286,9 +286,9 @@ The upper limit for a particular resource in a specific namespace. Will only be 
 
 The usage for a particular resource in a specific namespace. Will only be sent if a quota is specified. CPU requests/limits will be sent as millicores
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {resource} | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {resource} | Gauge | Int | development |
 
 #### Attributes
 
@@ -300,41 +300,41 @@ The usage for a particular resource in a specific namespace. Will only be sent i
 
 The number of pods created by the StatefulSet controller from the StatefulSet version
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {pod} | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {pod} | Gauge | Int | development |
 
 ### k8s.statefulset.desired_pods
 
 Number of desired pods in the stateful set (the `spec.replicas` field)
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {pod} | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {pod} | Gauge | Int | development |
 
 ### k8s.statefulset.ready_pods
 
 Number of pods created by the stateful set that have the `Ready` condition
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {pod} | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {pod} | Gauge | Int | development |
 
 ### k8s.statefulset.updated_pods
 
 Number of pods created by the StatefulSet controller from the StatefulSet version
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {pod} | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {pod} | Gauge | Int | development |
 
 ### openshift.appliedclusterquota.limit
 
 The upper limit for a particular resource in a specific namespace.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {resource} | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {resource} | Gauge | Int | development |
 
 #### Attributes
 
@@ -347,9 +347,9 @@ The upper limit for a particular resource in a specific namespace.
 
 The usage for a particular resource in a specific namespace.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {resource} | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {resource} | Gauge | Int | development |
 
 #### Attributes
 
@@ -362,9 +362,9 @@ The usage for a particular resource in a specific namespace.
 
 The configured upper limit for a particular resource.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {resource} | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {resource} | Gauge | Int | development |
 
 #### Attributes
 
@@ -376,9 +376,9 @@ The configured upper limit for a particular resource.
 
 The usage for a particular resource with a configured limit.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {resource} | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {resource} | Gauge | Int | development |
 
 #### Attributes
 
@@ -400,9 +400,9 @@ metrics:
 
 Experimental metric, may experience breaking changes. Describes the number of K8s containers that are currently in a state for a given reason. All possible container state reasons will be reported at each time interval to avoid missing metrics. Only the value corresponding to the current state reason will be non-zero.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {container} | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {container} | Sum | Int | Cumulative | false | development |
 
 #### Attributes
 
@@ -414,9 +414,9 @@ Experimental metric, may experience breaking changes. Describes the number of K8
 
 Experimental metric, may experience breaking changes. Describes the number of K8s containers that are currently in a given state. All possible container states will be reported at each time interval to avoid missing metrics. Only the value corresponding to the current state will be non-zero.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {container} | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {container} | Sum | Int | Cumulative | false | development |
 
 #### Attributes
 
@@ -428,9 +428,9 @@ Experimental metric, may experience breaking changes. Describes the number of K8
 
 The condition of a particular Node.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {condition} | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {condition} | Gauge | Int | development |
 
 #### Attributes
 
@@ -442,9 +442,9 @@ The condition of a particular Node.
 
 Current status reason of the pod (1 - Evicted, 2 - NodeAffinity, 3 - NodeLost, 4 - Shutdown, 5 - UnexpectedAdmissionError, 6 - Unknown)
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-|  | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+|  | Gauge | Int | development |
 
 ## Resource Attributes
 

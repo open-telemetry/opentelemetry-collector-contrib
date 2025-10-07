@@ -16,7 +16,7 @@ import (
 	"strings"
 
 	"github.com/bmatcuk/doublestar/v4"
-	"go.yaml.in/yaml/v2"
+	"go.yaml.in/yaml/v3"
 	"golang.org/x/mod/modfile"
 )
 
@@ -232,12 +232,17 @@ const (
 var matchComponentSection = regexp.MustCompile("(?s)" + startComponentList + ".*" + endComponentList)
 
 func addComponentList(config *CodecovConfig) error {
-	yamlData, err := yaml.Marshal(config)
+	var buf bytes.Buffer
+	enc := yaml.NewEncoder(&buf)
+	enc.SetIndent(2)
+	enc.CompactSeqIndent()
+
+	err := enc.Encode(config)
 	if err != nil {
 		return fmt.Errorf("failed to marshal YAML: %w", err)
 	}
 
-	replacement := []byte(startComponentList + "\n" + string(yamlData) + endComponentList)
+	replacement := []byte(startComponentList + "\n" + buf.String() + endComponentList)
 	codecovCfg, err := os.ReadFile(codecovFileName)
 	if err != nil {
 		return fmt.Errorf("failed to read %q: %w", codecovFileName, err)

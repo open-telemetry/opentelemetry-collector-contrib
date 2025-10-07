@@ -52,7 +52,8 @@ func TestClientConfig(t *testing.T) {
 						Backoff: 5 * time.Second,
 					},
 				},
-				RackID: "rack1",
+				RackID:         "rack1",
+				UseLeaderEpoch: true,
 			},
 		},
 		"sasl_aws_msk_iam_oauthbearer": {
@@ -111,6 +112,13 @@ func TestClientConfig(t *testing.T) {
 				return cfg
 			}(),
 		},
+		"not_use_leader_epoch": {
+			expected: func() ClientConfig {
+				cfg := NewDefaultClientConfig()
+				cfg.UseLeaderEpoch = false
+				return cfg
+			}(),
+		},
 
 		// Invalid configurations
 		"brokers_required": {
@@ -152,10 +160,11 @@ func TestConsumerConfig(t *testing.T) {
 					Enable:   false,
 					Interval: 10 * time.Minute,
 				},
-				MinFetchSize:     10,
-				DefaultFetchSize: 1024,
-				MaxFetchSize:     4096,
-				MaxFetchWait:     1 * time.Second,
+				MinFetchSize:          10,
+				DefaultFetchSize:      1024,
+				MaxFetchSize:          4096,
+				MaxFetchWait:          1 * time.Second,
+				MaxPartitionFetchSize: 4096,
 			},
 		},
 

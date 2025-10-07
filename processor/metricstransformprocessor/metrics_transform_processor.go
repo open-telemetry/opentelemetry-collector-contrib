@@ -31,7 +31,7 @@ type internalTransform struct {
 }
 
 type internalOperation struct {
-	configOperation     operation
+	configOperation     *operation
 	valueActionsMapping map[string]string
 	labelSetMap         map[string]bool
 	aggregatedValuesSet map[string]bool

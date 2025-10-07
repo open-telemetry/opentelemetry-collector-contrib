@@ -549,3 +549,70 @@ func TestFranzClient_MetadataRefreshInterval(t *testing.T) {
 		})
 	}
 }
+
+func TestFranzClient_ProtocolVersion(t *testing.T) {
+	type testcase struct {
+		protocolVersion string
+		expectedVersion int
+	}
+	tests := map[string]testcase{
+		"without protocol version": {
+			expectedVersion: 4, // maximum
+		},
+		"with protocol version": {
+			protocolVersion: "2.1.0",
+			expectedVersion: 2,
+		},
+	}
+
+	for name, testcase := range tests {
+		t.Run(name, func(t *testing.T) {
+			var calls int
+			cluster, clientConfig := kafkatest.NewCluster(t)
+			cluster.ControlKey(int16(kmsg.ApiVersions), func(req kmsg.Request) (kmsg.Response, error, bool) {
+				calls++
+				assert.Equal(t, int16(testcase.expectedVersion), req.GetVersion())
+				return nil, nil, false
+			})
+
+			clientConfig.ProtocolVersion = testcase.protocolVersion
+			t.Run("consumer", func(t *testing.T) {
+				consumeConfig := configkafka.NewDefaultConsumerConfig()
+				client := mustNewFranzConsumerGroup(t, clientConfig, consumeConfig, []string{})
+				assert.NoError(t, client.Ping(t.Context()))
+			})
+			t.Run("producer", func(t *testing.T) {
+				client, err := NewFranzSyncProducer(
+					t.Context(), clientConfig,
+					configkafka.NewDefaultProducerConfig(), time.Second, zap.NewNop(),
+				)
+				require.NoError(t, err)
+				require.NoError(t, client.Ping(t.Context())) // trigger an API call
+				client.Close()
+			})
+			assert.Equal(t, 2, calls)
+		})
+	}
+}
+
+func TestNewFranzClient_And_Admin(t *testing.T) {
+	_, clientCfg := kafkatest.NewCluster(t, kfake.SeedTopics(1, "meta-topic"))
+	tl := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
+
+	// Plain client
+	cl, err := NewFranzClient(t.Context(), clientCfg, tl)
+	require.NoError(t, err)
+	t.Cleanup(cl.Close)
+
+	// Admin from fresh client
+	ad, cl2, err := NewFranzClusterAdminClient(t.Context(), clientCfg, tl)
+	require.NoError(t, err)
+	t.Cleanup(func() { ad.Close(); cl2.Close() })
+
+	// Metadata via admin should return brokers & topic
+	md, err := ad.Metadata(t.Context(), "meta-topic")
+	require.NoError(t, err)
+	assert.NotEmpty(t, md.Brokers)
+	_, ok := md.Topics["meta-topic"]
+	assert.True(t, ok)
+}

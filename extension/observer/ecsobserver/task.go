@@ -15,7 +15,7 @@ import (
 // taskAnnotated contains both raw task info and its definition.
 // It is generated from taskFetcher.
 type taskAnnotated struct {
-	Task       ecstypes.Task
+	Task       *ecstypes.Task
 	Definition *ecstypes.TaskDefinition
 	EC2        *ec2types.Instance
 	Service    *ecstypes.Service
@@ -186,7 +186,8 @@ func (t *taskAnnotated) MappedPort(def ecstypes.ContainerDefinition, containerPo
 		return 0, errNotFound
 	case "", ecstypes.NetworkModeBridge:
 		//  task->containers->networkBindings
-		for _, c := range t.Task.Containers {
+		for i := range t.Task.Containers {
+			c := &t.Task.Containers[i]
 			if aws.ToString(def.Name) == aws.ToString(c.Name) {
 				for _, b := range c.NetworkBindings {
 					if containerPort == aws.ToInt32(b.ContainerPort) {

@@ -33,6 +33,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter/internal/metadata"
+	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite"
 )
 
@@ -258,16 +259,18 @@ func (prwe *prwExporter) Shutdown(context.Context) error {
 
 func (prwe *prwExporter) pushMetricsV1(ctx context.Context, md pmetric.Metrics) error {
 	tsMap, err := prometheusremotewrite.FromMetrics(md, prwe.exporterSettings)
-
+	if err != nil {
+		prwe.telemetry.recordTranslationFailure(ctx)
+		prwe.settings.Logger.Debug("failed to translate metrics, exporting remaining metrics", zap.Error(err), zap.Int("translated", len(tsMap)))
+	}
 	prwe.telemetry.recordTranslatedTimeSeries(ctx, len(tsMap))
 
 	var m []*prompb.MetricMetadata
 	if prwe.exporterSettings.SendMetadata {
-		m = prometheusremotewrite.OtelMetricsToMetadata(md, prwe.exporterSettings.AddMetricSuffixes, prwe.exporterSettings.Namespace)
-	}
-	if err != nil {
-		prwe.telemetry.recordTranslationFailure(ctx)
-		prwe.settings.Logger.Debug("failed to translate metrics, exporting remaining metrics", zap.Error(err), zap.Int("translated", len(tsMap)))
+		m, err = prometheusremotewrite.OtelMetricsToMetadata(md, prwe.exporterSettings.AddMetricSuffixes, prwe.exporterSettings.Namespace)
+		if err != nil {
+			prwe.settings.Logger.Debug("failed to translate metrics into metadata, exporting remaining metadata", zap.Error(err), zap.Int("translated", len(m)))
+		}
 	}
 	// Call export even if a conversion error, since there may be points that were successfully converted.
 	return prwe.handleExport(ctx, tsMap, m)
@@ -303,13 +306,19 @@ func (prwe *prwExporter) PushMetrics(ctx context.Context, md pmetric.Metrics) er
 }
 
 func validateAndSanitizeExternalLabels(cfg *Config) (map[string]string, error) {
-	namer := otlptranslator.LabelNamer{}
+	namer := otlptranslator.LabelNamer{
+		UnderscoreLabelSanitization: !prometheustranslator.DropSanitizationGate.IsEnabled(),
+	}
 	sanitizedLabels := make(map[string]string)
 	for key, value := range cfg.ExternalLabels {
 		if key == "" || value == "" {
 			return nil, errors.New("prometheus remote write: external labels configuration contains an empty key or value")
 		}
-		sanitizedLabels[namer.Build(key)] = value
+		normalizedName, err := namer.Build(key)
+		if err != nil {
+			return nil, err
+		}
+		sanitizedLabels[normalizedName] = value
 	}
 
 	return sanitizedLabels, nil

@@ -92,7 +92,8 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 	}
 
 	allResourceScopeLogs := map[string]plog.ScopeLogs{}
-	for _, log := range azureLogs.Records {
+	for i := range azureLogs.Records {
+		log := &azureLogs.Records[i]
 		scopeLogs, found := allResourceScopeLogs[log.ResourceID]
 		if !found {
 			scopeLogs = plog.NewScopeLogs()
@@ -157,7 +158,7 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 	return l, nil
 }
 
-func getTimestamp(record azureLogRecord, formats ...string) (pcommon.Timestamp, error) {
+func getTimestamp(record *azureLogRecord, formats ...string) (pcommon.Timestamp, error) {
 	if record.Time != "" {
 		return asTimestamp(record.Time, formats...)
 	} else if record.Timestamp != "" {
@@ -217,7 +218,7 @@ func putStrPtr(field string, value *string, record plog.LogRecord) {
 	}
 }
 
-func addCommonSchema(log azureLogRecord, record plog.LogRecord) {
+func addCommonSchema(log *azureLogRecord, record plog.LogRecord) {
 	record.Attributes().PutStr(attributeAzureCategory, log.Category)
 	putStrPtr(attributeAzureCorrelationID, log.CorrelationID, record)
 	record.Attributes().PutStr(attributeAzureOperationName, log.OperationName)
@@ -225,7 +226,7 @@ func addCommonSchema(log azureLogRecord, record plog.LogRecord) {
 	// TODO Keep adding other common fields, like tenant ID
 }
 
-func extractRawAttributes(log azureLogRecord) map[string]any {
+func extractRawAttributes(log *azureLogRecord) map[string]any {
 	attrs := map[string]any{}
 
 	attrs[azureCategory] = log.Category

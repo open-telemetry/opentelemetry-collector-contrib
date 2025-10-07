@@ -11,6 +11,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/constants"
 )
 
 func createVPCFlowLogContent(b *testing.B, filename string, nLogs int) []byte {
@@ -48,7 +50,7 @@ func BenchmarkUnmarshalUnmarshalPlainTextLogs(b *testing.B) {
 	}
 
 	u := vpcFlowLogUnmarshaler{
-		fileFormat: fileFormatPlainText,
+		fileFormat: constants.FileFormatPlainText,
 		buildInfo:  component.BuildInfo{},
 		logger:     zap.NewNop(),
 	}

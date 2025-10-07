@@ -95,7 +95,9 @@ func (it *IntegrationTest) Run(t *testing.T) {
 			t.Error(validateErr.Error())
 
 			logs := strings.Builder{}
-			for _, e := range observedLogs.All() {
+			allLogs := observedLogs.All()
+			for i := range allLogs {
+				e := &allLogs[i]
 				logs.WriteString(e.Message + "\n")
 			}
 			t.Errorf("full log:\n%s", logs.String())
@@ -118,7 +120,9 @@ func (it *IntegrationTest) Run(t *testing.T) {
 			}
 			if it.failOnErrorLogs && len(observedLogs.All()) > 0 {
 				logs := strings.Builder{}
-				for _, e := range observedLogs.All() {
+				allLogs := observedLogs.All()
+				for i := range allLogs {
+					e := &allLogs[i]
 					logs.WriteString(e.Message + "\n")
 				}
 				t.Errorf("full log:\n%s", logs.String())
@@ -140,7 +144,8 @@ func (it *IntegrationTest) createContainers(t *testing.T) *ContainerInfo {
 		containers: make(map[string]testcontainers.Container, len(it.containerRequests)),
 	}
 	wg.Add(len(it.containerRequests))
-	for _, cr := range it.containerRequests {
+	for i := range it.containerRequests {
+		cr := it.containerRequests[i]
 		go func(req testcontainers.ContainerRequest) {
 			var errs error
 			assert.Eventuallyf(t, func() bool {
@@ -166,7 +171,8 @@ func (it *IntegrationTest) createContainers(t *testing.T) *ContainerInfo {
 
 func (it *IntegrationTest) validate(t *testing.T) {
 	containerNames := make(map[string]bool, len(it.containerRequests))
-	for _, cr := range it.containerRequests {
+	for i := range it.containerRequests {
+		cr := &it.containerRequests[i]
 		if _, ok := containerNames[cr.Name]; ok {
 			require.False(t, ok, "duplicate container name: %q", cr.Name)
 		} else {

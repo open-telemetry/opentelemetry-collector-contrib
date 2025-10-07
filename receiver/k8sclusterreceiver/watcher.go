@@ -206,7 +206,8 @@ func (rw *resourceWatcher) isKindSupported(gvk schema.GroupVersionKind) (bool, e
 		return false, fmt.Errorf("failed to fetch group version details: %w", err)
 	}
 
-	for _, r := range resources.APIResources {
+	for i := range resources.APIResources {
+		r := &resources.APIResources[i]
 		if r.Kind == gvk.Kind {
 			return true, nil
 		}

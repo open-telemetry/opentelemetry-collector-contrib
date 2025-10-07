@@ -9,6 +9,9 @@ clickhouse/full:
   logs_table_name: otel_logs
   traces_table_name: otel_traces
   timeout: 5s
+  tls:
+    cert_file: client.crt
+    key_file: client.key
   retry_on_failure:
     enabled: true
     initial_interval: 5s

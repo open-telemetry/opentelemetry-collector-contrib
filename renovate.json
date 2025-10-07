@@ -229,6 +229,12 @@
       "matchPackageNames": [
         "github.com/splunk/stef{/,}**"
       ]
+    },
+    {
+      "matchPackageNames": [
+        "github.com/vmware/govmomi"
+      ],
+      "allowedVersions": "!/v0.51.0$/"
     }
   ],
   "ignoreDeps": [

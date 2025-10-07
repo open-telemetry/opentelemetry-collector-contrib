@@ -56,6 +56,49 @@ Each operator performs a simple responsibility, such as parsing a timestamp or J
 - Only parsers and general purpose operators should be used.
 
 ### Example Configurations
+#### Minimal configuration
+
+The following configuration is the minimal configuration to read
+journald logs:
+
+```yaml
+receivers:
+  journald:
+```
+will be passed to journalctl as the following arguments: `journalctl
+... --priority info`. This will read the 10 most recent entries and
+any subsequent entry.  `--priority info` is the default priority, the
+following examples will omit it for simplicity.
+
+#### Cursor tracking
+```yaml
+receivers:
+  journald:
+    storage: file_storage/journald
+
+extensions:
+  file_storage/journald:
+    directory: .
+
+service:
+  extensions: [file_storage/journald]
+```
+
+If you stop and start the otel collector, only new entries will be
+read.
+
+#### Reading from the beginning
+
+```yaml
+receivers:
+  journald:
+    start_at: beginning
+```
+
+will be passed to journalctl as the following arguments: `journalctl
+... --no-tail`. This will read all messages from the current boot.
+
+#### Units
 
 ```yaml
 receivers:
@@ -139,7 +182,7 @@ The user running the collector must have enough permissions to access the journa
 
 When running in a containerized environment, differences in the systemd version running on the host and on the container may prevent access to logs due to different features and configurations (e.g. zstd compression, keyed hash etc).
 
-### Docker
+### Docker & Kubernetes
 
 When running otelcol in a container, note that:
 
@@ -148,6 +191,8 @@ When running otelcol in a container, note that:
 3. depending on your guest system, you might need to explicitly set the log directory in the configuration
 
 Please note that *the official otelcol images do not contain the journald binary*; you will need to create your custom image or find one that does.
+
+There is a simple example with a step-by-step, including a `Dockerfile` in [`examples/container`](examples/container/README.md).
 
 ### Linux packaging
 
@@ -160,7 +205,3 @@ sudo su -s /bin/bash -c 'journalctl --lines 5' otelcol-contrib
 ```
 
 if the permissions are set correctly you will see some logs, otherwise a clear error message.
-
-### Kubernetes
-
-See the instructions for [Docker](#Docker) and adapt according to your Kubernetes distribution and node OS.

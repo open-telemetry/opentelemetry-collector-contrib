@@ -126,6 +126,7 @@ components:
         - sumologic
         - tail_sampling
         - transform
+        - unroll
     provider:
         - aes
         - googlesecretmanager

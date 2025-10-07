@@ -67,6 +67,8 @@ type tailSamplingSpanProcessor struct {
 	setPolicyMux       sync.Mutex
 	pendingPolicy      []PolicyCfg
 	sampleOnFirstMatch bool
+
+	host component.Host
 }
 
 type traceLimiter interface {
@@ -154,10 +156,7 @@ func newTracesProcessor(ctx context.Context, set processor.Settings, nextConsume
 	}
 
 	if tsp.policies == nil {
-		err := tsp.loadSamplingPolicy(cfg.PolicyCfgs)
-		if err != nil {
-			return nil, err
-		}
+		tsp.pendingPolicy = cfg.PolicyCfgs
 	}
 
 	if tsp.decisionBatcher == nil {
@@ -215,20 +214,20 @@ func withRecordPolicy() Option {
 	}
 }
 
-func getPolicyEvaluator(settings component.TelemetrySettings, cfg *PolicyCfg) (samplingpolicy.Evaluator, error) {
+func getPolicyEvaluator(settings component.TelemetrySettings, cfg *PolicyCfg, policyExtensions map[string]samplingpolicy.Extension) (samplingpolicy.Evaluator, error) {
 	switch cfg.Type {
 	case Composite:
-		return getNewCompositePolicy(settings, &cfg.CompositeCfg)
+		return getNewCompositePolicy(settings, &cfg.CompositeCfg, policyExtensions)
 	case And:
-		return getNewAndPolicy(settings, &cfg.AndCfg)
+		return getNewAndPolicy(settings, &cfg.AndCfg, policyExtensions)
 	case Drop:
-		return getNewDropPolicy(settings, &cfg.DropCfg)
+		return getNewDropPolicy(settings, &cfg.DropCfg, policyExtensions)
 	default:
-		return getSharedPolicyEvaluator(settings, &cfg.sharedPolicyCfg)
+		return getSharedPolicyEvaluator(settings, &cfg.sharedPolicyCfg, policyExtensions)
 	}
 }
 
-func getSharedPolicyEvaluator(settings component.TelemetrySettings, cfg *sharedPolicyCfg) (samplingpolicy.Evaluator, error) {
+func getSharedPolicyEvaluator(settings component.TelemetrySettings, cfg *sharedPolicyCfg, policyExtensions map[string]samplingpolicy.Extension) (samplingpolicy.Evaluator, error) {
 	settings.Logger = settings.Logger.With(zap.Any("policy", cfg.Type))
 
 	switch cfg.Type {
@@ -271,8 +270,17 @@ func getSharedPolicyEvaluator(settings component.TelemetrySettings, cfg *sharedP
 	case OTTLCondition:
 		ottlfCfg := cfg.OTTLConditionCfg
 		return sampling.NewOTTLConditionFilter(settings, ottlfCfg.SpanConditions, ottlfCfg.SpanEventConditions, ottlfCfg.ErrorMode)
-
 	default:
+		t := string(cfg.Type)
+		extension, ok := policyExtensions[t]
+		if ok {
+			evaluator, err := extension.NewEvaluator(cfg.Name, cfg.ExtensionCfg[t])
+			if err != nil {
+				return nil, fmt.Errorf("unable to load extension %s: %w", t, err)
+			}
+			return evaluator, nil
+		}
+
 		return nil, fmt.Errorf("unknown sampling policy type %s", cfg.Type)
 	}
 }
@@ -313,7 +321,8 @@ func (tsp *tailSamplingSpanProcessor) loadSamplingPolicy(cfgs []PolicyCfg) error
 	dropPolicies := make([]*policy, 0, cLen)
 	policyNames := make(map[string]struct{}, cLen)
 
-	for _, cfg := range cfgs {
+	for i := range cfgs {
+		cfg := cfgs[i]
 		if cfg.Name == "" {
 			return errors.New("policy name cannot be empty")
 		}
@@ -323,7 +332,7 @@ func (tsp *tailSamplingSpanProcessor) loadSamplingPolicy(cfgs []PolicyCfg) error
 		}
 		policyNames[cfg.Name] = struct{}{}
 
-		eval, err := getPolicyEvaluator(telemetrySettings, &cfg)
+		eval, err := getPolicyEvaluator(telemetrySettings, &cfg, tsp.extensions())
 		if err != nil {
 			return fmt.Errorf("failed to create policy evaluator for %q: %w", cfg.Name, err)
 		}
@@ -362,14 +371,14 @@ func (tsp *tailSamplingSpanProcessor) SetSamplingPolicy(cfgs []PolicyCfg) {
 	tsp.pendingPolicy = cfgs
 }
 
-func (tsp *tailSamplingSpanProcessor) loadPendingSamplingPolicy() {
+func (tsp *tailSamplingSpanProcessor) loadPendingSamplingPolicy() error {
 	tsp.setPolicyMux.Lock()
 	defer tsp.setPolicyMux.Unlock()
 
 	// Nothing pending, do nothing.
 	pLen := len(tsp.pendingPolicy)
 	if pLen == 0 {
-		return
+		return nil
 	}
 
 	tsp.logger.Debug("Loading pending sampling policy", zap.Int("pending.len", pLen))
@@ -379,17 +388,17 @@ func (tsp *tailSamplingSpanProcessor) loadPendingSamplingPolicy() {
 	// Empty pending regardless of error. If policy is invalid, it will fail on
 	// every tick, no need to do extra work and flood the log with errors.
 	tsp.pendingPolicy = nil
-
-	if err != nil {
-		tsp.logger.Error("Failed to load pending sampling policy", zap.Error(err))
-		tsp.logger.Debug("Continuing to use the previously loaded sampling policy")
-	}
+	return err
 }
 
 func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 	tsp.logger.Debug("Sampling Policy Evaluation ticked")
 
-	tsp.loadPendingSamplingPolicy()
+	err := tsp.loadPendingSamplingPolicy()
+	if err != nil {
+		tsp.logger.Error("Failed to load pending sampling policy", zap.Error(err))
+		tsp.logger.Debug("Continuing to use the previously loaded sampling policy")
+	}
 
 	ctx := context.Background()
 	metrics := newPolicyMetrics(len(tsp.policies))
@@ -645,9 +654,33 @@ func (*tailSamplingSpanProcessor) Capabilities() consumer.Capabilities {
 }
 
 // Start is invoked during service startup.
-func (tsp *tailSamplingSpanProcessor) Start(context.Context, component.Host) error {
+func (tsp *tailSamplingSpanProcessor) Start(_ context.Context, host component.Host) error {
+	// We need to store the host before loading sampling policies in order to load any extensions.
+	tsp.host = host
+	if tsp.policies == nil {
+		err := tsp.loadPendingSamplingPolicy()
+		if err != nil {
+			tsp.logger.Error("Failed to load initial sampling policy", zap.Error(err))
+			return err
+		}
+	}
 	tsp.policyTicker.Start(tsp.tickerFrequency)
 	return nil
+}
+
+func (tsp *tailSamplingSpanProcessor) extensions() map[string]samplingpolicy.Extension {
+	if tsp.host == nil {
+		return nil
+	}
+	extensions := tsp.host.GetExtensions()
+	scoped := map[string]samplingpolicy.Extension{}
+	for id, ext := range extensions {
+		evaluator, ok := ext.(samplingpolicy.Extension)
+		if ok {
+			scoped[id.String()] = evaluator
+		}
+	}
+	return scoped
 }
 
 // Shutdown is invoked during service shutdown.

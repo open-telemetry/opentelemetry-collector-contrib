@@ -66,7 +66,8 @@ var (
 func (t *translator) loadTranslation(content *ast11.Schema) error {
 	var errs error
 	t.log.Debug("Updating translation")
-	for v, def := range content.Versions {
+	for v := range content.Versions {
+		def := content.Versions[v]
 		version, err := NewVersion(string(v))
 		if err != nil {
 			errs = multierr.Append(errs, err)

@@ -24,7 +24,7 @@ func NewSettings(tt *componenttest.Telemetry) receiver.Settings {
 func AssertEqualSolacereceiverDroppedEgressSpans(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_solacereceiver_dropped_egress_spans",
-		Description: "Number of dropped egress spans",
+		Description: "Number of dropped egress spans [development]",
 		Unit:        "1",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -40,7 +40,7 @@ func AssertEqualSolacereceiverDroppedEgressSpans(t *testing.T, tt *componenttest
 func AssertEqualSolacereceiverDroppedSpanMessages(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_solacereceiver_dropped_span_messages",
-		Description: "Number of dropped span messages",
+		Description: "Number of dropped span messages [development]",
 		Unit:        "1",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -56,7 +56,7 @@ func AssertEqualSolacereceiverDroppedSpanMessages(t *testing.T, tt *componenttes
 func AssertEqualSolacereceiverFailedReconnections(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_solacereceiver_failed_reconnections",
-		Description: "Number of failed broker reconnections",
+		Description: "Number of failed broker reconnections [development]",
 		Unit:        "1",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -72,7 +72,7 @@ func AssertEqualSolacereceiverFailedReconnections(t *testing.T, tt *componenttes
 func AssertEqualSolacereceiverFatalUnmarshallingErrors(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_solacereceiver_fatal_unmarshalling_errors",
-		Description: "Number of fatal message unmarshalling errors",
+		Description: "Number of fatal message unmarshalling errors [development]",
 		Unit:        "1",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -88,7 +88,7 @@ func AssertEqualSolacereceiverFatalUnmarshallingErrors(t *testing.T, tt *compone
 func AssertEqualSolacereceiverNeedUpgrade(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_solacereceiver_need_upgrade",
-		Description: "Indicates with value 1 that receiver requires an upgrade and is not compatible with messages received from a broker",
+		Description: "Indicates with value 1 that receiver requires an upgrade and is not compatible with messages received from a broker [development]",
 		Unit:        "1",
 		Data: metricdata.Gauge[int64]{
 			DataPoints: dps,
@@ -102,7 +102,7 @@ func AssertEqualSolacereceiverNeedUpgrade(t *testing.T, tt *componenttest.Teleme
 func AssertEqualSolacereceiverReceivedSpanMessages(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_solacereceiver_received_span_messages",
-		Description: "Number of received span messages",
+		Description: "Number of received span messages [development]",
 		Unit:        "1",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -118,7 +118,7 @@ func AssertEqualSolacereceiverReceivedSpanMessages(t *testing.T, tt *componentte
 func AssertEqualSolacereceiverReceiverFlowControlRecentRetries(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_solacereceiver_receiver_flow_control_recent_retries",
-		Description: "Most recent/current retry count when flow controlled",
+		Description: "Most recent/current retry count when flow controlled [development]",
 		Unit:        "1",
 		Data: metricdata.Gauge[int64]{
 			DataPoints: dps,
@@ -132,7 +132,7 @@ func AssertEqualSolacereceiverReceiverFlowControlRecentRetries(t *testing.T, tt 
 func AssertEqualSolacereceiverReceiverFlowControlStatus(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_solacereceiver_receiver_flow_control_status",
-		Description: "Indicates the flow control status of the receiver. 0 = not flow controlled, 1 = currently flow controlled",
+		Description: "Indicates the flow control status of the receiver. 0 = not flow controlled, 1 = currently flow controlled [development]",
 		Unit:        "1",
 		Data: metricdata.Gauge[int64]{
 			DataPoints: dps,
@@ -146,7 +146,7 @@ func AssertEqualSolacereceiverReceiverFlowControlStatus(t *testing.T, tt *compon
 func AssertEqualSolacereceiverReceiverFlowControlTotal(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_solacereceiver_receiver_flow_control_total",
-		Description: "Number of times the receiver instance became flow controlled",
+		Description: "Number of times the receiver instance became flow controlled [development]",
 		Unit:        "1",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -162,7 +162,7 @@ func AssertEqualSolacereceiverReceiverFlowControlTotal(t *testing.T, tt *compone
 func AssertEqualSolacereceiverReceiverFlowControlWithSingleSuccessfulRetry(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_solacereceiver_receiver_flow_control_with_single_successful_retry",
-		Description: "Number of times the receiver instance became flow controlled and resolved situations after the first retry",
+		Description: "Number of times the receiver instance became flow controlled and resolved situations after the first retry [development]",
 		Unit:        "1",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -178,7 +178,7 @@ func AssertEqualSolacereceiverReceiverFlowControlWithSingleSuccessfulRetry(t *te
 func AssertEqualSolacereceiverReceiverStatus(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_solacereceiver_receiver_status",
-		Description: "Indicates the status of the receiver as an enum. 0 = starting, 1 = connecting, 2 = connected, 3 = disabled (often paired with needs_upgrade), 4 = terminating, 5 = terminated",
+		Description: "Indicates the status of the receiver as an enum. 0 = starting, 1 = connecting, 2 = connected, 3 = disabled (often paired with needs_upgrade), 4 = terminating, 5 = terminated [development]",
 		Unit:        "1",
 		Data: metricdata.Gauge[int64]{
 			DataPoints: dps,
@@ -192,7 +192,7 @@ func AssertEqualSolacereceiverReceiverStatus(t *testing.T, tt *componenttest.Tel
 func AssertEqualSolacereceiverRecoverableUnmarshallingErrors(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_solacereceiver_recoverable_unmarshalling_errors",
-		Description: "Number of recoverable message unmarshalling errors",
+		Description: "Number of recoverable message unmarshalling errors [development]",
 		Unit:        "1",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -208,7 +208,7 @@ func AssertEqualSolacereceiverRecoverableUnmarshallingErrors(t *testing.T, tt *c
 func AssertEqualSolacereceiverReportedSpans(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_solacereceiver_reported_spans",
-		Description: "Number of reported spans",
+		Description: "Number of reported spans [development]",
 		Unit:        "1",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,

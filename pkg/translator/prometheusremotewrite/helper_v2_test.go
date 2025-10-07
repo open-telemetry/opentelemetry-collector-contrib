@@ -131,7 +131,8 @@ func TestAddResourceTargetInfoV2(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			converter := newPrometheusConverterV2(Settings{})
 
-			converter.addResourceTargetInfoV2(tc.resource, tc.settings, tc.timestamp)
+			err := converter.addResourceTargetInfoV2(tc.resource, tc.settings, tc.timestamp)
+			require.NoError(t, err)
 
 			if len(tc.wantLabels) == 0 || tc.settings.DisableTargetInfo {
 				assert.Empty(t, converter.timeSeries())
@@ -267,14 +268,14 @@ func TestPrometheusConverterV2_AddSummaryDataPoints(t *testing.T) {
 				Unit: unitNamer.Build(metric.Unit()),
 			}
 
-			converter.addSummaryDataPoints(
+			err := converter.addSummaryDataPoints(
 				metric.Summary().DataPoints(),
 				pcommon.NewResource(),
 				Settings{},
 				metric.Name(),
 				m,
 			)
-
+			require.NoError(t, err)
 			assert.Equal(t, tt.want(), converter.unique)
 			assert.Empty(t, converter.conflicts)
 		})
@@ -388,14 +389,14 @@ func TestPrometheusConverterV2_AddHistogramDataPoints(t *testing.T) {
 				Help: metric.Description(),
 				Unit: unitNamer.Build(metric.Unit()),
 			}
-			converter.addHistogramDataPoints(
+			err := converter.addHistogramDataPoints(
 				metric.Histogram().DataPoints(),
 				pcommon.NewResource(),
 				Settings{},
 				metric.Name(),
 				m,
 			)
-
+			require.NoError(t, err)
 			assert.Equal(t, tt.want(), converter.unique)
 			assert.Empty(t, converter.conflicts)
 		})

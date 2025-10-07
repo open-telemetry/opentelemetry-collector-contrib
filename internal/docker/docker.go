@@ -112,9 +112,10 @@ func (dc *Client) LoadContainerList(ctx context.Context) error {
 	}
 
 	wg := sync.WaitGroup{}
-	for _, c := range containerList {
+	for i := range containerList {
+		c := &containerList[i]
 		wg.Add(1)
-		go func(container ctypes.Summary) {
+		go func(container *ctypes.Summary) {
 			if !dc.shouldBeExcluded(container.Image) {
 				dc.InspectAndPersistContainer(ctx, container.ID)
 			} else {

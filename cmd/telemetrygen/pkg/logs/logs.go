@@ -84,6 +84,8 @@ func run(c *Config, expF exporterFunc, logger *zap.Logger) error {
 			index:          i,
 			traceID:        c.TraceID,
 			spanID:         c.SpanID,
+			loadSize:       c.LoadSize,
+			allowFailures:  c.AllowExportFailures,
 		}
 		exp, err := expF()
 		if err != nil {

@@ -1,0 +1,22 @@
+resourceLogs:
+  - resource:
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: recordName
+                value:
+                  stringValue: slices
+            body:
+              arrayValue:
+                values:
+                  - stringValue: one
+                  - stringValue: two
+          - attributes:
+              - key: recordName
+                value:
+                  stringValue: slices
+            body:
+              arrayValue:
+                values:
+                  - stringValue: three
+                  - stringValue: four

@@ -113,7 +113,7 @@ func createLogsExporter(
 		return nil, err
 	}
 
-	qbs := exporterhelper.NewLogsQueueBatchSettings()
+	qbs := xexporterhelper.NewLogsQueueBatchSettings()
 	if len(cf.MetadataKeys) > 0 {
 		qbs.Partitioner = metadataKeysPartitioner{keys: cf.MetadataKeys}
 	}
@@ -141,7 +141,7 @@ func createMetricsExporter(
 		return nil, err
 	}
 
-	qbs := exporterhelper.NewMetricsQueueBatchSettings()
+	qbs := xexporterhelper.NewMetricsQueueBatchSettings()
 	if len(cf.MetadataKeys) > 0 {
 		qbs.Partitioner = metadataKeysPartitioner{keys: cf.MetadataKeys}
 	}
@@ -168,7 +168,7 @@ func createTracesExporter(ctx context.Context,
 		return nil, err
 	}
 
-	qbs := exporterhelper.NewTracesQueueBatchSettings()
+	qbs := xexporterhelper.NewTracesQueueBatchSettings()
 	if len(cf.MetadataKeys) > 0 {
 		qbs.Partitioner = metadataKeysPartitioner{keys: cf.MetadataKeys}
 	}
@@ -218,7 +218,7 @@ func exporterhelperOptions(
 	cfg *Config,
 	start component.StartFunc,
 	shutdown component.ShutdownFunc,
-	qbs exporterhelper.QueueBatchSettings,
+	qbs xexporterhelper.QueueBatchSettings,
 ) []exporterhelper.Option {
 	opts := []exporterhelper.Option{
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
@@ -229,7 +229,7 @@ func exporterhelperOptions(
 	switch {
 	case qbc.Batch.HasValue():
 		// Latest queue batch settings are used, prioritize them even if sending queue is disabled
-		opts = append(opts, exporterhelper.WithQueueBatch(qbc, qbs))
+		opts = append(opts, xexporterhelper.WithQueueBatch(qbc, qbs))
 
 		// Effectively disable timeout_sender because timeout is enforced in bulk indexer.
 		//

@@ -300,3 +300,28 @@ func Test_exemplarsFromConfig(t *testing.T) {
 		})
 	}
 }
+
+func TestNewMetricTypes(t *testing.T) {
+	tests := []struct {
+		name         string
+		metricType   MetricType
+		validateFunc func(t *testing.T, config Config)
+	}{
+		{
+			name:       "ExponentialHistogram metric type",
+			metricType: MetricTypeExponentialHistogram,
+			validateFunc: func(t *testing.T, config Config) {
+				assert.Equal(t, MetricTypeExponentialHistogram, config.MetricType)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			config := Config{
+				MetricType: tt.metricType,
+			}
+			tt.validateFunc(t, config)
+		})
+	}
+}

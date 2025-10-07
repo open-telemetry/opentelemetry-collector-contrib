@@ -30,21 +30,21 @@ Example configuration:
 ```yaml
 receivers:
   netflow:
-    - scheme: netflow
-      port: 2055
-      sockets: 16
-      workers: 32
+    scheme: netflow
+    port: 2055
+    sockets: 16
+    workers: 32
   netflow/sflow:
-    - scheme: sflow
-      port: 6343
-      sockets: 16
-      workers: 32
+    scheme: sflow
+    port: 6343
+    sockets: 16
+    workers: 32
   netflow/raw:
-    - scheme: netflow
-      port: 2055
-      sockets: 16
-      workers: 32
-      send_raw: true
+    scheme: netflow
+    port: 2055
+    sockets: 16
+    workers: 32
+    send_raw: true
 
 processors:
   batch:

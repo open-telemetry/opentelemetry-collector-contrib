@@ -20,6 +20,7 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetK8sClusterUID("k8s.cluster.uid-val")
 			rb.SetK8sContainerName("k8s.container.name-val")
 			rb.SetK8sCronjobName("k8s.cronjob.name-val")
+			rb.SetK8sCronjobUID("k8s.cronjob.uid-val")
 			rb.SetK8sDaemonsetName("k8s.daemonset.name-val")
 			rb.SetK8sDaemonsetUID("k8s.daemonset.uid-val")
 			rb.SetK8sDeploymentName("k8s.deployment.name-val")
@@ -50,7 +51,7 @@ func TestResourceBuilder(t *testing.T) {
 			case "default":
 				assert.Equal(t, 8, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 29, res.Attributes().Len())
+				assert.Equal(t, 30, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -92,6 +93,11 @@ func TestResourceBuilder(t *testing.T) {
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
 				assert.Equal(t, "k8s.cronjob.name-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.cronjob.uid")
+			assert.Equal(t, tt == "all_set", ok)
+			if ok {
+				assert.Equal(t, "k8s.cronjob.uid-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.daemonset.name")
 			assert.Equal(t, tt == "all_set", ok)

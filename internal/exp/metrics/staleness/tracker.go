@@ -18,8 +18,8 @@ func NewTracker() Tracker {
 }
 
 func (tr Tracker) Refresh(ts time.Time, ids ...identity.Stream) {
-	for _, id := range ids {
-		tr.pq.Update(id, ts)
+	for i := range ids {
+		tr.pq.Update(ids[i], ts)
 	}
 }
 

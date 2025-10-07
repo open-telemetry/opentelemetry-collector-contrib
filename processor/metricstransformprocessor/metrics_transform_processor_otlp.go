@@ -545,7 +545,8 @@ func transformMetric(metric pmetric.Metric, transform internalTransform) bool {
 		}
 	}
 
-	for _, op := range transform.Operations {
+	for i := range transform.Operations {
+		op := &transform.Operations[i]
 		switch op.configOperation.Action {
 		case updateLabel:
 			updateLabelOp(metric, op, transform.MetricIncludeFilter)

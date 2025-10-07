@@ -25,6 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/tools/cache"
@@ -455,6 +456,7 @@ func TestPodDelete(t *testing.T) {
 	c.deleteQueue = c.deleteQueue[:0]
 	pod = &api_v1.Pod{}
 	pod.Status.PodIP = "1.1.1.1"
+	pod.UID = "aaaaaaaa-bbbb-cccc-dddd"
 	c.handlePodDelete(pod)
 	got = c.Pods[newPodIdentifier("connection", "k8s.pod.ip", "1.1.1.1")]
 	assert.Len(t, c.Pods, 5)
@@ -472,7 +474,6 @@ func TestPodDelete(t *testing.T) {
 	assert.Len(t, c.deleteQueue, 3)
 	deleteRequest := c.deleteQueue[0]
 	assert.Equal(t, newPodIdentifier("connection", "k8s.pod.ip", "1.1.1.1"), deleteRequest.id)
-	assert.Equal(t, "podB", deleteRequest.podName)
 	assert.False(t, deleteRequest.ts.Before(tsBeforeDelete))
 	assert.False(t, deleteRequest.ts.After(time.Now()))
 
@@ -488,12 +489,12 @@ func TestPodDelete(t *testing.T) {
 	assert.Len(t, c.deleteQueue, 5)
 	deleteRequest = c.deleteQueue[0]
 	assert.Equal(t, newPodIdentifier("connection", "k8s.pod.ip", "2.2.2.2"), deleteRequest.id)
-	assert.Equal(t, "podC", deleteRequest.podName)
+	assert.Equal(t, "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", deleteRequest.podUID)
 	assert.False(t, deleteRequest.ts.Before(tsBeforeDelete))
 	assert.False(t, deleteRequest.ts.After(time.Now()))
 	deleteRequest = c.deleteQueue[1]
 	assert.Equal(t, newPodIdentifier("resource_attribute", "k8s.pod.uid", "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"), deleteRequest.id)
-	assert.Equal(t, "podC", deleteRequest.podName)
+	assert.Equal(t, "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", deleteRequest.podUID)
 	assert.False(t, deleteRequest.ts.Before(tsBeforeDelete))
 	assert.False(t, deleteRequest.ts.After(time.Now()))
 }
@@ -566,21 +567,6 @@ func TestNodeDelete(t *testing.T) {
 	node.Name = "nodeB"
 	c.handleNodeDelete(cache.DeletedFinalStateUnknown{Obj: node})
 	assert.Empty(t, c.Nodes)
-}
-
-func TestDeleteQueue(t *testing.T) {
-	c, _ := newTestClient(t)
-	podAddAndUpdateTest(t, c, c.handlePodAdd)
-	assert.Len(t, c.Pods, 5)
-	assert.Equal(t, "1.1.1.1", c.Pods[newPodIdentifier("connection", "k8s.pod.ip", "1.1.1.1")].Address)
-
-	// delete pod
-	pod := &api_v1.Pod{}
-	pod.Name = "podB"
-	pod.Status.PodIP = "1.1.1.1"
-	c.handlePodDelete(pod)
-	assert.Len(t, c.Pods, 5)
-	assert.Len(t, c.deleteQueue, 3)
 }
 
 func TestDeleteLoop(t *testing.T) {
@@ -1390,6 +1376,130 @@ func TestNamespaceExtractionRules(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestDeleteQueue(t *testing.T) {
+	makePodIdentifiers := func(pod *api_v1.Pod) []PodIdentifier {
+		return []PodIdentifier{
+			newPodIdentifier("resource_attribute", "k8s.pod.uid", string(pod.UID)),
+			{
+				{
+					Source: AssociationSource{
+						From: "resource_attribute",
+						Name: "k8s.namespace.name",
+					},
+					Value: "ns",
+				},
+				{
+					Source: AssociationSource{
+						From: "resource_attribute",
+						Name: "k8s.pod.name",
+					},
+					Value: "abc-0",
+				},
+			},
+			newPodIdentifier("resource_attribute", "k8s.pod.ip", "10.0.0.1"),
+			newPodIdentifier("connection", "", "10.0.0.1"),
+		}
+	}
+
+	makePod := func(podUid string) *api_v1.Pod {
+		pod1 := &api_v1.Pod{
+			ObjectMeta: meta_v1.ObjectMeta{
+				Name:      "abc-0",
+				Namespace: "ns",
+				UID:       types.UID(podUid),
+			},
+			Status: api_v1.PodStatus{
+				PodIP: "10.0.0.1",
+			},
+		}
+		return pod1
+	}
+
+	c, _ := newTestClient(t)
+	doAssertions := func(pod *api_v1.Pod) {
+		podIdentifiers := makePodIdentifiers(pod)
+		for _, id := range podIdentifiers {
+			foundPod, ok := c.Pods[id]
+			assert.True(t, ok, "Pod should be present in c.Pods for identifier %v", id)
+			assert.Equal(t, pod.UID, types.UID(foundPod.PodUID))
+			assert.Equal(t, "ns", foundPod.Namespace)
+			assert.Equal(t, "abc-0", foundPod.Name)
+			assert.Equal(t, "10.0.0.1", foundPod.Address)
+		}
+	}
+
+	// Clear the pods map to start fresh...
+	c.Pods = make(map[PodIdentifier]*Pod)
+	// Set associations to match what we have configured for our OpenTelemetry Collector.
+	c.Associations = []Association{
+		{
+			Sources: []AssociationSource{
+				{
+					From: "resource_attribute",
+					Name: "k8s.pod.uid",
+				},
+			},
+		},
+		{
+			Sources: []AssociationSource{
+				{
+					From: "resource_attribute",
+					Name: "k8s.namespace.name",
+				},
+				{
+					From: "resource_attribute",
+					Name: "k8s.pod.name",
+				},
+			},
+		},
+		{
+			Sources: []AssociationSource{
+				{
+					From: "resource_attribute",
+					Name: "k8s.pod.ip",
+				},
+			},
+		},
+		{
+			Sources: []AssociationSource{
+				{
+					From: "connection",
+				},
+			},
+		},
+	}
+
+	// Add a pod and verify that we can find it by all identifiers.
+	pod1 := makePod("12345678-1234-1234-1234-123456789abc")
+	c.handlePodAdd(pod1)
+	doAssertions(pod1)
+	assert.Len(t, c.Pods, 4)
+
+	// Delete a pod and verify that we can still found it by all identifiers
+	c.handlePodDelete(pod1)
+	doAssertions(pod1)
+	assert.Len(t, c.Pods, 4)
+
+	// Add a pod with the same values as pod1 except for UID, and verify that we can find it by all identifiers.
+	pod2 := makePod("87654321-4321-4321-4321-cba987654321")
+	c.handlePodAdd(pod2)
+	doAssertions(pod2)
+	assert.Len(t, c.Pods, 5) // 4 from pod2 + 1 from pod1 (the pod UID identifier)
+
+	c.deleteLoopProcessing(0 * time.Second)
+	assert.Len(t, c.Pods, 4) // Only mappings for pod2 remain
+	doAssertions(pod2)
+
+	// Delete pod2 and verify that it gets removed after the next delete loop housekeeping.
+	c.handlePodDelete(pod2)
+	assert.Len(t, c.Pods, 4) // Only mappings for pod2 remain
+	doAssertions(pod2)
+
+	// Delete loop processing should remove mappings for pod2.
+	c.deleteLoopProcessing(0 * time.Second)
+	assert.Empty(t, c.Pods) // No more mappings
 }
 
 func TestNodeExtractionRules(t *testing.T) {
@@ -3123,6 +3233,200 @@ func TestGetIdentifiersFromAssoc(t *testing.T) {
 			wc.Associations = tc.associations
 			actual := wc.getIdentifiersFromAssoc(tc.pod)
 			assert.ElementsMatch(t, tc.expected, actual)
+		})
+	}
+}
+
+func TestCronJobExtractionRules_FromJobOwner(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+	// Disable saving ip into k8s.pod.ip so attributes length assertions stay predictable
+	c.Associations[0].Sources[0].Name = ""
+
+	// Pod owned by a Job
+	pod := &api_v1.Pod{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:              "my-cronjob-27667920-pod",
+			UID:               "pod-uid-1",
+			Namespace:         "ns1",
+			CreationTimestamp: meta_v1.Now(),
+			OwnerReferences: []meta_v1.OwnerReference{
+				{
+					APIVersion: "batch/v1",
+					Kind:       "Job",
+					Name:       "my-cronjob-27667920",
+					UID:        "job-uid-123",
+				},
+			},
+		},
+		Spec: api_v1.PodSpec{
+			NodeName: "node1",
+		},
+		Status: api_v1.PodStatus{
+			PodIP: "1.1.1.1",
+		},
+	}
+
+	// The Job object the pod points to (we'll mutate OwnerReferences per test case)
+	job := &batch_v1.Job{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      "my-cronjob-27667920",
+			Namespace: "ns1",
+			UID:       "job-uid-123",
+		},
+	}
+
+	isController := true
+	isNotController := false
+
+	testCases := []struct {
+		name      string
+		rules     ExtractionRules
+		jobOwners []meta_v1.OwnerReference
+		want      map[string]string
+	}{
+		{
+			name:  "no-rules",
+			rules: ExtractionRules{},
+			jobOwners: []meta_v1.OwnerReference{
+				{
+					APIVersion: "batch/v1",
+					Kind:       "CronJob",
+					Name:       "my-cronjob",
+					UID:        "cron-uid-999",
+					Controller: &isController,
+				},
+			},
+			want: map[string]string{},
+		},
+		{
+			name: "cronjob-is-controller_emit_uid_only",
+			rules: ExtractionRules{
+				CronJobUID: true,
+			},
+			jobOwners: []meta_v1.OwnerReference{
+				{
+					APIVersion: "batch/v1",
+					Kind:       "CronJob",
+					Name:       "my-cronjob",
+					UID:        "cron-uid-999",
+					Controller: &isController,
+				},
+			},
+			want: map[string]string{
+				"k8s.cronjob.uid": "cron-uid-999",
+			},
+		},
+		{
+			name: "cronjob-is-controller_emit_name_and_uid",
+			rules: ExtractionRules{
+				CronJobName: true,
+				CronJobUID:  true,
+			},
+			jobOwners: []meta_v1.OwnerReference{
+				{
+					APIVersion: "batch/v1",
+					Kind:       "CronJob",
+					Name:       "my-cronjob",
+					UID:        "cron-uid-999",
+					Controller: &isController,
+				},
+			},
+			want: map[string]string{
+				"k8s.cronjob.name": "my-cronjob",
+				"k8s.cronjob.uid":  "cron-uid-999",
+			},
+		},
+		{
+			name: "cronjob-is-not-controller_do_not_emit",
+			rules: ExtractionRules{
+				CronJobName: true,
+				CronJobUID:  true,
+			},
+			jobOwners: []meta_v1.OwnerReference{
+				{
+					APIVersion: "batch/v1",
+					Kind:       "CronJob",
+					Name:       "my-cronjob",
+					UID:        "cron-uid-999",
+					Controller: &isNotController,
+				},
+			},
+			want: map[string]string{
+				"k8s.cronjob.name": "my-cronjob",
+			},
+		},
+		{
+			name: "multiple_owners_only_controller_counts",
+			rules: ExtractionRules{
+				CronJobName: true,
+				CronJobUID:  true,
+			},
+			jobOwners: []meta_v1.OwnerReference{
+				{
+					APIVersion: "batch/v1",
+					Kind:       "CronJob",
+					Name:       "cj-not-controller",
+					UID:        "cron-uid-111",
+					Controller: &isNotController,
+				},
+				{
+					APIVersion: "batch/v1",
+					Kind:       "CronJob",
+					Name:       "cj-controller",
+					UID:        "cron-uid-222",
+					Controller: &isController,
+				},
+			},
+			want: map[string]string{
+				"k8s.cronjob.name": "my-cronjob",
+				"k8s.cronjob.uid":  "cron-uid-222",
+			},
+		},
+		{
+			name: "no_cronjob_owner",
+			rules: ExtractionRules{
+				CronJobName: true,
+				CronJobUID:  true,
+			},
+			jobOwners: []meta_v1.OwnerReference{
+				{
+					APIVersion: "batch/v1",
+					Kind:       "SomethingElse",
+					Name:       "not-a-cronjob",
+					UID:        "whatever",
+					Controller: &isController,
+				},
+			},
+			want: map[string]string{
+				"k8s.cronjob.name": "my-cronjob",
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			c.Rules = tc.rules
+
+			// Set owners on Job according to case
+			job.OwnerReferences = tc.jobOwners
+
+			// Emulate informer transforms (like other tests do)
+			transformedPod := removeUnnecessaryPodData(pod, c.Rules)
+
+			// Feed caches
+			c.handleJobAdd(job)
+			c.handlePodAdd(transformedPod)
+
+			// Fetch enriched pod by connection id
+			p, ok := c.GetPod(newPodIdentifier("connection", "", pod.Status.PodIP))
+			require.True(t, ok)
+
+			assert.Len(t, p.Attributes, len(tc.want))
+			for k, v := range tc.want {
+				got, ok := p.Attributes[k]
+				assert.True(t, ok, "expected attribute %s", k)
+				assert.Equal(t, v, got)
+			}
 		})
 	}
 }

@@ -95,7 +95,8 @@ func (gtr *gitlabTracesReceiver) processStageSpans(r ptrace.ResourceSpans, pipel
 }
 
 func (gtr *gitlabTracesReceiver) processJobSpans(r ptrace.ResourceSpans, p *glPipeline, traceID pcommon.TraceID, stages map[string]*glPipelineStage) error {
-	for _, job := range p.Builds {
+	for i := range p.Builds {
+		job := p.Builds[i]
 		jobEvent := glPipelineJob(job)
 
 		if job.FinishedAt != "" {
@@ -223,7 +224,8 @@ func newSpanID(input string) (pcommon.SpanID, error) {
 func (gtr *gitlabTracesReceiver) newStages(pipeline *glPipeline) (map[string]*glPipelineStage, error) {
 	stages := make(map[string]*glPipelineStage)
 
-	for _, job := range pipeline.Builds {
+	for i := range pipeline.Builds {
+		job := pipeline.Builds[i]
 		stage, exists := stages[job.Stage]
 		if !exists {
 			stage = &glPipelineStage{

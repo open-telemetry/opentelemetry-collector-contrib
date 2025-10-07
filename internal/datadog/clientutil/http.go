@@ -30,6 +30,14 @@ var (
 
 // NewHTTPClient returns a http.Client configured with a subset of the confighttp.ClientConfig options.
 func NewHTTPClient(hcs confighttp.ClientConfig) *http.Client {
+	return &http.Client{
+		Timeout:   hcs.Timeout,
+		Transport: NewHTTPTransport(hcs),
+	}
+}
+
+// NewHTTPTransport returns a http.Transport configured with a subset of the confighttp.ClientConfig options.
+func NewHTTPTransport(hcs confighttp.ClientConfig) *http.Transport {
 	// If the ProxyURL field in the configuration is set, the HTTP client will use the proxy.
 	// Otherwise, the HTTP client will use the system's proxy settings.
 	httpProxy := http.ProxyFromEnvironment
@@ -55,6 +63,7 @@ func NewHTTPClient(hcs confighttp.ClientConfig) *http.Client {
 		// Not supported by intake
 		ForceAttemptHTTP2: false,
 		TLSClientConfig:   &tls.Config{InsecureSkipVerify: hcs.TLS.InsecureSkipVerify},
+		DisableKeepAlives: hcs.DisableKeepAlives,
 	}
 	if hcs.ReadBufferSize > 0 {
 		transport.ReadBufferSize = hcs.ReadBufferSize
@@ -74,11 +83,8 @@ func NewHTTPClient(hcs confighttp.ClientConfig) *http.Client {
 	if hcs.IdleConnTimeout > 0 {
 		transport.IdleConnTimeout = hcs.IdleConnTimeout
 	}
-	transport.DisableKeepAlives = hcs.DisableKeepAlives
-	return &http.Client{
-		Timeout:   hcs.Timeout,
-		Transport: &transport,
-	}
+
+	return &transport
 }
 
 // SetExtraHeaders appends a header map to HTTP headers.

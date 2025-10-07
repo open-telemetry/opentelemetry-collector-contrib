@@ -93,6 +93,70 @@ This configuration will create:
 
 If `service.name` is missing, the fallback value is used (e.g., `otel-logs-default-service-2024.06.07`).
 
+### OpenSearch document mapping
+
+
+The mapping mode can be controlled via the scope attribute `opensearch.mapping.mode`. 
+
+The OpenSearch exporter supports several document schemas and preprocessing behaviors, which may be configured through the following settings:
+
+- `mapping`:
+  - `mode` (default=`ss4o`): Configures the field mappings. Supported modes are:
+    - `ss4o`: Exports logs in the [Simple Schema for Observability](https://opensearch.org/docs/latest/observing-your-data/ss4o/) standard.
+    - `ecs`: Maps fields defined in the OpenTelemetry Semantic Conventions to the [Elastic Common Schema](https://www.elastic.co/guide/en/ecs/current/index.html)
+    - `flatten_attributes`: Uses the ECS mapping but flattens all resource and log attributes in the record to the top-level.
+    - `bodymap`: uses the "body" of a log record as the exact content of the OpenSearch document, without any transformation. This mapping mode is intended for use cases where the client wishes to have complete control over the OpenSearch document structure.
+  - `timestamp_field`: (optional) Field to store the timestamp in. If not set, uses the default `@timestamp`.
+  - `unix_timestamp`: (optional) Whether to store the timestamp in epoch milliseconds.
+  - `dedup`: (optional) removes fields from the document, that have duplicate keys. The filtering only keeps the last value for a key.
+  - `dedot`: (optional) convert dotted keys into nested JSON objects.
+
+#### SS4O mapping mode
+
+The default [`Simple Schema for Observability`](https://docs.opensearch.org/latest/observing-your-data/ss4o/) mapping mode.
+
+In `ss4o` mapping mode, the OpenSearch exporter stores documents using the SS4O schema, which is designed for observability data in OpenSearch. Documents use standardized field names and structure to facilitate integration with OpenSearch dashboards and tools.
+
+| Signal    | Supported          |
+| --------- | ------------------ |
+| Logs      | :white_check_mark: |
+| Traces    | :white_check_mark: |
+
+#### ECS mapping mode
+
+> [!WARNING]
+> The ECS mapping mode is currently undergoing changes, and its behaviour is unstable.
+
+In `ecs` mapping mode, the OpenSearch exporter maps fields from [OpenTelemetry Semantic Conventions](https://opentelemetry.io/docs/reference/specification/trace/semantic_conventions/) to [Elastic Common Schema (ECS)](https://www.elastic.co/guide/en/ecs/current/index.html) where possible. This mode may be used for compatibility with dashboards and tools that expect ECS.
+
+| Signal    | `ecs`              |
+| --------- | ------------------ |
+| Logs      | :white_check_mark: |
+| Traces    | :no_entry_sign:    |
+
+#### Flatten attributes mapping mode
+
+> [!WARNING]
+> The Flatten attributes mapping mode is currently undergoing changes, and its behaviour is unstable.
+
+In `flatten_attributes` mapping mode, the OpenSearch exporter uses the ECS mapping but flattens all resource and log attributes in the record to the top-level of the document.
+
+| Signal    | `flatten_attributes` |
+| --------- | -------------------- |
+| Logs      | :white_check_mark:   |
+| Traces    | :no_entry_sign:      |
+
+#### Bodymap mapping mode
+
+In `bodymap` mapping mode, the OpenSearch exporter supports only logs and uses the "body" of a log record as the exact content of the OpenSearch document, without any transformation. This mapping mode is intended for use cases where the client wishes to have complete control over the OpenSearch document structure.
+
+The bodymap mapping mode only supports log records where the body is of type Map. If the log body is not a Map, encoding will fail with an error. This ensures that only structured map data can be used as the document content in bodymap mode.
+
+| Signal    | `bodymap`           |
+| --------- | ------------------- |
+| Logs      | :white_check_mark:  |
+| Traces    | :no_entry_sign:     |
+
 ### HTTP Connection Options
 
 OpenSearch export supports standard [HTTP client settings](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp#client-configuration).

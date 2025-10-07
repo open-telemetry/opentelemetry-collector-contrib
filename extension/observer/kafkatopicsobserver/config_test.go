@@ -41,6 +41,7 @@ func TestLoadConfig(t *testing.T) {
 					ResolveCanonicalBootstrapServersOnly: false,
 					ClientID:                             "otel-collector",
 					Metadata:                             configkafka.NewDefaultMetadataConfig(),
+					UseLeaderEpoch:                       true,
 					Authentication: configkafka.AuthenticationConfig{
 						PlainText: &configkafka.PlainTextConfig{
 							Username: "fooUser",

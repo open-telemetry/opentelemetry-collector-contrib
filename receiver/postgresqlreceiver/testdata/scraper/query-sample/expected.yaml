@@ -50,7 +50,7 @@ resourceLogs:
                   doubleValue: 1.2
             body: {}
             eventName: db.server.query_sample
-            timeUnixNano: "1755817062035258000"
+            timeUnixNano: "1758612388939691000"
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
           version: latest

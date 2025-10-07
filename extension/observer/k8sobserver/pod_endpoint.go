@@ -41,14 +41,16 @@ func convertPodToEndpoints(idNamespace string, pod *v1.Pod) []observer.Endpoint 
 	// Map of running containers by name.
 	runningContainers := map[string]runningContainer{}
 
-	for _, container := range pod.Status.ContainerStatuses {
+	for i := range pod.Status.ContainerStatuses {
+		container := &pod.Status.ContainerStatuses[i]
 		if container.State.Running != nil {
 			runningContainers[container.Name] = containerIDWithRuntime(container)
 		}
 	}
 
 	// Create endpoint for each named container port.
-	for _, container := range pod.Spec.Containers {
+	for i := range pod.Spec.Containers {
+		container := &pod.Spec.Containers[i]
 		var rc runningContainer
 		var ok bool
 		if rc, ok = runningContainers[container.Name]; !ok {
@@ -105,7 +107,7 @@ func getTransport(protocol v1.Protocol) observer.Transport {
 }
 
 // containerIDWithRuntime parses the container ID to get the actual ID string
-func containerIDWithRuntime(c v1.ContainerStatus) runningContainer {
+func containerIDWithRuntime(c *v1.ContainerStatus) runningContainer {
 	cID := c.ContainerID
 	if cID != "" {
 		parts := strings.Split(cID, "://")

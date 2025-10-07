@@ -666,7 +666,8 @@ func TestRecreate(t *testing.T) {
 		require.NoError(t, ext.Shutdown(ctx))
 	}
 
-	// step 3: re-create the extension, but with Recreate=true and make sure that the data is not preset
+	// step 3: re-create the extension, but with Recreate=true and make sure that the data still exists
+	// (since recreate now only happens on panic, not always when recreate=true)
 	{
 		config.Recreate = true
 		ext, err := f.Create(ctx, extensiontest.NewNopSettings(f.Type()), config)
@@ -679,9 +680,9 @@ func TestRecreate(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, client)
 
-		// The data shouldn't exist.
+		// The data should still exist since no panic occurred
 		val, err := client.Get(ctx, "key")
-		require.Nil(t, val)
+		require.Equal(t, val, []byte("val"))
 		require.NoError(t, err)
 
 		// close the extension

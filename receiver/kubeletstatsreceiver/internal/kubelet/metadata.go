@@ -96,7 +96,8 @@ func NewMetadata(labels []MetadataLabel, podsMetadata *v1.PodList, nodeInfo Node
 	}
 
 	if podsMetadata != nil {
-		for _, pod := range podsMetadata.Items {
+		for i := range podsMetadata.Items {
+			pod := &podsMetadata.Items[i]
 			var podResource resources
 			allContainersCPULimitsDefined := true
 			allContainersCPURequestsDefined := true
@@ -199,9 +200,12 @@ func (m *Metadata) setExtraResources(rb *metadata.ResourceBuilder, podRef stats.
 // or if the apiServer returned a newly created container with empty containerID.
 func (m *Metadata) getContainerID(podUID, containerName string) (string, error) {
 	uid := types.UID(podUID)
-	for _, pod := range m.PodsMetadata.Items {
+	for i := range m.PodsMetadata.Items {
+		pod := &m.PodsMetadata.Items[i]
 		if pod.UID == uid {
-			for _, containerStatus := range append(pod.Status.ContainerStatuses, pod.Status.InitContainerStatuses...) {
+			containerStatuses := append(pod.Status.ContainerStatuses, pod.Status.InitContainerStatuses...) //nolint:gocritic // appendAssign: append result not assigned to the same slice
+			for j := range containerStatuses {
+				containerStatus := &containerStatuses[j]
 				if containerName == containerStatus.Name {
 					if strings.TrimSpace(containerStatus.ContainerID) == "" {
 						return "", fmt.Errorf("pod %q with container %q has an empty containerID", podUID, containerName)
@@ -222,10 +226,12 @@ func stripContainerID(id string) string {
 	return containerSchemeRegexp.ReplaceAllString(id, "")
 }
 
-func (m *Metadata) getPodVolume(podUID, volumeName string) (v1.Volume, error) {
-	for _, pod := range m.PodsMetadata.Items {
+func (m *Metadata) getPodVolume(podUID, volumeName string) (*v1.Volume, error) {
+	for i := range m.PodsMetadata.Items {
+		pod := &m.PodsMetadata.Items[i]
 		if pod.UID == types.UID(podUID) {
-			for _, volume := range pod.Spec.Volumes {
+			for j := range pod.Spec.Volumes {
+				volume := &pod.Spec.Volumes[j]
 				if volumeName == volume.Name {
 					return volume, nil
 				}
@@ -233,5 +239,5 @@ func (m *Metadata) getPodVolume(podUID, volumeName string) (v1.Volume, error) {
 		}
 	}
 
-	return v1.Volume{}, fmt.Errorf("pod %q with volume %q not found in the fetched metadata", podUID, volumeName)
+	return nil, fmt.Errorf("pod %q with volume %q not found in the fetched metadata", podUID, volumeName)
 }

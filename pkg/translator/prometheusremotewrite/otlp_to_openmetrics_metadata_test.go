@@ -10,6 +10,7 @@ import (
 	"github.com/prometheus/prometheus/prompb"
 	prom "github.com/prometheus/prometheus/storage/remote/otlptranslator/prometheusremotewrite"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
@@ -167,11 +168,13 @@ func TestOtelMetricsToMetadata(t *testing.T) {
 					Type: prompb.MetricMetadata_GAUGE,
 					MetricFamilyName: func() string {
 						metricNamer := otlptranslator.MetricNamer{WithMetricSuffixes: false, Namespace: ""}
-						return metricNamer.Build(prom.TranslatorMetricFromOtelMetric(getIntGaugeMetric(
+						metricName, err := metricNamer.Build(prom.TranslatorMetricFromOtelMetric(getIntGaugeMetric(
 							testdata.TestGaugeDoubleMetricName,
 							pcommon.NewMap(),
 							1, ts,
 						)))
+						require.NoError(t, err)
+						return metricName
 					}(),
 					Unit: "bytes_per_second",
 					Help: "gauge description",
@@ -180,11 +183,13 @@ func TestOtelMetricsToMetadata(t *testing.T) {
 					Type: prompb.MetricMetadata_GAUGE,
 					MetricFamilyName: func() string {
 						metricNamer := otlptranslator.MetricNamer{WithMetricSuffixes: false, Namespace: ""}
-						return metricNamer.Build(prom.TranslatorMetricFromOtelMetric(getIntGaugeMetric(
+						metricName, err := metricNamer.Build(prom.TranslatorMetricFromOtelMetric(getIntGaugeMetric(
 							testdata.TestGaugeIntMetricName,
 							pcommon.NewMap(),
 							1, ts,
 						)))
+						require.NoError(t, err)
+						return metricName
 					}(),
 					Unit: "per_second",
 					Help: "gauge description",
@@ -193,11 +198,13 @@ func TestOtelMetricsToMetadata(t *testing.T) {
 					Type: prompb.MetricMetadata_COUNTER,
 					MetricFamilyName: func() string {
 						metricNamer := otlptranslator.MetricNamer{WithMetricSuffixes: false, Namespace: ""}
-						return metricNamer.Build(prom.TranslatorMetricFromOtelMetric(getIntGaugeMetric(
+						metricName, err := metricNamer.Build(prom.TranslatorMetricFromOtelMetric(getIntGaugeMetric(
 							testdata.TestSumDoubleMetricName,
 							pcommon.NewMap(),
 							1, ts,
 						)))
+						require.NoError(t, err)
+						return metricName
 					}(),
 					Unit: "seconds",
 					Help: "sum description",
@@ -206,11 +213,13 @@ func TestOtelMetricsToMetadata(t *testing.T) {
 					Type: prompb.MetricMetadata_COUNTER,
 					MetricFamilyName: func() string {
 						metricNamer := otlptranslator.MetricNamer{WithMetricSuffixes: false, Namespace: ""}
-						return metricNamer.Build(prom.TranslatorMetricFromOtelMetric(getIntGaugeMetric(
+						metricName, err := metricNamer.Build(prom.TranslatorMetricFromOtelMetric(getIntGaugeMetric(
 							testdata.TestSumIntMetricName,
 							pcommon.NewMap(),
 							1, ts,
 						)))
+						require.NoError(t, err)
+						return metricName
 					}(),
 					Unit: "connections",
 					Help: "sum description",
@@ -219,11 +228,13 @@ func TestOtelMetricsToMetadata(t *testing.T) {
 					Type: prompb.MetricMetadata_HISTOGRAM,
 					MetricFamilyName: func() string {
 						metricNamer := otlptranslator.MetricNamer{WithMetricSuffixes: false, Namespace: ""}
-						return metricNamer.Build(prom.TranslatorMetricFromOtelMetric(getIntGaugeMetric(
+						metricName, err := metricNamer.Build(prom.TranslatorMetricFromOtelMetric(getIntGaugeMetric(
 							testdata.TestDoubleHistogramMetricName,
 							pcommon.NewMap(),
 							1, ts,
 						)))
+						require.NoError(t, err)
+						return metricName
 					}(),
 					Unit: "",
 					Help: "histogram description",
@@ -232,11 +243,13 @@ func TestOtelMetricsToMetadata(t *testing.T) {
 					Type: prompb.MetricMetadata_SUMMARY,
 					MetricFamilyName: func() string {
 						metricNamer := otlptranslator.MetricNamer{WithMetricSuffixes: false, Namespace: ""}
-						return metricNamer.Build(prom.TranslatorMetricFromOtelMetric(getIntGaugeMetric(
+						metricName, err := metricNamer.Build(prom.TranslatorMetricFromOtelMetric(getIntGaugeMetric(
 							testdata.TestDoubleSummaryMetricName,
 							pcommon.NewMap(),
 							1, ts,
 						)))
+						require.NoError(t, err)
+						return metricName
 					}(),
 					Unit: "",
 					Help: "summary description",
@@ -263,7 +276,8 @@ func TestOtelMetricsToMetadata(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			metaData := OtelMetricsToMetadata(tt.metrics, false, tt.namespace)
+			metaData, err := OtelMetricsToMetadata(tt.metrics, false, tt.namespace)
+			require.NoError(t, err)
 
 			for i := 0; i < len(metaData); i++ {
 				assert.Equal(t, tt.want[i].Type, metaData[i].Type)

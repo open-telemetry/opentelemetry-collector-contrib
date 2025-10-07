@@ -13,6 +13,10 @@ all_set:
       enabled: true
     host.id:
       enabled: true
+    host.image.id:
+      enabled: true
+    host.image.name:
+      enabled: true
     host.name:
       enabled: true
     host.type:
@@ -30,6 +34,10 @@ none_set:
     cloud.region:
       enabled: false
     host.id:
+      enabled: false
+    host.image.id:
+      enabled: false
+    host.image.name:
       enabled: false
     host.name:
       enabled: false

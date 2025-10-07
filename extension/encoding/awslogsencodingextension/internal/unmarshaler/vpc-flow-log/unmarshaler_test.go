@@ -17,6 +17,7 @@ import (
 	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 )
@@ -65,7 +66,7 @@ func TestUnmarshalLogs_PlainText(t *testing.T) {
 		},
 	}
 
-	u, err := NewVPCFlowLogUnmarshaler(fileFormatPlainText, component.BuildInfo{}, zap.NewNop())
+	u, err := NewVPCFlowLogUnmarshaler(constants.FileFormatPlainText, component.BuildInfo{}, zap.NewNop())
 	require.NoError(t, err)
 
 	for name, test := range tests {
@@ -78,7 +79,6 @@ func TestUnmarshalLogs_PlainText(t *testing.T) {
 			}
 
 			require.NoError(t, err)
-
 			expectedLogs, err := golden.ReadLogs(filepath.Join(dir, test.logsExpectedFilename))
 			require.NoError(t, err)
 			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs))

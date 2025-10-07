@@ -13,7 +13,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
 
-func addVolumeMetrics(mb *metadata.MetricsBuilder, volumeMetrics metadata.VolumeMetrics, s stats.VolumeStats, currentTime pcommon.Timestamp) {
+func addVolumeMetrics(mb *metadata.MetricsBuilder, volumeMetrics metadata.VolumeMetrics, s *stats.VolumeStats, currentTime pcommon.Timestamp) {
 	recordIntDataPoint(mb, volumeMetrics.Available, s.AvailableBytes, currentTime)
 	recordIntDataPoint(mb, volumeMetrics.Capacity, s.CapacityBytes, currentTime)
 	recordIntDataPoint(mb, volumeMetrics.Used, s.UsedBytes, currentTime)
@@ -22,7 +22,7 @@ func addVolumeMetrics(mb *metadata.MetricsBuilder, volumeMetrics metadata.Volume
 	recordIntDataPoint(mb, volumeMetrics.InodesUsed, s.InodesUsed, currentTime)
 }
 
-func setResourcesFromVolume(rb *metadata.ResourceBuilder, volume v1.Volume) {
+func setResourcesFromVolume(rb *metadata.ResourceBuilder, volume *v1.Volume) {
 	switch {
 	// TODO: Support more types
 	case volume.ConfigMap != nil:

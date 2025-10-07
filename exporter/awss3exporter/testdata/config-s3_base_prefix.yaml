@@ -1,0 +1,26 @@
+receivers:
+  nop:
+
+exporters:
+  awss3:
+    sending_queue:
+      enabled: false
+    timeout: 5s
+
+    s3uploader:
+        region: 'us-east-1'
+        s3_bucket: 'foo'
+        s3_base_prefix: 'base/prefix'
+        s3_prefix: 'bar'
+        s3_partition_format: 'year=%Y/month=%m/day=%d/hour=%H/minute=%M'
+        endpoint: "http://endpoint.com"
+
+processors:
+  nop:
+
+service:
+  pipelines:
+    traces:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [awss3]

@@ -8,20 +8,25 @@ The `journald_input` operator will use the `__REALTIME_TIMESTAMP` field of the j
 
 ### Configuration Fields
 
-| Field             | Default          | Description |
-| ---               | ---              | ---         |
-| `id`              | `journald_input` | A unique identifier for the operator. |
-| `output`          | Next in pipeline | The connected operator(s) that will receive all outbound entries. |
-| `directory`       |                  | A directory containing journal files to read entries from. |
-| `files`           |                  | A list of journal files to read entries from. |
-| `units`           |                  | A list of units to read entries from. See [Multiple filtering options](#multiple-filtering-options) examples. |
-| `matches`         |                  | A list of matches to read entries from. See [Matches](#matches) and [Multiple filtering options](#multiple-filtering-options) examples. |
-| `priority`        | `info`           | Filter output by message priorities or priority ranges. See [Multiple filtering options](#multiple-filtering-options) examples. |
-| `grep`            |                  | Filter output to entries where the MESSAGE= field matches the specified regular expression. See [Multiple filtering options](#multiple-filtering-options) examples. |
-| `start_at`        | `end`            | At startup, where to start reading logs from the file. Options are `beginning` or `end`. |
-| `attributes`      | {}               | A map of `key: value` pairs to add to the entry's attributes. |
-| `resource`        | {}               | A map of `key: value` pairs to add to the entry's resource. |
-| `all`             | 'false'          | If `true`, very long logs and logs with unprintable characters will also be included. |
+| Field                   | Default          | Description                                                                                                                                                                                                  |
+|-------------------------|------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `id`                    | `journald_input` | A unique identifier for the operator.                                                                                                                                                                        |
+| `output`                | Next in pipeline | The connected operator(s) that will receive all outbound entries.                                                                                                                                            |
+| `directory`             |                  | A directory containing journal files to read entries from.                                                                                                                                                   |
+| `files`                 |                  | A list of journal files to read entries from.                                                                                                                                                                |
+| `units`                 |                  | A list of units to read entries from. See [Multiple filtering options](#multiple-filtering-options) examples.                                                                                                |
+| `matches`               |                  | A list of matches to read entries from. See [Matches](#matches) and [Multiple filtering options](#multiple-filtering-options) examples.                                                                      |
+| `priority`              | `info`           | Filter output by message priorities or priority ranges. See [Multiple filtering options](#multiple-filtering-options) examples.                                                                              |
+| `grep`                  |                  | Filter output to entries where the MESSAGE= field matches the specified regular expression. See [Multiple filtering options](#multiple-filtering-options) examples.                                          |
+| `start_at`              | `end`            | At startup, where to start reading logs from the file. Options are `beginning` or `end`.                                                                                                                     |
+| `attributes`            | {}               | A map of `key: value` pairs to add to the entry's attributes.                                                                                                                                                |
+| `resource`              | {}               | A map of `key: value` pairs to add to the entry's resource.                                                                                                                                                  |
+| `all`                   | 'false'          | If `true`, very long logs and logs with unprintable characters will also be included.                                                                                                                        |
+| `namespace`             |                  | Will query the given namespace. See man page [`systemd-journald.service(8)`](https://www.man7.org/linux/man-pages/man8/systemd-journald.service.8.html#JOURNAL_NAMESPACES) for details.                      |
+| `convert_message_bytes` | `false`          | If `true` and if the `MESSAGE` field is read [as an array of bytes](https://github.com/systemd/systemd/blob/main/docs/JOURNAL_EXPORT_FORMATS.md#journal-json-format), the array will be converted to string. |
+| `merge`                 | 'false'          | If `true`, read from all available journals, including remote ones.                                                                                                                                          |
+| `dmesg`                 | 'false'          | Show only kernel messages. This shows logs from current boot and adds the match `_TRANSPORT=kernel`. See [Multiple filtering options](#multiple-filtering-options) examples.                                 |
+| `identifiers`           |                  | Filter output by message identifiers (`SYSTEMD_IDENTIFIER`). See [Multiple filtering options](#multiple-filtering-options) examples.                                                                         |
 
 ### Example Configurations
 
@@ -61,9 +66,13 @@ which is going to retrieve all entries which match at least one of the following
 In case of using multiple following options, conditions between them are logically `AND`ed and within them are logically `OR`ed:
 
 ```text
+( dmesg )
+AND
 ( priority )
 AND
 ( units[0] OR units[1] OR units[2] OR ... units[U] )
+AND
+( identifier[0] OR identifier[1] OR identifier[2] OR ... identifier[I] )
 AND
 ( matches[0] OR matches[1] OR matches[2] OR ... matches[M] )
 AND

@@ -21,7 +21,7 @@ func TestTaskExporter(t *testing.T) {
 
 	t.Run("invalid ip", func(t *testing.T) {
 		_, err := exp.exportTask(&taskAnnotated{
-			Task: ecstypes.Task{
+			Task: &ecstypes.Task{
 				TaskArn: aws.String("arn"),
 			},
 			Definition: &ecstypes.TaskDefinition{
@@ -33,7 +33,7 @@ func TestTaskExporter(t *testing.T) {
 		assert.ErrorAs(t, err, &v)
 	})
 
-	awsVpcTask := ecstypes.Task{
+	awsVpcTask := &ecstypes.Task{
 		TaskArn:           aws.String("arn:task:t2"),
 		TaskDefinitionArn: aws.String("t2"),
 		Attachments: []ecstypes.Attachment{
@@ -131,7 +131,7 @@ func TestTaskExporter(t *testing.T) {
 
 	t.Run("ec2", func(t *testing.T) {
 		task := &taskAnnotated{
-			Task: ecstypes.Task{
+			Task: &ecstypes.Task{
 				TaskArn:           aws.String("arn:task:t2"),
 				TaskDefinitionArn: aws.String("t2"),
 				Containers: []ecstypes.Container{
@@ -226,7 +226,7 @@ func TestTaskExporter(t *testing.T) {
 		Matched:    invalidMatched,
 	}
 	invalidIPTask := &taskAnnotated{
-		Task:       ecstypes.Task{TaskArn: aws.String("invalid task's invalid arn")},
+		Task:       &ecstypes.Task{TaskArn: aws.String("invalid task's invalid arn")},
 		Definition: &ecstypes.TaskDefinition{},
 	}
 	t.Run("all valid tasks", func(t *testing.T) {

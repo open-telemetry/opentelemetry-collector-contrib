@@ -7,6 +7,39 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.137.0
+
+### 🛑 Breaking changes 🛑
+
+- `libhoneyreceiver`: Unexport JSONEncoder (#43133)
+
+### 🚩 Deprecations 🚩
+
+- `pkg/datadog, exporter/datadog, extension/datadog`: Deprecates StaticAPIKeyCheck, stops doing validation for API key characters in Datadog exporter and extension. (#42677)
+  This was causing issues to users since validation of secrets is challenging
+  
+
+### 💡 Enhancements 💡
+
+- `pkg/ottl`: Create ctxprofilecommon for common attribute handling in various profiling sub messages (#42107)
+- `logicmonitorexporter`: Send log level along with log data (#41923)
+
+<!-- previous-version -->
+
+## v0.136.0
+
+### 🛑 Breaking changes 🛑
+
+- `datadogexporter`: Deprecate zorkian codepath (#17373)
+  Feature gate exporter.datadogexporter.metricexportnativeclient is now deprecated; the default metrics exporter is now 
+  Metrics Export Serializer unless feature gate exporter.datadogexporter.metricexportserializerclient is disabled. 
+  See https://github.com/open-telemetry/opentelemetry-collector-contrib/releases/tag/v0.122.0 and #37930 for more 
+  info about Metrics Export Serializer. 
+  
+- `pkg/translator/prometheusremotewrite`: Function 'OtelMetricsToMetadata' now returns an error if unable to convert a metric to metadata (#42493)
+
+<!-- previous-version -->
+
 ## v0.135.0
 
 ### 💡 Enhancements 💡

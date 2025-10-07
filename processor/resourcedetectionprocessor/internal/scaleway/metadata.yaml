@@ -32,6 +32,14 @@ resource_attributes:
     description: The host.id
     type: string
     enabled: true
+  host.image.id:
+    description: The host image id
+    type: string
+    enabled: true
+  host.image.name:
+    description: The host image name
+    type: string
+    enabled: true
   host.name:
     description: The hostname
     type: string

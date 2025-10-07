@@ -9,7 +9,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 	"go.uber.org/zap"
@@ -21,17 +20,7 @@ import (
 )
 
 const (
-	metricGroupsConfig               = "metric_groups"
-	enableCPUUsageMetricsFeatureFlag = "receiver.kubeletstats.enableCPUUsageMetrics"
-)
-
-var EnableCPUUsageMetrics = featuregate.GlobalRegistry().MustRegister(
-	enableCPUUsageMetricsFeatureFlag,
-	featuregate.StageStable,
-	featuregate.WithRegisterDescription("When enabled the container.cpu.utilization, k8s.pod.cpu.utilization and k8s.node.cpu.utilization metrics will be replaced by the container.cpu.usage, k8s.pod.cpu.usage and k8s.node.cpu.usage"),
-	featuregate.WithRegisterFromVersion("v0.110.0"),
-	featuregate.WithRegisterToVersion("v0.131.0"),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27885"),
+	metricGroupsConfig = "metric_groups"
 )
 
 var defaultMetricGroups = []kubelet.MetricGroup{
