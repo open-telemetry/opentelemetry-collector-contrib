@@ -4,7 +4,7 @@ $defs:
     type: object
     properties:
       behavior:
-        description: 'Behavior sets how the `/intake` endpoint should behave. The value should be one of: `disable` (default) - disable the endpoint entirely `proxy` - proxy the requests to Datadog itself'
+        description: 'Behavior sets how the `/intake` endpoint should behave. The value should be one of: `disable` (default) - disable the endpoint entirely `proxy` - proxy the requests to Datadog itself `swallow` - return "202 Accepted" but discard the data (fake-proxy)'
         type: string
       proxy:
         description: Proxy controls how the `/intake` proxy operates

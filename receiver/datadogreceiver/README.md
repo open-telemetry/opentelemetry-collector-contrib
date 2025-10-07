@@ -87,6 +87,9 @@ receivers:
           fail_on_invalid_key: true
 ```
 
+There is also a `behavior: swallow` setting, which causes the receiver to discard the `/intake` data but to still return a `202 Accepted`.
+This is useful for preventing clients from complaining about bad responses from the `/intake` endpoint when its functionality is not wanted.
+
 ### Metric Tag→Attribute Conversion
 
 Datadog [metric tags](https://docs.datadoghq.com/getting_started/tagging/) are expected to be in a `key:value` format.

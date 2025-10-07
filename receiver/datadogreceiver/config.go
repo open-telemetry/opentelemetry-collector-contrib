@@ -28,6 +28,7 @@ const (
 
 	configIntakeBehaviorDisable = "disable"
 	configIntakeBehaviorProxy   = "proxy"
+	configIntakeBehaviorSwallow = "swallow"
 )
 
 type Config struct {
@@ -49,6 +50,7 @@ type IntakeConfig struct {
 	// The value should be one of:
 	// `disable` (default) - disable the endpoint entirely
 	// `proxy` - proxy the requests to Datadog itself
+	// `swallow` - return "202 Accepted" but discard the data (fake-proxy)
 	Behavior string `mapstructure:"behavior"`
 	// Proxy controls how the `/intake` proxy operates
 	Proxy ProxyConfig `mapstructure:"proxy"`
@@ -65,7 +67,7 @@ type ProxyConfig struct {
 
 func (c *Config) Validate() error {
 	behavior := c.Intake.Behavior
-	isValidBehavior := behavior == "" || behavior == configIntakeBehaviorDisable || behavior == configIntakeBehaviorProxy
+	isValidBehavior := behavior == "" || behavior == configIntakeBehaviorDisable || behavior == configIntakeBehaviorProxy || behavior == configIntakeBehaviorSwallow
 	if !isValidBehavior {
 		return fmt.Errorf(`"intake.behavior" has an invalid value "%s"`, behavior)
 	}
