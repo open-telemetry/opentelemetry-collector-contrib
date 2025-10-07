@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 )
 
 const (
@@ -20,6 +21,27 @@ const (
 type Provider interface {
 	Metadata(context.Context) (*ComputeMetadata, error)
 }
+
+// IsRunningOnOracleCloud performs a fast probe to the OCI metadata endpoint with a short timeout.
+// Returns true if the endpoint responds with HTTP 200 OK, false otherwise.
+func IsRunningOnOracleCloud(ctx context.Context) bool {
+	client := &http.Client{
+		Timeout: 200 * time.Millisecond,
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodHead, metadataEndpoint, nil)
+	if err != nil {
+		return false
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return false
+	}
+	defer resp.Body.Close()
+	return resp.StatusCode == http.StatusOK
+}
+
+// IsRunningOnOracleCloudFunc can be overridden in tests to simulate probe presence/absence.
+var IsRunningOnOracleCloudFunc = IsRunningOnOracleCloud
 
 type oraclecloudProviderImpl struct {
 	endpoint string
