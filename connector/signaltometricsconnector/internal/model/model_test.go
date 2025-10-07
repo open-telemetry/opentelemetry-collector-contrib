@@ -18,8 +18,6 @@ import (
 
 const (
 	testServiceInstanceID = "627cc493-f310-47de-96bd-71410b7dec09"
-	testServiceName       = "testsignaltometrics"
-	testNamespace         = "test"
 )
 
 func TestFilterResourceAttributes(t *testing.T) {
@@ -45,8 +43,6 @@ func TestFilterResourceAttributes(t *testing.T) {
 				"key.4": "val.4",
 				// Collector instance info will be added
 				"signaltometrics.service.instance.id": testServiceInstanceID,
-				"signaltometrics.service.name":        testServiceName,
-				"signaltometrics.service.namespace":   testNamespace,
 			},
 		},
 		{
@@ -80,8 +76,6 @@ func TestFilterResourceAttributes(t *testing.T) {
 				"key.302": "anything",
 				// Collector instance info will be added
 				"signaltometrics.service.instance.id": testServiceInstanceID,
-				"signaltometrics.service.name":        testServiceName,
-				"signaltometrics.service.namespace":   testNamespace,
 			},
 		},
 	} {
@@ -175,8 +169,6 @@ func testCollectorInstanceInfo(t *testing.T) CollectorInstanceInfo {
 
 	set := componenttest.NewNopTelemetrySettings()
 	set.Resource.Attributes().PutStr(string(semconv.ServiceInstanceIDKey), testServiceInstanceID)
-	set.Resource.Attributes().PutStr(string(semconv.ServiceNameKey), testServiceName)
-	set.Resource.Attributes().PutStr(string(semconv.ServiceNamespaceKey), testNamespace)
 	return NewCollectorInstanceInfo(set)
 }
 
