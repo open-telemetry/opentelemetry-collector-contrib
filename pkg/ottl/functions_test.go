@@ -2861,7 +2861,7 @@ func TestGetLiteralValue(t *testing.T) {
 	t.Run("getter does not implement literalGetter", func(t *testing.T) {
 		val, ok := GetLiteralValue[any, string](nonLiteralStringGetter[any]{v: "val"})
 		require.False(t, ok)
-		require.Equal(t, "", val)
+		require.Empty(t, val)
 	})
 
 	t.Run("getter does not contain literal", func(t *testing.T) {
