@@ -69,10 +69,10 @@ func TestFromMetricsV2WithScopeProcessing(t *testing.T) {
 
 	ts := uint64(time.Now().UnixNano())
 	payload := createExportRequest(1, 0, 1, 1, 0, pcommon.Timestamp(ts))
-	
+
 	tsMap, symbolsTable, err := FromMetricsV2(payload.Metrics(), settings)
 	require.NoError(t, err)
-	
+
 	// Verify that scope processing doesn't break the conversion
 	require.NotEmpty(t, tsMap)
 	require.NotEmpty(t, symbolsTable.Symbols())

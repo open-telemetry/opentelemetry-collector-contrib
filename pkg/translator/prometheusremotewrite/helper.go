@@ -215,9 +215,7 @@ func isValidAggregationTemporality(metric pmetric.Metric) bool {
 	return false
 }
 
-func (c *prometheusConverter) addHistogramDataPoints(dataPoints pmetric.HistogramDataPointSlice,
-	resource pcommon.Resource, settings Settings, baseName string, scopeName, scopeVersion string,
-) error {
+func (c *prometheusConverter) addHistogramDataPoints(dataPoints pmetric.HistogramDataPointSlice, resource pcommon.Resource, settings Settings, baseName, scopeName, scopeVersion string) error {
 	var errs error
 	for x := 0; x < dataPoints.Len(); x++ {
 		pt := dataPoints.At(x)
@@ -406,9 +404,7 @@ func mostRecentTimestampInMetric(metric pmetric.Metric) pcommon.Timestamp {
 	return ts
 }
 
-func (c *prometheusConverter) addSummaryDataPoints(dataPoints pmetric.SummaryDataPointSlice, resource pcommon.Resource,
-	settings Settings, baseName string, scopeName, scopeVersion string,
-) error {
+func (c *prometheusConverter) addSummaryDataPoints(dataPoints pmetric.SummaryDataPointSlice, resource pcommon.Resource, settings Settings, baseName, scopeName, scopeVersion string) error {
 	var errs error
 	for x := 0; x < dataPoints.Len(); x++ {
 		pt := dataPoints.At(x)
@@ -579,9 +575,7 @@ func addResourceTargetInfo(resource pcommon.Resource, settings Settings, timesta
 // addScopeInfo generates otel_scope_info metrics for each unique scope per resource.
 // It only generates the metric when the scope has additional attributes beyond name and version,
 // following the same pattern as addResourceTargetInfo.
-func addScopeInfo(scopeName, scopeVersion string, scopeAttrs pcommon.Map, resource pcommon.Resource,
-	settings Settings, timestamp pcommon.Timestamp, converter *prometheusConverter) error {
-
+func addScopeInfo(scopeName, scopeVersion string, scopeAttrs pcommon.Map, resource pcommon.Resource, settings Settings, timestamp pcommon.Timestamp, converter *prometheusConverter) error {
 	if settings.DisableScopeInfo || timestamp == 0 {
 		return nil
 	}
@@ -721,9 +715,7 @@ func createScopeLabels(scopeName, scopeVersion string, labelNamer otlptranslator
 
 // createScopeInfoLabels creates labels for the otel_scope_info metric, including
 // scope name, version, and all additional scope attributes as labels.
-func createScopeInfoLabels(scopeName, scopeVersion string, scopeAttrs pcommon.Map,
-	baseLabels []prompb.Label, labelNamer otlptranslator.LabelNamer) ([]prompb.Label, error) {
-
+func createScopeInfoLabels(scopeName, scopeVersion string, scopeAttrs pcommon.Map, baseLabels []prompb.Label, labelNamer otlptranslator.LabelNamer) ([]prompb.Label, error) {
 	labels := make([]prompb.Label, len(baseLabels))
 	copy(labels, baseLabels)
 

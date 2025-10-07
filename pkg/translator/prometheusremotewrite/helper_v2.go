@@ -81,9 +81,7 @@ func (c *prometheusConverterV2) addResourceTargetInfoV2(resource pcommon.Resourc
 // addScopeInfoV2 generates otel_scope_info metrics for each unique scope per resource.
 // It only generates the metric when the scope has additional attributes beyond name and version,
 // following the same pattern as addResourceTargetInfoV2.
-func (c *prometheusConverterV2) addScopeInfoV2(scopeName, scopeVersion string, scopeAttrs pcommon.Map, resource pcommon.Resource,
-	settings Settings, timestamp pcommon.Timestamp) error {
-
+func (c *prometheusConverterV2) addScopeInfoV2(scopeName, scopeVersion string, scopeAttrs pcommon.Map, resource pcommon.Resource, settings Settings, timestamp pcommon.Timestamp) error {
 	if settings.DisableScopeInfo || timestamp == 0 {
 		return nil
 	}

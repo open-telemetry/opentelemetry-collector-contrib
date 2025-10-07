@@ -14,9 +14,7 @@ import (
 	"go.uber.org/multierr"
 )
 
-func (c *prometheusConverter) addGaugeNumberDataPoints(dataPoints pmetric.NumberDataPointSlice,
-	resource pcommon.Resource, settings Settings, name string, scopeName, scopeVersion string,
-) error {
+func (c *prometheusConverter) addGaugeNumberDataPoints(dataPoints pmetric.NumberDataPointSlice, resource pcommon.Resource, settings Settings, name, scopeName, scopeVersion string) error {
 	var errs error
 	for x := 0; x < dataPoints.Len(); x++ {
 		pt := dataPoints.At(x)
@@ -51,9 +49,7 @@ func (c *prometheusConverter) addGaugeNumberDataPoints(dataPoints pmetric.Number
 	return errs
 }
 
-func (c *prometheusConverter) addSumNumberDataPoints(dataPoints pmetric.NumberDataPointSlice,
-	resource pcommon.Resource, _ pmetric.Metric, settings Settings, name string, scopeName, scopeVersion string,
-) error {
+func (c *prometheusConverter) addSumNumberDataPoints(dataPoints pmetric.NumberDataPointSlice, resource pcommon.Resource, _ pmetric.Metric, settings Settings, name, scopeName, scopeVersion string) error {
 	var errs error
 	for x := 0; x < dataPoints.Len(); x++ {
 		pt := dataPoints.At(x)

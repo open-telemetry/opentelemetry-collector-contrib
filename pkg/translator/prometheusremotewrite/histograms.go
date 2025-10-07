@@ -17,9 +17,7 @@ import (
 
 const defaultZeroThreshold = 1e-128
 
-func (c *prometheusConverter) addExponentialHistogramDataPoints(dataPoints pmetric.ExponentialHistogramDataPointSlice,
-	resource pcommon.Resource, settings Settings, baseName string, scopeName, scopeVersion string,
-) error {
+func (c *prometheusConverter) addExponentialHistogramDataPoints(dataPoints pmetric.ExponentialHistogramDataPointSlice, resource pcommon.Resource, settings Settings, baseName, scopeName, scopeVersion string) error {
 	var errs error
 	for x := 0; x < dataPoints.Len(); x++ {
 		pt := dataPoints.At(x)

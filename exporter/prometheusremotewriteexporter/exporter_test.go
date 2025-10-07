@@ -1406,18 +1406,18 @@ func benchmarkPushMetrics(b *testing.B, numMetrics, numConsumers int) {
 // flows correctly from Config to Settings struct
 func TestScopeInfoConfigurationFlow(t *testing.T) {
 	tests := []struct {
-		name                    string
-		scopeInfoEnabled        bool
+		name                     string
+		scopeInfoEnabled         bool
 		expectedDisableScopeInfo bool
 	}{
 		{
-			name:                    "scope_info_enabled_true",
-			scopeInfoEnabled:        true,
+			name:                     "scope_info_enabled_true",
+			scopeInfoEnabled:         true,
 			expectedDisableScopeInfo: false,
 		},
 		{
-			name:                    "scope_info_enabled_false",
-			scopeInfoEnabled:        false,
+			name:                     "scope_info_enabled_false",
+			scopeInfoEnabled:         false,
 			expectedDisableScopeInfo: true,
 		},
 	}
