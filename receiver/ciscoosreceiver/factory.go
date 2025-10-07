@@ -5,23 +5,22 @@ package ciscoosreceiver // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
+	"fmt"
+	"io/ioutil"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 	"go.uber.org/zap"
+	cryptossh "golang.org/x/crypto/ssh"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/ciscoosreceiver/internal/connection"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/ciscoosreceiver/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/ciscoosreceiver/internal/scraper/interfacesscraper"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/ciscoosreceiver/internal/scraper/systemscraper"
 )
-
-var scraperFactories = map[component.Type]scraper.Factory{
-	component.MustNewType("interfaces"): interfacesscraper.NewFactory(),
-	component.MustNewType("system"):     systemscraper.NewFactory(),
-}
 
 // NewFactory creates a factory for Cisco OS receiver.
 func NewFactory() receiver.Factory {
@@ -36,92 +35,126 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 		Devices:          []DeviceConfig{},
-		Scrapers:         map[component.Type]component.Config{},
 	}
 }
 
 func createMetricsReceiver(
-	_ context.Context,
+	ctx context.Context,
 	set receiver.Settings,
 	cfg component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	conf := cfg.(*Config)
 
-	if len(conf.Devices) == 0 || len(conf.Scrapers) == 0 {
-		return &nopMetricsReceiver{}, nil
-	}
-
-	var scraperOptions []scraperhelper.ControllerOption
-	for scraperType, scraperCfg := range conf.Scrapers {
-		factory, exists := scraperFactories[scraperType]
-		if !exists {
-			set.Logger.Warn("Unsupported scraper type", zap.String("type", scraperType.String()))
-			continue
-		}
-
-		// Inject device configuration into scraper config
-		if sysCfg, ok := scraperCfg.(*systemscraper.Config); ok {
-			sysCfg.Devices = convertToSystemScraperDeviceConfigs(conf.Devices)
-		}
-		if intCfg, ok := scraperCfg.(*interfacesscraper.Config); ok {
-			intCfg.Devices = convertToInterfaceScraperDeviceConfigs(conf.Devices)
-		}
-
-		scraperOptions = append(scraperOptions, scraperhelper.AddFactoryWithConfig(factory, scraperCfg))
-	}
-
-	if len(scraperOptions) == 0 {
-		return &nopMetricsReceiver{}, nil
-	}
+	scraper := newConnectionScraper(conf.Devices, set.Logger)
 
 	return scraperhelper.NewMetricsController(
 		&conf.ControllerConfig,
 		set,
 		consumer,
-		scraperOptions...,
+		scraperhelper.AddScraper(metadata.Type, scraper),
 	)
 }
 
-func convertToSystemScraperDeviceConfigs(devices []DeviceConfig) []systemscraper.DeviceConfig {
-	scraperDevices := make([]systemscraper.DeviceConfig, len(devices))
-	for i, dev := range devices {
-		scraperDevices[i] = systemscraper.DeviceConfig{
-			Host: systemscraper.HostInfo{
-				Name: dev.Device.Host.Name,
-				IP:   dev.Device.Host.IP,
-				Port: dev.Device.Host.Port,
-			},
-			Auth: systemscraper.AuthConfig{
-				Username: dev.Auth.Username,
-				Password: string(dev.Auth.Password),
-				KeyFile:  dev.Auth.KeyFile,
-			},
-		}
-	}
-	return scraperDevices
+// connectionScraper implements basic SSH connection verification and connection status metrics
+type connectionScraper struct {
+	devices []DeviceConfig
+	logger  *zap.Logger
+	mb      *metadata.MetricsBuilder
 }
 
-func convertToInterfaceScraperDeviceConfigs(devices []DeviceConfig) []interfacesscraper.DeviceConfig {
-	scraperDevices := make([]interfacesscraper.DeviceConfig, len(devices))
-	for i, dev := range devices {
-		scraperDevices[i] = interfacesscraper.DeviceConfig{
-			Host: interfacesscraper.HostInfo{
-				Name: dev.Device.Host.Name,
-				IP:   dev.Device.Host.IP,
-				Port: dev.Device.Host.Port,
-			},
-			Auth: interfacesscraper.AuthConfig{
-				Username: dev.Auth.Username,
-				Password: string(dev.Auth.Password),
-				KeyFile:  dev.Auth.KeyFile,
-			},
-		}
+func newConnectionScraper(devices []DeviceConfig, logger *zap.Logger) *connectionScraper {
+	return &connectionScraper{
+		devices: devices,
+		logger:  logger,
+		mb:      metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receiver.Settings{
+			ID:                component.MustNewIDWithName(metadata.Type.String(), "connection"),
+			TelemetrySettings: component.TelemetrySettings{Logger: logger},
+		}),
 	}
-	return scraperDevices
 }
 
-type nopMetricsReceiver struct{}
+func (s *connectionScraper) Start(ctx context.Context, host component.Host) error {
+	return nil
+}
 
-func (*nopMetricsReceiver) Start(_ context.Context, _ component.Host) error { return nil }
-func (*nopMetricsReceiver) Shutdown(_ context.Context) error                { return nil }
+func (s *connectionScraper) Shutdown(ctx context.Context) error {
+	return nil
+}
+
+func (s *connectionScraper) ScrapeMetrics(ctx context.Context) (pmetric.Metrics, error) {
+	s.mb.Reset(metadata.WithStartTime(pcommon.NewTimestampFromTime(time.Now())))
+
+	for _, device := range s.devices {
+		// Test SSH connection
+		connectionStatus := int64(0)
+		
+		if client, err := s.establishConnection(ctx, device); err != nil {
+			s.logger.Warn("Failed to connect to device", zap.String("device", device.Device.Host.IP), zap.Error(err))
+		} else {
+			connectionStatus = int64(1)
+			client.Close()
+		}
+
+		// Create resource attributes
+		rb := s.mb.NewResourceBuilder()
+		rb.SetCiscoDeviceIP(device.Device.Host.IP)
+		if device.Device.Host.Name != "" {
+			rb.SetCiscoDeviceName(device.Device.Host.Name)
+		}
+
+		// Record connection status metric
+		now := pcommon.NewTimestampFromTime(time.Now())
+		s.mb.RecordCiscoConnectionStatusDataPoint(now, connectionStatus)
+	}
+
+	return s.mb.Emit(), nil
+}
+
+// establishConnection creates a new SSH connection to test connectivity
+func (s *connectionScraper) establishConnection(ctx context.Context, device DeviceConfig) (*connection.Client, error) {
+	// Build SSH config
+	sshConfig := &cryptossh.ClientConfig{
+		User:            device.Auth.Username,
+		HostKeyCallback: cryptossh.InsecureIgnoreHostKey(),
+		Timeout:         10 * time.Second,
+	}
+
+	// Add authentication method
+	if device.Auth.Password != "" {
+		sshConfig.Auth = []cryptossh.AuthMethod{
+			cryptossh.Password(string(device.Auth.Password)),
+		}
+	} else if device.Auth.KeyFile != "" {
+		key, err := ioutil.ReadFile(device.Auth.KeyFile)
+		if err != nil {
+			return nil, fmt.Errorf("unable to read private key: %w", err)
+		}
+
+		signer, err := cryptossh.ParsePrivateKey(key)
+		if err != nil {
+			return nil, fmt.Errorf("unable to parse private key: %w", err)
+		}
+
+		sshConfig.Auth = []cryptossh.AuthMethod{
+			cryptossh.PublicKeys(signer),
+		}
+	}
+
+	// Connect to device
+	address := fmt.Sprintf("%s:%d", device.Device.Host.IP, device.Device.Host.Port)
+	conn, err := cryptossh.Dial("tcp", address, sshConfig)
+	if err != nil {
+		return nil, fmt.Errorf("SSH connection failed to %s: %w", address, err)
+	}
+
+	// Create client wrapper
+	client := &connection.Client{
+		Target:     address,
+		Username:   device.Auth.Username,
+		Connection: conn,
+		Logger:     s.logger,
+	}
+
+	return client, nil
+}

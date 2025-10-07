@@ -8,6 +8,32 @@ status:
   codeowners:
     active: [dmitryax]
 
+resource_attributes:
+  cisco.device.name:
+    description: The name of the Cisco device
+    type: string
+    enabled: true
+  cisco.device.ip:
+    description: The IP address of the Cisco device
+    type: string
+    enabled: true
+  cisco.device.model:
+    description: The model of the Cisco device
+    type: string
+    enabled: true
+  cisco.device.os:
+    description: The operating system of the Cisco device
+    type: string
+    enabled: true
+
+metrics:
+  cisco.connection.status:
+    enabled: true
+    description: Connection status to the Cisco device (1 = connected, 0 = disconnected)
+    unit: "1"
+    gauge:
+      value_type: int
+
 tests:
   config:
     collection_interval: 30s
@@ -21,22 +47,3 @@ tests:
         auth:
           username: "admin"
           password: "password"
-    scrapers:
-      system:
-        metrics:
-          cisco.device.up:
-            enabled: true
-          cisco.collector.duration.seconds:
-            enabled: true
-      interfaces:
-        metrics:
-          cisco.interface.transmit.bytes:
-            enabled: true
-          cisco.interface.receive.bytes:
-            enabled: true
-          cisco.interface.up:
-            enabled: true
-          cisco.interface.receive.errors:
-            enabled: true
-          cisco.interface.transmit.errors:
-            enabled: true

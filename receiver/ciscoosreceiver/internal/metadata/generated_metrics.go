@@ -5,328 +5,251 @@ package metadata
 import (
 	"time"
 
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 )
 
-type MetricsBuilder struct {
-	config          MetricsBuilderConfig
-	startTime       pcommon.Timestamp
-	metricsCapacity int
-	metricsBuffer   pmetric.Metrics
+var MetricsInfo = metricsInfo{
+	CiscoConnectionStatus: metricInfo{
+		Name: "cisco.connection.status",
+	},
 }
 
-func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings) *MetricsBuilder {
-	return &MetricsBuilder{
-		config:        mbc,
-		startTime:     pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer: pmetric.NewMetrics(),
+type metricsInfo struct {
+	CiscoConnectionStatus metricInfo
+}
+
+type metricInfo struct {
+	Name string
+}
+
+type metricCiscoConnectionStatus struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills cisco.connection.status metric with initial data.
+func (m *metricCiscoConnectionStatus) init() {
+	m.data.SetName("cisco.connection.status")
+	m.data.SetDescription("Connection status to the Cisco device (1 = connected, 0 = disconnected)")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricCiscoConnectionStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricCiscoConnectionStatus) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
-func (mb *MetricsBuilder) Emit() pmetric.Metrics {
-	m := mb.metricsBuffer
-	mb.metricsBuffer = pmetric.NewMetrics()
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricCiscoConnectionStatus) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricCiscoConnectionStatus(cfg MetricConfig) metricCiscoConnectionStatus {
+	m := metricCiscoConnectionStatus{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
 	return m
 }
 
-// Duration metrics
-func (mb *MetricsBuilder) RecordCiscoCollectDurationSecondsDataPoint(ts pcommon.Timestamp, val float64, targetAttributeValue string, collectorAttributeValue string) {
-	if !mb.config.Metrics.CiscoCollectDurationSeconds.Enabled {
-		return
-	}
-	rm := mb.metricsBuffer.ResourceMetrics().AppendEmpty()
-	rm.Resource().Attributes().PutStr("target", targetAttributeValue)
-	rm.Resource().Attributes().PutStr("collector", collectorAttributeValue)
-
-	metrics := rm.ScopeMetrics().AppendEmpty().Metrics()
-	metric := metrics.AppendEmpty()
-	metric.SetName("cisco.collect.duration.seconds")
-	metric.SetDescription("Duration of a scrape by collector and target")
-	metric.SetUnit("s")
-
-	gauge := metric.SetEmptyGauge()
-	dp := gauge.DataPoints().AppendEmpty()
-	dp.SetTimestamp(ts)
-	dp.SetDoubleValue(val)
+// MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
+// required to produce metric representation defined in metadata and user config.
+type MetricsBuilder struct {
+	config                         MetricsBuilderConfig // config of the metrics builder.
+	startTime                      pcommon.Timestamp    // start time that will be applied to all recorded data points.
+	metricsCapacity                int                  // maximum observed number of metrics per resource.
+	metricsBuffer                  pmetric.Metrics      // accumulates metrics data before emitting.
+	buildInfo                      component.BuildInfo  // contains version information.
+	resourceAttributeIncludeFilter map[string]filter.Filter
+	resourceAttributeExcludeFilter map[string]filter.Filter
+	metricCiscoConnectionStatus    metricCiscoConnectionStatus
 }
 
-func (mb *MetricsBuilder) RecordCiscoCollectorDurationSecondsDataPoint(ts pcommon.Timestamp, val float64, targetAttributeValue string) {
-	if !mb.config.Metrics.CiscoCollectorDurationSeconds.Enabled {
-		return
-	}
-	rm := mb.metricsBuffer.ResourceMetrics().AppendEmpty()
-	rm.Resource().Attributes().PutStr("target", targetAttributeValue)
-
-	metrics := rm.ScopeMetrics().AppendEmpty().Metrics()
-	metric := metrics.AppendEmpty()
-	metric.SetName("cisco.collector.duration.seconds")
-	metric.SetDescription("Duration of all collector scrapes for one target (total collection time)")
-	metric.SetUnit("s")
-
-	gauge := metric.SetEmptyGauge()
-	dp := gauge.DataPoints().AppendEmpty()
-	dp.SetTimestamp(ts)
-	dp.SetDoubleValue(val)
+// MetricBuilderOption applies changes to default metrics builder.
+type MetricBuilderOption interface {
+	apply(*MetricsBuilder)
 }
 
-// Device metrics
-func (mb *MetricsBuilder) RecordCiscoDeviceUpDataPoint(ts pcommon.Timestamp, val int64, targetAttributeValue string) {
-	if !mb.config.Metrics.CiscoDeviceUp.Enabled {
-		return
-	}
-	rm := mb.metricsBuffer.ResourceMetrics().AppendEmpty()
-	rm.Resource().Attributes().PutStr("target", targetAttributeValue)
+type metricBuilderOptionFunc func(mb *MetricsBuilder)
 
-	metrics := rm.ScopeMetrics().AppendEmpty().Metrics()
-	metric := metrics.AppendEmpty()
-	metric.SetName("cisco.device.up")
-	metric.SetDescription("Device availability (1 = up, 0 = down)")
-	metric.SetUnit("1")
-
-	gauge := metric.SetEmptyGauge()
-	dp := gauge.DataPoints().AppendEmpty()
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
+func (mbof metricBuilderOptionFunc) apply(mb *MetricsBuilder) {
+	mbof(mb)
 }
 
-// Interface metrics
-func (mb *MetricsBuilder) RecordCiscoInterfaceReceiveBytesDataPoint(ts pcommon.Timestamp, val int64, targetAttributeValue string, nameAttributeValue string, macAttributeValue string, descriptionAttributeValue string, speedAttributeValue string) {
-	if !mb.config.Metrics.CiscoInterfaceReceiveBytes.Enabled {
-		return
+// WithStartTime sets startTime on the metrics builder.
+func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
+	return metricBuilderOptionFunc(func(mb *MetricsBuilder) {
+		mb.startTime = startTime
+	})
+}
+func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
+	mb := &MetricsBuilder{
+		config:                         mbc,
+		startTime:                      pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:                  pmetric.NewMetrics(),
+		buildInfo:                      settings.BuildInfo,
+		metricCiscoConnectionStatus:    newMetricCiscoConnectionStatus(mbc.Metrics.CiscoConnectionStatus),
+		resourceAttributeIncludeFilter: make(map[string]filter.Filter),
+		resourceAttributeExcludeFilter: make(map[string]filter.Filter),
 	}
-	rm := mb.metricsBuffer.ResourceMetrics().AppendEmpty()
-	rm.Resource().Attributes().PutStr("target", targetAttributeValue)
-	rm.Resource().Attributes().PutStr("name", nameAttributeValue)
-	rm.Resource().Attributes().PutStr("mac", macAttributeValue)
-	rm.Resource().Attributes().PutStr("description", descriptionAttributeValue)
-	rm.Resource().Attributes().PutStr("speed", speedAttributeValue)
+	if mbc.ResourceAttributes.CiscoDeviceIP.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["cisco.device.ip"] = filter.CreateFilter(mbc.ResourceAttributes.CiscoDeviceIP.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.CiscoDeviceIP.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["cisco.device.ip"] = filter.CreateFilter(mbc.ResourceAttributes.CiscoDeviceIP.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.CiscoDeviceModel.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["cisco.device.model"] = filter.CreateFilter(mbc.ResourceAttributes.CiscoDeviceModel.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.CiscoDeviceModel.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["cisco.device.model"] = filter.CreateFilter(mbc.ResourceAttributes.CiscoDeviceModel.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.CiscoDeviceName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["cisco.device.name"] = filter.CreateFilter(mbc.ResourceAttributes.CiscoDeviceName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.CiscoDeviceName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["cisco.device.name"] = filter.CreateFilter(mbc.ResourceAttributes.CiscoDeviceName.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.CiscoDeviceOs.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["cisco.device.os"] = filter.CreateFilter(mbc.ResourceAttributes.CiscoDeviceOs.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.CiscoDeviceOs.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["cisco.device.os"] = filter.CreateFilter(mbc.ResourceAttributes.CiscoDeviceOs.MetricsExclude)
+	}
 
-	metrics := rm.ScopeMetrics().AppendEmpty().Metrics()
-	metric := metrics.AppendEmpty()
-	metric.SetName("cisco.interface.receive.bytes")
-	metric.SetDescription("Number of bytes received on interface")
-	metric.SetUnit("By")
-
-	sum := metric.SetEmptySum()
-	sum.SetIsMonotonic(true)
-	dp := sum.DataPoints().AppendEmpty()
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
+	for _, op := range options {
+		op.apply(mb)
+	}
+	return mb
 }
 
-func (mb *MetricsBuilder) RecordCiscoInterfaceTransmitBytesDataPoint(ts pcommon.Timestamp, val int64, targetAttributeValue string, nameAttributeValue string, macAttributeValue string, descriptionAttributeValue string, speedAttributeValue string) {
-	if !mb.config.Metrics.CiscoInterfaceTransmitBytes.Enabled {
-		return
-	}
-	rm := mb.metricsBuffer.ResourceMetrics().AppendEmpty()
-	rm.Resource().Attributes().PutStr("target", targetAttributeValue)
-	rm.Resource().Attributes().PutStr("name", nameAttributeValue)
-	rm.Resource().Attributes().PutStr("mac", macAttributeValue)
-	rm.Resource().Attributes().PutStr("description", descriptionAttributeValue)
-	rm.Resource().Attributes().PutStr("speed", speedAttributeValue)
-
-	metrics := rm.ScopeMetrics().AppendEmpty().Metrics()
-	metric := metrics.AppendEmpty()
-	metric.SetName("cisco.interface.transmit.bytes")
-	metric.SetDescription("Number of bytes transmitted on interface")
-	metric.SetUnit("By")
-
-	sum := metric.SetEmptySum()
-	sum.SetIsMonotonic(true)
-	dp := sum.DataPoints().AppendEmpty()
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
+// NewResourceBuilder returns a new resource builder that should be used to build a resource associated with for the emitted metrics.
+func (mb *MetricsBuilder) NewResourceBuilder() *ResourceBuilder {
+	return NewResourceBuilder(mb.config.ResourceAttributes)
 }
 
-func (mb *MetricsBuilder) RecordCiscoInterfaceUpDataPoint(ts pcommon.Timestamp, val int64, targetAttributeValue string, nameAttributeValue string, macAttributeValue string, descriptionAttributeValue string, speedAttributeValue string) {
-	if !mb.config.Metrics.CiscoInterfaceUp.Enabled {
-		return
+// updateCapacity updates max length of metrics and resource attributes that will be used for the slice capacity.
+func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
+	if mb.metricsCapacity < rm.ScopeMetrics().At(0).Metrics().Len() {
+		mb.metricsCapacity = rm.ScopeMetrics().At(0).Metrics().Len()
 	}
-	rm := mb.metricsBuffer.ResourceMetrics().AppendEmpty()
-	rm.Resource().Attributes().PutStr("target", targetAttributeValue)
-	rm.Resource().Attributes().PutStr("name", nameAttributeValue)
-	rm.Resource().Attributes().PutStr("mac", macAttributeValue)
-	rm.Resource().Attributes().PutStr("description", descriptionAttributeValue)
-	rm.Resource().Attributes().PutStr("speed", speedAttributeValue)
-
-	metrics := rm.ScopeMetrics().AppendEmpty().Metrics()
-	metric := metrics.AppendEmpty()
-	metric.SetName("cisco.interface.up")
-	metric.SetDescription("Interface operational status (1 = up, 0 = down)")
-	metric.SetUnit("1")
-
-	gauge := metric.SetEmptyGauge()
-	dp := gauge.DataPoints().AppendEmpty()
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
 }
 
-// Error metrics
-func (mb *MetricsBuilder) RecordCiscoInterfaceReceiveErrorsDataPoint(ts pcommon.Timestamp, val int64, targetAttributeValue string, nameAttributeValue string, macAttributeValue string, descriptionAttributeValue string, speedAttributeValue string) {
-	if !mb.config.Metrics.CiscoInterfaceReceiveErrors.Enabled {
-		return
-	}
-	rm := mb.metricsBuffer.ResourceMetrics().AppendEmpty()
-	rm.Resource().Attributes().PutStr("target", targetAttributeValue)
-	rm.Resource().Attributes().PutStr("name", nameAttributeValue)
-	rm.Resource().Attributes().PutStr("mac", macAttributeValue)
-	rm.Resource().Attributes().PutStr("description", descriptionAttributeValue)
-	rm.Resource().Attributes().PutStr("speed", speedAttributeValue)
-
-	metrics := rm.ScopeMetrics().AppendEmpty().Metrics()
-	metric := metrics.AppendEmpty()
-	metric.SetName("cisco.interface.receive.errors")
-	metric.SetDescription("Number of input errors on interface")
-	metric.SetUnit("1")
-
-	sum := metric.SetEmptySum()
-	sum.SetIsMonotonic(true)
-	dp := sum.DataPoints().AppendEmpty()
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
+// ResourceMetricsOption applies changes to provided resource metrics.
+type ResourceMetricsOption interface {
+	apply(pmetric.ResourceMetrics)
 }
 
-func (mb *MetricsBuilder) RecordCiscoInterfaceTransmitErrorsDataPoint(ts pcommon.Timestamp, val int64, targetAttributeValue string, nameAttributeValue string, macAttributeValue string, descriptionAttributeValue string, speedAttributeValue string) {
-	if !mb.config.Metrics.CiscoInterfaceTransmitErrors.Enabled {
-		return
-	}
-	rm := mb.metricsBuffer.ResourceMetrics().AppendEmpty()
-	rm.Resource().Attributes().PutStr("target", targetAttributeValue)
-	rm.Resource().Attributes().PutStr("name", nameAttributeValue)
-	rm.Resource().Attributes().PutStr("mac", macAttributeValue)
-	rm.Resource().Attributes().PutStr("description", descriptionAttributeValue)
-	rm.Resource().Attributes().PutStr("speed", speedAttributeValue)
+type resourceMetricsOptionFunc func(pmetric.ResourceMetrics)
 
-	metrics := rm.ScopeMetrics().AppendEmpty().Metrics()
-	metric := metrics.AppendEmpty()
-	metric.SetName("cisco.interface.transmit.errors")
-	metric.SetDescription("Number of output errors on interface")
-	metric.SetUnit("1")
-
-	sum := metric.SetEmptySum()
-	sum.SetIsMonotonic(true)
-	dp := sum.DataPoints().AppendEmpty()
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
+func (rmof resourceMetricsOptionFunc) apply(rm pmetric.ResourceMetrics) {
+	rmof(rm)
 }
 
-func (mb *MetricsBuilder) RecordCiscoInterfaceReceiveDropsDataPoint(ts pcommon.Timestamp, val int64, targetAttributeValue string, nameAttributeValue string, macAttributeValue string, descriptionAttributeValue string, speedAttributeValue string) {
-	if !mb.config.Metrics.CiscoInterfaceReceiveDrops.Enabled {
-		return
-	}
-	rm := mb.metricsBuffer.ResourceMetrics().AppendEmpty()
-	rm.Resource().Attributes().PutStr("target", targetAttributeValue)
-	rm.Resource().Attributes().PutStr("name", nameAttributeValue)
-	rm.Resource().Attributes().PutStr("mac", macAttributeValue)
-	rm.Resource().Attributes().PutStr("description", descriptionAttributeValue)
-	rm.Resource().Attributes().PutStr("speed", speedAttributeValue)
-
-	metrics := rm.ScopeMetrics().AppendEmpty().Metrics()
-	metric := metrics.AppendEmpty()
-	metric.SetName("cisco.interface.receive.drops")
-	metric.SetDescription("Number of input drops on interface")
-	metric.SetUnit("1")
-
-	sum := metric.SetEmptySum()
-	sum.SetIsMonotonic(true)
-	dp := sum.DataPoints().AppendEmpty()
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
+// WithResource sets the provided resource on the emitted ResourceMetrics.
+// It's recommended to use ResourceBuilder to create the resource.
+func WithResource(res pcommon.Resource) ResourceMetricsOption {
+	return resourceMetricsOptionFunc(func(rm pmetric.ResourceMetrics) {
+		res.CopyTo(rm.Resource())
+	})
 }
 
-func (mb *MetricsBuilder) RecordCiscoInterfaceTransmitDropsDataPoint(ts pcommon.Timestamp, val int64, targetAttributeValue string, nameAttributeValue string, macAttributeValue string, descriptionAttributeValue string, speedAttributeValue string) {
-	if !mb.config.Metrics.CiscoInterfaceTransmitDrops.Enabled {
-		return
-	}
-	rm := mb.metricsBuffer.ResourceMetrics().AppendEmpty()
-	rm.Resource().Attributes().PutStr("target", targetAttributeValue)
-	rm.Resource().Attributes().PutStr("name", nameAttributeValue)
-	rm.Resource().Attributes().PutStr("mac", macAttributeValue)
-	rm.Resource().Attributes().PutStr("description", descriptionAttributeValue)
-	rm.Resource().Attributes().PutStr("speed", speedAttributeValue)
-
-	metrics := rm.ScopeMetrics().AppendEmpty().Metrics()
-	metric := metrics.AppendEmpty()
-	metric.SetName("cisco.interface.transmit.drops")
-	metric.SetDescription("Number of output drops on interface")
-	metric.SetUnit("1")
-
-	sum := metric.SetEmptySum()
-	sum.SetIsMonotonic(true)
-	dp := sum.DataPoints().AppendEmpty()
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
+// WithStartTimeOverride overrides start time for all the resource metrics data points.
+// This option should be only used if different start time has to be set on metrics coming from different resources.
+func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
+	return resourceMetricsOptionFunc(func(rm pmetric.ResourceMetrics) {
+		var dps pmetric.NumberDataPointSlice
+		metrics := rm.ScopeMetrics().At(0).Metrics()
+		for i := 0; i < metrics.Len(); i++ {
+			switch metrics.At(i).Type() {
+			case pmetric.MetricTypeGauge:
+				dps = metrics.At(i).Gauge().DataPoints()
+			case pmetric.MetricTypeSum:
+				dps = metrics.At(i).Sum().DataPoints()
+			}
+			for j := 0; j < dps.Len(); j++ {
+				dps.At(j).SetStartTimestamp(start)
+			}
+		}
+	})
 }
 
-func (mb *MetricsBuilder) RecordCiscoInterfaceReceiveMulticastDataPoint(ts pcommon.Timestamp, val int64, targetAttributeValue string, nameAttributeValue string, macAttributeValue string, descriptionAttributeValue string, speedAttributeValue string) {
-	if !mb.config.Metrics.CiscoInterfaceReceiveMulticast.Enabled {
-		return
+// EmitForResource saves all the generated metrics under a new resource and updates the internal state to be ready for
+// recording another set of data points as part of another resource. This function can be helpful when one scraper
+// needs to emit metrics from several resources. Otherwise calling this function is not required,
+// just `Emit` function can be called instead.
+// Resource attributes should be provided as ResourceMetricsOption arguments.
+func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
+	rm := pmetric.NewResourceMetrics()
+	ils := rm.ScopeMetrics().AppendEmpty()
+	ils.Scope().SetName(ScopeName)
+	ils.Scope().SetVersion(mb.buildInfo.Version)
+	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
+	mb.metricCiscoConnectionStatus.emit(ils.Metrics())
+
+	for _, op := range options {
+		op.apply(rm)
 	}
-	rm := mb.metricsBuffer.ResourceMetrics().AppendEmpty()
-	rm.Resource().Attributes().PutStr("target", targetAttributeValue)
-	rm.Resource().Attributes().PutStr("name", nameAttributeValue)
-	rm.Resource().Attributes().PutStr("mac", macAttributeValue)
-	rm.Resource().Attributes().PutStr("description", descriptionAttributeValue)
-	rm.Resource().Attributes().PutStr("speed", speedAttributeValue)
+	for attr, filter := range mb.resourceAttributeIncludeFilter {
+		if val, ok := rm.Resource().Attributes().Get(attr); ok && !filter.Matches(val.AsString()) {
+			return
+		}
+	}
+	for attr, filter := range mb.resourceAttributeExcludeFilter {
+		if val, ok := rm.Resource().Attributes().Get(attr); ok && filter.Matches(val.AsString()) {
+			return
+		}
+	}
 
-	metrics := rm.ScopeMetrics().AppendEmpty().Metrics()
-	metric := metrics.AppendEmpty()
-	metric.SetName("cisco.interface.receive.multicast")
-	metric.SetDescription("Number of multicast packets received on interface")
-	metric.SetUnit("1")
-
-	sum := metric.SetEmptySum()
-	sum.SetIsMonotonic(true)
-	dp := sum.DataPoints().AppendEmpty()
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
+	if ils.Metrics().Len() > 0 {
+		mb.updateCapacity(rm)
+		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())
+	}
 }
 
-func (mb *MetricsBuilder) RecordCiscoInterfaceReceiveBroadcastDataPoint(ts pcommon.Timestamp, val int64, targetAttributeValue string, nameAttributeValue string, macAttributeValue string, descriptionAttributeValue string, speedAttributeValue string) {
-	if !mb.config.Metrics.CiscoInterfaceReceiveBroadcast.Enabled {
-		return
-	}
-	rm := mb.metricsBuffer.ResourceMetrics().AppendEmpty()
-	rm.Resource().Attributes().PutStr("target", targetAttributeValue)
-	rm.Resource().Attributes().PutStr("name", nameAttributeValue)
-	rm.Resource().Attributes().PutStr("mac", macAttributeValue)
-	rm.Resource().Attributes().PutStr("description", descriptionAttributeValue)
-	rm.Resource().Attributes().PutStr("speed", speedAttributeValue)
-
-	metrics := rm.ScopeMetrics().AppendEmpty().Metrics()
-	metric := metrics.AppendEmpty()
-	metric.SetName("cisco.interface.receive.broadcast")
-	metric.SetDescription("Number of broadcast packets received on interface")
-	metric.SetUnit("1")
-
-	sum := metric.SetEmptySum()
-	sum.SetIsMonotonic(true)
-	dp := sum.DataPoints().AppendEmpty()
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
+// Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
+// recording another set of metrics. This function will be responsible for applying all the transformations required to
+// produce metric representation defined in metadata and user config, e.g. delta or cumulative.
+func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics {
+	mb.EmitForResource(options...)
+	metrics := mb.metricsBuffer
+	mb.metricsBuffer = pmetric.NewMetrics()
+	return metrics
 }
 
-func (mb *MetricsBuilder) RecordCiscoInterfaceErrorStatusDataPoint(ts pcommon.Timestamp, val int64, targetAttributeValue string, nameAttributeValue string, macAttributeValue string, descriptionAttributeValue string, speedAttributeValue string) {
-	if !mb.config.Metrics.CiscoInterfaceErrorStatus.Enabled {
-		return
+// RecordCiscoConnectionStatusDataPoint adds a data point to cisco.connection.status metric.
+func (mb *MetricsBuilder) RecordCiscoConnectionStatusDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricCiscoConnectionStatus.recordDataPoint(mb.startTime, ts, val)
+}
+
+// Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
+// and metrics builder should update its startTime and reset it's internal state accordingly.
+func (mb *MetricsBuilder) Reset(options ...MetricBuilderOption) {
+	mb.startTime = pcommon.NewTimestampFromTime(time.Now())
+	for _, op := range options {
+		op.apply(mb)
 	}
-	rm := mb.metricsBuffer.ResourceMetrics().AppendEmpty()
-	rm.Resource().Attributes().PutStr("target", targetAttributeValue)
-	rm.Resource().Attributes().PutStr("name", nameAttributeValue)
-	rm.Resource().Attributes().PutStr("mac", macAttributeValue)
-	rm.Resource().Attributes().PutStr("description", descriptionAttributeValue)
-	rm.Resource().Attributes().PutStr("speed", speedAttributeValue)
-
-	metrics := rm.ScopeMetrics().AppendEmpty().Metrics()
-	metric := metrics.AppendEmpty()
-	metric.SetName("cisco.interface.error.status")
-	metric.SetDescription("Admin and operational status differ (1 = mismatch, 0 = match)")
-	metric.SetUnit("1")
-
-	gauge := metric.SetEmptyGauge()
-	dp := gauge.DataPoints().AppendEmpty()
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
 }

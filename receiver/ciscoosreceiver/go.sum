@@ -77,6 +77,8 @@ go.opentelemetry.io/collector/consumer/xconsumer v0.137.0 h1:p3tkV3O9bL3bZl3RN2w
 go.opentelemetry.io/collector/consumer/xconsumer v0.137.0/go.mod h1:N+nRnP0ga4Scu8Ew87F+kxVajE/eGjRLbWC9H+elN5Q=
 go.opentelemetry.io/collector/featuregate v1.43.0 h1:Aq8UR5qv1zNlbbkTyqv8kLJtnoQMq/sG1/jS9o1cCJI=
 go.opentelemetry.io/collector/featuregate v1.43.0/go.mod h1:d0tiRzVYrytB6LkcYgz2ESFTv7OktRPQe0QEQcPt1L4=
+go.opentelemetry.io/collector/filter v0.137.0 h1:WPB2OfRFKD3qs0j8BdBVcSRoLa8K1XMeLUZGqhqgst8=
+go.opentelemetry.io/collector/filter v0.137.0/go.mod h1:XFpydpDipnPLE6DclkDyZ0vUJKydSF6l/tdjlz93BcI=
 go.opentelemetry.io/collector/internal/telemetry v0.137.0 h1:KlJcaBnIIn+QJzQIfA1eXbYUvHmgM7h/gLp/vjvUBMw=
 go.opentelemetry.io/collector/internal/telemetry v0.137.0/go.mod h1:GWOiXBZ82kMzwGMEihJ5rEo5lFL7gurfHD++5q0XtI8=
 go.opentelemetry.io/collector/pdata v1.43.0 h1:zVkj2hcjiMLwX+QDDNwb7iTh3LBjNXKv2qPSgj1Rzb4=

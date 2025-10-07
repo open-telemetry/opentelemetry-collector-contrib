@@ -7,7 +7,7 @@ change_type: enhancement
 component: ciscoosreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Add complete SSH-based scraping implementation with authentic Cisco device metric collection"
+note: "Add core SSH infrastructure and connection verification for Cisco OS receiver"
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [42647]
@@ -16,10 +16,10 @@ issues: [42647]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  Implements real SSH-based data collection from Cisco NX-OS, IOS XE, and IOS devices.
-  Includes authentic parsing of show commands for system, interface, BGP, environment, and optics metrics.
-  Supports password and SSH key authentication with configurable feature toggles.
-  Replaces skeleton implementation with full production-ready collector functionality.
+  Establishes SSH connectivity to Cisco NX-OS, IOS XE, and IOS devices.
+  Implements connection status monitoring with cisco.connection.status metric.
+  Supports password and SSH key authentication methods.
+  Provides foundation for future metric collection scrapers.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

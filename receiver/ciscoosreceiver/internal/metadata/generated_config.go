@@ -2,51 +2,103 @@
 
 package metadata
 
-// No imports needed for this basic config
+import (
+	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/filter"
+)
 
-// MetricsBuilderConfig is a configuration for building metrics.
-type MetricsBuilderConfig struct {
-	Metrics MetricsConfig `mapstructure:"metrics"`
-}
-
-// MetricsConfig provides configuration for metrics collection.
-type MetricsConfig struct {
-	CiscoCollectDurationSeconds    MetricConfig `mapstructure:"cisco.collect.duration.seconds"`
-	CiscoCollectorDurationSeconds  MetricConfig `mapstructure:"cisco.collector.duration.seconds"`
-	CiscoDeviceUp                  MetricConfig `mapstructure:"cisco.device.up"`
-	CiscoInterfaceErrorStatus      MetricConfig `mapstructure:"cisco.interface.error.status"`
-	CiscoInterfaceReceiveBroadcast MetricConfig `mapstructure:"cisco.interface.receive.broadcast"`
-	CiscoInterfaceReceiveBytes     MetricConfig `mapstructure:"cisco.interface.receive.bytes"`
-	CiscoInterfaceReceiveDrops     MetricConfig `mapstructure:"cisco.interface.receive.drops"`
-	CiscoInterfaceReceiveErrors    MetricConfig `mapstructure:"cisco.interface.receive.errors"`
-	CiscoInterfaceReceiveMulticast MetricConfig `mapstructure:"cisco.interface.receive.multicast"`
-	CiscoInterfaceTransmitBytes    MetricConfig `mapstructure:"cisco.interface.transmit.bytes"`
-	CiscoInterfaceTransmitDrops    MetricConfig `mapstructure:"cisco.interface.transmit.drops"`
-	CiscoInterfaceTransmitErrors   MetricConfig `mapstructure:"cisco.interface.transmit.errors"`
-	CiscoInterfaceUp               MetricConfig `mapstructure:"cisco.interface.up"`
-}
-
-// MetricConfig provides common configuration for a metric.
+// MetricConfig provides common config for a particular metric.
 type MetricConfig struct {
 	Enabled bool `mapstructure:"enabled"`
+
+	enabledSetByUser bool
+}
+
+func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// MetricsConfig provides config for ciscoosreceiver metrics.
+type MetricsConfig struct {
+	CiscoConnectionStatus MetricConfig `mapstructure:"cisco.connection.status"`
+}
+
+func DefaultMetricsConfig() MetricsConfig {
+	return MetricsConfig{
+		CiscoConnectionStatus: MetricConfig{
+			Enabled: true,
+		},
+	}
+}
+
+// ResourceAttributeConfig provides common config for a particular resource attribute.
+type ResourceAttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+
+	enabledSetByUser bool
+}
+
+func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ResourceAttributesConfig provides config for ciscoosreceiver resource attributes.
+type ResourceAttributesConfig struct {
+	CiscoDeviceIP    ResourceAttributeConfig `mapstructure:"cisco.device.ip"`
+	CiscoDeviceModel ResourceAttributeConfig `mapstructure:"cisco.device.model"`
+	CiscoDeviceName  ResourceAttributeConfig `mapstructure:"cisco.device.name"`
+	CiscoDeviceOs    ResourceAttributeConfig `mapstructure:"cisco.device.os"`
+}
+
+func DefaultResourceAttributesConfig() ResourceAttributesConfig {
+	return ResourceAttributesConfig{
+		CiscoDeviceIP: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		CiscoDeviceModel: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		CiscoDeviceName: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		CiscoDeviceOs: ResourceAttributeConfig{
+			Enabled: true,
+		},
+	}
+}
+
+// MetricsBuilderConfig is a configuration for ciscoosreceiver metrics builder.
+type MetricsBuilderConfig struct {
+	Metrics            MetricsConfig            `mapstructure:"metrics"`
+	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
 }
 
 func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
 	return MetricsBuilderConfig{
-		Metrics: MetricsConfig{
-			CiscoCollectDurationSeconds:    MetricConfig{Enabled: true},
-			CiscoCollectorDurationSeconds:  MetricConfig{Enabled: true},
-			CiscoDeviceUp:                  MetricConfig{Enabled: true},
-			CiscoInterfaceErrorStatus:      MetricConfig{Enabled: true},
-			CiscoInterfaceReceiveBroadcast: MetricConfig{Enabled: true},
-			CiscoInterfaceReceiveBytes:     MetricConfig{Enabled: true},
-			CiscoInterfaceReceiveDrops:     MetricConfig{Enabled: true},
-			CiscoInterfaceReceiveErrors:    MetricConfig{Enabled: true},
-			CiscoInterfaceReceiveMulticast: MetricConfig{Enabled: true},
-			CiscoInterfaceTransmitBytes:    MetricConfig{Enabled: true},
-			CiscoInterfaceTransmitDrops:    MetricConfig{Enabled: true},
-			CiscoInterfaceTransmitErrors:   MetricConfig{Enabled: true},
-			CiscoInterfaceUp:               MetricConfig{Enabled: true},
-		},
+		Metrics:            DefaultMetricsConfig(),
+		ResourceAttributes: DefaultResourceAttributesConfig(),
 	}
 }

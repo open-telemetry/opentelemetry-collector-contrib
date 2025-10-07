@@ -9,7 +9,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 )
 
@@ -34,9 +33,6 @@ func TestConfigValidate(t *testing.T) {
 						Auth: AuthConfig{Username: "admin", Password: "password"},
 					},
 				},
-				Scrapers: map[component.Type]component.Config{
-					component.MustNewType("interfaces"): nil,
-				},
 			},
 			expectedErr: "",
 		},
@@ -55,9 +51,6 @@ func TestConfigValidate(t *testing.T) {
 						Auth: AuthConfig{Username: "admin", KeyFile: "/path/to/key"},
 					},
 				},
-				Scrapers: map[component.Type]component.Config{
-					component.MustNewType("interfaces"): nil,
-				},
 			},
 			expectedErr: "",
 		},
@@ -69,9 +62,6 @@ func TestConfigValidate(t *testing.T) {
 					CollectionInterval: 60 * time.Second,
 				},
 				Devices: []DeviceConfig{},
-				Scrapers: map[component.Type]component.Config{
-					component.MustNewType("interfaces"): nil,
-				},
 			},
 			expectedErr: "at least one device must be configured",
 		},
@@ -89,9 +79,6 @@ func TestConfigValidate(t *testing.T) {
 						},
 						Auth: AuthConfig{Username: "admin", Password: "password"},
 					},
-				},
-				Scrapers: map[component.Type]component.Config{
-					component.MustNewType("interfaces"): nil,
 				},
 			},
 			expectedErr: "host.ip cannot be empty",
@@ -111,9 +98,6 @@ func TestConfigValidate(t *testing.T) {
 						Auth: AuthConfig{Username: "", Password: "password"},
 					},
 				},
-				Scrapers: map[component.Type]component.Config{
-					component.MustNewType("interfaces"): nil,
-				},
 			},
 			expectedErr: "auth.username cannot be empty",
 		},
@@ -132,30 +116,8 @@ func TestConfigValidate(t *testing.T) {
 						Auth: AuthConfig{Username: "admin", Password: ""},
 					},
 				},
-				Scrapers: map[component.Type]component.Config{
-					component.MustNewType("interfaces"): nil,
-				},
 			},
 			expectedErr: "auth.password or auth.key_file must be provided",
-		},
-		{
-			name: "no scrapers enabled",
-			config: &Config{
-				ControllerConfig: scraperhelper.ControllerConfig{
-					Timeout:            30 * time.Second,
-					CollectionInterval: 60 * time.Second,
-				},
-				Devices: []DeviceConfig{
-					{
-						Device: DeviceInfo{
-							Host: HostInfo{IP: "localhost", Port: 22},
-						},
-						Auth: AuthConfig{Username: "admin", Password: "password"},
-					},
-				},
-				Scrapers: map[component.Type]component.Config{},
-			},
-			expectedErr: "must specify at least one scraper",
 		},
 	}
 
@@ -176,13 +138,11 @@ func TestConfigUnmarshal(t *testing.T) {
 	cfg := &Config{
 		ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 		Devices:          []DeviceConfig{},
-		Scrapers:         map[component.Type]component.Config{},
 	}
 
 	// Test that Config struct can be created and has expected fields
 	assert.NotNil(t, cfg)
 	assert.NotNil(t, cfg.Devices)
-	assert.NotNil(t, cfg.Scrapers)
 	assert.Equal(t, 60*time.Second, cfg.CollectionInterval)
 }
 
@@ -260,9 +220,6 @@ func TestConfig_MultipleDevices(t *testing.T) {
 				Auth:   AuthConfig{Username: "admin", Password: "pass2"},
 			},
 		},
-		Scrapers: map[component.Type]component.Config{
-			component.MustNewType("system"): nil,
-		},
 	}
 
 	err := cfg.Validate()
@@ -288,9 +245,6 @@ func TestConfig_EmptyHostName(t *testing.T) {
 				Auth: AuthConfig{Username: "admin", Password: "password"},
 			},
 		},
-		Scrapers: map[component.Type]component.Config{
-			component.MustNewType("system"): nil,
-		},
 	}
 
 	err := cfg.Validate()
@@ -313,9 +267,6 @@ func TestConfig_ValidatePort(t *testing.T) {
 				},
 				Auth: AuthConfig{Username: "admin", Password: "password"},
 			},
-		},
-		Scrapers: map[component.Type]component.Config{
-			component.MustNewType("system"): nil,
 		},
 	}
 
@@ -340,41 +291,10 @@ func TestConfig_ValidateBothPasswordAndKeyFile(t *testing.T) {
 				},
 			},
 		},
-		Scrapers: map[component.Type]component.Config{
-			component.MustNewType("system"): nil,
-		},
 	}
 
 	err := cfg.Validate()
 	assert.NoError(t, err) // Both is allowed, password takes precedence
-}
-
-func TestConfig_UnmarshalWithScrapers(t *testing.T) {
-	cfg := &Config{
-		Scrapers: map[component.Type]component.Config{},
-	}
-
-	// Verify unmarshal initializes maps
-	assert.NotNil(t, cfg.Scrapers)
-	assert.Empty(t, cfg.Scrapers)
-}
-
-func TestGetAvailableScraperTypes(t *testing.T) {
-	types := getAvailableScraperTypes()
-
-	// Should contain known scraper types
-	assert.Contains(t, types, "system")
-	assert.Contains(t, types, "interfaces")
-	assert.Len(t, types, 2) // We have 2 scrapers
-}
-
-func TestConfig_CollectionIntervalDefault(t *testing.T) {
-	cfg := &Config{
-		ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
-	}
-
-	// Default collection interval should be 60s
-	assert.Equal(t, 60*time.Second, cfg.CollectionInterval)
 }
 
 func TestDeviceInfo_FullyPopulated(t *testing.T) {

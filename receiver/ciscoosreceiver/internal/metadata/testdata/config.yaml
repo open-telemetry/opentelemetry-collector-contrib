@@ -1,61 +1,63 @@
 default:
 all_set:
   metrics:
-    cisco.collect.duration.seconds:
+    cisco.connection.status:
       enabled: true
-    cisco.collector.duration.seconds:
+  resource_attributes:
+    cisco.device.ip:
       enabled: true
-    cisco.device.up:
+    cisco.device.model:
       enabled: true
-    cisco.interface.admin.up:
+    cisco.device.name:
       enabled: true
-    cisco.interface.error.status:
-      enabled: true
-    cisco.interface.receive.broadcast:
-      enabled: true
-    cisco.interface.receive.bytes:
-      enabled: true
-    cisco.interface.receive.drops:
-      enabled: true
-    cisco.interface.receive.errors:
-      enabled: true
-    cisco.interface.receive.multicast:
-      enabled: true
-    cisco.interface.transmit.bytes:
-      enabled: true
-    cisco.interface.transmit.drops:
-      enabled: true
-    cisco.interface.transmit.errors:
-      enabled: true
-    cisco.interface.up:
+    cisco.device.os:
       enabled: true
 none_set:
   metrics:
-    cisco.collect.duration.seconds:
+    cisco.connection.status:
       enabled: false
-    cisco.collector.duration.seconds:
+  resource_attributes:
+    cisco.device.ip:
       enabled: false
-    cisco.device.up:
+    cisco.device.model:
       enabled: false
-    cisco.interface.admin.up:
+    cisco.device.name:
       enabled: false
-    cisco.interface.error.status:
+    cisco.device.os:
       enabled: false
-    cisco.interface.receive.broadcast:
-      enabled: false
-    cisco.interface.receive.bytes:
-      enabled: false
-    cisco.interface.receive.drops:
-      enabled: false
-    cisco.interface.receive.errors:
-      enabled: false
-    cisco.interface.receive.multicast:
-      enabled: false
-    cisco.interface.transmit.bytes:
-      enabled: false
-    cisco.interface.transmit.drops:
-      enabled: false
-    cisco.interface.transmit.errors:
-      enabled: false
-    cisco.interface.up:
-      enabled: false
+filter_set_include:
+  resource_attributes:
+    cisco.device.ip:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    cisco.device.model:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    cisco.device.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    cisco.device.os:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+filter_set_exclude:
+  resource_attributes:
+    cisco.device.ip:
+      enabled: true
+      metrics_exclude:
+        - strict: "cisco.device.ip-val"
+    cisco.device.model:
+      enabled: true
+      metrics_exclude:
+        - strict: "cisco.device.model-val"
+    cisco.device.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "cisco.device.name-val"
+    cisco.device.os:
+      enabled: true
+      metrics_exclude:
+        - strict: "cisco.device.os-val"
