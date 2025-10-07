@@ -8,6 +8,7 @@ require (
 	go.opentelemetry.io/collector/component/componenttest v0.137.0
 	go.opentelemetry.io/collector/config/confighttp v0.137.0
 	go.opentelemetry.io/collector/confmap v1.43.0
+	go.opentelemetry.io/collector/consumer/consumertest v0.137.0
 	go.opentelemetry.io/collector/consumer/xconsumer v0.137.0
 	go.opentelemetry.io/collector/receiver v1.43.0
 	go.opentelemetry.io/collector/receiver/receivertest v0.137.0
