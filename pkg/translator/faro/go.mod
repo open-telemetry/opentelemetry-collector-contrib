@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/
 go 1.24.0
 
 require (
-	github.com/go-logfmt/logfmt v0.6.0
+	github.com/go-logfmt/logfmt v0.6.1
 	github.com/grafana/faro/pkg/go v0.0.0-20250314155512-06a06da3b8bc
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.137.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.137.0
