@@ -4,7 +4,7 @@ go 1.24.0
 
 require (
 	github.com/coreos/go-oidc/v3 v3.15.0
-	github.com/go-jose/go-jose/v4 v4.1.2
+	github.com/go-jose/go-jose/v4 v4.1.3
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/client v1.43.0
 	go.opentelemetry.io/collector/component v1.43.0
