@@ -185,6 +185,10 @@ func (f *elbAccessLogUnmarshaler) addToCLBAccessLogs(resourceAttr *resourceAttri
 	if clbRecord.UserAgent != unknownField {
 		recordLog.Attributes().PutStr(string(conventions.UserAgentOriginalKey), clbRecord.UserAgent)
 	}
+	if clbRecord.BackendIPPort != unknownField {
+		recordLog.Attributes().PutStr(string(conventions.DestinationAddressKey), clbRecord.BackendIP)
+		recordLog.Attributes().PutInt(string(conventions.DestinationPortKey), clbRecord.BackendPort)
+	}
 	// Set timestamp
 	recordLog.SetTimestamp(pcommon.Timestamp(epochNanoseconds))
 
@@ -238,6 +242,10 @@ func (f *elbAccessLogUnmarshaler) addToALBAccessLogs(resourceAttr *resourceAttri
 	}
 	if albRecord.DomainName != unknownField {
 		recordLog.Attributes().PutStr(string(conventions.URLDomainKey), albRecord.DomainName)
+	}
+	if albRecord.TargetIPPort != unknownField {
+		recordLog.Attributes().PutStr(string(conventions.DestinationAddressKey), albRecord.TargetIP)
+		recordLog.Attributes().PutInt(string(conventions.DestinationPortKey), albRecord.TargetPort)
 	}
 
 	// Set timestamp
