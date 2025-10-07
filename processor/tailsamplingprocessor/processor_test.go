@@ -11,6 +11,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"github.com/stretchr/testify/assert"
@@ -68,119 +69,128 @@ type spanInfo struct {
 	scope    pcommon.InstrumentationScope
 }
 
+func waitForTick() {
+	// Normally, time.Sleep is flaky, but because we're using synctest, we can
+	// wait for the tick to happen, we can guarantee that the policy ticker will
+	// fire. Then we call synctest.Wait() to make sure the ticker goroutine has
+	// finished and is blocked again.
+	time.Sleep(1 * time.Second)
+	synctest.Wait()
+}
+
 func TestTraceIntegrity(t *testing.T) {
-	const spanCount = 4
-	// Generate trace with several spans with different scopes
-	traces := ptrace.NewTraces()
-	spans := make(map[pcommon.SpanID]spanInfo, 0)
+	synctest.Test(t, func(t *testing.T) {
+		const spanCount = 4
+		// Generate trace with several spans with different scopes
+		traces := ptrace.NewTraces()
+		spans := make(map[pcommon.SpanID]spanInfo, 0)
 
-	// Fill resource
-	resourceSpans := traces.ResourceSpans().AppendEmpty()
-	resource := resourceSpans.Resource()
-	resourceSpans.Resource().Attributes().PutStr("key1", "value1")
-	resourceSpans.Resource().Attributes().PutInt("key2", 0)
+		// Fill resource
+		resourceSpans := traces.ResourceSpans().AppendEmpty()
+		resource := resourceSpans.Resource()
+		resourceSpans.Resource().Attributes().PutStr("key1", "value1")
+		resourceSpans.Resource().Attributes().PutInt("key2", 0)
 
-	// Fill scopeSpans 1
-	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
-	scope := scopeSpans.Scope()
-	scopeSpans.Scope().SetName("scope1")
-	scopeSpans.Scope().Attributes().PutStr("key1", "value1")
-	scopeSpans.Scope().Attributes().PutInt("key2", 0)
+		// Fill scopeSpans 1
+		scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
+		scope := scopeSpans.Scope()
+		scopeSpans.Scope().SetName("scope1")
+		scopeSpans.Scope().Attributes().PutStr("key1", "value1")
+		scopeSpans.Scope().Attributes().PutInt("key2", 0)
 
-	// Add spans to scopeSpans 1
-	span := scopeSpans.Spans().AppendEmpty()
-	spanID := [8]byte{1, 2, 3, 4, 5, 6, 7, 8}
-	span.SetSpanID(pcommon.SpanID(spanID))
-	span.SetTraceID(pcommon.TraceID([16]byte{1, 2, 3, 4}))
-	spans[spanID] = spanInfo{span: span, resource: resource, scope: scope}
+		// Add spans to scopeSpans 1
+		span := scopeSpans.Spans().AppendEmpty()
+		spanID := [8]byte{1, 2, 3, 4, 5, 6, 7, 8}
+		span.SetSpanID(pcommon.SpanID(spanID))
+		span.SetTraceID(pcommon.TraceID([16]byte{1, 2, 3, 4}))
+		spans[spanID] = spanInfo{span: span, resource: resource, scope: scope}
 
-	span = scopeSpans.Spans().AppendEmpty()
-	spanID = [8]byte{9, 10, 11, 12, 13, 14, 15, 16}
-	span.SetSpanID(pcommon.SpanID(spanID))
-	span.SetTraceID(pcommon.TraceID([16]byte{5, 6, 7, 8}))
-	spans[spanID] = spanInfo{span: span, resource: resource, scope: scope}
+		span = scopeSpans.Spans().AppendEmpty()
+		spanID = [8]byte{9, 10, 11, 12, 13, 14, 15, 16}
+		span.SetSpanID(pcommon.SpanID(spanID))
+		span.SetTraceID(pcommon.TraceID([16]byte{5, 6, 7, 8}))
+		spans[spanID] = spanInfo{span: span, resource: resource, scope: scope}
 
-	// Fill scopeSpans 2
-	scopeSpans = resourceSpans.ScopeSpans().AppendEmpty()
-	scope = scopeSpans.Scope()
-	scopeSpans.Scope().SetName("scope2")
-	scopeSpans.Scope().Attributes().PutStr("key1", "value1")
-	scopeSpans.Scope().Attributes().PutInt("key2", 0)
+		// Fill scopeSpans 2
+		scopeSpans = resourceSpans.ScopeSpans().AppendEmpty()
+		scope = scopeSpans.Scope()
+		scopeSpans.Scope().SetName("scope2")
+		scopeSpans.Scope().Attributes().PutStr("key1", "value1")
+		scopeSpans.Scope().Attributes().PutInt("key2", 0)
 
-	// Add spans to scopeSpans 2
-	span = scopeSpans.Spans().AppendEmpty()
-	spanID = [8]byte{17, 18, 19, 20, 21, 22, 23, 24}
-	span.SetSpanID(pcommon.SpanID(spanID))
-	span.SetTraceID(pcommon.TraceID([16]byte{9, 10, 11, 12}))
-	spans[spanID] = spanInfo{span: span, resource: resource, scope: scope}
+		// Add spans to scopeSpans 2
+		span = scopeSpans.Spans().AppendEmpty()
+		spanID = [8]byte{17, 18, 19, 20, 21, 22, 23, 24}
+		span.SetSpanID(pcommon.SpanID(spanID))
+		span.SetTraceID(pcommon.TraceID([16]byte{9, 10, 11, 12}))
+		spans[spanID] = spanInfo{span: span, resource: resource, scope: scope}
 
-	span = scopeSpans.Spans().AppendEmpty()
-	spanID = [8]byte{25, 26, 27, 28, 29, 30, 31, 32}
-	span.SetSpanID(pcommon.SpanID(spanID))
-	span.SetTraceID(pcommon.TraceID([16]byte{13, 14, 15, 16}))
-	spans[spanID] = spanInfo{span: span, resource: resource, scope: scope}
+		span = scopeSpans.Spans().AppendEmpty()
+		spanID = [8]byte{25, 26, 27, 28, 29, 30, 31, 32}
+		span.SetSpanID(pcommon.SpanID(spanID))
+		span.SetTraceID(pcommon.TraceID([16]byte{13, 14, 15, 16}))
+		spans[spanID] = spanInfo{span: span, resource: resource, scope: scope}
 
-	require.Len(t, spans, spanCount)
+		require.Len(t, spans, spanCount)
 
-	nextConsumer := new(consumertest.TracesSink)
-	idb := newSyncIDBatcher()
+		nextConsumer := new(consumertest.TracesSink)
+		idb := newSyncIDBatcher()
 
-	mpe1 := &mockPolicyEvaluator{}
+		mpe1 := &mockPolicyEvaluator{}
 
-	policies := []*policy{
-		{name: "mock-policy-1", evaluator: mpe1, attribute: metric.WithAttributes(attribute.String("policy", "mock-policy-1"))},
-	}
-
-	cfg := Config{
-		DecisionWait: defaultTestDecisionWait,
-		NumTraces:    defaultNumTraces,
-		Options: []Option{
-			withDecisionBatcher(idb),
-			withPolicies(policies),
-		},
-	}
-	p, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), nextConsumer, cfg)
-	require.NoError(t, err)
-
-	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
-	defer func() {
-		require.NoError(t, p.Shutdown(t.Context()))
-	}()
-
-	mpe1.NextDecision = samplingpolicy.Sampled
-
-	// Generate and deliver first span
-	require.NoError(t, p.ConsumeTraces(t.Context(), traces))
-
-	tsp := p.(*tailSamplingSpanProcessor)
-
-	// The first tick won't do anything
-	tsp.policyTicker.OnTick()
-	require.Equal(t, 0, mpe1.EvaluationCount)
-
-	// This will cause policy evaluations on the first span
-	tsp.policyTicker.OnTick()
-
-	// Both policies should have been evaluated once
-	require.Equal(t, 4, mpe1.EvaluationCount)
-
-	consumed := nextConsumer.AllTraces()
-	require.Len(t, consumed, 4)
-	for _, trace := range consumed {
-		require.Equal(t, 1, trace.SpanCount())
-		require.Equal(t, 1, trace.ResourceSpans().Len())
-		require.Equal(t, 1, trace.ResourceSpans().At(0).ScopeSpans().Len())
-		require.Equal(t, 1, trace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().Len())
-
-		span := trace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
-		if spanInfo, ok := spans[span.SpanID()]; ok {
-			require.Equal(t, spanInfo.span, span)
-			require.Equal(t, spanInfo.resource, trace.ResourceSpans().At(0).Resource())
-			require.Equal(t, spanInfo.scope, trace.ResourceSpans().At(0).ScopeSpans().At(0).Scope())
-		} else {
-			require.Fail(t, "Span not found")
+		policies := []*policy{
+			{name: "mock-policy-1", evaluator: mpe1, attribute: metric.WithAttributes(attribute.String("policy", "mock-policy-1"))},
 		}
-	}
+
+		cfg := Config{
+			DecisionWait: defaultTestDecisionWait,
+			NumTraces:    defaultNumTraces,
+			Options: []Option{
+				withDecisionBatcher(idb),
+				withPolicies(policies),
+			},
+		}
+		p, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), nextConsumer, cfg)
+		require.NoError(t, err)
+
+		require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+		defer func() {
+			require.NoError(t, p.Shutdown(t.Context()))
+		}()
+
+		mpe1.NextDecision = samplingpolicy.Sampled
+
+		// Generate and deliver first span
+		require.NoError(t, p.ConsumeTraces(t.Context(), traces))
+
+		// The first tick won't do anything
+		waitForTick()
+		require.Equal(t, 0, mpe1.EvaluationCount)
+
+		// This will cause policy evaluations on the first span
+		waitForTick()
+
+		// Both policies should have been evaluated once
+		assert.Equal(t, 4, mpe1.EvaluationCount)
+
+		consumed := nextConsumer.AllTraces()
+		require.Len(t, consumed, 4)
+		for _, trace := range consumed {
+			require.Equal(t, 1, trace.SpanCount())
+			require.Equal(t, 1, trace.ResourceSpans().Len())
+			require.Equal(t, 1, trace.ResourceSpans().At(0).ScopeSpans().Len())
+			require.Equal(t, 1, trace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().Len())
+
+			span := trace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+			if spanInfo, ok := spans[span.SpanID()]; ok {
+				require.Equal(t, spanInfo.span, span)
+				require.Equal(t, spanInfo.resource, trace.ResourceSpans().At(0).Resource())
+				require.Equal(t, spanInfo.scope, trace.ResourceSpans().At(0).ScopeSpans().At(0).Scope())
+			} else {
+				require.Fail(t, "Span not found")
+			}
+		}
+	})
 }
 
 func TestSequentialTraceArrival(t *testing.T) {
@@ -502,164 +512,167 @@ func TestConcurrentTraceMapSize(t *testing.T) {
 }
 
 func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
-	idb := newSyncIDBatcher()
-	msp := new(consumertest.TracesSink)
+	synctest.Test(t, func(t *testing.T) {
+		idb := newSyncIDBatcher()
+		msp := new(consumertest.TracesSink)
 
-	cfg := Config{
-		DecisionWait: defaultTestDecisionWait,
-		NumTraces:    defaultNumTraces,
-		PolicyCfgs: []PolicyCfg{
-			{
-				sharedPolicyCfg: sharedPolicyCfg{
-					Name: "always",
-					Type: AlwaysSample,
+		cfg := Config{
+			DecisionWait: defaultTestDecisionWait,
+			NumTraces:    defaultNumTraces,
+			PolicyCfgs: []PolicyCfg{
+				{
+					sharedPolicyCfg: sharedPolicyCfg{
+						Name: "always",
+						Type: AlwaysSample,
+					},
 				},
 			},
-		},
-		Options: []Option{
-			withDecisionBatcher(idb),
-		},
-	}
-	p, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), msp, cfg)
-	require.NoError(t, err)
+			Options: []Option{
+				withDecisionBatcher(idb),
+			},
+		}
+		p, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), msp, cfg)
+		require.NoError(t, err)
 
-	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
-	defer func() {
-		require.NoError(t, p.Shutdown(t.Context()))
-	}()
+		require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+		defer func() {
+			require.NoError(t, p.Shutdown(t.Context()))
+		}()
 
-	traceIDs, batches := generateIDsAndBatches(3)
-	for _, batch := range batches {
-		require.NoError(t, p.ConsumeTraces(t.Context(), batch))
-	}
+		traceIDs, batches := generateIDsAndBatches(3)
+		for _, batch := range batches {
+			require.NoError(t, p.ConsumeTraces(t.Context(), batch))
+		}
 
-	tsp := p.(*tailSamplingSpanProcessor)
-	tsp.policyTicker.OnTick() // the first tick always gets an empty batch
-	tsp.policyTicker.OnTick()
+		waitForTick() // the first tick always gets an empty batch
+		waitForTick()
 
-	require.Len(t, msp.AllTraces(), 3, "There should be three batches, one for each trace")
+		require.Len(t, msp.AllTraces(), 3, "There should be three batches, one for each trace")
 
-	expectedSpanIDs := make(map[int][]pcommon.SpanID)
-	expectedSpanIDs[0] = []pcommon.SpanID{
-		uInt64ToSpanID(uint64(1)),
-	}
-	expectedSpanIDs[1] = []pcommon.SpanID{
-		uInt64ToSpanID(uint64(2)),
-		uInt64ToSpanID(uint64(3)),
-	}
-	expectedSpanIDs[2] = []pcommon.SpanID{
-		uInt64ToSpanID(uint64(4)),
-		uInt64ToSpanID(uint64(5)),
-		uInt64ToSpanID(uint64(6)),
-	}
+		expectedSpanIDs := make(map[int][]pcommon.SpanID)
+		expectedSpanIDs[0] = []pcommon.SpanID{
+			uInt64ToSpanID(uint64(1)),
+		}
+		expectedSpanIDs[1] = []pcommon.SpanID{
+			uInt64ToSpanID(uint64(2)),
+			uInt64ToSpanID(uint64(3)),
+		}
+		expectedSpanIDs[2] = []pcommon.SpanID{
+			uInt64ToSpanID(uint64(4)),
+			uInt64ToSpanID(uint64(5)),
+			uInt64ToSpanID(uint64(6)),
+		}
 
-	receivedTraces := msp.AllTraces()
-	for i, traceID := range traceIDs {
-		trace := findTrace(t, receivedTraces, traceID)
-		require.Equal(t, i+1, trace.SpanCount(), "The trace should have all of its spans in a single batch")
+		receivedTraces := msp.AllTraces()
+		for i, traceID := range traceIDs {
+			trace := findTrace(t, receivedTraces, traceID)
+			require.Equal(t, i+1, trace.SpanCount(), "The trace should have all of its spans in a single batch")
 
-		expected := expectedSpanIDs[i]
-		got := collectSpanIDs(trace)
+			expected := expectedSpanIDs[i]
+			got := collectSpanIDs(trace)
 
-		// might have received out of order, sort for comparison
-		sort.Slice(got, func(i, j int) bool {
-			bytesA := got[i]
-			a := binary.BigEndian.Uint64(bytesA[:])
-			bytesB := got[j]
-			b := binary.BigEndian.Uint64(bytesB[:])
-			return a < b
-		})
+			// might have received out of order, sort for comparison
+			sort.Slice(got, func(i, j int) bool {
+				bytesA := got[i]
+				a := binary.BigEndian.Uint64(bytesA[:])
+				bytesB := got[j]
+				b := binary.BigEndian.Uint64(bytesB[:])
+				return a < b
+			})
 
-		require.Equal(t, expected, got)
-	}
+			require.Equal(t, expected, got)
+		}
+	})
 }
 
 func TestSetSamplingPolicy(t *testing.T) {
-	idb := newSyncIDBatcher()
-	msp := new(consumertest.TracesSink)
+	synctest.Test(t, func(t *testing.T) {
+		idb := newSyncIDBatcher()
+		msp := new(consumertest.TracesSink)
 
-	cfg := Config{
-		DecisionWait: defaultTestDecisionWait,
-		NumTraces:    defaultNumTraces,
-		PolicyCfgs: []PolicyCfg{
+		cfg := Config{
+			DecisionWait: defaultTestDecisionWait,
+			NumTraces:    defaultNumTraces,
+			PolicyCfgs: []PolicyCfg{
+				{
+					sharedPolicyCfg: sharedPolicyCfg{
+						Name: "always",
+						Type: AlwaysSample,
+					},
+				},
+			},
+			Options: []Option{
+				withDecisionBatcher(idb),
+			},
+		}
+		p, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), msp, cfg)
+		require.NoError(t, err)
+
+		require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+		defer func() {
+			require.NoError(t, p.Shutdown(t.Context()))
+		}()
+
+		tsp := p.(*tailSamplingSpanProcessor)
+
+		assert.Len(t, tsp.policies, 1)
+
+		waitForTick()
+
+		assert.Len(t, tsp.policies, 1)
+
+		cfgs := []PolicyCfg{
 			{
 				sharedPolicyCfg: sharedPolicyCfg{
 					Name: "always",
 					Type: AlwaysSample,
 				},
 			},
-		},
-		Options: []Option{
-			withDecisionBatcher(idb),
-		},
-	}
-	p, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), msp, cfg)
-	require.NoError(t, err)
-
-	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
-	defer func() {
-		require.NoError(t, p.Shutdown(t.Context()))
-	}()
-
-	tsp := p.(*tailSamplingSpanProcessor)
-
-	assert.Len(t, tsp.policies, 1)
-
-	tsp.policyTicker.OnTick()
-
-	assert.Len(t, tsp.policies, 1)
-
-	cfgs := []PolicyCfg{
-		{
-			sharedPolicyCfg: sharedPolicyCfg{
-				Name: "always",
-				Type: AlwaysSample,
+			{
+				sharedPolicyCfg: sharedPolicyCfg{
+					Name: "everything",
+					Type: AlwaysSample,
+				},
 			},
-		},
-		{
-			sharedPolicyCfg: sharedPolicyCfg{
-				Name: "everything",
-				Type: AlwaysSample,
+		}
+		tsp.SetSamplingPolicy(cfgs)
+
+		assert.Len(t, tsp.policies, 1)
+
+		waitForTick()
+
+		assert.Len(t, tsp.policies, 2)
+
+		// Duplicate policy name.
+		cfgs = []PolicyCfg{
+			{
+				sharedPolicyCfg: sharedPolicyCfg{
+					Name: "always",
+					Type: AlwaysSample,
+				},
 			},
-		},
-	}
-	tsp.SetSamplingPolicy(cfgs)
-
-	assert.Len(t, tsp.policies, 1)
-
-	tsp.policyTicker.OnTick()
-
-	assert.Len(t, tsp.policies, 2)
-
-	// Duplicate policy name.
-	cfgs = []PolicyCfg{
-		{
-			sharedPolicyCfg: sharedPolicyCfg{
-				Name: "always",
-				Type: AlwaysSample,
+			{
+				sharedPolicyCfg: sharedPolicyCfg{
+					Name: "everything",
+					Type: AlwaysSample,
+				},
 			},
-		},
-		{
-			sharedPolicyCfg: sharedPolicyCfg{
-				Name: "everything",
-				Type: AlwaysSample,
+			{
+				sharedPolicyCfg: sharedPolicyCfg{
+					Name: "everything",
+					Type: AlwaysSample,
+				},
 			},
-		},
-		{
-			sharedPolicyCfg: sharedPolicyCfg{
-				Name: "everything",
-				Type: AlwaysSample,
-			},
-		},
-	}
-	tsp.SetSamplingPolicy(cfgs)
+		}
+		tsp.SetSamplingPolicy(cfgs)
 
-	assert.Len(t, tsp.policies, 2)
+		assert.Len(t, tsp.policies, 2)
 
-	tsp.policyTicker.OnTick()
+		waitForTick()
 
-	// Should revert sampling policy.
-	assert.Len(t, tsp.policies, 2)
+		// Should revert sampling policy.
+		assert.Len(t, tsp.policies, 2)
+	})
 }
 
 func TestSubSecondDecisionTime(t *testing.T) {
