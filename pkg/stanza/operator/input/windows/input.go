@@ -202,21 +202,31 @@ func (i *Input) Stop() error {
 func (i *Input) readOnInterval(ctx context.Context) {
 	defer i.wg.Done()
 
-	ticker := time.NewTicker(i.pollInterval)
-	defer ticker.Stop()
-
 	for {
 		select {
 		case <-ctx.Done():
 			return
-		case <-ticker.C:
-			i.read(ctx)
+		case <-time.After(i.pollInterval):
+			i.readAll(ctx)
+		}
+	}
+}
+
+func (i *Input) readAll(ctx context.Context) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			if !i.read(ctx) {
+				return
+			}
 		}
 	}
 }
 
 // read will read events from the subscription.
-func (i *Input) read(ctx context.Context) {
+func (i *Input) read(ctx context.Context) bool {
 	events, actualMaxReads, err := i.subscription.Read(i.currentMaxReads)
 
 	// Update the current max reads if it changed
@@ -232,7 +242,7 @@ func (i *Input) read(ctx context.Context) {
 			closeErr := i.subscription.Close()
 			if closeErr != nil {
 				i.Logger().Error("Failed to close remote subscription", zap.Error(closeErr))
-				return
+				return false
 			}
 			if err := i.stopRemoteSession(); err != nil {
 				i.Logger().Error("Failed to close remote session", zap.Error(err))
@@ -241,14 +251,14 @@ func (i *Input) read(ctx context.Context) {
 			i.subscription = NewRemoteSubscription(i.remote.Server)
 			if err := i.startRemoteSession(); err != nil {
 				i.Logger().Error("Failed to re-establish remote session", zap.String("server", i.remote.Server), zap.Error(err))
-				return
+				return false
 			}
 			if err := i.subscription.Open(i.startAt, uintptr(i.remoteSessionHandle), i.channel, i.query, i.bookmark); err != nil {
 				i.Logger().Error("Failed to re-open subscription for remote server", zap.String("server", i.remote.Server), zap.Error(err))
-				return
+				return false
 			}
 		}
-		return
+		return false
 	}
 
 	for n, event := range events {
@@ -263,6 +273,8 @@ func (i *Input) read(ctx context.Context) {
 		}
 		event.Close()
 	}
+
+	return len(events) != 0
 }
 
 func (i *Input) getPublisherName(event Event) (name string, excluded bool) {
