@@ -21,6 +21,7 @@ var (
 	errFormatOTLPAttributes       = errors.New("value should be in one of the following formats: key=\"value\", key=true, key=false, key=<integer>, or key=[<value1>, <value2>, ...]")
 	errDoubleQuotesOTLPAttributes = errors.New("value should be a string wrapped in double quotes")
 	errMixedTypeSlice             = errors.New("all items in a slice should be of the same type")
+	errEmptySlice                 = errors.New("slice should not be empty")
 )
 
 const (
@@ -123,8 +124,7 @@ func (v *KeyValue) Set(s string) error {
 	// List of Values
 	content := strings.TrimSpace(kv[1][1 : len(kv[1])-1])
 	if content == "" {
-		(*v)[key] = []string{}
-		return nil
+		return errEmptySlice
 	}
 
 	items := splitItems(content)

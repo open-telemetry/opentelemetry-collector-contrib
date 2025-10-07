@@ -21,6 +21,10 @@ func TestKeyValueSet(t *testing.T) {
 			expected: KeyValue(map[string]any{"key": "value"}),
 		},
 		{
+			flag:     "key=\" value \"",
+			expected: KeyValue(map[string]any{"key": " value "}),
+		},
+		{
 			flag:     "key=\"\"",
 			expected: KeyValue(map[string]any{"key": ""}),
 		},
@@ -89,8 +93,16 @@ func TestKeyValueSet(t *testing.T) {
 			err:  errMixedTypeSlice,
 		},
 		{
-			flag:     "key=[]",
-			expected: KeyValue(map[string]any{"key": []string{}}),
+			flag: "key=[]",
+			err:  errEmptySlice,
+		},
+		{
+			flag:     "key=[\"\"]",
+			expected: KeyValue(map[string]any{"key": []string{""}}),
+		},
+		{
+			flag:     "key=[\" value \"]",
+			expected: KeyValue(map[string]any{"key": []string{" value "}}),
 		},
 		{
 			flag:     "key=[true,]",
