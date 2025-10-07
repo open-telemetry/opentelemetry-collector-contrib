@@ -46,8 +46,10 @@ metrics:
     description: Reports the count of kernel NFS client TCP segments and UDP datagrams handled.
     unit: '{record}'
     attributes: [network.transport]
-    gauge:
+    sum:
       value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
     stability:
       level: development
 
@@ -55,8 +57,10 @@ metrics:
     enabled: true
     description: Reports the count of kernel NFS client TCP connections accepted
     unit: '{connection}'
-    gauge:
+    sum:
       value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
     stability:
       level: development
 
@@ -64,8 +68,10 @@ metrics:
     enabled: true
     description: Reports the count of kernel NFS client RPCs sent, regardless of whether they're accepted/rejected by the server.
     unit: '{request}'
-    gauge:
+    sum:
       value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
     stability:
       level: development
 
@@ -73,8 +79,10 @@ metrics:
     enabled: true
     description: Reports the count of kernel NFS client RPC retransmits
     unit: '{retransmit}'
-    gauge:
+    sum:
       value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
     stability:
       level: development
 
@@ -82,8 +90,10 @@ metrics:
     enabled: true
     description: Reports the count of kernel NFS client RPC authentication refreshes
     unit: '{authrefresh}'
-    gauge:
+    sum:
       value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
     stability:
       level: development
 
@@ -94,8 +104,10 @@ metrics:
     attributes:
     - onc_rpc.version
     - nfs.operation.name
-    gauge:
+    sum:
       value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
     stability:
       level: development
 
@@ -104,8 +116,10 @@ metrics:
     description: Reports the count of kernel NFS client procedures
     unit: '{procedure}'
     attributes: [onc_rpc.version, onc_rpc.procedure.name]
-    gauge:
+    sum:
       value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
     stability:
       level: development
 
@@ -114,17 +128,21 @@ metrics:
     description: Reports the kernel NFS server reply cache request count by cache hit status.
     unit: '{request}'
     attributes: [nfs.server.repcache.status]
-    gauge:
+    sum:
       value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
     stability:
       level: development
 
   nfs.server.fh.stale.count:
     enabled: true
-    description: Reports the count of kernel NFS server stale file handles.
+    description: Reports the cumulative count of kernel NFS server stale file handles.
     unit: '{fh}'
-    gauge:
+    sum:
       value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
     stability:
       level: development
 
@@ -133,8 +151,10 @@ metrics:
     description: Reports the count of kernel NFS server bytes returned to receive and transmit (read and write) requests.
     unit: By
     attributes: [network.io.direction]
-    gauge:
+    sum:
       value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
     stability:
       level: development
 
@@ -142,8 +162,10 @@ metrics:
     enabled: true
     description: Reports the count of kernel NFS server available threads
     unit: '{thread}'
-    gauge:
+    sum:
       value_type: int
+      monotonic: false
+      aggregation_temporality: cumulative
     stability:
       level: development
 
@@ -152,8 +174,10 @@ metrics:
     description: Reports the count of kernel NFS server TCP segments and UDP datagrams handled.
     unit: '{request}'
     attributes: [network.transport]
-    gauge:
+    sum:
       value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
     stability:
       level: development
 
@@ -161,8 +185,10 @@ metrics:
     enabled: true
     description: Reports the count of kernel NFS server TCP connections accepted
     unit: '{connection}'
-    gauge:
+    sum:
       value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
     stability:
       level: development
 
@@ -171,8 +197,10 @@ metrics:
     description: Reports the count of kernel NFS server RPCs handled.
     unit: '{request}'
     attributes: [error.type]
-    gauge:
+    sum:
       value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
     stability:
       level: development
 
@@ -181,8 +209,10 @@ metrics:
     description: Reports the count of kernel NFSv4+ server operations
     unit: '{operation}'
     attributes: [onc_rpc.version, nfs.operation.name]
-    gauge:
+    sum:
       value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
     stability:
       level: development
 
@@ -191,7 +221,9 @@ metrics:
     description: Reports the count of kernel NFS server procedures
     unit: '{procedure}'
     attributes: [onc_rpc.version, onc_rpc.procedure.name]
-    gauge:
+    sum:
       value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
     stability:
       level: development
