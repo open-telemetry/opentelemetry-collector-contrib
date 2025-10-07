@@ -42,32 +42,6 @@ func TestCollectorInstanceInfo(t *testing.T) {
 				return m
 			}(),
 		},
-		{
-			name: "with_all_values",
-			input: func() component.TelemetrySettings {
-				ts := componenttest.NewNopTelemetrySettings()
-				ts.Resource.Attributes().PutStr(string(semconv.ServiceInstanceIDKey), "627cc493-f310-47de-96bd-71410b7dec09")
-				ts.Resource.Attributes().PutStr(string(semconv.ServiceNameKey), "signaltometrics")
-				ts.Resource.Attributes().PutStr(string(semconv.ServiceNamespaceKey), "test")
-				return ts
-			}(),
-			expected: func() pcommon.Map {
-				m := pcommon.NewMap()
-				m.PutStr(
-					"signaltometrics."+string(semconv.ServiceInstanceIDKey),
-					"627cc493-f310-47de-96bd-71410b7dec09",
-				)
-				m.PutStr(
-					"signaltometrics."+string(semconv.ServiceNameKey),
-					"signaltometrics",
-				)
-				m.PutStr(
-					"signaltometrics."+string(semconv.ServiceNamespaceKey),
-					"test",
-				)
-				return m
-			}(),
-		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			ci := NewCollectorInstanceInfo(tc.input)

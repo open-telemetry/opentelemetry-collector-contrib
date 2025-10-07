@@ -7,12 +7,6 @@ resourceMetrics:
         - key: signaltometrics.service.instance.id
           value:
             stringValue: 627cc493-f310-47de-96bd-71410b7dec09
-        - key: signaltometrics.service.name
-          value:
-            stringValue: signaltometrics
-        - key: signaltometrics.service.namespace
-          value:
-            stringValue: test
     scopeMetrics:
       - metrics:
           - description: Spans with resource attribute including resource.foo as a int gauge metric
@@ -35,12 +29,6 @@ resourceMetrics:
         - key: signaltometrics.service.instance.id
           value:
             stringValue: 627cc493-f310-47de-96bd-71410b7dec09
-        - key: signaltometrics.service.name
-          value:
-            stringValue: signaltometrics
-        - key: signaltometrics.service.namespace
-          value:
-            stringValue: test
     scopeMetrics:
       - metrics:
           - description: Adjusted count for the span as a int gauge metric

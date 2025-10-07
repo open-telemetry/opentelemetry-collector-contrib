@@ -297,11 +297,9 @@ principle. However, since `signaltometrics` component produces metrics from all 
 types and also allows customizing the resource attributes, there is a possibility
 of violating the single-writer principle. To keep the single-writer principle intact,
 the component adds collector instance information as resource attributes. The following
-resource attributes are added to each produced metrics:
+resource attribute is added to each produced metric:
 
 ```yaml
-signaltometrics.service.name: <service_name_of_the_otel_collector>
-signaltometrics.service.namespace: <service_namespace_of_the_otel_collector>
 signaltometrics.service.instance.id: <service_instance_id_of_the_otel_collector>
 ```
 
