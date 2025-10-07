@@ -62,7 +62,7 @@ jobs:
           else
             echo ".chloggen/config.yaml is up to date."
           fi
-          git checkout $PR_HEAD -- ./.chloggen/config.yaml
+          git checkout "$PR_HEAD" -- ./.chloggen/config.yaml
 
       - name: Ensure ./.chloggen/*.yaml addition(s)
         if: ${{ !contains(github.event.pull_request.labels.*.name, 'dependencies') && !contains(github.event.pull_request.labels.*.name, 'Skip Changelog') && !contains(github.event.pull_request.title, '[chore]')}}
