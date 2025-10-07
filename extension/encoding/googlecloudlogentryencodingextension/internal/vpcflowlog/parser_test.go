@@ -373,14 +373,14 @@ func TestParsePayloadIntoAttributes(t *testing.T) {
 				"bytes_sent": "0",
 				"packets_sent": "640",
 				"start_time": "2025-09-27T21:12:02.937646004Z",
-				"end_time": "2025-09-27T21:12:02.937646004Z"
+				"end_time": "2025-09-27T21:13:02.927646004Z"
 			}`),
 			expectedAttr: map[string]any{
 				gcpVPCFlowReporter:    "SRC",
 				gcpVPCFlowBytesSent:   int64(0),
 				gcpVPCFlowPacketsSent: int64(640),
-				gcpVPCFlowStartTime:   "2025-09-27T21:12:02.937646004Z",
-				gcpVPCFlowEndTime:     "2025-09-27T21:12:02.937646004Z",
+				gcpVPCFlowStartTime:   int64(1759007522937646004),
+				gcpVPCFlowEndTime:     int64(1759007582927646004),
 			},
 		},
 		"complete payload": {
@@ -396,7 +396,7 @@ func TestParsePayloadIntoAttributes(t *testing.T) {
 				"bytes_sent": "0",
 				"packets_sent": "640",
 				"start_time": "2025-09-27T21:12:02.937646004Z",
-				"end_time": "2025-09-27T21:12:02.937646004Z",
+				"end_time": "2025-09-27T21:15:03.837646004Z",
 				"network_service": {
 					"dscp": 32
 				},
@@ -426,8 +426,8 @@ func TestParsePayloadIntoAttributes(t *testing.T) {
 				gcpVPCFlowReporter:                     "SRC",
 				gcpVPCFlowBytesSent:                    int64(0),
 				gcpVPCFlowPacketsSent:                  int64(640),
-				gcpVPCFlowStartTime:                    "2025-09-27T21:12:02.937646004Z",
-				gcpVPCFlowEndTime:                      "2025-09-27T21:12:02.937646004Z",
+				gcpVPCFlowStartTime:                    int64(1759007522937646004),
+				gcpVPCFlowEndTime:                      int64(1759007703837646004),
 				gcpVPCFlowNetworkServiceDSCP:           int64(32),
 				gcpVPCFlowSourceInstanceProjectID:      "elastic-obs-integrations-dev",
 				gcpVPCFlowSourceInstanceVMRegion:       "us-central1",
