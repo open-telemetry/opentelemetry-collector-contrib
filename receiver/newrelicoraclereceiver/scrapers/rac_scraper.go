@@ -139,15 +139,48 @@ func (s *RacScraper) ScrapeRacMetrics(ctx context.Context) []error {
 	return allErrors
 }
 
+// Utility functions to reduce code duplication
+
+// executeQuery executes a database query with proper error handling and logging
+func (s *RacScraper) executeQuery(ctx context.Context, query string, queryType string) (*sql.Rows, error) {
+	rows, err := s.db.QueryContext(ctx, query)
+	if err != nil {
+		s.logger.Error(fmt.Sprintf("Failed to execute %s query", queryType), zap.Error(err))
+		return nil, err
+	}
+	return rows, nil
+}
+
+// handleScanError handles row scanning errors with consistent logging and error collection
+func (s *RacScraper) handleScanError(err error, scrapeErrors []error, context string) []error {
+	s.logger.Error(fmt.Sprintf("Failed to scan %s row", context), zap.Error(err))
+	return append(scrapeErrors, err)
+}
+
+// nullStringToString safely converts sql.NullString to string
+func nullStringToString(ns sql.NullString) string {
+	if ns.Valid {
+		return ns.String
+	}
+	return ""
+}
+
+// stringStatusToBinary converts string status to binary value (1 for match, 0 for no match)
+func stringStatusToBinary(status, expectedValue string) int64 {
+	if strings.ToUpper(status) == strings.ToUpper(expectedValue) {
+		return 1
+	}
+	return 0
+}
+
 // scrapeASMDiskGroups implements Feature 1: Automatic Storage Management (ASM) Monitoring
 func (s *RacScraper) scrapeASMDiskGroups(ctx context.Context) []error {
 	s.logger.Debug("Begin ASM disk group metrics scrape")
 
 	var scrapeErrors []error
 
-	rows, err := s.db.QueryContext(ctx, queries.ASMDiskGroupSQL)
+	rows, err := s.executeQuery(ctx, queries.ASMDiskGroupSQL, "ASM disk group")
 	if err != nil {
-		s.logger.Error("Failed to execute ASM disk group query", zap.Error(err))
 		return []error{err}
 	}
 	defer rows.Close()
@@ -159,8 +192,7 @@ func (s *RacScraper) scrapeASMDiskGroups(ctx context.Context) []error {
 		var offlineDisks sql.NullFloat64
 
 		if err := rows.Scan(&name, &totalMB, &freeMB, &offlineDisks); err != nil {
-			s.logger.Error("Failed to scan ASM disk group row", zap.Error(err))
-			scrapeErrors = append(scrapeErrors, err)
+			scrapeErrors = s.handleScanError(err, scrapeErrors, "ASM disk group")
 			continue
 		}
 
@@ -202,9 +234,8 @@ func (s *RacScraper) scrapeClusterWaitEvents(ctx context.Context) []error {
 
 	var scrapeErrors []error
 
-	rows, err := s.db.QueryContext(ctx, queries.ClusterWaitEventsSQL)
+	rows, err := s.executeQuery(ctx, queries.ClusterWaitEventsSQL, "cluster wait events")
 	if err != nil {
-		s.logger.Error("Failed to execute cluster wait events query", zap.Error(err))
 		return []error{err}
 	}
 	defer rows.Close()
@@ -219,8 +250,7 @@ func (s *RacScraper) scrapeClusterWaitEvents(ctx context.Context) []error {
 		var timeWaitedMicro sql.NullFloat64
 
 		if err := rows.Scan(&instID, &event, &totalWaits, &timeWaitedMicro); err != nil {
-			s.logger.Error("Failed to scan cluster wait event row", zap.Error(err))
-			scrapeErrors = append(scrapeErrors, err)
+			scrapeErrors = s.handleScanError(err, scrapeErrors, "cluster wait event")
 			continue
 		}
 
@@ -270,9 +300,8 @@ func (s *RacScraper) scrapeInstanceStatus(ctx context.Context) []error {
 
 	var scrapeErrors []error
 
-	rows, err := s.db.QueryContext(ctx, queries.RACInstanceStatusSQL)
+	rows, err := s.executeQuery(ctx, queries.RACInstanceStatusSQL, "RAC instance status")
 	if err != nil {
-		s.logger.Error("Failed to execute RAC instance status query", zap.Error(err))
 		return []error{err}
 	}
 	defer rows.Close()
@@ -290,8 +319,7 @@ func (s *RacScraper) scrapeInstanceStatus(ctx context.Context) []error {
 		var version sql.NullString
 
 		if err := rows.Scan(&instID, &instanceName, &hostName, &status, &startupTime, &databaseStatus, &activeState, &logins, &archiver, &version); err != nil {
-			s.logger.Error("Failed to scan RAC instance status row", zap.Error(err))
-			scrapeErrors = append(scrapeErrors, err)
+			scrapeErrors = s.handleScanError(err, scrapeErrors, "RAC instance status")
 			continue
 		}
 
@@ -303,42 +331,16 @@ func (s *RacScraper) scrapeInstanceStatus(ctx context.Context) []error {
 		now := pcommon.NewTimestampFromTime(time.Now())
 		instanceIDStr := instID.String
 		statusStr := status.String
-		instanceNameStr := ""
-		hostNameStr := ""
-		databaseStatusStr := ""
-		activeStateStr := ""
-		loginsStr := ""
-		archiverStr := ""
-
-		if instanceName.Valid {
-			instanceNameStr = instanceName.String
-		}
-		if hostName.Valid {
-			hostNameStr = hostName.String
-		}
-		if databaseStatus.Valid {
-			databaseStatusStr = databaseStatus.String
-		}
-		if activeState.Valid {
-			activeStateStr = activeState.String
-		}
-		if logins.Valid {
-			loginsStr = logins.String
-		}
-		if archiver.Valid {
-			archiverStr = archiver.String
-		}
-
-		versionStr := ""
-		if version.Valid {
-			versionStr = version.String
-		}
+		instanceNameStr := nullStringToString(instanceName)
+		hostNameStr := nullStringToString(hostName)
+		databaseStatusStr := nullStringToString(databaseStatus)
+		activeStateStr := nullStringToString(activeState)
+		loginsStr := nullStringToString(logins)
+		archiverStr := nullStringToString(archiver)
+		versionStr := nullStringToString(version)
 
 		// Convert status to numeric: OPEN = 1, anything else = 0
-		var statusValue int64 = 0
-		if strings.ToUpper(statusStr) == "OPEN" {
-			statusValue = 1
-		}
+		statusValue := stringStatusToBinary(statusStr, "OPEN")
 
 		// Record the original status metric
 		s.mb.RecordNewrelicoracledbRacInstanceStatusDataPoint(now, statusValue, s.instanceName, instanceIDStr, instanceNameStr, hostNameStr, statusStr)
@@ -350,31 +352,19 @@ func (s *RacScraper) scrapeInstanceStatus(ctx context.Context) []error {
 		}
 
 		// Record database status (1=ACTIVE, 0=other)
-		var dbStatusValue int64 = 0
-		if strings.ToUpper(databaseStatusStr) == "ACTIVE" {
-			dbStatusValue = 1
-		}
+		dbStatusValue := stringStatusToBinary(databaseStatusStr, "ACTIVE")
 		s.mb.RecordNewrelicoracledbRacInstanceDatabaseStatusDataPoint(now, dbStatusValue, s.instanceName, instanceIDStr, instanceNameStr, hostNameStr, databaseStatusStr)
 
 		// Record active state (1=NORMAL, 0=other)
-		var activeStateValue int64 = 0
-		if strings.ToUpper(activeStateStr) == "NORMAL" {
-			activeStateValue = 1
-		}
+		activeStateValue := stringStatusToBinary(activeStateStr, "NORMAL")
 		s.mb.RecordNewrelicoracledbRacInstanceActiveStateDataPoint(now, activeStateValue, s.instanceName, instanceIDStr, instanceNameStr, hostNameStr, activeStateStr)
 
 		// Record logins status (1=ALLOWED, 0=RESTRICTED)
-		var loginsValue int64 = 0
-		if strings.ToUpper(loginsStr) == "ALLOWED" {
-			loginsValue = 1
-		}
+		loginsValue := stringStatusToBinary(loginsStr, "ALLOWED")
 		s.mb.RecordNewrelicoracledbRacInstanceLoginsAllowedDataPoint(now, loginsValue, s.instanceName, instanceIDStr, instanceNameStr, hostNameStr, loginsStr)
 
 		// Record archiver status (1=STARTED, 0=STOPPED)
-		var archiverValue int64 = 0
-		if strings.ToUpper(archiverStr) == "STARTED" {
-			archiverValue = 1
-		}
+		archiverValue := stringStatusToBinary(archiverStr, "STARTED")
 		s.mb.RecordNewrelicoracledbRacInstanceArchiverStartedDataPoint(now, archiverValue, s.instanceName, instanceIDStr, instanceNameStr, hostNameStr, archiverStr)
 
 		// Record version info
@@ -401,9 +391,8 @@ func (s *RacScraper) scrapeActiveServices(ctx context.Context) []error {
 
 	var scrapeErrors []error
 
-	rows, err := s.db.QueryContext(ctx, queries.RACActiveServicesSQL)
+	rows, err := s.executeQuery(ctx, queries.RACActiveServicesSQL, "RAC active services")
 	if err != nil {
-		s.logger.Error("Failed to execute RAC active services query", zap.Error(err))
 		return []error{err}
 	}
 	defer rows.Close()
@@ -421,8 +410,7 @@ func (s *RacScraper) scrapeActiveServices(ctx context.Context) []error {
 		var clbGoal sql.NullString
 
 		if err := rows.Scan(&serviceName, &instID, &failoverMethod, &failoverType, &goal, &networkName, &creationDate, &failoverRetries, &failoverDelay, &clbGoal); err != nil {
-			s.logger.Error("Failed to scan RAC active service row", zap.Error(err))
-			scrapeErrors = append(scrapeErrors, err)
+			scrapeErrors = s.handleScanError(err, scrapeErrors, "RAC active service")
 			continue
 		}
 
@@ -434,39 +422,14 @@ func (s *RacScraper) scrapeActiveServices(ctx context.Context) []error {
 		now := pcommon.NewTimestampFromTime(time.Now())
 		serviceNameStr := serviceName.String
 		instanceIDStr := instID.String
-		failoverMethodStr := ""
-		failoverTypeStr := ""
-		goalStr := ""
-		networkNameStr := ""
-		creationDateStr := ""
-		failoverRetriesStr := ""
-		failoverDelayStr := ""
-		clbGoalStr := ""
-
-		if failoverMethod.Valid {
-			failoverMethodStr = failoverMethod.String
-		}
-		if failoverType.Valid {
-			failoverTypeStr = failoverType.String
-		}
-		if goal.Valid {
-			goalStr = goal.String
-		}
-		if networkName.Valid {
-			networkNameStr = networkName.String
-		}
-		if creationDate.Valid {
-			creationDateStr = creationDate.String
-		}
-		if failoverRetries.Valid {
-			failoverRetriesStr = failoverRetries.String
-		}
-		if failoverDelay.Valid {
-			failoverDelayStr = failoverDelay.String
-		}
-		if clbGoal.Valid {
-			clbGoalStr = clbGoal.String
-		}
+		failoverMethodStr := nullStringToString(failoverMethod)
+		failoverTypeStr := nullStringToString(failoverType)
+		goalStr := nullStringToString(goal)
+		networkNameStr := nullStringToString(networkName)
+		creationDateStr := nullStringToString(creationDate)
+		failoverRetriesStr := nullStringToString(failoverRetries)
+		failoverDelayStr := nullStringToString(failoverDelay)
+		clbGoalStr := nullStringToString(clbGoal)
 
 		// Record the instance ID where this service is currently running
 		instanceIDInt, _ := strconv.ParseFloat(instanceIDStr, 64)
