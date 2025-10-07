@@ -607,3 +607,17 @@ This may happen when you use [OTel mapping mode](#otel-mapping-mode) (the defaul
 
 To resolve this, it is recommended to upgrade your Elasticsearch to 8.12+, ideally 8.16+.
 Alternatively, try other mapping modes, but the document structure will be different.
+
+### dropping cumulative temporarily histogram
+
+Symptom: `elasticsearchexporter` logs a warning `dropping cumulative temporarily histogram` similar to:
+
+```
+warn [elasticsearchexporter@v0.130.0](mailto:elasticsearchexporter@v0.130.0)/exporter.go:347 validation errors [service.name](https://service.name/): metrics error: dropping cumulative temporarily histogram http.client.request.duration
+```
+
+This issue occurs because Elasticsearch does not support **cumulative temporality** for histograms.
+As a workaround, you can either:
+- Export histogram metrics using **delta temporality**, or
+- Apply a `cumulativetodelta` processor.
+For more details, see [Metrics data ingestion](https://www.elastic.co/docs/reference/opentelemetry/compatibility/limitations#metrics-data-ingestion).
