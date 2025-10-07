@@ -309,11 +309,10 @@ func (s *sqlServerScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 		defer cancel()
 
 		if err := s.queryPerformanceScraper.ScrapeBlockingSessionMetrics(scrapeCtx, scopeMetrics); err != nil {
-			s.logger.Error("Failed to scrape blocking session metrics",
+			s.logger.Warn("Failed to scrape blocking session metrics - continuing with other metrics",
 				zap.Error(err),
 				zap.Duration("timeout", s.config.Timeout))
-			scrapeErrors = append(scrapeErrors, err)
-			// Don't return here - continue with other metrics if enabled
+			// Don't add to scrapeErrors - just warn and continue
 		} else {
 			s.logger.Debug("Successfully scraped blocking session metrics")
 		}
@@ -331,15 +330,14 @@ func (s *sqlServerScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 		textTruncateLimit := 4094 // Default text truncate limit from nri-mssql
 
 		if err := s.queryPerformanceScraper.ScrapeSlowQueryMetrics(scrapeCtx, scopeMetrics, intervalSeconds, topN, elapsedTimeThreshold, textTruncateLimit); err != nil {
-			s.logger.Error("Failed to scrape slow query metrics",
+			s.logger.Warn("Failed to scrape slow query metrics - continuing with other metrics",
 				zap.Error(err),
 				zap.Duration("timeout", s.config.Timeout),
 				zap.Int("interval_seconds", intervalSeconds),
 				zap.Int("top_n", topN),
 				zap.Int("elapsed_time_threshold", elapsedTimeThreshold),
 				zap.Int("text_truncate_limit", textTruncateLimit))
-			scrapeErrors = append(scrapeErrors, err)
-			// Don't return here - continue with other metrics if enabled
+			// Don't add to scrapeErrors - just warn and continue
 		} else {
 			s.logger.Debug("Successfully scraped slow query metrics",
 				zap.Int("interval_seconds", intervalSeconds),
@@ -349,19 +347,29 @@ func (s *sqlServerScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 		}
 	}
 
-	// 	if s.config.EnableQueryMonitoring {
-	//     scrapeCtx, cancel := context.WithTimeout(ctx, s.config.Timeout)
-	//     defer cancel()
+	// Scrape wait time analysis metrics if query monitoring is enabled
+	if s.config.EnableQueryMonitoring {
+		scrapeCtx, cancel := context.WithTimeout(ctx, s.config.Timeout)
+		defer cancel()
 
-	//     if err := s.slowQueryScraper.ScrapeSlowQueryMetrics(scrapeCtx, scopeMetrics); err != nil {
-	//         s.logger.Error("Failed to scrape slow query metrics",
-	//             zap.Error(err),
-	//             zap.Duration("timeout", s.config.Timeout))
-	//         scrapeErrors = append(scrapeErrors, err)
-	//     } else {
-	//         s.logger.Debug("Successfully scraped slow query metrics")
-	//     }
-	// }
+		// Use config values for wait analysis parameters
+		topN := s.config.QueryMonitoringCountThreshold
+		textTruncateLimit := 4094 // Default text truncate limit from nri-mssql
+
+		if err := s.queryPerformanceScraper.ScrapeWaitTimeAnalysisMetrics(scrapeCtx, scopeMetrics, topN, textTruncateLimit); err != nil {
+			s.logger.Warn("Failed to scrape wait time analysis metrics - continuing with other metrics",
+				zap.Error(err),
+				zap.Duration("timeout", s.config.Timeout),
+				zap.Int("top_n", topN),
+				zap.Int("text_truncate_limit", textTruncateLimit))
+			// Don't add to scrapeErrors - just warn and continue with other metrics
+		} else {
+			s.logger.Debug("Successfully scraped wait time analysis metrics",
+				zap.Int("top_n", topN),
+				zap.Int("text_truncate_limit", textTruncateLimit))
+		}
+	}
+
 
 	s.logger.Debug("Starting instance buffer pool hit percent metrics scraping")
 	scrapeCtx, cancel := context.WithTimeout(ctx, s.config.Timeout)

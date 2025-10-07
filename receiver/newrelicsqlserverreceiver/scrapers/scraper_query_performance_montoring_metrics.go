@@ -14,21 +14,14 @@
 //   - Track CPU time, logical reads, physical reads, writes
 //   - Monitor plan generation time and recompiles
 //
-// 2. Wait Time Analysis:
-//   - Query dm_os_wait_stats for system-wide wait statistics
-//   - Track wait categories: CPU, I/O, Network, Memory, Locking
-//   - Calculate percentage distribution of wait types
-//   - Monitor signal wait time vs resource wait time
-//   - Include wait time per second calculations
-//
-// 3. Blocking Session Detection:
+// 2. Blocking Session Detection:
 //   - Query dm_exec_requests for blocked sessions
 //   - Identify blocking session hierarchy (head blockers)
 //   - Track blocked session duration and wait types
 //   - Include session details (login, program, host)
 //   - Monitor lock resource information
 //
-// 4. Execution Plan Analysis:
+// 3. Execution Plan Analysis:
 //   - Query dm_exec_cached_plans for plan cache statistics
 //   - Track plan reuse ratio and cache hit rates
 //   - Monitor plan cache memory consumption
@@ -47,7 +40,6 @@
 // Metrics Generated:
 // - mssql.performance.slow_queries.count
 // - mssql.performance.slow_queries.duration
-// - mssql.performance.wait_time.duration (by category)
 // - mssql.performance.blocking_sessions.count
 // - mssql.performance.execution_plans.cache_hit_ratio
 // - mssql.performance.execution_plans.recompiles_per_sec
@@ -175,6 +167,48 @@ func (s *QueryPerformanceScraper) ScrapeSlowQueryMetrics(ctx context.Context, sc
     return nil
 }
 
+// ScrapeWaitTimeAnalysisMetrics collects wait time analysis metrics using engine-specific queries
+func (s *QueryPerformanceScraper) ScrapeWaitTimeAnalysisMetrics(ctx context.Context, scopeMetrics pmetric.ScopeMetrics, topN, textTruncateLimit int) error {
+    s.logger.Debug("Scraping SQL Server wait time analysis metrics")
+
+    // Format the wait query with parameters
+    formattedQuery := fmt.Sprintf(queries.WaitQuery, topN, textTruncateLimit)
+
+    // Execute wait time analysis query
+    s.logger.Debug("Executing wait time analysis query",
+        zap.String("query", queries.TruncateQuery(formattedQuery, 100)),
+        zap.String("engine_type", queries.GetEngineTypeName(s.engineEdition)),
+        zap.Int("top_n", topN),
+        zap.Int("text_truncate_limit", textTruncateLimit))
+
+    var results []models.WaitTimeAnalysis
+    if err := s.connection.Query(ctx, &results, formattedQuery); err != nil {
+        s.logger.Warn("Failed to execute wait time analysis query - continuing with other metrics",
+            zap.Error(err),
+            zap.String("query", queries.TruncateQuery(formattedQuery, 100)),
+            zap.Int("engine_edition", s.engineEdition))
+        // Don't return error - just log warning and continue
+        return nil
+    }
+
+    s.logger.Debug("Wait query executed successfully", zap.Int("result_count", len(results)))
+
+    // Process each wait time analysis result
+    for i, result := range results {
+        if err := s.processWaitTimeAnalysisMetrics(result, scopeMetrics, i); err != nil {
+            s.logger.Error("Failed to process wait time analysis metrics", 
+                zap.Error(err), 
+                zap.Int("result_index", i))
+            continue // Continue processing other results
+        }
+    }
+
+    s.logger.Debug("Successfully scraped wait time analysis metrics",
+        zap.Int("wait_analysis_count", len(results)))
+
+    return nil
+}
+
 // processSlowQueryMetrics processes slow query metrics and creates separate OpenTelemetry metrics for each measurement
 func (s *QueryPerformanceScraper) processSlowQueryMetrics(result models.SlowQuery, scopeMetrics pmetric.ScopeMetrics, index int) error {
     timestamp := pcommon.NewTimestampFromTime(time.Now())
@@ -189,7 +223,7 @@ func (s *QueryPerformanceScraper) processSlowQueryMetrics(result models.SlowQuer
             attrs.PutStr("QueryID", fmt.Sprintf("%x", *result.QueryID))
         }
         if result.StatementType != nil {
-            attrs.PutStr("statment_type", *result.StatementType) // Note: keeping original typo as specified
+            attrs.PutStr("statement_type", *result.StatementType) 
         }
         if result.CollectionTimestamp != nil {
             attrs.PutStr("CollectionTimestamp", *result.CollectionTimestamp)
@@ -399,3 +433,116 @@ func (s *QueryPerformanceScraper) processBlockingSessionMetrics(result models.Bl
 
     return nil
 }
+
+// processWaitTimeAnalysisMetrics processes wait time analysis metrics and creates separate OpenTelemetry metrics for each measurement
+func (s *QueryPerformanceScraper) processWaitTimeAnalysisMetrics(result models.WaitTimeAnalysis, scopeMetrics pmetric.ScopeMetrics, index int) error {
+    timestamp := pcommon.NewTimestampFromTime(time.Now())
+    
+    // Helper function to create common attributes for all metrics
+    createCommonAttributes := func() pcommon.Map {
+        attrs := pcommon.NewMap()
+        if result.DatabaseName != nil {
+            attrs.PutStr("DatabaseName", *result.DatabaseName)
+        }
+        if len(result.QueryID) > 0 {
+            attrs.PutStr("QueryID", fmt.Sprintf("%x", result.QueryID))
+        }
+        if result.WaitCategory != nil {
+            attrs.PutStr("WaitCategory", *result.WaitCategory)
+        }
+        if result.CollectionTimestamp != nil {
+            attrs.PutStr("CollectionTimestamp", *result.CollectionTimestamp)
+        }
+        return attrs
+    }
+
+    // Create query_text metric
+    if result.QueryText != nil {
+        metric := scopeMetrics.Metrics().AppendEmpty()
+        metric.SetName("sqlserver.wait_analysis.query_text")
+        metric.SetDescription("Query text for wait time analysis")
+        metric.SetUnit("{dimensionless}")
+        
+        gauge := metric.SetEmptyGauge()
+        dataPoint := gauge.DataPoints().AppendEmpty()
+        dataPoint.SetTimestamp(timestamp)
+        dataPoint.SetStartTimestamp(s.startTime)
+        dataPoint.SetIntValue(1) // Dummy value since this is primarily for the string attribute
+        
+        // Only use common attributes as per specification
+        createCommonAttributes().CopyTo(dataPoint.Attributes())
+    }
+
+    // Create total_wait_time_ms metric
+    if result.TotalWaitTimeMs != nil {
+        metric := scopeMetrics.Metrics().AppendEmpty()
+        metric.SetName("sqlserver.wait_analysis.total_wait_time_ms")
+        metric.SetDescription("Total wait time in milliseconds for wait analysis")
+        metric.SetUnit("ms")
+        
+        gauge := metric.SetEmptyGauge()
+        dataPoint := gauge.DataPoints().AppendEmpty()
+        dataPoint.SetTimestamp(timestamp)
+        dataPoint.SetStartTimestamp(s.startTime)
+        dataPoint.SetDoubleValue(*result.TotalWaitTimeMs)
+        createCommonAttributes().CopyTo(dataPoint.Attributes())
+    }
+
+    // Create avg_wait_time_ms metric
+    if result.AvgWaitTimeMs != nil {
+        metric := scopeMetrics.Metrics().AppendEmpty()
+        metric.SetName("sqlserver.wait_analysis.avg_wait_time_ms")
+        metric.SetDescription("Average wait time in milliseconds for wait analysis")
+        metric.SetUnit("ms")
+        
+        gauge := metric.SetEmptyGauge()
+        dataPoint := gauge.DataPoints().AppendEmpty()
+        dataPoint.SetTimestamp(timestamp)
+        dataPoint.SetStartTimestamp(s.startTime)
+        dataPoint.SetDoubleValue(*result.AvgWaitTimeMs)
+        createCommonAttributes().CopyTo(dataPoint.Attributes())
+    }
+
+    // Create wait_event_count metric
+    if result.WaitEventCount != nil {
+        metric := scopeMetrics.Metrics().AppendEmpty()
+        metric.SetName("sqlserver.wait_analysis.wait_event_count")
+        metric.SetDescription("Wait event count for wait analysis")
+        metric.SetUnit("{count}")
+        
+        gauge := metric.SetEmptyGauge()
+        dataPoint := gauge.DataPoints().AppendEmpty()
+        dataPoint.SetTimestamp(timestamp)
+        dataPoint.SetStartTimestamp(s.startTime)
+        dataPoint.SetIntValue(*result.WaitEventCount)
+        createCommonAttributes().CopyTo(dataPoint.Attributes())
+    }
+
+    // Create last_execution_time metric
+    if result.LastExecutionTime != nil {
+        metric := scopeMetrics.Metrics().AppendEmpty()
+        metric.SetName("sqlserver.wait_analysis.last_execution_time")
+        metric.SetDescription("Last execution time for wait analysis")
+        metric.SetUnit("{dimensionless}")
+        
+        gauge := metric.SetEmptyGauge()
+        dataPoint := gauge.DataPoints().AppendEmpty()
+        dataPoint.SetTimestamp(timestamp)
+        dataPoint.SetStartTimestamp(s.startTime)
+        dataPoint.SetIntValue(1) // Dummy value since this is primarily for the string attribute
+        
+        // Only use common attributes as per specification
+        createCommonAttributes().CopyTo(dataPoint.Attributes())
+    }
+
+    s.logger.Debug("Processed wait time analysis metrics as separate metrics",
+        zap.Any("query_id", result.QueryID),
+        zap.Any("database_name", result.DatabaseName),
+        zap.Any("wait_category", result.WaitCategory),
+        zap.Any("total_wait_time_ms", result.TotalWaitTimeMs),
+        zap.Any("avg_wait_time_ms", result.AvgWaitTimeMs),
+        zap.Any("wait_event_count", result.WaitEventCount))
+
+    return nil
+}
+
