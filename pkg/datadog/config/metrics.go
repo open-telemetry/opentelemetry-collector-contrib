@@ -195,6 +195,8 @@ type SummaryConfig struct {
 	// The default is 'gauges'.
 	// See https://docs.datadoghq.com/metrics/otlp/?tab=summary#mapping for details and examples.
 	Mode SummaryMode `mapstructure:"mode"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // MetricsExporterConfig provides options for a user to customize the behavior of the
@@ -207,6 +209,8 @@ type MetricsExporterConfig struct {
 	// InstrumentationScopeMetadataAsTags, if set to true, adds the name and version of the
 	// instrumentation scope that created a metric to the metric tags
 	InstrumentationScopeMetadataAsTags bool `mapstructure:"instrumentation_scope_metadata_as_tags"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // ToTranslatorOpts returns a list of metrics translator options from the metrics config
