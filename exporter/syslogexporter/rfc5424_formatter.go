@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/leodido/go-syslog/v4/rfc5424"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -52,7 +51,7 @@ func (*rfc5424Formatter) formatVersion(logRecord plog.LogRecord) string {
 }
 
 func (*rfc5424Formatter) formatTimestamp(logRecord plog.LogRecord) string {
-	return logRecord.Timestamp().AsTime().Truncate(time.Microsecond).Format(rfc5424.RFC3339MICRO)
+	return logRecord.Timestamp().AsTime().Format(rfc5424.RFC3339MICRO)
 }
 
 func (*rfc5424Formatter) formatHostname(logRecord plog.LogRecord) string {

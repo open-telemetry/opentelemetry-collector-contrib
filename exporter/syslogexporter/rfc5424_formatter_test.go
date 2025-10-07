@@ -169,8 +169,7 @@ func TestRFC5424Formatter_NanoFractionIsTruncatedToMicro(t *testing.T) {
 	logRecord.Attributes().PutInt("version", 1)
 	logRecord.Attributes().PutStr("proc_id", "1234")
 
-	// 9-digit nanosecond fraction → should be truncated to 6 digits
-	timestamp, err := time.Parse(time.RFC3339Nano, "2025-10-02T20:04:11.518870899Z")
+	timestamp, err := time.Parse(rfc5424.RFC3339MICRO, "2025-10-02T20:04:11.518870899Z")
 	require.NoError(t, err)
 	logRecord.SetTimestamp(pcommon.NewTimestampFromTime(timestamp))
 
