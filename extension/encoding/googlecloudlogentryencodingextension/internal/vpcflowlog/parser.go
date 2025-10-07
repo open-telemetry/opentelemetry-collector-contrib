@@ -4,6 +4,7 @@
 package vpcflowlog // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/vpcflowlog"
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -13,6 +14,9 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/shared"
 )
+
+// Template type for OTEL attribute names needing the side (source or destination) to be added
+type attrNameTmpl string
 
 const (
 	// VPC flow log name suffixes for detection
@@ -30,59 +34,43 @@ const (
 	// Network service fields
 	gcpVPCFlowNetworkServiceDSCP = "gcp.vpc.flow.network_service.dscp"
 
-	// Source instance fields
-	gcpVPCFlowSourceInstanceProjectID = "gcp.vpc.flow.source.instance.project.id"
-	gcpVPCFlowSourceInstanceVMRegion  = "gcp.vpc.flow.source.instance.vm.region"
-	gcpVPCFlowSourceInstanceVMName    = "gcp.vpc.flow.source.instance.vm.name"
-	gcpVPCFlowSourceInstanceVMZone    = "gcp.vpc.flow.source.instance.vm.zone"
-	gcpVPCFlowSourceInstanceMIGName   = "gcp.vpc.flow.source.instance.managed_instance_group.name"
-	gcpVPCFlowSourceInstanceMIGZone   = "gcp.vpc.flow.source.instance.managed_instance_group.zone"
+	// Instance fields
+	gcpVPCFlowInstanceProjectIDTemplate attrNameTmpl = "gcp.vpc.flow.%s.instance.project.id"
+	gcpVPCFlowInstanceVMRegionTemplate  attrNameTmpl = "gcp.vpc.flow.%s.instance.vm.region"
+	gcpVPCFlowInstanceVMNameTemplate    attrNameTmpl = "gcp.vpc.flow.%s.instance.vm.name"
+	gcpVPCFlowInstanceVMZoneTemplate    attrNameTmpl = "gcp.vpc.flow.%s.instance.vm.zone"
+	gcpVPCFlowInstanceMIGNameTemplate   attrNameTmpl = "gcp.vpc.flow.%s.instance.managed_instance_group.name"
+	gcpVPCFlowInstanceMIGZoneTemplate   attrNameTmpl = "gcp.vpc.flow.%s.instance.managed_instance_group.zone"
 
-	// Destination instance fields
-	gcpVPCFlowDestInstanceProjectID = "gcp.vpc.flow.destination.instance.project.id"
-	gcpVPCFlowDestInstanceVMRegion  = "gcp.vpc.flow.destination.instance.vm.region"
-	gcpVPCFlowDestInstanceVMName    = "gcp.vpc.flow.destination.instance.vm.name"
-	gcpVPCFlowDestInstanceVMZone    = "gcp.vpc.flow.destination.instance.vm.zone"
-	gcpVPCFlowDestInstanceMIGName   = "gcp.vpc.flow.destination.instance.managed_instance_group.name"
-	gcpVPCFlowDestInstanceMIGZone   = "gcp.vpc.flow.destination.instance.managed_instance_group.zone"
+	// Location fields
+	gcpVPCFlowASNTemplate          attrNameTmpl = "gcp.vpc.flow.%s.asn"
+	gcpVPCFlowGeoCityTemplate      attrNameTmpl = "gcp.vpc.flow.%s.geo.city"
+	gcpVPCFlowGeoContinentTemplate attrNameTmpl = "gcp.vpc.flow.%s.geo.continent"
+	gcpVPCFlowGeoCountryTemplate   attrNameTmpl = "gcp.vpc.flow.%s.geo.country.iso_code.alpha3"
+	gcpVPCFlowGeoRegionTemplate    attrNameTmpl = "gcp.vpc.flow.%s.geo.region"
 
-	// Source location fields
-	gcpVPCFlowSourceASN          = "gcp.vpc.flow.source.asn"
-	gcpVPCFlowSourceGeoCity      = "gcp.vpc.flow.source.geo.city"
-	gcpVPCFlowSourceGeoContinent = "gcp.vpc.flow.source.geo.continent"
-	gcpVPCFlowSourceGeoCountry   = "gcp.vpc.flow.source.geo.country.iso_code.alpha3"
-	gcpVPCFlowSourceGeoRegion    = "gcp.vpc.flow.source.geo.region"
-
-	// Destination location fields
-	gcpVPCFlowDestASN          = "gcp.vpc.flow.destination.asn"
-	gcpVPCFlowDestGeoCity      = "gcp.vpc.flow.destination.geo.city"
-	gcpVPCFlowDestGeoContinent = "gcp.vpc.flow.destination.geo.continent"
-	gcpVPCFlowDestGeoCountry   = "gcp.vpc.flow.destination.geo.country.iso_code.alpha3"
-	gcpVPCFlowDestGeoRegion    = "gcp.vpc.flow.destination.geo.region"
-
-	// Source VPC fields
-	gcpVPCFlowSourceProjectID    = "gcp.vpc.flow.source.project.id"
-	gcpVPCFlowSourceSubnetName   = "gcp.vpc.flow.source.subnet.name"
-	gcpVPCFlowSourceSubnetRegion = "gcp.vpc.flow.source.subnet.region"
-	gcpVPCFlowSourceVPCName      = "gcp.vpc.flow.source.vpc.name"
-
-	// Destination VPC fields
-	gcpVPCFlowDestProjectID    = "gcp.vpc.flow.destination.project.id"
-	gcpVPCFlowDestSubnetName   = "gcp.vpc.flow.destination.subnet.name"
-	gcpVPCFlowDestSubnetRegion = "gcp.vpc.flow.destination.subnet.region"
-	gcpVPCFlowDestVPCName      = "gcp.vpc.flow.destination.vpc.name"
+	// VPC fields
+	gcpVPCFlowProjectIDTemplate    attrNameTmpl = "gcp.vpc.flow.%s.project.id"
+	gcpVPCFlowSubnetNameTemplate   attrNameTmpl = "gcp.vpc.flow.%s.subnet.name"
+	gcpVPCFlowSubnetRegionTemplate attrNameTmpl = "gcp.vpc.flow.%s.subnet.region"
+	gcpVPCFlowVPCNameTemplate      attrNameTmpl = "gcp.vpc.flow.%s.vpc.name"
 
 	// Internet routing details
 	gcpVPCFlowEgressASPaths = "gcp.vpc.flow.egress.as_paths"
 )
 
 // Flow side (source or destination)
-type flowSide uint8
+type flowSide string
 
 const (
-	src flowSide = iota
-	dest
+	src  flowSide = "source"
+	dest flowSide = "destination"
 )
+
+// fmtAttributeNameUsingSide formats a template string with the given side
+func fmtAttributeNameUsingSide(template attrNameTmpl, side flowSide) string {
+	return fmt.Sprintf(string(template), string(side))
+}
 
 type vpcFlowLog struct {
 	Connection  *connection `json:"connection"`
@@ -193,73 +181,64 @@ func handleNetworkService(ns *networkService, attr pcommon.Map) {
 	shared.PutInt(gcpVPCFlowNetworkServiceDSCP, ns.DSCP, attr)
 }
 
-func handleInstance(inst *instance, side flowSide, attr pcommon.Map) {
+func handleInstance(inst *instance, side flowSide, attr pcommon.Map) error {
 	if inst == nil {
-		return
+		return nil
 	}
 
-	switch side {
-	case src:
-		shared.PutStr(gcpVPCFlowSourceInstanceProjectID, inst.ProjectID, attr)
-		shared.PutStr(gcpVPCFlowSourceInstanceVMRegion, inst.Region, attr)
-		shared.PutStr(gcpVPCFlowSourceInstanceVMName, inst.VMName, attr)
-		shared.PutStr(gcpVPCFlowSourceInstanceVMZone, inst.Zone, attr)
-
-		if inst.ManagedInstanceGroup != nil {
-			shared.PutStr(gcpVPCFlowSourceInstanceMIGName, inst.ManagedInstanceGroup.Name, attr)
-			shared.PutStr(gcpVPCFlowSourceInstanceMIGZone, inst.ManagedInstanceGroup.Zone, attr)
-		}
-	case dest:
-		shared.PutStr(gcpVPCFlowDestInstanceProjectID, inst.ProjectID, attr)
-		shared.PutStr(gcpVPCFlowDestInstanceVMRegion, inst.Region, attr)
-		shared.PutStr(gcpVPCFlowDestInstanceVMName, inst.VMName, attr)
-		shared.PutStr(gcpVPCFlowDestInstanceVMZone, inst.Zone, attr)
-
-		if inst.ManagedInstanceGroup != nil {
-			shared.PutStr(gcpVPCFlowDestInstanceMIGName, inst.ManagedInstanceGroup.Name, attr)
-			shared.PutStr(gcpVPCFlowDestInstanceMIGZone, inst.ManagedInstanceGroup.Zone, attr)
-		}
+	// Validate that side is one of our constants
+	if side != src && side != dest {
+		return errors.New("unsupported side passed to handleInstance. Must be one of src or dest")
 	}
+
+	shared.PutStr(fmtAttributeNameUsingSide(gcpVPCFlowInstanceProjectIDTemplate, side), inst.ProjectID, attr)
+	shared.PutStr(fmtAttributeNameUsingSide(gcpVPCFlowInstanceVMRegionTemplate, side), inst.Region, attr)
+	shared.PutStr(fmtAttributeNameUsingSide(gcpVPCFlowInstanceVMNameTemplate, side), inst.VMName, attr)
+	shared.PutStr(fmtAttributeNameUsingSide(gcpVPCFlowInstanceVMZoneTemplate, side), inst.Zone, attr)
+
+	if inst.ManagedInstanceGroup != nil {
+		shared.PutStr(fmtAttributeNameUsingSide(gcpVPCFlowInstanceMIGNameTemplate, side), inst.ManagedInstanceGroup.Name, attr)
+		shared.PutStr(fmtAttributeNameUsingSide(gcpVPCFlowInstanceMIGZoneTemplate, side), inst.ManagedInstanceGroup.Zone, attr)
+	}
+
+	return nil
 }
 
-func handleLocation(loc *location, side flowSide, attr pcommon.Map) {
+func handleLocation(loc *location, side flowSide, attr pcommon.Map) error {
 	if loc == nil {
-		return
+		return nil
 	}
 
-	switch side {
-	case src:
-		shared.PutInt(gcpVPCFlowSourceASN, loc.ASN, attr)
-		shared.PutStr(gcpVPCFlowSourceGeoCity, loc.City, attr)
-		shared.PutStr(gcpVPCFlowSourceGeoContinent, loc.Continent, attr)
-		shared.PutStr(gcpVPCFlowSourceGeoCountry, loc.Country, attr)
-		shared.PutStr(gcpVPCFlowSourceGeoRegion, loc.Region, attr)
-	case dest:
-		shared.PutInt(gcpVPCFlowDestASN, loc.ASN, attr)
-		shared.PutStr(gcpVPCFlowDestGeoCity, loc.City, attr)
-		shared.PutStr(gcpVPCFlowDestGeoContinent, loc.Continent, attr)
-		shared.PutStr(gcpVPCFlowDestGeoCountry, loc.Country, attr)
-		shared.PutStr(gcpVPCFlowDestGeoRegion, loc.Region, attr)
+	// Validate that side is one of our constants
+	if side != src && side != dest {
+		return errors.New("unsupported side passed to handleLocation. Must be one of src or dest")
 	}
+
+	shared.PutInt(fmtAttributeNameUsingSide(gcpVPCFlowASNTemplate, side), loc.ASN, attr)
+	shared.PutStr(fmtAttributeNameUsingSide(gcpVPCFlowGeoCityTemplate, side), loc.City, attr)
+	shared.PutStr(fmtAttributeNameUsingSide(gcpVPCFlowGeoContinentTemplate, side), loc.Continent, attr)
+	shared.PutStr(fmtAttributeNameUsingSide(gcpVPCFlowGeoCountryTemplate, side), loc.Country, attr)
+	shared.PutStr(fmtAttributeNameUsingSide(gcpVPCFlowGeoRegionTemplate, side), loc.Region, attr)
+
+	return nil
 }
 
-func handleVPC(vpc *vpc, side flowSide, attr pcommon.Map) {
+func handleVPC(vpc *vpc, side flowSide, attr pcommon.Map) error {
 	if vpc == nil {
-		return
+		return nil
 	}
 
-	switch side {
-	case src:
-		shared.PutStr(gcpVPCFlowSourceProjectID, vpc.ProjectID, attr)
-		shared.PutStr(gcpVPCFlowSourceSubnetName, vpc.SubnetworkName, attr)
-		shared.PutStr(gcpVPCFlowSourceSubnetRegion, vpc.SubnetworkRegion, attr)
-		shared.PutStr(gcpVPCFlowSourceVPCName, vpc.VPCName, attr)
-	case dest:
-		shared.PutStr(gcpVPCFlowDestProjectID, vpc.ProjectID, attr)
-		shared.PutStr(gcpVPCFlowDestSubnetName, vpc.SubnetworkName, attr)
-		shared.PutStr(gcpVPCFlowDestSubnetRegion, vpc.SubnetworkRegion, attr)
-		shared.PutStr(gcpVPCFlowDestVPCName, vpc.VPCName, attr)
+	// Validate that side is one of our constants
+	if side != src && side != dest {
+		return errors.New("unsupported side passed to handleVPC. Must be one of src or dest")
 	}
+
+	shared.PutStr(fmtAttributeNameUsingSide(gcpVPCFlowProjectIDTemplate, side), vpc.ProjectID, attr)
+	shared.PutStr(fmtAttributeNameUsingSide(gcpVPCFlowSubnetNameTemplate, side), vpc.SubnetworkName, attr)
+	shared.PutStr(fmtAttributeNameUsingSide(gcpVPCFlowSubnetRegionTemplate, side), vpc.SubnetworkRegion, attr)
+	shared.PutStr(fmtAttributeNameUsingSide(gcpVPCFlowVPCNameTemplate, side), vpc.VPCName, attr)
+
+	return nil
 }
 
 func handleInternetRoutingDetails(ird *internetRoutingDetails, attr pcommon.Map) {
@@ -318,16 +297,28 @@ func ParsePayloadIntoAttributes(payload []byte, attr pcommon.Map) error {
 	handleNetworkService(log.NetworkService, attr)
 
 	// Handle instance details
-	handleInstance(log.SrcInstance, src, attr)
-	handleInstance(log.DestInstance, dest, attr)
+	if err := handleInstance(log.SrcInstance, src, attr); err != nil {
+		return fmt.Errorf("failed to handle source instance: %w", err)
+	}
+	if err := handleInstance(log.DestInstance, dest, attr); err != nil {
+		return fmt.Errorf("failed to handle destination instance: %w", err)
+	}
 
 	// Handle location details
-	handleLocation(log.SrcLocation, src, attr)
-	handleLocation(log.DestLocation, dest, attr)
+	if err := handleLocation(log.SrcLocation, src, attr); err != nil {
+		return fmt.Errorf("failed to handle source location: %w", err)
+	}
+	if err := handleLocation(log.DestLocation, dest, attr); err != nil {
+		return fmt.Errorf("failed to handle destination location: %w", err)
+	}
 
 	// Handle VPC details
-	handleVPC(log.SrcVPC, src, attr)
-	handleVPC(log.DestVPC, dest, attr)
+	if err := handleVPC(log.SrcVPC, src, attr); err != nil {
+		return fmt.Errorf("failed to handle source VPC: %w", err)
+	}
+	if err := handleVPC(log.DestVPC, dest, attr); err != nil {
+		return fmt.Errorf("failed to handle destination VPC: %w", err)
+	}
 
 	// Handle internet routing details
 	handleInternetRoutingDetails(log.InternetRoutingDetails, attr)
