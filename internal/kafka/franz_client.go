@@ -14,6 +14,7 @@ import (
 	krb5client "github.com/jcmturner/gokrb5/v8/client"
 	krb5config "github.com/jcmturner/gokrb5/v8/config"
 	"github.com/jcmturner/gokrb5/v8/keytab"
+	"github.com/twmb/franz-go/pkg/kadm"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/kmsg"
 	"github.com/twmb/franz-go/pkg/kversion"
@@ -132,6 +133,9 @@ func NewFranzConsumerGroup(ctx context.Context, clientCfg configkafka.ClientConf
 	if consumerCfg.DefaultFetchSize > 0 {
 		opts = append(opts, kgo.FetchMaxBytes(consumerCfg.DefaultFetchSize))
 	}
+	if consumerCfg.MaxPartitionFetchSize > 0 {
+		opts = append(opts, kgo.FetchMaxPartitionBytes(consumerCfg.MaxPartitionFetchSize))
+	}
 
 	// Configure max fetch wait
 	if consumerCfg.MaxFetchWait > 0 {
@@ -177,6 +181,39 @@ func NewFranzConsumerGroup(ctx context.Context, clientCfg configkafka.ClientConf
 		opts = append(opts, kgo.Balancers(kgo.CooperativeStickyBalancer()))
 	}
 	return kgo.NewClient(opts...)
+}
+
+// NewFranzClient creates a franz-go client using the same commonOpts used for producer/consumer.
+func NewFranzClient(
+	ctx context.Context,
+	clientCfg configkafka.ClientConfig,
+	logger *zap.Logger,
+	opts ...kgo.Opt,
+) (*kgo.Client, error) {
+	opts, err := commonOpts(ctx, clientCfg, logger, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return kgo.NewClient(opts...)
+}
+
+// NewFranzClusterAdminClient creates a kadm admin client from a freshly created franz client.
+func NewFranzClusterAdminClient(
+	ctx context.Context,
+	clientCfg configkafka.ClientConfig,
+	logger *zap.Logger,
+	opts ...kgo.Opt,
+) (*kadm.Client, *kgo.Client, error) {
+	cl, err := NewFranzClient(ctx, clientCfg, logger, opts...)
+	if err != nil {
+		return nil, nil, err
+	}
+	return kadm.NewClient(cl), cl, nil
+}
+
+// NewFranzAdminFromClient returns a kadm admin bound to an existing kgo client.
+func NewFranzAdminFromClient(cl *kgo.Client) *kadm.Client {
+	return kadm.NewClient(cl)
 }
 
 func commonOpts(ctx context.Context, clientCfg configkafka.ClientConfig,
