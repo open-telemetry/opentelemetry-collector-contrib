@@ -1,0 +1,37 @@
+# Minimal configuration for monitoring a single Cisco device
+
+receivers:
+  ciscoosreceiver:
+    collection_interval: 30s
+    timeout: 45s
+    
+    devices:
+      - device:
+          host:
+            ip: "192.168.1.1"
+            port: 22
+        auth:
+          username: "admin"
+          password: "password"
+    
+    scrapers:
+      system:
+      interfaces:
+
+processors:
+  batch:
+
+exporters:
+  debug:
+    verbosity: detailed
+
+service:
+  pipelines:
+    metrics:
+      receivers: [ciscoosreceiver]
+      processors: [batch]
+      exporters: [debug]
+  
+  telemetry:
+    logs:
+      level: info

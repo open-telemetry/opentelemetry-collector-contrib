@@ -1,0 +1,55 @@
+type: system
+
+status:
+  class: scraper
+  stability:
+    development: [metrics]
+  distributions: []
+  codeowners:
+    active: []
+
+attributes:
+  target:
+    description: The target network device hostname/IP (used for K8s node correlation)
+    type: string
+
+metrics:
+  cisco.device.up:
+    enabled: true
+    description: Device availability (1 = up, 0 = down)
+    unit: "1"
+    gauge:
+      value_type: int
+    attributes: [target]
+
+  cisco.collector.duration.seconds:
+    enabled: true
+    description: Duration of all collector scrapes for one target (total collection time)
+    unit: s
+    gauge:
+      value_type: double
+    attributes: [target]
+
+  cisco.interface.admin.up:
+    enabled: true
+    description: Interface admin status (1 = admin up, 0 = admin down)
+    unit: "1"
+    gauge:
+      value_type: int
+    attributes: [target]
+
+  cisco.interface.error.status:
+    enabled: true
+    description: Interface error status (1 = error, 0 = no error)
+    unit: "1"
+    gauge:
+      value_type: int
+    attributes: [target]
+
+  cisco.collect.duration.seconds:
+    enabled: true
+    description: Time spent collecting metrics from device
+    unit: s
+    gauge:
+      value_type: double
+    attributes: [target]
