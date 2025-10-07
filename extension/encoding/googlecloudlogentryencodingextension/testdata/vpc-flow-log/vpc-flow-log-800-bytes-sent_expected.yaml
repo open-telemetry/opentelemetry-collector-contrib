@@ -48,10 +48,10 @@ resourceLogs:
                   intValue: "20"
               - key: gcp.vpc.flow.start_time
                 value:
-                  stringValue: "2025-09-27T21:11:25.762594203Z"
+                  intValue: "1759007485762594203"
               - key: gcp.vpc.flow.end_time
                 value:
-                  stringValue: "2025-09-27T21:11:25.762594203Z"
+                  intValue: "1759007485762594203"
               - key: gcp.vpc.flow.destination.instance.project.id
                 value:
                   stringValue: elastic-obs-integrations-dev

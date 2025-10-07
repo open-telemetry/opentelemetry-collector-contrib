@@ -5,6 +5,7 @@ package vpcflowlog // import "github.com/open-telemetry/opentelemetry-collector-
 
 import (
 	"fmt"
+	"time"
 
 	gojson "github.com/goccy/go-json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -88,8 +89,8 @@ type vpcFlowLog struct {
 	Reporter    string      `json:"reporter"`
 	BytesSent   string      `json:"bytes_sent"`
 	PacketsSent string      `json:"packets_sent"`
-	StartTime   string      `json:"start_time"`
-	EndTime     string      `json:"end_time"`
+	StartTime   *time.Time  `json:"start_time"`
+	EndTime     *time.Time  `json:"end_time"`
 	RTTMsec     string      `json:"rtt_msec"`
 
 	// Network service
@@ -299,8 +300,14 @@ func ParsePayloadIntoAttributes(payload []byte, attr pcommon.Map) error {
 		return fmt.Errorf("failed to add packets sent: %w", err)
 	}
 
-	shared.PutStr(gcpVPCFlowStartTime, log.StartTime, attr)
-	shared.PutStr(gcpVPCFlowEndTime, log.EndTime, attr)
+	if log.StartTime != nil {
+		startTime := *log.StartTime
+		attr.PutInt(gcpVPCFlowStartTime, startTime.UnixNano())
+	}
+	if log.EndTime != nil {
+		endTime := *log.EndTime
+		attr.PutInt(gcpVPCFlowEndTime, endTime.UnixNano())
+	}
 
 	// Handle RTT
 	if err := shared.AddStrAsInt(gcpVPCFlowNetworkRTTMsec, log.RTTMsec, attr); err != nil {
