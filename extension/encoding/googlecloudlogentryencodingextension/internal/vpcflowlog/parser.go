@@ -20,12 +20,12 @@ const (
 	ComputeNameSuffix           = "compute.googleapis.com%2Fvpc_flows"
 
 	// Connection fields
-	gcpVPCFlowReporter       = "gcp.vpc.flow.reporter"
-	gcpVPCFlowBytesSent      = "gcp.vpc.flow.bytes_sent"
-	gcpVPCFlowPacketsSent    = "gcp.vpc.flow.packets_sent"
-	gcpVPCFlowStartTime      = "gcp.vpc.flow.start_time"
-	gcpVPCFlowEndTime        = "gcp.vpc.flow.end_time"
-	gcpVPCFlowNetworkRTTMsec = "gcp.vpc.flow.network.rtt_msec"
+	gcpVPCFlowReporter     = "gcp.vpc.flow.reporter"
+	gcpVPCFlowBytesSent    = "gcp.vpc.flow.bytes_sent"
+	gcpVPCFlowPacketsSent  = "gcp.vpc.flow.packets_sent"
+	gcpVPCFlowStartTime    = "gcp.vpc.flow.start_time"
+	gcpVPCFlowEndTime      = "gcp.vpc.flow.end_time"
+	gcpVPCFlowNetworkRTTMs = "gcp.vpc.flow.network.rtt_ms"
 
 	// Network service fields
 	gcpVPCFlowNetworkServiceDSCP = "gcp.vpc.flow.network_service.dscp"
@@ -310,7 +310,7 @@ func ParsePayloadIntoAttributes(payload []byte, attr pcommon.Map) error {
 	}
 
 	// Handle RTT
-	if err := shared.AddStrAsInt(gcpVPCFlowNetworkRTTMsec, log.RTTMsec, attr); err != nil {
+	if err := shared.AddStrAsInt(gcpVPCFlowNetworkRTTMs, log.RTTMsec, attr); err != nil {
 		return fmt.Errorf("failed to add RTT: %w", err)
 	}
 

@@ -189,7 +189,7 @@ See the struct of the Cloud Audit Log payload in [AuditLog](https://cloud.google
 | `connection.src_port` | `source.port` | supported |
 | `connection.dest_port` | `destination.port` | supported |
 | `reporter` | `gcp.vpc.flow.reporter` | supported |
-| `rtt_msec` | `gcp.vpc.flow.network.rtt_msec` | supported |
+| `rtt_msec` | `gcp.vpc.flow.network.rtt_ms` | supported |
 | `round_trip_time.median_msec` | `gcp.vpc.flow.rtt.median` | not yet supported |
 | `bytes_sent` | `gcp.vpc.flow.bytes_sent` |  supported |
 | `packets_sent` | `gcp.vpc.flow.packets_sent` | supported |
