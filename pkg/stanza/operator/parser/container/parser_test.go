@@ -199,7 +199,7 @@ func TestProcess(t *testing.T) {
 				&entry.Entry{
 					Body: `{"log":"INFO: log line here","stream":"stdout","time":"2029-03-30T08:31:20.545192187Z"}`,
 				},
-				"operator 'test_id' has 'add_metadata_from_filepath' enabled, but 'include_file_path' might be disabled",
+				"operator 'test_id' has 'add_metadata_from_filepath' enabled, but the log record attribute 'log.file.path' is missing. Perhaps enable the 'include_file_path' option?",
 			},
 		}
 
