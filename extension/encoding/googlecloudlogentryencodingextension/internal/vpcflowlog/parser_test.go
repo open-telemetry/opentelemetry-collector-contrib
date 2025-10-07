@@ -126,7 +126,7 @@ func TestHandleNetworkService(t *testing.T) {
 func TestHandleInstance(t *testing.T) {
 	tests := map[string]struct {
 		instance     *instance
-		prefix       string
+		side         flowSide
 		expectedAttr map[string]any
 	}{
 		"source instance with mig": {
@@ -140,7 +140,7 @@ func TestHandleInstance(t *testing.T) {
 					Zone: "us-central1-a",
 				},
 			},
-			prefix: "gcp.vpc.flow.source.instance",
+			side: src,
 			expectedAttr: map[string]any{
 				gcpVPCFlowSourceInstanceProjectID: "elastic-obs-integrations-dev",
 				gcpVPCFlowSourceInstanceVMRegion:  "us-central1",
@@ -157,7 +157,7 @@ func TestHandleInstance(t *testing.T) {
 				VMName:    "service-integration-dev-idc-ubuntu25-4",
 				Zone:      "asia-south1-c",
 			},
-			prefix: "gcp.vpc.flow.destination.instance",
+			side: dest,
 			expectedAttr: map[string]any{
 				gcpVPCFlowDestInstanceProjectID: "elastic-obs-integrations-dev",
 				gcpVPCFlowDestInstanceVMRegion:  "asia-south1",
@@ -167,7 +167,7 @@ func TestHandleInstance(t *testing.T) {
 		},
 		"nil instance": {
 			instance:     nil,
-			prefix:       "gcp.vpc.flow.source.instance",
+			side:         src,
 			expectedAttr: map[string]any{},
 		},
 	}
@@ -176,7 +176,7 @@ func TestHandleInstance(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			attr := pcommon.NewMap()
-			handleInstance(tt.instance, tt.prefix, attr)
+			handleInstance(tt.instance, tt.side, attr)
 			require.Equal(t, tt.expectedAttr, attr.AsRaw())
 		})
 	}
@@ -185,7 +185,7 @@ func TestHandleInstance(t *testing.T) {
 func TestHandleLocation(t *testing.T) {
 	tests := map[string]struct {
 		location     *location
-		prefix       string
+		side         flowSide
 		expectedAttr map[string]any
 	}{
 		"source location": {
@@ -196,7 +196,7 @@ func TestHandleLocation(t *testing.T) {
 				Country:   "usa",
 				Region:    "Virginia",
 			},
-			prefix: "gcp.vpc.flow.source",
+			side: src,
 			expectedAttr: map[string]any{
 				gcpVPCFlowSourceASN:          int64(14618),
 				gcpVPCFlowSourceGeoCity:      "Ashburn",
@@ -211,7 +211,7 @@ func TestHandleLocation(t *testing.T) {
 				Continent: "Asia",
 				Country:   "chn",
 			},
-			prefix: "gcp.vpc.flow.destination",
+			side: dest,
 			expectedAttr: map[string]any{
 				gcpVPCFlowDestASN:          int64(137718),
 				gcpVPCFlowDestGeoContinent: "Asia",
@@ -220,7 +220,7 @@ func TestHandleLocation(t *testing.T) {
 		},
 		"nil location": {
 			location:     nil,
-			prefix:       "gcp.vpc.flow.source",
+			side:         src,
 			expectedAttr: map[string]any{},
 		},
 	}
@@ -229,7 +229,7 @@ func TestHandleLocation(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			attr := pcommon.NewMap()
-			handleLocation(tt.location, tt.prefix, attr)
+			handleLocation(tt.location, tt.side, attr)
 			require.Equal(t, tt.expectedAttr, attr.AsRaw())
 		})
 	}
@@ -238,7 +238,7 @@ func TestHandleLocation(t *testing.T) {
 func TestHandleVPC(t *testing.T) {
 	tests := map[string]struct {
 		vpc          *vpc
-		prefix       string
+		side         flowSide
 		expectedAttr map[string]any
 	}{
 		"source vpc": {
@@ -248,7 +248,7 @@ func TestHandleVPC(t *testing.T) {
 				SubnetworkRegion: "us-central1",
 				VPCName:          "default",
 			},
-			prefix: "gcp.vpc.flow.source",
+			side: src,
 			expectedAttr: map[string]any{
 				gcpVPCFlowSourceProjectID:    "elastic-obs-integrations-dev",
 				gcpVPCFlowSourceSubnetName:   "default",
@@ -263,7 +263,7 @@ func TestHandleVPC(t *testing.T) {
 				SubnetworkRegion: "asia-south1",
 				VPCName:          "default",
 			},
-			prefix: "gcp.vpc.flow.destination",
+			side: dest,
 			expectedAttr: map[string]any{
 				gcpVPCFlowDestProjectID:    "elastic-obs-integrations-dev",
 				gcpVPCFlowDestSubnetName:   "default",
@@ -273,7 +273,7 @@ func TestHandleVPC(t *testing.T) {
 		},
 		"nil vpc": {
 			vpc:          nil,
-			prefix:       "gcp.vpc.flow.source",
+			side:         src,
 			expectedAttr: map[string]any{},
 		},
 	}
@@ -282,7 +282,7 @@ func TestHandleVPC(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			attr := pcommon.NewMap()
-			handleVPC(tt.vpc, tt.prefix, attr)
+			handleVPC(tt.vpc, tt.side, attr)
 			require.Equal(t, tt.expectedAttr, attr.AsRaw())
 		})
 	}

@@ -75,6 +75,14 @@ const (
 	gcpVPCFlowEgressASPaths = "gcp.vpc.flow.egress.as_paths"
 )
 
+// Flow side (source or destination)
+type flowSide uint8
+
+const (
+	src flowSide = iota
+	dest
+)
+
 type vpcFlowLog struct {
 	Connection  *connection `json:"connection"`
 	Reporter    string      `json:"reporter"`
@@ -184,13 +192,13 @@ func handleNetworkService(ns *networkService, attr pcommon.Map) {
 	shared.PutInt(gcpVPCFlowNetworkServiceDSCP, ns.DSCP, attr)
 }
 
-func handleInstance(inst *instance, prefix string, attr pcommon.Map) {
+func handleInstance(inst *instance, side flowSide, attr pcommon.Map) {
 	if inst == nil {
 		return
 	}
 
-	switch prefix {
-	case "gcp.vpc.flow.source.instance":
+	switch side {
+	case src:
 		shared.PutStr(gcpVPCFlowSourceInstanceProjectID, inst.ProjectID, attr)
 		shared.PutStr(gcpVPCFlowSourceInstanceVMRegion, inst.Region, attr)
 		shared.PutStr(gcpVPCFlowSourceInstanceVMName, inst.VMName, attr)
@@ -200,7 +208,7 @@ func handleInstance(inst *instance, prefix string, attr pcommon.Map) {
 			shared.PutStr(gcpVPCFlowSourceInstanceMIGName, inst.ManagedInstanceGroup.Name, attr)
 			shared.PutStr(gcpVPCFlowSourceInstanceMIGZone, inst.ManagedInstanceGroup.Zone, attr)
 		}
-	case "gcp.vpc.flow.destination.instance":
+	case dest:
 		shared.PutStr(gcpVPCFlowDestInstanceProjectID, inst.ProjectID, attr)
 		shared.PutStr(gcpVPCFlowDestInstanceVMRegion, inst.Region, attr)
 		shared.PutStr(gcpVPCFlowDestInstanceVMName, inst.VMName, attr)
@@ -213,19 +221,19 @@ func handleInstance(inst *instance, prefix string, attr pcommon.Map) {
 	}
 }
 
-func handleLocation(loc *location, prefix string, attr pcommon.Map) {
+func handleLocation(loc *location, side flowSide, attr pcommon.Map) {
 	if loc == nil {
 		return
 	}
 
-	switch prefix {
-	case "gcp.vpc.flow.source":
+	switch side {
+	case src:
 		shared.PutInt(gcpVPCFlowSourceASN, loc.ASN, attr)
 		shared.PutStr(gcpVPCFlowSourceGeoCity, loc.City, attr)
 		shared.PutStr(gcpVPCFlowSourceGeoContinent, loc.Continent, attr)
 		shared.PutStr(gcpVPCFlowSourceGeoCountry, loc.Country, attr)
 		shared.PutStr(gcpVPCFlowSourceGeoRegion, loc.Region, attr)
-	case "gcp.vpc.flow.destination":
+	case dest:
 		shared.PutInt(gcpVPCFlowDestASN, loc.ASN, attr)
 		shared.PutStr(gcpVPCFlowDestGeoCity, loc.City, attr)
 		shared.PutStr(gcpVPCFlowDestGeoContinent, loc.Continent, attr)
@@ -234,18 +242,18 @@ func handleLocation(loc *location, prefix string, attr pcommon.Map) {
 	}
 }
 
-func handleVPC(vpc *vpc, prefix string, attr pcommon.Map) {
+func handleVPC(vpc *vpc, side flowSide, attr pcommon.Map) {
 	if vpc == nil {
 		return
 	}
 
-	switch prefix {
-	case "gcp.vpc.flow.source":
+	switch side {
+	case src:
 		shared.PutStr(gcpVPCFlowSourceProjectID, vpc.ProjectID, attr)
 		shared.PutStr(gcpVPCFlowSourceSubnetName, vpc.SubnetworkName, attr)
 		shared.PutStr(gcpVPCFlowSourceSubnetRegion, vpc.SubnetworkRegion, attr)
 		shared.PutStr(gcpVPCFlowSourceVPCName, vpc.VPCName, attr)
-	case "gcp.vpc.flow.destination":
+	case dest:
 		shared.PutStr(gcpVPCFlowDestProjectID, vpc.ProjectID, attr)
 		shared.PutStr(gcpVPCFlowDestSubnetName, vpc.SubnetworkName, attr)
 		shared.PutStr(gcpVPCFlowDestSubnetRegion, vpc.SubnetworkRegion, attr)
@@ -303,16 +311,16 @@ func ParsePayloadIntoAttributes(payload []byte, attr pcommon.Map) error {
 	handleNetworkService(log.NetworkService, attr)
 
 	// Handle instance details
-	handleInstance(log.SrcInstance, "gcp.vpc.flow.source.instance", attr)
-	handleInstance(log.DestInstance, "gcp.vpc.flow.destination.instance", attr)
+	handleInstance(log.SrcInstance, src, attr)
+	handleInstance(log.DestInstance, dest, attr)
 
 	// Handle location details
-	handleLocation(log.SrcLocation, "gcp.vpc.flow.source", attr)
-	handleLocation(log.DestLocation, "gcp.vpc.flow.destination", attr)
+	handleLocation(log.SrcLocation, src, attr)
+	handleLocation(log.DestLocation, dest, attr)
 
 	// Handle VPC details
-	handleVPC(log.SrcVPC, "gcp.vpc.flow.source", attr)
-	handleVPC(log.DestVPC, "gcp.vpc.flow.destination", attr)
+	handleVPC(log.SrcVPC, src, attr)
+	handleVPC(log.DestVPC, dest, attr)
 
 	// Handle internet routing details
 	handleInternetRoutingDetails(log.InternetRoutingDetails, attr)
