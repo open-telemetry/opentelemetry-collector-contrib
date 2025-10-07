@@ -431,6 +431,8 @@ metrics:
   redis.cluster.state:
     enabled: false
     description: "State of the cluster"
+    stability:
+      level: development
     unit: "{state}"
     gauge:
       value_type: int
@@ -439,6 +441,8 @@ metrics:
   redis.cluster.slots_assigned:
     enabled: false
     description: "Number of slots assigned in the cluster"
+    stability:
+      level: development
     unit: "{slot}"
     gauge:
       value_type: int
@@ -446,6 +450,8 @@ metrics:
   redis.cluster.slots_ok:
     enabled: false
     description: "Number of slots in the cluster that are ok"
+    stability:
+      level: development
     unit: "{slot}"
     gauge:
       value_type: int
@@ -453,6 +459,8 @@ metrics:
   redis.cluster.slots_pfail:
     enabled: false
     description: "Number of slots in the cluster that are in a 'potentially failing' state"
+    stability:
+      level: development
     unit: "{slot}"
     gauge:
       value_type: int
@@ -460,6 +468,8 @@ metrics:
   redis.cluster.slots_fail:
     enabled: false
     description: "Number of slots in the cluster that are in a failing state"
+    stability:
+      level: development
     unit: "{slot}"
     gauge:
       value_type: int
@@ -467,6 +477,8 @@ metrics:
   redis.cluster.known_nodes:
     enabled: false
     description: "Number of known nodes in the cluster"
+    stability:
+      level: development
     unit: "{node}"
     gauge:
       value_type: int
@@ -474,6 +486,8 @@ metrics:
   redis.cluster.node.count:
     enabled: false
     description: "Number of master nodes in the cluster"
+    stability:
+      level: development
     unit: "{node}"
     gauge:
       value_type: int
@@ -481,6 +495,8 @@ metrics:
   redis.cluster.uptime:
     enabled: false
     description: "Current epoch of the cluster"
+    stability:
+      level: development
     unit: "s"
     gauge:
       value_type: int
@@ -488,6 +504,8 @@ metrics:
   redis.cluster.node.uptime:
     enabled: false
     description: "The node's current epoch"
+    stability:
+      level: development
     unit: "s"
     gauge:
       value_type: int
@@ -495,6 +513,8 @@ metrics:
   redis.cluster.stats_messages_sent:
     enabled: false
     description: "Total number of messages sent by the cluster"
+    stability:
+      level: development
     unit: "{message}"
     sum:
       value_type: int
@@ -504,15 +524,19 @@ metrics:
   redis.cluster.stats_messages_received:
     enabled: false
     description: "Total number of messages received by the cluster"
+    stability:
+      level: development
     unit: "{message}"
     sum:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
 
-  redis.cluster.total_cluster_links_buffer_limit_exceeded:
+  redis.cluster.links_buffer_limit_exceeded.count:
     enabled: false
     description: "Total number of times the cluster links buffer limit was exceeded"
+    stability:
+      level: development
     unit: "{count}"
     sum:
       value_type: int

@@ -11,6 +11,8 @@ all_set:
       enabled: true
     redis.cluster.known_nodes:
       enabled: true
+    redis.cluster.links_buffer_limit_exceeded.count:
+      enabled: true
     redis.cluster.node.count:
       enabled: true
     redis.cluster.node.uptime:
@@ -28,8 +30,6 @@ all_set:
     redis.cluster.stats_messages_received:
       enabled: true
     redis.cluster.stats_messages_sent:
-      enabled: true
-    redis.cluster.total_cluster_links_buffer_limit_exceeded:
       enabled: true
     redis.cluster.uptime:
       enabled: true
@@ -114,6 +114,8 @@ none_set:
       enabled: false
     redis.cluster.known_nodes:
       enabled: false
+    redis.cluster.links_buffer_limit_exceeded.count:
+      enabled: false
     redis.cluster.node.count:
       enabled: false
     redis.cluster.node.uptime:
@@ -131,8 +133,6 @@ none_set:
     redis.cluster.stats_messages_received:
       enabled: false
     redis.cluster.stats_messages_sent:
-      enabled: false
-    redis.cluster.total_cluster_links_buffer_limit_exceeded:
       enabled: false
     redis.cluster.uptime:
       enabled: false

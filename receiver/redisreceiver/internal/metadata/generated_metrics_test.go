@@ -88,6 +88,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordRedisClusterKnownNodesDataPoint(ts, 1)
 
 			allMetricsCount++
+			mb.RecordRedisClusterLinksBufferLimitExceededCountDataPoint(ts, 1)
+
+			allMetricsCount++
 			mb.RecordRedisClusterNodeCountDataPoint(ts, 1)
 
 			allMetricsCount++
@@ -113,9 +116,6 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordRedisClusterStatsMessagesSentDataPoint(ts, 1)
-
-			allMetricsCount++
-			mb.RecordRedisClusterTotalClusterLinksBufferLimitExceededDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordRedisClusterUptimeDataPoint(ts, 1)
@@ -328,6 +328,20 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "redis.cluster.links_buffer_limit_exceeded.count":
+					assert.False(t, validatedMetrics["redis.cluster.links_buffer_limit_exceeded.count"], "Found a duplicate in the metrics slice: redis.cluster.links_buffer_limit_exceeded.count")
+					validatedMetrics["redis.cluster.links_buffer_limit_exceeded.count"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Total number of times the cluster links buffer limit was exceeded", ms.At(i).Description())
+					assert.Equal(t, "{count}", ms.At(i).Unit())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "redis.cluster.node.count":
 					assert.False(t, validatedMetrics["redis.cluster.node.count"], "Found a duplicate in the metrics slice: redis.cluster.node.count")
 					validatedMetrics["redis.cluster.node.count"] = true
@@ -436,20 +450,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "Total number of messages sent by the cluster", ms.At(i).Description())
 					assert.Equal(t, "{message}", ms.At(i).Unit())
-					assert.True(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-				case "redis.cluster.total_cluster_links_buffer_limit_exceeded":
-					assert.False(t, validatedMetrics["redis.cluster.total_cluster_links_buffer_limit_exceeded"], "Found a duplicate in the metrics slice: redis.cluster.total_cluster_links_buffer_limit_exceeded")
-					validatedMetrics["redis.cluster.total_cluster_links_buffer_limit_exceeded"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Total number of times the cluster links buffer limit was exceeded", ms.At(i).Description())
-					assert.Equal(t, "{count}", ms.At(i).Unit())
 					assert.True(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)

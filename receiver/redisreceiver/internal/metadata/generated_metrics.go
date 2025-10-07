@@ -152,6 +152,9 @@ var MetricsInfo = metricsInfo{
 	RedisClusterKnownNodes: metricInfo{
 		Name: "redis.cluster.known_nodes",
 	},
+	RedisClusterLinksBufferLimitExceededCount: metricInfo{
+		Name: "redis.cluster.links_buffer_limit_exceeded.count",
+	},
 	RedisClusterNodeCount: metricInfo{
 		Name: "redis.cluster.node.count",
 	},
@@ -178,9 +181,6 @@ var MetricsInfo = metricsInfo{
 	},
 	RedisClusterStatsMessagesSent: metricInfo{
 		Name: "redis.cluster.stats_messages_sent",
-	},
-	RedisClusterTotalClusterLinksBufferLimitExceeded: metricInfo{
-		Name: "redis.cluster.total_cluster_links_buffer_limit_exceeded",
 	},
 	RedisClusterUptime: metricInfo{
 		Name: "redis.cluster.uptime",
@@ -281,53 +281,53 @@ var MetricsInfo = metricsInfo{
 }
 
 type metricsInfo struct {
-	RedisClientsBlocked                              metricInfo
-	RedisClientsConnected                            metricInfo
-	RedisClientsMaxInputBuffer                       metricInfo
-	RedisClientsMaxOutputBuffer                      metricInfo
-	RedisClusterKnownNodes                           metricInfo
-	RedisClusterNodeCount                            metricInfo
-	RedisClusterNodeUptime                           metricInfo
-	RedisClusterSlotsAssigned                        metricInfo
-	RedisClusterSlotsFail                            metricInfo
-	RedisClusterSlotsOk                              metricInfo
-	RedisClusterSlotsPfail                           metricInfo
-	RedisClusterState                                metricInfo
-	RedisClusterStatsMessagesReceived                metricInfo
-	RedisClusterStatsMessagesSent                    metricInfo
-	RedisClusterTotalClusterLinksBufferLimitExceeded metricInfo
-	RedisClusterUptime                               metricInfo
-	RedisCmdCalls                                    metricInfo
-	RedisCmdLatency                                  metricInfo
-	RedisCmdUsec                                     metricInfo
-	RedisCommands                                    metricInfo
-	RedisCommandsProcessed                           metricInfo
-	RedisConnectionsReceived                         metricInfo
-	RedisConnectionsRejected                         metricInfo
-	RedisCPUTime                                     metricInfo
-	RedisDbAvgTTL                                    metricInfo
-	RedisDbExpires                                   metricInfo
-	RedisDbKeys                                      metricInfo
-	RedisKeysEvicted                                 metricInfo
-	RedisKeysExpired                                 metricInfo
-	RedisKeyspaceHits                                metricInfo
-	RedisKeyspaceMisses                              metricInfo
-	RedisLatestFork                                  metricInfo
-	RedisMaxmemory                                   metricInfo
-	RedisMemoryFragmentationRatio                    metricInfo
-	RedisMemoryLua                                   metricInfo
-	RedisMemoryPeak                                  metricInfo
-	RedisMemoryRss                                   metricInfo
-	RedisMemoryUsed                                  metricInfo
-	RedisNetInput                                    metricInfo
-	RedisNetOutput                                   metricInfo
-	RedisRdbChangesSinceLastSave                     metricInfo
-	RedisReplicationBacklogFirstByteOffset           metricInfo
-	RedisReplicationOffset                           metricInfo
-	RedisReplicationReplicaOffset                    metricInfo
-	RedisRole                                        metricInfo
-	RedisSlavesConnected                             metricInfo
-	RedisUptime                                      metricInfo
+	RedisClientsBlocked                       metricInfo
+	RedisClientsConnected                     metricInfo
+	RedisClientsMaxInputBuffer                metricInfo
+	RedisClientsMaxOutputBuffer               metricInfo
+	RedisClusterKnownNodes                    metricInfo
+	RedisClusterLinksBufferLimitExceededCount metricInfo
+	RedisClusterNodeCount                     metricInfo
+	RedisClusterNodeUptime                    metricInfo
+	RedisClusterSlotsAssigned                 metricInfo
+	RedisClusterSlotsFail                     metricInfo
+	RedisClusterSlotsOk                       metricInfo
+	RedisClusterSlotsPfail                    metricInfo
+	RedisClusterState                         metricInfo
+	RedisClusterStatsMessagesReceived         metricInfo
+	RedisClusterStatsMessagesSent             metricInfo
+	RedisClusterUptime                        metricInfo
+	RedisCmdCalls                             metricInfo
+	RedisCmdLatency                           metricInfo
+	RedisCmdUsec                              metricInfo
+	RedisCommands                             metricInfo
+	RedisCommandsProcessed                    metricInfo
+	RedisConnectionsReceived                  metricInfo
+	RedisConnectionsRejected                  metricInfo
+	RedisCPUTime                              metricInfo
+	RedisDbAvgTTL                             metricInfo
+	RedisDbExpires                            metricInfo
+	RedisDbKeys                               metricInfo
+	RedisKeysEvicted                          metricInfo
+	RedisKeysExpired                          metricInfo
+	RedisKeyspaceHits                         metricInfo
+	RedisKeyspaceMisses                       metricInfo
+	RedisLatestFork                           metricInfo
+	RedisMaxmemory                            metricInfo
+	RedisMemoryFragmentationRatio             metricInfo
+	RedisMemoryLua                            metricInfo
+	RedisMemoryPeak                           metricInfo
+	RedisMemoryRss                            metricInfo
+	RedisMemoryUsed                           metricInfo
+	RedisNetInput                             metricInfo
+	RedisNetOutput                            metricInfo
+	RedisRdbChangesSinceLastSave              metricInfo
+	RedisReplicationBacklogFirstByteOffset    metricInfo
+	RedisReplicationOffset                    metricInfo
+	RedisReplicationReplicaOffset             metricInfo
+	RedisRole                                 metricInfo
+	RedisSlavesConnected                      metricInfo
+	RedisUptime                               metricInfo
 }
 
 type metricInfo struct {
@@ -576,6 +576,57 @@ func (m *metricRedisClusterKnownNodes) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRedisClusterKnownNodes(cfg MetricConfig) metricRedisClusterKnownNodes {
 	m := metricRedisClusterKnownNodes{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricRedisClusterLinksBufferLimitExceededCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills redis.cluster.links_buffer_limit_exceeded.count metric with initial data.
+func (m *metricRedisClusterLinksBufferLimitExceededCount) init() {
+	m.data.SetName("redis.cluster.links_buffer_limit_exceeded.count")
+	m.data.SetDescription("Total number of times the cluster links buffer limit was exceeded")
+	m.data.SetUnit("{count}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricRedisClusterLinksBufferLimitExceededCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricRedisClusterLinksBufferLimitExceededCount) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricRedisClusterLinksBufferLimitExceededCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricRedisClusterLinksBufferLimitExceededCount(cfg MetricConfig) metricRedisClusterLinksBufferLimitExceededCount {
+	m := metricRedisClusterLinksBufferLimitExceededCount{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1023,57 +1074,6 @@ func (m *metricRedisClusterStatsMessagesSent) emit(metrics pmetric.MetricSlice) 
 
 func newMetricRedisClusterStatsMessagesSent(cfg MetricConfig) metricRedisClusterStatsMessagesSent {
 	m := metricRedisClusterStatsMessagesSent{config: cfg}
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricRedisClusterTotalClusterLinksBufferLimitExceeded struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills redis.cluster.total_cluster_links_buffer_limit_exceeded metric with initial data.
-func (m *metricRedisClusterTotalClusterLinksBufferLimitExceeded) init() {
-	m.data.SetName("redis.cluster.total_cluster_links_buffer_limit_exceeded")
-	m.data.SetDescription("Total number of times the cluster links buffer limit was exceeded")
-	m.data.SetUnit("{count}")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-}
-
-func (m *metricRedisClusterTotalClusterLinksBufferLimitExceeded) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricRedisClusterTotalClusterLinksBufferLimitExceeded) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricRedisClusterTotalClusterLinksBufferLimitExceeded) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricRedisClusterTotalClusterLinksBufferLimitExceeded(cfg MetricConfig) metricRedisClusterTotalClusterLinksBufferLimitExceeded {
-	m := metricRedisClusterTotalClusterLinksBufferLimitExceeded{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2701,60 +2701,60 @@ func newMetricRedisUptime(cfg MetricConfig) metricRedisUptime {
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	config                                                 MetricsBuilderConfig // config of the metrics builder.
-	startTime                                              pcommon.Timestamp    // start time that will be applied to all recorded data points.
-	metricsCapacity                                        int                  // maximum observed number of metrics per resource.
-	metricsBuffer                                          pmetric.Metrics      // accumulates metrics data before emitting.
-	buildInfo                                              component.BuildInfo  // contains version information.
-	resourceAttributeIncludeFilter                         map[string]filter.Filter
-	resourceAttributeExcludeFilter                         map[string]filter.Filter
-	metricRedisClientsBlocked                              metricRedisClientsBlocked
-	metricRedisClientsConnected                            metricRedisClientsConnected
-	metricRedisClientsMaxInputBuffer                       metricRedisClientsMaxInputBuffer
-	metricRedisClientsMaxOutputBuffer                      metricRedisClientsMaxOutputBuffer
-	metricRedisClusterKnownNodes                           metricRedisClusterKnownNodes
-	metricRedisClusterNodeCount                            metricRedisClusterNodeCount
-	metricRedisClusterNodeUptime                           metricRedisClusterNodeUptime
-	metricRedisClusterSlotsAssigned                        metricRedisClusterSlotsAssigned
-	metricRedisClusterSlotsFail                            metricRedisClusterSlotsFail
-	metricRedisClusterSlotsOk                              metricRedisClusterSlotsOk
-	metricRedisClusterSlotsPfail                           metricRedisClusterSlotsPfail
-	metricRedisClusterState                                metricRedisClusterState
-	metricRedisClusterStatsMessagesReceived                metricRedisClusterStatsMessagesReceived
-	metricRedisClusterStatsMessagesSent                    metricRedisClusterStatsMessagesSent
-	metricRedisClusterTotalClusterLinksBufferLimitExceeded metricRedisClusterTotalClusterLinksBufferLimitExceeded
-	metricRedisClusterUptime                               metricRedisClusterUptime
-	metricRedisCmdCalls                                    metricRedisCmdCalls
-	metricRedisCmdLatency                                  metricRedisCmdLatency
-	metricRedisCmdUsec                                     metricRedisCmdUsec
-	metricRedisCommands                                    metricRedisCommands
-	metricRedisCommandsProcessed                           metricRedisCommandsProcessed
-	metricRedisConnectionsReceived                         metricRedisConnectionsReceived
-	metricRedisConnectionsRejected                         metricRedisConnectionsRejected
-	metricRedisCPUTime                                     metricRedisCPUTime
-	metricRedisDbAvgTTL                                    metricRedisDbAvgTTL
-	metricRedisDbExpires                                   metricRedisDbExpires
-	metricRedisDbKeys                                      metricRedisDbKeys
-	metricRedisKeysEvicted                                 metricRedisKeysEvicted
-	metricRedisKeysExpired                                 metricRedisKeysExpired
-	metricRedisKeyspaceHits                                metricRedisKeyspaceHits
-	metricRedisKeyspaceMisses                              metricRedisKeyspaceMisses
-	metricRedisLatestFork                                  metricRedisLatestFork
-	metricRedisMaxmemory                                   metricRedisMaxmemory
-	metricRedisMemoryFragmentationRatio                    metricRedisMemoryFragmentationRatio
-	metricRedisMemoryLua                                   metricRedisMemoryLua
-	metricRedisMemoryPeak                                  metricRedisMemoryPeak
-	metricRedisMemoryRss                                   metricRedisMemoryRss
-	metricRedisMemoryUsed                                  metricRedisMemoryUsed
-	metricRedisNetInput                                    metricRedisNetInput
-	metricRedisNetOutput                                   metricRedisNetOutput
-	metricRedisRdbChangesSinceLastSave                     metricRedisRdbChangesSinceLastSave
-	metricRedisReplicationBacklogFirstByteOffset           metricRedisReplicationBacklogFirstByteOffset
-	metricRedisReplicationOffset                           metricRedisReplicationOffset
-	metricRedisReplicationReplicaOffset                    metricRedisReplicationReplicaOffset
-	metricRedisRole                                        metricRedisRole
-	metricRedisSlavesConnected                             metricRedisSlavesConnected
-	metricRedisUptime                                      metricRedisUptime
+	config                                          MetricsBuilderConfig // config of the metrics builder.
+	startTime                                       pcommon.Timestamp    // start time that will be applied to all recorded data points.
+	metricsCapacity                                 int                  // maximum observed number of metrics per resource.
+	metricsBuffer                                   pmetric.Metrics      // accumulates metrics data before emitting.
+	buildInfo                                       component.BuildInfo  // contains version information.
+	resourceAttributeIncludeFilter                  map[string]filter.Filter
+	resourceAttributeExcludeFilter                  map[string]filter.Filter
+	metricRedisClientsBlocked                       metricRedisClientsBlocked
+	metricRedisClientsConnected                     metricRedisClientsConnected
+	metricRedisClientsMaxInputBuffer                metricRedisClientsMaxInputBuffer
+	metricRedisClientsMaxOutputBuffer               metricRedisClientsMaxOutputBuffer
+	metricRedisClusterKnownNodes                    metricRedisClusterKnownNodes
+	metricRedisClusterLinksBufferLimitExceededCount metricRedisClusterLinksBufferLimitExceededCount
+	metricRedisClusterNodeCount                     metricRedisClusterNodeCount
+	metricRedisClusterNodeUptime                    metricRedisClusterNodeUptime
+	metricRedisClusterSlotsAssigned                 metricRedisClusterSlotsAssigned
+	metricRedisClusterSlotsFail                     metricRedisClusterSlotsFail
+	metricRedisClusterSlotsOk                       metricRedisClusterSlotsOk
+	metricRedisClusterSlotsPfail                    metricRedisClusterSlotsPfail
+	metricRedisClusterState                         metricRedisClusterState
+	metricRedisClusterStatsMessagesReceived         metricRedisClusterStatsMessagesReceived
+	metricRedisClusterStatsMessagesSent             metricRedisClusterStatsMessagesSent
+	metricRedisClusterUptime                        metricRedisClusterUptime
+	metricRedisCmdCalls                             metricRedisCmdCalls
+	metricRedisCmdLatency                           metricRedisCmdLatency
+	metricRedisCmdUsec                              metricRedisCmdUsec
+	metricRedisCommands                             metricRedisCommands
+	metricRedisCommandsProcessed                    metricRedisCommandsProcessed
+	metricRedisConnectionsReceived                  metricRedisConnectionsReceived
+	metricRedisConnectionsRejected                  metricRedisConnectionsRejected
+	metricRedisCPUTime                              metricRedisCPUTime
+	metricRedisDbAvgTTL                             metricRedisDbAvgTTL
+	metricRedisDbExpires                            metricRedisDbExpires
+	metricRedisDbKeys                               metricRedisDbKeys
+	metricRedisKeysEvicted                          metricRedisKeysEvicted
+	metricRedisKeysExpired                          metricRedisKeysExpired
+	metricRedisKeyspaceHits                         metricRedisKeyspaceHits
+	metricRedisKeyspaceMisses                       metricRedisKeyspaceMisses
+	metricRedisLatestFork                           metricRedisLatestFork
+	metricRedisMaxmemory                            metricRedisMaxmemory
+	metricRedisMemoryFragmentationRatio             metricRedisMemoryFragmentationRatio
+	metricRedisMemoryLua                            metricRedisMemoryLua
+	metricRedisMemoryPeak                           metricRedisMemoryPeak
+	metricRedisMemoryRss                            metricRedisMemoryRss
+	metricRedisMemoryUsed                           metricRedisMemoryUsed
+	metricRedisNetInput                             metricRedisNetInput
+	metricRedisNetOutput                            metricRedisNetOutput
+	metricRedisRdbChangesSinceLastSave              metricRedisRdbChangesSinceLastSave
+	metricRedisReplicationBacklogFirstByteOffset    metricRedisReplicationBacklogFirstByteOffset
+	metricRedisReplicationOffset                    metricRedisReplicationOffset
+	metricRedisReplicationReplicaOffset             metricRedisReplicationReplicaOffset
+	metricRedisRole                                 metricRedisRole
+	metricRedisSlavesConnected                      metricRedisSlavesConnected
+	metricRedisUptime                               metricRedisUptime
 }
 
 // MetricBuilderOption applies changes to default metrics builder.
@@ -2776,59 +2776,59 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 }
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		config:                                                 mbc,
-		startTime:                                              pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:                                          pmetric.NewMetrics(),
-		buildInfo:                                              settings.BuildInfo,
-		metricRedisClientsBlocked:                              newMetricRedisClientsBlocked(mbc.Metrics.RedisClientsBlocked),
-		metricRedisClientsConnected:                            newMetricRedisClientsConnected(mbc.Metrics.RedisClientsConnected),
-		metricRedisClientsMaxInputBuffer:                       newMetricRedisClientsMaxInputBuffer(mbc.Metrics.RedisClientsMaxInputBuffer),
-		metricRedisClientsMaxOutputBuffer:                      newMetricRedisClientsMaxOutputBuffer(mbc.Metrics.RedisClientsMaxOutputBuffer),
-		metricRedisClusterKnownNodes:                           newMetricRedisClusterKnownNodes(mbc.Metrics.RedisClusterKnownNodes),
-		metricRedisClusterNodeCount:                            newMetricRedisClusterNodeCount(mbc.Metrics.RedisClusterNodeCount),
-		metricRedisClusterNodeUptime:                           newMetricRedisClusterNodeUptime(mbc.Metrics.RedisClusterNodeUptime),
-		metricRedisClusterSlotsAssigned:                        newMetricRedisClusterSlotsAssigned(mbc.Metrics.RedisClusterSlotsAssigned),
-		metricRedisClusterSlotsFail:                            newMetricRedisClusterSlotsFail(mbc.Metrics.RedisClusterSlotsFail),
-		metricRedisClusterSlotsOk:                              newMetricRedisClusterSlotsOk(mbc.Metrics.RedisClusterSlotsOk),
-		metricRedisClusterSlotsPfail:                           newMetricRedisClusterSlotsPfail(mbc.Metrics.RedisClusterSlotsPfail),
-		metricRedisClusterState:                                newMetricRedisClusterState(mbc.Metrics.RedisClusterState),
-		metricRedisClusterStatsMessagesReceived:                newMetricRedisClusterStatsMessagesReceived(mbc.Metrics.RedisClusterStatsMessagesReceived),
-		metricRedisClusterStatsMessagesSent:                    newMetricRedisClusterStatsMessagesSent(mbc.Metrics.RedisClusterStatsMessagesSent),
-		metricRedisClusterTotalClusterLinksBufferLimitExceeded: newMetricRedisClusterTotalClusterLinksBufferLimitExceeded(mbc.Metrics.RedisClusterTotalClusterLinksBufferLimitExceeded),
-		metricRedisClusterUptime:                               newMetricRedisClusterUptime(mbc.Metrics.RedisClusterUptime),
-		metricRedisCmdCalls:                                    newMetricRedisCmdCalls(mbc.Metrics.RedisCmdCalls),
-		metricRedisCmdLatency:                                  newMetricRedisCmdLatency(mbc.Metrics.RedisCmdLatency),
-		metricRedisCmdUsec:                                     newMetricRedisCmdUsec(mbc.Metrics.RedisCmdUsec),
-		metricRedisCommands:                                    newMetricRedisCommands(mbc.Metrics.RedisCommands),
-		metricRedisCommandsProcessed:                           newMetricRedisCommandsProcessed(mbc.Metrics.RedisCommandsProcessed),
-		metricRedisConnectionsReceived:                         newMetricRedisConnectionsReceived(mbc.Metrics.RedisConnectionsReceived),
-		metricRedisConnectionsRejected:                         newMetricRedisConnectionsRejected(mbc.Metrics.RedisConnectionsRejected),
-		metricRedisCPUTime:                                     newMetricRedisCPUTime(mbc.Metrics.RedisCPUTime),
-		metricRedisDbAvgTTL:                                    newMetricRedisDbAvgTTL(mbc.Metrics.RedisDbAvgTTL),
-		metricRedisDbExpires:                                   newMetricRedisDbExpires(mbc.Metrics.RedisDbExpires),
-		metricRedisDbKeys:                                      newMetricRedisDbKeys(mbc.Metrics.RedisDbKeys),
-		metricRedisKeysEvicted:                                 newMetricRedisKeysEvicted(mbc.Metrics.RedisKeysEvicted),
-		metricRedisKeysExpired:                                 newMetricRedisKeysExpired(mbc.Metrics.RedisKeysExpired),
-		metricRedisKeyspaceHits:                                newMetricRedisKeyspaceHits(mbc.Metrics.RedisKeyspaceHits),
-		metricRedisKeyspaceMisses:                              newMetricRedisKeyspaceMisses(mbc.Metrics.RedisKeyspaceMisses),
-		metricRedisLatestFork:                                  newMetricRedisLatestFork(mbc.Metrics.RedisLatestFork),
-		metricRedisMaxmemory:                                   newMetricRedisMaxmemory(mbc.Metrics.RedisMaxmemory),
-		metricRedisMemoryFragmentationRatio:                    newMetricRedisMemoryFragmentationRatio(mbc.Metrics.RedisMemoryFragmentationRatio),
-		metricRedisMemoryLua:                                   newMetricRedisMemoryLua(mbc.Metrics.RedisMemoryLua),
-		metricRedisMemoryPeak:                                  newMetricRedisMemoryPeak(mbc.Metrics.RedisMemoryPeak),
-		metricRedisMemoryRss:                                   newMetricRedisMemoryRss(mbc.Metrics.RedisMemoryRss),
-		metricRedisMemoryUsed:                                  newMetricRedisMemoryUsed(mbc.Metrics.RedisMemoryUsed),
-		metricRedisNetInput:                                    newMetricRedisNetInput(mbc.Metrics.RedisNetInput),
-		metricRedisNetOutput:                                   newMetricRedisNetOutput(mbc.Metrics.RedisNetOutput),
-		metricRedisRdbChangesSinceLastSave:                     newMetricRedisRdbChangesSinceLastSave(mbc.Metrics.RedisRdbChangesSinceLastSave),
-		metricRedisReplicationBacklogFirstByteOffset:           newMetricRedisReplicationBacklogFirstByteOffset(mbc.Metrics.RedisReplicationBacklogFirstByteOffset),
-		metricRedisReplicationOffset:                           newMetricRedisReplicationOffset(mbc.Metrics.RedisReplicationOffset),
-		metricRedisReplicationReplicaOffset:                    newMetricRedisReplicationReplicaOffset(mbc.Metrics.RedisReplicationReplicaOffset),
-		metricRedisRole:                                        newMetricRedisRole(mbc.Metrics.RedisRole),
-		metricRedisSlavesConnected:                             newMetricRedisSlavesConnected(mbc.Metrics.RedisSlavesConnected),
-		metricRedisUptime:                                      newMetricRedisUptime(mbc.Metrics.RedisUptime),
-		resourceAttributeIncludeFilter:                         make(map[string]filter.Filter),
-		resourceAttributeExcludeFilter:                         make(map[string]filter.Filter),
+		config:                            mbc,
+		startTime:                         pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:                     pmetric.NewMetrics(),
+		buildInfo:                         settings.BuildInfo,
+		metricRedisClientsBlocked:         newMetricRedisClientsBlocked(mbc.Metrics.RedisClientsBlocked),
+		metricRedisClientsConnected:       newMetricRedisClientsConnected(mbc.Metrics.RedisClientsConnected),
+		metricRedisClientsMaxInputBuffer:  newMetricRedisClientsMaxInputBuffer(mbc.Metrics.RedisClientsMaxInputBuffer),
+		metricRedisClientsMaxOutputBuffer: newMetricRedisClientsMaxOutputBuffer(mbc.Metrics.RedisClientsMaxOutputBuffer),
+		metricRedisClusterKnownNodes:      newMetricRedisClusterKnownNodes(mbc.Metrics.RedisClusterKnownNodes),
+		metricRedisClusterLinksBufferLimitExceededCount: newMetricRedisClusterLinksBufferLimitExceededCount(mbc.Metrics.RedisClusterLinksBufferLimitExceededCount),
+		metricRedisClusterNodeCount:                     newMetricRedisClusterNodeCount(mbc.Metrics.RedisClusterNodeCount),
+		metricRedisClusterNodeUptime:                    newMetricRedisClusterNodeUptime(mbc.Metrics.RedisClusterNodeUptime),
+		metricRedisClusterSlotsAssigned:                 newMetricRedisClusterSlotsAssigned(mbc.Metrics.RedisClusterSlotsAssigned),
+		metricRedisClusterSlotsFail:                     newMetricRedisClusterSlotsFail(mbc.Metrics.RedisClusterSlotsFail),
+		metricRedisClusterSlotsOk:                       newMetricRedisClusterSlotsOk(mbc.Metrics.RedisClusterSlotsOk),
+		metricRedisClusterSlotsPfail:                    newMetricRedisClusterSlotsPfail(mbc.Metrics.RedisClusterSlotsPfail),
+		metricRedisClusterState:                         newMetricRedisClusterState(mbc.Metrics.RedisClusterState),
+		metricRedisClusterStatsMessagesReceived:         newMetricRedisClusterStatsMessagesReceived(mbc.Metrics.RedisClusterStatsMessagesReceived),
+		metricRedisClusterStatsMessagesSent:             newMetricRedisClusterStatsMessagesSent(mbc.Metrics.RedisClusterStatsMessagesSent),
+		metricRedisClusterUptime:                        newMetricRedisClusterUptime(mbc.Metrics.RedisClusterUptime),
+		metricRedisCmdCalls:                             newMetricRedisCmdCalls(mbc.Metrics.RedisCmdCalls),
+		metricRedisCmdLatency:                           newMetricRedisCmdLatency(mbc.Metrics.RedisCmdLatency),
+		metricRedisCmdUsec:                              newMetricRedisCmdUsec(mbc.Metrics.RedisCmdUsec),
+		metricRedisCommands:                             newMetricRedisCommands(mbc.Metrics.RedisCommands),
+		metricRedisCommandsProcessed:                    newMetricRedisCommandsProcessed(mbc.Metrics.RedisCommandsProcessed),
+		metricRedisConnectionsReceived:                  newMetricRedisConnectionsReceived(mbc.Metrics.RedisConnectionsReceived),
+		metricRedisConnectionsRejected:                  newMetricRedisConnectionsRejected(mbc.Metrics.RedisConnectionsRejected),
+		metricRedisCPUTime:                              newMetricRedisCPUTime(mbc.Metrics.RedisCPUTime),
+		metricRedisDbAvgTTL:                             newMetricRedisDbAvgTTL(mbc.Metrics.RedisDbAvgTTL),
+		metricRedisDbExpires:                            newMetricRedisDbExpires(mbc.Metrics.RedisDbExpires),
+		metricRedisDbKeys:                               newMetricRedisDbKeys(mbc.Metrics.RedisDbKeys),
+		metricRedisKeysEvicted:                          newMetricRedisKeysEvicted(mbc.Metrics.RedisKeysEvicted),
+		metricRedisKeysExpired:                          newMetricRedisKeysExpired(mbc.Metrics.RedisKeysExpired),
+		metricRedisKeyspaceHits:                         newMetricRedisKeyspaceHits(mbc.Metrics.RedisKeyspaceHits),
+		metricRedisKeyspaceMisses:                       newMetricRedisKeyspaceMisses(mbc.Metrics.RedisKeyspaceMisses),
+		metricRedisLatestFork:                           newMetricRedisLatestFork(mbc.Metrics.RedisLatestFork),
+		metricRedisMaxmemory:                            newMetricRedisMaxmemory(mbc.Metrics.RedisMaxmemory),
+		metricRedisMemoryFragmentationRatio:             newMetricRedisMemoryFragmentationRatio(mbc.Metrics.RedisMemoryFragmentationRatio),
+		metricRedisMemoryLua:                            newMetricRedisMemoryLua(mbc.Metrics.RedisMemoryLua),
+		metricRedisMemoryPeak:                           newMetricRedisMemoryPeak(mbc.Metrics.RedisMemoryPeak),
+		metricRedisMemoryRss:                            newMetricRedisMemoryRss(mbc.Metrics.RedisMemoryRss),
+		metricRedisMemoryUsed:                           newMetricRedisMemoryUsed(mbc.Metrics.RedisMemoryUsed),
+		metricRedisNetInput:                             newMetricRedisNetInput(mbc.Metrics.RedisNetInput),
+		metricRedisNetOutput:                            newMetricRedisNetOutput(mbc.Metrics.RedisNetOutput),
+		metricRedisRdbChangesSinceLastSave:              newMetricRedisRdbChangesSinceLastSave(mbc.Metrics.RedisRdbChangesSinceLastSave),
+		metricRedisReplicationBacklogFirstByteOffset:    newMetricRedisReplicationBacklogFirstByteOffset(mbc.Metrics.RedisReplicationBacklogFirstByteOffset),
+		metricRedisReplicationOffset:                    newMetricRedisReplicationOffset(mbc.Metrics.RedisReplicationOffset),
+		metricRedisReplicationReplicaOffset:             newMetricRedisReplicationReplicaOffset(mbc.Metrics.RedisReplicationReplicaOffset),
+		metricRedisRole:                                 newMetricRedisRole(mbc.Metrics.RedisRole),
+		metricRedisSlavesConnected:                      newMetricRedisSlavesConnected(mbc.Metrics.RedisSlavesConnected),
+		metricRedisUptime:                               newMetricRedisUptime(mbc.Metrics.RedisUptime),
+		resourceAttributeIncludeFilter:                  make(map[string]filter.Filter),
+		resourceAttributeExcludeFilter:                  make(map[string]filter.Filter),
 	}
 	if mbc.ResourceAttributes.RedisVersion.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["redis.version"] = filter.CreateFilter(mbc.ResourceAttributes.RedisVersion.MetricsInclude)
@@ -2922,6 +2922,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricRedisClientsMaxInputBuffer.emit(ils.Metrics())
 	mb.metricRedisClientsMaxOutputBuffer.emit(ils.Metrics())
 	mb.metricRedisClusterKnownNodes.emit(ils.Metrics())
+	mb.metricRedisClusterLinksBufferLimitExceededCount.emit(ils.Metrics())
 	mb.metricRedisClusterNodeCount.emit(ils.Metrics())
 	mb.metricRedisClusterNodeUptime.emit(ils.Metrics())
 	mb.metricRedisClusterSlotsAssigned.emit(ils.Metrics())
@@ -2931,7 +2932,6 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricRedisClusterState.emit(ils.Metrics())
 	mb.metricRedisClusterStatsMessagesReceived.emit(ils.Metrics())
 	mb.metricRedisClusterStatsMessagesSent.emit(ils.Metrics())
-	mb.metricRedisClusterTotalClusterLinksBufferLimitExceeded.emit(ils.Metrics())
 	mb.metricRedisClusterUptime.emit(ils.Metrics())
 	mb.metricRedisCmdCalls.emit(ils.Metrics())
 	mb.metricRedisCmdLatency.emit(ils.Metrics())
@@ -3020,6 +3020,11 @@ func (mb *MetricsBuilder) RecordRedisClusterKnownNodesDataPoint(ts pcommon.Times
 	mb.metricRedisClusterKnownNodes.recordDataPoint(mb.startTime, ts, val)
 }
 
+// RecordRedisClusterLinksBufferLimitExceededCountDataPoint adds a data point to redis.cluster.links_buffer_limit_exceeded.count metric.
+func (mb *MetricsBuilder) RecordRedisClusterLinksBufferLimitExceededCountDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricRedisClusterLinksBufferLimitExceededCount.recordDataPoint(mb.startTime, ts, val)
+}
+
 // RecordRedisClusterNodeCountDataPoint adds a data point to redis.cluster.node.count metric.
 func (mb *MetricsBuilder) RecordRedisClusterNodeCountDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricRedisClusterNodeCount.recordDataPoint(mb.startTime, ts, val)
@@ -3063,11 +3068,6 @@ func (mb *MetricsBuilder) RecordRedisClusterStatsMessagesReceivedDataPoint(ts pc
 // RecordRedisClusterStatsMessagesSentDataPoint adds a data point to redis.cluster.stats_messages_sent metric.
 func (mb *MetricsBuilder) RecordRedisClusterStatsMessagesSentDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricRedisClusterStatsMessagesSent.recordDataPoint(mb.startTime, ts, val)
-}
-
-// RecordRedisClusterTotalClusterLinksBufferLimitExceededDataPoint adds a data point to redis.cluster.total_cluster_links_buffer_limit_exceeded metric.
-func (mb *MetricsBuilder) RecordRedisClusterTotalClusterLinksBufferLimitExceededDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricRedisClusterTotalClusterLinksBufferLimitExceeded.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordRedisClusterUptimeDataPoint adds a data point to redis.cluster.uptime metric.
