@@ -30,6 +30,9 @@ type DeviceConfig struct {
 
 // DeviceInfo follows semantic conventions for device identification
 type DeviceInfo struct {
+	// DO NOT USE unkeyed struct initialization
+	_ struct{} `mapstructure:"-"`
+
 	Host HostInfo `mapstructure:"host"`
 }
 

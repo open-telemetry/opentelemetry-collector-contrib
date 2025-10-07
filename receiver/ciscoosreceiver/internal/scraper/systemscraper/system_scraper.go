@@ -197,10 +197,7 @@ func (s *systemScraper) collectInterfaceMetrics(_ context.Context, rpcClient *co
 	}
 
 	// Parse interface data from command output
-	interfaces, err := parseInterfaceOutput(output, s.logger)
-	if err != nil {
-		return 0, fmt.Errorf("failed to parse interface output: %w", err)
-	}
+	interfaces := parseInterfaceOutput(output, s.logger)
 
 	return len(interfaces), nil
 }

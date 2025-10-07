@@ -180,18 +180,12 @@ func (s *interfacesScraper) parseInterfaceData(_ context.Context) ([]*Interface,
 	}
 
 	// Step 6: Parse interfaces from command output
-	interfaces, err := parseInterfaces(output, s.logger)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse interface output: %w", err)
-	}
+	interfaces := parseInterfaces(output, s.logger)
 
 	// If no interfaces found with main parser, try simple parsing
 	if len(interfaces) == 0 {
 		s.logger.Warn("No interfaces found with main parser, trying simple parsing")
-		interfaces, err = parseSimpleInterfaces(output, s.logger)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse simple interfaces: %w", err)
-		}
+		interfaces = parseSimpleInterfaces(output, s.logger)
 	}
 
 	return interfaces, nil

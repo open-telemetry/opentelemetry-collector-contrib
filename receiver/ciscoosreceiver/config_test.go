@@ -351,9 +351,7 @@ func TestConfig_ValidateBothPasswordAndKeyFile(t *testing.T) {
 
 func TestConfig_UnmarshalWithScrapers(t *testing.T) {
 	cfg := &Config{
-		ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
-		Devices:          []DeviceConfig{},
-		Scrapers:         map[component.Type]component.Config{},
+		Scrapers: map[component.Type]component.Config{},
 	}
 
 	// Verify unmarshal initializes maps
@@ -373,8 +371,6 @@ func TestGetAvailableScraperTypes(t *testing.T) {
 func TestConfig_CollectionIntervalDefault(t *testing.T) {
 	cfg := &Config{
 		ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
-		Devices:          []DeviceConfig{},
-		Scrapers:         map[component.Type]component.Config{},
 	}
 
 	// Default collection interval should be 60s

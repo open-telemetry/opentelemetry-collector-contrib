@@ -29,8 +29,8 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NotNil(t, config)
 
 	// Verify default metrics are enabled
-	assert.True(t, config.MetricsBuilderConfig.Metrics.CiscoDeviceUp.Enabled)
-	assert.True(t, config.MetricsBuilderConfig.Metrics.CiscoCollectorDurationSeconds.Enabled)
+	assert.True(t, config.Metrics.CiscoDeviceUp.Enabled)
+	assert.True(t, config.Metrics.CiscoCollectorDurationSeconds.Enabled)
 }
 
 func TestFactory_CreateScraperMethod(t *testing.T) {
@@ -103,12 +103,12 @@ func TestConfig_MetricsConfiguration(t *testing.T) {
 	}
 
 	// Verify metrics are configurable
-	assert.True(t, config.MetricsBuilderConfig.Metrics.CiscoDeviceUp.Enabled)
-	assert.True(t, config.MetricsBuilderConfig.Metrics.CiscoCollectorDurationSeconds.Enabled)
+	assert.True(t, config.Metrics.CiscoDeviceUp.Enabled)
+	assert.True(t, config.Metrics.CiscoCollectorDurationSeconds.Enabled)
 
 	// Test disabling metrics
-	config.MetricsBuilderConfig.Metrics.CiscoDeviceUp.Enabled = false
-	assert.False(t, config.MetricsBuilderConfig.Metrics.CiscoDeviceUp.Enabled)
+	config.Metrics.CiscoDeviceUp.Enabled = false
+	assert.False(t, config.Metrics.CiscoDeviceUp.Enabled)
 }
 
 func TestDeviceConfig_Structure(t *testing.T) {
@@ -135,7 +135,6 @@ func TestDeviceConfig_Structure(t *testing.T) {
 
 func TestConfig_MultipleDevices(t *testing.T) {
 	config := &Config{
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 		Devices: []DeviceConfig{
 			{
 				Host: HostInfo{IP: "10.0.0.1", Port: 22},
@@ -155,6 +154,7 @@ func TestConfig_MultipleDevices(t *testing.T) {
 
 func TestHostInfo_DefaultPort(t *testing.T) {
 	host := HostInfo{
+		Name: "router",
 		IP:   "192.168.1.1",
 		Port: 22,
 	}
@@ -196,7 +196,7 @@ func TestCreateDefaultConfig_MetricsEnabled(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 
 	// Verify all default metrics are enabled
-	metrics := cfg.MetricsBuilderConfig.Metrics
+	metrics := cfg.Metrics
 	assert.True(t, metrics.CiscoDeviceUp.Enabled)
 	assert.True(t, metrics.CiscoCollectorDurationSeconds.Enabled)
 	assert.True(t, metrics.CiscoCollectDurationSeconds.Enabled)

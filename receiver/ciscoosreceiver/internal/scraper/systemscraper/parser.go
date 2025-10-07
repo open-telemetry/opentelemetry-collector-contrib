@@ -15,7 +15,7 @@ type BasicInterface struct {
 }
 
 // parseInterfaceOutput parses Cisco interface command output and extracts interface names
-func parseInterfaceOutput(output string, logger *zap.Logger) ([]*BasicInterface, error) {
+func parseInterfaceOutput(output string, logger *zap.Logger) []*BasicInterface {
 	logger.Debug("Parsing interface output", zap.Int("output_length", len(output)))
 
 	var interfaces []*BasicInterface
@@ -44,5 +44,5 @@ func parseInterfaceOutput(output string, logger *zap.Logger) ([]*BasicInterface,
 		}
 	}
 
-	return interfaces, nil
+	return interfaces
 }

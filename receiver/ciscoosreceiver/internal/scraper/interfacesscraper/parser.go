@@ -135,7 +135,7 @@ func str2float64(s string) float64 {
 }
 
 // parseInterfaces parses interface information from command output
-func parseInterfaces(output string, logger *zap.Logger) ([]*Interface, error) {
+func parseInterfaces(output string, logger *zap.Logger) []*Interface {
 	// Regex patterns for parsing interface output
 	txNXOS := regexp.MustCompile(`^\s+TX$`)
 	macRegexp := regexp.MustCompile(`^\s+Hardware(?: is|:) .+, address(?: is|:) (.*) \(.*\)$`)
@@ -230,11 +230,11 @@ func parseInterfaces(output string, logger *zap.Logger) ([]*Interface, error) {
 		logger.Debug("Added final interface from parsing", zap.String("name", current.Name))
 	}
 
-	return interfaces, nil
+	return interfaces
 }
 
 // parseSimpleInterfaces implements simple interface parsing fallback (for "show interface brief" output)
-func parseSimpleInterfaces(output string, logger *zap.Logger) ([]*Interface, error) {
+func parseSimpleInterfaces(output string, logger *zap.Logger) []*Interface {
 	interfaces := make([]*Interface, 0)
 
 	// Simple regex for "show interface brief" output format
@@ -272,5 +272,5 @@ func parseSimpleInterfaces(output string, logger *zap.Logger) ([]*Interface, err
 	logger.Info("Simple interface parsing completed",
 		zap.Int("interfaces_found", len(interfaces)))
 
-	return interfaces, nil
+	return interfaces
 }

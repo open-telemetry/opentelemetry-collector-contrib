@@ -29,9 +29,9 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NotNil(t, config)
 
 	// Verify default metrics are enabled
-	assert.True(t, config.MetricsBuilderConfig.Metrics.CiscoInterfaceReceiveBytes.Enabled)
-	assert.True(t, config.MetricsBuilderConfig.Metrics.CiscoInterfaceTransmitBytes.Enabled)
-	assert.True(t, config.MetricsBuilderConfig.Metrics.CiscoInterfaceUp.Enabled)
+	assert.True(t, config.Metrics.CiscoInterfaceReceiveBytes.Enabled)
+	assert.True(t, config.Metrics.CiscoInterfaceTransmitBytes.Enabled)
+	assert.True(t, config.Metrics.CiscoInterfaceUp.Enabled)
 }
 
 func TestFactory_ConfigWithDevices(t *testing.T) {
@@ -65,7 +65,7 @@ func TestConfig_AllMetricsEnabled(t *testing.T) {
 	}
 
 	// Verify all interface metrics are enabled by default
-	metrics := config.MetricsBuilderConfig.Metrics
+	metrics := config.Metrics
 	assert.True(t, metrics.CiscoInterfaceReceiveBytes.Enabled)
 	assert.True(t, metrics.CiscoInterfaceTransmitBytes.Enabled)
 	assert.True(t, metrics.CiscoInterfaceUp.Enabled)
@@ -84,13 +84,13 @@ func TestConfig_DisableMetrics(t *testing.T) {
 	}
 
 	// Test disabling specific metrics
-	config.MetricsBuilderConfig.Metrics.CiscoInterfaceReceiveBytes.Enabled = false
-	config.MetricsBuilderConfig.Metrics.CiscoInterfaceTransmitBytes.Enabled = false
+	config.Metrics.CiscoInterfaceReceiveBytes.Enabled = false
+	config.Metrics.CiscoInterfaceTransmitBytes.Enabled = false
 
-	assert.False(t, config.MetricsBuilderConfig.Metrics.CiscoInterfaceReceiveBytes.Enabled)
-	assert.False(t, config.MetricsBuilderConfig.Metrics.CiscoInterfaceTransmitBytes.Enabled)
+	assert.False(t, config.Metrics.CiscoInterfaceReceiveBytes.Enabled)
+	assert.False(t, config.Metrics.CiscoInterfaceTransmitBytes.Enabled)
 	// Others should still be enabled
-	assert.True(t, config.MetricsBuilderConfig.Metrics.CiscoInterfaceUp.Enabled)
+	assert.True(t, config.Metrics.CiscoInterfaceUp.Enabled)
 }
 
 func TestDeviceConfig_Structure(t *testing.T) {
@@ -117,7 +117,6 @@ func TestDeviceConfig_Structure(t *testing.T) {
 
 func TestConfig_MultipleDevices(t *testing.T) {
 	config := &Config{
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 		Devices: []DeviceConfig{
 			{
 				Host: HostInfo{Name: "switch1", IP: "10.0.0.1", Port: 22},
@@ -211,7 +210,7 @@ func TestCreateDefaultConfig_AllInterfaceMetrics(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 
 	// Verify all 10 interface metrics are enabled
-	metrics := cfg.MetricsBuilderConfig.Metrics
+	metrics := cfg.Metrics
 	assert.True(t, metrics.CiscoInterfaceReceiveBytes.Enabled)
 	assert.True(t, metrics.CiscoInterfaceTransmitBytes.Enabled)
 	assert.True(t, metrics.CiscoInterfaceUp.Enabled)

@@ -150,4 +150,3 @@ All example configs use:
 
 - [Receiver Documentation](../README.md)
 - [OpenTelemetry Collector Config](https://opentelemetry.io/docs/collector/configuration/)
-- [Cisco Device Configuration](../docs/cisco-setup.md)
