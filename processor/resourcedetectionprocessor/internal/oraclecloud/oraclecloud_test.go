@@ -66,6 +66,44 @@ func TestDetect(t *testing.T) {
 	assert.Equal(t, expected, res.Attributes().AsRaw())
 }
 
+func TestDetect_ProbeFails_ReturnsEmptyResourceNoError(t *testing.T) {
+	// Patch the probe to return false (simulate "not on Oracle Cloud")
+	origProbe := oraclecloud.IsRunningOnOracleCloudFunc
+	oraclecloud.IsRunningOnOracleCloudFunc = func(context.Context) bool { return false }
+	defer func() { oraclecloud.IsRunningOnOracleCloudFunc = origProbe }()
+
+	cfg := CreateDefaultConfig()
+	det, err := NewDetector(processortest.NewNopSettings(rdpmetadata.Type), cfg)
+	require.NoError(t, err)
+
+	res, schemaURL, err := det.Detect(context.Background())
+	require.NoError(t, err)
+	assert.Empty(t, res.Attributes().AsRaw())
+	assert.Equal(t, "", schemaURL)
+}
+
+func TestDetect_ProbeSucceeds_MetadataFails_ReturnsError(t *testing.T) {
+	// Patch probe to return true (simulate OCI platform)
+	origProbe := oraclecloud.IsRunningOnOracleCloudFunc
+	oraclecloud.IsRunningOnOracleCloudFunc = func(context.Context) bool { return true }
+	defer func() { oraclecloud.IsRunningOnOracleCloudFunc = origProbe }()
+
+	// Set up mock provider returning failure
+	md := &mockMetadata{
+		out: nil,
+		err: assert.AnError,
+	}
+	cfg := CreateDefaultConfig()
+	det, err := NewDetector(processortest.NewNopSettings(rdpmetadata.Type), cfg)
+	require.NoError(t, err)
+	det.(*Detector).provider = md
+
+	res, schemaURL, err := det.Detect(context.Background())
+	require.Error(t, err)
+	assert.Empty(t, res.Attributes().AsRaw())
+	assert.Equal(t, "", schemaURL)
+}
+
 func TestDetectDisabledResourceAttributes(t *testing.T) {
 	md := &mockMetadata{
 		out: &oraclecloud.ComputeMetadata{

@@ -43,11 +43,17 @@ func NewDetector(p processor.Settings, dcfg internal.DetectorConfig) (internal.D
 
 // Detect detects system metadata and returns a resource with the available ones
 func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
+	// 1. Fast probe for Oracle Cloud platform
+	if !oraclecloud.IsRunningOnOracleCloudFunc(ctx) {
+		d.logger.Debug("Oracle Cloud platform probe failed – not running on Oracle Cloud. Returning empty resource.")
+		return pcommon.NewResource(), "", nil
+	}
+
+	// 2. After positive probe, attempt to fetch metadata
 	compute, err := d.provider.Metadata(ctx)
 	if err != nil {
-		d.logger.Debug("Oracle Cloud detector metadata retrieval failed!", zap.Error(err))
-		// return an empty Resource and no error
-		return pcommon.NewResource(), "", nil
+		d.logger.Error("Oracle Cloud detected but failed to retrieve metadata!", zap.Error(err))
+		return pcommon.NewResource(), "", err // signal error
 	}
 
 	d.rb.SetCloudProvider(conventions.CloudProviderOracleCloud.Value.AsString())
