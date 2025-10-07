@@ -19,7 +19,7 @@ require (
 	go.opentelemetry.io/otel v1.38.0
 	go.uber.org/goleak v1.3.0
 	google.golang.org/genproto v0.0.0-20250728155136-f173205681a0
-	google.golang.org/protobuf v1.36.9
+	google.golang.org/protobuf v1.36.10
 )
 
 require (
