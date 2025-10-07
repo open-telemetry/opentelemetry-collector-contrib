@@ -39,7 +39,7 @@ func TestOnlineIsolationForestCreation(t *testing.T) {
 	}
 }
 
-// NEW: Test adaptive forest creation
+// Test adaptive forest creation
 func TestOnlineIsolationForestCreationWithAdaptive(t *testing.T) {
 	adaptiveConfig := &AdaptiveWindowConfig{
 		Enabled:                true,
