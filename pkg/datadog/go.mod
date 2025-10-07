@@ -75,7 +75,6 @@ require (
 	github.com/DataDog/datadog-agent/pkg/util/backoff v0.72.0-rc.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/buf v0.72.0-rc.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/common v0.72.0-rc.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/defaultpaths v0.72.0-rc.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/executable v0.72.0-rc.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/filesystem v0.72.0-rc.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/fxutil v0.72.0-rc.1 // indirect
@@ -85,12 +84,10 @@ require (
 	github.com/DataDog/datadog-agent/pkg/util/option v0.72.0-rc.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/pointer v0.72.0-rc.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/quantile v0.72.0-rc.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/quantile/sketchtest v0.72.0-rc.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.72.0-rc.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/sort v0.72.0-rc.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/system v0.72.0-rc.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/system/socket v0.72.0-rc.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/testutil v0.72.0-rc.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/winutil v0.72.0-rc.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/version v0.72.0-rc.1 // indirect
 	github.com/DataDog/datadog-api-client-go/v2 v2.47.0 // indirect
@@ -151,7 +148,6 @@ require (
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/go-version v1.7.0 // indirect
-	github.com/hashicorp/hcl v1.0.1-vault-7 // indirect
 	github.com/hectane/go-acl v0.0.0-20230122075934-ca0b05cb1adb // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
@@ -195,7 +191,6 @@ require (
 	github.com/shirou/gopsutil/v3 v3.24.4 // indirect
 	github.com/shirou/gopsutil/v4 v4.25.8 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
-	github.com/spf13/afero v1.14.0 // indirect
 	github.com/spf13/cast v1.10.0 // indirect
 	github.com/spf13/cobra v1.10.1 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect

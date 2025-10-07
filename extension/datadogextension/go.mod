@@ -43,7 +43,7 @@ require (
 	github.com/DataDog/datadog-agent/comp/core/telemetry v0.72.0-rc.1 // indirect
 	github.com/DataDog/datadog-agent/comp/def v0.72.0-rc.1 // indirect
 	github.com/DataDog/datadog-agent/comp/forwarder/orchestrator/orchestratorinterface v0.72.0-rc.1 // indirect
-	github.com/DataDog/datadog-agent/comp/logs/agent/config v0.72.0-devel // indirect
+	github.com/DataDog/datadog-agent/comp/logs/agent/config v0.72.0-rc.1 // indirect
 	github.com/DataDog/datadog-agent/comp/serializer/metricscompression v0.72.0-rc.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/aggregator/ckey v0.72.0-rc.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/api v0.72.0-rc.1 // indirect
@@ -58,12 +58,12 @@ require (
 	github.com/DataDog/datadog-agent/pkg/config/utils v0.72.0-rc.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/config/viperconfig v0.72.0-rc.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/fips v0.72.0-rc.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/logs/types v0.72.0-devel // indirect
-	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/inframetadata v0.72.0-devel // indirect
-	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics v0.72.0-devel // indirect
+	github.com/DataDog/datadog-agent/pkg/logs/types v0.72.0-rc.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/inframetadata v0.72.0-rc.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics v0.72.0-rc.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/orchestrator/model v0.72.0-rc.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/process/util/api v0.72.0-rc.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/proto v0.72.0-devel // indirect
+	github.com/DataDog/datadog-agent/pkg/proto v0.72.0-rc.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/status/health v0.72.0-rc.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/tagger/types v0.72.0-rc.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/tagset v0.72.0-rc.1 // indirect
@@ -149,7 +149,6 @@ require (
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/go-version v1.7.0 // indirect
-	github.com/hashicorp/hcl v1.0.1-vault-7 // indirect
 	github.com/hectane/go-acl v0.0.0-20230122075934-ca0b05cb1adb // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
@@ -179,7 +178,7 @@ require (
 	github.com/openshift/client-go v0.0.0-20241203091221-452dfb8fa071 // indirect
 	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect
-	github.com/philhofer/fwd v1.1.3-0.20240916144458-20a13a1f6b7c // indirect
+	github.com/philhofer/fwd v1.2.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/planetscale/vtprotobuf v0.6.1-0.20240319094008-0393e58bdf10 // indirect
@@ -195,13 +194,12 @@ require (
 	github.com/shirou/gopsutil/v3 v3.24.4 // indirect
 	github.com/shirou/gopsutil/v4 v4.25.8 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
-	github.com/spf13/afero v1.14.0 // indirect
 	github.com/spf13/cast v1.10.0 // indirect
 	github.com/spf13/cobra v1.10.1 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.9 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
-	github.com/tinylib/msgp v1.3.0 // indirect
+	github.com/tinylib/msgp v1.4.0 // indirect
 	github.com/tklauser/go-sysconf v0.3.15 // indirect
 	github.com/tklauser/numcpus v0.10.0 // indirect
 	github.com/twmb/murmur3 v1.1.8 // indirect
