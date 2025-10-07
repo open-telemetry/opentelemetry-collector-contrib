@@ -69,7 +69,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/tagset v0.72.0-rc.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/telemetry v0.72.0-rc.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/template v0.72.0-rc.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace v0.71.0-devel.0.20250820164444-fcef12608466 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace v0.71.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/backoff v0.72.0-rc.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/buf v0.72.0-rc.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/common v0.72.0-rc.1 // indirect

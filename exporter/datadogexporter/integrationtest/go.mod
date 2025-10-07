@@ -60,7 +60,6 @@ require (
 	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/logsagentexporter v0.72.0-rc.1 // indirect
 	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/serializerexporter v0.72.0-rc.1 // indirect
 	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient v0.72.0-rc.1 // indirect
-	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/statsprocessor v0.72.0-rc.1 // indirect
 	github.com/DataDog/datadog-agent/comp/serializer/logscompression v0.72.0-rc.1 // indirect
 	github.com/DataDog/datadog-agent/comp/serializer/metricscompression v0.72.0-rc.1 // indirect
 	github.com/DataDog/datadog-agent/comp/trace/compression/def v0.72.0-rc.1 // indirect
