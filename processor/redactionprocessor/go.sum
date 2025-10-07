@@ -1,5 +1,7 @@
 github.com/DataDog/datadog-agent/pkg/obfuscate v0.70.2 h1:Xrmg13fi5wOm7+fhKRsMQGAKcZJIv/k1R/3czUnBL08=
 github.com/DataDog/datadog-agent/pkg/obfuscate v0.70.2/go.mod h1:lpp+8NC8/ggIah/F89kN4A7zzEWsIpDy0L9v8jsTpwg=
+github.com/DataDog/datadog-agent/pkg/obfuscate v0.71.0 h1:jX8qS7CkNzL1fdcDptrOkbWpsRFTQ58ICjp/mj02u1k=
+github.com/DataDog/datadog-agent/pkg/obfuscate v0.71.0/go.mod h1:B3T0If+WdWAwPMpawjm1lieJyqSI0v04dQZHq15WGxY=
 github.com/DataDog/datadog-agent/pkg/util/log v0.70.2 h1:4Abe5dyhdyv9cwA2tAFWCyX5pEjk2fQ89q6Q8NLtQ5Y=
 github.com/DataDog/datadog-agent/pkg/util/log v0.70.2/go.mod h1:tO7knmYyZGGoFPC8huxl4vtwgLYdVRQS0PoLdpZI8Lg=
 github.com/DataDog/datadog-agent/pkg/util/scrubber v0.70.2 h1:dM8yjDH0e1DLzh8sDiquRftGdFO87XLaTZ6t+KC9bpE=
@@ -10,6 +12,8 @@ github.com/DataDog/datadog-go/v5 v5.6.0 h1:2oCLxjF/4htd55piM75baflj/KoE6VYS7alEU
 github.com/DataDog/datadog-go/v5 v5.6.0/go.mod h1:K9kcYBlxkcPP8tvvjZZKs/m1edNAUFzBbdpTUKfCsuw=
 github.com/DataDog/go-sqllexer v0.1.6 h1:skEXpWEVCpeZFIiydoIa2f2rf+ymNpjiIMqpW4w3YAk=
 github.com/DataDog/go-sqllexer v0.1.6/go.mod h1:GGpo1h9/BVSN+6NJKaEcJ9Jn44Hqc63Rakeb+24Mjgo=
+github.com/DataDog/go-sqllexer v0.1.8 h1:ku9DpghFHeyyviR28W/3R4cCJwzpsuC08YIoltnx5ds=
+github.com/DataDog/go-sqllexer v0.1.8/go.mod h1:GGpo1h9/BVSN+6NJKaEcJ9Jn44Hqc63Rakeb+24Mjgo=
 github.com/Microsoft/go-winio v0.5.0/go.mod h1:JPGBdM1cNvN/6ISo+n8V5iA4v8pBzdOpzfwIujj1a84=
 github.com/Microsoft/go-winio v0.6.2 h1:F2VQgta7ecxGYO8k3ZZz3RS8fVIXVxONVUPlNERoyfY=
 github.com/Microsoft/go-winio v0.6.2/go.mod h1:yd8OoFMLzJbo9gZq8j5qaps8bJ9aShtEA8Ipt1oGCvU=
