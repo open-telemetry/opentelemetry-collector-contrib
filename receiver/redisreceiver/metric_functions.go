@@ -57,7 +57,7 @@ func (rs *redisScraper) dataPointRecorders() map[string]any {
 		"node_uptime":                               rs.mb.RecordRedisClusterNodeUptimeDataPoint,
 		"cluster_stats_messages_sent":               rs.mb.RecordRedisClusterStatsMessagesSentDataPoint,
 		"cluster_stats_messages_received":           rs.mb.RecordRedisClusterStatsMessagesReceivedDataPoint,
-		"total_cluster_links_buffer_limit_exceeded": rs.mb.RecordRedisClusterStatsMessagesSentDataPoint,
+		"total_cluster_links_buffer_limit_exceeded": rs.mb.RecordRedisClusterTotalClusterLinksBufferLimitExceededDataPoint,
 	}
 }
 
