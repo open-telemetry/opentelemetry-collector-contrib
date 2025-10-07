@@ -467,8 +467,8 @@ func handlePayload(logType string, log logEntry, logRecord plog.LogRecord, cfg C
 			return fmt.Errorf("failed to parse audit log proto payload: %w", err)
 		}
 		return nil
-	case vpcflowlog.VPCFlowLogNameSuffix,
-		vpcflowlog.ComputeVPCFlowLogNameSuffix:
+	case vpcflowlog.NetworkManagementNameSuffix,
+		vpcflowlog.ComputeNameSuffix:
 		if err := vpcflowlog.ParsePayloadIntoAttributes(log.JSONPayload, logRecord.Attributes()); err != nil {
 			return fmt.Errorf("failed to parse VPC flow log JSON payload: %w", err)
 		}

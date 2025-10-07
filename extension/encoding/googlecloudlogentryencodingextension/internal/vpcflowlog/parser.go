@@ -15,8 +15,8 @@ import (
 
 const (
 	// VPC flow log name suffixes for detection
-	VPCFlowLogNameSuffix        = "networkmanagement.googleapis.com%2Fvpc_flows"
-	ComputeVPCFlowLogNameSuffix = "compute.googleapis.com%2Fvpc_flows"
+	NetworkManagementNameSuffix = "networkmanagement.googleapis.com%2Fvpc_flows"
+	ComputeNameSuffix           = "compute.googleapis.com%2Fvpc_flows"
 
 	// Connection fields
 	gcpVPCFlowReporter       = "gcp.vpc.flow.reporter"
