@@ -1,12 +1,11 @@
+change_logs:
+    api: CHANGELOG-API.md
+    user: CHANGELOG.md
+default_change_logs:
+    - user
 entries_dir: .chloggen
 template_yaml: .chloggen/TEMPLATE.yaml
 summary_template: .chloggen/summary.tmpl
-change_logs:
-    user: CHANGELOG.md
-    api: CHANGELOG-API.md
-default_change_logs:
-    - user
-
 components:
     - all
     - cmd/codecovgen
