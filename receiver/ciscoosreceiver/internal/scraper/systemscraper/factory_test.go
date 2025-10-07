@@ -159,6 +159,8 @@ func TestHostInfo_DefaultPort(t *testing.T) {
 		Port: 22,
 	}
 
+	assert.Equal(t, "router", host.Name)
+	assert.Equal(t, "192.168.1.1", host.IP)
 	assert.Equal(t, 22, host.Port)
 }
 
