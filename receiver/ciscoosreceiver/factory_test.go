@@ -4,7 +4,6 @@
 package ciscoosreceiver
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -53,8 +52,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 	set := receivertest.NewNopSettings(metadata.Type)
 	consumer := consumertest.NewNop()
 
-	receiver, err := factory.CreateMetrics(context.Background(), set, cfg, consumer)
+	receiver, err := factory.CreateMetrics(t.Context(), set, cfg, consumer)
 	assert.NotNil(t, receiver)
 	assert.NoError(t, err)
 }
-

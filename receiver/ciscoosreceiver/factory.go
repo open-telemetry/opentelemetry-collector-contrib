@@ -6,7 +6,7 @@ package ciscoosreceiver // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -39,7 +39,7 @@ func createDefaultConfig() component.Config {
 }
 
 func createMetricsReceiver(
-	ctx context.Context,
+	_ context.Context,
 	set receiver.Settings,
 	cfg component.Config,
 	consumer consumer.Metrics,
@@ -67,18 +67,21 @@ func newConnectionScraper(devices []DeviceConfig, logger *zap.Logger) *connectio
 	return &connectionScraper{
 		devices: devices,
 		logger:  logger,
-		mb:      metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receiver.Settings{
-			ID:                component.MustNewIDWithName(metadata.Type.String(), "connection"),
-			TelemetrySettings: component.TelemetrySettings{Logger: logger},
-		}),
+		mb: metadata.NewMetricsBuilder(
+			metadata.DefaultMetricsBuilderConfig(),
+			receiver.Settings{
+				ID:                component.MustNewIDWithName(metadata.Type.String(), "connection"),
+				TelemetrySettings: component.TelemetrySettings{Logger: logger},
+			},
+		),
 	}
 }
 
-func (s *connectionScraper) Start(ctx context.Context, host component.Host) error {
+func (*connectionScraper) Start(_ context.Context, _ component.Host) error {
 	return nil
 }
 
-func (s *connectionScraper) Shutdown(ctx context.Context) error {
+func (*connectionScraper) Shutdown(_ context.Context) error {
 	return nil
 }
 
@@ -88,7 +91,7 @@ func (s *connectionScraper) ScrapeMetrics(ctx context.Context) (pmetric.Metrics,
 	for _, device := range s.devices {
 		// Test SSH connection
 		connectionStatus := int64(0)
-		
+
 		if client, err := s.establishConnection(ctx, device); err != nil {
 			s.logger.Warn("Failed to connect to device", zap.String("device", device.Device.Host.IP), zap.Error(err))
 		} else {
@@ -112,7 +115,7 @@ func (s *connectionScraper) ScrapeMetrics(ctx context.Context) (pmetric.Metrics,
 }
 
 // establishConnection creates a new SSH connection to test connectivity
-func (s *connectionScraper) establishConnection(ctx context.Context, device DeviceConfig) (*connection.Client, error) {
+func (s *connectionScraper) establishConnection(_ context.Context, device DeviceConfig) (*connection.Client, error) {
 	// Build SSH config
 	sshConfig := &cryptossh.ClientConfig{
 		User:            device.Auth.Username,
@@ -126,7 +129,7 @@ func (s *connectionScraper) establishConnection(ctx context.Context, device Devi
 			cryptossh.Password(string(device.Auth.Password)),
 		}
 	} else if device.Auth.KeyFile != "" {
-		key, err := ioutil.ReadFile(device.Auth.KeyFile)
+		key, err := os.ReadFile(device.Auth.KeyFile)
 		if err != nil {
 			return nil, fmt.Errorf("unable to read private key: %w", err)
 		}

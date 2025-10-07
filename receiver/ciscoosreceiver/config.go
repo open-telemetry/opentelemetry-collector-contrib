@@ -47,9 +47,7 @@ type AuthConfig struct {
 	KeyFile  string              `mapstructure:"key_file"`
 }
 
-var (
-	_ xconfmap.Validator = (*Config)(nil)
-)
+var _ xconfmap.Validator = (*Config)(nil)
 
 // Validate checks the receiver configuration is valid
 func (cfg *Config) Validate() error {
