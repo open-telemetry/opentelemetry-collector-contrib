@@ -5,6 +5,7 @@ package pod
 
 import (
 	"fmt"
+	"maps"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -193,9 +194,7 @@ func TestDataCollectorSyncMetadataForPodWorkloads(t *testing.T) {
 					got, exists := actual[key]
 					require.True(t, exists)
 
-					for k, v := range commonPodMetadata {
-						item.Metadata[k] = v
-					}
+					maps.Copy(item.Metadata, commonPodMetadata)
 					require.Equal(t, *item, *got)
 
 					if testCase.logMessage != "" {
@@ -552,12 +551,8 @@ func TestPodMetadata(t *testing.T) {
 			podMeta := meta["test-pod-0-uid"].Metadata
 
 			allExpectedMetadata := make(map[string]string)
-			for key, value := range commonPodMetadata {
-				allExpectedMetadata[key] = value
-			}
-			for key, value := range tt.expectedMetadata {
-				allExpectedMetadata[key] = value
-			}
+			maps.Copy(allExpectedMetadata, commonPodMetadata)
+			maps.Copy(allExpectedMetadata, tt.expectedMetadata)
 			assert.Equal(t, allExpectedMetadata, podMeta)
 		})
 	}

@@ -184,6 +184,10 @@ component_management:
     name: exporter_googlecloudpubsub
     paths:
     - exporter/googlecloudpubsubexporter/**
+  - component_id: exporter_googlecloudstorage
+    name: exporter_googlecloudstorage
+    paths:
+    - exporter/googlecloudstorageexporter/**
   - component_id: exporter_googlemanagedprometheus
     name: exporter_googlemanagedprometheus
     paths:
@@ -612,6 +616,10 @@ component_management:
     name: receiver_chrony
     paths:
     - receiver/chronyreceiver/**
+  - component_id: receiver_ciscoos
+    name: receiver_ciscoos
+    paths:
+    - receiver/ciscoosreceiver/**
   - component_id: receiver_cloudflare
     name: receiver_cloudflare
     paths:

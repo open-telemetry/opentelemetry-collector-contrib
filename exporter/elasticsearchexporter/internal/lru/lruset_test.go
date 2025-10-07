@@ -47,8 +47,8 @@ func TestLRUSetLifeTime(t *testing.T) {
 	// Wait until cache item is expired.
 	time.Sleep(lifetime)
 	err = cache.WithLock(func(lock LockedLRUSet) error {
-		assert.False(t, lock.CheckAndAdd("a"))
 		timeSet = time.Now()
+		assert.False(t, lock.CheckAndAdd("a"))
 		assert.True(t, lock.CheckAndAdd("a"))
 		return nil
 	})
@@ -63,8 +63,10 @@ func TestLRUSetLifeTime(t *testing.T) {
 		})
 		require.NoError(tt, err)
 		assert.False(tt, val)
-	}, lifetime*2, lifetime/10)
-	assert.GreaterOrEqual(t, time.Since(timeSet), lifetime)
+	}, lifetime*2, lifetime/100) // tick is kept at 1% of lifetime
+	// Assert with epsilon to somewhat account for NTP adjustments.
+	// Also see: https://github.com/elastic/go-freelru/issues/1
+	assert.InEpsilon(t, lifetime, time.Since(timeSet), 0.015) // epsilon is kept at 1.5%
 }
 
 func BenchmarkLRUSetCheck(b *testing.B) {
