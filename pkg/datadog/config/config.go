@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/DataDog/datadog-agent/pkg/util/hostname/validate"
 	"go.opentelemetry.io/collector/component"
@@ -264,6 +265,13 @@ func handleRemovedSettings(configMap *confmap.Conf) error {
 
 var _ confmap.Unmarshaler = (*Config)(nil)
 
+// trimAPIKeyFunc trims whitespace and surrounding non-alphanumeric characters from an API key
+// from example https://pkg.go.dev/strings#example-TrimFunc
+func trimAPIKeyFunc(r rune) bool {
+	// remove non-alphanumeric characters from start and end of string
+	return !unicode.IsLetter(r) && !unicode.IsNumber(r)
+}
+
 // Unmarshal a configuration map into the configuration struct.
 func (c *Config) Unmarshal(configMap *confmap.Conf) error {
 	if err := handleRemovedSettings(configMap); err != nil {
@@ -286,7 +294,7 @@ func (c *Config) Unmarshal(configMap *confmap.Conf) error {
 		c.warnings = append(c.warnings, errors.New("first_resource is deprecated, opt in to https://docs.datadoghq.com/opentelemetry/mapping/host_metadata/ instead"))
 	}
 
-	c.API.Key = configopaque.String(strings.TrimSpace(string(c.API.Key)))
+	c.API.Key = configopaque.String(strings.TrimFunc(string(c.API.Key), trimAPIKeyFunc))
 
 	// If an endpoint is not explicitly set, override it based on the site.
 	if !configMap.IsSet("metrics::endpoint") {
