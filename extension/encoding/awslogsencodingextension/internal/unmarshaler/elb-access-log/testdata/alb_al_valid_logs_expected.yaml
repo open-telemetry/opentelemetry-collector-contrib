@@ -43,6 +43,66 @@ resourceLogs:
               - key: tls.cipher
                 value:
                   stringValue: ECDHE-RSA-AES128-GCM-SHA256
+              - key: user_agent.original
+                value:
+                  stringValue: curl/7.46.0
+              - key: url.domain
+                value:
+                  stringValue: www.example.com
+              - key: destination.address
+                value:
+                  stringValue: 10.0.0.1
+              - key: destination.port
+                value:
+                  intValue: "80"
+            body: {}
+            timeUnixNano: "1530570180186641000"
+          - attributes:
+              - key: network.protocol.name
+                value:
+                  stringValue: https
+              - key: network.protocol.version
+                value:
+                  stringValue: "1.1"
+              - key: client.address
+                value:
+                  stringValue: fe80::202:b3ff:fe1e:8329
+              - key: http.request.method
+                value:
+                  stringValue: GET
+              - key: url.full
+                value:
+                  stringValue: https://www.example.com:443/
+              - key: client.port
+                value:
+                  intValue: "443"
+              - key: http.request.size
+                value:
+                  intValue: "0"
+              - key: http.response.size
+                value:
+                  intValue: "57"
+              - key: aws.elb.status.code
+                value:
+                  intValue: "200"
+              - key: tls.protocol.version
+                value:
+                  stringValue: tlsv1.2
+              - key: tls.cipher
+                value:
+                  stringValue: ECDHE-RSA-AES128-GCM-SHA256
+              - key: user_agent.original
+                value:
+                  stringValue: curl/7.46.0
+              - key: url.domain
+                value:
+                  stringValue: www.example.com
+              - key: destination.address
+                value:
+                  stringValue: 2001:db8::1
+              - key: destination.port
+                value:
+                  intValue: "80"
             body: {}
             timeUnixNano: "1530570180186641000"
         scope:
