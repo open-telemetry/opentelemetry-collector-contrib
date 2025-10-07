@@ -60,6 +60,15 @@ attributes:
   splunk.rollingorrestart:
     description: Boolean that indicates if there is a rolling restart or rolling upgrade in progress.
     type: bool
+  splunk.license.status:
+    description: The status of the license.
+    type: string
+  splunk.license.label:
+    description: The label of the license.
+    type: string
+  splunk.license.type:
+    description: The type of license.
+    type: string
 
 metrics:
   splunk.license.index.usage:
@@ -448,6 +457,13 @@ metrics:
     gauge:
       value_type: int
     attributes: [splunk.splunkd.build, splunk.splunkd.version]
+  splunk.license.expiration.seconds_remaining:
+    enabled: false
+    description: Gauge tracking the seconds remaining on any given Splunk License found via Splunk API. **Note:** This will only work on a Cluster Manager.
+    unit: "{seconds}"
+    gauge:
+      value_type: int
+    attributes: [splunk.license.status, splunk.license.label, splunk.license.type, splunk.splunkd.build, splunk.splunkd.version]
 
 tests:
   config:
