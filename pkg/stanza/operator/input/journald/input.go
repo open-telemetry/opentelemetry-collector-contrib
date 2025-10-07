@@ -16,7 +16,7 @@ import (
 	"sync"
 	"time"
 
-	jsoniter "github.com/json-iterator/go"
+	gojson "github.com/goccy/go-json"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -31,7 +31,7 @@ type Input struct {
 	newCmd func(ctx context.Context, cursor []byte) cmd
 
 	persister           operator.Persister
-	json                jsoniter.API
+	json                gojson
 	convertMessageBytes bool
 	cancel              context.CancelFunc
 	wg                  sync.WaitGroup
