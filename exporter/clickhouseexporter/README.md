@@ -409,6 +409,8 @@ ALTER TABLE otel.otel_logs
   ADD INDEX IF NOT EXISTS idx_scope_attr_keys ScopeAttributesKeys TYPE bloom_filter(0.01) GRANULARITY 1,
   ADD INDEX IF NOT EXISTS idx_log_attr_keys LogAttributesKeys TYPE bloom_filter(0.01) GRANULARITY 1;
 
+-- EventName
+ALTER TABLE otel.otel_logs ADD COLUMN IF NOT EXISTS EventName String CODEC(ZSTD(1)),
 
 -- These 2 columns are part of one feature, you must add all 2 at once.
 ALTER TABLE otel.otel_traces

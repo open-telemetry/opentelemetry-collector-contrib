@@ -44,6 +44,7 @@ func newTestLogsJSONExporter(t *testing.T, dsn string, testSchemaFeatures bool, 
 	// Tests the schema feature flags by disabling newer columns. The insert logic should adapt.
 	if testSchemaFeatures {
 		exporter.schemaFeatures.AttributeKeys = false
+		exporter.schemaFeatures.EventName = false
 		exporter.renderInsertLogsJSONSQL()
 	}
 
@@ -81,6 +82,7 @@ func verifyExportLogsJSON(t *testing.T, exporter *logsJSONExporter, mapBody, tes
 		ResourceAttributesKeys []string  `ch:"ResourceAttributesKeys"`
 		ScopeAttributesKeys    []string  `ch:"ScopeAttributesKeys"`
 		LogAttributesKeys      []string  `ch:"LogAttributesKeys"`
+		EventName              string    `ch:"EventName"`
 	}
 
 	expectedLog := log{
@@ -101,6 +103,7 @@ func verifyExportLogsJSON(t *testing.T, exporter *logsJSONExporter, mapBody, tes
 		ResourceAttributesKeys: []string{"service.name"},
 		ScopeAttributesKeys:    []string{"lib"},
 		LogAttributesKeys:      []string{"service.namespace"},
+		EventName:              "event",
 	}
 
 	if mapBody {
@@ -111,6 +114,7 @@ func verifyExportLogsJSON(t *testing.T, exporter *logsJSONExporter, mapBody, tes
 		expectedLog.ResourceAttributesKeys = []string{}
 		expectedLog.ScopeAttributesKeys = []string{}
 		expectedLog.LogAttributesKeys = []string{}
+		expectedLog.EventName = ""
 	}
 
 	row := exporter.db.QueryRow(t.Context(), fmt.Sprintf("SELECT * FROM %s", tableName))

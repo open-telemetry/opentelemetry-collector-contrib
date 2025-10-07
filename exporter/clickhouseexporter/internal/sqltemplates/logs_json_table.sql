@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS "%s"."%s" %s (
+CREATE TABLE IF NOT EXISTS %q.%q %s (
     Timestamp DateTime64(9) CODEC(Delta(8), ZSTD(1)),
     TraceId String CODEC(ZSTD(1)),
     SpanId String CODEC(ZSTD(1)),
@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS "%s"."%s" %s (
     ScopeAttributesKeys Array(LowCardinality(String)) CODEC(ZSTD(1)),
     LogAttributes JSON CODEC(ZSTD(1)),
     LogAttributesKeys Array(LowCardinality(String)) CODEC(ZSTD(1)),
+    EventName String CODEC(ZSTD(1)),
 
     INDEX idx_res_attr_keys ResourceAttributesKeys TYPE bloom_filter(0.01) GRANULARITY 1,
     INDEX idx_scope_attr_keys ScopeAttributesKeys TYPE bloom_filter(0.01) GRANULARITY 1,

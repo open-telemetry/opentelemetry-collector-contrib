@@ -26,6 +26,7 @@ type logsJSONExporter struct {
 	insertSQL      string
 	schemaFeatures struct {
 		AttributeKeys bool
+		EventName     bool
 	}
 }
 
@@ -71,6 +72,7 @@ const (
 	logsJSONColumnResourceAttributesKeys = "ResourceAttributesKeys"
 	logsJSONColumnScopeAttributesKeys    = "ScopeAttributesKeys"
 	logsJSONColumnLogAttributesKeys      = "LogAttributesKeys"
+	logsJSONColumnEventName              = "EventName"
 )
 
 func (e *logsJSONExporter) detectSchemaFeatures(ctx context.Context) error {
@@ -87,6 +89,8 @@ func (e *logsJSONExporter) detectSchemaFeatures(ctx context.Context) error {
 			e.schemaFeatures.AttributeKeys = true
 		case logsJSONColumnLogAttributesKeys:
 			e.schemaFeatures.AttributeKeys = true
+		case logsJSONColumnEventName:
+			e.schemaFeatures.EventName = true
 		}
 	}
 
@@ -169,7 +173,7 @@ func (e *logsJSONExporter) pushLogsData(ctx context.Context, ld plog.Logs) error
 					timestamp = r.ObservedTimestamp()
 				}
 
-				columnValues := make([]any, 0, 18)
+				columnValues := make([]any, 0, 19)
 				columnValues = append(columnValues,
 					timestamp.AsTime(),
 					r.TraceID().String(),
@@ -191,6 +195,10 @@ func (e *logsJSONExporter) pushLogsData(ctx context.Context, ld plog.Logs) error
 				if e.schemaFeatures.AttributeKeys {
 					logAttrKeys := internal.UniqueFlattenedAttributes(logAttr)
 					columnValues = append(columnValues, resAttrKeys, scopeAttrKeys, logAttrKeys)
+				}
+
+				if e.schemaFeatures.EventName {
+					columnValues = append(columnValues, r.EventName())
 				}
 
 				appendErr := batch.Append(columnValues...)
@@ -233,6 +241,13 @@ func (e *logsJSONExporter) renderInsertLogsJSONSQL() {
 		featureColumnNames.WriteString(logsJSONColumnLogAttributesKeys)
 
 		featureColumnPositions.WriteString(", ?, ?, ?")
+	}
+
+	if e.schemaFeatures.EventName {
+		featureColumnNames.WriteString(", ")
+		featureColumnNames.WriteString(logsJSONColumnEventName)
+
+		featureColumnPositions.WriteString(", ?")
 	}
 
 	e.insertSQL = fmt.Sprintf(sqltemplates.LogsJSONInsert, e.cfg.database(), e.cfg.LogsTableName, featureColumnNames.String(), featureColumnPositions.String())
