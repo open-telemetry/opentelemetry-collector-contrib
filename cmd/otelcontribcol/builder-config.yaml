@@ -10,7 +10,7 @@ dist:
   module: github.com/open-telemetry/opentelemetry-collector-contrib/cmd/otelcontribcol
   name: otelcontribcol
   description: Local OpenTelemetry Collector Contrib binary, testing only.
-  version: 0.135.0-dev
+  version: 0.135.0
   output_path: ./cmd/otelcontribcol
 
 extensions:
@@ -60,7 +60,7 @@ extensions:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/cgroupruntimeextension v0.135.0
 
 exporters:
-  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.135.1-0.20250911155607-37a3ace6274c
+  #- gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.135.1-0.20250911155607-37a3ace6274c
   - gomod: go.opentelemetry.io/collector/exporter/nopexporter v0.135.1-0.20250911155607-37a3ace6274c
   - gomod: go.opentelemetry.io/collector/exporter/otlpexporter v0.135.1-0.20250911155607-37a3ace6274c
   - gomod: go.opentelemetry.io/collector/exporter/otlphttpexporter v0.135.1-0.20250911155607-37a3ace6274c

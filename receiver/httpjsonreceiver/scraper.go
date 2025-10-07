@@ -2,6 +2,7 @@ package httpjsonreceiver // import "httpjsonreceiver"
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"io"
 	"net/http"
@@ -58,6 +59,32 @@ func (s *Scraper) Scrape(ctx context.Context) (pmetric.Metrics, error) {
 func (s *Scraper) scrapeEndpoint(ctx context.Context, endpoint EndpointConfig, sm pmetric.ScopeMetrics) error {
 	start := time.Now()
 
+	// Create a client for this endpoint if it has custom TLS settings
+	client := s.client
+	if endpoint.SkipTLSVerify != nil {
+		skipTLS := *endpoint.SkipTLSVerify
+		if skipTLS != s.cfg.SkipTLSVerify {
+			// Create endpoint-specific client with different TLS settings
+			transport := &http.Transport{
+				TLSClientConfig: &tls.Config{
+					InsecureSkipVerify: skipTLS,
+				},
+			}
+			timeout := s.cfg.Timeout
+			if endpoint.Timeout > 0 {
+				timeout = endpoint.Timeout
+			}
+			client = &http.Client{
+				Timeout:   timeout,
+				Transport: transport,
+			}
+
+			s.logger.Debug("Using endpoint-specific TLS settings",
+				zap.String("url", endpoint.URL),
+				zap.Bool("skip_tls_verify", skipTLS))
+		}
+	}
+
 	req, err := http.NewRequestWithContext(ctx, endpoint.Method, endpoint.URL, nil)
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
@@ -81,7 +108,7 @@ func (s *Scraper) scrapeEndpoint(ctx context.Context, endpoint EndpointConfig, s
 		req = req.WithContext(ctx)
 	}
 
-	resp, err := s.client.Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
 		return fmt.Errorf("HTTP request failed: %w", err)
 	}

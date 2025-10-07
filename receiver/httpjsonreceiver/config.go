@@ -11,18 +11,20 @@ type Config struct {
 	CollectionInterval time.Duration     `mapstructure:"collection_interval"`
 	InitialDelay       time.Duration     `mapstructure:"initial_delay"`
 	Timeout            time.Duration     `mapstructure:"timeout"`
+	SkipTLSVerify      bool              `mapstructure:"skip_tls_verify"`
 	Endpoints          []EndpointConfig  `mapstructure:"endpoints"`
 	ResourceAttributes map[string]string `mapstructure:"resource_attributes"`
 }
 
 type EndpointConfig struct {
-	URL     string            `mapstructure:"url"`
-	Method  string            `mapstructure:"method"`
-	Headers map[string]string `mapstructure:"headers"`
-	Body    string            `mapstructure:"body,omitempty"`
-	Name    string            `mapstructure:"name,omitempty"`
-	Metrics []MetricConfig    `mapstructure:"metrics"`
-	Timeout time.Duration     `mapstructure:"timeout,omitempty"`
+	URL           string            `mapstructure:"url"`
+	Method        string            `mapstructure:"method"`
+	Headers       map[string]string `mapstructure:"headers"`
+	Body          string            `mapstructure:"body,omitempty"`
+	Name          string            `mapstructure:"name,omitempty"`
+	Metrics       []MetricConfig    `mapstructure:"metrics"`
+	Timeout       time.Duration     `mapstructure:"timeout,omitempty"`
+	SkipTLSVerify *bool             `mapstructure:"skip_tls_verify,omitempty"`
 }
 
 type MetricConfig struct {

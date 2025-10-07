@@ -2,6 +2,7 @@ package httpjsonreceiver // import "httpjsonreceiver"
 
 import (
 	"context"
+	"crypto/tls"
 	"net/http"
 	"sync"
 	"time"
@@ -48,11 +49,19 @@ func NewReceiver(
 func (r *Receiver) Start(ctx context.Context, host component.Host) error {
 	r.logger.Info("Starting HTTP JSON receiver",
 		zap.Int("endpoints", len(r.cfg.Endpoints)),
-		zap.Duration("interval", r.cfg.CollectionInterval))
+		zap.Duration("interval", r.cfg.CollectionInterval),
+		zap.Bool("skip_tls_verify", r.cfg.SkipTLSVerify))
 
-	// Create HTTP client with timeout
+	// Create HTTP client with timeout and TLS configuration
+	transport := &http.Transport{
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: r.cfg.SkipTLSVerify,
+		},
+	}
+
 	r.client = &http.Client{
-		Timeout: r.cfg.Timeout,
+		Timeout:   r.cfg.Timeout,
+		Transport: transport,
 	}
 
 	r.scraper = NewScraper(r.cfg, r.client, r.logger)

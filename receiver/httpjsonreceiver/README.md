@@ -29,6 +29,9 @@ receivers:
     collection_interval: 30s
     initial_delay: 5s
     timeout: 10s
+    # Global TLS verification setting (applies to all endpoints unless overridden)
+    skip_tls_verify: false
+
     resource_attributes:
       service.name: "my-service"
       environment: "production"
@@ -36,6 +39,8 @@ receivers:
       - name: "api_metrics"
         url: "https://api.example.com/metrics"
         method: "GET"
+        # Override global TLS setting for this endpoint
+        skip_tls_verify: true
         headers:
           Authorization: "Bearer your-token"
           User-Agent: "otel-collector/1.0"
