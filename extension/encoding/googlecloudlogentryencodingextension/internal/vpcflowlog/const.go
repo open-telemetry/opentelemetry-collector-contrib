@@ -103,6 +103,7 @@ var protocolNames = map[uint32]string{
 	96:  "scc-sp",
 	97:  "etherip",
 	98:  "encap",
+	99:  "any-private-encryption-scheme",
 	100: "gmtp",
 	101: "ifmp",
 	102: "pnni",
@@ -147,7 +148,8 @@ var protocolNames = map[uint32]string{
 	142: "rohc",
 	143: "ethernet",
 	144: "aggfrag",
-	145: "nsis",
-	146: "nsh",
+	145: "nsh",
+	146: "homa",
+	147: "bit-emu",
 	255: "reserved",
 }
