@@ -272,7 +272,14 @@ func (p *Parser) extractk8sMetaFromFilePath(e *entry.Entry) error {
 		return nil
 	}
 
-	logPath := e.Attributes[logPathField]
+	logPath, ok := e.Attributes[logPathField]
+	if !ok {
+		return fmt.Errorf(
+			"operator '%s' has 'add_metadata_from_filepath' enabled, but the log record attribute '%s' is missing. Perhaps enable the 'include_file_path' option?",
+			p.OperatorID,
+			logPathField)
+	}
+
 	rawLogPath, ok := logPath.(string)
 	if !ok {
 		return fmt.Errorf("type '%T' cannot be parsed as log path field", logPath)
