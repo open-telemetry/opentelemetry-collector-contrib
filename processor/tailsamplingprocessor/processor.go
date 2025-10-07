@@ -54,7 +54,6 @@ type tailSamplingSpanProcessor struct {
 	logger    *zap.Logger
 
 	nextConsumer       consumer.Traces
-	maxNumTraces       uint64
 	policies           []*policy
 	idToTrace          sync.Map
 	policyTicker       timeutils.TTicker
@@ -132,7 +131,6 @@ func newTracesProcessor(ctx context.Context, set processor.Settings, nextConsume
 		set:                set,
 		telemetry:          telemetry,
 		nextConsumer:       nextConsumer,
-		maxNumTraces:       cfg.NumTraces,
 		sampledIDCache:     sampledDecisions,
 		nonSampledIDCache:  nonSampledDecisions,
 		logger:             telemetrySettings.Logger,
