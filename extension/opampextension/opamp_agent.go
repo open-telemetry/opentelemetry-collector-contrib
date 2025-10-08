@@ -8,6 +8,7 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	maps0 "maps"
 	"net/http"
 	"os"
 	"runtime"
@@ -383,9 +384,7 @@ func (o *opampAgent) createAgentDescription() error {
 	nonIdentifyingAttributeMap[string(semconv.HostNameKey)] = hostname
 	nonIdentifyingAttributeMap[string(semconv.OSDescriptionKey)] = description
 
-	for k, v := range o.cfg.AgentDescription.NonIdentifyingAttributes {
-		nonIdentifyingAttributeMap[k] = v
-	}
+	maps0.Copy(nonIdentifyingAttributeMap, o.cfg.AgentDescription.NonIdentifyingAttributes)
 	if o.cfg.AgentDescription.IncludeResourceAttributes {
 		for k, v := range o.resourceAttrs {
 			// skip the attributes that are being used in the identifying attributes.
