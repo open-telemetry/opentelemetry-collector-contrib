@@ -53,13 +53,23 @@ type ClientConfig struct {
 	// replica selection when supported by the brokers. This maps to Kafka's
 	// standard "client.rack" setting. By default, this is empty.
 	RackID string `mapstructure:"rack_id"`
+
+	// When enabled, the consumer uses the leader epoch returned by brokers (KIP-320)
+	// to detect log truncation. Setting this to false clears the leader epoch from
+	// fetch offsets, disabling KIP-320. Disabling can improve compatibility with
+	// brokers that don’t fully support leader epochs (e.g., Azure Event Hubs),
+	// at the cost of losing automatic log-truncation safety.
+	//
+	// NOTE: this is experimental and may be removed in a future release.
+	UseLeaderEpoch bool `mapstructure:"use_leader_epoch"`
 }
 
 func NewDefaultClientConfig() ClientConfig {
 	return ClientConfig{
-		Brokers:  []string{"localhost:9092"},
-		ClientID: "otel-collector",
-		Metadata: NewDefaultMetadataConfig(),
+		Brokers:        []string{"localhost:9092"},
+		ClientID:       "otel-collector",
+		Metadata:       NewDefaultMetadataConfig(),
+		UseLeaderEpoch: true,
 	}
 }
 
@@ -108,6 +118,11 @@ type ConsumerConfig struct {
 	// The maximum amount of time to wait for MinFetchSize bytes to be
 	// available before the broker returns a response (default 250ms)
 	MaxFetchWait time.Duration `mapstructure:"max_fetch_wait"`
+
+	// MaxPartitionFetchSize defines the maximum number of bytes to fetch
+	// per partition (default "1048576")
+	MaxPartitionFetchSize int32 `mapstructure:"max_partition_fetch_size"`
+
 	// RebalanceStrategy specifies the strategy to use for partition assignment.
 	// Possible values are "range", "roundrobin", and "sticky".
 	// Defaults to "range".
@@ -127,10 +142,11 @@ func NewDefaultConsumerConfig() ConsumerConfig {
 			Enable:   true,
 			Interval: time.Second,
 		},
-		MinFetchSize:     1,
-		MaxFetchSize:     0,
-		MaxFetchWait:     250 * time.Millisecond,
-		DefaultFetchSize: 1048576,
+		MinFetchSize:          1,
+		MaxFetchSize:          0,
+		MaxFetchWait:          250 * time.Millisecond,
+		DefaultFetchSize:      1048576,
+		MaxPartitionFetchSize: 1048576,
 	}
 }
 

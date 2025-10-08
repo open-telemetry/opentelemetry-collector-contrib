@@ -290,7 +290,7 @@ func stackFrames(dic pprofile.ProfilesDictionary, sample pprofile.Sample) ([]Sta
 			continue
 		}
 
-		frameTypeStr, err := getStringFromAttribute(dic, location, "profile.frame.type")
+		frameTypeStr, err := getStringFromAttribute(dic, location, string(semconv.ProfileFrameTypeKey))
 		if err != nil {
 			return nil, nil, nil, err
 		}
@@ -373,7 +373,6 @@ var errMissingAttribute = errors.New("missing attribute")
 // of the profile if the attribute key matches the expected attrKey.
 func getStringFromAttribute(dic pprofile.ProfilesDictionary, record attributable, attrKey string) (string, error) {
 	lenAttrTable := dic.AttributeTable().Len()
-
 	for _, idx32 := range record.AttributeIndices().All() {
 		idx := int(idx32)
 
@@ -472,9 +471,8 @@ func stackTraceID(frames []StackFrame) (string, error) {
 
 func getLocations(dic pprofile.ProfilesDictionary, stack pprofile.Stack) []pprofile.Location {
 	locations := make([]pprofile.Location, 0, stack.LocationIndices().Len())
-
-	for i := range stack.LocationIndices().All() {
-		locations = append(locations, dic.LocationTable().At(i))
+	for _, i := range stack.LocationIndices().All() {
+		locations = append(locations, dic.LocationTable().At(int(i)))
 	}
 
 	return locations

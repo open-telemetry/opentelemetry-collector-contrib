@@ -594,3 +594,25 @@ func TestFranzClient_ProtocolVersion(t *testing.T) {
 		})
 	}
 }
+
+func TestNewFranzClient_And_Admin(t *testing.T) {
+	_, clientCfg := kafkatest.NewCluster(t, kfake.SeedTopics(1, "meta-topic"))
+	tl := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
+
+	// Plain client
+	cl, err := NewFranzClient(t.Context(), clientCfg, tl)
+	require.NoError(t, err)
+	t.Cleanup(cl.Close)
+
+	// Admin from fresh client
+	ad, cl2, err := NewFranzClusterAdminClient(t.Context(), clientCfg, tl)
+	require.NoError(t, err)
+	t.Cleanup(func() { ad.Close(); cl2.Close() })
+
+	// Metadata via admin should return brokers & topic
+	md, err := ad.Metadata(t.Context(), "meta-topic")
+	require.NoError(t, err)
+	assert.NotEmpty(t, md.Brokers)
+	_, ok := md.Topics["meta-topic"]
+	assert.True(t, ok)
+}

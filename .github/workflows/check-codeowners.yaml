@@ -2,9 +2,15 @@ name: codeowners
 on:
   push:
     branches: [main]
+    paths:
+      - ".github/CODEOWNERS"
+      - "**/metadata.yaml"
     tags:
       - "v[0-9]+.[0-9]+.[0-9]+*"
   pull_request_target:
+    paths:
+      - ".github/CODEOWNERS"
+      - "**/metadata.yaml"
     types:
       - opened
       - synchronize
@@ -46,8 +52,14 @@ jobs:
           repository: ${{github.event.pull_request.head.repo.full_name}}
           path: pr
 
+      - uses: actions/create-github-app-token@67018539274d69449ef7c02e8e71183d1719ab42 # v2.1.4
+        id: otelbot-token
+        with:
+          app-id: ${{ vars.OTELBOT_APP_ID }}
+          private-key: ${{ secrets.OTELBOT_PRIVATE_KEY }}
+
       - name: Gen CODEOWNERS
         run: |
           cd pr
-          GITHUB_TOKEN=${{ secrets.READ_ORG_AND_USER_TOKEN }} ../.tools/githubgen codeowners
+          GITHUB_TOKEN=${{ steps.otelbot-token.outputs.token }} ../.tools/githubgen codeowners
           git diff -s --exit-code || (echo 'Generated code is out of date, please run "make gencodeowners" or apply this diff and commit the changes in this PR.' && git diff && exit 1)
