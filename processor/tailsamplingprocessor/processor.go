@@ -173,13 +173,6 @@ func newTracesProcessor(ctx context.Context, set processor.Settings, nextConsume
 	return tsp, nil
 }
 
-// withPolicies sets the sampling policies to be used by the processor.
-func withPolicies(policies []*policy) Option {
-	return func(tsp *tailSamplingSpanProcessor) {
-		tsp.policies = policies
-	}
-}
-
 // WithSampledDecisionCache sets the cache which the processor uses to store recently sampled trace IDs.
 func WithSampledDecisionCache(c cache.Cache[bool]) Option {
 	return func(tsp *tailSamplingSpanProcessor) {
