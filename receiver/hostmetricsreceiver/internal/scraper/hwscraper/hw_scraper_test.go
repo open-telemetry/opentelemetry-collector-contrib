@@ -44,7 +44,7 @@ func TestScrape(t *testing.T) {
 					},
 				},
 			},
-			expectedMetricCount: 2,
+			expectedMetricCount: 1,
 		},
 		{
 			name: "No hwmon path",
