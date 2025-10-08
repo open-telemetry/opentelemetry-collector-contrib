@@ -84,7 +84,7 @@ func (e *logsJSONExporter) pushLogsData(ctx context.Context, ld plog.Logs) error
 	var logCount int
 	rsLogs := ld.ResourceLogs()
 	rsLen := rsLogs.Len()
-	for i := 0; i < rsLen; i++ {
+	for i := range rsLen {
 		logs := rsLogs.At(i)
 		res := logs.Resource()
 		resURL := logs.SchemaUrl()
@@ -96,7 +96,7 @@ func (e *logsJSONExporter) pushLogsData(ctx context.Context, ld plog.Logs) error
 		}
 
 		slLen := logs.ScopeLogs().Len()
-		for j := 0; j < slLen; j++ {
+		for j := range slLen {
 			scopeLog := logs.ScopeLogs().At(j)
 			scopeURL := scopeLog.SchemaUrl()
 			scopeLogScope := scopeLog.Scope()
@@ -109,7 +109,7 @@ func (e *logsJSONExporter) pushLogsData(ctx context.Context, ld plog.Logs) error
 			}
 
 			slrLen := scopeLogRecords.Len()
-			for k := 0; k < slrLen; k++ {
+			for k := range slrLen {
 				r := scopeLogRecords.At(k)
 				logAttrBytes, logAttrErr := json.Marshal(r.Attributes().AsRaw())
 				if logAttrErr != nil {
