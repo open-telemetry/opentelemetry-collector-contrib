@@ -56,7 +56,7 @@ type tailSamplingSpanProcessor struct {
 	nextConsumer       consumer.Traces
 	policies           []*policy
 	idToTrace          sync.Map
-	policyTicker       timeutils.TTicker
+	policyTicker       *timeutils.PolicyTicker
 	tickerFrequency    time.Duration
 	decisionBatcher    idbatcher.Batcher
 	sampledIDCache     cache.Cache[bool]
@@ -173,24 +173,10 @@ func newTracesProcessor(ctx context.Context, set processor.Settings, nextConsume
 	return tsp, nil
 }
 
-// withDecisionBatcher sets the batcher used to batch trace IDs for policy evaluation.
-func withDecisionBatcher(batcher idbatcher.Batcher) Option {
-	return func(tsp *tailSamplingSpanProcessor) {
-		tsp.decisionBatcher = batcher
-	}
-}
-
 // withPolicies sets the sampling policies to be used by the processor.
 func withPolicies(policies []*policy) Option {
 	return func(tsp *tailSamplingSpanProcessor) {
 		tsp.policies = policies
-	}
-}
-
-// withTickerFrequency sets the frequency at which the processor will evaluate the sampling policies.
-func withTickerFrequency(frequency time.Duration) Option {
-	return func(tsp *tailSamplingSpanProcessor) {
-		tsp.tickerFrequency = frequency
 	}
 }
 
