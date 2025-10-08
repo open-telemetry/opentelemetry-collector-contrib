@@ -5,6 +5,7 @@ package translation // import "github.com/open-telemetry/opentelemetry-collector
 
 import (
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 
@@ -779,12 +780,7 @@ func filterDimensions(dimensions []*sfxpb.Dimension, withoutDimensions []string)
 
 // dimensionIn checks if the dimension found in the dimensionsKeysFilter
 func dimensionIn(dimension *sfxpb.Dimension, dimensionsKeysFilter []string) bool {
-	for _, dk := range dimensionsKeysFilter {
-		if dimension.Key == dk {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(dimensionsKeysFilter, dimension.Key)
 }
 
 // splitMetric renames a metric with "dimension key" == dimensionKey to mapping["dimension value"],

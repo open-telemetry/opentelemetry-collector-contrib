@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"net"
 	"net/http"
 	"net/url"
@@ -175,9 +176,7 @@ func (dc *DimensionClient) acceptDimension(dimUpdate *DimensionUpdate) error {
 func mergeProperties(propMaps ...map[string]*string) map[string]*string {
 	out := map[string]*string{}
 	for _, propMap := range propMaps {
-		for k, v := range propMap {
-			out[k] = v
-		}
+		maps.Copy(out, propMap)
 	}
 	return out
 }
@@ -188,9 +187,7 @@ func mergeProperties(propMaps ...map[string]*string) map[string]*string {
 func mergeTags(tagSets ...map[string]bool) map[string]bool {
 	out := map[string]bool{}
 	for _, tagSet := range tagSets {
-		for k, v := range tagSet {
-			out[k] = v
-		}
+		maps.Copy(out, tagSet)
 	}
 	return out
 }
