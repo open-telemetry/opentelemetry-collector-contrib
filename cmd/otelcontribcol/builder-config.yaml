@@ -220,6 +220,7 @@ receivers:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefbreceiver v0.136.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver v0.136.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator v0.136.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redfishreceiver v0.136.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver v0.136.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/riakreceiver v0.136.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphanareceiver v0.136.0
