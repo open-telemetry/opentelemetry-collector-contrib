@@ -3,6 +3,8 @@
 
 package metricstransformprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor"
 
+import "slices"
+
 import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/aggregateutil"
 
 const (
@@ -168,13 +170,7 @@ const (
 var actions = []ConfigAction{Insert, Update, Combine, Group}
 
 func (ca ConfigAction) isValid() bool {
-	for _, configAction := range actions {
-		if ca == configAction {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(actions, ca)
 }
 
 // operationAction is the enum to capture the types of actions to perform for an operation.
@@ -216,13 +212,7 @@ const (
 var operationActions = []operationAction{addLabel, updateLabel, deleteLabelValue, toggleScalarDataType, scaleValue, aggregateLabels, aggregateLabelValues}
 
 func (oa operationAction) isValid() bool {
-	for _, operationAction := range operationActions {
-		if oa == operationAction {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(operationActions, oa)
 }
 
 // matchType is the enum to capture the two types of matching metric(s) that should have operations applied to them.
@@ -239,13 +229,7 @@ const (
 var matchTypes = []matchType{strictMatchType, regexpMatchType}
 
 func (mt matchType) isValid() bool {
-	for _, matchType := range matchTypes {
-		if mt == matchType {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(matchTypes, mt)
 }
 
 // submatchCase is the enum to capture the two types of case changes to apply to submatches.
@@ -262,11 +246,5 @@ const (
 var submatchCases = []submatchCase{lower, upper}
 
 func (sc submatchCase) isValid() bool {
-	for _, submatchCase := range submatchCases {
-		if sc == submatchCase {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(submatchCases, sc)
 }
