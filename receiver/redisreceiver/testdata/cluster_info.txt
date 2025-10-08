@@ -1,0 +1,13 @@
+# CLUSTER INFO metrics
+cluster_state:ok
+cluster_slots_assigned:16384
+cluster_slots_ok:16384
+cluster_slots_pfail:0
+cluster_slots_fail:0
+cluster_known_nodes:6
+node_count:3
+cluster_uptime:6
+node_uptime:2
+cluster_stats_messages_sent:1483972
+cluster_stats_messages_received:1483968
+total_cluster_links_buffer_limit_exceeded:0

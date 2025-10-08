@@ -139,6 +139,7 @@ body:
       - internal/core
       - internal/datadog
       - internal/docker
+      - internal/e2e
       - internal/exp/metrics
       - internal/filter
       - internal/grpcutil
@@ -211,6 +212,7 @@ body:
       - processor/resourcedetection/internal/digitalocean
       - processor/resourcedetection/internal/dynatrace
       - processor/resourcedetection/internal/hetzner
+      - processor/resourcedetection/internal/openstack/nova
       - processor/resourcedetection/internal/oraclecloud
       - processor/resourcedetection/internal/scaleway
       - processor/resourcedetection/internal/upcloud
