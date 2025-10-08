@@ -44,16 +44,6 @@ attributes:
     enum: [degraded, failed, needs_cleaning, ok, predicted_failure]
 
 metrics:
-  hw.status:
-    enabled: true
-    description: "Operational status: 1 (true) or 0 (false) for each of the possible states."
-    unit: "1"
-    sum:
-      value_type: int
-      aggregation_temporality: cumulative
-      monotonic: false
-    attributes: [ id, state, type, name, parent ]
-
   hw.temperature:
     enabled: true
     description: Temperature in degrees Celsius.
@@ -70,3 +60,12 @@ metrics:
       value_type: double
     attributes: [id, limit_type, name, parent, sensor_location]
 
+  hw.status:
+    enabled: false
+    description: "Operational status: 1 (true) or 0 (false) for each of the possible states."
+    unit: "1"
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+    attributes: [ id, state, type, name, parent ]

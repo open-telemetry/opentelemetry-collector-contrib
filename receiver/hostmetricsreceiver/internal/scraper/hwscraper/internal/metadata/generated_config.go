@@ -35,7 +35,7 @@ type MetricsConfig struct {
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
 		HwStatus: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		HwTemperature: MetricConfig{
 			Enabled: true,
