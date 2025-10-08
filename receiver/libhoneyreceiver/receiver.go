@@ -409,12 +409,12 @@ func getMimeTypeFromContentType(contentType string) string {
 
 func handleUnmatchedMethod(resp http.ResponseWriter) {
 	status := http.StatusMethodNotAllowed
-	writeResponse(resp, "text/plain", status, []byte(fmt.Sprintf("%v method not allowed, supported: [POST]", status)))
+	writeResponse(resp, "text/plain", status, fmt.Appendf(nil, "%v method not allowed, supported: [POST]", status))
 }
 
 func handleUnmatchedContentType(resp http.ResponseWriter) {
 	status := http.StatusUnsupportedMediaType
-	writeResponse(resp, "text/plain", status, []byte(fmt.Sprintf("%v unsupported media type, supported: [%s, %s]", status, encoder.JSONContentType, encoder.PbContentType)))
+	writeResponse(resp, "text/plain", status, fmt.Appendf(nil, "%v unsupported media type, supported: [%s, %s]", status, encoder.JSONContentType, encoder.PbContentType))
 }
 
 // applyConsumerResultsToSuccessfulEvents applies consumer results only to events that succeeded parsing
