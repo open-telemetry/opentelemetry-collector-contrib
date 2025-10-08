@@ -132,7 +132,7 @@ func TestBearerStartWatchStop(t *testing.T) {
 	assert.True(t, credential.RequireTransportSecurity())
 
 	// change file content once
-	assert.NoError(t, os.WriteFile(bauth.filename, []byte(fmt.Sprintf("%stest", token)), 0o600))
+	assert.NoError(t, os.WriteFile(bauth.filename, fmt.Appendf(nil, "%stest", token), 0o600))
 	time.Sleep(5 * time.Second)
 	credential, _ = bauth.PerRPCCredentials()
 	md, err = credential.GetRequestMetadata(t.Context())
@@ -182,7 +182,7 @@ func TestBearerTokenFileContentUpdate(t *testing.T) {
 	assert.Equal(t, authHeaderValue, fmt.Sprintf("%s %s", scheme, string(token)))
 
 	// change file content once
-	assert.NoError(t, os.WriteFile(bauth.filename, []byte(fmt.Sprintf("%stest", token)), 0o600))
+	assert.NoError(t, os.WriteFile(bauth.filename, fmt.Appendf(nil, "%stest", token), 0o600))
 	time.Sleep(5 * time.Second)
 
 	tokenNew, err := os.ReadFile(bauth.filename)
