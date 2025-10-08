@@ -172,7 +172,7 @@ func TestPrometheusConverter_addSample(t *testing.T) {
 // Test_timeSeriesSignature checks that timeSeriesSignature returns consistent and unique signatures for a distinct label set.
 func Test_timeSeriesSignature(t *testing.T) {
 	var oneKBLabels []prompb.Label
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		const name = "12345"
 		const value = "12345"
 		oneKBLabels = append(oneKBLabels, prompb.Label{Name: name, Value: value})
@@ -414,8 +414,8 @@ func BenchmarkCreateAttributes(b *testing.B) {
 	m.PutBool("test-bool-key", true)
 
 	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+
+	for b.Loop() {
 		//nolint:errcheck
 		createAttributes(r, m, ext, nil, true, otlptranslator.LabelNamer{})
 	}
