@@ -462,7 +462,7 @@ func BenchmarkExporters(b *testing.B) {
 
 	var traces []ptrace.Traces
 	var logs []plog.Logs
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		td := testdata.GenerateTracesTwoSpansSameResource()
 		td.ResourceSpans().At(0).Resource().Attributes().PutStr("fileexporter.path_segment", fmt.Sprintf("file%d", i))
 		traces = append(traces, td)
@@ -498,7 +498,7 @@ func BenchmarkExporters(b *testing.B) {
 			b.ResetTimer()
 
 			ctx := b.Context()
-			for i := 0; i < b.N; i++ {
+			for i := 0; b.Loop(); i++ {
 				require.NoError(b, fe.consumeTraces(ctx, traces[i%len(traces)]))
 				require.NoError(b, fe.consumeLogs(ctx, logs[i%len(logs)]))
 			}
