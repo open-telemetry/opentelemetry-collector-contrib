@@ -1135,10 +1135,10 @@ func initSpanWithAttribute(key string, value pcommon.Value, dest ptrace.Span) {
 func genRandomTestData(numBatches, numTracesPerBatch int, serviceName string, resourceSpanCount int) (tdd []ptrace.Traces) {
 	r := rand.New(rand.NewPCG(123, 456))
 	var traceBatches []ptrace.Traces
-	for i := 0; i < numBatches; i++ {
+	for range numBatches {
 		traces := ptrace.NewTraces()
 		traces.ResourceSpans().EnsureCapacity(resourceSpanCount)
-		for j := 0; j < resourceSpanCount; j++ {
+		for range resourceSpanCount {
 			rs := traces.ResourceSpans().AppendEmpty()
 			rs.Resource().Attributes().PutStr("service.name", serviceName)
 			rs.Resource().Attributes().PutBool("bool", true)
@@ -1147,7 +1147,7 @@ func genRandomTestData(numBatches, numTracesPerBatch int, serviceName string, re
 			ils := rs.ScopeSpans().AppendEmpty()
 			ils.Spans().EnsureCapacity(numTracesPerBatch)
 
-			for k := 0; k < numTracesPerBatch; k++ {
+			for range numTracesPerBatch {
 				span := ils.Spans().AppendEmpty()
 				span.SetTraceID(idutils.UInt64ToTraceID(r.Uint64(), r.Uint64()))
 				span.SetSpanID(idutils.UInt64ToSpanID(r.Uint64()))

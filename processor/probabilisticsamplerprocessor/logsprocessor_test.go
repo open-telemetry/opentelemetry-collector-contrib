@@ -226,7 +226,7 @@ func TestLogsSampling(t *testing.T) {
 			require.NoError(t, err)
 			logs := plog.NewLogs()
 			lr := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
-			for i := 0; i < 100; i++ {
+			for i := range 100 {
 				record := lr.AppendEmpty()
 				record.SetTimestamp(pcommon.Timestamp(time.Unix(1649400860, 0).Unix()))
 				record.SetSeverityNumber(plog.SeverityNumberDebug)
