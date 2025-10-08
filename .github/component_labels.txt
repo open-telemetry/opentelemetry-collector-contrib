@@ -120,6 +120,7 @@ internal/common internal/common
 internal/coreinternal internal/core
 internal/datadog internal/datadog
 internal/docker internal/docker
+internal/e2e internal/e2e
 internal/exp/metrics internal/exp/metrics
 internal/filter internal/filter
 internal/grpcutil internal/grpcutil
