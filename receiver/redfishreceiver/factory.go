@@ -11,7 +11,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redfishreceiver/internal/metadata"
@@ -36,13 +35,7 @@ func createMetricsReceiver(_ context.Context, params receiver.Settings, baseCfg 
 		return nil, fmt.Errorf("invalid redfishreceiver config")
 	}
 
-	redfishScraper := newScraper(cfg, params)
-	s, err := scraper.NewMetrics(redfishScraper.scrape, scraper.WithStart(redfishScraper.start))
-	if err != nil {
-		return nil, err
-	}
-
-	return scraperhelper.NewMetricsController(&cfg.ControllerConfig, params, consumer, scraperhelper.AddScraper(metadata.Type, s))
+	return scraperhelper.NewMetricsController(&cfg.ControllerConfig, params, consumer)
 }
 
 // NewFactory creates a factory for redfish receiver.
@@ -50,5 +43,5 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, component.StabilityLevelAlpha))
+		receiver.WithMetrics(createMetricsReceiver, component.StabilityLevelDevelopment))
 }
