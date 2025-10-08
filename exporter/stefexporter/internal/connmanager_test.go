@@ -193,7 +193,7 @@ func TestConnManagerAcquireReleaseConcurrent(t *testing.T) {
 		t, testDef{
 			test: func(cm *ConnManager) {
 				var wg sync.WaitGroup
-				for i := 0; i < 100; i++ {
+				for range 100 {
 					wg.Add(1)
 					go func() {
 						defer wg.Done()
@@ -227,7 +227,7 @@ func TestConnManagerAcquireDiscardConcurrent(t *testing.T) {
 		t, testDef{
 			test: func(cm *ConnManager) {
 				var wg sync.WaitGroup
-				for i := 0; i < 100; i++ {
+				for range 100 {
 					wg.Add(1)
 					go func() {
 						defer wg.Done()
