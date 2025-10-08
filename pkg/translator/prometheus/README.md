@@ -13,7 +13,7 @@
 | Case                                                     | Transformation                                                                                                                   | Example                                                                                   |
 |----------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------|
 | Unsupported characters and extraneous underscores        | Replace unsupported characters with underscores (`_`). Drop redundant, leading and trailing underscores.                         | `(lambda).function.executions(#)` → `lambda_function_executions`                          |
-| Standard unit                                            | Convert the unit from [Unified Code for Units of Measure](http://unitsofmeasure.org/ucum.html) to Prometheus standard and append | `system.filesystem.usage` with unit `By` → `system_filesystem_usage_bytes`                |
+| Standard unit                                            | Convert the unit from [Unified Code for Units of Measure](http://ucum.org/ucum/) to Prometheus standard and append | `system.filesystem.usage` with unit `By` → `system_filesystem_usage_bytes`                |
 | Non-standard unit (unit is surrounded with `{}`)         | Drop the unit                                                                                                                    | `system.network.dropped` with unit `{packets}` → `system_network_dropped`                 |
 | Non-standard unit (unit is **not** surrounded with `{}`) | Append the unit, if not already present, after sanitization (all non-alphanumeric chars are dropped)                             | `system.network.dropped` with unit `packets` → `system_network_dropped_packets`           |
 | Percentages (unit is `1`)                                | Append `_ratio` (for gauges only)                                                                                                | `system.memory.utilization` with unit `1` → `system_memory_utilization_ratio`             |
@@ -82,7 +82,7 @@ OpenTelemetry *Attributes* are converted to Prometheus labels and normalized to 
 The following transformations are performed on OpenTelemetry *Attributes* to produce Prometheus labels:
 
 * Drop unsupported characters and replace with underscores (`_`)
-* Prefix label with `key_` if it doesn't start with a letter, except if it's already prefixed with double-underscore (`__`)
+* Prefix label with `key_` if it doesn't start with a letter, except if it's already prefixed with double-underscore (`__`). This is to provide compatibility with OpenMetrics 1.0.
 
 By default, labels that start with a simple underscore (`_`) are prefixed with `key`, which is strictly unnecessary to follow Prometheus labels naming rules. This behavior can be disabled with the feature `pkg.translator.prometheus.PermissiveLabelSanitization`, which must be activated with the feature gate option of the collector:
 
