@@ -117,7 +117,7 @@ func (s *oidcServer) token(jsonPayload []byte) (string, error) {
 
 	header := base64.RawURLEncoding.EncodeToString(jsonHeader)
 	payload := base64.RawURLEncoding.EncodeToString(jsonPayload)
-	digest := sha256.Sum256([]byte(fmt.Sprintf("%s.%s", header, payload)))
+	digest := sha256.Sum256(fmt.Appendf(nil, "%s.%s", header, payload))
 
 	signature, err := rsa.SignPKCS1v15(rand.Reader, s.privateKey, crypto.SHA256, digest[:])
 	if err != nil {
