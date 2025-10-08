@@ -82,7 +82,7 @@ func BenchmarkMergeManyIntoSingle(b *testing.B) {
 			mdB := generateMetrics(b, 10000)
 
 			b.ResetTimer()
-			for i := 0; i < b.N; i++ {
+			for b.Loop() {
 				b.StopTimer()
 				mdA := pmetric.NewMetrics()
 				mdAClean.CopyTo(mdA)
@@ -115,7 +115,7 @@ func BenchmarkMergeManyIntoMany(b *testing.B) {
 			mdB := generateMetrics(b, 10000)
 
 			b.ResetTimer()
-			for i := 0; i < b.N; i++ {
+			for b.Loop() {
 				b.StopTimer()
 				mdA := pmetric.NewMetrics()
 				mdAClean.CopyTo(mdA)
@@ -136,7 +136,7 @@ func generateMetrics(t require.TestingT, rmCount int) pmetric.Metrics {
 	timeStamp := pcommon.Timestamp(rand.IntN(256))
 	value := rand.Int64N(256)
 
-	for i := 0; i < rmCount; i++ {
+	for range rmCount {
 		rm := md.ResourceMetrics().AppendEmpty()
 		err := rm.Resource().Attributes().FromRaw(map[string]any{
 			string(conventions.ServiceNameKey): "service-test",
