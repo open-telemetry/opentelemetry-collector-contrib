@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/leodido/go-syslog/v4/rfc5424"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -25,7 +26,7 @@ func TestRFC5424Formatter(t *testing.T) {
 	logRecord.Attributes().PutInt("priority", 165)
 	logRecord.Attributes().PutStr("proc_id", "8710")
 	logRecord.Attributes().PutInt("version", 1)
-	timestamp, err := time.Parse(time.RFC3339Nano, "2003-08-24T05:14:15.000003Z")
+	timestamp, err := time.Parse(rfc5424.RFC3339MICRO, "2003-08-24T05:14:15.000003Z")
 	require.NoError(t, err)
 	logRecord.SetTimestamp(pcommon.NewTimestampFromTime(timestamp))
 
@@ -43,7 +44,7 @@ func TestRFC5424Formatter(t *testing.T) {
 	logRecord.Attributes().PutInt("priority", 165)
 	logRecord.Attributes().PutStr("proc_id", "111")
 	logRecord.Attributes().PutInt("version", 1)
-	timestamp, err = time.Parse(time.RFC3339Nano, "2003-10-11T22:14:15.003Z")
+	timestamp, err = time.Parse(rfc5424.RFC3339MICRO, "2003-10-11T22:14:15.003Z")
 	require.NoError(t, err)
 	logRecord.SetTimestamp(pcommon.NewTimestampFromTime(timestamp))
 
@@ -72,7 +73,7 @@ func TestRFC5424Formatter(t *testing.T) {
 	structuredDataSubmap.Map().PutStr("UserHostAddress", "192.168.2.132")
 	structuredDataSubmap.Map().PutStr("UserID", "Tester2")
 	logRecord.Attributes().PutInt("version", 1)
-	timestamp, err = time.Parse(time.RFC3339Nano, "2003-08-24T05:14:15.000003-07:00")
+	timestamp, err = time.Parse(rfc5424.RFC3339MICRO, "2003-08-24T05:14:15.000003-07:00")
 	require.NoError(t, err)
 	logRecord.SetTimestamp(pcommon.NewTimestampFromTime(timestamp))
 
@@ -112,7 +113,7 @@ func TestRFC5424Formatter(t *testing.T) {
 	structuredDataSubmap.Map().PutStr("UserHostAddress", "192.168.2.132")
 	logRecord.Attributes().PutInt("version", 1)
 
-	timestamp, err = time.Parse(time.RFC3339Nano, "2003-08-24T05:14:15.000003-07:00")
+	timestamp, err = time.Parse(rfc5424.RFC3339MICRO, "2003-08-24T05:14:15.000003-07:00")
 	require.NoError(t, err)
 	logRecord.SetTimestamp(pcommon.NewTimestampFromTime(timestamp))
 
@@ -151,10 +152,40 @@ func TestRFC5424Formatter(t *testing.T) {
 	// Test defaults
 	expected = "<165>1 2003-08-24T12:14:15.000003Z - - - - -\n"
 	logRecord = plog.NewLogRecord()
-	timestamp, err = time.Parse(time.RFC3339Nano, "2003-08-24T05:14:15.000003-07:00")
+	timestamp, err = time.Parse(rfc5424.RFC3339MICRO, "2003-08-24T05:14:15.000003-07:00")
 	require.NoError(t, err)
 	logRecord.SetTimestamp(pcommon.NewTimestampFromTime(timestamp))
 
 	actual = newRFC5424Formatter(false).format(logRecord)
 	assert.Equal(t, expected, actual)
+}
+
+func TestRFC5424Formatter_NanoFractionIsTruncatedToMicro(t *testing.T) {
+	logRecord := plog.NewLogRecord()
+	logRecord.Attributes().PutStr("appname", "myapp")
+	logRecord.Attributes().PutStr("hostname", "myhost")
+	logRecord.Attributes().PutStr("message", "nano->micro")
+	logRecord.Attributes().PutInt("priority", 14)
+	logRecord.Attributes().PutInt("version", 1)
+	logRecord.Attributes().PutStr("proc_id", "1234")
+
+	timestamp, err := time.Parse(rfc5424.RFC3339MICRO, "2025-10-02T20:04:11.518870899Z")
+	require.NoError(t, err)
+	logRecord.SetTimestamp(pcommon.NewTimestampFromTime(timestamp))
+
+	expectedPrefix := "<14>1 2025-10-02T20:04:11.51887Z myhost myapp 1234 - - nano->micro"
+	actual := newRFC5424Formatter(false).format(logRecord)
+
+	// The formatted output should contain the truncated (not rounded) timestamp
+	assert.Contains(t, actual, expectedPrefix)
+
+	// Validate timestamp parseability using RFC3339MICRO layout
+	parts := strings.Split(actual, " ")
+	require.GreaterOrEqual(t, len(parts), 3)
+	_, err = time.Parse(rfc5424.RFC3339MICRO, parts[1])
+	require.NoError(t, err)
+
+	// Check that octet counting mode also works correctly
+	octetCounting := newRFC5424Formatter(true).format(logRecord)
+	assert.True(t, strings.HasPrefix(octetCounting, fmt.Sprintf("%d ", len(actual))))
 }
