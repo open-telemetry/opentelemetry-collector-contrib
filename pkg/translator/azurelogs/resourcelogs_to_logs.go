@@ -223,7 +223,15 @@ func addCommonSchema(log *azureLogRecord, record plog.LogRecord) {
 	putStrPtr(attributeAzureCorrelationID, log.CorrelationID, record)
 	record.Attributes().PutStr(attributeAzureOperationName, log.OperationName)
 	putStrPtr(attributeAzureOperationVersion, log.OperationVersion, record)
-	// TODO Keep adding other common fields, like tenant ID
+	putStrPtr(string(conventions.CloudAccountIDKey), log.TenantID, record)
+
+	// Add other common fields
+	putStrPtr(string(conventions.NetworkPeerAddressKey), log.CallerIPAddress, record)
+
+	// Extract identity/claims for activity logs
+	if log.Identity != nil {
+		addIdentityAttributes(*log.Identity, record)
+	}
 }
 
 func extractRawAttributes(log *azureLogRecord) map[string]any {
@@ -316,5 +324,24 @@ func copyPropertiesAndApplySemanticConventions(category string, properties []byt
 func setIf(attrs map[string]any, key string, value *string) {
 	if value != nil && *value != "" {
 		attrs[key] = *value
+	}
+}
+
+// addIdentityAttributes extracts identity details from Activity Logs like Recommendation
+func addIdentityAttributes(identity any, record plog.LogRecord) {
+	identityMap, ok := identity.(map[string]any)
+	if !ok {
+		return
+	}
+
+	// Extract claims details (used by Recommendation and other Activity Logs)
+	if claims, ok := identityMap["claims"].(map[string]any); ok {
+		// Extract common claim fields
+		if email, ok := claims["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress"].(string); ok && email != "" {
+			record.Attributes().PutStr(string(conventions.UserEmailKey), email)
+		}
+		// Store the complete claims data
+		claimsMap := record.Attributes().PutEmptyMap("azure.identity.claims")
+		_ = claimsMap.FromRaw(claims)
 	}
 }
