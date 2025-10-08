@@ -35,6 +35,7 @@ type Config struct {
 	MaxReads                 int           `mapstructure:"max_reads,omitempty"`
 	StartAt                  string        `mapstructure:"start_at,omitempty"`
 	PollInterval             time.Duration `mapstructure:"poll_interval,omitempty"`
+	RateLimit                int           `mapstructure:"rate_limit,omitempty"`
 	Raw                      bool          `mapstructure:"raw,omitempty"`
 	IncludeLogRecordOriginal bool          `mapstructure:"include_log_record_original,omitempty"`
 	SuppressRenderingInfo    bool          `mapstructure:"suppress_rendering_info,omitempty"`

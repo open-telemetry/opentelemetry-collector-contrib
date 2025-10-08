@@ -62,6 +62,10 @@ func (c *Config) Build(set component.TelemetrySettings) (operator.Operator, erro
 	}
 	input.startRemoteSession = input.defaultStartRemoteSession
 
+	if c.RateLimit > 0 {
+		input.throttle = newThrottle(c.RateLimit)
+	}
+
 	if c.SuppressRenderingInfo {
 		input.processEvent = input.processEventWithoutRenderingInfo
 	} else {
