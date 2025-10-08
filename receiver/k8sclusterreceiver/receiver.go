@@ -40,7 +40,7 @@ type kubernetesReceiver struct {
 	cancel          context.CancelFunc
 	sessionCancel   context.CancelFunc
 	mu              sync.Mutex
-	wg              sync.WaitGroup
+	wg              *sync.WaitGroup
 	obsrecv         *receiverhelper.ObsReport
 }
 
@@ -70,11 +70,13 @@ func (kr *kubernetesReceiver) startReceiver(ctx context.Context, host component.
 	// replace any previous sessionCancel (should normally be nil when starting fresh)
 	kr.sessionCancel = cancel
 	// track the session worker goroutine
-	kr.wg.Add(1)
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+	kr.wg = wg
 	kr.mu.Unlock()
 
-	go func() {
-		defer kr.wg.Done()
+	go func(wg *sync.WaitGroup) {
+		defer wg.Done()
 		kr.settings.Logger.Info("Starting shared informers and wait for initial cache sync.")
 		for _, informer := range kr.resourceWatcher.informerFactories {
 			if informer == nil {
@@ -110,7 +112,7 @@ func (kr *kubernetesReceiver) startReceiver(ctx context.Context, host component.
 				return
 			}
 		}
-	}()
+	}(wg)
 	return nil
 }
 
@@ -159,7 +161,9 @@ func (kr *kubernetesReceiver) stopReceiver() {
 	kr.settings.Logger.Info("Stopping the receiver session (standby)")
 	kr.mu.Lock()
 	cancel := kr.sessionCancel
+	wg := kr.wg
 	kr.sessionCancel = nil
+	kr.wg = nil
 	kr.mu.Unlock()
 
 	if cancel != nil {
@@ -167,7 +171,9 @@ func (kr *kubernetesReceiver) stopReceiver() {
 	}
 
 	// Wait for the session goroutine to exit to avoid overlaps on quick flaps.
-	kr.wg.Wait()
+	if wg != nil {
+		wg.Wait()
+	}
 }
 
 func (kr *kubernetesReceiver) Shutdown(context.Context) error {
