@@ -5,7 +5,7 @@ package redfishreceiver // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -32,7 +32,7 @@ func createDefaultConfig() component.Config {
 func createMetricsReceiver(_ context.Context, params receiver.Settings, baseCfg component.Config, consumer consumer.Metrics) (receiver.Metrics, error) {
 	cfg, ok := baseCfg.(*Config)
 	if !ok {
-		return nil, fmt.Errorf("invalid redfishreceiver config")
+		return nil, errors.New("invalid redfishreceiver config")
 	}
 
 	return scraperhelper.NewMetricsController(&cfg.ControllerConfig, params, consumer)
