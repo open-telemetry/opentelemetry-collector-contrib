@@ -19,6 +19,10 @@ resource_attributes:
     description: The cloud.account.id
     type: string
     enabled: true
+  cloud.availability_zone:
+    description: The cloud availability zone
+    type: string
+    enabled: false
   host.name:
     description: The hostname
     type: string
