@@ -38,10 +38,10 @@ func CompareTraces(expected, actual ptrace.Traces, options ...CompareTracesOptio
 
 	var errs error
 	var outOfOrderErrs error
-	for e := 0; e < numResources; e++ {
+	for e := range numResources {
 		er := expectedSpans.At(e)
 		var foundMatch bool
-		for a := 0; a < numResources; a++ {
+		for a := range numResources {
 			ar := actualSpans.At(a)
 			if _, ok := matchingResources[ar]; ok {
 				continue
@@ -62,7 +62,7 @@ func CompareTraces(expected, actual ptrace.Traces, options ...CompareTracesOptio
 		}
 	}
 
-	for i := 0; i < numResources; i++ {
+	for i := range numResources {
 		if _, ok := matchingResources[actualSpans.At(i)]; !ok {
 			errs = multierr.Append(errs, fmt.Errorf("unexpected resource: %v", actualSpans.At(i).Resource().Attributes().AsRaw()))
 		}
@@ -103,10 +103,10 @@ func CompareResourceSpans(expected, actual ptrace.ResourceSpans) error {
 	matchingScopeSpans := make(map[ptrace.ScopeSpans]ptrace.ScopeSpans, numScopeSpans)
 
 	var outOfOrderErrs error
-	for e := 0; e < numScopeSpans; e++ {
+	for e := range numScopeSpans {
 		es := expected.ScopeSpans().At(e)
 		var foundMatch bool
-		for a := 0; a < numScopeSpans; a++ {
+		for a := range numScopeSpans {
 			as := actual.ScopeSpans().At(a)
 			if _, ok := matchingScopeSpans[as]; ok {
 				continue
@@ -127,7 +127,7 @@ func CompareResourceSpans(expected, actual ptrace.ResourceSpans) error {
 		}
 	}
 
-	for i := 0; i < numScopeSpans; i++ {
+	for i := range numScopeSpans {
 		if _, ok := matchingScopeSpans[actual.ScopeSpans().At(i)]; !ok {
 			errs = multierr.Append(errs, fmt.Errorf("unexpected scope: %s", actual.ScopeSpans().At(i).Scope().Name()))
 		}
@@ -168,10 +168,10 @@ func CompareScopeSpans(expected, actual ptrace.ScopeSpans) error {
 	matchingSpans := make(map[ptrace.Span]ptrace.Span, numSpans)
 
 	var outOfOrderErrs error
-	for e := 0; e < numSpans; e++ {
+	for e := range numSpans {
 		es := expected.Spans().At(e)
 		var foundMatch bool
-		for a := 0; a < numSpans; a++ {
+		for a := range numSpans {
 			as := actual.Spans().At(a)
 			if _, ok := matchingSpans[as]; ok {
 				continue
@@ -192,7 +192,7 @@ func CompareScopeSpans(expected, actual ptrace.ScopeSpans) error {
 		}
 	}
 
-	for i := 0; i < numSpans; i++ {
+	for i := range numSpans {
 		if _, ok := matchingSpans[actual.Spans().At(i)]; !ok {
 			errs = multierr.Append(errs, fmt.Errorf("unexpected span: %s", actual.Spans().At(i).Name()))
 		}
@@ -302,10 +302,10 @@ func compareSpanEventSlice(expected, actual ptrace.SpanEventSlice) (errs error) 
 	matchingSpanEvents := make(map[ptrace.SpanEvent]ptrace.SpanEvent, numSpanEvents)
 
 	var outOfOrderErrs error
-	for e := 0; e < numSpanEvents; e++ {
+	for e := range numSpanEvents {
 		ee := expected.At(e)
 		var foundMatch bool
-		for a := 0; a < numSpanEvents; a++ {
+		for a := range numSpanEvents {
 			ae := actual.At(a)
 			if _, ok := matchingSpanEvents[ae]; ok {
 				continue
@@ -326,7 +326,7 @@ func compareSpanEventSlice(expected, actual ptrace.SpanEventSlice) (errs error) 
 		}
 	}
 
-	for i := 0; i < numSpanEvents; i++ {
+	for i := range numSpanEvents {
 		if _, ok := matchingSpanEvents[actual.At(i)]; !ok {
 			errs = multierr.Append(errs, fmt.Errorf("unexpected span event: %s", actual.At(i).Name()))
 		}
@@ -382,10 +382,10 @@ func compareSpanLinkSlice(expected, actual ptrace.SpanLinkSlice) (errs error) {
 	matchingSpanLinks := make(map[ptrace.SpanLink]ptrace.SpanLink, numSpanLinks)
 
 	var outOfOrderErrs error
-	for e := 0; e < numSpanLinks; e++ {
+	for e := range numSpanLinks {
 		el := expected.At(e)
 		var foundMatch bool
-		for a := 0; a < numSpanLinks; a++ {
+		for a := range numSpanLinks {
 			al := actual.At(a)
 			if _, ok := matchingSpanLinks[al]; ok {
 				continue
@@ -406,7 +406,7 @@ func compareSpanLinkSlice(expected, actual ptrace.SpanLinkSlice) (errs error) {
 		}
 	}
 
-	for i := 0; i < numSpanLinks; i++ {
+	for i := range numSpanLinks {
 		if _, ok := matchingSpanLinks[actual.At(i)]; !ok {
 			errs = multierr.Append(errs, fmt.Errorf("unexpected span link: %s", actual.At(i).SpanID()))
 		}
