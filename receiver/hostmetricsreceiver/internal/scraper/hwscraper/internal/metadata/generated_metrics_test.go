@@ -59,7 +59,6 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount := 0
 			allMetricsCount := 0
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordHwStatusDataPoint(ts, 1, "id-val", AttributeStateDegraded, AttributeTypeBattery, "name-val", "parent-val")
 
