@@ -23,16 +23,16 @@ func BenchmarkUnroll(b *testing.B) {
 	}
 	testLogs := createTestResourceLogs()
 
-	for n := 0; n < b.N; n++ {
+	for b.Loop() {
 		_, _ = unrollProcessor.ProcessLogs(b.Context(), testLogs)
 	}
 }
 
 func createTestResourceLogs() plog.Logs {
 	rl := plog.NewLogs()
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		resourceLog := rl.ResourceLogs().AppendEmpty()
-		for j := 0; j < 10; j++ {
+		for range 10 {
 			scopeLogs := resourceLog.ScopeLogs().AppendEmpty()
 			_ = scopeLogs.LogRecords().AppendEmpty().Body().SetEmptySlice().FromRaw([]any{1, 2, 3, 4, 5, 6, 7})
 		}
