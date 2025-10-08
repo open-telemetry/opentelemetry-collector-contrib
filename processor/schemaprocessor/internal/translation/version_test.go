@@ -121,8 +121,7 @@ var ver *Version
 func BenchmarkParsingVersion(b *testing.B) {
 	b.ReportAllocs()
 
-	b.StopTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		var err error
 		b.StartTimer()
 		ver, err = NewVersion("1.16.9")
