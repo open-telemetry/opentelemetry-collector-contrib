@@ -308,6 +308,7 @@ body:
       - receiver/purefb
       - receiver/rabbitmq
       - receiver/receivercreator
+      - receiver/redfish
       - receiver/redis
       - receiver/riak
       - receiver/saphana
