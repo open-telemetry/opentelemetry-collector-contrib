@@ -295,12 +295,12 @@ func BenchmarkLogsExporter_PushLogs(b *testing.B) {
 	}
 	for _, numLogs := range testCases {
 		b.Run("numLogs="+fmt.Sprint(numLogs), func(b *testing.B) {
-			for i := 0; i < b.N; i++ {
+			for b.Loop() {
 				logs := plog.NewLogs()
 				rl := logs.ResourceLogs().AppendEmpty()
 				rl.Resource().Attributes().PutStr("service.name", "benchmark-service")
 				sl := rl.ScopeLogs().AppendEmpty()
-				for j := 0; j < numLogs; j++ {
+				for range numLogs {
 					logRecord := sl.LogRecords().AppendEmpty()
 					logRecord.Body().SetStr("benchmark log message")
 					logRecord.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
@@ -419,7 +419,7 @@ func TestLogsExporter_PushLogs_Performance(t *testing.T) {
 		sl := rl.ScopeLogs().AppendEmpty()
 
 		logCount := 3000
-		for i := 0; i < logCount; i++ {
+		for i := range logCount {
 			logRecord := sl.LogRecords().AppendEmpty()
 			logRecord.Body().SetStr(fmt.Sprintf("test log message %d", i))
 			logRecord.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
@@ -438,7 +438,7 @@ func TestLogsExporter_PushLogs_Performance(t *testing.T) {
 	t.Run("Over rate limit", func(t *testing.T) {
 		mockSrv.recvCount = 0
 
-		for i := 0; i < 5; i++ {
+		for range 5 {
 			exp.EnableRateLimit()
 		}
 
@@ -448,7 +448,7 @@ func TestLogsExporter_PushLogs_Performance(t *testing.T) {
 		sl := rl.ScopeLogs().AppendEmpty()
 
 		logCount := 7000
-		for i := 0; i < logCount; i++ {
+		for i := range logCount {
 			logRecord := sl.LogRecords().AppendEmpty()
 			logRecord.Body().SetStr(fmt.Sprintf("test log message %d", i))
 			logRecord.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
@@ -493,7 +493,7 @@ func TestLogsExporter_PushLogs_Performance(t *testing.T) {
 		sl := rl.ScopeLogs().AppendEmpty()
 
 		logCount := 3000
-		for i := 0; i < logCount; i++ {
+		for i := range logCount {
 			logRecord := sl.LogRecords().AppendEmpty()
 			logRecord.Body().SetStr(fmt.Sprintf("test log message %d", i))
 			logRecord.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
@@ -539,7 +539,7 @@ func TestLogsExporter_RateLimitErrorCountReset(t *testing.T) {
 		require.NoError(t, err)
 	}()
 
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		exp.EnableRateLimit()
 	}
 	assert.Equal(t, int32(5), exp.rateError.errorCount.Load())
@@ -616,7 +616,7 @@ func TestLogsExporter_RateLimitCounterResetOnSuccess(t *testing.T) {
 	})
 
 	t.Run("Trigger errors below threshold", func(t *testing.T) {
-		for i := 0; i < 4; i++ {
+		for range 4 {
 			exp.EnableRateLimit()
 		}
 		assert.Equal(t, int32(4), exp.rateError.errorCount.Load())
