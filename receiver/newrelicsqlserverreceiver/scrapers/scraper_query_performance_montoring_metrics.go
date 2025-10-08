@@ -38,11 +38,20 @@
 //	}
 //
 // Metrics Generated:
-// - mssql.performance.slow_queries.count
-// - mssql.performance.slow_queries.duration
-// - mssql.performance.blocking_sessions.count
-// - mssql.performance.execution_plans.cache_hit_ratio
-// - mssql.performance.execution_plans.recompiles_per_sec
+// - sqlserver.slowquery.avg_cpu_time_ms
+// - sqlserver.slowquery.avg_disk_reads
+// - sqlserver.slowquery.avg_disk_writes
+// - sqlserver.slowquery.avg_elapsed_time_ms
+// - sqlserver.slowquery.execution_count
+// - sqlserver.slowquery.query_text
+// - sqlserver.slowquery.query_id
+// - sqlserver.blocking_query.wait_time_seconds
+// - sqlserver.blocked_query.wait_time_seconds
+// - sqlserver.wait_analysis.query_text
+// - sqlserver.wait_analysis.total_wait_time_ms
+// - sqlserver.wait_analysis.avg_wait_time_ms
+// - sqlserver.wait_analysis.wait_event_count
+// - sqlserver.wait_analysis.last_execution_time
 //
 // Engine-Specific Considerations:
 // - Azure SQL Database: Limited access to some DMVs, use Azure-specific alternatives
@@ -352,29 +361,27 @@ func (s *QueryPerformanceScraper) processSlowQueryMetrics(result models.SlowQuer
 func (s *QueryPerformanceScraper) processBlockingSessionMetrics(result models.BlockingSession, scopeMetrics pmetric.ScopeMetrics, index int) error {
     timestamp := pcommon.NewTimestampFromTime(time.Now())
     
-    // Create BlockingSPID metric
-    if result.BlockingSPID != nil {
+    // Create BlockingSPID metric as wait time
+    if result.WaitTimeInSeconds != nil && result.BlockingSPID != nil {
         metric := scopeMetrics.Metrics().AppendEmpty()
-        metric.SetName("sqlserver.blockingsession.blocking_spid")
-        metric.SetDescription("Blocking session SPID")
-        metric.SetUnit("1")
+        metric.SetName("sqlserver.blocking_query.wait_time_seconds")
+        metric.SetDescription("Wait time in seconds for blocking query")
+        metric.SetUnit("s")
         
         gauge := metric.SetEmptyGauge()
         dataPoint := gauge.DataPoints().AppendEmpty()
         dataPoint.SetTimestamp(timestamp)
         dataPoint.SetStartTimestamp(s.startTime)
-        dataPoint.SetIntValue(int64(*result.BlockingSPID))
+        dataPoint.SetDoubleValue(*result.WaitTimeInSeconds)
         
-        // Set BlockingSPID attributes
+        // Set attributes including blocking SPID as an attribute
         attrs := dataPoint.Attributes()
+        attrs.PutInt("BlockingSPID", int64(*result.BlockingSPID))
         if result.BlockingStatus != nil {
             attrs.PutStr("BlockingStatus", *result.BlockingStatus)
         }
         if result.WaitType != nil {
             attrs.PutStr("WaitType", *result.WaitType)
-        }
-        if result.WaitTimeInSeconds != nil {
-            attrs.PutDouble("WaitTimeInSeconds", *result.WaitTimeInSeconds)
         }
         if result.DatabaseName != nil {
             attrs.PutStr("DatabaseName", *result.DatabaseName)
@@ -387,29 +394,27 @@ func (s *QueryPerformanceScraper) processBlockingSessionMetrics(result models.Bl
         }
     }
 
-    // Create BlockedSPID metric
-    if result.BlockedSPID != nil {
+    // Create BlockedSPID metric as wait time
+    if result.WaitTimeInSeconds != nil && result.BlockedSPID != nil {
         metric := scopeMetrics.Metrics().AppendEmpty()
-        metric.SetName("sqlserver.blockingsession.blocked_spid")
-        metric.SetDescription("Blocked session SPID")
-        metric.SetUnit("1")
+        metric.SetName("sqlserver.blocked_query.wait_time_seconds")
+        metric.SetDescription("Wait time in seconds for blocked query")
+        metric.SetUnit("s")
         
         gauge := metric.SetEmptyGauge()
         dataPoint := gauge.DataPoints().AppendEmpty()
         dataPoint.SetTimestamp(timestamp)
         dataPoint.SetStartTimestamp(s.startTime)
-        dataPoint.SetIntValue(int64(*result.BlockedSPID))
+        dataPoint.SetDoubleValue(*result.WaitTimeInSeconds)
         
-        // Set BlockedSPID attributes
+        // Set attributes including blocked SPID as an attribute
         attrs := dataPoint.Attributes()
+        attrs.PutInt("BlockedSPID", int64(*result.BlockedSPID))
         if result.BlockedStatus != nil {
             attrs.PutStr("BlockedStatus", *result.BlockedStatus)
         }
         if result.WaitType != nil {
             attrs.PutStr("WaitType", *result.WaitType)
-        }
-        if result.WaitTimeInSeconds != nil {
-            attrs.PutDouble("WaitTimeInSeconds", *result.WaitTimeInSeconds)
         }
         if result.DatabaseName != nil {
             attrs.PutStr("DatabaseName", *result.DatabaseName)
