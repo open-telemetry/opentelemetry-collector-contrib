@@ -671,6 +671,7 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 func TestSetSamplingPolicy(t *testing.T) {
 	controller := newTestTSPController()
 	msp := new(consumertest.TracesSink)
+	telem := setupTestTelemetry()
 
 	cfg := Config{
 		DecisionWait: defaultTestDecisionWait,
@@ -678,8 +679,12 @@ func TestSetSamplingPolicy(t *testing.T) {
 		PolicyCfgs: []PolicyCfg{
 			{
 				sharedPolicyCfg: sharedPolicyCfg{
-					Name: "always",
-					Type: AlwaysSample,
+					Name: "only-metrics",
+					Type: StringAttribute,
+					StringAttributeCfg: StringAttributeCfg{
+						Key:    "url.path",
+						Values: []string{"/metrics"},
+					},
 				},
 			},
 		},
@@ -687,7 +692,7 @@ func TestSetSamplingPolicy(t *testing.T) {
 			withTestController(controller),
 		},
 	}
-	p, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), msp, cfg)
+	p, err := newTracesProcessor(t.Context(), telem.newSettings(), msp, cfg)
 	require.NoError(t, err)
 
 	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
@@ -695,65 +700,52 @@ func TestSetSamplingPolicy(t *testing.T) {
 		require.NoError(t, p.Shutdown(t.Context()))
 	}()
 
-	tsp := p.(*tailSamplingSpanProcessor)
+	// Send some metrics traces and confirm they are sampled
+	metricsTrace := simpleTracesWithID(uInt64ToTraceID(1))
+	metricsTrace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("url.path", "/metrics")
+	healthTrace := simpleTracesWithID(uInt64ToTraceID(2))
+	healthTrace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("url.path", "/health")
 
-	assert.Len(t, tsp.policies, 1)
+	require.NoError(t, p.ConsumeTraces(t.Context(), metricsTrace))
+	require.NoError(t, p.ConsumeTraces(t.Context(), healthTrace))
 
 	controller.waitForTick()
+	controller.waitForTick()
 
-	assert.Len(t, tsp.policies, 1)
+	assert.Len(t, msp.AllTraces(), 1)
+	assert.Equal(t, uInt64ToTraceID(1), msp.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID())
+
+	msp.Reset()
 
 	cfgs := []PolicyCfg{
 		{
 			sharedPolicyCfg: sharedPolicyCfg{
-				Name: "always",
-				Type: AlwaysSample,
-			},
-		},
-		{
-			sharedPolicyCfg: sharedPolicyCfg{
-				Name: "everything",
-				Type: AlwaysSample,
-			},
-		},
-	}
-	tsp.SetSamplingPolicy(cfgs)
-
-	assert.Len(t, tsp.policies, 1)
-
-	controller.waitForTick()
-
-	assert.Len(t, tsp.policies, 2)
-
-	// Duplicate policy name.
-	cfgs = []PolicyCfg{
-		{
-			sharedPolicyCfg: sharedPolicyCfg{
-				Name: "always",
-				Type: AlwaysSample,
-			},
-		},
-		{
-			sharedPolicyCfg: sharedPolicyCfg{
-				Name: "everything",
-				Type: AlwaysSample,
-			},
-		},
-		{
-			sharedPolicyCfg: sharedPolicyCfg{
-				Name: "everything",
-				Type: AlwaysSample,
+				Name: "only-health",
+				Type: StringAttribute,
+				StringAttributeCfg: StringAttributeCfg{
+					Key:    "url.path",
+					Values: []string{"/health"},
+				},
 			},
 		},
 	}
-	tsp.SetSamplingPolicy(cfgs)
-
-	assert.Len(t, tsp.policies, 2)
+	p.(*tailSamplingSpanProcessor).SetSamplingPolicy(cfgs)
 
 	controller.waitForTick()
 
-	// Should revert sampling policy.
-	assert.Len(t, tsp.policies, 2)
+	metricsTrace = simpleTracesWithID(uInt64ToTraceID(3))
+	metricsTrace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("url.path", "/metrics")
+	healthTrace = simpleTracesWithID(uInt64ToTraceID(4))
+	healthTrace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("url.path", "/health")
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), metricsTrace))
+	require.NoError(t, p.ConsumeTraces(t.Context(), healthTrace))
+
+	controller.waitForTick()
+	controller.waitForTick()
+
+	assert.Len(t, msp.AllTraces(), 1)
+	assert.Equal(t, uInt64ToTraceID(4), msp.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID())
 }
 
 func TestSubSecondDecisionTime(t *testing.T) {
