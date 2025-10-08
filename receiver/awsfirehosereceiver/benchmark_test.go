@@ -65,7 +65,7 @@ func BenchmarkLogsConsumer_cwlogs(b *testing.B) {
 				require.NoError(b, err)
 
 				b.ResetTimer()
-				for i := 0; i < b.N; i++ {
+				for b.Loop() {
 					req := newTestRequest(body)
 					recorder := httptest.NewRecorder()
 					r.(http.Handler).ServeHTTP(recorder, req)
@@ -121,7 +121,7 @@ func BenchmarkMetricsConsumer_cwmetrics(b *testing.B) {
 				require.NoError(b, err)
 
 				b.ResetTimer()
-				for i := 0; i < b.N; i++ {
+				for b.Loop() {
 					req := newTestRequest(body)
 					recorder := httptest.NewRecorder()
 					r.(http.Handler).ServeHTTP(recorder, req)
@@ -137,7 +137,7 @@ func BenchmarkMetricsConsumer_cwmetrics(b *testing.B) {
 func makeCloudWatchLogRecord(rng *rand.Rand, numLogs, numLogGroups int) []byte {
 	var buf bytes.Buffer
 	w := gzip.NewWriter(&buf)
-	for i := 0; i < numLogs; i++ {
+	for i := range numLogs {
 		group := rng.IntN(numLogGroups)
 		fmt.Fprintf(w,
 			`{"messageType":"DATA_MESSAGE","owner":"123","logGroup":"group_%d","logStream":"stream","logEvents":[{"id":"the_id","timestamp":1725594035523,"message":"message %d"}]}`,
@@ -153,7 +153,7 @@ func makeCloudWatchLogRecord(rng *rand.Rand, numLogs, numLogGroups int) []byte {
 
 func makeCloudWatchMetricRecord(rng *rand.Rand, numMetrics, numStreams int) []byte {
 	var buf bytes.Buffer
-	for i := 0; i < numMetrics; i++ {
+	for i := range numMetrics {
 		stream := rng.IntN(numStreams)
 		fmt.Fprintf(&buf,
 			`{"metric_stream_name":"stream_%d","account_id":"1234567890","region":"us-east-1","namespace":"AWS/NATGateway","metric_name":"metric_%d","dimensions":{"NatGatewayId":"nat-01a4160dfb995b990"},"timestamp":1643916720000,"value":{"max":0.0,"min":0.0,"sum":0.0,"count":2.0},"unit":"Count"}`,
