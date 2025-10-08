@@ -194,92 +194,116 @@ func TestTraceIntegrity(t *testing.T) {
 }
 
 func TestSequentialTraceArrival(t *testing.T) {
-	traceIDs, batches := generateIDsAndBatches(128)
-	cfg := Config{
-		DecisionWait:            defaultTestDecisionWait,
-		NumTraces:               uint64(2 * len(traceIDs)),
-		ExpectedNewTracesPerSec: 64,
-		PolicyCfgs:              testPolicy,
-		Options: []Option{
-			withTickerFrequency(time.Millisecond),
-		},
-	}
-	sp, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), consumertest.NewNop(), cfg)
-	require.NoError(t, err)
-
-	err = sp.Start(t.Context(), componenttest.NewNopHost())
-	require.NoError(t, err)
-	defer func() {
-		err = sp.Shutdown(t.Context())
+	synctest.Test(t, func(t *testing.T) {
+		traceIDs, batches := generateIDsAndBatches(128)
+		cfg := Config{
+			DecisionWait:            defaultTestDecisionWait,
+			NumTraces:               uint64(2 * len(traceIDs)),
+			ExpectedNewTracesPerSec: 64,
+			PolicyCfgs:              testPolicy,
+			Options: []Option{
+				withTickerFrequency(time.Millisecond),
+			},
+		}
+		telem := setupTestTelemetry()
+		telemetrySettings := telem.newSettings()
+		nextConsumer := new(consumertest.TracesSink)
+		sp, err := newTracesProcessor(t.Context(), telemetrySettings, nextConsumer, cfg)
 		require.NoError(t, err)
-	}()
 
-	for _, batch := range batches {
-		require.NoError(t, sp.ConsumeTraces(t.Context(), batch))
-	}
+		err = sp.Start(t.Context(), componenttest.NewNopHost())
+		require.NoError(t, err)
+		defer func() {
+			err = sp.Shutdown(t.Context())
+			require.NoError(t, err)
+		}()
 
-	tsp := sp.(*tailSamplingSpanProcessor)
-	for i := range traceIDs {
-		d, ok := tsp.idToTrace.Load(traceIDs[i])
-		require.True(t, ok, "Missing expected traceId")
-		v := d.(*samplingpolicy.TraceData)
-		require.Equal(t, int64(i+1), v.SpanCount.Load(), "Incorrect number of spans for entry %d", i)
-	}
+		for _, batch := range batches {
+			require.NoError(t, sp.ConsumeTraces(t.Context(), batch))
+		}
+
+		waitForTick()
+
+		allSampledTraces := nextConsumer.AllTraces()
+		sampledTraceIDs := make(map[pcommon.TraceID]struct{})
+		for _, trace := range allSampledTraces {
+			sampledTraceIDs[trace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID()] = struct{}{}
+		}
+		require.Equal(t, 128, len(sampledTraceIDs))
+		for _, expectedTrace := range traceIDs {
+			_, ok := sampledTraceIDs[expectedTrace]
+			require.True(t, ok, "Expected trace %v to be sampled", expectedTrace)
+			delete(sampledTraceIDs, expectedTrace)
+		}
+		require.Equal(t, 0, len(sampledTraceIDs), "No extra traces should be sampled")
+	})
 }
 
 func TestConcurrentTraceArrival(t *testing.T) {
-	traceIDs, batches := generateIDsAndBatches(128)
+	synctest.Test(t, func(t *testing.T) {
+		traceIDs, batches := generateIDsAndBatches(128)
 
-	var wg sync.WaitGroup
-	cfg := Config{
-		DecisionWait:            defaultTestDecisionWait,
-		NumTraces:               uint64(2 * len(traceIDs)),
-		ExpectedNewTracesPerSec: 64,
-		PolicyCfgs:              testPolicy,
-		Options: []Option{
-			withTickerFrequency(time.Millisecond),
-		},
-	}
-	sp, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), consumertest.NewNop(), cfg)
-	require.NoError(t, err)
-
-	err = sp.Start(t.Context(), componenttest.NewNopHost())
-	require.NoError(t, err)
-	defer func() {
-		err = sp.Shutdown(t.Context())
+		var wg sync.WaitGroup
+		cfg := Config{
+			DecisionWait:            defaultTestDecisionWait,
+			NumTraces:               uint64(2 * len(traceIDs)),
+			ExpectedNewTracesPerSec: 64,
+			PolicyCfgs:              testPolicy,
+			Options: []Option{
+				withTickerFrequency(time.Millisecond),
+			},
+		}
+		telem := setupTestTelemetry()
+		telemetrySettings := telem.newSettings()
+		nextConsumer := new(consumertest.TracesSink)
+		sp, err := newTracesProcessor(t.Context(), telemetrySettings, nextConsumer, cfg)
 		require.NoError(t, err)
-	}()
 
-	// Limit the concurrency here to avoid creating too many goroutines and hit
-	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9126
-	concurrencyLimiter := make(chan struct{}, 128)
-	defer close(concurrencyLimiter)
-	for _, batch := range batches {
-		// Add the same traceId twice.
-		wg.Add(2)
-		concurrencyLimiter <- struct{}{}
-		go func(td ptrace.Traces) {
-			assert.NoError(t, sp.ConsumeTraces(t.Context(), td))
-			wg.Done()
-			<-concurrencyLimiter
-		}(batch)
-		concurrencyLimiter <- struct{}{}
-		go func(td ptrace.Traces) {
-			assert.NoError(t, sp.ConsumeTraces(t.Context(), td))
-			wg.Done()
-			<-concurrencyLimiter
-		}(batch)
-	}
+		err = sp.Start(t.Context(), componenttest.NewNopHost())
+		require.NoError(t, err)
+		defer func() {
+			err = sp.Shutdown(t.Context())
+			require.NoError(t, err)
+		}()
 
-	wg.Wait()
+		// Limit the concurrency here to avoid creating too many goroutines and hit
+		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9126
+		concurrencyLimiter := make(chan struct{}, 128)
+		defer close(concurrencyLimiter)
+		for _, batch := range batches {
+			// Add the same traceId twice.
+			wg.Add(2)
+			concurrencyLimiter <- struct{}{}
+			go func(td ptrace.Traces) {
+				assert.NoError(t, sp.ConsumeTraces(t.Context(), td))
+				wg.Done()
+				<-concurrencyLimiter
+			}(batch)
+			concurrencyLimiter <- struct{}{}
+			go func(td ptrace.Traces) {
+				assert.NoError(t, sp.ConsumeTraces(t.Context(), td))
+				wg.Done()
+				<-concurrencyLimiter
+			}(batch)
+		}
 
-	tsp := sp.(*tailSamplingSpanProcessor)
-	for i := range traceIDs {
-		d, ok := tsp.idToTrace.Load(traceIDs[i])
-		require.True(t, ok, "Missing expected traceId")
-		v := d.(*samplingpolicy.TraceData)
-		require.Equal(t, int64(i+1)*2, v.SpanCount.Load(), "Incorrect number of spans for entry %d", i)
-	}
+		wg.Wait()
+
+		waitForTick()
+
+		allSampledTraces := nextConsumer.AllTraces()
+		sampledTraceIDs := make(map[pcommon.TraceID]struct{})
+		for _, trace := range allSampledTraces {
+			sampledTraceIDs[trace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID()] = struct{}{}
+		}
+		require.Equal(t, 128, len(sampledTraceIDs))
+		for _, expectedTrace := range traceIDs {
+			_, ok := sampledTraceIDs[expectedTrace]
+			require.True(t, ok, "Expected trace %v to be sampled", expectedTrace)
+			delete(sampledTraceIDs, expectedTrace)
+		}
+		require.Equal(t, 0, len(sampledTraceIDs), "No extra traces should be sampled")
+	})
 }
 
 func TestConcurrentArrivalAndEvaluation(t *testing.T) {
@@ -334,37 +358,53 @@ func TestConcurrentArrivalAndEvaluation(t *testing.T) {
 }
 
 func TestSequentialTraceMapSize(t *testing.T) {
-	traceIDs, batches := generateIDsAndBatches(210)
-	cfg := Config{
-		DecisionWait:            defaultTestDecisionWait,
-		NumTraces:               defaultNumTraces,
-		ExpectedNewTracesPerSec: 64,
-		PolicyCfgs:              testPolicy,
-		Options: []Option{
-			withTickerFrequency(100 * time.Millisecond),
-		},
-	}
-	sp, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), consumertest.NewNop(), cfg)
-	require.NoError(t, err)
-
-	err = sp.Start(t.Context(), componenttest.NewNopHost())
-	require.NoError(t, err)
-	defer func() {
-		err = sp.Shutdown(t.Context())
+	synctest.Test(t, func(t *testing.T) {
+		traceIDs, batches := generateIDsAndBatches(210)
+		cfg := Config{
+			DecisionWait:            defaultTestDecisionWait,
+			NumTraces:               defaultNumTraces,
+			ExpectedNewTracesPerSec: 64,
+			PolicyCfgs:              testPolicy,
+			Options: []Option{
+				withTickerFrequency(100 * time.Millisecond),
+				withDecisionBatcher(newSyncIDBatcher()),
+			},
+		}
+		nextConsumer := new(consumertest.TracesSink)
+		sp, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), nextConsumer, cfg)
 		require.NoError(t, err)
-	}()
 
-	for _, batch := range batches {
-		err = sp.ConsumeTraces(t.Context(), batch)
+		err = sp.Start(t.Context(), componenttest.NewNopHost())
 		require.NoError(t, err)
-	}
+		defer func() {
+			err = sp.Shutdown(t.Context())
+			require.NoError(t, err)
+		}()
 
-	// On sequential insertion it is possible to know exactly which traces should be still on the map.
-	tsp := sp.(*tailSamplingSpanProcessor)
-	for i := 0; i < len(traceIDs)-int(cfg.NumTraces); i++ {
-		_, ok := tsp.idToTrace.Load(traceIDs[i])
-		require.False(t, ok, "Found unexpected traceId[%d] still on map (id: %v)", i, traceIDs[i])
-	}
+		for _, batch := range batches {
+			err = sp.ConsumeTraces(t.Context(), batch)
+			require.NoError(t, err)
+		}
+
+		// On sequential insertion it is possible to know exactly which traces
+		// should be still on the map. We expect those to be sampled now.
+		waitForTick()
+
+		allSampledTraces := nextConsumer.AllTraces()
+		sampledTraceIDs := make(map[pcommon.TraceID]struct{})
+		for _, trace := range allSampledTraces {
+			sampledTraceIDs[trace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID()] = struct{}{}
+		}
+
+		require.Equal(t, int(cfg.NumTraces), len(sampledTraceIDs))
+		for _, expectedTrace := range traceIDs[len(traceIDs)-int(cfg.NumTraces):] {
+			_, ok := sampledTraceIDs[expectedTrace]
+			require.True(t, ok, "Expected trace %v to be sampled", expectedTrace)
+			delete(sampledTraceIDs, expectedTrace)
+		}
+
+		require.Equal(t, 0, len(sampledTraceIDs), "No extra traces should be sampled")
+	})
 }
 
 func TestConsumptionDuringPolicyEvaluation(t *testing.T) {
@@ -502,13 +542,14 @@ func TestConcurrentTraceMapSize(t *testing.T) {
 
 	// Since we can't guarantee the order of insertion the only thing that can be checked is
 	// if the number of traces on the map matches the expected value.
-	cnt := 0
-	tsp := sp.(*tailSamplingSpanProcessor)
-	tsp.idToTrace.Range(func(_, _ any) bool {
-		cnt++
-		return true
-	})
-	require.Equal(t, maxSize, cnt, "Incorrect traces count on idToTrace")
+	// cnt := 0
+	// tsp := sp.(*tailSamplingSpanProcessor)
+	// tsp.idToTrace.Range(func(_, _ any) bool {
+	// 	cnt++
+	// 	return true
+	// })
+	// require.Equal(t, maxSize, cnt, "Incorrect traces count on idToTrace")
+	t.FailNow()
 }
 
 func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
