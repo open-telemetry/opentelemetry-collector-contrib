@@ -26,7 +26,7 @@ type aggregation struct {
 func newAggregateAttributesProcessor(config []aggregationPair) *aggregateAttributesProcessor {
 	aggregations := []*aggregation{}
 
-	for i := 0; i < len(config); i++ {
+	for i := range config {
 		pair := &aggregation{
 			attribute: config[i].Attribute,
 			prefixes:  config[i].Prefixes,
@@ -163,8 +163,8 @@ func (proc *aggregateAttributesProcessor) processAttributes(attributes pcommon.M
 
 // Checks if the key has given prefix and trims it if so.
 func getNewKey(key, prefix string) (bool, string) {
-	if strings.HasPrefix(key, prefix) {
-		return true, strings.TrimPrefix(key, prefix)
+	if after, ok := strings.CutPrefix(key, prefix); ok {
+		return true, after
 	}
 
 	return false, ""
