@@ -122,7 +122,7 @@ func (proc *aggregateAttributesProcessor) processAttributes(attributes pcommon.M
 			newMap.EnsureCapacity(attributes.Len())
 
 			for key, value := range attributes.All() {
-				ok, trimmedKey := getNewKey(key, prefix)
+				trimmedKey, ok := strings.CutPrefix(key, prefix)
 				if ok {
 					// TODO: Potential name conflict to resolve, eg.:
 					// pod_* matches pod_foo
@@ -159,13 +159,4 @@ func (proc *aggregateAttributesProcessor) processAttributes(attributes pcommon.M
 	}
 
 	return nil
-}
-
-// Checks if the key has given prefix and trims it if so.
-func getNewKey(key, prefix string) (bool, string) {
-	if after, ok := strings.CutPrefix(key, prefix); ok {
-		return true, after
-	}
-
-	return false, ""
 }
