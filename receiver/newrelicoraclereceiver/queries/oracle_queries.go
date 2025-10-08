@@ -6,6 +6,64 @@ package queries
 // Oracle SQL query for session count metric
 const (
 	SessionCountSQL = "SELECT COUNT(*) as SESSION_COUNT FROM v$session WHERE type = 'USER'"
+
+	// RAC-specific queries for cluster monitoring
+
+	// ASM Disk Group monitoring query
+	ASMDiskGroupSQL = `
+		SELECT
+			NAME,
+			TOTAL_MB,
+			FREE_MB,
+			OFFLINE_DISKS
+		FROM GV$ASM_DISKGROUP`
+
+	// Cluster wait events query
+	ClusterWaitEventsSQL = `
+		SELECT
+			INST_ID,
+			EVENT,
+			TOTAL_WAITS,
+			TIME_WAITED_MICRO
+		FROM GV$SYSTEM_EVENT
+		WHERE WAIT_CLASS = 'Cluster'`
+
+	// RAC instance status query
+	RACInstanceStatusSQL = `
+		SELECT
+			INST_ID,
+			INSTANCE_NAME,
+			HOST_NAME,
+			STATUS,
+			STARTUP_TIME,
+			DATABASE_STATUS,
+			ACTIVE_STATE,
+			LOGINS,
+			ARCHIVER,
+			VERSION
+		FROM GV$INSTANCE`
+
+	// Active services query for failover tracking
+	RACActiveServicesSQL = `
+		SELECT
+			NAME AS SERVICE_NAME,
+			INST_ID,
+			FAILOVER_METHOD,
+			FAILOVER_TYPE,
+			GOAL,
+			NETWORK_NAME,
+			CREATION_DATE,
+			FAILOVER_RETRIES,
+			FAILOVER_DELAY,
+			CLB_GOAL
+		FROM GV$ACTIVE_SERVICES`
+
+	// RAC detection query - checks if Oracle is running in RAC mode
+	RACDetectionSQL = `
+		SELECT 
+			VALUE 
+		FROM V$PARAMETER 
+		WHERE NAME = 'cluster_database'`
 )
 
 // Oracle SQL query for system metrics from gv$sysmetric

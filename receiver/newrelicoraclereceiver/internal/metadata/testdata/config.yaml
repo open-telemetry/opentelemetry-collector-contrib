@@ -1,6 +1,12 @@
 default:
 all_set:
   metrics:
+    newrelicoracledb.asm.diskgroup.free_mb:
+      enabled: true
+    newrelicoracledb.asm.diskgroup.offline_disks:
+      enabled: true
+    newrelicoracledb.asm.diskgroup.total_mb:
+      enabled: true
     newrelicoracledb.connection.active_sessions:
       enabled: true
     newrelicoracledb.connection.blocking_sessions:
@@ -192,6 +198,38 @@ all_set:
     newrelicoracledb.pdb.user_rollbacks_percentage:
       enabled: true
     newrelicoracledb.pdb.wait_time_ratio:
+      enabled: true
+    newrelicoracledb.rac.instance.active_state:
+      enabled: true
+    newrelicoracledb.rac.instance.archiver_started:
+      enabled: true
+    newrelicoracledb.rac.instance.database_status:
+      enabled: true
+    newrelicoracledb.rac.instance.logins_allowed:
+      enabled: true
+    newrelicoracledb.rac.instance.status:
+      enabled: true
+    newrelicoracledb.rac.instance.uptime_seconds:
+      enabled: true
+    newrelicoracledb.rac.instance.version_info:
+      enabled: true
+    newrelicoracledb.rac.service.clb_config:
+      enabled: true
+    newrelicoracledb.rac.service.creation_age_days:
+      enabled: true
+    newrelicoracledb.rac.service.failover_config:
+      enabled: true
+    newrelicoracledb.rac.service.failover_delay_seconds:
+      enabled: true
+    newrelicoracledb.rac.service.failover_retries:
+      enabled: true
+    newrelicoracledb.rac.service.instance_id:
+      enabled: true
+    newrelicoracledb.rac.service.network_config:
+      enabled: true
+    newrelicoracledb.rac.total_waits:
+      enabled: true
+    newrelicoracledb.rac.wait_time:
       enabled: true
     newrelicoracledb.redo_log_parallel_write_waits:
       enabled: true
@@ -546,6 +584,12 @@ all_set:
       enabled: true
 none_set:
   metrics:
+    newrelicoracledb.asm.diskgroup.free_mb:
+      enabled: false
+    newrelicoracledb.asm.diskgroup.offline_disks:
+      enabled: false
+    newrelicoracledb.asm.diskgroup.total_mb:
+      enabled: false
     newrelicoracledb.connection.active_sessions:
       enabled: false
     newrelicoracledb.connection.blocking_sessions:
@@ -737,6 +781,38 @@ none_set:
     newrelicoracledb.pdb.user_rollbacks_percentage:
       enabled: false
     newrelicoracledb.pdb.wait_time_ratio:
+      enabled: false
+    newrelicoracledb.rac.instance.active_state:
+      enabled: false
+    newrelicoracledb.rac.instance.archiver_started:
+      enabled: false
+    newrelicoracledb.rac.instance.database_status:
+      enabled: false
+    newrelicoracledb.rac.instance.logins_allowed:
+      enabled: false
+    newrelicoracledb.rac.instance.status:
+      enabled: false
+    newrelicoracledb.rac.instance.uptime_seconds:
+      enabled: false
+    newrelicoracledb.rac.instance.version_info:
+      enabled: false
+    newrelicoracledb.rac.service.clb_config:
+      enabled: false
+    newrelicoracledb.rac.service.creation_age_days:
+      enabled: false
+    newrelicoracledb.rac.service.failover_config:
+      enabled: false
+    newrelicoracledb.rac.service.failover_delay_seconds:
+      enabled: false
+    newrelicoracledb.rac.service.failover_retries:
+      enabled: false
+    newrelicoracledb.rac.service.instance_id:
+      enabled: false
+    newrelicoracledb.rac.service.network_config:
+      enabled: false
+    newrelicoracledb.rac.total_waits:
+      enabled: false
+    newrelicoracledb.rac.wait_time:
       enabled: false
     newrelicoracledb.redo_log_parallel_write_waits:
       enabled: false

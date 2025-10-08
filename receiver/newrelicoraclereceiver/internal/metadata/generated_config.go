@@ -28,6 +28,9 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for newrelicoracledb metrics.
 type MetricsConfig struct {
+	NewrelicoracledbAsmDiskgroupFreeMb                                 MetricConfig `mapstructure:"newrelicoracledb.asm.diskgroup.free_mb"`
+	NewrelicoracledbAsmDiskgroupOfflineDisks                           MetricConfig `mapstructure:"newrelicoracledb.asm.diskgroup.offline_disks"`
+	NewrelicoracledbAsmDiskgroupTotalMb                                MetricConfig `mapstructure:"newrelicoracledb.asm.diskgroup.total_mb"`
 	NewrelicoracledbConnectionActiveSessions                           MetricConfig `mapstructure:"newrelicoracledb.connection.active_sessions"`
 	NewrelicoracledbConnectionBlockingSessions                         MetricConfig `mapstructure:"newrelicoracledb.connection.blocking_sessions"`
 	NewrelicoracledbConnectionBytesReceived                            MetricConfig `mapstructure:"newrelicoracledb.connection.bytes_received"`
@@ -124,6 +127,22 @@ type MetricsConfig struct {
 	NewrelicoracledbPdbUserRollbacksPerSecond                          MetricConfig `mapstructure:"newrelicoracledb.pdb.user_rollbacks_per_second"`
 	NewrelicoracledbPdbUserRollbacksPercentage                         MetricConfig `mapstructure:"newrelicoracledb.pdb.user_rollbacks_percentage"`
 	NewrelicoracledbPdbWaitTimeRatio                                   MetricConfig `mapstructure:"newrelicoracledb.pdb.wait_time_ratio"`
+	NewrelicoracledbRacInstanceActiveState                             MetricConfig `mapstructure:"newrelicoracledb.rac.instance.active_state"`
+	NewrelicoracledbRacInstanceArchiverStarted                         MetricConfig `mapstructure:"newrelicoracledb.rac.instance.archiver_started"`
+	NewrelicoracledbRacInstanceDatabaseStatus                          MetricConfig `mapstructure:"newrelicoracledb.rac.instance.database_status"`
+	NewrelicoracledbRacInstanceLoginsAllowed                           MetricConfig `mapstructure:"newrelicoracledb.rac.instance.logins_allowed"`
+	NewrelicoracledbRacInstanceStatus                                  MetricConfig `mapstructure:"newrelicoracledb.rac.instance.status"`
+	NewrelicoracledbRacInstanceUptimeSeconds                           MetricConfig `mapstructure:"newrelicoracledb.rac.instance.uptime_seconds"`
+	NewrelicoracledbRacInstanceVersionInfo                             MetricConfig `mapstructure:"newrelicoracledb.rac.instance.version_info"`
+	NewrelicoracledbRacServiceClbConfig                                MetricConfig `mapstructure:"newrelicoracledb.rac.service.clb_config"`
+	NewrelicoracledbRacServiceCreationAgeDays                          MetricConfig `mapstructure:"newrelicoracledb.rac.service.creation_age_days"`
+	NewrelicoracledbRacServiceFailoverConfig                           MetricConfig `mapstructure:"newrelicoracledb.rac.service.failover_config"`
+	NewrelicoracledbRacServiceFailoverDelaySeconds                     MetricConfig `mapstructure:"newrelicoracledb.rac.service.failover_delay_seconds"`
+	NewrelicoracledbRacServiceFailoverRetries                          MetricConfig `mapstructure:"newrelicoracledb.rac.service.failover_retries"`
+	NewrelicoracledbRacServiceInstanceID                               MetricConfig `mapstructure:"newrelicoracledb.rac.service.instance_id"`
+	NewrelicoracledbRacServiceNetworkConfig                            MetricConfig `mapstructure:"newrelicoracledb.rac.service.network_config"`
+	NewrelicoracledbRacTotalWaits                                      MetricConfig `mapstructure:"newrelicoracledb.rac.total_waits"`
+	NewrelicoracledbRacWaitTime                                        MetricConfig `mapstructure:"newrelicoracledb.rac.wait_time"`
 	NewrelicoracledbRedoLogParallelWriteWaits                          MetricConfig `mapstructure:"newrelicoracledb.redo_log_parallel_write_waits"`
 	NewrelicoracledbRedoLogSwitchArchivingNeededWaits                  MetricConfig `mapstructure:"newrelicoracledb.redo_log_switch_archiving_needed_waits"`
 	NewrelicoracledbRedoLogSwitchCheckpointIncompleteWaits             MetricConfig `mapstructure:"newrelicoracledb.redo_log_switch_checkpoint_incomplete_waits"`
@@ -301,6 +320,15 @@ type MetricsConfig struct {
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
+		NewrelicoracledbAsmDiskgroupFreeMb: MetricConfig{
+			Enabled: true,
+		},
+		NewrelicoracledbAsmDiskgroupOfflineDisks: MetricConfig{
+			Enabled: true,
+		},
+		NewrelicoracledbAsmDiskgroupTotalMb: MetricConfig{
+			Enabled: true,
+		},
 		NewrelicoracledbConnectionActiveSessions: MetricConfig{
 			Enabled: true,
 		},
@@ -587,6 +615,54 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		NewrelicoracledbPdbWaitTimeRatio: MetricConfig{
+			Enabled: true,
+		},
+		NewrelicoracledbRacInstanceActiveState: MetricConfig{
+			Enabled: true,
+		},
+		NewrelicoracledbRacInstanceArchiverStarted: MetricConfig{
+			Enabled: true,
+		},
+		NewrelicoracledbRacInstanceDatabaseStatus: MetricConfig{
+			Enabled: true,
+		},
+		NewrelicoracledbRacInstanceLoginsAllowed: MetricConfig{
+			Enabled: true,
+		},
+		NewrelicoracledbRacInstanceStatus: MetricConfig{
+			Enabled: true,
+		},
+		NewrelicoracledbRacInstanceUptimeSeconds: MetricConfig{
+			Enabled: true,
+		},
+		NewrelicoracledbRacInstanceVersionInfo: MetricConfig{
+			Enabled: true,
+		},
+		NewrelicoracledbRacServiceClbConfig: MetricConfig{
+			Enabled: true,
+		},
+		NewrelicoracledbRacServiceCreationAgeDays: MetricConfig{
+			Enabled: true,
+		},
+		NewrelicoracledbRacServiceFailoverConfig: MetricConfig{
+			Enabled: true,
+		},
+		NewrelicoracledbRacServiceFailoverDelaySeconds: MetricConfig{
+			Enabled: true,
+		},
+		NewrelicoracledbRacServiceFailoverRetries: MetricConfig{
+			Enabled: true,
+		},
+		NewrelicoracledbRacServiceInstanceID: MetricConfig{
+			Enabled: true,
+		},
+		NewrelicoracledbRacServiceNetworkConfig: MetricConfig{
+			Enabled: true,
+		},
+		NewrelicoracledbRacTotalWaits: MetricConfig{
+			Enabled: true,
+		},
+		NewrelicoracledbRacWaitTime: MetricConfig{
 			Enabled: true,
 		},
 		NewrelicoracledbRedoLogParallelWriteWaits: MetricConfig{

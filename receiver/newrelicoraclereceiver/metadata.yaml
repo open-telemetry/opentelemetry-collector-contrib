@@ -64,6 +64,51 @@ attributes:
   resource.name:
     description: Oracle resource name
     type: string
+  diskgroup.name:
+    description: ASM disk group name
+    type: string
+  service.name:
+    description: Oracle database service name
+    type: string
+  rac.instance.name:
+    description: Oracle RAC instance name
+    type: string
+  host.name.rac:
+    description: Oracle RAC host name
+    type: string
+  instance.status:
+    description: Oracle RAC instance status
+    type: string
+  database.status:
+    description: Oracle database status (ACTIVE, SUSPENDED, etc.)
+    type: string
+  active.state:
+    description: Oracle instance active state (NORMAL, QUIESCING, etc.)
+    type: string
+  logins.status:
+    description: Oracle instance login status (ALLOWED, RESTRICTED)
+    type: string
+  archiver.status:
+    description: Oracle archiver status (STARTED, STOPPED)
+    type: string
+  failover.method:
+    description: Oracle service failover method
+    type: string
+  failover.type:
+    description: Oracle service failover type
+    type: string
+  service.goal:
+    description: Oracle service goal (THROUGHPUT, SERVICE_TIME, etc.)
+    type: string
+  oracle.version:
+    description: Oracle database version
+    type: string
+  network.name:
+    description: Oracle service network name
+    type: string
+  clb.goal:
+    description: Oracle service connection load balancing goal
+    type: string
 
 metrics:
   newrelicoracledb.sessions.count:
@@ -2794,6 +2839,238 @@ metrics:
     unit: By
     attributes:
       - newrelic.entity_name
+
+  # RAC-specific metrics for Feature 1: ASM Monitoring
+  newrelicoracledb.asm.diskgroup.total_mb:
+    description: Total capacity of the ASM disk group in MB
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "MB"
+    attributes:
+      - newrelic.entity_name
+      - diskgroup.name
+
+  newrelicoracledb.asm.diskgroup.free_mb:
+    description: Available free space in the ASM disk group in MB
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "MB"
+    attributes:
+      - newrelic.entity_name
+      - diskgroup.name
+
+  newrelicoracledb.asm.diskgroup.offline_disks:
+    description: Number of offline disks in the ASM disk group
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "{disks}"
+    attributes:
+      - newrelic.entity_name
+      - diskgroup.name
+
+  # RAC-specific metrics for Feature 2: Cluster Wait Events
+  newrelicoracledb.rac.wait_time:
+    description: Rate of cluster wait time in microseconds per second
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "us/s"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+      - wait.event
+
+  newrelicoracledb.rac.total_waits:
+    description: Total number of cluster wait events
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "{waits}"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+      - wait.event
+
+  # RAC-specific metrics for Feature 3A: Instance Status
+  newrelicoracledb.rac.instance.status:
+    description: RAC instance status (1=OPEN, 0=other)
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+      - rac.instance.name
+      - host.name.rac
+      - instance.status
+
+  # RAC-specific metrics for Feature 3B: Service Failover
+  newrelicoracledb.rac.service.instance_id:
+    description: Instance ID where the service is currently running
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - service.name
+      - instance.id
+
+  # Additional RAC Instance Health Metrics
+  newrelicoracledb.rac.instance.uptime_seconds:
+    description: Instance uptime in seconds since startup
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "s"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+      - rac.instance.name
+      - host.name.rac
+
+  newrelicoracledb.rac.instance.database_status:
+    description: Database status indicator (1=ACTIVE, 0=other)
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+      - rac.instance.name
+      - host.name.rac
+      - database.status
+
+  newrelicoracledb.rac.instance.active_state:
+    description: Instance active state indicator (1=NORMAL, 0=other)
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+      - rac.instance.name
+      - host.name.rac
+      - active.state
+
+  newrelicoracledb.rac.instance.logins_allowed:
+    description: Instance login status indicator (1=ALLOWED, 0=RESTRICTED)
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+      - rac.instance.name
+      - host.name.rac
+      - logins.status
+
+  newrelicoracledb.rac.instance.archiver_started:
+    description: Archiver status indicator (1=STARTED, 0=STOPPED)
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+      - rac.instance.name
+      - host.name.rac
+      - archiver.status
+
+  # Additional RAC Service Configuration Metrics
+  newrelicoracledb.rac.service.failover_config:
+    description: Service failover configuration indicator (always 1, config in attributes)
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - service.name
+      - instance.id
+      - failover.method
+      - failover.type
+      - service.goal
+
+  # Oracle Database Version Metric
+  newrelicoracledb.rac.instance.version_info:
+    description: Oracle database version information (always 1, version in attributes)
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - instance.id
+      - rac.instance.name
+      - host.name.rac
+      - oracle.version
+
+  # Enhanced Service Configuration Metrics
+  newrelicoracledb.rac.service.network_config:
+    description: Service network configuration (always 1, config in attributes)
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - service.name
+      - instance.id
+      - network.name
+
+  newrelicoracledb.rac.service.creation_age_days:
+    description: Service age in days since creation
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "d"
+    attributes:
+      - newrelic.entity_name
+      - service.name
+      - instance.id
+
+  newrelicoracledb.rac.service.failover_retries:
+    description: Number of failover retries configured for the service
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "{retries}"
+    attributes:
+      - newrelic.entity_name
+      - service.name
+      - instance.id
+
+  newrelicoracledb.rac.service.failover_delay_seconds:
+    description: Failover delay in seconds configured for the service
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "s"
+    attributes:
+      - newrelic.entity_name
+      - service.name
+      - instance.id
+
+  newrelicoracledb.rac.service.clb_config:
+    description: Connection load balancing configuration (always 1, config in attributes)
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+    attributes:
+      - newrelic.entity_name
+      - service.name
+      - instance.id
+      - clb.goal
 
 tests:
   config:
