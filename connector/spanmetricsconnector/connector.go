@@ -6,6 +6,7 @@ package spanmetricsconnector // import "github.com/open-telemetry/opentelemetry-
 import (
 	"bytes"
 	"context"
+	"slices"
 	"sync"
 	"time"
 
@@ -516,16 +517,6 @@ func (p *connectorImp) getOrCreateResourceMetrics(attr pcommon.Map) *resourceMet
 	return v
 }
 
-// contains checks if string slice contains a string value
-func contains(elements []string, value string) bool {
-	for _, element := range elements {
-		if value == element {
-			return true
-		}
-	}
-	return false
-}
-
 func (p *connectorImp) buildAttributes(
 	serviceName string,
 	span ptrace.Span,
@@ -535,25 +526,25 @@ func (p *connectorImp) buildAttributes(
 ) pcommon.Map {
 	attr := pcommon.NewMap()
 	attr.EnsureCapacity(5 + len(dimensions))
-	if !contains(p.config.ExcludeDimensions, serviceNameKey) {
+	if !slices.Contains(p.config.ExcludeDimensions, serviceNameKey) {
 		attr.PutStr(serviceNameKey, serviceName)
 	}
-	if !contains(p.config.ExcludeDimensions, spanNameKey) {
+	if !slices.Contains(p.config.ExcludeDimensions, spanNameKey) {
 		attr.PutStr(spanNameKey, span.Name())
 	}
-	if !contains(p.config.ExcludeDimensions, spanKindKey) {
+	if !slices.Contains(p.config.ExcludeDimensions, spanKindKey) {
 		attr.PutStr(spanKindKey, traceutil.SpanKindStr(span.Kind()))
 	}
-	if !contains(p.config.ExcludeDimensions, statusCodeKey) {
+	if !slices.Contains(p.config.ExcludeDimensions, statusCodeKey) {
 		attr.PutStr(statusCodeKey, traceutil.StatusCodeStr(span.Status().Code()))
 	}
 	if includeCollectorInstanceID.IsEnabled() {
-		if !contains(p.config.ExcludeDimensions, collectorInstanceKey) {
+		if !slices.Contains(p.config.ExcludeDimensions, collectorInstanceKey) {
 			attr.PutStr(collectorInstanceKey, p.instanceID)
 		}
 	}
 
-	if contains(p.config.IncludeInstrumentationScope, instrumentationScope.Name()) && instrumentationScope.Name() != "" {
+	if slices.Contains(p.config.IncludeInstrumentationScope, instrumentationScope.Name()) && instrumentationScope.Name() != "" {
 		attr.PutStr(instrumentationScopeNameKey, instrumentationScope.Name())
 		if instrumentationScope.Version() != "" {
 			attr.PutStr(instrumentationScopeVersionKey, instrumentationScope.Version())
@@ -588,16 +579,16 @@ func concatDimensionValue(dest *bytes.Buffer, value string, prefixSep bool) {
 func (p *connectorImp) buildKey(serviceName string, span ptrace.Span, optionalDims []utilattri.Dimension, resourceOrEventAttrs pcommon.Map) metrics.Key {
 	p.keyBuf.Reset()
 
-	if !contains(p.config.ExcludeDimensions, serviceNameKey) {
+	if !slices.Contains(p.config.ExcludeDimensions, serviceNameKey) {
 		concatDimensionValue(p.keyBuf, serviceName, false)
 	}
-	if !contains(p.config.ExcludeDimensions, spanNameKey) {
+	if !slices.Contains(p.config.ExcludeDimensions, spanNameKey) {
 		concatDimensionValue(p.keyBuf, span.Name(), true)
 	}
-	if !contains(p.config.ExcludeDimensions, spanKindKey) {
+	if !slices.Contains(p.config.ExcludeDimensions, spanKindKey) {
 		concatDimensionValue(p.keyBuf, traceutil.SpanKindStr(span.Kind()), true)
 	}
-	if !contains(p.config.ExcludeDimensions, statusCodeKey) {
+	if !slices.Contains(p.config.ExcludeDimensions, statusCodeKey) {
 		concatDimensionValue(p.keyBuf, traceutil.StatusCodeStr(span.Status().Code()), true)
 	}
 
