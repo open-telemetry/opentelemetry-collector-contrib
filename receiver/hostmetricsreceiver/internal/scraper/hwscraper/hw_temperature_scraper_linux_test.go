@@ -133,6 +133,7 @@ func TestHwTemperatureScraperScrape_Linux(t *testing.T) {
 	// All metrics enabled
 	allEnabledMetrics := metadata.DefaultMetricsBuilderConfig()
 	allEnabledMetrics.Metrics.HwTemperatureLimit.Enabled = true
+	allEnabledMetrics.Metrics.HwStatus.Enabled = true
 
 	testCases := []testCase{
 		{
@@ -144,7 +145,7 @@ func TestHwTemperatureScraperScrape_Linux(t *testing.T) {
 				},
 			},
 			metricsConfig:       metadata.DefaultMetricsBuilderConfig(),
-			expectedMetricCount: 2, // hw.temperature and hw.status (default enabled)
+			expectedMetricCount: 1, // hw.temperature only (hw.status disabled by default)
 			setupCompleteDir:    true,
 		},
 		{
@@ -168,7 +169,7 @@ func TestHwTemperatureScraperScrape_Linux(t *testing.T) {
 				},
 			},
 			metricsConfig:       disabledTempMetric,
-			expectedMetricCount: 1, // hw.status only
+			expectedMetricCount: 0, // no metrics (both disabled)
 			setupCompleteDir:    true,
 		},
 		{
@@ -180,7 +181,7 @@ func TestHwTemperatureScraperScrape_Linux(t *testing.T) {
 				},
 			},
 			metricsConfig:       disabledLimitMetric,
-			expectedMetricCount: 2, // hw.temperature and hw.status (limit already disabled by default)
+			expectedMetricCount: 1, // hw.temperature only (limit and status disabled by default)
 			setupCompleteDir:    true,
 		},
 		{
