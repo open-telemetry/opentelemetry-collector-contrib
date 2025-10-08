@@ -48,10 +48,6 @@ type TimeFormat struct {
 	Traces  []string `mapstructure:"traces"`
 }
 
-func isValidFormat(format string) bool {
-	return slices.Contains(validFormats, logFormat(format))
-}
-
 // Validate config
 func (config *Config) Validate() error {
 	if !azEventHubFeatureGate.IsEnabled() &&
@@ -70,7 +66,7 @@ func (config *Config) Validate() error {
 			return err
 		}
 	}
-	if !isValidFormat(config.Format) {
+	if !slices.Contains(validFormats, logFormat(config.Format)) {
 		return fmt.Errorf("invalid format; must be one of %#v", validFormats)
 	}
 	if config.Partition == "" && config.Offset != "" {
