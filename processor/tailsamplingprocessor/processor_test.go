@@ -554,48 +554,6 @@ func TestConsumptionDuringPolicyEvaluation(t *testing.T) {
 	}, 1*time.Second, 100*time.Millisecond)
 }
 
-func TestConcurrentTraceMapSize(t *testing.T) {
-	t.Skip("Flaky test, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9126")
-	_, batches := generateIDsAndBatches(210)
-	const maxSize = 100
-	var wg sync.WaitGroup
-	cfg := Config{
-		DecisionWait:            defaultTestDecisionWait,
-		NumTraces:               uint64(maxSize),
-		ExpectedNewTracesPerSec: 64,
-		PolicyCfgs:              testPolicy,
-		Options: []Option{
-			withTickerFrequency(100 * time.Millisecond),
-		},
-	}
-	sp, _ := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), consumertest.NewNop(), cfg)
-	require.NoError(t, sp.Start(t.Context(), componenttest.NewNopHost()))
-	defer func() {
-		require.NoError(t, sp.Shutdown(t.Context()))
-	}()
-
-	for _, batch := range batches {
-		wg.Add(1)
-		go func(td ptrace.Traces) {
-			assert.NoError(t, sp.ConsumeTraces(t.Context(), td))
-			wg.Done()
-		}(batch)
-	}
-
-	wg.Wait()
-
-	// Since we can't guarantee the order of insertion the only thing that can be checked is
-	// if the number of traces on the map matches the expected value.
-	// cnt := 0
-	// tsp := sp.(*tailSamplingSpanProcessor)
-	// tsp.idToTrace.Range(func(_, _ any) bool {
-	// 	cnt++
-	// 	return true
-	// })
-	// require.Equal(t, maxSize, cnt, "Incorrect traces count on idToTrace")
-	t.FailNow()
-}
-
 func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 	controller := newTestTSPController()
 	msp := new(consumertest.TracesSink)
