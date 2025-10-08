@@ -120,6 +120,7 @@ internal/common internal/common
 internal/coreinternal internal/core
 internal/datadog internal/datadog
 internal/docker internal/docker
+internal/e2e internal/e2e
 internal/exp/metrics internal/exp/metrics
 internal/filter internal/filter
 internal/grpcutil internal/grpcutil
@@ -191,6 +192,7 @@ processor/resourcedetectionprocessor/internal/akamai processor/resourcedetection
 processor/resourcedetectionprocessor/internal/digitalocean processor/resourcedetection/internal/digitalocean
 processor/resourcedetectionprocessor/internal/dynatrace processor/resourcedetection/internal/dynatrace
 processor/resourcedetectionprocessor/internal/hetzner processor/resourcedetection/internal/hetzner
+processor/resourcedetectionprocessor/internal/openstack/nova processor/resourcedetection/internal/openstack/nova
 processor/resourcedetectionprocessor/internal/oraclecloud processor/resourcedetection/internal/oraclecloud
 processor/resourcedetectionprocessor/internal/scaleway processor/resourcedetection/internal/scaleway
 processor/resourcedetectionprocessor/internal/upcloud processor/resourcedetection/internal/upcloud

@@ -150,9 +150,7 @@ func measurementToKeyVal(m *faroTypes.Measurement) *keyVal {
 	mergeKeyVal(kv, traceToKeyVal(m.Trace))
 
 	values := make(map[string]float64, len(m.Values))
-	for key, value := range m.Values {
-		values[key] = value
-	}
+	maps.Copy(values, m.Values)
 
 	mergeKeyValWithPrefix(kv, keyValFromFloatMap(values), faroMeasurementValuePrefix)
 	mergeKeyVal(kv, actionToKeyVal(m.Action))
