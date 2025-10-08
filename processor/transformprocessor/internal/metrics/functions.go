@@ -5,6 +5,7 @@ package metrics // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"go.opentelemetry.io/collector/featuregate"
+	"maps"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
@@ -28,9 +29,7 @@ func DataPointFunctions() map[string]ottl.Factory[ottldatapoint.TransformContext
 		newMergeHistogramBucketsFactory(),
 	)
 
-	for k, v := range datapointFunctions {
-		functions[k] = v
-	}
+	maps.Copy(functions, datapointFunctions)
 
 	return functions
 }
@@ -51,9 +50,7 @@ func MetricFunctions() map[string]ottl.Factory[ottlmetric.TransformContext] {
 		newConvertSummaryQuantileValToGaugeFactory(),
 	)
 
-	for k, v := range metricFunctions {
-		functions[k] = v
-	}
+	maps.Copy(functions, metricFunctions)
 
 	return functions
 }
