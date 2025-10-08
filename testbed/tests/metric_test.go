@@ -73,6 +73,17 @@ func TestMetric10kDPS(t *testing.T) {
 				ExpectedMaxRAM: 150,
 			},
 		},
+		{
+			name: "OtelArrow",
+			sender: datasenders.NewOtelarrowDataSender(
+				testbed.DefaultHost, testutil.GetAvailablePort(t),
+			),
+			receiver: datareceivers.NewOtelarrowDataReceiver(testutil.GetAvailablePort(t)),
+			resourceSpec: testbed.ResourceSpec{
+				ExpectedMaxCPU: 160,
+				ExpectedMaxRAM: 250,
+			},
+		},
 	}
 
 	for _, test := range tests {
