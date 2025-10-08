@@ -11,6 +11,15 @@ connector/spanmetricsconnector
 internal/common
 pkg/resourcetotelemetry
 exporter/carbonexporter
+internal/grpcutil
+internal/sharedcomponent
+receiver/otelarrowreceiver
+internal/otelarrow
+exporter/otelarrowexporter
+receiver/otelarrowreceiver
+internal/otelarrow
+exporter/otelarrowexporter
+receiver/otelarrowreceiver
 pkg/translator/prometheus
 pkg/translator/prometheusremotewrite
 exporter/prometheusremotewriteexporter
@@ -38,7 +47,6 @@ internal/aws/ecsutil
 internal/k8sconfig
 internal/metadataproviders
 internal/datadog
-internal/sharedcomponent
 pkg/datadog
 receiver/datadogreceiver
 receiver/jaegerreceiver
@@ -113,6 +121,7 @@ extension/encoding/otlpencodingextension
 exporter/fileexporter
 exporter/googlecloudexporter
 exporter/googlecloudpubsubexporter
+exporter/googlecloudstorageexporter
 exporter/googlemanagedprometheusexporter
 exporter/honeycombmarkerexporter
 exporter/influxdbexporter
@@ -126,14 +135,6 @@ exporter/logicmonitorexporter
 exporter/logzioexporter
 exporter/mezmoexporter
 exporter/opensearchexporter
-internal/grpcutil
-receiver/otelarrowreceiver
-internal/otelarrow
-exporter/otelarrowexporter
-receiver/otelarrowreceiver
-internal/otelarrow
-exporter/otelarrowexporter
-receiver/otelarrowreceiver
 exporter/pulsarexporter
 internal/rabbitmq
 exporter/rabbitmqexporter
