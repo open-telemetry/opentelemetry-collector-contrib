@@ -16,7 +16,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redfishreceiver/internal/metadata"
 )
 
-var typeStr = component.MustNewType("redfishreceiver")
+var typeStr = component.MustNewType("redfish")
 
 func createDefaultConfig() component.Config {
 	cfg := scraperhelper.NewDefaultControllerConfig()
