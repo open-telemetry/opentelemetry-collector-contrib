@@ -4,6 +4,52 @@ The translator for Azure logs receives azure resource logs as raw data and extra
 
 Currently, it expects the azure resource logs to be coming from event hub.
 
+## Common
+
+### Top-level Common Schema
+
+https://learn.microsoft.com/en-us/azure/azure-monitor/platform/resource-logs-schema#top-level-common-schema
+
+| Original Field (JSON) | Resource Attribute  |
+| --------------------- | ------------------- |
+| `resourceId`          | `cloud.resource_id` |
+
+| Original Field (JSON) | Log Record                                     |
+| --------------------- | ---------------------------------------------- |
+| `time`                | `timeUnixNano`                                 |
+| `level`               | Decoded as `severityNumber` and `severityText` |
+
+| Original Field (JSON) | Log Record Attribute      |
+| --------------------- | ------------------------- |
+| `tenantId`            | `cloud.account.id`        |
+| `operationName`       | `azure.operation.name`    |
+| `operationVersion`    | `azure.operation.version` |
+| `category`            | `azure.category`          |
+| `resultType`          | ?                         |
+| `resultSignature`     | ?                         |
+| `resultDescription`   | ?                         |
+| `durationMs`          | `azure.duration`          |
+| `callerIpAddress`     | `network.peer.address`    |
+| `correlationId`       | `azure.correlation.id`    |
+| `identity`            | `azure.identity`          |
+| `location`            | ?                         |
+
+
+### Identity
+
+| Original Field (JSON) | Log Record Attribute    |
+| --------------------- | ----------------------- |
+| `identity.claims`     | `azure.identity.claims` |
+
+#### Claims
+
+| Original Field (JSON)                                                | Log Record Attribute  |
+| -------------------------------------------------------------------- | --------------------- |
+| `http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress` | `user.email`          |
+
+
+## Azure Content Delivery Network (CDN)
+
 ### Azure CDN Access Logs
 
 The mapping for this category is as follows:
@@ -34,6 +80,7 @@ The mapping for this category is as follows:
 | `isReceivedFromClient`  | `network.io.direction`<br>- If `true`, `receive`<br>- Else, `transmit`                                                                |
 | `backendHostname`       | 1. `destination.address` <br>2. `destination.port`, if any                                                                            |
 
+## Azure Front Door
 
 ### Front Door Web Application Firewall Logs
 
@@ -81,3 +128,18 @@ The mapping for this category is as follows:
 | `securityCurves`      | `tls.curve`                                                                                                                           |
 | `securityCipher`      | `tls.cipher`                                                                                                                          |
 | `OriginIP`            | Split in:<br>1.`server.address`<br>2.`server.port`                                                                                    |
+
+## Activity Logs
+
+### Recommendation
+
+The mapping for this category is as follows:
+
+| Original Field (JSON)         | Log Record Attribute                  |
+| ----------------------------- | ------------------------------------- |
+| `recommendationCategory`      | `azure.recommendation.category`       |
+| `recommendationImpact`        | `azure.recommendation.impact`         |
+| `recommendationName`          | `azure.recommendation.name`           |
+| `recommendationResourceLink`  | `azure.recommendation.link`           |
+| `recommendationSchemaVersion` | `azure.recommendation.schema_version` |
+| `recommendationType`          | `azure.recommendation.type`           |
