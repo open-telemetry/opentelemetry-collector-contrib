@@ -48,7 +48,7 @@ func createCommunityIDFunction[K any](_ ottl.FunctionContext, oArgs ottl.Argumen
 	)
 }
 
-func CommunityIDHash[K any](
+func communityIDHash[K any](
 	sourceIP ottl.StringGetter[K],
 	sourcePort ottl.IntGetter[K],
 	destinationIP ottl.StringGetter[K],
@@ -142,7 +142,6 @@ func CommunityIDHash[K any](
 	}, nil
 }
 
-// Parse the protocol
 func resolveProtocolValue(protoStr string) (int, error) {
 	proto := -1
 	protoStr = strings.ToUpper(protoStr)
@@ -153,7 +152,7 @@ func resolveProtocolValue(protoStr string) (int, error) {
 		proto = 17
 	case "ICMP":
 		proto = 1
-	case "ICMPV6":
+	case "ICMP6":
 		proto = 58
 	case "SCTP":
 		proto = 132
