@@ -24,6 +24,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/k8snode"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/kubeadm"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/openshift"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/openstack/nova"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/oraclecloud"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/scaleway"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/system"
@@ -97,6 +98,9 @@ type DetectorConfig struct {
 	// OpenShift contains user-specified configurations for the OpenShift detector
 	OpenShiftConfig openshift.Config `mapstructure:"openshift"`
 
+	// OpenShift contains user-specified configurations for the OpenShift detector
+	OpenStackNovaConfig nova.Config `mapstructure:"nova"`
+
 	// OracleCloud contains user-specified configurations for the OracleCloud detector
 	OracleCloudConfig oraclecloud.Config `mapstructure:"oraclecloud"`
 
@@ -136,6 +140,7 @@ func detectorCreateDefaultConfig() DetectorConfig {
 		HetznerConfig:          hetzner.CreateDefaultConfig(),
 		SystemConfig:           system.CreateDefaultConfig(),
 		OpenShiftConfig:        openshift.CreateDefaultConfig(),
+		OpenStackNovaConfig:    nova.CreateDefaultConfig(),
 		OracleCloudConfig:      oraclecloud.CreateDefaultConfig(),
 		K8SNodeConfig:          k8snode.CreateDefaultConfig(),
 		KubeadmConfig:          kubeadm.CreateDefaultConfig(),
@@ -178,6 +183,8 @@ func (d *DetectorConfig) GetConfigFromType(detectorType internal.DetectorType) i
 		return d.SystemConfig
 	case openshift.TypeStr:
 		return d.OpenShiftConfig
+	case nova.TypeStr:
+		return d.OpenStackNovaConfig
 	case oraclecloud.TypeStr:
 		return d.OracleCloudConfig
 	case k8snode.TypeStr:

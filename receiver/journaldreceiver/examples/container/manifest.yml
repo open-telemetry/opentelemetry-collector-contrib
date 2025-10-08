@@ -1,0 +1,56 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-config
+data:
+  otel-config.yml: |
+    receivers:
+      journald:
+        directory: /opt/journal
+
+    exporters:
+      debug:
+        verbosity: normal
+
+    service:
+      pipelines:
+        logs:
+          receivers: [journald]
+          exporters: [debug]
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: otel-collector
+  labels:
+    app: otel-collector
+spec:
+  selector:
+    matchLabels:
+      app: otel-collector
+  template:
+    metadata:
+      labels:
+        app: otel-collector
+    spec:
+      containers:
+      - name: otel-collector
+        image: otel-col-journald:latest
+        # Image is already loaded in the cluster, no need to pull it
+        # because pulling will fail because it has not been published.
+        imagePullPolicy: Never 
+        volumeMounts:
+        - name: otel-config-volume
+          mountPath: /opt/otelcol-config.yaml
+          subPath: otel-config.yml
+        - name: journal-volume
+          mountPath: /opt/journal
+          readOnly: true
+      volumes:
+      - name: otel-config-volume
+        configMap:
+          name: otel-config
+      - name: journal-volume
+        hostPath:
+          path: /run/log/journal/
+          type: Directory
