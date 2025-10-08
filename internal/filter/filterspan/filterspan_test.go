@@ -1280,7 +1280,7 @@ func BenchmarkFilterspan_NewSkipExpr(b *testing.B) {
 		tCtx := ottlspan.NewTransformContext(span, scope, resource, ptrace.NewScopeSpans(), ptrace.NewResourceSpans())
 
 		b.Run(tt.name, func(b *testing.B) {
-			for i := 0; i < b.N; i++ {
+			for b.Loop() {
 				var skip bool
 				skip, err = skipExpr.Eval(b.Context(), tCtx)
 				assert.NoError(b, err)
