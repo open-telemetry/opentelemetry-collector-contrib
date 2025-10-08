@@ -20,11 +20,11 @@
     "packets_sent": "16",
     "dest_instance": {
       "managed_instance_group": {
-        "name": "proxy-crest-new-group",
+        "name": "test-mig-2",
         "zone": "us-central1-a"
       },
       "project_id": "test-project-id",
-      "vm_name": "proxy-crest-new-group-892l",
+      "vm_name": "test-vm-4",
       "region": "us-central1",
       "zone": "us-central1-a"
     },

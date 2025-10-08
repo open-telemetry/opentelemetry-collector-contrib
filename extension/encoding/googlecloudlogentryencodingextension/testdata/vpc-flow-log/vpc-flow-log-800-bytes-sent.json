@@ -11,7 +11,7 @@
       "region": "asia-south1",
       "project_id": "test-project-id",
       "zone": "asia-south1-c",
-      "vm_name": "service-integration-dev-idc-ubuntu25-4"
+      "vm_name": "test-vm-3"
     },
     "bytes_sent": "800",
     "end_time": "2025-09-27T21:11:25.762594203Z",
@@ -36,7 +36,7 @@
     "labels": {
       "resource_container": "projects/123456789012",
       "location": "global",
-      "name": "joe-test-flow-logs-default"
+      "name": "test-flow-logs-config"
     }
   },
   "timestamp": "2025-09-27T21:11:28.320127676Z",

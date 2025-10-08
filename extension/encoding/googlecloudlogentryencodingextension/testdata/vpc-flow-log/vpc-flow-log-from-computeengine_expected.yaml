@@ -66,13 +66,13 @@ resourceLogs:
                   stringValue: us-central1
               - key: gcp.vpc.flow.destination.instance.vm.name
                 value:
-                  stringValue: proxy-crest-new-group-892l
+                  stringValue: test-vm-4
               - key: gcp.vpc.flow.destination.instance.vm.zone
                 value:
                   stringValue: us-central1-a
               - key: gcp.vpc.flow.destination.instance.managed_instance_group.name
                 value:
-                  stringValue: proxy-crest-new-group
+                  stringValue: test-mig-2
               - key: gcp.vpc.flow.destination.instance.managed_instance_group.zone
                 value:
                   stringValue: us-central1-a

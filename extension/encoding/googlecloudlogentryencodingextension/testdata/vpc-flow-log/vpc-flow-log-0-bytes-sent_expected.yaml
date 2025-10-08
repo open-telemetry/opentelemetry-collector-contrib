@@ -12,7 +12,7 @@ resourceLogs:
             stringValue: vpc_flow_logs_config
         - key: gcp.label.name
           value:
-            stringValue: "joe-test-flow-logs-default"
+            stringValue: "test-flow-logs-config"
         - key: gcp.label.location
           value:
             stringValue: global
@@ -67,13 +67,13 @@ resourceLogs:
                   stringValue: us-central1
               - key: gcp.vpc.flow.source.instance.vm.name
                 value:
-                  stringValue: proxy-crest-new-group-b51k
+                  stringValue: test-vm-1
               - key: gcp.vpc.flow.source.instance.vm.zone
                 value:
                   stringValue: us-central1-a
               - key: gcp.vpc.flow.source.instance.managed_instance_group.name
                 value:
-                  stringValue: proxy-crest-new-group
+                  stringValue: test-mig-1
               - key: gcp.vpc.flow.source.instance.managed_instance_group.zone
                 value:
                   stringValue: us-central1-a
