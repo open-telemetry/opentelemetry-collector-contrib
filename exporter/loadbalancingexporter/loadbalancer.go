@@ -201,7 +201,7 @@ func (lb *loadBalancer) removeExtraExporters(ctx context.Context, endpoints []st
 		endpointsWithPort[i] = endpointWithPort(e)
 	}
 	for existing := range lb.exporters {
-		if !endpointFound(existing, endpointsWithPort) {
+		if !slices.Contains(endpointsWithPort, existing) {
 			exp := lb.exporters[existing]
 			// Shutdown the exporter asynchronously to avoid blocking the resolver
 			go func() {
@@ -210,10 +210,6 @@ func (lb *loadBalancer) removeExtraExporters(ctx context.Context, endpoints []st
 			delete(lb.exporters, existing)
 		}
 	}
-}
-
-func endpointFound(endpoint string, endpoints []string) bool {
-	return slices.Contains(endpoints, endpoint)
 }
 
 func (lb *loadBalancer) Shutdown(ctx context.Context) error {
