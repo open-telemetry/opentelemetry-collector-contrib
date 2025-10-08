@@ -13,6 +13,7 @@
 | azure.vm.scaleset.name | The azure.vm.scaleset.name | Any Str | true |
 | azure.vm.size | The azure.vm.size | Any Str | true |
 | cloud.account.id | The cloud.account.id | Any Str | true |
+| cloud.availability_zone | The cloud availability zone | Any Str | false |
 | cloud.platform | The cloud.platform | Any Str | true |
 | cloud.provider | The cloud.provider | Any Str | true |
 | cloud.region | The cloud.region | Any Str | true |

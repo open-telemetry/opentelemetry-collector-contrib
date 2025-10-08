@@ -130,6 +130,21 @@ func (rs *redisScraper) recordCommonMetrics(ts pcommon.Timestamp, inf info) {
 					zap.String("val", infoVal), zap.Error(err))
 			}
 			recordDataPoint(ts, val)
+		case func(pcommon.Timestamp, int64, metadata.AttributeClusterState):
+			val, err := strconv.ParseInt(infoVal, 10, 64)
+			if err != nil {
+				rs.settings.Logger.Warn("failed to parse info int val", zap.String("key", infoKey),
+					zap.String("val", infoVal), zap.Error(err))
+			}
+			var state metadata.AttributeClusterState
+			if infoKey == "cluster_state" {
+				if infoVal == "ok" {
+					state = metadata.AttributeClusterStateOk
+				} else {
+					state = metadata.AttributeClusterStateFail
+				}
+			}
+			recordDataPoint(ts, val, state)
 		}
 	}
 }

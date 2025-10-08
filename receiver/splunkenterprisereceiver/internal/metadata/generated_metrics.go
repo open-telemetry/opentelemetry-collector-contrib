@@ -87,6 +87,9 @@ var MetricsInfo = metricsInfo{
 	SplunkKvstoreStatus: metricInfo{
 		Name: "splunk.kvstore.status",
 	},
+	SplunkLicenseExpirationSecondsRemaining: metricInfo{
+		Name: "splunk.license.expiration.seconds_remaining",
+	},
 	SplunkLicenseIndexUsage: metricInfo{
 		Name: "splunk.license.index.usage",
 	},
@@ -190,6 +193,7 @@ type metricsInfo struct {
 	SplunkKvstoreBackupStatus                   metricInfo
 	SplunkKvstoreReplicationStatus              metricInfo
 	SplunkKvstoreStatus                         metricInfo
+	SplunkLicenseExpirationSecondsRemaining     metricInfo
 	SplunkLicenseIndexUsage                     metricInfo
 	SplunkParseQueueRatio                       metricInfo
 	SplunkPipelineSetCount                      metricInfo
@@ -1554,6 +1558,61 @@ func newMetricSplunkKvstoreStatus(cfg MetricConfig) metricSplunkKvstoreStatus {
 	return m
 }
 
+type metricSplunkLicenseExpirationSecondsRemaining struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills splunk.license.expiration.seconds_remaining metric with initial data.
+func (m *metricSplunkLicenseExpirationSecondsRemaining) init() {
+	m.data.SetName("splunk.license.expiration.seconds_remaining")
+	m.data.SetDescription("Gauge tracking the seconds remaining on any given Splunk License found via Splunk API. **Note:** This will only work on a Cluster Manager.")
+	m.data.SetUnit("{seconds}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSplunkLicenseExpirationSecondsRemaining) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkLicenseStatusAttributeValue string, splunkLicenseLabelAttributeValue string, splunkLicenseTypeAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("splunk.license.status", splunkLicenseStatusAttributeValue)
+	dp.Attributes().PutStr("splunk.license.label", splunkLicenseLabelAttributeValue)
+	dp.Attributes().PutStr("splunk.license.type", splunkLicenseTypeAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSplunkLicenseExpirationSecondsRemaining) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSplunkLicenseExpirationSecondsRemaining) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSplunkLicenseExpirationSecondsRemaining(cfg MetricConfig) metricSplunkLicenseExpirationSecondsRemaining {
+	m := metricSplunkLicenseExpirationSecondsRemaining{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricSplunkLicenseIndexUsage struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -2910,6 +2969,7 @@ type MetricsBuilder struct {
 	metricSplunkKvstoreBackupStatus                   metricSplunkKvstoreBackupStatus
 	metricSplunkKvstoreReplicationStatus              metricSplunkKvstoreReplicationStatus
 	metricSplunkKvstoreStatus                         metricSplunkKvstoreStatus
+	metricSplunkLicenseExpirationSecondsRemaining     metricSplunkLicenseExpirationSecondsRemaining
 	metricSplunkLicenseIndexUsage                     metricSplunkLicenseIndexUsage
 	metricSplunkParseQueueRatio                       metricSplunkParseQueueRatio
 	metricSplunkPipelineSetCount                      metricSplunkPipelineSetCount
@@ -2985,6 +3045,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricSplunkKvstoreBackupStatus:                   newMetricSplunkKvstoreBackupStatus(mbc.Metrics.SplunkKvstoreBackupStatus),
 		metricSplunkKvstoreReplicationStatus:              newMetricSplunkKvstoreReplicationStatus(mbc.Metrics.SplunkKvstoreReplicationStatus),
 		metricSplunkKvstoreStatus:                         newMetricSplunkKvstoreStatus(mbc.Metrics.SplunkKvstoreStatus),
+		metricSplunkLicenseExpirationSecondsRemaining:     newMetricSplunkLicenseExpirationSecondsRemaining(mbc.Metrics.SplunkLicenseExpirationSecondsRemaining),
 		metricSplunkLicenseIndexUsage:                     newMetricSplunkLicenseIndexUsage(mbc.Metrics.SplunkLicenseIndexUsage),
 		metricSplunkParseQueueRatio:                       newMetricSplunkParseQueueRatio(mbc.Metrics.SplunkParseQueueRatio),
 		metricSplunkPipelineSetCount:                      newMetricSplunkPipelineSetCount(mbc.Metrics.SplunkPipelineSetCount),
@@ -3100,6 +3161,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricSplunkKvstoreBackupStatus.emit(ils.Metrics())
 	mb.metricSplunkKvstoreReplicationStatus.emit(ils.Metrics())
 	mb.metricSplunkKvstoreStatus.emit(ils.Metrics())
+	mb.metricSplunkLicenseExpirationSecondsRemaining.emit(ils.Metrics())
 	mb.metricSplunkLicenseIndexUsage.emit(ils.Metrics())
 	mb.metricSplunkParseQueueRatio.emit(ils.Metrics())
 	mb.metricSplunkPipelineSetCount.emit(ils.Metrics())
@@ -3269,6 +3331,11 @@ func (mb *MetricsBuilder) RecordSplunkKvstoreReplicationStatusDataPoint(ts pcomm
 // RecordSplunkKvstoreStatusDataPoint adds a data point to splunk.kvstore.status metric.
 func (mb *MetricsBuilder) RecordSplunkKvstoreStatusDataPoint(ts pcommon.Timestamp, val int64, splunkKvstoreStorageEngineAttributeValue string, splunkKvstoreExternalAttributeValue string, splunkKvstoreStatusValueAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	mb.metricSplunkKvstoreStatus.recordDataPoint(mb.startTime, ts, val, splunkKvstoreStorageEngineAttributeValue, splunkKvstoreExternalAttributeValue, splunkKvstoreStatusValueAttributeValue, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
+}
+
+// RecordSplunkLicenseExpirationSecondsRemainingDataPoint adds a data point to splunk.license.expiration.seconds_remaining metric.
+func (mb *MetricsBuilder) RecordSplunkLicenseExpirationSecondsRemainingDataPoint(ts pcommon.Timestamp, val int64, splunkLicenseStatusAttributeValue string, splunkLicenseLabelAttributeValue string, splunkLicenseTypeAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+	mb.metricSplunkLicenseExpirationSecondsRemaining.recordDataPoint(mb.startTime, ts, val, splunkLicenseStatusAttributeValue, splunkLicenseLabelAttributeValue, splunkLicenseTypeAttributeValue, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
 }
 
 // RecordSplunkLicenseIndexUsageDataPoint adds a data point to splunk.license.index.usage metric.

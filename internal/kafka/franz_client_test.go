@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/kafkatest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
@@ -116,13 +117,16 @@ func TestNewFranzSyncProducer_TLS(t *testing.T) {
 	serverTLS := httpServer.TLS
 	caCert := httpServer.Certificate() // self-signed
 
+	core, observedLogs := observer.New(zap.WarnLevel)
+	logger := zap.New(core)
+
 	_, clientConfig := kafkatest.NewCluster(t, kfake.TLS(serverTLS))
-	tryConnect := func(cfg configtls.ClientConfig) error {
+	tryConnect := func(cfg *configtls.ClientConfig) error {
+		observedLogs.TakeAll()       // drop existing logs
 		clientConfig := clientConfig // copy
-		clientConfig.TLS = &cfg
-		tl := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
+		clientConfig.TLS = cfg
 		client, err := NewFranzSyncProducer(t.Context(), clientConfig,
-			configkafka.NewDefaultProducerConfig(), time.Second, tl,
+			configkafka.NewDefaultProducerConfig(), time.Second, logger,
 		)
 		if err != nil {
 			return err
@@ -132,33 +136,37 @@ func TestNewFranzSyncProducer_TLS(t *testing.T) {
 	}
 
 	t.Run("tls_valid_ca", func(t *testing.T) {
-		t.Parallel()
 		tlsConfig := configtls.NewDefaultClientConfig()
 		tlsConfig.CAPem = configopaque.String(
 			pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: caCert.Raw}),
 		)
-		assert.NoError(t, tryConnect(tlsConfig))
+		require.NoError(t, tryConnect(&tlsConfig))
+		assert.Empty(t, observedLogs.All())
 	})
 
 	t.Run("tls_insecure_skip_verify", func(t *testing.T) {
 		t.Parallel()
 		tlsConfig := configtls.NewDefaultClientConfig()
 		tlsConfig.InsecureSkipVerify = true
-		require.NoError(t, tryConnect(tlsConfig))
+		require.NoError(t, tryConnect(&tlsConfig))
+		assert.Empty(t, observedLogs.All())
 	})
 
 	t.Run("tls_unknown_ca", func(t *testing.T) {
-		t.Parallel()
 		config := configtls.NewDefaultClientConfig()
-		err := tryConnect(config)
+		err := tryConnect(&config)
 		require.Error(t, err)
 		assert.ErrorContains(t, err, "x509: certificate signed by unknown authority")
+		assert.NotEmpty(t, observedLogs.All())
 	})
 
 	t.Run("plaintext", func(t *testing.T) {
-		t.Parallel()
 		// Should fail because the server expects TLS.
-		require.Error(t, tryConnect(configtls.ClientConfig{}))
+		require.Error(t, tryConnect(nil))
+		filtered := observedLogs.FilterMessage(
+			"failed to connect to broker, it may require TLS but TLS is not configured",
+		)
+		assert.NotEmpty(t, filtered.All())
 	})
 }
 

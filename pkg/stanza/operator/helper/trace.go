@@ -34,18 +34,26 @@ type TraceParser struct {
 	TraceID    *TraceIDConfig    `mapstructure:"trace_id,omitempty"`
 	SpanID     *SpanIDConfig     `mapstructure:"span_id,omitempty"`
 	TraceFlags *TraceFlagsConfig `mapstructure:"trace_flags,omitempty"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type TraceIDConfig struct {
 	ParseFrom *entry.Field `mapstructure:"parse_from,omitempty"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type SpanIDConfig struct {
 	ParseFrom *entry.Field `mapstructure:"parse_from,omitempty"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type TraceFlagsConfig struct {
 	ParseFrom *entry.Field `mapstructure:"parse_from,omitempty"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // Validate validates a TraceParser, and reconfigures it if necessary

@@ -16,9 +16,9 @@ metrics:
 
 The number of data pages in the InnoDB buffer pool.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| 1 | Sum | Int | Cumulative | false | development |
 
 #### Attributes
 
@@ -30,17 +30,17 @@ The number of data pages in the InnoDB buffer pool.
 
 The configured size of the InnoDB buffer pool.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | false | development |
 
 ### mysql.buffer_pool.operations
 
 The number of operations on the InnoDB buffer pool.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| 1 | Sum | Int | Cumulative | true | development |
 
 #### Attributes
 
@@ -52,17 +52,17 @@ The number of operations on the InnoDB buffer pool.
 
 The number of requests to flush pages from the InnoDB buffer pool.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| 1 | Sum | Int | Cumulative | true | development |
 
 ### mysql.buffer_pool.pages
 
 The number of pages in the InnoDB buffer pool.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| 1 | Sum | Int | Cumulative | false | development |
 
 #### Attributes
 
@@ -74,9 +74,9 @@ The number of pages in the InnoDB buffer pool.
 
 The number of bytes in the InnoDB buffer pool.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | false | development |
 
 #### Attributes
 
@@ -88,9 +88,9 @@ The number of bytes in the InnoDB buffer pool.
 
 The number of writes to the InnoDB doublewrite buffer.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| 1 | Sum | Int | Cumulative | true | development |
 
 #### Attributes
 
@@ -102,9 +102,9 @@ The number of writes to the InnoDB doublewrite buffer.
 
 The number of requests to various MySQL handlers.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| 1 | Sum | Int | Cumulative | true | development |
 
 #### Attributes
 
@@ -116,9 +116,9 @@ The number of requests to various MySQL handlers.
 
 The total count of I/O wait events for an index.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| 1 | Sum | Int | Cumulative | true | development |
 
 #### Attributes
 
@@ -133,9 +133,9 @@ The total count of I/O wait events for an index.
 
 The total time of I/O wait events for an index.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| ns | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| ns | Sum | Int | Cumulative | true | development |
 
 #### Attributes
 
@@ -150,9 +150,9 @@ The total time of I/O wait events for an index.
 
 The number of MySQL locks.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| 1 | Sum | Int | Cumulative | true | development |
 
 #### Attributes
 
@@ -164,9 +164,9 @@ The number of MySQL locks.
 
 The number of InnoDB log operations.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| 1 | Sum | Int | Cumulative | true | development |
 
 #### Attributes
 
@@ -180,9 +180,9 @@ The number of mysqlx connections.
 
 This metric is specific for MySQL working as Document Store (X-Plugin). [more docs](https://dev.mysql.com/doc/refman/8.0/en/document-store.html)
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| 1 | Sum | Int | Cumulative | true | development |
 
 #### Attributes
 
@@ -194,9 +194,9 @@ This metric is specific for MySQL working as Document Store (X-Plugin). [more do
 
 The number of opened resources.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| 1 | Sum | Int | Cumulative | true | development |
 
 #### Attributes
 
@@ -208,9 +208,9 @@ The number of opened resources.
 
 The number of InnoDB operations.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| 1 | Sum | Int | Cumulative | true | development |
 
 #### Attributes
 
@@ -222,9 +222,9 @@ The number of InnoDB operations.
 
 The number of InnoDB page operations.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| 1 | Sum | Int | Cumulative | true | development |
 
 #### Attributes
 
@@ -236,9 +236,9 @@ The number of InnoDB page operations.
 
 The number of times each type of prepared statement command has been issued.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| 1 | Sum | Int | Cumulative | true | development |
 
 #### Attributes
 
@@ -250,9 +250,9 @@ The number of times each type of prepared statement command has been issued.
 
 The number of InnoDB row locks.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| 1 | Sum | Int | Cumulative | true | development |
 
 #### Attributes
 
@@ -264,9 +264,9 @@ The number of InnoDB row locks.
 
 The number of InnoDB row operations.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| 1 | Sum | Int | Cumulative | true | development |
 
 #### Attributes
 
@@ -278,9 +278,9 @@ The number of InnoDB row operations.
 
 The number of MySQL sorts.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| 1 | Sum | Int | Cumulative | true | development |
 
 #### Attributes
 
@@ -292,9 +292,9 @@ The number of MySQL sorts.
 
 The total count of I/O wait events for a table.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| 1 | Sum | Int | Cumulative | true | development |
 
 #### Attributes
 
@@ -308,9 +308,9 @@ The total count of I/O wait events for a table.
 
 The total time of I/O wait events for a table.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| ns | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| ns | Sum | Int | Cumulative | true | development |
 
 #### Attributes
 
@@ -324,9 +324,9 @@ The total time of I/O wait events for a table.
 
 The state of MySQL threads.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| 1 | Sum | Int | Cumulative | false | development |
 
 #### Attributes
 
@@ -338,9 +338,9 @@ The state of MySQL threads.
 
 The number of created temporary resources.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| 1 | Sum | Int | Cumulative | true | development |
 
 #### Attributes
 
@@ -352,9 +352,9 @@ The number of created temporary resources.
 
 The number of seconds that the server has been up.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| s | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| s | Sum | Int | Cumulative | true | development |
 
 ## Optional Metrics
 
@@ -370,9 +370,9 @@ metrics:
 
 The number of transmitted bytes between server and clients.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | true | development |
 
 #### Attributes
 
@@ -384,9 +384,9 @@ The number of transmitted bytes between server and clients.
 
 The number of times each type of command has been executed.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| 1 | Sum | Int | Cumulative | true | development |
 
 #### Attributes
 
@@ -398,17 +398,17 @@ The number of times each type of command has been executed.
 
 The number of connection attempts (successful or not) to the MySQL server.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| 1 | Sum | Int | Cumulative | true | development |
 
 ### mysql.connection.errors
 
 Errors that occur during the client connection process.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| 1 | Sum | Int | Cumulative | true | development |
 
 #### Attributes
 
@@ -420,9 +420,9 @@ Errors that occur during the client connection process.
 
 The number of joins that perform table scans.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| 1 | Sum | Int | Cumulative | true | development |
 
 #### Attributes
 
@@ -434,9 +434,9 @@ The number of joins that perform table scans.
 
 Maximum number of connections used simultaneously since the server started.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| 1 | Sum | Int | Cumulative | false | development |
 
 ### mysql.mysqlx_worker_threads
 
@@ -444,9 +444,9 @@ The number of worker threads available.
 
 This metric is specific for MySQL working as Document Store (X-Plugin). [more docs](https://dev.mysql.com/doc/refman/8.0/en/document-store.html)
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| 1 | Sum | Int | Cumulative | false | development |
 
 #### Attributes
 
@@ -458,57 +458,57 @@ This metric is specific for MySQL working as Document Store (X-Plugin). [more do
 
 InnoDB page size.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | false | development |
 
 ### mysql.query.client.count
 
 The number of statements executed by the server. This includes only statements sent to the server by clients.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| 1 | Sum | Int | Cumulative | true | development |
 
 ### mysql.query.count
 
 The number of statements executed by the server.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| 1 | Sum | Int | Cumulative | true | development |
 
 ### mysql.query.slow.count
 
 The number of slow queries.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| 1 | Sum | Int | Cumulative | true | development |
 
 ### mysql.replica.sql_delay
 
 The number of seconds that the replica must lag the source.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| s | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| s | Sum | Int | Cumulative | false | development |
 
 ### mysql.replica.time_behind_source
 
 This field is an indication of how “late” the replica is.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| s | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| s | Sum | Int | Cumulative | false | development |
 
 ### mysql.statement_event.count
 
 Summary of current and recent statement events.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| 1 | Sum | Int | Cumulative | false | development |
 
 #### Attributes
 
@@ -523,9 +523,9 @@ Summary of current and recent statement events.
 
 The total wait time of the summarized timed events.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| ns | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| ns | Sum | Int | Cumulative | false | development |
 
 #### Attributes
 
@@ -539,9 +539,9 @@ The total wait time of the summarized timed events.
 
 The average row length in bytes for a given table.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | false | development |
 
 #### Attributes
 
@@ -554,9 +554,9 @@ The average row length in bytes for a given table.
 
 The total table lock wait read events.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| 1 | Sum | Int | Cumulative | false | development |
 
 #### Attributes
 
@@ -570,9 +570,9 @@ The total table lock wait read events.
 
 The total table lock wait read events times.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| ns | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| ns | Sum | Int | Cumulative | false | development |
 
 #### Attributes
 
@@ -586,9 +586,9 @@ The total table lock wait read events times.
 
 The total table lock wait write events.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| 1 | Sum | Int | Cumulative | false | development |
 
 #### Attributes
 
@@ -602,9 +602,9 @@ The total table lock wait write events.
 
 The total table lock wait write events times.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| ns | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| ns | Sum | Int | Cumulative | false | development |
 
 #### Attributes
 
@@ -618,9 +618,9 @@ The total table lock wait write events times.
 
 The number of rows for a given table.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| 1 | Sum | Int | Cumulative | false | development |
 
 #### Attributes
 
@@ -633,9 +633,9 @@ The number of rows for a given table.
 
 The table size in bytes for a given table.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | false | development |
 
 #### Attributes
 
@@ -649,9 +649,9 @@ The table size in bytes for a given table.
 
 The number of hits, misses or overflows for open tables cache lookups.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| 1 | Sum | Int | Cumulative | true | development |
 
 #### Attributes
 
