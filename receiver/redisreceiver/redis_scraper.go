@@ -214,8 +214,8 @@ func (rs *redisScraper) recordCmdMetrics(ts pcommon.Timestamp, inf info) {
 // Only 'calls' and 'usec' are recorded at the moment.
 // 'cmd' is the Redis command, 'val' is the values string (e.g. "calls=1685,usec=6032,usec_per_call=3.58,rejected_calls=0,failed_calls=0").
 func (rs *redisScraper) recordCmdStatsMetrics(ts pcommon.Timestamp, cmd, val string) {
-	parts := strings.Split(strings.TrimSpace(val), ",")
-	for _, element := range parts {
+	parts := strings.SplitSeq(strings.TrimSpace(val), ",")
+	for element := range parts {
 		subParts := strings.Split(element, "=")
 		if len(subParts) == 1 {
 			continue
