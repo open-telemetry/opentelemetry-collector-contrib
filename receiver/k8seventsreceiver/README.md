@@ -28,6 +28,7 @@ The following settings are optional:
 the K8s API server. This can be one of `none` (for no auth), `serviceAccount`
 (to use the standard service account token provided to the agent pod), or
 `kubeConfig` to use credentials from `~/.kube/config`.
+- `k8s_leader_elector` (default: none): if specified, will enable Leader Election by using `k8sleaderelector` extension
 - `namespaces` (default = `all`): An array of `namespaces` to collect events from.
 This receiver will continuously watch all the `namespaces` mentioned in the array for
 new events.
@@ -37,6 +38,7 @@ Examples:
 ```yaml
   k8s_events:
     auth_type: kubeConfig
+    k8s_leader_elector: k8s_leader_elector
     namespaces: [default, my_namespace]
 ```
 
@@ -229,3 +231,87 @@ spec:
 EOF
 ```
 
+## Conversion Example
+
+The following K8s Event
+
+```json
+{
+    "apiVersion": "v1",
+    "count": 4,
+    "eventTime": null,
+    "firstTimestamp": "2025-09-08T06:20:41Z",
+    "involvedObject": {
+        "apiVersion": "v1",
+        "fieldPath": "spec.containers{bad}",
+        "kind": "Pod",
+        "name": "bad-pod",
+        "namespace": "default",
+        "resourceVersion": "11326",
+        "uid": "2c2a4312-12b4-4ef0-bba4-5295add58417"
+    },
+    "kind": "Event",
+    "lastTimestamp": "2025-09-08T06:22:13Z",
+    "message": "Pulling image \"nonexistentrepo/nonexistimage\"",
+    "metadata": {
+        "creationTimestamp": "2025-09-08T06:20:41Z",
+        "name": "bad-pod.18633a5aeb89ba21",
+        "namespace": "default",
+        "resourceVersion": "11520",
+        "uid": "86bc5e70-a921-4fbc-8b64-fa1316289423"
+    },
+    "reason": "Pulling",
+    "reportingComponent": "kubelet",
+    "reportingInstance": "kind-control-plane",
+    "source": {
+        "component": "kubelet",
+        "host": "kind-control-plane"
+    },
+    "type": "Normal"
+}
+
+```
+
+will be converted to the following log
+
+```json
+{
+  "SchemaURL": "",
+  "ResourceAttributes": {
+    "k8s.node.name": "kind-control-plane",
+    "k8s.object.kind": "Pod",
+    "k8s.object.name": "bad-pod",
+    "k8s.object.uid": "2c2a4312-12b4-4ef0-bba4-5295add58417",
+    "k8s.object.fieldpath": "spec.containers{bad}",
+    "k8s.object.api_version": "v1",
+    "k8s.object.resource_version": "11326"
+  },
+  "ScopeLogs": [
+    {
+      "SchemaURL": "",
+      "InstrumentationScope": {},
+      "LogRecords": [
+        {
+          "ObservedTimestamp": "1970-01-01T00:00:00Z",
+          "Timestamp": "2025-09-08T06:22:13Z",
+          "SeverityText": "Normal",
+          "SeverityNumber": 9,
+          "Body": "Pulling image \"nonexistentrepo/nonexistimage\"",
+          "Attributes": {
+            "k8s.event.reason": "Pulling",
+            "k8s.event.action": "",
+            "k8s.event.start_time": "2025-09-08T06:20:41Z",
+            "k8s.event.name": "bad-pod.18633a5aeb89ba21",
+            "k8s.event.uid": "86bc5e70-a921-4fbc-8b64-fa1316289423",
+            "k8s.namespace.name": "default",
+            "k8s.event.count": 4
+          },
+          "TraceID": "",
+          "SpanID": "",
+          "Flags": 0
+        }
+      ]
+    }
+  ]
+}
+```

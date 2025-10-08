@@ -806,3 +806,128 @@ func TestAutoContentTypeConfiguration(t *testing.T) {
 		})
 	}
 }
+
+func TestResponseValidation(t *testing.T) {
+	// Create a mock server that returns JSON
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, err := w.Write([]byte(`{"status": "ok", "count": 5, "message": "healthy"}`))
+		assert.NoError(t, err)
+	}))
+	defer server.Close()
+
+	cfg := createDefaultConfig().(*Config)
+	// Enable validation metrics
+	cfg.Metrics.HttpcheckValidationPassed.Enabled = true
+	cfg.Metrics.HttpcheckValidationFailed.Enabled = true
+	cfg.Metrics.HttpcheckResponseSize.Enabled = true
+
+	cfg.Targets = []*targetConfig{
+		{
+			ClientConfig: confighttp.ClientConfig{
+				Endpoint: server.URL,
+			},
+			Validations: []validationConfig{
+				{
+					Contains: "healthy",
+				},
+				{
+					JSONPath: "$.status",
+					Equals:   "ok",
+				},
+				{
+					JSONPath: "$.count",
+					Equals:   "5",
+				},
+				{
+					MaxSize: func() *int64 { size := int64(100); return &size }(),
+				},
+				{
+					NotContains: "error",
+				},
+			},
+		},
+	}
+
+	scraper := newScraper(cfg, receivertest.NewNopSettings(metadata.Type))
+	require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()))
+
+	metrics, err := scraper.scrape(t.Context())
+	require.NoError(t, err)
+
+	// Check that we have metrics
+	require.Positive(t, metrics.ResourceMetrics().Len())
+	rm := metrics.ResourceMetrics().At(0)
+	ilm := rm.ScopeMetrics().At(0)
+
+	// Verify validation metrics are present
+	foundMetrics := make(map[string]bool)
+	for i := 0; i < ilm.Metrics().Len(); i++ {
+		metric := ilm.Metrics().At(i)
+		foundMetrics[metric.Name()] = true
+	}
+
+	// Check that validation metrics are present
+	assert.True(t, foundMetrics["httpcheck.validation.passed"])
+	assert.True(t, foundMetrics["httpcheck.response.size"])
+}
+
+func TestResponseValidationFailures(t *testing.T) {
+	// Create a mock server that returns JSON with some failing conditions
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, err := w.Write([]byte(`{"status": "error", "count": 3, "message": "unhealthy"}`))
+		assert.NoError(t, err)
+	}))
+	defer server.Close()
+
+	cfg := createDefaultConfig().(*Config)
+	// Enable validation metrics
+	cfg.Metrics.HttpcheckValidationPassed.Enabled = true
+	cfg.Metrics.HttpcheckValidationFailed.Enabled = true
+
+	cfg.Targets = []*targetConfig{
+		{
+			ClientConfig: confighttp.ClientConfig{
+				Endpoint: server.URL,
+			},
+			Validations: []validationConfig{
+				{
+					Contains: "healthy", // This will fail
+				},
+				{
+					JSONPath: "$.status",
+					Equals:   "ok", // This will fail
+				},
+				{
+					JSONPath: "$.count",
+					Equals:   "3", // This will pass
+				},
+			},
+		},
+	}
+
+	scraper := newScraper(cfg, receivertest.NewNopSettings(metadata.Type))
+	require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()))
+
+	metrics, err := scraper.scrape(t.Context())
+	require.NoError(t, err)
+
+	// Check that we have metrics
+	require.Positive(t, metrics.ResourceMetrics().Len())
+	rm := metrics.ResourceMetrics().At(0)
+	ilm := rm.ScopeMetrics().At(0)
+
+	// Verify validation metrics are present
+	foundMetrics := make(map[string]bool)
+	for i := 0; i < ilm.Metrics().Len(); i++ {
+		metric := ilm.Metrics().At(i)
+		foundMetrics[metric.Name()] = true
+	}
+
+	// Check that validation metrics are present
+	assert.True(t, foundMetrics["httpcheck.validation.passed"])
+	assert.True(t, foundMetrics["httpcheck.validation.failed"])
+}

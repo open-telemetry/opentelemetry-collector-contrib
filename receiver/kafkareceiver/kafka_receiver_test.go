@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/testdata"
 	"go.opentelemetry.io/collector/receiver"
@@ -60,10 +61,10 @@ func init() {
 func runTestForClients(t *testing.T, fn func(t *testing.T)) {
 	clients := []string{"Sarama", "Franz"}
 	for _, client := range clients {
-		if client == "Franz" {
-			setFranzGo(t, true)
-		}
-		t.Run(client, fn)
+		t.Run(client, func(t *testing.T) {
+			setFranzGo(t, client == "Franz")
+			fn(t)
+		})
 	}
 }
 
@@ -457,8 +458,9 @@ func TestReceiver_InternalTelemetry(t *testing.T) {
 
 func TestReceiver_MessageMarking(t *testing.T) {
 	for name, testcase := range map[string]struct {
-		markAfter  bool
-		markErrors bool
+		markAfter           bool
+		markErrors          bool
+		markPermanentErrors bool
 
 		errorShouldRestart bool
 	}{
@@ -469,9 +471,21 @@ func TestReceiver_MessageMarking(t *testing.T) {
 			markAfter:          true,
 			errorShouldRestart: true,
 		},
-		"mark_after_all": {
-			markAfter:  true,
-			markErrors: true,
+		"mark_after_errors": {
+			markAfter:           true,
+			markErrors:          true,
+			markPermanentErrors: true,
+		},
+		"mark_after_non_permanent_only": {
+			markAfter:           true,
+			markErrors:          true,
+			markPermanentErrors: false,
+			errorShouldRestart:  true, // error is permanent, so it isn't marked and will cause a restart
+		},
+		"mark_after_permanent_only": {
+			markAfter:           true,
+			markErrors:          false,
+			markPermanentErrors: true,
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
@@ -499,6 +513,7 @@ func TestReceiver_MessageMarking(t *testing.T) {
 				// Only mark messages after consuming, including for errors.
 				receiverConfig.MessageMarking.After = testcase.markAfter
 				receiverConfig.MessageMarking.OnError = testcase.markErrors
+				receiverConfig.MessageMarking.OnPermanentError = testcase.markPermanentErrors
 				set, tel, observedLogs := mustNewSettings(t)
 				f := NewFactory()
 				r, err := f.CreateTraces(t.Context(), set, receiverConfig, consumer)
@@ -518,13 +533,13 @@ func TestReceiver_MessageMarking(t *testing.T) {
 					}
 
 					// Verify that the consumer restarts at least once.
-					assert.Eventually(t, func() bool {
+					assert.EventuallyWithT(t, func(t *assert.CollectT) {
 						m, err := tel.GetMetric("otelcol_kafka_receiver_partition_start")
 						require.NoError(t, err)
 
 						dataPoints := m.Data.(metricdata.Sum[int64]).DataPoints
 						assert.Len(t, dataPoints, 1)
-						return dataPoints[0].Value >= value
+						assert.GreaterOrEqual(t, dataPoints[0].Value, value)
 					}, time.Second, 100*time.Millisecond, "unmarshal error should restart consumer")
 
 					// reprocesses of the same message
@@ -692,84 +707,152 @@ func TestNewMetricsReceiver(t *testing.T) {
 	})
 }
 
-func TestComponentStatus(t *testing.T) {
-	t.Parallel()
-	_, receiverConfig := mustNewFakeCluster(t, kfake.SeedTopics(1, "otlp_spans"))
+func TestNewProfilesReceiver(t *testing.T) {
+	runTestForClients(t, func(t *testing.T) {
+		kafkaClient, receiverConfig := mustNewFakeCluster(t, kfake.SeedTopics(1, "otlp_profiles"))
 
-	statusEventCh := make(chan *componentstatus.Event, 10)
-	waitStatusEvent := func() *componentstatus.Event {
-		select {
-		case event := <-statusEventCh:
-			return event
-		case <-time.After(10 * time.Second):
-			t.Fatal("timed out waiting for status event")
-		}
-		panic("unreachable")
-	}
-	assertNoStatusEvent := func(t *testing.T) {
-		t.Helper()
-		select {
-		case event := <-statusEventCh:
-			t.Fatalf("unexpected status event received: %+v", event)
-		case <-time.After(100 * time.Millisecond):
-		}
-	}
+		var sink consumertest.ProfilesSink
+		receiverConfig.HeaderExtraction.ExtractHeaders = true
+		receiverConfig.HeaderExtraction.Headers = []string{"key1"}
+		set, tel, _ := mustNewSettings(t)
+		r, err := newProfilesReceiver(receiverConfig, set, &sink)
+		require.NoError(t, err)
 
-	// Create an intermediate TCP listener which will proxy the connection to the
-	// fake Kafka cluster. This can be used to verify the initial "OK" status is
-	// reported only after the broker connection is established.
-	lis, err := net.Listen("tcp", "localhost:0")
-	require.NoError(t, err)
-	t.Cleanup(func() { assert.NoError(t, lis.Close()) })
-	brokers := receiverConfig.Brokers
-	receiverConfig.Brokers = []string{lis.Addr().String()}
+		// Send some profiles to the otlp_profiles topic.
+		profiles := testdata.GenerateProfiles(1)
+		data, err := (&pprofile.ProtoMarshaler{}).MarshalProfiles(profiles)
+		require.NoError(t, err)
+		results := kafkaClient.ProduceSync(t.Context(),
+			&kgo.Record{
+				Topic: "otlp_profiles",
+				Value: data,
+				Headers: []kgo.RecordHeader{
+					{Key: "key1", Value: []byte("value1")},
+				},
+			},
+			&kgo.Record{Topic: "otlp_profiles", Value: []byte("junk")},
+		)
+		require.NoError(t, results.FirstErr())
 
-	f := NewFactory()
-	r, err := f.CreateTraces(t.Context(), receivertest.NewNopSettings(metadata.Type), receiverConfig, &consumertest.TracesSink{})
-	require.NoError(t, err)
-	require.NoError(t, r.Start(t.Context(), &statusReporterHost{
-		report: func(event *componentstatus.Event) {
-			statusEventCh <- event
-		},
-	}))
-	t.Cleanup(func() {
-		assert.NoError(t, r.Shutdown(t.Context()))
+		err = r.Start(t.Context(), componenttest.NewNopHost())
+		require.NoError(t, err)
+		t.Cleanup(func() {
+			assert.NoError(t, r.Shutdown(context.Background())) //nolint:usetesting
+		})
+
+		// There should be one failed message due to the invalid message payload.
+		// It may not be available immediately, as the receiver may not have processed it yet.
+		assert.Eventually(t, func() bool {
+			_, err := tel.GetMetric("otelcol_kafka_receiver_unmarshal_failed_profiles")
+			return err == nil
+		}, 10*time.Second, 100*time.Millisecond)
+		metadatatest.AssertEqualKafkaReceiverUnmarshalFailedProfiles(t, tel, []metricdata.DataPoint[int64]{{
+			Value: 1,
+			Attributes: attribute.NewSet(
+				attribute.String("topic", "otlp_profiles"),
+				attribute.Int64("partition", 0),
+			),
+		}}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+
+		// There should be one successfully processed batch of profiles.
+		assert.Len(t, sink.AllProfiles(), 1)
+		_, ok := sink.AllProfiles()[0].ResourceProfiles().At(0).Resource().Attributes().Get("kafka.header.key1")
+		require.True(t, ok)
 	})
+}
 
-	// Connection to the Kafka cluster is asynchronous; the receiver
-	// will report that it is starting before the connection is established.
-	assert.Equal(t, componentstatus.StatusStarting, waitStatusEvent().Status())
-	// The StatusOK event should not be reported yet, as the connection to the
-	// fake Kafka cluster is not established yet.
-	assertNoStatusEvent(t)
+func TestComponentStatus(t *testing.T) {
+	runTestForClients(t, func(t *testing.T) {
+		_, receiverConfig := mustNewFakeCluster(t, kfake.SeedTopics(1, "otlp_spans"))
 
-	// Accept the connection, proxy to the fake Kafka cluster.
-	var wg sync.WaitGroup
-	conn, err := lis.Accept()
-	require.NoError(t, err)
-	kfakeConn, err := net.Dial("tcp", brokers[0])
-	require.NoError(t, err)
-	wg.Add(2)
-	go func() {
-		defer wg.Done()
-		_, _ = io.Copy(conn, kfakeConn)
-	}()
-	go func() {
-		defer wg.Done()
-		_, _ = io.Copy(kfakeConn, conn)
-	}()
-	defer wg.Wait()
-	defer conn.Close()
-	defer kfakeConn.Close()
+		statusEventCh := make(chan *componentstatus.Event, 10)
+		waitStatusEvent := func(timeout time.Duration) *componentstatus.Event {
+			select {
+			case event := <-statusEventCh:
+				return event
+			case <-time.After(timeout):
+				return nil
+			}
+		}
+		assertNoStatusEvent := func(t *testing.T) {
+			t.Helper()
+			select {
+			case event := <-statusEventCh:
+				t.Fatalf("unexpected status event received: %+v", event)
+			case <-time.After(100 * time.Millisecond):
+			}
+		}
 
-	assert.Equal(t, componentstatus.StatusOK, waitStatusEvent().Status())
-	assertNoStatusEvent(t)
+		// Create an intermediate TCP listener which will proxy the connection to the
+		// fake Kafka cluster. This can be used to verify the initial "OK" status is
+		// reported only after the broker connection is established.
+		lis, err := net.Listen("tcp", "localhost:0")
+		require.NoError(t, err)
+		t.Cleanup(func() { assert.NoError(t, lis.Close()) })
+		brokers := receiverConfig.Brokers
+		receiverConfig.Brokers = []string{lis.Addr().String()}
 
-	assert.NoError(t, r.Shutdown(t.Context()))
+		f := NewFactory()
+		r, err := f.CreateTraces(t.Context(), receivertest.NewNopSettings(metadata.Type), receiverConfig, &consumertest.TracesSink{})
+		require.NoError(t, err)
+		require.NoError(t, r.Start(t.Context(), &statusReporterHost{
+			report: func(event *componentstatus.Event) {
+				statusEventCh <- event
+			},
+		}))
+		t.Cleanup(func() {
+			assert.NoError(t, r.Shutdown(context.Background())) //nolint:usetesting
+		})
 
-	assert.Equal(t, componentstatus.StatusStopping, waitStatusEvent().Status())
-	assert.Equal(t, componentstatus.StatusStopped, waitStatusEvent().Status())
-	assertNoStatusEvent(t)
+		// Connection to the Kafka cluster is asynchronous; the receiver
+		// will report that it is starting before the connection is established.
+		e := waitStatusEvent(10 * time.Second)
+		require.NotNil(t, e, "timed out waiting for StatusStarting")
+		assert.Equal(t, componentstatus.StatusStarting, e.Status())
+		// The StatusOK event should not be reported yet, as the connection to the
+		// fake Kafka cluster is not established yet.
+		assertNoStatusEvent(t)
+
+		// Accept the connection, proxy to the fake Kafka cluster.
+		var wg sync.WaitGroup
+		conn, err := lis.Accept()
+		require.NoError(t, err)
+		kfakeConn, err := net.Dial("tcp", brokers[0])
+		require.NoError(t, err)
+		wg.Add(2)
+		go func() {
+			defer wg.Done()
+			_, _ = io.Copy(conn, kfakeConn)
+		}()
+		go func() {
+			defer wg.Done()
+			_, _ = io.Copy(kfakeConn, conn)
+		}()
+		t.Cleanup(func() {
+			_ = conn.Close()
+			_ = kfakeConn.Close()
+			wg.Wait()
+		})
+
+		// Now we expect StatusOK after the proxy connects through to the fake cluster.
+		e = waitStatusEvent(10 * time.Second)
+		require.NotNil(t, e, "timed out waiting for StatusOK")
+		assert.Equal(t, componentstatus.StatusOK, e.Status())
+		assertNoStatusEvent(t)
+
+		// Shut down and check we see Stopping then Stopped.
+		require.NoError(t, r.Shutdown(t.Context()))
+
+		e = waitStatusEvent(2 * time.Second)
+		require.NotNil(t, e, "expected StatusStopping")
+		assert.Equal(t, componentstatus.StatusStopping, e.Status())
+
+		e = waitStatusEvent(2 * time.Second)
+		require.NotNil(t, e, "expected StatusStopped")
+		assert.Equal(t, componentstatus.StatusStopped, e.Status())
+
+		assertNoStatusEvent(t)
+	})
 }
 
 func mustNewTracesReceiver(tb testing.TB, cfg *Config, nextConsumer consumer.Traces) {

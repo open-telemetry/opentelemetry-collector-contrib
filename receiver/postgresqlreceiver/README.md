@@ -18,8 +18,6 @@
 
 This receiver queries the PostgreSQL [statistics collector](https://www.postgresql.org/docs/13/monitoring-stats.html).
 
-> :construction: This receiver is in **BETA**. Configuration fields and metric data model are subject to change.
-
 ## Prerequisites
 
 See PostgreSQL documentation for [supported versions](https://www.postgresql.org/support/versioning).
@@ -127,8 +125,10 @@ receivers:
         enabled: true
       db.server.top_query:
         enabled: true
-      max_rows_per_query: 100 
+    query_sample_collection:
+      max_rows_per_query: 100
     top_query_collection:
+      max_rows_per_query: 100
       top_n_query: 100
 ```
 

@@ -17,10 +17,10 @@ import (
 	"time"
 
 	"github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil"
+	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes"
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	tracelog "github.com/DataDog/datadog-agent/pkg/trace/log"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
-	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -124,12 +124,7 @@ func testTracesSource(t *testing.T, enableReceiveResourceSpansV2 bool) {
 
 	reqs := make(chan []byte, 1)
 	metricsServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var expectedMetricEndpoint string
-		if isMetricExportV2Enabled() {
-			expectedMetricEndpoint = testutil.MetricV2Endpoint
-		} else {
-			expectedMetricEndpoint = testutil.MetricV1Endpoint
-		}
+		expectedMetricEndpoint := testutil.MetricV2Endpoint
 		if r.URL.Path != expectedMetricEndpoint {
 			// we only want to capture series payloads
 			return
@@ -172,21 +167,6 @@ func testTracesSource(t *testing.T, enableReceiveResourceSpansV2 bool) {
 	exporter, err := f.CreateTraces(ctx, params, &cfg)
 	assert.NoError(err)
 
-	// Payload specifies a sub-set of a Zorkian metrics series payload.
-	type Payload struct {
-		Series []struct {
-			Host string   `json:"host,omitempty"`
-			Tags []string `json:"tags,omitempty"`
-		} `json:"series"`
-	}
-	// getHostTags extracts the host and tags from the Zorkian metrics series payload
-	// body found in data.
-	getHostTags := func(data []byte) (host string, tags []string) {
-		var p Payload
-		assert.NoError(json.Unmarshal(data, &p))
-		assert.Len(p.Series, 1)
-		return p.Series[0].Host, p.Series[0].Tags
-	}
 	// getHostTagsV2 extracts the host and tags from the native DatadogV2 metrics series payload
 	// body found in data.
 	getHostTagsV2 := func(data []byte) (host string, tags []string) {
@@ -239,11 +219,7 @@ func testTracesSource(t *testing.T, enableReceiveResourceSpansV2 bool) {
 			case data := <-reqs:
 				var host string
 				var tags []string
-				if isMetricExportV2Enabled() {
-					host, tags = getHostTagsV2(data)
-				} else {
-					host, tags = getHostTags(data)
-				}
+				host, tags = getHostTagsV2(data)
 				assert.Equal(tt.host, host)
 				assert.Equal(tt.tags, tags)
 			case <-timeout:

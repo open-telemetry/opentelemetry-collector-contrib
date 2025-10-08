@@ -153,6 +153,7 @@ func (e *oidcExtension) Authenticate(ctx context.Context, headers map[string][]s
 	cl := client.FromContext(ctx)
 	cl.Auth = &authData{
 		raw:        raw,
+		claims:     claims,
 		subject:    subject,
 		membership: membership,
 	}

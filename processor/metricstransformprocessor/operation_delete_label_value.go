@@ -9,7 +9,7 @@ import (
 )
 
 // deleteLabelValueOp deletes a label value and all data associated with it
-func deleteLabelValueOp(metric pmetric.Metric, mtpOp internalOperation) {
+func deleteLabelValueOp(metric pmetric.Metric, mtpOp *internalOperation) {
 	op := mtpOp.configOperation
 	//exhaustive:enforce
 	switch metric.Type() {

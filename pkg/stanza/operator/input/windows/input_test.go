@@ -148,6 +148,46 @@ func TestInputStart_BadChannelName(t *testing.T) {
 	assert.ErrorContains(t, err, "The specified channel could not be found")
 }
 
+func TestInputStart_RemoteSessionWithDomain(t *testing.T) {
+	persister := testutil.NewMockPersister("")
+
+	// Mock EvtOpenSession to capture the login struct and verify Domain handling
+	originalOpenSessionProc := openSessionProc
+	var capturedDomain string
+	var domainWasNil bool
+	openSessionProc = MockProc{
+		call: func(a ...uintptr) (uintptr, uintptr, error) {
+			// a[0] = loginClass, a[1] = login pointer, a[2] = timeout, a[3] = flags
+			if len(a) >= 4 && a[1] != 0 {
+				capturedDomain = "remote-domain"
+				domainWasNil = false
+			} else {
+				domainWasNil = true
+			}
+			return 1, 0, nil
+		},
+	}
+	defer func() { openSessionProc = originalOpenSessionProc }()
+
+	input := newTestInput()
+	input.ignoreChannelErrors = true
+	input.channel = "test-channel"
+	input.startAt = "beginning"
+	input.pollInterval = 1 * time.Second
+	input.remote = RemoteConfig{
+		Server:   "remote-server",
+		Username: "test-user",
+		Password: "test-pass",
+		Domain:   "remote-domain",
+	}
+
+	err := input.Start(persister)
+	require.NoError(t, err)
+
+	require.False(t, domainWasNil)
+	require.Equal(t, "remote-domain", capturedDomain)
+}
+
 // TestInputRead_RPCInvalidBound tests that the Input handles RPC_S_INVALID_BOUND errors properly
 func TestInputRead_RPCInvalidBound(t *testing.T) {
 	// Save original procs and restore after test

@@ -3,10 +3,13 @@ resourceLogs:
       attributes:
         - key: oracledb.instance.name
           value:
-            stringValue: oracle-instance-sample-1
+            stringValue: oraclehost:1521/ORCL
         - key: host.name
           value:
-            stringValue: oracle-host-sample-1
+            stringValue: oraclehost:1521
+        - key: service.instance.id
+          value:
+            stringValue: oraclehost:1521/ORCL
     scopeLogs:
       - logRecords:
           - attributes:
@@ -15,10 +18,10 @@ resourceLogs:
                   stringValue: oracle
               - key: db.server.name
                 value:
-                  stringValue: oracle-host-sample-1
+                  stringValue: oraclehost:1521
               - key: db.query.text
                 value:
-                  stringValue: select count ( * ) from admin. employee e join admin. person p on e. businessentityid = ? join admin. employeepayhistory eph on e. businessentityid = eph. businessentityid where eph. rate > ( select avg ( rate ) from admin. employeepayhistory )
+                  stringValue: SELECT COUNT ( * ) FROM ADMIN. Employee e JOIN ADMIN. Person p ON e. BusinessEntityID = ? JOIN ADMIN. EmployeePayHistory eph ON e. BusinessEntityID = eph. BusinessEntityID WHERE eph. Rate > ( SELECT AVG ( Rate ) FROM ADMIN. EmployeePayHistory )
               - key: oracledb.query_plan
                 value:
                   stringValue: '[{"ACCESS_PREDICATES":"","BYTES":"","CARDINALITY":"","COST":"1","CPU_COST":"","DEPTH":"0","ID":"0","IO_COST":"","OPERATION":"SELECT STATEMENT","OPTIONS":"FULL","PARENT_ID":"","POSITION":"1","PROJECTION":""}]'
@@ -81,9 +84,7 @@ resourceLogs:
                   doubleValue: 2e-05
             body: {}
             eventName: db.server.top_query
-            spanId: ""
-            timeUnixNano: "1752581882636677000"
-            traceId: ""
+            timeUnixNano: "1759142512777891000"
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver
           version: latest

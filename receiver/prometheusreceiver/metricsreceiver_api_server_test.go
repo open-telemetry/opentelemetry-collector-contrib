@@ -63,7 +63,7 @@ func TestPrometheusAPIServer(t *testing.T) {
 		require.NoError(t, err)
 		receiver, err := newPrometheusReceiver(receivertest.NewNopSettings(metadata.Type), &Config{
 			PrometheusConfig: cfg,
-			APIServer: &APIServer{
+			APIServer: APIServer{
 				Enabled: true,
 				ServerConfig: confighttp.ServerConfig{
 					Endpoint: endpoint,
@@ -135,7 +135,8 @@ func testTargets(t *testing.T, endpoint string) {
 	assert.NoError(t, err)
 	assert.NotNil(t, targets)
 	assert.NotNil(t, targets.Active)
-	for _, target := range targets.Active {
+	for i := range targets.Active {
+		target := targets.Active[i]
 		assert.NotNil(t, target)
 		assert.NotEmpty(t, target.DiscoveredLabels)
 		assert.NotEmpty(t, target.Labels)

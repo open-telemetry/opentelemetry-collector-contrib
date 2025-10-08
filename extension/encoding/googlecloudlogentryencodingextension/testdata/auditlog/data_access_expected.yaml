@@ -1,0 +1,74 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: gcp.project
+          value:
+            stringValue: elastic-observability
+        - key: cloud.resource_id
+          value:
+            stringValue: cloudaudit.googleapis.com%2Fdata_access
+        - key: gcp.resource_type
+          value:
+            stringValue: gke_cluster
+        - key: gcp.label.location
+          value:
+            stringValue: us-central1-c
+        - key: gcp.label.cluster_name
+          value:
+            stringValue: edge-oblt
+        - key: gcp.label.project_id
+          value:
+            stringValue: elastic-observability
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: log.record.uid
+                value:
+                  stringValue: ak85oqe14p19
+              - key: gcp.audit.service.name
+                value:
+                  stringValue: container.googleapis.com
+              - key: gcp.audit.method.name
+                value:
+                  stringValue: google.container.v1beta1.ClusterManager.GetCluster
+              - key: gcp.audit.resource.name
+                value:
+                  stringValue: projects/elastic-observability/zones/us-central1-c/clusters/edge-oblt
+              - key: gcp.audit.resource.location.current
+                value:
+                  arrayValue:
+                    values:
+                      - stringValue: us-central1-c
+              - key: user.id
+                value:
+                  stringValue: serviceAccount:service-8560181848@container-engine-robot.iam.gserviceaccount.com
+              - key: user.email
+                value:
+                  stringValue: service-8560181848@container-engine-robot.iam.gserviceaccount.com
+              - key: gcp.audit.authorization
+                value:
+                  arrayValue:
+                    values:
+                      - kvlistValue:
+                          values:
+                            - key: permission
+                              value:
+                                stringValue: container.clusters.get
+                            - key: granted
+                              value:
+                                boolValue: true
+                            - key: resource
+                              value:
+                                stringValue: projects/elastic-observability/zones/us-central1-c/clusters/edge-oblt
+              - key: client.address
+                value:
+                  stringValue: 34.29.77.17
+              - key: user_agent.original
+                value:
+                  stringValue: google-api-go-client/0.5 cluster-autoscaler,gzip(gfe)
+            body: {}
+            observedTimeUnixNano: "1755262578095662412"
+            severityNumber: 9
+            severityText: INFO
+            timeUnixNano: "1755262577261620203"
+        scope: {}

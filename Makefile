@@ -623,8 +623,7 @@ $(1)
 endef
 
 # List of directories where certificates are stored for unit tests.
-CERT_DIRS := receiver/sapmreceiver/testdata \
-             receiver/signalfxreceiver/testdata \
+CERT_DIRS := receiver/signalfxreceiver/testdata \
              receiver/splunkhecreceiver/testdata \
              receiver/mongodbatlasreceiver/testdata/alerts/cert \
              receiver/mongodbreceiver/testdata/certs \
@@ -654,6 +653,10 @@ multimod-sync: $(MULTIMOD)
 crosslink: $(CROSSLINK)
 	@echo "Executing crosslink"
 	$(CROSSLINK) --root=$(shell pwd) --prune
+
+.PHONY: actionlint
+actionlint: $(ACTIONLINT)
+	$(ACTIONLINT) -config-file .github/actionlint.yaml -color $(filter-out $(wildcard .github/workflows/*windows.y*), $(wildcard .github/workflows/*.y*))
 
 .PHONY: clean
 clean:

@@ -5,11 +5,10 @@ package datadogextension // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"errors"
-	"fmt"
 	"testing"
 	"time"
 
-	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
+	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes/source"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -75,22 +74,6 @@ func TestConfig_Validate(t *testing.T) {
 				},
 			},
 			wantErr: datadogconfig.ErrUnsetAPIKey,
-		},
-		{
-			name: "Invalid API key characters",
-			config: Config{
-				API: datadogconfig.APIConfig{
-					Site: datadogconfig.DefaultSite,
-					Key:  "1234567890abcdef1234567890abcdeg",
-				},
-				HTTPConfig: &httpserver.Config{
-					ServerConfig: confighttp.ServerConfig{
-						Endpoint: "http://localhost:8080",
-					},
-					Path: "/metadata",
-				},
-			},
-			wantErr: fmt.Errorf("%w: invalid characters: %s", datadogconfig.ErrAPIKeyFormat, "g"),
 		},
 		{
 			name: "Missing HTTP config",

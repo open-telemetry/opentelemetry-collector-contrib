@@ -804,11 +804,23 @@ func TestSendLogsUnexpectedFormat(t *testing.T) {
 }
 
 func TestSendLogsOTLP(t *testing.T) {
+	l := plog.NewLogs()
+	ls := l.ResourceLogs().AppendEmpty()
+
+	logRecords := exampleTwoLogs()
+	for i := 0; i < len(logRecords); i++ {
+		logRecords[i].MoveTo(ls.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty())
+	}
+
 	test := prepareSenderTest(t, NoCompression, []func(w http.ResponseWriter, req *http.Request){
 		func(_ http.ResponseWriter, req *http.Request) {
 			body := extractBody(t, req)
-			//nolint:lll
-			assert.Equal(t, "\n\x84\x01\n\x00\x12;\n\x00\x127*\r\n\vExample log2\x10\n\x04key1\x12\b\n\x06value12\x10\n\x04key2\x12\b\n\x06value2J\x00R\x00\x12C\n\x00\x12?*\x15\n\x13Another example log2\x10\n\x04key1\x12\b\n\x06value12\x10\n\x04key2\x12\b\n\x06value2J\x00R\x00", body)
+
+			ld, err := (&plog.ProtoUnmarshaler{}).UnmarshalLogs([]byte(body))
+			assert.NoError(t, err)
+			// Need to check with read only bit, because we do the same on line 845.
+			ld.MarkReadOnly()
+			assert.Equal(t, l, ld)
 
 			assert.Equal(t, "otelcol", req.Header.Get("X-Sumo-Client"))
 			assert.Equal(t, "application/x-protobuf", req.Header.Get("Content-Type"))
@@ -830,16 +842,7 @@ func TestSendLogsOTLP(t *testing.T) {
 
 	test.s.config.LogFormat = "otlp"
 
-	l := plog.NewLogs()
-	ls := l.ResourceLogs().AppendEmpty()
-
-	logRecords := exampleTwoLogs()
-	for i := 0; i < len(logRecords); i++ {
-		logRecords[i].MoveTo(ls.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty())
-	}
-
 	l.MarkReadOnly()
-
 	assert.NoError(t, test.s.sendOTLPLogs(t.Context(), l))
 	assert.EqualValues(t, 1, *test.reqCounter)
 }
@@ -1089,7 +1092,6 @@ func TestSendMetrics(t *testing.T) {
 		metricSum, metricGauge,
 	)
 	metrics.MarkReadOnly()
-
 	_, errs := test.s.sendNonOTLPMetrics(t.Context(), metrics)
 	assert.Empty(t, errs)
 }

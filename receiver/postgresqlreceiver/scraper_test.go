@@ -426,11 +426,13 @@ func TestScrapeQuerySample(t *testing.T) {
 	scraper := newPostgreSQLScraper(settings, cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
 	scraper.newestQueryTimestamp = 123440.111
 	mock.ExpectQuery(expectedScrapeSampleQuery).WillReturnRows(sqlmock.NewRows(
-		[]string{"datname", "usename", "client_addrs", "client_hostname", "client_port", "query_start", "wait_event_type", "wait_event", "query_id", "pid", "application_name", "_query_start_timestamp", "state", "query"},
-	).FromCSVString("postgres,otelu,11.4.5.14,otel,114514,2025-02-12T16:37:54.843+08:00,,,123131231231,1450,receiver,123445.123,idle,select * from pg_stat_activity where id = 32"))
+		[]string{"datname", "usename", "client_addr", "client_hostname", "client_port", "query_start", "wait_event_type", "wait_event", "query_id", "pid", "application_name", "_query_start_timestamp", "state", "query", "duration_ms"},
+	).FromCSVString("postgres,otelu,11.4.5.14,otel,114514,2025-02-12T16:37:54.843+08:00,,,123131231231,1450,receiver,123445.123,idle,select * from pg_stat_activity where id = 32,1.2"))
 	actualLogs, err := scraper.scrapeQuerySamples(t.Context(), 30)
 	assert.NoError(t, err)
 	expectedFile := filepath.Join("testdata", "scraper", "query-sample", "expected.yaml")
+	// Uncomment line below to re-generate expected logs.
+	// golden.WriteLogs(t, expectedFile, actualLogs)
 	expectedLogs, err := golden.ReadLogs(expectedFile)
 	require.NoError(t, err)
 	errs := plogtest.CompareLogs(expectedLogs, actualLogs, plogtest.IgnoreTimestamp())
@@ -511,6 +513,18 @@ func TestScrapeTopQueries(t *testing.T) {
 	// golden.WriteLogs(t, expectedFile, actualLogs)
 	errs := plogtest.CompareLogs(expectedLogs, actualLogs, plogtest.IgnoreTimestamp())
 	assert.NoError(t, errs)
+
+	// Verify the cache has updated with latest counter
+
+	calls, callsExists := scraper.cache.Get(queryid + callsColumnName)
+	assert.True(t, callsExists)
+	assert.Equal(t, float64(123), calls)
+	execTime, execTimeExists := scraper.cache.Get(queryid + totalExecTimeColumnName)
+	assert.True(t, execTimeExists)
+	assert.Equal(t, float64(11), execTime)
+	planTime, planTimeExists := scraper.cache.Get(queryid + totalPlanTimeColumnName)
+	assert.True(t, planTimeExists)
+	assert.Equal(t, float64(12), planTime)
 }
 
 type (

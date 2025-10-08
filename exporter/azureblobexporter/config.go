@@ -28,6 +28,7 @@ type BlobNameFormat struct {
 	TracesFormat             string            `mapstructure:"traces_format"`
 	SerialNumRange           int64             `mapstructure:"serial_num_range"`
 	SerialNumBeforeExtension bool              `mapstructure:"serial_num_before_extension"`
+	TemplateEnabled          bool              `mapstructure:"template_enabled"`
 	Params                   map[string]string `mapstructure:"params"`
 }
 
