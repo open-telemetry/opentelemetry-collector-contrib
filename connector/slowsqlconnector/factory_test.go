@@ -4,7 +4,6 @@
 package slowsqlconnector
 
 import (
-	"context"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/slowsqlconnector/internal/metadata"
 	"testing"
 
@@ -46,7 +45,7 @@ func TestNewConnector(t *testing.T) {
 			cfg.Dimensions = tc.dimensions
 
 			// Test Logs
-			traceLogsConnector, err := factory.CreateTracesToLogs(context.Background(), creationParams, cfg, consumertest.NewNop())
+			traceLogsConnector, err := factory.CreateTracesToLogs(t.Context(), creationParams, cfg, consumertest.NewNop())
 			slc := traceLogsConnector.(*logsConnector)
 
 			assert.NoError(t, err)
