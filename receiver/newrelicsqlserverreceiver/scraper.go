@@ -29,8 +29,9 @@ type sqlServerScraper struct {
 	instanceScraper         *scrapers.InstanceScraper
 	queryPerformanceScraper *scrapers.QueryPerformanceScraper
 	//slowQueryScraper  *scrapers.SlowQueryScraper
-	databaseScraper *scrapers.DatabaseScraper
-	engineEdition   int // SQL Server engine edition (0=Unknown, 5=Azure DB, 8=Azure MI)
+	databaseScraper       *scrapers.DatabaseScraper
+	userConnectionScraper *scrapers.UserConnectionScraper
+	engineEdition         int // SQL Server engine edition (0=Unknown, 5=Azure DB, 8=Azure MI)
 }
 
 // newSqlServerScraper creates a new SQL Server scraper with structured approach
@@ -81,6 +82,9 @@ func (s *sqlServerScraper) start(ctx context.Context, _ component.Host) error {
 	// Initialize query performance scraper for blocking sessions and performance monitoring
 	s.queryPerformanceScraper = scrapers.NewQueryPerformanceScraper(s.connection, s.logger, s.engineEdition)
 	//s.slowQueryScraper = scrapers.NewSlowQueryScraper(s.logger, s.connection)
+
+	// Initialize user connection scraper for user connection and authentication metrics
+	s.userConnectionScraper = scrapers.NewUserConnectionScraper(s.connection, s.logger, s.engineEdition)
 
 	s.logger.Info("Successfully connected to SQL Server",
 		zap.String("hostname", s.config.Hostname),
@@ -458,6 +462,173 @@ func (s *sqlServerScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 		// Don't return here - continue with other metrics
 	} else {
 		s.logger.Debug("Successfully scraped instance comprehensive statistics")
+	}
+
+	// Scrape user connection metrics if enabled
+	s.logger.Debug("Checking user connection metrics configuration",
+		zap.Bool("enable_user_connection_metrics", s.config.IsUserConnectionMetricsEnabled()),
+		zap.Bool("enable_user_connection_stats_metrics", s.config.IsUserConnectionStatsMetricsEnabled()),
+		zap.Bool("enable_login_logout_metrics", s.config.IsLoginLogoutMetricsEnabled()))
+
+	if s.config.IsUserConnectionMetricsEnabled() {
+		s.logger.Debug("Starting user connection status metrics scraping")
+		scrapeCtx, cancel = context.WithTimeout(ctx, s.config.Timeout)
+		defer cancel()
+
+		if err := s.userConnectionScraper.ScrapeUserConnectionStatusMetrics(scrapeCtx, scopeMetrics); err != nil {
+			s.logger.Error("Failed to scrape user connection status metrics",
+				zap.Error(err),
+				zap.Duration("timeout", s.config.Timeout))
+			scrapeErrors = append(scrapeErrors, err)
+			// Don't return here - continue with other metrics
+		} else {
+			s.logger.Debug("Successfully scraped user connection status metrics")
+		}
+
+		// Scrape user connection summary metrics
+		s.logger.Debug("Starting user connection summary metrics scraping")
+		scrapeCtx, cancel = context.WithTimeout(ctx, s.config.Timeout)
+		defer cancel()
+
+		if err := s.userConnectionScraper.ScrapeUserConnectionSummaryMetrics(scrapeCtx, scopeMetrics); err != nil {
+			s.logger.Error("Failed to scrape user connection summary metrics",
+				zap.Error(err),
+				zap.Duration("timeout", s.config.Timeout))
+			scrapeErrors = append(scrapeErrors, err)
+			// Don't return here - continue with other metrics
+		} else {
+			s.logger.Debug("Successfully scraped user connection summary metrics")
+		}
+
+		// Scrape user connection utilization metrics
+		s.logger.Debug("Starting user connection utilization metrics scraping")
+		scrapeCtx, cancel = context.WithTimeout(ctx, s.config.Timeout)
+		defer cancel()
+
+		if err := s.userConnectionScraper.ScrapeUserConnectionUtilizationMetrics(scrapeCtx, scopeMetrics); err != nil {
+			s.logger.Error("Failed to scrape user connection utilization metrics",
+				zap.Error(err),
+				zap.Duration("timeout", s.config.Timeout))
+			scrapeErrors = append(scrapeErrors, err)
+			// Don't return here - continue with other metrics
+		} else {
+			s.logger.Debug("Successfully scraped user connection utilization metrics")
+		}
+
+		// Scrape user connection by client metrics
+		s.logger.Debug("Starting user connection by client metrics scraping")
+		scrapeCtx, cancel = context.WithTimeout(ctx, s.config.Timeout)
+		defer cancel()
+
+		if err := s.userConnectionScraper.ScrapeUserConnectionByClientMetrics(scrapeCtx, scopeMetrics); err != nil {
+			s.logger.Error("Failed to scrape user connection by client metrics",
+				zap.Error(err),
+				zap.Duration("timeout", s.config.Timeout))
+			scrapeErrors = append(scrapeErrors, err)
+			// Don't return here - continue with other metrics
+		} else {
+			s.logger.Debug("Successfully scraped user connection by client metrics")
+		}
+
+		// Scrape user connection client summary metrics
+		s.logger.Debug("Starting user connection client summary metrics scraping")
+		scrapeCtx, cancel = context.WithTimeout(ctx, s.config.Timeout)
+		defer cancel()
+
+		if err := s.userConnectionScraper.ScrapeUserConnectionClientSummaryMetrics(scrapeCtx, scopeMetrics); err != nil {
+			s.logger.Error("Failed to scrape user connection client summary metrics",
+				zap.Error(err),
+				zap.Duration("timeout", s.config.Timeout))
+			scrapeErrors = append(scrapeErrors, err)
+			// Don't return here - continue with other metrics
+		} else {
+			s.logger.Debug("Successfully scraped user connection client summary metrics")
+		}
+	} else {
+		s.logger.Debug("User connection metrics disabled in configuration")
+	}
+
+	// Scrape user connection stats metrics if enabled
+	if s.config.IsUserConnectionStatsMetricsEnabled() {
+		s.logger.Debug("Starting user connection stats metrics scraping")
+		scrapeCtx, cancel = context.WithTimeout(ctx, s.config.Timeout)
+		defer cancel()
+
+		if err := s.userConnectionScraper.ScrapeUserConnectionStatsMetrics(scrapeCtx, scopeMetrics); err != nil {
+			s.logger.Error("Failed to scrape user connection stats metrics",
+				zap.Error(err),
+				zap.Duration("timeout", s.config.Timeout))
+			scrapeErrors = append(scrapeErrors, err)
+			// Don't return here - continue with other metrics
+		} else {
+			s.logger.Debug("Successfully scraped user connection stats metrics")
+		}
+	} else {
+		s.logger.Debug("User connection stats metrics disabled in configuration")
+	}
+
+	// Scrape login/logout metrics if enabled
+	if s.config.IsLoginLogoutMetricsEnabled() {
+		s.logger.Debug("Starting login/logout metrics scraping")
+		scrapeCtx, cancel = context.WithTimeout(ctx, s.config.Timeout)
+		defer cancel()
+
+		if err := s.userConnectionScraper.ScrapeLoginLogoutMetrics(scrapeCtx, scopeMetrics); err != nil {
+			s.logger.Error("Failed to scrape login/logout metrics",
+				zap.Error(err),
+				zap.Duration("timeout", s.config.Timeout))
+			scrapeErrors = append(scrapeErrors, err)
+			// Don't return here - continue with other metrics
+		} else {
+			s.logger.Debug("Successfully scraped login/logout metrics")
+		}
+
+		// Scrape login/logout summary metrics
+		s.logger.Debug("Starting login/logout summary metrics scraping")
+		scrapeCtx, cancel = context.WithTimeout(ctx, s.config.Timeout)
+		defer cancel()
+
+		if err := s.userConnectionScraper.ScrapeLoginLogoutSummaryMetrics(scrapeCtx, scopeMetrics); err != nil {
+			s.logger.Error("Failed to scrape login/logout summary metrics",
+				zap.Error(err),
+				zap.Duration("timeout", s.config.Timeout))
+			scrapeErrors = append(scrapeErrors, err)
+			// Don't return here - continue with other metrics
+		} else {
+			s.logger.Debug("Successfully scraped login/logout summary metrics")
+		}
+
+		// Scrape failed login metrics
+		s.logger.Debug("Starting failed login metrics scraping")
+		scrapeCtx, cancel = context.WithTimeout(ctx, s.config.Timeout)
+		defer cancel()
+
+		if err := s.userConnectionScraper.ScrapeFailedLoginMetrics(scrapeCtx, scopeMetrics); err != nil {
+			s.logger.Error("Failed to scrape failed login metrics",
+				zap.Error(err),
+				zap.Duration("timeout", s.config.Timeout))
+			scrapeErrors = append(scrapeErrors, err)
+			// Don't return here - continue with other metrics
+		} else {
+			s.logger.Debug("Successfully scraped failed login metrics")
+		}
+
+		// Scrape failed login summary metrics
+		s.logger.Debug("Starting failed login summary metrics scraping")
+		scrapeCtx, cancel = context.WithTimeout(ctx, s.config.Timeout)
+		defer cancel()
+
+		if err := s.userConnectionScraper.ScrapeFailedLoginSummaryMetrics(scrapeCtx, scopeMetrics); err != nil {
+			s.logger.Error("Failed to scrape failed login summary metrics",
+				zap.Error(err),
+				zap.Duration("timeout", s.config.Timeout))
+			scrapeErrors = append(scrapeErrors, err)
+			// Don't return here - continue with other metrics
+		} else {
+			s.logger.Debug("Successfully scraped failed login summary metrics")
+		}
+	} else {
+		s.logger.Debug("Login/logout metrics disabled in configuration")
 	}
 
 	// Log summary of scraping results
