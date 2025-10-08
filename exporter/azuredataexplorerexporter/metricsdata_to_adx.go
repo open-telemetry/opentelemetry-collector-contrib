@@ -6,6 +6,7 @@ package azuredataexplorerexporter // import "github.com/open-telemetry/opentelem
 import (
 	"context"
 	"fmt"
+	"maps"
 	"math"
 	"os"
 	"strconv"
@@ -248,9 +249,7 @@ func rawMetricsToAdxMetrics(_ context.Context, metrics pmetric.Metrics, logger *
 }
 
 func copyMap(toAttrib, fromAttrib map[string]any) map[string]any {
-	for k, v := range fromAttrib {
-		toAttrib[k] = v
-	}
+	maps.Copy(toAttrib, fromAttrib)
 	return toAttrib
 }
 
