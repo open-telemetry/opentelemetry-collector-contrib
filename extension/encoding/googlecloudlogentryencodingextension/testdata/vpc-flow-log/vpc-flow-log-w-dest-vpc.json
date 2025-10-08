@@ -15,7 +15,7 @@
     "rtt_msec": "22",
     "dest_vpc": {
       "vpc_name": "default",
-      "project_id": "elastic-obs-integrations-dev",
+      "project_id": "test-project-id",
       "subnetwork_region": "asia-south1",
       "subnetwork_name": "default"
     },
@@ -23,7 +23,7 @@
       "zone": "asia-south1-c",
       "vm_name": "service-integration-dev-idc-ubuntu25-4",
       "region": "asia-south1",
-      "project_id": "elastic-obs-integrations-dev"
+      "project_id": "test-project-id"
     },
     "connection": {
       "src_ip": "122.168.194.41",
@@ -38,14 +38,14 @@
     "type": "vpc_flow_logs_config",
     "labels": {
       "name": "joe-test-flow-logs-default",
-      "resource_container": "projects/774712120909",
+      "resource_container": "projects/123456789012",
       "location": "global"
     }
   },
   "timestamp": "2025-09-27T21:13:28.314589494Z",
   "labels": {
-    "target_resource_name": "projects/774712120909/global/networks/default"
+    "target_resource_name": "projects/123456789012/global/networks/default"
   },
-  "logName": "projects/elastic-obs-integrations-dev/logs/networkmanagement.googleapis.com%2Fvpc_flows",
+  "logName": "projects/test-project-id/logs/networkmanagement.googleapis.com%2Fvpc_flows",
   "receiveTimestamp": "2025-09-27T21:13:28.314589494Z"
 }

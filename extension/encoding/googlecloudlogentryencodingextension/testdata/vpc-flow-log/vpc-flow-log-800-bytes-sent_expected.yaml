@@ -3,7 +3,7 @@ resourceLogs:
       attributes:
         - key: gcp.project
           value:
-            stringValue: elastic-obs-integrations-dev
+            stringValue: test-project-id
         - key: cloud.resource_id
           value:
             stringValue: networkmanagement.googleapis.com%2Fvpc_flows
@@ -18,7 +18,7 @@ resourceLogs:
             stringValue: global
         - key: gcp.label.resource_container
           value:
-            stringValue: projects/774712120909
+            stringValue: projects/123456789012
     scopeLogs:
       - logRecords:
           - attributes:
@@ -27,7 +27,7 @@ resourceLogs:
                   stringValue: uuq3awf13s959
               - key: gcp.label.target_resource_name
                 value:
-                  stringValue: projects/774712120909/global/networks/default
+                  stringValue: projects/123456789012/global/networks/default
               - key: network.protocol.name
                 value:
                   stringValue: icmp
@@ -54,7 +54,7 @@ resourceLogs:
                   intValue: "1759007485762594203"
               - key: gcp.vpc.flow.destination.instance.project.id
                 value:
-                  stringValue: elastic-obs-integrations-dev
+                  stringValue: test-project-id
               - key: gcp.vpc.flow.destination.instance.vm.region
                 value:
                   stringValue: asia-south1
@@ -66,7 +66,7 @@ resourceLogs:
                   stringValue: asia-south1-c
               - key: gcp.vpc.flow.destination.project.id
                 value:
-                  stringValue: elastic-obs-integrations-dev
+                  stringValue: test-project-id
               - key: gcp.vpc.flow.destination.subnet.name
                 value:
                   stringValue: default

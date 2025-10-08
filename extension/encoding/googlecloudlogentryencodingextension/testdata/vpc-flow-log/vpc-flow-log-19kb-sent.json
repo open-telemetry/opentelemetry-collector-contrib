@@ -3,7 +3,7 @@
   "jsonPayload": {
     "src_vpc": {
       "subnetwork_name": "default",
-      "project_id": "elastic-obs-integrations-dev",
+      "project_id": "test-project-id",
       "subnetwork_region": "asia-south1",
       "vpc_name": "default"
     },
@@ -17,7 +17,7 @@
     "start_time": "2025-09-27T21:12:57.083366649Z",
     "src_instance": {
       "vm_name": "service-integration-dev-idc-ubuntu25-4",
-      "project_id": "elastic-obs-integrations-dev",
+      "project_id": "test-project-id",
       "region": "asia-south1",
       "zone": "asia-south1-c"
     },
@@ -56,13 +56,13 @@
     "labels": {
       "name": "joe-test-flow-logs-default",
       "location": "global",
-      "resource_container": "projects/774712120909"
+      "resource_container": "projects/123456789012"
     }
   },
   "timestamp": "2025-09-27T21:13:04.502203447Z",
   "labels": {
-    "target_resource_name": "projects/774712120909/global/networks/default"
+    "target_resource_name": "projects/123456789012/global/networks/default"
   },
-  "logName": "projects/elastic-obs-integrations-dev/logs/networkmanagement.googleapis.com%2Fvpc_flows",
+  "logName": "projects/test-project-id/logs/networkmanagement.googleapis.com%2Fvpc_flows",
   "receiveTimestamp": "2025-09-27T21:13:04.502203447Z"
 }

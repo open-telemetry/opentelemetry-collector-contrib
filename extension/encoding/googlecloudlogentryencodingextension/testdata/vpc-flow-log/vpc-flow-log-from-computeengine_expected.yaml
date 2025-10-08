@@ -3,7 +3,7 @@ resourceLogs:
       attributes:
         - key: gcp.project
           value:
-            stringValue: elastic-obs-integrations-dev
+            stringValue: test-project-id
         - key: cloud.resource_id
           value:
             stringValue: compute.googleapis.com%2Fvpc_flows
@@ -18,7 +18,7 @@ resourceLogs:
             stringValue: default
         - key: gcp.label.project_id
           value:
-            stringValue: elastic-obs-integrations-dev
+            stringValue: test-project-id
         - key: gcp.label.location
           value:
             stringValue: us-central1
@@ -60,7 +60,7 @@ resourceLogs:
                   intValue: "1759008879250342106"
               - key: gcp.vpc.flow.destination.instance.project.id
                 value:
-                  stringValue: elastic-obs-integrations-dev
+                  stringValue: test-project-id
               - key: gcp.vpc.flow.destination.instance.vm.region
                 value:
                   stringValue: us-central1
@@ -78,7 +78,7 @@ resourceLogs:
                   stringValue: us-central1-a
               - key: gcp.vpc.flow.destination.project.id
                 value:
-                  stringValue: elastic-obs-integrations-dev
+                  stringValue: test-project-id
               - key: gcp.vpc.flow.destination.subnet.name
                 value:
                   stringValue: default
