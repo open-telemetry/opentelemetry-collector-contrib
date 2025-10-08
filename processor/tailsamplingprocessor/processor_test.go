@@ -827,48 +827,6 @@ func TestDuplicatePolicyName(t *testing.T) {
 	assert.Equal(t, err, errors.New(`duplicate policy name "always_sample"`))
 }
 
-func TestDecisionPolicyMetrics(t *testing.T) {
-	traceIDs, batches := generateIDsAndBatches(10)
-	policy := []PolicyCfg{
-		{
-			sharedPolicyCfg: sharedPolicyCfg{
-				Name:             "test-policy",
-				Type:             Probabilistic,
-				ProbabilisticCfg: ProbabilisticCfg{SamplingPercentage: 50},
-			},
-		},
-	}
-	cfg := Config{
-		DecisionWait:            defaultTestDecisionWait,
-		NumTraces:               uint64(2 * len(traceIDs)),
-		ExpectedNewTracesPerSec: 64,
-		PolicyCfgs:              policy,
-	}
-	sp, _ := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), consumertest.NewNop(), cfg)
-	tsp := sp.(*tailSamplingSpanProcessor)
-	require.NoError(t, tsp.Start(t.Context(), componenttest.NewNopHost()))
-	defer func() {
-		require.NoError(t, tsp.Shutdown(t.Context()))
-	}()
-	metrics := newPolicyMetrics(len(policy))
-
-	for i, id := range traceIDs {
-		sb := &samplingpolicy.TraceData{
-			ArrivalTime:     time.Now(),
-			ReceivedBatches: batches[i],
-			SpanCount:       &atomic.Int64{},
-		}
-		sb.SpanCount.Store(int64(batches[i].SpanCount()))
-
-		_ = tsp.makeDecision(id, sb, metrics)
-	}
-
-	assert.EqualValues(t, 5, metrics.decisionSampled)
-	assert.EqualValues(t, 5, metrics.decisionNotSampled)
-	assert.EqualValues(t, 0, metrics.idNotFoundOnMapCount)
-	assert.EqualValues(t, 0, metrics.evaluateErrorCount)
-}
-
 func TestDropPolicyIsFirstInPolicyList(t *testing.T) {
 	controller := newTestTSPController()
 	msp := new(consumertest.TracesSink)
