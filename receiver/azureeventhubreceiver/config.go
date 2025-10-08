@@ -6,6 +6,7 @@ package azureeventhubreceiver // import "github.com/open-telemetry/opentelemetry
 import (
 	"errors"
 	"fmt"
+	"slices"
 
 	"github.com/Azure/azure-amqp-common-go/v4/conn"
 	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs/v2"
@@ -48,12 +49,7 @@ type TimeFormat struct {
 }
 
 func isValidFormat(format string) bool {
-	for _, validFormat := range validFormats {
-		if logFormat(format) == validFormat {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(validFormats, logFormat(format))
 }
 
 // Validate config
