@@ -42,10 +42,18 @@ type Input struct {
 	cancel                   context.CancelFunc
 	wg                       sync.WaitGroup
 	subscription             Subscription
+	throttle                 *throttle
 	remote                   RemoteConfig
 	remoteSessionHandle      windows.Handle
 	startRemoteSession       func() error
 	processEvent             func(context.Context, Event) error
+}
+
+type throttle struct {
+	rate            int
+	tokens          int
+	tokensRemainder float64
+	refilledAt      time.Time
 }
 
 // newInput creates a new Input operator.
@@ -166,7 +174,7 @@ func (i *Input) Start(persister operator.Persister) error {
 	if !subscriptionError {
 		i.subscription = subscription
 		i.wg.Add(1)
-		go i.readOnInterval(ctx)
+		go i.pollAndRead(ctx)
 	}
 
 	return nil
@@ -198,8 +206,7 @@ func (i *Input) Stop() error {
 	return multierr.Append(errs, i.stopRemoteSession())
 }
 
-// readOnInterval will read events with respect to the polling interval until it reaches the end of the channel.
-func (i *Input) readOnInterval(ctx context.Context) {
+func (i *Input) pollAndRead(ctx context.Context) {
 	defer i.wg.Done()
 
 	for {
@@ -218,15 +225,15 @@ func (i *Input) readAll(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		default:
-			if !i.read(ctx) {
+			if !i.readThrottle(ctx) {
 				return
 			}
 		}
 	}
 }
 
-// read will read events from the subscription.
-func (i *Input) read(ctx context.Context) bool {
+// readThrottle will read events from the subscription using rate limits
+func (i *Input) readThrottle(ctx context.Context) bool {
 	events, actualMaxReads, err := i.subscription.Read(i.currentMaxReads)
 
 	// Update the current max reads if it changed
@@ -262,6 +269,8 @@ func (i *Input) read(ctx context.Context) bool {
 	}
 
 	for n, event := range events {
+		i.throttle.consume(1, ctx)
+
 		if err := i.processEvent(ctx, event); err != nil {
 			i.Logger().Error("process event", zap.Error(err))
 		}
@@ -397,4 +406,61 @@ func (i *Input) getPersistKey() string {
 	}
 
 	return i.channel
+}
+
+func newThrottle(rate int) *throttle {
+	return &throttle{
+		rate:            rate,
+		tokens:          rate,
+		tokensRemainder: 0.0,
+		refilledAt:      time.Time{},
+	}
+}
+
+func (t *throttle) consume(n int, ctx context.Context) {
+	if t == nil {
+		return
+	}
+
+	for {
+		t.refill()
+
+		if t.tokens >= n {
+			t.tokens -= n
+			return
+		}
+
+		tokensWait := (n - t.tokens) + 1
+		throttleDuration := time.Duration(tokensWait) * time.Second / time.Duration(t.rate)
+
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(throttleDuration):
+		}
+	}
+}
+
+func (t *throttle) refill() {
+	if t == nil {
+		return
+	}
+
+	now := time.Now()
+	if t.refilledAt.IsZero() {
+		t.refilledAt = now
+		return
+	}
+
+	sinceLastRefill := now.Sub(t.refilledAt)
+
+	tokensIncrement := sinceLastRefill.Seconds()*float64(t.rate) + t.tokensRemainder
+	tokensIncrementInt := int(tokensIncrement)
+	t.tokensRemainder = tokensIncrement - float64(tokensIncrementInt)
+
+	if tokensIncrementInt > 0 {
+		t.tokens = min(t.tokens+tokensIncrementInt, t.rate*2)
+	}
+
+	t.refilledAt = now
 }
