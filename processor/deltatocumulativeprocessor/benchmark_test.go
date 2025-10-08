@@ -145,7 +145,7 @@ func BenchmarkProcessor(gb *testing.B) {
 			b.StopTimer()
 
 			ctx := gb.Context()
-			for range b.N {
+			for b.Loop() {
 				for i := range ms.Len() {
 					cs.next(ms.At(i))
 				}
@@ -279,7 +279,7 @@ func maxCPUs() int {
 		return cpus
 	}
 
-	for _, s := range strings.Split(list.Value.String(), ",") {
+	for s := range strings.SplitSeq(list.Value.String(), ",") {
 		n, err := strconv.Atoi(s)
 		if err != nil {
 			panic(err)
