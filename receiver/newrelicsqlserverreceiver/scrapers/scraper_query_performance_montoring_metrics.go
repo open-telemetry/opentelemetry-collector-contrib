@@ -472,10 +472,12 @@ func (s *QueryPerformanceScraper) processWaitTimeAnalysisMetrics(result models.W
         dataPoint := gauge.DataPoints().AppendEmpty()
         dataPoint.SetTimestamp(timestamp)
         dataPoint.SetStartTimestamp(s.startTime)
-        dataPoint.SetIntValue(1) // Dummy value since this is primarily for the string attribute
+        dataPoint.SetIntValue(1) // Dummy numeric value required for OpenTelemetry metrics
         
-        // Only use common attributes as per specification
-        createCommonAttributes().CopyTo(dataPoint.Attributes())
+        // Add query text as an attribute and also include it in common attributes
+        attrs := createCommonAttributes()
+        attrs.PutStr("query_text", *result.QueryText)
+        attrs.CopyTo(dataPoint.Attributes())
     }
 
     // Create total_wait_time_ms metric
