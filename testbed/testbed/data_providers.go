@@ -110,7 +110,7 @@ func (dp *perfTestDataProvider) GenerateMetrics() (pmetric.Metrics, bool) {
 		batchIndex := dp.traceIDSequence.Add(1)
 		// Generate data points for the metric.
 		dps.EnsureCapacity(dataPointsPerMetric)
-		for j := 0; j < dataPointsPerMetric; j++ {
+		for j := range dataPointsPerMetric {
 			dataPoint := dps.AppendEmpty()
 			dataPoint.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 			value := dp.dataItemsGenerated.Add(1)
