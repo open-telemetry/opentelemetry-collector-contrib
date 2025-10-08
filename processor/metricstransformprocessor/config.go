@@ -3,9 +3,11 @@
 
 package metricstransformprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor"
 
-import "slices"
+import (
+	"slices"
 
-import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/aggregateutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/aggregateutil"
+)
 
 const (
 	// includeFieldName is the mapstructure field name for Include field
