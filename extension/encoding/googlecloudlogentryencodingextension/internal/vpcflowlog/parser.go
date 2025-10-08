@@ -250,9 +250,9 @@ func handleInternetRoutingDetails(ird *internetRoutingDetails, attr pcommon.Map)
 	asPaths := attr.PutEmptySlice(gcpVPCFlowEgressASPaths)
 	for _, path := range ird.EgressASPath {
 		pathMap := asPaths.AppendEmpty().SetEmptyMap()
-		asDetails := pathMap.PutEmptySlice("as_details")
+		asDetailsSlice := pathMap.PutEmptySlice("as_details")
 		for _, detail := range path.ASDetails {
-			detailMap := asDetails.AppendEmpty().SetEmptyMap()
+			detailMap := asDetailsSlice.AppendEmpty().SetEmptyMap()
 			if detail.ASN != nil {
 				detailMap.PutInt("asn", *detail.ASN)
 			}
