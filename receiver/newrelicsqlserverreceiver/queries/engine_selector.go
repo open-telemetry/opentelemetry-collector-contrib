@@ -98,6 +98,7 @@ const (
 	InstanceQueries = iota
 	DatabaseQueries
 	PerformanceQueries
+	UserConnectionQueries
 )
 
 // QueryDefinition represents a SQL query with metadata
@@ -376,6 +377,153 @@ var databaseQueriesAzureManagedInstance = []*QueryDefinition{
 	},
 }
 
+// Query definitions for user connection metrics (Default/Standard SQL Server)
+var userConnectionQueriesDefault = []*QueryDefinition{
+	{
+		Query:       UserConnectionStatusQuery,
+		MetricName:  "sqlserver.user_connections.status.metrics",
+		Description: "User connection status distribution",
+	},
+	{
+		Query:       LoginLogoutQuery,
+		MetricName:  "sqlserver.user_connections.authentication.metrics",
+		Description: "Login/logout rate metrics",
+	},
+	{
+		Query:       LoginLogoutSummaryQuery,
+		MetricName:  "sqlserver.user_connections.authentication.summary",
+		Description: "Login/logout summary statistics",
+	},
+	{
+		Query:       FailedLoginQuery,
+		MetricName:  "sqlserver.user_connections.failed_logins.metrics",
+		Description: "Failed login attempts from error log",
+	},
+	{
+		Query:       FailedLoginSummaryQuery,
+		MetricName:  "sqlserver.user_connections.failed_logins_summary.metrics",
+		Description: "Failed login summary statistics",
+	},
+	{
+		Query:       UserConnectionSummaryQuery,
+		MetricName:  "sqlserver.user_connections.status.summary",
+		Description: "User connection summary statistics",
+	},
+	{
+		Query:       UserConnectionUtilizationQuery,
+		MetricName:  "sqlserver.user_connections.utilization",
+		Description: "User connection utilization metrics",
+	},
+	{
+		Query:       UserConnectionByClientQuery,
+		MetricName:  "sqlserver.user_connections.by_client",
+		Description: "User connections grouped by client",
+	},
+	{
+		Query:       UserConnectionClientSummaryQuery,
+		MetricName:  "sqlserver.user_connections.client.summary",
+		Description: "User connection client summary statistics",
+	},
+}
+
+// Query definitions for user connection metrics (Azure SQL Database)
+var userConnectionQueriesAzureDatabase = []*QueryDefinition{
+	{
+		Query:       UserConnectionStatusQueryAzureSQL,
+		MetricName:  "sqlserver.user_connections.status.metrics",
+		Description: "User connection status distribution (Azure SQL Database)",
+	},
+	{
+		Query:       LoginLogoutQueryAzureSQL,
+		MetricName:  "sqlserver.user_connections.authentication.metrics",
+		Description: "Login/logout rate metrics (Azure SQL Database)",
+	},
+	{
+		Query:       LoginLogoutSummaryQueryAzureSQL,
+		MetricName:  "sqlserver.user_connections.authentication.summary",
+		Description: "Login/logout summary statistics (Azure SQL Database)",
+	},
+	{
+		Query:       FailedLoginQueryAzureSQL,
+		MetricName:  "sqlserver.user_connections.failed_logins.metrics",
+		Description: "Failed login attempts from sys.event_log (Azure SQL Database)",
+	},
+	{
+		Query:       FailedLoginSummaryQueryAzureSQL,
+		MetricName:  "sqlserver.user_connections.failed_logins_summary.metrics",
+		Description: "Failed login summary statistics (Azure SQL Database)",
+	},
+	{
+		Query:       UserConnectionSummaryQueryAzureSQL,
+		MetricName:  "sqlserver.user_connections.status.summary",
+		Description: "User connection summary statistics (Azure SQL Database)",
+	},
+	{
+		Query:       UserConnectionUtilizationQueryAzureSQL,
+		MetricName:  "sqlserver.user_connections.utilization",
+		Description: "User connection utilization metrics (Azure SQL Database)",
+	},
+	{
+		Query:       UserConnectionByClientQueryAzureSQL,
+		MetricName:  "sqlserver.user_connections.by_client",
+		Description: "User connections grouped by client (Azure SQL Database)",
+	},
+	{
+		Query:       UserConnectionClientSummaryQueryAzureSQL,
+		MetricName:  "sqlserver.user_connections.client.summary",
+		Description: "User connection client summary statistics (Azure SQL Database)",
+	},
+}
+
+// Query definitions for user connection metrics (Azure SQL Managed Instance)
+var userConnectionQueriesAzureManagedInstance = []*QueryDefinition{
+	{
+		Query:       UserConnectionStatusQueryAzureMI,
+		MetricName:  "sqlserver.user_connections.status.metrics",
+		Description: "User connection status distribution (Azure SQL Managed Instance)",
+	},
+	{
+		Query:       LoginLogoutQueryAzureMI,
+		MetricName:  "sqlserver.user_connections.authentication.metrics",
+		Description: "Login/logout rate metrics (Azure SQL Managed Instance)",
+	},
+	{
+		Query:       LoginLogoutSummaryQueryAzureMI,
+		MetricName:  "sqlserver.user_connections.authentication.summary",
+		Description: "Login/logout summary statistics (Azure SQL Managed Instance)",
+	},
+	{
+		Query:       FailedLoginQueryAzureMI,
+		MetricName:  "sqlserver.user_connections.failed_logins.metrics",
+		Description: "Failed login attempts from error log (Azure SQL Managed Instance)",
+	},
+	{
+		Query:       FailedLoginSummaryQueryAzureMI,
+		MetricName:  "sqlserver.user_connections.failed_logins_summary.metrics",
+		Description: "Failed login summary statistics (Azure SQL Managed Instance)",
+	},
+	{
+		Query:       UserConnectionSummaryQueryAzureMI,
+		MetricName:  "sqlserver.user_connections.status.summary",
+		Description: "User connection summary statistics (Azure SQL Managed Instance)",
+	},
+	{
+		Query:       UserConnectionUtilizationQueryAzureMI,
+		MetricName:  "sqlserver.user_connections.utilization",
+		Description: "User connection utilization metrics (Azure SQL Managed Instance)",
+	},
+	{
+		Query:       UserConnectionByClientQueryAzureMI,
+		MetricName:  "sqlserver.user_connections.by_client",
+		Description: "User connections grouped by client (Azure SQL Managed Instance)",
+	},
+	{
+		Query:       UserConnectionClientSummaryQueryAzureMI,
+		MetricName:  "sqlserver.user_connections.client.summary",
+		Description: "User connection client summary statistics (Azure SQL Managed Instance)",
+	},
+}
+
 // queryDefinitionSets maps query types to engine-specific query sets
 var queryDefinitionSets = map[QueryDefinitionType]EngineSet[[]*QueryDefinition]{
 	InstanceQueries: {
@@ -387,6 +535,11 @@ var queryDefinitionSets = map[QueryDefinitionType]EngineSet[[]*QueryDefinition]{
 		Default:                 databaseQueriesDefault,
 		AzureSQLDatabase:        databaseQueriesAzureManagedDatabase,
 		AzureSQLManagedInstance: databaseQueriesAzureManagedInstance,
+	},
+	UserConnectionQueries: {
+		Default:                 userConnectionQueriesDefault,
+		AzureSQLDatabase:        userConnectionQueriesAzureDatabase,
+		AzureSQLManagedInstance: userConnectionQueriesAzureManagedInstance,
 	},
 }
 

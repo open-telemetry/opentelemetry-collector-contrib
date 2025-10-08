@@ -81,75 +81,15 @@ func (s *UserConnectionScraper) ScrapeUserConnectionStatusMetrics(ctx context.Co
 	return nil
 }
 
-// getQueryForMetric returns the appropriate query for the given metric name based on engine edition
+// getQueryForMetric retrieves the appropriate query for a metric based on engine edition with Default fallback
 func (s *UserConnectionScraper) getQueryForMetric(metricName string) (string, bool) {
-	switch metricName {
-	case "sqlserver.user_connections.status.metrics":
-		querySet := queries.EngineSet[string]{
-			Default:                 queries.UserConnectionStatusQuery,
-			AzureSQLDatabase:        queries.UserConnectionStatusQueryAzureSQL,
-			AzureSQLManagedInstance: queries.UserConnectionStatusQueryAzureMI,
-		}
-		return querySet.Select(s.engineEdition), true
-	case "sqlserver.user_connections.authentication.metrics":
-		querySet := queries.EngineSet[string]{
-			Default:                 queries.LoginLogoutQuery,
-			AzureSQLDatabase:        queries.LoginLogoutQueryAzureSQL,
-			AzureSQLManagedInstance: queries.LoginLogoutQueryAzureMI,
-		}
-		return querySet.Select(s.engineEdition), true
-	case "sqlserver.user_connections.authentication.summary":
-		querySet := queries.EngineSet[string]{
-			Default:                 queries.LoginLogoutSummaryQuery,
-			AzureSQLDatabase:        queries.LoginLogoutSummaryQueryAzureSQL,
-			AzureSQLManagedInstance: queries.LoginLogoutSummaryQueryAzureMI,
-		}
-		return querySet.Select(s.engineEdition), true
-	case "sqlserver.user_connections.failed_logins.metrics":
-		querySet := queries.EngineSet[string]{
-			Default:                 queries.FailedLoginQuery,
-			AzureSQLDatabase:        queries.FailedLoginQueryAzureSQL,
-			AzureSQLManagedInstance: queries.FailedLoginQueryAzureMI,
-		}
-		return querySet.Select(s.engineEdition), true
-	case "sqlserver.user_connections.failed_logins_summary.metrics":
-		querySet := queries.EngineSet[string]{
-			Default:                 queries.FailedLoginSummaryQuery,
-			AzureSQLDatabase:        queries.FailedLoginSummaryQueryAzureSQL,
-			AzureSQLManagedInstance: queries.FailedLoginSummaryQueryAzureMI,
-		}
-		return querySet.Select(s.engineEdition), true
-	case "sqlserver.user_connections.status.summary":
-		querySet := queries.EngineSet[string]{
-			Default:                 queries.UserConnectionSummaryQuery,
-			AzureSQLDatabase:        queries.UserConnectionSummaryQueryAzureSQL,
-			AzureSQLManagedInstance: queries.UserConnectionSummaryQueryAzureMI,
-		}
-		return querySet.Select(s.engineEdition), true
-	case "sqlserver.user_connections.utilization":
-		querySet := queries.EngineSet[string]{
-			Default:                 queries.UserConnectionUtilizationQuery,
-			AzureSQLDatabase:        queries.UserConnectionUtilizationQueryAzureSQL,
-			AzureSQLManagedInstance: queries.UserConnectionUtilizationQueryAzureMI,
-		}
-		return querySet.Select(s.engineEdition), true
-	case "sqlserver.user_connections.by_client":
-		querySet := queries.EngineSet[string]{
-			Default:                 queries.UserConnectionByClientQuery,
-			AzureSQLDatabase:        queries.UserConnectionByClientQueryAzureSQL,
-			AzureSQLManagedInstance: queries.UserConnectionByClientQueryAzureMI,
-		}
-		return querySet.Select(s.engineEdition), true
-	case "sqlserver.user_connections.client.summary":
-		querySet := queries.EngineSet[string]{
-			Default:                 queries.UserConnectionClientSummaryQuery,
-			AzureSQLDatabase:        queries.UserConnectionClientSummaryQueryAzureSQL,
-			AzureSQLManagedInstance: queries.UserConnectionClientSummaryQueryAzureMI,
-		}
-		return querySet.Select(s.engineEdition), true
-	default:
-		return "", false
+	query, found := queries.GetQueryForMetric(queries.UserConnectionQueries, metricName, s.engineEdition)
+	if found {
+		s.logger.Debug("Using query for metric",
+			zap.String("metric_name", metricName),
+			zap.String("engine_type", queries.GetEngineTypeName(s.engineEdition)))
 	}
+	return query, found
 }
 
 // processUserConnectionStatusMetrics processes user connection status metrics and creates OpenTelemetry metrics
