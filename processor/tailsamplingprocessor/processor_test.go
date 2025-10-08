@@ -279,13 +279,13 @@ func TestSequentialTraceArrival(t *testing.T) {
 	for _, trace := range allSampledTraces {
 		sampledTraceIDs[trace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID()] = struct{}{}
 	}
-	require.Equal(t, 128, len(sampledTraceIDs))
+	require.Len(t, sampledTraceIDs, 128)
 	for _, expectedTrace := range traceIDs {
 		_, ok := sampledTraceIDs[expectedTrace]
 		require.True(t, ok, "Expected trace %v to be sampled", expectedTrace)
 		delete(sampledTraceIDs, expectedTrace)
 	}
-	require.Equal(t, 0, len(sampledTraceIDs), "No extra traces should be sampled")
+	require.Empty(t, sampledTraceIDs, "No extra traces should be sampled")
 }
 
 func TestConcurrentTraceArrival(t *testing.T) {
@@ -346,14 +346,13 @@ func TestConcurrentTraceArrival(t *testing.T) {
 	for _, trace := range allSampledTraces {
 		sampledTraceIDs[trace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID()] = struct{}{}
 	}
-	require.Equal(t, 128, len(sampledTraceIDs))
+	require.Len(t, sampledTraceIDs, 128)
 	for _, expectedTrace := range traceIDs {
 		_, ok := sampledTraceIDs[expectedTrace]
 		require.True(t, ok, "Expected trace %v to be sampled", expectedTrace)
 		delete(sampledTraceIDs, expectedTrace)
 	}
-	require.Equal(t, 0, len(sampledTraceIDs), "No extra traces should be sampled")
-
+	require.Empty(t, sampledTraceIDs, "No extra traces should be sampled")
 }
 
 func TestConcurrentArrivalAndEvaluation(t *testing.T) {
@@ -446,14 +445,14 @@ func TestSequentialTraceMapSize(t *testing.T) {
 		sampledTraceIDs[trace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID()] = struct{}{}
 	}
 
-	require.Equal(t, int(cfg.NumTraces), len(sampledTraceIDs))
+	require.Len(t, sampledTraceIDs, int(cfg.NumTraces))
 	for _, expectedTrace := range traceIDs[len(traceIDs)-int(cfg.NumTraces):] {
 		_, ok := sampledTraceIDs[expectedTrace]
 		require.True(t, ok, "Expected trace %v to be sampled", expectedTrace)
 		delete(sampledTraceIDs, expectedTrace)
 	}
 
-	require.Equal(t, 0, len(sampledTraceIDs), "No extra traces should be sampled")
+	require.Empty(t, sampledTraceIDs, "No extra traces should be sampled")
 }
 
 func TestConsumptionDuringPolicyEvaluation(t *testing.T) {
