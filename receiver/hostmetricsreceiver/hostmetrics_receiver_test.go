@@ -6,6 +6,7 @@ package hostmetricsreceiver
 import (
 	"context"
 	"errors"
+	"maps"
 	"runtime"
 	"testing"
 	"time"
@@ -175,9 +176,7 @@ func getReturnedMetricNames(metrics pmetric.MetricSlice) map[string]struct{} {
 }
 
 func appendMapInto(m1, m2 map[string]struct{}) {
-	for k, v := range m2 {
-		m1[k] = v
-	}
+	maps.Copy(m1, m2)
 }
 
 var mockType = component.MustNewType("mock")
@@ -248,8 +247,7 @@ func benchmarkScrapeMetrics(b *testing.B, cfg *Config) {
 
 	require.NoError(b, receiver.Start(b.Context(), componenttest.NewNopHost()))
 
-	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
+	for b.Loop() {
 		tickerCh <- time.Now()
 		<-sink.ch
 	}
