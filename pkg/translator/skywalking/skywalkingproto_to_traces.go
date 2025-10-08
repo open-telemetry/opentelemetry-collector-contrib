@@ -310,7 +310,7 @@ func swStringToUUID(s string, extra uint32) (dst [16]byte) {
 		return uid
 	}
 
-	for i := 0; i < 4; i++ {
+	for i := range 4 {
 		uid[i] ^= byte(extra)
 		extra >>= 8
 	}
@@ -351,7 +351,7 @@ func swStringToUUID(s string, extra uint32) (dst [16]byte) {
 func uuidTo8Bytes(uuid [16]byte) [8]byte {
 	// high bit XOR low bit
 	var dst [8]byte
-	for i := 0; i < 8; i++ {
+	for i := range 8 {
 		dst[i] = uuid[i] ^ uuid[i+8]
 	}
 	return dst
