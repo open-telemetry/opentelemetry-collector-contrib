@@ -51,7 +51,7 @@ func FilterAttrs(metric pmetric.Metric, filterAttrKeys []string) {
 	// as normal.
 	RangeDataPointAttributes(metric, func(attrs pcommon.Map) bool {
 		attrs.RemoveIf(func(k string, _ pcommon.Value) bool {
-			return isNotPresent(k, filterAttrKeys)
+			return !slices.Contains(filterAttrKeys, k)
 		})
 		return true
 	})
@@ -139,10 +139,6 @@ func RangeDataPointAttributes(metric pmetric.Metric, f func(pcommon.Map) bool) {
 			}
 		}
 	}
-}
-
-func isNotPresent(target string, arr []string) bool {
-	return !slices.Contains(arr, target)
 }
 
 func mergeNumberDataPoints(dpsMap map[string]pmetric.NumberDataPointSlice, agg AggregationType, to pmetric.NumberDataPointSlice) {
