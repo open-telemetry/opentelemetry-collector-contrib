@@ -792,8 +792,7 @@ func BenchmarkConsumeMetrics(b *testing.B) {
 	reset()
 	assert.NoError(b, p.ConsumeMetrics(b.Context(), metrics))
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		reset()
 		assert.NoError(b, p.ConsumeMetrics(b.Context(), metrics))
 	}
