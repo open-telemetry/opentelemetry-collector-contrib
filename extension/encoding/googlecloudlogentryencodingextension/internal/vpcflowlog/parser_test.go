@@ -134,10 +134,10 @@ func TestHandleInstance(t *testing.T) {
 			instance: &instance{
 				ProjectID: "test-project-id",
 				Region:    "us-central1",
-				VMName:    "proxy-crest-new-group-b51k",
+				VMName:    "test-vm-1",
 				Zone:      "us-central1-a",
 				ManagedInstanceGroup: &managedInstanceGroup{
-					Name: "proxy-crest-new-group",
+					Name: "test-mig-1",
 					Zone: "us-central1-a",
 				},
 			},
@@ -145,9 +145,9 @@ func TestHandleInstance(t *testing.T) {
 			expectedAttr: map[string]any{
 				fmtAttributeNameUsingSide(gcpVPCFlowInstanceProjectIDTemplate, src): "test-project-id",
 				fmtAttributeNameUsingSide(gcpVPCFlowInstanceVMRegionTemplate, src):  "us-central1",
-				fmtAttributeNameUsingSide(gcpVPCFlowInstanceVMNameTemplate, src):    "proxy-crest-new-group-b51k",
+				fmtAttributeNameUsingSide(gcpVPCFlowInstanceVMNameTemplate, src):    "test-vm-1",
 				fmtAttributeNameUsingSide(gcpVPCFlowInstanceVMZoneTemplate, src):    "us-central1-a",
-				fmtAttributeNameUsingSide(gcpVPCFlowInstanceMIGNameTemplate, src):   "proxy-crest-new-group",
+				fmtAttributeNameUsingSide(gcpVPCFlowInstanceMIGNameTemplate, src):   "test-mig-1",
 				fmtAttributeNameUsingSide(gcpVPCFlowInstanceMIGZoneTemplate, src):   "us-central1-a",
 			},
 		},
@@ -155,14 +155,14 @@ func TestHandleInstance(t *testing.T) {
 			instance: &instance{
 				ProjectID: "test-project-id",
 				Region:    "asia-south1",
-				VMName:    "service-integration-dev-idc-ubuntu25-4",
+				VMName:    "test-vm-2",
 				Zone:      "asia-south1-c",
 			},
 			side: dest,
 			expectedAttr: map[string]any{
 				fmtAttributeNameUsingSide(gcpVPCFlowInstanceProjectIDTemplate, dest): "test-project-id",
 				fmtAttributeNameUsingSide(gcpVPCFlowInstanceVMRegionTemplate, dest):  "asia-south1",
-				fmtAttributeNameUsingSide(gcpVPCFlowInstanceVMNameTemplate, dest):    "service-integration-dev-idc-ubuntu25-4",
+				fmtAttributeNameUsingSide(gcpVPCFlowInstanceVMNameTemplate, dest):    "test-vm-2",
 				fmtAttributeNameUsingSide(gcpVPCFlowInstanceVMZoneTemplate, dest):    "asia-south1-c",
 			},
 		},
@@ -464,10 +464,10 @@ func TestParsePayloadIntoAttributes(t *testing.T) {
 				"src_instance": {
 					"project_id": "test-project-id-src",
 					"region": "us-central1",
-					"vm_name": "proxy-crest-new-group-b51k",
+					"vm_name": "test-vm-1",
 					"zone": "us-central1-a",
 					"managed_instance_group": {
-						"name": "proxy-crest-new-group",
+						"name": "test-mig-1",
 						"zone": "us-central1-a"
 					}
 				},
@@ -492,9 +492,9 @@ func TestParsePayloadIntoAttributes(t *testing.T) {
 				gcpVPCFlowNetworkServiceDSCP:           int64(32),
 				fmtAttributeNameUsingSide(gcpVPCFlowInstanceProjectIDTemplate, src): "test-project-id-src",
 				fmtAttributeNameUsingSide(gcpVPCFlowInstanceVMRegionTemplate, src):  "us-central1",
-				fmtAttributeNameUsingSide(gcpVPCFlowInstanceVMNameTemplate, src):    "proxy-crest-new-group-b51k",
+				fmtAttributeNameUsingSide(gcpVPCFlowInstanceVMNameTemplate, src):    "test-vm-1",
 				fmtAttributeNameUsingSide(gcpVPCFlowInstanceVMZoneTemplate, src):    "us-central1-a",
-				fmtAttributeNameUsingSide(gcpVPCFlowInstanceMIGNameTemplate, src):   "proxy-crest-new-group",
+				fmtAttributeNameUsingSide(gcpVPCFlowInstanceMIGNameTemplate, src):   "test-mig-1",
 				fmtAttributeNameUsingSide(gcpVPCFlowInstanceMIGZoneTemplate, src):   "us-central1-a",
 				fmtAttributeNameUsingSide(gcpVPCFlowProjectIDTemplate, src):         "test-project-id",
 				fmtAttributeNameUsingSide(gcpVPCFlowSubnetNameTemplate, src):        "default",
