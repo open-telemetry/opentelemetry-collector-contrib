@@ -18,17 +18,22 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/metrics"
 )
 
 const (
-	DefaultNamespace                 = "traces.span.metrics"
-	legacyMetricNamesFeatureGateID   = "connector.spanmetrics.legacyMetricNames"
-	includeCollectorInstanceIDGateID = "connector.spanmetrics.includeCollectorInstanceID"
+	DefaultNamespace                           = "traces.span.metrics"
+	legacyMetricNamesFeatureGateID             = "connector.spanmetrics.legacyMetricNames"
+	includeCollectorInstanceIDFeatureGateID    = "connector.spanmetrics.includeCollectorInstanceID"
+	useSecondAsDefaultMetricsUnitFeatureGateID = "connector.spanmetrics.useSecondAsDefaultMetricsUnit"
+	excludeResourceMetricsFeatureGate          = "connector.spanmetrics.excludeResourceMetrics"
 )
 
 var (
-	legacyMetricNamesFeatureGate *featuregate.Gate
-	includeCollectorInstanceID   *featuregate.Gate
+	legacyMetricNamesFeatureGate  *featuregate.Gate
+	includeCollectorInstanceID    *featuregate.Gate
+	useSecondAsDefaultMetricsUnit *featuregate.Gate
+	excludeResourceMetrics        *featuregate.Gate
 )
 
 func init() {
@@ -40,10 +45,22 @@ func init() {
 		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33227"),
 	)
 	includeCollectorInstanceID = featuregate.GlobalRegistry().MustRegister(
-		includeCollectorInstanceIDGateID,
+		includeCollectorInstanceIDFeatureGateID,
 		featuregate.StageAlpha,
 		featuregate.WithRegisterDescription("When enabled, connector add collector.instance.id to default dimensions."),
 		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/40400"),
+	)
+	useSecondAsDefaultMetricsUnit = featuregate.GlobalRegistry().MustRegister(
+		useSecondAsDefaultMetricsUnitFeatureGateID,
+		featuregate.StageAlpha,
+		featuregate.WithRegisterDescription("When enabled, connector use second as default unit for duration metrics."),
+		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42462"),
+	)
+	excludeResourceMetrics = featuregate.GlobalRegistry().MustRegister(
+		excludeResourceMetricsFeatureGate,
+		featuregate.StageAlpha,
+		featuregate.WithRegisterDescription("When enabled, connector will exclude all resource attributes."),
+		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42103"),
 	)
 }
 
@@ -58,10 +75,16 @@ func NewFactory() connector.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		AggregationTemporality:      "AGGREGATION_TEMPORALITY_CUMULATIVE",
-		ResourceMetricsCacheSize:    defaultResourceMetricsCacheSize,
-		MetricsFlushInterval:        60 * time.Second,
-		Histogram:                   HistogramConfig{Disable: false, Unit: defaultUnit},
+		AggregationTemporality:   "AGGREGATION_TEMPORALITY_CUMULATIVE",
+		ResourceMetricsCacheSize: defaultResourceMetricsCacheSize,
+		MetricsFlushInterval:     60 * time.Second,
+		Histogram: HistogramConfig{Disable: false, Unit: func() metrics.Unit {
+			if useSecondAsDefaultMetricsUnit.IsEnabled() {
+				return metrics.Seconds
+			}
+
+			return metrics.Milliseconds
+		}()},
 		Namespace:                   DefaultNamespace,
 		AggregationCardinalityLimit: 0,
 		Exemplars: ExemplarsConfig{

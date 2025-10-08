@@ -24,6 +24,7 @@ resource_attributes:
   spark.stage.attempt.id:
     description: The ID of the stage attempt for which the metric was recorded.
     type: int
+    enabled: false
   spark.executor.id:
     description: The ID of the executor for which the metric was recorded.
     type: string
@@ -123,6 +124,8 @@ metrics:
   spark.stage.status:
     description: A one-hot encoding representing the status of this stage.
     enabled: true
+    stability:
+      level: development
     sum:
       monotonic: false
       aggregation_temporality: cumulative
@@ -133,6 +136,8 @@ metrics:
   spark.stage.task.active:
     description: Number of active tasks in this stage.
     enabled: true
+    stability:
+      level: development
     sum:
       aggregation_temporality: cumulative
       monotonic: false
@@ -142,6 +147,8 @@ metrics:
   spark.stage.task.result:
     description: Number of tasks with a specific result in this stage.
     enabled: true
+    stability:
+      level: development
     sum:
       aggregation_temporality: cumulative
       monotonic: true
@@ -152,6 +159,8 @@ metrics:
   spark.stage.executor.run_time:
     description: Amount of time spent by the executor in this stage.
     enabled: true
+    stability:
+      level: development
     sum:
       aggregation_temporality: cumulative
       monotonic: true
@@ -161,6 +170,8 @@ metrics:
   spark.stage.executor.cpu_time:
     description: CPU time spent by the executor in this stage.
     enabled: true
+    stability:
+      level: development
     sum:
       aggregation_temporality: cumulative
       monotonic: true
@@ -170,6 +181,8 @@ metrics:
   spark.stage.task.result_size:
     description: The amount of data transmitted back to the driver by all the tasks in this stage.
     enabled: true
+    stability:
+      level: development
     sum:
       aggregation_temporality: cumulative
       monotonic: true
@@ -179,6 +192,8 @@ metrics:
   spark.stage.jvm_gc_time:
     description: The amount of time the JVM spent on garbage collection in this stage.
     enabled: true
+    stability:
+      level: development
     sum:
       aggregation_temporality: cumulative
       monotonic: true
@@ -188,6 +203,8 @@ metrics:
   spark.stage.memory.spilled:
     description: The amount of memory moved to disk due to size constraints (spilled) in this stage.
     enabled: true
+    stability:
+      level: development
     sum:
       aggregation_temporality: cumulative
       monotonic: true
@@ -197,6 +214,8 @@ metrics:
   spark.stage.disk.spilled:
     description: The amount of disk space used for storing portions of overly large data chunks that couldn't fit in memory in this stage.
     enabled: true
+    stability:
+      level: development
     sum:
       aggregation_temporality: cumulative
       monotonic: true
@@ -206,6 +225,8 @@ metrics:
   spark.stage.memory.peak:
     description: Peak memory used by internal data structures created during shuffles, aggregations and joins in this stage.
     enabled: true
+    stability:
+      level: development
     sum:
       aggregation_temporality: cumulative
       monotonic: true
@@ -215,6 +236,8 @@ metrics:
   spark.stage.io.size:
     description: Amount of data written and read at this stage.
     enabled: true
+    stability:
+      level: development
     sum:
       aggregation_temporality: cumulative
       monotonic: true
@@ -225,6 +248,8 @@ metrics:
   spark.stage.io.records:
     description: Number of records written and read in this stage.
     enabled: true
+    stability:
+      level: development
     sum:
       aggregation_temporality: cumulative
       monotonic: true
@@ -235,6 +260,8 @@ metrics:
   spark.stage.shuffle.blocks_fetched:
     description: Number of blocks fetched in shuffle operations in this stage.
     enabled: true
+    stability:
+      level: development
     sum:
       aggregation_temporality: cumulative
       monotonic: true
@@ -245,6 +272,8 @@ metrics:
   spark.stage.shuffle.fetch_wait_time:
     description: Time spent in this stage waiting for remote shuffle blocks.
     enabled: true
+    stability:
+      level: development
     sum:
       aggregation_temporality: cumulative
       monotonic: true
@@ -254,6 +283,8 @@ metrics:
   spark.stage.shuffle.io.disk:
     description: Amount of data read to disk in shuffle operations (sometimes required for large blocks, as opposed to the default behavior of reading into memory).
     enabled: true
+    stability:
+      level: development
     sum:
       aggregation_temporality: cumulative
       monotonic: true
@@ -263,6 +294,8 @@ metrics:
   spark.stage.shuffle.io.read.size:
     description: Amount of data read in shuffle operations in this stage.
     enabled: true
+    stability:
+      level: development
     sum:
       aggregation_temporality: cumulative
       monotonic: true
@@ -273,6 +306,8 @@ metrics:
   spark.stage.shuffle.io.write.size:
     description: Amount of data written in shuffle operations in this stage.
     enabled: true
+    stability:
+      level: development
     sum:
       aggregation_temporality: cumulative
       monotonic: true
@@ -283,6 +318,8 @@ metrics:
   spark.stage.shuffle.io.records:
     description: Number of records written or read in shuffle operations in this stage.
     enabled: true
+    stability:
+      level: development
     sum:
       aggregation_temporality: cumulative
       monotonic: true
@@ -293,6 +330,8 @@ metrics:
   spark.stage.shuffle.write_time:
     description: Time spent blocking on writes to disk or buffer cache in this stage.
     enabled: true
+    stability:
+      level: development
     sum:
       aggregation_temporality: cumulative
       monotonic: true
@@ -303,6 +342,8 @@ metrics:
   spark.executor.memory.usage:
     description: Storage memory used by this executor.
     enabled: true
+    stability:
+      level: development
     sum:
       aggregation_temporality: cumulative
       monotonic: false
@@ -312,6 +353,8 @@ metrics:
   spark.executor.disk.usage:
     description: Disk space used by this executor for RDD storage.
     enabled: true
+    stability:
+      level: development
     sum:
       aggregation_temporality: cumulative
       monotonic: false
@@ -321,6 +364,8 @@ metrics:
   spark.executor.task.limit:
     description: Maximum number of tasks that can run concurrently in this executor.
     enabled: true
+    stability:
+      level: development
     sum:
       aggregation_temporality: cumulative
       monotonic: false
@@ -330,6 +375,8 @@ metrics:
   spark.executor.task.active:
     description: Number of tasks currently running in this executor.
     enabled: true
+    stability:
+      level: development
     sum:
       aggregation_temporality: cumulative
       monotonic: false
@@ -339,6 +386,8 @@ metrics:
   spark.executor.task.result:
     description: Number of tasks with a specific result in this executor.
     enabled: true
+    stability:
+      level: development
     sum:
       aggregation_temporality: cumulative
       monotonic: true
@@ -348,6 +397,8 @@ metrics:
   spark.executor.time:
     description: Elapsed time the JVM spent executing tasks in this executor.
     enabled: true
+    stability:
+      level: development
     sum:
       aggregation_temporality: cumulative
       monotonic: true
@@ -357,6 +408,8 @@ metrics:
   spark.executor.gc_time:
     description: Elapsed time the JVM spent in garbage collection in this executor.
     enabled: true
+    stability:
+      level: development
     sum:
       aggregation_temporality: cumulative
       monotonic: true
@@ -366,6 +419,8 @@ metrics:
   spark.executor.input_size:
     description: Amount of data input for this executor.
     enabled: true
+    stability:
+      level: development
     sum:
       aggregation_temporality: cumulative
       monotonic: true
@@ -375,6 +430,8 @@ metrics:
   spark.executor.shuffle.io.size:
     description: Amount of data written and read during shuffle operations for this executor.
     enabled: true
+    stability:
+      level: development
     sum:
       aggregation_temporality: cumulative
       monotonic: true
@@ -384,6 +441,8 @@ metrics:
   spark.executor.storage_memory.usage:
     description: The executor's storage memory usage.
     enabled: true
+    stability:
+      level: development
     sum:
       aggregation_temporality: cumulative
       monotonic: false
@@ -394,6 +453,8 @@ metrics:
   spark.job.task.active:
     description: Number of active tasks in this job.
     enabled: true
+    stability:
+      level: development
     sum:
       aggregation_temporality: cumulative
       monotonic: false
@@ -403,6 +464,8 @@ metrics:
   spark.job.task.result:
     description: Number of tasks with a specific result in this job.
     enabled: true
+    stability:
+      level: development
     sum:
       aggregation_temporality: cumulative
       monotonic: true
@@ -412,6 +475,8 @@ metrics:
   spark.job.stage.active:
     description: Number of active stages in this job.
     enabled: true
+    stability:
+      level: development
     sum:
       aggregation_temporality: cumulative
       monotonic: false
@@ -421,6 +486,8 @@ metrics:
   spark.job.stage.result:
     description: Number of stages with a specific result in this job.
     enabled: true
+    stability:
+      level: development
     sum:
       aggregation_temporality: cumulative
       monotonic: true
@@ -431,6 +498,8 @@ metrics:
   spark.driver.block_manager.disk.usage:
     description: Disk space used by the BlockManager.
     enabled: true
+    stability:
+      level: development
     sum:
       aggregation_temporality: cumulative
       monotonic: false
@@ -440,6 +509,8 @@ metrics:
   spark.driver.block_manager.memory.usage:
     description: Memory usage for the driver's BlockManager.
     enabled: true
+    stability:
+      level: development
     sum:
       aggregation_temporality: cumulative
       monotonic: false
@@ -449,6 +520,8 @@ metrics:
   spark.driver.hive_external_catalog.file_cache_hits:
     description: Number of file cache hits on the HiveExternalCatalog.
     enabled: true
+    stability:
+      level: development
     sum:
       aggregation_temporality: cumulative
       monotonic: true
@@ -458,6 +531,8 @@ metrics:
   spark.driver.hive_external_catalog.files_discovered:
     description: Number of files discovered while listing the partitions of a table in the Hive metastore
     enabled: true
+    stability:
+      level: development
     sum:
       aggregation_temporality: cumulative
       monotonic: true
@@ -467,6 +542,8 @@ metrics:
   spark.driver.hive_external_catalog.hive_client_calls:
     description: Number of calls to the underlying Hive Metastore client made by the Spark application.
     enabled: true
+    stability:
+      level: development
     sum:
       aggregation_temporality: cumulative
       monotonic: true
@@ -476,6 +553,8 @@ metrics:
   spark.driver.hive_external_catalog.parallel_listing_jobs:
     description: Number of parallel listing jobs initiated by the HiveExternalCatalog when listing partitions of a table.
     enabled: true
+    stability:
+      level: development
     sum:
       aggregation_temporality: cumulative
       monotonic: true
@@ -485,6 +564,8 @@ metrics:
   spark.driver.hive_external_catalog.partitions_fetched:
     description: Table partitions fetched by the HiveExternalCatalog.
     enabled: true
+    stability:
+      level: development
     sum:
       aggregation_temporality: cumulative
       monotonic: true
@@ -494,6 +575,8 @@ metrics:
   spark.driver.code_generator.compilation.count:
     description: Number of source code compilation operations performed by the CodeGenerator.
     enabled: true
+    stability:
+      level: development
     sum:
       aggregation_temporality: cumulative
       monotonic: true
@@ -503,6 +586,8 @@ metrics:
   spark.driver.code_generator.compilation.average_time:
     description: Average time spent during CodeGenerator source code compilation operations.
     enabled: true
+    stability:
+      level: development
     gauge:
       value_type: double
     unit: ms
@@ -510,6 +595,8 @@ metrics:
   spark.driver.code_generator.generated_class.count:
     description: Number of classes generated by the CodeGenerator.
     enabled: true
+    stability:
+      level: development
     sum:
       aggregation_temporality: cumulative
       monotonic: true
@@ -519,6 +606,8 @@ metrics:
   spark.driver.code_generator.generated_class.average_size:
     description: Average class size of the classes generated by the CodeGenerator.
     enabled: true
+    stability:
+      level: development
     gauge:
       value_type: double
     unit: bytes
@@ -526,6 +615,8 @@ metrics:
   spark.driver.code_generator.generated_method.count:
     description: Number of methods generated by the CodeGenerator.
     enabled: true
+    stability:
+      level: development
     sum:
       aggregation_temporality: cumulative
       monotonic: true
@@ -535,6 +626,8 @@ metrics:
   spark.driver.code_generator.generated_method.average_size:
     description: Average method size of the classes generated by the CodeGenerator.
     enabled: true
+    stability:
+      level: development
     gauge:
       value_type: double
     unit: bytes
@@ -542,6 +635,8 @@ metrics:
   spark.driver.code_generator.source_code.operations:
     description: Number of source code generation operations performed by the CodeGenerator.
     enabled: true
+    stability:
+      level: development
     sum:
       aggregation_temporality: cumulative
       monotonic: true
@@ -551,6 +646,8 @@ metrics:
   spark.driver.code_generator.source_code.average_size:
     description: Average size of the source code generated by a CodeGenerator code generation operation.
     enabled: true
+    stability:
+      level: development
     gauge:
       value_type: double
     unit: bytes
@@ -558,6 +655,8 @@ metrics:
   spark.driver.dag_scheduler.job.active:
     description: Number of active jobs currently being processed by the DAGScheduler.
     enabled: true
+    stability:
+      level: development
     sum:
       aggregation_temporality: cumulative
       monotonic: false
@@ -567,6 +666,8 @@ metrics:
   spark.driver.dag_scheduler.job.count:
     description: Number of jobs that have been submitted to the DAGScheduler.
     enabled: true
+    stability:
+      level: development
     sum:
       aggregation_temporality: cumulative
       monotonic: true
@@ -576,6 +677,8 @@ metrics:
   spark.driver.dag_scheduler.stage.failed:
     description: Number of failed stages run by the DAGScheduler.
     enabled: true
+    stability:
+      level: development
     sum:
       aggregation_temporality: cumulative
       monotonic: true
@@ -585,6 +688,8 @@ metrics:
   spark.driver.dag_scheduler.stage.count:
     description: Number of stages the DAGScheduler is either running or needs to run.
     enabled: true
+    stability:
+      level: development
     sum:
       aggregation_temporality: cumulative
       monotonic: false
@@ -594,6 +699,8 @@ metrics:
   spark.driver.live_listener_bus.posted:
     description: Number of events that have been posted on the LiveListenerBus.
     enabled: true
+    stability:
+      level: development
     sum:
       aggregation_temporality: cumulative
       monotonic: true
@@ -603,6 +710,8 @@ metrics:
   spark.driver.live_listener_bus.processing_time.average:
     description: Average time taken for the LiveListenerBus to process an event posted to it.
     enabled: true
+    stability:
+      level: development
     gauge:
       value_type: double
     unit: ms
@@ -610,6 +719,8 @@ metrics:
   spark.driver.live_listener_bus.dropped:
     description: Number of events that have been dropped by the LiveListenerBus.
     enabled: true
+    stability:
+      level: development
     sum:
       aggregation_temporality: cumulative
       monotonic: true
@@ -619,6 +730,8 @@ metrics:
   spark.driver.live_listener_bus.queue_size:
     description: Number of events currently waiting to be processed by the LiveListenerBus.
     enabled: true
+    stability:
+      level: development
     sum:
       aggregation_temporality: cumulative
       monotonic: false
@@ -628,6 +741,8 @@ metrics:
   spark.driver.jvm_cpu_time:
     description: Current CPU time taken by the Spark driver.
     enabled: true
+    stability:
+      level: development
     sum:
       aggregation_temporality: cumulative
       monotonic: true
@@ -637,6 +752,8 @@ metrics:
   spark.driver.executor.memory.jvm:
     description: Amount of memory used by the driver's JVM.
     enabled: true
+    stability:
+      level: development
     sum:
       aggregation_temporality: cumulative
       monotonic: false
@@ -646,6 +763,8 @@ metrics:
   spark.driver.executor.memory.execution:
     description: Amount of execution memory currently used by the driver.
     enabled: true
+    stability:
+      level: development
     sum:
       aggregation_temporality: cumulative
       monotonic: false
@@ -655,6 +774,8 @@ metrics:
   spark.driver.executor.memory.storage:
     description: Amount of storage memory currently used by the driver.
     enabled: true
+    stability:
+      level: development
     sum:
       aggregation_temporality: cumulative
       monotonic: false
@@ -664,6 +785,8 @@ metrics:
   spark.driver.executor.memory.pool:
     description: Amount of pool memory currently used by the driver.
     enabled: true
+    stability:
+      level: development
     sum:
       aggregation_temporality: cumulative
       monotonic: false
@@ -673,6 +796,8 @@ metrics:
   spark.driver.executor.gc.operations:
     description: Number of garbage collection operations performed by the driver.
     enabled: true
+    stability:
+      level: development
     sum:
       aggregation_temporality: cumulative
       monotonic: true
@@ -682,6 +807,8 @@ metrics:
   spark.driver.executor.gc.time:
     description: Total elapsed time during garbage collection operations performed by the driver.
     enabled: true
+    stability:
+      level: development
     sum:
       aggregation_temporality: cumulative
       monotonic: true

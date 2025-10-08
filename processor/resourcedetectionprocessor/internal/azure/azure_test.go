@@ -36,6 +36,7 @@ func TestDetectAzureAvailable(t *testing.T) {
 		SubscriptionID:    "subscriptionID",
 		ResourceGroupName: "resourceGroup",
 		VMScaleSetName:    "myScaleset",
+		AvailabilityZone:  "availabilityZone",
 		TagsList: []azure.ComputeTagsListMetadata{
 			{
 				Name:  "tag1key",

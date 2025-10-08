@@ -41,6 +41,7 @@ func (mb *MetricsBuilder) ConvertGaugeToMetrics(ts *monitoringpb.TimeSeries, m p
 	m.SetUnit(ts.GetUnit())
 	gauge := m.SetEmptyGauge()
 
+	metricAttributes := convertLabelsToMetricAttributes(ts.GetMetric().GetLabels())
 	for _, point := range ts.GetPoints() {
 		dp := gauge.DataPoints().AppendEmpty()
 
@@ -55,6 +56,8 @@ func (mb *MetricsBuilder) ConvertGaugeToMetrics(ts *monitoringpb.TimeSeries, m p
 		} else {
 			mb.logger.Warn("EndTime is invalid for metric:", zap.String("Metric", ts.GetMetric().GetType()))
 		}
+
+		metricAttributes.CopyTo(dp.Attributes())
 
 		switch v := point.Value.Value.(type) {
 		case *monitoringpb.TypedValue_DoubleValue:
@@ -75,6 +78,7 @@ func (mb *MetricsBuilder) ConvertSumToMetrics(ts *monitoringpb.TimeSeries, m pme
 	sum := m.SetEmptySum()
 	sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 
+	metricAttributes := convertLabelsToMetricAttributes(ts.GetMetric().GetLabels())
 	for _, point := range ts.GetPoints() {
 		dp := sum.DataPoints().AppendEmpty()
 
@@ -89,6 +93,8 @@ func (mb *MetricsBuilder) ConvertSumToMetrics(ts *monitoringpb.TimeSeries, m pme
 		} else {
 			mb.logger.Warn("EndTime is invalid for metric:", zap.String("Metric", ts.GetMetric().GetType()))
 		}
+
+		metricAttributes.CopyTo(dp.Attributes())
 
 		switch v := point.Value.Value.(type) {
 		case *monitoringpb.TypedValue_DoubleValue:
@@ -109,6 +115,7 @@ func (mb *MetricsBuilder) ConvertDeltaToMetrics(ts *monitoringpb.TimeSeries, m p
 	sum := m.SetEmptySum()
 	sum.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 
+	metricAttributes := convertLabelsToMetricAttributes(ts.GetMetric().GetLabels())
 	for _, point := range ts.GetPoints() {
 		dp := sum.DataPoints().AppendEmpty()
 
@@ -123,6 +130,8 @@ func (mb *MetricsBuilder) ConvertDeltaToMetrics(ts *monitoringpb.TimeSeries, m p
 		} else {
 			mb.logger.Warn("EndTime is invalid for metric:", zap.String("Metric", ts.GetMetric().GetType()))
 		}
+
+		metricAttributes.CopyTo(dp.Attributes())
 
 		switch v := point.Value.Value.(type) {
 		case *monitoringpb.TypedValue_DoubleValue:
@@ -152,7 +161,7 @@ func (mb *MetricsBuilder) ConvertDistributionToMetrics(ts *monitoringpb.TimeSeri
 	// > Importers and exporters working with OpenTelemetry Metrics data are meant to disregard this specification when
 	// > translating to and from histogram formats that use inclusive lower bounds and exclusive upper bounds.
 
-	metricAttributes := convertDistributionLabels(ts.GetMetric().GetLabels())
+	metricAttributes := convertLabelsToMetricAttributes(ts.GetMetric().GetLabels())
 	for _, sourceDataPoint := range ts.GetPoints() {
 		sourceValue := sourceDataPoint.GetValue()
 		if sourceValue == nil {
@@ -271,7 +280,7 @@ func (mb *MetricsBuilder) ConvertDistributionToMetrics(ts *monitoringpb.TimeSeri
 	return m
 }
 
-func convertDistributionLabels(sourceLabels map[string]string) pcommon.Map {
+func convertLabelsToMetricAttributes(sourceLabels map[string]string) pcommon.Map {
 	metricAttributes := pcommon.NewMap()
 	metricAttributes.EnsureCapacity(len(sourceLabels))
 	for k, v := range sourceLabels {

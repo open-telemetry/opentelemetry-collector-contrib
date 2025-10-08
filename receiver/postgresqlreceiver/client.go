@@ -945,7 +945,7 @@ func (c *postgreSQLClient) getQuerySamples(ctx context.Context, limit int64, new
 		}
 		currentAttributes[dbPrefix+"pid"] = pid
 		currentAttributes["network.peer.port"] = clientPort
-		currentAttributes["network.peer.address"] = row["client_addrs"]
+		currentAttributes["network.peer.address"] = row["client_addr"]
 		currentAttributes["db.query.text"] = obfuscated
 		currentAttributes["db.namespace"] = row["datname"]
 		currentAttributes["user.name"] = row["usename"]
