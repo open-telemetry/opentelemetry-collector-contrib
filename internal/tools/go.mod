@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/internal/tools
 
-go 1.24.2
+go 1.24.4
 
 require (
 	github.com/Khan/genqlient v0.8.1
@@ -13,12 +13,12 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/cmd/codecovgen v0.137.0
 	github.com/rhysd/actionlint v1.7.7
 	go.opentelemetry.io/build-tools/checkapi v0.26.2
-	go.opentelemetry.io/build-tools/checkfile v0.28.0
-	go.opentelemetry.io/build-tools/chloggen v0.28.0
-	go.opentelemetry.io/build-tools/crosslink v0.28.0
-	go.opentelemetry.io/build-tools/githubgen v0.28.0
-	go.opentelemetry.io/build-tools/issuegenerator v0.28.0
-	go.opentelemetry.io/build-tools/multimod v0.28.0
+	go.opentelemetry.io/build-tools/checkfile v0.28.1
+	go.opentelemetry.io/build-tools/chloggen v0.28.1
+	go.opentelemetry.io/build-tools/crosslink v0.28.1
+	go.opentelemetry.io/build-tools/githubgen v0.28.1
+	go.opentelemetry.io/build-tools/issuegenerator v0.28.1
+	go.opentelemetry.io/build-tools/multimod v0.28.1
 	go.opentelemetry.io/collector/cmd/builder v0.137.0
 	go.opentelemetry.io/collector/cmd/mdatagen v0.137.0
 	go.uber.org/goleak v1.3.0
@@ -80,7 +80,7 @@ require (
 	github.com/ckaznocha/intrange v0.3.1 // indirect
 	github.com/cloudflare/circl v1.6.1 // indirect
 	github.com/curioswitch/go-reassign v0.3.0 // indirect
-	github.com/cyphar/filepath-securejoin v0.4.1 // indirect
+	github.com/cyphar/filepath-securejoin v0.5.0 // indirect
 	github.com/dave/dst v0.27.3 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/denis-tingaikin/go-header v0.5.0 // indirect
@@ -122,8 +122,7 @@ require (
 	github.com/golangci/revgrep v0.8.0 // indirect
 	github.com/golangci/unconvert v0.0.0-20250410112200-a129a6e6413e // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
-	github.com/google/go-github v17.0.0+incompatible // indirect
-	github.com/google/go-github/v74 v74.0.0 // indirect
+	github.com/google/go-github/v75 v75.0.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
 	github.com/google/uuid v1.6.0 // indirect
@@ -254,7 +253,7 @@ require (
 	go-simpler.org/sloglint v0.11.0 // indirect
 	go.augendre.info/fatcontext v0.8.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/build-tools v0.28.0 // indirect
+	go.opentelemetry.io/build-tools v0.28.1 // indirect
 	go.opentelemetry.io/collector/component v1.43.0 // indirect
 	go.opentelemetry.io/collector/confmap v1.43.0 // indirect
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.43.0 // indirect
