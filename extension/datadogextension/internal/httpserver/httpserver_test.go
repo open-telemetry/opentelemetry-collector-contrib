@@ -365,7 +365,7 @@ func TestHandleMetadataConcurrency(t *testing.T) {
 	var wg sync.WaitGroup
 	responses := make([]*httptest.ResponseRecorder, numRequests)
 
-	for i := 0; i < numRequests; i++ {
+	for i := range numRequests {
 		wg.Add(1)
 		go func(index int) {
 			defer wg.Done()
@@ -596,7 +596,7 @@ func TestServerStopConcurrency(t *testing.T) {
 	const numStops = 5
 	var wg sync.WaitGroup
 
-	for i := 0; i < numStops; i++ {
+	for i := range numStops {
 		wg.Add(1)
 		go func(_ int) {
 			defer wg.Done()
