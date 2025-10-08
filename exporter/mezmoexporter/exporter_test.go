@@ -36,7 +36,7 @@ func createSimpleLogData(numberOfLogs int) plog.Logs {
 	rl.ScopeLogs().AppendEmpty() // Add an empty ScopeLogs
 	sl := rl.ScopeLogs().AppendEmpty()
 
-	for i := 0; i < numberOfLogs; i++ {
+	for i := range numberOfLogs {
 		ts := pcommon.Timestamp(int64(i) * time.Millisecond.Nanoseconds())
 		logRecord := sl.LogRecords().AppendEmpty()
 		logRecord.Body().SetStr("10byteslog")
@@ -57,7 +57,7 @@ func createMinimalAttributesLogData(numberOfLogs int) plog.Logs {
 	rl.ScopeLogs().AppendEmpty()
 	sl := rl.ScopeLogs().AppendEmpty()
 
-	for i := 0; i < numberOfLogs; i++ {
+	for range numberOfLogs {
 		logRecord := sl.LogRecords().AppendEmpty()
 		logRecord.Body().SetStr("minimal attribute log")
 	}
@@ -76,7 +76,7 @@ func createMaxLogData() plog.Logs {
 	lineLen := maxMessageSize
 	lineCnt := (maxBodySize / lineLen) * 2
 
-	for i := 0; i < lineCnt; i++ {
+	for i := range lineCnt {
 		ts := pcommon.Timestamp(int64(i) * time.Millisecond.Nanoseconds())
 		logRecord := sl.LogRecords().AppendEmpty()
 		logRecord.Body().SetStr(randString(maxMessageSize))
