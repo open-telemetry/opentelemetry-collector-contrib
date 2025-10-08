@@ -212,7 +212,7 @@ func createWantedMetrics(wantedRequestBody wantedBody) pmetric.Metrics {
 }
 
 func assertMetricsAreEqual(t *testing.T, expectedData, actualData []pmetric.Metrics) {
-	for i := 0; i < len(expectedData); i++ {
+	for i := range expectedData {
 		err := pmetrictest.CompareMetrics(expectedData[i], actualData[i])
 		require.NoError(t, err)
 	}
