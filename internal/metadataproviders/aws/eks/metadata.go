@@ -159,8 +159,8 @@ func getClusterNameTagFromReservations(reservations []types.Reservation) string 
 				}
 				if key == clusterNameAwsEksTag || key == clusterNameEksTag {
 					return aws.ToString(tag.Value)
-				} else if strings.HasPrefix(key, kubernetesClusterNameTag) {
-					return strings.TrimPrefix(key, kubernetesClusterNameTag)
+				} else if after, ok := strings.CutPrefix(key, kubernetesClusterNameTag); ok {
+					return after
 				}
 			}
 		}
