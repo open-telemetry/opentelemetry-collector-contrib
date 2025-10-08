@@ -77,7 +77,12 @@ func newTestTSPController() *testTSPController {
 }
 
 func (t *testTSPController) waitForTick() {
+	t.concurrentWithTick(func() {})
+}
+
+func (t *testTSPController) concurrentWithTick(f func()) {
 	t.tickBarrier <- struct{}{}
+	f()
 	<-t.tickBarrier
 }
 
@@ -357,8 +362,7 @@ func TestConcurrentTraceArrival(t *testing.T) {
 
 func TestConcurrentArrivalAndEvaluation(t *testing.T) {
 	traceIDs, batches := generateIDsAndBatches(1)
-	evalStarted := make(chan struct{})
-	continueEvaluation := make(chan struct{})
+	controller := newTestTSPController()
 
 	var wg sync.WaitGroup
 	cfg := Config{
@@ -368,6 +372,7 @@ func TestConcurrentArrivalAndEvaluation(t *testing.T) {
 		PolicyCfgs:              testLatencyPolicy,
 		Options: []Option{
 			withTickerFrequency(time.Millisecond),
+			withTestController(controller),
 		},
 	}
 	sp, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), consumertest.NewNop(), cfg)
@@ -380,25 +385,17 @@ func TestConcurrentArrivalAndEvaluation(t *testing.T) {
 		require.NoError(t, err)
 	}()
 
-	tsp := sp.(*tailSamplingSpanProcessor)
-	tpe := &TestPolicyEvaluator{
-		Started:       evalStarted,
-		CouldContinue: continueEvaluation,
-		pe:            tsp.policies[0].evaluator,
-	}
-	tsp.policies[0].evaluator = tpe
-
 	for _, batch := range batches {
 		wg.Add(1)
 		go func(td ptrace.Traces) {
 			for range 10 {
-				assert.NoError(t, tsp.ConsumeTraces(t.Context(), td))
+				assert.NoError(t, sp.ConsumeTraces(t.Context(), td))
 			}
-			<-evalStarted
-			close(continueEvaluation)
-			for range 10 {
-				assert.NoError(t, tsp.ConsumeTraces(t.Context(), td))
-			}
+			controller.concurrentWithTick(func() {
+				for range 10 {
+					assert.NoError(t, sp.ConsumeTraces(t.Context(), td))
+				}
+			})
 			wg.Done()
 		}(batch)
 	}
@@ -1200,8 +1197,6 @@ func TestExtension(t *testing.T) {
 		require.NoError(t, p.Shutdown(t.Context()))
 	}()
 
-	tsp := p.(*tailSamplingSpanProcessor)
-	assert.Len(t, tsp.policies, 1)
 	assert.Equal(t, "extension", host.extension.policyName)
 	assert.Equal(t, map[string]any{"foo": "bar"}, host.extension.cfg)
 }
