@@ -64,7 +64,7 @@ type s3SQSNotificationReader struct {
 	s3Prefix            string
 	maxNumberOfMessages int32
 	waitTimeSeconds     int32
-	deleteMessages      bool
+	preserveMessages    bool
 }
 
 func newS3SQSReader(ctx context.Context, logger *zap.Logger, cfg *Config) (*s3SQSNotificationReader, error) {
@@ -93,11 +93,6 @@ func newS3SQSReader(ctx context.Context, logger *zap.Logger, cfg *Config) (*s3SQ
 		waitTime = int32(*cfg.SQS.WaitTimeSeconds)
 	}
 
-	deleteMessages := true // Default to true
-	if cfg.SQS.DeleteMessages != nil {
-		deleteMessages = *cfg.SQS.DeleteMessages
-	}
-
 	return &s3SQSNotificationReader{
 		logger:              logger,
 		s3Client:            getObjectClient,
@@ -107,7 +102,7 @@ func newS3SQSReader(ctx context.Context, logger *zap.Logger, cfg *Config) (*s3SQ
 		s3Prefix:            cfg.S3Downloader.S3Prefix,
 		maxNumberOfMessages: maxMessages,
 		waitTimeSeconds:     waitTime,
-		deleteMessages:      deleteMessages,
+		preserveMessages:    cfg.SQS.PreserveMessages,
 	}, nil
 }
 
@@ -117,7 +112,8 @@ func (r *s3SQSNotificationReader) readAll(ctx context.Context, _ string, callbac
 		zap.String("s3Bucket", r.s3Bucket),
 		zap.String("s3Prefix", r.s3Prefix),
 		zap.Int32("maxNumberOfMessages", r.maxNumberOfMessages),
-		zap.Int32("waitTimeSeconds", r.waitTimeSeconds))
+		zap.Int32("waitTimeSeconds", r.waitTimeSeconds),
+		zap.Bool("preserveMessages", r.preserveMessages))
 
 	for {
 		select {
@@ -220,7 +216,7 @@ func (r *s3SQSNotificationReader) readAll(ctx context.Context, _ string, callbac
 					}
 				}
 
-				if r.deleteMessages {
+				if !r.preserveMessages {
 					r.logger.Debug("Deleting message from SQS queue",
 						zap.String("messageID", aws.ToString(message.MessageId)))
 
