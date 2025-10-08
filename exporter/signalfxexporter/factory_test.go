@@ -621,7 +621,7 @@ func BenchmarkMetricConversion(b *testing.B) {
 	metrics, err := unmarshaller.UnmarshalMetrics(bytes)
 	require.NoError(b, err)
 
-	for n := 0; n < b.N; n++ {
+	for b.Loop() {
 		translated := c.MetricsToSignalFxV2(metrics)
 		require.NotNil(b, translated)
 	}
@@ -677,7 +677,7 @@ func buildHistogram(im pmetric.Metric, name string, timestamp pcommon.Timestamp,
 	idps := im.Histogram().DataPoints()
 	idps.EnsureCapacity(dpCount)
 
-	for i := 0; i < dpCount; i++ {
+	for range dpCount {
 		dp := idps.AppendEmpty()
 		buildHistogramDP(dp, timestamp)
 	}
