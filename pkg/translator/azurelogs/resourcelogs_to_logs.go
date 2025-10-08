@@ -91,6 +91,8 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 		return plog.Logs{}, fmt.Errorf("JSON parse failed: %w", iter.Error)
 	}
 
+	observedTimestamp := pcommon.NewTimestampFromTime(time.Now())
+
 	allResourceScopeLogs := map[string]plog.ScopeLogs{}
 	for i := range azureLogs.Records {
 		log := &azureLogs.Records[i]
@@ -110,6 +112,7 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 
 		lr := scopeLogs.LogRecords().AppendEmpty()
 		lr.SetTimestamp(nanos)
+		lr.SetObservedTimestamp(observedTimestamp)
 
 		if log.Level != nil {
 			severity := asSeverity(*log.Level)
