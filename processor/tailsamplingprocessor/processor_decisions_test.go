@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
@@ -511,9 +512,9 @@ func TestLateArrivingSpanUsesDecisionCache(t *testing.T) {
 		require.NoError(t, err)
 
 		require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
-		defer func() {
+		defer func(p processor.Traces) {
 			require.NoError(t, p.Shutdown(t.Context()))
-		}()
+		}(p)
 
 		// We are going to create 2 spans belonging to the same trace
 		traceID := uInt64ToTraceID(1)
@@ -533,8 +534,6 @@ func TestLateArrivingSpanUsesDecisionCache(t *testing.T) {
 		// Generate and deliver first span
 		require.NoError(t, p.ConsumeTraces(t.Context(), spanIndexToTraces(1)))
 
-		tsp := p.(*tailSamplingSpanProcessor)
-
 		// The first tick won't do anything
 		waitForTick()
 		require.Equal(t, 0, mpe.EvaluationCount)
@@ -548,9 +547,13 @@ func TestLateArrivingSpanUsesDecisionCache(t *testing.T) {
 		// The final decision SHOULD be Sampled.
 		require.Equal(t, 1, nextConsumer.SpanCount())
 
-		// The trace should have been dropped after its id was added to the decision cache
-		_, ok := tsp.idToTrace.Load(traceID)
-		require.False(t, ok)
+		// Now we create a brand new tailsampling span processor with the same decision cache
+		p, err = newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), nextConsumer, cfg)
+		require.NoError(t, err)
+		require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+		defer func(p processor.Traces) {
+			require.NoError(t, p.Shutdown(t.Context()))
+		}(p)
 
 		// Set next decision to not sampled, ensuring the next decision is determined by the decision cache, not the policy
 		mpe.NextDecision = samplingpolicy.NotSampled
@@ -558,6 +561,9 @@ func TestLateArrivingSpanUsesDecisionCache(t *testing.T) {
 		// Generate and deliver final span for the trace which SHOULD get the same sampling decision as the first span.
 		// The policies should NOT be evaluated again.
 		require.NoError(t, p.ConsumeTraces(t.Context(), spanIndexToTraces(2)))
+		waitForTick()
+
+		// Policy should still have been evaluated only once
 		require.Equal(t, 1, mpe.EvaluationCount)
 		require.Equal(t, 2, nextConsumer.SpanCount(), "original final decision not honored")
 		allTraces := nextConsumer.AllTraces()
@@ -599,9 +605,9 @@ func TestLateSpanUsesNonSampledDecisionCache(t *testing.T) {
 		require.NoError(t, err)
 
 		require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
-		defer func() {
+		defer func(p processor.Traces) {
 			require.NoError(t, p.Shutdown(t.Context()))
-		}()
+		}(p)
 
 		// We are going to create 2 spans belonging to the same trace
 		traceID := uInt64ToTraceID(1)
@@ -621,8 +627,6 @@ func TestLateSpanUsesNonSampledDecisionCache(t *testing.T) {
 		// Generate and deliver first span
 		require.NoError(t, p.ConsumeTraces(t.Context(), spanIndexToTraces(1)))
 
-		tsp := p.(*tailSamplingSpanProcessor)
-
 		// The first tick won't do anything
 		waitForTick()
 		require.Equal(t, 0, mpe.EvaluationCount)
@@ -636,9 +640,13 @@ func TestLateSpanUsesNonSampledDecisionCache(t *testing.T) {
 		// The final decision SHOULD be NOT Sampled.
 		require.Equal(t, 0, nextConsumer.SpanCount())
 
-		// The trace should have been dropped after its id was added to the decision cache
-		_, ok := tsp.idToTrace.Load(traceID)
-		require.False(t, ok)
+		// Now we create a brand new tailsampling span processor with the same decision cache
+		p, err = newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), nextConsumer, cfg)
+		require.NoError(t, err)
+		require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+		defer func(p processor.Traces) {
+			require.NoError(t, p.Shutdown(t.Context()))
+		}(p)
 
 		// Set next decision to sampled, ensuring the next decision is determined by the decision cache, not the policy
 		mpe.NextDecision = samplingpolicy.Sampled
@@ -646,6 +654,9 @@ func TestLateSpanUsesNonSampledDecisionCache(t *testing.T) {
 		// Generate and deliver final span for the trace which SHOULD get the same sampling decision as the first span.
 		// The policies should NOT be evaluated again.
 		require.NoError(t, p.ConsumeTraces(t.Context(), spanIndexToTraces(2)))
+		waitForTick()
+
+		// Policy should still have been evaluated only once
 		require.Equal(t, 1, mpe.EvaluationCount)
 		require.Equal(t, 0, nextConsumer.SpanCount(), "original final decision not honored")
 	})
@@ -679,9 +690,9 @@ func TestSampleOnFirstMatch(t *testing.T) {
 		require.NoError(t, err)
 
 		require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
-		defer func() {
+		defer func(p processor.Traces) {
 			require.NoError(t, p.Shutdown(t.Context()))
-		}()
+		}(p)
 
 		// Second policy matches, last policy should not be evaluated
 		mpe1.NextDecision = samplingpolicy.NotSampled
