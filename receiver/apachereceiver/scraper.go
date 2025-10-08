@@ -165,8 +165,8 @@ func (r *apacheScraper) GetStats() (string, error) {
 func parseStats(resp string) map[string]string {
 	metrics := make(map[string]string)
 
-	fields := strings.Split(resp, "\n")
-	for _, field := range fields {
+	fields := strings.SplitSeq(resp, "\n")
+	for field := range fields {
 		index := strings.Index(field, ": ")
 		if index == -1 {
 			continue
