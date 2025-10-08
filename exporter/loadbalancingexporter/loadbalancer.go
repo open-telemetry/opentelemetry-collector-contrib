@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"sync"
 
@@ -212,13 +213,7 @@ func (lb *loadBalancer) removeExtraExporters(ctx context.Context, endpoints []st
 }
 
 func endpointFound(endpoint string, endpoints []string) bool {
-	for _, candidate := range endpoints {
-		if candidate == endpoint {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(endpoints, endpoint)
 }
 
 func (lb *loadBalancer) Shutdown(ctx context.Context) error {
