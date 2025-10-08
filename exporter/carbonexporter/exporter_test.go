@@ -240,7 +240,7 @@ func TestConnPoolWithIdleMaxConnections(t *testing.T) {
 
 	// Create connections and
 	var conns []net.Conn
-	for i := 0; i < maxIdleConns; i++ {
+	for i := range maxIdleConns {
 		conn, err := cp.get()
 		require.NoError(t, err)
 		conns = append(conns, conn)
@@ -252,7 +252,7 @@ func TestConnPoolWithIdleMaxConnections(t *testing.T) {
 		cp.put(conn)
 	}
 
-	for i := 0; i < maxIdleConns+1; i++ {
+	for i := range maxIdleConns + 1 {
 		conn, err := cp.get()
 		require.NoError(t, err)
 		_, err = conn.Write([]byte(metricDataToPlaintext(generateSmallBatch())))
@@ -289,7 +289,7 @@ func generateMetricsBatch(size int) pmetric.Metrics {
 	rm.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), "carbon")
 	ms := rm.ScopeMetrics().AppendEmpty().Metrics()
 
-	for i := 0; i < size; i++ {
+	for i := range size {
 		m := ms.AppendEmpty()
 		m.SetName("test_" + strconv.Itoa(i))
 		dp := m.SetEmptyGauge().DataPoints().AppendEmpty()

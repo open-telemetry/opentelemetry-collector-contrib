@@ -165,7 +165,7 @@ func formatHistogramDataPoints(
 
 		bounds := dp.ExplicitBounds().AsRaw()
 		carbonBounds := make([]string, len(bounds)+1)
-		for i := 0; i < len(bounds); i++ {
+		for i := range bounds {
 			carbonBounds[i] = formatFloatForLabel(bounds[i])
 		}
 		carbonBounds[len(carbonBounds)-1] = infinityCarbonValue
