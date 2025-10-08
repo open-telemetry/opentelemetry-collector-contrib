@@ -756,7 +756,7 @@ func stringifyDimensions(dimensions []*sfxpb.Dimension, exclusions []string) str
 	const aggregationKeyDelimiter = "//"
 	aggregationKeyParts := make([]string, 0, len(dimensions))
 	for _, d := range dimensions {
-		if !dimensionIn(d, exclusions) {
+		if !slices.Contains(exclusions, d.Key) {
 			aggregationKeyParts = append(aggregationKeyParts, fmt.Sprintf("%s:%s", d.Key, d.Value))
 		}
 	}
@@ -771,16 +771,11 @@ func filterDimensions(dimensions []*sfxpb.Dimension, withoutDimensions []string)
 	}
 	result := make([]*sfxpb.Dimension, 0, len(dimensions)-len(withoutDimensions))
 	for _, d := range dimensions {
-		if !dimensionIn(d, withoutDimensions) {
+		if !slices.Contains(withoutDimensions, d.Key) {
 			result = append(result, d)
 		}
 	}
 	return result
-}
-
-// dimensionIn checks if the dimension found in the dimensionsKeysFilter
-func dimensionIn(dimension *sfxpb.Dimension, dimensionsKeysFilter []string) bool {
-	return slices.Contains(dimensionsKeysFilter, dimension.Key)
 }
 
 // splitMetric renames a metric with "dimension key" == dimensionKey to mapping["dimension value"],
