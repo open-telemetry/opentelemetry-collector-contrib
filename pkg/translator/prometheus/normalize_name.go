@@ -4,6 +4,7 @@
 package prometheus // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 
 import (
+	"slices"
 	"strings"
 	"unicode"
 
@@ -164,12 +165,7 @@ func RemovePromForbiddenRunes(s string) string {
 
 // Returns whether the slice contains the specified value
 func contains(slice []string, value string) bool {
-	for _, sliceEntry := range slice {
-		if sliceEntry == value {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(slice, value)
 }
 
 // Remove the specified value from the slice
