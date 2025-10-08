@@ -21,6 +21,7 @@ Count of spans that were sampled or not per sampling policy
 | policy | Name of the policy | Any Str |
 | sampled | Whether the sampling decision was sampled or not, false can mean either not sampled or dropped | Any Bool |
 | decision | The sampling decision | Str: ``sampled``, ``not_sampled``, ``dropped`` |
+| worker | The worker ID, with a value between 0 and num_workers | Any Int |
 
 ### otelcol_processor_tail_sampling_count_traces_sampled
 
@@ -37,6 +38,7 @@ Count of traces that were sampled or not per sampling policy
 | policy | Name of the policy | Any Str |
 | sampled | Whether the sampling decision was sampled or not, false can mean either not sampled or dropped | Any Bool |
 | decision | The sampling decision | Str: ``sampled``, ``not_sampled``, ``dropped`` |
+| worker | The worker ID, with a value between 0 and num_workers | Any Int |
 
 ### otelcol_processor_tail_sampling_early_releases_from_cache_decision
 
@@ -51,6 +53,7 @@ Number of spans that were able to be immediately released due to a decision cach
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | sampled | Whether the sampling decision was sampled or not, false can mean either not sampled or dropped | Any Bool |
+| worker | The worker ID, with a value between 0 and num_workers | Any Int |
 
 ### otelcol_processor_tail_sampling_global_count_traces_sampled
 
@@ -66,6 +69,7 @@ Global count of traces that were sampled or not by at least one policy
 | ---- | ----------- | ------ |
 | sampled | Whether the sampling decision was sampled or not, false can mean either not sampled or dropped | Any Bool |
 | decision | The sampling decision | Str: ``sampled``, ``not_sampled``, ``dropped`` |
+| worker | The worker ID, with a value between 0 and num_workers | Any Int |
 
 ### otelcol_processor_tail_sampling_new_trace_id_received
 
@@ -75,6 +79,12 @@ Counts the arrival of new traces
 | ---- | ----------- | ---------- | --------- |
 | {traces} | Sum | Int | true |
 
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| worker | The worker ID, with a value between 0 and num_workers | Any Int |
+
 ### otelcol_processor_tail_sampling_sampling_decision_latency
 
 Latency (in microseconds) of a given sampling policy
@@ -82,6 +92,12 @@ Latency (in microseconds) of a given sampling policy
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | µs | Histogram | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| worker | The worker ID, with a value between 0 and num_workers | Any Int |
 
 ### otelcol_processor_tail_sampling_sampling_decision_timer_latency
 
@@ -91,6 +107,12 @@ Latency (in milliseconds) of each run of the sampling decision timer
 | ---- | ----------- | ---------- |
 | ms | Histogram | Int |
 
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| worker | The worker ID, with a value between 0 and num_workers | Any Int |
+
 ### otelcol_processor_tail_sampling_sampling_late_span_age
 
 Time (in seconds) from the sampling decision was taken and the arrival of a late span
@@ -98,6 +120,12 @@ Time (in seconds) from the sampling decision was taken and the arrival of a late
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | s | Histogram | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| worker | The worker ID, with a value between 0 and num_workers | Any Int |
 
 ### otelcol_processor_tail_sampling_sampling_policy_evaluation_error
 
@@ -107,6 +135,15 @@ Count of sampling policy evaluation errors
 | ---- | ----------- | ---------- | --------- |
 | {errors} | Sum | Int | true |
 
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| policy | Name of the policy | Any Str |
+| sampled | Whether the sampling decision was sampled or not, false can mean either not sampled or dropped | Any Bool |
+| decision | The sampling decision | Str: ``sampled``, ``not_sampled``, ``dropped`` |
+| worker | The worker ID, with a value between 0 and num_workers | Any Int |
+
 ### otelcol_processor_tail_sampling_sampling_trace_dropped_too_early
 
 Count of traces that needed to be dropped before the configured wait time
@@ -114,6 +151,12 @@ Count of traces that needed to be dropped before the configured wait time
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
 | {traces} | Sum | Int | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| worker | The worker ID, with a value between 0 and num_workers | Any Int |
 
 ### otelcol_processor_tail_sampling_sampling_trace_removal_age
 
@@ -123,6 +166,12 @@ Time (in seconds) from arrival of a new trace until its removal from memory
 | ---- | ----------- | ---------- |
 | s | Histogram | Int |
 
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| worker | The worker ID, with a value between 0 and num_workers | Any Int |
+
 ### otelcol_processor_tail_sampling_sampling_traces_on_memory
 
 Tracks the number of traces current on memory
@@ -130,3 +179,9 @@ Tracks the number of traces current on memory
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | {traces} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| worker | The worker ID, with a value between 0 and num_workers | Any Int |

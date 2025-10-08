@@ -4,13 +4,14 @@
 package tailsamplingprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor"
 
 import (
+	"container/list"
 	"context"
 	"errors"
 	"fmt"
+	"hash/maphash"
 	"math"
 	"runtime"
 	"slices"
-	"sync"
 	"sync/atomic"
 	"time"
 
@@ -23,13 +24,11 @@ import (
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/cache"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/idbatcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/telemetry"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/tracelimiter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/pkg/samplingpolicy"
 )
 
@@ -44,36 +43,211 @@ type policy struct {
 	attribute metric.MeasurementOption
 }
 
-// tailSamplingSpanProcessor handles the incoming trace data and uses the given sampling
-// policy to sample traces.
 type tailSamplingSpanProcessor struct {
-	ctx context.Context
+	set    processor.Settings
+	cfg    Config
+	logger *zap.Logger
+	host   component.Host
+
+	seed    maphash.Seed
+	workers []*tspWorker
+}
+
+func newTracesProcessor(ctx context.Context, set processor.Settings, nextConsumer consumer.Traces, cfg Config) (processor.Traces, error) {
+	if cfg.NumWorkers == 0 {
+		cfg.NumWorkers = 1
+	}
+
+	nopCache := cache.NewNopDecisionCache[bool]()
+	sampledDecisions := nopCache
+	nonSampledDecisions := nopCache
+	var err error
+	if cfg.DecisionCache.SampledCacheSize > 0 {
+		sampledDecisions, err = cache.NewLRUDecisionCache[bool](cfg.DecisionCache.SampledCacheSize)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if cfg.DecisionCache.NonSampledCacheSize > 0 {
+		nonSampledDecisions, err = cache.NewLRUDecisionCache[bool](cfg.DecisionCache.NonSampledCacheSize)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	tsp := &tailSamplingSpanProcessor{
+		seed:   maphash.MakeSeed(),
+		set:    set,
+		cfg:    cfg,
+		logger: set.Logger,
+	}
+
+	tsp.workers = make([]*tspWorker, 0, cfg.NumWorkers)
+	for i := 0; i < cfg.NumWorkers; i++ {
+		w, err := newWorker(ctx, i, set, nextConsumer, cfg, sampledDecisions, nonSampledDecisions)
+		if err != nil {
+			return nil, err
+		}
+		tsp.workers = append(tsp.workers, w)
+	}
+
+	return tsp, nil
+}
+
+func (*tailSamplingSpanProcessor) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
+}
+
+// Start is invoked during service startup.
+func (tsp *tailSamplingSpanProcessor) Start(ctx context.Context, host component.Host) error {
+	tsp.host = host
+	policies, err := tsp.loadSamplingPolicies(host, tsp.cfg.PolicyCfgs)
+	if err != nil {
+		return err
+	}
+
+	for _, w := range tsp.workers {
+		err := w.Start(ctx, policies)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// Shutdown is invoked during service shutdown.
+func (tsp *tailSamplingSpanProcessor) Shutdown(ctx context.Context) error {
+	for _, w := range tsp.workers {
+		err := w.Shutdown(ctx)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// ConsumeTraces is required by the processor.Traces interface.
+func (tsp *tailSamplingSpanProcessor) ConsumeTraces(_ context.Context, td ptrace.Traces) error {
+	for _, rss := range td.ResourceSpans().All() {
+		idToSpansAndScope := groupSpansByTraceKey(rss)
+		for id, spans := range idToSpansAndScope {
+			worker := tsp.workers[shard(tsp.seed, id, len(tsp.workers))]
+			worker.submitWork(rss, id, spans)
+		}
+	}
+
+	return nil
+}
+
+func shard(s maphash.Seed, id pcommon.TraceID, numWorkers int) int {
+	var h maphash.Hash
+	h.SetSeed(s)
+	h.Write(id[:])
+	hashCode := h.Sum64()
+	return int(hashCode % uint64(numWorkers))
+}
+
+func (tsp *tailSamplingSpanProcessor) SetSamplingPolicy(cfgs []PolicyCfg) {
+	policies, err := tsp.loadSamplingPolicies(tsp.host, cfgs)
+	if err != nil {
+		tsp.logger.Error("Failed to load sampling policies", zap.Error(err))
+		return
+	}
+	for _, w := range tsp.workers {
+		w.submitNewPolicies(policies)
+	}
+}
+
+func (tsp *tailSamplingSpanProcessor) loadSamplingPolicies(host component.Host, cfgs []PolicyCfg) ([]*policy, error) {
+	telemetrySettings := tsp.set.TelemetrySettings
+	componentID := tsp.set.ID.Name()
+
+	cLen := len(cfgs)
+	policies := make([]*policy, 0, cLen)
+	dropPolicies := make([]*policy, 0, cLen)
+	policyNames := make(map[string]struct{}, cLen)
+
+	for i := range cfgs {
+		cfg := cfgs[i]
+		if cfg.Name == "" {
+			return nil, errors.New("policy name cannot be empty")
+		}
+
+		if _, exists := policyNames[cfg.Name]; exists {
+			return nil, fmt.Errorf("duplicate policy name %q", cfg.Name)
+		}
+		policyNames[cfg.Name] = struct{}{}
+
+		eval, err := getPolicyEvaluator(telemetrySettings, &cfg, extensions(host))
+		if err != nil {
+			return nil, fmt.Errorf("failed to create policy evaluator for %q: %w", cfg.Name, err)
+		}
+
+		uniquePolicyName := cfg.Name
+		if componentID != "" {
+			uniquePolicyName = fmt.Sprintf("%s.%s", componentID, cfg.Name)
+		}
+
+		p := &policy{
+			name:      cfg.Name,
+			evaluator: eval,
+			attribute: metric.WithAttributes(attribute.String("policy", uniquePolicyName)),
+		}
+
+		if cfg.Type == Drop {
+			dropPolicies = append(dropPolicies, p)
+		} else {
+			policies = append(policies, p)
+		}
+	}
+	// Dropped decision takes precedence over all others, therefore we evaluate them first.
+	return slices.Concat(dropPolicies, policies), nil
+}
+
+type consumeTracesCmd struct {
+	traceID       pcommon.TraceID
+	resourceSpans ptrace.ResourceSpans
+	spans         []spanAndScope
+}
+
+type newPolicyCmd struct {
+	policies []*policy
+}
+
+// tspWorker handles the incoming trace data and uses the given sampling
+// policy to sample traces.
+type tspWorker struct {
+	ctx        context.Context
+	id         int
+	numWorkers int
+	numTraces  uint64
+	cancel     context.CancelFunc
 
 	set       processor.Settings
 	telemetry *metadata.TelemetryBuilder
 	logger    *zap.Logger
 
+	idToTrace          map[pcommon.TraceID]*samplingpolicy.TraceData
+	deleteTraceQueue   *list.List
 	nextConsumer       consumer.Traces
 	policies           []*policy
-	idToTrace          sync.Map
-	policyTicker       *timeutils.PolicyTicker
 	tickerFrequency    time.Duration
 	decisionBatcher    idbatcher.Batcher
 	sampledIDCache     cache.Cache[bool]
 	nonSampledIDCache  cache.Cache[bool]
-	traceLimiter       traceLimiter
-	numTracesOnMap     *atomic.Uint64
 	recordPolicy       bool
-	setPolicyMux       sync.Mutex
-	pendingPolicy      []PolicyCfg
 	sampleOnFirstMatch bool
+	blockOnOverflow    bool
 
-	host component.Host
-}
+	workerAttribute metric.MeasurementOption
 
-type traceLimiter interface {
-	AcceptTrace(context.Context, pcommon.TraceID, time.Time)
-	OnDeleteTrace()
+	newPolicyChan chan newPolicyCmd
+	workChan      chan consumeTracesCmd
+	doneChan      chan struct{}
+
+	// tickChan triggers ticks and responds on the provided channel when the tick is complete.
+	// this is used in tests to produce deterministic ticks.
+	tickChan chan chan struct{}
 }
 
 // spanAndScope a structure for holding information about span and its instrumentation scope.
@@ -100,52 +274,50 @@ var (
 	attrSampledFalse = metric.WithAttributes(attribute.String("sampled", "false"))
 )
 
-type Option func(*tailSamplingSpanProcessor)
+type Option func(*tspWorker)
 
-// newTracesProcessor returns a processor.TracesProcessor that will perform tail sampling according to the given
+// newWorker returns a processor.TracesProcessor that will perform tail sampling according to the given
 // configuration.
-func newTracesProcessor(ctx context.Context, set processor.Settings, nextConsumer consumer.Traces, cfg Config) (processor.Traces, error) {
+func newWorker(
+	ctx context.Context,
+	workerID int,
+	set processor.Settings,
+	nextConsumer consumer.Traces,
+	cfg Config,
+	sampledDecisions cache.Cache[bool],
+	nonSampledDecisions cache.Cache[bool],
+) (*tspWorker, error) {
 	telemetrySettings := set.TelemetrySettings
 	telemetry, err := metadata.NewTelemetryBuilder(telemetrySettings)
 	if err != nil {
 		return nil, err
 	}
-	nopCache := cache.NewNopDecisionCache[bool]()
-	sampledDecisions := nopCache
-	nonSampledDecisions := nopCache
-	if cfg.DecisionCache.SampledCacheSize > 0 {
-		sampledDecisions, err = cache.NewLRUDecisionCache[bool](cfg.DecisionCache.SampledCacheSize)
-		if err != nil {
-			return nil, err
-		}
-	}
-	if cfg.DecisionCache.NonSampledCacheSize > 0 {
-		nonSampledDecisions, err = cache.NewLRUDecisionCache[bool](cfg.DecisionCache.NonSampledCacheSize)
-		if err != nil {
-			return nil, err
-		}
-	}
 
-	tsp := &tailSamplingSpanProcessor{
+	ctx, cancel := context.WithCancel(ctx)
+	tsp := &tspWorker{
 		ctx:                ctx,
+		cancel:             cancel,
 		set:                set,
+		id:                 workerID,
+		numTraces:          cfg.NumTraces / uint64(cfg.NumWorkers),
+		numWorkers:         cfg.NumWorkers,
 		telemetry:          telemetry,
 		nextConsumer:       nextConsumer,
 		sampledIDCache:     sampledDecisions,
 		nonSampledIDCache:  nonSampledDecisions,
-		logger:             telemetrySettings.Logger,
-		numTracesOnMap:     &atomic.Uint64{},
+		logger:             telemetrySettings.Logger.With(zap.Int("worker", workerID)),
+		idToTrace:          make(map[pcommon.TraceID]*samplingpolicy.TraceData),
+		deleteTraceQueue:   list.New(),
 		sampleOnFirstMatch: cfg.SampleOnFirstMatch,
+		blockOnOverflow:    cfg.BlockOnOverflow,
+		workerAttribute:    metric.WithAttributes(attribute.Int("worker", workerID)),
+		// We don't need a buffer here for the system to be correct, but it can
+		// be a convenient lever to improve latency upstream.
+		workChan: make(chan consumeTracesCmd, cfg.WorkChanCapacity),
+		// We need to buffer one new policy command so that external callers can
+		// queue up new policies without blocking on the ticker.
+		newPolicyChan: make(chan newPolicyCmd, 1),
 	}
-	tsp.policyTicker = &timeutils.PolicyTicker{OnTickFunc: tsp.samplingPolicyOnTick}
-
-	var tl traceLimiter
-	if cfg.BlockOnOverflow {
-		tl = tracelimiter.NewBlockingTracesLimiter(cfg.NumTraces)
-	} else {
-		tl = tracelimiter.NewDropOldTracesLimiter(cfg.NumTraces, tsp.dropTrace)
-	}
-	tsp.traceLimiter = tl
 
 	for _, opt := range cfg.Options {
 		opt(tsp)
@@ -153,10 +325,6 @@ func newTracesProcessor(ctx context.Context, set processor.Settings, nextConsume
 
 	if tsp.tickerFrequency == 0 {
 		tsp.tickerFrequency = time.Second
-	}
-
-	if tsp.policies == nil {
-		tsp.pendingPolicy = cfg.PolicyCfgs
 	}
 
 	if tsp.decisionBatcher == nil {
@@ -175,20 +343,20 @@ func newTracesProcessor(ctx context.Context, set processor.Settings, nextConsume
 
 // WithSampledDecisionCache sets the cache which the processor uses to store recently sampled trace IDs.
 func WithSampledDecisionCache(c cache.Cache[bool]) Option {
-	return func(tsp *tailSamplingSpanProcessor) {
+	return func(tsp *tspWorker) {
 		tsp.sampledIDCache = c
 	}
 }
 
 // WithNonSampledDecisionCache sets the cache which the processor uses to store recently non-sampled trace IDs.
 func WithNonSampledDecisionCache(c cache.Cache[bool]) Option {
-	return func(tsp *tailSamplingSpanProcessor) {
+	return func(tsp *tspWorker) {
 		tsp.nonSampledIDCache = c
 	}
 }
 
 func withRecordPolicy() Option {
-	return func(tsp *tailSamplingSpanProcessor) {
+	return func(tsp *tspWorker) {
 		tsp.recordPolicy = true
 	}
 }
@@ -291,93 +459,85 @@ func (m *policyMetrics) addDecision(policyIndex int, decision samplingpolicy.Dec
 	m.tracesSampledByPolicyDecision[policyIndex][decision] = stats
 }
 
-func (tsp *tailSamplingSpanProcessor) loadSamplingPolicy(cfgs []PolicyCfg) error {
-	telemetrySettings := tsp.set.TelemetrySettings
-	componentID := tsp.set.ID.Name()
-
-	cLen := len(cfgs)
-	policies := make([]*policy, 0, cLen)
-	dropPolicies := make([]*policy, 0, cLen)
-	policyNames := make(map[string]struct{}, cLen)
-
-	for i := range cfgs {
-		cfg := cfgs[i]
-		if cfg.Name == "" {
-			return errors.New("policy name cannot be empty")
-		}
-
-		if _, exists := policyNames[cfg.Name]; exists {
-			return fmt.Errorf("duplicate policy name %q", cfg.Name)
-		}
-		policyNames[cfg.Name] = struct{}{}
-
-		eval, err := getPolicyEvaluator(telemetrySettings, &cfg, tsp.extensions())
-		if err != nil {
-			return fmt.Errorf("failed to create policy evaluator for %q: %w", cfg.Name, err)
-		}
-
-		uniquePolicyName := cfg.Name
-		if componentID != "" {
-			uniquePolicyName = fmt.Sprintf("%s.%s", componentID, cfg.Name)
-		}
-
-		p := &policy{
-			name:      cfg.Name,
-			evaluator: eval,
-			attribute: metric.WithAttributes(attribute.String("policy", uniquePolicyName)),
-		}
-
-		if cfg.Type == Drop {
-			dropPolicies = append(dropPolicies, p)
-		} else {
-			policies = append(policies, p)
-		}
+func (tsp *tspWorker) loop() {
+	waitForShardTickAlignment(tsp.id, tsp.numWorkers)
+	ticker := time.NewTicker(tsp.tickerFrequency)
+	defer ticker.Stop()
+	defer close(tsp.doneChan)
+	for tsp.iter(ticker.C, tsp.workChan) {
 	}
-	// Dropped decision takes precedence over all others, therefore we evaluate them first.
-	tsp.policies = slices.Concat(dropPolicies, policies)
-
-	tsp.logger.Debug("Loaded sampling policy", zap.Int("policies.len", len(policies)))
-
-	return nil
 }
 
-func (tsp *tailSamplingSpanProcessor) SetSamplingPolicy(cfgs []PolicyCfg) {
-	tsp.logger.Debug("Setting pending sampling policy", zap.Int("pending.len", len(cfgs)))
+func (tsp *tspWorker) iter(tickChan <-chan time.Time, workChan <-chan consumeTracesCmd) bool {
+	select {
+	case <-tsp.ctx.Done():
+		return false
+	case cmd := <-workChan:
 
-	tsp.setPolicyMux.Lock()
-	defer tsp.setPolicyMux.Unlock()
+		// If the trace ID is in the sampled cache, short circuit the decision
+		if _, ok := tsp.sampledIDCache.Get(cmd.traceID); ok {
+			tsp.logger.Debug("Trace ID is in the sampled cache", zap.Stringer("id", cmd.traceID))
+			traceTd := ptrace.NewTraces()
+			appendToTraces(traceTd, cmd.resourceSpans, cmd.spans)
+			if tsp.recordPolicy {
+				sampling.SetBoolAttrOnScopeSpans(traceTd, "tailsampling.cached_decision", true)
+			}
+			tsp.forwardSpans(tsp.ctx, traceTd)
+			tsp.telemetry.ProcessorTailSamplingEarlyReleasesFromCacheDecision.
+				Add(tsp.ctx, int64(len(cmd.spans)), attrSampledTrue, tsp.workerAttribute)
+			return true
+		}
+		// If the trace ID is in the non-sampled cache, short circuit the decision
+		if _, ok := tsp.nonSampledIDCache.Get(cmd.traceID); ok {
+			tsp.logger.Debug("Trace ID is in the non-sampled cache", zap.Stringer("id", cmd.traceID))
+			tsp.telemetry.ProcessorTailSamplingEarlyReleasesFromCacheDecision.
+				Add(tsp.ctx, int64(len(cmd.spans)), attrSampledFalse, tsp.workerAttribute)
+			return true
+		}
 
-	tsp.pendingPolicy = cfgs
+		_, ok := tsp.idToTrace[cmd.traceID]
+		if !ok && len(tsp.idToTrace) >= int(tsp.numTraces) {
+			tsp.waitForSpace(tickChan)
+		}
+
+		tsp.processTraces(cmd.resourceSpans, cmd.traceID, cmd.spans)
+	case cmd := <-tsp.newPolicyChan:
+		tsp.policies = cmd.policies
+		tsp.logger.Debug("New policies loaded", zap.Int("policies.len", len(tsp.policies)))
+	case <-tickChan:
+		tsp.samplingPolicyOnTick()
+	case tickChan := <-tsp.tickChan:
+		tsp.samplingPolicyOnTick()
+		tickChan <- struct{}{}
+	}
+	return true
 }
 
-func (tsp *tailSamplingSpanProcessor) loadPendingSamplingPolicy() error {
-	tsp.setPolicyMux.Lock()
-	defer tsp.setPolicyMux.Unlock()
-
-	// Nothing pending, do nothing.
-	pLen := len(tsp.pendingPolicy)
-	if pLen == 0 {
-		return nil
+// waitForSpace blocks until space is available. Depending on configuration,
+// this might immediately drop data or wait until the sampler tick frees space.
+func (tsp *tspWorker) waitForSpace(tickChan <-chan time.Time) {
+	if tsp.blockOnOverflow {
+		// Ticks are not guaranteed to drop data, since they may process an
+		// empty batch. We loop until we have space for a new trace.
+		for len(tsp.idToTrace) >= int(tsp.numTraces) {
+			// Recursively iter with a nil workChan to wait for space.
+			tsp.iter(tickChan, nil)
+		}
+		return
 	}
 
-	tsp.logger.Debug("Loading pending sampling policy", zap.Int("pending.len", pLen))
-
-	err := tsp.loadSamplingPolicy(tsp.pendingPolicy)
-
-	// Empty pending regardless of error. If policy is invalid, it will fail on
-	// every tick, no need to do extra work and flood the log with errors.
-	tsp.pendingPolicy = nil
-	return err
+	front := tsp.deleteTraceQueue.Front()
+	if front == nil {
+		// This should be impossible.
+		tsp.logger.Error("deleteTraceQueue is empty, but we're waiting for space. This is a bug!")
+		return
+	}
+	tsp.dropTrace(front.Value.(pcommon.TraceID), time.Now())
+	tsp.deleteTraceQueue.Remove(front)
 }
 
-func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
+func (tsp *tspWorker) samplingPolicyOnTick() {
 	tsp.logger.Debug("Sampling Policy Evaluation ticked")
-
-	err := tsp.loadPendingSamplingPolicy()
-	if err != nil {
-		tsp.logger.Error("Failed to load pending sampling policy", zap.Error(err))
-		tsp.logger.Debug("Continuing to use the previously loaded sampling policy")
-	}
 
 	ctx := context.Background()
 	metrics := newPolicyMetrics(len(tsp.policies))
@@ -387,17 +547,16 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 	batchLen := len(batch)
 
 	for _, id := range batch {
-		d, ok := tsp.idToTrace.Load(id)
+		trace, ok := tsp.idToTrace[id]
 		if !ok {
 			metrics.idNotFoundOnMapCount++
 			continue
 		}
-		trace := d.(*samplingpolicy.TraceData)
 		trace.DecisionTime = time.Now()
 
 		decision := tsp.makeDecision(id, trace, metrics)
 
-		tsp.telemetry.ProcessorTailSamplingGlobalCountTracesSampled.Add(tsp.ctx, 1, decisionToAttributes[decision])
+		tsp.telemetry.ProcessorTailSamplingGlobalCountTracesSampled.Add(tsp.ctx, 1, decisionToAttributes[decision], tsp.workerAttribute)
 
 		// Sampled or not, remove the batches
 		trace.Lock()
@@ -413,16 +572,16 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 		}
 	}
 
-	tsp.telemetry.ProcessorTailSamplingSamplingDecisionTimerLatency.Record(tsp.ctx, int64(time.Since(startTime)/time.Millisecond))
-	tsp.telemetry.ProcessorTailSamplingSamplingTracesOnMemory.Record(tsp.ctx, int64(tsp.numTracesOnMap.Load()))
-	tsp.telemetry.ProcessorTailSamplingSamplingTraceDroppedTooEarly.Add(tsp.ctx, metrics.idNotFoundOnMapCount)
-	tsp.telemetry.ProcessorTailSamplingSamplingPolicyEvaluationError.Add(tsp.ctx, metrics.evaluateErrorCount)
+	tsp.telemetry.ProcessorTailSamplingSamplingDecisionTimerLatency.Record(tsp.ctx, int64(time.Since(startTime)/time.Millisecond), tsp.workerAttribute)
+	tsp.telemetry.ProcessorTailSamplingSamplingTracesOnMemory.Record(tsp.ctx, int64(len(tsp.idToTrace)), tsp.workerAttribute)
+	tsp.telemetry.ProcessorTailSamplingSamplingTraceDroppedTooEarly.Add(tsp.ctx, metrics.idNotFoundOnMapCount, tsp.workerAttribute)
+	tsp.telemetry.ProcessorTailSamplingSamplingPolicyEvaluationError.Add(tsp.ctx, metrics.evaluateErrorCount, tsp.workerAttribute)
 
 	for i, p := range tsp.policies {
 		for decision, stats := range metrics.tracesSampledByPolicyDecision[i] {
-			tsp.telemetry.ProcessorTailSamplingCountTracesSampled.Add(tsp.ctx, int64(stats.tracesSampled), p.attribute, decisionToAttributes[decision])
+			tsp.telemetry.ProcessorTailSamplingCountTracesSampled.Add(tsp.ctx, int64(stats.tracesSampled), p.attribute, decisionToAttributes[decision], tsp.workerAttribute)
 			if telemetry.IsMetricStatCountSpansSampledEnabled() {
-				tsp.telemetry.ProcessorTailSamplingCountSpansSampled.Add(tsp.ctx, stats.spansSampled, p.attribute, decisionToAttributes[decision])
+				tsp.telemetry.ProcessorTailSamplingCountSpansSampled.Add(tsp.ctx, stats.spansSampled, p.attribute, decisionToAttributes[decision], tsp.workerAttribute)
 			}
 		}
 	}
@@ -437,7 +596,7 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 	)
 }
 
-func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *samplingpolicy.TraceData, metrics *policyMetrics) samplingpolicy.Decision {
+func (tsp *tspWorker) makeDecision(id pcommon.TraceID, trace *samplingpolicy.TraceData, metrics *policyMetrics) samplingpolicy.Decision {
 	finalDecision := samplingpolicy.NotSampled
 	samplingDecisions := map[samplingpolicy.Decision]*policy{
 		samplingpolicy.Error:            nil,
@@ -455,7 +614,7 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *sa
 	for i, p := range tsp.policies {
 		decision, err := p.evaluator.Evaluate(ctx, id, trace)
 		latency := time.Since(startTime)
-		tsp.telemetry.ProcessorTailSamplingSamplingDecisionLatency.Record(ctx, int64(latency/time.Microsecond), p.attribute)
+		tsp.telemetry.ProcessorTailSamplingSamplingDecisionLatency.Record(ctx, int64(latency/time.Microsecond), p.attribute, tsp.workerAttribute)
 
 		if err != nil {
 			if samplingDecisions[samplingpolicy.Error] == nil {
@@ -514,16 +673,7 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *sa
 	return finalDecision
 }
 
-// ConsumeTraces is required by the processor.Traces interface.
-func (tsp *tailSamplingSpanProcessor) ConsumeTraces(_ context.Context, td ptrace.Traces) error {
-	resourceSpans := td.ResourceSpans()
-	for i := 0; i < resourceSpans.Len(); i++ {
-		tsp.processTraces(resourceSpans.At(i))
-	}
-	return nil
-}
-
-func (*tailSamplingSpanProcessor) groupSpansByTraceKey(resourceSpans ptrace.ResourceSpans) map[pcommon.TraceID][]spanAndScope {
+func groupSpansByTraceKey(resourceSpans ptrace.ResourceSpans) map[pcommon.TraceID][]spanAndScope {
 	idToSpans := make(map[pcommon.TraceID][]spanAndScope)
 	ilss := resourceSpans.ScopeSpans()
 	for j := 0; j < ilss.Len(); j++ {
@@ -543,115 +693,97 @@ func (*tailSamplingSpanProcessor) groupSpansByTraceKey(resourceSpans ptrace.Reso
 	return idToSpans
 }
 
-func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans ptrace.ResourceSpans) {
-	currTime := time.Now()
-
-	// Group spans per their traceId to minimize contention on idToTrace
-	idToSpansAndScope := tsp.groupSpansByTraceKey(resourceSpans)
-	var newTraceIDs int64
-	for id, spans := range idToSpansAndScope {
-		// If the trace ID is in the sampled cache, short circuit the decision
-		if _, ok := tsp.sampledIDCache.Get(id); ok {
-			tsp.logger.Debug("Trace ID is in the sampled cache", zap.Stringer("id", id))
-			traceTd := ptrace.NewTraces()
-			appendToTraces(traceTd, resourceSpans, spans)
-			if tsp.recordPolicy {
-				sampling.SetBoolAttrOnScopeSpans(traceTd, "tailsampling.cached_decision", true)
-			}
-			tsp.forwardSpans(tsp.ctx, traceTd)
-			tsp.telemetry.ProcessorTailSamplingEarlyReleasesFromCacheDecision.
-				Add(tsp.ctx, int64(len(spans)), attrSampledTrue)
-			continue
-		}
-		// If the trace ID is in the non-sampled cache, short circuit the decision
-		if _, ok := tsp.nonSampledIDCache.Get(id); ok {
-			tsp.logger.Debug("Trace ID is in the non-sampled cache", zap.Stringer("id", id))
-			tsp.telemetry.ProcessorTailSamplingEarlyReleasesFromCacheDecision.
-				Add(tsp.ctx, int64(len(spans)), attrSampledFalse)
-			continue
-		}
-
-		lenSpans := int64(len(spans))
-
-		d, loaded := tsp.idToTrace.Load(id)
-		if !loaded {
-			spanCount := &atomic.Int64{}
-			spanCount.Store(lenSpans)
-
-			td := &samplingpolicy.TraceData{
-				ArrivalTime:     currTime,
-				SpanCount:       spanCount,
-				ReceivedBatches: ptrace.NewTraces(),
-			}
-
-			if d, loaded = tsp.idToTrace.LoadOrStore(id, td); !loaded {
-				newTraceIDs++
-				tsp.decisionBatcher.AddToCurrentBatch(id)
-				tsp.numTracesOnMap.Add(1)
-				tsp.traceLimiter.AcceptTrace(tsp.ctx, id, currTime)
-			}
-		}
-
-		actualData := d.(*samplingpolicy.TraceData)
-		if loaded {
-			actualData.SpanCount.Add(lenSpans)
-		}
-
-		actualData.Lock()
-		finalDecision := actualData.FinalDecision
-
-		if finalDecision == samplingpolicy.Unspecified {
-			// If the final decision hasn't been made, add the new spans under the lock.
-			appendToTraces(actualData.ReceivedBatches, resourceSpans, spans)
-			actualData.Unlock()
-			continue
-		}
-
-		actualData.Unlock()
-
-		switch finalDecision {
-		case samplingpolicy.Sampled:
-			traceTd := ptrace.NewTraces()
-			appendToTraces(traceTd, resourceSpans, spans)
-			tsp.forwardSpans(tsp.ctx, traceTd)
-		case samplingpolicy.NotSampled:
-			tsp.releaseNotSampledTrace(id)
-		default:
-			tsp.logger.Warn("Unexpected sampling decision", zap.Int("decision", int(finalDecision)))
-		}
-
-		if !actualData.DecisionTime.IsZero() {
-			tsp.telemetry.ProcessorTailSamplingSamplingLateSpanAge.Record(tsp.ctx, int64(time.Since(actualData.DecisionTime)/time.Second))
-		}
+func (tsp *tspWorker) submitWork(resourceSpans ptrace.ResourceSpans, id pcommon.TraceID, spans []spanAndScope) {
+	tsp.workChan <- consumeTracesCmd{
+		resourceSpans: resourceSpans,
+		traceID:       id,
+		spans:         spans,
 	}
-
-	tsp.telemetry.ProcessorTailSamplingNewTraceIDReceived.Add(tsp.ctx, newTraceIDs)
 }
 
-func (*tailSamplingSpanProcessor) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: false}
+func (tsp *tspWorker) submitNewPolicies(policies []*policy) {
+	tsp.newPolicyChan <- newPolicyCmd{policies: policies}
+}
+
+func (tsp *tspWorker) processTraces(resourceSpans ptrace.ResourceSpans, id pcommon.TraceID, spans []spanAndScope) {
+	currTime := time.Now()
+
+	var newTraceIDs int64
+	defer func() {
+		// Need a closure here to delay evaluation of newTraceIDs.
+		tsp.telemetry.ProcessorTailSamplingNewTraceIDReceived.Add(tsp.ctx, newTraceIDs, tsp.workerAttribute)
+	}()
+
+	lenSpans := int64(len(spans))
+
+	actualData, ok := tsp.idToTrace[id]
+	if !ok {
+		spanCount := &atomic.Int64{}
+		spanCount.Store(lenSpans)
+
+		actualData = &samplingpolicy.TraceData{
+			ArrivalTime:     currTime,
+			SpanCount:       spanCount,
+			ReceivedBatches: ptrace.NewTraces(),
+		}
+
+		tsp.idToTrace[id] = actualData
+
+		newTraceIDs++
+		tsp.decisionBatcher.AddToCurrentBatch(id)
+
+		if !tsp.blockOnOverflow {
+			tsp.deleteTraceQueue.PushBack(id)
+		}
+	} else {
+		actualData.SpanCount.Add(lenSpans)
+	}
+
+	actualData.Lock()
+	finalDecision := actualData.FinalDecision
+
+	if finalDecision == samplingpolicy.Unspecified {
+		// If the final decision hasn't been made, add the new spans under the lock.
+		appendToTraces(actualData.ReceivedBatches, resourceSpans, spans)
+		actualData.Unlock()
+		return
+	}
+
+	actualData.Unlock()
+
+	switch finalDecision {
+	case samplingpolicy.Sampled:
+		traceTd := ptrace.NewTraces()
+		appendToTraces(traceTd, resourceSpans, spans)
+		tsp.forwardSpans(tsp.ctx, traceTd)
+	case samplingpolicy.NotSampled:
+		tsp.releaseNotSampledTrace(id)
+	default:
+		tsp.logger.Warn("Unexpected sampling decision", zap.Int("decision", int(finalDecision)))
+	}
+
+	if !actualData.DecisionTime.IsZero() {
+		tsp.telemetry.ProcessorTailSamplingSamplingLateSpanAge.Record(tsp.ctx, int64(time.Since(actualData.DecisionTime)/time.Second), tsp.workerAttribute)
+	}
 }
 
 // Start is invoked during service startup.
-func (tsp *tailSamplingSpanProcessor) Start(_ context.Context, host component.Host) error {
-	// We need to store the host before loading sampling policies in order to load any extensions.
-	tsp.host = host
+func (tsp *tspWorker) Start(_ context.Context, policies []*policy) error {
+	// If the policies are not set, set them. This is only for testing purposes,
+	// so that withPolicies can inject custom policies.
 	if tsp.policies == nil {
-		err := tsp.loadPendingSamplingPolicy()
-		if err != nil {
-			tsp.logger.Error("Failed to load initial sampling policy", zap.Error(err))
-			return err
-		}
+		tsp.policies = policies
 	}
-	tsp.policyTicker.Start(tsp.tickerFrequency)
+	tsp.doneChan = make(chan struct{})
+	go tsp.loop()
 	return nil
 }
 
-func (tsp *tailSamplingSpanProcessor) extensions() map[string]samplingpolicy.Extension {
-	if tsp.host == nil {
+func extensions(host component.Host) map[string]samplingpolicy.Extension {
+	if host == nil {
 		return nil
 	}
-	extensions := tsp.host.GetExtensions()
+	extensions := host.GetExtensions()
 	scoped := map[string]samplingpolicy.Extension{}
 	for id, ext := range extensions {
 		evaluator, ok := ext.(samplingpolicy.Extension)
@@ -663,32 +795,29 @@ func (tsp *tailSamplingSpanProcessor) extensions() map[string]samplingpolicy.Ext
 }
 
 // Shutdown is invoked during service shutdown.
-func (tsp *tailSamplingSpanProcessor) Shutdown(context.Context) error {
+func (tsp *tspWorker) Shutdown(context.Context) error {
+	tsp.cancel()
+	if tsp.doneChan != nil {
+		<-tsp.doneChan
+	}
 	tsp.decisionBatcher.Stop()
-	tsp.policyTicker.Stop()
 	return nil
 }
 
-func (tsp *tailSamplingSpanProcessor) dropTrace(traceID pcommon.TraceID, deletionTime time.Time) {
-	var trace *samplingpolicy.TraceData
-	if d, ok := tsp.idToTrace.Load(traceID); ok {
-		trace = d.(*samplingpolicy.TraceData)
-		tsp.idToTrace.Delete(traceID)
-		// Subtract one from numTracesOnMap per https://godoc.org/sync/atomic#AddUint64
-		tsp.numTracesOnMap.Add(^uint64(0))
-		tsp.traceLimiter.OnDeleteTrace()
-	}
-	if trace == nil {
+func (tsp *tspWorker) dropTrace(traceID pcommon.TraceID, deletionTime time.Time) {
+	trace, ok := tsp.idToTrace[traceID]
+	if !ok {
 		tsp.logger.Debug("Attempt to delete trace ID not on table", zap.Stringer("id", traceID))
 		return
 	}
 
-	tsp.telemetry.ProcessorTailSamplingSamplingTraceRemovalAge.Record(tsp.ctx, int64(deletionTime.Sub(trace.ArrivalTime)/time.Second))
+	delete(tsp.idToTrace, traceID)
+	tsp.telemetry.ProcessorTailSamplingSamplingTraceRemovalAge.Record(tsp.ctx, int64(deletionTime.Sub(trace.ArrivalTime)/time.Second), tsp.workerAttribute)
 }
 
 // forwardSpans sends the trace data to the next consumer. it is different from
 // releaseSampledTrace in that it does not modify any tsp state.
-func (tsp *tailSamplingSpanProcessor) forwardSpans(ctx context.Context, td ptrace.Traces) {
+func (tsp *tspWorker) forwardSpans(ctx context.Context, td ptrace.Traces) {
 	if err := tsp.nextConsumer.ConsumeTraces(ctx, td); err != nil {
 		tsp.logger.Warn(
 			"Error sending spans to destination",
@@ -699,7 +828,7 @@ func (tsp *tailSamplingSpanProcessor) forwardSpans(ctx context.Context, td ptrac
 // releaseSampledTrace sends the trace data to the next consumer. It
 // additionally adds the trace ID to the cache of sampled trace IDs. If the
 // trace ID is cached, it deletes the spans from the internal map.
-func (tsp *tailSamplingSpanProcessor) releaseSampledTrace(ctx context.Context, id pcommon.TraceID, td ptrace.Traces) {
+func (tsp *tspWorker) releaseSampledTrace(ctx context.Context, id pcommon.TraceID, td ptrace.Traces) {
 	tsp.sampledIDCache.Put(id, true)
 	tsp.forwardSpans(ctx, td)
 	_, ok := tsp.sampledIDCache.Get(id)
@@ -710,7 +839,7 @@ func (tsp *tailSamplingSpanProcessor) releaseSampledTrace(ctx context.Context, i
 
 // releaseNotSampledTrace adds the trace ID to the cache of not sampled trace
 // IDs. If the trace ID is cached, it deletes the spans from the internal map.
-func (tsp *tailSamplingSpanProcessor) releaseNotSampledTrace(id pcommon.TraceID) {
+func (tsp *tspWorker) releaseNotSampledTrace(id pcommon.TraceID) {
 	tsp.nonSampledIDCache.Put(id, true)
 	_, ok := tsp.nonSampledIDCache.Get(id)
 	if ok {
@@ -737,4 +866,12 @@ func appendToTraces(dest ptrace.Traces, rss ptrace.ResourceSpans, spanAndScopes 
 			spanAndScope.span.CopyTo(sp)
 		}
 	}
+}
+
+func waitForShardTickAlignment(shard, numWorkers int) {
+	tickFrequency := time.Second
+	alignment := time.Duration(shard) * (tickFrequency / time.Duration(numWorkers))
+	now := time.Now()
+	nextAlignment := now.Truncate(alignment).Add(alignment)
+	time.Sleep(nextAlignment.Sub(now))
 }

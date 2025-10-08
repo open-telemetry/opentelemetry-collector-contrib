@@ -27,7 +27,6 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/idbatcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/pkg/samplingpolicy"
@@ -66,63 +65,68 @@ func (t *TestPolicyEvaluator) Evaluate(ctx context.Context, traceID pcommon.Trac
 // testTSPController is a set of mechanisms to make the TSP do predictable
 // things in tests.
 type testTSPController struct {
-	// tickBarrier is a barrier to block ticks until the test is ready
-	tickBarrier chan struct{}
+	tickChans []chan chan struct{}
 }
 
 func newTestTSPController() *testTSPController {
 	return &testTSPController{
-		tickBarrier: make(chan struct{}),
+		tickChans: make([]chan chan struct{}, 0),
 	}
 }
 
-func (t *testTSPController) waitForTick() {
-	t.concurrentWithTick(func() {})
+func (t *testTSPController) triggerTicks() []chan struct{} {
+	promises := make([]chan struct{}, 0, len(t.tickChans))
+	for _, tickChan := range t.tickChans {
+		// We need a buffer so the ticker can signal completion without
+		// blocking.
+		ch := make(chan struct{}, 1)
+		promises = append(promises, ch)
+		tickChan <- ch
+	}
+	return promises
+}
+
+func awaitTicks(promises []chan struct{}) {
+	for _, ch := range promises {
+		<-ch
+	}
 }
 
 func (t *testTSPController) concurrentWithTick(f func()) {
-	t.tickBarrier <- struct{}{}
+	promises := t.triggerTicks()
 	f()
-	<-t.tickBarrier
+	awaitTicks(promises)
+}
+
+func (t *testTSPController) waitForTick() {
+	awaitTicks(t.triggerTicks())
 }
 
 func withTestController(t *testTSPController) Option {
-	return func(tsp *tailSamplingSpanProcessor) {
-		// Replace the policy ticker with a custom one that uses the tick barrier
-		originalOnTickFunc := tsp.policyTicker.OnTickFunc
-		tsp.policyTicker = &timeutils.PolicyTicker{
-			OnTickFunc: func() {
-				select {
-				case <-t.tickBarrier:
-					originalOnTickFunc()
-					t.tickBarrier <- struct{}{}
-				case <-tsp.policyTicker.StopCh:
-					return
-				}
-			},
-		}
+	return func(tsp *tspWorker) {
+		tsp.tickChan = make(chan chan struct{})
+		t.tickChans = append(t.tickChans, tsp.tickChan)
 
 		// use a sync ID batcher to avoid waiting on lots of empty ticks
 		tsp.decisionBatcher = newSyncIDBatcher()
 
-		// Use a fast tick frequency to avoid waiting on slow ticks. Since we
-		// use the tick barrier, we know the ticks will only fire when we're
-		// ready anyway.
-		tsp.tickerFrequency = 1 * time.Millisecond
+		// Use a slow tick frequency to effectively disable automatic ticks.
+		// We'll manually trigger ticks as needed via the tickChan.
+		tsp.tickerFrequency = time.Hour
 	}
 }
 
 // withTickerFrequency sets the frequency at which the processor will evaluate
 // the sampling policies.
 func withTickerFrequency(frequency time.Duration) Option {
-	return func(tsp *tailSamplingSpanProcessor) {
+	return func(tsp *tspWorker) {
 		tsp.tickerFrequency = frequency
 	}
 }
 
 // withPolicies sets the sampling policies to be used by the processor.
 func withPolicies(policies []*policy) Option {
-	return func(tsp *tailSamplingSpanProcessor) {
+	return func(tsp *tspWorker) {
 		tsp.policies = policies
 	}
 }
