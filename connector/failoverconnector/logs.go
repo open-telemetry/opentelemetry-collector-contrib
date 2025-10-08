@@ -58,7 +58,7 @@ func (f *logsRouter) consumeByHealthyPipeline(ctx context.Context, ld plog.Logs)
 // sampleRetryConsumers iterates through all unhealthy consumers to re-establish a healthy connection
 func (f *logsRouter) sampleRetryConsumers(ctx context.Context, ld plog.Logs) bool {
 	stableIndex := f.pS.CurrentPipeline()
-	for i := 0; i < stableIndex; i++ {
+	for i := range stableIndex {
 		consumer := f.getConsumerAtIndex(i)
 		err := consumer.ConsumeLogs(ctx, ld)
 		if err == nil {
