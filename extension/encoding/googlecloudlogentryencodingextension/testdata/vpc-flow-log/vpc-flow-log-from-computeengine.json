@@ -12,9 +12,9 @@
     "end_time": "2025-09-27T21:34:39.250342106Z",
     "connection": {
       "dest_port": 443,
-      "src_ip": "35.191.240.44",
+      "src_ip": "203.0.113.4",
       "src_port": 55524,
-      "dest_ip": "10.128.0.43",
+      "dest_ip": "192.0.2.4",
       "protocol": 6
     },
     "packets_sent": "16",

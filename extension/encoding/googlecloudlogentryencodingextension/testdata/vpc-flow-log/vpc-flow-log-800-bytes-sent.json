@@ -2,8 +2,8 @@
   "insertId": "uuq3awf13s959",
   "jsonPayload": {
     "connection": {
-      "dest_ip": "10.160.0.36",
-      "src_ip": "54.237.57.118",
+      "dest_ip": "192.0.2.3",
+      "src_ip": "203.0.113.3",
       "protocol": 1
     },
     "start_time": "2025-09-27T21:11:25.762594203Z",

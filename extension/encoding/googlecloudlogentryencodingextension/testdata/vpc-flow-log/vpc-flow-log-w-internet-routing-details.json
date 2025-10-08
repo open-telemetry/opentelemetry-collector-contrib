@@ -2,9 +2,9 @@
   "insertId": "79c1kvepzqvr",
   "jsonPayload": {
     "connection": {
-      "dest_ip": "54.172.3.217",
+      "dest_ip": "203.0.113.6",
       "protocol": 1,
-      "src_ip": "10.160.0.36"
+      "src_ip": "192.0.2.6"
     },
     "packets_sent": "20",
     "reporter": "SRC",

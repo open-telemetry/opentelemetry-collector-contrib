@@ -26,8 +26,8 @@
       "project_id": "test-project-id"
     },
     "connection": {
-      "src_ip": "122.168.194.41",
-      "dest_ip": "10.160.0.36",
+      "src_ip": "203.0.113.5",
+      "dest_ip": "192.0.2.5",
       "dest_port": 22,
       "protocol": 6,
       "src_port": 45004

@@ -11,8 +11,8 @@
       "protocol": 6,
       "dest_port": 40708,
       "src_port": 443,
-      "dest_ip": "35.191.240.41",
-      "src_ip": "10.128.0.41"
+      "dest_ip": "203.0.113.1",
+      "src_ip": "192.0.2.1"
     },
     "start_time": "2025-09-27T21:12:02.937646004Z",
     "src_instance": {

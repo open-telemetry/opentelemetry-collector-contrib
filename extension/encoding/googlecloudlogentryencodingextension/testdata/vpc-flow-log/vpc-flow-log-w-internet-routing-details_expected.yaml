@@ -33,10 +33,10 @@ resourceLogs:
                   stringValue: icmp
               - key: source.address
                 value:
-                  stringValue: 10.160.0.36
+                  stringValue: 192.0.2.6
               - key: destination.address
                 value:
-                  stringValue: 54.172.3.217
+                  stringValue: 203.0.113.6
               - key: gcp.vpc.flow.reporter
                 value:
                   stringValue: SRC

@@ -33,10 +33,10 @@ resourceLogs:
                   stringValue: tcp
               - key: source.address
                 value:
-                  stringValue: 122.168.194.41
+                  stringValue: 203.0.113.5
               - key: destination.address
                 value:
-                  stringValue: 10.160.0.36
+                  stringValue: 192.0.2.5
               - key: source.port
                 value:
                   intValue: "45004"
