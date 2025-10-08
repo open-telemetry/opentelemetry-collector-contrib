@@ -448,15 +448,15 @@ func TestConsumptionDuringPolicyEvaluation(t *testing.T) {
 			// dropped too early errors.
 			SampledCacheSize: numBatches * 2,
 		},
+		Options: []Option{
+			withTickerFrequency(5 * time.Millisecond),
+		},
 	}
 	settings := processortest.NewNopSettings(metadata.Type)
 	reader := sdkmetric.NewManualReader()
 	settings.MeterProvider = sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader))
 	tsp, err := newTracesProcessor(t.Context(), settings, msp, cfg)
 	require.NoError(t, err)
-
-	// speed up the test a bit
-	tsp.(*tailSamplingSpanProcessor).tickerFrequency = 5 * time.Millisecond
 
 	require.NoError(t, tsp.Start(t.Context(), componenttest.NewNopHost()))
 	defer func() {
@@ -723,11 +723,11 @@ func TestSubSecondDecisionTime(t *testing.T) {
 		DecisionWait: 500 * time.Millisecond,
 		NumTraces:    defaultNumTraces,
 		PolicyCfgs:   testPolicy,
+		Options: []Option{
+			withTickerFrequency(10 * time.Millisecond),
+		},
 	})
 	require.NoError(t, err)
-
-	// speed up the test a bit
-	tsp.(*tailSamplingSpanProcessor).tickerFrequency = 10 * time.Millisecond
 
 	require.NoError(t, tsp.Start(t.Context(), componenttest.NewNopHost()))
 	defer func() {
