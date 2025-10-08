@@ -896,8 +896,22 @@ func TestDropPolicyIsFirstInPolicyList(t *testing.T) {
 			},
 			{
 				sharedPolicyCfg: sharedPolicyCfg{
-					Name: "drop-policy",
+					Name: "drop-metrics-policy",
 					Type: Drop,
+				},
+				DropCfg: DropCfg{
+					SubPolicyCfg: []AndSubPolicyCfg{
+						{
+							sharedPolicyCfg: sharedPolicyCfg{
+								Name: "drop-metrics-policy",
+								Type: StringAttribute,
+								StringAttributeCfg: StringAttributeCfg{
+									Key:    "url.path",
+									Values: []string{"/metrics"},
+								},
+							},
+						},
+					},
 				},
 			},
 		},
@@ -914,9 +928,26 @@ func TestDropPolicyIsFirstInPolicyList(t *testing.T) {
 		require.NoError(t, err)
 	}()
 
-	tsp := p.(*tailSamplingSpanProcessor)
-	require.GreaterOrEqual(t, len(tsp.policies), 2)
-	assert.Equal(t, "drop-policy", tsp.policies[0].name)
+	metricsTrace := simpleTracesWithID(uInt64ToTraceID(1))
+	metricsTrace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("url.path", "/metrics")
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), metricsTrace))
+
+	healthTrace := simpleTracesWithID(uInt64ToTraceID(2))
+	healthTrace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("url.path", "/health")
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), healthTrace))
+
+	controller.waitForTick()
+	controller.waitForTick()
+
+	assert.Len(t, msp.AllTraces(), 1, "Health trace should be sampled")
+	sampledTraceIDs := make(map[pcommon.TraceID]struct{})
+	for _, trace := range msp.AllTraces() {
+		sampledTraceIDs[trace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID()] = struct{}{}
+	}
+	require.Len(t, sampledTraceIDs, 1)
+	assert.Contains(t, sampledTraceIDs, uInt64ToTraceID(2))
 }
 
 func collectSpanIDs(trace ptrace.Traces) []pcommon.SpanID {
