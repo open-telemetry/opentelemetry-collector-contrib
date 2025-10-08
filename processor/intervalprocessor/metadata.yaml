@@ -8,5 +8,6 @@ status:
   warnings: [Statefulness]
   codeowners:
     active: [RichieSams]
+    emeritus: [tombrk]
 tests:
   config:

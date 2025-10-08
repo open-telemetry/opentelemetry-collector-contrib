@@ -8,6 +8,7 @@ status:
   warnings: [Statefulness]
   codeowners:
     active: [RichieSams]
+    emeritus: [tombrk]
 
 telemetry:
   metrics:
