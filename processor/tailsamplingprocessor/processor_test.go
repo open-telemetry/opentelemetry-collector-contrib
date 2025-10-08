@@ -107,9 +107,18 @@ func withTestController(t *testTSPController) Option {
 	}
 }
 
+// withTickerFrequency sets the frequency at which the processor will evaluate
+// the sampling policies.
 func withTickerFrequency(frequency time.Duration) Option {
 	return func(tsp *tailSamplingSpanProcessor) {
 		tsp.tickerFrequency = frequency
+	}
+}
+
+// withPolicies sets the sampling policies to be used by the processor.
+func withPolicies(policies []*policy) Option {
+	return func(tsp *tailSamplingSpanProcessor) {
+		tsp.policies = policies
 	}
 }
 
