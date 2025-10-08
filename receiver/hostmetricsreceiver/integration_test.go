@@ -133,6 +133,7 @@ func Test_HwScrape(t *testing.T) {
 				hCfg.HwmonPath = hwmonPath
 				hCfg.Temperature.Include.Sensors = []string{".*"}
 				hCfg.MetricsBuilderConfig.Metrics.HwTemperatureLimit.Enabled = true
+				hCfg.MetricsBuilderConfig.Metrics.HwStatus.Enabled = true
 				rCfg.Scrapers = map[component.Type]component.Config{
 					f.Type(): hCfg,
 				}
