@@ -47,7 +47,7 @@ var totalScrapes = 10
 // TestStaleNaNs validates that staleness marker gets generated when the timeseries is no longer present
 func TestStaleNaNs(t *testing.T) {
 	var mockResponses []mockPrometheusResponse
-	for i := 0; i < totalScrapes; i++ {
+	for i := range totalScrapes {
 		if i%2 == 0 {
 			mockResponses = append(mockResponses, mockPrometheusResponse{
 				code: 200,
@@ -75,7 +75,7 @@ func verifyStaleNaNs(t *testing.T, td *testData, resourceMetrics []pmetric.Resou
 	verifyNumTotalScrapeResults(t, td, resourceMetrics)
 	metrics1 := resourceMetrics[0].ScopeMetrics().At(0).Metrics()
 	ts := getTS(metrics1)
-	for i := 0; i < totalScrapes; i++ {
+	for i := range totalScrapes {
 		if i%2 == 0 {
 			verifyStaleNaNsSuccessfulScrape(t, td, resourceMetrics[i], ts, i+1)
 		} else {
