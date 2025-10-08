@@ -306,7 +306,7 @@ func (c *Cluster) SetServices(services []ecstypes.Service) {
 // GenTasks returns tasks with TaskArn set to arnPrefix+offset, where offset is [0, count).
 func GenTasks(arnPrefix string, count int, modifier func(i int, task *ecstypes.Task)) []ecstypes.Task {
 	var tasks []ecstypes.Task
-	for i := 0; i < count; i++ {
+	for i := range count {
 		t := ecstypes.Task{
 			Group:   aws.String(""),
 			TaskArn: aws.String(arnPrefix + strconv.Itoa(i)),
@@ -323,7 +323,7 @@ func GenTasks(arnPrefix string, count int, modifier func(i int, task *ecstypes.T
 // e.g. foo0:1, foo1:1 the `:` is following the task family version syntax.
 func GenTaskDefinitions(arnPrefix string, count, version int, modifier func(i int, def *ecstypes.TaskDefinition)) []*ecstypes.TaskDefinition {
 	var defs []*ecstypes.TaskDefinition
-	for i := 0; i < count; i++ {
+	for i := range count {
 		d := &ecstypes.TaskDefinition{
 			TaskDefinitionArn: aws.String(fmt.Sprintf("%s%d:%d", arnPrefix, i, version)),
 			Family:            aws.String(""),
@@ -338,7 +338,7 @@ func GenTaskDefinitions(arnPrefix string, count, version int, modifier func(i in
 
 func GenContainerInstances(arnPrefix string, count int, modifier func(i int, ci *ecstypes.ContainerInstance)) []ecstypes.ContainerInstance {
 	var instances []ecstypes.ContainerInstance
-	for i := 0; i < count; i++ {
+	for i := range count {
 		ci := ecstypes.ContainerInstance{
 			ContainerInstanceArn: aws.String(fmt.Sprintf("%s%d", arnPrefix, i)),
 		}
@@ -352,7 +352,7 @@ func GenContainerInstances(arnPrefix string, count int, modifier func(i int, ci 
 
 func GenEc2Instances(idPrefix string, count int, modifier func(i int, ins *ec2types.Instance)) []ec2types.Instance {
 	var instances []ec2types.Instance
-	for i := 0; i < count; i++ {
+	for i := range count {
 		ins := ec2types.Instance{
 			InstanceId: aws.String(fmt.Sprintf("%s%d", idPrefix, i)),
 		}
@@ -366,7 +366,7 @@ func GenEc2Instances(idPrefix string, count int, modifier func(i int, ins *ec2ty
 
 func GenServices(arnPrefix string, count int, modifier func(i int, s *ecstypes.Service)) []ecstypes.Service {
 	var services []ecstypes.Service
-	for i := 0; i < count; i++ {
+	for i := range count {
 		svc := ecstypes.Service{
 			ServiceArn:  aws.String(fmt.Sprintf("%s%d", arnPrefix, i)),
 			ServiceName: aws.String(fmt.Sprintf("%s%d", arnPrefix, i)),
