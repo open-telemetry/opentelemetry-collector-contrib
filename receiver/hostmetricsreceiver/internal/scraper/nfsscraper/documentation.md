@@ -16,9 +16,9 @@ metrics:
 
 Reports the count of kernel NFS client TCP segments and UDP datagrams handled.
 
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| {record} | Gauge | Int | development |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {record} | Sum | Int | Cumulative | true | development |
 
 #### Attributes
 
@@ -30,17 +30,17 @@ Reports the count of kernel NFS client TCP segments and UDP datagrams handled.
 
 Reports the count of kernel NFS client TCP connections accepted
 
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| {connection} | Gauge | Int | development |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {connection} | Sum | Int | Cumulative | true | development |
 
 ### nfs.client.operation.count
 
 Reports the count of kernel NFSv4+ client operations
 
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| {operation} | Gauge | Int | development |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {operation} | Sum | Int | Cumulative | true | development |
 
 #### Attributes
 
@@ -53,9 +53,9 @@ Reports the count of kernel NFSv4+ client operations
 
 Reports the count of kernel NFS client procedures
 
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| {procedure} | Gauge | Int | development |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {procedure} | Sum | Int | Cumulative | true | development |
 
 #### Attributes
 
@@ -68,41 +68,41 @@ Reports the count of kernel NFS client procedures
 
 Reports the count of kernel NFS client RPC authentication refreshes
 
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| {authrefresh} | Gauge | Int | development |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {authrefresh} | Sum | Int | Cumulative | true | development |
 
 ### nfs.client.rpc.count
 
 Reports the count of kernel NFS client RPCs sent, regardless of whether they're accepted/rejected by the server.
 
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| {request} | Gauge | Int | development |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {request} | Sum | Int | Cumulative | true | development |
 
 ### nfs.client.rpc.retransmit.count
 
 Reports the count of kernel NFS client RPC retransmits
 
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| {retransmit} | Gauge | Int | development |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {retransmit} | Sum | Int | Cumulative | true | development |
 
 ### nfs.server.fh.stale.count
 
-Reports the count of kernel NFS server stale file handles.
+Reports the cumulative count of kernel NFS server stale file handles.
 
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| {fh} | Gauge | Int | development |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {fh} | Sum | Int | Cumulative | true | development |
 
 ### nfs.server.io
 
 Reports the count of kernel NFS server bytes returned to receive and transmit (read and write) requests.
 
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| By | Gauge | Int | development |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | true | development |
 
 #### Attributes
 
@@ -114,9 +114,9 @@ Reports the count of kernel NFS server bytes returned to receive and transmit (r
 
 Reports the count of kernel NFS server TCP segments and UDP datagrams handled.
 
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| {request} | Gauge | Int | development |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {request} | Sum | Int | Cumulative | true | development |
 
 #### Attributes
 
@@ -128,17 +128,17 @@ Reports the count of kernel NFS server TCP segments and UDP datagrams handled.
 
 Reports the count of kernel NFS server TCP connections accepted
 
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| {connection} | Gauge | Int | development |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {connection} | Sum | Int | Cumulative | true | development |
 
 ### nfs.server.operation.count
 
 Reports the count of kernel NFSv4+ server operations
 
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| {operation} | Gauge | Int | development |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {operation} | Sum | Int | Cumulative | true | development |
 
 #### Attributes
 
@@ -151,9 +151,9 @@ Reports the count of kernel NFSv4+ server operations
 
 Reports the count of kernel NFS server procedures
 
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| {procedure} | Gauge | Int | development |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {procedure} | Sum | Int | Cumulative | true | development |
 
 #### Attributes
 
@@ -166,9 +166,9 @@ Reports the count of kernel NFS server procedures
 
 Reports the kernel NFS server reply cache request count by cache hit status.
 
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| {request} | Gauge | Int | development |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {request} | Sum | Int | Cumulative | true | development |
 
 #### Attributes
 
@@ -180,9 +180,9 @@ Reports the kernel NFS server reply cache request count by cache hit status.
 
 Reports the count of kernel NFS server RPCs handled.
 
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| {request} | Gauge | Int | development |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {request} | Sum | Int | Cumulative | true | development |
 
 #### Attributes
 
@@ -194,6 +194,6 @@ Reports the count of kernel NFS server RPCs handled.
 
 Reports the count of kernel NFS server available threads
 
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| {thread} | Gauge | Int | development |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {thread} | Sum | Int | Cumulative | false | development |
