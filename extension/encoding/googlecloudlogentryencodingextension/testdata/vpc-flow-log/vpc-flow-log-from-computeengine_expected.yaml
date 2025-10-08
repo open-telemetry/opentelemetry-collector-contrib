@@ -12,7 +12,7 @@ resourceLogs:
             stringValue: gce_subnetwork
         - key: gcp.label.subnetwork_id
           value:
-            stringValue: "2319928369511802306"
+            stringValue: "1234548292813243874"
         - key: gcp.label.subnetwork_name
           value:
             stringValue: default

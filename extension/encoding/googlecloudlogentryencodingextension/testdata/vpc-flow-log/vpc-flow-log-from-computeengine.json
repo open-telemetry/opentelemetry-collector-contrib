@@ -36,7 +36,7 @@
   "resource": {
     "type": "gce_subnetwork",
     "labels": {
-      "subnetwork_id": "2319928369511802306",
+      "subnetwork_id": "1234548292813243874",
       "subnetwork_name": "default",
       "project_id": "test-project-id",
       "location": "us-central1"
