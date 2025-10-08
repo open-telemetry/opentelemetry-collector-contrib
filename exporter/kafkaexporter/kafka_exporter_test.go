@@ -298,7 +298,7 @@ func TestTracesPusher_partitioning(t *testing.T) {
 		// Jaeger encodings produce one message per span,
 		// and each one will have the trace ID as the key.
 		var keys [][]byte
-		for i := 0; i < 4; i++ {
+		for range 4 {
 			producer.ExpectSendMessageWithMessageCheckerFunctionAndSucceed(
 				func(msg *sarama.ProducerMessage) error {
 					key, err := msg.Key.Encode()
@@ -328,7 +328,7 @@ func TestTracesPusher_partitioning(t *testing.T) {
 		// even if they have the same service name.
 		var keys [][]byte
 		var traces []ptrace.Traces
-		for i := 0; i < 2; i++ {
+		for range 2 {
 			producer.ExpectSendMessageWithMessageCheckerFunctionAndSucceed(
 				func(msg *sarama.ProducerMessage) error {
 					value, err := msg.Value.Encode()
@@ -538,7 +538,7 @@ func TestMetricsPusher_partitioning(t *testing.T) {
 		// We should get one message per ResourceMetrics,
 		// even if they have the same service name.
 		var keys [][]byte
-		for i := 0; i < 3; i++ {
+		for i := range 3 {
 			producer.ExpectSendMessageWithMessageCheckerFunctionAndSucceed(
 				func(msg *sarama.ProducerMessage) error {
 					value, err := msg.Value.Encode()
@@ -951,7 +951,7 @@ func TestLogsPusher_partitioning(t *testing.T) {
 		// We should get one message per ResourceLogs,
 		// even if they have the same service name.
 		var keys [][]byte
-		for i := 0; i < 3; i++ {
+		for i := range 3 {
 			producer.ExpectSendMessageWithMessageCheckerFunctionAndSucceed(
 				func(msg *sarama.ProducerMessage) error {
 					value, err := msg.Value.Encode()
