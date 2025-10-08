@@ -142,6 +142,7 @@ body:
       - internal/core
       - internal/datadog
       - internal/docker
+      - internal/e2e
       - internal/exp/metrics
       - internal/filter
       - internal/grpcutil

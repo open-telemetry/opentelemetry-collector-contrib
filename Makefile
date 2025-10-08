@@ -387,6 +387,10 @@ update-codeowners: generate gengithub
 gencodeowners: install-tools
 	$(GITHUBGEN) -skipgithub
 
+.PHONY: generate-chloggen-components
+generate-chloggen-components: $(GITHUBGEN)
+	$(GITHUBGEN) chloggen-components
+
 FILENAME?=$(shell git branch --show-current)
 .PHONY: chlog-new
 chlog-new: $(CHLOGGEN)
