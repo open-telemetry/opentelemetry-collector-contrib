@@ -100,7 +100,7 @@ The following configuration options can also be configured:
   IMPORTANT: Host metadata synchronization relies on `resourcedetection`
   processor. If this option is enabled make sure that `resourcedetection`
   processor is enabled in the pipeline with one of the cloud provider detectors
-  or environment variable detector setting a unique value to `host.name` attribute
+  or environment variable detector setting a unique value to `host.id` attribute
   within your k8s cluster. And keep `override=true` in resourcedetection config.
 - `root_path`: Used by the host metadata to identify the root filesystem.
   This is needed when running in a containerized environment and the host root
