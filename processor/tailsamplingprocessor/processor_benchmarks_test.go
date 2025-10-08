@@ -34,7 +34,7 @@ func BenchmarkSampling(b *testing.B) {
 	metrics := &policyMetrics{}
 	sampleBatches := make([]*samplingpolicy.TraceData, 0, len(batches))
 
-	for i := 0; i < len(batches); i++ {
+	for range batches {
 		sampleBatches = append(sampleBatches, &samplingpolicy.TraceData{
 			ArrivalTime: time.Now(),
 			// SpanCount:       spanCount,
@@ -42,7 +42,7 @@ func BenchmarkSampling(b *testing.B) {
 		})
 	}
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		for i, id := range traceIDs {
 			_ = tsp.makeDecision(id, sampleBatches[i], metrics)
 		}

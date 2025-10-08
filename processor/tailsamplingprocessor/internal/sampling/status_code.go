@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -60,11 +61,6 @@ func (r *statusCodeFilter) Evaluate(_ context.Context, _ pcommon.TraceID, trace 
 	batches := trace.ReceivedBatches
 
 	return hasSpanWithCondition(batches, func(span ptrace.Span) bool {
-		for _, statusCode := range r.statusCodes {
-			if span.Status().Code() == statusCode {
-				return true
-			}
-		}
-		return false
+		return slices.Contains(r.statusCodes, span.Status().Code())
 	}), nil
 }

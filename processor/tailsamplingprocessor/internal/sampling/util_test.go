@@ -62,10 +62,10 @@ func TestSetAttrOnScopeSpans_Many(t *testing.T) {
 }
 
 func BenchmarkSetAttrOnScopeSpans(b *testing.B) {
-	for n := 0; n < b.N; n++ {
+	for b.Loop() {
 		traces := ptrace.NewTraces()
 
-		for i := 0; i < 5; i++ {
+		for range 5 {
 			rs := traces.ResourceSpans().AppendEmpty()
 			ss1 := rs.ScopeSpans().AppendEmpty()
 			ss1.Spans().AppendEmpty()
