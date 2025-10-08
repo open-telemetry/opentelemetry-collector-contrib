@@ -4,9 +4,10 @@
 package ctxdatapoint // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxdatapoint"
 
 import (
+	"maps"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxmetric"
-	"maps"
 )
 
 var SymbolTable = func() map[ottl.EnumSymbol]ottl.Enum {
