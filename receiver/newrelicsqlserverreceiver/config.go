@@ -39,21 +39,34 @@ type Config struct {
 	CertificateLocation    string `mapstructure:"certificate_location"`
 
 	// Performance and feature toggles
-	EnableDatabaseSampleMetrics      bool `mapstructure:"enable_database_sample_metrics"`
-	EnableBufferMetrics              bool `mapstructure:"enable_buffer_metrics"`
-	EnableDatabaseReserveMetrics     bool `mapstructure:"enable_database_reserve_metrics"`
-	EnableDiskMetricsInBytes         bool `mapstructure:"enable_disk_metrics_in_bytes"`
-	EnableIOMetrics                  bool `mapstructure:"enable_io_metrics"`
-	EnableLogGrowthMetrics           bool `mapstructure:"enable_log_growth_metrics"`
-	EnablePageFileMetrics            bool `mapstructure:"enable_page_file_metrics"`
-	EnablePageFileTotalMetrics       bool `mapstructure:"enable_page_file_total_metrics"`
-	EnableMemoryMetrics              bool `mapstructure:"enable_memory_metrics"`
-	EnableMemoryTotalMetrics         bool `mapstructure:"enable_memory_total_metrics"`
-	EnableMemoryAvailableMetrics     bool `mapstructure:"enable_memory_available_metrics"`
-	EnableMemoryUtilizationMetrics   bool `mapstructure:"enable_memory_utilization_metrics"`
-	EnableUserConnectionMetrics      bool `mapstructure:"enable_user_connection_metrics"`
-	EnableUserConnectionStatsMetrics bool `mapstructure:"enable_user_connection_stats_metrics"`
-	EnableLoginLogoutMetrics         bool `mapstructure:"enable_login_logout_metrics"`
+	EnableDatabaseSampleMetrics    bool `mapstructure:"enable_database_sample_metrics"`
+	EnableBufferMetrics            bool `mapstructure:"enable_buffer_metrics"`
+	EnableDatabaseReserveMetrics   bool `mapstructure:"enable_database_reserve_metrics"`
+	EnableDiskMetricsInBytes       bool `mapstructure:"enable_disk_metrics_in_bytes"`
+	EnableIOMetrics                bool `mapstructure:"enable_io_metrics"`
+	EnableLogGrowthMetrics         bool `mapstructure:"enable_log_growth_metrics"`
+	EnablePageFileMetrics          bool `mapstructure:"enable_page_file_metrics"`
+	EnablePageFileTotalMetrics     bool `mapstructure:"enable_page_file_total_metrics"`
+	EnableMemoryMetrics            bool `mapstructure:"enable_memory_metrics"`
+	EnableMemoryTotalMetrics       bool `mapstructure:"enable_memory_total_metrics"`
+	EnableMemoryAvailableMetrics   bool `mapstructure:"enable_memory_available_metrics"`
+	EnableMemoryUtilizationMetrics bool `mapstructure:"enable_memory_utilization_metrics"`
+
+	// User Connection Metrics - Granular toggles for different metric categories
+	EnableUserConnectionMetrics            bool `mapstructure:"enable_user_connection_metrics"`             // Master toggle for all user connection metrics
+	EnableUserConnectionStatusMetrics      bool `mapstructure:"enable_user_connection_status_metrics"`      // UserConnectionStatusMetrics - individual connection status counts
+	EnableUserConnectionSummaryMetrics     bool `mapstructure:"enable_user_connection_summary_metrics"`     // UserConnectionStatusSummary - aggregated connection counts by status
+	EnableUserConnectionUtilizationMetrics bool `mapstructure:"enable_user_connection_utilization_metrics"` // UserConnectionUtilization - efficiency ratios and percentages
+	EnableUserConnectionClientMetrics      bool `mapstructure:"enable_user_connection_client_metrics"`      // UserConnectionByClientMetrics - connections by host/program
+	EnableUserConnectionClientSummary      bool `mapstructure:"enable_user_connection_client_summary"`      // UserConnectionClientSummary - aggregated client statistics
+	EnableUserConnectionStatsMetrics       bool `mapstructure:"enable_user_connection_stats_metrics"`       // General statistical analysis metrics
+
+	// Authentication Metrics - Granular toggles for authentication monitoring
+	EnableLoginLogoutMetrics        bool `mapstructure:"enable_login_logout_metrics"`         // Master toggle for all authentication metrics
+	EnableLoginLogoutRateMetrics    bool `mapstructure:"enable_login_logout_rate_metrics"`    // LoginLogoutMetrics - individual login/logout rates
+	EnableLoginLogoutSummaryMetrics bool `mapstructure:"enable_login_logout_summary_metrics"` // LoginLogoutSummary - aggregated authentication activity
+	EnableFailedLoginMetrics        bool `mapstructure:"enable_failed_login_metrics"`         // FailedLoginMetrics - individual failed login attempts
+	EnableFailedLoginSummaryMetrics bool `mapstructure:"enable_failed_login_summary_metrics"` // FailedLoginSummary - aggregated failed login statistics
 
 	// Concurrency and timeouts
 	MaxConcurrentWorkers int           `mapstructure:"max_concurrent_workers"`
@@ -83,21 +96,34 @@ func DefaultConfig() component.Config {
 		Port:     "1433",
 
 		// Default feature toggles (matching nri-mssql defaults)
-		EnableDatabaseSampleMetrics:      false, // Master toggle - when true, enables all database metrics
-		EnableBufferMetrics:              true,
-		EnableDatabaseReserveMetrics:     true,
-		EnableDiskMetricsInBytes:         true,
-		EnableIOMetrics:                  true,
-		EnableLogGrowthMetrics:           true,
-		EnablePageFileMetrics:            true,
-		EnablePageFileTotalMetrics:       true,
-		EnableMemoryMetrics:              true,
-		EnableMemoryTotalMetrics:         true,
-		EnableMemoryAvailableMetrics:     true,
-		EnableMemoryUtilizationMetrics:   true,
-		EnableUserConnectionMetrics:      true,
-		EnableUserConnectionStatsMetrics: true,
-		EnableLoginLogoutMetrics:         true,
+		EnableDatabaseSampleMetrics:    false, // Master toggle - when true, enables all database metrics
+		EnableBufferMetrics:            true,
+		EnableDatabaseReserveMetrics:   true,
+		EnableDiskMetricsInBytes:       true,
+		EnableIOMetrics:                true,
+		EnableLogGrowthMetrics:         true,
+		EnablePageFileMetrics:          true,
+		EnablePageFileTotalMetrics:     true,
+		EnableMemoryMetrics:            true,
+		EnableMemoryTotalMetrics:       true,
+		EnableMemoryAvailableMetrics:   true,
+		EnableMemoryUtilizationMetrics: true,
+
+		// Default user connection metrics (all enabled by default for comprehensive monitoring)
+		EnableUserConnectionMetrics:            true, // Master toggle
+		EnableUserConnectionStatusMetrics:      true, // Individual status metrics
+		EnableUserConnectionSummaryMetrics:     true, // Aggregated status summary
+		EnableUserConnectionUtilizationMetrics: true, // Utilization ratios
+		EnableUserConnectionClientMetrics:      true, // Client/host breakdown
+		EnableUserConnectionClientSummary:      true, // Client summary stats
+		EnableUserConnectionStatsMetrics:       true, // Statistical analysis
+
+		// Default authentication metrics (all enabled by default for security monitoring)
+		EnableLoginLogoutMetrics:        true, // Master toggle
+		EnableLoginLogoutRateMetrics:    true, // Individual rates
+		EnableLoginLogoutSummaryMetrics: true, // Aggregated auth activity
+		EnableFailedLoginMetrics:        true, // Individual failed attempts
+		EnableFailedLoginSummaryMetrics: true, // Failed login statistics
 
 		// Default concurrency and timeout
 		MaxConcurrentWorkers: 10,
@@ -328,17 +354,66 @@ func (cfg *Config) IsMemoryUtilizationMetricsEnabled() bool {
 	return cfg.EnableDatabaseSampleMetrics || cfg.EnableMemoryUtilizationMetrics
 }
 
-// IsUserConnectionMetricsEnabled checks if user connection metrics should be collected
+// User Connection Metrics - Granular helper methods with master toggle support
+
+// IsUserConnectionMetricsEnabled checks if any user connection metrics should be collected (master toggle)
 func (cfg *Config) IsUserConnectionMetricsEnabled() bool {
 	return cfg.EnableUserConnectionMetrics
 }
 
-// IsUserConnectionStatsMetricsEnabled checks if user connection stats metrics should be collected
-func (cfg *Config) IsUserConnectionStatsMetricsEnabled() bool {
-	return cfg.EnableUserConnectionStatsMetrics
+// IsUserConnectionStatusMetricsEnabled checks if user connection status metrics should be collected
+func (cfg *Config) IsUserConnectionStatusMetricsEnabled() bool {
+	return cfg.EnableUserConnectionMetrics || cfg.EnableUserConnectionStatusMetrics
 }
 
-// IsLoginLogoutMetricsEnabled checks if login/logout rate metrics should be collected
+// IsUserConnectionSummaryMetricsEnabled checks if user connection summary metrics should be collected
+func (cfg *Config) IsUserConnectionSummaryMetricsEnabled() bool {
+	return cfg.EnableUserConnectionMetrics || cfg.EnableUserConnectionSummaryMetrics
+}
+
+// IsUserConnectionUtilizationMetricsEnabled checks if user connection utilization metrics should be collected
+func (cfg *Config) IsUserConnectionUtilizationMetricsEnabled() bool {
+	return cfg.EnableUserConnectionMetrics || cfg.EnableUserConnectionUtilizationMetrics
+}
+
+// IsUserConnectionClientMetricsEnabled checks if user connection client metrics should be collected
+func (cfg *Config) IsUserConnectionClientMetricsEnabled() bool {
+	return cfg.EnableUserConnectionMetrics || cfg.EnableUserConnectionClientMetrics
+}
+
+// IsUserConnectionClientSummaryEnabled checks if user connection client summary metrics should be collected
+func (cfg *Config) IsUserConnectionClientSummaryEnabled() bool {
+	return cfg.EnableUserConnectionMetrics || cfg.EnableUserConnectionClientSummary
+}
+
+// IsUserConnectionStatsMetricsEnabled checks if user connection stats metrics should be collected
+func (cfg *Config) IsUserConnectionStatsMetricsEnabled() bool {
+	return cfg.EnableUserConnectionMetrics || cfg.EnableUserConnectionStatsMetrics
+}
+
+// Authentication Metrics - Granular helper methods with master toggle support
+
+// IsLoginLogoutMetricsEnabled checks if any login/logout metrics should be collected (master toggle)
 func (cfg *Config) IsLoginLogoutMetricsEnabled() bool {
 	return cfg.EnableLoginLogoutMetrics
+}
+
+// IsLoginLogoutRateMetricsEnabled checks if login/logout rate metrics should be collected
+func (cfg *Config) IsLoginLogoutRateMetricsEnabled() bool {
+	return cfg.EnableLoginLogoutMetrics || cfg.EnableLoginLogoutRateMetrics
+}
+
+// IsLoginLogoutSummaryMetricsEnabled checks if login/logout summary metrics should be collected
+func (cfg *Config) IsLoginLogoutSummaryMetricsEnabled() bool {
+	return cfg.EnableLoginLogoutMetrics || cfg.EnableLoginLogoutSummaryMetrics
+}
+
+// IsFailedLoginMetricsEnabled checks if failed login metrics should be collected
+func (cfg *Config) IsFailedLoginMetricsEnabled() bool {
+	return cfg.EnableLoginLogoutMetrics || cfg.EnableFailedLoginMetrics
+}
+
+// IsFailedLoginSummaryMetricsEnabled checks if failed login summary metrics should be collected
+func (cfg *Config) IsFailedLoginSummaryMetricsEnabled() bool {
+	return cfg.EnableLoginLogoutMetrics || cfg.EnableFailedLoginSummaryMetrics
 }

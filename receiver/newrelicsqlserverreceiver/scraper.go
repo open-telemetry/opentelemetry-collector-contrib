@@ -464,13 +464,19 @@ func (s *sqlServerScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 		s.logger.Debug("Successfully scraped instance comprehensive statistics")
 	}
 
-	// Scrape user connection metrics if enabled
+	// Scrape user connection metrics with granular toggles
 	s.logger.Debug("Checking user connection metrics configuration",
 		zap.Bool("enable_user_connection_metrics", s.config.IsUserConnectionMetricsEnabled()),
+		zap.Bool("enable_user_connection_status_metrics", s.config.IsUserConnectionStatusMetricsEnabled()),
+		zap.Bool("enable_user_connection_summary_metrics", s.config.IsUserConnectionSummaryMetricsEnabled()),
+		zap.Bool("enable_user_connection_utilization_metrics", s.config.IsUserConnectionUtilizationMetricsEnabled()),
+		zap.Bool("enable_user_connection_client_metrics", s.config.IsUserConnectionClientMetricsEnabled()),
+		zap.Bool("enable_user_connection_client_summary", s.config.IsUserConnectionClientSummaryEnabled()),
 		zap.Bool("enable_user_connection_stats_metrics", s.config.IsUserConnectionStatsMetricsEnabled()),
 		zap.Bool("enable_login_logout_metrics", s.config.IsLoginLogoutMetricsEnabled()))
 
-	if s.config.IsUserConnectionMetricsEnabled() {
+	// Scrape user connection status metrics if enabled
+	if s.config.IsUserConnectionStatusMetricsEnabled() {
 		s.logger.Debug("Starting user connection status metrics scraping")
 		scrapeCtx, cancel = context.WithTimeout(ctx, s.config.Timeout)
 		defer cancel()
@@ -484,8 +490,12 @@ func (s *sqlServerScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 		} else {
 			s.logger.Debug("Successfully scraped user connection status metrics")
 		}
+	} else {
+		s.logger.Debug("User connection status metrics disabled in configuration")
+	}
 
-		// Scrape user connection summary metrics
+	// Scrape user connection summary metrics if enabled
+	if s.config.IsUserConnectionSummaryMetricsEnabled() {
 		s.logger.Debug("Starting user connection summary metrics scraping")
 		scrapeCtx, cancel = context.WithTimeout(ctx, s.config.Timeout)
 		defer cancel()
@@ -499,8 +509,12 @@ func (s *sqlServerScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 		} else {
 			s.logger.Debug("Successfully scraped user connection summary metrics")
 		}
+	} else {
+		s.logger.Debug("User connection summary metrics disabled in configuration")
+	}
 
-		// Scrape user connection utilization metrics
+	// Scrape user connection utilization metrics if enabled
+	if s.config.IsUserConnectionUtilizationMetricsEnabled() {
 		s.logger.Debug("Starting user connection utilization metrics scraping")
 		scrapeCtx, cancel = context.WithTimeout(ctx, s.config.Timeout)
 		defer cancel()
@@ -514,8 +528,12 @@ func (s *sqlServerScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 		} else {
 			s.logger.Debug("Successfully scraped user connection utilization metrics")
 		}
+	} else {
+		s.logger.Debug("User connection utilization metrics disabled in configuration")
+	}
 
-		// Scrape user connection by client metrics
+	// Scrape user connection by client metrics if enabled
+	if s.config.IsUserConnectionClientMetricsEnabled() {
 		s.logger.Debug("Starting user connection by client metrics scraping")
 		scrapeCtx, cancel = context.WithTimeout(ctx, s.config.Timeout)
 		defer cancel()
@@ -529,8 +547,12 @@ func (s *sqlServerScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 		} else {
 			s.logger.Debug("Successfully scraped user connection by client metrics")
 		}
+	} else {
+		s.logger.Debug("User connection client metrics disabled in configuration")
+	}
 
-		// Scrape user connection client summary metrics
+	// Scrape user connection client summary metrics if enabled
+	if s.config.IsUserConnectionClientSummaryEnabled() {
 		s.logger.Debug("Starting user connection client summary metrics scraping")
 		scrapeCtx, cancel = context.WithTimeout(ctx, s.config.Timeout)
 		defer cancel()
@@ -545,7 +567,7 @@ func (s *sqlServerScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 			s.logger.Debug("Successfully scraped user connection client summary metrics")
 		}
 	} else {
-		s.logger.Debug("User connection metrics disabled in configuration")
+		s.logger.Debug("User connection client summary metrics disabled in configuration")
 	}
 
 	// Scrape user connection stats metrics if enabled
@@ -567,23 +589,29 @@ func (s *sqlServerScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 		s.logger.Debug("User connection stats metrics disabled in configuration")
 	}
 
-	// Scrape login/logout metrics if enabled
-	if s.config.IsLoginLogoutMetricsEnabled() {
-		s.logger.Debug("Starting login/logout metrics scraping")
+	// Scrape authentication metrics with granular toggles
+
+	// Scrape login/logout rate metrics if enabled
+	if s.config.IsLoginLogoutRateMetricsEnabled() {
+		s.logger.Debug("Starting login/logout rate metrics scraping")
 		scrapeCtx, cancel = context.WithTimeout(ctx, s.config.Timeout)
 		defer cancel()
 
 		if err := s.userConnectionScraper.ScrapeLoginLogoutMetrics(scrapeCtx, scopeMetrics); err != nil {
-			s.logger.Error("Failed to scrape login/logout metrics",
+			s.logger.Error("Failed to scrape login/logout rate metrics",
 				zap.Error(err),
 				zap.Duration("timeout", s.config.Timeout))
 			scrapeErrors = append(scrapeErrors, err)
 			// Don't return here - continue with other metrics
 		} else {
-			s.logger.Debug("Successfully scraped login/logout metrics")
+			s.logger.Debug("Successfully scraped login/logout rate metrics")
 		}
+	} else {
+		s.logger.Debug("Login/logout rate metrics disabled in configuration")
+	}
 
-		// Scrape login/logout summary metrics
+	// Scrape login/logout summary metrics if enabled
+	if s.config.IsLoginLogoutSummaryMetricsEnabled() {
 		s.logger.Debug("Starting login/logout summary metrics scraping")
 		scrapeCtx, cancel = context.WithTimeout(ctx, s.config.Timeout)
 		defer cancel()
@@ -597,8 +625,12 @@ func (s *sqlServerScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 		} else {
 			s.logger.Debug("Successfully scraped login/logout summary metrics")
 		}
+	} else {
+		s.logger.Debug("Login/logout summary metrics disabled in configuration")
+	}
 
-		// Scrape failed login metrics
+	// Scrape failed login metrics if enabled
+	if s.config.IsFailedLoginMetricsEnabled() {
 		s.logger.Debug("Starting failed login metrics scraping")
 		scrapeCtx, cancel = context.WithTimeout(ctx, s.config.Timeout)
 		defer cancel()
@@ -612,8 +644,12 @@ func (s *sqlServerScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 		} else {
 			s.logger.Debug("Successfully scraped failed login metrics")
 		}
+	} else {
+		s.logger.Debug("Failed login metrics disabled in configuration")
+	}
 
-		// Scrape failed login summary metrics
+	// Scrape failed login summary metrics if enabled
+	if s.config.IsFailedLoginSummaryMetricsEnabled() {
 		s.logger.Debug("Starting failed login summary metrics scraping")
 		scrapeCtx, cancel = context.WithTimeout(ctx, s.config.Timeout)
 		defer cancel()
@@ -628,7 +664,7 @@ func (s *sqlServerScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 			s.logger.Debug("Successfully scraped failed login summary metrics")
 		}
 	} else {
-		s.logger.Debug("Login/logout metrics disabled in configuration")
+		s.logger.Debug("Failed login summary metrics disabled in configuration")
 	}
 
 	// Log summary of scraping results
