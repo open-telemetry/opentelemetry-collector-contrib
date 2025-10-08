@@ -6,6 +6,7 @@ package aggregateutil // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"encoding/json"
 	"math"
+	"slices"
 	"sort"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -141,12 +142,7 @@ func RangeDataPointAttributes(metric pmetric.Metric, f func(pcommon.Map) bool) {
 }
 
 func isNotPresent(target string, arr []string) bool {
-	for _, item := range arr {
-		if item == target {
-			return false
-		}
-	}
-	return true
+	return !slices.Contains(arr, target)
 }
 
 func mergeNumberDataPoints(dpsMap map[string]pmetric.NumberDataPointSlice, agg AggregationType, to pmetric.NumberDataPointSlice) {
@@ -216,9 +212,7 @@ func mergeNumberDataPoints(dpsMap map[string]pmetric.NumberDataPointSlice, agg A
 				if len(medianNumbers) == 1 {
 					dp.SetIntValue(medianNumbers[0])
 				} else {
-					sort.Slice(medianNumbers, func(i, j int) bool {
-						return medianNumbers[i] < medianNumbers[j]
-					})
+					slices.Sort(medianNumbers)
 					mNumber := len(medianNumbers) / 2
 					if math.Mod(float64(len(medianNumbers)), 2) != 0 {
 						dp.SetIntValue(medianNumbers[mNumber])
