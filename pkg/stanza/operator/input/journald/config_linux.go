@@ -13,7 +13,6 @@ import (
 	"sort"
 	"time"
 
-	jsoniter "github.com/json-iterator/go"
 	"go.opentelemetry.io/collector/component"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -49,7 +48,6 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 			// journalctl is an executable that is required for this operator to function
 		},
 		convertMessageBytes: c.ConvertMessageBytes,
-		json:                jsoniter.ConfigFastest,
 	}, nil
 }
 
