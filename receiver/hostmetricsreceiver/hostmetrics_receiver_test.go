@@ -133,9 +133,9 @@ func assertIncludesExpectedMetrics(t *testing.T, got pmetric.Metrics) {
 		assert.Equal(t, conventions.SchemaURL, rm.SchemaUrl(),
 			"SchemaURL is incorrect for metrics: %v", returnedMetricNames)
 		if rm.Resource().Attributes().Len() == 0 {
-			appendMapInto(returnedMetrics, returnedMetricNames)
+			maps.Copy(returnedMetrics, returnedMetricNames)
 		} else {
-			appendMapInto(returnedResourceMetrics, returnedMetricNames)
+			maps.Copy(returnedResourceMetrics, returnedMetricNames)
 		}
 	}
 
@@ -173,10 +173,6 @@ func getReturnedMetricNames(metrics pmetric.MetricSlice) map[string]struct{} {
 		metricNames[metrics.At(i).Name()] = struct{}{}
 	}
 	return metricNames
-}
-
-func appendMapInto(m1, m2 map[string]struct{}) {
-	maps.Copy(m1, m2)
 }
 
 var mockType = component.MustNewType("mock")
