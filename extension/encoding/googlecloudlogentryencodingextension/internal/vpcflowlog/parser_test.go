@@ -24,15 +24,15 @@ func TestHandleConnection(t *testing.T) {
 		"tcp connection": {
 			connection: &connection{
 				Protocol: int64Ptr(6),
-				SrcIP:    "10.128.0.41",
-				DestIP:   "35.191.240.41",
+				SrcIP:    "192.0.2.1",
+				DestIP:   "203.0.113.1",
 				SrcPort:  int64Ptr(443),
 				DestPort: int64Ptr(40708),
 			},
 			expectedAttr: map[string]any{
 				string(semconv.NetworkProtocolNameKey): "tcp",
-				string(semconv.SourceAddressKey):       "10.128.0.41",
-				string(semconv.DestinationAddressKey):  "35.191.240.41",
+				string(semconv.SourceAddressKey):       "192.0.2.1",
+				string(semconv.DestinationAddressKey):  "203.0.113.1",
 				string(semconv.SourcePortKey):          int64(443),
 				string(semconv.DestinationPortKey):     int64(40708),
 			},
@@ -40,13 +40,13 @@ func TestHandleConnection(t *testing.T) {
 		"icmp connection": {
 			connection: &connection{
 				Protocol: int64Ptr(1),
-				SrcIP:    "54.237.57.118",
-				DestIP:   "10.160.0.36",
+				SrcIP:    "203.0.113.3",
+				DestIP:   "192.0.2.3",
 			},
 			expectedAttr: map[string]any{
 				string(semconv.NetworkProtocolNameKey): "icmp",
-				string(semconv.SourceAddressKey):       "54.237.57.118",
-				string(semconv.DestinationAddressKey):  "10.160.0.36",
+				string(semconv.SourceAddressKey):       "203.0.113.3",
+				string(semconv.DestinationAddressKey):  "192.0.2.3",
 			},
 		},
 		"udp connection": {
@@ -448,8 +448,8 @@ func TestParsePayloadIntoAttributes(t *testing.T) {
 			payload: []byte(`{
 				"connection": {
 					"protocol": 6,
-					"src_ip": "10.128.0.41",
-					"dest_ip": "35.191.240.41",
+					"src_ip": "192.0.2.1",
+					"dest_ip": "203.0.113.1",
 					"src_port": 443,
 					"dest_port": 40708
 				},
@@ -480,8 +480,8 @@ func TestParsePayloadIntoAttributes(t *testing.T) {
 			}`),
 			expectedAttr: map[string]any{
 				string(semconv.NetworkProtocolNameKey): "tcp",
-				string(semconv.SourceAddressKey):       "10.128.0.41",
-				string(semconv.DestinationAddressKey):  "35.191.240.41",
+				string(semconv.SourceAddressKey):       "192.0.2.1",
+				string(semconv.DestinationAddressKey):  "203.0.113.1",
 				string(semconv.SourcePortKey):          int64(443),
 				string(semconv.DestinationPortKey):     int64(40708),
 				gcpVPCFlowReporter:                     "SRC",
