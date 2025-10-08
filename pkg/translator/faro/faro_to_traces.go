@@ -26,7 +26,7 @@ func TranslateToTraces(ctx context.Context, payload faroTypes.Payload) (ptrace.T
 	resspanCount := payload.Traces.Traces.ResourceSpans().Len()
 	span.SetAttributes(attribute.Int("count", resspanCount))
 	traces.ResourceSpans().EnsureCapacity(resspanCount)
-	for i := 0; i < resspanCount; i++ {
+	for i := range resspanCount {
 		rs := traces.ResourceSpans().AppendEmpty()
 		frs := ptrace.NewResourceSpans()
 		payload.Traces.Traces.ResourceSpans().At(i).CopyTo(frs)
