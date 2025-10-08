@@ -62,10 +62,10 @@ func normalizeName(metric pmetric.Metric, namespace string) string {
 
 	// Append unit if it exists
 	promUnit, promUnitRate := buildCompliantMainUnit(metric.Unit()), buildCompliantPerUnit(metric.Unit())
-	if promUnit != "" && !contains(nameTokens, promUnit) {
+	if promUnit != "" && !slices.Contains(nameTokens, promUnit) {
 		nameTokens = append(nameTokens, promUnit)
 	}
-	if promUnitRate != "" && !contains(nameTokens, promUnitRate) {
+	if promUnitRate != "" && !slices.Contains(nameTokens, promUnitRate) {
 		nameTokens = append(append(nameTokens, "per"), promUnitRate)
 	}
 
@@ -161,11 +161,6 @@ func removeSuffix(tokens []string, suffix string) []string {
 
 func RemovePromForbiddenRunes(s string) string {
 	return strings.Join(strings.FieldsFunc(s, func(r rune) bool { return !unicode.IsLetter(r) && !unicode.IsDigit(r) && r != '_' && r != ':' }), "_")
-}
-
-// Returns whether the slice contains the specified value
-func contains(slice []string, value string) bool {
-	return slices.Contains(slice, value)
 }
 
 // Remove the specified value from the slice
