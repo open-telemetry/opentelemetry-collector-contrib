@@ -19,7 +19,7 @@ func simpleResource() pcommon.Resource {
 	rs := pcommon.NewResource()
 	rs.Attributes().PutStr("somekey1", "some-string-value")
 	rs.Attributes().PutInt("somekey2", 123)
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		k := fmt.Sprint("random-", i)
 		v := fmt.Sprint("value-", rand.IntN(100))
 		rs.Attributes().PutStr(k, v)
@@ -29,7 +29,7 @@ func simpleResource() pcommon.Resource {
 
 func randomAttributeMap() pcommon.Map {
 	attrs := pcommon.NewMap()
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		k := fmt.Sprint("key-", i)
 		v := fmt.Sprint("value-", rand.IntN(500000))
 		attrs.PutStr(k, v)
@@ -39,7 +39,7 @@ func randomAttributeMap() pcommon.Map {
 
 func randomGroups(count int) []pcommon.Map {
 	entries := make([]pcommon.Map, count)
-	for i := 0; i < count; i++ {
+	for i := range count {
 		entries[i] = randomAttributeMap()
 	}
 	return entries
@@ -149,7 +149,7 @@ func TestInstrumentationLibraryMatching(t *testing.T) {
 func BenchmarkAttrGrouping(b *testing.B) {
 	lg := newLogsGroup()
 	b.ReportAllocs()
-	for n := 0; n < b.N; n++ {
+	for b.Loop() {
 		lg.findOrCreateResourceLogs(res, groups[rand.IntN(count)])
 	}
 }
