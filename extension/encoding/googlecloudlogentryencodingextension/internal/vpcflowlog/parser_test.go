@@ -132,7 +132,7 @@ func TestHandleInstance(t *testing.T) {
 	}{
 		"source instance with mig": {
 			instance: &instance{
-				ProjectID: "elastic-obs-integrations-dev",
+				ProjectID: "test-project-id",
 				Region:    "us-central1",
 				VMName:    "proxy-crest-new-group-b51k",
 				Zone:      "us-central1-a",
@@ -143,7 +143,7 @@ func TestHandleInstance(t *testing.T) {
 			},
 			side: src,
 			expectedAttr: map[string]any{
-				fmtAttributeNameUsingSide(gcpVPCFlowInstanceProjectIDTemplate, src): "elastic-obs-integrations-dev",
+				fmtAttributeNameUsingSide(gcpVPCFlowInstanceProjectIDTemplate, src): "test-project-id",
 				fmtAttributeNameUsingSide(gcpVPCFlowInstanceVMRegionTemplate, src):  "us-central1",
 				fmtAttributeNameUsingSide(gcpVPCFlowInstanceVMNameTemplate, src):    "proxy-crest-new-group-b51k",
 				fmtAttributeNameUsingSide(gcpVPCFlowInstanceVMZoneTemplate, src):    "us-central1-a",
@@ -153,14 +153,14 @@ func TestHandleInstance(t *testing.T) {
 		},
 		"destination instance without mig": {
 			instance: &instance{
-				ProjectID: "elastic-obs-integrations-dev",
+				ProjectID: "test-project-id",
 				Region:    "asia-south1",
 				VMName:    "service-integration-dev-idc-ubuntu25-4",
 				Zone:      "asia-south1-c",
 			},
 			side: dest,
 			expectedAttr: map[string]any{
-				fmtAttributeNameUsingSide(gcpVPCFlowInstanceProjectIDTemplate, dest): "elastic-obs-integrations-dev",
+				fmtAttributeNameUsingSide(gcpVPCFlowInstanceProjectIDTemplate, dest): "test-project-id",
 				fmtAttributeNameUsingSide(gcpVPCFlowInstanceVMRegionTemplate, dest):  "asia-south1",
 				fmtAttributeNameUsingSide(gcpVPCFlowInstanceVMNameTemplate, dest):    "service-integration-dev-idc-ubuntu25-4",
 				fmtAttributeNameUsingSide(gcpVPCFlowInstanceVMZoneTemplate, dest):    "asia-south1-c",
@@ -285,14 +285,14 @@ func TestHandleVPC(t *testing.T) {
 	}{
 		"source vpc": {
 			vpc: &vpc{
-				ProjectID:        "elastic-obs-integrations-dev",
+				ProjectID:        "test-project-id",
 				SubnetworkName:   "default",
 				SubnetworkRegion: "us-central1",
 				VPCName:          "default",
 			},
 			side: src,
 			expectedAttr: map[string]any{
-				fmtAttributeNameUsingSide(gcpVPCFlowProjectIDTemplate, src):    "elastic-obs-integrations-dev",
+				fmtAttributeNameUsingSide(gcpVPCFlowProjectIDTemplate, src):    "test-project-id",
 				fmtAttributeNameUsingSide(gcpVPCFlowSubnetNameTemplate, src):   "default",
 				fmtAttributeNameUsingSide(gcpVPCFlowSubnetRegionTemplate, src): "us-central1",
 				fmtAttributeNameUsingSide(gcpVPCFlowVPCNameTemplate, src):      "default",
@@ -300,14 +300,14 @@ func TestHandleVPC(t *testing.T) {
 		},
 		"destination vpc": {
 			vpc: &vpc{
-				ProjectID:        "elastic-obs-integrations-dev",
+				ProjectID:        "test-project-id",
 				SubnetworkName:   "default",
 				SubnetworkRegion: "asia-south1",
 				VPCName:          "default",
 			},
 			side: dest,
 			expectedAttr: map[string]any{
-				fmtAttributeNameUsingSide(gcpVPCFlowProjectIDTemplate, dest):    "elastic-obs-integrations-dev",
+				fmtAttributeNameUsingSide(gcpVPCFlowProjectIDTemplate, dest):    "test-project-id",
 				fmtAttributeNameUsingSide(gcpVPCFlowSubnetNameTemplate, dest):   "default",
 				fmtAttributeNameUsingSide(gcpVPCFlowSubnetRegionTemplate, dest): "asia-south1",
 				fmtAttributeNameUsingSide(gcpVPCFlowVPCNameTemplate, dest):      "default",
@@ -462,7 +462,7 @@ func TestParsePayloadIntoAttributes(t *testing.T) {
 					"dscp": 32
 				},
 				"src_instance": {
-					"project_id": "elastic-obs-integrations-dev",
+					"project_id": "test-project-id-src",
 					"region": "us-central1",
 					"vm_name": "proxy-crest-new-group-b51k",
 					"zone": "us-central1-a",
@@ -472,7 +472,7 @@ func TestParsePayloadIntoAttributes(t *testing.T) {
 					}
 				},
 				"src_vpc": {
-					"project_id": "elastic-obs-integrations-dev",
+					"project_id": "test-project-id",
 					"subnetwork_name": "default",
 					"subnetwork_region": "us-central1",
 					"vpc_name": "default"
@@ -490,13 +490,13 @@ func TestParsePayloadIntoAttributes(t *testing.T) {
 				gcpVPCFlowStartTime:                    int64(1759007522937646004),
 				gcpVPCFlowEndTime:                      int64(1759007703837646004),
 				gcpVPCFlowNetworkServiceDSCP:           int64(32),
-				fmtAttributeNameUsingSide(gcpVPCFlowInstanceProjectIDTemplate, src): "elastic-obs-integrations-dev",
+				fmtAttributeNameUsingSide(gcpVPCFlowInstanceProjectIDTemplate, src): "test-project-id-src",
 				fmtAttributeNameUsingSide(gcpVPCFlowInstanceVMRegionTemplate, src):  "us-central1",
 				fmtAttributeNameUsingSide(gcpVPCFlowInstanceVMNameTemplate, src):    "proxy-crest-new-group-b51k",
 				fmtAttributeNameUsingSide(gcpVPCFlowInstanceVMZoneTemplate, src):    "us-central1-a",
 				fmtAttributeNameUsingSide(gcpVPCFlowInstanceMIGNameTemplate, src):   "proxy-crest-new-group",
 				fmtAttributeNameUsingSide(gcpVPCFlowInstanceMIGZoneTemplate, src):   "us-central1-a",
-				fmtAttributeNameUsingSide(gcpVPCFlowProjectIDTemplate, src):         "elastic-obs-integrations-dev",
+				fmtAttributeNameUsingSide(gcpVPCFlowProjectIDTemplate, src):         "test-project-id",
 				fmtAttributeNameUsingSide(gcpVPCFlowSubnetNameTemplate, src):        "default",
 				fmtAttributeNameUsingSide(gcpVPCFlowSubnetRegionTemplate, src):      "us-central1",
 				fmtAttributeNameUsingSide(gcpVPCFlowVPCNameTemplate, src):           "default",
