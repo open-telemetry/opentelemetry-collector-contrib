@@ -114,7 +114,7 @@ func BenchmarkConnectorConsumeTraces(b *testing.B) {
 
 	// Test
 	ctx := metadata.NewIncomingContext(b.Context(), nil)
-	for n := 0; n < b.N; n++ {
+	for b.Loop() {
 		assert.NoError(b, conn.ConsumeTraces(ctx, traces))
 	}
 }
@@ -188,7 +188,7 @@ func verifyConsumeMetricsInput(tb testing.TB, input pmetric.Metrics, numCumulati
 	assert.True(tb, m.At(0).Sum().IsMonotonic())
 	callsDps := m.At(0).Sum().DataPoints()
 	require.Equal(tb, 3, callsDps.Len())
-	for dpi := 0; dpi < 3; dpi++ {
+	for dpi := range 3 {
 		dp := callsDps.At(dpi)
 		assert.Equal(tb, int64(numCumulativeConsumptions), dp.IntValue(), "There should only be one metric per Service/kind combination")
 		assert.NotZero(tb, dp.StartTimestamp(), "StartTimestamp should be set")
