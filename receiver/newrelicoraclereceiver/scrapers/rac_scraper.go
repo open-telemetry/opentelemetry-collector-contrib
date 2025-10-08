@@ -20,7 +20,6 @@ package scrapers
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"strconv"
 	"strings"
 	"sync"
@@ -41,9 +40,9 @@ type RacScraper struct {
 	instanceName         string
 	metricsBuilderConfig metadata.MetricsBuilderConfig
 
-	// For tracking rate-based metrics
-	previousWaitEvents map[string]float64
-	mutex              sync.RWMutex
+	// Cache for RAC mode detection to avoid repeated queries
+	isRacMode    *bool
+	racModeMutex sync.RWMutex
 }
 
 // NewRacScraper creates a new RAC Scraper instance
@@ -54,17 +53,78 @@ func NewRacScraper(db *sql.DB, mb *metadata.MetricsBuilder, logger *zap.Logger, 
 		logger:               logger,
 		instanceName:         instanceName,
 		metricsBuilderConfig: metricsBuilderConfig,
-		previousWaitEvents:   make(map[string]float64),
 	}
+}
+
+// isRacEnabled checks if Oracle is running in RAC mode by querying the cluster_database parameter
+func (s *RacScraper) isRacEnabled(ctx context.Context) (bool, error) {
+	s.racModeMutex.RLock()
+	if s.isRacMode != nil {
+		result := *s.isRacMode
+		s.racModeMutex.RUnlock()
+		return result, nil
+	}
+	s.racModeMutex.RUnlock()
+
+	s.racModeMutex.Lock()
+	defer s.racModeMutex.Unlock()
+
+	// Double-check pattern to avoid race conditions
+	if s.isRacMode != nil {
+		return *s.isRacMode, nil
+	}
+
+	s.logger.Debug("Checking if Oracle is running in RAC mode")
+
+	rows, err := s.db.QueryContext(ctx, queries.RACDetectionSQL)
+	if err != nil {
+		s.logger.Error("Failed to execute RAC detection query", zap.Error(err))
+		return false, err
+	}
+	defer rows.Close()
+
+	var clusterDB sql.NullString
+	if rows.Next() {
+		if err := rows.Scan(&clusterDB); err != nil {
+			s.logger.Error("Failed to scan RAC detection result", zap.Error(err))
+			return false, err
+		}
+	}
+
+	// RAC is enabled if cluster_database parameter is TRUE
+	racEnabled := clusterDB.Valid && strings.ToUpper(clusterDB.String) == "TRUE"
+	s.isRacMode = &racEnabled
+
+	s.logger.Info("RAC mode detection completed",
+		zap.Bool("rac_enabled", racEnabled),
+		zap.String("cluster_database_value", clusterDB.String))
+
+	return racEnabled, nil
 }
 
 // ScrapeRacMetrics collects all Oracle RAC-specific metrics concurrently
 func (s *RacScraper) ScrapeRacMetrics(ctx context.Context) []error {
-	s.logger.Debug("Begin Oracle RAC metrics scrape with concurrent processing")
+	s.logger.Debug("Begin Oracle RAC metrics scrape")
 
-	// Create context with timeout for concurrent operations
-	scrapeCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
-	defer cancel()
+	// First check if RAC is enabled
+	racEnabled, err := s.isRacEnabled(ctx)
+	if err != nil {
+		s.logger.Error("Failed to detect RAC mode", zap.Error(err))
+		return []error{err}
+	}
+
+	if !racEnabled {
+		s.logger.Debug("Oracle is not running in RAC mode, skipping RAC-specific metrics")
+		return nil
+	}
+
+	s.logger.Debug("Oracle RAC mode detected, proceeding with RAC metrics collection")
+
+	// Check if context is already cancelled before starting goroutines
+	if ctx.Err() != nil {
+		s.logger.Warn("Context already cancelled before starting RAC metrics collection", zap.Error(ctx.Err()))
+		return []error{ctx.Err()}
+	}
 
 	// Channel to collect errors from all goroutines
 	errorChan := make(chan []error, 4) // Buffer for 4 scraper functions
@@ -76,7 +136,13 @@ func (s *RacScraper) ScrapeRacMetrics(ctx context.Context) []error {
 	// Scrape ASM metrics concurrently
 	go func() {
 		defer wg.Done()
-		if errs := s.scrapeASMDiskGroups(scrapeCtx); len(errs) > 0 {
+		select {
+		case <-ctx.Done():
+			errorChan <- []error{ctx.Err()}
+			return
+		default:
+		}
+		if errs := s.scrapeASMDiskGroups(ctx); len(errs) > 0 {
 			errorChan <- errs
 		} else {
 			errorChan <- nil
@@ -86,7 +152,13 @@ func (s *RacScraper) ScrapeRacMetrics(ctx context.Context) []error {
 	// Scrape cluster wait events concurrently
 	go func() {
 		defer wg.Done()
-		if errs := s.scrapeClusterWaitEvents(scrapeCtx); len(errs) > 0 {
+		select {
+		case <-ctx.Done():
+			errorChan <- []error{ctx.Err()}
+			return
+		default:
+		}
+		if errs := s.scrapeClusterWaitEvents(ctx); len(errs) > 0 {
 			errorChan <- errs
 		} else {
 			errorChan <- nil
@@ -96,7 +168,13 @@ func (s *RacScraper) ScrapeRacMetrics(ctx context.Context) []error {
 	// Scrape instance status concurrently
 	go func() {
 		defer wg.Done()
-		if errs := s.scrapeInstanceStatus(scrapeCtx); len(errs) > 0 {
+		select {
+		case <-ctx.Done():
+			errorChan <- []error{ctx.Err()}
+			return
+		default:
+		}
+		if errs := s.scrapeInstanceStatus(ctx); len(errs) > 0 {
 			errorChan <- errs
 		} else {
 			errorChan <- nil
@@ -106,7 +184,13 @@ func (s *RacScraper) ScrapeRacMetrics(ctx context.Context) []error {
 	// Scrape service failover status concurrently
 	go func() {
 		defer wg.Done()
-		if errs := s.scrapeActiveServices(scrapeCtx); len(errs) > 0 {
+		select {
+		case <-ctx.Done():
+			errorChan <- []error{ctx.Err()}
+			return
+		default:
+		}
+		if errs := s.scrapeActiveServices(ctx); len(errs) > 0 {
 			errorChan <- errs
 		} else {
 			errorChan <- nil
@@ -128,9 +212,9 @@ func (s *RacScraper) ScrapeRacMetrics(ctx context.Context) []error {
 	}
 
 	// Check if context was cancelled
-	if scrapeCtx.Err() != nil {
-		s.logger.Warn("RAC metrics scrape context cancelled", zap.Error(scrapeCtx.Err()))
-		allErrors = append(allErrors, scrapeCtx.Err())
+	if ctx.Err() != nil {
+		s.logger.Warn("RAC metrics scrape context cancelled", zap.Error(ctx.Err()))
+		allErrors = append(allErrors, ctx.Err())
 	}
 
 	s.logger.Debug("Completed Oracle RAC metrics scrape",
@@ -145,7 +229,7 @@ func (s *RacScraper) ScrapeRacMetrics(ctx context.Context) []error {
 func (s *RacScraper) executeQuery(ctx context.Context, query string, queryType string) (*sql.Rows, error) {
 	rows, err := s.db.QueryContext(ctx, query)
 	if err != nil {
-		s.logger.Error(fmt.Sprintf("Failed to execute %s query", queryType), zap.Error(err))
+		s.logger.Error("Failed to execute "+queryType+" query", zap.Error(err))
 		return nil, err
 	}
 	return rows, nil
@@ -153,7 +237,7 @@ func (s *RacScraper) executeQuery(ctx context.Context, query string, queryType s
 
 // handleScanError handles row scanning errors with consistent logging and error collection
 func (s *RacScraper) handleScanError(err error, scrapeErrors []error, context string) []error {
-	s.logger.Error(fmt.Sprintf("Failed to scan %s row", context), zap.Error(err))
+	s.logger.Error("Failed to scan "+context+" row", zap.Error(err))
 	return append(scrapeErrors, err)
 }
 
@@ -240,9 +324,6 @@ func (s *RacScraper) scrapeClusterWaitEvents(ctx context.Context) []error {
 	}
 	defer rows.Close()
 
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-
 	for rows.Next() {
 		var instID sql.NullString
 		var event sql.NullString
@@ -254,7 +335,7 @@ func (s *RacScraper) scrapeClusterWaitEvents(ctx context.Context) []error {
 			continue
 		}
 
-		if !instID.Valid || !event.Valid || !timeWaitedMicro.Valid {
+		if !instID.Valid || !event.Valid {
 			s.logger.Debug("Skipping cluster wait event with null values")
 			continue
 		}
@@ -263,32 +344,21 @@ func (s *RacScraper) scrapeClusterWaitEvents(ctx context.Context) []error {
 		instanceIDStr := instID.String
 		eventName := event.String
 
-		// Create unique key for this instance/event combination
-		key := fmt.Sprintf("%s:%s", instanceIDStr, eventName)
-
-		// Calculate rate for TIME_WAITED_MICRO (cumulative counter)
-		if previous, exists := s.previousWaitEvents[key]; exists {
-			if timeWaitedMicro.Float64 >= previous {
-				rate := timeWaitedMicro.Float64 - previous
-
-				// Record the rate-based metric
-				s.mb.RecordNewrelicoracledbRacWaitTimeDataPoint(now, rate, s.instanceName, instanceIDStr, eventName)
-
-				s.logger.Debug("Processed cluster wait event",
-					zap.String("instance_id", instanceIDStr),
-					zap.String("event", eventName),
-					zap.Float64("time_waited_micro", timeWaitedMicro.Float64),
-					zap.Float64("rate_micro_per_second", rate))
-			}
+		// Record the raw time waited in microseconds (cumulative counter)
+		if timeWaitedMicro.Valid {
+			s.mb.RecordNewrelicoracledbRacWaitTimeDataPoint(now, timeWaitedMicro.Float64, s.instanceName, instanceIDStr, eventName)
 		}
 
-		// Store current value for next iteration
-		s.previousWaitEvents[key] = timeWaitedMicro.Float64
-
-		// Also record total waits if available
+		// Record total waits if available
 		if totalWaits.Valid {
 			s.mb.RecordNewrelicoracledbRacTotalWaitsDataPoint(now, int64(totalWaits.Float64), s.instanceName, instanceIDStr, eventName)
 		}
+
+		s.logger.Debug("Processed cluster wait event",
+			zap.String("instance_id", instanceIDStr),
+			zap.String("event", eventName),
+			zap.Float64("time_waited_micro", timeWaitedMicro.Float64),
+			zap.Float64("total_waits", totalWaits.Float64))
 	}
 
 	return scrapeErrors

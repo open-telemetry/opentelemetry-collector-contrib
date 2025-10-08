@@ -57,6 +57,13 @@ const (
 			FAILOVER_DELAY,
 			CLB_GOAL
 		FROM GV$ACTIVE_SERVICES`
+
+	// RAC detection query - checks if Oracle is running in RAC mode
+	RACDetectionSQL = `
+		SELECT 
+			VALUE 
+		FROM V$PARAMETER 
+		WHERE NAME = 'cluster_database'`
 )
 
 // Oracle SQL query for system metrics from gv$sysmetric

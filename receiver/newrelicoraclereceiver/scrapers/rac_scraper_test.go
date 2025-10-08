@@ -47,8 +47,7 @@ func TestNewRacScraper(t *testing.T) {
 	assert.Equal(t, logger, scraper.logger)
 	assert.Equal(t, testInstanceName, scraper.instanceName)
 	assert.Equal(t, config, scraper.metricsBuilderConfig)
-	assert.NotNil(t, scraper.previousWaitEvents)
-	assert.Empty(t, scraper.previousWaitEvents)
+	assert.Nil(t, scraper.isRacMode) // Initially nil until first check
 }
 
 func TestScrapeRacMetrics_NilDB(t *testing.T) {
@@ -158,18 +157,18 @@ func TestScrapeActiveServices_NilDB(t *testing.T) {
 	assert.Contains(t, errors[0].Error(), "invalid connection")
 }
 
-func TestConcurrentSafetyPreviousWaitEvents(t *testing.T) {
+func TestConcurrentSafetyRacScraper(t *testing.T) {
 	scraper := setupTestRacScraper(t)
 
-	// Test concurrent access to previousWaitEvents map
-	// This tests the mutex protection
+	// Test concurrent access to RAC scraper
+	// This tests the concurrent execution of RAC metric collection
 	done := make(chan bool, 10)
 
-	// Start 10 goroutines that try to access the map concurrently
+	// Start 10 goroutines that try to scrape concurrently
 	for i := 0; i < 10; i++ {
 		go func(id int) {
 			ctx := context.Background()
-			// This will try to access the mutex-protected map
+			// This will try to scrape cluster wait events concurrently
 			_ = scraper.scrapeClusterWaitEvents(ctx)
 			done <- true
 		}(i)
@@ -273,8 +272,7 @@ func TestRacScraperLifecycle(t *testing.T) {
 	require.NotNil(t, scraper)
 
 	// Test that scraper is in valid initial state
-	assert.NotNil(t, scraper.previousWaitEvents)
-	assert.Equal(t, 0, len(scraper.previousWaitEvents))
+	assert.Nil(t, scraper.isRacMode) // RAC mode not yet determined
 
 	// Test operation (even with nil DB should not panic)
 	ctx := context.Background()
@@ -282,7 +280,7 @@ func TestRacScraperLifecycle(t *testing.T) {
 	assert.NotNil(t, errors) // Should get errors, but no panic
 
 	// Test that state is maintained properly
-	assert.NotNil(t, scraper.previousWaitEvents)
+	assert.Nil(t, scraper.isRacMode) // Should still be nil due to DB error
 }
 
 // Integration test placeholder
