@@ -279,8 +279,7 @@ func init() {
 
 func initAdditionalTargetSystems() {
 	if AdditionalTargetSystems != "n/a" {
-		additionalTargets := strings.SplitSeq(AdditionalTargetSystems, ",")
-		for t := range additionalTargets {
+		for t := range strings.SplitSeq(AdditionalTargetSystems, ",") {
 			validTargetSystems[t] = struct{}{}
 		}
 	}
