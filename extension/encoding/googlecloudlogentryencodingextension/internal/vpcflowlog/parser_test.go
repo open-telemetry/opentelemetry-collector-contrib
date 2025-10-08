@@ -128,6 +128,7 @@ func TestHandleInstance(t *testing.T) {
 		instance     *instance
 		side         flowSide
 		expectedAttr map[string]any
+		expectError  bool
 	}{
 		"source instance with mig": {
 			instance: &instance{
@@ -170,14 +171,33 @@ func TestHandleInstance(t *testing.T) {
 			side:         src,
 			expectedAttr: map[string]any{},
 		},
+		"invalid side": {
+			instance: &instance{
+				ProjectID: "test-project",
+				Region:    "us-central1",
+				VMName:    "test-vm",
+				Zone:      "us-central1-a",
+			},
+			side:         flowSide("invalid"),
+			expectedAttr: map[string]any{},
+			expectError:  true,
+		},
 	}
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			attr := pcommon.NewMap()
-			handleInstance(tt.instance, tt.side, attr)
-			require.Equal(t, tt.expectedAttr, attr.AsRaw())
+			err := handleInstance(tt.instance, tt.side, attr)
+			if tt.expectError {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), "unsupported side")
+				require.Contains(t, err.Error(), "handleInstance")
+				require.Contains(t, err.Error(), "[source destination]")
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, tt.expectedAttr, attr.AsRaw())
+			}
 		})
 	}
 }
@@ -187,6 +207,7 @@ func TestHandleLocation(t *testing.T) {
 		location     *location
 		side         flowSide
 		expectedAttr map[string]any
+		expectError  bool
 	}{
 		"source location": {
 			location: &location{
@@ -223,14 +244,34 @@ func TestHandleLocation(t *testing.T) {
 			side:         src,
 			expectedAttr: map[string]any{},
 		},
+		"invalid side": {
+			location: &location{
+				ASN:       int64Ptr(12345),
+				City:      "Test City",
+				Continent: "Test Continent",
+				Country:   "test",
+				Region:    "Test Region",
+			},
+			side:         flowSide("invalid"),
+			expectedAttr: map[string]any{},
+			expectError:  true,
+		},
 	}
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			attr := pcommon.NewMap()
-			handleLocation(tt.location, tt.side, attr)
-			require.Equal(t, tt.expectedAttr, attr.AsRaw())
+			err := handleLocation(tt.location, tt.side, attr)
+			if tt.expectError {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), "unsupported side")
+				require.Contains(t, err.Error(), "handleLocation")
+				require.Contains(t, err.Error(), "[source destination]")
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, tt.expectedAttr, attr.AsRaw())
+			}
 		})
 	}
 }
@@ -240,6 +281,7 @@ func TestHandleVPC(t *testing.T) {
 		vpc          *vpc
 		side         flowSide
 		expectedAttr map[string]any
+		expectError  bool
 	}{
 		"source vpc": {
 			vpc: &vpc{
@@ -276,14 +318,33 @@ func TestHandleVPC(t *testing.T) {
 			side:         src,
 			expectedAttr: map[string]any{},
 		},
+		"invalid side": {
+			vpc: &vpc{
+				ProjectID:        "test-project",
+				SubnetworkName:   "test-subnet",
+				SubnetworkRegion: "us-central1",
+				VPCName:          "test-vpc",
+			},
+			side:         flowSide("invalid"),
+			expectedAttr: map[string]any{},
+			expectError:  true,
+		},
 	}
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			attr := pcommon.NewMap()
-			handleVPC(tt.vpc, tt.side, attr)
-			require.Equal(t, tt.expectedAttr, attr.AsRaw())
+			err := handleVPC(tt.vpc, tt.side, attr)
+			if tt.expectError {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), "unsupported side")
+				require.Contains(t, err.Error(), "handleVPC")
+				require.Contains(t, err.Error(), "[source destination]")
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, tt.expectedAttr, attr.AsRaw())
+			}
 		})
 	}
 }

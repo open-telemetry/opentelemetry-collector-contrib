@@ -4,7 +4,6 @@
 package vpcflowlog // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/vpcflowlog"
 
 import (
-	"errors"
 	"fmt"
 	"time"
 
@@ -66,6 +65,8 @@ const (
 	src  flowSide = "source"
 	dest flowSide = "destination"
 )
+
+var validSides = []flowSide{src, dest}
 
 // fmtAttributeNameUsingSide formats a template string with the given side
 func fmtAttributeNameUsingSide(template attrNameTmpl, side flowSide) string {
@@ -188,7 +189,7 @@ func handleInstance(inst *instance, side flowSide, attr pcommon.Map) error {
 
 	// Validate that side is one of our constants
 	if side != src && side != dest {
-		return errors.New("unsupported side passed to handleInstance. Must be one of src or dest")
+		return fmt.Errorf("unsupported side %q passed to handleInstance. Must be one of %v", side, validSides)
 	}
 
 	shared.PutStr(fmtAttributeNameUsingSide(gcpVPCFlowInstanceProjectIDTemplate, side), inst.ProjectID, attr)
@@ -211,7 +212,7 @@ func handleLocation(loc *location, side flowSide, attr pcommon.Map) error {
 
 	// Validate that side is one of our constants
 	if side != src && side != dest {
-		return errors.New("unsupported side passed to handleLocation. Must be one of src or dest")
+		return fmt.Errorf("unsupported side %q passed to handleLocation. Must be one of %v", side, validSides)
 	}
 
 	shared.PutInt(fmtAttributeNameUsingSide(gcpVPCFlowASNTemplate, side), loc.ASN, attr)
@@ -230,7 +231,7 @@ func handleVPC(vpc *vpc, side flowSide, attr pcommon.Map) error {
 
 	// Validate that side is one of our constants
 	if side != src && side != dest {
-		return errors.New("unsupported side passed to handleVPC. Must be one of src or dest")
+		return fmt.Errorf("unsupported side %q passed to handleVPC. Must be one of %v", side, validSides)
 	}
 
 	shared.PutStr(fmtAttributeNameUsingSide(gcpVPCFlowProjectIDTemplate, side), vpc.ProjectID, attr)
