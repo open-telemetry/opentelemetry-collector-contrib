@@ -190,14 +190,6 @@ The number of rows in the database.
 | ---- | ----------- | ------ | -------- |
 | state | The tuple (row) state. | Str: ``dead``, ``live`` | false |
 
-### postgresql.table.autovacuum.count
-
-Number of times a table has manually been autovacuumed.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {autovacuums} | Sum | Int | Cumulative | true |
-
 ### postgresql.table.count
 
 Number of user tables in a database.
@@ -322,6 +314,14 @@ The number of sequential scans.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {sequential_scan} | Sum | Int | Cumulative | true |
+
+### postgresql.table.autovacuum.count
+
+Number of times a table has manually been autovacuumed.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {autovacuum} | Sum | Int | Cumulative | true | development |
 
 ### postgresql.temp.io
 

@@ -1613,7 +1613,7 @@ type metricPostgresqlTableAutovacuumCount struct {
 func (m *metricPostgresqlTableAutovacuumCount) init() {
 	m.data.SetName("postgresql.table.autovacuum.count")
 	m.data.SetDescription("Number of times a table has manually been autovacuumed.")
-	m.data.SetUnit("{autovacuums}")
+	m.data.SetUnit("{autovacuum}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)

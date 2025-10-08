@@ -139,7 +139,7 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		PostgresqlTableAutovacuumCount: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		PostgresqlTableCount: MetricConfig{
 			Enabled: true,
