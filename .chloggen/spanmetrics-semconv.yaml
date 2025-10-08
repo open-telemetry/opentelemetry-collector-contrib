@@ -1,0 +1,10 @@
+change_type: enhancement
+
+component: spanmetricsconnector
+
+note: "Option to set the `span.name` metric attribute based on the semantic conventions for span names (e.g., HTTP, RPC, messaging, and database spans)"
+
+# change to issue when it has been moved to the contrib repo
+issues: [43012]
+
+change_logs: ['user']

@@ -17,18 +17,19 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
+	"go.opentelemetry.io/otel/semconv/v1.37.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/cache"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/metrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/traces"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 	utilattri "github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
 const (
-	serviceNameKey                 = string(conventions.ServiceNameKey)
+	serviceNameKey                 = string(semconv.ServiceNameKey)
 	spanNameKey                    = "span.name"                          // OpenTelemetry non-standard constant.
 	spanKindKey                    = "span.kind"                          // OpenTelemetry non-standard constant.
 	statusCodeKey                  = "status.code"                        // OpenTelemetry non-standard constant.
@@ -381,7 +382,7 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 	for i := 0; i < traces.ResourceSpans().Len(); i++ {
 		rspans := traces.ResourceSpans().At(i)
 		resourceAttr := rspans.Resource().Attributes()
-		serviceAttr, ok := resourceAttr.Get(string(conventions.ServiceNameKey))
+		serviceAttr, ok := resourceAttr.Get(string(semconv.ServiceNameKey))
 		if !ok {
 			continue
 		}
@@ -539,7 +540,7 @@ func (p *connectorImp) buildAttributes(
 		attr.PutStr(serviceNameKey, serviceName)
 	}
 	if !contains(p.config.ExcludeDimensions, spanNameKey) {
-		attr.PutStr(spanNameKey, span.Name())
+		attr.PutStr(spanNameKey, p.spanName(span))
 	}
 	if !contains(p.config.ExcludeDimensions, spanKindKey) {
 		attr.PutStr(spanKindKey, traceutil.SpanKindStr(span.Kind()))
@@ -592,7 +593,7 @@ func (p *connectorImp) buildKey(serviceName string, span ptrace.Span, optionalDi
 		concatDimensionValue(p.keyBuf, serviceName, false)
 	}
 	if !contains(p.config.ExcludeDimensions, spanNameKey) {
-		concatDimensionValue(p.keyBuf, span.Name(), true)
+		concatDimensionValue(p.keyBuf, p.spanName(span), true)
 	}
 	if !contains(p.config.ExcludeDimensions, spanKindKey) {
 		concatDimensionValue(p.keyBuf, traceutil.SpanKindStr(span.Kind()), true)
@@ -608,6 +609,13 @@ func (p *connectorImp) buildKey(serviceName string, span ptrace.Span, optionalDi
 	}
 
 	return metrics.Key(p.keyBuf.String())
+}
+
+func (p *connectorImp) spanName(span ptrace.Span) string {
+	if p.config.SpanNameSemanticConvention {
+		return traces.SemConvSpanName(span)
+	}
+	return span.Name()
 }
 
 // buildMetricName builds the namespace prefix for the metric name.

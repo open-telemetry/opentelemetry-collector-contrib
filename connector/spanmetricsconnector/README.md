@@ -139,6 +139,7 @@ The following settings can be optionally configured:
 - `resource_metrics_key_attributes`: Filter the resource attributes used to produce the resource metrics key map hash(It's only used to build the hash key, not copy the attributes to metrics resource attributes). 
    Use this in case changing resource attributes (e.g. process id) are breaking counter metrics.
 - `aggregation_cardinality_limit` (default: `0`): Defines the maximum number of unique combinations of dimensions that will be tracked for metrics aggregation. When the limit is reached, additional unique combinations will be dropped but registered under a new entry with `otel.metric.overflow="true"`. A value of `0` means no limit is applied.
+- `span_name_semantic_convention` (default: `false`): When enabled, the connector sets the `span.name` metric attribute based on the [OpenTelemetry Semantic Conventions for Span names](https://opentelemetry.io/docs/reference/specification/trace/semantic_conventions/span-general/#span-name) (e.g., HTTP, RPC, messaging, and database spans) when applicable; otherwise, it uses the raw span name. See [Using `spanmetrics` with semantic conventions for span names](#using-spanmetrics-with-semantic-conventions-for-span-names) for more details.
 
 The feature gate `connector.spanmetrics.legacyMetricNames` (disabled by default) controls the connector to use legacy metric names.
 
@@ -248,6 +249,68 @@ For example:
 target_info{job="shippingservice", instance="...", ...} 1
 calls_total{span_name="/Address", service_name="shippingservice", span_kind="SPAN_KIND_SERVER", status_code="STATUS_CODE_UNSET", ...} 142
 ```
+
+### Using `spanmetrics` with semantic conventions for span names
+
+You can configure the `spanmetrics` connector to derive the `span.name` metric attribute from the
+[OpenTelemetry Semantic Conventions for Span names](https://opentelemetry.io/docs/reference/specification/trace/semantic_conventions/span-general/#span-name)
+for span names, rather than using the raw span name. The original span’s name is not modified.
+
+The primary use case for this feature is to reduce high-cardinality `span.name` values in generated metrics.
+This may drop detail where semantic data is incomplete—an intentional tradeoff for cardinality control.
+
+This feature is disabled by default. To activate it, set `span_name_semantic_convention` to `true`.  
+
+When enabled, existing metric attributes are preserved, and the `span.name` attribute is computed from the applicable 
+semantic convention (e.g., HTTP, RPC, messaging, database). If no convention applies, the original span name is used. 
+Be aware this can change metric cardinality if the semantic name differs from the original.
+
+
+```yaml
+connectors:
+  spanmetrics:
+    span_name_semantic_convention: true
+```
+
+Examples showing how high-cardinality can be reduced, with and without information loss, depending on semantic 
+convention coverage.
+
+Example HTTP server span override without information loss (`http.route` present):
+
+|                       | Before           | Override value for `spanmetrics` |
+|-----------------------|------------------|----------------------------------|
+| Span kind             | `SERVER`         |                                  |
+| Span name             | `GET /users/123` | `GET /users/:id`                 |
+| `http.request.method` | `GET`            |                                  |
+| `http.route`          | `/users/:id`     |                                  |
+
+
+Example HTTP server span override with information loss (`http.route` missing):
+
+|               | Before           | Override value for `spanmetrics` |
+|---------------|------------------|----------------------------------|
+| Span kind     | `SERVER`         |                                  |
+| Span name     | `GET /users/123` | `GET`                            |
+| `http.method` | `GET`            |                                  |
+| `http.route`  |                  |                                  |
+
+Example database call override without information loss (`db.namespace.name`, `db.operation.name`, `db.collection.name` present):
+
+|                      | Before                               | Override value for `spanmetrics` |
+|----------------------|--------------------------------------|----------------------------------|
+| Span kind            | `CLIENT`                             |                                  |
+| Span name            | `SELECT * FROM orders where uid=123` | `SELECT webshop.orders`          |
+| `db.system.name`     | `postgresql`                         |                                  |
+| `db.namespace.name`  | `webshop`                            |                                  |
+| `db.operation.name`  | `SELECT`                             |                                  |
+| `db.collection.name` | `orders`                             |                                  | 
+
+Example unchanged span name when no semantic convention applies:
+
+|           | Before       | Override value for `spanmetrics` |
+|-----------|--------------|----------------------------------|
+| Span kind | `INTERNAL`   |                                  |
+| Span name | `doCheckout` | `doCheckout`                     |
 
 ### More Examples
 
