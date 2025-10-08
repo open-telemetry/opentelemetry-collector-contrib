@@ -3,6 +3,8 @@
 
 package entry // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 
+import "maps"
+
 import "encoding/json"
 
 // copyValue will deep copy a value based on its type.
@@ -30,9 +32,7 @@ func copyValue(v any) any {
 // copyStringMap will deep copy a map of strings.
 func copyStringMap(m map[string]string) map[string]string {
 	mapCopy := make(map[string]string)
-	for k, v := range m {
-		mapCopy[k] = v
-	}
+	maps.Copy(mapCopy, m)
 	return mapCopy
 }
 

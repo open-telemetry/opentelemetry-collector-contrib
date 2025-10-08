@@ -246,11 +246,9 @@ func benchmarkReceiver(b *testing.B, logsPerIteration int, batchingInput, batchi
 	rcv.set = set
 	rcv.emitter = emitter
 
-	b.ResetTimer()
-
 	require.NoError(b, rcv.Start(b.Context(), nil))
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		nextIteration <- struct{}{}
 		<-iterationComplete
 		mockConsumer.receivedLogs.Store(0)
@@ -325,7 +323,7 @@ pipeline:
 	// Populate the file that will be consumed
 	file, err := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE, 0o666)
 	require.NoError(b, err)
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_, err := file.WriteString("testlog\n")
 		require.NoError(b, err)
 	}
@@ -387,7 +385,7 @@ func BenchmarkParseAndMap(b *testing.B) {
 	// Populate the file that will be consumed
 	file, err := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE, 0o666)
 	require.NoError(b, err)
-	for i := 0; i < b.N; i++ {
+	for i := 0; b.Loop(); i++ {
 		_, err := fmt.Fprintf(file, "10.33.121.119 - - [11/Aug/2020:00:00:00 -0400] \"GET /index.html HTTP/1.1\" 404 %d\n", i%1000)
 		require.NoError(b, err)
 	}
