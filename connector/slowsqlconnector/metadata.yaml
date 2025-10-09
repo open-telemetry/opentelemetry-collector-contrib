@@ -3,7 +3,7 @@ type: slowsql
 status:
   class: connector
   stability:
-    alpha: [traces_to_logs]
+    development: [traces_to_logs]
   codeowners:
     active: [JaredTan95]
 
