@@ -295,7 +295,7 @@ func TestObserverListError(t *testing.T) {
 	mockClient := newMockDynamicClient()
 
 	// Make list return error
-	mockClient.client.(*fake.FakeDynamicClient).PrependReactor("list", "pods", func(action k8s_testing.Action) (bool, runtime.Object, error) {
+	mockClient.client.(*fake.FakeDynamicClient).PrependReactor("list", "pods", func(_ k8s_testing.Action) (bool, runtime.Object, error) {
 		return true, nil, errors.New("mock list error")
 	})
 
