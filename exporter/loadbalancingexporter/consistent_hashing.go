@@ -106,7 +106,7 @@ func bsearch(pos position, left, right []ringItem) ringItem {
 func positionsFor(endpoint string, numPoints int) []position {
 	res := make([]position, 0, numPoints)
 	buf := make([]byte, 4)
-	for i := 0; i < numPoints; i++ {
+	for i := range numPoints {
 		h := crc32.NewIEEE()
 		binary.LittleEndian.PutUint32(buf, uint32(i))
 		h.Write([]byte(endpoint))
