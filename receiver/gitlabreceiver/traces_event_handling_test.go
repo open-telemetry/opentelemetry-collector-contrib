@@ -129,7 +129,7 @@ func TestProcessStageSpans(t *testing.T) {
 
 	// Verify the stage spans were created
 	scopeSpansCount := resourceSpans.ScopeSpans().Len()
-	for i := 0; i < scopeSpansCount; i++ {
+	for i := range scopeSpansCount {
 		scopeSpans := resourceSpans.ScopeSpans().At(i)
 		require.Equal(t, 1, scopeSpans.Spans().Len(), "each scope span should have one span")
 
@@ -154,7 +154,7 @@ func TestProcessJobSpans(t *testing.T) {
 
 	// Verify the job spans were created
 	scopeSpansCount := resourceSpans.ScopeSpans().Len()
-	for i := 0; i < scopeSpansCount; i++ {
+	for i := range scopeSpansCount {
 		scopeSpans := resourceSpans.ScopeSpans().At(i)
 		require.Equal(t, 1, scopeSpans.Spans().Len(), "each scope span should have one span")
 
