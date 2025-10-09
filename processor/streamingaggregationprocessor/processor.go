@@ -16,6 +16,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/streamingaggregationprocessor/internal/aggregation"
 )
 
 // streamingAggregationProcessor implements the streaming aggregation processor
@@ -330,190 +332,34 @@ func (p *streamingAggregationProcessor) aggregateMetric(
 	// Get or create aggregator at processor level (persistent across window swaps)
 	aggregator := p.getOrCreateAggregator(seriesKey, metric.Type())
 	
-	// Aggregate based on metric type
+	// Aggregate based on metric type using internal aggregation package
 	switch metric.Type() {
 	case pmetric.MetricTypeSum:
-		return p.aggregateSum(metric.Sum(), aggregator)
+		config := aggregation.CounterAggregationConfig{
+			StaleDataThreshold: p.config.StaleDataThreshold,
+			Logger:             p.logger,
+		}
+		return aggregation.AggregateSum(metric.Sum(), aggregator, config, p.forceExportActiveWindow)
 	case pmetric.MetricTypeGauge:
-		return p.aggregateGauge(metric.Gauge(), aggregator)
+		config := aggregation.GaugeAggregationConfig{
+			Logger: p.logger,
+		}
+		return aggregation.AggregateGauge(metric.Gauge(), aggregator, config)
 	case pmetric.MetricTypeHistogram:
-		return p.aggregateHistogram(metric.Histogram(), aggregator)
+		config := aggregation.HistogramAggregationConfig{
+			StaleDataThreshold: p.config.StaleDataThreshold,
+			Logger:             p.logger,
+		}
+		return aggregation.AggregateHistogram(metric.Histogram(), aggregator, config)
 	case pmetric.MetricTypeExponentialHistogram:
-		return p.aggregateExponentialHistogram(metric, metric.ExponentialHistogram(), aggregator)
+		return aggregation.AggregateExponentialHistogram(metric, metric.ExponentialHistogram(), aggregator)
 	case pmetric.MetricTypeSummary:
-		return p.aggregateSummary(metric.Summary(), aggregator)
+		return aggregation.AggregateSummary(metric.Summary(), aggregator)
 	default:
 		return fmt.Errorf("unsupported metric type: %v", metric.Type())
 	}
 }
 
-// aggregateGauge aggregates gauge metrics - keep last value
-func (p *streamingAggregationProcessor) aggregateGauge(gauge pmetric.Gauge, agg *Aggregator) error {
-	dps := gauge.DataPoints()
-	for i := 0; i < dps.Len(); i++ {
-		dp := dps.At(i)
-		
-		// Get the value based on the data point type
-		var value float64
-		switch dp.ValueType() {
-		case pmetric.NumberDataPointValueTypeInt:
-			value = float64(dp.IntValue())
-		case pmetric.NumberDataPointValueTypeDouble:
-			value = dp.DoubleValue()
-		default:
-			continue // Skip if neither int nor double
-		}
-		
-		agg.UpdateLast(value, dp.Timestamp())
-
-		p.logger.Debug("Aggregating gauge",
-			zap.Float64("value", value),
-			zap.String("timestamp", dp.Timestamp().AsTime().String()),
-		)
-	}
-	return nil
-}
-
-// aggregateSum aggregates sum/counter metrics - sum values
-func (p *streamingAggregationProcessor) aggregateSum(sum pmetric.Sum, agg *Aggregator) error {
-	dps := sum.DataPoints()
-	for i := 0; i < dps.Len(); i++ {
-		dp := dps.At(i)
-		
-		// Get the value based on the data point type
-		var value float64
-		switch dp.ValueType() {
-		case pmetric.NumberDataPointValueTypeInt:
-			value = float64(dp.IntValue())
-		case pmetric.NumberDataPointValueTypeDouble:
-			value = dp.DoubleValue()
-		default:
-			continue // Skip if neither int nor double
-		}
-		
-		// Handle based on monotonic property and temporality
-		if !sum.IsMonotonic() {
-			// UpDownCounter - track the net change within the window
-			// For UpDownCounters, we want to track the difference between the first
-			// and last value seen in the window, not accumulate all changes
-			if sum.AggregationTemporality() == pmetric.AggregationTemporalityCumulative {
-				// For cumulative UpDownCounters, track first and last values
-				agg.UpdateUpDownCounter(value, dp.Timestamp())
-			} else {
-				// For delta UpDownCounters, sum the deltas
-				agg.UpdateSum(value)
-			}
-			
-			p.logger.Debug("Aggregating UpDownCounter",
-				zap.Float64("value", value),
-				zap.String("temporality", sum.AggregationTemporality().String()),
-				zap.Bool("is_monotonic", sum.IsMonotonic()),
-			)
-		} else {
-			// Regular counter (monotonic) - accumulate deltas
-			if sum.AggregationTemporality() == pmetric.AggregationTemporalityCumulative {
-				// For cumulative, compute the delta from the previous value with gap detection
-				// ComputeDeltaFromCumulativeWithGapDetection already updates counterWindowDeltaSum internally
-				deltaValue, wasReset := agg.ComputeDeltaFromCumulativeWithGapDetection(value, dp.Timestamp(), p.config.StaleDataThreshold)
-				// Don't call UpdateSum here - ComputeDeltaFromCumulativeWithGapDetection handles the accumulation
-				
-				// If cumulative state was reset due to gap, trigger immediate export
-				if wasReset {
-					go p.forceExportActiveWindow() // Export active window immediately in background
-				}
-				
-				p.logger.Debug("Aggregating cumulative counter",
-					zap.Float64("cumulative_value", value),
-					zap.Float64("delta_value", deltaValue),
-					zap.String("temporality", sum.AggregationTemporality().String()),
-					zap.Bool("is_monotonic", sum.IsMonotonic()),
-				)
-			} else {
-				// For delta temporality, use the value directly
-				// For delta counters, we need to accumulate in the counter-specific fields
-				// We treat delta values as increments to the total sum
-				agg.mu.Lock()
-				if !agg.hasCounterCumulative {
-					// First delta value initializes the counter
-					agg.counterTotalSum = value
-					agg.hasCounterCumulative = true
-				} else {
-					// Add delta to total sum
-					agg.counterTotalSum += value
-				}
-				agg.counterWindowDeltaSum += value
-				agg.mu.Unlock()
-				
-				p.logger.Debug("Aggregating delta counter",
-					zap.Float64("value", value),
-					zap.Float64("total_sum", agg.counterTotalSum),
-					zap.String("temporality", sum.AggregationTemporality().String()),
-					zap.Bool("is_monotonic", sum.IsMonotonic()),
-				)
-			}
-		}
-	}
-	return nil
-}
-
-// aggregateHistogram aggregates histogram metrics - merge buckets
-func (p *streamingAggregationProcessor) aggregateHistogram(hist pmetric.Histogram, agg *Aggregator) error {
-	dps := hist.DataPoints()
-	temporality := hist.AggregationTemporality()
-	
-	// Debug logging to understand what's being aggregated
-	p.logger.Debug("Aggregating histogram",
-		zap.Int("data_points", dps.Len()),
-		zap.String("temporality", temporality.String()),
-	)
-	
-	for i := 0; i < dps.Len(); i++ {
-		dp := dps.At(i)
-		
-		// Log each data point being aggregated
-		attrs := make(map[string]string)
-		dp.Attributes().Range(func(k string, v pcommon.Value) bool {
-			attrs[k] = v.AsString()
-			return true
-		})
-		
-		p.logger.Debug("Merging histogram data point",
-			zap.Uint64("count", dp.Count()),
-			zap.Float64("sum", dp.Sum()),
-			zap.Any("attributes", attrs),
-			zap.String("temporality", temporality.String()),
-		)
-		
-		// Use the original proven logic for now - aggregateutil needs more integration work
-		agg.MergeHistogramWithTemporalityAndGapDetection(dp, temporality, p.config.StaleDataThreshold)
-	}
-	return nil
-}
-
-// aggregateExponentialHistogram aggregates exponential histogram metrics
-func (p *streamingAggregationProcessor) aggregateExponentialHistogram(metric pmetric.Metric, hist pmetric.ExponentialHistogram, agg *Aggregator) error {
-	dps := hist.DataPoints()
-
-	for i := 0; i < dps.Len(); i++ {
-		dp := dps.At(i)
-		// Pass metric so accumulator can capture name/description/unit
-		if err := agg.MergeExponentialHistogram(metric, dp); err != nil {
-			return fmt.Errorf("failed to merge exponential histogram: %w", err)
-		}
-	}
-	return nil
-}
-
-// aggregateSummary aggregates summary metrics
-func (p *streamingAggregationProcessor) aggregateSummary(summary pmetric.Summary, agg *Aggregator) error {
-	dps := summary.DataPoints()
-	for i := 0; i < dps.Len(); i++ {
-		dp := dps.At(i)
-		agg.UpdateSum(dp.Sum())
-		agg.UpdateCount(dp.Count())
-	}
-	return nil
-}
 
 // exportActiveWindow exports aggregated metrics from processor-level aggregators
 func (p *streamingAggregationProcessor) exportActiveWindow() {
