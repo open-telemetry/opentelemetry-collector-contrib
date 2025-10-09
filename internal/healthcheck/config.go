@@ -27,6 +27,7 @@ type (
 	GRPCConfig                   = grpc.Config
 	ComponentHealthConfig        = common.ComponentHealthConfig
 	CheckCollectorPipelineConfig = http.CheckCollectorPipelineConfig
+	ResponseBodyConfig           = http.ResponseBodyConfig
 )
 
 const (
@@ -98,11 +99,39 @@ func (c *Config) Validate() error {
 
 // Unmarshal a confmap.Conf into the config struct.
 func (c *Config) Unmarshal(conf *confmap.Conf) error {
+	// Initialize with default values to enable unmarshaling into nested structs
+	if conf.IsSet(httpConfigKey) {
+		c.HTTPConfig = &http.Config{
+			ServerConfig: confighttp.ServerConfig{
+				Endpoint: testutil.EndpointForPort(DefaultHTTPPort),
+			},
+			Status: http.PathConfig{
+				Enabled: true,
+				Path:    "/status",
+			},
+			Config: http.PathConfig{
+				Enabled: false,
+				Path:    "/config",
+			},
+		}
+	}
+	if conf.IsSet(grpcConfigKey) {
+		c.GRPCConfig = &grpc.Config{
+			ServerConfig: configgrpc.ServerConfig{
+				NetAddr: confignet.AddrConfig{
+					Endpoint:  testutil.EndpointForPort(DefaultGRPCPort),
+					Transport: confignet.TransportTypeTCP,
+				},
+			},
+		}
+	}
+
 	err := conf.Unmarshal(c)
 	if err != nil {
 		return err
 	}
 
+	// Clear configs that weren't actually set in the confmap
 	if !conf.IsSet(httpConfigKey) {
 		c.HTTPConfig = nil
 	}

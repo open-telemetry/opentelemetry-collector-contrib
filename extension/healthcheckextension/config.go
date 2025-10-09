@@ -5,11 +5,15 @@ package healthcheckextension // import "github.com/open-telemetry/opentelemetry-
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/confmap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/healthcheck"
 )
 
 type ResponseBodySettings struct {
@@ -37,20 +41,45 @@ type Config struct {
 
 	// CheckCollectorPipeline contains the list of settings of collector pipeline health check
 	CheckCollectorPipeline checkCollectorPipelineSettings `mapstructure:"check_collector_pipeline"`
+
+	// HTTP contains the configuration for the v2 HTTP healthcheck server.
+	HTTP *healthcheck.HTTPConfig `mapstructure:"http"`
+
+	// GRPC contains the configuration for the v2 gRPC healthcheck server.
+	GRPC *healthcheck.GRPCConfig `mapstructure:"grpc"`
+
+	// ComponentHealth configuration shared between HTTP and gRPC v2 servers.
+	ComponentHealth *healthcheck.ComponentHealthConfig `mapstructure:"component_health"`
+
+	hasV2Settings bool
 }
 
 var _ component.Config = (*Config)(nil)
+
 var (
 	errNoEndpointProvided                      = errors.New("bad config: endpoint must be specified")
 	errInvalidExporterFailureThresholdProvided = errors.New("bad config: exporter_failure_threshold expects a positive number")
 	errInvalidPath                             = errors.New("bad config: path must start with /")
+	errV2ConfigWithoutGate                     = errors.New("bad config: enabling v2 behavior requires the feature gate extension.healthcheck.disableCompatibilityWrapper")
 )
 
-// Validate checks if the extension configuration is valid
+// Validate checks if the extension configuration is valid.
 func (cfg *Config) Validate() error {
-	_, err := time.ParseDuration(cfg.CheckCollectorPipeline.Interval)
-	if err != nil {
-		return err
+	if disableCompatibilityWrapperGate.IsEnabled() {
+		internalCfg := cfg.toInternalConfig(true)
+		return internalCfg.Validate()
+	}
+
+	if cfg.hasV2Settings || cfg.HTTP != nil || cfg.GRPC != nil || cfg.ComponentHealth != nil {
+		return errV2ConfigWithoutGate
+	}
+
+	return cfg.validateLegacy()
+}
+
+func (cfg *Config) validateLegacy() error {
+	if _, err := time.ParseDuration(cfg.CheckCollectorPipeline.Interval); err != nil {
+		return fmt.Errorf("bad config: invalid interval %q: %w", cfg.CheckCollectorPipeline.Interval, err)
 	}
 	if cfg.Endpoint == "" {
 		return errNoEndpointProvided
@@ -62,6 +91,88 @@ func (cfg *Config) Validate() error {
 		return errInvalidPath
 	}
 	return nil
+}
+
+// toInternalConfig builds the shared healthcheck configuration used when the feature gate is enabled.
+func (cfg *Config) toInternalConfig(enableV2 bool) healthcheck.Config {
+	internal := healthcheck.Config{
+		LegacyConfig: healthcheck.HTTPLegacyConfig{
+			ServerConfig: cfg.ServerConfig,
+			Path:         cfg.Path,
+			ResponseBody: convertResponseBody(cfg.ResponseBody),
+			CheckCollectorPipeline: &healthcheck.CheckCollectorPipelineConfig{
+				Enabled:                  cfg.CheckCollectorPipeline.Enabled,
+				Interval:                 cfg.CheckCollectorPipeline.Interval,
+				ExporterFailureThreshold: cfg.CheckCollectorPipeline.ExporterFailureThreshold,
+			},
+			UseV2: enableV2,
+		},
+		ComponentHealthConfig: cloneComponentHealth(cfg.ComponentHealth),
+		GRPCConfig:            cloneGRPCConfig(cfg.GRPC),
+		HTTPConfig:            cloneHTTPConfig(cfg.HTTP),
+	}
+
+	if internal.HTTPConfig == nil && enableV2 {
+		internal.HTTPConfig = &healthcheck.HTTPConfig{
+			ServerConfig: cfg.ServerConfig,
+			Status: healthcheck.PathConfig{
+				Enabled: true,
+				Path:    cfg.Path,
+			},
+			Config: healthcheck.PathConfig{
+				Enabled: false,
+				Path:    "/config",
+			},
+		}
+	}
+
+	if enableV2 {
+		internal.UseV2 = true
+	}
+
+	return internal
+}
+
+// Unmarshal keeps track of whether v2 configuration options were specified.
+func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
+	cfg.hasV2Settings = conf.IsSet("http") || conf.IsSet("grpc") || conf.IsSet("component_health")
+
+	type raw Config
+	return conf.Unmarshal((*raw)(cfg))
+}
+
+func convertResponseBody(body *ResponseBodySettings) *healthcheck.ResponseBodyConfig {
+	if body == nil {
+		return nil
+	}
+	return &healthcheck.ResponseBodyConfig{
+		Healthy:   body.Healthy,
+		Unhealthy: body.Unhealthy,
+	}
+}
+
+func cloneComponentHealth(cfg *healthcheck.ComponentHealthConfig) *healthcheck.ComponentHealthConfig {
+	if cfg == nil {
+		return nil
+	}
+	clone := *cfg
+	return &clone
+}
+
+func cloneGRPCConfig(cfg *healthcheck.GRPCConfig) *healthcheck.GRPCConfig {
+	if cfg == nil {
+		return nil
+	}
+	clone := *cfg
+	return &clone
+}
+
+func cloneHTTPConfig(cfg *healthcheck.HTTPConfig) *healthcheck.HTTPConfig {
+	if cfg == nil {
+		return nil
+	}
+	clone := *cfg
+	return &clone
 }
 
 type checkCollectorPipelineSettings struct {
