@@ -376,11 +376,11 @@ func TestHighVolume(t *testing.T) {
 	const totalMessagesPerRoutine = 1000
 
 	var wg sync.WaitGroup
-	for i := 0; i < totalRoutines; i++ {
+	for i := range totalRoutines {
 		wg.Add(1)
 		go func(num int) {
 			conn := connect()
-			for j := 0; j < totalMessagesPerRoutine; j++ {
+			for j := range totalMessagesPerRoutine {
 				eventBytes := makeSampleEvent(fmt.Sprintf("tag-%d-%d", num, j))
 				n, err := conn.Write(eventBytes)
 				assert.NoError(t, err)
