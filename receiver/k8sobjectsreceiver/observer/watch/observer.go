@@ -59,9 +59,11 @@ func (o *Observer) Start(ctx context.Context, wg *sync.WaitGroup) chan struct{} 
 	stopperChan := make(chan struct{})
 
 	if len(o.config.Namespaces) == 0 {
+		wg.Add(1)
 		go o.startWatch(ctx, resource, stopperChan, wg)
 	} else {
 		for _, ns := range o.config.Namespaces {
+			wg.Add(1)
 			go o.startWatch(ctx, resource.Namespace(ns), stopperChan, wg)
 		}
 	}

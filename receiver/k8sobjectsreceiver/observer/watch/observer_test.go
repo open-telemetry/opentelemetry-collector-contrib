@@ -5,21 +5,22 @@ package watch
 
 import (
 	"context"
+	"fmt"
+	k8s_testing "k8s.io/client-go/testing"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/observer"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/watch"
+	apiWatch "k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/dynamic/fake"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/observer"
 )
 
 func TestObserver(t *testing.T) {
@@ -41,16 +42,15 @@ func TestObserver(t *testing.T) {
 		},
 	}
 
-	receivedEventsChan := make(chan *watch.Event)
+	receivedEventsChan := make(chan *apiWatch.Event)
 
-	obs, err := New(mockClient, cfg, zap.NewNop(), func(event *watch.Event) {
+	obs, err := New(mockClient, cfg, zap.NewNop(), func(event *apiWatch.Event) {
 		receivedEventsChan <- event
 	})
 
 	require.NoError(t, err)
 
 	wg := sync.WaitGroup{}
-	wg.Add(1)
 
 	stopChan := obs.Start(t.Context(), &wg)
 
@@ -93,16 +93,15 @@ func TestObserverWithInitialState(t *testing.T) {
 		IncludeInitialState: true,
 	}
 
-	receivedEventsChan := make(chan *watch.Event)
+	receivedEventsChan := make(chan *apiWatch.Event)
 
-	obs, err := New(mockClient, cfg, zap.NewNop(), func(event *watch.Event) {
+	obs, err := New(mockClient, cfg, zap.NewNop(), func(event *apiWatch.Event) {
 		receivedEventsChan <- event
 	})
 
 	require.NoError(t, err)
 
 	wg := sync.WaitGroup{}
-	wg.Add(1)
 
 	stopChan := obs.Start(t.Context(), &wg)
 
@@ -124,21 +123,20 @@ func TestObserverExcludeDelete(t *testing.T) {
 			Namespaces: []string{"default"},
 		},
 		IncludeInitialState: true,
-		Exclude: map[watch.EventType]bool{
-			watch.Deleted: true,
+		Exclude: map[apiWatch.EventType]bool{
+			apiWatch.Deleted: true,
 		},
 	}
 
-	receivedEventsChan := make(chan *watch.Event)
+	receivedEventsChan := make(chan *apiWatch.Event)
 
-	obs, err := New(mockClient, cfg, zap.NewNop(), func(event *watch.Event) {
+	obs, err := New(mockClient, cfg, zap.NewNop(), func(event *apiWatch.Event) {
 		receivedEventsChan <- event
 	})
 
 	require.NoError(t, err)
 
 	wg := sync.WaitGroup{}
-	wg.Add(1)
 
 	stopChan := obs.Start(t.Context(), &wg)
 
@@ -157,7 +155,215 @@ func TestObserverExcludeDelete(t *testing.T) {
 	wg.Wait()
 }
 
-func verifyReceivedEvents(t *testing.T, numEvents int, receivedEventsChan chan *watch.Event, stopChan chan struct{}) {
+func TestObserverEmptyNamespaces(t *testing.T) {
+	mockClient := newMockDynamicClient()
+
+	cfg := Config{
+		Config: observer.Config{
+			Gvr: schema.GroupVersionResource{
+				Group:    "",
+				Version:  "v1",
+				Resource: "pods",
+			},
+			Namespaces: []string{}, // empty to watch all namespaces
+		},
+	}
+
+	receivedEventsChan := make(chan *apiWatch.Event)
+
+	obs, err := New(mockClient, cfg, zap.NewNop(), func(event *apiWatch.Event) {
+		receivedEventsChan <- event
+	})
+
+	require.NoError(t, err)
+
+	wg := sync.WaitGroup{}
+
+	stopChan := obs.Start(t.Context(), &wg)
+
+	time.Sleep(time.Millisecond * 100)
+
+	mockClient.createPods(
+		generatePod("pod1", "default", map[string]any{"env": "test"}, "1"),
+		generatePod("pod2", "other", map[string]any{"env": "prod"}, "2"),
+	)
+
+	verifyReceivedEvents(t, 2, receivedEventsChan, stopChan)
+
+	wg.Wait()
+}
+
+func TestObserverMultipleNamespaces(t *testing.T) {
+	mockClient := newMockDynamicClient()
+
+	cfg := Config{
+		Config: observer.Config{
+			Gvr: schema.GroupVersionResource{
+				Group:    "",
+				Version:  "v1",
+				Resource: "pods",
+			},
+			Namespaces: []string{"default", "other"},
+		},
+	}
+
+	receivedEventsChan := make(chan *apiWatch.Event)
+
+	obs, err := New(mockClient, cfg, zap.NewNop(), func(event *apiWatch.Event) {
+		receivedEventsChan <- event
+	})
+
+	require.NoError(t, err)
+
+	wg := sync.WaitGroup{}
+
+	stopChan := obs.Start(t.Context(), &wg)
+
+	time.Sleep(time.Millisecond * 100)
+
+	mockClient.createPods(
+		generatePod("pod1", "default", map[string]any{"env": "test"}, "1"),
+		generatePod("pod2", "other", map[string]any{"env": "prod"}, "2"),
+		generatePod("pod3", "ignored", map[string]any{"env": "dev"}, "3"),
+	)
+
+	verifyReceivedEvents(t, 2, receivedEventsChan, stopChan)
+
+	wg.Wait()
+}
+
+func TestObserverWithSelectors(t *testing.T) {
+	mockClient := newMockDynamicClient()
+
+	cfg := Config{
+		Config: observer.Config{
+			Gvr: schema.GroupVersionResource{
+				Group:    "",
+				Version:  "v1",
+				Resource: "pods",
+			},
+			Namespaces:      []string{"default"},
+			LabelSelector:   "environment=test",
+			FieldSelector:   "",
+			ResourceVersion: "",
+		},
+	}
+
+	receivedEventsChan := make(chan *apiWatch.Event)
+
+	obs, err := New(mockClient, cfg, zap.NewNop(), func(event *apiWatch.Event) {
+		receivedEventsChan <- event
+	})
+
+	require.NoError(t, err)
+
+	wg := sync.WaitGroup{}
+
+	stopChan := obs.Start(t.Context(), &wg)
+
+	time.Sleep(time.Millisecond * 100)
+
+	// Since fake client doesn't filter, it will return all, but the code path is covered
+	mockClient.createPods(
+		generatePod("pod1", "default", map[string]any{"environment": "test"}, "1"),
+		generatePod("pod2", "default", map[string]any{"environment": "prod"}, "2"),
+	)
+
+	verifyReceivedEvents(t, 2, receivedEventsChan, stopChan)
+
+	wg.Wait()
+}
+
+func TestObserverInitialStateError(t *testing.T) {
+	mockClient := newMockDynamicClient()
+
+	// Make list return error for initial state
+	mockClient.client.(*fake.FakeDynamicClient).PrependReactor("list", "pods", func(action k8s_testing.Action) (bool, runtime.Object, error) {
+		return true, nil, fmt.Errorf("mock list error")
+	})
+
+	cfg := Config{
+		Config: observer.Config{
+			Gvr: schema.GroupVersionResource{
+				Group:    "",
+				Version:  "v1",
+				Resource: "pods",
+			},
+			Namespaces: []string{"default"},
+		},
+		IncludeInitialState: true,
+	}
+
+	receivedEventsChan := make(chan *apiWatch.Event)
+
+	obs, err := New(mockClient, cfg, zap.NewNop(), func(event *apiWatch.Event) {
+		receivedEventsChan <- event
+	})
+
+	require.NoError(t, err)
+
+	wg := sync.WaitGroup{}
+
+	stopChan := obs.Start(t.Context(), &wg)
+
+	time.Sleep(time.Millisecond * 100)
+
+	// No events should be received due to error
+	select {
+	case <-receivedEventsChan:
+		t.Fatal("unexpected event received")
+	case <-time.After(100 * time.Millisecond):
+		// ok
+	}
+
+	close(stopChan)
+
+	wg.Wait()
+}
+
+func TestObserverInitialStateNoObjects(t *testing.T) {
+	mockClient := newMockDynamicClient()
+
+	cfg := Config{
+		Config: observer.Config{
+			Gvr: schema.GroupVersionResource{
+				Group:    "",
+				Version:  "v1",
+				Resource: "pods",
+			},
+			Namespaces: []string{"default"},
+		},
+		IncludeInitialState: true,
+	}
+
+	receivedEventsChan := make(chan *apiWatch.Event)
+
+	obs, err := New(mockClient, cfg, zap.NewNop(), func(event *apiWatch.Event) {
+		receivedEventsChan <- event
+	})
+
+	require.NoError(t, err)
+
+	wg := sync.WaitGroup{}
+
+	stopChan := obs.Start(t.Context(), &wg)
+
+	time.Sleep(time.Millisecond * 100)
+
+	// No events since no objects
+	select {
+	case <-receivedEventsChan:
+		t.Fatal("unexpected event received")
+	case <-time.After(100 * time.Millisecond):
+		// ok
+	}
+
+	close(stopChan)
+
+	wg.Wait()
+}
+
+func verifyReceivedEvents(t *testing.T, numEvents int, receivedEventsChan chan *apiWatch.Event, stopChan chan struct{}) {
 	receivedEvents := 0
 
 	exit := false
@@ -180,7 +386,7 @@ func verifyReceivedEvents(t *testing.T, numEvents int, receivedEventsChan chan *
 		}
 	}
 
-	stopChan <- struct{}{}
+	close(stopChan)
 }
 
 type mockDynamicClient struct {

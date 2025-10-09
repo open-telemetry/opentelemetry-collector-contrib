@@ -265,8 +265,6 @@ func (kr *k8sobjectsreceiver) start(ctx context.Context, object *K8sObjectsConfi
 		return err
 	}
 
-	kr.wg.Add(1)
-
 	stopChan := obs.Start(ctx, &kr.wg)
 	kr.stopperChanList = append(kr.stopperChanList, stopChan)
 
