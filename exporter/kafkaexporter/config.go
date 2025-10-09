@@ -4,6 +4,8 @@
 package kafkaexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
 
 import (
+	"fmt"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap"
@@ -79,6 +81,13 @@ type Config struct {
 	// selection falls back to the Kafka client’s default strategy. Resource
 	// attributes are not used for the key when this option is enabled.
 	PartitionLogsByTraceID bool `mapstructure:"partition_logs_by_trace_id"`
+}
+
+func (c *Config) Validate() (err error) {
+	if c.PartitionLogsByResourceAttributes && c.PartitionLogsByTraceID {
+		return fmt.Errorf("partition_logs_by_resource_attributes and partition_logs_by_trace_id cannot both be enabled")
+	}
+	return err
 }
 
 func (c *Config) Unmarshal(conf *confmap.Conf) error {
