@@ -25,9 +25,7 @@ func TestPushMetricData(t *testing.T) {
 	config := createDefaultConfig().(*Config)
 	config.Endpoint = fmt.Sprintf("http://127.0.0.1:%d", port)
 	config.CreateSchema = false
-
-	err = config.Validate()
-	require.NoError(t, err)
+	require.NoError(t, config.Validate())
 
 	exporter := newMetricsExporter(zap.NewNop(), config, componenttest.NewNopTelemetrySettings())
 
@@ -43,22 +41,26 @@ func TestPushMetricData(t *testing.T) {
 		_ = exporter.shutdown(ctx)
 	}()
 
+	mux := http.NewServeMux()
+	metrics := []string{"gauge", "sum", "histogram", "exponential_histogram", "summary"}
+	for _, metric := range metrics {
+		url := fmt.Sprintf("/api/otel/otel_metrics_%s/_stream_load", metric)
+		mux.HandleFunc(url, func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{"Status":"Success"}`))
+		})
+	}
+
 	server := &http.Server{
 		ReadTimeout: 3 * time.Second,
 		Addr:        fmt.Sprintf(":%d", port),
+		Handler:     mux,
 	}
 
+	// Run server
+	serverErr := make(chan error, 1)
 	go func() {
-		metrics := []string{"gauge", "sum", "histogram", "exponential_histogram", "summary"}
-		for _, metric := range metrics {
-			url := fmt.Sprintf("/api/otel/otel_metrics_%s/_stream_load", metric)
-			http.HandleFunc(url, func(w http.ResponseWriter, _ *http.Request) {
-				w.WriteHeader(http.StatusOK)
-				_, _ = w.Write([]byte(`{"Status":"Success"}`))
-			})
-		}
-		err = server.ListenAndServe()
-		assert.Equal(t, http.ErrServerClosed, err)
+		serverErr <- server.ListenAndServe()
 	}()
 
 	err0 := errors.New("Not Started")
@@ -75,6 +77,8 @@ func TestPushMetricData(t *testing.T) {
 	require.NoError(t, err0)
 
 	_ = server.Shutdown(ctx)
+	err = <-serverErr
+	assert.True(t, err == nil || errors.Is(err, http.ErrServerClosed), "unexpected server error: %v", err)
 }
 
 func simpleMetrics(count int, typeSet map[pmetric.MetricType]struct{}) pmetric.Metrics {

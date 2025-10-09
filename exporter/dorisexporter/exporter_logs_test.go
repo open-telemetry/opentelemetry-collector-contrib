@@ -41,7 +41,9 @@ func TestPushLogData(t *testing.T) {
 
 	exporter.client = client
 
-	defer func() { _ = exporter.shutdown(ctx) }()
+	defer func() {
+		_ = exporter.shutdown(ctx)
+	}()
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/otel/otel_logs/_stream_load", func(w http.ResponseWriter, _ *http.Request) {
