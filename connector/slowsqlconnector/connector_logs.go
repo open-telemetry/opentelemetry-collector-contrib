@@ -41,7 +41,7 @@ func newLogsConnector(logger *zap.Logger, config component.Config) *logsConnecto
 }
 
 // Capabilities implements the consumer interface.
-func (c *logsConnector) Capabilities() consumer.Capabilities {
+func (_ *logsConnector) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
@@ -66,8 +66,7 @@ func (c *logsConnector) ConsumeTraces(ctx context.Context, traces ptrace.Traces)
 			spans := ils.Spans()
 			for k := 0; k < spans.Len(); k++ {
 				span := spans.At(k)
-				switch span.Kind() {
-				case ptrace.SpanKindClient:
+				if span.Kind() == ptrace.SpanKindClient {
 					// through db.Statement exists represents db client
 					if _, dbSystem := findAttributeValue(dbSystemKey, span.Attributes()); dbSystem {
 						for _, db := range c.config.DBSystem {
@@ -96,7 +95,7 @@ func (c *logsConnector) exportLogs(ctx context.Context, ld plog.Logs) error {
 	return nil
 }
 
-func (c *logsConnector) newScopeLogs(ld plog.Logs) plog.ScopeLogs {
+func (_ *logsConnector) newScopeLogs(ld plog.Logs) plog.ScopeLogs {
 	rl := ld.ResourceLogs().AppendEmpty()
 	sl := rl.ScopeLogs().AppendEmpty()
 	return sl

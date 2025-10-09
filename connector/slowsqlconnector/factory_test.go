@@ -6,12 +6,12 @@ package slowsqlconnector
 import (
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/slowsqlconnector/internal/metadata"
-
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/slowsqlconnector/internal/metadata"
 )
 
 func TestNewConnector(t *testing.T) {
