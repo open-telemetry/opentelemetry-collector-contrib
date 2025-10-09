@@ -29,6 +29,11 @@ const (
 	defaultServiceName                      = "foo"
 	defaultServiceNamespace                 = "ns1"
 	defaultServiceInstance                  = "112345"
+	defaultServiceVersion                   = "1.0"
+	defaultOSName                           = "Linux"
+	defaultOSVersion                        = "1.0"
+	defaultDeviceManufacturer               = "Initech"
+	defaultDeviceModelIdentifier            = "Machine"
 	defaultScopeName                        = "myinstrumentationlib"
 	defaultScopeVersion                     = "1.0"
 	defaultHTTPMethod                       = http.MethodGet
@@ -523,6 +528,11 @@ func TestSpanWithEventsToEnvelopes(t *testing.T) {
 		assert.Equal(t, defaultSpanIDAsHex, envelope.Tags[contracts.OperationParentId])
 		assert.Equal(t, defaultServiceNamespace+"."+defaultServiceName, envelope.Tags[contracts.CloudRole])
 		assert.Equal(t, defaultServiceInstance, envelope.Tags[contracts.CloudRoleInstance])
+		assert.Equal(t, defaultServiceVersion, envelope.Tags[contracts.ApplicationVersion])
+		assert.Equal(t, defaultDeviceManufacturer, envelope.Tags[contracts.DeviceModel])
+		assert.Equal(t, defaultDeviceModelIdentifier, envelope.Tags[contracts.DeviceType])
+		assert.Equal(t, defaultOSName+" "+defaultOSVersion, envelope.Tags[contracts.DeviceOSVersion])
+		assert.Contains(t, envelope.Tags[contracts.InternalSdkVersion], "otelc-")
 		assert.NotNil(t, envelope.Data)
 	}
 
@@ -623,6 +633,10 @@ func commonEnvelopeValidations(
 	assert.Equal(t, defaultParentSpanIDAsHex, envelope.Tags[contracts.OperationParentId])
 	assert.Equal(t, defaultServiceNamespace+"."+defaultServiceName, envelope.Tags[contracts.CloudRole])
 	assert.Equal(t, defaultServiceInstance, envelope.Tags[contracts.CloudRoleInstance])
+	assert.Equal(t, defaultServiceVersion, envelope.Tags[contracts.ApplicationVersion])
+	assert.Equal(t, defaultDeviceManufacturer, envelope.Tags[contracts.DeviceModel])
+	assert.Equal(t, defaultDeviceModelIdentifier, envelope.Tags[contracts.DeviceType])
+	assert.Equal(t, defaultOSName+" "+defaultOSVersion, envelope.Tags[contracts.DeviceOSVersion])
 	assert.Contains(t, envelope.Tags[contracts.InternalSdkVersion], "otelc-")
 	assert.NotNil(t, envelope.Data)
 
@@ -893,6 +907,11 @@ func getResource() pcommon.Resource {
 	r.Attributes().PutStr(string(conventions.ServiceNameKey), defaultServiceName)
 	r.Attributes().PutStr(string(conventions.ServiceNamespaceKey), defaultServiceNamespace)
 	r.Attributes().PutStr(string(conventions.ServiceInstanceIDKey), defaultServiceInstance)
+	r.Attributes().PutStr(string(conventions.ServiceVersionKey), defaultServiceVersion)
+	r.Attributes().PutStr(string(conventions.DeviceManufacturerKey), defaultDeviceManufacturer)
+	r.Attributes().PutStr(string(conventions.DeviceModelIdentifierKey), defaultDeviceModelIdentifier)
+	r.Attributes().PutStr(string(conventions.OSNameKey), defaultOSName)
+	r.Attributes().PutStr(string(conventions.OSVersionKey), defaultOSVersion)
 	return r
 }
 
