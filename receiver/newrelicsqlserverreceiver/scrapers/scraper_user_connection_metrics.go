@@ -221,10 +221,20 @@ func (s *UserConnectionScraper) processLoginLogoutMetrics(result models.LoginLog
 		dataPoint.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 		dataPoint.SetIntValue(*result.CntrValue)
 
-		// Add attributes to identify the counter type
+		// Add attributes to identify the counter type and user information
 		attrs := dataPoint.Attributes()
 		attrs.PutStr("counter_name", result.CounterName)
 		attrs.PutStr("source_type", "user_connections")
+
+		// Add username if available
+		if result.Username != nil {
+			attrs.PutStr("username", *result.Username)
+		}
+
+		// Add source IP if available
+		if result.SourceIP != nil {
+			attrs.PutStr("source_ip", *result.SourceIP)
+		}
 	}
 
 	return nil
@@ -233,6 +243,17 @@ func (s *UserConnectionScraper) processLoginLogoutMetrics(result models.LoginLog
 // processLoginLogoutSummaryMetrics processes login/logout summary metrics and creates OpenTelemetry metrics
 func (s *UserConnectionScraper) processLoginLogoutSummaryMetrics(result models.LoginLogoutSummary, scopeMetrics pmetric.ScopeMetrics) error {
 	timestamp := pcommon.NewTimestampFromTime(time.Now())
+
+	// Helper function to add common attributes
+	addCommonAttributes := func(attrs pcommon.Map) {
+		attrs.PutStr("source_type", "user_connections")
+		if result.Username != nil {
+			attrs.PutStr("username", *result.Username)
+		}
+		if result.SourceIP != nil {
+			attrs.PutStr("source_ip", *result.SourceIP)
+		}
+	}
 
 	// Process LoginsPerSec
 	if result.LoginsPerSec != nil && *result.LoginsPerSec > 0 {
@@ -247,7 +268,7 @@ func (s *UserConnectionScraper) processLoginLogoutSummaryMetrics(result models.L
 		dataPoint.SetIntValue(*result.LoginsPerSec)
 
 		attrs := dataPoint.Attributes()
-		attrs.PutStr("source_type", "user_connections")
+		addCommonAttributes(attrs)
 	}
 
 	// Process LogoutsPerSec
@@ -263,7 +284,7 @@ func (s *UserConnectionScraper) processLoginLogoutSummaryMetrics(result models.L
 		dataPoint.SetIntValue(*result.LogoutsPerSec)
 
 		attrs := dataPoint.Attributes()
-		attrs.PutStr("source_type", "user_connections")
+		addCommonAttributes(attrs)
 	}
 
 	// Process TotalAuthActivity
@@ -279,7 +300,7 @@ func (s *UserConnectionScraper) processLoginLogoutSummaryMetrics(result models.L
 		dataPoint.SetIntValue(*result.TotalAuthActivity)
 
 		attrs := dataPoint.Attributes()
-		attrs.PutStr("source_type", "user_connections")
+		addCommonAttributes(attrs)
 	}
 
 	// Process ConnectionChurnRate
@@ -295,7 +316,7 @@ func (s *UserConnectionScraper) processLoginLogoutSummaryMetrics(result models.L
 		dataPoint.SetDoubleValue(*result.ConnectionChurnRate)
 
 		attrs := dataPoint.Attributes()
-		attrs.PutStr("source_type", "user_connections")
+		addCommonAttributes(attrs)
 	}
 
 	return nil
@@ -401,6 +422,14 @@ func (s *UserConnectionScraper) processFailedLoginMetrics(result models.FailedLo
 	// Add attributes with failed login details
 	attrs := dataPoint.Attributes()
 	attrs.PutStr("source_type", "user_connections")
+
+	// Add extracted username and source IP if available
+	if result.Username != nil {
+		attrs.PutStr("username", *result.Username)
+	}
+	if result.SourceIP != nil {
+		attrs.PutStr("source_ip", *result.SourceIP)
+	}
 
 	// Handle different query formats based on engine edition
 	if s.engineEdition == queries.AzureSQLDatabaseEngineEdition {
@@ -935,6 +964,17 @@ func (s *UserConnectionScraper) processUserConnectionClientSummaryMetrics(result
 func (s *UserConnectionScraper) processFailedLoginSummaryMetrics(result models.FailedLoginSummary, scopeMetrics pmetric.ScopeMetrics) error {
 	s.logger.Debug("Processing failed login summary metrics")
 
+	// Helper function to add common attributes
+	addCommonAttributes := func(attrs pcommon.Map) {
+		attrs.PutStr("source_type", "user_connections")
+		if result.Username != nil {
+			attrs.PutStr("username", *result.Username)
+		}
+		if result.SourceIP != nil {
+			attrs.PutStr("source_ip", *result.SourceIP)
+		}
+	}
+
 	// Process total failed logins
 	if result.TotalFailedLogins != nil {
 		metric := scopeMetrics.Metrics().AppendEmpty()
@@ -947,7 +987,7 @@ func (s *UserConnectionScraper) processFailedLoginSummaryMetrics(result models.F
 		dataPoint.SetIntValue(*result.TotalFailedLogins)
 
 		attrs := dataPoint.Attributes()
-		attrs.PutStr("source_type", "user_connections")
+		addCommonAttributes(attrs)
 	}
 
 	// Process recent failed logins
@@ -962,7 +1002,7 @@ func (s *UserConnectionScraper) processFailedLoginSummaryMetrics(result models.F
 		dataPoint.SetIntValue(*result.RecentFailedLogins)
 
 		attrs := dataPoint.Attributes()
-		attrs.PutStr("source_type", "user_connections")
+		addCommonAttributes(attrs)
 	}
 
 	// Process unique failed users
@@ -977,7 +1017,7 @@ func (s *UserConnectionScraper) processFailedLoginSummaryMetrics(result models.F
 		dataPoint.SetIntValue(*result.UniqueFailedUsers)
 
 		attrs := dataPoint.Attributes()
-		attrs.PutStr("source_type", "user_connections")
+		addCommonAttributes(attrs)
 	}
 
 	// Process unique failed sources
@@ -992,7 +1032,7 @@ func (s *UserConnectionScraper) processFailedLoginSummaryMetrics(result models.F
 		dataPoint.SetIntValue(*result.UniqueFailedSources)
 
 		attrs := dataPoint.Attributes()
-		attrs.PutStr("source_type", "user_connections")
+		addCommonAttributes(attrs)
 	}
 
 	return nil

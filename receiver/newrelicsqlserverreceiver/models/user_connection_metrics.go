@@ -176,6 +176,14 @@ type LoginLogoutMetrics struct {
 	// CntrValue is the current counter value representing rate per second
 	// This shows the current authentication activity rate
 	CntrValue *int64 `db:"cntr_value" metric_name:"sqlserver.user_connections.authentication.rate" source_type:"gauge"`
+
+	// Username represents the user performing login/logout activity
+	// Extracted from session information for user-specific tracking
+	Username *string `db:"username" source_type:"attribute"`
+
+	// SourceIP represents the client IP address for the login/logout activity
+	// Extracted from session host information for location tracking
+	SourceIP *string `db:"source_ip" source_type:"attribute"`
 }
 
 // LoginLogoutSummary represents aggregated login/logout statistics
@@ -196,6 +204,14 @@ type LoginLogoutSummary struct {
 	// ConnectionChurnRate is the logout/login ratio as percentage
 	// High values indicate excessive connection turnover
 	ConnectionChurnRate *float64 `db:"connection_churn_rate" metric_name:"sqlserver.user_connections.authentication.churn_rate" source_type:"gauge"`
+
+	// Username represents the user for grouped authentication statistics
+	// Allows for per-user authentication analysis
+	Username *string `db:"username" source_type:"attribute"`
+
+	// SourceIP represents the client IP address for grouped statistics
+	// Allows for per-IP authentication analysis
+	SourceIP *string `db:"source_ip" source_type:"attribute"`
 }
 
 // FailedLoginMetrics represents failed login attempts from SQL Server error log or event log
@@ -222,6 +238,14 @@ type FailedLoginMetrics struct {
 
 	// ClientIP contains the client IP address from sys.event_log (for Azure SQL Database)
 	ClientIP *string `db:"client_ip" source_type:"attribute"`
+
+	// Username extracted from failed login attempts for user-specific tracking
+	// Parsed from Text field for standard SQL Server or available directly for Azure
+	Username *string `db:"username" source_type:"attribute"`
+
+	// SourceIP extracted from failed login attempts for location tracking
+	// Parsed from Text field for standard SQL Server or ClientIP for Azure
+	SourceIP *string `db:"source_ip" source_type:"attribute"`
 }
 
 // FailedLoginSummary represents aggregated failed login statistics
@@ -238,4 +262,12 @@ type FailedLoginSummary struct {
 
 	// UniqueFailedSources is the count of distinct source IPs with failed logins
 	UniqueFailedSources *int64 `db:"unique_failed_sources" metric_name:"sqlserver.user_connections.authentication.unique_failed_sources" source_type:"gauge"`
+
+	// Username for per-user failed login aggregation
+	// Enables grouping of failed login metrics by specific user
+	Username *string `db:"username" source_type:"attribute"`
+
+	// SourceIP for per-IP failed login aggregation
+	// Enables grouping of failed login metrics by source location
+	SourceIP *string `db:"source_ip" source_type:"attribute"`
 }

@@ -364,49 +364,105 @@ SELECT
     (SELECT COUNT(*) FROM HostStats WHERE programs_per_host > 1) AS hosts_with_multiple_programs,
     (SELECT COUNT(*) FROM ProgramStats WHERE hosts_per_program > 1) AS programs_from_multiple_hosts`
 
-// LoginLogoutQuery returns the SQL query for login and logout rate metrics
-// This query retrieves authentication activity counters from performance counters
+// LoginLogoutQuery returns the SQL query for login and logout rate metrics with user details
+// This query retrieves authentication activity with username and source IP information
 //
 // The query returns:
 // - counter_name: Name of the performance counter (Logins/sec, Logouts/sec)
 // - cntr_value: Current counter value representing rate per second
+// - username: Username from active sessions for context
+// - source_ip: Client IP address from session host information
 //
 // These metrics are useful for:
-// - Monitoring authentication activity and connection patterns
-// - Detecting abnormal login/logout spikes that may indicate issues
-// - Understanding connection churn and application behavior
-// - Identifying potential security events or authentication problems
-const LoginLogoutQuery = `SELECT
-    RTRIM(counter_name) AS counter_name,
-    cntr_value
-FROM sys.dm_os_performance_counters WITH (NOLOCK)
-WHERE object_name LIKE '%General Statistics%'
-    AND counter_name IN ('Logins/sec', 'Logouts/sec')`
+// - Monitoring authentication activity and connection patterns per user
+// - Detecting abnormal login/logout spikes for specific users or IPs
+// - Understanding connection churn by user and location
+// - Identifying potential security events or authentication problems by source
+const LoginLogoutQuery = `WITH auth_counters AS (
+    SELECT
+        RTRIM(counter_name) AS counter_name,
+        cntr_value
+    FROM sys.dm_os_performance_counters WITH (NOLOCK)
+    WHERE object_name LIKE '%General Statistics%'
+        AND counter_name IN ('Logins/sec', 'Logouts/sec')
+),
+user_sessions AS (
+    SELECT DISTINCT
+        ISNULL(login_name, 'unknown') AS username,
+        ISNULL(host_name, 'unknown') AS source_ip
+    FROM sys.dm_exec_sessions WITH (NOLOCK)
+    WHERE is_user_process = 1
+        AND session_id != @@SPID
+)
+SELECT 
+    ac.counter_name,
+    ac.cntr_value,
+    us.username,
+    us.source_ip
+FROM auth_counters ac
+CROSS JOIN user_sessions us`
 
-// LoginLogoutQueryAzureSQL returns the same query for Azure SQL Database
-const LoginLogoutQueryAzureSQL = `SELECT
-    RTRIM(counter_name) AS counter_name,
-    cntr_value
-FROM sys.dm_os_performance_counters
-WHERE object_name LIKE '%General Statistics%'
-    AND counter_name IN ('Logins/sec', 'Logouts/sec')`
+// LoginLogoutQueryAzureSQL returns the same query for Azure SQL Database with user details
+const LoginLogoutQueryAzureSQL = `WITH auth_counters AS (
+    SELECT
+        RTRIM(counter_name) AS counter_name,
+        cntr_value
+    FROM sys.dm_os_performance_counters
+    WHERE object_name LIKE '%General Statistics%'
+        AND counter_name IN ('Logins/sec', 'Logouts/sec')
+),
+user_sessions AS (
+    SELECT DISTINCT
+        ISNULL(login_name, 'unknown') AS username,
+        ISNULL(host_name, 'unknown') AS source_ip
+    FROM sys.dm_exec_sessions
+    WHERE is_user_process = 1
+        AND session_id != @@SPID
+)
+SELECT 
+    ac.counter_name,
+    ac.cntr_value,
+    us.username,
+    us.source_ip
+FROM auth_counters ac
+CROSS JOIN user_sessions us`
 
-// LoginLogoutQueryAzureMI returns the same query for Azure SQL Managed Instance
-const LoginLogoutQueryAzureMI = `SELECT
-    RTRIM(counter_name) AS counter_name,
-    cntr_value
-FROM sys.dm_os_performance_counters WITH (NOLOCK)
-WHERE object_name LIKE '%General Statistics%'
-    AND counter_name IN ('Logins/sec', 'Logouts/sec')`
+// LoginLogoutQueryAzureMI returns the same query for Azure SQL Managed Instance with user details
+const LoginLogoutQueryAzureMI = `WITH auth_counters AS (
+    SELECT
+        RTRIM(counter_name) AS counter_name,
+        cntr_value
+    FROM sys.dm_os_performance_counters WITH (NOLOCK)
+    WHERE object_name LIKE '%General Statistics%'
+        AND counter_name IN ('Logins/sec', 'Logouts/sec')
+),
+user_sessions AS (
+    SELECT DISTINCT
+        ISNULL(login_name, 'unknown') AS username,
+        ISNULL(host_name, 'unknown') AS source_ip
+    FROM sys.dm_exec_sessions WITH (NOLOCK)
+    WHERE is_user_process = 1
+        AND session_id != @@SPID
+)
+SELECT 
+    ac.counter_name,
+    ac.cntr_value,
+    us.username,
+    us.source_ip
+FROM auth_counters ac
+CROSS JOIN user_sessions us`
 
-// LoginLogoutSummaryQuery returns aggregated login/logout statistics
-// This query provides summary metrics for authentication activity analysis
+// LoginLogoutSummaryQuery returns aggregated login/logout statistics with user grouping
+// This query provides summary metrics for authentication activity analysis per user/host
 //
 // The query returns:
 // - logins_per_sec: Current login rate per second
 // - logouts_per_sec: Current logout rate per second
 // - total_auth_activity: Sum of logins and logouts per second
 // - connection_churn_rate: Percentage of connections that are being churned
+// - username: Username for grouping statistics
+// - source_ip: Source IP for grouping statistics
+// - host_name: Host name for grouping statistics
 const LoginLogoutSummaryQuery = `WITH AuthStats AS (
     SELECT
         CASE WHEN counter_name = 'Logins/sec' THEN cntr_value ELSE 0 END AS logins_per_sec,
@@ -414,6 +470,15 @@ const LoginLogoutSummaryQuery = `WITH AuthStats AS (
     FROM sys.dm_os_performance_counters WITH (NOLOCK)
     WHERE object_name LIKE '%General Statistics%'
         AND counter_name IN ('Logins/sec', 'Logouts/sec')
+),
+user_sessions AS (
+    SELECT DISTINCT
+        ISNULL(login_name, 'unknown') AS username,
+        ISNULL(host_name, 'unknown') AS source_ip,
+        ISNULL(host_name, 'unknown') AS host_name
+    FROM sys.dm_exec_sessions WITH (NOLOCK)
+    WHERE is_user_process = 1
+        AND session_id != @@SPID
 )
 SELECT 
     MAX(logins_per_sec) AS logins_per_sec,
@@ -423,10 +488,14 @@ SELECT
         WHEN MAX(logins_per_sec) > 0 
         THEN (MAX(logouts_per_sec) * 100.0) / MAX(logins_per_sec)
         ELSE 0 
-    END AS connection_churn_rate
-FROM AuthStats`
+    END AS connection_churn_rate,
+    us.username,
+    us.source_ip
+FROM AuthStats
+CROSS JOIN user_sessions us
+GROUP BY us.username, us.source_ip`
 
-// LoginLogoutSummaryQueryAzureSQL returns the summary query for Azure SQL Database
+// LoginLogoutSummaryQueryAzureSQL returns the summary query for Azure SQL Database with user grouping
 const LoginLogoutSummaryQueryAzureSQL = `WITH AuthStats AS (
     SELECT
         CASE WHEN counter_name = 'Logins/sec' THEN cntr_value ELSE 0 END AS logins_per_sec,
@@ -434,6 +503,14 @@ const LoginLogoutSummaryQueryAzureSQL = `WITH AuthStats AS (
     FROM sys.dm_os_performance_counters
     WHERE object_name LIKE '%General Statistics%'
         AND counter_name IN ('Logins/sec', 'Logouts/sec')
+),
+user_sessions AS (
+    SELECT DISTINCT
+        ISNULL(login_name, 'unknown') AS username,
+        ISNULL(host_name, 'unknown') AS source_ip
+    FROM sys.dm_exec_sessions
+    WHERE is_user_process = 1
+        AND session_id != @@SPID
 )
 SELECT 
     MAX(logins_per_sec) AS logins_per_sec,
@@ -443,10 +520,14 @@ SELECT
         WHEN MAX(logins_per_sec) > 0 
         THEN (MAX(logouts_per_sec) * 100.0) / MAX(logins_per_sec)
         ELSE 0 
-    END AS connection_churn_rate
-FROM AuthStats`
+    END AS connection_churn_rate,
+    us.username,
+    us.source_ip
+FROM AuthStats
+CROSS JOIN user_sessions us
+GROUP BY us.username, us.source_ip`
 
-// LoginLogoutSummaryQueryAzureMI returns the summary query for Azure SQL Managed Instance
+// LoginLogoutSummaryQueryAzureMI returns the summary query for Azure SQL Managed Instance with user grouping
 const LoginLogoutSummaryQueryAzureMI = `WITH AuthStats AS (
     SELECT
         CASE WHEN counter_name = 'Logins/sec' THEN cntr_value ELSE 0 END AS logins_per_sec,
@@ -454,6 +535,14 @@ const LoginLogoutSummaryQueryAzureMI = `WITH AuthStats AS (
     FROM sys.dm_os_performance_counters WITH (NOLOCK)
     WHERE object_name LIKE '%General Statistics%'
         AND counter_name IN ('Logins/sec', 'Logouts/sec')
+),
+user_sessions AS (
+    SELECT DISTINCT
+        ISNULL(login_name, 'unknown') AS username,
+        ISNULL(host_name, 'unknown') AS source_ip
+    FROM sys.dm_exec_sessions WITH (NOLOCK)
+    WHERE is_user_process = 1
+        AND session_id != @@SPID
 )
 SELECT 
     MAX(logins_per_sec) AS logins_per_sec,
@@ -463,21 +552,58 @@ SELECT
         WHEN MAX(logins_per_sec) > 0 
         THEN (MAX(logouts_per_sec) * 100.0) / MAX(logins_per_sec)
         ELSE 0 
-    END AS connection_churn_rate
-FROM AuthStats`
+    END AS connection_churn_rate,
+    us.username,
+    us.source_ip
+FROM AuthStats
+CROSS JOIN user_sessions us
+GROUP BY us.username, us.source_ip`
 
-// FailedLoginQuery returns the SQL query for failed login attempts from error log
-// This query reads the SQL Server Error Log and filters for "Login failed" messages
-// which is critical for security and connectivity troubleshooting
-const FailedLoginQuery = `EXEC sp_readerrorlog 0, 1, 'Login failed'`
+// FailedLoginQuery returns the SQL query for failed login attempts from error log with user extraction
+// This query reads the SQL Server Error Log and extracts username and source IP from failed login messages
+const FailedLoginQuery = `
+DECLARE @FailedLogins TABLE (
+    LogDate DATETIME,
+    ProcessInfo NVARCHAR(100),
+    Text NVARCHAR(MAX)
+);
 
-// FailedLoginQueryAzureSQL returns the failed login query for Azure SQL Database
+INSERT INTO @FailedLogins (LogDate, ProcessInfo, Text)
+EXEC sp_readerrorlog 0, 1, 'Login failed';
+
+SELECT 
+    LogDate,
+    ProcessInfo,
+    Text,
+    -- Extract username from the failed login message
+    CASE 
+        WHEN Text LIKE '%for user ''%''%' THEN 
+            SUBSTRING(Text, CHARINDEX('for user ''', Text) + 10, 
+                      CHARINDEX('''', Text, CHARINDEX('for user ''', Text) + 10) - CHARINDEX('for user ''', Text) - 10)
+        ELSE 'unknown'
+    END AS username,
+    -- Extract source IP from the failed login message  
+    CASE 
+        WHEN Text LIKE '%Client: %' THEN 
+            RTRIM(LTRIM(SUBSTRING(Text, CHARINDEX('Client: ', Text) + 8, 50)))
+        WHEN Text LIKE '%[CLIENT: %]%' THEN 
+            SUBSTRING(Text, CHARINDEX('[CLIENT: ', Text) + 9, 
+                      CHARINDEX(']', Text, CHARINDEX('[CLIENT: ', Text)) - CHARINDEX('[CLIENT: ', Text) - 9)
+        ELSE 'unknown'
+    END AS source_ip
+FROM @FailedLogins`
+
+// FailedLoginQueryAzureSQL returns the failed login query for Azure SQL Database with user extraction
 // Azure SQL Database uses sys.event_log to track connection failures and authentication events
 const FailedLoginQueryAzureSQL = `SELECT
     event_type,
     event_subtype_desc AS description,
     start_time,
-    JSON_VALUE(CAST(additional_data AS NVARCHAR(MAX)), '$.client_ip') AS client_ip
+    JSON_VALUE(CAST(additional_data AS NVARCHAR(MAX)), '$.client_ip') AS client_ip,
+    -- Extract username from additional_data if available
+    ISNULL(JSON_VALUE(CAST(additional_data AS NVARCHAR(MAX)), '$.user_name'), 'unknown') AS username,
+    -- Use client_ip as source_ip for consistency
+    ISNULL(JSON_VALUE(CAST(additional_data AS NVARCHAR(MAX)), '$.client_ip'), 'unknown') AS source_ip
 FROM
     sys.event_log
 WHERE
@@ -486,11 +612,41 @@ WHERE
 ORDER BY
     start_time DESC`
 
-// FailedLoginQueryAzureMI returns the failed login query for Azure SQL Managed Instance
-const FailedLoginQueryAzureMI = `EXEC sp_readerrorlog 0, 1, 'Login failed'`
+// FailedLoginQueryAzureMI returns the failed login query for Azure SQL Managed Instance with user extraction
+const FailedLoginQueryAzureMI = `
+DECLARE @FailedLogins TABLE (
+    LogDate DATETIME,
+    ProcessInfo NVARCHAR(100),
+    Text NVARCHAR(MAX)
+);
 
-// FailedLoginSummaryQuery returns aggregated statistics about failed login attempts
-// This query analyzes the SQL Server error log for failed login patterns and statistics
+INSERT INTO @FailedLogins (LogDate, ProcessInfo, Text)
+EXEC sp_readerrorlog 0, 1, 'Login failed';
+
+SELECT 
+    LogDate,
+    ProcessInfo,
+    Text,
+    -- Extract username from the failed login message
+    CASE 
+        WHEN Text LIKE '%for user ''%''%' THEN 
+            SUBSTRING(Text, CHARINDEX('for user ''', Text) + 10, 
+                      CHARINDEX('''', Text, CHARINDEX('for user ''', Text) + 10) - CHARINDEX('for user ''', Text) - 10)
+        ELSE 'unknown'
+    END AS username,
+    -- Extract source IP from the failed login message  
+    CASE 
+        WHEN Text LIKE '%Client: %' THEN 
+            RTRIM(LTRIM(SUBSTRING(Text, CHARINDEX('Client: ', Text) + 8, 50)))
+        WHEN Text LIKE '%[CLIENT: %]%' THEN 
+            SUBSTRING(Text, CHARINDEX('[CLIENT: ', Text) + 9, 
+                      CHARINDEX(']', Text, CHARINDEX('[CLIENT: ', Text)) - CHARINDEX('[CLIENT: ', Text) - 9)
+        ELSE 'unknown'
+    END AS source_ip
+FROM @FailedLogins`
+
+// FailedLoginSummaryQuery returns aggregated statistics about failed login attempts with user grouping
+// This query analyzes the SQL Server error log for failed login patterns and statistics grouped by user/IP
 const FailedLoginSummaryQuery = `
 DECLARE @FailedLogins TABLE (
     LogDate DATETIME,
@@ -511,40 +667,57 @@ WITH FilteredLogins AS (
     SELECT
         LogDate,
         -- Parse the username from the log text
-        LTRIM(RTRIM(SUBSTRING(
-            Text,
-            CHARINDEX('user ''', Text) + 6,
-            CHARINDEX('''', Text, CHARINDEX('user ''', Text) + 6) - (CHARINDEX('user ''', Text) + 6)
-        ))) AS failed_user,
+        CASE 
+            WHEN Text LIKE '%for user ''%''%' THEN 
+                SUBSTRING(Text, CHARINDEX('for user ''', Text) + 10, 
+                          CHARINDEX('''', Text, CHARINDEX('for user ''', Text) + 10) - CHARINDEX('for user ''', Text) - 10)
+            ELSE 'unknown'
+        END AS failed_user,
         -- Parse the client IP address from the log text
-        LTRIM(RTRIM(SUBSTRING(
-            Text,
-            CHARINDEX('[CLIENT: ', Text) + 9,
-            CHARINDEX(']', Text, CHARINDEX('[CLIENT: ', Text)) - (CHARINDEX('[CLIENT: ', Text) + 9)
-        ))) AS source_ip
+        CASE 
+            WHEN Text LIKE '%Client: %' THEN 
+                RTRIM(LTRIM(SUBSTRING(Text, CHARINDEX('Client: ', Text) + 8, 50)))
+            WHEN Text LIKE '%[CLIENT: %]%' THEN 
+                SUBSTRING(Text, CHARINDEX('[CLIENT: ', Text) + 9, 
+                          CHARINDEX(']', Text, CHARINDEX('[CLIENT: ', Text)) - CHARINDEX('[CLIENT: ', Text) - 9)
+            ELSE 'unknown'
+        END AS source_ip
     FROM @FailedLogins
     WHERE Text LIKE '%Login failed for user%' -- Ensure we only process relevant rows
 )
--- Aggregate the final metrics
+-- Aggregate the final metrics grouped by user and source IP
 SELECT
     COUNT(*) AS total_failed_logins,
     SUM(CASE WHEN LogDate >= DATEADD(HOUR, -1, GETDATE()) THEN 1 ELSE 0 END) AS recent_failed_logins,
     COUNT(DISTINCT failed_user) AS unique_failed_users,
-    COUNT(DISTINCT source_ip) AS unique_failed_sources
-FROM FilteredLogins`
+    COUNT(DISTINCT source_ip) AS unique_failed_sources,
+    failed_user AS username,
+    source_ip
+FROM FilteredLogins
+GROUP BY failed_user, source_ip`
 
-// FailedLoginSummaryQueryAzureSQL returns summary statistics for Azure SQL Database using sys.event_log
-// This query aggregates connection failure events from the event log for monitoring purposes
-const FailedLoginSummaryQueryAzureSQL = `SELECT 
+// FailedLoginSummaryQueryAzureSQL returns summary statistics for Azure SQL Database using sys.event_log with user grouping
+// This query aggregates connection failure events from the event log for monitoring purposes grouped by user/IP
+const FailedLoginSummaryQueryAzureSQL = `WITH failed_events AS (
+    SELECT 
+        start_time,
+        ISNULL(JSON_VALUE(CAST(additional_data AS NVARCHAR(MAX)), '$.client_ip'), 'unknown') AS source_ip,
+        ISNULL(JSON_VALUE(CAST(additional_data AS NVARCHAR(MAX)), '$.user_name'), 'unknown') AS username
+    FROM sys.event_log
+    WHERE event_type IN ('connection_failed')
+        AND start_time >= DATEADD(HOUR, -24, GETUTCDATE())
+)
+SELECT 
     COUNT(*) AS total_failed_logins,
     SUM(CASE WHEN start_time >= DATEADD(HOUR, -1, GETUTCDATE()) THEN 1 ELSE 0 END) AS recent_failed_logins,
-    COUNT(DISTINCT JSON_VALUE(CAST(additional_data AS NVARCHAR(MAX)), '$.client_ip')) AS unique_failed_sources,
-    COUNT(DISTINCT JSON_VALUE(CAST(additional_data AS NVARCHAR(MAX)), '$.username')) AS unique_failed_users
-FROM sys.event_log
-WHERE event_type IN ('connection_failed')
-    AND start_time >= DATEADD(HOUR, -24, GETUTCDATE())`
+    COUNT(DISTINCT source_ip) AS unique_failed_sources,
+    COUNT(DISTINCT username) AS unique_failed_users,
+    username,
+    source_ip
+FROM failed_events
+GROUP BY username, source_ip`
 
-// FailedLoginSummaryQueryAzureMI returns the summary query for Azure SQL Managed Instance
+// FailedLoginSummaryQueryAzureMI returns the summary query for Azure SQL Managed Instance with user grouping
 // Azure SQL Managed Instance supports sp_readerrorlog with full functionality
 const FailedLoginSummaryQueryAzureMI = `
 DECLARE @FailedLogins TABLE (
@@ -566,24 +739,31 @@ WITH FilteredLogins AS (
     SELECT
         LogDate,
         -- Parse the username from the log text
-        LTRIM(RTRIM(SUBSTRING(
-            Text,
-            CHARINDEX('user ''', Text) + 6,
-            CHARINDEX('''', Text, CHARINDEX('user ''', Text) + 6) - (CHARINDEX('user ''', Text) + 6)
-        ))) AS failed_user,
+        CASE 
+            WHEN Text LIKE '%for user ''%''%' THEN 
+                SUBSTRING(Text, CHARINDEX('for user ''', Text) + 10, 
+                          CHARINDEX('''', Text, CHARINDEX('for user ''', Text) + 10) - CHARINDEX('for user ''', Text) - 10)
+            ELSE 'unknown'
+        END AS failed_user,
         -- Parse the client IP address from the log text
-        LTRIM(RTRIM(SUBSTRING(
-            Text,
-            CHARINDEX('[CLIENT: ', Text) + 9,
-            CHARINDEX(']', Text, CHARINDEX('[CLIENT: ', Text)) - (CHARINDEX('[CLIENT: ', Text) + 9)
-        ))) AS source_ip
+        CASE 
+            WHEN Text LIKE '%Client: %' THEN 
+                RTRIM(LTRIM(SUBSTRING(Text, CHARINDEX('Client: ', Text) + 8, 50)))
+            WHEN Text LIKE '%[CLIENT: %]%' THEN 
+                SUBSTRING(Text, CHARINDEX('[CLIENT: ', Text) + 9, 
+                          CHARINDEX(']', Text, CHARINDEX('[CLIENT: ', Text)) - CHARINDEX('[CLIENT: ', Text) - 9)
+            ELSE 'unknown'
+        END AS source_ip
     FROM @FailedLogins
     WHERE Text LIKE '%Login failed for user%' -- Ensure we only process relevant rows
 )
--- Aggregate the final metrics
+-- Aggregate the final metrics grouped by user and source IP
 SELECT
     COUNT(*) AS total_failed_logins,
     SUM(CASE WHEN LogDate >= DATEADD(HOUR, -1, GETDATE()) THEN 1 ELSE 0 END) AS recent_failed_logins,
     COUNT(DISTINCT failed_user) AS unique_failed_users,
-    COUNT(DISTINCT source_ip) AS unique_failed_sources
-FROM FilteredLogins`
+    COUNT(DISTINCT source_ip) AS unique_failed_sources,
+    failed_user AS username,
+    source_ip
+FROM FilteredLogins
+GROUP BY failed_user, source_ip`
