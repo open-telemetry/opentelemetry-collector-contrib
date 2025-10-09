@@ -125,9 +125,8 @@ func TestHistogramWindowRotation(t *testing.T) {
 
 // TestHistogramStatePreservationAcrossWindows verifies that histogram state is preserved correctly
 func TestHistogramStatePreservationAcrossWindows(t *testing.T) {
-	// Create a window and aggregator
-	window := NewWindow(time.Now(), time.Now().Add(1*time.Second))
-	agg := window.GetOrCreateAggregator("test.histogram|", pmetric.MetricTypeHistogram)
+	// Create an aggregator directly (window boundaries are now separate)
+	agg := NewAggregator(pmetric.MetricTypeHistogram)
 	
 	// Send first cumulative histogram
 	dp1 := pmetric.NewHistogramDataPoint()
@@ -201,7 +200,9 @@ func TestHistogramStatePreservationAcrossWindows(t *testing.T) {
 	metric.SetName("test.histogram")
 	metric.SetEmptyHistogram()
 	
-	agg.ExportTo(metric, window.start, window.end, map[string]string{})
+	windowStart := time.Now()
+	windowEnd := windowStart.Add(1 * time.Second)
+	agg.ExportTo(metric, windowStart, windowEnd, map[string]string{})
 	
 	hist := metric.Histogram()
 	if hist.DataPoints().Len() == 0 {

@@ -143,7 +143,7 @@ func (acc *HistogramAccumulator) Merge(dp pmetric.ExponentialHistogramDataPoint)
 		acc.Timestamp = dp.Timestamp()
 	}
 
-	// USE OTEL UTILITY: After scale normalization, use proven bucket merging
+	// Use proven bucket merging with OTel utilities
 	if dp.Positive().BucketCounts().Len() > 0 {
 		acc.mergePositiveBucketsWithOTel(dp.Positive(), dp.Scale())
 	}
@@ -155,131 +155,7 @@ func (acc *HistogramAccumulator) Merge(dp pmetric.ExponentialHistogramDataPoint)
 	return nil
 }
 
-// mergePositiveBuckets merges positive bucket data
-func (acc *HistogramAccumulator) mergePositiveBuckets(buckets pmetric.ExponentialHistogramDataPointBuckets, incomingScale int32) {
-	if acc.PositiveBuckets == nil {
-		// First positive buckets - adjust for scale if needed
-		offset := buckets.Offset()
-		counts := make([]uint64, buckets.BucketCounts().Len())
-		for i := 0; i < buckets.BucketCounts().Len(); i++ {
-			counts[i] = buckets.BucketCounts().At(i)
-		}
 
-		// If incoming scale is higher than accumulator scale, downscale the incoming data
-		if incomingScale > acc.Scale {
-			scaleDiff := incomingScale - acc.Scale
-			factor := int32(1 << scaleDiff)
-			offset = offset / factor
-			counts = acc.downscaleCounts(counts, buckets.Offset(), factor)
-		}
-
-		acc.PositiveBuckets = &BucketData{
-			Offset:       offset,
-			BucketCounts: counts,
-		}
-		return
-	}
-
-	// Merge with existing buckets
-	acc.mergeBucketData(acc.PositiveBuckets, buckets, incomingScale)
-}
-
-// mergeNegativeBuckets merges negative bucket data
-func (acc *HistogramAccumulator) mergeNegativeBuckets(buckets pmetric.ExponentialHistogramDataPointBuckets, incomingScale int32) {
-	if acc.NegativeBuckets == nil {
-		// First negative buckets - adjust for scale if needed
-		offset := buckets.Offset()
-		counts := make([]uint64, buckets.BucketCounts().Len())
-		for i := 0; i < buckets.BucketCounts().Len(); i++ {
-			counts[i] = buckets.BucketCounts().At(i)
-		}
-
-		// If incoming scale is higher than accumulator scale, downscale the incoming data
-		if incomingScale > acc.Scale {
-			scaleDiff := incomingScale - acc.Scale
-			factor := int32(1 << scaleDiff)
-			offset = offset / factor
-			counts = acc.downscaleCounts(counts, buckets.Offset(), factor)
-		}
-
-		acc.NegativeBuckets = &BucketData{
-			Offset:       offset,
-			BucketCounts: counts,
-		}
-		return
-	}
-
-	// Merge with existing buckets
-	acc.mergeBucketData(acc.NegativeBuckets, buckets, incomingScale)
-}
-
-// mergeBucketData merges incoming bucket data into existing bucket data
-func (acc *HistogramAccumulator) mergeBucketData(existing *BucketData, incoming pmetric.ExponentialHistogramDataPointBuckets, incomingScale int32) {
-	incomingOffset := incoming.Offset()
-	incomingCounts := incoming.BucketCounts()
-
-	// If incoming scale is higher, downscale the incoming data
-	if incomingScale > acc.Scale {
-		scaleDiff := incomingScale - acc.Scale
-		factor := int32(1 << scaleDiff)
-		incomingOffset = incomingOffset / factor
-		// Convert to slice and downscale
-		counts := make([]uint64, incomingCounts.Len())
-		for i := 0; i < incomingCounts.Len(); i++ {
-			counts[i] = incomingCounts.At(i)
-		}
-		counts = acc.downscaleCounts(counts, incoming.Offset(), factor)
-
-		// Create a temporary structure to work with downscaled data
-		tempCounts := counts
-		tempOffset := incomingOffset
-
-		// Now merge the downscaled data
-		acc.mergeDownscaledBuckets(existing, tempCounts, tempOffset)
-		return
-	}
-
-	// Handle case where scales are the same (or incoming scale is lower)
-	// Calculate the range of indices we need to cover
-	existingStart := existing.Offset
-	existingEnd := existingStart + int32(len(existing.BucketCounts))
-
-	incomingStart := incomingOffset
-	incomingEnd := incomingStart + int32(incomingCounts.Len())
-
-	// Determine the new range
-	newStart := existingStart
-	if incomingStart < newStart {
-		newStart = incomingStart
-	}
-
-	newEnd := existingEnd
-	if incomingEnd > newEnd {
-		newEnd = incomingEnd
-	}
-
-	// Create new bucket array if needed
-	if newStart < existingStart || newEnd > existingEnd {
-		newSize := int(newEnd - newStart)
-		newBuckets := make([]uint64, newSize)
-
-		// Copy existing buckets to new array
-		existingOffset := int(existingStart - newStart)
-		copy(newBuckets[existingOffset:], existing.BucketCounts)
-
-		// Update existing bucket data
-		existing.Offset = newStart
-		existing.BucketCounts = newBuckets
-	}
-
-	// Add incoming bucket counts
-	for i := 0; i < incomingCounts.Len(); i++ {
-		idx := int(incomingOffset - existing.Offset) + i
-		if idx >= 0 && idx < len(existing.BucketCounts) {
-			existing.BucketCounts[idx] += incomingCounts.At(i)
-		}
-	}
-}
 
 // ToDataPoint converts the accumulator back to an exponential histogram data point
 func (acc *HistogramAccumulator) ToDataPoint(dp pmetric.ExponentialHistogramDataPoint) {

@@ -11,8 +11,6 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/aggregateutil"
 )
 
 // TimeWindow represents a time window boundary (no aggregators stored here)
@@ -21,23 +19,6 @@ type TimeWindow struct {
 	end   time.Time
 }
 
-// Window represents a time window for aggregation (deprecated - use TimeWindow for new double-buffer design)
-type Window struct {
-	start time.Time
-	end   time.Time
-	
-	// Aggregators by series key
-	aggregators map[string]*Aggregator
-	
-	// Memory tracking
-	memoryUsage int64
-	
-	// For LRU eviction
-	lastAccess map[string]time.Time
-	
-	// Mutex for thread-safe access
-	mu sync.RWMutex
-}
 
 // NewTimeWindow creates a new time window boundary
 func NewTimeWindow(start, end time.Time) *TimeWindow {
@@ -52,172 +33,6 @@ func (tw *TimeWindow) Contains(timestamp time.Time) bool {
 	return !timestamp.Before(tw.start) && timestamp.Before(tw.end)
 }
 
-// NewWindow creates a new time window (deprecated - use NewTimeWindow for new double-buffer design)
-func NewWindow(start, end time.Time) *Window {
-	return &Window{
-		start:       start,
-		end:         end,
-		aggregators: make(map[string]*Aggregator),
-		lastAccess:  make(map[string]time.Time),
-	}
-}
-
-// Contains checks if a timestamp falls within this window
-func (w *Window) Contains(timestamp time.Time) bool {
-	return !timestamp.Before(w.start) && timestamp.Before(w.end)
-}
-
-// GetOrCreateAggregator gets or creates an aggregator for a series
-func (w *Window) GetOrCreateAggregator(seriesKey string, metricType pmetric.MetricType) *Aggregator {
-	w.mu.RLock()
-	if agg, exists := w.aggregators[seriesKey]; exists {
-		w.mu.RUnlock()
-		w.mu.Lock()
-		w.lastAccess[seriesKey] = time.Now()
-		w.mu.Unlock()
-		return agg
-	}
-	w.mu.RUnlock()
-	
-	// Create new aggregator under write lock
-	w.mu.Lock()
-	defer w.mu.Unlock()
-	
-	// Double-check in case another goroutine created it
-	if agg, exists := w.aggregators[seriesKey]; exists {
-		w.lastAccess[seriesKey] = time.Now()
-		return agg
-	}
-	
-	// Create new aggregator
-	agg := NewAggregator(metricType)
-	w.aggregators[seriesKey] = agg
-	w.lastAccess[seriesKey] = time.Now()
-	
-	// Update memory usage estimate
-	w.memoryUsage += agg.EstimateMemoryUsage()
-	
-	return agg
-}
-
-// HasData returns true if the window contains any data
-func (w *Window) HasData() bool {
-	w.mu.RLock()
-	defer w.mu.RUnlock()
-	return len(w.aggregators) > 0
-}
-
-// GetSeriesCount returns the number of series in the window
-func (w *Window) GetSeriesCount() int64 {
-	w.mu.RLock()
-	defer w.mu.RUnlock()
-	return int64(len(w.aggregators))
-}
-
-// GetMemoryUsage returns the estimated memory usage
-func (w *Window) GetMemoryUsage() int64 {
-	w.mu.RLock()
-	defer w.mu.RUnlock()
-	return w.memoryUsage
-}
-
-// Clear clears all data from the window
-func (w *Window) Clear() {
-	w.mu.Lock()
-	defer w.mu.Unlock()
-	
-	// Instead of completely clearing aggregators, reset them for the new window
-	// This preserves cumulative state needed for proper delta computation
-	for _, agg := range w.aggregators {
-		agg.ResetForNewWindow()
-	}
-	
-	// Clear the last access times as they are window-specific
-	w.lastAccess = make(map[string]time.Time)
-	
-	// Recalculate memory usage after reset
-	w.memoryUsage = 0
-	for _, agg := range w.aggregators {
-		w.memoryUsage += agg.EstimateMemoryUsage()
-	}
-}
-
-// Export exports the aggregated metrics from the window
-func (w *Window) Export() pmetric.Metrics {
-	w.mu.RLock()
-	defer w.mu.RUnlock()
-	
-	md := pmetric.NewMetrics()
-	
-	if len(w.aggregators) == 0 {
-		return md
-	}
-	
-	// Group aggregators by resource and scope
-	// For simplicity, we'll create a single resource and scope
-	rm := md.ResourceMetrics().AppendEmpty()
-	sm := rm.ScopeMetrics().AppendEmpty()
-	sm.Scope().SetName("streamingaggregation")
-	
-	// Export each aggregator
-	for seriesKey, agg := range w.aggregators {
-		// Parse series key to extract metric name and labels
-		metricName, labels := parseSeriesKey(seriesKey)
-		
-		// Create metric based on aggregator state
-		metric := sm.Metrics().AppendEmpty()
-		metric.SetName(metricName)
-		
-		// Export based on metric type (use cumulative for backward compatibility)
-		agg.ExportTo(metric, w.start, w.end, labels)
-	}
-	
-	return md
-}
-
-// EvictLowPrioritySeries evicts a percentage of least recently used series
-func (w *Window) EvictLowPrioritySeries(percentage float64) int64 {
-	w.mu.Lock()
-	defer w.mu.Unlock()
-	
-	if len(w.aggregators) == 0 {
-		return 0
-	}
-	
-	// Sort series by last access time
-	type seriesAccess struct {
-		key        string
-		lastAccess time.Time
-	}
-	
-	series := make([]seriesAccess, 0, len(w.aggregators))
-	for key, lastAccess := range w.lastAccess {
-		series = append(series, seriesAccess{key: key, lastAccess: lastAccess})
-	}
-	
-	sort.Slice(series, func(i, j int) bool {
-		return series[i].lastAccess.Before(series[j].lastAccess)
-	})
-	
-	// Evict the specified percentage
-	toEvict := int(float64(len(series)) * percentage)
-	if toEvict == 0 && len(series) > 0 {
-		toEvict = 1 // Evict at least one
-	}
-	
-	var bytesFreed int64
-	for i := 0; i < toEvict && i < len(series); i++ {
-		key := series[i].key
-		if agg, exists := w.aggregators[key]; exists {
-			bytesFreed += agg.EstimateMemoryUsage()
-			delete(w.aggregators, key)
-			delete(w.lastAccess, key)
-		}
-	}
-	
-	w.memoryUsage -= bytesFreed
-	return bytesFreed
-}
 
 // Aggregator handles aggregation for a single metric series
 type Aggregator struct {
@@ -239,12 +54,6 @@ type Aggregator struct {
 	sumForMean   float64
 	countForMean int64
 	
-	// ===== RATE CALCULATION =====
-	// For rate calculation
-	firstValue     float64
-	firstTimestamp pcommon.Timestamp
-	lastRateValue  float64
-	lastRateTime   pcommon.Timestamp
 	
 	// ===== CUMULATIVE TO DELTA CONVERSION =====
 	// For cumulative to delta conversion
@@ -285,9 +94,6 @@ type Aggregator struct {
 	// For exponential histogram - using well-tested accumulator from native-histogram-otel
 	expHistogramAccumulator *HistogramAccumulator
 	
-	// ===== PERCENTILE CALCULATION =====
-	// For percentile calculation (using reservoir sampling)
-	reservoir []float64
 	
 	// ===== THREAD SAFETY =====
 	mu sync.Mutex // Protects all fields for thread-safe access
@@ -309,7 +115,6 @@ func NewAggregator(metricType pmetric.MetricType) *Aggregator {
 		max:                   -1e308, // Min float64
 		histogramBuckets:      make(map[float64]uint64),
 		histogramTotalBuckets: make(map[float64]uint64),
-		reservoir:             make([]float64, 0, 1000), // Reservoir sampling with 1000 samples
 		lastHistogramValues:   make(map[string]*histogramCumulativeState),
 	}
 }
@@ -430,24 +235,6 @@ func (a *Aggregator) UpdateMean(value float64) {
 	a.updateMinMaxLocked(value)
 }
 
-// UpdateMin updates the minimum value
-func (a *Aggregator) UpdateMin(value float64) {
-	a.mu.Lock()
-	defer a.mu.Unlock()
-	if value < a.min {
-		a.min = value
-	}
-}
-
-// UpdateMax updates the maximum value
-func (a *Aggregator) UpdateMax(value float64) {
-	a.mu.Lock()
-	defer a.mu.Unlock()
-	if value > a.max {
-		a.max = value
-	}
-}
-
 // IncrementCount increments the count
 func (a *Aggregator) IncrementCount() {
 	a.mu.Lock()
@@ -460,28 +247,6 @@ func (a *Aggregator) UpdateCount(count uint64) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	a.count += int64(count)
-}
-
-// UpdateRate updates values for rate calculation
-func (a *Aggregator) UpdateRate(value float64, timestamp pcommon.Timestamp) {
-	a.mu.Lock()
-	defer a.mu.Unlock()
-	if a.firstTimestamp == 0 {
-		a.firstValue = value
-		a.firstTimestamp = timestamp
-	}
-	a.lastRateValue = value
-	a.lastRateTime = timestamp
-}
-
-// UpdateIncrease updates the increase value
-func (a *Aggregator) UpdateIncrease(value float64) {
-	a.mu.Lock()
-	defer a.mu.Unlock()
-	if a.firstValue == 0 {
-		a.firstValue = value
-	}
-	a.lastRateValue = value
 }
 
 // UpdateUpDownCounter updates values for UpDownCounter (non-monotonic sum)
@@ -659,279 +424,8 @@ func (a *Aggregator) MergeHistogramWithTemporalityAndGapDetection(dp pmetric.His
 	}
 }
 
-// MergeHistogramWithAggregateUtil merges histogram data points using battle-tested aggregateutil logic
-// This provides enhanced bucket merging, better edge case handling, and standardized aggregation patterns
-func (a *Aggregator) MergeHistogramWithAggregateUtil(dp pmetric.HistogramDataPoint, temporality pmetric.AggregationTemporality, staleThreshold time.Duration) {
-	a.mu.Lock()
-	defer a.mu.Unlock()
-
-	// Handle gap detection and reset logic (preserve our streaming semantics)
-	if temporality == pmetric.AggregationTemporalityCumulative && staleThreshold > 0 {
-		sourceKey := getSourceKey(dp.Attributes())
-		if a.checkAndHandleGapDetection(sourceKey, staleThreshold) {
-			// Gap detected - reset state and proceed with fresh aggregation
-		}
-	}
-
-	// Create temporary metric to use with aggregateutil
-	tempMetric := pmetric.NewMetric()
-	tempMetric.SetName("temp_histogram")
-	tempHist := tempMetric.SetEmptyHistogram()
-	tempHist.SetAggregationTemporality(temporality)
-
-	// Convert our existing aggregated state to a data point
-	if a.histogramTotalCount > 0 {
-		existingDp := tempHist.DataPoints().AppendEmpty()
-		a.populateHistogramDataPoint(existingDp)
-	}
-
-	// Add the new data point (after delta conversion if cumulative)
-	newDp := tempHist.DataPoints().AppendEmpty()
-	if temporality == pmetric.AggregationTemporalityCumulative {
-		// Convert cumulative to delta before merging
-		a.convertCumulativeToDelta(dp, newDp)
-	} else {
-		// Copy delta data point as-is
-		dp.CopyTo(newDp)
-	}
-
-	// Use aggregateutil to group and merge the data points
-	aggGroups := &aggregateutil.AggGroups{}
-	aggregateutil.GroupDataPoints(tempMetric, aggGroups)
-
-	// Create result metric
-	resultMetric := pmetric.NewMetric()
-	aggregateutil.CopyMetricDetails(tempMetric, resultMetric)
-
-	// Merge using aggregateutil (uses Sum strategy for histograms)
-	aggregateutil.MergeDataPoints(resultMetric, aggregateutil.Sum, *aggGroups)
-
-	// Extract the merged result back to our aggregator state
-	if resultMetric.Histogram().DataPoints().Len() > 0 {
-		mergedDp := resultMetric.Histogram().DataPoints().At(0)
-		a.updateFromHistogramDataPoint(mergedDp)
-	}
-
-	// Update min/max if available (preserve existing logic)
-	if dp.HasMin() {
-		a.updateMinMaxLocked(dp.Min())
-	}
-	if dp.HasMax() {
-		a.updateMinMaxLocked(dp.Max())
-	}
-}
-
-// checkAndHandleGapDetection checks for stale data and resets state if needed
-func (a *Aggregator) checkAndHandleGapDetection(sourceKey string, staleThreshold time.Duration) bool {
-	if a.lastHistogramValues == nil {
-		a.lastHistogramValues = make(map[string]*histogramCumulativeState)
-		return false
-	}
-
-	sourceState, exists := a.lastHistogramValues[sourceKey]
-	if !exists {
-		return false
-	}
-
-	currentTime := time.Now()
-	lastTime := sourceState.lastTimestamp.AsTime()
-	if !lastTime.IsZero() {
-		timeSinceLastData := currentTime.Sub(lastTime)
-		if timeSinceLastData > staleThreshold {
-			// Gap detected - reset all histogram state
-			a.histogramTotalSum = 0
-			a.histogramTotalCount = 0
-			a.histogramTotalBuckets = make(map[float64]uint64)
-			a.histogramBuckets = make(map[float64]uint64)
-			a.lastHistogramValues = make(map[string]*histogramCumulativeState)
-			return true
-		}
-	}
-	return false
-}
-
-// populateHistogramDataPoint populates a data point with current aggregated state
-func (a *Aggregator) populateHistogramDataPoint(dp pmetric.HistogramDataPoint) {
-	dp.SetSum(a.histogramTotalSum)
-	dp.SetCount(a.histogramTotalCount)
-	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
-
-	if a.min != 1e308 {
-		dp.SetMin(a.min)
-	}
-	if a.max != -1e308 {
-		dp.SetMax(a.max)
-	}
-
-	// Set bucket bounds and counts
-	if len(a.histogramTotalBuckets) > 0 {
-		bounds := make([]float64, 0, len(a.histogramTotalBuckets))
-		for bound := range a.histogramTotalBuckets {
-			if bound != 1e308 { // Skip infinity bucket
-				bounds = append(bounds, bound)
-			}
-		}
-		sort.Float64s(bounds)
-
-		dp.ExplicitBounds().FromRaw(bounds)
-
-		// Set bucket counts
-		for _, bound := range bounds {
-			dp.BucketCounts().Append(a.histogramTotalBuckets[bound])
-		}
-		// Add infinity bucket
-		if infCount, ok := a.histogramTotalBuckets[1e308]; ok {
-			dp.BucketCounts().Append(infCount)
-		} else {
-			dp.BucketCounts().Append(0)
-		}
-	}
-}
-
-// convertCumulativeToDelta converts a cumulative histogram to delta using our existing logic
-func (a *Aggregator) convertCumulativeToDelta(cumulativeDp, deltaDp pmetric.HistogramDataPoint) {
-	sourceKey := getSourceKey(cumulativeDp.Attributes())
-
-	// Initialize source state if needed
-	if a.lastHistogramValues == nil {
-		a.lastHistogramValues = make(map[string]*histogramCumulativeState)
-	}
-
-	sourceState, exists := a.lastHistogramValues[sourceKey]
-	if !exists {
-		sourceState = &histogramCumulativeState{
-			lastBuckets:   make(map[float64]uint64),
-			lastTimestamp: pcommon.NewTimestampFromTime(time.Now()),
-		}
-		a.lastHistogramValues[sourceKey] = sourceState
-	}
-
-	// Compute deltas
-	deltaSum := cumulativeDp.Sum() - sourceState.lastSum
-	deltaCount := cumulativeDp.Count() - sourceState.lastCount
-
-	// Handle counter resets
-	if !exists {
-		deltaSum = cumulativeDp.Sum()
-		deltaCount = cumulativeDp.Count()
-	} else if deltaCount < 0 || deltaSum < 0 {
-		deltaSum = cumulativeDp.Sum()
-		deltaCount = cumulativeDp.Count()
-	}
-
-	// Set delta values
-	deltaDp.SetSum(deltaSum)
-	deltaDp.SetCount(deltaCount)
-	deltaDp.SetTimestamp(cumulativeDp.Timestamp())
-
-	// Copy bounds
-	cumulativeDp.ExplicitBounds().CopyTo(deltaDp.ExplicitBounds())
-
-	// Compute delta bucket counts
-	cumulativeBuckets := cumulativeDp.BucketCounts()
-	bounds := cumulativeDp.ExplicitBounds()
-
-	for i := 0; i < cumulativeBuckets.Len(); i++ {
-		var bound float64
-		if i < bounds.Len() {
-			bound = bounds.At(i)
-		} else {
-			bound = 1e308 // Infinity bucket
-		}
-
-		currentBucketCount := cumulativeBuckets.At(i)
-		lastBucketCount := sourceState.lastBuckets[bound]
-		deltaBucketCount := currentBucketCount - lastBucketCount
-
-		if !exists || deltaBucketCount < 0 {
-			deltaBucketCount = currentBucketCount
-		}
-
-		deltaDp.BucketCounts().Append(deltaBucketCount)
-		sourceState.lastBuckets[bound] = currentBucketCount
-	}
-
-	// Update source state
-	sourceState.lastSum = cumulativeDp.Sum()
-	sourceState.lastCount = cumulativeDp.Count()
-	sourceState.lastTimestamp = cumulativeDp.Timestamp()
-
-	// Copy attributes and other metadata
-	cumulativeDp.Attributes().CopyTo(deltaDp.Attributes())
-	if cumulativeDp.HasMin() {
-		deltaDp.SetMin(cumulativeDp.Min())
-	}
-	if cumulativeDp.HasMax() {
-		deltaDp.SetMax(cumulativeDp.Max())
-	}
-}
-
-// updateFromHistogramDataPoint updates aggregator state from a histogram data point
-func (a *Aggregator) updateFromHistogramDataPoint(dp pmetric.HistogramDataPoint) {
-	// Update totals
-	a.histogramTotalSum = dp.Sum()
-	a.histogramTotalCount = dp.Count()
-	a.histogramSum = dp.Sum() // For window-specific tracking
-	a.histogramCount = dp.Count()
-
-	// Initialize buckets if needed
-	if a.histogramTotalBuckets == nil {
-		a.histogramTotalBuckets = make(map[float64]uint64)
-	}
-	if a.histogramBuckets == nil {
-		a.histogramBuckets = make(map[float64]uint64)
-	}
-
-	// Clear existing bucket state and rebuild from data point
-	a.histogramTotalBuckets = make(map[float64]uint64)
-	a.histogramBuckets = make(map[float64]uint64)
-
-	buckets := dp.BucketCounts()
-	bounds := dp.ExplicitBounds()
-
-	for i := 0; i < buckets.Len(); i++ {
-		var bound float64
-		if i < bounds.Len() {
-			bound = bounds.At(i)
-		} else {
-			bound = 1e308 // Infinity bucket
-		}
-
-		bucketCount := buckets.At(i)
-		a.histogramTotalBuckets[bound] = bucketCount
-		a.histogramBuckets[bound] = bucketCount
-	}
-
-	// Update min/max
-	if dp.HasMin() {
-		a.updateMinMaxLocked(dp.Min())
-	}
-	if dp.HasMax() {
-		a.updateMinMaxLocked(dp.Max())
-	}
-}
 
 
-// UpdatePercentile updates values for percentile calculation
-func (a *Aggregator) UpdatePercentile(dp pmetric.HistogramDataPoint, percentile float64) {
-	// For histogram data points, we can estimate percentiles from buckets
-	// This is a simplified implementation
-	// In production, you might want to use a more sophisticated algorithm
-
-	a.mu.Lock()
-	defer a.mu.Unlock()
-
-	// Add samples to reservoir (simplified - just using sum/count)
-	if dp.Count() > 0 {
-		avgValue := dp.Sum() / float64(dp.Count())
-		a.reservoir = append(a.reservoir, avgValue)
-
-		// Keep reservoir size limited
-		if len(a.reservoir) > 1000 {
-			a.reservoir = a.reservoir[len(a.reservoir)-1000:]
-		}
-	}
-}
 
 // MergeExponentialHistogram merges an exponential histogram using the proven accumulator
 func (a *Aggregator) MergeExponentialHistogram(metric pmetric.Metric, dp pmetric.ExponentialHistogramDataPoint) error {
@@ -1187,13 +681,13 @@ func (a *Aggregator) ResetForNewWindow() {
 func (a *Aggregator) EstimateMemoryUsage() int64 {
 	a.mu.Lock()
 	defer a.mu.Unlock()
-	
+
 	// Base size
 	size := int64(200) // Base struct size
-	
+
 	// Histogram buckets
 	size += int64(len(a.histogramBuckets) * 16) // map entry overhead
-	
+
 	// Exponential histogram accumulator
 	if a.expHistogramAccumulator != nil {
 		size += int64(200) // Base accumulator struct
@@ -1204,10 +698,7 @@ func (a *Aggregator) EstimateMemoryUsage() int64 {
 			size += int64(len(a.expHistogramAccumulator.NegativeBuckets.BucketCounts) * 8)
 		}
 	}
-	
-	// Reservoir
-	size += int64(len(a.reservoir) * 8)
-	
+
 	return size
 }
 
