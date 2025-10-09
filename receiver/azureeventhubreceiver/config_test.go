@@ -102,13 +102,6 @@ func TestInvalidConnectionString(t *testing.T) {
 	assert.EqualError(t, err, "failed parsing connection string due to unmatched key value separated by '='")
 }
 
-func TestIsValidFormat(t *testing.T) {
-	for _, format := range []logFormat{defaultLogFormat, rawLogFormat, azureLogFormat} {
-		assert.True(t, isValidFormat(string(format)))
-	}
-	assert.False(t, isValidFormat("invalid-format"))
-}
-
 func TestInvalidFormat(t *testing.T) {
 	require.NoError(t, featuregate.GlobalRegistry().Set(azEventHubFeatureGateName, false))
 	factory := NewFactory()
