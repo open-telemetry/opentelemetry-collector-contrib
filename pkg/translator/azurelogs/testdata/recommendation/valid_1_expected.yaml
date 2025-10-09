@@ -43,6 +43,15 @@ resourceLogs:
               - key: azure.operation.version
                 value:
                   stringValue: "2017-03-31"
+              - key: azure.result.type
+                value:
+                  stringValue: "Active"
+              - key: azure.result.signature
+                value:
+                  stringValue: "Succeeded"
+              - key: azure.result.description
+                value:
+                  stringValue: "A new recommendation is available."
               - key: network.peer.address
                 value:
                   stringValue: 0.0.0.0

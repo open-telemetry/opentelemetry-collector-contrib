@@ -23,10 +23,13 @@ const (
 	// Constants for OpenTelemetry Specs
 	scopeName = "otelcol/azureresourcelogs"
 
-	attributeAzureCategory         = "azure.category"
-	attributeAzureCorrelationID    = "azure.correlation_id"
-	attributeAzureOperationName    = "azure.operation.name"
-	attributeAzureOperationVersion = "azure.operation.version"
+	attributeAzureCategory          = "azure.category"
+	attributeAzureCorrelationID     = "azure.correlation_id"
+	attributeAzureOperationName     = "azure.operation.name"
+	attributeAzureOperationVersion  = "azure.operation.version"
+	attributeAzureResultType        = "azure.result.type"
+	attributeAzureResultSignature   = "azure.result.signature"
+	attributeAzureResultDescription = "azure.result.description"
 
 	// Constants for Azure Log Record body fields
 	azureCategory          = "category"
@@ -227,8 +230,9 @@ func addCommonSchema(log *azureLogRecord, record plog.LogRecord) {
 	record.Attributes().PutStr(attributeAzureOperationName, log.OperationName)
 	putStrPtr(attributeAzureOperationVersion, log.OperationVersion, record)
 	putStrPtr(string(conventions.CloudAccountIDKey), log.TenantID, record)
-
-	// Add other common fields
+	putStrPtr(attributeAzureResultType, log.ResultType, record)
+	putStrPtr(attributeAzureResultSignature, log.ResultSignature, record)
+	putStrPtr(attributeAzureResultDescription, log.ResultDescription, record)
 	putStrPtr(string(conventions.NetworkPeerAddressKey), log.CallerIPAddress, record)
 
 	// Extract identity/claims for activity logs

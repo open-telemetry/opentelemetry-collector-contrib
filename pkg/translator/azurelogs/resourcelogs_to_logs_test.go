@@ -512,7 +512,7 @@ func TestUnmarshalLogs_Recommendation(t *testing.T) {
 
 			expectedLogs, err := golden.ReadLogs(filepath.Join(dir, test.expectedFilename))
 			require.NoError(t, err)
-			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreResourceLogsOrder()))
+			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreResourceLogsOrder(), plogtest.IgnoreObservedTimestamp()))
 		})
 	}
 }

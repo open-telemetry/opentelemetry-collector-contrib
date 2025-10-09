@@ -19,20 +19,19 @@ https://learn.microsoft.com/en-us/azure/azure-monitor/platform/resource-logs-sch
 | `time`                | `timeUnixNano`                                 |
 | `level`               | Decoded as `severityNumber` and `severityText` |
 
-| Original Field (JSON) | Log Record Attribute      |
-| --------------------- | ------------------------- |
-| `tenantId`            | `cloud.account.id`        |
-| `operationName`       | `azure.operation.name`    |
-| `operationVersion`    | `azure.operation.version` |
-| `category`            | `azure.category`          |
-| `resultType`          | ?                         |
-| `resultSignature`     | ?                         |
-| `resultDescription`   | ?                         |
-| `durationMs`          | `azure.duration`          |
-| `callerIpAddress`     | `network.peer.address`    |
-| `correlationId`       | `azure.correlation.id`    |
-| `identity`            | `azure.identity`          |
-| `location`            | ?                         |
+| Original Field (JSON) | Log Record Attribute       |
+| --------------------- | -------------------------- |
+| `tenantId`            | `cloud.account.id`         |
+| `operationName`       | `azure.operation.name`     |
+| `operationVersion`    | `azure.operation.version`  |
+| `category`            | `azure.category`           |
+| `resultType`          | `azure.result.type`        |
+| `resultSignature`     | `azure.result.signature`   |
+| `resultDescription`   | `azure.result.description` |
+| `durationMs`          | `azure.duration`           |
+| `callerIpAddress`     | `network.peer.address`     |
+| `correlationId`       | `azure.correlation.id`     |
+| `identity`            | `azure.identity`           |
 
 
 ### Identity
