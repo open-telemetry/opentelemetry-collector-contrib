@@ -5,13 +5,11 @@ package watch
 
 import (
 	"context"
-	"fmt"
-	k8s_testing "k8s.io/client-go/testing"
+	"errors"
 	"sync"
 	"testing"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/observer"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -21,6 +19,9 @@ import (
 	apiWatch "k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/dynamic/fake"
+	k8s_testing "k8s.io/client-go/testing"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/observer"
 )
 
 func TestObserver(t *testing.T) {
@@ -279,7 +280,7 @@ func TestObserverInitialStateError(t *testing.T) {
 
 	// Make list return error for initial state
 	mockClient.client.(*fake.FakeDynamicClient).PrependReactor("list", "pods", func(action k8s_testing.Action) (bool, runtime.Object, error) {
-		return true, nil, fmt.Errorf("mock list error")
+		return true, nil, errors.New("mock list error")
 	})
 
 	cfg := Config{

@@ -5,13 +5,11 @@ package pull
 
 import (
 	"context"
-	"fmt"
-	k8s_testing "k8s.io/client-go/testing"
+	"errors"
 	"sync"
 	"testing"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/observer"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -20,6 +18,9 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/dynamic/fake"
+	k8s_testing "k8s.io/client-go/testing"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/observer"
 )
 
 func TestObserver(t *testing.T) {
@@ -295,7 +296,7 @@ func TestObserverListError(t *testing.T) {
 
 	// Make list return error
 	mockClient.client.(*fake.FakeDynamicClient).PrependReactor("list", "pods", func(action k8s_testing.Action) (bool, runtime.Object, error) {
-		return true, nil, fmt.Errorf("mock list error")
+		return true, nil, errors.New("mock list error")
 	})
 
 	cfg := Config{
@@ -332,7 +333,7 @@ func TestObserverListError(t *testing.T) {
 }
 
 func TestNewTicker(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	ticker := newTicker(ctx, 1*time.Second)
 	defer ticker.Stop()
 
