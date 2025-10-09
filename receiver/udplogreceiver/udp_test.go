@@ -55,7 +55,7 @@ func testUDP(t *testing.T, cfg *UDPLogConfig, listenAddress string) {
 	conn, err = net.Dial("udp", listenAddress)
 	require.NoError(t, err)
 
-	for i := 0; i < numLogs; i++ {
+	for i := range numLogs {
 		msg := fmt.Sprintf("<86>1 2021-02-28T00:0%d:02.003Z test msg %d\n", i, i)
 		_, err = conn.Write([]byte(msg))
 		require.NoError(t, err)
@@ -72,11 +72,11 @@ func testUDP(t *testing.T, cfg *UDPLogConfig, listenAddress string) {
 
 	expectedLogs := make([]string, numLogs)
 
-	for i := 0; i < numLogs; i++ {
+	for i := range numLogs {
 		expectedLogs[i] = fmt.Sprintf("<86>1 2021-02-28T00:0%d:02.003Z test msg %d", i, i)
 	}
 
-	for i := 0; i < numLogs; i++ {
+	for i := range numLogs {
 		assert.Contains(t, expectedLogs, logs.At(i).Body().Str())
 	}
 }
