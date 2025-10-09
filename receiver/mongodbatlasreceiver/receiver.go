@@ -211,8 +211,7 @@ func (s *mongodbatlasreceiver) getNodeClusterNameMap(
 	for i := range clusters {
 		cluster := &clusters[i]
 		// URI in the form mongodb://host1.mongodb.net:27017,host2.mongodb.net:27017,host3.mongodb.net:27017
-		nodes := strings.Split(strings.TrimPrefix(cluster.MongoURI, "mongodb://"), ",")
-		for _, node := range nodes {
+		for node := range strings.SplitSeq(strings.TrimPrefix(cluster.MongoURI, "mongodb://"), ",") {
 			// Remove the port from the node
 			n, _, _ := strings.Cut(node, ":")
 			clusterMap[n] = cluster.Name
