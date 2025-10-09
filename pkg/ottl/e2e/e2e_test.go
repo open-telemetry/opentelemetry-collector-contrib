@@ -2006,8 +2006,8 @@ func Benchmark_XML_Functions(b *testing.B) {
 
 	actualCtx := tCtxWithTestBody()
 	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+
+	for b.Loop() {
 		_, _, _ = logStatements.Execute(b.Context(), actualCtx)
 	}
 
