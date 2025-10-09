@@ -52,7 +52,7 @@ The following settings can be optionally configured:
 - `db_system:` the list value of span attribute `db.system`, Filter specific db systems, define those database's statements need to be collected. ref: https://opentelemetry.io/docs/specs/semconv/attributes-registry/db/
     - Default: `[h2, mongodb, mssql, mysql, oracle, postgresql, mariadb]`
 - `threshold`: define a threshold and collect when the `db.statement`, namely span duration, larger than this value.
-    - Default: 
+    - Default: `500ms`
 
 ## Examples
 

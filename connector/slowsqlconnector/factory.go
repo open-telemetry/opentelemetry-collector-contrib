@@ -28,7 +28,7 @@ func NewFactory() connector.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		Threshold: time.Microsecond * 500,
+		Threshold: time.Millisecond * 500,
 		DBSystem: []string{
 			string(conventions.DBSystemH2.Key), string(conventions.DBSystemMongoDB.Key),
 			string(conventions.DBSystemMySQL.Key), string(conventions.DBSystemOracle.Key),
