@@ -121,7 +121,7 @@ func TestMetricDataToLogService(t *testing.T) {
 		return
 	}
 	assert.Len(t, gotLogs, len(wantLogs))
-	for j := 0; j < len(gotLogs); j++ {
+	for j := range gotLogs {
 		sort.Sort(logKeyValuePairs(gotLogPairs[j]))
 		sort.Sort(logKeyValuePairs(wantLogs[j]))
 		assert.Equal(t, wantLogs[j], gotLogPairs[j])
