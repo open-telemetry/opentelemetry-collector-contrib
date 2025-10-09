@@ -43,6 +43,6 @@ jobs:
           
           # Add survey comment for external contributor
           echo "Adding survey comment for external contributor: $USERNAME"
-          gh pr comment "${PR_NUM}" --repo ${{ github.repository }} --body "Thank you for your contribution @${USERNAME}! 🎉 We would like to hear from you about your experience contributing to OpenTelemetry by taking a few minutes to fill out this [survey](${SURVEY_URL})."
+          gh pr comment "${PR_NUM}" --repo ${{ github.repository }} --body "Thank you for your contribution @${USERNAME}! 🎉 We would like to hear from you about your experience contributing to OpenTelemetry by taking a few minutes to fill out this [survey](${SURVEY_URL}). If you are getting started contributing, you can also join the CNCF Slack channel [#opentelemetry-new-contributors](https://cloud-native.slack.com/archives/C09H3MNMBQV) to ask for guidance and get help."
         env:
           GH_TOKEN: ${{ steps.otelbot-token.outputs.token }}

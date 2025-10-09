@@ -154,7 +154,7 @@ func validateRealData(t *testing.T, metrics pmetric.MetricSlice) {
 func validateStartTime(t *testing.T, metrics pmetric.MetricSlice) {
 	startTime, err := host.BootTime()
 	assert.NoError(t, err)
-	for i := 0; i < metricsLength; i++ {
+	for i := range metricsLength {
 		internal.AssertSumMetricStartTimeEquals(t, metrics.At(i), pcommon.Timestamp(startTime*1e9))
 	}
 }

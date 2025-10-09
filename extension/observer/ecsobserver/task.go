@@ -5,6 +5,7 @@ package ecsobserver // import "github.com/open-telemetry/opentelemetry-collector
 
 import (
 	"fmt"
+	"maps"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
@@ -65,9 +66,7 @@ func (t *taskAnnotated) ContainerLabels(containerIndex int) map[string]string {
 		return nil
 	}
 	labels := make(map[string]string, len(def.DockerLabels))
-	for k, v := range def.DockerLabels {
-		labels[k] = v
-	}
+	maps.Copy(labels, def.DockerLabels)
 	return labels
 }
 

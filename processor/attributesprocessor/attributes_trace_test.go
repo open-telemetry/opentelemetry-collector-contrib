@@ -506,7 +506,7 @@ func BenchmarkAttributes_FilterSpansByName(b *testing.B) {
 		td := generateTraceData(tt.serviceName, tt.name, tt.inputAttributes)
 
 		b.Run(tt.name, func(b *testing.B) {
-			for i := 0; i < b.N; i++ {
+			for b.Loop() {
 				assert.NoError(b, tp.ConsumeTraces(b.Context(), td))
 			}
 		})

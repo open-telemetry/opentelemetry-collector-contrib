@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"hash/fnv"
+	"maps"
 	"math"
 	"strconv"
 	"sync"
@@ -671,12 +672,10 @@ func attributeMapToGeneric(attrs pcommon.Map) map[string]any {
 }
 
 // mergeAttributes combines multiple attribute maps with later maps taking precedence
-func mergeAttributes(maps ...map[string]any) map[string]any {
+func mergeAttributes(in ...map[string]any) map[string]any {
 	result := make(map[string]any)
-	for _, m := range maps {
-		for k, v := range m {
-			result[k] = v
-		}
+	for _, m := range in {
+		maps.Copy(result, m)
 	}
 	return result
 }

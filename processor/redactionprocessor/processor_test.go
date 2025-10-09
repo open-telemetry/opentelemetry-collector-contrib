@@ -1339,7 +1339,7 @@ func BenchmarkRedactSummaryDebug(b *testing.B) {
 	ctx := b.Context()
 	processor, _ := newRedaction(ctx, config, zaptest.NewLogger(b))
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		runBenchmark(allowed, redacted, masked, ignored, processor)
 	}
 }
@@ -1370,7 +1370,7 @@ func BenchmarkMaskSummaryDebug(b *testing.B) {
 	ctx := b.Context()
 	processor, _ := newRedaction(ctx, config, zaptest.NewLogger(b))
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		runBenchmark(allowed, nil, masked, ignored, processor)
 	}
 }

@@ -409,10 +409,7 @@ func setPathWithPrefix(prefix string) func(handlerName string, handler http.Hand
 // plus a delta to prevent race conditions.
 // This ensures jobs are not garbage collected between scrapes.
 func gcInterval(cfg *PromConfig) time.Duration {
-	gcInterval := defaultGCInterval
-	if time.Duration(cfg.GlobalConfig.ScrapeInterval)+gcIntervalDelta > gcInterval {
-		gcInterval = time.Duration(cfg.GlobalConfig.ScrapeInterval) + gcIntervalDelta
-	}
+	gcInterval := max(time.Duration(cfg.GlobalConfig.ScrapeInterval)+gcIntervalDelta, defaultGCInterval)
 	for _, scrapeConfig := range cfg.ScrapeConfigs {
 		if time.Duration(scrapeConfig.ScrapeInterval)+gcIntervalDelta > gcInterval {
 			gcInterval = time.Duration(scrapeConfig.ScrapeInterval) + gcIntervalDelta

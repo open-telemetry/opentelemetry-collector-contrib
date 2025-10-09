@@ -344,11 +344,11 @@ func TestEventConsumeConsistency(t *testing.T) {
 		t.Run(tt.casename, func(t *testing.T) {
 			realTraceID := workerIndexForTraceID(pcommon.TraceID(tt.traceID), 100)
 			var wg sync.WaitGroup
-			for i := 0; i < 50; i++ {
+			for range 50 {
 				wg.Add(1)
 				go func() {
 					defer wg.Done()
-					for j := 0; j < 30; j++ {
+					for range 30 {
 						assert.Equal(t, realTraceID, workerIndexForTraceID(pcommon.TraceID(tt.traceID), 100))
 					}
 				}()

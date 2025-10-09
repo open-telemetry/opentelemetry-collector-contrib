@@ -44,7 +44,7 @@ var _ encoding.TextUnmarshaler = (*CommaSeparatedSet)(nil)
 
 func (c *CommaSeparatedSet) UnmarshalText(text []byte) error {
 	*c = make(map[string]struct{})
-	for _, key := range strings.Split(string(text), ",") {
+	for key := range strings.SplitSeq(string(text), ",") {
 		key = strings.TrimSpace(key)
 		if key == "" {
 			return errors.New("empty key in comma-separated list")

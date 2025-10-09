@@ -311,7 +311,7 @@ func TestPartitionKeyInputsUniqueKey(t *testing.T) {
 	// is not repeated
 
 	seen := make(map[string]struct{})
-	for i := 0; i < 500; i++ {
+	for range 500 {
 		uv := (&PartitionKeyBuilder{}).uniqueKey()
 		_, ok := seen[uv]
 		assert.False(t, ok, "Must not have repeated partition key %q", uv)
@@ -322,7 +322,7 @@ func TestPartitionKeyInputsUniqueKey(t *testing.T) {
 	// is generated correctly, is unique, and is ordered by time.
 	seen = make(map[string]struct{})
 	lastKey := ""
-	for i := 0; i < 500; i++ {
+	for range 500 {
 		uv := (&PartitionKeyBuilder{UniqueKeyFunc: GenerateUUIDv7}).uniqueKey()
 		_, ok := seen[uv]
 		assert.False(t, ok, "Must not have repeated partition key %q", uv)

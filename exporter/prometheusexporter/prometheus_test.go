@@ -69,7 +69,7 @@ func TestPrometheusExporter(t *testing.T) {
 	set := exportertest.NewNopSettings(metadata.Type)
 	for _, tt := range tests {
 		// Run it a few times to ensure that shutdowns exit cleanly.
-		for j := 0; j < 3; j++ {
+		for range 3 {
 			cfg := tt.config()
 			exp, err := factory.CreateMetrics(t.Context(), set, cfg)
 

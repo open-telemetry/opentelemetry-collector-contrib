@@ -25,7 +25,7 @@ func createSimpleLogData(numberOfLogs int) plog.Logs {
 	rl.ScopeLogs().AppendEmpty() // Add an empty ScopeLogs
 	sl := rl.ScopeLogs().AppendEmpty()
 
-	for i := 0; i < numberOfLogs; i++ {
+	for i := range numberOfLogs {
 		ts := pcommon.Timestamp(int64(i) * time.Millisecond.Nanoseconds())
 		logRecord := sl.LogRecords().AppendEmpty()
 		logRecord.Body().SetStr("mylog")

@@ -279,7 +279,7 @@ func TestOtelMetricsToMetadata(t *testing.T) {
 			metaData, err := OtelMetricsToMetadata(tt.metrics, false, tt.namespace)
 			require.NoError(t, err)
 
-			for i := 0; i < len(metaData); i++ {
+			for i := range metaData {
 				assert.Equal(t, tt.want[i].Type, metaData[i].Type)
 				assert.Equal(t, tt.want[i].Unit, metaData[i].Unit)
 				assert.Equal(t, tt.want[i].MetricFamilyName, metaData[i].MetricFamilyName)

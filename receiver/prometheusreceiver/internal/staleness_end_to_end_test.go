@@ -188,7 +188,7 @@ service:
 
 	// 5. Let's wait on 10 fetches.
 	var wReqL []*prompb.WriteRequest
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		wReqL = append(wReqL, <-prweUploads)
 	}
 	defer cancel()

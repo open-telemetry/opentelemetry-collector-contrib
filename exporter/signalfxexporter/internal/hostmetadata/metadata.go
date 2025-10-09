@@ -5,6 +5,7 @@ package hostmetadata // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"context"
+	"maps"
 	"sync"
 
 	"github.com/shirou/gopsutil/v4/common"
@@ -93,27 +94,21 @@ func (s *Syncer) scrapeHostProperties() map[string]string {
 
 	cpu, err := getCPU(ctx)
 	if err == nil {
-		for k, v := range cpu.toStringMap() {
-			props[k] = v
-		}
+		maps.Copy(props, cpu.toStringMap())
 	} else {
 		s.logger.Warn("Failed to scrape host hostCPU metadata", zap.Error(err))
 	}
 
 	mem, err := getMemory(ctx)
 	if err == nil {
-		for k, v := range mem.toStringMap() {
-			props[k] = v
-		}
+		maps.Copy(props, mem.toStringMap())
 	} else {
 		s.logger.Warn("Failed to scrape host memory metadata", zap.Error(err))
 	}
 
 	os, err := getOS(ctx)
 	if err == nil {
-		for k, v := range os.toStringMap() {
-			props[k] = v
-		}
+		maps.Copy(props, os.toStringMap())
 	} else {
 		s.logger.Warn("Failed to scrape host hostOS metadata", zap.Error(err))
 	}

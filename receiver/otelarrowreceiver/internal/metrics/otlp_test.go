@@ -141,7 +141,7 @@ func TestExport_AdmissionLimitExceeded(t *testing.T) {
 
 	var expectSuccess atomic.Int32
 
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		go func() {
 			defer wait.Done()
 			_, err := metricsClient.Export(t.Context(), req)

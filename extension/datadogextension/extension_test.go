@@ -542,7 +542,7 @@ func TestNotifyConfigConcurrentAccess(t *testing.T) {
 		var wg sync.WaitGroup
 		errors := make(chan error, numGoroutines)
 
-		for i := 0; i < numGoroutines; i++ {
+		for i := range numGoroutines {
 			wg.Add(1)
 			go func(confIndex int) {
 				defer wg.Done()

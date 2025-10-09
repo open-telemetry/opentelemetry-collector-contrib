@@ -223,8 +223,7 @@ func findField(fields []zapcore.Field, key string) *zapcore.Field {
 func BenchmarkZapLogger_Info(b *testing.B) {
 	zapLogger, _ := setupTestLogger()
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		zapLogger.Info("benchmark message")
 	}
 }
@@ -232,8 +231,7 @@ func BenchmarkZapLogger_Info(b *testing.B) {
 func BenchmarkZapLogger_Infof(b *testing.B) {
 	zapLogger, _ := setupTestLogger()
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for i := 0; b.Loop(); i++ {
 		zapLogger.Infof("benchmark %s %d", "message", i)
 	}
 }
@@ -241,8 +239,7 @@ func BenchmarkZapLogger_Infof(b *testing.B) {
 func BenchmarkZapLogger_Critical(b *testing.B) {
 	zapLogger, _ := setupTestLogger()
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_ = zapLogger.Critical("benchmark critical message")
 	}
 }

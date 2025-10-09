@@ -106,7 +106,7 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 		scopeLogs.Scope().SetVersion(r.Version)
 		logRecords := scopeLogs.LogRecords()
 
-		for i := 0; i < len(logs); i++ {
+		for i := range logs {
 			log := logs[i]
 			nanos, err := getTimestamp(log, r.TimeFormats...)
 			if err != nil {

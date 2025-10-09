@@ -784,10 +784,9 @@ func BenchmarkGetAttributesSignature(b *testing.B) {
 	attrs.PutStr("key7", "some-random-test-value-7")
 	attrs.PutStr("key8", "some-random-test-value-8")
 
-	b.ResetTimer()
 	b.ReportAllocs()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		getAttributesSignature(attrs)
 	}
 }

@@ -6,6 +6,7 @@ package aggregateutil // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"encoding/json"
 	"math"
+	"slices"
 	"sort"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -50,7 +51,7 @@ func FilterAttrs(metric pmetric.Metric, filterAttrKeys []string) {
 	// as normal.
 	RangeDataPointAttributes(metric, func(attrs pcommon.Map) bool {
 		attrs.RemoveIf(func(k string, _ pcommon.Value) bool {
-			return isNotPresent(k, filterAttrKeys)
+			return !slices.Contains(filterAttrKeys, k)
 		})
 		return true
 	})
@@ -140,15 +141,6 @@ func RangeDataPointAttributes(metric pmetric.Metric, f func(pcommon.Map) bool) {
 	}
 }
 
-func isNotPresent(target string, arr []string) bool {
-	for _, item := range arr {
-		if item == target {
-			return false
-		}
-	}
-	return true
-}
-
 func mergeNumberDataPoints(dpsMap map[string]pmetric.NumberDataPointSlice, agg AggregationType, to pmetric.NumberDataPointSlice) {
 	for _, dps := range dpsMap {
 		dp := to.AppendEmpty()
@@ -216,9 +208,7 @@ func mergeNumberDataPoints(dpsMap map[string]pmetric.NumberDataPointSlice, agg A
 				if len(medianNumbers) == 1 {
 					dp.SetIntValue(medianNumbers[0])
 				} else {
-					sort.Slice(medianNumbers, func(i, j int) bool {
-						return medianNumbers[i] < medianNumbers[j]
-					})
+					slices.Sort(medianNumbers)
 					mNumber := len(medianNumbers) / 2
 					if math.Mod(float64(len(medianNumbers)), 2) != 0 {
 						dp.SetIntValue(medianNumbers[mNumber])

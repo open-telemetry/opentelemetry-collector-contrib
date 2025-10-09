@@ -501,7 +501,7 @@ func TestArrowExporterStreamRace(t *testing.T) {
 	// stream, but none will become available.  Eventually the
 	// context will be canceled and cause these goroutines to
 	// return.
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -556,7 +556,7 @@ func TestArrowExporterStreaming(t *testing.T) {
 				}
 			}()
 
-			for times := 0; times < 10; times++ {
+			for range 10 {
 				input := testdata.GenerateTraces(2)
 
 				sent, err := tc.exporter.SendAndWait(t.Context(), input)
@@ -615,7 +615,7 @@ func TestArrowExporterHeaders(t *testing.T) {
 				}
 			}()
 
-			for times := 0; times < 10; times++ {
+			for times := range 10 {
 				input := testdata.GenerateTraces(2)
 
 				if times%2 == 1 {
@@ -707,7 +707,7 @@ func TestArrowExporterIsTraced(t *testing.T) {
 				}
 			}()
 
-			for times := 0; times < 10; times++ {
+			for times := range 10 {
 				input := testdata.GenerateTraces(2)
 				callCtx := t.Context()
 
@@ -750,7 +750,7 @@ func TestAddJitter(t *testing.T) {
 	require.Equal(t, time.Duration(0), addJitter(0))
 
 	// Expect no more than 5% less in each trial.
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		x := addJitter(20 * time.Minute)
 		require.LessOrEqual(t, 19*time.Minute, x)
 		require.Less(t, x, 20*time.Minute)
@@ -927,9 +927,7 @@ func benchmarkPrioritizer(b *testing.B, numStreams int, pname PrioritizerName) {
 		wg.Wait()
 	}()
 
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		sent, err := tc.exporter.SendAndWait(bg, input)
 		if err != nil || !sent {
 			b.Errorf("send failed: %v: %v", sent, err)

@@ -56,8 +56,8 @@ func calculateCPULimit(hostConfig *ctypes.HostConfig) (float64, error) {
 func parseCPUSet(line string) (float64, error) {
 	var numCPUs uint64
 
-	lineSlice := strings.Split(line, ",")
-	for _, l := range lineSlice {
+	lineSlice := strings.SplitSeq(line, ",")
+	for l := range lineSlice {
 		lineParts := strings.Split(l, "-")
 		if len(lineParts) == 2 {
 			p0, err0 := strconv.Atoi(lineParts[0])
