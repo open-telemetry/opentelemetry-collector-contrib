@@ -18,7 +18,7 @@ type winService struct {
 	config ConfigEx
 }
 
-func getService(m *serviceManager, sname string) (*winService, error) {
+func updateService(m *serviceManager, sname string) (*winService, error) {
 	s, err := m.openService(sname)
 	if err != nil {
 		return nil, err

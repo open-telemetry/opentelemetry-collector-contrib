@@ -6,7 +6,6 @@ package windowsservicereceiver // import "github.com/open-telemetry/opentelemetr
 
 import (
 	"context"
-	"sync"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -27,8 +26,6 @@ type windowsServiceScraper struct {
 	includeSet map[string]struct{}
 	excludeSet map[string]struct{}
 }
-
-const defaultScrapeConcurrency = 32
 
 func newWindowsServiceScraper(settings receiver.Settings, cfg *Config, mb *metadata.MetricsBuilder) *windowsServiceScraper {
 	ws := &windowsServiceScraper{
@@ -97,62 +94,40 @@ func (ws *windowsServiceScraper) scrape(_ context.Context) (pmetric.Metrics, err
 		return ws.mb.Emit(), err
 	}
 
-	type result struct {
-		name      string
-		val       int64
-		startAttr metadata.AttributeStartupMode
-		err       error
-	}
-
-	results := make(chan result, len(names))
-	sem := make(chan struct{}, defaultScrapeConcurrency)
-	var wg sync.WaitGroup
+	var scrapeErr error
 
 	for _, name := range names {
 		if !ws.allowed(name) {
 			continue
 		}
-		wg.Add(1)
-		sem <- struct{}{}
-		go func(n string) {
-			defer wg.Done()
-			defer func() { <-sem }()
 
-			svc, err := getService(&ws.mgr, n)
-			if err != nil {
-				results <- result{err: err}
-				return
-			}
+		svc, err := updateService(&ws.mgr, name)
+		if err != nil {
+			scrapeErr = multierr.Append(scrapeErr, err)
+			continue
+		}
+
+		func() {
 			defer func() { _ = svc.close() }()
 
 			if err := svc.updateStatus(); err != nil {
-				results <- result{err: err}
+				scrapeErr = multierr.Append(scrapeErr, err)
 				return
 			}
 			if err := svc.updateConfig(); err != nil {
-				results <- result{err: err}
+				scrapeErr = multierr.Append(scrapeErr, err)
 				return
 			}
 
 			val := int64(svc.status.State)
+
+			if val < 1 || val > 7 {
+				val = 0
+			}
+
 			startAttr := mapStartTypeToAttr(svc.config.StartType)
-
-			results <- result{name: n, val: val, startAttr: startAttr}
-		}(name)
-	}
-
-	go func() {
-		wg.Wait()
-		close(results)
-	}()
-
-	var scrapeErr error
-	for r := range results {
-		if r.err != nil {
-			scrapeErr = multierr.Append(scrapeErr, r.err)
-			continue
-		}
-		ws.mb.RecordWindowsServiceStatusDataPoint(ts, r.val, r.name, r.startAttr)
+			ws.mb.RecordWindowsServiceStatusDataPoint(ts, val, name, startAttr)
+		}()
 	}
 
 	return ws.mb.Emit(), scrapeErr
