@@ -148,7 +148,6 @@ func TestTracePayloadV07Unmarshalling(t *testing.T) {
 }
 
 func BenchmarkTranslatorv05(b *testing.B) {
-
 	for b.Loop() {
 		TestTracePayloadV05Unmarshalling(&testing.T{})
 	}
@@ -156,7 +155,6 @@ func BenchmarkTranslatorv05(b *testing.B) {
 }
 
 func BenchmarkTranslatorv07(b *testing.B) {
-
 	for b.Loop() {
 		TestTracePayloadV07Unmarshalling(&testing.T{})
 	}
