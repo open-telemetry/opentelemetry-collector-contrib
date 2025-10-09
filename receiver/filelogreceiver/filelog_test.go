@@ -185,7 +185,7 @@ func (rt *rotationTest) Run(t *testing.T) {
 	}()
 	require.NoError(t, err)
 
-	for i := 0; i < numLogs; i++ {
+	for i := range numLogs {
 		if (i+1)%maxLinesPerFile == 0 {
 			if rt.copyTruncate {
 				// Recreate the backup file
