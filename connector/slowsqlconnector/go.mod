@@ -3,7 +3,6 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/connector/slows
 go 1.24.0
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector v0.137.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.137.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.43.0
@@ -14,7 +13,6 @@ require (
 	go.opentelemetry.io/collector/connector/connectortest v0.137.0
 	go.opentelemetry.io/collector/consumer v1.43.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.137.0
-	go.opentelemetry.io/collector/otelcol/otelcoltest v0.137.0
 	go.opentelemetry.io/collector/pdata v1.43.0
 	go.opentelemetry.io/collector/pipeline v1.43.0
 	go.opentelemetry.io/otel v1.38.0
@@ -132,8 +130,8 @@ require (
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
-
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
