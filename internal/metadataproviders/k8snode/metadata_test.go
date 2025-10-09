@@ -80,7 +80,7 @@ func TestNodeUID(t *testing.T) {
 }
 
 func setupNodes(client *fake.Clientset) error {
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		n := &corev1.Node{
 			ObjectMeta: metav1.ObjectMeta{
 				UID:  types.UID("node" + strconv.Itoa(i)),

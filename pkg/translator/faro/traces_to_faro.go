@@ -37,7 +37,7 @@ func TranslateFromTraces(ctx context.Context, td ptrace.Traces) ([]faroTypes.Pay
 	w := sha256.New()
 	encoder := json.NewEncoder(w)
 	var errs error
-	for i := 0; i < resourceSpansLen; i++ {
+	for i := range resourceSpansLen {
 		rs := resourceSpans.At(i)
 		payload := resourceSpansToFaroPayload(rs)
 		meta := payload.Meta

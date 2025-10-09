@@ -27,7 +27,7 @@ func TestDropHelper(t *testing.T) {
 					},
 				},
 			},
-		})
+		}, nil)
 		require.NoError(t, err)
 
 		expected := sampling.NewDrop(zap.NewNop(), []samplingpolicy.Evaluator{
@@ -46,7 +46,7 @@ func TestDropHelper(t *testing.T) {
 					},
 				},
 			},
-		})
+		}, nil)
 		require.EqualError(t, err, "unknown sampling policy type drop")
 	})
 }

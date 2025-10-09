@@ -6,6 +6,7 @@ package azureeventhubreceiver // import "github.com/open-telemetry/opentelemetry
 import (
 	"errors"
 	"fmt"
+	"slices"
 
 	"github.com/Azure/azure-amqp-common-go/v4/conn"
 	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs/v2"
@@ -47,15 +48,6 @@ type TimeFormat struct {
 	Traces  []string `mapstructure:"traces"`
 }
 
-func isValidFormat(format string) bool {
-	for _, validFormat := range validFormats {
-		if logFormat(format) == validFormat {
-			return true
-		}
-	}
-	return false
-}
-
 // Validate config
 func (config *Config) Validate() error {
 	if !azEventHubFeatureGate.IsEnabled() &&
@@ -74,7 +66,7 @@ func (config *Config) Validate() error {
 			return err
 		}
 	}
-	if !isValidFormat(config.Format) {
+	if !slices.Contains(validFormats, logFormat(config.Format)) {
 		return fmt.Errorf("invalid format; must be one of %#v", validFormats)
 	}
 	if config.Partition == "" && config.Offset != "" {

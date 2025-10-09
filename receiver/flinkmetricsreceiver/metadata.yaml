@@ -59,6 +59,8 @@ attributes:
 metrics:
   flink.jvm.cpu.load:
     enabled: true
+    stability:
+      level: development
     description: The CPU usage of the JVM for a jobmanager or taskmanager.
     unit: "%"
     gauge:
@@ -67,6 +69,8 @@ metrics:
     attributes: []
   flink.jvm.cpu.time:
     enabled: true
+    stability:
+      level: development
     description: The CPU time used by the JVM for a jobmanager or taskmanager.
     unit: ns
     sum:
@@ -77,6 +81,8 @@ metrics:
     attributes: []
   flink.jvm.memory.heap.used:
     enabled: true
+    stability:
+      level: development
     description: The amount of heap memory currently used.
     unit: By
     sum:
@@ -87,6 +93,8 @@ metrics:
     attributes: []
   flink.jvm.memory.heap.committed:
     enabled: true
+    stability:
+      level: development
     description: The amount of heap memory guaranteed to be available to the JVM.
     unit: By
     sum:
@@ -97,6 +105,8 @@ metrics:
     attributes: []
   flink.jvm.memory.heap.max:
     enabled: true
+    stability:
+      level: development
     description: The maximum amount of heap memory that can be used for memory management.
     unit: By
     sum:
@@ -107,6 +117,8 @@ metrics:
     attributes: []
   flink.jvm.memory.nonheap.used:
     enabled: true
+    stability:
+      level: development
     description: The amount of non-heap memory currently used.
     unit: By
     sum:
@@ -117,6 +129,8 @@ metrics:
     attributes: []
   flink.jvm.memory.nonheap.committed:
     enabled: true
+    stability:
+      level: development
     description: The amount of non-heap memory guaranteed to be available to the JVM.
     unit: By
     sum:
@@ -127,6 +141,8 @@ metrics:
     attributes: []
   flink.jvm.memory.nonheap.max:
     enabled: true
+    stability:
+      level: development
     description: The maximum amount of non-heap memory that can be used for memory management.
     unit: By
     sum:
@@ -137,6 +153,8 @@ metrics:
     attributes: []
   flink.jvm.memory.metaspace.used:
     enabled: true
+    stability:
+      level: development
     description: The amount of memory currently used in the Metaspace memory pool.
     unit: By
     sum:
@@ -147,6 +165,8 @@ metrics:
     attributes: []
   flink.jvm.memory.metaspace.committed:
     enabled: true
+    stability:
+      level: development
     description: The amount of memory guaranteed to be available to the JVM in the Metaspace memory pool.
     unit: By
     sum:
@@ -157,6 +177,8 @@ metrics:
     attributes: []
   flink.jvm.memory.metaspace.max:
     enabled: true
+    stability:
+      level: development
     description: The maximum amount of memory that can be used in the Metaspace memory pool.
     unit: By
     sum:
@@ -167,6 +189,8 @@ metrics:
     attributes: []
   flink.jvm.memory.direct.used:
     enabled: true
+    stability:
+      level: development
     description: The amount of memory used by the JVM for the direct buffer pool.
     unit: By
     sum:
@@ -177,6 +201,8 @@ metrics:
     attributes: []
   flink.jvm.memory.direct.total_capacity:
     enabled: true
+    stability:
+      level: development
     description: The total capacity of all buffers in the direct buffer pool.
     unit: By
     sum:
@@ -187,6 +213,8 @@ metrics:
     attributes: []
   flink.jvm.memory.mapped.used:
     enabled: true
+    stability:
+      level: development
     description: The amount of memory used by the JVM for the mapped buffer pool.
     unit: By
     sum:
@@ -197,6 +225,8 @@ metrics:
     attributes: []
   flink.jvm.memory.mapped.total_capacity:
     enabled: true
+    stability:
+      level: development
     description: The number of buffers in the mapped buffer pool.
     unit: By
     sum:
@@ -207,6 +237,8 @@ metrics:
     attributes: []
   flink.memory.managed.used:
     enabled: true
+    stability:
+      level: development
     description: The amount of managed memory currently used.
     unit: By
     sum:
@@ -217,6 +249,8 @@ metrics:
     attributes: []
   flink.memory.managed.total:
     enabled: true
+    stability:
+      level: development
     description: The total amount of managed memory.
     unit: By
     sum:
@@ -227,6 +261,8 @@ metrics:
     attributes: []
   flink.jvm.threads.count:
     enabled: true
+    stability:
+      level: development
     description: The total number of live threads.
     unit: "{threads}"
     sum:
@@ -237,6 +273,8 @@ metrics:
     attributes: []
   flink.jvm.gc.collections.count:
     enabled: true
+    stability:
+      level: development
     description: The total number of collections that have occurred.
     unit: "{collections}"
     sum:
@@ -247,6 +285,8 @@ metrics:
     attributes: [ garbage_collector_name ]
   flink.jvm.gc.collections.time:
     enabled: true
+    stability:
+      level: development
     description: The total time spent performing garbage collection.
     unit: ms
     sum:
@@ -257,6 +297,8 @@ metrics:
     attributes: [ garbage_collector_name ]
   flink.jvm.class_loader.classes_loaded:
     enabled: true
+    stability:
+      level: development
     description: The total number of classes loaded since the start of the JVM.
     unit: "{classes}"
     sum:
@@ -267,6 +309,8 @@ metrics:
     attributes: []
   flink.job.restart.count:
     enabled: true
+    stability:
+      level: development
     description: The total number of restarts since this job was submitted, including full restarts and fine-grained restarts.
     unit: "{restarts}"
     sum:
@@ -277,6 +321,8 @@ metrics:
     attributes: []
   flink.job.last_checkpoint.time:
     enabled: true
+    stability:
+      level: development
     description: The end to end duration of the last checkpoint.
     unit: ms
     gauge:
@@ -285,6 +331,8 @@ metrics:
     attributes: []
   flink.job.last_checkpoint.size:
     enabled: true
+    stability:
+      level: development
     description: The total size of the last checkpoint.
     unit: By
     sum:
@@ -295,6 +343,8 @@ metrics:
     attributes: []
   flink.job.checkpoint.count:
     enabled: true
+    stability:
+      level: development
     description: The number of checkpoints completed or failed.
     unit: "{checkpoints}"
     sum:
@@ -305,6 +355,8 @@ metrics:
     attributes: [ checkpoint ]
   flink.job.checkpoint.in_progress:
     enabled: true
+    stability:
+      level: development
     description: The number of checkpoints in progress.
     unit: "{checkpoints}"
     sum:
@@ -315,6 +367,8 @@ metrics:
     attributes: []
   flink.task.record.count:
     enabled: true
+    stability:
+      level: development
     description: The number of records a task has.
     unit: "{records}"
     sum:
@@ -325,6 +379,8 @@ metrics:
     attributes: [ record ]
   flink.operator.record.count:
     enabled: true
+    stability:
+      level: development
     description: The number of records an operator has.
     unit: "{records}"
     sum:
@@ -335,6 +391,8 @@ metrics:
     attributes: [ operator_name, record ]
   flink.operator.watermark.output:
     enabled: true
+    stability:
+      level: development
     description: The last watermark this operator has emitted.
     unit: ms
     sum:

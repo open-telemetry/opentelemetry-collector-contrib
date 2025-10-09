@@ -33,6 +33,10 @@ func TestDataPointRecorders(t *testing.T) {
 			recorderName := runtime.FuncForPC(reflect.ValueOf(recorder).Pointer()).Name()
 			require.NotContains(t, metricByRecorder, recorderName, "share the same recorder")
 			metricByRecorder[recorderName] = metric
+		case func(pcommon.Timestamp, int64, metadata.AttributeClusterState):
+			recorderName := runtime.FuncForPC(reflect.ValueOf(recorder).Pointer()).Name()
+			require.NotContains(t, metricByRecorder, recorderName, "share the same recorder")
+			metricByRecorder[recorderName] = metric
 		default:
 			assert.Failf(t, "invalid-recorder", "Metric %q has invalid recorder type", metric)
 		}

@@ -41,6 +41,10 @@ type Config struct {
 	CloudID string `mapstructure:"cloudid"`
 
 	// NumWorkers configures the number of workers publishing bulk requests.
+	//
+	// Deprecated: [v0.136.0] This config is now deprecated. Use `sending_queue::num_consumers`
+	// instead. If this config is defined and `sending_queue::num_consumers` is not defined then
+	// it will be used to set `sending_queue::num_consumers`.
 	NumWorkers int `mapstructure:"num_workers"`
 
 	// LogsIndex configures the static index used for document routing for logs.
@@ -74,9 +78,13 @@ type Config struct {
 	Authentication          AuthenticationSettings `mapstructure:",squash"`
 	Discovery               DiscoverySettings      `mapstructure:"discover"`
 	Retry                   RetrySettings          `mapstructure:"retry"`
-	Flush                   FlushSettings          `mapstructure:"flush"`
-	Mapping                 MappingsSettings       `mapstructure:"mapping"`
-	LogstashFormat          LogstashFormatSettings `mapstructure:"logstash_format"`
+
+	// Deprecated: [v0.136.0] This config is now deprecated. Use `sending_queue::batch` instead.
+	// If this config is defined then it will be used to configure sending queue's batch provided
+	// sending queue's config are not explicitly defined.
+	Flush          FlushSettings          `mapstructure:"flush"`
+	Mapping        MappingsSettings       `mapstructure:"mapping"`
+	LogstashFormat LogstashFormatSettings `mapstructure:"logstash_format"`
 
 	// TelemetrySettings contains settings useful for testing/debugging purposes.
 	// This is experimental and may change at any time.
@@ -97,18 +105,6 @@ type Config struct {
 	// Users are expected to sanitize the responses themselves.
 	IncludeSourceOnError *bool `mapstructure:"include_source_on_error"`
 
-	// Batcher holds configuration for batching requests based on timeout
-	// and size-based thresholds.
-	//
-	// Batcher is unused by default, in which case Flush will be used.
-	// If Batcher.Enabled is non-nil (i.e. batcher::enabled is specified),
-	// then the Flush will be ignored even if Batcher.Enabled is false.
-	//
-	// Deprecated: [v0.132.0] This config is now deprecated. Use `sending_queue::batch` instead.
-	// Batcher config will be ignored if `sending_queue::batch` is defined even if sending queue
-	// is disabled.
-	Batcher BatcherConfig `mapstructure:"batcher"`
-
 	// Experimental: MetadataKeys defines a list of client.Metadata keys that
 	// will be used as partition keys for when batcher is enabled and will be
 	// added to the exporter's telemetry if defined. The config only applies
@@ -120,31 +116,6 @@ type Config struct {
 	//
 	// Keys are case-insensitive and duplicates will trigger a validation error.
 	MetadataKeys []string `mapstructure:"metadata_keys"`
-}
-
-// BatcherConfig holds configuration for exporterbatcher.
-//
-// This is a slightly modified version of exporterbatcher.Config,
-// to enable tri-state Enabled: unset, false, true.
-type BatcherConfig struct {
-	Enabled      bool                            `mapstructure:"enabled"`
-	FlushTimeout time.Duration                   `mapstructure:"flush_timeout"`
-	Sizer        exporterhelper.RequestSizerType `mapstructure:"sizer"`
-	MinSize      int64                           `mapstructure:"min_size"`
-	MaxSize      int64                           `mapstructure:"max_size"`
-
-	// enabledSet tracks whether Enabled has been specified.
-	// If enabledSet is false, the exporter will perform its
-	// own buffering.
-	enabledSet bool `mapstructure:"-"`
-}
-
-func (c *BatcherConfig) Unmarshal(conf *confmap.Conf) error {
-	if err := conf.Unmarshal(c); err != nil {
-		return err
-	}
-	c.enabledSet = conf.IsSet("enabled")
-	return nil
 }
 
 type TelemetrySettings struct {
@@ -233,11 +204,24 @@ type DiscoverySettings struct {
 // FlushSettings defines settings for configuring the write buffer flushing
 // policy in the Elasticsearch exporter. The exporter sends a bulk request with
 // all events already serialized into the send-buffer.
+//
+// Deprecated: [v0.136.0] This config is now deprecated. Use `sending_queue::batch` instead.
+// If this config is defined then it will be used to configure sending queue's batch provided
+// sending queue's config are not explicitly defined.
 type FlushSettings struct {
 	// Bytes sets the send buffer flushing limit.
+	// Bytes is now deprecated. Use `sending_queue::batch::{min, max}_size` with `bytes`
+	// sizer to configure batching based on bytes.
+	//
+	// If this config option is defined then it will be used to configure `sending_queue::batch::max_size`
+	// provided it is not explcitly defined.
 	Bytes int `mapstructure:"bytes"`
 
 	// Interval configures the max age of a document in the send buffer.
+	// Interval is now deprecated. Use `sending-queue::batch::flush_timeout` instead.
+	//
+	// If this config option is defined then it will be used to configure `sending_queue::batch::flush_timeout`
+	// provided it is not explcitly defined.
 	Interval time.Duration `mapstructure:"interval"`
 
 	// prevent unkeyed literal initialization
@@ -324,6 +308,25 @@ var (
 )
 
 const defaultElasticsearchEnvName = "ELASTICSEARCH_URL"
+
+func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
+	if err := conf.Unmarshal(cfg); err != nil {
+		return err
+	}
+	if !conf.IsSet("sending_queue::num_consumers") && conf.IsSet("num_workers") {
+		cfg.QueueBatchConfig.NumConsumers = cfg.NumWorkers
+	}
+	if cfg.QueueBatchConfig.Batch.HasValue() {
+		qbCfg := cfg.QueueBatchConfig.Batch.Get()
+		if !conf.IsSet("sending_queue::batch::flush_timeout") && conf.IsSet("flush::interval") {
+			qbCfg.FlushTimeout = cfg.Flush.Interval
+		}
+		if !conf.IsSet("sending_queue::batch::max_size") && conf.IsSet("flush::bytes") {
+			qbCfg.MaxSize = int64(cfg.Flush.Bytes)
+		}
+	}
+	return nil
+}
 
 // Validate validates the elasticsearch server configuration.
 func (cfg *Config) Validate() error {
@@ -502,11 +505,11 @@ func handleDeprecatedConfig(cfg *Config, logger *zap.Logger) {
 	if cfg.TracesDynamicIndex.Enabled {
 		logger.Warn("traces_dynamic_index::enabled has been deprecated, and will be removed in a future version. It is now a no-op. Dynamic document routing is now the default. See Elasticsearch Exporter README.")
 	}
-	switch {
-	case cfg.Batcher.enabledSet && cfg.QueueBatchConfig.Batch.HasValue():
-		logger.Warn("batcher::enabled and sending_queue::batch both have been set, sending_queue::batch will take preference.")
-	case cfg.Batcher.enabledSet:
-		logger.Warn("batcher has been deprecated, and will be removed in a future version. Use sending_queue instead.")
+	if cfg.Flush.Bytes > 0 || cfg.Flush.Interval > 0 {
+		logger.Warn("flush settings are now deprecated and ignored. Use `sending_queue` instead.")
+	}
+	if cfg.NumWorkers > 0 {
+		logger.Warn("num_workers is now deprecated and ignored. Use `sending_queue` instead.")
 	}
 }
 
