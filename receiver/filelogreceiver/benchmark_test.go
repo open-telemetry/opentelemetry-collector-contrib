@@ -56,8 +56,7 @@ func benchmarkReadSingleStaticFile(b *testing.B, numLines int) {
 	sink := new(consumertest.LogsSink)
 	f := NewFactory()
 
-	b.ResetTimer()
-	for range b.N {
+	for b.Loop() {
 		rcvr, err := f.CreateLogs(b.Context(), receivertest.NewNopSettings(metadata.Type), cfg, sink)
 		require.NoError(b, err)
 		require.NoError(b, rcvr.Start(b.Context(), componenttest.NewNopHost()))
