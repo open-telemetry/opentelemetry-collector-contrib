@@ -62,7 +62,7 @@ func NewComposite(
 ) samplingpolicy.Evaluator {
 	var subpolicies []*subpolicy
 
-	for i := 0; i < len(subPolicyParams); i++ {
+	for i := range subPolicyParams {
 		sub := &subpolicy{}
 		sub.evaluator = subPolicyParams[i].Evaluator
 		sub.allocatedSPS = subPolicyParams[i].MaxSpansPerSecond
