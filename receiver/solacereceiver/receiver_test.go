@@ -836,7 +836,7 @@ func (m *mockUnmarshaller) unmarshal(message *inboundMessage) (ptrace.Traces, er
 func newTestTracesWithSpans(spanCount int) ptrace.Traces {
 	traces := ptrace.NewTraces()
 	spans := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty()
-	for i := 0; i < spanCount; i++ {
+	for range spanCount {
 		spans.Spans().AppendEmpty()
 	}
 	return traces
