@@ -531,7 +531,7 @@ func TestSpanContextsBufferLimit(t *testing.T) {
 	}
 
 	// Add more span contexts than the buffer limit
-	for i := 0; i < 1200; i++ {
+	for i := range 1200 {
 		traceID, _ := trace.TraceIDFromHex(fmt.Sprintf("%032d", i))
 		spanID, _ := trace.SpanIDFromHex(fmt.Sprintf("%016d", i))
 		spanCtx := trace.NewSpanContext(trace.SpanContextConfig{
