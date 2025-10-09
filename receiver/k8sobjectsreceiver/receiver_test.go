@@ -688,7 +688,7 @@ func TestWatchLeaderFlapDuringStartup_NoPanic(t *testing.T) {
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		for i := 0; i < loops; i++ {
+		for range loops {
 			fakeLE.InvokeOnStopping()
 			// small gap so stopWatches() can complete and workers exit
 			time.Sleep(1 * time.Millisecond)
@@ -745,7 +745,7 @@ func TestPullLeaderFlapDuringStartup_NoPanic(t *testing.T) {
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		for i := 0; i < loops; i++ {
+		for range loops {
 			fakeLE.InvokeOnStopping()
 			time.Sleep(1 * time.Millisecond)
 			fakeLE.InvokeOnLeading()
