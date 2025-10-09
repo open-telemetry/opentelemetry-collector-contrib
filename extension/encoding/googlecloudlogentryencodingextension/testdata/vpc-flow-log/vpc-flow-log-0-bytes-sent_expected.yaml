@@ -43,7 +43,6 @@ resourceLogs:
               - key: destination.port
                 value:
                   intValue: "40708"
-              # good to here
               - key: gcp.vpc.flow.reporter
                 value:
                   stringValue: SRC
