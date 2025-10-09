@@ -12,8 +12,6 @@ import (
 	"errors"
 	"fmt"
 	"net"
-	"net/netip"
-	"strings"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
@@ -38,7 +36,7 @@ func createCommunityIDFunction[K any](_ ottl.FunctionContext, oArgs ottl.Argumen
 		return nil, errors.New("CommunityIDFactory args must be of type *CommunityIDArguments[K]")
 	}
 
-	return CommunityIDHash(
+	return communityID(
 		args.SourceIP,
 		args.SourcePort,
 		args.DestinationIP,
@@ -48,7 +46,7 @@ func createCommunityIDFunction[K any](_ ottl.FunctionContext, oArgs ottl.Argumen
 	)
 }
 
-func communityIDHash[K any](
+func communityID[K any](
 	sourceIP ottl.StringGetter[K],
 	sourcePort ottl.IntGetter[K],
 	destinationIP ottl.StringGetter[K],
@@ -77,21 +75,20 @@ func communityIDHash[K any](
 			return nil, fmt.Errorf("failed to get destination port: %w", err)
 		}
 
-		protolValue := 6 // default to TCP
+		protocolValue := uint8(6) // defaults to TCP
 		if !protocol.IsEmpty() {
-			protoStr, err := protocol.Get().Get(ctx, tCtx)
+			protocolStr, err := protocol.Get().Get(ctx, tCtx)
 			if err != nil {
 				return nil, fmt.Errorf("failed to get protocol: %w", err)
 			}
 
-			resolvedProto, err := resolveProtocolValue(protoStr)
+			resolvedProtocolId, err := resolveProtocolValue(protocolStr)
 			if err != nil {
 				return nil, err
 			}
-			protolValue = resolvedProto
+			protocolValue = resolvedProtocolId
 		}
 
-		// Parse IPs
 		srcIPAddr := net.ParseIP(srcIPValue)
 		if srcIPAddr == nil {
 			return nil, fmt.Errorf("invalid source IP: %s", srcIPValue)
@@ -102,7 +99,7 @@ func communityIDHash[K any](
 			return nil, fmt.Errorf("invalid destination IP: %s", dstIPValue)
 		}
 
-		// Get seed value (default: 0)
+		// Get seed value (default: 0) if applied
 		seedValue := uint16(0)
 		if !seed.IsEmpty() {
 			seedInt, err := seed.Get().Get(ctx, tCtx)
@@ -129,69 +126,56 @@ func communityIDHash[K any](
 		// Determine a flow direction for normalization
 		// If source IP is greater than destination IP, or if IPs are equal and source port is greater than destination port,
 		// then swap source and destination to normalize the flow direction
-		if result := compareIPs(srcIPValue, dstIPValue); result > 0 {
+		shouldSwap := false
+		if len(srcIPBytes) != len(dstIPBytes) {
+			shouldSwap = len(srcIPBytes) > len(dstIPBytes)
+		} else if cmp := bytesCompare(srcIPBytes, dstIPBytes); cmp > 0 {
+			shouldSwap = true
+		} else if cmp == 0 && srcPort > dstPort {
+			shouldSwap = true
+		}
+		if shouldSwap {
 			srcIPBytes, dstIPBytes = dstIPBytes, srcIPBytes
 			srcPortForHash, dstPortForHash = dstPortForHash, srcPortForHash
-		} else if result == 0 && srcPort > dstPort {
-			srcPortForHash, dstPortForHash = uint16(srcPort), uint16(dstPort)
 		}
 
 		// Build the flow tuple
 		// Format: <seed:2><protocol:1><src_ip><dst_ip><src_port:2><dst_port:2>
-		return generateFlowTuple(srcIPBytes, dstIPBytes, srcPortForHash, dstPortForHash, protolValue, seedValue), nil
+		return flow(srcIPBytes, srcPortForHash, dstIPBytes, dstPortForHash, protocolValue, seedValue), nil
 	}, nil
 }
 
-func resolveProtocolValue(protoStr string) (int, error) {
-	proto := -1
-	protoStr = strings.ToUpper(protoStr)
-	switch protoStr {
-	case "TCP":
-		proto = 6
-	case "UDP":
-		proto = 17
-	case "ICMP":
-		proto = 1
-	case "ICMP6":
-		proto = 58
-	case "SCTP":
-		proto = 132
-	case "RSVP":
-		proto = 46
-	default:
-		return proto, fmt.Errorf("unsupported protocol: %s", protoStr)
+func resolveProtocolValue(protoStr string) (uint8, error) {
+	protoMap := map[string]uint8{"ICMP": 1, "TCP": 6, "UDP": 17, "RSVP": 46, "ICMP6": 58, "SCTP": 132}
+	protoId := protoMap[protoStr]
+
+	if protoId == 0 {
+		return 0, fmt.Errorf("unsupported protocol: %s", protoStr)
 	}
-	return proto, nil
+	return protoId, nil
 }
 
-// compareIPs compares two IP addresses
-// Returns:
-//
-//	-1 if ip1 < ip2
-//	 0 if equal
-//	 1 is if ip1 > ip2
-func compareIPs(ipSource1 string, ipSource2 string) int {
-	// skip error check since already validated
-	ip1, _ := netip.ParseAddr(ipSource1)
-	ip2, _ := netip.ParseAddr(ipSource2)
-
-	return ip1.Compare(ip2)
+func bytesCompare(a, b []byte) int {
+	for i := range a {
+		if a[i] < b[i] {
+			return -1
+		}
+		if a[i] > b[i] {
+			return 1
+		}
+	}
+	return 0
 }
 
-func generateFlowTuple(srcIPBytes net.IP, dstIPBytes net.IP, srcPortForHash uint16, dstPortForHash uint16, protolValue int, seedValue uint16) string {
-	flowTuple := make([]byte, 0, 2+1+len(srcIPBytes)+len(dstIPBytes)+2+2)
-
+func flow(srcIPBytes net.IP, srcPortForHash uint16, dstIPBytes net.IP, dstPortForHash uint16, protolValue uint8, seedValue uint16) string {
 	// Add seed (2 bytes, network order)
-	seedBytes := make([]byte, 2)
-	binary.BigEndian.PutUint16(seedBytes, seedValue)
-	flowTuple = append(flowTuple, seedBytes...)
+	flowTuple := make([]byte, 2)
+	binary.BigEndian.PutUint16(flowTuple, seedValue)
 
-	// Add protocol (1 byte)
-	flowTuple = append(flowTuple, byte(protolValue))
-
-	// Add source and destination IPs
+	// Add source, destination IPs and 1-byte protocol
 	flowTuple = append(flowTuple, srcIPBytes...)
 	flowTuple = append(flowTuple, dstIPBytes...)
+	flowTuple = append(flowTuple, protolValue, 0)
 
 	// Add source and destination ports (2 bytes each, network order)
 	srcPortBytes := make([]byte, 2)
@@ -204,13 +188,8 @@ func generateFlowTuple(srcIPBytes net.IP, dstIPBytes net.IP, srcPortForHash uint
 
 	// Generate the SHA1 hash
 	//gosec:disable G401 -- we are not using SHA1 for security, but for generating unique identifier, conflicts will be solved with the seed
-	hash := sha1.New()
-	hash.Write(flowTuple)
-	hashBytes := hash.Sum(nil)
-
-	// Encode with Base64
-	encoded := base64.StdEncoding.EncodeToString(hashBytes)
+	hashBytes := sha1.Sum(flowTuple)
 
 	// Add version prefix (1) and return
-	return "1:" + encoded
+	return "1:" + base64.StdEncoding.EncodeToString(hashBytes[:])
 }
