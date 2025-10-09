@@ -12,5 +12,5 @@ var (
 )
 
 const (
-	TracesToLogsStability = component.StabilityLevelAlpha
+	TracesToLogsStability = component.StabilityLevelDevelopment
 )
