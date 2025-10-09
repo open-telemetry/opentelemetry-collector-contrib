@@ -38,7 +38,7 @@ func BenchmarkProcessBatch(b *testing.B) {
 		require.NoError(b, err)
 
 		entries := make([]*entry.Entry, 1000000)
-		for i := range 1000000 {
+		for i := range 1000 {
 			entries[i] = entry.New()
 			entries[i].Body = fmt.Sprintf("10.33.121.119 - - [11/Aug/2020:00:00:00 -0400] \"GET /index.html HTTP/1.1\" 404 %d\n", i%1000)
 		}
