@@ -994,7 +994,7 @@ func TestLogsPusher_partitioning(t *testing.T) {
 		tid1 := pcommon.TraceID([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1})
 		tid2 := pcommon.TraceID([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2})
 
-		mkRL := func(tid pcommon.TraceID) plog.ResourceLogs {
+		makeResourceLogs := func(tid pcommon.TraceID) plog.ResourceLogs {
 			rl := in.ResourceLogs().AppendEmpty()
 			rl.Resource().Attributes().PutStr("service.name", "svc")
 			sl := rl.ScopeLogs().AppendEmpty()
@@ -1002,9 +1002,9 @@ func TestLogsPusher_partitioning(t *testing.T) {
 			lr.SetTraceID(tid)
 			return rl
 		}
-		rl1 := mkRL(tid1)
-		rl2 := mkRL(tid1)
-		rl3 := mkRL(tid2)
+		rl1 := makeResourceLogs(tid1)
+		rl2 := makeResourceLogs(tid1)
+		rl3 := makeResourceLogs(tid2)
 		rls = append(rls, rl1, rl2, rl3)
 
 		var keys [][]byte

@@ -285,7 +285,7 @@ func (e *kafkaLogsMessenger) partitionData(ld plog.Logs) iter.Seq2[[]byte, plog.
 			for _, l := range batchpersignal.SplitLogs(ld) {
 				var key []byte
 				traceID := l.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).TraceID()
-				if traceID.IsEmpty() {
+				if !traceID.IsEmpty() {
 					key = []byte(traceutil.TraceIDToHexOrEmptyString(traceID))
 				}
 				if !yield(key, l) {
