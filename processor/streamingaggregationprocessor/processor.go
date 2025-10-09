@@ -339,7 +339,7 @@ func (p *streamingAggregationProcessor) aggregateMetric(
 	case pmetric.MetricTypeHistogram:
 		return p.aggregateHistogram(metric.Histogram(), aggregator)
 	case pmetric.MetricTypeExponentialHistogram:
-		return p.aggregateExponentialHistogram(metric.ExponentialHistogram(), aggregator)
+		return p.aggregateExponentialHistogram(metric, metric.ExponentialHistogram(), aggregator)
 	case pmetric.MetricTypeSummary:
 		return p.aggregateSummary(metric.Summary(), aggregator)
 	default:
@@ -491,13 +491,15 @@ func (p *streamingAggregationProcessor) aggregateHistogram(hist pmetric.Histogra
 }
 
 // aggregateExponentialHistogram aggregates exponential histogram metrics
-func (p *streamingAggregationProcessor) aggregateExponentialHistogram(hist pmetric.ExponentialHistogram, agg *Aggregator) error {
+func (p *streamingAggregationProcessor) aggregateExponentialHistogram(metric pmetric.Metric, hist pmetric.ExponentialHistogram, agg *Aggregator) error {
 	dps := hist.DataPoints()
 
 	for i := 0; i < dps.Len(); i++ {
 		dp := dps.At(i)
-		// Use the original logic for now - keep proven behavior
-		agg.MergeExponentialHistogram(dp)
+		// Pass metric so accumulator can capture name/description/unit
+		if err := agg.MergeExponentialHistogram(metric, dp); err != nil {
+			return fmt.Errorf("failed to merge exponential histogram: %w", err)
+		}
 	}
 	return nil
 }

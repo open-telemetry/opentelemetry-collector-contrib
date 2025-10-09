@@ -282,8 +282,8 @@ type Aggregator struct {
 	lastHistogramValues map[string]*histogramCumulativeState // Key is label hash
 	
 	// ===== EXPONENTIAL HISTOGRAM =====
-	// For exponential histogram
-	expHistogram *ExponentialHistogramState
+	// For exponential histogram - using well-tested accumulator from native-histogram-otel
+	expHistogramAccumulator *HistogramAccumulator
 	
 	// ===== PERCENTILE CALCULATION =====
 	// For percentile calculation (using reservoir sampling)
@@ -291,16 +291,6 @@ type Aggregator struct {
 	
 	// ===== THREAD SAFETY =====
 	mu sync.Mutex // Protects all fields for thread-safe access
-}
-
-// ExponentialHistogramState holds state for exponential histogram aggregation
-type ExponentialHistogramState struct {
-	scale        int32
-	zeroCount    uint64
-	sum          float64
-	count        uint64
-	positiveBuckets map[int32]uint64
-	negativeBuckets map[int32]uint64
 }
 
 // histogramCumulativeState tracks cumulative state for a specific source
@@ -921,199 +911,41 @@ func (a *Aggregator) updateFromHistogramDataPoint(dp pmetric.HistogramDataPoint)
 	}
 }
 
-// MergeExponentialHistogram merges an exponential histogram data point
-func (a *Aggregator) MergeExponentialHistogram(dp pmetric.ExponentialHistogramDataPoint) {
-	a.mu.Lock()
-	defer a.mu.Unlock()
-	
-	if a.expHistogram == nil {
-		a.expHistogram = &ExponentialHistogramState{
-			scale:           dp.Scale(),
-			positiveBuckets: make(map[int32]uint64),
-			negativeBuckets: make(map[int32]uint64),
-		}
-	}
-	
-	a.expHistogram.sum += dp.Sum()
-	a.expHistogram.count += dp.Count()
-	a.expHistogram.zeroCount += dp.ZeroCount()
-	
-	// Merge positive buckets
-	positive := dp.Positive()
-	positiveCounts := positive.BucketCounts()
-	for i := 0; i < positiveCounts.Len(); i++ {
-		bucketIndex := int32(i) + positive.Offset()
-		a.expHistogram.positiveBuckets[bucketIndex] += positiveCounts.At(i)
-	}
-	
-	// Merge negative buckets
-	negative := dp.Negative()
-	negativeCounts := negative.BucketCounts()
-	for i := 0; i < negativeCounts.Len(); i++ {
-		bucketIndex := int32(i) + negative.Offset()
-		a.expHistogram.negativeBuckets[bucketIndex] += negativeCounts.At(i)
-	}
-}
-
-// MergeExponentialHistogramWithAggregateUtil merges exponential histogram data points using aggregateutil
-// This provides enhanced bucket merging with proper scale handling and offset management
-func (a *Aggregator) MergeExponentialHistogramWithAggregateUtil(dp pmetric.ExponentialHistogramDataPoint, temporality pmetric.AggregationTemporality) {
-	a.mu.Lock()
-	defer a.mu.Unlock()
-
-	// Create temporary metric to use with aggregateutil
-	tempMetric := pmetric.NewMetric()
-	tempMetric.SetName("temp_exp_histogram")
-	tempExpHist := tempMetric.SetEmptyExponentialHistogram()
-	tempExpHist.SetAggregationTemporality(temporality)
-
-	// Convert our existing aggregated state to a data point if we have data
-	if a.expHistogram != nil && a.expHistogram.count > 0 {
-		existingDp := tempExpHist.DataPoints().AppendEmpty()
-		a.populateExponentialHistogramDataPoint(existingDp)
-	}
-
-	// Add the new data point
-	newDp := tempExpHist.DataPoints().AppendEmpty()
-	dp.CopyTo(newDp)
-
-	// Use aggregateutil to group and merge the data points
-	aggGroups := &aggregateutil.AggGroups{}
-	aggregateutil.GroupDataPoints(tempMetric, aggGroups)
-
-	// Create result metric
-	resultMetric := pmetric.NewMetric()
-	aggregateutil.CopyMetricDetails(tempMetric, resultMetric)
-
-	// Merge using aggregateutil (uses Sum strategy for exponential histograms)
-	aggregateutil.MergeDataPoints(resultMetric, aggregateutil.Sum, *aggGroups)
-
-	// Extract the merged result back to our aggregator state
-	if resultMetric.ExponentialHistogram().DataPoints().Len() > 0 {
-		mergedDp := resultMetric.ExponentialHistogram().DataPoints().At(0)
-		a.updateFromExponentialHistogramDataPoint(mergedDp)
-	}
-}
-
-// populateExponentialHistogramDataPoint populates a data point with current aggregated state
-func (a *Aggregator) populateExponentialHistogramDataPoint(dp pmetric.ExponentialHistogramDataPoint) {
-	if a.expHistogram == nil {
-		return
-	}
-
-	dp.SetScale(a.expHistogram.scale)
-	dp.SetSum(a.expHistogram.sum)
-	dp.SetCount(a.expHistogram.count)
-	dp.SetZeroCount(a.expHistogram.zeroCount)
-	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
-
-	// Set positive buckets
-	if len(a.expHistogram.positiveBuckets) > 0 {
-		positive := dp.Positive()
-		minOffset := int32(1<<31 - 1)
-		maxOffset := int32(-1 << 31)
-
-		for offset := range a.expHistogram.positiveBuckets {
-			if offset < minOffset {
-				minOffset = offset
-			}
-			if offset > maxOffset {
-				maxOffset = offset
-			}
-		}
-
-		positive.SetOffset(minOffset)
-		for i := minOffset; i <= maxOffset; i++ {
-			count := a.expHistogram.positiveBuckets[i]
-			positive.BucketCounts().Append(count)
-		}
-	}
-
-	// Set negative buckets
-	if len(a.expHistogram.negativeBuckets) > 0 {
-		negative := dp.Negative()
-		minOffset := int32(1<<31 - 1)
-		maxOffset := int32(-1 << 31)
-
-		for offset := range a.expHistogram.negativeBuckets {
-			if offset < minOffset {
-				minOffset = offset
-			}
-			if offset > maxOffset {
-				maxOffset = offset
-			}
-		}
-
-		negative.SetOffset(minOffset)
-		for i := minOffset; i <= maxOffset; i++ {
-			count := a.expHistogram.negativeBuckets[i]
-			negative.BucketCounts().Append(count)
-		}
-	}
-}
-
-// updateFromExponentialHistogramDataPoint updates aggregator state from an exponential histogram data point
-func (a *Aggregator) updateFromExponentialHistogramDataPoint(dp pmetric.ExponentialHistogramDataPoint) {
-	if a.expHistogram == nil {
-		a.expHistogram = &ExponentialHistogramState{
-			scale:           dp.Scale(),
-			positiveBuckets: make(map[int32]uint64),
-			negativeBuckets: make(map[int32]uint64),
-		}
-	}
-
-	// Update basic fields
-	a.expHistogram.scale = dp.Scale()
-	a.expHistogram.sum = dp.Sum()
-	a.expHistogram.count = dp.Count()
-	a.expHistogram.zeroCount = dp.ZeroCount()
-
-	// Clear and rebuild positive buckets
-	a.expHistogram.positiveBuckets = make(map[int32]uint64)
-	positive := dp.Positive()
-	positiveCounts := positive.BucketCounts()
-	for i := 0; i < positiveCounts.Len(); i++ {
-		bucketIndex := int32(i) + positive.Offset()
-		a.expHistogram.positiveBuckets[bucketIndex] = positiveCounts.At(i)
-	}
-
-	// Clear and rebuild negative buckets
-	a.expHistogram.negativeBuckets = make(map[int32]uint64)
-	negative := dp.Negative()
-	negativeCounts := negative.BucketCounts()
-	for i := 0; i < negativeCounts.Len(); i++ {
-		bucketIndex := int32(i) + negative.Offset()
-		a.expHistogram.negativeBuckets[bucketIndex] = negativeCounts.At(i)
-	}
-
-	// Update min/max if available
-	if dp.HasMin() {
-		a.updateMinMaxLocked(dp.Min())
-	}
-	if dp.HasMax() {
-		a.updateMinMaxLocked(dp.Max())
-	}
-}
 
 // UpdatePercentile updates values for percentile calculation
 func (a *Aggregator) UpdatePercentile(dp pmetric.HistogramDataPoint, percentile float64) {
 	// For histogram data points, we can estimate percentiles from buckets
 	// This is a simplified implementation
 	// In production, you might want to use a more sophisticated algorithm
-	
+
 	a.mu.Lock()
 	defer a.mu.Unlock()
-	
+
 	// Add samples to reservoir (simplified - just using sum/count)
 	if dp.Count() > 0 {
 		avgValue := dp.Sum() / float64(dp.Count())
 		a.reservoir = append(a.reservoir, avgValue)
-		
+
 		// Keep reservoir size limited
 		if len(a.reservoir) > 1000 {
 			a.reservoir = a.reservoir[len(a.reservoir)-1000:]
 		}
 	}
+}
+
+// MergeExponentialHistogram merges an exponential histogram using the proven accumulator
+func (a *Aggregator) MergeExponentialHistogram(metric pmetric.Metric, dp pmetric.ExponentialHistogramDataPoint) error {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
+	// Initialize accumulator on first data point
+	if a.expHistogramAccumulator == nil {
+		a.expHistogramAccumulator = NewHistogramAccumulator(metric, dp)
+		return nil
+	}
+
+	// Use the proven merge logic with scale normalization
+	return a.expHistogramAccumulator.Merge(dp)
 }
 
 // updateMinMax updates min and max values (thread-safe)
@@ -1275,71 +1107,28 @@ func (a *Aggregator) exportHistogram(metric pmetric.Metric, windowStart, windowE
 	}
 }
 
-// exportExponentialHistogram exports as an exponential histogram metric
+// exportExponentialHistogram exports using the accumulator's ToDataPoint method
 func (a *Aggregator) exportExponentialHistogram(metric pmetric.Metric, windowStart, windowEnd time.Time, labels map[string]string) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
-	
-	if a.expHistogram == nil {
+
+	if a.expHistogramAccumulator == nil {
 		return
 	}
-	
+
 	expHist := metric.SetEmptyExponentialHistogram()
-	expHist.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
-	
+	expHist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+
 	dp := expHist.DataPoints().AppendEmpty()
-	dp.SetScale(a.expHistogram.scale)
-	dp.SetSum(a.expHistogram.sum)
-	dp.SetCount(a.expHistogram.count)
-	dp.SetZeroCount(a.expHistogram.zeroCount)
+
+	// Use the proven ToDataPoint logic from the accumulator
+	a.expHistogramAccumulator.ToDataPoint(dp)
+
+	// Override timestamps for window boundaries
 	dp.SetStartTimestamp(pcommon.NewTimestampFromTime(windowStart))
 	dp.SetTimestamp(pcommon.NewTimestampFromTime(windowEnd))
-	
-	// Set positive buckets
-	if len(a.expHistogram.positiveBuckets) > 0 {
-		positive := dp.Positive()
-		minOffset := int32(1<<31 - 1)
-		maxOffset := int32(-1 << 31)
-		
-		for offset := range a.expHistogram.positiveBuckets {
-			if offset < minOffset {
-				minOffset = offset
-			}
-			if offset > maxOffset {
-				maxOffset = offset
-			}
-		}
-		
-		positive.SetOffset(minOffset)
-		for i := minOffset; i <= maxOffset; i++ {
-			count := a.expHistogram.positiveBuckets[i]
-			positive.BucketCounts().Append(count)
-		}
-	}
-	
-	// Set negative buckets
-	if len(a.expHistogram.negativeBuckets) > 0 {
-		negative := dp.Negative()
-		minOffset := int32(1<<31 - 1)
-		maxOffset := int32(-1 << 31)
-		
-		for offset := range a.expHistogram.negativeBuckets {
-			if offset < minOffset {
-				minOffset = offset
-			}
-			if offset > maxOffset {
-				maxOffset = offset
-			}
-		}
-		
-		negative.SetOffset(minOffset)
-		for i := minOffset; i <= maxOffset; i++ {
-			count := a.expHistogram.negativeBuckets[i]
-			negative.BucketCounts().Append(count)
-		}
-	}
-	
-	// Set labels
+
+	// Set labels (streaming processor drops all incoming labels, adds back if configured)
 	for k, v := range labels {
 		dp.Attributes().PutStr(k, v)
 	}
@@ -1381,9 +1170,15 @@ func (a *Aggregator) ResetForNewWindow() {
 		// Preserve: lastHistogramValues (per-source cumulative state for delta computation)
 	}
 	
+	// For exponential histograms, reset the accumulator for true windowed behavior
+	// This matches native-histogram-otel behavior where each window is independent
+	if a.metricType == pmetric.MetricTypeExponentialHistogram {
+		a.expHistogramAccumulator = nil
+	}
+
 	// For gauges, keep the last value as it represents the current state
 	// Don't reset: lastValue, lastTimestamp
-	
+
 	// For UpDownCounters, keep tracking the values
 	// Don't reset: upDownFirstValue, upDownLastValue, hasUpDownFirstValue
 }
@@ -1399,11 +1194,15 @@ func (a *Aggregator) EstimateMemoryUsage() int64 {
 	// Histogram buckets
 	size += int64(len(a.histogramBuckets) * 16) // map entry overhead
 	
-	// Exponential histogram
-	if a.expHistogram != nil {
-		size += int64(100) // Base struct
-		size += int64(len(a.expHistogram.positiveBuckets) * 12)
-		size += int64(len(a.expHistogram.negativeBuckets) * 12)
+	// Exponential histogram accumulator
+	if a.expHistogramAccumulator != nil {
+		size += int64(200) // Base accumulator struct
+		if a.expHistogramAccumulator.PositiveBuckets != nil {
+			size += int64(len(a.expHistogramAccumulator.PositiveBuckets.BucketCounts) * 8)
+		}
+		if a.expHistogramAccumulator.NegativeBuckets != nil {
+			size += int64(len(a.expHistogramAccumulator.NegativeBuckets.BucketCounts) * 8)
+		}
 	}
 	
 	// Reservoir
