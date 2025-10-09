@@ -488,7 +488,7 @@ func (m *mySQLScraper) scrapeTableStats(now pcommon.Timestamp, errs *scrapererro
 		return
 	}
 
-	for i := 0; i < len(tableStats); i++ {
+	for i := range tableStats {
 		s := tableStats[i]
 		// counts
 		m.mb.RecordMysqlTableRowsDataPoint(now, s.rows, s.name, s.schema)
@@ -506,7 +506,7 @@ func (m *mySQLScraper) scrapeTableIoWaitsStats(now pcommon.Timestamp, errs *scra
 		return
 	}
 
-	for i := 0; i < len(tableIoWaitsStats); i++ {
+	for i := range tableIoWaitsStats {
 		s := tableIoWaitsStats[i]
 		// counts
 		m.mb.RecordMysqlTableIoWaitCountDataPoint(now, s.countDelete, metadata.AttributeIoWaitsOperationsDelete, s.name, s.schema)
@@ -538,7 +538,7 @@ func (m *mySQLScraper) scrapeIndexIoWaitsStats(now pcommon.Timestamp, errs *scra
 		return
 	}
 
-	for i := 0; i < len(indexIoWaitsStats); i++ {
+	for i := range indexIoWaitsStats {
 		s := indexIoWaitsStats[i]
 		// counts
 		m.mb.RecordMysqlIndexIoWaitCountDataPoint(now, s.countDelete, metadata.AttributeIoWaitsOperationsDelete, s.name, s.schema, s.index)
@@ -570,7 +570,7 @@ func (m *mySQLScraper) scrapeStatementEventsStats(now pcommon.Timestamp, errs *s
 		return
 	}
 
-	for i := 0; i < len(statementEventsStats); i++ {
+	for i := range statementEventsStats {
 		s := statementEventsStats[i]
 		m.mb.RecordMysqlStatementEventCountDataPoint(now, s.countCreatedTmpDiskTables, s.schema, s.digest, s.digestText, metadata.AttributeEventStateCreatedTmpDiskTables)
 		m.mb.RecordMysqlStatementEventCountDataPoint(now, s.countCreatedTmpTables, s.schema, s.digest, s.digestText, metadata.AttributeEventStateCreatedTmpTables)
@@ -595,7 +595,7 @@ func (m *mySQLScraper) scrapeTableLockWaitEventStats(now pcommon.Timestamp, errs
 		return
 	}
 
-	for i := 0; i < len(tableLockWaitEventStats); i++ {
+	for i := range tableLockWaitEventStats {
 		s := tableLockWaitEventStats[i]
 		// read data points
 		m.mb.RecordMysqlTableLockWaitReadCountDataPoint(now, s.countReadNormal, s.schema, s.name, metadata.AttributeReadLockTypeNormal)
@@ -634,7 +634,7 @@ func (m *mySQLScraper) scrapeReplicaStatusStats(now pcommon.Timestamp) {
 		return
 	}
 
-	for i := 0; i < len(replicaStatusStats); i++ {
+	for i := range replicaStatusStats {
 		s := replicaStatusStats[i]
 
 		val, _ := s.secondsBehindSource.Value()

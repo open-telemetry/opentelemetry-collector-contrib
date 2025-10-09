@@ -162,16 +162,8 @@ func verifyConsumeMetricsInput(tb testing.TB, input pmetric.Metrics, expectedTem
 	for i := 0; i < input.ResourceMetrics().Len(); i++ {
 		rm := input.ResourceMetrics().At(i)
 
-		var numDataPoints int
-		val, ok := rm.Resource().Attributes().Get(serviceNameKey)
-		require.True(tb, ok)
-		serviceName := val.AsString()
-		switch serviceName {
-		case "service-a":
-			numDataPoints = 2
-		case "service-b":
-			numDataPoints = 1
-		}
+		// validate no Resource
+		assert.Empty(tb, rm.Resource().Attributes().Len())
 
 		ilm := rm.ScopeMetrics()
 		require.Equal(tb, 1, ilm.Len())
@@ -188,6 +180,16 @@ func verifyConsumeMetricsInput(tb testing.TB, input pmetric.Metrics, expectedTem
 
 		seenMetricIDs := make(map[metricID]bool)
 		callsDps := metric.Sum().DataPoints()
+		var numDataPoints int
+		val, _ := callsDps.At(0).Attributes().Get(serviceNameKey)
+		serviceName := val.AsString()
+		switch serviceName {
+		case "service-a":
+			numDataPoints = 2
+		case "service-b":
+			numDataPoints = 1
+		}
+
 		require.Equal(tb, numDataPoints, callsDps.Len())
 		for dpi := 0; dpi < numDataPoints; dpi++ {
 			dp := callsDps.At(dpi)
@@ -227,7 +229,7 @@ func verifyConsumeMetricsInput(tb testing.TB, input pmetric.Metrics, expectedTem
 func verifyExplicitHistogramDataPoints(tb testing.TB, dps pmetric.HistogramDataPointSlice, numDataPoints, numCumulativeConsumptions int) {
 	seenMetricIDs := make(map[metricID]bool)
 	require.Equal(tb, numDataPoints, dps.Len())
-	for dpi := 0; dpi < numDataPoints; dpi++ {
+	for dpi := range numDataPoints {
 		dp := dps.At(dpi)
 		assert.Equal(
 			tb,
@@ -266,7 +268,7 @@ func verifyExplicitHistogramDataPoints(tb testing.TB, dps pmetric.HistogramDataP
 func verifyExponentialHistogramDataPoints(tb testing.TB, dps pmetric.ExponentialHistogramDataPointSlice, numDataPoints, numCumulativeConsumptions int) {
 	seenMetricIDs := make(map[metricID]bool)
 	require.Equal(tb, numDataPoints, dps.Len())
-	for dpi := 0; dpi < numDataPoints; dpi++ {
+	for dpi := range numDataPoints {
 		dp := dps.At(dpi)
 		assert.Equal(
 			tb,
@@ -663,7 +665,7 @@ func TestConcurrentShutdown(t *testing.T) {
 	var wg sync.WaitGroup
 	const concurrency = 1000
 	wg.Add(concurrency)
-	for i := 0; i < concurrency; i++ {
+	for range concurrency {
 		go func() {
 			err := p.Shutdown(ctx)
 			assert.NoError(t, err)
@@ -765,6 +767,12 @@ func TestConsumeMetricsErrors(t *testing.T) {
 }
 
 func TestConsumeTraces(t *testing.T) {
+	// enable it
+	require.NoError(t, featuregate.GlobalRegistry().Set(excludeResourceMetrics.ID(), true))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(legacyMetricNamesFeatureGate.ID(), false))
+	}()
+
 	t.Parallel()
 
 	testcases := []struct {
@@ -975,7 +983,7 @@ func TestResourceMetricsCache(t *testing.T) {
 	assert.Equal(t, 2, p.resourceMetrics.Len())
 
 	// consume more batches for new resources. Max size is exceeded causing old resource entries to be discarded
-	for i := 0; i < resourceMetricsCacheSize; i++ {
+	for i := range resourceMetricsCacheSize {
 		traces := buildSampleTrace()
 
 		// add resource attributes to simulate additional resources providing data
@@ -1037,7 +1045,7 @@ func TestResourceMetricsKeyAttributes(t *testing.T) {
 	assert.Equal(t, 2, p.resourceMetrics.Len())
 
 	// consume more batches for new resources. Max size is exceeded causing old resource entries to be discarded
-	for i := 0; i < resourceMetricsCacheSize; i++ {
+	for i := range resourceMetricsCacheSize {
 		traces := buildSampleTrace()
 
 		// add resource attributes to simulate additional resources providing data
@@ -1062,7 +1070,7 @@ func BenchmarkConnectorConsumeTraces(b *testing.B) {
 
 	// Test
 	ctx := metadata.NewIncomingContext(b.Context(), nil)
-	for n := 0; n < b.N; n++ {
+	for b.Loop() {
 		assert.NoError(b, conn.ConsumeTraces(ctx, traces))
 	}
 }
@@ -1680,6 +1688,12 @@ func assertDataPointsHaveExactlyOneExemplarForTrace(t *testing.T, metrics pmetri
 }
 
 func TestTimestampsForUninterruptedStream(t *testing.T) {
+	// enable it
+	require.NoError(t, featuregate.GlobalRegistry().Set(excludeResourceMetrics.ID(), true))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(legacyMetricNamesFeatureGate.ID(), false))
+	}()
+
 	tests := []struct {
 		temporality      string
 		verifyTimestamps func(startTime1, timestamp1, startTime2, timestamp2 pcommon.Timestamp)
@@ -1757,7 +1771,7 @@ func verifyAndCollectCommonTimestamps(t *testing.T, m pmetric.Metrics) (start, t
 	for i := 0; i < m.ResourceMetrics().Len(); i++ {
 		rm := m.ResourceMetrics().At(i)
 
-		serviceName, _ := rm.Resource().Attributes().Get("service.name")
+		serviceName, _ := rm.ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().Get("service.name")
 		if serviceName.Str() == "unrelated-service" {
 			continue
 		}
@@ -2060,7 +2074,7 @@ func TestConnectorWithCardinalityLimit(t *testing.T) {
 	ils2 := rspan2.ScopeSpans().AppendEmpty()
 
 	// Add spans with different names to trigger overflow
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		span1 := ils1.Spans().AppendEmpty()
 		span1.SetName(fmt.Sprintf("operation%d", i))
 		span1.SetKind(ptrace.SpanKindServer)
@@ -2193,7 +2207,7 @@ func TestConnectorWithCardinalityLimitForEvents(t *testing.T) {
 
 	// Add 3 different events to trigger overflow
 	events := span.Events()
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		event := events.AppendEmpty()
 		event.SetName(fmt.Sprintf("event%d", i))
 		event.Attributes().PutStr("event.name", fmt.Sprintf("event%d", i))
