@@ -1043,6 +1043,31 @@ func TestLogsPusher_partitioning(t *testing.T) {
 		assert.NotEqual(t, keys[0], keys[2])
 	})
 
+	// ensure that when TraceID partitioning is enabled but a log record has no TraceID,
+	// the exporter falls back to default partitioning (nil key).
+	t.Run("trace_id_partitioning_missing_traceid_defaults_to_nil_key", func(t *testing.T) {
+		config := createDefaultConfig().(*Config)
+		config.PartitionLogsByTraceID = true
+		exp, producer := newMockLogsExporter(t, *config, componenttest.NewNopHost())
+
+		in := plog.NewLogs()
+		rl := in.ResourceLogs().AppendEmpty()
+		rl.Resource().Attributes().PutStr("service.name", "svc")
+		sl := rl.ScopeLogs().AppendEmpty()
+		_ = sl.LogRecords().AppendEmpty()
+
+		producer.ExpectSendMessageWithMessageCheckerFunctionAndSucceed(
+			func(msg *sarama.ProducerMessage) error {
+				if msg.Key != nil {
+					return fmt.Errorf("expected nil key for missing TraceID, got %v", msg.Key)
+				}
+				return nil
+			},
+		)
+
+		require.NoError(t, exp.exportData(t.Context(), in))
+	})
+
 	// precedence: when both flags are true, resource-attribute partitioning wins over trace-id
 	t.Run("partitioning_precedence_resource_over_trace", func(t *testing.T) {
 		config := createDefaultConfig().(*Config)
