@@ -303,7 +303,15 @@ type ResourceAttributesConfig struct {
 	GlusterfsPath                ResourceAttributeConfig `mapstructure:"glusterfs.path"`
 	K8sContainerName             ResourceAttributeConfig `mapstructure:"k8s.container.name"`
 	K8sNamespaceName             ResourceAttributeConfig `mapstructure:"k8s.namespace.name"`
+	K8sNodeAnnotation            ResourceAttributeConfig `mapstructure:"k8s.node.annotation"`
+	K8sNodeBool                  ResourceAttributeConfig `mapstructure:"k8s.node.bool"`
+	K8sNodeBytes                 ResourceAttributeConfig `mapstructure:"k8s.node.bytes"`
+	K8sNodeDouble                ResourceAttributeConfig `mapstructure:"k8s.node.double"`
+	K8sNodeInt                   ResourceAttributeConfig `mapstructure:"k8s.node.int"`
+	K8sNodeLabel                 ResourceAttributeConfig `mapstructure:"k8s.node.label"`
+	K8sNodeMap                   ResourceAttributeConfig `mapstructure:"k8s.node.map"`
 	K8sNodeName                  ResourceAttributeConfig `mapstructure:"k8s.node.name"`
+	K8sNodeSlice                 ResourceAttributeConfig `mapstructure:"k8s.node.slice"`
 	K8sPersistentvolumeclaimName ResourceAttributeConfig `mapstructure:"k8s.persistentvolumeclaim.name"`
 	K8sPodName                   ResourceAttributeConfig `mapstructure:"k8s.pod.name"`
 	K8sPodUID                    ResourceAttributeConfig `mapstructure:"k8s.pod.uid"`
@@ -338,8 +346,32 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 		K8sNamespaceName: ResourceAttributeConfig{
 			Enabled: true,
 		},
+		K8sNodeAnnotation: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		K8sNodeBool: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		K8sNodeBytes: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		K8sNodeDouble: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		K8sNodeInt: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		K8sNodeLabel: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		K8sNodeMap: ResourceAttributeConfig{
+			Enabled: false,
+		},
 		K8sNodeName: ResourceAttributeConfig{
 			Enabled: true,
+		},
+		K8sNodeSlice: ResourceAttributeConfig{
+			Enabled: false,
 		},
 		K8sPersistentvolumeclaimName: ResourceAttributeConfig{
 			Enabled: true,
