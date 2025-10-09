@@ -242,11 +242,9 @@ func benchmarkReceiver(b *testing.B, logsPerIteration int, batchingInput, batchi
 	rcv.set = set
 	rcv.emitter = emitter
 
-	b.ResetTimer()
-
 	require.NoError(b, rcv.Start(b.Context(), nil))
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		nextIteration <- struct{}{}
 		<-iterationComplete
 		mockConsumer.receivedLogs.Store(0)

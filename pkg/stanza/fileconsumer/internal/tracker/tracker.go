@@ -6,6 +6,7 @@ package tracker // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"context"
 	"os"
+	"slices"
 
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
@@ -59,7 +60,7 @@ type fileTracker struct {
 
 func NewFileTracker(ctx context.Context, set component.TelemetrySettings, maxBatchFiles, pollsToArchive int, persister operator.Persister) Tracker {
 	knownFiles := make([]*fileset.Fileset[*reader.Metadata], 3)
-	for i := 0; i < len(knownFiles); i++ {
+	for i := range knownFiles {
 		knownFiles[i] = fileset.New[*reader.Metadata](maxBatchFiles)
 	}
 	set.Logger = set.Logger.With(zap.String("tracker", "fileTracker"))
@@ -103,11 +104,9 @@ func (t *fileTracker) GetClosedFile(fp *fingerprint.Fingerprint) *reader.Metadat
 
 func (t *fileTracker) AddUnmatched(file *os.File, fp *fingerprint.Fingerprint) {
 	// exclude duplicate fingerprints
-	for _, f := range t.unmatchedFps {
-		if fp.Equal(f) {
-			t.set.Logger.Debug("Skipping duplicate file", zap.String("path", file.Name()))
-			return
-		}
+	if slices.ContainsFunc(t.unmatchedFps, fp.Equal) {
+		t.set.Logger.Debug("Skipping duplicate file", zap.String("path", file.Name()))
+		return
 	}
 	t.unmatchedFps = append(t.unmatchedFps, fp)
 	t.unmatchedFiles = append(t.unmatchedFiles, file)

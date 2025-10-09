@@ -5,6 +5,7 @@ package syslog
 
 import (
 	"fmt"
+	"maps"
 	"net"
 	"testing"
 	"time"
@@ -195,18 +196,14 @@ func InputTest(t *testing.T, tc syslogtest.Case, cfg *Config, rsrc, attr map[str
 			if expect.Resource == nil {
 				expect.Resource = rsrc
 			} else {
-				for k, v := range rsrc {
-					expect.Resource[k] = v
-				}
+				maps.Copy(expect.Resource, rsrc)
 			}
 		}
 		if attr != nil {
 			if expect.Attributes == nil {
 				expect.Attributes = attr
 			} else {
-				for k, v := range attr {
-					expect.Attributes[k] = v
-				}
+				maps.Copy(expect.Attributes, attr)
 			}
 		}
 		require.Equal(t, expect, e)

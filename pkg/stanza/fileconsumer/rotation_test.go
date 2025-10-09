@@ -43,9 +43,9 @@ func TestCopyTruncate(t *testing.T) {
 	numRotations := 3
 
 	expected := make([][]byte, 0, numFiles*numMessages*numRotations)
-	for i := 0; i < numFiles; i++ {
-		for j := 0; j < numMessages; j++ {
-			for k := 0; k < numRotations; k++ {
+	for i := range numFiles {
+		for j := range numMessages {
+			for k := range numRotations {
 				expected = append(expected, []byte(getMessage(i, k, j)))
 			}
 		}
@@ -57,14 +57,14 @@ func TestCopyTruncate(t *testing.T) {
 	}()
 
 	var wg sync.WaitGroup
-	for fileNum := 0; fileNum < numFiles; fileNum++ {
+	for fileNum := range numFiles {
 		wg.Add(1)
 		go func(fn int) {
 			defer wg.Done()
 
 			file := filetest.OpenFile(t, baseFileName(fn))
-			for rotationNum := 0; rotationNum < numRotations; rotationNum++ {
-				for messageNum := 0; messageNum < numMessages; messageNum++ {
+			for rotationNum := range numRotations {
+				for messageNum := range numMessages {
 					filetest.WriteString(t, file, getMessage(fn, rotationNum, messageNum)+"\n")
 					time.Sleep(10 * time.Millisecond)
 				}
@@ -104,9 +104,9 @@ func TestMoveCreate(t *testing.T) {
 	numRotations := 3
 
 	expected := make([][]byte, 0, numFiles*numMessages*numRotations)
-	for i := 0; i < numFiles; i++ {
-		for j := 0; j < numMessages; j++ {
-			for k := 0; k < numRotations; k++ {
+	for i := range numFiles {
+		for j := range numMessages {
+			for k := range numRotations {
 				expected = append(expected, []byte(getMessage(i, k, j)))
 			}
 		}
@@ -118,14 +118,14 @@ func TestMoveCreate(t *testing.T) {
 	}()
 
 	var wg sync.WaitGroup
-	for fileNum := 0; fileNum < numFiles; fileNum++ {
+	for fileNum := range numFiles {
 		wg.Add(1)
 		go func(fn int) {
 			defer wg.Done()
 
-			for rotationNum := 0; rotationNum < numRotations; rotationNum++ {
+			for rotationNum := range numRotations {
 				file := filetest.OpenFile(t, baseFileName(fn))
-				for messageNum := 0; messageNum < numMessages; messageNum++ {
+				for messageNum := range numMessages {
 					filetest.WriteString(t, file, getMessage(fn, rotationNum, messageNum)+"\n")
 					time.Sleep(10 * time.Millisecond)
 				}

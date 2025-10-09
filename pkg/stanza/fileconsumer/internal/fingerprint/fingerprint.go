@@ -93,7 +93,7 @@ func (f Fingerprint) Equal(other *Fingerprint) bool {
 	if l0 != l1 {
 		return false
 	}
-	for i := 0; i < l0; i++ {
+	for i := range l0 {
 		if other.firstBytes[i] != f.firstBytes[i] {
 			return false
 		}

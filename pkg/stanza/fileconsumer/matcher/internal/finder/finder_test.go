@@ -270,8 +270,8 @@ func BenchmarkFind10kFiles(b *testing.B) {
 	excludeGlobs := []string{}
 
 	var r []string
-	b.ResetTimer()
-	for range b.N {
+
+	for b.Loop() {
 		r, _ = FindFiles(includeGlobs, excludeGlobs)
 	}
 
