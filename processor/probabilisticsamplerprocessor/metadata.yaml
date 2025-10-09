@@ -19,6 +19,8 @@ telemetry:
     processor_probabilistic_sampler_count_traces_sampled:
       enabled: true
       description: Count of traces that were sampled or not
+      stability:
+        level: development
       unit: "1"
       sum:
         value_type: int
@@ -26,6 +28,8 @@ telemetry:
     processor_probabilistic_sampler_count_logs_sampled:
       enabled: true
       description: Count of logs that were sampled or not
+      stability:
+        level: development
       unit: "1"
       sum:
         value_type: int
