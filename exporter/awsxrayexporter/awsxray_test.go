@@ -53,12 +53,14 @@ func TestXrayAndW3CSpanTraceExport(t *testing.T) {
 }
 
 func TestXrayAndW3CSpanTraceResourceExtraction(t *testing.T) {
+	setSkipTimestampValidation(t, true)
 	td := constructXrayAndW3CSpanData()
 	logger, _ := zap.NewProduction()
 	assert.Len(t, extractResourceSpans(generateConfig(t), logger, td), 4, "4 spans have xray/w3c trace id")
 }
 
 func TestW3CSpanTraceResourceExtraction(t *testing.T) {
+	setSkipTimestampValidation(t, true)
 	td := constructW3CSpanData()
 	logger, _ := zap.NewProduction()
 	assert.Len(t, extractResourceSpans(generateConfig(t), logger, td), 2, "2 spans have w3c trace id")
