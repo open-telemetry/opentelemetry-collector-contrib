@@ -252,6 +252,33 @@ func jobWatchFuncWithSelectors(client kubernetes.Interface, namespace string) ca
 	}
 }
 
+func newCronJobSharedInformer(
+	client kubernetes.Interface,
+	namespace string,
+) cache.SharedInformer {
+	informer := cache.NewSharedInformer(
+		&cache.ListWatch{
+			ListFunc:  cronJobListFuncWithSelectors(client, namespace),
+			WatchFunc: cronJobWatchFuncWithSelectors(client, namespace),
+		},
+		&batch_v1.CronJob{},
+		watchSyncPeriod,
+	)
+	return informer
+}
+
+func cronJobListFuncWithSelectors(client kubernetes.Interface, namespace string) cache.ListFunc {
+	return func(opts metav1.ListOptions) (runtime.Object, error) {
+		return client.BatchV1().CronJobs(namespace).List(context.Background(), opts)
+	}
+}
+
+func cronJobWatchFuncWithSelectors(client kubernetes.Interface, namespace string) cache.WatchFunc {
+	return func(opts metav1.ListOptions) (watch.Interface, error) {
+		return client.BatchV1().CronJobs(namespace).Watch(context.Background(), opts)
+	}
+}
+
 func daemonsetListFuncWithSelectors(client kubernetes.Interface, namespace string) cache.ListFunc {
 	return func(opts metav1.ListOptions) (runtime.Object, error) {
 		return client.AppsV1().DaemonSets(namespace).List(context.Background(), opts)
