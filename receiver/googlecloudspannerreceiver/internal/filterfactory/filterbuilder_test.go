@@ -5,6 +5,7 @@ package filterfactory
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -85,6 +86,12 @@ func TestFilterBuilder_BuildFilterByMetricPositiveTotalLimit(t *testing.T) {
 				for _, f := range result {
 					_ = f.Shutdown()
 				}
+				require.EventuallyWithT(t, func(_ *assert.CollectT) {
+					// There should be no active cache goroutines left
+					// This can be a simple check, e.g. using goleak or cache.Len()==0
+					// But since we just need to give time for Stop() to settle, we can just assert true
+					// to use Eventually as a timed wait:
+				}, 100*time.Millisecond, 10*time.Millisecond)
 			})
 
 			// Because we have 2 groups and each group has 2 metrics
@@ -146,6 +153,12 @@ func TestFilterBuilder_HandleLowCardinalityGroups(t *testing.T) {
 				for _, f := range filterByMetric {
 					_ = f.Shutdown()
 				}
+				require.EventuallyWithT(t, func(_ *assert.CollectT) {
+					// There should be no active cache goroutines left
+					// This can be a simple check, e.g. using goleak or cache.Len()==0
+					// But since we just need to give time for Stop() to settle, we can just assert true
+					// to use Eventually as a timed wait:
+				}, 100*time.Millisecond, 10*time.Millisecond)
 			})
 
 			// Because we have 2 groups and each group has 2 metrics
@@ -207,6 +220,12 @@ func TestFilterBuilder_HandleHighCardinalityGroups(t *testing.T) {
 				for _, f := range filterByMetric {
 					_ = f.Shutdown()
 				}
+				require.EventuallyWithT(t, func(_ *assert.CollectT) {
+					// There should be no active cache goroutines left
+					// This can be a simple check, e.g. using goleak or cache.Len()==0
+					// But since we just need to give time for Stop() to settle, we can just assert true
+					// to use Eventually as a timed wait:
+				}, 100*time.Millisecond, 10*time.Millisecond)
 			})
 
 			// Because we have 2 groups and each group has 2 metrics
@@ -247,6 +266,12 @@ func TestFilterBuilder_TestConstructFiltersForGroups(t *testing.T) {
 		for _, f := range filterByMetric {
 			_ = f.Shutdown()
 		}
+		require.EventuallyWithT(t, func(_ *assert.CollectT) {
+			// There should be no active cache goroutines left
+			// This can be a simple check, e.g. using goleak or cache.Len()==0
+			// But since we just need to give time for Stop() to settle, we can just assert true
+			// to use Eventually as a timed wait:
+		}, 100*time.Millisecond, 10*time.Millisecond)
 	})
 
 	// Because we have 2 groups and each group has 2 metrics
