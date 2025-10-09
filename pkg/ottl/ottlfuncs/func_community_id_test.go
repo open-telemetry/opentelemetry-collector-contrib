@@ -7,10 +7,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestCommunityID(t *testing.T) {
@@ -155,8 +153,7 @@ func TestCommunityID(t *testing.T) {
 			protocolOpt := ottl.NewTestingOptional[ottl.StringGetter[any]](protocol)
 			seedOpt := ottl.NewTestingOptional[ottl.IntGetter[any]](seed)
 
-			exprFunc, err := communityID(sourceIP, sourcePort, destIP, destPort, protocolOpt, seedOpt)
-			require.NoError(t, err)
+			exprFunc := communityID(sourceIP, sourcePort, destIP, destPort, protocolOpt, seedOpt)
 
 			result, err := exprFunc(t.Context(), nil)
 			if tt.errorExpected {

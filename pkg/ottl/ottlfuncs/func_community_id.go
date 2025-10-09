@@ -43,7 +43,7 @@ func createCommunityIDFunction[K any](_ ottl.FunctionContext, oArgs ottl.Argumen
 		args.DestinationPort,
 		args.Protocol,
 		args.Seed,
-	)
+	), nil
 }
 
 func communityID[K any](
@@ -53,7 +53,7 @@ func communityID[K any](
 	destinationPort ottl.IntGetter[K],
 	protocol ottl.Optional[ottl.StringGetter[K]],
 	seed ottl.Optional[ottl.IntGetter[K]],
-) (ottl.ExprFunc[K], error) {
+) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		srcIPValue, err := sourceIP.Get(ctx, tCtx)
 		if err != nil {
@@ -129,7 +129,7 @@ func communityID[K any](
 		shouldSwap := false
 		if len(srcIPBytes) != len(dstIPBytes) {
 			shouldSwap = len(srcIPBytes) > len(dstIPBytes)
-		} else if cmp := bytesCompare(srcIPBytes, dstIPBytes); cmp > 0 {
+		} else if cmp := compareBytes(srcIPBytes, dstIPBytes); cmp > 0 {
 			shouldSwap = true
 		} else if cmp == 0 && srcPort > dstPort {
 			shouldSwap = true
@@ -139,10 +139,9 @@ func communityID[K any](
 			srcPortForHash, dstPortForHash = dstPortForHash, srcPortForHash
 		}
 
-		// Build the flow tuple
-		// Format: <seed:2><protocol:1><src_ip><dst_ip><src_port:2><dst_port:2>
+		// Build the flow, format: <seed:2><protocol:1><src_ip><dst_ip><src_port:2><dst_port:2>
 		return flow(srcIPBytes, srcPortForHash, dstIPBytes, dstPortForHash, protocolValue, seedValue), nil
-	}, nil
+	}
 }
 
 func resolveProtocolValue(protoStr string) (uint8, error) {
@@ -155,7 +154,7 @@ func resolveProtocolValue(protoStr string) (uint8, error) {
 	return protocolValue, nil
 }
 
-func bytesCompare(a, b []byte) int {
+func compareBytes(a, b []byte) int {
 	for i := range a {
 		if a[i] < b[i] {
 			return -1
