@@ -18,7 +18,6 @@ import (
 )
 
 func BenchmarkConvertSimple(b *testing.B) {
-
 	ent := entry.New()
 	b.ReportAllocs()
 
@@ -28,7 +27,6 @@ func BenchmarkConvertSimple(b *testing.B) {
 }
 
 func BenchmarkConvertComplex(b *testing.B) {
-
 	ent := complexEntry()
 	b.ReportAllocs()
 
@@ -811,7 +809,6 @@ func BenchmarkConverter(b *testing.B) {
 }
 
 func BenchmarkGetResourceID(b *testing.B) {
-
 	res := getResource()
 	b.ReportAllocs()
 

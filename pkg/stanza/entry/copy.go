@@ -3,9 +3,10 @@
 
 package entry // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 
-import "maps"
-
-import "encoding/json"
+import (
+	"encoding/json"
+	"maps"
+)
 
 // copyValue will deep copy a value based on its type.
 func copyValue(v any) any {
