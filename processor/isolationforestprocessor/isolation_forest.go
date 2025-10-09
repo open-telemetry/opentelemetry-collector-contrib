@@ -103,7 +103,7 @@ func newOnlineIsolationForest(numTrees, windowSize, maxDepth int) *onlineIsolati
 	}
 
 	// Initialize trees with minimal structure
-	for i := 0; i < numTrees; i++ {
+	for i := range numTrees {
 		forest.trees[i] = &onlineIsolationTree{
 			maxDepth:       maxDepth,
 			lastUpdateTime: time.Now(),

@@ -109,7 +109,7 @@ func TestWALStopManyTimes(t *testing.T) {
 	// Ensure that invoking .stop() multiple times doesn't cause a panic, but actually
 	// First close should NOT return an error.
 	require.NoError(t, pwal.stop())
-	for i := 0; i < 4; i++ {
+	for range 4 {
 		// Every invocation to .stop() should return an errAlreadyClosed.
 		require.ErrorIs(t, pwal.stop(), errAlreadyClosed)
 	}

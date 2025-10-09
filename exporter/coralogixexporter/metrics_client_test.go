@@ -308,12 +308,12 @@ func BenchmarkMetricsExporter_PushMetrics(b *testing.B) {
 	}
 	for _, numMetrics := range testCases {
 		b.Run("numMetrics="+fmt.Sprint(numMetrics), func(b *testing.B) {
-			for i := 0; i < b.N; i++ {
+			for b.Loop() {
 				metrics := pmetric.NewMetrics()
 				rm := metrics.ResourceMetrics().AppendEmpty()
 				rm.Resource().Attributes().PutStr("service.name", "benchmark-service")
 				sm := rm.ScopeMetrics().AppendEmpty()
-				for j := 0; j < numMetrics; j++ {
+				for j := range numMetrics {
 					metric := sm.Metrics().AppendEmpty()
 					metric.SetName("benchmark_metric")
 					metric.SetUnit("1")
@@ -455,7 +455,7 @@ func TestMetricsExporter_PushMetrics_Performance(t *testing.T) {
 		sm := rm.ScopeMetrics().AppendEmpty()
 
 		metricCount := 3000
-		for i := 0; i < metricCount; i++ {
+		for i := range metricCount {
 			metric := sm.Metrics().AppendEmpty()
 			metric.SetName(fmt.Sprintf("test_metric_%d", i))
 			metric.SetUnit("1")
@@ -477,7 +477,7 @@ func TestMetricsExporter_PushMetrics_Performance(t *testing.T) {
 	t.Run("Over rate limit", func(t *testing.T) {
 		mockSrv.recvCount = 0
 
-		for i := 0; i < 5; i++ {
+		for range 5 {
 			exp.EnableRateLimit()
 		}
 
@@ -487,7 +487,7 @@ func TestMetricsExporter_PushMetrics_Performance(t *testing.T) {
 		sm := rm.ScopeMetrics().AppendEmpty()
 
 		metricCount := 7000
-		for i := 0; i < metricCount; i++ {
+		for i := range metricCount {
 			metric := sm.Metrics().AppendEmpty()
 			metric.SetName(fmt.Sprintf("test_metric_%d", i))
 			metric.SetUnit("1")
@@ -537,7 +537,7 @@ func TestMetricsExporter_PushMetrics_Performance(t *testing.T) {
 		sm := rm.ScopeMetrics().AppendEmpty()
 
 		metricCount := 3000
-		for i := 0; i < metricCount; i++ {
+		for i := range metricCount {
 			metric := sm.Metrics().AppendEmpty()
 			metric.SetName(fmt.Sprintf("test_metric_%d", i))
 			metric.SetUnit("1")
@@ -586,7 +586,7 @@ func TestMetricsExporter_RateLimitErrorCountReset(t *testing.T) {
 		require.NoError(t, err)
 	}()
 
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		exp.EnableRateLimit()
 	}
 	assert.Equal(t, int32(5), exp.rateError.errorCount.Load())
@@ -673,7 +673,7 @@ func TestMetricsExporter_RateLimitCounterResetOnSuccess(t *testing.T) {
 	})
 
 	t.Run("Trigger errors below threshold", func(t *testing.T) {
-		for i := 0; i < 4; i++ {
+		for range 4 {
 			exp.EnableRateLimit()
 		}
 		assert.Equal(t, int32(4), exp.rateError.errorCount.Load())

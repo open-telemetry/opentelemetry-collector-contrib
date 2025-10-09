@@ -111,12 +111,12 @@ func testLogsExporter(t *testing.T, ld plog.Logs, cfg *Config) error {
 // Traces
 func newTestTracesWithAttributes() ptrace.Traces {
 	td := ptrace.NewTraces()
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		s := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 		s.SetName(fmt.Sprintf("%s-%d", testOperation, i))
 		s.SetTraceID(pcommon.TraceID([16]byte{byte(i), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}))
 		s.SetSpanID(pcommon.SpanID([8]byte{byte(i), 0, 0, 0, 0, 0, 0, 2}))
-		for j := 0; j < 5; j++ {
+		for j := range 5 {
 			s.Attributes().PutStr(fmt.Sprintf("k%d", j), fmt.Sprintf("v%d", j))
 		}
 		s.SetKind(ptrace.SpanKindServer)

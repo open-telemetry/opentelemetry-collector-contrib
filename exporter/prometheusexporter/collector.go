@@ -131,7 +131,7 @@ func convertExemplars(exemplars pmetric.ExemplarSlice) []prometheus.Exemplar {
 	length := exemplars.Len()
 	result := make([]prometheus.Exemplar, length)
 
-	for i := 0; i < length; i++ {
+	for i := range length {
 		e := exemplars.At(i)
 		exemplarLabels := make(prometheus.Labels, 0)
 

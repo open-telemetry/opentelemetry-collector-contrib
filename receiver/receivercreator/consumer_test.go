@@ -4,6 +4,7 @@
 package receivercreator
 
 import (
+	"maps"
 	"strings"
 	"testing"
 
@@ -139,9 +140,7 @@ func TestNewEnhancingConsumer(t *testing.T) {
 			args: args{
 				resources: func() resourceAttributes {
 					res := map[observer.EndpointType]map[string]string{observer.PodType: {}}
-					for k, v := range cfg.ResourceAttributes[observer.PodType] {
-						res[observer.PodType][k] = v
-					}
+					maps.Copy(res[observer.PodType], cfg.ResourceAttributes[observer.PodType])
 					res[observer.PodType]["duplicate.resource.attribute"] = "pod.value"
 					res[observer.PodType]["delete.me"] = "pod.value"
 					return res

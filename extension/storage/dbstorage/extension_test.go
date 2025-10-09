@@ -103,7 +103,7 @@ func testExtensionIntegrity(t *testing.T, se storage.Extension) {
 		opsSet := make([]*storage.Operation, 0, len(keys))
 		opsGet := make([]*storage.Operation, 0, len(keys))
 		opsDelete := make([]*storage.Operation, 0, len(keys))
-		for i := 0; i < len(keys); i++ {
+		for i := range keys {
 			opsSet = append(opsSet, &storage.Operation{
 				Type:  storage.Set,
 				Key:   keys[i],
@@ -155,20 +155,20 @@ func testExtensionIntegrity(t *testing.T, se storage.Extension) {
 
 		// Single-operation interfaces
 		// Reset my values
-		for i := 0; i < len(keys); i++ {
+		for i := range keys {
 			err := c.Set(ctx, keys[i], append(myBytes, []byte("_"+keys[i])...))
 			require.NoError(t, err)
 		}
 
 		// Make sure my values are still mine
-		for i := 0; i < len(keys); i++ {
+		for i := range keys {
 			v, err := c.Get(ctx, keys[i])
 			require.NoError(t, err)
 			require.Equal(t, append(myBytes, []byte("_"+keys[i])...), v)
 		}
 
 		// Delete my values
-		for i := 0; i < len(keys); i++ {
+		for i := range keys {
 			err := c.Delete(ctx, keys[i])
 			require.NoError(t, err)
 		}

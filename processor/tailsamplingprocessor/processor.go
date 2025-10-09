@@ -554,7 +554,7 @@ func (*tailSamplingSpanProcessor) groupSpansByTraceKey(resourceSpans ptrace.Reso
 		spans := scope.Spans()
 		is := scope.Scope()
 		spansLen := spans.Len()
-		for k := 0; k < spansLen; k++ {
+		for k := range spansLen {
 			span := spans.At(k)
 			key := span.TraceID()
 			idToSpans[key] = append(idToSpans[key], spanAndScope{

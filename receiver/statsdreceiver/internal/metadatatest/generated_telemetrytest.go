@@ -24,7 +24,7 @@ func NewSettings(tt *componenttest.Telemetry) receiver.Settings {
 func AssertEqualReceiverReceivedStatsdMetrics(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_receiver_received_statsd_metrics",
-		Description: "Number of statsd metrics received.",
+		Description: "Number of statsd metrics received. [development]",
 		Unit:        "1",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,

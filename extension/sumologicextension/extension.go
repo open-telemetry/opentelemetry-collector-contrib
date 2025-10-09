@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"net"
 	"net/http"
 	"net/url"
@@ -865,9 +866,7 @@ func (se *SumologicExtension) updateMetadataWithHTTPClient(ctx context.Context, 
 		}
 	}
 
-	for k, v := range se.conf.CollectorFields {
-		td[k] = v
-	}
+	maps.Copy(td, se.conf.CollectorFields)
 
 	var buff bytes.Buffer
 	err = json.NewEncoder(&buff).Encode(api.OpenMetadataRequestPayload{

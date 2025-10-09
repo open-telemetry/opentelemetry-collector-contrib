@@ -37,10 +37,10 @@ func CompareLogs(expected, actual plog.Logs, options ...CompareLogsOption) error
 
 	var errs error
 	var outOfOrderErrs error
-	for e := 0; e < numResources; e++ {
+	for e := range numResources {
 		er := expectedLogs.At(e)
 		var foundMatch bool
-		for a := 0; a < numResources; a++ {
+		for a := range numResources {
 			ar := actualLogs.At(a)
 			if _, ok := matchingResources[ar]; ok {
 				continue
@@ -61,7 +61,7 @@ func CompareLogs(expected, actual plog.Logs, options ...CompareLogsOption) error
 		}
 	}
 
-	for i := 0; i < numResources; i++ {
+	for i := range numResources {
 		if _, ok := matchingResources[actualLogs.At(i)]; !ok {
 			errs = multierr.Append(errs, fmt.Errorf("unexpected resource: %v", actualLogs.At(i).Resource().Attributes().AsRaw()))
 		}
@@ -105,10 +105,10 @@ func CompareResourceLogs(expected, actual plog.ResourceLogs) error {
 	matchingScopeLogs := make(map[plog.ScopeLogs]plog.ScopeLogs, numScopeLogs)
 
 	var outOfOrderErrs error
-	for e := 0; e < numScopeLogs; e++ {
+	for e := range numScopeLogs {
 		esl := expected.ScopeLogs().At(e)
 		var foundMatch bool
-		for a := 0; a < numScopeLogs; a++ {
+		for a := range numScopeLogs {
 			asl := actual.ScopeLogs().At(a)
 			if _, ok := matchingScopeLogs[asl]; ok {
 				continue
@@ -129,7 +129,7 @@ func CompareResourceLogs(expected, actual plog.ResourceLogs) error {
 		}
 	}
 
-	for i := 0; i < numScopeLogs; i++ {
+	for i := range numScopeLogs {
 		if _, ok := matchingScopeLogs[actual.ScopeLogs().At(i)]; !ok {
 			errs = multierr.Append(errs, fmt.Errorf("unexpected scope: %s", actual.ScopeLogs().At(i).Scope().Name()))
 		}
@@ -170,10 +170,10 @@ func CompareScopeLogs(expected, actual plog.ScopeLogs) error {
 	matchingLogRecords := make(map[plog.LogRecord]plog.LogRecord, numLogRecords)
 
 	var outOfOrderErrs error
-	for e := 0; e < numLogRecords; e++ {
+	for e := range numLogRecords {
 		elr := expected.LogRecords().At(e)
 		var foundMatch bool
-		for a := 0; a < numLogRecords; a++ {
+		for a := range numLogRecords {
 			alr := actual.LogRecords().At(a)
 			if _, ok := matchingLogRecords[alr]; ok {
 				continue
@@ -194,7 +194,7 @@ func CompareScopeLogs(expected, actual plog.ScopeLogs) error {
 		}
 	}
 
-	for i := 0; i < numLogRecords; i++ {
+	for i := range numLogRecords {
 		if _, ok := matchingLogRecords[actual.LogRecords().At(i)]; !ok {
 			errs = multierr.Append(errs, fmt.Errorf("unexpected log record: %v",
 				actual.LogRecords().At(i).Attributes().AsRaw()))

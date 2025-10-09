@@ -219,7 +219,7 @@ func setProxy(cfg *datadogconfig.Config, pkgconfig pkgconfigmodel.Config) {
 	// this config during secrets resolution. It unmarshals empty yaml lists to type
 	// []any, which will then conflict with type []string and fail to merge.
 	var noProxy []any
-	for _, v := range strings.Split(proxyConfig.NoProxy, ",") {
+	for v := range strings.SplitSeq(proxyConfig.NoProxy, ",") {
 		noProxy = append(noProxy, v)
 	}
 	pkgconfig.Set("proxy.no_proxy", noProxy, pkgconfigmodel.SourceEnvVar)

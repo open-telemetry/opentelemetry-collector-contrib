@@ -64,7 +64,7 @@ func TestDownscale(t *testing.T) {
 			buckets := make([]Repr[B], len(reprs))
 			for i, r := range reprs {
 				bkt := pmetric.NewExponentialHistogramDataPointBuckets()
-				for _, elem := range strings.Fields(r.bkt) {
+				for elem := range strings.FieldsSeq(r.bkt) {
 					if elem == "ø" {
 						bkt.SetOffset(bkt.Offset() + 1)
 						continue

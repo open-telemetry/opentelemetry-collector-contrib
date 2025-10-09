@@ -48,7 +48,7 @@ func (prwe *prwExporter) exportV2(ctx context.Context, requests []*writev2.Reque
 	var errs error
 	// Run concurrencyLimit of workers until there
 	// is no more requests to execute in the input channel.
-	for i := 0; i < concurrencyLimit; i++ {
+	for range concurrencyLimit {
 		go func() {
 			defer wg.Done()
 			err := prwe.handleRequestsV2(ctx, input)
