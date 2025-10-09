@@ -372,7 +372,10 @@ func TestStoreCredentials_PreexistingCredentialsAreUsed(t *testing.T) {
 	require.NoError(t, se.Shutdown(t.Context()))
 	require.FileExists(t, credsPath)
 
-	require.EqualValues(t, 2, atomic.LoadInt32(&reqCount))
+	// Depending on timing, the periodic heartbeat can result in more than
+	// two requests being made. Testing that at least two requests were made
+	// should be sufficient to satisfy this test.
+	require.GreaterOrEqual(t, atomic.LoadInt32(&reqCount), int32(2))
 }
 
 func TestStoreCredentials_V2CredentialsAreUsed(t *testing.T) {
