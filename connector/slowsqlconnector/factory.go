@@ -9,13 +9,12 @@ import (
 	"context"
 	"time"
 
-	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/slowsqlconnector/internal/metadata"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 )
 
 // NewFactory creates a factory for the exceptions connector.
