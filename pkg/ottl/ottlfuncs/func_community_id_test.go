@@ -155,8 +155,7 @@ func TestCommunityID(t *testing.T) {
 			protocolOpt := ottl.NewTestingOptional[ottl.StringGetter[any]](protocol)
 			seedOpt := ottl.NewTestingOptional[ottl.IntGetter[any]](seed)
 
-			exprFunc, err := communityID(sourceIP, sourcePort, destIP, destPort, protocolOpt, seedOpt)
-			require.NoError(t, err)
+			exprFunc := communityID(sourceIP, sourcePort, destIP, destPort, protocolOpt, seedOpt)
 
 			result, err := exprFunc(context.Background(), nil)
 			if tt.errorExpected {

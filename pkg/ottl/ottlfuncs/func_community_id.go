@@ -82,11 +82,11 @@ func communityID[K any](
 				return nil, fmt.Errorf("failed to get protocol: %w", err)
 			}
 
-			resolvedProtocolId, err := resolveProtocolValue(protocolStr)
+			resolvedProtocolValue, err := resolveProtocolValue(protocolStr)
 			if err != nil {
 				return nil, err
 			}
-			protocolValue = resolvedProtocolId
+			protocolValue = resolvedProtocolValue
 		}
 
 		srcIPAddr := net.ParseIP(srcIPValue)
@@ -147,12 +147,12 @@ func communityID[K any](
 
 func resolveProtocolValue(protoStr string) (uint8, error) {
 	protoMap := map[string]uint8{"ICMP": 1, "TCP": 6, "UDP": 17, "RSVP": 46, "ICMP6": 58, "SCTP": 132}
-	protoId := protoMap[protoStr]
+	protocolValue := protoMap[protoStr]
 
-	if protoId == 0 {
+	if protocolValue == 0 {
 		return 0, fmt.Errorf("unsupported protocol: %s", protoStr)
 	}
-	return protoId, nil
+	return protocolValue, nil
 }
 
 func bytesCompare(a, b []byte) int {
