@@ -259,7 +259,7 @@ func TestUpdateAdaptiveThreshold_InsufficientSamples(t *testing.T) {
 	forest := newOnlineIsolationForest(1, 10, 4)
 
 	// Add fewer than 50 samples (minimum for threshold update)
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		forest.updateAdaptiveThreshold(0.5)
 	}
 
@@ -275,7 +275,7 @@ func TestUpdateAdaptiveThreshold_SufficientSamples(t *testing.T) {
 	forest := newOnlineIsolationForest(1, 100, 4)
 
 	// Add enough samples for threshold adaptation
-	for i := 0; i < 60; i++ {
+	for i := range 60 {
 		score := 0.3 + 0.4*float64(i)/60.0 // Gradual increase from 0.3 to 0.7
 		forest.updateAdaptiveThreshold(score)
 	}
@@ -404,7 +404,7 @@ func TestSplitNode_ConstantFeature(t *testing.T) {
 	forest := newOnlineIsolationForest(1, 10, 4)
 
 	// Fill window with constant values
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		forest.updateSlidingWindow([]float64{2.0}) // All same value
 	}
 
@@ -568,7 +568,7 @@ func TestConcurrentAccess(t *testing.T) {
 	// Test concurrent processing to ensure thread safety
 	done := make(chan bool, 10)
 
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		go func(val float64) {
 			defer func() { done <- true }()
 			sample := []float64{val, val * 2}
@@ -577,7 +577,7 @@ func TestConcurrentAccess(t *testing.T) {
 	}
 
 	// Wait for all goroutines to complete
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		<-done
 	}
 
@@ -637,7 +637,7 @@ func TestSplitNode_EdgeCases(t *testing.T) {
 	forest := newOnlineIsolationForest(1, 10, 4)
 
 	// Test split with different feature values
-	for i := 0; i < 3; i++ {
+	for range 3 {
 		forest.updateSlidingWindow([]float64{5.0, 3.0}) // Different values
 	}
 
@@ -677,7 +677,7 @@ func TestUpdateAdaptiveThreshold_BoundaryValues(t *testing.T) {
 	forest := newOnlineIsolationForest(1, 100, 4)
 
 	// Add exactly 50 samples (boundary for threshold update)
-	for i := 0; i < 50; i++ {
+	for range 50 {
 		forest.updateAdaptiveThreshold(0.6)
 	}
 
@@ -718,8 +718,7 @@ func BenchmarkIsolationForestProcessing(b *testing.B) {
 		}
 	}
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for i := 0; b.Loop(); i++ {
 		sample := samples[i%len(samples)]
 		forest.ProcessSample(sample)
 	}
@@ -741,8 +740,7 @@ func BenchmarkFeatureExtraction(b *testing.B) {
 		"service.name": "benchmark-service",
 	}
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		extractor.ExtractFeatures(span, resourceAttrs)
 	}
 }
