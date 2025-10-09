@@ -456,7 +456,7 @@ func BenchmarkURLToMap(b *testing.B) {
 	v := "https://dev:password@www.golang.org:8443/v1/app/stage?token=d9e28b1d-2c7b-4853-be6a-d94f34a5d4ab&env=prod&env=stage&token=c6fa29f9-a31b-4584-b98d-aa8473b0e18d&region=us-east1b&mode=fast"
 	u, err := url.ParseRequestURI(v)
 	require.NoError(b, err)
-	for n := 0; n < b.N; n++ {
+	for b.Loop() {
 		_, _ = urlToMap(u, m)
 	}
 }
@@ -466,7 +466,7 @@ func BenchmarkQueryToMap(b *testing.B) {
 	v := "?token=d9e28b1d-2c7b-4853-be6a-d94f34a5d4ab&env=prod&env=stage&token=c6fa29f9-a31b-4584-b98d-aa8473b0e18d&region=us-east1b&mode=fast"
 	u, err := url.ParseQuery(v)
 	require.NoError(b, err)
-	for n := 0; n < b.N; n++ {
+	for b.Loop() {
 		queryToMap(u, m)
 	}
 }
@@ -476,7 +476,7 @@ func BenchmarkQueryParamValuesToMap(b *testing.B) {
 		"d9e28b1d-2c7b-4853-be6a-d94f34a5d4ab",
 		"c6fa29f9-a31b-4584-b98d-aa8473b0e18",
 	}
-	for n := 0; n < b.N; n++ {
+	for b.Loop() {
 		queryParamValuesToMap(v)
 	}
 }

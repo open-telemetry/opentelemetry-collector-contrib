@@ -6,6 +6,7 @@ package collectdreceiver // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -66,9 +67,7 @@ func (cdr *collectDRecord) appendToMetrics(logger *zap.Logger, scopeMetrics pmet
 	}
 
 	labels := make(map[string]string, len(defaultLabels))
-	for k, v := range defaultLabels {
-		labels[k] = v
-	}
+	maps.Copy(labels, defaultLabels)
 
 	for i := range cdr.Dsnames {
 		if i >= len(cdr.Dstypes) || i >= len(cdr.Values) || cdr.Values[i] == nil {

@@ -6,6 +6,7 @@ package receivercreator // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"errors"
 	"fmt"
+	"maps"
 	"net/url"
 	"strings"
 
@@ -305,12 +306,8 @@ func validateEndpoint(endpoint, defaultEndpoint string) error {
 func mergeAnnotations(podAnnotations, defaultAnnotations map[string]string) map[string]string {
 	annotations := make(map[string]string)
 	// Start with defaultAnnotations (lower priority)
-	for k, v := range defaultAnnotations {
-		annotations[k] = v
-	}
+	maps.Copy(annotations, defaultAnnotations)
 	// Overwrite with podAnnotations (higher priority)
-	for k, v := range podAnnotations {
-		annotations[k] = v
-	}
+	maps.Copy(annotations, podAnnotations)
 	return annotations
 }

@@ -38,7 +38,7 @@ func TestAccessAttributes_Getter(t *testing.T) {
 	dict := pprofile.NewProfilesDictionary()
 	attrTable := dict.AttributeTable()
 	strTable := dict.StringTable()
-	for i := 0; i < 3; i++ {
+	for range 3 {
 		strTable.Append("")
 	}
 	strTable.SetAt(1, "foo")
@@ -81,7 +81,7 @@ func TestAccessAttributes_Setter(t *testing.T) {
 	attrTable := dict.AttributeTable()
 	strTable := dict.StringTable()
 
-	for i := 0; i < 3; i++ {
+	for range 3 {
 		strTable.Append("")
 	}
 	strTable.SetAt(1, "existing_key1")
@@ -193,7 +193,7 @@ func TestAccessAttributesKey_Getter(t *testing.T) {
 	dict := pprofile.NewProfilesDictionary()
 	attrTable := dict.AttributeTable()
 	strTable := dict.StringTable()
-	for i := 0; i < 2; i++ {
+	for range 2 {
 		strTable.Append("")
 	}
 	strTable.SetAt(1, "foo")
@@ -242,7 +242,7 @@ func TestAccessAttributesKey_Setter(t *testing.T) {
 	attrTable := dict.AttributeTable()
 	strTable := dict.StringTable()
 
-	for i := 0; i < 4; i++ {
+	for range 4 {
 		strTable.Append("")
 	}
 	strTable.SetAt(1, "foo")

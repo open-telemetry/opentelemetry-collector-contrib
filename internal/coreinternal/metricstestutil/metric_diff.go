@@ -37,7 +37,7 @@ func diffRMSlices(sent, recd []pmetric.ResourceMetrics) []*MetricDiff {
 			Msg:           "Sent vs received ResourceMetrics not equal length",
 		}}
 	}
-	for i := 0; i < len(sent); i++ {
+	for i := range sent {
 		sentRM := sent[i]
 		recdRM := recd[i]
 		diffs = diffRMs(diffs, sentRM, recdRM)

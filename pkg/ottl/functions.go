@@ -691,7 +691,7 @@ func buildSlice[T any](argVal value, argType reflect.Type, buildArg buildArgFunc
 
 	vals := []T{}
 	values := argVal.List.Values
-	for j := 0; j < len(values); j++ {
+	for j := range values {
 		untypedVal, err := buildArg(values[j], argType.Elem())
 		if err != nil {
 			return nil, fmt.Errorf("error while parsing list argument at index %v: %w", j, err)

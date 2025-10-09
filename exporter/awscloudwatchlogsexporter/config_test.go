@@ -159,7 +159,7 @@ func TestValidateTags(t *testing.T) {
 	// Create a map with no items and then one with too many items for testing
 	emptyMap := make(map[string]string)
 	bigMap := make(map[string]string)
-	for i := 0; i < 51; i++ {
+	for i := range 51 {
 		bigMap[strconv.Itoa(i)] = basicValue
 	}
 

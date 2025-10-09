@@ -720,7 +720,7 @@ func TestAccumulateSum_RefusedNonMonotonicDelta_Logging(t *testing.T) {
 	sum.SetIsMonotonic(false)
 
 	// Add 2 data points
-	for i := 0; i < 2; i++ {
+	for range 2 {
 		dp := sum.DataPoints().AppendEmpty()
 		dp.SetDoubleValue(42.0)
 		dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))

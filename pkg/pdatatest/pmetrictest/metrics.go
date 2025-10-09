@@ -36,10 +36,10 @@ func CompareMetrics(expected, actual pmetric.Metrics, options ...CompareMetricsO
 
 	var errs error
 	var outOfOrderErrs error
-	for e := 0; e < numResources; e++ {
+	for e := range numResources {
 		er := expectedMetrics.At(e)
 		var foundMatch bool
-		for a := 0; a < numResources; a++ {
+		for a := range numResources {
 			ar := actualMetrics.At(a)
 			if _, ok := matchingResources[ar]; ok {
 				continue
@@ -61,7 +61,7 @@ func CompareMetrics(expected, actual pmetric.Metrics, options ...CompareMetricsO
 		}
 	}
 
-	for i := 0; i < numResources; i++ {
+	for i := range numResources {
 		if _, ok := matchingResources[actualMetrics.At(i)]; !ok {
 			errs = multierr.Append(errs, fmt.Errorf("unexpected resource: %v",
 				actualMetrics.At(i).Resource().Attributes().AsRaw()))
@@ -104,10 +104,10 @@ func CompareResourceMetrics(expected, actual pmetric.ResourceMetrics) error {
 	matchingResources := make(map[pmetric.ScopeMetrics]pmetric.ScopeMetrics, numScopeMetrics)
 
 	var outOfOrderErrs error
-	for e := 0; e < numScopeMetrics; e++ {
+	for e := range numScopeMetrics {
 		esm := esms.At(e)
 		var foundMatch bool
-		for a := 0; a < numScopeMetrics; a++ {
+		for a := range numScopeMetrics {
 			asm := asms.At(a)
 			if _, ok := matchingResources[asm]; ok {
 				continue
@@ -129,7 +129,7 @@ func CompareResourceMetrics(expected, actual pmetric.ResourceMetrics) error {
 		}
 	}
 
-	for i := 0; i < numScopeMetrics; i++ {
+	for i := range numScopeMetrics {
 		if _, ok := matchingResources[actual.ScopeMetrics().At(i)]; !ok {
 			errs = multierr.Append(errs, fmt.Errorf("unexpected scope: %s",
 				actual.ScopeMetrics().At(i).Scope().Name()))
@@ -175,10 +175,10 @@ func CompareScopeMetrics(expected, actual pmetric.ScopeMetrics) error {
 	matchingMetrics := make(map[pmetric.Metric]pmetric.Metric, numMetrics)
 
 	var outOfOrderErrs error
-	for e := 0; e < numMetrics; e++ {
+	for e := range numMetrics {
 		em := ems.At(e)
 		var foundMatch bool
-		for a := 0; a < numMetrics; a++ {
+		for a := range numMetrics {
 			am := ams.At(a)
 			if _, ok := matchingMetrics[am]; ok {
 				continue
@@ -199,7 +199,7 @@ func CompareScopeMetrics(expected, actual pmetric.ScopeMetrics) error {
 		}
 	}
 
-	for i := 0; i < numMetrics; i++ {
+	for i := range numMetrics {
 		if _, ok := matchingMetrics[ams.At(i)]; !ok {
 			errs = multierr.Append(errs, fmt.Errorf("unexpected metric: %s", ams.At(i).Name()))
 		}
@@ -212,7 +212,7 @@ func CompareScopeMetrics(expected, actual pmetric.ScopeMetrics) error {
 		return outOfOrderErrs
 	}
 
-	for i := 0; i < numMetrics; i++ {
+	for i := range numMetrics {
 		errPrefix := fmt.Sprintf(`metric %q`, ems.At(i).Name())
 		errs = multierr.Append(errs, internal.AddErrPrefix(errPrefix, CompareMetric(ems.At(i), ams.At(i))))
 	}
@@ -293,10 +293,10 @@ func compareNumberDataPointSlices(expected, actual pmetric.NumberDataPointSlice)
 
 	var errs error
 	var outOfOrderErrs error
-	for e := 0; e < numPoints; e++ {
+	for e := range numPoints {
 		edp := expected.At(e)
 		var foundMatch bool
-		for a := 0; a < numPoints; a++ {
+		for a := range numPoints {
 			adp := actual.At(a)
 			if _, ok := matchingDPS[adp]; ok {
 				continue
@@ -317,7 +317,7 @@ func compareNumberDataPointSlices(expected, actual pmetric.NumberDataPointSlice)
 		}
 	}
 
-	for i := 0; i < numPoints; i++ {
+	for i := range numPoints {
 		if _, ok := matchingDPS[actual.At(i)]; !ok {
 			errs = multierr.Append(errs, fmt.Errorf("unexpected datapoint: %v", actual.At(i).Attributes().AsRaw()))
 		}
@@ -385,10 +385,10 @@ func compareExemplarSlice(expected, actual pmetric.ExemplarSlice) error {
 
 	var errs error
 	var outOfOrderErrs error
-	for e := 0; e < numExemplars; e++ {
+	for e := range numExemplars {
 		eex := expected.At(e)
 		var foundMatch bool
-		for a := 0; a < numExemplars; a++ {
+		for a := range numExemplars {
 			aex := actual.At(a)
 			if _, ok := matchingExs[aex]; ok {
 				continue
@@ -409,7 +409,7 @@ func compareExemplarSlice(expected, actual pmetric.ExemplarSlice) error {
 		}
 	}
 
-	for i := 0; i < numExemplars; i++ {
+	for i := range numExemplars {
 		if _, ok := matchingExs[actual.At(i)]; !ok {
 			errs = multierr.Append(errs, fmt.Errorf("unexpected exemplar: %v",
 				actual.At(i).FilteredAttributes().AsRaw()))
@@ -476,10 +476,10 @@ func compareHistogramDataPointSlices(expected, actual pmetric.HistogramDataPoint
 
 	var errs error
 	var outOfOrderErrs error
-	for e := 0; e < numPoints; e++ {
+	for e := range numPoints {
 		edp := expected.At(e)
 		var foundMatch bool
-		for a := 0; a < numPoints; a++ {
+		for a := range numPoints {
 			adp := actual.At(a)
 			if _, ok := matchingDPS[adp]; ok {
 				continue
@@ -500,7 +500,7 @@ func compareHistogramDataPointSlices(expected, actual pmetric.HistogramDataPoint
 		}
 	}
 
-	for i := 0; i < numPoints; i++ {
+	for i := range numPoints {
 		if _, ok := matchingDPS[actual.At(i)]; !ok {
 			errs = multierr.Append(errs, fmt.Errorf("unexpected datapoint: %v", actual.At(i).Attributes().AsRaw()))
 		}
@@ -611,10 +611,10 @@ func compareExponentialHistogramDataPointSlice(expected, actual pmetric.Exponent
 
 	var errs error
 	var outOfOrderErrs error
-	for e := 0; e < numPoints; e++ {
+	for e := range numPoints {
 		edp := expected.At(e)
 		var foundMatch bool
-		for a := 0; a < numPoints; a++ {
+		for a := range numPoints {
 			adp := actual.At(a)
 			if _, ok := matchingDPS[adp]; ok {
 				continue
@@ -635,7 +635,7 @@ func compareExponentialHistogramDataPointSlice(expected, actual pmetric.Exponent
 		}
 	}
 
-	for i := 0; i < numPoints; i++ {
+	for i := range numPoints {
 		if _, ok := matchingDPS[actual.At(i)]; !ok {
 			errs = multierr.Append(errs, fmt.Errorf("unexpected datapoint: %v", actual.At(i).Attributes().AsRaw()))
 		}
@@ -759,10 +759,10 @@ func compareSummaryDataPointSlices(expected, actual pmetric.SummaryDataPointSlic
 	matchingDPS := map[pmetric.SummaryDataPoint]pmetric.SummaryDataPoint{}
 	var errs error
 	var outOfOrderErrs error
-	for e := 0; e < numPoints; e++ {
+	for e := range numPoints {
 		edp := expected.At(e)
 		var foundMatch bool
-		for a := 0; a < numPoints; a++ {
+		for a := range numPoints {
 			adp := actual.At(a)
 			if _, ok := matchingDPS[adp]; ok {
 				continue
@@ -783,7 +783,7 @@ func compareSummaryDataPointSlices(expected, actual pmetric.SummaryDataPointSlic
 		}
 	}
 
-	for i := 0; i < numPoints; i++ {
+	for i := range numPoints {
 		if _, ok := matchingDPS[actual.At(i)]; !ok {
 			errs = multierr.Append(errs, fmt.Errorf("unexpected datapoint: %v", actual.At(i).Attributes().AsRaw()))
 		}

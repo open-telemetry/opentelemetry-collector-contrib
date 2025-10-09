@@ -69,13 +69,11 @@ func benchMergeTraces(b *testing.B, tracesCount int) {
 	traces1 := ptrace.NewTraces()
 	traces2 := ptrace.NewTraces()
 
-	for i := 0; i < tracesCount; i++ {
+	for range tracesCount {
 		appendSimpleTraceWithID(traces2.ResourceSpans().AppendEmpty(), [16]byte{1, 2, 3, 4})
 	}
 
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		mergeTraces(traces1, traces2)
 	}
 }

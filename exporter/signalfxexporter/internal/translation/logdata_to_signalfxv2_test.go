@@ -168,7 +168,7 @@ func mapToEventProps(m map[string]any) []*sfxpb.Property {
 
 func buildNDimensions(n uint) []*sfxpb.Dimension {
 	d := make([]*sfxpb.Dimension, 0, n)
-	for i := uint(0); i < n; i++ {
+	for i := range n {
 		idx := int(i)
 		suffix := strconv.Itoa(idx)
 		d = append(d, &sfxpb.Dimension{

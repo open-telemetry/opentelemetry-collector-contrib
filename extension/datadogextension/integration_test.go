@@ -847,7 +847,7 @@ func TestHTTPServerConcurrentAccess(t *testing.T) {
 	errors := make(chan error, numGoroutines)
 
 	wg.Add(numGoroutines)
-	for i := 0; i < numGoroutines; i++ {
+	for i := range numGoroutines {
 		go func(routineID int) {
 			defer wg.Done()
 

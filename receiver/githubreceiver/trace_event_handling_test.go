@@ -200,7 +200,7 @@ func TestNewParentSpanID_Consistency(t *testing.T) {
 	spanID1, err1 := newParentSpanID(runID, runAttempt)
 	require.NoError(t, err1)
 
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		spanID2, err2 := newParentSpanID(runID, runAttempt)
 		require.NoError(t, err2)
 		require.Equal(t, spanID1, spanID2, "span ID should be consistent across multiple calls")
@@ -276,7 +276,7 @@ func TestNewUniqueSteps(t *testing.T) {
 			}
 
 			// Check contents match
-			for i := 0; i < len(result); i++ {
+			for i := range result {
 				if result[i] != tt.expected[i] {
 					t.Errorf("at index %d: got %q, want %q", i, result[i], tt.expected[i])
 				}
@@ -588,7 +588,7 @@ func TestNewStepSpanID_Consistency(t *testing.T) {
 	spanID1, err1 := newStepSpanID(runID, runAttempt, jobName, stepName, number)
 	require.NoError(t, err1)
 
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		spanID2, err2 := newStepSpanID(runID, runAttempt, jobName, stepName, number)
 		require.NoError(t, err2)
 		require.Equal(t, spanID1, spanID2, "span ID should be consistent across multiple calls")
@@ -697,7 +697,7 @@ func TestNewJobSpanID_Consistency(t *testing.T) {
 	spanID1, err1 := newJobSpanID(runID, runAttempt, jobName)
 	require.NoError(t, err1)
 
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		spanID2, err2 := newJobSpanID(runID, runAttempt, jobName)
 		require.NoError(t, err2)
 		require.Equal(t, spanID1, spanID2, "span ID should be consistent across multiple calls")

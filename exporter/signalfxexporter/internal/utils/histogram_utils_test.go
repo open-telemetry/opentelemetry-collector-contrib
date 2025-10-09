@@ -54,7 +54,7 @@ func buildHistogram(im pmetric.Metric, name string, timestamp pcommon.Timestamp,
 	idps := im.Histogram().DataPoints()
 	idps.EnsureCapacity(dpCount)
 
-	for i := 0; i < dpCount; i++ {
+	for range dpCount {
 		dp := idps.AppendEmpty()
 		buildHistogramDP(dp, timestamp)
 	}
@@ -65,7 +65,7 @@ func buildGauge(im pmetric.Metric, name string, timestamp pcommon.Timestamp, dpC
 	idps := im.Gauge().DataPoints()
 	idps.EnsureCapacity(dpCount)
 
-	for i := 0; i < dpCount; i++ {
+	for range dpCount {
 		dp := idps.AppendEmpty()
 		dp.SetTimestamp(timestamp)
 		dp.SetDoubleValue(1000)
@@ -78,7 +78,7 @@ func buildSum(im pmetric.Metric, name string, timestamp pcommon.Timestamp, dpCou
 	idps := im.Sum().DataPoints()
 	idps.EnsureCapacity(dpCount)
 
-	for i := 0; i < dpCount; i++ {
+	for range dpCount {
 		dp := idps.AppendEmpty()
 		dp.SetStartTimestamp(timestamp)
 		dp.SetTimestamp(timestamp)

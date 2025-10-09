@@ -243,7 +243,7 @@ func sendTraces(t *testing.T, endpoint string) {
 	}()
 
 	tracer := otel.Tracer("test-tracer")
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		_, span := tracer.Start(ctx, fmt.Sprintf("TestSpan%d", i), apitrace.WithSpanKind(apitrace.SpanKindClient))
 
 		if i == 3 {
@@ -412,7 +412,7 @@ func sendTracesComputeTopLevelBySpanKind(t *testing.T, endpoint string) {
 	}()
 
 	tracer := otel.Tracer("test-tracer")
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		var spanKind apitrace.SpanKind
 		switch i {
 		case 0, 1:
