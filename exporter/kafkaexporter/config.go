@@ -4,7 +4,7 @@
 package kafkaexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
 
 import (
-	"fmt"
+	"errors"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configretry"
@@ -85,7 +85,7 @@ type Config struct {
 
 func (c *Config) Validate() (err error) {
 	if c.PartitionLogsByResourceAttributes && c.PartitionLogsByTraceID {
-		return fmt.Errorf("partition_logs_by_resource_attributes and partition_logs_by_trace_id cannot both be enabled")
+		return errors.New("partition_logs_by_resource_attributes and partition_logs_by_trace_id cannot both be enabled")
 	}
 	return err
 }
