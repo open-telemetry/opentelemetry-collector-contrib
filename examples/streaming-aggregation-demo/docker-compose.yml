@@ -27,7 +27,6 @@ services:
       - ./otel-config.yaml:/etc/otel-config.yaml
     ports:
       - "4320:4318" # OTLP gRPC for aggregated metrics
-      - "8891:8889" # Prometheus metrics endpoint
       - "8892:8888" # Collector internal metrics
     networks:
       - demo-network
@@ -35,7 +34,7 @@ services:
       - prometheus
     restart: unless-stopped
 
-  # Collector without aggregation (raw metrics)
+  # Collector without aggregation (raw metrics passthrough)
   collector-raw:
     build:
       context: .
@@ -45,7 +44,6 @@ services:
       - ./otel-config-raw.yaml:/etc/otel-config.yaml
     ports:
       - "4319:4317" # OTLP gRPC for raw metrics
-      - "8893:8890" # Prometheus metrics endpoint
       - "8894:8887" # Collector internal metrics
     networks:
       - demo-network
@@ -85,6 +83,7 @@ services:
       - "--storage.tsdb.retention.time=1h"
       - "--web.enable-remote-write-receiver"
       - "--web.enable-otlp-receiver"
+      - "--enable-feature=native-histograms"
     ports:
       - "9091:9090"
     networks:

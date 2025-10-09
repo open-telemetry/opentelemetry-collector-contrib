@@ -1,4 +1,4 @@
-# OpenTelemetry Collector configuration WITHOUT streaming aggregation (raw metrics)
+# OpenTelemetry Collector configuration WITHOUT streaming aggregation (raw metrics passthrough)
 
 receivers:
   otlp:
@@ -6,20 +6,43 @@ receivers:
       grpc:
         endpoint: 0.0.0.0:4317 # Port for raw metrics
 
+processors:
+  # Add raw_ prefix to all metrics
+  metricstransform:
+    transforms:
+      - include: ".*"
+        match_type: regexp
+        action: update
+        new_name: "raw_$$0"
+
+  # Batch processor for efficiency (matches native-histogram-otel)
+  batch:
+    timeout: 5s
+    send_batch_size: 100
+    send_batch_max_size: 200
+
 exporters:
-  prometheus:
-    endpoint: 0.0.0.0:8890
-    namespace: raw
-    const_labels:
-      pipeline: raw
-    metric_expiration: 5m
-    enable_open_metrics: true
+  # Prometheus remote write for all metrics (native histograms + regular metrics)
+  prometheusremotewrite:
+    endpoint: "http://prometheus:9090/api/v1/write"
+    tls:
+      insecure: true
+    resource_to_telemetry_conversion:
+      enabled: true
+    timeout: 60s
+    retry_on_failure:
+      enabled: true
+      initial_interval: 1s
+      max_interval: 30s
+      max_elapsed_time: 120s
+    add_metric_suffixes: false
 
 service:
   pipelines:
     metrics:
       receivers: [otlp]
-      exporters: [prometheus] # No processors - direct pass-through
+      processors: [metricstransform, batch]
+      exporters: [prometheusremotewrite]
 
   telemetry:
     logs:

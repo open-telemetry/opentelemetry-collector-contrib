@@ -81,15 +81,29 @@ func initMetricProvider(ctx context.Context, endpoint string, serviceName string
 		return nil, fmt.Errorf("failed to create resource: %w", err)
 	}
 
-	// Create meter provider with 1 second export interval
+	// Create meter provider with 5 second export interval
 	provider := sdkmetric.NewMeterProvider(
 		sdkmetric.WithResource(res),
 		sdkmetric.WithReader(
 			sdkmetric.NewPeriodicReader(
 				exporter,
-				sdkmetric.WithInterval(1*time.Second),
+				sdkmetric.WithInterval(5*time.Second),
 			),
 		),
+		// Configure exponential histogram ONLY for request_duration_seconds
+		// This keeps http_response_time_ms as a regular histogram
+		sdkmetric.WithView(sdkmetric.NewView(
+			sdkmetric.Instrument{
+				Name: "request_duration_seconds",
+				Kind: sdkmetric.InstrumentKindHistogram,
+			},
+			sdkmetric.Stream{
+				Aggregation: sdkmetric.AggregationBase2ExponentialHistogram{
+					MaxSize:  160, // Maximum number of buckets
+					MaxScale: 20,  // Maximum scale factor
+				},
+			},
+		)),
 	)
 
 	return provider, nil
@@ -148,6 +162,26 @@ func createAndEmitMetrics(ctx context.Context, rawMeter, aggMeter metric.Meter, 
 		"http_response_time_ms",
 		metric.WithDescription("HTTP response time in milliseconds"),
 		metric.WithUnit("ms"),
+	)
+	if err != nil {
+		return err
+	}
+
+	// Create exponential histogram for request duration (following native-histogram-otel pattern)
+	// Note: raw_ prefix will be added by the raw collector's metricstransform processor
+	rawRequestDuration, err := rawMeter.Float64Histogram(
+		"request_duration_seconds",
+		metric.WithDescription("Duration of requests in seconds"),
+		metric.WithUnit("s"),
+	)
+	if err != nil {
+		return err
+	}
+
+	aggRequestDuration, err := aggMeter.Float64Histogram(
+		"request_duration_seconds",
+		metric.WithDescription("Duration of requests in seconds"),
+		metric.WithUnit("s"),
 	)
 	if err != nil {
 		return err
@@ -261,6 +295,24 @@ func createAndEmitMetrics(ctx context.Context, rawMeter, aggMeter metric.Meter, 
 				)
 			}
 
+			// Emit exponential histogram metrics (following native-histogram-otel pattern)
+			for i := int64(0); i < requests; i++ {
+				latency := generateLatencySeconds()
+
+				rawRequestDuration.Record(ctx, latency,
+					metric.WithAttributes(
+						attribute.String("endpoint", "/api/data"),
+						attribute.String("method", "GET"),
+					),
+				)
+				aggRequestDuration.Record(ctx, latency,
+					metric.WithAttributes(
+						attribute.String("endpoint", "/api/data"),
+						attribute.String("method", "GET"),
+					),
+				)
+			}
+
 			// Update active connections (simulate connection changes)
 			// Keep connections between 50 and 150
 			connChange := rand.Int63n(21) - 10 // -10 to +10
@@ -334,4 +386,26 @@ func generateResponseTime() float64 {
 	} else { // 5% slow
 		return 500 + rand.Float64()*1500
 	}
+}
+
+// generateLatencySeconds generates request latency in seconds using the same distribution
+// as native-histogram-otel for consistency
+func generateLatencySeconds() float64 {
+	// Simulate different latency patterns (matching native-histogram-otel)
+	var latency float64
+	switch rand.Intn(4) {
+	case 0:
+		// Fast requests (1-10ms)
+		latency = 0.001 + rand.Float64()*0.009
+	case 1:
+		// Normal requests (10-100ms)
+		latency = 0.01 + rand.Float64()*0.09
+	case 2:
+		// Slow requests (100ms-1s)
+		latency = 0.1 + rand.Float64()*0.9
+	case 3:
+		// Very slow requests (1-5s)
+		latency = 1.0 + rand.Float64()*4.0
+	}
+	return latency
 }

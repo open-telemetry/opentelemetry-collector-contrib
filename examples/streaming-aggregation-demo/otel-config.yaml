@@ -17,23 +17,34 @@ processors:
         action: update
         new_name: "aggregated_$$0"
 
+  # Batch processor for efficiency (matches native-histogram-otel)
+  batch:
+    timeout: 5s
+    send_batch_size: 100
+    send_batch_max_size: 200
+
 exporters:
-  otlphttp:
-    endpoint: http://prometheus:9090/api/v1/otlp
+  # Use prometheusremotewrite for proper native histogram support
+  prometheusremotewrite:
+    endpoint: "http://prometheus:9090/api/v1/write"
     tls:
       insecure: true
+    resource_to_telemetry_conversion:
+      enabled: true
+    timeout: 60s
     retry_on_failure:
       enabled: true
-      initial_interval: 5s
+      initial_interval: 1s
       max_interval: 30s
-      max_elapsed_time: 300s
+      max_elapsed_time: 120s
+    add_metric_suffixes: false
 
 service:
   pipelines:
     metrics:
       receivers: [otlp]
-      processors: [streamingaggregation, metricstransform]
-      exporters: [otlphttp]
+      processors: [streamingaggregation, metricstransform, batch]
+      exporters: [prometheusremotewrite]
 
   telemetry:
     logs:
