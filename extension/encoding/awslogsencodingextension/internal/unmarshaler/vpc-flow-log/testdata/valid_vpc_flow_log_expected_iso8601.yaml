@@ -18,7 +18,7 @@ resourceLogs:
                   stringValue: eni-0eb1e4178af74336c
               - key: aws.vpc.flow.start
                 value:
-                  intValue: "1742570089"
+                  stringValue: "2025-03-21T15:14:49.000Z"
               - key: aws.vpc.flow.status
                 value:
                   stringValue: NODATA

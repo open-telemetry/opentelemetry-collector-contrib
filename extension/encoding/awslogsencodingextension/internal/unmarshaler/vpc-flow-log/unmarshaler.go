@@ -34,12 +34,16 @@ type vpcFlowLogUnmarshaler struct {
 
 	buildInfo component.BuildInfo
 	logger    *zap.Logger
+
+	// Whether VPC flow start field should use ISO-8601 format
+	vpcFlowStartISO8601FormatEnabled bool
 }
 
 func NewVPCFlowLogUnmarshaler(
 	format string,
 	buildInfo component.BuildInfo,
 	logger *zap.Logger,
+	vpcFlowStartISO8601FormatEnabled bool,
 ) (unmarshaler.AWSUnmarshaler, error) {
 	switch format {
 	case constants.FileFormatParquet:
@@ -54,9 +58,10 @@ func NewVPCFlowLogUnmarshaler(
 		)
 	}
 	return &vpcFlowLogUnmarshaler{
-		fileFormat: format,
-		buildInfo:  buildInfo,
-		logger:     logger,
+		fileFormat:                       format,
+		buildInfo:                        buildInfo,
+		logger:                           logger,
+		vpcFlowStartISO8601FormatEnabled: vpcFlowStartISO8601FormatEnabled,
 	}, nil
 }
 
@@ -179,7 +184,7 @@ func (v *vpcFlowLogUnmarshaler) addToLogs(
 			continue
 		}
 
-		found, err := handleField(field, value, record, addr, key)
+		found, err := v.handleField(field, value, record, addr, key)
 		if err != nil {
 			return err
 		}
@@ -242,7 +247,7 @@ func (v *vpcFlowLogUnmarshaler) handleAddresses(addr *address, record plog.LogRe
 // adds its value to the resourceKey or puts the
 // field and its value in the attributes map. If the
 // field is not recognized, it returns false.
-func handleField(
+func (v *vpcFlowLogUnmarshaler) handleField(
 	field string,
 	value string,
 	record plog.LogRecord,
@@ -344,8 +349,14 @@ func handleField(
 		if err != nil {
 			return true, fmt.Errorf("value %s for field %s does not correspond to a valid timestamp", value, field)
 		}
-		timestamp := time.Unix(unixSeconds, 0).UTC()
-		record.Attributes().PutStr("aws.vpc.flow.start", timestamp.Format("2006-01-02T15:04:05.000Z"))
+		if v.vpcFlowStartISO8601FormatEnabled {
+			// New behavior: ISO-8601 format
+			timestamp := time.Unix(unixSeconds, 0).UTC()
+			record.Attributes().PutStr("aws.vpc.flow.start", timestamp.Format("2006-01-02T15:04:05.000Z"))
+		} else {
+			// Legacy behavior: Unix timestamp as integer
+			record.Attributes().PutInt("aws.vpc.flow.start", unixSeconds)
+		}
 	case "end":
 		unixSeconds, err := getNumber(value)
 		if err != nil {
