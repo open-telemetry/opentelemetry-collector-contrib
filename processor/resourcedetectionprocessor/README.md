@@ -881,6 +881,16 @@ resourcedetection:
         enabled: false
 ```
 
+### Using the `refresh_interval` parameter
+
+The `refresh_interval` option allows resource attributes to be periodically refreshed without restarting the Collector.
+
+- It may take some time for newly detected resource attributes to be applied.
+- Changes to resource attributes can result in the creation of new metric time series.
+- Frequent refreshes can increase resource usage and should be configured carefully.
+
+In most environments, a single resource detection at startup is sufficient. Periodic refresh should be used only when resource attributes are expected to change during the Collector’s lifetime.
+
 ## Ordering
 
 Note that if multiple detectors are inserting the same attribute name, the first detector to insert wins. For example if you had `detectors: [eks, ec2]` then `cloud.platform` will be `aws_eks` instead of `ec2`. The below ordering is recommended.
