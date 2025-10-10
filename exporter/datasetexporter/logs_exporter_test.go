@@ -610,17 +610,22 @@ func TestBuildEventFromLogExportResources(t *testing.T) {
 	lr := testdata.GenerateLogsOneLogRecord()
 	ld := lr.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
 
-	defaultAttrs := testLEventRaw.Attrs
-	defaultAttrs["resource-attr"] = "resource-attr-val-1"
-
 	expected := &add_events.EventBundle{
 		Event: &add_events.Event{
-			Thread:     testLEventRaw.Thread,
-			Log:        testLEventRaw.Log,
-			Sev:        testLEventRaw.Sev,
-			Ts:         testLEventRaw.Ts,
-			Attrs:      defaultAttrs,
-			ServerHost: testLEventRaw.ServerHost,
+			Thread: "TL",
+			Log:    "LL",
+			Sev:    3,
+			Ts:     "1581452773000000789",
+			Attrs: map[string]any{
+				"app":                      "server",
+				"instance_num":             int64(1),
+				"dropped_attributes_count": uint32(1),
+				"message":                  "This is a log message",
+				"span_id":                  "0102040800000000",
+				"trace_id":                 "08040201000000000000000000000000",
+				"resource-attr":            "resource-attr-val-1",
+			},
+			ServerHost: testServerHost,
 		},
 		Thread: testLThread,
 		Log:    testLLog,
