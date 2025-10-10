@@ -100,6 +100,7 @@ const (
 	PerformanceQueries
 	FailoverClusterQueries
 	DatabasePrincipalsQueries
+	DatabaseRoleMembershipQueries
 )
 
 // QueryDefinition represents a SQL query with metadata
@@ -390,6 +391,31 @@ var failoverClusterQueriesDefault = []*QueryDefinition{
 		MetricName:  "sqlserver.failover_cluster.replica_state_metrics",
 		Description: "Always On Availability Group database replica state metrics",
 	},
+	{
+		Query:       FailoverClusterNodeQuery,
+		MetricName:  "sqlserver.failover_cluster.node_metrics",
+		Description: "Windows Server Failover Cluster node information and status",
+	},
+	{
+		Query:       FailoverClusterAvailabilityGroupHealthQuery,
+		MetricName:  "sqlserver.failover_cluster.availability_group_health_metrics",
+		Description: "Always On Availability Group health status metrics",
+	},
+	{
+		Query:       FailoverClusterAvailabilityGroupQuery,
+		MetricName:  "sqlserver.failover_cluster.availability_group_metrics",
+		Description: "Always On Availability Group configuration metrics",
+	},
+	{
+		Query:       FailoverClusterPerformanceCounterQuery,
+		MetricName:  "sqlserver.failover_cluster.performance_counter_metrics",
+		Description: "Always On Availability Group performance counter metrics",
+	},
+	{
+		Query:       FailoverClusterClusterPropertiesQuery,
+		MetricName:  "sqlserver.failover_cluster.cluster_properties_metrics",
+		Description: "Windows Server Failover Cluster properties and quorum information",
+	},
 }
 
 // Failover cluster query definitions for Azure SQL Database
@@ -404,6 +430,31 @@ var failoverClusterQueriesAzureManagedDatabase = []*QueryDefinition{
 		MetricName:  "sqlserver.failover_cluster.replica_state_metrics",
 		Description: "Always On Availability Group replica state metrics (not applicable for Azure SQL Database)",
 	},
+	{
+		Query:       FailoverClusterNodeQueryAzureSQL,
+		MetricName:  "sqlserver.failover_cluster.node_metrics",
+		Description: "Cluster node metrics (not applicable for Azure SQL Database)",
+	},
+	{
+		Query:       FailoverClusterAvailabilityGroupHealthQueryAzureSQL,
+		MetricName:  "sqlserver.failover_cluster.availability_group_health_metrics",
+		Description: "Availability Group health metrics (not applicable for Azure SQL Database)",
+	},
+	{
+		Query:       FailoverClusterAvailabilityGroupQueryAzureSQL,
+		MetricName:  "sqlserver.failover_cluster.availability_group_metrics",
+		Description: "Availability Group configuration metrics (not applicable for Azure SQL Database)",
+	},
+	{
+		Query:       FailoverClusterPerformanceCounterQueryAzureSQL,
+		MetricName:  "sqlserver.failover_cluster.performance_counter_metrics",
+		Description: "Performance counter metrics (not applicable for Azure SQL Database)",
+	},
+	{
+		Query:       FailoverClusterClusterPropertiesQueryAzureSQL,
+		MetricName:  "sqlserver.failover_cluster.cluster_properties_metrics",
+		Description: "Cluster properties metrics (not applicable for Azure SQL Database)",
+	},
 }
 
 // Failover cluster query definitions for Azure SQL Managed Instance
@@ -417,6 +468,31 @@ var failoverClusterQueriesAzureManagedInstance = []*QueryDefinition{
 		Query:       FailoverClusterReplicaStateQueryAzureMI,
 		MetricName:  "sqlserver.failover_cluster.replica_state_metrics",
 		Description: "Always On Availability Group replica state metrics (Azure SQL Managed Instance)",
+	},
+	{
+		Query:       FailoverClusterNodeQueryAzureMI,
+		MetricName:  "sqlserver.failover_cluster.node_metrics",
+		Description: "Cluster node metrics (limited support for Azure SQL Managed Instance)",
+	},
+	{
+		Query:       FailoverClusterAvailabilityGroupHealthQueryAzureMI,
+		MetricName:  "sqlserver.failover_cluster.availability_group_health_metrics",
+		Description: "Availability Group health metrics (Azure SQL Managed Instance)",
+	},
+	{
+		Query:       FailoverClusterAvailabilityGroupQueryAzureMI,
+		MetricName:  "sqlserver.failover_cluster.availability_group_metrics",
+		Description: "Availability Group configuration metrics (Azure SQL Managed Instance)",
+	},
+	{
+		Query:       FailoverClusterPerformanceCounterQueryAzureMI,
+		MetricName:  "sqlserver.failover_cluster.performance_counter_metrics",
+		Description: "Performance counter metrics (Azure SQL Managed Instance)",
+	},
+	{
+		Query:       FailoverClusterClusterPropertiesQueryAzureMI,
+		MetricName:  "sqlserver.failover_cluster.cluster_properties_metrics",
+		Description: "Cluster properties metrics (limited support for Azure SQL Managed Instance)",
 	},
 }
 
@@ -477,6 +553,93 @@ var databasePrincipalsQueriesAzureManagedInstance = []*QueryDefinition{
 	},
 }
 
+// Database role membership query definitions for Standard SQL Server
+var databaseRoleMembershipQueriesDefault = []*QueryDefinition{
+	{
+		Query:       DatabaseRoleMembershipMetricsQuery,
+		MetricName:  "database_role_membership",
+		Description: "Database role membership relationships",
+	},
+	{
+		Query:       DatabaseRoleMembershipSummaryQuery,
+		MetricName:  "database_role_membership_summary",
+		Description: "Database role membership summary statistics",
+	},
+	{
+		Query:       DatabaseRoleHierarchyQuery,
+		MetricName:  "database_role_hierarchy",
+		Description: "Database role hierarchy and nesting information",
+	},
+	{
+		Query:       DatabaseRoleActivityQuery,
+		MetricName:  "database_role_activity",
+		Description: "Database role activity and usage metrics",
+	},
+	{
+		Query:       DatabaseRolePermissionMatrixQuery,
+		MetricName:  "database_role_permission_matrix",
+		Description: "Database role permission matrix analysis",
+	},
+}
+
+// Database role membership query definitions for Azure SQL Database
+var databaseRoleMembershipQueriesAzureDatabase = []*QueryDefinition{
+	{
+		Query:       DatabaseRoleMembershipMetricsQuery,
+		MetricName:  "database_role_membership",
+		Description: "Database role membership relationships (Azure SQL Database)",
+	},
+	{
+		Query:       DatabaseRoleMembershipSummaryQuery,
+		MetricName:  "database_role_membership_summary",
+		Description: "Database role membership summary statistics (Azure SQL Database)",
+	},
+	{
+		Query:       DatabaseRoleHierarchyQuery,
+		MetricName:  "database_role_hierarchy",
+		Description: "Database role hierarchy and nesting information (Azure SQL Database)",
+	},
+	{
+		Query:       DatabaseRoleActivityQuery,
+		MetricName:  "database_role_activity",
+		Description: "Database role activity and usage metrics (Azure SQL Database)",
+	},
+	{
+		Query:       DatabaseRolePermissionMatrixQuery,
+		MetricName:  "database_role_permission_matrix",
+		Description: "Database role permission matrix analysis (Azure SQL Database)",
+	},
+}
+
+// Database role membership query definitions for Azure SQL Managed Instance
+var databaseRoleMembershipQueriesAzureManagedInstance = []*QueryDefinition{
+	{
+		Query:       DatabaseRoleMembershipMetricsQuery,
+		MetricName:  "database_role_membership",
+		Description: "Database role membership relationships (Azure SQL Managed Instance)",
+	},
+	{
+		Query:       DatabaseRoleMembershipSummaryQuery,
+		MetricName:  "database_role_membership_summary",
+		Description: "Database role membership summary statistics (Azure SQL Managed Instance)",
+	},
+	{
+		Query:       DatabaseRoleHierarchyQuery,
+		MetricName:  "database_role_hierarchy",
+		Description: "Database role hierarchy and nesting information (Azure SQL Managed Instance)",
+	},
+	{
+		Query:       DatabaseRoleActivityQuery,
+		MetricName:  "database_role_activity",
+		Description: "Database role activity and usage metrics (Azure SQL Managed Instance)",
+	},
+	{
+		Query:       DatabaseRolePermissionMatrixQuery,
+		MetricName:  "database_role_permission_matrix",
+		Description: "Database role permission matrix analysis (Azure SQL Managed Instance)",
+	},
+}
+
 // queryDefinitionSets maps query types to engine-specific query sets
 var queryDefinitionSets = map[QueryDefinitionType]EngineSet[[]*QueryDefinition]{
 	InstanceQueries: {
@@ -498,6 +661,11 @@ var queryDefinitionSets = map[QueryDefinitionType]EngineSet[[]*QueryDefinition]{
 		Default:                 databasePrincipalsQueriesDefault,
 		AzureSQLDatabase:        databasePrincipalsQueriesAzureDatabase,
 		AzureSQLManagedInstance: databasePrincipalsQueriesAzureManagedInstance,
+	},
+	DatabaseRoleMembershipQueries: {
+		Default:                 databaseRoleMembershipQueriesDefault,
+		AzureSQLDatabase:        databaseRoleMembershipQueriesAzureDatabase,
+		AzureSQLManagedInstance: databaseRoleMembershipQueriesAzureManagedInstance,
 	},
 }
 

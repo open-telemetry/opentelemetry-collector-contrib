@@ -215,7 +215,7 @@ func TestFailoverClusterScraper_ProcessFailoverClusterReplicaMetrics(t *testing.
 	}
 }
 
-func TestFailoverClusterScraper_GetQueryForMetric(t *testing.T) {
+func TestFailoverClusterScraper_CentralizedQuerySelection(t *testing.T) {
 	tests := []struct {
 		name          string
 		engineEdition int
@@ -255,11 +255,8 @@ func TestFailoverClusterScraper_GetQueryForMetric(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			logger := zap.NewNop()
-			mockConn := &MockSQLConnection{}
-			scraper := NewFailoverClusterScraper(mockConn, logger, tt.engineEdition)
-
-			query, found := scraper.getQueryForMetric(tt.metricName)
+			// Test using centralized query selection
+			query, found := queries.GetQueryForMetric(queries.FailoverClusterQueries, tt.metricName, tt.engineEdition)
 
 			assert.Equal(t, tt.expectFound, found)
 			if tt.expectFound {
@@ -431,7 +428,7 @@ func TestFailoverClusterScraper_ProcessFailoverClusterReplicaStateMetrics(t *tes
 	}
 }
 
-func TestFailoverClusterScraper_GetQueryForMetric_ReplicaState(t *testing.T) {
+func TestFailoverClusterScraper_CentralizedQuerySelection_ReplicaState(t *testing.T) {
 	tests := []struct {
 		name          string
 		engineEdition int
@@ -470,11 +467,8 @@ func TestFailoverClusterScraper_GetQueryForMetric_ReplicaState(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			logger := zap.NewNop()
-			mockConn := &MockSQLConnection{}
-			scraper := NewFailoverClusterScraper(mockConn, logger, tt.engineEdition)
-
-			query, found := scraper.getQueryForMetric(tt.metricName)
+			// Test using centralized query selection
+			query, found := queries.GetQueryForMetric(queries.FailoverClusterQueries, tt.metricName, tt.engineEdition)
 
 			assert.Equal(t, tt.expectFound, found)
 			if tt.expectFound {

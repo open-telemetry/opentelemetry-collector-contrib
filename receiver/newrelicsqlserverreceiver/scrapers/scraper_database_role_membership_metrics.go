@@ -260,23 +260,15 @@ func (s *DatabaseRoleMembershipScraper) ScrapeDatabaseRolePermissionMatrixMetric
 	return nil
 }
 
-// getQueryForMetric retrieves the appropriate query for a metric based on engine edition
+// getQueryForMetric retrieves the appropriate query for a metric based on engine edition with Default fallback
 func (s *DatabaseRoleMembershipScraper) getQueryForMetric(metricName string) (string, bool) {
-	// For now, use direct query constants since we haven't added them to the query selector yet
-	switch metricName {
-	case "database_role_membership":
-		return queries.DatabaseRoleMembershipMetricsQuery, true
-	case "database_role_membership_summary":
-		return queries.DatabaseRoleMembershipSummaryQuery, true
-	case "database_role_hierarchy":
-		return queries.DatabaseRoleHierarchyQuery, true
-	case "database_role_activity":
-		return queries.DatabaseRoleActivityQuery, true
-	case "database_role_permission_matrix":
-		return queries.DatabaseRolePermissionMatrixQuery, true
-	default:
-		return "", false
+	query, found := queries.GetQueryForMetric(queries.DatabaseRoleMembershipQueries, metricName, s.engineEdition)
+	if found {
+		s.logger.Debug("Using query for metric",
+			zap.String("metric_name", metricName),
+			zap.String("engine_type", queries.GetEngineTypeName(s.engineEdition)))
 	}
+	return query, found
 }
 
 // processDatabaseRoleMembershipMetrics processes individual role membership metrics and adds them to the scope
