@@ -42,18 +42,12 @@ type Input struct {
 	cancel                   context.CancelFunc
 	wg                       sync.WaitGroup
 	subscription             Subscription
-	throttle                 *throttle
+	maxEventsPerPollCycle    int
+	eventsReadInPollCycle    int
 	remote                   RemoteConfig
 	remoteSessionHandle      windows.Handle
 	startRemoteSession       func() error
 	processEvent             func(context.Context, Event) error
-}
-
-type throttle struct {
-	rate            int
-	tokens          int
-	tokensRemainder float64
-	refilledAt      time.Time
 }
 
 // newInput creates a new Input operator.
@@ -210,34 +204,41 @@ func (i *Input) pollAndRead(ctx context.Context) {
 	defer i.wg.Done()
 
 	for {
+		i.eventsReadInPollCycle = 0
+
 		select {
 		case <-ctx.Done():
 			return
 		case <-time.After(i.pollInterval):
-			i.readAll(ctx)
+			i.read(ctx)
 		}
 	}
 }
 
-func (i *Input) readAll(ctx context.Context) {
+func (i *Input) read(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		default:
-			if !i.readThrottle(ctx) {
+			if !i.readBatch(ctx) {
 				return
 			}
 		}
 	}
 }
 
-// readThrottle will read events from the subscription using rate limits
-func (i *Input) readThrottle(ctx context.Context) bool {
-	events, actualMaxReads, err := i.subscription.Read(i.currentMaxReads)
+// readBatch will read events from the subscription
+func (i *Input) readBatch(ctx context.Context) bool {
+	maxBatchSize := i.getCurrentBatchSize()
+	if maxBatchSize <= 0 {
+		return false
+	}
+
+	events, actualMaxReads, err := i.subscription.Read(maxBatchSize)
 
 	// Update the current max reads if it changed
-	if err == nil && actualMaxReads < i.currentMaxReads {
+	if err == nil && actualMaxReads < maxBatchSize {
 		i.currentMaxReads = actualMaxReads
 		i.Logger().Debug("Encountered RPC_S_INVALID_BOUND, reduced batch size", zap.Int("current_batch_size", i.currentMaxReads), zap.Int("original_batch_size", i.maxReads))
 	}
@@ -269,8 +270,6 @@ func (i *Input) readThrottle(ctx context.Context) bool {
 	}
 
 	for n, event := range events {
-		i.throttle.consume(1, ctx)
-
 		if err := i.processEvent(ctx, event); err != nil {
 			i.Logger().Error("process event", zap.Error(err))
 		}
@@ -283,6 +282,7 @@ func (i *Input) readThrottle(ctx context.Context) bool {
 		event.Close()
 	}
 
+	i.eventsReadInPollCycle += len(events)
 	return len(events) != 0
 }
 
@@ -408,59 +408,10 @@ func (i *Input) getPersistKey() string {
 	return i.channel
 }
 
-func newThrottle(rate int) *throttle {
-	return &throttle{
-		rate:            rate,
-		tokens:          rate,
-		tokensRemainder: 0.0,
-		refilledAt:      time.Time{},
-	}
-}
-
-func (t *throttle) consume(n int, ctx context.Context) {
-	if t == nil {
-		return
+func (i *Input) getCurrentBatchSize() int {
+	if i.maxEventsPerPollCycle == 0 {
+		return i.currentMaxReads
 	}
 
-	for {
-		t.refill()
-
-		if t.tokens >= n {
-			t.tokens -= n
-			return
-		}
-
-		tokensWait := (n - t.tokens) + 1
-		throttleDuration := time.Duration(tokensWait) * time.Second / time.Duration(t.rate)
-
-		select {
-		case <-ctx.Done():
-			return
-		case <-time.After(throttleDuration):
-		}
-	}
-}
-
-func (t *throttle) refill() {
-	if t == nil {
-		return
-	}
-
-	now := time.Now()
-	if t.refilledAt.IsZero() {
-		t.refilledAt = now
-		return
-	}
-
-	sinceLastRefill := now.Sub(t.refilledAt)
-
-	tokensIncrement := sinceLastRefill.Seconds()*float64(t.rate) + t.tokensRemainder
-	tokensIncrementInt := int(tokensIncrement)
-	t.tokensRemainder = tokensIncrement - float64(tokensIncrementInt)
-
-	if tokensIncrementInt > 0 {
-		t.tokens = min(t.tokens+tokensIncrementInt, t.rate*2)
-	}
-
-	t.refilledAt = now
+	return min(i.currentMaxReads, i.maxEventsPerPollCycle-i.eventsReadInPollCycle)
 }
