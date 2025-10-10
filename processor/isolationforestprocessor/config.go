@@ -28,6 +28,23 @@ type Config struct {
 	Features                FeatureConfig     `mapstructure:"features"`
 	Models                  []ModelConfig     `mapstructure:"models"`
 	Performance             PerformanceConfig `mapstructure:"performance"`
+
+	// Adaptive window sizing configuration
+	AdaptiveWindow *AdaptiveWindowConfig `mapstructure:"adaptive_window"`
+}
+
+// AdaptiveWindowConfig configures automatic window size adjustment based on traffic patterns
+type AdaptiveWindowConfig struct {
+	// Core configuration
+	Enabled        bool    `mapstructure:"enabled"`         // Enable adaptive sizing
+	MinWindowSize  int     `mapstructure:"min_window_size"` // Minimum samples to keep
+	MaxWindowSize  int     `mapstructure:"max_window_size"` // Maximum samples (memory protection)
+	MemoryLimitMB  int     `mapstructure:"memory_limit_mb"` // Auto-shrink when exceeded
+	AdaptationRate float64 `mapstructure:"adaptation_rate"` // Adjustment speed (0.0-1.0)
+
+	// Optional parameters with defaults
+	VelocityThreshold      float64 `mapstructure:"velocity_threshold"`       // Grow when >N samples/sec
+	StabilityCheckInterval string  `mapstructure:"stability_check_interval"` // Check model accuracy interval
 }
 
 type FeatureConfig struct {
@@ -79,6 +96,17 @@ func createDefaultConfig() component.Config {
 			BatchSize:       1000,
 			ParallelWorkers: 4,
 		},
+
+		// Default adaptive window configuration (disabled by default for backward compatibility)
+		AdaptiveWindow: &AdaptiveWindowConfig{
+			Enabled:                false,  // Disabled by default - backward compatibility
+			MinWindowSize:          1000,   // Match MinSamples for consistency
+			MaxWindowSize:          100000, // Reasonable upper bound
+			MemoryLimitMB:          256,    // Half of total processor memory
+			AdaptationRate:         0.1,    // Conservative adjustment speed
+			VelocityThreshold:      50,     // Default growth threshold
+			StabilityCheckInterval: "5m",   // Check model stability every 5 minutes
+		},
 	}
 }
 
@@ -118,7 +146,72 @@ func (cfg *Config) Validate() error {
 		return errors.New("at least one feature type must be configured")
 	}
 
+	// Validate adaptive window configuration
+	if cfg.AdaptiveWindow != nil {
+		if err := cfg.validateAdaptiveWindow(); err != nil {
+			return fmt.Errorf("adaptive_window validation failed: %w", err)
+		}
+	}
+
 	return nil
+}
+
+// validateAdaptiveWindow validates the adaptive window configuration
+func (cfg *Config) validateAdaptiveWindow() error {
+	aw := cfg.AdaptiveWindow
+
+	if aw.MinWindowSize <= 0 {
+		return errors.New("min_window_size must be positive")
+	}
+
+	if aw.MaxWindowSize <= aw.MinWindowSize {
+		return errors.New("max_window_size must be greater than min_window_size")
+	}
+
+	// Ensure consistency with main config
+	if aw.MinWindowSize < cfg.MinSamples {
+		return fmt.Errorf("adaptive_window.min_window_size (%d) should be >= min_samples (%d) for consistency",
+			aw.MinWindowSize, cfg.MinSamples)
+	}
+
+	if aw.MemoryLimitMB <= 0 {
+		return errors.New("memory_limit_mb must be positive")
+	}
+
+	// Memory limit should be reasonable compared to total processor memory
+	if aw.MemoryLimitMB > cfg.Performance.MaxMemoryMB {
+		return fmt.Errorf("adaptive_window.memory_limit_mb (%d) should not exceed performance.max_memory_mb (%d)",
+			aw.MemoryLimitMB, cfg.Performance.MaxMemoryMB)
+	}
+
+	if aw.AdaptationRate < 0.0 || aw.AdaptationRate > 1.0 {
+		return errors.New("adaptation_rate must be between 0.0 and 1.0")
+	}
+
+	if aw.VelocityThreshold < 0 {
+		return errors.New("velocity_threshold must be non-negative")
+	}
+
+	if aw.StabilityCheckInterval != "" {
+		if _, err := time.ParseDuration(aw.StabilityCheckInterval); err != nil {
+			return fmt.Errorf("stability_check_interval is not a valid duration: %w", err)
+		}
+	}
+
+	return nil
+}
+
+// IsAdaptiveWindowEnabled returns true if adaptive window sizing is enabled
+func (cfg *Config) IsAdaptiveWindowEnabled() bool {
+	return cfg.AdaptiveWindow != nil && cfg.AdaptiveWindow.Enabled
+}
+
+// GetStabilityCheckInterval returns the stability check interval duration
+func (cfg *Config) GetStabilityCheckInterval() (time.Duration, error) {
+	if cfg.AdaptiveWindow == nil || cfg.AdaptiveWindow.StabilityCheckInterval == "" {
+		return 5 * time.Minute, nil // Default
+	}
+	return time.ParseDuration(cfg.AdaptiveWindow.StabilityCheckInterval)
 }
 
 func (cfg *Config) GetTrainingWindowDuration() (time.Duration, error) {

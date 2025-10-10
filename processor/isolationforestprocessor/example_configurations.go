@@ -322,3 +322,52 @@ service:
 	fmt.Println("Debugging Configuration:")
 	fmt.Println(configYAML)
 }
+
+// ExampleAdaptiveWindowConfiguration shows adaptive window sizing for dynamic workloads
+func ExampleAdaptiveWindowConfiguration() {
+	configYAML := `
+processors:
+  isolationforest:
+    # Dynamic window sizing for varying traffic patterns
+    forest_size: 100
+    mode: "enrich"
+    threshold: 0.8
+    
+    # Adaptive window configuration
+    adaptive_window:
+      enabled: true
+      min_window_size: 1000
+      max_window_size: 50000
+      memory_limit_mb: 256
+      adaptation_rate: 0.1
+      velocity_threshold: 50.0
+      stability_check_interval: 5m
+    
+    # Standard settings
+    training_window: "12h"
+    update_frequency: "30m"
+    
+    features:
+      traces: ["duration", "error"]
+      metrics: ["value", "rate_of_change"]
+    
+    performance:
+      max_memory_mb: 512
+      batch_size: 1000
+
+
+exporters:
+  prometheus:
+    endpoint: "0.0.0.0:8888"
+
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [isolationforest]
+      exporters: [prometheus]
+`
+	fmt.Println("Adaptive Window Configuration:")
+	fmt.Println(configYAML)
+}
