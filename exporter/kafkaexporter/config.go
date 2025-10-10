@@ -16,9 +16,7 @@ import (
 
 var _ component.Config = (*Config)(nil)
 
-var (
-	errLogsPartitionExclusive = errors.New("partition_logs_by_resource_attributes and partition_logs_by_trace_id cannot both be enabled")
-)
+var errLogsPartitionExclusive = errors.New("partition_logs_by_resource_attributes and partition_logs_by_trace_id cannot both be enabled")
 
 // Config defines configuration for Kafka exporter.
 type Config struct {
