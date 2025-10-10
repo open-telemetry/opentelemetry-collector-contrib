@@ -141,7 +141,7 @@ func setupMockPrometheus(tds ...*testData) (*mockPrometheus, *PromConfig, error)
 	}
 	mp := newMockPrometheus(endpoints)
 	u, _ := url.Parse(mp.srv.URL)
-	for i := 0; i < len(tds); i++ {
+	for i := range tds {
 		job := make(map[string]any)
 		job["job_name"] = tds[i].name
 		job["metrics_path"] = metricPaths[i]
@@ -244,7 +244,7 @@ func getValidScrapes(t *testing.T, rms []pmetric.ResourceMetrics, target *testDa
 	// for metrics retrieved with 'honor_labels: true', there will be a resource metric containing the scrape metrics, based on the scrape job config,
 	// and resources containing only the retrieved metrics, without additional scrape metrics, based on the job/instance label pairs that are detected
 	// during a scrape
-	for i := 0; i < len(rms); i++ {
+	for i := range rms {
 		allMetrics := getMetrics(rms[i])
 		if expectedScrapeMetricCount <= len(allMetrics) && countScrapeMetrics(allMetrics, target.normalizedName) == expectedScrapeMetricCount ||
 			expectedExtraScrapeMetricCount <= len(allMetrics) && countScrapeMetrics(allMetrics, target.normalizedName) == expectedExtraScrapeMetricCount {
