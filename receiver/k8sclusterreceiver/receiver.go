@@ -6,6 +6,7 @@ package k8sclusterreceiver // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"context"
 	"errors"
+	"sync"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -37,6 +38,9 @@ type kubernetesReceiver struct {
 	settings        receiver.Settings
 	metricsConsumer consumer.Metrics
 	cancel          context.CancelFunc
+	sessionCancel   context.CancelFunc
+	mu              sync.Mutex
+	wg              *sync.WaitGroup
 	obsrecv         *receiverhelper.ObsReport
 }
 
@@ -60,13 +64,25 @@ func (kr *kubernetesReceiver) startReceiver(ctx context.Context, host component.
 		return err
 	}
 
-	go func() {
+	// Create a leadership-session context so we can stop ONLY the watches/ticker on standby.
+	cctx, cancel := context.WithCancel(ctx)
+	kr.mu.Lock()
+	// replace any previous sessionCancel (should normally be nil when starting fresh)
+	kr.sessionCancel = cancel
+	// track the session worker goroutine
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+	kr.wg = wg
+	kr.mu.Unlock()
+
+	go func(wg *sync.WaitGroup) {
+		defer wg.Done()
 		kr.settings.Logger.Info("Starting shared informers and wait for initial cache sync.")
 		for _, informer := range kr.resourceWatcher.informerFactories {
 			if informer == nil {
 				continue
 			}
-			timedContextForInitialSync := kr.resourceWatcher.startWatchingResources(ctx, informer)
+			timedContextForInitialSync := kr.resourceWatcher.startWatchingResources(cctx, informer)
 
 			// Wait till either the initial cache sync times out or until the cancel method
 			// corresponding to this context is called.
@@ -91,12 +107,12 @@ func (kr *kubernetesReceiver) startReceiver(ctx context.Context, host component.
 		for {
 			select {
 			case <-ticker.C:
-				kr.dispatchMetrics(ctx)
-			case <-ctx.Done():
+				kr.dispatchMetrics(cctx)
+			case <-cctx.Done():
 				return
 			}
 		}
-	}()
+	}(wg)
 	return nil
 }
 
@@ -122,11 +138,12 @@ func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) er
 		}
 
 		leaderElectorExt.SetCallBackFuncs(
-			func(ctx context.Context) {
-				if err := kr.startReceiver(ctx, host); err != nil {
+			func(cbCtx context.Context) {
+				if err := kr.startReceiver(cbCtx, host); err != nil {
 					kr.settings.Logger.Error("Failed to start receiver", zap.Error(err))
 				}
-			}, func() {
+			},
+			func() {
 				kr.stopReceiver()
 			},
 		)
@@ -141,14 +158,31 @@ func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) er
 }
 
 func (kr *kubernetesReceiver) stopReceiver() {
-	kr.settings.Logger.Info("Stopping the receiver")
-	if kr.cancel != nil {
-		kr.cancel()
+	kr.settings.Logger.Info("Stopping the receiver session (standby)")
+	kr.mu.Lock()
+	cancel := kr.sessionCancel
+	wg := kr.wg
+	kr.sessionCancel = nil
+	kr.wg = nil
+	kr.mu.Unlock()
+
+	if cancel != nil {
+		cancel()
+	}
+
+	// Wait for the session goroutine to exit to avoid overlaps on quick flaps.
+	if wg != nil {
+		wg.Wait()
 	}
 }
 
 func (kr *kubernetesReceiver) Shutdown(context.Context) error {
+	// First stop the active session (if any).
 	kr.stopReceiver()
+	// Then cancel the component-level context.
+	if kr.cancel != nil {
+		kr.cancel()
+	}
 	return nil
 }
 
