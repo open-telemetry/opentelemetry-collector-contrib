@@ -16,7 +16,7 @@ import (
 )
 
 func NewGetSemconvSpanNameFactory() ottl.Factory[ottlspan.TransformContext] {
-	return ottl.NewFactory("GetSemConvSpanName", nil, createGetSemconvSpanNameFunction)
+	return ottl.NewFactory("GetSemconvSpanName", nil, createGetSemconvSpanNameFunction)
 }
 
 func createGetSemconvSpanNameFunction(_ ottl.FunctionContext, _ ottl.Arguments) (ottl.ExprFunc[ottlspan.TransformContext], error) {
