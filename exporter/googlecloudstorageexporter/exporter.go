@@ -109,7 +109,7 @@ func (s *storageExporter) Start(ctx context.Context, host component.Host) error 
 		// otherwise bucket exists and will be reused
 		s.logger.Info("Existing bucket will be used", zap.String("bucket", s.cfg.Bucket.Name))
 	} else {
-		s.logger.Info("created bucket", zap.String("bucket", s.cfg.Bucket.Name))
+		s.logger.Info("Created bucket", zap.String("bucket", s.cfg.Bucket.Name))
 	}
 	s.bucketHandle = client.Bucket(s.cfg.Bucket.Name)
 	s.storageClient = client
