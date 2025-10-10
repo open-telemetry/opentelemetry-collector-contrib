@@ -44,11 +44,9 @@ Each log will additionally have the following attributes:
 If you are not already familiar with connectors, you may find it helpful to first visit the [Connectors README].
 
 The following settings can be optionally configured:
-- `dimensions`: the list of dimensions to add together with the default dimensions defined above.
-
-  Each additional dimension is defined with a `name` which is looked up in the span's collection of attributes or resource attributes.
-
-  The provided default config includes `exception.type` and `exception.message` as additional dimensions.
+- `dimensions`: the list of dimensions to add to *logs* with the default dimensions defined above.
+  Each additional dimension is defined with a `name` which is looked up in the span's collection of attributes or
+  resource attributes (AKA process tags) such as `ip`, `host.name` or `region`.
 - `db_system:` the list value of span attribute `db.system`, Filter specific db systems, define those database's statements need to be collected. ref: https://opentelemetry.io/docs/specs/semconv/attributes-registry/db/
     - Default: `[h2, mongodb, mssql, mysql, oracle, postgresql, mariadb]`
 - `threshold`: define a threshold and collect when the `db.statement`, namely span duration, larger than this value.
