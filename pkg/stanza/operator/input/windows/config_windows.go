@@ -51,6 +51,7 @@ func (c *Config) Build(set component.TelemetrySettings) (operator.Operator, erro
 		channel:                  c.Channel,
 		ignoreChannelErrors:      c.IgnoreChannelErrors,
 		maxReads:                 c.MaxReads,
+		maxEventsPerPollCycle:    c.MaxEventsPerPoll,
 		currentMaxReads:          c.MaxReads,
 		startAt:                  c.StartAt,
 		pollInterval:             c.PollInterval,
@@ -61,10 +62,6 @@ func (c *Config) Build(set component.TelemetrySettings) (operator.Operator, erro
 		query:                    c.Query,
 	}
 	input.startRemoteSession = input.defaultStartRemoteSession
-
-	if c.RateLimit > 0 {
-		input.throttle = newThrottle(c.RateLimit)
-	}
 
 	if c.SuppressRenderingInfo {
 		input.processEvent = input.processEventWithoutRenderingInfo
