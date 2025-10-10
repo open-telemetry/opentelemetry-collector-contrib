@@ -48,10 +48,10 @@ resourceLogs:
                   intValue: "20"
               - key: gcp.vpc.flow.start_time
                 value:
-                  intValue: "1759007585056628399"
+                  stringValue: "2025-09-27T21:13:05.056628399Z"
               - key: gcp.vpc.flow.end_time
                 value:
-                  intValue: "1759007585056628399"
+                  stringValue: "2025-09-27T21:13:05.056628399Z"
               - key: gcp.vpc.flow.egress.as_paths
                 value:
                   arrayValue:

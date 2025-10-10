@@ -54,10 +54,10 @@ resourceLogs:
                   intValue: "60"
               - key: gcp.vpc.flow.start_time
                 value:
-                  intValue: "1759007577083366649"
+                  stringValue: "2025-09-27T21:12:57.083366649Z"
               - key: gcp.vpc.flow.end_time
                 value:
-                  intValue: "1759007578512821056"
+                  stringValue: "2025-09-27T21:12:58.512821056Z"
               - key: gcp.vpc.flow.source.instance.project.id
                 value:
                   stringValue: test-project-id
