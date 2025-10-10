@@ -20,11 +20,6 @@ const (
 	dbStatementKey        = "db.statement" // OpenTelemetry non-standard constant.
 )
 
-type dimension struct {
-	name  string
-	value *pcommon.Value
-}
-
 func newDimensions(cfgDims []Dimension) []pdatautil.Dimension {
 	if len(cfgDims) == 0 {
 		return nil
