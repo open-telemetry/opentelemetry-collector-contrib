@@ -319,7 +319,7 @@ func TestReceiver_InternalTelemetry(t *testing.T) {
 						attribute.String("topic", "otlp_spans"),
 						attribute.Int64("partition", 0),
 						attribute.String("outcome", "success"),
-						attribute.String("compression_codec", "snappy"),
+						attribute.String("compression_codec", "none"),
 					),
 				},
 			}, metricdatatest.IgnoreTimestamp())
@@ -331,7 +331,7 @@ func TestReceiver_InternalTelemetry(t *testing.T) {
 						attribute.String("topic", "otlp_spans"),
 						attribute.Int64("partition", 0),
 						attribute.String("outcome", "success"),
-						attribute.String("compression_codec", "snappy"),
+						attribute.String("compression_codec", "none"),
 					),
 				},
 			}, metricdatatest.IgnoreTimestamp())
@@ -342,7 +342,7 @@ func TestReceiver_InternalTelemetry(t *testing.T) {
 						attribute.String("topic", "otlp_spans"),
 						attribute.Int64("partition", 0),
 						attribute.String("outcome", "success"),
-						attribute.String("compression_codec", "snappy"),
+						attribute.String("compression_codec", "none"),
 					),
 				},
 			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
@@ -353,7 +353,7 @@ func TestReceiver_InternalTelemetry(t *testing.T) {
 						attribute.String("topic", "otlp_spans"),
 						attribute.Int64("partition", 0),
 						attribute.String("outcome", "success"),
-						attribute.String("compression_codec", "snappy"),
+						attribute.String("compression_codec", "none"),
 					),
 				},
 			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
@@ -552,7 +552,7 @@ func TestReceiver_MessageMarking(t *testing.T) {
 									attribute.String("topic", "otlp_spans"),
 									attribute.Int64("partition", 0),
 									attribute.String("outcome", "success"),
-									attribute.String("compression_codec", "snappy"),
+									attribute.String("compression_codec", "none"),
 								),
 							},
 						}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
@@ -917,7 +917,14 @@ func mustNewFakeCluster(tb testing.TB, opts ...kfake.Opt) (*kgo.Client, *Config)
 }
 
 func mustNewClient(tb testing.TB, cluster *kfake.Cluster) *kgo.Client {
-	client, err := kgo.NewClient(kgo.SeedBrokers(cluster.ListenAddrs()...))
+	client, err := kgo.NewClient(
+		kgo.SeedBrokers(cluster.ListenAddrs()...),
+
+		// Disable compression for greater determinism in tests
+		// relating to record sizes. This is important for tests
+		// that set minimum fetch size, for example.
+		kgo.ProducerBatchCompression(kgo.NoCompression()),
+	)
 	require.NoError(tb, err)
 	tb.Cleanup(client.Close)
 	return client
