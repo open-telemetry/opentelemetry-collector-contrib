@@ -139,17 +139,15 @@ func accessObservedTime[K Context]() ottl.StandardGetSetter[K] {
 }
 
 func accessSeverityNumber[K Context]() ottl.StandardGetSetter[K] {
-	return ottl.StandardGetSetter[K]{
-		Getter: func(_ context.Context, tCtx K) (any, error) {
-			return int64(tCtx.GetLogRecord().SeverityNumber()), nil
+	return ottl.CoercingIntGetSetter[K](
+		func(_ context.Context, tCtx K) (any, error) {
+			return tCtx.GetLogRecord().SeverityNumber(), nil
 		},
-		Setter: func(_ context.Context, tCtx K, val any) error {
-			if i, ok := val.(int64); ok {
-				tCtx.GetLogRecord().SetSeverityNumber(plog.SeverityNumber(i))
-			}
+		func(_ context.Context, tCtx K, val int64) error {
+			tCtx.GetLogRecord().SetSeverityNumber(plog.SeverityNumber(val))
 			return nil
 		},
-	}
+	)
 }
 
 func accessSeverityText[K Context]() ottl.StandardGetSetter[K] {

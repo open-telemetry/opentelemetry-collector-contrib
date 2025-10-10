@@ -10,6 +10,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"math"
 	"reflect"
 	"strconv"
 	"time"
@@ -354,6 +355,91 @@ type IntGetter[K any] interface {
 // StandardIntGetter is a basic implementation of IntGetter
 type StandardIntGetter[K any] struct {
 	Getter func(ctx context.Context, tCtx K) (any, error)
+}
+
+// CoercingIntGetSetter builds a StandardGetSetter with int64 semantics.
+// The provided coerce function is responsible for converting arbitrary input into an int64
+// (and returns an error if conversion fails).
+// Should existing StandardIntGetter and StandardIntLikeGetter/IntLikeGetter reuse the same coering utility method?
+func CoercingIntGetSetter[K any](
+	getter func(context.Context, K) (any, error),
+	setter func(context.Context, K, int64) error,
+) StandardGetSetter[K] {
+	return StandardGetSetter[K]{
+		Getter: func(ctx context.Context, tCtx K) (any, error) {
+			val, err := getter(ctx, tCtx)
+			if err != nil {
+				return nil, err
+			}
+			coerced, err := coerceIntValue(val)
+			if err != nil {
+				return nil, err
+			}
+			return coerced, nil
+		},
+		Setter: func(ctx context.Context, tCtx K, val any) error {
+			coerced, err := coerceIntValue(val)
+			if err != nil {
+				return err
+			}
+			return setter(ctx, tCtx, coerced)
+		},
+	}
+}
+
+// coerceIntValue can be moved to ctxutil
+func coerceIntValue(val any) (int64, error) {
+	if val == nil {
+		return 0, TypeError("expected int64 but got nil")
+	}
+
+	switch v := val.(type) {
+	case int:
+		return int64(v), nil
+	case int8:
+		return int64(v), nil
+	case int16:
+		return int64(v), nil
+	case int32:
+		return int64(v), nil
+	case int64:
+		return v, nil
+	case uint:
+		if uint64(v) > math.MaxInt64 {
+			return 0, TypeError(fmt.Sprintf("value %d overflows int64", v))
+		}
+		return int64(v), nil
+	case uint8:
+		return int64(v), nil
+	case uint16:
+		return int64(v), nil
+	case uint32:
+		return int64(v), nil
+	case uint64:
+		if v > math.MaxInt64 {
+			return 0, TypeError(fmt.Sprintf("value %d overflows int64", v))
+		}
+		return int64(v), nil
+	case pcommon.Value:
+		if v.Type() != pcommon.ValueTypeInt {
+			return 0, TypeError(fmt.Sprintf("expected int64 but got %v", v.Type()))
+		}
+		return v.Int(), nil
+	}
+
+	rv := reflect.ValueOf(val)
+	switch rv.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return rv.Int(), nil
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+		u := rv.Uint()
+		if u > math.MaxInt64 {
+			return 0, TypeError(fmt.Sprintf("value %d overflows int64", u))
+		}
+		return int64(u), nil
+	default:
+		return 0, TypeError(fmt.Sprintf("expected int64 but got %T", val))
+	}
 }
 
 // Get retrieves an int64 value.
