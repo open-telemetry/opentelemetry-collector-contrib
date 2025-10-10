@@ -27,7 +27,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest]
+        os: [windows-latest, windows-11-arm]
     runs-on: ${{ matrix.os }}
     if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Windows') || github.event_name == 'push' || github.event_name == 'merge_group') }}
     steps:
@@ -51,16 +51,19 @@ jobs:
       - name: Upload Collector Binary
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: collector-binary
+          name: collector-binary-${{ matrix.os == 'windows-11-arm' && 'arm64' || 'amd64' }}
           path: ./bin/*
 
   supervisor-test:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-2022, windows-2025]
+        os: [windows-2022, windows-2025, windows-11-arm]
     runs-on: ${{ matrix.os }}
     if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Windows') || github.event_name == 'push' || github.event_name == 'merge_group') }}
+    env:
+      # The gcc installed on the Windows arm64 runner doesn't ship native ARM libraries so we need to disable CGO.
+      CGO_ENABLED: ${{ matrix.os == 'windows-11-arm' && '0' || '' }}
     needs: [collector-build]
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
@@ -78,7 +81,7 @@ jobs:
       - name: Download Collector Binary
         uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
         with:
-          name: collector-binary
+          name: collector-binary-${{ matrix.os == 'windows-11-arm' && 'arm64' || 'amd64' }}
           path: bin/
       - name: Run opampsupervisor e2e tests
         run: |
@@ -89,7 +92,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-2022, windows-2025]
+        os: [windows-2022, windows-2025, windows-11-arm]
     runs-on: ${{ matrix.os }}
     if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Windows') || github.event_name == 'push' || github.event_name == 'merge_group') }}
     needs: [collector-build]
@@ -113,7 +116,7 @@ jobs:
       - name: Download Collector Binary
         uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
         with:
-          name: collector-binary
+          name: collector-binary-${{ matrix.os == 'windows-11-arm' && 'arm64' || 'amd64' }}
           path: bin/
       - name: Build supervisor
         run: cd cmd/opampsupervisor; go build
