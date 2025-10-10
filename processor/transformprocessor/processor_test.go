@@ -115,7 +115,7 @@ func BenchmarkLogsWithoutFlatten(b *testing.B) {
 	input, err := golden.ReadLogs(filepath.Join("testdata", "logs", "input.yaml"))
 	require.NoError(b, err)
 
-	for n := 0; n < b.N; n++ {
+	for b.Loop() {
 		assert.NoError(b, p.ConsumeLogs(b.Context(), input))
 	}
 }
@@ -141,7 +141,7 @@ func BenchmarkLogsWithFlatten(b *testing.B) {
 	input, err := golden.ReadLogs(filepath.Join("testdata", "logs", "input.yaml"))
 	require.NoError(b, err)
 
-	for n := 0; n < b.N; n++ {
+	for b.Loop() {
 		assert.NoError(b, p.ConsumeLogs(b.Context(), input))
 	}
 }
