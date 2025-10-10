@@ -207,9 +207,9 @@ func newTraceAgentConfig(ctx context.Context, params exporter.Settings, cfg *dat
 	acfg.PeerTags = cfg.Traces.PeerTags
 	acfg.MaxSenderRetries = 4
 	if traceCustomHTTPFeatureGate.IsEnabled() {
-		params.Logger.Info("Experimental feature: datadog exporter trace export uses a custom HTTP client from the exporter HTTP configs")
-		acfg.HTTPClientFunc = func() *http.Client {
-			return clientutil.NewHTTPClient(cfg.ClientConfig)
+		params.Logger.Info("Experimental feature: datadog exporter trace export uses a custom HTTP transport from the exporter HTTP configs")
+		acfg.HTTPTransportFunc = func() *http.Transport {
+			return clientutil.NewHTTPTransport(cfg.ClientConfig)
 		}
 	}
 	if !datadog.OperationAndResourceNameV2FeatureGate.IsEnabled() {

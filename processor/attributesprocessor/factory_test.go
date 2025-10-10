@@ -51,7 +51,7 @@ func TestFactoryCreateTraces_InvalidActions(t *testing.T) {
 		{Key: "http.status_code", ConvertedType: "array", Action: attraction.CONVERT},
 	}
 	ap2, err2 := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
-	require.EqualError(t, err2, "error creating AttrProc due to invalid value \"array\" in field \"converted_type\" for action \"convert\" at the 0-th action")
+	require.EqualError(t, err2, "error with key \"http.status_code\" (0-th action): error creating AttrProc due to invalid value \"array\" in field \"converted_type\" for action \"convert\"")
 	assert.Nil(t, ap2)
 }
 

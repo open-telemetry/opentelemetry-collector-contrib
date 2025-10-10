@@ -251,7 +251,8 @@ func stackTraceEvent(dic pprofile.ProfilesDictionary, traceID string, sample ppr
 
 func stackTrace(stackTraceID string, frames []StackFrame, frameTypes []libpf.FrameType) StackTrace {
 	frameIDs := make([]string, 0, len(frames))
-	for _, f := range frames {
+	for i := range frames {
+		f := &frames[i]
 		frameIDs = append(frameIDs, f.DocID)
 	}
 
@@ -289,7 +290,7 @@ func stackFrames(dic pprofile.ProfilesDictionary, sample pprofile.Sample) ([]Sta
 			continue
 		}
 
-		frameTypeStr, err := getStringFromAttribute(dic, location, "profile.frame.type")
+		frameTypeStr, err := getStringFromAttribute(dic, location, string(semconv.ProfileFrameTypeKey))
 		if err != nil {
 			return nil, nil, nil, err
 		}
@@ -372,7 +373,6 @@ var errMissingAttribute = errors.New("missing attribute")
 // of the profile if the attribute key matches the expected attrKey.
 func getStringFromAttribute(dic pprofile.ProfilesDictionary, record attributable, attrKey string) (string, error) {
 	lenAttrTable := dic.AttributeTable().Len()
-
 	for _, idx32 := range record.AttributeIndices().All() {
 		idx := int(idx32)
 
@@ -471,9 +471,8 @@ func stackTraceID(frames []StackFrame) (string, error) {
 
 func getLocations(dic pprofile.ProfilesDictionary, stack pprofile.Stack) []pprofile.Location {
 	locations := make([]pprofile.Location, 0, stack.LocationIndices().Len())
-
-	for i := range stack.LocationIndices().All() {
-		locations = append(locations, dic.LocationTable().At(i))
+	for _, i := range stack.LocationIndices().All() {
+		locations = append(locations, dic.LocationTable().At(int(i)))
 	}
 
 	return locations
