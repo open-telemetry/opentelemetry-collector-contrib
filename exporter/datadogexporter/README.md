@@ -27,7 +27,20 @@ Find the full configs of Datadog exporter and their usage in [collector.yaml](./
 
 This error indicates the payload size sent by the Datadog exporter exceeds the size limit (see previous examples https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16834, https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/17566).
 
-This is usually caused by the pipeline batching too many telemetry data before sending to the Datadog exporter. To fix that, try lowering `send_batch_size` and `send_batch_max_size` in your batchprocessor config. You might want to have a separate batch processor dedicated for datadog exporter if other exporters expect a larger batch size, e.g.
+This is usually caused by the pipeline batching too many telemetry data before sending to the Datadog API intake. To fix that, prefer using the Datadog exporter `sending_queue::batch` section instead of the batch processor, since the former has the defaults that work correctly with Datadog:
+
+```yaml
+exporters:
+  datadog:
+    api:
+      key: ${env:DD_API_KEY}
+    sending_queue:
+      # An empty section means that the defaults will be used.
+      batch:
+```
+
+
+If you are using the batch processor instead, try lowering `send_batch_size` and `send_batch_max_size` in your config. You might want to have a separate batch processor dedicated for datadog exporter if other exporters expect a larger batch size, e.g.
 ```
 processors:
   batch:  # To be used by other exporters
