@@ -209,7 +209,7 @@ func getMetricsFromMetricList(metricList ...pmetric.Metric) pmetric.Metrics {
 	rm := metrics.ResourceMetrics().AppendEmpty()
 	ilm := rm.ScopeMetrics().AppendEmpty()
 	ilm.Metrics().EnsureCapacity(len(metricList))
-	for i := 0; i < len(metricList); i++ {
+	for i := range metricList {
 		metricList[i].CopyTo(ilm.Metrics().AppendEmpty())
 	}
 
@@ -420,7 +420,7 @@ func getQuantiles(bounds, values []float64) pmetric.SummaryDataPointValueAtQuant
 	quantiles := pmetric.NewSummaryDataPointValueAtQuantileSlice()
 	quantiles.EnsureCapacity(len(bounds))
 
-	for i := 0; i < len(bounds); i++ {
+	for i := range bounds {
 		quantile := quantiles.AppendEmpty()
 		quantile.SetQuantile(bounds[i])
 		quantile.SetValue(values[i])
