@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //go:build windows
 
-package windowsservicereceiver
+package windowsservicereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsservicereceiver"
 
 import (
 	"context"
@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsservicereceiver/internal/metadata"
@@ -48,28 +49,7 @@ func newWindowsServiceScraper(settings receiver.Settings, cfg *Config, mb *metad
 	return ws
 }
 
-func mapStateToMetricValue(st State) int {
-	switch st {
-	case StateStopped:
-		return 1
-	case StateStartPending:
-		return 2
-	case StateStopPending:
-		return 3
-	case StateRunning:
-		return 4
-	case StateContinuePending:
-		return 5
-	case StatePausePending:
-		return 6
-	case StatePaused:
-		return 7
-	default:
-		return 1
-	}
-}
-
-func mapStartTypeToAttr(st StartType, _ bool) metadata.AttributeStartupMode {
+func mapStartTypeToAttr(st StartType) metadata.AttributeStartupMode {
 	switch st {
 	case StartBoot:
 		return metadata.AttributeStartupModeBootStart
@@ -114,32 +94,41 @@ func (ws *windowsServiceScraper) scrape(_ context.Context) (pmetric.Metrics, err
 		return ws.mb.Emit(), err
 	}
 
+	var scrapeErr error
+
 	for _, name := range names {
 		if !ws.allowed(name) {
 			continue
 		}
 
-		svc, err := getService(&ws.mgr, name)
+		svc, err := updateService(&ws.mgr, name)
 		if err != nil {
+			scrapeErr = multierr.Append(scrapeErr, err)
 			continue
 		}
 
-		if err := svc.getStatus(); err != nil {
-			_ = svc.close()
-			continue
-		}
-		if err := svc.getConfig(); err != nil {
-			_ = svc.close()
-			continue
-		}
+		func() {
+			defer func() { _ = svc.close() }()
 
-		val := int64(mapStateToMetricValue(State(svc.status.State)))
-		startAttr := mapStartTypeToAttr(svc.config.StartType, svc.config.DelayedAutoStart)
+			if err := svc.updateStatus(); err != nil {
+				scrapeErr = multierr.Append(scrapeErr, err)
+				return
+			}
+			if err := svc.updateConfig(); err != nil {
+				scrapeErr = multierr.Append(scrapeErr, err)
+				return
+			}
 
-		ws.mb.RecordWindowsServiceStatusDataPoint(ts, val, name, startAttr)
+			val := int64(svc.status.State)
 
-		_ = svc.close()
+			if val < 1 || val > 7 {
+				val = 0
+			}
+
+			startAttr := mapStartTypeToAttr(svc.config.StartType)
+			ws.mb.RecordWindowsServiceStatusDataPoint(ts, val, name, startAttr)
+		}()
 	}
 
-	return ws.mb.Emit(), nil
+	return ws.mb.Emit(), scrapeErr
 }

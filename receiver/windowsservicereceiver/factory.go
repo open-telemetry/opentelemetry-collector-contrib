@@ -3,7 +3,7 @@
 
 //go:build windows
 
-package windowsservicereceiver
+package windowsservicereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsservicereceiver"
 
 import (
 	"time"
