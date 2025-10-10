@@ -107,7 +107,7 @@ func (s *storageExporter) Start(ctx context.Context, host component.Host) error 
 			return fmt.Errorf("failed to create storage bucket %q: %w", s.cfg.Bucket.Name, err)
 		}
 		// otherwise bucket exists and will be reused
-		s.logger.Info("existent bucket will be used", zap.String("bucket", s.cfg.Bucket.Name))
+		s.logger.Info("Existing bucket will be used", zap.String("bucket", s.cfg.Bucket.Name))
 	} else {
 		s.logger.Info("created bucket", zap.String("bucket", s.cfg.Bucket.Name))
 	}
