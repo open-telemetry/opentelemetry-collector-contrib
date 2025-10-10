@@ -253,6 +253,7 @@ receiver/hostmetricsreceiver/internal/scraper/processscraper receiver/hostmetric
 receiver/hostmetricsreceiver/internal/scraper/systemscraper receiver/hostmetrics/internal/scraper/system
 receiver/httpcheckreceiver receiver/httpcheck
 receiver/huaweicloudcesreceiver receiver/huaweicloudces
+receiver/icmpcheckreceiver receiver/icmpcheck
 receiver/iisreceiver receiver/iis
 receiver/influxdbreceiver receiver/influxdb
 receiver/jaegerreceiver receiver/jaeger

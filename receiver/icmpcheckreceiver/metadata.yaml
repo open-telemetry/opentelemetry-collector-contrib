@@ -1,0 +1,9 @@
+type: icmpcheckreceiver
+
+status:
+  class: receiver
+  stability:
+    development: [metrics]
+  distributions: []
+  codeowners:
+    active: [atoulme, jkoronaAtCisco]

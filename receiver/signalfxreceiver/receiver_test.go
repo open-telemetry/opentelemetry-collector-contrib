@@ -768,7 +768,7 @@ func sfxCategoryPtr(t sfxpb.EventCategory) *sfxpb.EventCategory {
 
 func buildNDimensions(n uint) []*sfxpb.Dimension {
 	d := make([]*sfxpb.Dimension, 0, n)
-	for i := uint(0); i < n; i++ {
+	for i := range n {
 		idx := int(i)
 		suffix := strconv.Itoa(idx)
 		d = append(d, &sfxpb.Dimension{
@@ -830,7 +830,7 @@ func buildHistogram(im pmetric.Metric) {
 }
 
 func addAttributes(count int, dst pcommon.Map) {
-	for i := 0; i < count; i++ {
+	for i := range count {
 		suffix := strconv.Itoa(i)
 		dst.PutStr("k"+suffix, "v"+suffix)
 	}
@@ -843,7 +843,7 @@ func buildOtlpMetrics(metricsCount int) *pmetric.Metrics {
 	ilm := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 	ilm.EnsureCapacity(metricsCount)
 
-	for i := 0; i < metricsCount; i++ {
+	for i := range metricsCount {
 		switch i % 2 {
 		case 0:
 			buildGauge(ilm.AppendEmpty())
