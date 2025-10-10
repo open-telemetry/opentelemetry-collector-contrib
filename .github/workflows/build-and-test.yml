@@ -486,8 +486,6 @@ jobs:
           - os: windows
             arch: arm
           - os: windows
-            arch: arm64
-          - os: windows
             arch: ppc64le
           - os: windows
             arch: riscv64

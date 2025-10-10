@@ -203,7 +203,7 @@ func buildKey(dest *bytes.Buffer, serviceName string, span ptrace.Span, optional
 	concatDimensionValue(dest, traceutil.StatusCodeStr(span.Status().Code()), true)
 
 	for _, d := range optionalDims {
-		if v, ok := getDimensionValue(d, span.Attributes(), eventAttrs, resourceAttrs); ok {
+		if v, ok := pdatautil.GetDimensionValue(d, span.Attributes(), eventAttrs, resourceAttrs); ok {
 			concatDimensionValue(dest, v.AsString(), true)
 		}
 	}
