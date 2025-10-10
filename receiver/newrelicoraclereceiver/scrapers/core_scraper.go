@@ -107,6 +107,11 @@ func (s *CoreScraper) ScrapeCoreMetrics(ctx context.Context) []error {
 
 // scrapeLockedAccountsMetrics handles the locked accounts metrics
 func (s *CoreScraper) scrapeLockedAccountsMetrics(ctx context.Context, now pcommon.Timestamp) []error {
+	// Check if locked accounts metric is enabled
+	if !s.config.Metrics.NewrelicoracledbLockedAccounts.Enabled {
+		return nil
+	}
+
 	var errors []error
 
 	// Execute locked accounts query
@@ -158,6 +163,16 @@ func (s *CoreScraper) scrapeLockedAccountsMetrics(ctx context.Context, now pcomm
 
 // scrapeReadWriteMetrics handles the disk read/write I/O metrics
 func (s *CoreScraper) scrapeReadWriteMetrics(ctx context.Context, now pcommon.Timestamp) []error {
+	// Check if any disk I/O metrics are enabled
+	if !s.config.Metrics.NewrelicoracledbDiskReads.Enabled &&
+		!s.config.Metrics.NewrelicoracledbDiskWrites.Enabled &&
+		!s.config.Metrics.NewrelicoracledbDiskBlocksRead.Enabled &&
+		!s.config.Metrics.NewrelicoracledbDiskBlocksWritten.Enabled &&
+		!s.config.Metrics.NewrelicoracledbDiskReadTimeMilliseconds.Enabled &&
+		!s.config.Metrics.NewrelicoracledbDiskWriteTimeMilliseconds.Enabled {
+		return nil
+	}
+
 	var errors []error
 
 	// Execute read/write metrics query
@@ -197,13 +212,25 @@ func (s *CoreScraper) scrapeReadWriteMetrics(ctx context.Context, now pcommon.Ti
 			zap.String("instance", s.instanceName),
 		)
 
-		// Record all disk I/O metrics
-		s.mb.RecordNewrelicoracledbDiskReadsDataPoint(now, physicalReads, s.instanceName, instanceID)
-		s.mb.RecordNewrelicoracledbDiskWritesDataPoint(now, physicalWrites, s.instanceName, instanceID)
-		s.mb.RecordNewrelicoracledbDiskBlocksReadDataPoint(now, physicalBlockReads, s.instanceName, instanceID)
-		s.mb.RecordNewrelicoracledbDiskBlocksWrittenDataPoint(now, physicalBlockWrites, s.instanceName, instanceID)
-		s.mb.RecordNewrelicoracledbDiskReadTimeMillisecondsDataPoint(now, readTime, s.instanceName, instanceID)
-		s.mb.RecordNewrelicoracledbDiskWriteTimeMillisecondsDataPoint(now, writeTime, s.instanceName, instanceID)
+		// Record disk I/O metrics only if enabled
+		if s.config.Metrics.NewrelicoracledbDiskReads.Enabled {
+			s.mb.RecordNewrelicoracledbDiskReadsDataPoint(now, physicalReads, s.instanceName, instanceID)
+		}
+		if s.config.Metrics.NewrelicoracledbDiskWrites.Enabled {
+			s.mb.RecordNewrelicoracledbDiskWritesDataPoint(now, physicalWrites, s.instanceName, instanceID)
+		}
+		if s.config.Metrics.NewrelicoracledbDiskBlocksRead.Enabled {
+			s.mb.RecordNewrelicoracledbDiskBlocksReadDataPoint(now, physicalBlockReads, s.instanceName, instanceID)
+		}
+		if s.config.Metrics.NewrelicoracledbDiskBlocksWritten.Enabled {
+			s.mb.RecordNewrelicoracledbDiskBlocksWrittenDataPoint(now, physicalBlockWrites, s.instanceName, instanceID)
+		}
+		if s.config.Metrics.NewrelicoracledbDiskReadTimeMilliseconds.Enabled {
+			s.mb.RecordNewrelicoracledbDiskReadTimeMillisecondsDataPoint(now, readTime, s.instanceName, instanceID)
+		}
+		if s.config.Metrics.NewrelicoracledbDiskWriteTimeMilliseconds.Enabled {
+			s.mb.RecordNewrelicoracledbDiskWriteTimeMillisecondsDataPoint(now, writeTime, s.instanceName, instanceID)
+		}
 
 		metricCount++
 	}

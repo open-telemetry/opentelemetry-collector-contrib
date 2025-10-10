@@ -67,6 +67,16 @@ all_set:
       enabled: true
     newrelicoracledb.connection.wait_events:
       enabled: true
+    newrelicoracledb.container.restricted:
+      enabled: true
+    newrelicoracledb.container.status:
+      enabled: true
+    newrelicoracledb.datafile.autoextensible:
+      enabled: true
+    newrelicoracledb.datafile.size_bytes:
+      enabled: true
+    newrelicoracledb.datafile.used_bytes:
+      enabled: true
     newrelicoracledb.db_id:
       enabled: true
     newrelicoracledb.disk.blocks_read:
@@ -157,6 +167,8 @@ all_set:
       enabled: true
     newrelicoracledb.pdb.open_cursors_per_transaction:
       enabled: true
+    newrelicoracledb.pdb.open_mode:
+      enabled: true
     newrelicoracledb.pdb.parse_failure_count_per_second:
       enabled: true
     newrelicoracledb.pdb.physical_read_bytes_per_second:
@@ -179,9 +191,13 @@ all_set:
       enabled: true
     newrelicoracledb.pdb.sql_service_response_time:
       enabled: true
+    newrelicoracledb.pdb.status:
+      enabled: true
     newrelicoracledb.pdb.total_parse_count_per_second:
       enabled: true
     newrelicoracledb.pdb.total_parse_count_per_transaction:
+      enabled: true
+    newrelicoracledb.pdb.total_size_bytes:
       enabled: true
     newrelicoracledb.pdb.transactions_per_second:
       enabled: true
@@ -244,6 +260,10 @@ all_set:
     newrelicoracledb.rollback_segments_wait_ratio:
       enabled: true
     newrelicoracledb.rollback_segments_waits:
+      enabled: true
+    newrelicoracledb.service.count:
+      enabled: true
+    newrelicoracledb.service.status:
       enabled: true
     newrelicoracledb.sessions.count:
       enabled: true
@@ -576,6 +596,12 @@ all_set:
     newrelicoracledb.tablespace.space_reserved_bytes:
       enabled: true
     newrelicoracledb.tablespace.space_used_percentage:
+      enabled: true
+    newrelicoracledb.tablespace.total_bytes:
+      enabled: true
+    newrelicoracledb.tablespace.used_bytes:
+      enabled: true
+    newrelicoracledb.tablespace.used_percent:
       enabled: true
   resource_attributes:
     host.name:
@@ -650,6 +676,16 @@ none_set:
       enabled: false
     newrelicoracledb.connection.wait_events:
       enabled: false
+    newrelicoracledb.container.restricted:
+      enabled: false
+    newrelicoracledb.container.status:
+      enabled: false
+    newrelicoracledb.datafile.autoextensible:
+      enabled: false
+    newrelicoracledb.datafile.size_bytes:
+      enabled: false
+    newrelicoracledb.datafile.used_bytes:
+      enabled: false
     newrelicoracledb.db_id:
       enabled: false
     newrelicoracledb.disk.blocks_read:
@@ -740,6 +776,8 @@ none_set:
       enabled: false
     newrelicoracledb.pdb.open_cursors_per_transaction:
       enabled: false
+    newrelicoracledb.pdb.open_mode:
+      enabled: false
     newrelicoracledb.pdb.parse_failure_count_per_second:
       enabled: false
     newrelicoracledb.pdb.physical_read_bytes_per_second:
@@ -762,9 +800,13 @@ none_set:
       enabled: false
     newrelicoracledb.pdb.sql_service_response_time:
       enabled: false
+    newrelicoracledb.pdb.status:
+      enabled: false
     newrelicoracledb.pdb.total_parse_count_per_second:
       enabled: false
     newrelicoracledb.pdb.total_parse_count_per_transaction:
+      enabled: false
+    newrelicoracledb.pdb.total_size_bytes:
       enabled: false
     newrelicoracledb.pdb.transactions_per_second:
       enabled: false
@@ -827,6 +869,10 @@ none_set:
     newrelicoracledb.rollback_segments_wait_ratio:
       enabled: false
     newrelicoracledb.rollback_segments_waits:
+      enabled: false
+    newrelicoracledb.service.count:
+      enabled: false
+    newrelicoracledb.service.status:
       enabled: false
     newrelicoracledb.sessions.count:
       enabled: false
@@ -1159,6 +1205,12 @@ none_set:
     newrelicoracledb.tablespace.space_reserved_bytes:
       enabled: false
     newrelicoracledb.tablespace.space_used_percentage:
+      enabled: false
+    newrelicoracledb.tablespace.total_bytes:
+      enabled: false
+    newrelicoracledb.tablespace.used_bytes:
+      enabled: false
+    newrelicoracledb.tablespace.used_percent:
       enabled: false
   resource_attributes:
     host.name:

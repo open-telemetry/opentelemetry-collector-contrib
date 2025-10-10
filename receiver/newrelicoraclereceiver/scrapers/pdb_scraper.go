@@ -7,22 +7,29 @@ import (
 	"context"
 	"database/sql"
 	"strconv"
+	"sync"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/newrelicoraclereceiver/internal/errors"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/newrelicoraclereceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/newrelicoraclereceiver/queries"
 )
 
-// PdbScraper handles Oracle PDB sys metrics
+// PdbScraper handles Oracle PDB sys metrics with CDB environment detection
 type PdbScraper struct {
 	db           *sql.DB
 	mb           *metadata.MetricsBuilder
 	logger       *zap.Logger
 	instanceName string
 	config       metadata.MetricsBuilderConfig
+
+	// Environment capability detection
+	isCDBCapable       *bool        // Cache for CDB capability check
+	environmentChecked bool         // Track if environment has been checked
+	detectionMutex     sync.RWMutex // Protect concurrent access to detection state
 }
 
 // NewPdbScraper creates a new PDB scraper
@@ -36,11 +43,24 @@ func NewPdbScraper(db *sql.DB, mb *metadata.MetricsBuilder, logger *zap.Logger, 
 	}
 }
 
-// ScrapePdbMetrics collects Oracle PDB sys metrics
+// ScrapePdbMetrics collects Oracle PDB sys metrics with CDB environment detection
 func (s *PdbScraper) ScrapePdbMetrics(ctx context.Context) []error {
 	var errors []error
 
 	s.logger.Debug("Scraping Oracle PDB sys metrics")
+
+	// Check if CDB features are supported before querying PDB-specific views
+	if err := s.checkCDBCapability(ctx); err != nil {
+		s.logger.Error("Failed to check CDB capability", zap.Error(err))
+		return []error{err}
+	}
+
+	// Skip PDB metrics if CDB features are not supported
+	if !s.isCDBSupported() {
+		s.logger.Debug("CDB features not supported, skipping PDB sys metrics")
+		return nil
+	}
+
 	now := pcommon.NewTimestampFromTime(time.Now())
 
 	// Scrape PDB sys metrics
@@ -182,4 +202,51 @@ func (s *PdbScraper) scrapePDBSysMetrics(ctx context.Context, now pcommon.Timest
 	}
 
 	return nil
+}
+
+// CDB capability detection methods
+
+// checkCDBCapability checks if the Oracle database supports CDB features
+func (s *PdbScraper) checkCDBCapability(ctx context.Context) error {
+	s.detectionMutex.Lock()
+	defer s.detectionMutex.Unlock()
+
+	if s.environmentChecked {
+		return nil // Already checked
+	}
+
+	// Check if this is a CDB-capable database
+	var isCDB int64
+	err := s.db.QueryRowContext(ctx, queries.CheckCDBFeatureSQL).Scan(&isCDB)
+	if err != nil {
+		if errors.IsPermanentError(err) {
+			// Likely an older Oracle version that doesn't support CDB
+			s.logger.Info("Database does not support CDB features, skipping PDB metrics",
+				zap.String("instance", s.instanceName),
+				zap.Error(err))
+			cdbCapable := false
+			s.isCDBCapable = &cdbCapable
+			s.environmentChecked = true
+			return nil
+		}
+		return errors.NewQueryError("cdb_capability_check", queries.CheckCDBFeatureSQL, err,
+			map[string]interface{}{"instance": s.instanceName})
+	}
+
+	cdbCapable := isCDB == 1
+	s.isCDBCapable = &cdbCapable
+	s.environmentChecked = true
+
+	s.logger.Info("Oracle CDB capability detected for PDB metrics",
+		zap.String("instance", s.instanceName),
+		zap.Bool("cdb_capable", *s.isCDBCapable))
+
+	return nil
+}
+
+// isCDBSupported returns true if the database supports CDB features
+func (s *PdbScraper) isCDBSupported() bool {
+	s.detectionMutex.RLock()
+	defer s.detectionMutex.RUnlock()
+	return s.isCDBCapable != nil && *s.isCDBCapable
 }

@@ -82,6 +82,14 @@ func createReceiverFunc(sqlOpenerFunc sqlOpenerFunc) receiver.CreateMetricsFunc 
 				db.SetMaxOpenConns(1)
 			}
 
+			// Set connection timeouts to ensure proper cancellation
+			// MaxIdleConns should be reasonable to prevent too many idle connections
+			db.SetMaxIdleConns(2)
+			// ConnMaxLifetime ensures connections are refreshed periodically
+			db.SetConnMaxLifetime(10 * time.Minute)
+			// ConnMaxIdleTime closes idle connections
+			db.SetConnMaxIdleTime(30 * time.Second)
+
 			return db, nil
 		}, instanceName, hostName)
 		if err != nil {

@@ -41,6 +41,7 @@ type newRelicOracleScraper struct {
 	pdbScraper        *scrapers.PdbScraper
 	systemScraper     *scrapers.SystemScraper
 	connectionScraper *scrapers.ConnectionScraper
+	containerScraper  *scrapers.ContainerScraper
 	racScraper        *scrapers.RacScraper
 
 	db                   *sql.DB
@@ -93,6 +94,9 @@ func (s *newRelicOracleScraper) start(context.Context, component.Host) error {
 	// Initialize connection scraper with direct DB connection
 	s.connectionScraper = scrapers.NewConnectionScraper(s.db, s.mb, s.logger, s.instanceName, s.metricsBuilderConfig)
 
+	// Initialize container scraper with direct DB connection
+	s.containerScraper = scrapers.NewContainerScraper(s.db, s.mb, s.logger, s.instanceName, s.metricsBuilderConfig)
+
 	// Initialize RAC scraper with direct DB connection
 	s.racScraper = scrapers.NewRacScraper(s.db, s.mb, s.logger, s.instanceName, s.metricsBuilderConfig)
 
@@ -103,8 +107,13 @@ func (s *newRelicOracleScraper) scrape(ctx context.Context) (pmetric.Metrics, er
 	s.logger.Debug("Begin New Relic Oracle scrape")
 
 	// Create context with timeout for the entire scrape operation
-	scrapeCtx, cancel := context.WithTimeout(ctx, s.scrapeCfg.Timeout)
-	defer cancel()
+	// IMPORTANT: Use the original context, not a child context to ensure proper cancellation
+	scrapeCtx := ctx
+	if s.scrapeCfg.Timeout > 0 {
+		var cancel context.CancelFunc
+		scrapeCtx, cancel = context.WithTimeout(ctx, s.scrapeCfg.Timeout)
+		defer cancel()
+	}
 
 	// Channel to collect errors from concurrent scrapers
 	const maxErrors = 100 // Buffer size to prevent blocking
@@ -121,19 +130,30 @@ func (s *newRelicOracleScraper) scrape(ctx context.Context) (pmetric.Metrics, er
 		s.pdbScraper.ScrapePdbMetrics,
 		s.systemScraper.ScrapeSystemMetrics,
 		s.connectionScraper.ScrapeConnectionMetrics,
+		s.containerScraper.ScrapeContainerMetrics,
 		s.racScraper.ScrapeRacMetrics,
 	}
 
-	// Launch concurrent scrapers
+	// Launch concurrent scrapers with proper cancellation handling
 	for i, scraperFunc := range scraperFuncs {
 		wg.Add(1)
 		go func(index int, fn ScraperFunc) {
 			defer wg.Done()
 
+			// Check for context cancellation before starting
+			select {
+			case <-scrapeCtx.Done():
+				s.logger.Debug("Context cancelled before starting scraper",
+					zap.Int("scraper_index", index),
+					zap.Error(scrapeCtx.Err()))
+				return
+			default:
+			}
+
 			s.logger.Debug("Starting scraper", zap.Int("scraper_index", index))
 			startTime := time.Now()
 
-			// Execute the scraper function
+			// Execute the scraper function with cancellation check
 			errs := fn(scrapeCtx)
 
 			duration := time.Since(startTime)
@@ -142,36 +162,57 @@ func (s *newRelicOracleScraper) scrape(ctx context.Context) (pmetric.Metrics, er
 				zap.Duration("duration", duration),
 				zap.Int("error_count", len(errs)))
 
-			// Send errors to the error channel
+			// Send errors to the error channel with cancellation check
 			for _, err := range errs {
 				select {
 				case errChan <- err:
 				case <-scrapeCtx.Done():
-					// Context cancelled, stop sending errors
+					// Context cancelled, stop sending errors and exit goroutine
+					s.logger.Debug("Context cancelled while sending errors",
+						zap.Int("scraper_index", index),
+						zap.Error(scrapeCtx.Err()))
 					return
 				default:
 					// Channel is full, log and continue
-					s.logger.Warn("Error channel full, dropping error", zap.Error(err))
+					s.logger.Warn("Error channel full, dropping error",
+						zap.Error(err),
+						zap.Int("scraper_index", index))
 				}
 			}
 		}(i, scraperFunc)
 	}
 
-	// Close error channel when all scrapers are done
+	// Close error channel when all scrapers are done, with timeout protection
+	done := make(chan struct{})
 	go func() {
+		defer close(done)
 		wg.Wait()
 		close(errChan)
 	}()
 
-	// Collect all errors from the channel
+	// Collect all errors from the channel with cancellation handling
 	var scrapeErrors []error
-	for err := range errChan {
-		scrapeErrors = append(scrapeErrors, err)
-	}
-
-	// Check if context was cancelled
-	if scrapeCtx.Err() != nil {
-		scrapeErrors = append(scrapeErrors, fmt.Errorf("scrape operation timed out or was cancelled: %w", scrapeCtx.Err()))
+	collecting := true
+	for collecting {
+		select {
+		case err, ok := <-errChan:
+			if !ok {
+				collecting = false
+				break
+			}
+			scrapeErrors = append(scrapeErrors, err)
+		case <-scrapeCtx.Done():
+			// Context cancelled, stop collecting errors
+			s.logger.Warn("Context cancelled while collecting errors", zap.Error(scrapeCtx.Err()))
+			scrapeErrors = append(scrapeErrors, fmt.Errorf("scrape operation cancelled: %w", scrapeCtx.Err()))
+			collecting = false
+		case <-done:
+			// All scrapers completed, collect remaining errors
+			for err := range errChan {
+				scrapeErrors = append(scrapeErrors, err)
+			}
+			collecting = false
+		}
 	}
 
 	// Build the resource with instance and host information

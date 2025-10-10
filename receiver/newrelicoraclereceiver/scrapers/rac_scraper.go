@@ -1,19 +1,5 @@
-// Licensed to The New Relic under one or more contributor
-// license agreements. See the NOTICE file distributed with
-// this work for additional information regarding copyright
-// ownership. The New Relic licenses this file to you under
-// the Apache License, Version 2.0 (the "License"); you may
-// not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing,
-// software distributed under the License is distributed on an
-// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied.  See the License for the
-// specific language governing permissions and limitations
-// under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package scrapers
 
@@ -45,14 +31,14 @@ type RacScraper struct {
 	racModeMutex sync.RWMutex
 }
 
-// NewRacScraper creates a new RAC Scraper instance
-func NewRacScraper(db *sql.DB, mb *metadata.MetricsBuilder, logger *zap.Logger, instanceName string, metricsBuilderConfig metadata.MetricsBuilderConfig) *RacScraper {
+// NewRacScraper creates a new RAC metrics scraper
+func NewRacScraper(db *sql.DB, mb *metadata.MetricsBuilder, logger *zap.Logger, instanceName string, config metadata.MetricsBuilderConfig) *RacScraper {
 	return &RacScraper{
 		db:                   db,
 		mb:                   mb,
 		logger:               logger,
 		instanceName:         instanceName,
-		metricsBuilderConfig: metricsBuilderConfig,
+		metricsBuilderConfig: config,
 	}
 }
 
@@ -74,8 +60,6 @@ func (s *RacScraper) isRacEnabled(ctx context.Context) (bool, error) {
 		return *s.isRacMode, nil
 	}
 
-	s.logger.Debug("Checking if Oracle is running in RAC mode")
-
 	rows, err := s.db.QueryContext(ctx, queries.RACDetectionSQL)
 	if err != nil {
 		s.logger.Error("Failed to execute RAC detection query", zap.Error(err))
@@ -95,115 +79,119 @@ func (s *RacScraper) isRacEnabled(ctx context.Context) (bool, error) {
 	racEnabled := clusterDB.Valid && strings.ToUpper(clusterDB.String) == "TRUE"
 	s.isRacMode = &racEnabled
 
-	s.logger.Info("RAC mode detection completed",
-		zap.Bool("rac_enabled", racEnabled),
-		zap.String("cluster_database_value", clusterDB.String))
+	if racEnabled {
+		s.logger.Info("Oracle RAC mode detected", zap.String("cluster_database", clusterDB.String))
+	}
 
 	return racEnabled, nil
 }
 
-// ScrapeRacMetrics collects all Oracle RAC-specific metrics concurrently
-func (s *RacScraper) ScrapeRacMetrics(ctx context.Context) []error {
-	s.logger.Debug("Begin Oracle RAC metrics scrape")
+// isASMAvailable checks if ASM (Automatic Storage Management) is available
+func (s *RacScraper) isASMAvailable(ctx context.Context) (bool, error) {
+	rows, err := s.db.QueryContext(ctx, queries.ASMDetectionSQL)
+	if err != nil {
+		s.logger.Debug("Failed to execute ASM detection query (expected if ASM not configured)", zap.Error(err))
+		return false, nil // Don't treat as error - ASM might not be configured
+	}
+	defer rows.Close()
 
-	// First check if RAC is enabled
+	var asmCount int
+	if rows.Next() {
+		if err := rows.Scan(&asmCount); err != nil {
+			s.logger.Error("Failed to scan ASM detection result", zap.Error(err))
+			return false, err
+		}
+	}
+
+	asmAvailable := asmCount > 0
+	if asmAvailable {
+		s.logger.Info("Oracle ASM storage detected", zap.Int("diskgroup_tables_found", asmCount))
+	}
+
+	return asmAvailable, nil
+}
+
+// ScrapeRacMetrics collects Oracle RAC and ASM metrics based on availability
+// It detects both RAC cluster configuration and ASM storage management,
+// running appropriate scrapers for the detected environment
+func (s *RacScraper) ScrapeRacMetrics(ctx context.Context) []error {
+	// Check if RAC is enabled
 	racEnabled, err := s.isRacEnabled(ctx)
 	if err != nil {
 		s.logger.Error("Failed to detect RAC mode", zap.Error(err))
 		return []error{err}
 	}
 
-	if !racEnabled {
-		s.logger.Debug("Oracle is not running in RAC mode, skipping RAC-specific metrics")
+	// Check if ASM is available
+	asmAvailable, err := s.isASMAvailable(ctx)
+	if err != nil {
+		s.logger.Error("Failed to detect ASM availability", zap.Error(err))
+		return []error{err}
+	}
+
+	// Skip if neither RAC nor ASM is available
+	if !racEnabled && !asmAvailable {
 		return nil
 	}
 
-	s.logger.Debug("Oracle RAC mode detected, proceeding with RAC metrics collection")
-
-	// Check if context is already cancelled before starting goroutines
+	// Check if context is already cancelled
 	if ctx.Err() != nil {
-		s.logger.Warn("Context already cancelled before starting RAC metrics collection", zap.Error(ctx.Err()))
 		return []error{ctx.Err()}
 	}
 
-	// Channel to collect errors from all goroutines
-	errorChan := make(chan []error, 4) // Buffer for 4 scraper functions
+	// Determine which scrapers to run based on capabilities
+	var scrapers []func(context.Context) []error
+	var scraperCount int
+
+	// ASM scraper runs for both RAC and standalone ASM
+	if asmAvailable {
+		scrapers = append(scrapers, s.scrapeASMDiskGroups)
+		scraperCount++
+	}
+
+	// RAC-specific scrapers only run in RAC mode
+	if racEnabled {
+		scrapers = append(scrapers,
+			s.scrapeClusterWaitEvents,
+			s.scrapeInstanceStatus,
+			s.scrapeActiveServices,
+		)
+		scraperCount += 3
+	}
+
+	if scraperCount == 0 {
+		return nil
+	}
+
+	// Launch concurrent scrapers
+	errorChan := make(chan []error, scraperCount)
 	var wg sync.WaitGroup
+	wg.Add(scraperCount)
 
-	// Launch goroutines for each metric group
-	wg.Add(4)
+	for _, scraper := range scrapers {
+		go func(fn func(context.Context) []error) {
+			defer wg.Done()
+			select {
+			case <-ctx.Done():
+				errorChan <- []error{ctx.Err()}
+				return
+			default:
+			}
+			if errs := fn(ctx); len(errs) > 0 {
+				errorChan <- errs
+			} else {
+				errorChan <- nil
+			}
+		}(scraper)
+	}
 
-	// Scrape ASM metrics concurrently
-	go func() {
-		defer wg.Done()
-		select {
-		case <-ctx.Done():
-			errorChan <- []error{ctx.Err()}
-			return
-		default:
-		}
-		if errs := s.scrapeASMDiskGroups(ctx); len(errs) > 0 {
-			errorChan <- errs
-		} else {
-			errorChan <- nil
-		}
-	}()
-
-	// Scrape cluster wait events concurrently
-	go func() {
-		defer wg.Done()
-		select {
-		case <-ctx.Done():
-			errorChan <- []error{ctx.Err()}
-			return
-		default:
-		}
-		if errs := s.scrapeClusterWaitEvents(ctx); len(errs) > 0 {
-			errorChan <- errs
-		} else {
-			errorChan <- nil
-		}
-	}()
-
-	// Scrape instance status concurrently
-	go func() {
-		defer wg.Done()
-		select {
-		case <-ctx.Done():
-			errorChan <- []error{ctx.Err()}
-			return
-		default:
-		}
-		if errs := s.scrapeInstanceStatus(ctx); len(errs) > 0 {
-			errorChan <- errs
-		} else {
-			errorChan <- nil
-		}
-	}()
-
-	// Scrape service failover status concurrently
-	go func() {
-		defer wg.Done()
-		select {
-		case <-ctx.Done():
-			errorChan <- []error{ctx.Err()}
-			return
-		default:
-		}
-		if errs := s.scrapeActiveServices(ctx); len(errs) > 0 {
-			errorChan <- errs
-		} else {
-			errorChan <- nil
-		}
-	}()
-
-	// Wait for all goroutines to complete
+	// Wait for completion
 	go func() {
 		wg.Wait()
 		close(errorChan)
 	}()
 
-	// Collect all errors
+	// Collect errors
 	var allErrors []error
 	for errors := range errorChan {
 		if errors != nil {
@@ -211,15 +199,10 @@ func (s *RacScraper) ScrapeRacMetrics(ctx context.Context) []error {
 		}
 	}
 
-	// Check if context was cancelled
 	if ctx.Err() != nil {
-		s.logger.Warn("RAC metrics scrape context cancelled", zap.Error(ctx.Err()))
 		allErrors = append(allErrors, ctx.Err())
 	}
 
-	s.logger.Debug("Completed Oracle RAC metrics scrape",
-		zap.Int("error_count", len(allErrors)),
-		zap.Bool("concurrent_processing", true))
 	return allErrors
 }
 
@@ -259,7 +242,12 @@ func stringStatusToBinary(status, expectedValue string) int64 {
 
 // scrapeASMDiskGroups implements Feature 1: Automatic Storage Management (ASM) Monitoring
 func (s *RacScraper) scrapeASMDiskGroups(ctx context.Context) []error {
-	s.logger.Debug("Begin ASM disk group metrics scrape")
+	// Check if any ASM metrics are enabled before querying
+	if !s.metricsBuilderConfig.Metrics.NewrelicoracledbAsmDiskgroupTotalMb.Enabled &&
+		!s.metricsBuilderConfig.Metrics.NewrelicoracledbAsmDiskgroupFreeMb.Enabled &&
+		!s.metricsBuilderConfig.Metrics.NewrelicoracledbAsmDiskgroupOfflineDisks.Enabled {
+		return nil
+	}
 
 	var scrapeErrors []error
 
@@ -281,32 +269,21 @@ func (s *RacScraper) scrapeASMDiskGroups(ctx context.Context) []error {
 		}
 
 		if !name.Valid {
-			s.logger.Debug("Skipping ASM disk group with null name")
 			continue
 		}
 
 		now := pcommon.NewTimestampFromTime(time.Now())
 
-		// Record total MB metric
-		if totalMB.Valid {
+		// Record metrics only if enabled
+		if totalMB.Valid && s.metricsBuilderConfig.Metrics.NewrelicoracledbAsmDiskgroupTotalMb.Enabled {
 			s.mb.RecordNewrelicoracledbAsmDiskgroupTotalMbDataPoint(now, totalMB.Float64, s.instanceName, name.String)
 		}
-
-		// Record free MB metric
-		if freeMB.Valid {
+		if freeMB.Valid && s.metricsBuilderConfig.Metrics.NewrelicoracledbAsmDiskgroupFreeMb.Enabled {
 			s.mb.RecordNewrelicoracledbAsmDiskgroupFreeMbDataPoint(now, freeMB.Float64, s.instanceName, name.String)
 		}
-
-		// Record offline disks metric
-		if offlineDisks.Valid {
+		if offlineDisks.Valid && s.metricsBuilderConfig.Metrics.NewrelicoracledbAsmDiskgroupOfflineDisks.Enabled {
 			s.mb.RecordNewrelicoracledbAsmDiskgroupOfflineDisksDataPoint(now, int64(offlineDisks.Float64), s.instanceName, name.String)
 		}
-
-		s.logger.Debug("Processed ASM disk group",
-			zap.String("name", name.String),
-			zap.Float64("total_mb", totalMB.Float64),
-			zap.Float64("free_mb", freeMB.Float64),
-			zap.Float64("offline_disks", offlineDisks.Float64))
 	}
 
 	return scrapeErrors
@@ -314,7 +291,11 @@ func (s *RacScraper) scrapeASMDiskGroups(ctx context.Context) []error {
 
 // scrapeClusterWaitEvents implements Feature 2: Detailed Cluster Wait Events
 func (s *RacScraper) scrapeClusterWaitEvents(ctx context.Context) []error {
-	s.logger.Debug("Begin cluster wait events metrics scrape")
+	// Check if cluster wait event metrics are enabled
+	if !s.metricsBuilderConfig.Metrics.NewrelicoracledbRacWaitTime.Enabled &&
+		!s.metricsBuilderConfig.Metrics.NewrelicoracledbRacTotalWaits.Enabled {
+		return nil
+	}
 
 	var scrapeErrors []error
 
@@ -336,7 +317,6 @@ func (s *RacScraper) scrapeClusterWaitEvents(ctx context.Context) []error {
 		}
 
 		if !instID.Valid || !event.Valid {
-			s.logger.Debug("Skipping cluster wait event with null values")
 			continue
 		}
 
@@ -344,21 +324,13 @@ func (s *RacScraper) scrapeClusterWaitEvents(ctx context.Context) []error {
 		instanceIDStr := instID.String
 		eventName := event.String
 
-		// Record the raw time waited in microseconds (cumulative counter)
-		if timeWaitedMicro.Valid {
+		// Record metrics only if enabled
+		if timeWaitedMicro.Valid && s.metricsBuilderConfig.Metrics.NewrelicoracledbRacWaitTime.Enabled {
 			s.mb.RecordNewrelicoracledbRacWaitTimeDataPoint(now, timeWaitedMicro.Float64, s.instanceName, instanceIDStr, eventName)
 		}
-
-		// Record total waits if available
-		if totalWaits.Valid {
+		if totalWaits.Valid && s.metricsBuilderConfig.Metrics.NewrelicoracledbRacTotalWaits.Enabled {
 			s.mb.RecordNewrelicoracledbRacTotalWaitsDataPoint(now, int64(totalWaits.Float64), s.instanceName, instanceIDStr, eventName)
 		}
-
-		s.logger.Debug("Processed cluster wait event",
-			zap.String("instance_id", instanceIDStr),
-			zap.String("event", eventName),
-			zap.Float64("time_waited_micro", timeWaitedMicro.Float64),
-			zap.Float64("total_waits", totalWaits.Float64))
 	}
 
 	return scrapeErrors
@@ -366,7 +338,16 @@ func (s *RacScraper) scrapeClusterWaitEvents(ctx context.Context) []error {
 
 // scrapeInstanceStatus implements Feature 3A: Node Availability (Instance Status)
 func (s *RacScraper) scrapeInstanceStatus(ctx context.Context) []error {
-	s.logger.Debug("Begin RAC instance status metrics scrape")
+	// Check if any instance status metrics are enabled
+	if !s.metricsBuilderConfig.Metrics.NewrelicoracledbRacInstanceStatus.Enabled &&
+		!s.metricsBuilderConfig.Metrics.NewrelicoracledbRacInstanceUptimeSeconds.Enabled &&
+		!s.metricsBuilderConfig.Metrics.NewrelicoracledbRacInstanceDatabaseStatus.Enabled &&
+		!s.metricsBuilderConfig.Metrics.NewrelicoracledbRacInstanceActiveState.Enabled &&
+		!s.metricsBuilderConfig.Metrics.NewrelicoracledbRacInstanceLoginsAllowed.Enabled &&
+		!s.metricsBuilderConfig.Metrics.NewrelicoracledbRacInstanceArchiverStarted.Enabled &&
+		!s.metricsBuilderConfig.Metrics.NewrelicoracledbRacInstanceVersionInfo.Enabled {
+		return nil
+	}
 
 	var scrapeErrors []error
 
@@ -377,16 +358,9 @@ func (s *RacScraper) scrapeInstanceStatus(ctx context.Context) []error {
 	defer rows.Close()
 
 	for rows.Next() {
-		var instID sql.NullString
-		var instanceName sql.NullString
-		var hostName sql.NullString
-		var status sql.NullString
+		var instID, instanceName, hostName, status sql.NullString
 		var startupTime sql.NullTime
-		var databaseStatus sql.NullString
-		var activeState sql.NullString
-		var logins sql.NullString
-		var archiver sql.NullString
-		var version sql.NullString
+		var databaseStatus, activeState, logins, archiver, version sql.NullString
 
 		if err := rows.Scan(&instID, &instanceName, &hostName, &status, &startupTime, &databaseStatus, &activeState, &logins, &archiver, &version); err != nil {
 			scrapeErrors = s.handleScanError(err, scrapeErrors, "RAC instance status")
@@ -394,7 +368,6 @@ func (s *RacScraper) scrapeInstanceStatus(ctx context.Context) []error {
 		}
 
 		if !instID.Valid || !status.Valid {
-			s.logger.Debug("Skipping RAC instance with null values")
 			continue
 		}
 
@@ -409,47 +382,40 @@ func (s *RacScraper) scrapeInstanceStatus(ctx context.Context) []error {
 		archiverStr := nullStringToString(archiver)
 		versionStr := nullStringToString(version)
 
-		// Convert status to numeric: OPEN = 1, anything else = 0
-		statusValue := stringStatusToBinary(statusStr, "OPEN")
+		// Record metrics only if enabled
+		if s.metricsBuilderConfig.Metrics.NewrelicoracledbRacInstanceStatus.Enabled {
+			statusValue := stringStatusToBinary(statusStr, "OPEN")
+			s.mb.RecordNewrelicoracledbRacInstanceStatusDataPoint(now, statusValue, s.instanceName, instanceIDStr, instanceNameStr, hostNameStr, statusStr)
+		}
 
-		// Record the original status metric
-		s.mb.RecordNewrelicoracledbRacInstanceStatusDataPoint(now, statusValue, s.instanceName, instanceIDStr, instanceNameStr, hostNameStr, statusStr)
-
-		// Calculate and record uptime
-		if startupTime.Valid {
+		if startupTime.Valid && s.metricsBuilderConfig.Metrics.NewrelicoracledbRacInstanceUptimeSeconds.Enabled {
 			uptime := time.Since(startupTime.Time).Seconds()
 			s.mb.RecordNewrelicoracledbRacInstanceUptimeSecondsDataPoint(now, int64(uptime), s.instanceName, instanceIDStr, instanceNameStr, hostNameStr)
 		}
 
-		// Record database status (1=ACTIVE, 0=other)
-		dbStatusValue := stringStatusToBinary(databaseStatusStr, "ACTIVE")
-		s.mb.RecordNewrelicoracledbRacInstanceDatabaseStatusDataPoint(now, dbStatusValue, s.instanceName, instanceIDStr, instanceNameStr, hostNameStr, databaseStatusStr)
+		if s.metricsBuilderConfig.Metrics.NewrelicoracledbRacInstanceDatabaseStatus.Enabled {
+			dbStatusValue := stringStatusToBinary(databaseStatusStr, "ACTIVE")
+			s.mb.RecordNewrelicoracledbRacInstanceDatabaseStatusDataPoint(now, dbStatusValue, s.instanceName, instanceIDStr, instanceNameStr, hostNameStr, databaseStatusStr)
+		}
 
-		// Record active state (1=NORMAL, 0=other)
-		activeStateValue := stringStatusToBinary(activeStateStr, "NORMAL")
-		s.mb.RecordNewrelicoracledbRacInstanceActiveStateDataPoint(now, activeStateValue, s.instanceName, instanceIDStr, instanceNameStr, hostNameStr, activeStateStr)
+		if s.metricsBuilderConfig.Metrics.NewrelicoracledbRacInstanceActiveState.Enabled {
+			activeStateValue := stringStatusToBinary(activeStateStr, "NORMAL")
+			s.mb.RecordNewrelicoracledbRacInstanceActiveStateDataPoint(now, activeStateValue, s.instanceName, instanceIDStr, instanceNameStr, hostNameStr, activeStateStr)
+		}
 
-		// Record logins status (1=ALLOWED, 0=RESTRICTED)
-		loginsValue := stringStatusToBinary(loginsStr, "ALLOWED")
-		s.mb.RecordNewrelicoracledbRacInstanceLoginsAllowedDataPoint(now, loginsValue, s.instanceName, instanceIDStr, instanceNameStr, hostNameStr, loginsStr)
+		if s.metricsBuilderConfig.Metrics.NewrelicoracledbRacInstanceLoginsAllowed.Enabled {
+			loginsValue := stringStatusToBinary(loginsStr, "ALLOWED")
+			s.mb.RecordNewrelicoracledbRacInstanceLoginsAllowedDataPoint(now, loginsValue, s.instanceName, instanceIDStr, instanceNameStr, hostNameStr, loginsStr)
+		}
 
-		// Record archiver status (1=STARTED, 0=STOPPED)
-		archiverValue := stringStatusToBinary(archiverStr, "STARTED")
-		s.mb.RecordNewrelicoracledbRacInstanceArchiverStartedDataPoint(now, archiverValue, s.instanceName, instanceIDStr, instanceNameStr, hostNameStr, archiverStr)
+		if s.metricsBuilderConfig.Metrics.NewrelicoracledbRacInstanceArchiverStarted.Enabled {
+			archiverValue := stringStatusToBinary(archiverStr, "STARTED")
+			s.mb.RecordNewrelicoracledbRacInstanceArchiverStartedDataPoint(now, archiverValue, s.instanceName, instanceIDStr, instanceNameStr, hostNameStr, archiverStr)
+		}
 
-		// Record version info
-		s.mb.RecordNewrelicoracledbRacInstanceVersionInfoDataPoint(now, 1, s.instanceName, instanceIDStr, instanceNameStr, hostNameStr, versionStr)
-
-		s.logger.Debug("Processed RAC instance status",
-			zap.String("instance_id", instanceIDStr),
-			zap.String("instance_name", instanceNameStr),
-			zap.String("host_name", hostNameStr),
-			zap.String("status", statusStr),
-			zap.Int64("status_value", statusValue),
-			zap.String("database_status", databaseStatusStr),
-			zap.String("active_state", activeStateStr),
-			zap.String("logins", loginsStr),
-			zap.String("archiver", archiverStr))
+		if s.metricsBuilderConfig.Metrics.NewrelicoracledbRacInstanceVersionInfo.Enabled {
+			s.mb.RecordNewrelicoracledbRacInstanceVersionInfoDataPoint(now, 1, s.instanceName, instanceIDStr, instanceNameStr, hostNameStr, versionStr)
+		}
 	}
 
 	return scrapeErrors
@@ -457,7 +423,16 @@ func (s *RacScraper) scrapeInstanceStatus(ctx context.Context) []error {
 
 // scrapeActiveServices implements Feature 3B: Service Failover Status
 func (s *RacScraper) scrapeActiveServices(ctx context.Context) []error {
-	s.logger.Debug("Begin RAC active services metrics scrape")
+	// Check if any service metrics are enabled
+	if !s.metricsBuilderConfig.Metrics.NewrelicoracledbRacServiceInstanceID.Enabled &&
+		!s.metricsBuilderConfig.Metrics.NewrelicoracledbRacServiceFailoverConfig.Enabled &&
+		!s.metricsBuilderConfig.Metrics.NewrelicoracledbRacServiceNetworkConfig.Enabled &&
+		!s.metricsBuilderConfig.Metrics.NewrelicoracledbRacServiceCreationAgeDays.Enabled &&
+		!s.metricsBuilderConfig.Metrics.NewrelicoracledbRacServiceFailoverRetries.Enabled &&
+		!s.metricsBuilderConfig.Metrics.NewrelicoracledbRacServiceFailoverDelaySeconds.Enabled &&
+		!s.metricsBuilderConfig.Metrics.NewrelicoracledbRacServiceClbConfig.Enabled {
+		return nil
+	}
 
 	var scrapeErrors []error
 
@@ -468,16 +443,8 @@ func (s *RacScraper) scrapeActiveServices(ctx context.Context) []error {
 	defer rows.Close()
 
 	for rows.Next() {
-		var serviceName sql.NullString
-		var instID sql.NullString
-		var failoverMethod sql.NullString
-		var failoverType sql.NullString
-		var goal sql.NullString
-		var networkName sql.NullString
-		var creationDate sql.NullString
-		var failoverRetries sql.NullString
-		var failoverDelay sql.NullString
-		var clbGoal sql.NullString
+		var serviceName, instID, failoverMethod, failoverType, goal sql.NullString
+		var networkName, creationDate, failoverRetries, failoverDelay, clbGoal sql.NullString
 
 		if err := rows.Scan(&serviceName, &instID, &failoverMethod, &failoverType, &goal, &networkName, &creationDate, &failoverRetries, &failoverDelay, &clbGoal); err != nil {
 			scrapeErrors = s.handleScanError(err, scrapeErrors, "RAC active service")
@@ -485,67 +452,56 @@ func (s *RacScraper) scrapeActiveServices(ctx context.Context) []error {
 		}
 
 		if !serviceName.Valid || !instID.Valid {
-			s.logger.Debug("Skipping RAC active service with null values")
 			continue
 		}
 
 		now := pcommon.NewTimestampFromTime(time.Now())
 		serviceNameStr := serviceName.String
 		instanceIDStr := instID.String
-		failoverMethodStr := nullStringToString(failoverMethod)
-		failoverTypeStr := nullStringToString(failoverType)
-		goalStr := nullStringToString(goal)
-		networkNameStr := nullStringToString(networkName)
-		creationDateStr := nullStringToString(creationDate)
-		failoverRetriesStr := nullStringToString(failoverRetries)
-		failoverDelayStr := nullStringToString(failoverDelay)
-		clbGoalStr := nullStringToString(clbGoal)
 
-		// Record the instance ID where this service is currently running
-		instanceIDInt, _ := strconv.ParseFloat(instanceIDStr, 64)
-		s.mb.RecordNewrelicoracledbRacServiceInstanceIDDataPoint(now, instanceIDInt, s.instanceName, serviceNameStr, instanceIDStr)
-
-		// Record service failover configuration
-		s.mb.RecordNewrelicoracledbRacServiceFailoverConfigDataPoint(now, int64(1), s.instanceName, serviceNameStr, instanceIDStr, failoverMethodStr, failoverTypeStr, goalStr)
-
-		// Record service network name
-		s.mb.RecordNewrelicoracledbRacServiceNetworkConfigDataPoint(now, 1, s.instanceName, serviceNameStr, instanceIDStr, networkNameStr)
-
-		// Record service creation date
-		s.mb.RecordNewrelicoracledbRacServiceCreationAgeDaysDataPoint(now, 1, s.instanceName, serviceNameStr, instanceIDStr)
-
-		// Record failover retries
-		var failoverRetriesValue int64 = 0
-		if failoverRetriesStr != "" {
-			if retriesInt, err := strconv.ParseInt(failoverRetriesStr, 10, 64); err == nil {
-				failoverRetriesValue = retriesInt
-			}
+		// Record metrics only if enabled
+		if s.metricsBuilderConfig.Metrics.NewrelicoracledbRacServiceInstanceID.Enabled {
+			instanceIDInt, _ := strconv.ParseFloat(instanceIDStr, 64)
+			s.mb.RecordNewrelicoracledbRacServiceInstanceIDDataPoint(now, instanceIDInt, s.instanceName, serviceNameStr, instanceIDStr)
 		}
-		s.mb.RecordNewrelicoracledbRacServiceFailoverRetriesDataPoint(now, failoverRetriesValue, s.instanceName, serviceNameStr, instanceIDStr)
 
-		// Record failover delay
-		var failoverDelayValue int64 = 0
-		if failoverDelayStr != "" {
-			if delayInt, err := strconv.ParseInt(failoverDelayStr, 10, 64); err == nil {
-				failoverDelayValue = delayInt
-			}
+		if s.metricsBuilderConfig.Metrics.NewrelicoracledbRacServiceFailoverConfig.Enabled {
+			s.mb.RecordNewrelicoracledbRacServiceFailoverConfigDataPoint(now, int64(1), s.instanceName, serviceNameStr, instanceIDStr,
+				nullStringToString(failoverMethod), nullStringToString(failoverType), nullStringToString(goal))
 		}
-		s.mb.RecordNewrelicoracledbRacServiceFailoverDelaySecondsDataPoint(now, failoverDelayValue, s.instanceName, serviceNameStr, instanceIDStr)
 
-		// Record CLB goal
-		s.mb.RecordNewrelicoracledbRacServiceClbConfigDataPoint(now, 1, s.instanceName, serviceNameStr, instanceIDStr, clbGoalStr)
+		if s.metricsBuilderConfig.Metrics.NewrelicoracledbRacServiceNetworkConfig.Enabled {
+			s.mb.RecordNewrelicoracledbRacServiceNetworkConfigDataPoint(now, 1, s.instanceName, serviceNameStr, instanceIDStr, nullStringToString(networkName))
+		}
 
-		s.logger.Debug("Processed RAC active service",
-			zap.String("service_name", serviceNameStr),
-			zap.String("instance_id", instanceIDStr),
-			zap.String("failover_method", failoverMethodStr),
-			zap.String("failover_type", failoverTypeStr),
-			zap.String("goal", goalStr),
-			zap.String("network_name", networkNameStr),
-			zap.String("creation_date", creationDateStr),
-			zap.String("failover_retries", failoverRetriesStr),
-			zap.String("failover_delay", failoverDelayStr),
-			zap.String("clb_goal", clbGoalStr))
+		if s.metricsBuilderConfig.Metrics.NewrelicoracledbRacServiceCreationAgeDays.Enabled {
+			s.mb.RecordNewrelicoracledbRacServiceCreationAgeDaysDataPoint(now, 1, s.instanceName, serviceNameStr, instanceIDStr)
+		}
+
+		// Parse and record failover metrics only if enabled
+		if s.metricsBuilderConfig.Metrics.NewrelicoracledbRacServiceFailoverRetries.Enabled {
+			var failoverRetriesValue int64 = 0
+			if failoverRetriesStr := nullStringToString(failoverRetries); failoverRetriesStr != "" {
+				if retriesInt, err := strconv.ParseInt(failoverRetriesStr, 10, 64); err == nil {
+					failoverRetriesValue = retriesInt
+				}
+			}
+			s.mb.RecordNewrelicoracledbRacServiceFailoverRetriesDataPoint(now, failoverRetriesValue, s.instanceName, serviceNameStr, instanceIDStr)
+		}
+
+		if s.metricsBuilderConfig.Metrics.NewrelicoracledbRacServiceFailoverDelaySeconds.Enabled {
+			var failoverDelayValue int64 = 0
+			if failoverDelayStr := nullStringToString(failoverDelay); failoverDelayStr != "" {
+				if delayInt, err := strconv.ParseInt(failoverDelayStr, 10, 64); err == nil {
+					failoverDelayValue = delayInt
+				}
+			}
+			s.mb.RecordNewrelicoracledbRacServiceFailoverDelaySecondsDataPoint(now, failoverDelayValue, s.instanceName, serviceNameStr, instanceIDStr)
+		}
+
+		if s.metricsBuilderConfig.Metrics.NewrelicoracledbRacServiceClbConfig.Enabled {
+			s.mb.RecordNewrelicoracledbRacServiceClbConfigDataPoint(now, 1, s.instanceName, serviceNameStr, instanceIDStr, nullStringToString(clbGoal))
+		}
 	}
 
 	return scrapeErrors
