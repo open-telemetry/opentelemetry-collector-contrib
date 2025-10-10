@@ -274,6 +274,7 @@ body:
       - receiver/hostmetrics/internal/scraper/systemscraper
       - receiver/httpcheck
       - receiver/huaweicloudces
+      - receiver/icmpcheck
       - receiver/iis
       - receiver/influxdb
       - receiver/jaeger
