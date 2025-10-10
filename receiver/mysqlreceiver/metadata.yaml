@@ -220,8 +220,32 @@ attributes:
   network.peer.port:
     description: TCP port used by the peer client.
     type: int
+  mysql.query_plan:
+    description: The query plan for the statement, if available.
+    type: string
+  mysql.events_statements_summary_by_digest.digest:
+    description: The statement digest SHA-256 value as a string of 64 hexadecimal characters, or empty if the statements_digest consumer is no.
+    type: string
+  mysql.events_statements_summary_by_digest.count_star:
+    description: The number of times the statement was executed, report in delta value.
+    type: int
+  mysql.events_statements_summary_by_digest.sum_timer_wait:
+    description: The total time spent executing the statement, report in delta seconds.
+    type: double
 
 events:
+  db.server.top_query:
+    enabled: false
+    description: |
+      Top query collection enables monitoring of the queries that consumed the most CPU in the database.
+      This provides insights into query performance and resource usage, helping users identify and optimize high-impact queries as part of their observability pipeline.
+    attributes:
+      - db.system.name
+      - db.query.text
+      - mysql.query_plan
+      - mysql.events_statements_summary_by_digest.digest
+      - mysql.events_statements_summary_by_digest.count_star
+      - mysql.events_statements_summary_by_digest.sum_timer_wait
   db.server.query_sample:
     enabled: true
     description: |
@@ -797,3 +821,10 @@ metrics:
       input_type: string
       monotonic: false
       aggregation_temporality: cumulative
+
+tests:
+  config:
+  goleak:
+    ignore:
+      any:
+        - "github.com/cihub/seelog.(*asyncLoopLogger).processQueue" # see https://github.com/cihub/seelog/issues/182
