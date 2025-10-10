@@ -3,7 +3,7 @@
 # One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
 change_type: "enhancement"
 
-component: resourcedetectionprocessor
+component: resourcedetectionprocessor/oraclecloud
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: "OCI resource detector now distinguishes between not-on-Oracle Cloud and metadata fetch failure via a fast probe to the IMDS endpoint."
