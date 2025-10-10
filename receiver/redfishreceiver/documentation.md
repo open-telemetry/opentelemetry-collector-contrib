@@ -25,7 +25,7 @@ Measures the power state of a chassis (-1 unknown, 0 off, 1 on).
 | Name | Description | Values | Optional |
 | ---- | ----------- | ------ | -------- |
 | system.host_name | System host name. | Any Str | false |
-| base_url | base url (protocol://host:port). | Any Str | false |
+| base_url | base url. | Any Str | false |
 | chassis.id | Chassis id. | Any Str | false |
 | chassis.asset_tag | Chassis asset tag. | Any Str | false |
 | chassis.model | Chassis model. | Any Str | false |
@@ -48,7 +48,7 @@ Measures the health of a chassis (-1 unknown, 0 critical, 1 ok, 2 warning).
 | Name | Description | Values | Optional |
 | ---- | ----------- | ------ | -------- |
 | system.host_name | System host name. | Any Str | false |
-| base_url | base url (protocol://host:port). | Any Str | false |
+| base_url | base url. | Any Str | false |
 | chassis.id | Chassis id. | Any Str | false |
 | chassis.asset_tag | Chassis asset tag. | Any Str | false |
 | chassis.model | Chassis model. | Any Str | false |
@@ -71,7 +71,7 @@ Measures the state of a chassis (-1 unknown, 0 disabled, 1 enabled).
 | Name | Description | Values | Optional |
 | ---- | ----------- | ------ | -------- |
 | system.host_name | System host name. | Any Str | false |
-| base_url | base url (protocol://host:port). | Any Str | false |
+| base_url | base url. | Any Str | false |
 | chassis.id | Chassis id. | Any Str | false |
 | chassis.asset_tag | Chassis asset tag. | Any Str | false |
 | chassis.model | Chassis model. | Any Str | false |
@@ -94,7 +94,7 @@ Measures the reading of a chassis fan.
 | Name | Description | Values | Optional |
 | ---- | ----------- | ------ | -------- |
 | system.host_name | System host name. | Any Str | false |
-| base_url | base url (protocol://host:port). | Any Str | false |
+| base_url | base url. | Any Str | false |
 | chassis.id | Chassis id. | Any Str | false |
 | fan.name | Fan name. | Any Str | false |
 
@@ -111,7 +111,7 @@ Measures the health of a chassis fan (-1 unknown, 0 critical, 1 ok, 2 warning).
 | Name | Description | Values | Optional |
 | ---- | ----------- | ------ | -------- |
 | system.host_name | System host name. | Any Str | false |
-| base_url | base url (protocol://host:port). | Any Str | false |
+| base_url | base url. | Any Str | false |
 | chassis.id | Chassis id. | Any Str | false |
 | fan.name | Fan name. | Any Str | false |
 
@@ -128,7 +128,7 @@ Measures the state of a chassis fan (-1 unknown, 0 disabled, 1 enabled).
 | Name | Description | Values | Optional |
 | ---- | ----------- | ------ | -------- |
 | system.host_name | System host name. | Any Str | false |
-| base_url | base url (protocol://host:port). | Any Str | false |
+| base_url | base url. | Any Str | false |
 | chassis.id | Chassis id. | Any Str | false |
 | fan.name | Fan name. | Any Str | false |
 
@@ -144,7 +144,7 @@ Measures the power state of a system (-1 unknown, 0 off, 1 on).
 
 | Name | Description | Values | Optional |
 | ---- | ----------- | ------ | -------- |
-| base_url | base url (protocol://host:port). | Any Str | false |
+| base_url | base url. | Any Str | false |
 | system.id | System id. | Any Str | false |
 | system.asset_tag | System asset tag. | Any Str | false |
 | system.bios_version | System bios version. | Any Str | false |
@@ -168,7 +168,7 @@ Measures the health of a system (-1 unknown, 0 critical, 1 ok, 2 warning).
 
 | Name | Description | Values | Optional |
 | ---- | ----------- | ------ | -------- |
-| base_url | base url (protocol://host:port). | Any Str | false |
+| base_url | base url. | Any Str | false |
 | system.id | System id. | Any Str | false |
 | system.asset_tag | System asset tag. | Any Str | false |
 | system.bios_version | System bios version. | Any Str | false |
@@ -192,7 +192,7 @@ Measures the state of a system (-1 unknown, 0 disabled, 1 enabled).
 
 | Name | Description | Values | Optional |
 | ---- | ----------- | ------ | -------- |
-| base_url | base url (protocol://host:port). | Any Str | false |
+| base_url | base url. | Any Str | false |
 | system.id | System id. | Any Str | false |
 | system.asset_tag | System asset tag. | Any Str | false |
 | system.bios_version | System bios version. | Any Str | false |
@@ -217,7 +217,7 @@ Measures the reading of a chassis temperature.
 | Name | Description | Values | Optional |
 | ---- | ----------- | ------ | -------- |
 | system.host_name | System host name. | Any Str | false |
-| base_url | base url (protocol://host:port). | Any Str | false |
+| base_url | base url. | Any Str | false |
 | chassis.id | Chassis id. | Any Str | false |
 | fan.name | Fan name. | Any Str | false |
 
@@ -234,7 +234,7 @@ Measures the health of a chassis temperature (-1 unknown, 0 critical, 1 ok, 2 wa
 | Name | Description | Values | Optional |
 | ---- | ----------- | ------ | -------- |
 | system.host_name | System host name. | Any Str | false |
-| base_url | base url (protocol://host:port). | Any Str | false |
+| base_url | base url. | Any Str | false |
 | chassis.id | Chassis id. | Any Str | false |
 | temperature.name | Temperature name. | Any Str | false |
 
@@ -251,6 +251,6 @@ Measures the state of a chassis temperature (-1 unknown, 0 disabled, 1 enabled).
 | Name | Description | Values | Optional |
 | ---- | ----------- | ------ | -------- |
 | system.host_name | System host name. | Any Str | false |
-| base_url | base url (protocol://host:port). | Any Str | false |
+| base_url | base url. | Any Str | false |
 | chassis.id | Chassis id. | Any Str | false |
 | temperature.name | Temperature name. | Any Str | false |

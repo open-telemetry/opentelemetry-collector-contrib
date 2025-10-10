@@ -11,7 +11,7 @@ resource_attributes:
 
 attributes:
   base_url:
-    description: base url (protocol://host:port).
+    description: base url.
     type: string
   system.id:
     description: System id.
