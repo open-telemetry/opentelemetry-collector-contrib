@@ -114,9 +114,15 @@ func TestStart(t *testing.T) {
 		Bucket: bucketConfig{
 			Name: newBucketName,
 		},
-		Encoding: &id,
 	}, logger: zap.NewNop()}
 
+	t.Run("unset encoding", func(t *testing.T) {
+		err := gcsExporter.Start(t.Context(), mHost)
+		require.NoError(t, err)
+		require.Equal(t, &plog.JSONMarshaler{}, gcsExporter.logsMarshaler)
+	})
+
+	gcsExporter.cfg.Encoding = &id
 	t.Run("encoding id not present", func(t *testing.T) {
 		err := gcsExporter.Start(t.Context(), mHost)
 		require.ErrorContains(t, err, "unknown extension")
