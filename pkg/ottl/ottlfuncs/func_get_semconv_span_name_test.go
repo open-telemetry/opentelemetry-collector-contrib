@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 )
 
-func TestSemConvSpanName(t *testing.T) {
+func TestSemconvSpanName(t *testing.T) {
 	tests := []struct {
 		name                   string
 		currentSpanName        string // span name currently produced by the instrumentation library
@@ -140,7 +140,7 @@ func TestSemConvSpanName(t *testing.T) {
 		},
 		// DB CLIENT SPANS
 		{
-			name:            "DB client span with db.system and db.operation.semConvSpanName - postgresql",
+			name:            "DB client span with db.system and db.operation.name - postgresql",
 			currentSpanName: "INSERT webshop.orders",
 			kind:            ptrace.SpanKindClient,
 			addAttributes: func(attrs pcommon.Map) {
@@ -332,7 +332,7 @@ VALUES (@p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16);
 			span.SetName(tt.currentSpanName)
 			span.SetKind(tt.kind)
 			tt.addAttributes(span.Attributes())
-			assert.Equal(t, tt.want, SemConvSpanName(span))
+			assert.Equal(t, tt.want, SemconvSpanName(span))
 		})
 	}
 }

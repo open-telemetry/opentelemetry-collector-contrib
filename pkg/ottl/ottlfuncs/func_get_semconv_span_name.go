@@ -15,17 +15,17 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 )
 
-func NewGetSemConvSpanNameFactory() ottl.Factory[ottlspan.TransformContext] {
-	return ottl.NewFactory("GetSemConvSpanName", nil, createGetSemConvSpanNameFunction)
+func NewGetSemconvSpanNameFactory() ottl.Factory[ottlspan.TransformContext] {
+	return ottl.NewFactory("GetSemConvSpanName", nil, createGetSemconvSpanNameFunction)
 }
 
-func createGetSemConvSpanNameFunction(_ ottl.FunctionContext, _ ottl.Arguments) (ottl.ExprFunc[ottlspan.TransformContext], error) {
+func createGetSemconvSpanNameFunction(_ ottl.FunctionContext, _ ottl.Arguments) (ottl.ExprFunc[ottlspan.TransformContext], error) {
 	return func(_ context.Context, tCtx ottlspan.TransformContext) (any, error) {
-		return SemConvSpanName(tCtx.GetSpan()), nil
+		return SemconvSpanName(tCtx.GetSpan()), nil
 	}, nil
 }
 
-func SemConvSpanName(span ptrace.Span) string {
+func SemconvSpanName(span ptrace.Span) string {
 	switch span.Kind() {
 	case ptrace.SpanKindServer:
 		spanName := httpSpanName(span, semconv.HTTPRouteKey)
