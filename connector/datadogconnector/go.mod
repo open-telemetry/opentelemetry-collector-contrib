@@ -10,7 +10,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics v0.72.0-rc.1
 	github.com/DataDog/datadog-agent/pkg/proto v0.72.0-rc.1
 	github.com/DataDog/datadog-agent/pkg/trace v0.72.0-rc.1
-	github.com/DataDog/datadog-go/v5 v5.8.0
+	github.com/DataDog/datadog-go/v5 v5.7.1-0.20250924111842-1a07cfc4b5e7
 	github.com/google/go-cmp v0.7.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter v0.137.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog v0.137.0
@@ -377,23 +377,9 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/metad
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig => ../../internal/k8sconfig
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker => ../../internal/docker
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xk8stest => ../../pkg/xk8stest
-
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry => ../../pkg/resourcetotelemetry
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter => ../../internal/filter
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver => ../../receiver/prometheusreceiver
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver => ../../receiver/hostmetricsreceiver
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter => ../../exporter/prometheusremotewriteexporter
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver => ../../receiver/filelogreceiver
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver => ../../receiver/dockerstatsreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
 
@@ -401,19 +387,11 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest 
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza => ../../pkg/stanza
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor => ../../processor/resourcedetectionprocessor
-
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl => ../../pkg/ottl
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter => ../../exporter/datadogexporter
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus => ../../pkg/translator/prometheus
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite => ../../pkg/translator/prometheusremotewrite
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor => ../../processor/probabilisticsamplerprocessor
 
@@ -421,30 +399,12 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/commo
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil => ../../internal/aws/ecsutil
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor => ../../processor/k8sattributesprocessor
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage => ../../extension/storage
-
 replace github.com/openshift/api v3.9.0+incompatible => github.com/openshift/api v0.0.0-20180801171038-322a19404e37
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor => ../../processor/transformprocessor
-
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling => ../../pkg/sampling
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil => ../../internal/pdatautil
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata => ../../pkg/experimentalmetricmetadata
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog => ../../pkg/datadog
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils => ../../pkg/core/xidutils
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog => ../../internal/datadog
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters => ../../pkg/winperfcounters
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/gopsutilenv => ../../internal/gopsutilenv
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor => ../../processor/deltatocumulativeprocessor
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics => ../../internal/exp/metrics
