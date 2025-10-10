@@ -104,7 +104,7 @@ func (s *storageExporter) Start(ctx context.Context, host component.Host) error 
 			return fmt.Errorf("failed to create storage bucket %q: %w", s.cfg.Bucket.Name, err)
 		}
 		if !isBucketConflictError(err) {
-			return fmt.Errorf("failed to create storage bucket %q: %w", s.cfg.Bucket.Name, err)
+			return fmt.Errorf("unexpected error creating the storage bucket %q: %w", s.cfg.Bucket.Name, err)
 		}
 		// otherwise bucket exists and will be reused
 		s.logger.Info("Existing bucket will be used", zap.String("bucket", s.cfg.Bucket.Name))
@@ -141,19 +141,22 @@ func (s *storageExporter) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 
 func (s *storageExporter) uploadFile(ctx context.Context, content []byte) (err error) {
 	if len(content) == 0 {
-		s.logger.Info("no content to upload")
+		s.logger.Info("No content to upload")
 		return nil
 	}
 
 	// if we have multiple files coming, we need to make sure the name is unique so they do
 	// not overwrite each other
-	filename := fmt.Sprintf("%s_%s", s.cfg.Bucket.FilePrefix, uuid.New().String())
+	filename := uuid.New().String()
+	if s.cfg.Bucket.FilePrefix != "" {
+		filename = s.cfg.Bucket.FilePrefix + "_" + filename
+	}
 	writer := s.bucketHandle.Object(filename).NewWriter(ctx)
 	defer func() {
 		err = writer.Close()
 		if err != nil {
 			s.logger.Error(
-				"failed to close file writer",
+				"Failed to close file writer",
 				zap.Error(err),
 				zap.String("filename", filename),
 				zap.String("bucket", s.cfg.Bucket.Name),
@@ -164,7 +167,7 @@ func (s *storageExporter) uploadFile(ctx context.Context, content []byte) (err e
 		return fmt.Errorf("failed to write to file: %w", err)
 	}
 	s.logger.Info(
-		"new file uploaded",
+		"New file uploaded",
 		zap.String("filename", filename),
 		zap.String("bucket", s.cfg.Bucket.Name),
 		zap.Int("size", len(content)),
