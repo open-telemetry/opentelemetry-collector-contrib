@@ -253,6 +253,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/huaweicloudcesreceiver      
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/httpcheckreceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/icmpcheckreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/influxdbreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver

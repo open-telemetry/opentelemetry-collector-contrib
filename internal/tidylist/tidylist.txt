@@ -262,6 +262,7 @@ receiver/googlecloudspannerreceiver
 receiver/haproxyreceiver
 receiver/httpcheckreceiver
 receiver/huaweicloudcesreceiver
+receiver/icmpcheckreceiver
 receiver/iisreceiver
 receiver/influxdbreceiver
 receiver/jmxreceiver

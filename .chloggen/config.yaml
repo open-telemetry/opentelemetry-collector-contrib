@@ -256,6 +256,7 @@ components:
     - receiver/hostmetrics
     - receiver/httpcheck
     - receiver/huaweicloudcesreceiver
+    - receiver/icmpcheckreceiver
     - receiver/iis
     - receiver/influxdb
     - receiver/jaeger
