@@ -260,14 +260,16 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 			continue
 		}
 
+		// Create a new resource metrics to avoid modifying the existing one and avoid race conditions when adding or removing attributes.
+		rm := pmetric.NewResourceMetrics()
 		// If the metric name is equal to target_info, we use its labels as attributes of the resource
 		// Ref: https://opentelemetry.io/docs/specs/otel/compatibility/prometheus_and_openmetrics/#resource-attributes-1
 		if metadata.Name == "target_info" {
-			var rm pmetric.ResourceMetrics
 			hashedLabels := xxhash.Sum64String(ls.Get("job") + string([]byte{'\xff'}) + ls.Get("instance"))
 
 			if existingRM, ok := prw.rmCache.Get(hashedLabels); ok {
-				rm = existingRM
+				// We need to copy the resource metrics to avoid modifying the existing one and avoid race conditions when adding or removing attributes.
+				existingRM.CopyTo(rm)
 			} else {
 				rm = otelMetrics.ResourceMetrics().AppendEmpty()
 			}
@@ -281,6 +283,7 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 					attrs.PutStr(labelName, labelValue)
 				}
 			}
+			// After changing the resource metrics, we added the copied version to the cache.
 			prw.rmCache.Add(hashedLabels, rm)
 			continue
 		}
@@ -309,12 +312,12 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		// Handle regular metrics (gauge, counter, summary)
 		hashedLabels := xxhash.Sum64String(ls.Get("job") + string([]byte{'\xff'}) + ls.Get("instance"))
 		existingRM, ok := prw.rmCache.Get(hashedLabels)
-		var rm pmetric.ResourceMetrics
 		if ok {
-			rm = existingRM
+			existingRM.CopyTo(rm)
 		} else {
 			rm = otelMetrics.ResourceMetrics().AppendEmpty()
 			parseJobAndInstance(rm.Resource().Attributes(), ls.Get("job"), ls.Get("instance"))
+			// After changing the resource metrics, we added the copied version to the cache.
 			prw.rmCache.Add(hashedLabels, rm)
 		}
 
@@ -411,10 +414,12 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 		return
 	}
 
-	var rm pmetric.ResourceMetrics
-	var hashedLabels uint64
-	var resourceID identity.Resource
-	var scope pmetric.ScopeMetrics
+	var (
+		hashedLabels uint64
+		resourceID   identity.Resource
+		scope        pmetric.ScopeMetrics
+		rm           pmetric.ResourceMetrics
+	)
 
 	for i := range ts.Histograms {
 		histogram := &ts.Histograms[i]
@@ -440,10 +445,12 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 			hashedLabels = xxhash.Sum64String(ls.Get("job") + string([]byte{'\xff'}) + ls.Get("instance"))
 			existingRM, ok := prw.rmCache.Get(hashedLabels)
 			if ok {
-				rm = existingRM
+				// We need to copy the resource metrics to avoid modifying the existing one and avoid race conditions when adding or removing attributes.
+				existingRM.CopyTo(rm)
 			} else {
 				rm = otelMetrics.ResourceMetrics().AppendEmpty()
 				parseJobAndInstance(rm.Resource().Attributes(), ls.Get("job"), ls.Get("instance"))
+				// After changing the resource metrics, we added the copied version to the cache.
 				prw.rmCache.Add(hashedLabels, rm)
 			}
 			resourceID = identity.OfResource(rm.Resource())
