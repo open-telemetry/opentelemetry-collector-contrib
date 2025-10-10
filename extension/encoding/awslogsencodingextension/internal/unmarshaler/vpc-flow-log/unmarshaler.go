@@ -344,7 +344,7 @@ func handleField(
 		if err != nil {
 			return true, fmt.Errorf("value %s for field %s does not correspond to a valid timestamp", value, field)
 		}
-		timestamp := time.Unix(unixSeconds, 0)
+		timestamp := time.Unix(unixSeconds, 0).UTC()
 		record.Attributes().PutStr("aws.vpc.flow.start", timestamp.Format("2006-01-02T15:04:05.000Z"))
 	case "end":
 		unixSeconds, err := getNumber(value)
