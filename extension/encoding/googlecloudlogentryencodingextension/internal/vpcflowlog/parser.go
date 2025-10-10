@@ -282,11 +282,11 @@ func ParsePayloadIntoAttributes(payload []byte, attr pcommon.Map) error {
 
 	if log.StartTime != nil {
 		startTime := *log.StartTime
-		attr.PutInt(gcpVPCFlowStartTime, startTime.UnixNano())
+		attr.PutStr(gcpVPCFlowStartTime, startTime.Format(time.RFC3339Nano))
 	}
 	if log.EndTime != nil {
 		endTime := *log.EndTime
-		attr.PutInt(gcpVPCFlowEndTime, endTime.UnixNano())
+		attr.PutStr(gcpVPCFlowEndTime, endTime.Format(time.RFC3339Nano))
 	}
 
 	// Handle RTT
