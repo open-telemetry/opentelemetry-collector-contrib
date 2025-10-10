@@ -5,7 +5,7 @@ status:
   stability:
     development: [traces_to_logs]
   codeowners:
-    active: [JaredTan95]
+    active: [JaredTan95, Frapschen, atoulme]
 
 tests:
   config:
