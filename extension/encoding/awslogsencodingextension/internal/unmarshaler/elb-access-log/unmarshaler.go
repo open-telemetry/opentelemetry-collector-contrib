@@ -16,6 +16,7 @@ import (
 	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler"
 )
@@ -124,6 +125,7 @@ func (f *elbAccessLogUnmarshaler) createLogs() (plog.Logs, plog.ResourceLogs, pl
 	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
 	scopeLogs.Scope().SetName(metadata.ScopeName)
 	scopeLogs.Scope().SetVersion(f.buildInfo.Version)
+	scopeLogs.Scope().Attributes().PutStr(constants.FormatIdentificationTag, "aws."+constants.FormatELBAccessLog)
 	return logs, resourceLogs, scopeLogs
 }
 
@@ -179,6 +181,14 @@ func (f *elbAccessLogUnmarshaler) addToCLBAccessLogs(resourceAttr *resourceAttri
 	if clbRecord.BackendStatusCode != 0 {
 		recordLog.Attributes().PutInt(AttributeELBBackendStatusCode, clbRecord.BackendStatusCode)
 	}
+
+	if clbRecord.UserAgent != unknownField {
+		recordLog.Attributes().PutStr(string(conventions.UserAgentOriginalKey), clbRecord.UserAgent)
+	}
+	if clbRecord.BackendIPPort != unknownField {
+		recordLog.Attributes().PutStr(string(conventions.DestinationAddressKey), clbRecord.BackendIP)
+		recordLog.Attributes().PutInt(string(conventions.DestinationPortKey), clbRecord.BackendPort)
+	}
 	// Set timestamp
 	recordLog.SetTimestamp(pcommon.Timestamp(epochNanoseconds))
 
@@ -227,6 +237,16 @@ func (f *elbAccessLogUnmarshaler) addToALBAccessLogs(resourceAttr *resourceAttri
 	if albRecord.SSLCipher != unknownField {
 		recordLog.Attributes().PutStr(string(conventions.TLSCipherKey), albRecord.SSLCipher)
 	}
+	if albRecord.UserAgent != unknownField {
+		recordLog.Attributes().PutStr(string(conventions.UserAgentOriginalKey), albRecord.UserAgent)
+	}
+	if albRecord.DomainName != unknownField {
+		recordLog.Attributes().PutStr(string(conventions.URLDomainKey), albRecord.DomainName)
+	}
+	if albRecord.TargetIPPort != unknownField {
+		recordLog.Attributes().PutStr(string(conventions.DestinationAddressKey), albRecord.TargetIP)
+		recordLog.Attributes().PutInt(string(conventions.DestinationPortKey), albRecord.TargetPort)
+	}
 
 	// Set timestamp
 	recordLog.SetTimestamp(pcommon.Timestamp(epochNanoseconds))
@@ -265,11 +285,16 @@ func (f *elbAccessLogUnmarshaler) addToNLBAccessLogs(resourceAttr *resourceAttri
 	recordLog.Attributes().PutStr(string(conventions.NetworkProtocolVersionKey), nlbRecord.Version)
 	recordLog.Attributes().PutStr(string(conventions.ClientAddressKey), nlbRecord.ClientIP)
 	recordLog.Attributes().PutInt(string(conventions.ClientPortKey), nlbRecord.ClientPort)
+	recordLog.Attributes().PutStr(string(conventions.DestinationAddressKey), nlbRecord.DestinationIP)
+	recordLog.Attributes().PutInt(string(conventions.DestinationPortKey), nlbRecord.DestinationPort)
 	recordLog.Attributes().PutInt(string(conventions.HTTPRequestSizeKey), nlbRecord.ReceivedBytes)
 	recordLog.Attributes().PutInt(string(conventions.HTTPResponseSizeKey), nlbRecord.SentBytes)
 	recordLog.Attributes().PutStr(AttributeTLSListenerResourceID, nlbRecord.Listener)
 	recordLog.Attributes().PutStr(string(conventions.TLSProtocolVersionKey), nlbRecord.TLSProtocolVersion)
 	recordLog.Attributes().PutStr(string(conventions.TLSCipherKey), nlbRecord.TLSCipher)
+	if nlbRecord.DomainName != unknownField {
+		recordLog.Attributes().PutStr(string(conventions.URLDomainKey), nlbRecord.DomainName)
+	}
 
 	// Set timestamp
 	recordLog.SetTimestamp(pcommon.Timestamp(epochNanoseconds))

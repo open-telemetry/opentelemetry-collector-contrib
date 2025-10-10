@@ -15,7 +15,7 @@ import (
 )
 
 func TestContainerResource(t *testing.T) {
-	cm := ecsutil.ContainerMetadata{
+	cm := &ecsutil.ContainerMetadata{
 		ContainerName: "container-1",
 		DockerID:      "001",
 		DockerName:    "docker-container-1",
@@ -47,7 +47,7 @@ func TestContainerResource(t *testing.T) {
 
 func TestContainerResourceForStoppedContainer(t *testing.T) {
 	var exitCode int64 = 2
-	cm := ecsutil.ContainerMetadata{
+	cm := &ecsutil.ContainerMetadata{
 		ContainerName: "container-1",
 		DockerID:      "001",
 		DockerName:    "docker-container-1",
