@@ -4,6 +4,7 @@
 package operationsmanagement
 
 import (
+	"maps"
 	"testing"
 	"time"
 
@@ -273,9 +274,7 @@ func TestEnrichMetricNamesWithAttributes(t *testing.T) {
 			for _, m := range result {
 				// Copy to a new map to avoid mutation side-effects
 				labelsCopy := make(map[string]string)
-				for k, v := range m.Labels {
-					labelsCopy[k] = v
-				}
+				maps.Copy(labelsCopy, m.Labels)
 				actualLabels = append(actualLabels, labelsCopy)
 			}
 

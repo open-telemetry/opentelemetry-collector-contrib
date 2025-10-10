@@ -126,7 +126,7 @@ func (f *FakeOutput) ExpectEntry(tb testing.TB, expected *entry.Entry) {
 // ExpectEntries expects that the given entries will be received in any order
 func (f *FakeOutput) ExpectEntries(tb testing.TB, expected []*entry.Entry) {
 	entries := make([]*entry.Entry, 0, len(expected))
-	for i := 0; i < len(expected); i++ {
+	for range expected {
 		select {
 		case e := <-f.Received:
 			entries = append(entries, e)

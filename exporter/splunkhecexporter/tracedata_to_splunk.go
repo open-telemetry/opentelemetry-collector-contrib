@@ -41,7 +41,7 @@ type hecSpan struct {
 	Attributes map[string]any    `json:"attributes,omitempty"`
 	EndTime    pcommon.Timestamp `json:"end_time"`
 	Kind       string            `json:"kind"`
-	Status     hecSpanStatus     `json:"status,omitempty"`
+	Status     hecSpanStatus     `json:"status"`
 	StartTime  pcommon.Timestamp `json:"start_time"`
 	Events     []hecEvent        `json:"events,omitempty"`
 	Links      []hecLink         `json:"links,omitempty"`

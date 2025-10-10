@@ -5,6 +5,7 @@ package operationsmanagement // import "github.com/open-telemetry/opentelemetry-
 
 import (
 	"fmt"
+	"maps"
 	"slices"
 	"sort"
 	"strings"
@@ -145,7 +146,7 @@ func (mp *MetricsProducer) createHelixMetrics(metric pmetric.Metric, resourceAtt
 	case pmetric.MetricTypeSum:
 		sliceLen := metric.Sum().DataPoints().Len()
 		helixMetrics = slices.Grow(helixMetrics, sliceLen)
-		for i := 0; i < sliceLen; i++ {
+		for i := range sliceLen {
 			dp := metric.Sum().DataPoints().At(i)
 			metricPayload, err := mp.createSingleDatapointMetric(dp, metric, resourceAttrs)
 			if err != nil {
@@ -163,7 +164,7 @@ func (mp *MetricsProducer) createHelixMetrics(metric pmetric.Metric, resourceAtt
 	case pmetric.MetricTypeGauge:
 		sliceLen := metric.Gauge().DataPoints().Len()
 		helixMetrics = slices.Grow(helixMetrics, sliceLen)
-		for i := 0; i < sliceLen; i++ {
+		for i := range sliceLen {
 			dp := metric.Gauge().DataPoints().At(i)
 			metricPayload, err := mp.createSingleDatapointMetric(dp, metric, resourceAttrs)
 			if err != nil {
@@ -220,9 +221,7 @@ func (mp *MetricsProducer) createSingleDatapointMetric(dp pmetric.NumberDataPoin
 	labels["source"] = "OTEL"
 
 	// Add resource attributes
-	for k, v := range resourceAttrs {
-		labels[k] = v
-	}
+	maps.Copy(labels, resourceAttrs)
 
 	// Set the metric unit
 	labels["unit"] = metric.Unit()
@@ -274,9 +273,7 @@ func (*MetricsProducer) updateEntityInformation(labels map[string]string, metric
 	}
 
 	// Add the resource attributes to the metric attributes
-	for k, v := range resourceAttrs {
-		stringMetricAttrs[k] = v
-	}
+	maps.Copy(stringMetricAttrs, resourceAttrs)
 
 	// entityTypeId is required for the BMC Helix Operations Management payload
 	entityTypeID := stringMetricAttrs["entityTypeId"]
@@ -444,9 +441,7 @@ func addPercentageVariants(metrics []BMCHelixOMMetric) []BMCHelixOMMetric {
 
 		// Clone the original
 		percentLabels := make(map[string]string, len(m.Labels))
-		for k, v := range m.Labels {
-			percentLabels[k] = v
-		}
+		maps.Copy(percentLabels, m.Labels)
 
 		// Rename metricName
 		originalName := percentLabels["metricName"]

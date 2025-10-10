@@ -1534,7 +1534,7 @@ func BenchmarkTwoSpans(b *testing.B) {
 			processor, err := NewProcessor([]common.ContextStatements{{Context: "span", Statements: tt.statements}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultSpanFunctions, DefaultSpanEventFunctions)
 			assert.NoError(b, err)
 			b.ResetTimer()
-			for n := 0; n < b.N; n++ {
+			for b.Loop() {
 				td := constructTraces()
 				_, err = processor.ProcessTraces(b.Context(), td)
 				assert.NoError(b, err)
@@ -1564,7 +1564,7 @@ func BenchmarkHundredSpans(b *testing.B) {
 			statements: func() []string {
 				var statements []string
 				statements = append(statements, `set(status.code, 1) where name == "operationA"`)
-				for i := 0; i < 99; i++ {
+				for range 99 {
 					statements = append(statements, `keep_keys(attributes, ["http.method"]) where name == "unknownOperation"`)
 				}
 				return statements
@@ -1576,7 +1576,7 @@ func BenchmarkHundredSpans(b *testing.B) {
 			processor, err := NewProcessor([]common.ContextStatements{{Context: "span", Statements: tt.statements}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultSpanFunctions, DefaultSpanEventFunctions)
 			assert.NoError(b, err)
 			b.ResetTimer()
-			for n := 0; n < b.N; n++ {
+			for b.Loop() {
 				td := constructTracesNum(100)
 				_, err = processor.ProcessTraces(b.Context(), td)
 				assert.NoError(b, err)
@@ -1602,7 +1602,7 @@ func constructTracesNum(num int) ptrace.Traces {
 	td := ptrace.NewTraces()
 	rs0 := td.ResourceSpans().AppendEmpty()
 	rs0ils0 := rs0.ScopeSpans().AppendEmpty()
-	for i := 0; i < num; i++ {
+	for range num {
 		fillSpanOne(rs0ils0.Spans().AppendEmpty())
 	}
 	return td
