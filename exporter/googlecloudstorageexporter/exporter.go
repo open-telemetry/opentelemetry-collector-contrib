@@ -22,7 +22,7 @@ import (
 
 type storageExporter struct {
 	cfg           *Config
-	logsEncoding  plog.Marshaler
+	logsMarshaler plog.Marshaler
 	storageClient *storage.Client
 	bucketHandle  *storage.BucketHandle
 	logger        *zap.Logger
@@ -80,16 +80,15 @@ func isBucketConflictError(err error) bool {
 }
 
 func (s *storageExporter) Start(ctx context.Context, host component.Host) error {
-	if s.cfg.Encoding == nil {
-		// this should never happen as Validate() already prevents this
-		return errors.New("encoding is not set")
+	if s.cfg.Encoding != nil {
+		encoding, err := loadExtension[plog.Marshaler](host, *s.cfg.Encoding, "logs marshaler")
+		if err != nil {
+			return fmt.Errorf("failed to load logs extension: %w", err)
+		}
+		s.logsMarshaler = encoding
+	} else {
+		s.logsMarshaler = &plog.JSONMarshaler{}
 	}
-
-	encoding, err := loadExtension[plog.Marshaler](host, *s.cfg.Encoding, "logs marshaler")
-	if err != nil {
-		return fmt.Errorf("failed to load logs extension: %w", err)
-	}
-	s.logsEncoding = encoding
 
 	// TODO Add option for authenticator
 	client, err := storage.NewClient(ctx)
@@ -128,7 +127,7 @@ func (*storageExporter) Capabilities() consumer.Capabilities {
 }
 
 func (s *storageExporter) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
-	buf, err := s.logsEncoding.MarshalLogs(ld)
+	buf, err := s.logsMarshaler.MarshalLogs(ld)
 	if err != nil {
 		return fmt.Errorf("failed to marshal logs: %w", err)
 	}
