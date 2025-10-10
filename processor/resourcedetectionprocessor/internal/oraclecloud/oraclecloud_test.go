@@ -88,10 +88,10 @@ func TestDetect_ProbeFails_ReturnsEmptyResourceNoError(t *testing.T) {
 		det, err := NewDetector(processortest.NewNopSettings(rdpmetadata.Type), cfg)
 		require.NoError(t, err)
 
-		res, schemaURL, err := det.Detect(context.Background())
+		res, schemaURL, err := det.Detect(t.Context())
 		require.NoError(t, err)
 		assert.Empty(t, res.Attributes().AsRaw())
-		assert.Equal(t, "", schemaURL)
+		assert.Empty(t, schemaURL)
 	})
 }
 
@@ -109,10 +109,10 @@ func TestDetect_ProbeSucceeds_MetadataFails_ReturnsError(t *testing.T) {
 		require.NoError(t, err)
 		det.(*Detector).provider = md
 
-		res, schemaURL, err := det.Detect(context.Background())
+		res, schemaURL, err := det.Detect(t.Context())
 		require.Error(t, err)
 		assert.Empty(t, res.Attributes().AsRaw())
-		assert.Equal(t, "", schemaURL)
+		assert.Empty(t, schemaURL)
 	})
 }
 
