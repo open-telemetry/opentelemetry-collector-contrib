@@ -308,7 +308,7 @@ func TestStopExporters(t *testing.T) {
 
 func TestCheckAndCastConfigError(t *testing.T) {
 	factory := NewFactory()
-	ctx := context.Background()
+	ctx := t.Context()
 	settings := exportertest.NewNopSettings(metadata.Type)
 
 	// Create a mock config of wrong type (using a simple struct instead of *datadogconfig.Config)
