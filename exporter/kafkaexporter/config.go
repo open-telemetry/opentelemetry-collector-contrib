@@ -16,6 +16,10 @@ import (
 
 var _ component.Config = (*Config)(nil)
 
+var (
+	errLogsPartitionExclusive = errors.New("partition_logs_by_resource_attributes and partition_logs_by_trace_id cannot both be enabled")
+)
+
 // Config defines configuration for Kafka exporter.
 type Config struct {
 	TimeoutSettings           exporterhelper.TimeoutConfig    `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
@@ -85,7 +89,7 @@ type Config struct {
 
 func (c *Config) Validate() (err error) {
 	if c.PartitionLogsByResourceAttributes && c.PartitionLogsByTraceID {
-		return errors.New("partition_logs_by_resource_attributes and partition_logs_by_trace_id cannot both be enabled")
+		return errLogsPartitionExclusive
 	}
 	return err
 }

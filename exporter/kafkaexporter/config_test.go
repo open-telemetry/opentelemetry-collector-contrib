@@ -158,63 +158,14 @@ func TestLoadConfigFailed(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		id         component.ID
-		expected   component.Config
-		configFile string
+		id            component.ID
+		expectedError error
+		configFile    string
 	}{
 		{
-			id: component.NewIDWithName(metadata.Type, ""),
-			expected: &Config{
-				TimeoutSettings: exporterhelper.TimeoutConfig{
-					Timeout: 10 * time.Second,
-				},
-				BackOffConfig: func() configretry.BackOffConfig {
-					config := configretry.NewDefaultBackOffConfig()
-					config.InitialInterval = 10 * time.Second
-					config.MaxInterval = 60 * time.Second
-					config.MaxElapsedTime = 10 * time.Minute
-					return config
-				}(),
-				QueueBatchConfig: exporterhelper.QueueBatchConfig{
-					Enabled:      true,
-					NumConsumers: 2,
-					QueueSize:    10,
-					Sizer:        exporterhelper.RequestSizerTypeRequests,
-				},
-				ClientConfig: func() configkafka.ClientConfig {
-					config := configkafka.NewDefaultClientConfig()
-					config.Brokers = []string{"foo:123", "bar:456"}
-					return config
-				}(),
-				Producer: func() configkafka.ProducerConfig {
-					config := configkafka.NewDefaultProducerConfig()
-					config.MaxMessageBytes = 10000000
-					config.RequiredAcks = configkafka.WaitForAll
-					return config
-				}(),
-				Logs: SignalConfig{
-					Topic:    "spans",
-					Encoding: "otlp_proto",
-				},
-				Metrics: SignalConfig{
-					Topic:    "spans",
-					Encoding: "otlp_proto",
-				},
-				Traces: SignalConfig{
-					Topic:    "spans",
-					Encoding: "otlp_proto",
-				},
-				Profiles: SignalConfig{
-					Topic:    "spans",
-					Encoding: "otlp_proto",
-				},
-				Topic:                                "spans",
-				PartitionTracesByID:                  true,
-				PartitionMetricsByResourceAttributes: true,
-				PartitionLogsByResourceAttributes:    true,
-				PartitionLogsByTraceID:               true,
-			},
-			configFile: "config-partitioning-failed.yaml",
+			id:            component.NewIDWithName(metadata.Type, ""),
+			expectedError: errLogsPartitionExclusive,
+			configFile:    "config-partitioning-failed.yaml",
 		},
 	}
 
@@ -229,8 +180,7 @@ func TestLoadConfigFailed(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.Error(t, xconfmap.Validate(cfg))
-			assert.Equal(t, tt.expected, cfg)
+			assert.ErrorIs(t, xconfmap.Validate(cfg), tt.expectedError)
 		})
 	}
 }

@@ -1067,65 +1067,6 @@ func TestLogsPusher_partitioning(t *testing.T) {
 
 		require.NoError(t, exp.exportData(t.Context(), in))
 	})
-
-	// precedence: when both flags are true, resource-attribute partitioning wins over trace-id
-	t.Run("partitioning_precedence_resource_over_trace", func(t *testing.T) {
-		config := createDefaultConfig().(*Config)
-		config.PartitionLogsByResourceAttributes = true
-		config.PartitionLogsByTraceID = true
-		exp, producer := newMockLogsExporter(t, *config, componenttest.NewNopHost())
-
-		// Build input with three ResourceLogs: first two share the same resource but have different TraceIDs;
-		// third has a different resource. Expect keys to be equal for the first two despite different TraceIDs.
-		in := plog.NewLogs()
-		var rls []plog.ResourceLogs
-		tidA := pcommon.TraceID([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3})
-		tidB := pcommon.TraceID([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4})
-
-		mkRL := func(service string, tid pcommon.TraceID) plog.ResourceLogs {
-			rl := in.ResourceLogs().AppendEmpty()
-			rl.Resource().Attributes().PutStr("service.name", service)
-			sl := rl.ScopeLogs().AppendEmpty()
-			lr := sl.LogRecords().AppendEmpty()
-			lr.SetTraceID(tid)
-			return rl
-		}
-		rl1 := mkRL("service1", tidA)
-		rl2 := mkRL("service1", tidB) // same resource attributes, different TraceID
-		rl3 := mkRL("service2", tidA)
-		rls = append(rls, rl1, rl2, rl3)
-
-		var keys [][]byte
-		for i := 0; i < len(rls); i++ {
-			producer.ExpectSendMessageWithMessageCheckerFunctionAndSucceed(
-				func(msg *sarama.ProducerMessage) error {
-					value, err := msg.Value.Encode()
-					require.NoError(t, err)
-					output, err := (&plog.ProtoUnmarshaler{}).UnmarshalLogs(value)
-					require.NoError(t, err)
-
-					require.Equal(t, 1, output.ResourceLogs().Len())
-					assert.NoError(t, plogtest.CompareResourceLogs(
-						rls[i],
-						output.ResourceLogs().At(0),
-					))
-
-					key, err := msg.Key.Encode()
-					require.NoError(t, err)
-					keys = append(keys, key)
-					return nil
-				},
-			)
-		}
-
-		err := exp.exportData(t.Context(), in)
-		require.NoError(t, err)
-
-		require.Len(t, keys, 3)
-		assert.NotEmpty(t, keys[0])
-		assert.Equal(t, keys[0], keys[1]) // same resource => same key, even with different TraceIDs (resource precedence)
-		assert.NotEqual(t, keys[0], keys[2])
-	})
 }
 
 func TestProfilesPusher(t *testing.T) {
