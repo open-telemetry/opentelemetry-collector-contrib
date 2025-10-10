@@ -31,7 +31,8 @@ func newLogsExporter(cfg component.Config, set exp.Settings) (*logsExporter, err
 }
 
 type logsExporter struct {
-	logExporter plogotlp.GRPCClient
+	grpcLogsExporter plogotlp.GRPCClient
+	httpLogsExporter httpLogsExporter
 	*signalExporter
 }
 
@@ -40,7 +41,12 @@ func (e *logsExporter) start(ctx context.Context, host component.Host) (err erro
 	if err := e.startSignalExporter(ctx, host, wrapper); err != nil {
 		return err
 	}
-	e.logExporter = plogotlp.NewGRPCClient(e.clientConn)
+	if e.config.Protocol == httpProtocol {
+		e.httpLogsExporter = newHTTPLogsExporter(e.clientHTTP, e.config)
+	} else {
+		e.grpcLogsExporter = plogotlp.NewGRPCClient(e.clientConn)
+	}
+
 	return nil
 }
 
@@ -57,7 +63,15 @@ func (e *logsExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
 		resourceLog.Resource().Attributes().PutStr(cxSubsystemNameAttrName, subsystem)
 	}
 
-	resp, err := e.logExporter.Export(e.enhanceContext(ctx), plogotlp.NewExportRequestFromLogs(ld), e.callOptions...)
+	er := plogotlp.NewExportRequestFromLogs(ld)
+	var resp plogotlp.ExportResponse
+	var err error
+
+	if e.config.Protocol == httpProtocol {
+		resp, err = e.httpLogsExporter.Export(ctx, er)
+	} else {
+		resp, err = e.grpcLogsExporter.Export(e.enhanceContext(ctx), er, e.callOptions...)
+	}
 	if err != nil {
 		return e.processError(err)
 	}
