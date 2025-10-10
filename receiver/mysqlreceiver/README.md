@@ -56,6 +56,21 @@ The following settings are optional:
   - `limit` - limit of records, which is maximum number of generated metrics (default=`250`)
 - `query_sample_collection`: Additional configuration for query sample collection(`db.server.query_sample` event):
   - `max_rows_per_query` - maximum number of rows to collect per scrape (default=`100`)
+- `top_query_collection`: Additional configuration for top queries collection (`db.server.top_query` event):
+  - `lookback_time` (optional, example = `60`, default = `2 * collection_interval`): The time window (in seconds) in which to query for top queries.
+    - Queries that finished execution outside the lookback window are not included in the collection. Increasing the lookback window will be useful for capturing long-running queries.
+  - `max_query_sample_count` (optional, example = `5000`, default = `1000`): The maximum number of records to fetch in a single run.
+  - `top_query_count`: (optional, example = `100`, default = `200`): The maximum number of active queries to report (to the next consumer) in a single run.
+  - `collection_interval`: (optional, default = `60s`): The interval at which top queries should be emitted by this receiver.
+    - This value can only guarantee that the top queries are collected at most once in this interval.
+      - For instance, you have global `collection_interval` set to `10s` and `top_query_collection.collection_interval` set to `60s`.
+        - In this case, the default receiver scraper will still run every 10 seconds.
+        - However, the top queries collection will only run after 60 seconds have passed since the last collection.
+      - For instance, you have global `collection_interval` set to `10s` and `top_query_collection.collection_interval` set to `5s`.
+        - In this case, `top_query_collection.collection_interval` will have no impact on the collection frequency, which will run every 10s.
+  - `query_plan_cache_size`: (optional, default = `1000`). The query plan cache size. Once we got query plan results from explain queries, we will store them in the cache.
+    This defines the cache's size for query plan.
+  - `query_plan_cache_ttl`: (optional, example = `1m`, default = `1h`). How long until a query plan expires in the cache. The receiver will run an explain query to MySQL to get the query plan after it expires.
 
 ### Example Configuration
 
@@ -82,3 +97,12 @@ Details about the metrics produced by this receiver can be found in [metadata.ya
 
 ## Logs
 Details about the logs produced by this receiver can be found in [documentation.md](./documentation.md)
+
+### MySQL Requirements to enable log collection
+
+| Parameter                                | Value                            | Description                                         |
+|------------------------------------------|----------------------------------|-----------------------------------------------------|
+| `performance_schema`                     | Enabled (Required)               | Enable performance schema                           |
+| `max_digest_length`                      | `4096`  (Recommended)            | Maximum length of digest text                       |
+| `performance_schema_max_digest_length`   | `4096`  (Recommended)            | Maximum length of digest text on performance schema |
+| `performance_schema_max_sql_text_length` | `4096`  (Recommended)            | Maximum length of sql text                          |
