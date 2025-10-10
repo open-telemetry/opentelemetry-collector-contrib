@@ -330,6 +330,7 @@ func convertNHCBAbsoluteBuckets(histogram *histogram.FloatHistogram) []uint64 {
 
 		for i := uint32(0); i < span.Length && bucketIdx < len(bucketCounts) && i < uint32(len(histogram.PositiveBuckets)); i++ {
 			if bucketIdx >= 0 && bucketIdx < len(bucketCounts) {
+                 // This intentionally truncates the float value to an integer (e.g. 5.7 becomes 5).
 				bucketCounts[bucketIdx] = uint64(histogram.PositiveBuckets[i])
 			}
 			bucketIdx++
