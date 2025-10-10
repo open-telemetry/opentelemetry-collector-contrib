@@ -73,7 +73,7 @@ require (
 	github.com/cncf/xds/go v0.0.0-20250501225837-2ac532fd4443 // indirect
 	github.com/containerd/errdefs v1.0.0 // indirect
 	github.com/containerd/errdefs/pkg v0.3.0 // indirect
-	github.com/coreos/go-systemd/v22 v22.5.0 // indirect
+	github.com/coreos/go-systemd/v22 v22.6.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/dennwc/varint v1.0.0 // indirect
 	github.com/digitalocean/godo v1.157.0 // indirect
@@ -181,7 +181,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/prometheus/alertmanager v0.28.1 // indirect
 	github.com/prometheus/common/assets v0.2.0 // indirect
-	github.com/prometheus/exporter-toolkit v0.14.0 // indirect
+	github.com/prometheus/exporter-toolkit v0.14.1 // indirect
 	github.com/prometheus/procfs v0.17.0 // indirect
 	github.com/prometheus/sigv4 v0.2.0 // indirect
 	github.com/puzpuzpuz/xsync/v3 v3.5.1 // indirect
