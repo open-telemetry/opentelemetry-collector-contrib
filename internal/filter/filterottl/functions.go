@@ -25,6 +25,8 @@ func StandardSpanFuncs() map[string]ottl.Factory[ottlspan.TransformContext] {
 	m := ottlfuncs.StandardConverters[ottlspan.TransformContext]()
 	isRootSpanFactory := ottlfuncs.NewIsRootSpanFactory()
 	m[isRootSpanFactory.Name()] = isRootSpanFactory
+	getSemconvSpanNameFactory := ottlfuncs.NewGetSemconvSpanNameFactory()
+	m[getSemconvSpanNameFactory.Name()] = getSemconvSpanNameFactory
 	return m
 }
 

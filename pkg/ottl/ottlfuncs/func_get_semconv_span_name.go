@@ -20,6 +20,10 @@ func NewGetSemconvSpanNameFactory() ottl.Factory[ottlspan.TransformContext] {
 }
 
 func createGetSemconvSpanNameFunction(_ ottl.FunctionContext, _ ottl.Arguments) (ottl.ExprFunc[ottlspan.TransformContext], error) {
+	return getSemconvSpanName()
+}
+
+func getSemconvSpanName() (ottl.ExprFunc[ottlspan.TransformContext], error) {
 	return func(_ context.Context, tCtx ottlspan.TransformContext) (any, error) {
 		return SemconvSpanName(tCtx.GetSpan()), nil
 	}, nil
