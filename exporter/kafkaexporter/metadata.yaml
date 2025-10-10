@@ -7,7 +7,7 @@ status:
     development: [profiles]
   distributions: [core, contrib]
   codeowners:
-    active: [pavolloffay, MovieStoreGuy, axw]
+    active: [pavolloffay, MovieStoreGuy, axw, paulojmdias]
 
 tests:
   config:
