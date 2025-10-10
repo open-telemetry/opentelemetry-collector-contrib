@@ -28,7 +28,7 @@ func IsRunningOnOracleCloud(ctx context.Context) bool {
 	client := &http.Client{
 		Timeout: 200 * time.Millisecond,
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodHead, metadataEndpoint, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodHead, metadataEndpoint, http.NoBody)
 	if err != nil {
 		return false
 	}
