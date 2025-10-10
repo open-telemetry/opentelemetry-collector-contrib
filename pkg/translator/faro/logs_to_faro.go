@@ -359,7 +359,7 @@ func parseIntegrationsFromString(integrationsString string) []faroTypes.SDKInteg
 		return sdkIntegrations
 	}
 
-	for _, integrationString := range strings.Split(integrationsString, ",") {
+	for integrationString := range strings.SplitSeq(integrationsString, ",") {
 		integrationNameVersion := strings.Split(integrationString, ":")
 		sdkIntegrations = append(sdkIntegrations, faroTypes.SDKIntegration{
 			Name:    integrationNameVersion[0],
@@ -743,8 +743,8 @@ func parseStacktraceFromString(stacktraceStr, exceptionType, exceptionValue stri
 	var stacktrace faroTypes.Stacktrace
 	frames := make([]faroTypes.Frame, 0)
 	framesAsString, _ := strings.CutPrefix(stacktraceStr, fmt.Sprintf("%s: %s", exceptionType, exceptionValue))
-	framesAsArrayOfStrings := strings.Split(framesAsString, "\n  at ")
-	for _, frameStr := range framesAsArrayOfStrings {
+	framesAsArrayOfStrings := strings.SplitSeq(framesAsString, "\n  at ")
+	for frameStr := range framesAsArrayOfStrings {
 		frame, err := parseFrameFromString(frameStr)
 		if err != nil {
 			return nil, err
