@@ -82,6 +82,9 @@ func TestLoadConfig(t *testing.T) {
 				TargetInfo: TargetInfo{
 					Enabled: true,
 				},
+				ScopeInfo: ScopeInfo{
+					Enabled: false,
+				},
 				RemoteWriteProtoMsg: config.RemoteWriteProtoMsgV1,
 			},
 		},
@@ -150,6 +153,32 @@ func TestDisabledTargetInfo(t *testing.T) {
 	require.NoError(t, sub.Unmarshal(cfg))
 
 	assert.False(t, cfg.(*Config).TargetInfo.Enabled)
+}
+
+func TestDisabledScopeInfo(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "disabled_scope_info").String())
+	require.NoError(t, err)
+	require.NoError(t, sub.Unmarshal(cfg))
+
+	assert.False(t, cfg.(*Config).ScopeInfo.Enabled)
+}
+
+func TestEnabledScopeInfo(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "enabled_scope_info").String())
+	require.NoError(t, err)
+	require.NoError(t, sub.Unmarshal(cfg))
+
+	assert.True(t, cfg.(*Config).ScopeInfo.Enabled)
 }
 
 func toPtr[T any](val T) *T {

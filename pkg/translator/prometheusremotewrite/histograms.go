@@ -17,9 +17,7 @@ import (
 
 const defaultZeroThreshold = 1e-128
 
-func (c *prometheusConverter) addExponentialHistogramDataPoints(dataPoints pmetric.ExponentialHistogramDataPointSlice,
-	resource pcommon.Resource, settings Settings, baseName string,
-) error {
+func (c *prometheusConverter) addExponentialHistogramDataPoints(dataPoints pmetric.ExponentialHistogramDataPointSlice, resource pcommon.Resource, settings Settings, baseName, scopeName, scopeVersion string) error {
 	var errs error
 	for x := 0; x < dataPoints.Len(); x++ {
 		pt := dataPoints.At(x)
@@ -28,6 +26,14 @@ func (c *prometheusConverter) addExponentialHistogramDataPoints(dataPoints pmetr
 			errs = multierr.Append(errs, err)
 			continue
 		}
+
+		// Add scope labels to the data point
+		scopeLabels, err := createScopeLabels(scopeName, scopeVersion, c.labelNamer)
+		if err != nil {
+			errs = multierr.Append(errs, err)
+			continue
+		}
+		lbls = append(lbls, scopeLabels...)
 		ts, _ := c.getOrCreateTimeSeries(lbls)
 
 		histogram, err := exponentialToNativeHistogram(pt)
