@@ -1,0 +1,61 @@
+azureeventhubs/conn-string:
+  auth:
+    type: connection_string
+    connection_string: "Endpoint=sb://my-namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=mykey"
+  event_hub:
+    traces: "otel-traces"
+    metrics: "otel-metrics"
+    logs: "otel-logs"
+  format: json
+  partition_key:
+    source: random
+  max_event_size: 1048576
+  batch_size: 100
+
+azureeventhubs/sp:
+  namespace: "my-namespace.servicebus.windows.net"
+  auth:
+    type: service_principal
+    tenant_id: "tenant-id"
+    client_id: "client-id"
+    client_secret: "client-secret"
+  event_hub:
+    traces: "traces"
+    metrics: "metrics"
+    logs: "logs"
+  format: proto
+  partition_key:
+    source: resource_attribute
+    value: "service.name"
+  max_event_size: 1048576
+  batch_size: 100
+
+azureeventhubs/smi:
+  namespace: "my-namespace.servicebus.windows.net"
+  auth:
+    type: system_managed_identity
+  event_hub:
+    traces: "traces"
+    metrics: "metrics"
+    logs: "logs"
+  format: json
+  partition_key:
+    source: trace_id
+  max_event_size: 1048576
+  batch_size: 100
+
+azureeventhubs/umi:
+  namespace: "my-namespace.servicebus.windows.net"
+  auth:
+    type: user_managed_identity
+    client_id: "client-id"
+  event_hub:
+    traces: "traces"
+    metrics: "metrics"
+    logs: "logs"
+  format: json
+  partition_key:
+    source: static
+    value: "my-partition"
+  max_event_size: 1048576
+  batch_size: 100
