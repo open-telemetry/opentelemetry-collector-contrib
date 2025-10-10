@@ -357,10 +357,8 @@ type StandardIntGetter[K any] struct {
 	Getter func(ctx context.Context, tCtx K) (any, error)
 }
 
-// CoercingIntGetSetter builds a StandardGetSetter with int64 semantics.
-// The provided coerce function is responsible for converting arbitrary input into an int64
-// (and returns an error if conversion fails).
-// Should existing StandardIntGetter and StandardIntLikeGetter/IntLikeGetter reuse the same coering utility method?
+// CoercingIntGetSetter builds a StandardGetSetter with int64 semantics, coercing both
+// getter and setter values through coerceIntValue.
 func CoercingIntGetSetter[K any](
 	getter func(context.Context, K) (any, error),
 	setter func(context.Context, K, int64) error,
@@ -450,20 +448,11 @@ func (g StandardIntGetter[K]) Get(ctx context.Context, tCtx K) (int64, error) {
 	if err != nil {
 		return 0, fmt.Errorf("error getting value in %T: %w", g, err)
 	}
-	if val == nil {
-		return 0, TypeError("expected int64 but got nil")
+	coerced, err := coerceIntValue(val)
+	if err != nil {
+		return 0, err
 	}
-	switch v := val.(type) {
-	case int64:
-		return v, nil
-	case pcommon.Value:
-		if v.Type() == pcommon.ValueTypeInt {
-			return v.Int(), nil
-		}
-		return 0, TypeError(fmt.Sprintf("expected int64 but got %v", v.Type()))
-	default:
-		return 0, TypeError(fmt.Sprintf("expected int64 but got %T", val))
-	}
+	return coerced, nil
 }
 
 // FloatGetter is a Getter that must return a float64.
