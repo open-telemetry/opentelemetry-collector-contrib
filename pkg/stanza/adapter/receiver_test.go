@@ -137,7 +137,6 @@ func TestShutdownFlush(t *testing.T) {
 			select {
 			case <-closeCh:
 				assert.NoError(t, logsReceiver.Shutdown(t.Context()))
-				fmt.Println(">> Shutdown called")
 				return
 			default:
 				err := stanzaReceiver.emitter.Process(t.Context(), entry.New())

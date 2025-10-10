@@ -148,16 +148,28 @@ func TestConsumerShutdownConsuming(t *testing.T) {
 		},
 	}
 
+	// Create some traces for sending to the otlp_spans topic.
+	const topic = "otlp_spans"
+	traces := testdata.GenerateTraces(5)
+	data, err := (&ptrace.ProtoMarshaler{}).MarshalTraces(traces)
+	require.NoError(t, err)
+	rs := []*kgo.Record{
+		{Topic: topic, Value: data},
+		{Topic: topic, Value: data},
+	}
+
 	testShutdown := func(tb testing.TB, testConfig tCfg, want assertions) {
 		// Test that the consumer shuts down while consuming a message and
 		// commits the offset after it's left the group.
 		setFranzGo(tb, true)
 
-		topic := "otlp_spans"
 		kafkaClient, cfg := mustNewFakeCluster(tb, kfake.SeedTopics(1, topic))
 		cfg.ConsumerConfig = configkafka.ConsumerConfig{
 			GroupID:    tb.Name(),
 			AutoCommit: configkafka.AutoCommitConfig{Enable: true, Interval: 10 * time.Second},
+
+			// Set MinFetchSize to ensure all records are fetched at once
+			MinFetchSize: int32(len(data) * len(rs)),
 		}
 		cfg.ErrorBackOff = testConfig.backOff
 		cfg.MessageMarking = testConfig.mark
@@ -184,28 +196,12 @@ func TestConsumerShutdownConsuming(t *testing.T) {
 			}, consuming
 		}
 
-		// Send some traces to the otlp_spans topic.
-		traces := testdata.GenerateTraces(5)
-		data, err := (&ptrace.ProtoMarshaler{}).MarshalTraces(traces)
-		require.NoError(t, err)
-		rs := []*kgo.Record{
-			{Topic: topic, Value: data},
-			{Topic: topic, Value: data},
-		}
-
 		test := func(tb testing.TB, expected int64) {
 			ctx := t.Context()
 			consumeFn, consuming := newConsumeFunc()
 			consumer, e := newFranzKafkaConsumer(cfg, settings, []string{topic}, consumeFn)
 			require.NoError(tb, e)
 			require.NoError(tb, consumer.Start(ctx, componenttest.NewNopHost()))
-			// Wait until the group has assigned at least one partition.
-			require.Eventually(tb, func() bool {
-				consumer.mu.RLock()
-				n := len(consumer.assignments)
-				consumer.mu.RUnlock()
-				return n > 0
-			}, 10*time.Second, 10*time.Millisecond)
 			require.NoError(tb, kafkaClient.ProduceSync(ctx, rs...).FirstErr())
 
 			select {
@@ -214,13 +210,6 @@ func TestConsumerShutdownConsuming(t *testing.T) {
 			case <-time.After(time.Second):
 				tb.Fatal("expected to consume a message")
 			}
-
-			// Only ensure consumption has started (at least one message processed)
-			// before shutting down. The remaining messages on the same partition are
-			// processed *after* Shutdown unblocks ctx.Done() in the handler.
-			require.EventuallyWithT(tb, func(c *assert.CollectT) {
-				assert.GreaterOrEqual(c, called.Load(), int64(1))
-			}, 2*time.Second, 20*time.Millisecond)
 
 			require.NoError(tb, consumer.Shutdown(ctx))
 			wg.Wait() // Wait for the consume functions to exit.
