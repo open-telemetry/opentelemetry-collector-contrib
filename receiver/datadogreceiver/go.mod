@@ -48,7 +48,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/util/quantile v0.72.0-rc.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.72.0-rc.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/version v0.72.0-rc.1 // indirect
-	github.com/DataDog/datadog-go/v5 v5.6.0 // indirect
+	github.com/DataDog/datadog-go/v5 v5.8.1 // indirect
 	github.com/DataDog/go-sqllexer v0.1.8 // indirect
 	github.com/DataDog/go-tuf v1.1.1-0.5.2 // indirect
 	github.com/DataDog/zstd v1.5.6 // indirect
