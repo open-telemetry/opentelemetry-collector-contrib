@@ -73,11 +73,11 @@ func TestSync2Async(t *testing.T) {
 	expectedErr := false
 	var unexpectedErr error
 
-	for i := 0; i < syncProducers; i++ {
+	for i := range syncProducers {
 		wg.Add(1)
 		go func(data int) {
 			defer wg.Done()
-			for j := 0; j < countPerProducer; j++ {
+			for range countPerProducer {
 				err := s2a.DoSync(ctx, data)
 				if data%10 == 0 {
 					// Must be an error.

@@ -263,7 +263,7 @@ func BenchmarkLogToCWLog(b *testing.B) {
 	resource := testResource()
 	log := testLogRecord()
 	scope := testScope()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_, err := logToCWLog(attrsValue(resource.Attributes()), scope, log, &Config{})
 		if err != nil {
 			b.Errorf("logToCWLog() failed %v", err)
