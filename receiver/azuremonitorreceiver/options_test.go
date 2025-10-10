@@ -111,6 +111,7 @@ func newMockClientOptionsResolver(
 		}
 		armResourcesClientOptions[subID] = &arm.ClientOptions{
 			ClientOptions: azcore.ClientOptions{
+				Cloud:     cloud.AzurePublic, // Ensure Cloud client options is set. This is important to prevent race condition in the client constructor.
 				Transport: armresourcesfake.NewServerTransport(&resourceServer),
 			},
 		}
@@ -123,6 +124,7 @@ func newMockClientOptionsResolver(
 	}
 	armSubscriptionsClientOptions := &arm.ClientOptions{
 		ClientOptions: azcore.ClientOptions{
+			Cloud:     cloud.AzurePublic, // Ensure Cloud client options is set. This is important to prevent race condition in the client constructor.
 			Transport: armsubscriptionsfake.NewServerTransport(&subscriptionsServer),
 		},
 	}
@@ -138,6 +140,7 @@ func newMockClientOptionsResolver(
 	}
 	armMonitorClientOptions := &arm.ClientOptions{
 		ClientOptions: azcore.ClientOptions{
+			Cloud:     cloud.AzurePublic, // Ensure Cloud client options is set. This is important to prevent race condition in the client constructor.
 			Transport: armmonitorfake.NewServerFactoryTransport(&armMonitorServerFactory),
 		},
 	}
@@ -148,6 +151,7 @@ func newMockClientOptionsResolver(
 	}
 	azMetricsClientOptions := &azmetrics.ClientOptions{
 		ClientOptions: azcore.ClientOptions{
+			Cloud:     cloud.AzurePublic, // Ensure Cloud client options is set. This is important to prevent race condition in the client constructor.
 			Transport: azmetricsfake.NewServerTransport(&azMetricsServer),
 		},
 	}
