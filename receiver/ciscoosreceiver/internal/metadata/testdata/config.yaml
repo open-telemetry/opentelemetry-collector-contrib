@@ -1,9 +1,61 @@
 default:
 all_set:
   metrics:
-    cisco.device.connected:
+    cisco.collect.duration.seconds:
+      enabled: true
+    cisco.collector.duration.seconds:
+      enabled: true
+    cisco.device.up:
+      enabled: true
+    cisco.interface.admin.up:
+      enabled: true
+    cisco.interface.error.status:
+      enabled: true
+    cisco.interface.receive.broadcast:
+      enabled: true
+    cisco.interface.receive.bytes:
+      enabled: true
+    cisco.interface.receive.drops:
+      enabled: true
+    cisco.interface.receive.errors:
+      enabled: true
+    cisco.interface.receive.multicast:
+      enabled: true
+    cisco.interface.transmit.bytes:
+      enabled: true
+    cisco.interface.transmit.drops:
+      enabled: true
+    cisco.interface.transmit.errors:
+      enabled: true
+    cisco.interface.up:
       enabled: true
 none_set:
   metrics:
-    cisco.device.connected:
+    cisco.collect.duration.seconds:
+      enabled: false
+    cisco.collector.duration.seconds:
+      enabled: false
+    cisco.device.up:
+      enabled: false
+    cisco.interface.admin.up:
+      enabled: false
+    cisco.interface.error.status:
+      enabled: false
+    cisco.interface.receive.broadcast:
+      enabled: false
+    cisco.interface.receive.bytes:
+      enabled: false
+    cisco.interface.receive.drops:
+      enabled: false
+    cisco.interface.receive.errors:
+      enabled: false
+    cisco.interface.receive.multicast:
+      enabled: false
+    cisco.interface.transmit.bytes:
+      enabled: false
+    cisco.interface.transmit.drops:
+      enabled: false
+    cisco.interface.transmit.errors:
+      enabled: false
+    cisco.interface.up:
       enabled: false

@@ -1,0 +1,155 @@
+type: interfaces
+
+status:
+  class: scraper
+  stability:
+    development: [metrics]
+  distributions: []
+  codeowners:
+    active: []
+
+attributes:
+  target:
+    description: The target network device hostname/IP
+    type: string
+  name:
+    description: The name of the network interface
+    type: string
+  mac:
+    description: The MAC address of the network interface (for layer 2 correlation)
+    type: string
+  description:
+    description: The description/alias of the network interface
+    type: string
+  speed:
+    description: The configured speed of the network interface (e.g., "1000 Mb/s", "10 Gb/s")
+    type: string
+
+metrics:
+  cisco.interface.transmit.bytes:
+    enabled: true
+    description: Number of bytes transmitted on interface
+    unit: By
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [target, name, mac, description, speed]
+
+  cisco.interface.receive.bytes:
+    enabled: true
+    description: Number of bytes received on interface
+    unit: By
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [target, name, mac, description, speed]
+
+  cisco.interface.transmit.errors:
+    enabled: true
+    description: Number of output errors on interface
+    unit: "1"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [target, name, mac, description, speed]
+
+  cisco.interface.receive.errors:
+    enabled: true
+    description: Number of input errors on interface
+    unit: "1"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [target, name, mac, description, speed]
+
+  cisco.interface.transmit.drops:
+    enabled: true
+    description: Number of output drops on interface
+    unit: "1"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [target, name, mac, description, speed]
+
+  cisco.interface.receive.drops:
+    enabled: true
+    description: Number of input drops on interface
+    unit: "1"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [target, name, mac, description, speed]
+
+  cisco.interface.receive.multicast:
+    enabled: true
+    description: Number of multicast packets received on interface
+    unit: "1"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [target, name, mac, description, speed]
+
+  cisco.interface.receive.broadcast:
+    enabled: true
+    description: Number of broadcast packets received on interface
+    unit: "1"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [target, name, mac, description, speed]
+
+  cisco.interface.up:
+    enabled: true
+    description: Interface operational status (1 = up, 0 = down)
+    unit: "1"
+    gauge:
+      value_type: int
+    attributes: [target, name, mac, description, speed]
+
+  cisco.interface.admin.up:
+    enabled: true
+    description: Interface admin status (1 = admin up, 0 = admin down)
+    unit: "1"
+    gauge:
+      value_type: int
+    attributes: [target, name, mac, description, speed]
+
+  cisco.interface.error.status:
+    enabled: true
+    description: Interface error status (1 = error, 0 = no error)
+    unit: "1"
+    gauge:
+      value_type: int
+    attributes: [target, name, mac, description, speed]
+
+  cisco.collect.duration.seconds:
+    enabled: true
+    description: Time spent collecting interface metrics
+    unit: s
+    gauge:
+      value_type: double
+    attributes: [target]
+
+  cisco.collector.duration.seconds:
+    enabled: true
+    description: Duration of interface collector scrapes for one target
+    unit: s
+    gauge:
+      value_type: double
+    attributes: [target]
+
+  cisco.device.up:
+    enabled: true
+    description: Device availability from interface scraper perspective (1 = up, 0 = down)
+    unit: "1"
+    gauge:
+      value_type: int
+    attributes: [target]
