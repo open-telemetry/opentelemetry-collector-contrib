@@ -56,8 +56,6 @@ github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/serialize
 github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/serializerexporter v0.72.0-rc.1/go.mod h1:eDJE5SrQ64Vu26lMQL7p08jw1p6J3m5Zyl/6ETPIWkU=
 github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient v0.72.0-rc.1 h1:i496Ipz4IBK8MZmOw7heXj3dryhOHeLj9RbD05j4OQI=
 github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient v0.72.0-rc.1/go.mod h1:Sjmbl45/JZmo4kNjhwA4za5yG9rZYVGT34YVQTJxYXo=
-github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/statsprocessor v0.72.0-rc.1 h1:UGKooCex5gO/xsh7/1dSXvKs4pLsxwzJkNi1Ox9wF3M=
-github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/statsprocessor v0.72.0-rc.1/go.mod h1:FLcjSkwxELZt1IGdlKNrzVOin708Nvsyl4jtgwK73OQ=
 github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil v0.72.0-rc.1 h1:Zy9v+XAv9u5g+ER6GziykmDslu3QxVIOpKqyNqalik4=
 github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil v0.72.0-rc.1/go.mod h1:at/GM8nXJkTeNCQXgIt/CutEtgxGO3h7n8eE8tIdKRQ=
 github.com/DataDog/datadog-agent/comp/serializer/logscompression v0.72.0-rc.1 h1:rpyf9K582Mo2yTmXjjKG3wI6R2yGgn4JQ/UO1HPvqPM=
