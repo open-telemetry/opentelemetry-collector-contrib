@@ -33,7 +33,7 @@ func BenchmarkSampling(b *testing.B) {
 	metrics := &policyMetrics{}
 	sampleBatches := make([]*samplingpolicy.TraceData, 0, len(batches))
 
-	for range batches {
+	for i := range batches {
 		sampleBatches = append(sampleBatches, &samplingpolicy.TraceData{
 			ArrivalTime: time.Now(),
 			// SpanCount:       spanCount,
