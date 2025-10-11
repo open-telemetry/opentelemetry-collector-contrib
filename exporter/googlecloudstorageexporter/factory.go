@@ -21,5 +21,5 @@ func NewFactory() exporter.Factory {
 }
 
 func createLogsExporter(ctx context.Context, set exporter.Settings, config component.Config) (exporter.Logs, error) {
-	return newStorageExporter(ctx, config.(*Config), set.Logger), nil
+	return newGCSExporter(ctx, config.(*Config), set.Logger)
 }

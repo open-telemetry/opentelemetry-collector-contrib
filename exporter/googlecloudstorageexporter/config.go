@@ -63,9 +63,6 @@ func (c *bucketConfig) Validate() error {
 	return nil
 }
 
-func (c *Config) Validate() error {
-	if c.Encoding == nil {
-		return errors.New("encoding is required")
-	}
+func (*Config) Validate() error {
 	return nil
 }
