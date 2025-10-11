@@ -1,0 +1,106 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: gcp.project
+          value:
+            stringValue: test-project-id
+        - key: cloud.resource_id
+          value:
+            stringValue: networkmanagement.googleapis.com%2Fvpc_flows
+        - key: gcp.resource_type
+          value:
+            stringValue: vpc_flow_logs_config
+        - key: gcp.label.name
+          value:
+            stringValue: "test-flow-logs-config"
+        - key: gcp.label.resource_container
+          value:
+            stringValue: projects/123456789012
+        - key: gcp.label.location
+          value:
+            stringValue: global
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: log.record.uid
+                value:
+                  stringValue: 29gom3ewhg88
+              - key: gcp.label.target_resource_name
+                value:
+                  stringValue: projects/123456789012/global/networks/default
+              - key: network.protocol.name
+                value:
+                  stringValue: tcp
+              - key: source.address
+                value:
+                  stringValue: 203.0.113.5
+              - key: destination.address
+                value:
+                  stringValue: 192.0.2.5
+              - key: source.port
+                value:
+                  intValue: "45004"
+              - key: destination.port
+                value:
+                  intValue: "22"
+              - key: gcp.vpc.flow.reporter
+                value:
+                  stringValue: DEST
+              - key: gcp.vpc.flow.network.rtt_ms
+                value:
+                  intValue: "22"
+              - key: gcp.vpc.flow.bytes_sent
+                value:
+                  intValue: "11590"
+              - key: gcp.vpc.flow.packets_sent
+                value:
+                  intValue: "90"
+              - key: gcp.vpc.flow.start_time
+                value:
+                  stringValue: "2025-09-27T21:13:15.686128981Z"
+              - key: gcp.vpc.flow.end_time
+                value:
+                  stringValue: "2025-09-27T21:13:15.943125002Z"
+              - key: gcp.vpc.flow.destination.instance.project.id
+                value:
+                  stringValue: test-project-id
+              - key: gcp.vpc.flow.destination.instance.vm.region
+                value:
+                  stringValue: asia-south1
+              - key: gcp.vpc.flow.destination.instance.vm.name
+                value:
+                  stringValue: test-vm-5
+              - key: gcp.vpc.flow.destination.instance.vm.zone
+                value:
+                  stringValue: asia-south1-c
+              - key: gcp.vpc.flow.destination.project.id
+                value:
+                  stringValue: test-project-id
+              - key: gcp.vpc.flow.destination.subnet.name
+                value:
+                  stringValue: default
+              - key: gcp.vpc.flow.destination.subnet.region
+                value:
+                  stringValue: asia-south1
+              - key: gcp.vpc.flow.destination.vpc.name
+                value:
+                  stringValue: default
+              - key: gcp.vpc.flow.source.asn
+                value:
+                  intValue: "24560"
+              - key: gcp.vpc.flow.source.geo.city
+                value:
+                  stringValue: Indore
+              - key: gcp.vpc.flow.source.geo.continent
+                value:
+                  stringValue: Asia
+              - key: gcp.vpc.flow.source.geo.country.iso_code.alpha3
+                value:
+                  stringValue: ind
+              - key: gcp.vpc.flow.source.geo.region
+                value:
+                  stringValue: Madhya Pradesh
+            body: {}
+            observedTimeUnixNano: "1759007608314589494"
+            timeUnixNano: "1759007608314589494"
+        scope: {}
