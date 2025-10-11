@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pipeline"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status"
@@ -26,6 +27,7 @@ func TestAggregateStatus(t *testing.T) {
 		st, ok := agg.AggregateStatus(status.ScopeAll, status.Concise)
 		require.True(t, ok)
 		assert.Equal(t, componentstatus.StatusNone, st.Status())
+		assert.Equal(t, pcommon.NewMap(), st.Attributes())
 	})
 
 	testhelpers.SeedAggregator(agg, traces.InstanceIDs(), componentstatus.StatusOK)
@@ -47,21 +49,27 @@ func TestAggregateStatus(t *testing.T) {
 		assertErrorEventsMatch(t,
 			componentstatus.StatusRecoverableError,
 			assert.AnError,
+			pcommon.NewMap(),
 			st,
 		)
 	})
 
+	attrs := pcommon.NewMap()
+	attrs.PutStr("error.msg", "error cannot be recovered")
 	agg.RecordStatus(
 		traces.ExporterID,
-		componentstatus.NewPermanentErrorEvent(assert.AnError),
+		componentstatus.NewEvent(componentstatus.StatusPermanentError,
+			componentstatus.WithError(assert.AnError),
+			componentstatus.WithAttributes(attrs)),
 	)
 
-	t.Run("pipeline with permanent error", func(t *testing.T) {
+	t.Run("pipeline with permanent error and attributes", func(t *testing.T) {
 		st, ok := agg.AggregateStatus(status.ScopeAll, status.Concise)
 		require.True(t, ok)
 		assertErrorEventsMatch(t,
 			componentstatus.StatusPermanentError,
 			assert.AnError,
+			attrs,
 			st,
 		)
 	})
@@ -110,6 +118,7 @@ func TestAggregateStatusVerbose(t *testing.T) {
 			t,
 			componentstatus.StatusRecoverableError,
 			assert.AnError,
+			pcommon.NewMap(),
 			st,
 			st.ComponentStatusMap[tracesKey],
 		)
@@ -124,6 +133,7 @@ func TestAggregateStatusVerbose(t *testing.T) {
 		assertErrorEventsMatch(t,
 			componentstatus.StatusRecoverableError,
 			assert.AnError,
+			pcommon.NewMap(),
 			st.ComponentStatusMap[tracesKey].ComponentStatusMap[toComponentKey(traces.ExporterID)],
 		)
 	})
@@ -152,6 +162,7 @@ func TestAggregateStatusPriorityRecoverable(t *testing.T) {
 		assertErrorEventsMatch(t,
 			componentstatus.StatusPermanentError,
 			assert.AnError,
+			pcommon.NewMap(),
 			st,
 		)
 	})
@@ -167,6 +178,7 @@ func TestAggregateStatusPriorityRecoverable(t *testing.T) {
 		assertErrorEventsMatch(t,
 			componentstatus.StatusRecoverableError,
 			assert.AnError,
+			pcommon.NewMap(),
 			st,
 		)
 	})
@@ -204,7 +216,7 @@ func TestPipelineAggregateStatus(t *testing.T) {
 			status.Concise,
 		)
 		require.True(t, ok)
-		assertErrorEventsMatch(t, componentstatus.StatusRecoverableError, assert.AnError, st)
+		assertErrorEventsMatch(t, componentstatus.StatusRecoverableError, assert.AnError, pcommon.NewMap(), st)
 	})
 }
 
@@ -238,7 +250,7 @@ func TestPipelineAggregateStatusVerbose(t *testing.T) {
 		require.True(t, ok)
 
 		// Top-level status matches
-		assertErrorEventsMatch(t, componentstatus.StatusRecoverableError, assert.AnError, st)
+		assertErrorEventsMatch(t, componentstatus.StatusRecoverableError, assert.AnError, pcommon.NewMap(), st)
 
 		// Component statuses match
 		assertEventsMatch(t,
@@ -248,6 +260,7 @@ func TestPipelineAggregateStatusVerbose(t *testing.T) {
 		assertErrorEventsMatch(t,
 			componentstatus.StatusRecoverableError,
 			assert.AnError,
+			pcommon.NewMap(),
 			st.ComponentStatusMap[toComponentKey(traces.ExporterID)],
 		)
 	})
@@ -279,6 +292,7 @@ func TestAggregateStatusExtensions(t *testing.T) {
 		assertErrorEventsMatch(t,
 			componentstatus.StatusRecoverableError,
 			assert.AnError,
+			pcommon.NewMap(),
 			st,
 		)
 	})
@@ -400,6 +414,7 @@ func TestStreamingVerbose(t *testing.T) {
 		assertErrorEventsMatch(t,
 			componentstatus.StatusRecoverableError,
 			assert.AnError,
+			pcommon.NewMap(),
 			st,
 			st.ComponentStatusMap[tracesKey],
 		)
@@ -414,6 +429,7 @@ func TestStreamingVerbose(t *testing.T) {
 		assertErrorEventsMatch(t,
 			componentstatus.StatusRecoverableError,
 			assert.AnError,
+			pcommon.NewMap(),
 			st.ComponentStatusMap[tracesKey].ComponentStatusMap[toComponentKey(traces.ExporterID)],
 		)
 	})
@@ -471,6 +487,7 @@ func assertErrorEventsMatch(
 	t *testing.T,
 	expectedStatus componentstatus.Status,
 	expectedErr error,
+	expectedAttrs pcommon.Map,
 	statuses ...*status.AggregateStatus,
 ) {
 	assert.True(t, componentstatus.StatusIsError(expectedStatus))
@@ -478,6 +495,7 @@ func assertErrorEventsMatch(
 		ev := st.Event
 		assert.Equal(t, expectedStatus, ev.Status())
 		assert.Equal(t, expectedErr, ev.Err())
+		assert.True(t, expectedAttrs.Equal(ev.Attributes()))
 	}
 }
 

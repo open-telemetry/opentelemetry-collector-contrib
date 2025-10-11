@@ -140,6 +140,7 @@ type componentStatusExpectation struct {
 	healthy      bool
 	status       componentstatus.Status
 	err          error
+	attributes   map[string]any
 	nestedStatus map[string]*componentStatusExpectation
 }
 
