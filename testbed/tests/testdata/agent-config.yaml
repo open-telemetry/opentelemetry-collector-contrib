@@ -9,19 +9,16 @@ exporters:
     endpoint: "127.0.0.1:55680"
     tls:
       insecure: true
+    sending_queue:
+      batch:
   debug:
     loglevel: info
-
-processors:
-  batch:
 
 service:
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [batch]
       exporters: [otlp, debug]
     metrics:
       receivers: [otlp]
-      processors: [batch]
       exporters: [otlp, debug]
