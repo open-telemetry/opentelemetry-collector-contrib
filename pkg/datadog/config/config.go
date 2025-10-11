@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -322,12 +323,31 @@ func defaultClientConfig() confighttp.ClientConfig {
 	return client
 }
 
+// newDefaultQueueConfig creates the default exporter queue configuration.
+func newDefaultQueueConfig() exporterhelper.QueueBatchConfig {
+	queueSet := exporterhelper.NewDefaultQueueConfig()
+	// Override batching options since the defaults cause payloads that are over our limits
+	// See e.g. https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16834 or https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/17566
+	//
+	// The limits were chosen based on the API intake limits:
+	// - Trace intake: 3.2MB
+	// - Log intake: https://docs.datadoghq.com/api/latest/logs/
+	// - Metrics V2 intake: https://docs.datadoghq.com/api/latest/metrics/#submit-metrics
+	queueSet.Batch = configoptional.Default(exporterhelper.BatchConfig{
+		FlushTimeout: 10 * time.Second,
+		Sizer:        exporterhelper.RequestSizerTypeItems,
+		MinSize:      10,
+		MaxSize:      100,
+	})
+	return queueSet
+}
+
 // CreateDefaultConfig creates the default exporter configuration
 func CreateDefaultConfig() component.Config {
 	return &Config{
 		ClientConfig:  defaultClientConfig(),
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),
-		QueueSettings: exporterhelper.NewDefaultQueueConfig(),
+		QueueSettings: newDefaultQueueConfig(),
 
 		API: APIConfig{
 			Site: "datadoghq.com",
