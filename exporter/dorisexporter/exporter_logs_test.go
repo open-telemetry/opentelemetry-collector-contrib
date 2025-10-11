@@ -45,18 +45,22 @@ func TestPushLogData(t *testing.T) {
 		_ = exporter.shutdown(ctx)
 	}()
 
+	mux := http.NewServeMux()
+	mux.HandleFunc("/api/otel/otel_logs/_stream_load", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"Status":"Success"}`))
+	})
+
 	server := &http.Server{
 		ReadTimeout: 3 * time.Second,
 		Addr:        fmt.Sprintf(":%d", port),
+		Handler:     mux,
 	}
 
+	// Run the server.
+	serverErr := make(chan error, 1)
 	go func() {
-		http.HandleFunc("/api/otel/otel_logs/_stream_load", func(w http.ResponseWriter, _ *http.Request) {
-			w.WriteHeader(http.StatusOK)
-			_, _ = w.Write([]byte(`{"Status":"Success"}`))
-		})
-		err = server.ListenAndServe()
-		assert.Equal(t, http.ErrServerClosed, err)
+		serverErr <- server.ListenAndServe()
 	}()
 
 	err0 := errors.New("Not Started")
@@ -67,6 +71,8 @@ func TestPushLogData(t *testing.T) {
 	require.NoError(t, err0)
 
 	_ = server.Shutdown(ctx)
+	err = <-serverErr
+	assert.True(t, err == nil || errors.Is(err, http.ErrServerClosed), "unexpected server error: %v", err)
 }
 
 func simpleLogs(count int) plog.Logs {
@@ -78,7 +84,7 @@ func simpleLogs(count int) plog.Logs {
 	sl.Scope().SetVersion("1.0.0")
 	sl.Scope().Attributes().PutStr("lib", "doris")
 	timestamp := time.Now()
-	for i := 0; i < count; i++ {
+	for i := range count {
 		r := sl.LogRecords().AppendEmpty()
 		r.SetTimestamp(pcommon.NewTimestampFromTime(timestamp))
 		r.SetObservedTimestamp(pcommon.NewTimestampFromTime(timestamp))

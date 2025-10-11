@@ -26,9 +26,7 @@ func TestPushTraceData(t *testing.T) {
 	config := createDefaultConfig().(*Config)
 	config.Endpoint = fmt.Sprintf("http://127.0.0.1:%d", port)
 	config.CreateSchema = false
-
-	err = config.Validate()
-	require.NoError(t, err)
+	require.NoError(t, config.Validate())
 
 	exporter := newTracesExporter(zap.NewNop(), config, componenttest.NewNopTelemetrySettings())
 
@@ -44,18 +42,22 @@ func TestPushTraceData(t *testing.T) {
 		_ = exporter.shutdown(ctx)
 	}()
 
+	mux := http.NewServeMux()
+	mux.HandleFunc("/api/otel/otel_traces/_stream_load", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"Status":"Success"}`))
+	})
+
 	server := &http.Server{
 		ReadTimeout: 3 * time.Second,
 		Addr:        fmt.Sprintf(":%d", port),
+		Handler:     mux,
 	}
 
+	// Start server
+	serverErr := make(chan error, 1)
 	go func() {
-		http.HandleFunc("/api/otel/otel_traces/_stream_load", func(w http.ResponseWriter, _ *http.Request) {
-			w.WriteHeader(http.StatusOK)
-			_, _ = w.Write([]byte(`{"Status":"Success"}`))
-		})
-		err = server.ListenAndServe()
-		assert.Equal(t, http.ErrServerClosed, err)
+		serverErr <- server.ListenAndServe()
 	}()
 
 	err0 := errors.New("Not Started")
@@ -66,6 +68,8 @@ func TestPushTraceData(t *testing.T) {
 	require.NoError(t, err0)
 
 	_ = server.Shutdown(ctx)
+	err = <-serverErr
+	assert.True(t, err == nil || errors.Is(err, http.ErrServerClosed), "unexpected server error: %v", err)
 }
 
 func simpleTraces(count int) ptrace.Traces {
@@ -81,7 +85,7 @@ func simpleTraces(count int) ptrace.Traces {
 	ss.Scope().SetDroppedAttributesCount(20)
 	ss.Scope().Attributes().PutStr("lib", "doris")
 	timestamp := time.Now()
-	for i := 0; i < count; i++ {
+	for i := range count {
 		s := ss.Spans().AppendEmpty()
 		s.SetTraceID([16]byte{1, 2, 3, byte(i)})
 		s.SetSpanID([8]byte{1, 2, 3, byte(i)})
