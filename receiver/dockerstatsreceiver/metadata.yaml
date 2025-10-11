@@ -22,14 +22,22 @@ tests:
 
 # Note: there are other, additional resource attributes that the user can configure through the yaml
 resource_attributes:
-  container.runtime:
-    description: "The runtime of the container. For this receiver, it will always be 'docker'."
+  container.command_line:
+    description: "The full command executed by the container."
+    type: string
+    enabled: false
+  container.hostname:
+    description: "The hostname of the container."
     type: string
     enabled: true
   container.id:
     description: "The ID of the container."
     type: string
     enabled: true
+  container.image.id:
+    description: "The ID of the container image."
+    type: string
+    enabled: false
   container.image.name:
     description: "The name of the docker image in use by the container."
     type: string
@@ -38,18 +46,10 @@ resource_attributes:
     description: "The name of the container."
     type: string
     enabled: true
-  container.hostname:
-    description: "The hostname of the container."
+  container.runtime:
+    description: "The runtime of the container. For this receiver, it will always be 'docker'."
     type: string
     enabled: true
-  container.image.id:
-    description: "The ID of the container image."
-    type: string
-    enabled: false
-  container.command_line:
-    description: "The full command executed by the container."
-    type: string
-    enabled: false
 
 attributes:
   core:
@@ -70,528 +70,6 @@ attributes:
 
 metrics:
   # CPU
-  container.cpu.usage.system:
-    enabled: false
-    stability:
-      level: development
-    description: "System CPU usage, as reported by docker."
-    extended_documentation: "Note this is the usage for the system, not the container."
-    unit: ns
-    sum:
-      value_type: int
-      monotonic: true
-      aggregation_temporality: cumulative
-  container.cpu.usage.total:
-    enabled: true
-    stability:
-      level: development
-    description: "Total CPU time consumed."
-    unit: ns
-    sum:
-      value_type: int
-      monotonic: true
-      aggregation_temporality: cumulative
-  container.cpu.usage.kernelmode:
-    enabled: true
-    stability:
-      level: development
-    description: >-
-      Time spent by tasks of the cgroup in kernel mode (Linux). 
-      Time spent by all container processes in kernel mode (Windows).
-    unit: ns
-    sum:
-      value_type: int
-      monotonic: true
-      aggregation_temporality: cumulative
-  container.cpu.usage.usermode:
-    enabled: true
-    stability:
-      level: development
-    description: >-
-      Time spent by tasks of the cgroup in user mode (Linux). 
-      Time spent by all container processes in user mode (Windows).
-    unit: ns
-    sum:
-      value_type: int
-      monotonic: true
-      aggregation_temporality: cumulative
-  container.cpu.usage.percpu:
-    enabled: false
-    stability:
-      level: development
-    description: "Per-core CPU usage by the container (Only available with cgroups v1)."
-    unit: ns
-    sum:
-      value_type: int
-      monotonic: true
-      aggregation_temporality: cumulative
-    attributes:
-      - core
-  container.cpu.throttling_data.periods:
-    enabled: false
-    stability:
-      level: development
-    description: "Number of periods with throttling active."
-    unit: "{periods}"
-    sum:
-      value_type: int
-      monotonic: true
-      aggregation_temporality: cumulative
-  container.cpu.throttling_data.throttled_periods:
-    enabled: false
-    stability:
-      level: development
-    description: "Number of periods when the container hits its throttling limit."
-    unit: "{periods}"
-    sum:
-      value_type: int
-      monotonic: true
-      aggregation_temporality: cumulative
-  container.cpu.throttling_data.throttled_time:
-    enabled: false
-    stability:
-      level: development
-    description: "Aggregate time the container was throttled."
-    unit: ns
-    sum:
-      value_type: int
-      monotonic: true
-      aggregation_temporality: cumulative
-  container.cpu.utilization:
-    enabled: true
-    stability:
-      level: development
-    description: "Percent of CPU used by the container."
-    unit: "1"
-    gauge:
-      value_type: double
-  container.cpu.limit:
-    enabled: false
-    stability:
-      level: development
-    description: "CPU limit set for the container."
-    extended_documentation: "This metric is only reported if the container has limits set with -cpus, -cpuset-cpus or -cpu-quota."
-    unit: "{cpus}"
-    gauge:
-      value_type: double
-  container.cpu.shares:
-    enabled: false
-    stability:
-      level: development
-    description: "CPU shares set for the container."
-    unit: "1"
-    gauge:
-      value_type: int
-  container.cpu.logical.count:
-    enabled: false
-    stability:
-      level: development
-    description: "Number of cores available to the container."
-    unit: "{cpus}"
-    gauge:
-      value_type: int
-
-
-  # Memory
-  container.memory.usage.limit:
-    enabled: true
-    stability:
-      level: development
-    description: "Memory limit of the container. Not supported on Windows."
-    unit: By
-    sum:
-      value_type: int
-      aggregation_temporality: cumulative
-      monotonic: false
-  container.memory.usage.total:
-    enabled: true
-    stability:
-      level: development
-    description: "Memory usage of the container. This excludes the cache."
-    unit: By
-    sum:
-      value_type: int
-      aggregation_temporality: cumulative
-      monotonic: false
-  container.memory.usage.max:
-    enabled: false
-    stability:
-      level: development
-    description: "Maximum memory usage."
-    unit: By
-    sum:
-      value_type: int
-      aggregation_temporality: cumulative
-      monotonic: false
-  container.memory.percent:
-    enabled: true
-    stability:
-      level: development
-    description: "Percentage of memory used. Not supported on Windows."
-    unit: "1"
-    gauge:
-      value_type: double
-  container.memory.cache:
-    enabled: false
-    stability:
-      level: development
-    description: "The amount of memory used by the processes of this control group that can be associated precisely with a block on a block device (Only available with cgroups v1)."
-    unit: By
-    sum:
-      value_type: int
-      aggregation_temporality: cumulative
-      monotonic: false
-  container.memory.rss:
-    enabled: false
-    stability:
-      level: development
-    description: "The amount of memory that doesn’t correspond to anything on disk: stacks, heaps, and anonymous memory maps (Only available with cgroups v1)."
-    unit: By
-    sum:
-      value_type: int
-      aggregation_temporality: cumulative
-      monotonic: false
-  container.memory.rss_huge:
-    enabled: false
-    stability:
-      level: development
-    description: "Number of bytes of anonymous transparent hugepages in this cgroup (Only available with cgroups v1)."
-    unit: By
-    sum:
-      value_type: int
-      aggregation_temporality: cumulative
-      monotonic: false
-  container.memory.dirty:
-    enabled: false
-    stability:
-      level: development
-    description: "Bytes that are waiting to get written back to the disk, from this cgroup (Only available with cgroups v1)."
-    unit: By
-    sum:
-      value_type: int
-      aggregation_temporality: cumulative
-      monotonic: false
-  container.memory.writeback:
-    enabled: false
-    stability:
-      level: development
-    description: "Number of bytes of file/anon cache that are queued for syncing to disk in this cgroup (Only available with cgroups v1)."
-    unit: By
-    sum:
-      value_type: int
-      aggregation_temporality: cumulative
-      monotonic: false
-  container.memory.mapped_file:
-    enabled: false
-    stability:
-      level: development
-    description: "Indicates the amount of memory mapped by the processes in the control group (Only available with cgroups v1)."
-    unit: By
-    sum:
-      value_type: int
-      aggregation_temporality: cumulative
-      monotonic: false
-  container.memory.pgpgin:
-    enabled: false
-    stability:
-      level: development
-    description: "Number of pages read from disk by the cgroup (Only available with cgroups v1)."
-    extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/memory.txt)."
-    unit: "{operations}"
-    sum:
-      value_type: int
-      aggregation_temporality: cumulative
-      monotonic: true
-  container.memory.pgpgout:
-    enabled: false
-    stability:
-      level: development
-    description: "Number of pages written to disk by the cgroup (Only available with cgroups v1)."
-    extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/memory.txt)."
-    unit: "{operations}"
-    sum:
-      value_type: int
-      aggregation_temporality: cumulative
-      monotonic: true
-  container.memory.pgfault:
-    enabled: false
-    stability:
-      level: development
-    description: "Indicate the number of times that a process of the cgroup triggered a page fault."
-    unit: "{faults}"
-    sum:
-      value_type: int
-      aggregation_temporality: cumulative
-      monotonic: true
-  container.memory.pgmajfault:
-    enabled: false
-    stability:
-      level: development
-    description: "Indicate the number of times that a process of the cgroup triggered a major fault."
-    unit: "{faults}"
-    sum:
-      value_type: int
-      aggregation_temporality: cumulative
-      monotonic: true
-  container.memory.inactive_anon:
-    enabled: false
-    stability:
-      level: development
-    description: "The amount of anonymous memory that has been identified as inactive by the kernel."
-    unit: By
-    sum:
-      value_type: int
-      aggregation_temporality: cumulative
-      monotonic: false
-  container.memory.active_anon:
-    enabled: false
-    stability:
-      level: development
-    description: "The amount of anonymous memory that has been identified as active by the kernel."
-    unit: By
-    sum:
-      value_type: int
-      aggregation_temporality: cumulative
-      monotonic: false
-  container.memory.inactive_file:
-    enabled: false
-    stability:
-      level: development
-    description: "Cache memory that has been identified as inactive by the kernel."
-    extended_documentation: "[More docs](https://docs.docker.com/config/containers/runmetrics/)"
-    unit: By
-    sum:
-      value_type: int
-      aggregation_temporality: cumulative
-      monotonic: false
-  container.memory.active_file:
-    enabled: false
-    stability:
-      level: development
-    description: "Cache memory that has been identified as active by the kernel."
-    extended_documentation: "[More docs](https://docs.docker.com/config/containers/runmetrics/)"
-    unit: By
-    sum:
-      value_type: int
-      aggregation_temporality: cumulative
-      monotonic: false
-  container.memory.unevictable:
-    enabled: false
-    stability:
-      level: development
-    description: "The amount of memory that cannot be reclaimed."
-    unit: By
-    sum:
-      value_type: int
-      aggregation_temporality: cumulative
-      monotonic: false
-  container.memory.hierarchical_memory_limit:
-    enabled: false
-    stability:
-      level: development
-    description: "The maximum amount of physical memory that can be used by the processes of this control group (Only available with cgroups v1)."
-    unit: By
-    sum:
-      value_type: int
-      aggregation_temporality: cumulative
-      monotonic: false
-  container.memory.hierarchical_memsw_limit:
-    enabled: false
-    stability:
-      level: development
-    description: "The maximum amount of RAM + swap that can be used by the processes of this control group (Only available with cgroups v1)."
-    unit: By
-    sum:
-      value_type: int
-      aggregation_temporality: cumulative
-      monotonic: false
-  container.memory.total_cache:
-    enabled: true
-    stability:
-      level: development
-    description: "Total amount of memory used by the processes of this cgroup (and descendants) that can be associated with a block on a block device. Also accounts for memory used by tmpfs (Only available with cgroups v1). Not supported on Windows."
-    unit: By
-    sum:
-      value_type: int
-      aggregation_temporality: cumulative
-      monotonic: false
-  container.memory.total_rss:
-    enabled: false
-    stability:
-      level: development
-    description: "The amount of memory that doesn’t correspond to anything on disk: stacks, heaps, and anonymous memory maps. Includes descendant cgroups (Only available with cgroups v1)."
-    unit: By
-    sum:
-      value_type: int
-      aggregation_temporality: cumulative
-      monotonic: false
-  container.memory.total_rss_huge:
-    enabled: false
-    stability:
-      level: development
-    description: "Number of bytes of anonymous transparent hugepages in this cgroup and descendant cgroups (Only available with cgroups v1)."
-    unit: By
-    sum:
-      value_type: int
-      aggregation_temporality: cumulative
-      monotonic: false
-  container.memory.total_dirty:
-    enabled: false
-    stability:
-      level: development
-    description: "Bytes that are waiting to get written back to the disk, from this cgroup and descendants (Only available with cgroups v1)."
-    unit: By
-    sum:
-      value_type: int
-      aggregation_temporality: cumulative
-      monotonic: false
-  container.memory.total_writeback:
-    enabled: false
-    stability:
-      level: development
-    description: "Number of bytes of file/anon cache that are queued for syncing to disk in this cgroup and descendants (Only available with cgroups v1)."
-    unit: By
-    sum:
-      value_type: int
-      aggregation_temporality: cumulative
-      monotonic: false
-  container.memory.total_mapped_file:
-    enabled: false
-    stability:
-      level: development
-    description: "Indicates the amount of memory mapped by the processes in the control group and descendant groups (Only available with cgroups v1)."
-    unit: By
-    sum:
-      value_type: int
-      aggregation_temporality: cumulative
-      monotonic: false
-  container.memory.total_pgpgin:
-    enabled: false
-    stability:
-      level: development
-    description: "Number of pages read from disk by the cgroup and descendant groups (Only available with cgroups v1)."
-    unit: "{operations}"
-    sum:
-      value_type: int
-      aggregation_temporality: cumulative
-      monotonic: true
-  container.memory.total_pgpgout:
-    enabled: false
-    stability:
-      level: development
-    description: "Number of pages written to disk by the cgroup and descendant groups (Only available with cgroups v1)."
-    unit: "{operations}"
-    sum:
-      value_type: int
-      aggregation_temporality: cumulative
-      monotonic: true
-  container.memory.total_pgfault:
-    enabled: false
-    stability:
-      level: development
-    description: "Indicate the number of times that a process of the cgroup (or descendant cgroups) triggered a page fault (Only available with cgroups v1)."
-    unit: "{faults}"
-    sum:
-      value_type: int
-      aggregation_temporality: cumulative
-      monotonic: true
-  container.memory.total_pgmajfault:
-    enabled: false
-    stability:
-      level: development
-    description: "Indicate the number of times that a process of the cgroup (or descendant cgroups) triggered a major fault (Only available with cgroups v1)."
-    unit: "{faults}"
-    sum:
-      value_type: int
-      aggregation_temporality: cumulative
-      monotonic: true
-  container.memory.total_inactive_anon:
-    enabled: false
-    stability:
-      level: development
-    description: "The amount of anonymous memory that has been identified as inactive by the kernel. Includes descendant cgroups (Only available with cgroups v1)."
-    unit: By
-    sum:
-      value_type: int
-      aggregation_temporality: cumulative
-      monotonic: false
-  container.memory.total_active_anon:
-    enabled: false
-    stability:
-      level: development
-    description: "The amount of anonymous memory that has been identified as active by the kernel. Includes descendant cgroups (Only available with cgroups v1)."
-    unit: By
-    sum:
-      value_type: int
-      aggregation_temporality: cumulative
-      monotonic: false
-  container.memory.total_inactive_file:
-    enabled: false
-    stability:
-      level: development
-    description: "Cache memory that has been identified as inactive by the kernel. Includes descendant cgroups (Only available with cgroups v1)."
-    extended_documentation: "[More docs](https://docs.docker.com/config/containers/runmetrics/)."
-    unit: By
-    sum:
-      value_type: int
-      aggregation_temporality: cumulative
-      monotonic: false
-  container.memory.total_active_file:
-    enabled: false
-    stability:
-      level: development
-    description: "Cache memory that has been identified as active by the kernel. Includes descendant cgroups (Only available with cgroups v1)."
-    extended_documentation: "[More docs](https://docs.docker.com/config/containers/runmetrics/)."
-    unit: By
-    sum:
-      value_type: int
-      aggregation_temporality: cumulative
-      monotonic: false
-  container.memory.total_unevictable:
-    enabled: false
-    stability:
-      level: development
-    description: "The amount of memory that cannot be reclaimed. Includes descendant cgroups (Only available with cgroups v1)."
-    unit: By
-    sum:
-      value_type: int
-      aggregation_temporality: cumulative
-      monotonic: false
-  container.memory.anon:
-    enabled: false
-    stability:
-      level: development
-    description: "Amount of memory used in anonymous mappings such as brk(), sbrk(), and mmap(MAP_ANONYMOUS) (Only available with cgroups v2)."
-    extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v2.txt)"
-    unit: By
-    sum:
-      value_type: int
-      aggregation_temporality: cumulative
-      monotonic: false
-  container.memory.file:
-    enabled: true
-    stability:
-      level: development
-    description: "Amount of memory used to cache filesystem data, including tmpfs and shared memory (Only available with cgroups v2)."
-    extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v2.txt)"
-    unit: By
-    sum:
-      value_type: int
-      aggregation_temporality: cumulative
-      monotonic: false
-  container.memory.fails:
-    enabled: false
-    stability:
-      level: development
-    description: "Number of times the memory limit was hit."
-    unit: "{fails}"
-    sum:
-      value_type: int
-      aggregation_temporality: cumulative
-      monotonic: true
-
-
-  # BlockIO (cgroup v1) and IO (cgroup v2) controllers
   container.blockio.io_merged_recursive:
     enabled: false
     stability:
@@ -715,25 +193,531 @@ metrics:
       - device_major
       - device_minor
       - operation
-
   # Network
-  container.network.io.usage.rx_bytes:
+  container.cpu.limit:
+    enabled: false
+    stability:
+      level: development
+    description: "CPU limit set for the container."
+    extended_documentation: "This metric is only reported if the container has limits set with -cpus, -cpuset-cpus or -cpu-quota."
+    unit: "{cpus}"
+    gauge:
+      value_type: double
+  container.cpu.logical.count:
+    enabled: false
+    stability:
+      level: development
+    description: "Number of cores available to the container."
+    unit: "{cpus}"
+    gauge:
+      value_type: int
+
+  # Memory
+  container.cpu.shares:
+    enabled: false
+    stability:
+      level: development
+    description: "CPU shares set for the container."
+    unit: "1"
+    gauge:
+      value_type: int
+  container.cpu.throttling_data.periods:
+    enabled: false
+    stability:
+      level: development
+    description: "Number of periods with throttling active."
+    unit: "{periods}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+  container.cpu.throttling_data.throttled_periods:
+    enabled: false
+    stability:
+      level: development
+    description: "Number of periods when the container hits its throttling limit."
+    unit: "{periods}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+  container.cpu.throttling_data.throttled_time:
+    enabled: false
+    stability:
+      level: development
+    description: "Aggregate time the container was throttled."
+    unit: ns
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+  container.cpu.usage.kernelmode:
     enabled: true
     stability:
       level: development
-    description: "Bytes received by the container."
-    unit: By
+    description: >-
+      Time spent by tasks of the cgroup in kernel mode (Linux).  Time spent by all container processes in kernel mode (Windows).
+    unit: ns
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+  container.cpu.usage.percpu:
+    enabled: false
+    stability:
+      level: development
+    description: "Per-core CPU usage by the container (Only available with cgroups v1)."
+    unit: ns
     sum:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
     attributes:
-      - interface
-  container.network.io.usage.tx_bytes:
+      - core
+  container.cpu.usage.system:
+    enabled: false
+    stability:
+      level: development
+    description: "System CPU usage, as reported by docker."
+    extended_documentation: "Note this is the usage for the system, not the container."
+    unit: ns
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+  container.cpu.usage.total:
     enabled: true
     stability:
       level: development
-    description: "Bytes sent."
+    description: "Total CPU time consumed."
+    unit: ns
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+  container.cpu.usage.usermode:
+    enabled: true
+    stability:
+      level: development
+    description: >-
+      Time spent by tasks of the cgroup in user mode (Linux).  Time spent by all container processes in user mode (Windows).
+    unit: ns
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+  container.cpu.utilization:
+    enabled: true
+    stability:
+      level: development
+    description: "Percent of CPU used by the container."
+    unit: "1"
+    gauge:
+      value_type: double
+  container.memory.active_anon:
+    enabled: false
+    stability:
+      level: development
+    description: "The amount of anonymous memory that has been identified as active by the kernel."
+    unit: By
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+  container.memory.active_file:
+    enabled: false
+    stability:
+      level: development
+    description: "Cache memory that has been identified as active by the kernel."
+    extended_documentation: "[More docs](https://docs.docker.com/config/containers/runmetrics/)"
+    unit: By
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+  container.memory.anon:
+    enabled: false
+    stability:
+      level: development
+    description: "Amount of memory used in anonymous mappings such as brk(), sbrk(), and mmap(MAP_ANONYMOUS) (Only available with cgroups v2)."
+    extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v2.txt)"
+    unit: By
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+  container.memory.cache:
+    enabled: false
+    stability:
+      level: development
+    description: "The amount of memory used by the processes of this control group that can be associated precisely with a block on a block device (Only available with cgroups v1)."
+    unit: By
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+  container.memory.dirty:
+    enabled: false
+    stability:
+      level: development
+    description: "Bytes that are waiting to get written back to the disk, from this cgroup (Only available with cgroups v1)."
+    unit: By
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+  container.memory.fails:
+    enabled: false
+    stability:
+      level: development
+    description: "Number of times the memory limit was hit."
+    unit: "{fails}"
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: true
+
+
+  # BlockIO (cgroup v1) and IO (cgroup v2) controllers
+  container.memory.file:
+    enabled: true
+    stability:
+      level: development
+    description: "Amount of memory used to cache filesystem data, including tmpfs and shared memory (Only available with cgroups v2)."
+    extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v2.txt)"
+    unit: By
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+  container.memory.hierarchical_memory_limit:
+    enabled: false
+    stability:
+      level: development
+    description: "The maximum amount of physical memory that can be used by the processes of this control group (Only available with cgroups v1)."
+    unit: By
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+  container.memory.hierarchical_memsw_limit:
+    enabled: false
+    stability:
+      level: development
+    description: "The maximum amount of RAM + swap that can be used by the processes of this control group (Only available with cgroups v1)."
+    unit: By
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+  container.memory.inactive_anon:
+    enabled: false
+    stability:
+      level: development
+    description: "The amount of anonymous memory that has been identified as inactive by the kernel."
+    unit: By
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+  container.memory.inactive_file:
+    enabled: false
+    stability:
+      level: development
+    description: "Cache memory that has been identified as inactive by the kernel."
+    extended_documentation: "[More docs](https://docs.docker.com/config/containers/runmetrics/)"
+    unit: By
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+  container.memory.mapped_file:
+    enabled: false
+    stability:
+      level: development
+    description: "Indicates the amount of memory mapped by the processes in the control group (Only available with cgroups v1)."
+    unit: By
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+  container.memory.percent:
+    enabled: true
+    stability:
+      level: development
+    description: "Percentage of memory used. Not supported on Windows."
+    unit: "1"
+    gauge:
+      value_type: double
+  container.memory.pgfault:
+    enabled: false
+    stability:
+      level: development
+    description: "Indicate the number of times that a process of the cgroup triggered a page fault."
+    unit: "{faults}"
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: true
+  container.memory.pgmajfault:
+    enabled: false
+    stability:
+      level: development
+    description: "Indicate the number of times that a process of the cgroup triggered a major fault."
+    unit: "{faults}"
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: true
+  container.memory.pgpgin:
+    enabled: false
+    stability:
+      level: development
+    description: "Number of pages read from disk by the cgroup (Only available with cgroups v1)."
+    extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/memory.txt)."
+    unit: "{operations}"
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: true
+  container.memory.pgpgout:
+    enabled: false
+    stability:
+      level: development
+    description: "Number of pages written to disk by the cgroup (Only available with cgroups v1)."
+    extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/memory.txt)."
+    unit: "{operations}"
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: true
+  container.memory.rss:
+    enabled: false
+    stability:
+      level: development
+    description: "The amount of memory that doesn’t correspond to anything on disk: stacks, heaps, and anonymous memory maps (Only available with cgroups v1)."
+    unit: By
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+  container.memory.rss_huge:
+    enabled: false
+    stability:
+      level: development
+    description: "Number of bytes of anonymous transparent hugepages in this cgroup (Only available with cgroups v1)."
+    unit: By
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+  container.memory.total_active_anon:
+    enabled: false
+    stability:
+      level: development
+    description: "The amount of anonymous memory that has been identified as active by the kernel. Includes descendant cgroups (Only available with cgroups v1)."
+    unit: By
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+  container.memory.total_active_file:
+    enabled: false
+    stability:
+      level: development
+    description: "Cache memory that has been identified as active by the kernel. Includes descendant cgroups (Only available with cgroups v1)."
+    extended_documentation: "[More docs](https://docs.docker.com/config/containers/runmetrics/)."
+    unit: By
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+  container.memory.total_cache:
+    enabled: true
+    stability:
+      level: development
+    description: "Total amount of memory used by the processes of this cgroup (and descendants) that can be associated with a block on a block device. Also accounts for memory used by tmpfs (Only available with cgroups v1). Not supported on Windows."
+    unit: By
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+  container.memory.total_dirty:
+    enabled: false
+    stability:
+      level: development
+    description: "Bytes that are waiting to get written back to the disk, from this cgroup and descendants (Only available with cgroups v1)."
+    unit: By
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+  container.memory.total_inactive_anon:
+    enabled: false
+    stability:
+      level: development
+    description: "The amount of anonymous memory that has been identified as inactive by the kernel. Includes descendant cgroups (Only available with cgroups v1)."
+    unit: By
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+  container.memory.total_inactive_file:
+    enabled: false
+    stability:
+      level: development
+    description: "Cache memory that has been identified as inactive by the kernel. Includes descendant cgroups (Only available with cgroups v1)."
+    extended_documentation: "[More docs](https://docs.docker.com/config/containers/runmetrics/)."
+    unit: By
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+  container.memory.total_mapped_file:
+    enabled: false
+    stability:
+      level: development
+    description: "Indicates the amount of memory mapped by the processes in the control group and descendant groups (Only available with cgroups v1)."
+    unit: By
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+  container.memory.total_pgfault:
+    enabled: false
+    stability:
+      level: development
+    description: "Indicate the number of times that a process of the cgroup (or descendant cgroups) triggered a page fault (Only available with cgroups v1)."
+    unit: "{faults}"
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: true
+  container.memory.total_pgmajfault:
+    enabled: false
+    stability:
+      level: development
+    description: "Indicate the number of times that a process of the cgroup (or descendant cgroups) triggered a major fault (Only available with cgroups v1)."
+    unit: "{faults}"
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: true
+  container.memory.total_pgpgin:
+    enabled: false
+    stability:
+      level: development
+    description: "Number of pages read from disk by the cgroup and descendant groups (Only available with cgroups v1)."
+    unit: "{operations}"
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: true
+  container.memory.total_pgpgout:
+    enabled: false
+    stability:
+      level: development
+    description: "Number of pages written to disk by the cgroup and descendant groups (Only available with cgroups v1)."
+    unit: "{operations}"
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: true
+  container.memory.total_rss:
+    enabled: false
+    stability:
+      level: development
+    description: "The amount of memory that doesn’t correspond to anything on disk: stacks, heaps, and anonymous memory maps. Includes descendant cgroups (Only available with cgroups v1)."
+    unit: By
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+  container.memory.total_rss_huge:
+    enabled: false
+    stability:
+      level: development
+    description: "Number of bytes of anonymous transparent hugepages in this cgroup and descendant cgroups (Only available with cgroups v1)."
+    unit: By
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+  container.memory.total_unevictable:
+    enabled: false
+    stability:
+      level: development
+    description: "The amount of memory that cannot be reclaimed. Includes descendant cgroups (Only available with cgroups v1)."
+    unit: By
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+  container.memory.total_writeback:
+    enabled: false
+    stability:
+      level: development
+    description: "Number of bytes of file/anon cache that are queued for syncing to disk in this cgroup and descendants (Only available with cgroups v1)."
+    unit: By
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+  container.memory.unevictable:
+    enabled: false
+    stability:
+      level: development
+    description: "The amount of memory that cannot be reclaimed."
+    unit: By
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+  container.memory.usage.limit:
+    enabled: true
+    stability:
+      level: development
+    description: "Memory limit of the container. Not supported on Windows."
+    unit: By
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+  container.memory.usage.max:
+    enabled: false
+    stability:
+      level: development
+    description: "Maximum memory usage."
+    unit: By
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+  container.memory.usage.total:
+    enabled: true
+    stability:
+      level: development
+    description: "Memory usage of the container. This excludes the cache."
+    unit: By
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+  container.memory.writeback:
+    enabled: false
+    stability:
+      level: development
+    description: "Number of bytes of file/anon cache that are queued for syncing to disk in this cgroup (Only available with cgroups v1)."
+    unit: By
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+  container.network.io.usage.rx_bytes:
+    enabled: true
+    stability:
+      level: development
+    description: "Bytes received by the container."
     unit: By
     sum:
       value_type: int
@@ -753,35 +737,11 @@ metrics:
       aggregation_temporality: cumulative
     attributes:
       - interface
-  container.network.io.usage.tx_dropped:
-    enabled: true
-    stability:
-      level: development
-    description: "Outgoing packets dropped."
-    unit: "{packets}"
-    sum:
-      value_type: int
-      monotonic: true
-      aggregation_temporality: cumulative
-    attributes:
-      - interface
   container.network.io.usage.rx_errors:
     enabled: false
     stability:
       level: development
     description: "Received errors. Not supported on Windows."
-    unit: "{errors}"
-    sum:
-      value_type: int
-      monotonic: true
-      aggregation_temporality: cumulative
-    attributes:
-      - interface
-  container.network.io.usage.tx_errors:
-    enabled: false
-    stability:
-      level: development
-    description: "Sent errors. Not supported on Windows."
     unit: "{errors}"
     sum:
       value_type: int
@@ -795,6 +755,42 @@ metrics:
       level: development
     description: "Packets received."
     unit: "{packets}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes:
+      - interface
+  container.network.io.usage.tx_bytes:
+    enabled: true
+    stability:
+      level: development
+    description: "Bytes sent."
+    unit: By
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes:
+      - interface
+  container.network.io.usage.tx_dropped:
+    enabled: true
+    stability:
+      level: development
+    description: "Outgoing packets dropped."
+    unit: "{packets}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes:
+      - interface
+  container.network.io.usage.tx_errors:
+    enabled: false
+    stability:
+      level: development
+    description: "Sent errors. Not supported on Windows."
+    unit: "{errors}"
     sum:
       value_type: int
       monotonic: true
@@ -839,16 +835,6 @@ metrics:
       aggregation_temporality: cumulative
       monotonic: false
 
-  # Base
-  container.uptime:
-    enabled: false
-    stability:
-      level: development
-    description: "Time elapsed since container start time."
-    unit: s
-    gauge:
-      value_type: double
-
   # Container
   container.restarts:
     enabled: false
@@ -860,3 +846,13 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
+
+  # Base
+  container.uptime:
+    enabled: false
+    stability:
+      level: development
+    description: "Time elapsed since container start time."
+    unit: s
+    gauge:
+      value_type: double
