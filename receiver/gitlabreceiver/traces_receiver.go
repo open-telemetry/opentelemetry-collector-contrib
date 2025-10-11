@@ -150,7 +150,7 @@ func (gtr *gitlabTracesReceiver) handleHealthCheck(w http.ResponseWriter, r *htt
 	_, _ = w.Write([]byte(healthyResponse))
 }
 
-// handleReq handles incoming request sent to the webhook endoint
+// handleReq handles incoming request sent to the webhook endpoint
 func (gtr *gitlabTracesReceiver) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	ctx := gtr.obsrecv.StartTracesOp(r.Context())
 
