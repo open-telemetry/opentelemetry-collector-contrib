@@ -282,12 +282,12 @@ func TestBodyMapMappingModel_EncodeLog_Concurrent_Calls(t *testing.T) {
 		errorsChan := make(chan error, numGoroutines*operationsPerGoroutine)
 
 		// Test concurrent access to buffer pool
-		for g := 0; g < numGoroutines; g++ {
+		for g := range numGoroutines {
 			wg.Add(1)
 			go func(goroutineID int) {
 				defer wg.Done()
 
-				for i := 0; i < operationsPerGoroutine; i++ {
+				for i := range operationsPerGoroutine {
 					logRecord := createLogRecordWithMapBody(t)
 					bodyMap := logRecord.Body().SetEmptyMap()
 
