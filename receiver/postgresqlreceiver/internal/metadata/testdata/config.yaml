@@ -47,6 +47,8 @@ all_set:
       enabled: true
     postgresql.sequential_scans:
       enabled: true
+    postgresql.table.autovacuum.count:
+      enabled: true
     postgresql.table.count:
       enabled: true
     postgresql.table.size:
@@ -134,6 +136,8 @@ none_set:
     postgresql.rows:
       enabled: false
     postgresql.sequential_scans:
+      enabled: false
+    postgresql.table.autovacuum.count:
       enabled: false
     postgresql.table.count:
       enabled: false
