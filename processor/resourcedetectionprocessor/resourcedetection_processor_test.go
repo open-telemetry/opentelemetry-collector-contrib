@@ -297,6 +297,66 @@ func TestResourceProcessor(t *testing.T) {
 	}
 }
 
+func TestProcessor_RefreshInterval_UpdatesResource(t *testing.T) {
+	factory := &factory{providers: map[component.ID]*internal.ResourceProvider{}}
+
+	// First detect returns res1, then res2.
+	md := &mockDetector{}
+	res1 := pcommon.NewResource()
+	require.NoError(t, res1.Attributes().FromRaw(map[string]any{"k": "v1"}))
+	res2 := pcommon.NewResource()
+	require.NoError(t, res2.Attributes().FromRaw(map[string]any{"k": "v2"}))
+	md.On("Detect").Return(res1, nil).Once()
+	md.On("Detect").Return(res2, nil)
+
+	// Hook detector into factory.
+	factory.resourceProviderFactory = internal.NewProviderFactory(
+		map[internal.DetectorType]internal.DetectorFactory{
+			"mock": func(processor.Settings, internal.DetectorConfig) (internal.Detector, error) {
+				return md, nil
+			},
+		},
+	)
+
+	cfg := &Config{
+		Detectors:       []string{"mock"},
+		ClientConfig:    confighttp.ClientConfig{Timeout: 500 * time.Millisecond},
+		RefreshInterval: 50 * time.Millisecond, // short to trigger refresh quickly
+	}
+
+	// Create metrics processor.
+	msink := new(consumertest.MetricsSink)
+	mp, err := factory.createMetricsProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, msink)
+	require.NoError(t, err)
+	require.NoError(t, mp.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() { assert.NoError(t, mp.Shutdown(t.Context())) }()
+
+	// Send one batch → should see res1.
+	md1 := pmetric.NewMetrics()
+	require.NoError(t, md1.ResourceMetrics().AppendEmpty().Resource().Attributes().FromRaw(map[string]any{}))
+	require.NoError(t, mp.ConsumeMetrics(t.Context(), md1))
+
+	require.Eventually(t, func() bool {
+		return len(msink.AllMetrics()) > 0
+	}, time.Second, 20*time.Millisecond)
+	got1 := msink.AllMetrics()[0].ResourceMetrics().At(0).Resource().Attributes().AsRaw()
+	assert.Equal(t, map[string]any{"k": "v1"}, got1)
+
+	// Wait for refresh loop to replace detector result.
+	time.Sleep(150 * time.Millisecond)
+
+	// Send another batch → should see res2.
+	md2 := pmetric.NewMetrics()
+	require.NoError(t, md2.ResourceMetrics().AppendEmpty().Resource().Attributes().FromRaw(map[string]any{}))
+	require.NoError(t, mp.ConsumeMetrics(t.Context(), md2))
+
+	require.Eventually(t, func() bool {
+		return len(msink.AllMetrics()) >= 2
+	}, time.Second, 20*time.Millisecond)
+	got2 := msink.AllMetrics()[1].ResourceMetrics().At(0).Resource().Attributes().AsRaw()
+	assert.Equal(t, map[string]any{"k": "v2"}, got2)
+}
+
 func benchmarkConsumeTraces(b *testing.B, cfg *Config) {
 	factory := NewFactory()
 	sink := new(consumertest.TracesSink)
