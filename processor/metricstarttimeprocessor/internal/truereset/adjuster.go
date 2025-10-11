@@ -186,7 +186,11 @@ func (*Adjuster) adjustMetricSum(tsm *datapointstorage.TimeseriesMap, current pm
 		refTsi, found := tsm.Get(current, currentSum.Attributes())
 		if !found {
 			// initialize everything.
-			refTsi.Number = datapointstorage.NumberInfo{PreviousValue: currentSum.DoubleValue(), StartTime: currentSum.Timestamp()}
+			refTsi.Number = datapointstorage.NumberInfo{
+				PreviousDoubleValue: currentSum.DoubleValue(),
+				PreviousIntValue:    currentSum.IntValue(),
+				StartTime:           currentSum.Timestamp(),
+			}
 
 			// For the first point, set the start time as the point timestamp.
 			currentSum.SetStartTimestamp(currentSum.Timestamp())
@@ -206,7 +210,8 @@ func (*Adjuster) adjustMetricSum(tsm *datapointstorage.TimeseriesMap, current pm
 		}
 
 		// Update only previous values.
-		refTsi.Number.PreviousValue = currentSum.DoubleValue()
+		refTsi.Number.PreviousDoubleValue = currentSum.DoubleValue()
+		refTsi.Number.PreviousIntValue = currentSum.IntValue()
 		currentSum.SetStartTimestamp(refTsi.Number.StartTime)
 	}
 }
