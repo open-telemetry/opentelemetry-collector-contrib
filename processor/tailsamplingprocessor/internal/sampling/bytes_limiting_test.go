@@ -12,6 +12,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/pkg/samplingpolicy"
 )
 
 func TestBytesLimitingTokenBucket(t *testing.T) {
@@ -24,7 +26,7 @@ func TestBytesLimitingTokenBucket(t *testing.T) {
 		bytesPerSecond    int64
 		burstCapacity     int64
 		numTraces         int
-		expectedDecisions []Decision
+		expectedDecisions []samplingpolicy.Decision
 		description       string
 	}{
 		{
@@ -32,7 +34,7 @@ func TestBytesLimitingTokenBucket(t *testing.T) {
 			bytesPerSecond:    traceSize / 2, // Low rate
 			burstCapacity:     traceSize * 2, // High burst capacity
 			numTraces:         1,
-			expectedDecisions: []Decision{Sampled},
+			expectedDecisions: []samplingpolicy.Decision{samplingpolicy.Sampled},
 			description:       "Should sample when burst capacity allows it",
 		},
 		{
@@ -40,7 +42,7 @@ func TestBytesLimitingTokenBucket(t *testing.T) {
 			bytesPerSecond:    traceSize / 2,
 			burstCapacity:     traceSize, // Exactly trace size
 			numTraces:         1,
-			expectedDecisions: []Decision{Sampled},
+			expectedDecisions: []samplingpolicy.Decision{samplingpolicy.Sampled},
 			description:       "Should sample when trace fits in burst capacity",
 		},
 		{
@@ -48,7 +50,7 @@ func TestBytesLimitingTokenBucket(t *testing.T) {
 			bytesPerSecond:    traceSize,
 			burstCapacity:     traceSize - 1, // Less than trace size
 			numTraces:         1,
-			expectedDecisions: []Decision{NotSampled},
+			expectedDecisions: []samplingpolicy.Decision{samplingpolicy.NotSampled},
 			description:       "Should not sample when trace exceeds burst capacity",
 		},
 		{
@@ -56,7 +58,7 @@ func TestBytesLimitingTokenBucket(t *testing.T) {
 			bytesPerSecond:    traceSize,
 			burstCapacity:     traceSize * 3, // Can hold 3 traces
 			numTraces:         2,
-			expectedDecisions: []Decision{Sampled, Sampled},
+			expectedDecisions: []samplingpolicy.Decision{samplingpolicy.Sampled, samplingpolicy.Sampled},
 			description:       "Should sample multiple traces that fit in burst capacity",
 		},
 		{
@@ -64,7 +66,7 @@ func TestBytesLimitingTokenBucket(t *testing.T) {
 			bytesPerSecond:    traceSize / 2,
 			burstCapacity:     traceSize + 1, // Can hold just over 1 trace
 			numTraces:         2,
-			expectedDecisions: []Decision{Sampled, NotSampled},
+			expectedDecisions: []samplingpolicy.Decision{samplingpolicy.Sampled, samplingpolicy.NotSampled},
 			description:       "Should reject traces that exceed burst capacity",
 		},
 	}
@@ -97,16 +99,16 @@ func TestBytesLimitingDefaultConstructor(t *testing.T) {
 	// Should be able to sample at least 2 traces immediately (2x burst capacity)
 	decision1, err := filter.Evaluate(t.Context(), pcommon.TraceID([16]byte{1}), trace)
 	require.NoError(t, err)
-	assert.Equal(t, Sampled, decision1)
+	assert.Equal(t, samplingpolicy.Sampled, decision1)
 
 	decision2, err := filter.Evaluate(t.Context(), pcommon.TraceID([16]byte{2}), trace)
 	require.NoError(t, err)
-	assert.Equal(t, Sampled, decision2)
+	assert.Equal(t, samplingpolicy.Sampled, decision2)
 
 	// Third trace should be rejected (exceeds 2x capacity)
 	decision3, err := filter.Evaluate(t.Context(), pcommon.TraceID([16]byte{3}), trace)
 	require.NoError(t, err)
-	assert.Equal(t, NotSampled, decision3)
+	assert.Equal(t, samplingpolicy.NotSampled, decision3)
 }
 
 func TestBytesLimitingTokenRefill(t *testing.T) {
@@ -123,12 +125,12 @@ func TestBytesLimitingTokenRefill(t *testing.T) {
 	// First trace should be sampled (using burst capacity)
 	decision1, err := filter.Evaluate(t.Context(), pcommon.TraceID([16]byte{1}), trace)
 	require.NoError(t, err)
-	assert.Equal(t, Sampled, decision1)
+	assert.Equal(t, samplingpolicy.Sampled, decision1)
 
 	// Second trace should be rejected (no tokens left)
 	decision2, err := filter.Evaluate(t.Context(), pcommon.TraceID([16]byte{2}), trace)
 	require.NoError(t, err)
-	assert.Equal(t, NotSampled, decision2)
+	assert.Equal(t, samplingpolicy.NotSampled, decision2)
 
 	// Wait for tokens to refill (real time delay)
 	// golang.org/x/time/rate handles token refill automatically based on real time
@@ -137,7 +139,7 @@ func TestBytesLimitingTokenRefill(t *testing.T) {
 	// Third trace should be sampled (tokens refilled)
 	decision3, err := filter.Evaluate(t.Context(), pcommon.TraceID([16]byte{3}), trace)
 	require.NoError(t, err)
-	assert.Equal(t, Sampled, decision3)
+	assert.Equal(t, samplingpolicy.Sampled, decision3)
 }
 
 func TestBytesLimitingConcurrency(t *testing.T) {
@@ -151,7 +153,7 @@ func TestBytesLimitingConcurrency(t *testing.T) {
 	)
 
 	// Test concurrent access doesn't cause race conditions
-	results := make(chan Decision, 10)
+	results := make(chan samplingpolicy.Decision, 10)
 
 	for i := 0; i < 10; i++ {
 		go func(id int) {
@@ -165,7 +167,7 @@ func TestBytesLimitingConcurrency(t *testing.T) {
 	var sampled, notSampled int
 	for i := 0; i < 10; i++ {
 		decision := <-results
-		if decision == Sampled {
+		if decision == samplingpolicy.Sampled {
 			sampled++
 		} else {
 			notSampled++
@@ -186,8 +188,8 @@ func TestCalculateTraceSize(t *testing.T) {
 }
 
 // newTraceBytesFilter creates a trace for testing bytes limiting
-func newTraceBytesFilter() *TraceData {
-	var trace TraceData
+func newTraceBytesFilter() *samplingpolicy.TraceData {
+	var trace samplingpolicy.TraceData
 
 	td := ptrace.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()

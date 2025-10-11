@@ -37,14 +37,13 @@ func BenchmarkSampling(b *testing.B) {
 		sampleBatches = append(sampleBatches, &samplingpolicy.TraceData{
 			ArrivalTime: time.Now(),
 			// SpanCount:       spanCount,
-			ReceivedBatches: ptrace.NewTraces(),
+			ReceivedBatches: batches[i],
 		})
 	}
 
 	for i := 0; i < b.N; i++ {
-		for i, id := range traceIDs {
-			_ = tsp.makeDecision(id, sampleBatches[i], metrics)
+		for j, id := range traceIDs {
+			_ = tsp.makeDecision(id, sampleBatches[j], metrics)
 		}
-		_ = tsp.makeDecision(id, sb, metrics)
 	}
 }
