@@ -31,7 +31,6 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
-
     connector_servicegraph_total_edges:
       description: Total number of unique edges
       unit: "1"
