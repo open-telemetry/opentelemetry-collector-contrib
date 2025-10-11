@@ -4,7 +4,7 @@ status:
   class: exporter
   stability:
     development: [traces, metrics, logs]
-  distributions: []
+  distributions: [contrib]
   codeowners:
     active: []
     seeking_new: true
