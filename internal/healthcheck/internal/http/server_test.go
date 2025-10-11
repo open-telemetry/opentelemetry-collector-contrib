@@ -2762,7 +2762,8 @@ func TestStatus(t *testing.T) {
 					step: func() {
 						server.aggregator.RecordStatus(
 							metrics.ExporterID,
-							componentstatus.NewPermanentErrorEvent(assert.AnError),
+							componentstatus.NewPermanentErrorEvent(
+								assert.AnError),
 						)
 					},
 					expectedStatusCode: http.StatusOK,
