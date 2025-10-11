@@ -9,6 +9,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"net/url"
 	"regexp"
 	"strings"
@@ -684,9 +685,7 @@ func makeXRayAttributes(attributes map[string]pcommon.Value, resource pcommon.Re
 					// if unable to unmarshal, keep the original key/value
 					defaultMetadata[key] = value.Str()
 				case strings.EqualFold(namespace, defaultMetadataNamespace):
-					for k, v := range metaVal {
-						defaultMetadata[k] = v
-					}
+					maps.Copy(defaultMetadata, metaVal)
 				default:
 					metadata[namespace] = metaVal
 				}
@@ -758,10 +757,10 @@ func fixAnnotationKey(key string) string {
 
 func trimAwsSdkPrefix(name string, span ptrace.Span) string {
 	if isAwsSdkSpan(span) {
-		if strings.HasPrefix(name, "AWS.SDK.") {
-			return strings.TrimPrefix(name, "AWS.SDK.")
-		} else if strings.HasPrefix(name, "AWS::") {
-			return strings.TrimPrefix(name, "AWS::")
+		if after, ok := strings.CutPrefix(name, "AWS.SDK."); ok {
+			return after
+		} else if after, ok := strings.CutPrefix(name, "AWS::"); ok {
+			return after
 		}
 	}
 	return name
