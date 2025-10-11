@@ -5,6 +5,7 @@ package config // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -398,6 +399,81 @@ func TestUnmarshal(t *testing.T) {
 			} else {
 				assert.Equal(t, testInstance.cfg, cfg)
 			}
+		})
+	}
+}
+
+func TestUnmarshalAPIKeyProcessing(t *testing.T) {
+	tests := []struct {
+		name           string
+		configMap      map[string]any
+		expectedAPIKey string
+	}{
+		{
+			name: "normal api key",
+			configMap: map[string]any{
+				"api": map[string]any{
+					"key": "abc123def456",
+				},
+			},
+			expectedAPIKey: "abc123def456",
+		},
+		{
+			name: "api key with double quotes",
+			configMap: map[string]any{
+				"api": map[string]any{
+					"key": `"abc123def456"`,
+				},
+			},
+			expectedAPIKey: "abc123def456",
+		},
+		{
+			name: "api key with single quotes",
+			configMap: map[string]any{
+				"api": map[string]any{
+					"key": "'abc123def456'",
+				},
+			},
+			expectedAPIKey: "abc123def456",
+		},
+		{
+			name: "api key with quotes and whitespace",
+			configMap: map[string]any{
+				"api": map[string]any{
+					"key": `  "abc123def456"  `,
+				},
+			},
+			expectedAPIKey: "abc123def456",
+		},
+		{
+			name: "api key with special characters at ends",
+			configMap: map[string]any{
+				"api": map[string]any{
+					"key": "!@#abc123def456$%^",
+				},
+			},
+			expectedAPIKey: "abc123def456",
+		},
+		{
+			name: "api key with complex surrounding characters",
+			configMap: map[string]any{
+				"api": map[string]any{
+					"key": "!\"'  abc123-def456_ghi  '\"!",
+				},
+			},
+			expectedAPIKey: "abc123-def456_ghi",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := CreateDefaultConfig().(*Config)
+			cm := confmap.NewFromStringMap(tt.configMap)
+
+			err := cfg.Unmarshal(cm)
+			require.NoError(t, err)
+
+			assert.Equal(t, tt.expectedAPIKey, string(cfg.API.Key))
 		})
 	}
 }
@@ -842,6 +918,112 @@ func TestOverrideEndpoints(t *testing.T) {
 			assert.Equal(t, testInstance.expectedMetricsEndpoint, componentCfg.Metrics.Endpoint)
 			assert.Equal(t, testInstance.expectedTracesEndpoint, componentCfg.Traces.Endpoint)
 			assert.Equal(t, testInstance.expectedLogsEndpoint, componentCfg.Logs.Endpoint)
+		})
+	}
+}
+
+func TestTrimAPIKeyFunc(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "normal api key",
+			input:    "abc123def456",
+			expected: "abc123def456",
+		},
+		{
+			name:     "api key with whitespace",
+			input:    "  abc123def456  ",
+			expected: "abc123def456",
+		},
+		{
+			name:     "api key with double quotes",
+			input:    `"abc123def456"`,
+			expected: "abc123def456",
+		},
+		{
+			name:     "api key with single quotes",
+			input:    "'abc123def456'",
+			expected: "abc123def456",
+		},
+		{
+			name:     "api key with quotes and whitespace",
+			input:    `  "abc123def456"  `,
+			expected: "abc123def456",
+		},
+		{
+			name:     "api key with quotes and internal whitespace",
+			input:    `"  abc123def456  "`,
+			expected: "abc123def456",
+		},
+		{
+			name:     "api key with single quotes and whitespace",
+			input:    "  'abc123def456'  ",
+			expected: "abc123def456",
+		},
+		{
+			name:     "api key with special characters at ends",
+			input:    "!@#abc123def456$%^",
+			expected: "abc123def456",
+		},
+		{
+			name:     "api key with hyphens at ends",
+			input:    "--abc123def456--",
+			expected: "abc123def456",
+		},
+		{
+			name:     "api key with mixed non-alphanumeric at ends",
+			input:    "!\"'abc123def456'\"!",
+			expected: "abc123def456",
+		},
+		{
+			name:     "empty string",
+			input:    "",
+			expected: "",
+		},
+		{
+			name:     "only quotes",
+			input:    `""`,
+			expected: "",
+		},
+		{
+			name:     "only single quotes",
+			input:    "''",
+			expected: "",
+		},
+		{
+			name:     "only special characters",
+			input:    "!@#$%^&*()",
+			expected: "",
+		},
+		{
+			name:     "single alphanumeric character",
+			input:    "a",
+			expected: "a",
+		},
+		{
+			name:     "single numeric character",
+			input:    "1",
+			expected: "1",
+		},
+		{
+			name:     "alphanumeric with internal special chars preserved",
+			input:    "abc-123-def",
+			expected: "abc-123-def",
+		},
+		{
+			name:     "complex case with various non-alphanumeric",
+			input:    "!@#\"'  abc123-def456_ghi  '\"@#!",
+			expected: "abc123-def456_ghi",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := strings.TrimFunc(tt.input, trimAPIKeyFunc)
+			assert.Equal(t, tt.expected, result)
 		})
 	}
 }
