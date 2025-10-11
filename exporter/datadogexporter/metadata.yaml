@@ -6,7 +6,7 @@ status:
     beta: [traces, metrics, logs]
   distributions: [contrib]
   codeowners:
-    active: [mx-psi, dineshg13, liustanley, songy23, mackjmr, ankitpatel96, jade-guiton-dd, IbraheemA]
+    active: [mx-psi, dineshg13, liustanley, songy23, mackjmr, ankitpatel96, jade-guiton-dd, IbraheemA, jackgopack4]
     emeritus: [gbbr]
 
 tests:
