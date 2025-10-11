@@ -18,12 +18,12 @@ type ClientOptionsResolver interface {
 }
 
 type clientOptionsResolver struct {
-	armOptions       *arm.ClientOptions
-	azmetricsOptions *azmetrics.ClientOptions
+	cloud cloud.Configuration
 }
 
 // newClientOptionsResolver creates a resolver that will always return the same options.
 // Unlike in the tests where there will be one option by API mock, here we don't need different options for each client.
+// Note the fact that it recreates the options each time. It's because the options are mutable, they can be modified by the client ctor.
 func newClientOptionsResolver(cloudStr string) ClientOptionsResolver {
 	var cloudToUse cloud.Configuration
 	switch cloudStr {
@@ -34,25 +34,35 @@ func newClientOptionsResolver(cloudStr string) ClientOptionsResolver {
 	default:
 		cloudToUse = cloud.AzurePublic
 	}
-	return &clientOptionsResolver{armOptions: &arm.ClientOptions{
-		ClientOptions: azcore.ClientOptions{
-			Cloud: cloudToUse,
-		},
-	}}
+	return &clientOptionsResolver{cloud: cloudToUse}
+}
+
+func (r *clientOptionsResolver) getClientOptions() azcore.ClientOptions {
+	return azcore.ClientOptions{
+		Cloud: r.cloud,
+	}
 }
 
 func (r *clientOptionsResolver) GetArmResourceClientOptions(_ string) *arm.ClientOptions {
-	return r.armOptions
+	return &arm.ClientOptions{
+		ClientOptions: r.getClientOptions(),
+	}
 }
 
 func (r *clientOptionsResolver) GetArmSubscriptionsClientOptions() *arm.ClientOptions {
-	return r.armOptions
+	return &arm.ClientOptions{
+		ClientOptions: r.getClientOptions(),
+	}
 }
 
 func (r *clientOptionsResolver) GetArmMonitorClientOptions() *arm.ClientOptions {
-	return r.armOptions
+	return &arm.ClientOptions{
+		ClientOptions: r.getClientOptions(),
+	}
 }
 
 func (r *clientOptionsResolver) GetAzMetricsClientOptions() *azmetrics.ClientOptions {
-	return r.azmetricsOptions
+	return &azmetrics.ClientOptions{
+		ClientOptions: r.getClientOptions(),
+	}
 }
