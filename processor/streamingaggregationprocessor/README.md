@@ -2,171 +2,175 @@
 
 ## Overview
 
-The Streaming Aggregation Processor is a high-performance, zero-configuration metrics aggregation processor for the OpenTelemetry Collector. It automatically aggregates metrics based on their type using a single-instance, timestamp-based windowing architecture optimized for pre-sharded deployments.
+The Streaming Aggregation Processor aggregates metrics over time windows for the OpenTelemetry Collector. It provides automatic type-based aggregation with configurable time windows.
 
-## Key Features
+## What It Does
 
-- **Zero Configuration**: Automatic type-based aggregation - no rules needed
-- **Single-Instance Design**: Optimized for upstream sharding (e.g., load balancer → stats-relay → shards)
-- **Time-Window Aggregation**: Configurable windows with automatic export
-- **All Metric Types**: Handles gauges, counters, histograms, exponential histograms, and summaries
-- **Memory Management**: Automatic eviction and backpressure handling
-- **Production Ready**: Graceful shutdown, statistics reporting, and comprehensive monitoring
+The processor automatically aggregates metrics based on their type:
 
-## Architecture
+| Metric Type               | Aggregation Method | Description                     |
+| ------------------------- | ------------------ | ------------------------------- |
+| **Gauge**                 | Last Value         | Keeps the most recent value     |
+| **Counter/Sum**           | Sum                | Adds all values together        |
+| **Histogram**             | Bucket Merging     | Combines histogram buckets      |
+| **Exponential Histogram** | Scale-Aware Merge  | Merges with scale normalization |
+| **Summary**               | Sum & Count        | Combines sum and count values   |
 
-The processor uses a single-instance architecture designed for pre-sharded deployments:
+## Key Behavior
+
+### Label Dropping
+
+The processor drops all labels/attributes from metrics, aggregating by metric name only:
 
 ```
-[Upstream Sharding]
-       ↓
-[OTEL Collector Instance]
-       ↓
-[Streaming Aggregation]
-       ↓
-  [Time Windows]  ← Multiple timestamp-based windows
-       ↓
-[Aggregated Metrics]
+Input:
+  http_requests{endpoint="/api/users", method="GET"} = 100
+  http_requests{endpoint="/api/orders", method="POST"} = 50
+
+Output:
+  http_requests = 150  # Labels dropped, values aggregated
 ```
-
-**Important**: This processor is designed to work as a single shard in a larger distributed system where upstream components (like a stats-relay or load balancer) handle metric routing. Each OTEL Collector instance with this processor acts as one shard, similar to a StatsD backend.
-
-The processor:
-
-- Maintains multiple time windows for aggregation
-- Aggregates metrics automatically by type
-- Exports completed windows on schedule
-- Handles late-arriving metrics within tolerance
-
-## Automatic Aggregation
-
-The processor automatically aggregates metrics based on their type - no configuration required:
-
-| Metric Type               | Aggregation Method | Description                              |
-| ------------------------- | ------------------ | ---------------------------------------- |
-| **Gauge**                 | Last Value         | Keeps the most recent value              |
-| **Counter/Sum**           | Sum                | Sums all values in the window            |
-| **Histogram**             | Merge Buckets      | Combines histogram buckets               |
-| **Exponential Histogram** | Merge Buckets      | Scale-aware bucket merging               |
-| **Summary**               | Sum & Count        | Merges sum and count (quantiles limited) |
 
 ### Temporality Handling
 
-The processor correctly handles both delta and cumulative temporality:
-
-- **Delta Temporality**: Values are directly summed as they represent new data
-- **Cumulative Temporality**: The processor computes deltas from cumulative values before aggregation
-  - For counters: Tracks last cumulative value and computes delta
-  - For histograms: Tracks last cumulative values (sum, count, buckets) and computes deltas
-  - Handles counter resets gracefully by treating the new value as the delta
-
-This ensures accurate aggregation regardless of the input temporality, preventing double-counting of cumulative values.
-
-#### Histogram State Preservation
-
-The processor maintains proper cumulative state for histograms across window rotations:
-
-- **Window-specific state**: Reset each window (current window's bucket counts, sum, count)
-- **Cumulative tracking state**: Preserved across windows (total accumulated values)
-- **Export behavior**: Always exports cumulative totals, ensuring monotonically increasing values
-
-This design prevents the "sawtooth" pattern in aggregated histograms and ensures correct cumulative values are maintained even as windows rotate. This fix also resolves "out of order sample" errors that can occur when exporting to time-series databases like Prometheus, ensuring reliable data delivery without drops.
-
-### Label Dropping for True Streaming Aggregation
-
-**Important**: This processor implements true streaming aggregation by **dropping all labels/attributes** from metrics. This provides:
-
-- **Maximum cardinality reduction**: All data points with the same metric name are aggregated into a single series
-- **Consistent behavior**: All metric types (gauges, counters, histograms, etc.) follow the same label-dropping logic
-- **Memory efficiency**: Significantly reduces memory usage by eliminating label combinations
-
-For example:
-
-- Input: 5 histogram series with different `endpoint` labels → Output: 1 aggregated histogram
-- Input: Multiple counter series with various attributes → Output: 1 aggregated counter
-
-This behavior ensures true streaming aggregation where metrics are combined across all dimensions, providing the highest level of data reduction.
+- **Delta Temporality**: Values are directly aggregated
+- **Cumulative Temporality**: Processor computes deltas before aggregation
 
 ## Configuration
 
-The processor works out of the box with sensible defaults. All configuration is optional:
+### Basic Usage
 
 ```yaml
 processors:
   streamingaggregation:
-    window_size: 30s # Aggregation window size (default: 30s)
-    num_windows: 4 # Number of time windows to maintain (default: 4)
-    max_memory_mb: 100 # Maximum memory usage in MB (default: 100)
-    export_interval: 30s # How often to export (default: 30s)
+    window_size: 30s # How long to aggregate metrics
+    max_memory_mb: 100 # Memory limit in megabytes
 ```
 
-## How It Works
+### Configuration Options
 
-1. **Metrics arrive** at the processor (already sharded by upstream)
-2. **Processor** places metrics into appropriate time windows based on timestamp
-3. **Each window** aggregates metrics by type:
-   - Gauges → Keep last value
-   - Counters → Sum values
-   - Histograms → Merge buckets
-4. **On schedule**, completed windows are exported
-5. **Memory management** ensures the processor stays within limits
+| Parameter              | Type     | Default | Description                         |
+| ---------------------- | -------- | ------- | ----------------------------------- |
+| `window_size`          | duration | `30s`   | Duration of each aggregation window |
+| `max_memory_mb`        | int      | `100`   | Maximum memory usage in megabytes   |
+| `stale_data_threshold` | duration | `5m`    | Threshold for detecting stale data  |
 
-## Example Scenarios
+### Complete Example
 
-### Scenario 1: Application Metrics with Label Dropping
+```yaml
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
 
-Input metrics (multiple series with different labels):
+processors:
+  streamingaggregation:
+    window_size: 30s
+    max_memory_mb: 100
+
+exporters:
+  logging:
+    loglevel: info
+
+service:
+  pipelines:
+    metrics:
+      receivers: [otlp]
+      processors: [streamingaggregation]
+      exporters: [logging]
+```
+
+## Examples
+
+### Example 1: Application Metrics
+
+**Input metrics:**
 
 ```
 app.requests{service="api", endpoint="/users"} = 100 (counter)
-app.requests{service="api", endpoint="/products"} = 200 (counter)
-app.requests{service="api", endpoint="/orders"} = 150 (counter)
-app.latency{service="api", endpoint="/users"} = [histogram data] (histogram)
-app.latency{service="api", endpoint="/products"} = [histogram data] (histogram)
+app.requests{service="api", endpoint="/orders"} = 200 (counter)
+app.latency{service="api", endpoint="/users"} = [histogram data]
 app.memory{service="api", instance="1"} = 512 (gauge)
-app.memory{service="api", instance="2"} = 480 (gauge)
 ```
 
-Output after 30s window (labels dropped, metrics aggregated):
+**Output after 30s window:**
 
 ```
-app.requests = 450 (sum of all requests across all endpoints)
-app.latency = [merged histogram across all endpoints]
-app.memory = 480 (last value seen)
+app.requests = 300 (sum of all requests)
+app.latency = [merged histogram data]
+app.memory = 512 (last value seen)
 ```
 
-Note: All labels are dropped, resulting in one aggregated series per metric name.
+### Example 2: Infrastructure Metrics
 
-### Scenario 2: System Metrics with Multiple Hosts
-
-Input metrics (from multiple hosts):
+**Input metrics:**
 
 ```
-system.cpu{host="server1"} = 45.2 (gauge)
-system.cpu{host="server2"} = 62.1 (gauge)
-system.cpu{host="server3"} = 38.8 (gauge)
-system.network.bytes{host="server1", interface="eth0"} = 1000 (counter)
-system.network.bytes{host="server2", interface="eth0"} = 2000 (counter)
-system.network.bytes{host="server3", interface="eth1"} = 1500 (counter)
+cpu.usage{host="server1"} = 45.2 (gauge)
+cpu.usage{host="server2"} = 62.1 (gauge)
+network.bytes{host="server1", interface="eth0"} = 1000 (counter)
+network.bytes{host="server2", interface="eth0"} = 2000 (counter)
 ```
 
-Output after 30s window (all labels dropped):
+**Output after 30s window:**
 
 ```
-system.cpu = 38.8 (last value from any host)
-system.network.bytes = 4500 (sum across all hosts and interfaces)
+cpu.usage = 62.1 (last value from either host)
+network.bytes = 3000 (sum across both hosts)
 ```
 
-This provides a system-wide view by aggregating metrics across all dimensions.
+## Use Cases
+
+This processor is useful when you want to:
+
+- **Reduce metric cardinality** by aggregating across all label dimensions
+- **Get system-wide views** of metrics across multiple sources
+- **Simplify monitoring** by focusing on aggregate values rather than per-instance metrics
+- **Reduce storage costs** by storing fewer metric series
+
+## Architecture
+
+The processor uses a double-buffer design where metrics are aggregated in time windows and exported when windows complete.
+
+### File Structure
+
+```
+streamingaggregationprocessor/
+├── aggregator.go                      # Core aggregation logic
+├── processor.go                       # Main processor
+├── window.go                          # Time window utilities
+├── config.go                          # Configuration
+├── factory.go                         # Component factory
+├── internal/aggregation/              # Type-specific aggregation
+│   ├── counter.go                     # Counter aggregation
+│   ├── gauge.go                       # Gauge aggregation
+│   ├── histogram.go                   # Histogram aggregation
+│   └── ...
+└── *_test.go                          # Tests
+```
 
 ## Monitoring
 
-The processor exports internal metrics for monitoring:
+The processor exports these internal metrics:
 
-- `streamingaggregation_metrics_received` - Total metrics received
-- `streamingaggregation_metrics_processed` - Successfully processed
-- `streamingaggregation_metrics_dropped` - Dropped due to backpressure
+- `streamingaggregation_metrics_received_total` - Total metrics received
+- `streamingaggregation_metrics_processed_total` - Successfully processed
 - `streamingaggregation_memory_usage_bytes` - Current memory usage
-- `streamingaggregation_series_active` - Number of active series
-- `streamingaggregation_windows_exported` - Windows successfully exported
-- `streamingaggregation_partition_queue_size` - Current queue size per partition
+- `streamingaggregation_active_series_count` - Number of active series
+
+## Limitations
+
+- **All labels are dropped** - only metric names are preserved
+- **Memory usage grows** with the number of unique metric names
+- **Window boundaries are fixed** - metrics are aggregated within time windows only
+- **No label-based aggregation** - cannot aggregate by specific label values
+
+## When Not to Use
+
+This processor may not be suitable if you:
+
+- Need to preserve specific labels or dimensions
+- Require per-instance or per-service metric breakdowns
+- Want to aggregate only specific label combinations
+- Need real-time (non-windowed) aggregation
