@@ -116,9 +116,55 @@ func TestLoadConfig(t *testing.T) {
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
 			},
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "workload"),
+			expected: &Config{
+				Namespace: "my-namespace.servicebus.windows.net",
+				Auth: Authentication{
+					Type:               WorkloadIdentity,
+					TenantID:           "tenant-id",
+					ClientID:           "client-id",
+					FederatedTokenFile: "/var/run/secrets/azure/tokens/azure-identity-token",
+				},
+				EventHub: TelemetryConfig{
+					Traces:  "traces",
+					Metrics: "metrics",
+					Logs:    "logs",
+				},
+				FormatType: "json",
+				PartitionKey: PartitionKeyConfig{
+					Source: "span_id",
+				},
+				MaxEventSize:  1048576,
+				BatchSize:     100,
+				BackOffConfig: configretry.NewDefaultBackOffConfig(),
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "default"),
+			expected: &Config{
+				Namespace: "my-namespace.servicebus.windows.net",
+				Auth: Authentication{
+					Type: DefaultCredentials,
+				},
+				EventHub: TelemetryConfig{
+					Traces:  "traces",
+					Metrics: "metrics",
+					Logs:    "logs",
+				},
+				FormatType: "proto",
+			
+			PartitionKey: PartitionKeyConfig{
+					Source: "random",
+				},
+				MaxEventSize:  1048576,
+				BatchSize:     100,
+				BackOffConfig: configretry.NewDefaultBackOffConfig(),
+			},
+		},
 	}
 
-	for _, tt := range tests {
+		for _, tt := range tests {
 		t.Run(tt.id.String(), func(t *testing.T) {
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig()
@@ -127,7 +173,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.NoError(t, cfg.(*Config).Validate())
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -322,6 +368,224 @@ func TestConfigValidation(t *testing.T) {
 				},
 			},
 			expectedErr: "unknown partition_key.source: invalid_source",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.config.Validate()
+			if tt.expectedErr == "" {
+				assert.NoError(t, err)
+			} else {
+				assert.ErrorContains(t, err, tt.expectedErr)
+			}
+		})
+	}
+}
+
+func TestConfigValidateEdgeCases(t *testing.T) {
+	tests := []struct {
+		name        string
+		config      *Config
+		expectedErr string
+	}{
+		{
+			name: "valid connection string with namespace",
+			config: &Config{
+				Namespace: "my-namespace.servicebus.windows.net",
+				Auth: Authentication{
+					Type:             ConnectionString,
+					ConnectionString: "Endpoint=sb://test.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=test",
+				},
+				EventHub: TelemetryConfig{
+					Traces:  "traces",
+					Metrics: "metrics",
+					Logs:    "logs",
+				},
+				FormatType:   "json",
+				MaxEventSize: 1048576,
+				BatchSize:    100,
+			},
+			expectedErr: "",
+		},
+		{
+			name: "max event size at boundary",
+			config: &Config{
+				Auth: Authentication{
+					Type:             ConnectionString,
+					ConnectionString: "Endpoint=sb://test.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=test",
+				},
+				EventHub: TelemetryConfig{
+					Traces:  "traces",
+					Metrics: "metrics",
+					Logs:    "logs",
+				},
+				FormatType:   "json",
+				MaxEventSize: 1, // minimum valid
+				BatchSize:    100,
+			},
+			expectedErr: "",
+		},
+		{
+			name: "max event size zero",
+			config: &Config{
+				Auth: Authentication{
+					Type:             ConnectionString,
+					ConnectionString: "Endpoint=sb://test.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=test",
+				},
+				EventHub: TelemetryConfig{
+					Traces:  "traces",
+					Metrics: "metrics",
+					Logs:    "logs",
+				},
+				FormatType:   "json",
+				MaxEventSize: 0,
+				BatchSize:    100,
+			},
+			expectedErr: "max_event_size must be between 1 and 1048576 bytes",
+		},
+		{
+			name: "max event size exceeds limit",
+			config: &Config{
+				Auth: Authentication{
+					Type:             ConnectionString,
+					ConnectionString: "Endpoint=sb://test.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=test",
+				},
+				EventHub: TelemetryConfig{
+					Traces:  "traces",
+					Metrics: "metrics",
+					Logs:    "logs",
+				},
+				FormatType:   "json",
+				MaxEventSize: 1048577, // exceeds 1MB
+				BatchSize:    100,
+			},
+			expectedErr: "max_event_size must be between 1 and 1048576 bytes",
+		},
+		{
+			name: "batch size zero",
+			config: &Config{
+				Auth: Authentication{
+					Type:             ConnectionString,
+					ConnectionString: "Endpoint=sb://test.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=test",
+				},
+				EventHub: TelemetryConfig{
+					Traces:  "traces",
+					Metrics: "metrics",
+					Logs:    "logs",
+				},
+				FormatType:   "json",
+				MaxEventSize: 1048576,
+				BatchSize:    0,
+			},
+			expectedErr: "batch_size must be greater than 0",
+		},
+		{
+			name: "partition key static with empty value",
+			config: &Config{
+				Auth: Authentication{
+					Type:             ConnectionString,
+					ConnectionString: "Endpoint=sb://test.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=test",
+				},
+				EventHub: TelemetryConfig{
+					Traces:  "traces",
+					Metrics: "metrics",
+					Logs:    "logs",
+				},
+				FormatType:   "json",
+				MaxEventSize: 1048576,
+				BatchSize:    100,
+				PartitionKey: PartitionKeyConfig{
+					Source: "static",
+					Value:  "",
+				},
+			},
+			expectedErr: "partition_key.value cannot be empty when source is static",
+		},
+		{
+			name: "partition key resource_attribute with empty value",
+			config: &Config{
+				Auth: Authentication{
+					Type:             ConnectionString,
+					ConnectionString: "Endpoint=sb://test.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=test",
+				},
+				EventHub: TelemetryConfig{
+					Traces:  "traces",
+					Metrics: "metrics",
+					Logs:    "logs",
+				},
+				FormatType:   "json",
+				MaxEventSize: 1048576,
+				BatchSize:    100,
+				PartitionKey: PartitionKeyConfig{
+					Source: "resource_attribute",
+					Value:  "",
+				},
+			},
+			expectedErr: "partition_key.value must specify the attribute name when source is resource_attribute",
+		},
+		{
+			name: "partition key trace_id valid",
+			config: &Config{
+				Auth: Authentication{
+					Type:             ConnectionString,
+					ConnectionString: "Endpoint=sb://test.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=test",
+				},
+				EventHub: TelemetryConfig{
+					Traces:  "traces",
+					Metrics: "metrics",
+					Logs:    "logs",
+				},
+				FormatType:   "json",
+				MaxEventSize: 1048576,
+				BatchSize:    100,
+				PartitionKey: PartitionKeyConfig{
+					Source: "trace_id",
+				},
+			},
+			expectedErr: "",
+		},
+		{
+			name: "partition key span_id valid",
+			config: &Config{
+				Auth: Authentication{
+					Type:             ConnectionString,
+					ConnectionString: "Endpoint=sb://test.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=test",
+				},
+				EventHub: TelemetryConfig{
+					Traces:  "traces",
+					Metrics: "metrics",
+					Logs:    "logs",
+				},
+				FormatType:   "json",
+				MaxEventSize: 1048576,
+				BatchSize:    100,
+				PartitionKey: PartitionKeyConfig{
+					Source: "span_id",
+				},
+			},
+			expectedErr: "",
+		},
+		{
+			name: "empty partition key source is valid",
+			config: &Config{
+				Auth: Authentication{
+					Type:             ConnectionString,
+					ConnectionString: "Endpoint=sb://test.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=test",
+				},
+				EventHub: TelemetryConfig{
+					Traces:  "traces",
+					Metrics: "metrics",
+					Logs:    "logs",
+				},
+				FormatType:   "json",
+				MaxEventSize: 1048576,
+				BatchSize:    100,
+				PartitionKey: PartitionKeyConfig{
+					Source: "",
+				},
+			},
+			expectedErr: "",
 		},
 	}
 

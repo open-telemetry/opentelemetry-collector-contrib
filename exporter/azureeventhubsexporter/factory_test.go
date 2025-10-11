@@ -38,7 +38,7 @@ func TestCreateTracesExporter(t *testing.T) {
 
 	exp, err := createTracesExporter(
 		context.Background(),
-		exportertest.NewNopSettings(),
+		exportertest.NewNopSettings(metadata.Type),
 		cfg)
 	assert.NoError(t, err)
 	require.NotNil(t, exp)
@@ -50,7 +50,7 @@ func TestCreateLogsExporter(t *testing.T) {
 
 	exp, err := createLogsExporter(
 		context.Background(),
-		exportertest.NewNopSettings(),
+		exportertest.NewNopSettings(metadata.Type),
 		cfg)
 	assert.NoError(t, err)
 	require.NotNil(t, exp)
@@ -62,7 +62,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 
 	exp, err := createMetricsExporter(
 		context.Background(),
-		exportertest.NewNopSettings(),
+		exportertest.NewNopSettings(metadata.Type),
 		cfg)
 	assert.NoError(t, err)
 	require.NotNil(t, exp)
@@ -81,7 +81,7 @@ func TestCreateTracesExporterWithInvalidConfig(t *testing.T) {
 
 	_, err := createTracesExporter(
 		context.Background(),
-		exportertest.NewNopSettings(),
+		exportertest.NewNopSettings(metadata.Type),
 		cfg)
 	assert.Error(t, err)
 }

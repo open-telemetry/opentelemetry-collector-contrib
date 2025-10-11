@@ -6,6 +6,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azureeventhubsexporter/internal/metadata"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -56,7 +57,7 @@ func TestComponentLifecycle(t *testing.T) {
 			// Set a dummy connection string for lifecycle test
 			cfg.Auth.ConnectionString = "Endpoint=sb://test.servicebus.windows.net/;SharedAccessKeyName=Test;SharedAccessKey=test"
 
-			c, err := tt.createFn(context.Background(), exportertest.NewNopSettings(), cfg)
+			c, err := tt.createFn(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
 			require.NoError(t, err)
 			require.NotNil(t, c)
 

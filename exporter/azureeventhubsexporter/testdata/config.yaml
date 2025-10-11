@@ -59,3 +59,34 @@ azureeventhubs/umi:
     value: "my-partition"
   max_event_size: 1048576
   batch_size: 100
+
+azureeventhubs/workload:
+  namespace: "my-namespace.servicebus.windows.net"
+  auth:
+    type: workload_identity
+    tenant_id: "tenant-id"
+    client_id: "client-id"
+    federated_token_file: "/var/run/secrets/azure/tokens/azure-identity-token"
+  event_hub:
+    traces: "traces"
+    metrics: "metrics"
+    logs: "logs"
+  format: json
+  partition_key:
+    source: span_id
+  max_event_size: 1048576
+  batch_size: 100
+
+azureeventhubs/default:
+  namespace: "my-namespace.servicebus.windows.net"
+  auth:
+    type: default_credentials
+  event_hub:
+    traces: "traces"
+    metrics: "metrics"
+    logs: "logs"
+  format: proto
+  partition_key:
+    source: random
+  max_event_size: 1048576
+  batch_size: 100

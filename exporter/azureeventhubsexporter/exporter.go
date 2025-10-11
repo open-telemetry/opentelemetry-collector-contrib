@@ -1,4 +1,3 @@
-package azureeventhubsexporter
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
@@ -24,13 +23,17 @@ import (
 type azureEventHubsExporter struct {
 	config     *Config
 	logger     *zap.Logger
-	client     *azeventhubs.ProducerClient
+	client     eventHubProducerClient
 	signal     pipeline.Signal
 	marshaller marshaller
 }
 
 // newExporter creates a new Azure Event Hubs exporter
 func newExporter(config *Config, set component.TelemetrySettings, signal pipeline.Signal) (*azureEventHubsExporter, error) {
+	if err := config.Validate(); err != nil {
+		return nil, err
+	}
+
 	marshaller, err := createMarshaller(config)
 	if err != nil {
 		return nil, err
@@ -73,7 +76,7 @@ func (e *azureEventHubsExporter) shutdown(ctx context.Context) error {
 	return nil
 }
 
-func (e *azureEventHubsExporter) createEventHubsClient() (*azeventhubs.ProducerClient, error) {
+func (e *azureEventHubsExporter) createEventHubsClient() (eventHubProducerClient, error) {
 	var eventHubName string
 	switch e.signal {
 	case pipeline.SignalTraces:
@@ -86,74 +89,77 @@ func (e *azureEventHubsExporter) createEventHubsClient() (*azeventhubs.ProducerC
 		return nil, fmt.Errorf("unsupported signal type: %v", e.signal)
 	}
 
+	var azureClient *azeventhubs.ProducerClient
+	var err error
+
 	switch e.config.Auth.Type {
 	case ConnectionString:
-		return azeventhubs.NewProducerClientFromConnectionString(
+		azureClient, err = azeventhubs.NewProducerClientFromConnectionString(
 			e.config.Auth.ConnectionString,
 			eventHubName,
 			nil,
 		)
 	case DefaultCredentials:
-		cred, err := azidentity.NewDefaultAzureCredential(nil)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create default credentials: %w", err)
+		cred, credErr := azidentity.NewDefaultAzureCredential(nil)
+		if credErr != nil {
+			return nil, fmt.Errorf("failed to create default credentials: %w", credErr)
 		}
-		return azeventhubs.NewProducerClient(
+		azureClient, err = azeventhubs.NewProducerClient(
 			e.config.Namespace,
 			eventHubName,
 			cred,
 			nil,
 		)
 	case SystemManagedIdentity:
-		cred, err := azidentity.NewManagedIdentityCredential(nil)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create managed identity credential: %w", err)
+		cred, credErr := azidentity.NewManagedIdentityCredential(nil)
+		if credErr != nil {
+			return nil, fmt.Errorf("failed to create managed identity credential: %w", credErr)
 		}
-		return azeventhubs.NewProducerClient(
+		azureClient, err = azeventhubs.NewProducerClient(
 			e.config.Namespace,
 			eventHubName,
 			cred,
 			nil,
 		)
 	case UserManagedIdentity:
-		cred, err := azidentity.NewManagedIdentityCredential(&azidentity.ManagedIdentityCredentialOptions{
+		cred, credErr := azidentity.NewManagedIdentityCredential(&azidentity.ManagedIdentityCredentialOptions{
 			ID: azidentity.ClientID(e.config.Auth.ClientID),
 		})
-		if err != nil {
-			return nil, fmt.Errorf("failed to create user managed identity credential: %w", err)
+		if credErr != nil {
+			return nil, fmt.Errorf("failed to create user managed identity credential: %w", credErr)
 		}
-		return azeventhubs.NewProducerClient(
+		azureClient, err = azeventhubs.NewProducerClient(
 			e.config.Namespace,
 			eventHubName,
 			cred,
 			nil,
 		)
 	case ServicePrincipal:
-		cred, err := azidentity.NewClientSecretCredential(
+		cred, credErr := azidentity.NewClientSecretCredential(
 			e.config.Auth.TenantID,
 			e.config.Auth.ClientID,
 			e.config.Auth.ClientSecret,
 			nil,
 		)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create service principal credential: %w", err)
+		if credErr != nil {
+			return nil, fmt.Errorf("failed to create service principal credential: %w", credErr)
 		}
-		return azeventhubs.NewProducerClient(
+		azureClient, err = azeventhubs.NewProducerClient(
 			e.config.Namespace,
 			eventHubName,
 			cred,
 			nil,
 		)
 	case WorkloadIdentity:
-		cred, err := azidentity.NewWorkloadIdentityCredential(&azidentity.WorkloadIdentityCredentialOptions{
+		cred, credErr := azidentity.NewWorkloadIdentityCredential(&azidentity.WorkloadIdentityCredentialOptions{
 			TenantID:      e.config.Auth.TenantID,
 			ClientID:      e.config.Auth.ClientID,
 			TokenFilePath: e.config.Auth.FederatedTokenFile,
 		})
-		if err != nil {
-			return nil, fmt.Errorf("failed to create workload identity credential: %w", err)
+		if credErr != nil {
+			return nil, fmt.Errorf("failed to create workload identity credential: %w", credErr)
 		}
-		return azeventhubs.NewProducerClient(
+		azureClient, err = azeventhubs.NewProducerClient(
 			e.config.Namespace,
 			eventHubName,
 			cred,
@@ -162,6 +168,13 @@ func (e *azureEventHubsExporter) createEventHubsClient() (*azeventhubs.ProducerC
 	default:
 		return nil, fmt.Errorf("unsupported authentication type: %s", e.config.Auth.Type)
 	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	// Wrap the Azure SDK client to implement our interface
+	return &azureEventHubProducerClientWrapper{client: azureClient}, nil
 }
 
 func (e *azureEventHubsExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
