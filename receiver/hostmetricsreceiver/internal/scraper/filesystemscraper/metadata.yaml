@@ -37,6 +37,8 @@ metrics:
     enabled: true
     description: Filesystem bytes used.
     unit: By
+    stability:
+      level: development
     sum:
       value_type: int
       aggregation_temporality: cumulative
@@ -47,6 +49,8 @@ metrics:
     enabled: true
     description: FileSystem inodes used.
     unit: "{inodes}"
+    stability:
+      level: development
     sum:
       value_type: int
       aggregation_temporality: cumulative
@@ -57,6 +61,8 @@ metrics:
     enabled: false
     description: Fraction of filesystem bytes used.
     unit: "1"
+    stability:
+      level: development
     gauge:
       value_type: double
     attributes: [device, mode, mountpoint, type]

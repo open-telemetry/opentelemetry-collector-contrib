@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"testing"
-	"time"
 
 	"github.com/IBM/sarama"
 	"github.com/IBM/sarama/mocks"
@@ -299,7 +298,7 @@ func TestTracesPusher_partitioning(t *testing.T) {
 		// Jaeger encodings produce one message per span,
 		// and each one will have the trace ID as the key.
 		var keys [][]byte
-		for i := 0; i < 4; i++ {
+		for range 4 {
 			producer.ExpectSendMessageWithMessageCheckerFunctionAndSucceed(
 				func(msg *sarama.ProducerMessage) error {
 					key, err := msg.Key.Encode()
@@ -329,7 +328,7 @@ func TestTracesPusher_partitioning(t *testing.T) {
 		// even if they have the same service name.
 		var keys [][]byte
 		var traces []ptrace.Traces
-		for i := 0; i < 2; i++ {
+		for range 2 {
 			producer.ExpectSendMessageWithMessageCheckerFunctionAndSucceed(
 				func(msg *sarama.ProducerMessage) error {
 					value, err := msg.Value.Encode()
@@ -539,7 +538,7 @@ func TestMetricsPusher_partitioning(t *testing.T) {
 		// We should get one message per ResourceMetrics,
 		// even if they have the same service name.
 		var keys [][]byte
-		for i := 0; i < 3; i++ {
+		for i := range 3 {
 			producer.ExpectSendMessageWithMessageCheckerFunctionAndSucceed(
 				func(msg *sarama.ProducerMessage) error {
 					value, err := msg.Value.Encode()
@@ -952,7 +951,7 @@ func TestLogsPusher_partitioning(t *testing.T) {
 		// We should get one message per ResourceLogs,
 		// even if they have the same service name.
 		var keys [][]byte
-		for i := 0; i < 3; i++ {
+		for i := range 3 {
 			producer.ExpectSendMessageWithMessageCheckerFunctionAndSucceed(
 				func(msg *sarama.ProducerMessage) error {
 					value, err := msg.Value.Encode()
@@ -1600,7 +1599,9 @@ func configureExporter[T any](tb testing.TB,
 	return cluster
 }
 
-// fetchKgoRecords polls a franz-go topic for up to 5 seconds and returns all records produced to that topic.
+// fetchKgoRecords polls a franz-go topic and returns at most one record produced to that topic.
+//
+// TODO rename the function to fetchKgoRecord, and have it return exactly one record.
 func fetchKgoRecords(tb testing.TB, brokers []string, topic string) []*kgo.Record {
 	clientOpts := []kgo.Opt{
 		kgo.SeedBrokers(brokers...),
@@ -1611,12 +1612,8 @@ func fetchKgoRecords(tb testing.TB, brokers []string, topic string) []*kgo.Recor
 	require.NoError(tb, err, "failed to create kgo consumer client")
 	defer consumerClient.Close()
 
-	ctx, cancel := context.WithTimeoutCause(tb.Context(), 500*time.Millisecond,
-		errors.New("No records were received"))
-	defer cancel()
-
 	var records []*kgo.Record
-	fetches := consumerClient.PollRecords(ctx, 1)
+	fetches := consumerClient.PollRecords(tb.Context(), 1)
 	require.NoError(tb, fetches.Err(), "error polling records")
 	fetches.EachRecord(func(r *kgo.Record) {
 		records = append(records, r)

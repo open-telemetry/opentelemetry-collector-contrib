@@ -28,7 +28,7 @@ The following settings are required:
 
 - `http`
   - `endpoint` must set an endpoint. Defaults to `127.0.0.1:8080`
-  - `compression_algorithms` (optional): List of supported compression algorithms. Defaults to `["", "gzip", "zstd", "zlib", "snappy", "deflate"]`. Set to `[]` to disable automatic decompression.
+  - `compression_algorithms` (optional): List of supported compression algorithms. Defaults to `["", "gzip", "zstd", "zlib", "deflate"]`. Set to `[]` to disable automatic decompression.
 - `resources`: if the `service.name` field is different, map it here.
 - `scopes`: to get the `library.name` and `library.version` set in the scope section, set them here.
 - `attributes`: if the other trace-related data have different keys, map them here, defaults are otlp-like field names.

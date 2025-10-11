@@ -15,15 +15,16 @@ func TestResourceBuilder(t *testing.T) {
 			rb := NewResourceBuilder(cfg)
 			rb.SetHostName("host.name-val")
 			rb.SetOracledbInstanceName("oracledb.instance.name-val")
+			rb.SetServiceInstanceID("service.instance.id-val")
 
 			res := rb.Emit()
 			assert.Equal(t, 0, rb.Emit().Attributes().Len()) // Second call should return empty Resource
 
 			switch tt {
 			case "default":
-				assert.Equal(t, 2, res.Attributes().Len())
+				assert.Equal(t, 3, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 2, res.Attributes().Len())
+				assert.Equal(t, 3, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -40,6 +41,11 @@ func TestResourceBuilder(t *testing.T) {
 			assert.True(t, ok)
 			if ok {
 				assert.Equal(t, "oracledb.instance.name-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("service.instance.id")
+			assert.True(t, ok)
+			if ok {
+				assert.Equal(t, "service.instance.id-val", val.Str())
 			}
 		})
 	}

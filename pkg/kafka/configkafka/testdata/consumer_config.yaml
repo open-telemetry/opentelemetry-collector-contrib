@@ -11,6 +11,7 @@ kafka/full:
   default_fetch_size: 1024
   max_fetch_size: 4096
   max_fetch_wait: 1s
+  max_partition_fetch_size: 4096
 
 # Invalid configurations
 kafka/invalid_initial_offset:

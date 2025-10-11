@@ -16,17 +16,17 @@ metrics:
 
 This is the estimated error bound on the frequency.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| ppm | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| ppm | Gauge | Double | development |
 
 ### ntp.time.correction
 
 The number of seconds difference between the system's clock and the reference clock
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| seconds | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| seconds | Gauge | Double | development |
 
 #### Attributes
 
@@ -38,9 +38,9 @@ The number of seconds difference between the system's clock and the reference cl
 
 The estimated local offset on the last clock update
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| seconds | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| seconds | Gauge | Double | development |
 
 #### Attributes
 
@@ -64,9 +64,9 @@ The frequency is the rate by which the system s clock would be wrong if chronyd 
 
 It is expressed in ppm (parts per million). For example, a value of 1 ppm would mean that when the system’s clock thinks it has advanced 1 second, it has actually advanced by 1.000001 seconds relative to true time.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| ppm | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| ppm | Gauge | Double | development |
 
 #### Attributes
 
@@ -80,17 +80,17 @@ The number of hops away from the reference system keeping the reference time
 
 To read further, refer to https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/system_administrators_guide/ch-configuring_ntp_using_the_chrony_suite#sect-Checking_chrony_tracking
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {count} | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {count} | Gauge | Int | development |
 
 ### ntp.time.rms_offset
 
 the long term average of the offset value
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| seconds | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| seconds | Gauge | Double | development |
 
 #### Attributes
 
@@ -102,9 +102,9 @@ the long term average of the offset value
 
 This is the total of the network path delays to the stratum-1 system from which the system is ultimately synchronised.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| seconds | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| seconds | Gauge | Double | development |
 
 #### Attributes
 

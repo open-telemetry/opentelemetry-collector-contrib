@@ -36,12 +36,12 @@ func newTracesExporter(logger *zap.Logger, cfg *Config) *tracesExporter {
 }
 
 func (e *tracesExporter) start(ctx context.Context, _ component.Host) error {
-	dsn, err := e.cfg.buildDSN()
+	opt, err := e.cfg.buildClickHouseOptions()
 	if err != nil {
 		return err
 	}
 
-	e.db, err = internal.NewClickhouseClient(dsn)
+	e.db, err = internal.NewClickhouseClientFromOptions(opt)
 	if err != nil {
 		return err
 	}
@@ -83,7 +83,7 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 	var spanCount int
 	rsSpans := td.ResourceSpans()
 	rsLen := rsSpans.Len()
-	for i := 0; i < rsLen; i++ {
+	for i := range rsLen {
 		spans := rsSpans.At(i)
 		res := spans.Resource()
 		resAttr := res.Attributes()
@@ -91,7 +91,7 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 		resAttrMap := internal.AttributesToMap(res.Attributes())
 
 		ssRootLen := spans.ScopeSpans().Len()
-		for j := 0; j < ssRootLen; j++ {
+		for j := range ssRootLen {
 			scopeSpanRoot := spans.ScopeSpans().At(j)
 			scopeSpanScope := scopeSpanRoot.Scope()
 			scopeName := scopeSpanScope.Name()
@@ -99,7 +99,7 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 			scopeSpans := scopeSpanRoot.Spans()
 
 			ssLen := scopeSpans.Len()
-			for k := 0; k < ssLen; k++ {
+			for k := range ssLen {
 				span := scopeSpans.At(k)
 				spanStatus := span.Status()
 				spanDurationNanos := span.EndTimestamp() - span.StartTimestamp()

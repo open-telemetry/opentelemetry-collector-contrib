@@ -65,6 +65,42 @@ func createRouteTests(dsType string) []routeTestCase {
 			want:      renderWantRoute(dsType, defaultDataStreamDataset, defaultDataStreamNamespace, MappingOTel),
 		},
 		{
+			name:      "receiver without a receiver name",
+			mode:      MappingOTel,
+			scopeName: "some.scope.name/receiver/receiver/should/be/ignored",
+			want:      renderWantRoute(dsType, defaultDataStreamDataset, defaultDataStreamNamespace, MappingOTel),
+		},
+		{
+			name:      "otel collector self-telemetry for receivers",
+			mode:      MappingOTel,
+			scopeName: "go.opentelemetry.io/collector/receiver/receiverhelper",
+			want:      renderWantRoute(dsType, collectorSelfTelemetryDataStreamDataset, defaultDataStreamNamespace, MappingOTel),
+		},
+		{
+			name:      "otel collector self-telemetry for scrapers",
+			mode:      MappingOTel,
+			scopeName: "go.opentelemetry.io/collector/scraper/scraperhelper",
+			want:      renderWantRoute(dsType, collectorSelfTelemetryDataStreamDataset, defaultDataStreamNamespace, MappingOTel),
+		},
+		{
+			name:      "otel collector self-telemetry for processors",
+			mode:      MappingOTel,
+			scopeName: "go.opentelemetry.io/collector/processor/processorhelper",
+			want:      renderWantRoute(dsType, collectorSelfTelemetryDataStreamDataset, defaultDataStreamNamespace, MappingOTel),
+		},
+		{
+			name:      "otel collector self-telemetry for exporters",
+			mode:      MappingOTel,
+			scopeName: "go.opentelemetry.io/collector/exporter/exporterhelper",
+			want:      renderWantRoute(dsType, collectorSelfTelemetryDataStreamDataset, defaultDataStreamNamespace, MappingOTel),
+		},
+		{
+			name:      "otel collector self-telemetry for service",
+			mode:      MappingOTel,
+			scopeName: "go.opentelemetry.io/collector/service",
+			want:      renderWantRoute(dsType, collectorSelfTelemetryDataStreamDataset, defaultDataStreamNamespace, MappingOTel),
+		},
+		{
 			name:      "otel with elasticsearch.index",
 			mode:      MappingOTel,
 			scopeName: "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/should/be/ignored",

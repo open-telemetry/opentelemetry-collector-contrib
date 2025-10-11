@@ -162,7 +162,7 @@ func TestCluster_DescribeInstances(t *testing.T) {
 	t.Run("get by id", func(t *testing.T) {
 		nIDs := 100
 		ids := make([]string, 0, nIDs)
-		for i := 0; i < nIDs; i++ {
+		for i := range nIDs {
 			ids = append(ids, fmt.Sprintf("i-%d", i*10))
 		}
 		req := &ec2.DescribeInstancesInput{InstanceIds: ids}
@@ -202,7 +202,7 @@ func TestCluster_DescribeContainerInstances(t *testing.T) {
 	t.Run("get by id", func(t *testing.T) {
 		nIDs := count
 		ids := make([]string, 0, nIDs)
-		for i := 0; i < nIDs; i++ {
+		for i := range nIDs {
 			ids = append(ids, fmt.Sprintf("foo%d", i))
 		}
 		req := &ecs.DescribeContainerInstancesInput{ContainerInstances: ids}

@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pipeline"
 
@@ -31,6 +32,7 @@ func TestTracesRegisterConsumers(t *testing.T) {
 	cfg := &Config{
 		PipelinePriority: [][]pipeline.ID{{tracesFirst}, {tracesSecond}, {tracesThird}},
 		RetryInterval:    25 * time.Millisecond,
+		QueueSettings:    exporterhelper.NewDefaultQueueConfig(),
 	}
 
 	router := connector.NewTracesRouter(map[pipeline.ID]consumer.Traces{
@@ -42,17 +44,18 @@ func TestTracesRegisterConsumers(t *testing.T) {
 	conn, err := NewFactory().CreateTracesToTraces(t.Context(),
 		connectortest.NewNopSettings(metadata.Type), cfg, router.(consumer.Traces))
 
-	failoverConnector := conn.(*tracesFailover)
+	wrappedConn := conn.(*wrappedTracesConnector)
+	failoverRouter := wrappedConn.GetFailoverRouter()
 	defer func() {
-		assert.NoError(t, failoverConnector.Shutdown(t.Context()))
+		assert.NoError(t, wrappedConn.Shutdown(t.Context()))
 	}()
 
 	require.NoError(t, err)
 	require.NotNil(t, conn)
 
-	tc := failoverConnector.failover.getConsumerAtIndex(0)
-	tc1 := failoverConnector.failover.TestGetConsumerAtIndex(1)
-	tc2 := failoverConnector.failover.TestGetConsumerAtIndex(2)
+	tc := failoverRouter.getConsumerAtIndex(0)
+	tc1 := failoverRouter.TestGetConsumerAtIndex(1)
+	tc2 := failoverRouter.TestGetConsumerAtIndex(2)
 
 	require.Equal(t, tc, &sinkFirst)
 	require.Equal(t, tc1, &sinkSecond)
@@ -60,20 +63,20 @@ func TestTracesRegisterConsumers(t *testing.T) {
 }
 
 func TestTracesWithValidFailover(t *testing.T) {
-	var sinkSecond, sinkThird consumertest.TracesSink
+	var sinkFirst, sinkSecond, sinkThird consumertest.TracesSink
 
 	tracesFirst := pipeline.NewIDWithName(pipeline.SignalTraces, "traces/first")
 	tracesSecond := pipeline.NewIDWithName(pipeline.SignalTraces, "traces/second")
 	tracesThird := pipeline.NewIDWithName(pipeline.SignalTraces, "traces/third")
-	noOp := consumertest.NewNop()
 
 	cfg := &Config{
 		PipelinePriority: [][]pipeline.ID{{tracesFirst}, {tracesSecond}, {tracesThird}},
 		RetryInterval:    50 * time.Millisecond,
+		QueueSettings:    exporterhelper.NewDefaultQueueConfig(),
 	}
 
 	router := connector.NewTracesRouter(map[pipeline.ID]consumer.Traces{
-		tracesFirst:  noOp,
+		tracesFirst:  &sinkFirst,
 		tracesSecond: &sinkSecond,
 		tracesThird:  &sinkThird,
 	})
@@ -83,25 +86,25 @@ func TestTracesWithValidFailover(t *testing.T) {
 
 	require.NoError(t, err)
 
-	failoverConnector := conn.(*tracesFailover)
-	failoverConnector.failover.ModifyConsumerAtIndex(0, consumertest.NewErr(errTracesConsumer))
+	wrappedConn := conn.(*wrappedTracesConnector)
+	failoverRouter := wrappedConn.GetFailoverRouter()
+	failoverRouter.ModifyConsumerAtIndex(0, consumertest.NewErr(errTracesConsumer))
 	defer func() {
-		assert.NoError(t, failoverConnector.Shutdown(t.Context()))
+		assert.NoError(t, wrappedConn.Shutdown(t.Context()))
 	}()
 
 	tr := sampleTrace()
 
 	require.Eventually(t, func() bool {
-		return consumeTracesAndCheckStable(failoverConnector, 1, tr)
+		return consumeTracesAndCheckStable(failoverRouter, 1, tr)
 	}, 3*time.Second, 5*time.Millisecond)
 }
 
 func TestTracesWithFailoverError(t *testing.T) {
-	var sinkSecond, sinkThird consumertest.TracesSink
+	var sinkFirst, sinkSecond, sinkThird consumertest.TracesSink
 	tracesFirst := pipeline.NewIDWithName(pipeline.SignalTraces, "traces/first")
 	tracesSecond := pipeline.NewIDWithName(pipeline.SignalTraces, "traces/second")
 	tracesThird := pipeline.NewIDWithName(pipeline.SignalTraces, "traces/third")
-	noOp := consumertest.NewNop()
 
 	cfg := &Config{
 		PipelinePriority: [][]pipeline.ID{{tracesFirst}, {tracesSecond}, {tracesThird}},
@@ -109,7 +112,7 @@ func TestTracesWithFailoverError(t *testing.T) {
 	}
 
 	router := connector.NewTracesRouter(map[pipeline.ID]consumer.Traces{
-		tracesFirst:  noOp,
+		tracesFirst:  &sinkFirst,
 		tracesSecond: &sinkSecond,
 		tracesThird:  &sinkThird,
 	})
@@ -129,12 +132,49 @@ func TestTracesWithFailoverError(t *testing.T) {
 
 	tr := sampleTrace()
 
-	assert.EqualError(t, conn.ConsumeTraces(t.Context(), tr), "All provided pipelines return errors")
+	assert.EqualError(t, failoverConnector.ConsumeTraces(t.Context(), tr), "All provided pipelines return errors")
 }
 
-func consumeTracesAndCheckStable(conn *tracesFailover, idx int, tr ptrace.Traces) bool {
-	_ = conn.ConsumeTraces(context.Background(), tr)
-	stableIndex := conn.failover.pS.CurrentPipeline()
+func TestTracesWithQueue(t *testing.T) {
+	var sinkFirst, sinkSecond, sinkThird consumertest.TracesSink
+	tracesFirst := pipeline.NewIDWithName(pipeline.SignalTraces, "traces/first")
+	tracesSecond := pipeline.NewIDWithName(pipeline.SignalTraces, "traces/second")
+	tracesThird := pipeline.NewIDWithName(pipeline.SignalTraces, "traces/third")
+
+	cfg := &Config{
+		PipelinePriority: [][]pipeline.ID{{tracesFirst}, {tracesSecond}, {tracesThird}},
+		RetryInterval:    50 * time.Millisecond,
+		QueueSettings:    exporterhelper.NewDefaultQueueConfig(),
+	}
+
+	router := connector.NewTracesRouter(map[pipeline.ID]consumer.Traces{
+		tracesFirst:  &sinkFirst,
+		tracesSecond: &sinkSecond,
+		tracesThird:  &sinkThird,
+	})
+
+	conn, err := NewFactory().CreateTracesToTraces(t.Context(),
+		connectortest.NewNopSettings(metadata.Type), cfg, router.(consumer.Traces))
+
+	require.NoError(t, err)
+
+	wrappedConn := conn.(*wrappedTracesConnector)
+	failoverRouter := wrappedConn.GetFailoverRouter()
+	failoverRouter.ModifyConsumerAtIndex(0, consumertest.NewErr(errTracesConsumer))
+	failoverRouter.ModifyConsumerAtIndex(1, consumertest.NewErr(errTracesConsumer))
+	failoverRouter.ModifyConsumerAtIndex(2, consumertest.NewErr(errTracesConsumer))
+	defer func() {
+		assert.NoError(t, wrappedConn.Shutdown(t.Context()))
+	}()
+
+	tr := sampleTrace()
+
+	assert.NoError(t, wrappedConn.ConsumeTraces(t.Context(), tr))
+}
+
+func consumeTracesAndCheckStable(router *tracesRouter, idx int, tr ptrace.Traces) bool {
+	_ = router.Consume(context.Background(), tr)
+	stableIndex := router.pS.CurrentPipeline()
 	return stableIndex == idx
 }
 
