@@ -696,3 +696,42 @@ this_one_there_where_{arch="x86",instance="test-instance",job="test-service",os=
 		})
 	}
 }
+
+func TestPrometheusExporter_OpenMetricsCreatedSamples(t *testing.T) {
+	addr := testutil.GetAvailableLocalAddress(t)
+	cfg := &Config{
+		Namespace: "test",
+		ServerConfig: confighttp.ServerConfig{
+			Endpoint: addr,
+		},
+		EnableOpenMetrics:                   true,
+		EnableOpenMetricsTextCreatedSamples: true,
+		SendTimestamps:                      true,
+		MetricExpiration:                    120 * time.Minute,
+	}
+
+	factory := NewFactory()
+	set := exportertest.NewNopSettings(metadata.Type)
+	exp, err := factory.CreateMetrics(t.Context(), set, cfg)
+	require.NoError(t, err)
+
+	defer func() { require.NoError(t, exp.Shutdown(t.Context())) }()
+
+	require.NoError(t, exp.Start(t.Context(), componenttest.NewNopHost()))
+
+	md := metricBuilder(0, "", "test-service", "test-instance")
+	assert.NoError(t, exp.ConsumeMetrics(t.Context(), md))
+
+	req, err := http.NewRequest(http.MethodGet, "http://"+addr+"/metrics", http.NoBody)
+	require.NoError(t, err)
+	req.Header.Set("Accept", "application/openmetrics-text;version=1.0.0;escaping=allow-utf-8")
+	res, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, res.StatusCode)
+
+	blob, _ := io.ReadAll(res.Body)
+	_ = res.Body.Close()
+	output := string(blob)
+
+	assert.Contains(t, output, "test_this_one_there_where_created")
+}
