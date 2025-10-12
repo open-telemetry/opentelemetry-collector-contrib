@@ -28,8 +28,6 @@ const (
 	AttributeCICDPipelineRunActorID   = "cicd.pipeline.run.actor.id"
 	AttributeCICDPipelineRunActorName = "cicd.pipeline.run.actor.name"
 
-	AttributeCICDTaskTypeStatus = "cicd.pipeline.task.type.status"
-
 	AttributeCICDTaskEnvironmentName = "cicd.pipeline.task.run.environment.name"
 
 	AttributeCICDWorkerType   = "cicd.worker.type"
@@ -159,11 +157,8 @@ func (*glPipelineStage) setTimeStamps(span ptrace.Span, startTime, endTime strin
 	return setSpanTimeStamps(span, startTime, endTime)
 }
 
-func (s *glPipelineStage) setAttributes(attrs pcommon.Map) {
-	attrs.PutStr(string(semconv.CICDPipelineTaskTypeKey), s.Name)
-
-	// ---------- The following attribute is not part of semconv yet ----------
-	attrs.PutStr(AttributeCICDTaskTypeStatus, s.Status)
+// Appropriate attributes for stages require further discussion and are yet to be defined as part of: https://github.com/open-telemetry/semantic-conventions/issues/2900
+func (*glPipelineStage) setAttributes(pcommon.Map) {
 }
 
 // glJobEvent represents the PipelineEvent.Builds struct from the pipeline webhook event - it's not exported as type by the Gitlab API client, so we need to use this struct to represent it
