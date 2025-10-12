@@ -26,9 +26,16 @@ import (
 )
 
 const (
-	validPipelineWebhookEvent                    = `{"object_attributes":{"id":1,"status":"success","created_at":"2022-01-01 12:00:00 UTC","finished_at":"2022-01-01 13:00:00 UTC","name":"Test Pipeline"},"project":{"id":123,"path_with_namespace":"test/project"},"builds":[{"id":1,"stage":"build","name":"build-job","status":"success","created_at":"2022-01-01 12:00:00 UTC","started_at":"2022-01-01 12:01:00 UTC","finished_at":"2022-01-01 12:10:00 UTC"},{"id":2,"stage":"test","name":"test-job","status":"success","created_at":"2022-01-01 12:11:00 UTC","started_at":"2022-01-01 12:12:00 UTC","finished_at":"2022-01-01 12:20:00 UTC"}],"commit":{"title":"Test commit"}}`
-	validPipelineWebhookEventWithoutJobs         = `{"object_attributes":{"id":1,"status":"success","created_at":"2022-01-01 12:00:00 UTC","finished_at":"2022-01-01 13:00:00 UTC","name":"Test Pipeline"},"project":{"id":123,"path_with_namespace":"test/project"}}`
-	invalidPipelineWebhookEventMissingFinishedAt = `{"object_attributes":{"id":1,"status":"success","created_at":"2022-01-01 12:00:00 UTC","name":"Test Pipeline"},"project":{"id":123,"path_with_namespace":"test/project"}}`
+	validPipelineWebhookEvent                    = `{"object_attributes":{"id":1,"status":"success","created_at":"2022-01-01 12:00:00 UTC","finished_at":"2022-01-01 13:00:00 UTC","name":"Test Pipeline","source":"push","ref":"main","tag":false,"sha":"abc123def456"},"project":{"id":123,"name":"my-project","path_with_namespace":"test/project","namespace":"test","web_url":"https://gitlab.example.com/test/project","visibility":"private","default_branch":"main"},"builds":[{"id":1,"stage":"build","name":"build-job","status":"success","created_at":"2022-01-01 12:00:00 UTC","started_at":"2022-01-01 12:01:00 UTC","finished_at":"2022-01-01 12:10:00 UTC","runner":{"id":100,"description":"shared-runner-1","active":true,"is_shared":true,"runner_type":"instance_type","tags":["docker","linux"]},"queued_duration":60.5,"allow_failure":false},{"id":2,"stage":"test","name":"test-job","status":"success","created_at":"2022-01-01 12:11:00 UTC","started_at":"2022-01-01 12:12:00 UTC","finished_at":"2022-01-01 12:20:00 UTC","runner":{"id":101,"description":"project-runner-1","active":true,"is_shared":false,"runner_type":"project_type","tags":["ruby","postgres"]},"queued_duration":30.2,"allow_failure":false}],"commit":{"id":"abc123def456","message":"Fix critical bug\n\nDetailed description of the fix","timestamp":"2022-01-01T11:50:00Z","author":{"name":"John Doe","email":"john.doe@example.com"}},"user":{"id":42,"username":"jdoe","name":"John Doe"}}`
+	validPipelineWebhookEventWithoutJobs         = `{"object_attributes":{"id":1,"status":"success","created_at":"2022-01-01 12:00:00 UTC","finished_at":"2022-01-01 13:00:00 UTC","name":"Test Pipeline","source":"push","ref":"main","tag":false,"sha":"abc123"},"project":{"id":123,"name":"my-project","path_with_namespace":"test/project","namespace":"test","web_url":"https://gitlab.example.com/test/project","visibility":"private","default_branch":"main"},"commit":{"id":"abc123","message":"Test commit","timestamp":"2022-01-01T11:50:00Z","author":{"name":"Test User","email":"test@example.com"}},"user":{"id":1,"username":"testuser","name":"Test User"}}`
+	invalidPipelineWebhookEventMissingFinishedAt = `{"object_attributes":{"id":1,"status":"success","created_at":"2022-01-01 12:00:00 UTC","name":"Test Pipeline","ref":"main","sha":"abc123"},"project":{"id":123,"path_with_namespace":"test/project"},"commit":{"id":"abc123"}}`
+	minimalValidPipelineWebhookEvent             = `{"object_attributes":{"id":1,"status":"success","created_at":"2022-01-01 12:00:00 UTC","finished_at":"2022-01-01 13:00:00 UTC","name":"","source":"","ref":"main","tag":false,"sha":"abc123","url":""},"project":{"id":123,"name":"","path_with_namespace":"test/project","namespace":"","web_url":"","visibility":"","default_branch":""},"commit":{"id":"abc123","message":"","timestamp":null,"author":{"name":"","email":""}},"user":null,"merge_request":{"id":0,"state":"","title":"","target_branch":"","source_branch":""}}`
+
+	// Multi-pipeline webhook event with parent pipeline information
+	validMultiPipelineWebhookEvent = `{"object_attributes":{"id":2,"status":"success","created_at":"2022-01-02 14:00:00 UTC","finished_at":"2022-01-02 14:30:00 UTC","name":"Child Pipeline","source":"parent_pipeline","ref":"main","tag":false,"sha":"def789ghi012"},"project":{"id":124,"name":"child-project","path_with_namespace":"test/child-project","namespace":"test","web_url":"https://gitlab.example.com/test/child-project","visibility":"internal","default_branch":"main"},"source_pipeline":{"project":{"id":123,"path_with_namespace":"test/parent-project","web_url":"https://gitlab.example.com/test/parent-project"},"pipeline_id":1,"job_id":99},"builds":[],"commit":{"id":"def789ghi012","message":"Trigger child pipeline","timestamp":"2022-01-02T13:50:00Z","author":{"name":"Jane Smith","email":"jane.smith@example.com"}},"user":{"id":43,"username":"jsmith","name":"Jane Smith"}}`
+
+	// Pipeline with environment deployment
+	validPipelineWithEnvironmentEvent = `{"object_attributes":{"id":3,"status":"success","created_at":"2022-01-03 10:00:00 UTC","finished_at":"2022-01-03 10:45:00 UTC","name":"Deploy Pipeline","source":"merge_request_event","ref":"main","tag":false,"sha":"xyz789abc123"},"project":{"id":125,"name":"web-app","path_with_namespace":"prod/web-app","namespace":"prod","web_url":"https://gitlab.example.com/prod/web-app","visibility":"public","default_branch":"main"},"builds":[{"id":10,"stage":"deploy","name":"deploy-staging","status":"success","created_at":"2022-01-03 10:20:00 UTC","started_at":"2022-01-03 10:21:00 UTC","finished_at":"2022-01-03 10:30:00 UTC","runner":{"id":200,"description":"deploy-runner","active":true,"is_shared":false,"runner_type":"group_type","tags":["kubernetes","production"]},"queued_duration":45.0,"allow_failure":false,"environment":{"name":"staging","action":"start","deployment_tier":"staging"}},{"id":11,"stage":"deploy","name":"deploy-production","status":"failed","created_at":"2022-01-03 10:31:00 UTC","started_at":"2022-01-03 10:32:00 UTC","finished_at":"2022-01-03 10:40:00 UTC","runner":{"id":201,"description":"prod-runner","active":true,"is_shared":false,"runner_type":"group_type","tags":["kubernetes","production","critical"]},"queued_duration":60.0,"allow_failure":true,"failure_reason":"script_failure","environment":{"name":"production","action":"start","deployment_tier":"production"}}],"commit":{"id":"xyz789abc123","message":"Deploy v2.0.0 to production","timestamp":"2022-01-03T09:45:00Z","author":{"name":"Deploy Bot","email":"deploy@example.com"}},"user":{"id":1,"username":"deploy-bot","name":"Deploy Bot"},"merge_request":{"iid":42,"target_branch":"main","source_branch":"feature/v2"}}`
 )
 
 // Helper function to create a gitlabTracesReceiver
@@ -164,7 +171,7 @@ func TestHandleWebhook(t *testing.T) {
 			headers: map[string]string{
 				defaultGitLabEventHeader: "Pipeline Hook",
 			},
-			body:         `{"object_attributes":{"id":1,"status":"failed","created_at":"2022-01-01 12:00:00 UTC","finished_at":"2022-01-01 13:00:00 UTC","name":"Test Pipeline"},"project":{"id":123,"path_with_namespace":"test/project"}}`,
+			body:         `{"object_attributes":{"id":1,"status":"failed","created_at":"2022-01-01 12:00:00 UTC","finished_at":"2022-01-01 13:00:00 UTC","name":"Test Pipeline","ref":"main","sha":"abc123"},"project":{"id":123,"path_with_namespace":"test/project"},"commit":{"id":"abc123"}}`,
 			expectedCode: http.StatusOK,
 			spanCount:    1,
 		},
@@ -174,7 +181,7 @@ func TestHandleWebhook(t *testing.T) {
 			headers: map[string]string{
 				defaultGitLabEventHeader: "Pipeline Hook",
 			},
-			body:         `{"object_attributes":{"id":1,"status":"canceled","created_at":"2022-01-01 12:00:00 UTC","finished_at":"2022-01-01 13:00:00 UTC","name":"Test Pipeline"},"project":{"id":123,"path_with_namespace":"test/project"}}`,
+			body:         `{"object_attributes":{"id":1,"status":"canceled","created_at":"2022-01-01 12:00:00 UTC","finished_at":"2022-01-01 13:00:00 UTC","name":"Test Pipeline","ref":"main","sha":"abc123"},"project":{"id":123,"path_with_namespace":"test/project"},"commit":{"id":"abc123"}}`,
 			expectedCode: http.StatusOK,
 			spanCount:    1,
 		},
@@ -184,7 +191,7 @@ func TestHandleWebhook(t *testing.T) {
 			headers: map[string]string{
 				defaultGitLabEventHeader: "Pipeline Hook",
 			},
-			body:         `{"object_attributes":{"id":1,"status":"skipped","created_at":"2022-01-01 12:00:00 UTC","finished_at":"2022-01-01 13:00:00 UTC","name":"Test Pipeline"},"project":{"id":123,"path_with_namespace":"test/project"}}`,
+			body:         `{"object_attributes":{"id":1,"status":"skipped","created_at":"2022-01-01 12:00:00 UTC","finished_at":"2022-01-01 13:00:00 UTC","name":"Test Pipeline","ref":"main","sha":"abc123"},"project":{"id":123,"path_with_namespace":"test/project"},"commit":{"id":"abc123"}}`,
 			expectedCode: http.StatusOK,
 			spanCount:    1,
 		},
@@ -194,7 +201,7 @@ func TestHandleWebhook(t *testing.T) {
 			headers: map[string]string{
 				defaultGitLabEventHeader: "Pipeline Hook",
 			},
-			body:         `{"object_attributes":{"id":1,"status":"unknown_status","created_at":"2022-01-01 12:00:00 UTC","finished_at":"2022-01-01 13:00:00 UTC","name":"Test Pipeline"},"project":{"id":123,"path_with_namespace":"test/project"}}`,
+			body:         `{"object_attributes":{"id":1,"status":"unknown_status","created_at":"2022-01-01 12:00:00 UTC","finished_at":"2022-01-01 13:00:00 UTC","name":"Test Pipeline","ref":"main","sha":"abc123"},"project":{"id":123,"path_with_namespace":"test/project"},"commit":{"id":"abc123"}}`,
 			expectedCode: http.StatusNoContent,
 		},
 	}
@@ -362,6 +369,82 @@ func TestValidateReq(t *testing.T) {
 			}
 			require.NoError(t, err)
 			require.Equal(t, tt.expectedEvent, eventType)
+		})
+	}
+}
+
+func TestValidatePipelineEvent(t *testing.T) {
+	receiver := setupGitlabTracesReceiver(t)
+
+	tests := []struct {
+		name            string
+		jsonEvent       string
+		expectedErrText string
+	}{
+		{
+			name:      "valid_event",
+			jsonEvent: validPipelineWebhookEvent,
+		},
+		{
+			name:            "missing_pipeline_id",
+			jsonEvent:       `{"object_attributes":{"status":"success","created_at":"2022-01-01 12:00:00 UTC","finished_at":"2022-01-01 13:00:00 UTC","ref":"main","sha":"abc123"},"project":{"id":123,"path_with_namespace":"test/project"},"commit":{"id":"abc123"}}`,
+			expectedErrText: "missing required field: pipeline ID",
+		},
+		{
+			name:            "missing_created_at",
+			jsonEvent:       `{"object_attributes":{"id":1,"status":"success","finished_at":"2022-01-01 13:00:00 UTC","ref":"main","sha":"abc123"},"project":{"id":123,"path_with_namespace":"test/project"},"commit":{"id":"abc123"}}`,
+			expectedErrText: "missing required field: pipeline created_at",
+		},
+		{
+			name:            "missing_ref",
+			jsonEvent:       `{"object_attributes":{"id":1,"status":"success","created_at":"2022-01-01 12:00:00 UTC","finished_at":"2022-01-01 13:00:00 UTC","sha":"abc123"},"project":{"id":123,"path_with_namespace":"test/project"},"commit":{"id":"abc123"}}`,
+			expectedErrText: "missing required field: pipeline ref",
+		},
+		{
+			name:            "missing_sha",
+			jsonEvent:       `{"object_attributes":{"id":1,"status":"success","created_at":"2022-01-01 12:00:00 UTC","finished_at":"2022-01-01 13:00:00 UTC","ref":"main"},"project":{"id":123,"path_with_namespace":"test/project"},"commit":{"id":"abc123"}}`,
+			expectedErrText: "missing required field: pipeline SHA",
+		},
+		{
+			name:            "missing_project_id",
+			jsonEvent:       `{"object_attributes":{"id":1,"status":"success","created_at":"2022-01-01 12:00:00 UTC","finished_at":"2022-01-01 13:00:00 UTC","ref":"main","sha":"abc123"},"project":{"path_with_namespace":"test/project"},"commit":{"id":"abc123"}}`,
+			expectedErrText: "missing required field: project ID",
+		},
+		{
+			name:            "missing_project_path",
+			jsonEvent:       `{"object_attributes":{"id":1,"status":"success","created_at":"2022-01-01 12:00:00 UTC","finished_at":"2022-01-01 13:00:00 UTC","ref":"main","sha":"abc123"},"project":{"id":123},"commit":{"id":"abc123"}}`,
+			expectedErrText: "missing required field: project path_with_namespace",
+		},
+		{
+			name:            "missing_commit_id",
+			jsonEvent:       `{"object_attributes":{"id":1,"status":"success","created_at":"2022-01-01 12:00:00 UTC","finished_at":"2022-01-01 13:00:00 UTC","ref":"main","sha":"abc123"},"project":{"id":123,"path_with_namespace":"test/project"},"commit":{}}`,
+			expectedErrText: "missing required field: commit ID",
+		},
+		{
+			name:            "nil_commit",
+			jsonEvent:       `{"object_attributes":{"id":1,"status":"success","created_at":"2022-01-01 12:00:00 UTC","finished_at":"2022-01-01 13:00:00 UTC","ref":"main","sha":"abc123"},"project":{"id":123,"path_with_namespace":"test/project"}}`,
+			expectedErrText: "missing required field: commit ID",
+		},
+		{
+			name:            "nil_project",
+			jsonEvent:       `{"object_attributes":{"id":1,"status":"success","created_at":"2022-01-01 12:00:00 UTC","finished_at":"2022-01-01 13:00:00 UTC","ref":"main","sha":"abc123"},"commit":{"id":"abc123"}}`,
+			expectedErrText: "missing required field: project ID",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var pipelineEvent gitlab.PipelineEvent
+			err := json.Unmarshal([]byte(tt.jsonEvent), &pipelineEvent)
+			require.NoError(t, err, "failed to unmarshal test event")
+
+			err = receiver.validatePipelineEvent(&pipelineEvent)
+			if tt.expectedErrText != "" {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), tt.expectedErrText)
+			} else {
+				require.NoError(t, err)
+			}
 		})
 	}
 }
