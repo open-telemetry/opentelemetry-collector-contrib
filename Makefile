@@ -212,6 +212,10 @@ gofmt:
 golint:
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="lint"
 
+.PHONY: gogenerate
+gogenerate:
+	$(MAKE) $(FOR_GROUP_TARGET) TARGET="generate"
+
 .PHONY: gogovulncheck
 gogovulncheck:
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="govulncheck"
@@ -222,7 +226,7 @@ goporto: $(PORTO)
 
 .PHONY: for-all
 for-all:
-	@set -e; for dir in $(ALL_MODS); do \
+	@set -e; for dir in $${ALL_MODS}; do \
 	  (cd "$${dir}" && \
 	  	echo "running $${CMD} in $${dir}" && \
 	 	$${CMD} ); \
