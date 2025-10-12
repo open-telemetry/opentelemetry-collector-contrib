@@ -98,10 +98,10 @@ func (opt ignoreProfileAttributeValue) applyOnProfiles(expected, actual pprofile
 }
 
 func (opt ignoreProfileAttributeValue) maskProfileAttributeValue(profiles pprofile.Profiles) {
-	dic := profiles.ProfilesDictionary()
+	dic := profiles.Dictionary()
 	for l := 0; l < dic.AttributeTable().Len(); l++ {
 		a := dic.AttributeTable().At(l)
-		if a.Key() == opt.attributeName {
+		if dic.StringTable().At(int(a.KeyStrindex())) == opt.attributeName {
 			a.Value().SetEmptyBytes()
 		}
 	}
@@ -206,7 +206,7 @@ func profileAttributesToMap(dic pprofile.ProfilesDictionary, p pprofile.Profile)
 	d := map[string]string{}
 	for _, i := range p.AttributeIndices().AsRaw() {
 		v := dic.AttributeTable().At(int(i))
-		d[v.Key()] = v.Value().AsString()
+		d[dic.StringTable().At(int(v.KeyStrindex()))] = v.Value().AsString()
 	}
 
 	return d

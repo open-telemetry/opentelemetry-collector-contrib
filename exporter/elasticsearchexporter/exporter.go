@@ -500,7 +500,7 @@ func (e *elasticsearchExporter) pushProfilesData(ctx context.Context, pd pprofil
 	// the specified mapping mode.
 	scopeMappingModeSessions := mappingModeSessions{indexers: &e.bulkIndexers.modes}
 	defer scopeMappingModeSessions.End()
-	dic := pd.ProfilesDictionary()
+	dic := pd.Dictionary()
 
 	var errs []error
 	for _, rp := range pd.ResourceProfiles().All() {
@@ -567,7 +567,9 @@ func (*elasticsearchExporter) pushProfileRecord(
 			return eventsSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionCreate)
 		case otelserializer.ExecutablesIndex:
 			return executablesSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionUpdate)
-		case otelserializer.ExecutablesSymQueueIndex, otelserializer.LeafFramesSymQueueIndex:
+		case otelserializer.ExecutablesSymQueueIndex,
+			otelserializer.LeafFramesSymQueueIndex,
+			otelserializer.HostsMetadataIndex:
 			// These regular indices have a low write-frequency and can share the executablesSession.
 			return executablesSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionCreate)
 		default:

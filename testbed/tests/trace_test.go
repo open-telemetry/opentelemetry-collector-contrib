@@ -38,15 +38,6 @@ func TestTrace10kSPS(t *testing.T) {
 		resourceSpec testbed.ResourceSpec
 	}{
 		{
-			"OpenCensus",
-			datasenders.NewOCTraceDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
-			datareceivers.NewOCDataReceiver(testutil.GetAvailablePort(t)),
-			testbed.ResourceSpec{
-				ExpectedMaxCPU: 39,
-				ExpectedMaxRAM: 100,
-			},
-		},
-		{
 			"OTLP-gRPC",
 			testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
 			testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t)),

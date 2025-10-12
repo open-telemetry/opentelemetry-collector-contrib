@@ -231,7 +231,8 @@ func newSpanID(input string) (pcommon.SpanID, error) {
 func (gtr *gitlabTracesReceiver) newStages(pipeline *glPipeline) (map[string]*glPipelineStage, error) {
 	stages := make(map[string]*glPipelineStage)
 
-	for _, job := range pipeline.Builds {
+	for i := range pipeline.Builds {
+		job := pipeline.Builds[i]
 		stage, exists := stages[job.Stage]
 		if !exists {
 			stage = &glPipelineStage{

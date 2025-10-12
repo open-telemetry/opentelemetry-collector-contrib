@@ -130,7 +130,7 @@ func TestExporterLogs(t *testing.T) {
 					body := pcommon.NewValueMap()
 					m := body.Map()
 					s := m.PutEmptySlice("a")
-					for i := 0; i < 2; i++ {
+					for i := range 2 {
 						s.AppendEmpty().SetInt(int64(i))
 					}
 					return body
@@ -631,9 +631,9 @@ func TestExporterLogs(t *testing.T) {
 					cfg.Retry.InitialInterval = 1 * time.Millisecond
 					cfg.Retry.MaxInterval = 5 * time.Millisecond
 
-					// use sync bulk indexer
-					cfg.Batcher.Enabled = false
-					cfg.Batcher.enabledSet = true
+					// use sync flushing
+					cfg.QueueBatchConfig.Enabled = true
+					cfg.QueueBatchConfig.WaitForResult = true
 				})
 
 				logs := plog.NewLogs()
@@ -675,8 +675,10 @@ func TestExporterLogs(t *testing.T) {
 					cfg.Retry.InitialInterval = 1 * time.Millisecond
 					cfg.Retry.MaxInterval = 5 * time.Millisecond
 
-					// use async bulk indexer
-					cfg.Batcher.enabledSet = false
+					// use async indexer
+					cfg.QueueBatchConfig.Enabled = true
+					cfg.QueueBatchConfig.WaitForResult = false
+					cfg.QueueBatchConfig.BlockOnOverflow = false
 				})
 				mustSendLogRecords(t, exporter, plog.NewLogRecord()) // as sync bulk indexer is used, retries are not guaranteed to finish
 
@@ -822,11 +824,10 @@ func TestExporterLogs(t *testing.T) {
 
 		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
 			cfg.Mapping.Mode = "otel"
-			cfg.Flush.Interval = 50 * time.Millisecond
 			cfg.Retry.InitialInterval = 1 * time.Millisecond
 			cfg.Retry.MaxInterval = 10 * time.Millisecond
 		})
-		for i := 0; i < 3; i++ {
+		for i := range 3 {
 			logRecord := plog.NewLogRecord()
 			logRecord.Attributes().PutInt("idx", int64(i))
 			mustSendLogRecords(t, exporter, logRecord)
@@ -867,12 +868,12 @@ func TestExporterLogs(t *testing.T) {
 
 		cfgs := map[string]func(*Config){
 			"async": func(cfg *Config) {
-				cfg.Batcher.enabledSet = false
+				cfg.QueueBatchConfig.WaitForResult = false
+				cfg.QueueBatchConfig.BlockOnOverflow = false
 			},
 			"sync": func(cfg *Config) {
-				cfg.Batcher.enabledSet = true
-				cfg.Batcher.Enabled = true
-				cfg.Batcher.FlushTimeout = 10 * time.Millisecond
+				cfg.QueueBatchConfig.WaitForResult = true
+				cfg.QueueBatchConfig.BlockOnOverflow = false
 			},
 		}
 		for _, tt := range tableTests {
@@ -943,11 +944,12 @@ func TestExporterLogs(t *testing.T) {
 
 		cfgs := map[string]func(*Config){
 			"async": func(cfg *Config) {
-				cfg.Batcher.Enabled = false
+				cfg.QueueBatchConfig.WaitForResult = false
+				cfg.QueueBatchConfig.BlockOnOverflow = false
 			},
 			"sync": func(cfg *Config) {
-				cfg.Batcher.Enabled = true
-				cfg.Batcher.FlushTimeout = 10 * time.Millisecond
+				cfg.QueueBatchConfig.WaitForResult = true
+				cfg.QueueBatchConfig.BlockOnOverflow = false
 			},
 		}
 		for _, tt := range tableTests {
@@ -1000,11 +1002,16 @@ func TestExporterMetrics(t *testing.T) {
 		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
 			cfg.Mapping.Mode = "ecs"
 		})
-		dp := pmetric.NewNumberDataPoint()
-		dp.SetDoubleValue(123.456)
-		dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
-		mustSendMetricSumDataPoints(t, exporter, dp)
-		mustSendMetricGaugeDataPoints(t, exporter, dp)
+		dpSum := pmetric.NewNumberDataPoint()
+		dpSum.SetDoubleValue(123.456)
+		dpSum.SetTimestamp(pcommon.NewTimestampFromTime(time.Now().Add(-2 * time.Second)))
+		mustSendMetricSumDataPoints(t, exporter, dpSum)
+
+		dpGauge := pmetric.NewNumberDataPoint()
+		dpGauge.SetDoubleValue(123.456)
+		// Keep timestamp different to avoid metric grouping putting them in same doc
+		dpGauge.SetTimestamp(pcommon.NewTimestampFromTime(time.Now().Add(-1 * time.Second)))
+		mustSendMetricGaugeDataPoints(t, exporter, dpGauge)
 
 		rec.WaitItems(2)
 	})
@@ -1291,13 +1298,45 @@ func TestExporterMetrics(t *testing.T) {
 		fooOtherDp.ExplicitBounds().FromRaw([]float64{4.0, 5.0, 6.0})
 		fooOtherDp.BucketCounts().FromRaw([]uint64{4, 5, 6, 7})
 
-		sumMetric := metricSlice.AppendEmpty()
-		sumMetric.SetName("metric.sum")
-		sumDps := sumMetric.SetEmptySum().DataPoints()
-		sumDp := sumDps.AppendEmpty()
-		sumDp.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(3600, 0)))
-		sumDp.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(7200, 0)))
-		sumDp.SetDoubleValue(1.5)
+		sumMonotonicCumulative := metricSlice.AppendEmpty()
+		sumMonotonicCumulative.SetName("metric.sum.monotonic.cumulative")
+		sumMonotonicCumulative.SetEmptySum()
+		sumMonotonicCumulative.Sum().SetIsMonotonic(true)
+		sumMonotonicCumulative.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+		dp := sumMonotonicCumulative.Sum().DataPoints().AppendEmpty()
+		dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(3600, 0)))
+		dp.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(7200, 0)))
+		dp.SetDoubleValue(1.5)
+
+		sumMonotonicDelta := metricSlice.AppendEmpty()
+		sumMonotonicDelta.SetName("metric.sum.monotonic.delta")
+		sumMonotonicDelta.SetEmptySum()
+		sumMonotonicDelta.Sum().SetIsMonotonic(true)
+		sumMonotonicDelta.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+		dp = sumMonotonicDelta.Sum().DataPoints().AppendEmpty()
+		dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(3600, 0)))
+		dp.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(7200, 0)))
+		dp.SetDoubleValue(2.5)
+
+		sumCumulative := metricSlice.AppendEmpty()
+		sumCumulative.SetName("metric.sum.nonmonotonic.cumulative")
+		sumCumulative.SetEmptySum()
+		sumCumulative.Sum().SetIsMonotonic(false)
+		sumCumulative.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+		dp = sumCumulative.Sum().DataPoints().AppendEmpty()
+		dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(3600, 0)))
+		dp.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(7200, 0)))
+		dp.SetDoubleValue(3.5)
+
+		sumDelta := metricSlice.AppendEmpty()
+		sumDelta.SetName("metric.sum.nonmonotonic.delta")
+		sumDelta.SetEmptySum()
+		sumDelta.Sum().SetIsMonotonic(false)
+		sumDelta.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+		dp = sumDelta.Sum().DataPoints().AppendEmpty()
+		dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(3600, 0)))
+		dp.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(7200, 0)))
+		dp.SetDoubleValue(4.5)
 
 		summaryMetric := metricSlice.AppendEmpty()
 		summaryMetric.SetName("metric.summary")
@@ -1320,8 +1359,8 @@ func TestExporterMetrics(t *testing.T) {
 				Document: []byte(`{"@timestamp":3600000,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"metric.foo":{"counts":[4,5,6,7],"values":[2.0,4.5,5.5,6.0]}},"resource":{},"scope":{},"_metric_names_hash":"b23939f78dc5f649"}`),
 			},
 			{
-				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.metric.sum":"gauge_double"}}}`),
-				Document: []byte(`{"@timestamp":3600000,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"metric.sum":1.5},"resource":{},"scope":{},"start_timestamp":7200000,"_metric_names_hash":"f4a8ac5e1b330ad6"}`),
+				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.metric.sum.monotonic.delta":"gauge_double","metrics.metric.sum.nonmonotonic.cumulative":"gauge_double","metrics.metric.sum.nonmonotonic.delta":"gauge_double","metrics.metric.sum.monotonic.cumulative":"counter_double"}}}`),
+				Document: []byte(`{"@timestamp":3600000,"start_timestamp":7200000,"data_stream":{"type":"metrics","dataset":"generic.otel","namespace":"default"},"resource":{},"scope":{},"metrics":{"metric.sum.monotonic.cumulative":1.5,"metric.sum.monotonic.delta":2.5,"metric.sum.nonmonotonic.cumulative":3.5,"metric.sum.nonmonotonic.delta":4.5},"_metric_names_hash":"4c23ec9ba381ab20"}`),
 			},
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.metric.summary":"summary"}}}`),
@@ -2403,7 +2442,10 @@ func TestExporter_DynamicMappingMode(t *testing.T) {
 				})
 
 				logs := createLogs(tc.scopes...)
-				exporter := newTestLogsExporter(t, server.URL, setAllowedMappingModes)
+				exporter := newTestLogsExporter(t, server.URL, setAllowedMappingModes, func(cfg *Config) {
+					// Set wait_for_result to be true so that errors are reported directly via Consume*
+					cfg.QueueBatchConfig.WaitForResult = true
+				})
 				err := exporter.ConsumeLogs(tc.ctx, logs)
 				if tc.expectErr != "" {
 					require.EqualError(t, err, tc.expectErr)
@@ -2428,7 +2470,10 @@ func TestExporter_DynamicMappingMode(t *testing.T) {
 				})
 
 				metrics := createMetrics(tc.scopes...)
-				exporter := newTestMetricsExporter(t, server.URL, setAllowedMappingModes)
+				exporter := newTestMetricsExporter(t, server.URL, setAllowedMappingModes, func(cfg *Config) {
+					// Set wait_for_result to be true so that errors are reported directly via Consume*
+					cfg.QueueBatchConfig.WaitForResult = true
+				})
 				err := exporter.ConsumeMetrics(tc.ctx, metrics)
 				if tc.expectErr != "" {
 					require.EqualError(t, err, tc.expectErr)
@@ -2446,7 +2491,10 @@ func TestExporter_DynamicMappingMode(t *testing.T) {
 	t.Run("profiles", func(t *testing.T) {
 		// Profiles are only supported by otel mode, so just verify that
 		// the metadata is picked up and invalid modes are rejected.
-		exporter := newTestProfilesExporter(t, "https://testing.invalid", setAllowedMappingModes)
+		exporter := newTestProfilesExporter(t, "https://testing.invalid", setAllowedMappingModes, func(cfg *Config) {
+			// Set wait_for_result to be true so that errors are reported directly via Consume*
+			cfg.QueueBatchConfig.WaitForResult = true
+		})
 		err := exporter.ConsumeProfiles(noneContext, pprofile.NewProfiles())
 		assert.EqualError(t, err,
 			`Permanent error: invalid context mapping mode: unsupported mapping mode "none", expected one of ["ecs" "otel"]`,
@@ -2467,7 +2515,10 @@ func TestExporter_DynamicMappingMode(t *testing.T) {
 				})
 
 				traces := createTraces(tc.scopes...)
-				exporter := newTestTracesExporter(t, server.URL, setAllowedMappingModes)
+				exporter := newTestTracesExporter(t, server.URL, setAllowedMappingModes, func(cfg *Config) {
+					// Set wait_for_result to be true so that errors are reported directly via Consume*
+					cfg.QueueBatchConfig.WaitForResult = true
+				})
 				err := exporter.ConsumeTraces(tc.ctx, traces)
 				if tc.expectErr != "" {
 					require.EqualError(t, err, tc.expectErr)
@@ -2516,14 +2567,14 @@ func TestExporterBatcher(t *testing.T) {
 	var requests []*http.Request
 	testauthID := component.NewID(component.MustNewType("authtest"))
 	exporter := newUnstartedTestLogsExporter(t, "http://testing.invalid", func(cfg *Config) {
-		cfg.Batcher = BatcherConfig{
-			Enabled: false,
-			// sync bulk indexer is used without batching
+		cfg.QueueBatchConfig.Enabled = true
+		cfg.QueueBatchConfig.WaitForResult = true
+		cfg.QueueBatchConfig.Batch = configoptional.Some(exporterhelper.BatchConfig{
 			FlushTimeout: 200 * time.Millisecond,
 			Sizer:        exporterhelper.RequestSizerTypeItems,
 			MinSize:      8192,
-			enabledSet:   true,
-		}
+			MaxSize:      10000,
+		})
 		cfg.Auth = configoptional.Some(configauth.Config{AuthenticatorID: testauthID})
 		cfg.Retry.Enabled = false
 	})
@@ -2558,8 +2609,9 @@ func newTestTracesExporter(t *testing.T, url string, fns ...func(*Config)) expor
 	f := NewFactory()
 	cfg := withDefaultConfig(append([]func(*Config){func(cfg *Config) {
 		cfg.Endpoints = []string{url}
-		cfg.NumWorkers = 1
-		cfg.Flush.Interval = 10 * time.Millisecond
+		cfg.QueueBatchConfig.NumConsumers = 1
+		// Batch is configured by default so we can directly edit flush timeout
+		cfg.QueueBatchConfig.Batch.Get().FlushTimeout = 10 * time.Millisecond
 	}}, fns...)...)
 	require.NoError(t, xconfmap.Validate(cfg))
 	exp, err := f.CreateTraces(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
@@ -2577,8 +2629,9 @@ func newTestProfilesExporter(t *testing.T, url string, fns ...func(*Config)) xex
 	f := NewFactory().(xexporter.Factory)
 	cfg := withDefaultConfig(append([]func(*Config){func(cfg *Config) {
 		cfg.Endpoints = []string{url}
-		cfg.NumWorkers = 1
-		cfg.Flush.Interval = 10 * time.Millisecond
+		cfg.QueueBatchConfig.NumConsumers = 1
+		// Batch is configured by default so we can directly edit flush timeout
+		cfg.QueueBatchConfig.Batch.Get().FlushTimeout = 10 * time.Millisecond
 	}}, fns...)...)
 	require.NoError(t, xconfmap.Validate(cfg))
 	exp, err := f.CreateProfiles(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
@@ -2596,8 +2649,9 @@ func newTestMetricsExporter(t *testing.T, url string, fns ...func(*Config)) expo
 	f := NewFactory()
 	cfg := withDefaultConfig(append([]func(*Config){func(cfg *Config) {
 		cfg.Endpoints = []string{url}
-		cfg.NumWorkers = 1
-		cfg.Flush.Interval = 10 * time.Millisecond
+		cfg.QueueBatchConfig.NumConsumers = 1
+		// Batch is configured by default so we can directly edit flush timeout
+		cfg.QueueBatchConfig.Batch.Get().FlushTimeout = 10 * time.Millisecond
 	}}, fns...)...)
 	require.NoError(t, xconfmap.Validate(cfg))
 	exp, err := f.CreateMetrics(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
@@ -2625,8 +2679,9 @@ func newUnstartedTestLogsExporter(t *testing.T, url string, fns ...func(*Config)
 	f := NewFactory()
 	cfg := withDefaultConfig(append([]func(*Config){func(cfg *Config) {
 		cfg.Endpoints = []string{url}
-		cfg.NumWorkers = 1
-		cfg.Flush.Interval = 10 * time.Millisecond
+		cfg.QueueBatchConfig.NumConsumers = 1
+		// Batch is defined as default configuration
+		cfg.QueueBatchConfig.Batch.Get().FlushTimeout = 10 * time.Millisecond
 	}}, fns...)...)
 	require.NoError(t, xconfmap.Validate(cfg))
 	exp, err := f.CreateLogs(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
@@ -2645,7 +2700,9 @@ func mustSendLogRecords(t *testing.T, exporter exporter.Logs, records ...plog.Lo
 }
 
 func mustSendLogs(t *testing.T, exporter exporter.Logs, logs plog.Logs) {
-	logs.MarkReadOnly()
+	if !exporter.Capabilities().MutatesData {
+		logs.MarkReadOnly()
+	}
 	err := exporter.ConsumeLogs(t.Context(), logs)
 	require.NoError(t, err)
 }
@@ -2653,10 +2710,10 @@ func mustSendLogs(t *testing.T, exporter exporter.Logs, logs plog.Logs) {
 func mustSendMetricSumDataPoints(t *testing.T, exporter exporter.Metrics, dataPoints ...pmetric.NumberDataPoint) {
 	metrics := pmetric.NewMetrics()
 	scopeMetrics := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+	metric := scopeMetrics.Metrics().AppendEmpty()
+	metric.SetEmptySum()
+	metric.SetName("sum")
 	for _, dataPoint := range dataPoints {
-		metric := scopeMetrics.Metrics().AppendEmpty()
-		metric.SetEmptySum()
-		metric.SetName("sum")
 		dataPoint.CopyTo(metric.Sum().DataPoints().AppendEmpty())
 	}
 	mustSendMetrics(t, exporter, metrics)
@@ -2665,17 +2722,19 @@ func mustSendMetricSumDataPoints(t *testing.T, exporter exporter.Metrics, dataPo
 func mustSendMetricGaugeDataPoints(t *testing.T, exporter exporter.Metrics, dataPoints ...pmetric.NumberDataPoint) {
 	metrics := pmetric.NewMetrics()
 	scopeMetrics := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+	metric := scopeMetrics.Metrics().AppendEmpty()
+	metric.SetEmptyGauge()
+	metric.SetName("gauge")
 	for _, dataPoint := range dataPoints {
-		metric := scopeMetrics.Metrics().AppendEmpty()
-		metric.SetEmptyGauge()
-		metric.SetName("gauge")
 		dataPoint.CopyTo(metric.Gauge().DataPoints().AppendEmpty())
 	}
 	mustSendMetrics(t, exporter, metrics)
 }
 
 func mustSendMetrics(t *testing.T, exporter exporter.Metrics, metrics pmetric.Metrics) {
-	metrics.MarkReadOnly()
+	if !exporter.Capabilities().MutatesData {
+		metrics.MarkReadOnly()
+	}
 	err := exporter.ConsumeMetrics(t.Context(), metrics)
 	require.NoError(t, err)
 }
@@ -2691,7 +2750,9 @@ func mustSendSpans(t *testing.T, exporter exporter.Traces, spans ...ptrace.Span)
 }
 
 func mustSendTraces(t *testing.T, exporter exporter.Traces, traces ptrace.Traces) {
-	traces.MarkReadOnly()
+	if !exporter.Capabilities().MutatesData {
+		traces.MarkReadOnly()
+	}
 	err := exporter.ConsumeTraces(t.Context(), traces)
 	require.NoError(t, err)
 }

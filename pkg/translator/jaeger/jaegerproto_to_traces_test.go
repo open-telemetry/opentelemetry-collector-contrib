@@ -539,9 +539,9 @@ func TestProtoBatchesToInternalTraces(t *testing.T) {
 	lenbatches := expected.ResourceSpans().Len()
 	found := 0
 
-	for i := 0; i < lenbatches; i++ {
+	for i := range lenbatches {
 		rsExpected := expected.ResourceSpans().At(i)
-		for j := 0; j < lenbatches; j++ {
+		for j := range lenbatches {
 			got.ResourceSpans().RemoveIf(func(_ ptrace.ResourceSpans) bool {
 				nameExpected := rsExpected.ScopeSpans().At(0).Spans().At(0).Name()
 				nameGot := got.ResourceSpans().At(j).ScopeSpans().At(0).Scope().Name()
@@ -1060,8 +1060,7 @@ func BenchmarkProtoBatchToInternalTraces(b *testing.B) {
 		},
 	}
 
-	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
+	for b.Loop() {
 		_, err := ProtoToTraces(jb)
 		assert.NoError(b, err)
 	}

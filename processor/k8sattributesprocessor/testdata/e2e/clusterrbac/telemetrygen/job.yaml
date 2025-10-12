@@ -3,6 +3,8 @@ kind: Job
 metadata:
   name: {{ .Name }}-{{ .DataType}}-job
   namespace: e2ek8sattribute-clusterrbac
+  annotations:
+    workload: job-annotation
 spec:
   template:
     metadata:

@@ -28,8 +28,6 @@ available on your system.
 
 # Configuration
 
-Note: this receiver is in alpha and functionality and configuration fields are subject to change.
-
 Example configuration:
 
 ```yaml

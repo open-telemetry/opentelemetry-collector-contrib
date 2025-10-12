@@ -67,6 +67,8 @@ func (bq *bqTest) startWaiter(ctx context.Context, size uint64, relp *ReleaseFun
 }
 
 func (bq *bqTest) waitForPending(admitted, waiting uint64) {
+	// TODO: Remove time.Sleep below, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42514
+	time.Sleep(20 * time.Millisecond)
 	require.Eventually(bq.t, func() bool {
 		bq.lock.Lock()
 		defer bq.lock.Unlock()

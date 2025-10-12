@@ -58,12 +58,18 @@ The following settings can be optionally configured:
   - `num_consumers`: minimum number of workers to use to fan out the outgoing requests. (default: `5` or default: `1` if `EnableMultipleWorkersFeatureGate` is enabled).
 - `resource_to_telemetry_conversion`
   - `enabled` (default = false): If `enabled` is `true`, all the resource attributes will be converted to metric labels by default.
+- `wal`: Write-Ahead-Log settings for the exporter.
+  - `directory` (default = ``): The directory to store the WAL in.
+  - `buffer_size` (default = `300`): Count of elements to be read from the WAL before truncating.
+  - `truncate_frequency` (default = `1m`): Frequency for how often the WAL should be truncated. 
+  - `lag_record_frequency` (default = `15s`): Frequency for how often the exporter will record the lag of the WAL. 
 - `target_info`: customize `target_info` metric
   - `enabled` (default = true): If `enabled` is `true`, a `target_info` metric will be generated for each resource metric (see https://github.com/open-telemetry/opentelemetry-specification/pull/2381).
-- `max_batch_size_bytes` (default = `3000000` -> `~2.861 mb`): Maximum size of a batch of
-  samples to be sent to the remote write endpoint. If the batch size is larger
-  than this value, it will be split into multiple batches.
-- `max_batch_request_parallelism` (default = `5`): Maximum parallelism allowed for a single request bigger than `max_batch_size_bytes`.
+- `max_batch_size_bytes` (default = `3000000` -> `~2.861 mb`): Maximum size of a batch of samples to be sent to the remote 
+  write endpoint. If the batch size is larger than this value, it will be split into multiple batches. This option is ignored
+  when using the wal and where the wal buffer_size / truncate_frequency will be used.
+- `max_batch_request_parallelism` (default = `5`): Maximum parallelism allowed when sending multiple requests to the remote write endpoint. 
+  If the remote write endpoint does not support out of order samples, this should be set to `1`. 
 - `protobuf_message` (default = `prometheus.WriteRequest`): 
   - Protobuf message to use when writing to the remote write endpoint. This option is ignored unless the `exporter.prometheusremotewritexporter.enableSendingRW2` feature gate is enabled.
   - `prometheus.WriteRequest` is the message used in [Remote Write 1.0](https://prometheus.io/docs/specs/remote_write_spec/).

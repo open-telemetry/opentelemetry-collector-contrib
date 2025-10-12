@@ -27,6 +27,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
+					ApacheConnectionsAsync:   MetricConfig{Enabled: true},
 					ApacheCPULoad:            MetricConfig{Enabled: true},
 					ApacheCPUTime:            MetricConfig{Enabled: true},
 					ApacheCurrentConnections: MetricConfig{Enabled: true},
@@ -50,6 +51,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
+					ApacheConnectionsAsync:   MetricConfig{Enabled: false},
 					ApacheCPULoad:            MetricConfig{Enabled: false},
 					ApacheCPUTime:            MetricConfig{Enabled: false},
 					ApacheCurrentConnections: MetricConfig{Enabled: false},
