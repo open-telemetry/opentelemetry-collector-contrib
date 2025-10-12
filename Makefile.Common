@@ -247,7 +247,7 @@ fmt: $(GOFUMPT) $(GOIMPORTS)
 
 # On Windows changing path with absolute path includes ':' and escaping it is not enough to get the correct
 # path, so use a relative path when pre-pending to PATH
-TOOLS_BIN_DIR_REL ?= $(shell realpath --relative-to="$(CURDIR)" "$(TOOLS_BIN_DIR)")
+TOOLS_BIN_DIR_REL ?= $(shell realpath "$(TOOLS_BIN_DIR)")
 
 .PHONY: generate-tools
 generate-tools: $(MDATAGEN)
@@ -260,7 +260,7 @@ endif
 .PHONY: generate
 generate: generate-tools
 ifeq ($(CURDIR),$(SRC_ROOT))
-	$(MAKE) gogenerate
+	PATH="$(TOOLS_BIN_DIR_REL):$$PATH" $(MAKE) for-all CMD="$(GOCMD) generate ./..."
 	$(MAKE) gofmt
 else
 	PATH="$(TOOLS_BIN_DIR_REL):$$PATH" $(GOCMD) generate ./...

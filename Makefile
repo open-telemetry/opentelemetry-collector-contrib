@@ -212,10 +212,6 @@ gofmt:
 golint:
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="lint"
 
-.PHONY: gogenerate
-gogenerate:
-	$(MAKE) $(FOR_GROUP_TARGET) TARGET="generate"
-
 .PHONY: gogovulncheck
 gogovulncheck:
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="govulncheck"
