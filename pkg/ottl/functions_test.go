@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
@@ -534,10 +535,17 @@ func Test_NewFunctionCall(t *testing.T) {
 		WithEnumParser[any](testParseEnum),
 	)
 
+	testMap := pcommon.NewMap()
+	testMap.PutStr("foo", "bar")
+
+	testSlice := pcommon.NewSlice()
+	testSlice.AppendEmpty().SetStr("test")
+
 	tests := []struct {
-		name string
-		inv  editor
-		want any
+		name      string
+		inv       editor
+		want      any
+		wantError string
 	}{
 		{
 			name: "no arguments",
@@ -1731,9 +1739,11 @@ func Test_NewFunctionCall(t *testing.T) {
 			fn, err := p.newFunctionCall(tt.inv)
 			assert.NoError(t, err)
 
+			result, err := fn.Eval(t.Context(), nil)
 			if tt.want != nil {
-				result, _ := fn.Eval(t.Context(), nil)
 				assert.Equal(t, tt.want, result)
+			} else if tt.wantError != "" {
+				assert.ErrorContains(t, err, tt.wantError)
 			}
 		})
 	}
@@ -2839,4 +2849,46 @@ func Test_Optional_GetOr(t *testing.T) {
 
 	setOpt := NewTestingOptional[string]("foo")
 	assert.Equal(t, "foo", setOpt.GetOr("bar"))
+}
+
+// nonLiteralStringGetter implements typedGetter but NOT literalGetter.
+// Used to verify GetLiteralValue returns false when literalGetter isn't implemented.
+type nonLiteralStringGetter[K any] struct{ v string }
+
+func (g nonLiteralStringGetter[K]) Get(_ context.Context, _ K) (string, error) { return g.v, nil }
+
+func TestGetLiteralValue(t *testing.T) {
+	t.Run("getter does not implement literalGetter", func(t *testing.T) {
+		val, ok := GetLiteralValue[any, string](nonLiteralStringGetter[any]{v: "val"})
+		require.False(t, ok)
+		require.Empty(t, val)
+	})
+
+	t.Run("getter does not contain literal", func(t *testing.T) {
+		g := mockLiteralGetter[any, any]{
+			valueGetter: func(context.Context, any) (any, error) { return "value", nil },
+			literal:     false,
+		}
+		val, ok := GetLiteralValue[any, any](g)
+		require.False(t, ok)
+		require.Nil(t, val)
+	})
+	t.Run("getter contains literal", func(t *testing.T) {
+		g := mockLiteralGetter[any, any]{
+			valueGetter: func(context.Context, any) (any, error) { return "value", nil },
+			literal:     true,
+		}
+		val, ok := GetLiteralValue[any, any](g)
+		require.True(t, ok)
+		require.Equal(t, "value", val)
+	})
+	t.Run("getter returns error", func(t *testing.T) {
+		g := mockLiteralGetter[any, any]{
+			valueGetter: func(context.Context, any) (any, error) { return nil, errors.New("err") },
+			literal:     true,
+		}
+		val, ok := GetLiteralValue[any, any](g)
+		require.False(t, ok)
+		require.Nil(t, val)
+	})
 }
