@@ -296,6 +296,7 @@ type policyMetrics struct {
 	idNotFoundOnMapCount, evaluateErrorCount, decisionSampled, decisionNotSampled, decisionDropped int64
 	tracesSampledByPolicyDecision                                                                  []map[samplingpolicy.Decision]policyDecisionMetrics
 	timeSpentExecutingPolicies                                                                     []time.Duration
+	policyExecutions                                                                               []int64
 }
 
 func newPolicyMetrics(numPolicies int) *policyMetrics {
@@ -306,6 +307,7 @@ func newPolicyMetrics(numPolicies int) *policyMetrics {
 	return &policyMetrics{
 		tracesSampledByPolicyDecision: tracesSampledByPolicyDecision,
 		timeSpentExecutingPolicies:    make([]time.Duration, numPolicies),
+		policyExecutions:              make([]int64, numPolicies),
 	}
 }
 
@@ -318,6 +320,7 @@ func (m *policyMetrics) addDecision(policyIndex int, decision samplingpolicy.Dec
 
 func (m *policyMetrics) addDecisionTime(policyIndex int, decisionTime time.Duration) {
 	m.timeSpentExecutingPolicies[policyIndex] += decisionTime
+	m.policyExecutions[policyIndex]++
 }
 
 func (tsp *tailSamplingSpanProcessor) loadSamplingPolicy(cfgs []PolicyCfg) error {
@@ -459,6 +462,7 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 			}
 		}
 		tsp.telemetry.ProcessorTailSamplingSamplingPolicyCPUTime.Add(tsp.ctx, metrics.timeSpentExecutingPolicies[i].Microseconds(), p.attribute)
+		tsp.telemetry.ProcessorTailSamplingSamplingPolicyExecutions.Add(tsp.ctx, metrics.policyExecutions[i], p.attribute)
 	}
 
 	tsp.logger.Debug("Sampling policy evaluation completed",

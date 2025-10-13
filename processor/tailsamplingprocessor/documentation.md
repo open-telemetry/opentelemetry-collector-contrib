@@ -113,6 +113,20 @@ Count of sampling policy evaluation errors
 | ---- | ----------- | ---------- | --------- |
 | {errors} | Sum | Int | true |
 
+### otelcol_processor_tail_sampling_sampling_policy_executions
+
+Total number of executions of a specific sampling policy
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {executions} | Sum | Int | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| policy | Name of the policy | Any Str |
+
 ### otelcol_processor_tail_sampling_sampling_trace_dropped_too_early
 
 Count of traces that needed to be dropped before the configured wait time

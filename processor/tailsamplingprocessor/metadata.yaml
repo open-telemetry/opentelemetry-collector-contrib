@@ -38,6 +38,15 @@ telemetry:
         monotonic: true
       attributes: [policy]
 
+    processor_tail_sampling_sampling_policy_executions:
+      description: Total number of executions of a specific sampling policy
+      unit: "{executions}"
+      enabled: true
+      sum:
+        value_type: int
+        monotonic: true
+      attributes: [policy]
+
     processor_tail_sampling_sampling_decision_timer_latency:
       description: Latency (in milliseconds) of each run of the sampling decision timer
       unit: ms

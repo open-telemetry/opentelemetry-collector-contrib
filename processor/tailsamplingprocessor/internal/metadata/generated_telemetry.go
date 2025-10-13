@@ -35,6 +35,7 @@ type TelemetryBuilder struct {
 	ProcessorTailSamplingSamplingLateSpanAge            metric.Int64Histogram
 	ProcessorTailSamplingSamplingPolicyCPUTime          metric.Int64Counter
 	ProcessorTailSamplingSamplingPolicyEvaluationError  metric.Int64Counter
+	ProcessorTailSamplingSamplingPolicyExecutions       metric.Int64Counter
 	ProcessorTailSamplingSamplingTraceDroppedTooEarly   metric.Int64Counter
 	ProcessorTailSamplingSamplingTraceRemovalAge        metric.Int64Histogram
 	ProcessorTailSamplingSamplingTracesOnMemory         metric.Int64Gauge
@@ -122,6 +123,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		"otelcol_processor_tail_sampling_sampling_policy_evaluation_error",
 		metric.WithDescription("Count of sampling policy evaluation errors"),
 		metric.WithUnit("{errors}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessorTailSamplingSamplingPolicyExecutions, err = builder.meter.Int64Counter(
+		"otelcol_processor_tail_sampling_sampling_policy_executions",
+		metric.WithDescription("Total number of executions of a specific sampling policy"),
+		metric.WithUnit("{executions}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorTailSamplingSamplingTraceDroppedTooEarly, err = builder.meter.Int64Counter(
