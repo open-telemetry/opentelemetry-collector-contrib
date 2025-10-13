@@ -141,7 +141,7 @@ func convertBucketsLayout(buckets pmetric.ExponentialHistogramDataPointBuckets, 
 		Length: 0,
 	})
 
-	for i := 0; i < numBuckets; i++ {
+	for i := range numBuckets {
 		// The offset is scaled and adjusted by 1 as described above.
 		nextBucketIdx := (int32(i)+buckets.Offset())>>scaleDown + 1
 		if bucketIdx == nextBucketIdx { // We have not collected enough buckets to merge yet.
@@ -165,7 +165,7 @@ func convertBucketsLayout(buckets pmetric.ExponentialHistogramDataPointBuckets, 
 		} else {
 			// We have found a small gap (or no gap at all).
 			// Insert empty buckets as needed.
-			for j := int32(0); j < gap; j++ {
+			for range gap {
 				appendDelta(0)
 			}
 		}
@@ -186,7 +186,7 @@ func convertBucketsLayout(buckets pmetric.ExponentialHistogramDataPointBuckets, 
 	} else {
 		// We have found a small gap (or no gap at all).
 		// Insert empty buckets as needed.
-		for j := int32(0); j < gap; j++ {
+		for range gap {
 			appendDelta(0)
 		}
 	}

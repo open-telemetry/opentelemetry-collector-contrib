@@ -50,7 +50,7 @@ func createLogData(numberOfLogs int) plog.Logs {
 	sl.Scope().SetName("collector")
 	sl.Scope().SetVersion("v0.1.0")
 
-	for i := 0; i < numberOfLogs; i++ {
+	for i := range numberOfLogs {
 		ts := pcommon.Timestamp(int64(i) * time.Millisecond.Nanoseconds())
 		logRecord := sl.LogRecords().AppendEmpty()
 		switch i {
@@ -107,7 +107,7 @@ func TestConvertLogs(t *testing.T) {
 	wantLogs := make([][]logKeyValuePair, 0, validLogCount)
 	resultLogFile := "./testdata/logservice_log_data.json"
 	require.NoError(t, loadFromJSON(resultLogFile, &wantLogs))
-	for j := 0; j < validLogCount; j++ {
+	for j := range validLogCount {
 		sort.Sort(logKeyValuePairs(gotLogPairs[j]))
 		sort.Sort(logKeyValuePairs(wantLogs[j]))
 		assert.Equal(t, wantLogs[j], gotLogPairs[j])

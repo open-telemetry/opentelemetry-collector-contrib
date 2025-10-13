@@ -721,7 +721,7 @@ func TestRandom_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 				// even though the distribution is random, we know that for this
 				// particular test case, the min value is 40, therefore the 1st 3 bucket
 				// counts should be 0, as they represent values 10 - 30
-				for i := 0; i < 3; i++ {
+				for i := range 3 {
 					assert.Equal(t, uint64(0), dp.BucketCounts().At(i), "bucket %d", i)
 				}
 
