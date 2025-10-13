@@ -299,6 +299,9 @@ func commonOpts(ctx context.Context, clientCfg configkafka.ClientConfig,
 		)
 		opts = append(opts, kgo.MinVersions(versions), kgo.MaxVersions(versions))
 	}
+	if clientCfg.AllowAutoTopicCreation {
+		opts = append(opts, kgo.AllowAutoTopicCreation())
+	}
 	return opts, nil
 }
 

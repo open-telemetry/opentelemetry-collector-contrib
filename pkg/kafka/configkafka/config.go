@@ -62,6 +62,10 @@ type ClientConfig struct {
 	//
 	// NOTE: this is experimental and may be removed in a future release.
 	UseLeaderEpoch bool `mapstructure:"use_leader_epoch"`
+
+	// AllowAutoTopicCreation enables topics to be auto created if they do
+	// not exist when fetching their metadata.
+	AllowAutoTopicCreation bool `mapstructure:"allow_auto_topic_creation"`
 }
 
 func NewDefaultClientConfig() ClientConfig {
