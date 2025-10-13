@@ -29,9 +29,12 @@ type sqlServerScraper struct {
 	instanceScraper         *scrapers.InstanceScraper
 	queryPerformanceScraper *scrapers.QueryPerformanceScraper
 	//slowQueryScraper  *scrapers.SlowQueryScraper
-	databaseScraper       *scrapers.DatabaseScraper
-	userConnectionScraper *scrapers.UserConnectionScraper
-	engineEdition         int // SQL Server engine edition (0=Unknown, 5=Azure DB, 8=Azure MI)
+	databaseScraper               *scrapers.DatabaseScraper
+	userConnectionScraper         *scrapers.UserConnectionScraper
+	failoverClusterScraper        *scrapers.FailoverClusterScraper
+	databasePrincipalsScraper     *scrapers.DatabasePrincipalsScraper
+	databaseRoleMembershipScraper *scrapers.DatabaseRoleMembershipScraper
+	engineEdition                 int // SQL Server engine edition (0=Unknown, 5=Azure DB, 8=Azure MI)
 }
 
 // newSqlServerScraper creates a new SQL Server scraper with structured approach
@@ -78,6 +81,15 @@ func (s *sqlServerScraper) start(ctx context.Context, _ component.Host) error {
 
 	// Create database scraper for database-level metrics
 	s.databaseScraper = scrapers.NewDatabaseScraper(s.connection, s.logger, s.engineEdition)
+
+	// Create failover cluster scraper for Always On Availability Group metrics
+	s.failoverClusterScraper = scrapers.NewFailoverClusterScraper(s.connection, s.logger, s.engineEdition)
+
+	// Create database principals scraper for database security metrics
+	s.databasePrincipalsScraper = scrapers.NewDatabasePrincipalsScraper(s.connection, s.logger, s.engineEdition)
+
+	// Create database role membership scraper for database role and membership metrics
+	s.databaseRoleMembershipScraper = scrapers.NewDatabaseRoleMembershipScraper(s.logger, s.connection, s.engineEdition)
 
 	// Initialize query performance scraper for blocking sessions and performance monitoring
 	s.queryPerformanceScraper = scrapers.NewQueryPerformanceScraper(s.connection, s.logger, s.engineEdition)
@@ -665,6 +677,282 @@ func (s *sqlServerScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 		}
 	} else {
 		s.logger.Debug("Failed login summary metrics disabled in configuration")
+	}
+
+	// Scrape failover cluster metrics if enabled (using granular toggles)
+
+	// Scrape failover cluster replica metrics if enabled
+	if s.config.IsFailoverClusterReplicaMetricsEnabled() {
+		s.logger.Debug("Starting failover cluster replica metrics scraping")
+		scrapeCtx, cancel = context.WithTimeout(ctx, s.config.Timeout)
+		defer cancel()
+		if err := s.failoverClusterScraper.ScrapeFailoverClusterMetrics(scrapeCtx, scopeMetrics); err != nil {
+			s.logger.Error("Failed to scrape failover cluster replica metrics",
+				zap.Error(err),
+				zap.Duration("timeout", s.config.Timeout))
+			scrapeErrors = append(scrapeErrors, err)
+			// Don't return here - continue with other metrics
+		} else {
+			s.logger.Debug("Successfully scraped failover cluster replica metrics")
+		}
+	} else {
+		s.logger.Debug("Failover cluster replica metrics disabled in configuration")
+	}
+
+	// Scrape failover cluster replica state metrics if enabled
+	if s.config.IsFailoverClusterReplicaStateMetricsEnabled() {
+		s.logger.Debug("Starting failover cluster replica state metrics scraping")
+		scrapeCtx, cancel = context.WithTimeout(ctx, s.config.Timeout)
+		defer cancel()
+		if err := s.failoverClusterScraper.ScrapeFailoverClusterReplicaStateMetrics(scrapeCtx, scopeMetrics); err != nil {
+			s.logger.Error("Failed to scrape failover cluster replica state metrics",
+				zap.Error(err),
+				zap.Duration("timeout", s.config.Timeout))
+			scrapeErrors = append(scrapeErrors, err)
+			// Don't return here - continue with other metrics
+		} else {
+			s.logger.Debug("Successfully scraped failover cluster replica state metrics")
+		}
+	} else {
+		s.logger.Debug("Failover cluster replica state metrics disabled in configuration")
+	}
+
+	// Scrape failover cluster node metrics if enabled
+	if s.config.IsFailoverClusterNodeMetricsEnabled() {
+		s.logger.Debug("Starting failover cluster node metrics scraping")
+		scrapeCtx, cancel = context.WithTimeout(ctx, s.config.Timeout)
+		defer cancel()
+		if err := s.failoverClusterScraper.ScrapeFailoverClusterNodeMetrics(scrapeCtx, scopeMetrics); err != nil {
+			s.logger.Error("Failed to scrape failover cluster node metrics",
+				zap.Error(err),
+				zap.Duration("timeout", s.config.Timeout))
+			scrapeErrors = append(scrapeErrors, err)
+			// Don't return here - continue with other metrics
+		} else {
+			s.logger.Debug("Successfully scraped failover cluster node metrics")
+		}
+	} else {
+		s.logger.Debug("Failover cluster node metrics disabled in configuration")
+	}
+
+	// Scrape availability group health metrics if enabled
+	if s.config.IsFailoverClusterAvailabilityGroupHealthMetricsEnabled() {
+		s.logger.Debug("Starting availability group health metrics scraping")
+		scrapeCtx, cancel = context.WithTimeout(ctx, s.config.Timeout)
+		defer cancel()
+		if err := s.failoverClusterScraper.ScrapeFailoverClusterAvailabilityGroupHealthMetrics(scrapeCtx, scopeMetrics); err != nil {
+			s.logger.Error("Failed to scrape availability group health metrics",
+				zap.Error(err),
+				zap.Duration("timeout", s.config.Timeout))
+			scrapeErrors = append(scrapeErrors, err)
+			// Don't return here - continue with other metrics
+		} else {
+			s.logger.Debug("Successfully scraped availability group health metrics")
+		}
+	} else {
+		s.logger.Debug("Availability group health metrics disabled in configuration")
+	}
+
+	// Scrape availability group configuration metrics if enabled
+	if s.config.IsFailoverClusterAvailabilityGroupMetricsEnabled() {
+		s.logger.Debug("Starting availability group configuration metrics scraping")
+		scrapeCtx, cancel = context.WithTimeout(ctx, s.config.Timeout)
+		defer cancel()
+		if err := s.failoverClusterScraper.ScrapeFailoverClusterAvailabilityGroupMetrics(scrapeCtx, scopeMetrics); err != nil {
+			s.logger.Error("Failed to scrape availability group configuration metrics",
+				zap.Error(err),
+				zap.Duration("timeout", s.config.Timeout))
+			scrapeErrors = append(scrapeErrors, err)
+			// Don't return here - continue with other metrics
+		} else {
+			s.logger.Debug("Successfully scraped availability group configuration metrics")
+		}
+	} else {
+		s.logger.Debug("Availability group configuration metrics disabled in configuration")
+	}
+
+	// Scrape failover cluster performance counter metrics if enabled
+	if s.config.IsFailoverClusterPerformanceCounterMetricsEnabled() {
+		s.logger.Debug("Starting failover cluster performance counter metrics scraping")
+		scrapeCtx, cancel = context.WithTimeout(ctx, s.config.Timeout)
+		defer cancel()
+		if err := s.failoverClusterScraper.ScrapeFailoverClusterPerformanceCounterMetrics(scrapeCtx, scopeMetrics); err != nil {
+			s.logger.Error("Failed to scrape failover cluster performance counter metrics",
+				zap.Error(err),
+				zap.Duration("timeout", s.config.Timeout))
+			scrapeErrors = append(scrapeErrors, err)
+			// Don't return here - continue with other metrics
+		} else {
+			s.logger.Debug("Successfully scraped failover cluster performance counter metrics")
+		}
+	} else {
+		s.logger.Debug("Failover cluster performance counter metrics disabled in configuration")
+	}
+
+	// Scrape cluster properties metrics if enabled
+	if s.config.IsFailoverClusterClusterPropertiesMetricsEnabled() {
+		s.logger.Debug("Starting cluster properties metrics scraping")
+		scrapeCtx, cancel = context.WithTimeout(ctx, s.config.Timeout)
+		defer cancel()
+		if err := s.failoverClusterScraper.ScrapeFailoverClusterClusterPropertiesMetrics(scrapeCtx, scopeMetrics); err != nil {
+			s.logger.Error("Failed to scrape cluster properties metrics",
+				zap.Error(err),
+				zap.Duration("timeout", s.config.Timeout))
+			scrapeErrors = append(scrapeErrors, err)
+			// Don't return here - continue with other metrics
+		} else {
+			s.logger.Debug("Successfully scraped cluster properties metrics")
+		}
+	} else {
+		s.logger.Debug("Cluster properties metrics disabled in configuration")
+	}
+
+	// Scrape database principals metrics if enabled (using granular toggles)
+
+	// Scrape database principals details metrics if enabled
+	if s.config.IsDatabasePrincipalsDetailsMetricsEnabled() {
+		s.logger.Debug("Starting database principals details metrics scraping")
+		scrapeCtx, cancel = context.WithTimeout(ctx, s.config.Timeout)
+		defer cancel()
+		if err := s.databasePrincipalsScraper.ScrapeDatabasePrincipalsMetrics(scrapeCtx, scopeMetrics); err != nil {
+			s.logger.Error("Failed to scrape database principals details metrics",
+				zap.Error(err),
+				zap.Duration("timeout", s.config.Timeout))
+			scrapeErrors = append(scrapeErrors, err)
+			// Don't return here - continue with other metrics
+		} else {
+			s.logger.Debug("Successfully scraped database principals details metrics")
+		}
+	} else {
+		s.logger.Debug("Database principals details metrics disabled in configuration")
+	}
+
+	// Scrape database principals summary metrics if enabled
+	if s.config.IsDatabasePrincipalsSummaryMetricsEnabled() {
+		s.logger.Debug("Starting database principals summary metrics scraping")
+		scrapeCtx, cancel = context.WithTimeout(ctx, s.config.Timeout)
+		defer cancel()
+		if err := s.databasePrincipalsScraper.ScrapeDatabasePrincipalsSummaryMetrics(scrapeCtx, scopeMetrics); err != nil {
+			s.logger.Error("Failed to scrape database principals summary metrics",
+				zap.Error(err),
+				zap.Duration("timeout", s.config.Timeout))
+			scrapeErrors = append(scrapeErrors, err)
+			// Don't return here - continue with other metrics
+		} else {
+			s.logger.Debug("Successfully scraped database principals summary metrics")
+		}
+	} else {
+		s.logger.Debug("Database principals summary metrics disabled in configuration")
+	}
+
+	// Scrape database principals activity metrics if enabled
+	if s.config.IsDatabasePrincipalsActivityMetricsEnabled() {
+		s.logger.Debug("Starting database principals activity metrics scraping")
+		scrapeCtx, cancel = context.WithTimeout(ctx, s.config.Timeout)
+		defer cancel()
+		if err := s.databasePrincipalsScraper.ScrapeDatabasePrincipalActivityMetrics(scrapeCtx, scopeMetrics); err != nil {
+			s.logger.Error("Failed to scrape database principals activity metrics",
+				zap.Error(err),
+				zap.Duration("timeout", s.config.Timeout))
+			scrapeErrors = append(scrapeErrors, err)
+			// Don't return here - continue with other metrics
+		} else {
+			s.logger.Debug("Successfully scraped database principals activity metrics")
+		}
+	} else {
+		s.logger.Debug("Database principals activity metrics disabled in configuration")
+	}
+
+	// Scrape database role membership metrics if enabled (using granular toggles)
+
+	// Scrape database role membership details metrics if enabled
+	if s.config.IsDatabaseRoleMembershipDetailsMetricsEnabled() {
+		s.logger.Debug("Starting database role membership details metrics scraping")
+		scrapeCtx, cancel = context.WithTimeout(ctx, s.config.Timeout)
+		defer cancel()
+		if err := s.databaseRoleMembershipScraper.ScrapeDatabaseRoleMembershipMetrics(scrapeCtx, scopeMetrics); err != nil {
+			s.logger.Error("Failed to scrape database role membership details metrics",
+				zap.Error(err),
+				zap.Duration("timeout", s.config.Timeout))
+			scrapeErrors = append(scrapeErrors, err)
+			// Don't return here - continue with other metrics
+		} else {
+			s.logger.Debug("Successfully scraped database role membership details metrics")
+		}
+	} else {
+		s.logger.Debug("Database role membership details metrics disabled in configuration")
+	}
+
+	// Scrape database role membership summary metrics if enabled
+	if s.config.IsDatabaseRoleMembershipSummaryMetricsEnabled() {
+		s.logger.Debug("Starting database role membership summary metrics scraping")
+		scrapeCtx, cancel = context.WithTimeout(ctx, s.config.Timeout)
+		defer cancel()
+		if err := s.databaseRoleMembershipScraper.ScrapeDatabaseRoleMembershipSummaryMetrics(scrapeCtx, scopeMetrics); err != nil {
+			s.logger.Error("Failed to scrape database role membership summary metrics",
+				zap.Error(err),
+				zap.Duration("timeout", s.config.Timeout))
+			scrapeErrors = append(scrapeErrors, err)
+			// Don't return here - continue with other metrics
+		} else {
+			s.logger.Debug("Successfully scraped database role membership summary metrics")
+		}
+	} else {
+		s.logger.Debug("Database role membership summary metrics disabled in configuration")
+	}
+
+	// Scrape database role hierarchy metrics if enabled
+	if s.config.IsDatabaseRoleHierarchyMetricsEnabled() {
+		s.logger.Debug("Starting database role hierarchy metrics scraping")
+		scrapeCtx, cancel = context.WithTimeout(ctx, s.config.Timeout)
+		defer cancel()
+		if err := s.databaseRoleMembershipScraper.ScrapeDatabaseRoleHierarchyMetrics(scrapeCtx, scopeMetrics); err != nil {
+			s.logger.Error("Failed to scrape database role hierarchy metrics",
+				zap.Error(err),
+				zap.Duration("timeout", s.config.Timeout))
+			scrapeErrors = append(scrapeErrors, err)
+			// Don't return here - continue with other metrics
+		} else {
+			s.logger.Debug("Successfully scraped database role hierarchy metrics")
+		}
+	} else {
+		s.logger.Debug("Database role hierarchy metrics disabled in configuration")
+	}
+
+	// Scrape database role activity metrics if enabled
+	if s.config.IsDatabaseRoleActivityMetricsEnabled() {
+		s.logger.Debug("Starting database role activity metrics scraping")
+		scrapeCtx, cancel = context.WithTimeout(ctx, s.config.Timeout)
+		defer cancel()
+		if err := s.databaseRoleMembershipScraper.ScrapeDatabaseRoleActivityMetrics(scrapeCtx, scopeMetrics); err != nil {
+			s.logger.Error("Failed to scrape database role activity metrics",
+				zap.Error(err),
+				zap.Duration("timeout", s.config.Timeout))
+			scrapeErrors = append(scrapeErrors, err)
+			// Don't return here - continue with other metrics
+		} else {
+			s.logger.Debug("Successfully scraped database role activity metrics")
+		}
+	} else {
+		s.logger.Debug("Database role activity metrics disabled in configuration")
+	}
+
+	// Scrape database role permission matrix metrics if enabled
+	if s.config.IsDatabaseRolePermissionMatrixMetricsEnabled() {
+		s.logger.Debug("Starting database role permission matrix metrics scraping")
+		scrapeCtx, cancel = context.WithTimeout(ctx, s.config.Timeout)
+		defer cancel()
+		if err := s.databaseRoleMembershipScraper.ScrapeDatabaseRolePermissionMatrixMetrics(scrapeCtx, scopeMetrics); err != nil {
+			s.logger.Error("Failed to scrape database role permission matrix metrics",
+				zap.Error(err),
+				zap.Duration("timeout", s.config.Timeout))
+			scrapeErrors = append(scrapeErrors, err)
+			// Don't return here - continue with other metrics
+		} else {
+			s.logger.Debug("Successfully scraped database role permission matrix metrics")
+		}
+	} else {
+		s.logger.Debug("Database role permission matrix metrics disabled in configuration")
 	}
 
 	// Log summary of scraping results
