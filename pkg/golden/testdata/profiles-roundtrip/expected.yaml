@@ -1,27 +1,32 @@
 dictionary:
   attributeTable:
-    - key: process.executable.build_id.htlhash
+    - keyStrindex: 4
       value:
         stringValue: 600DCAFE4A110000F2BF38C493F5FB92
-    - key: profile.frame.type
+    - keyStrindex: 5
       value:
         stringValue: native
-    - key: host.id
+    - keyStrindex: 6
       value:
         stringValue: localhost
   locationTable:
     - address: "111"
       attributeIndices:
         - 1
-      mappingIndex: 0
   mappingTable:
     - attributeIndices:
+        - 0
+  stackTable:
+    - locationIndices:
         - 0
   stringTable:
     - samples
     - count
     - cpu
     - nanoseconds
+    - process.executable.build_id.htlhash
+    - profile.frame.type
+    - host.id
 resourceProfiles:
   - resource: {}
     scopeProfiles:
@@ -32,9 +37,8 @@ resourceProfiles:
               typeStrindex: 2
               unitStrindex: 3
             sample:
-              - locationsLength: 1
-                timestampsUnixNano:
+              - timestampsUnixNano:
                   - "0"
             sampleType:
-              - unitStrindex: 1
+              unitStrindex: 1
         scope: {}

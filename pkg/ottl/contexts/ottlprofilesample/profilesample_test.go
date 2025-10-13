@@ -6,7 +6,6 @@ package ottlprofilesample // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"slices"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -190,16 +189,14 @@ func createProfileSampleTelemetry() (pprofile.Sample, pprofile.Profile) {
 	profile := pprofile.NewProfile()
 	sample := profile.Sample().AppendEmpty()
 	sample.SetLinkIndex(42)
-	sample.SetLocationsStartIndex(73)
-	sample.SetLocationsLength(97)
 
 	timestamps := sample.TimestampsUnixNano()
 	if timestamps.Len() == 0 {
 		timestamps.EnsureCapacity(1)
-		timestamps.Append(uint64(time.Now().Unix()))
+		timestamps.Append(1704067200) // January 1, 2024 00:00:00 UTC
 	}
 
-	values := sample.Value()
+	values := sample.Values()
 	if values.Len() == 0 {
 		values.EnsureCapacity(1)
 		values.Append(3)
