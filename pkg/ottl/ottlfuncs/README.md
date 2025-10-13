@@ -468,6 +468,7 @@ Available Converters:
 - [FNV](#fnv)
 - [Format](#format)
 - [FormatTime](#formattime)
+- [GetSemconvSpanName](#getsemconvspanname)
 - [GetXML](#getxml)
 - [HasPrefix](#hasprefix)
 - [HasSuffix](#hassuffix)
@@ -941,6 +942,141 @@ Examples:
 - `FormatTime(Time("02/04/2023", "%m/%d/%Y"), "%A %h %e %Y")`
 - `FormatTime(UnixNano(span.attributes["time_nanoseconds"]), "%b %d %Y %H:%M:%S")`
 - `FormatTime(TruncateTime(spanevent.time, Duration("10h 20m"))), "%Y-%m-%d %H:%M:%S")`
+
+### GetSemconvSpanName
+
+`GetSemconvSpanName()`
+
+The `GetSemconvSpanName` Converter returns a span name based on 
+[OpenTelemetry semantic conventions](https://opentelemetry.io/docs/specs/semconv/) for 
+[HTTP](https://opentelemetry.io/docs/specs/semconv/http/http-spans/), 
+[RPC](https://opentelemetry.io/docs/specs/semconv/rpc/rpc-spans/),
+[messaging](https://opentelemetry.io/docs/specs/semconv/messaging/messaging-spans/), and 
+[database](https://opentelemetry.io/docs/specs/semconv/database/) spans. In all other scenarios, the original `span.name` 
+is returned.
+
+The primary use case of the `GetSemconvSpanName()` function is to be used in conjunction with the 
+[Span Metrics Connector](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/connector/spanmetricsconnector)
+to fix span metrics high cardinality problems when the `span.name` doesn't comply with the OpenTelemetry specification 
+that requires it be be low cardinality   
+
+This function is supported with [OTTL span context](../contexts/ottlspan/README.md). In any other context it is not supported.
+
+`GetSemconvSpanName()` returned value examples:
+
+<table>
+<thead>
+<tr>
+<th>Span</th>
+<th>`GetSemconvSpanName()`</th>
+<th>Comments</th>
+</tr>
+</thead>
+<tbody>
+<!-- HTTP SERVER SPANS -->
+<tr>
+<td>
+<pre>
+<code>
+span.name: GET /api/v1/users/{id}
+span.kind: server
+span.attributes["http.request.method"]: GET
+span.attributes["http.route"]: /api/v1/users/{id}
+</code>
+</pre>
+</td>
+<td>
+<pre>
+GET /api/v1/users/{id}
+</pre>
+</td>
+<td>
+Compliant span names don't get modified
+</td>
+</tr>
+<tr>
+<td>
+<pre>
+<code>
+span.name: GET /api/v1/users/123 # /!\ high cardinality
+span.kind: server
+span.attributes["http.request.method"]: GET
+span.attributes["http.route"]: /api/v1/users/{id}
+</code>
+</pre>
+</td>
+<td>
+<pre>
+GET /api/v1/users/{id}
+</pre>
+</td>
+<td>
+High cardinality span name `GET /api/v1/users/123` gets sanitized without loss of information when recommended semantic 
+convention span attributes are provided (e.g. `http.request.method` and `http.route`).
+</td>
+</tr>
+<tr>
+<td>
+<pre>
+<code>
+span.name: GET /api/v1/users/123 # /!\ high cardinality
+span.kind: server
+span.attributes["http.request.method"]: GET
+</code>
+</pre>
+</td>
+<td>
+<pre>
+GET
+</pre>
+</td>
+<td>
+High cardinality span name `GET /api/v1/users/123` gets sanitized with loss of information when recommended semantic 
+convention span attributes are mising (e.g. `http.route` missing)..
+</td>
+</tr>
+</table>
+
+Backward compatibility: `GetSemconvSpanName()` supports the version 1.37 of the semantic conventions and backward compatibility 
+for the following attributes:
+
+| Attribute             | Backward compatibility |
+|-----------------------|------------------------|
+| `http.request.method` | `http.method`          |
+| `rpc.method`          | `rpc.grpc.method`      |
+| `rpc.service`         | `rpc.grpc.service`     |
+| `db.system`           | `db.system.name`       |
+| `db.operation.name`   | `db.operation`         |
+| `db.collection.name`  | `db.name`              |
+
+OTTL syntax examples:
+
+- `set(span.name, GetSemconvSpanName())`
+
+- Ingestion pipeline preventing high cardinality on the `span.name` attribute of the metrics produced by the span metrics connector:
+
+    ```yaml
+    processors:
+      # ...
+      # prevent high cardinality span names
+      transform/sanitize_span_name:
+        error_mode: ignore
+        trace_statements:
+          - set(span.attributes["original_name"], span.name)
+          - set(span.name, GetSemconvSpanName())
+          - delete_key(span.attributes, "original_name") where span.attributes["original_name"] == span.name
+    connectors:
+      spanmetrics:
+    service:
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [..., transform/sanitize_span_name, ...]
+          exporters: [otlp, spanmetrics]
+        metrics:
+          receivers: [spanmetrics, ...]
+          exporters: [otlp]
+    ```
 
 ### GetXML
 
