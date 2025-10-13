@@ -112,8 +112,6 @@ receivers:
           static_configs:
             - targets: [%q]
 
-processors:
-  batch:
 exporters:
   prometheusremotewrite:
     endpoint: %q
@@ -121,10 +119,12 @@ exporters:
       insecure: true
 
 service:
+  telemetry:
+    metrics:
+      level: "none"
   pipelines:
     metrics:
       receivers: [prometheus]
-      processors: [batch]
       exporters: [prometheusremotewrite]`, serverURL.Host, prweServer.URL)
 
 	confFile, err := os.CreateTemp(os.TempDir(), "conf-")
@@ -188,7 +188,7 @@ service:
 
 	// 5. Let's wait on 10 fetches.
 	var wReqL []*prompb.WriteRequest
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		wReqL = append(wReqL, <-prweUploads)
 	}
 	defer cancel()

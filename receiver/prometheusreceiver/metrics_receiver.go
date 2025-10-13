@@ -96,7 +96,7 @@ func newPrometheusReceiver(set receiver.Settings, cfg *Config, next consumer.Met
 		registry:     registry,
 		targetAllocatorManager: targetallocator.NewManager(
 			set,
-			cfg.TargetAllocator,
+			cfg.TargetAllocator.Get(),
 			&baseCfg,
 			enableNativeHistogramsGate.IsEnabled(),
 		),
@@ -123,7 +123,7 @@ func (r *pReceiver) Start(ctx context.Context, host component.Host) error {
 		return err
 	}
 
-	if r.cfg.APIServer != nil && r.cfg.APIServer.Enabled {
+	if r.cfg.APIServer.Enabled {
 		err = r.initAPIServer(discoveryCtx, host)
 		if err != nil {
 			r.settings.Logger.Error("Failed to initAPIServer", zap.Error(err))
@@ -348,6 +348,8 @@ func (r *pReceiver) initAPIServer(ctx context.Context, host component.Host) erro
 		o.ConvertOTLPDelta,
 		o.NativeOTLPDeltaIngestion,
 		o.CTZeroIngestionEnabled,
+		5*time.Minute, // LookbackDelta - Using the default value of 5 minutes
+		o.EnableTypeAndUnitLabels,
 	)
 
 	// Create listener and monitor with conntrack in the same way as the Prometheus web package: https://github.com/prometheus/prometheus/blob/6150e1ca0ede508e56414363cc9062ef522db518/web/web.go#L564-L579
@@ -407,10 +409,7 @@ func setPathWithPrefix(prefix string) func(handlerName string, handler http.Hand
 // plus a delta to prevent race conditions.
 // This ensures jobs are not garbage collected between scrapes.
 func gcInterval(cfg *PromConfig) time.Duration {
-	gcInterval := defaultGCInterval
-	if time.Duration(cfg.GlobalConfig.ScrapeInterval)+gcIntervalDelta > gcInterval {
-		gcInterval = time.Duration(cfg.GlobalConfig.ScrapeInterval) + gcIntervalDelta
-	}
+	gcInterval := max(time.Duration(cfg.GlobalConfig.ScrapeInterval)+gcIntervalDelta, defaultGCInterval)
 	for _, scrapeConfig := range cfg.ScrapeConfigs {
 		if time.Duration(scrapeConfig.ScrapeInterval)+gcIntervalDelta > gcInterval {
 			gcInterval = time.Duration(scrapeConfig.ScrapeInterval) + gcIntervalDelta

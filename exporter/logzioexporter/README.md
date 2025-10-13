@@ -56,10 +56,6 @@ receivers:
         endpoint: "0.0.0.0:14250"
       thrift_http:
         endpoint: "0.0.0.0:14268"
-processors:
-  batch:
-    send_batch_size: 10000
-    timeout: 1s
 exporters:
   logzio/traces:
     account_token: "LOGZIOtraceTOKEN"
@@ -68,7 +64,6 @@ service:
   pipelines:
     traces:
       receivers: [ otlp,jaeger ]
-      processors: [ batch ]
       exporters: [ logzio/traces ]
   telemetry:
     logs:
@@ -92,9 +87,6 @@ receivers:
     attributes:
       type: <<your-logzio-type>>
 processors:
-  batch:
-    send_batch_size: 10000
-    timeout: 1s
   resourcedetection/system:
     detectors: [ "system" ]
     system:
@@ -107,7 +99,7 @@ service:
   pipelines:
     logs:
       receivers: [filelog]
-      processors: [ resourcedetection/system, batch ]
+      processors: [ resourcedetection/system ]
       exporters: [logzio/logs]
   telemetry:
     logs:
@@ -150,17 +142,11 @@ exporters:
     endpoint: "https://listener.logz.io:8053"
     headers:
       Authorization: "Bearer LOGZIOprometheusTOKEN"
-
-processors:
-  batch:
-    send_batch_size: 10000
-    timeout: 1s
     
 service:
   pipelines:
     traces:
       receivers: [jaeger]
-      processors: [batch]
       exporters: [logzio/traces]
 
     metrics:

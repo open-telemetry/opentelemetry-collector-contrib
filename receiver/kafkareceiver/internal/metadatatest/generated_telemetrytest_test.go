@@ -37,6 +37,7 @@ func TestSetupTelemetry(t *testing.T) {
 	tb.KafkaReceiverRecordsDelay.Record(context.Background(), 1)
 	tb.KafkaReceiverUnmarshalFailedLogRecords.Add(context.Background(), 1)
 	tb.KafkaReceiverUnmarshalFailedMetricPoints.Add(context.Background(), 1)
+	tb.KafkaReceiverUnmarshalFailedProfiles.Add(context.Background(), 1)
 	tb.KafkaReceiverUnmarshalFailedSpans.Add(context.Background(), 1)
 	AssertEqualKafkaBrokerClosed(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
@@ -87,6 +88,9 @@ func TestSetupTelemetry(t *testing.T) {
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualKafkaReceiverUnmarshalFailedMetricPoints(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualKafkaReceiverUnmarshalFailedProfiles(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualKafkaReceiverUnmarshalFailedSpans(t, testTel,

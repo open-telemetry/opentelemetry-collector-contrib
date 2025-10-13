@@ -4,6 +4,8 @@
 package metrics // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metrics"
 
 import (
+	"maps"
+
 	"go.opentelemetry.io/collector/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -22,14 +24,13 @@ var UseConvertBetweenSumAndGaugeMetricContext = featuregate.GlobalRegistry().Mus
 func DataPointFunctions() map[string]ottl.Factory[ottldatapoint.TransformContext] {
 	functions := ottlfuncs.StandardFuncs[ottldatapoint.TransformContext]()
 
-	datapointFunctions := ottl.CreateFactoryMap[ottldatapoint.TransformContext](
+	datapointFunctions := ottl.CreateFactoryMap(
 		newConvertSummarySumValToSumFactory(),
 		newConvertSummaryCountValToSumFactory(),
+		newMergeHistogramBucketsFactory(),
 	)
 
-	for k, v := range datapointFunctions {
-		functions[k] = v
-	}
+	maps.Copy(functions, datapointFunctions)
 
 	return functions
 }
@@ -50,9 +51,7 @@ func MetricFunctions() map[string]ottl.Factory[ottlmetric.TransformContext] {
 		newConvertSummaryQuantileValToGaugeFactory(),
 	)
 
-	for k, v := range metricFunctions {
-		functions[k] = v
-	}
+	maps.Copy(functions, metricFunctions)
 
 	return functions
 }

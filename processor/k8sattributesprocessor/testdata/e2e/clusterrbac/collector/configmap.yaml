@@ -26,6 +26,12 @@ data:
           - from: statefulset
             key: workload
             tag_name: simple-statefulset-workload-annotation
+          - from: daemonset
+            key: workload
+            tag_name: simple-daemonset-workload-annotation
+          - from: job
+            key: workload
+            tag_name: simple-job-workload-annotation
           labels:
           - from: pod
             key: app
@@ -48,6 +54,7 @@ data:
           - k8s.daemonset.name
           - k8s.daemonset.uid
           - k8s.cronjob.name
+          - k8s.cronjob.uid
           - k8s.job.name
           - k8s.job.uid
           - k8s.node.name

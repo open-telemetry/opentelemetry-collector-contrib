@@ -16,6 +16,7 @@ const (
 	knownTracesCacheSize                  = 128 * 1024
 	knownUnsymbolizedFramesCacheSize      = 128 * 1024
 	knownUnsymbolizedExecutablesCacheSize = 16 * 1024
+	knownHostsCacheSize                   = 1024 * 1024
 
 	minILMRolloverTime = 3 * time.Hour
 )
@@ -29,6 +30,7 @@ type Serializer struct {
 	knownExecutables             *lru.LRUSet
 	knownUnsymbolizedFrames      *lru.LRUSet
 	knownUnsymbolizedExecutables *lru.LRUSet
+	knownHosts                   *lru.LRUSet
 }
 
 // New builds a new Serializer

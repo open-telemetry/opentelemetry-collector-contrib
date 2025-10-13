@@ -105,8 +105,10 @@ type resourceAggregator struct {
 
 // newResourceAggregator creates a new ResourceCounter.
 func newResourceAggregator(resource pcommon.Resource, dedupFields []string) *resourceAggregator {
+	cloneResource := pcommon.NewResource()
+	resource.CopyTo(cloneResource)
 	return &resourceAggregator{
-		resource:      resource,
+		resource:      cloneResource,
 		scopeCounters: make(map[uint64]*scopeAggregator),
 		dedupFields:   dedupFields,
 	}
@@ -132,8 +134,10 @@ type scopeAggregator struct {
 
 // newScopeAggregator creates a new ScopeCounter.
 func newScopeAggregator(scope pcommon.InstrumentationScope, dedupFields []string) *scopeAggregator {
+	cloneScope := pcommon.NewInstrumentationScope()
+	scope.CopyTo(cloneScope)
 	return &scopeAggregator{
-		scope:       scope,
+		scope:       cloneScope,
 		logCounters: make(map[uint64]*logCounter),
 		dedupFields: dedupFields,
 	}
@@ -160,8 +164,11 @@ type logCounter struct {
 
 // newLogCounter creates a new AttributeCounter.
 func newLogCounter(logRecord plog.LogRecord) *logCounter {
+	// Since we always remove the logRecord if we got to this point, we can move it instead of copying.
+	movedLogRecord := plog.NewLogRecord()
+	logRecord.MoveTo(movedLogRecord)
 	return &logCounter{
-		logRecord:              logRecord,
+		logRecord:              movedLogRecord,
 		count:                  0,
 		firstObservedTimestamp: timeNow().UTC(),
 		lastObservedTimestamp:  timeNow().UTC(),

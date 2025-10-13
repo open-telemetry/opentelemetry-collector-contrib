@@ -26,7 +26,6 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/testing/compare"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/testing/sdktest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/testing/testar"
 )
@@ -69,21 +68,15 @@ func TestProcessor(t *testing.T) {
 			stages, _ := filepath.Glob(file("*.test"))
 			for _, file := range stages {
 				var stage Stage
-				err := read(file, &stage)
-				require.NoError(t, err)
+				require.NoError(t, read(file, &stage))
 
 				sink.Reset()
-				err = proc.ConsumeMetrics(ctx, stage.In)
-				require.NoError(t, err)
+				require.NoError(t, proc.ConsumeMetrics(ctx, stage.In))
 
 				out := []pmetric.Metrics{stage.Out}
-				if diff := compare.Diff(out, sink.AllMetrics()); diff != "" {
-					t.Fatal(diff)
-				}
+				assert.Equal(t, out, sink.AllMetrics())
 
-				if err := sdktest.Test(stage.Sdk, tel.reader); err != nil {
-					t.Fatal(err)
-				}
+				require.NoError(t, sdktest.Test(stage.Sdk, tel.reader))
 			}
 		})
 	}

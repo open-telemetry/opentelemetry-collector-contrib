@@ -1504,7 +1504,7 @@ func verifyStartTimeMetricPage(t *testing.T, td *testData, result []pmetric.Reso
 	numTimeseries := 0
 	for _, rm := range result {
 		metrics := getMetrics(rm)
-		for i := 0; i < len(metrics); i++ {
+		for i := range metrics {
 			timestamp := startTimeMetricPageStartTimestamp
 			switch metrics[i].Type() {
 			case pmetric.MetricTypeGauge:
@@ -1585,6 +1585,7 @@ example_process_start_time_seconds 400.8
 
 // TestStartTimeMetricRegex validates that timeseries have start time regex set to 'process_start_time_seconds'
 func TestStartTimeMetricRegex(t *testing.T) {
+	t.Skip("Skipping test since it is flaky, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42684.")
 	targets := []*testData{
 		{
 			name: "target1",

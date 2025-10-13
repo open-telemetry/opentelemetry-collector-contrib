@@ -13,7 +13,7 @@ import (
 
 // See:
 // https://docs.datadoghq.com/opentelemetry/schema_semantics/semantic_mapping/
-// https://github.com/DataDog/opentelemetry-mapping-go/blob/main/pkg/otlp/attributes/attributes.go
+// https://github.com/DataDog/datadog-agent/blob/main/pkg/opentelemetry-mapping-go/otlp/attributes/attributes.go
 var datadogKnownResourceAttributes = map[string]string{
 	"env":     string(semconv.DeploymentEnvironmentNameKey),
 	"service": string(semconv.ServiceNameKey),
@@ -101,11 +101,11 @@ func translateDatadogKeyToOTel(k string) string {
 	}
 
 	// HTTP dynamic attributes
-	if strings.HasPrefix(k, "http.response.headers.") { // type: string[]
-		header := strings.TrimPrefix(k, "http.response.headers.")
+	if after, ok := strings.CutPrefix(k, "http.response.headers."); ok { // type: string[]
+		header := after
 		return "http.response.header." + header
-	} else if strings.HasPrefix(k, "http.request.headers.") { // type: string[]
-		header := strings.TrimPrefix(k, "http.request.headers.")
+	} else if after, ok := strings.CutPrefix(k, "http.request.headers."); ok { // type: string[]
+		header := after
 		return "http.request.header." + header
 	}
 	return k

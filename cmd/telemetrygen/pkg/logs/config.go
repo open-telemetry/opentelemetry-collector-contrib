@@ -5,6 +5,7 @@ package logs
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/spf13/pflag"
 
@@ -50,7 +51,7 @@ func (c *Config) SetDefaults() {
 	c.Config.SetDefaults()
 	c.HTTPPath = "/v1/logs"
 	c.Rate = 1
-	c.TotalDuration = types.MustDurationWithInf("inf")
+	c.TotalDuration = types.DurationWithInf(0)
 	c.Body = "the message"
 	c.SeverityText = "Info"
 	c.SeverityNumber = 9
@@ -62,6 +63,10 @@ func (c *Config) SetDefaults() {
 func (c *Config) Validate() error {
 	if c.TotalDuration.Duration() <= 0 && c.NumLogs <= 0 && !c.TotalDuration.IsInf() {
 		return errors.New("either `logs` or `duration` must be greater than 0")
+	}
+
+	if c.LoadSize < 0 {
+		return fmt.Errorf("load size must be non-negative, found %d", c.LoadSize)
 	}
 
 	if c.TraceID != "" {

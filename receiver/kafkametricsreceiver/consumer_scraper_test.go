@@ -123,14 +123,16 @@ func TestConsumerScraper_createScraper_handles_invalid_group_match(t *testing.T)
 }
 
 func TestConsumerScraper_scrape(t *testing.T) {
+	client := newMockClient()
 	filter := regexp.MustCompile(defaultGroupMatch)
 	cs := consumerScraper{
-		client:       newMockClient(),
+		client:       client,
 		settings:     receivertest.NewNopSettings(metadata.Type),
 		clusterAdmin: newMockClusterAdmin(),
 		topicFilter:  filter,
 		groupFilter:  filter,
 	}
+	client.Mock.On("Closed").Return(false)
 	require.NoError(t, cs.start(t.Context(), componenttest.NewNopHost()))
 	md, err := cs.scrape(t.Context())
 	assert.NoError(t, err)
@@ -149,36 +151,41 @@ func TestConsumerScraper_scrape_handlesListTopicError(t *testing.T) {
 		topicFilter:  filter,
 		groupFilter:  filter,
 	}
+	client.Mock.On("Closed").Return(false)
 	_, err := cs.scrape(t.Context())
 	assert.Error(t, err)
 }
 
 func TestConsumerScraper_scrape_handlesListConsumerGroupError(t *testing.T) {
+	client := newMockClient()
 	filter := regexp.MustCompile(defaultGroupMatch)
 	clusterAdmin := newMockClusterAdmin()
 	clusterAdmin.consumerGroups = nil
 	cs := consumerScraper{
-		client:       newMockClient(),
+		client:       client,
 		settings:     receivertest.NewNopSettings(metadata.Type),
 		clusterAdmin: clusterAdmin,
 		topicFilter:  filter,
 		groupFilter:  filter,
 	}
+	client.Mock.On("Closed").Return(false)
 	_, err := cs.scrape(t.Context())
 	assert.Error(t, err)
 }
 
 func TestConsumerScraper_scrape_handlesDescribeConsumerError(t *testing.T) {
+	client := newMockClient()
 	filter := regexp.MustCompile(defaultGroupMatch)
 	clusterAdmin := newMockClusterAdmin()
 	clusterAdmin.consumerGroupDescriptions = nil
 	cs := consumerScraper{
-		client:       newMockClient(),
+		client:       client,
 		settings:     receivertest.NewNopSettings(metadata.Type),
 		clusterAdmin: clusterAdmin,
 		topicFilter:  filter,
 		groupFilter:  filter,
 	}
+	client.Mock.On("Closed").Return(false)
 	_, err := cs.scrape(t.Context())
 	assert.Error(t, err)
 }
@@ -196,6 +203,7 @@ func TestConsumerScraper_scrape_handlesOffsetPartialError(t *testing.T) {
 		topicFilter:  filter,
 		clusterAdmin: clusterAdmin,
 	}
+	client.Mock.On("Closed").Return(false)
 	require.NoError(t, cs.start(t.Context(), componenttest.NewNopHost()))
 	_, err := cs.scrape(t.Context())
 	assert.Error(t, err)
@@ -214,6 +222,7 @@ func TestConsumerScraper_scrape_handlesPartitionPartialError(t *testing.T) {
 		topicFilter:  filter,
 		clusterAdmin: clusterAdmin,
 	}
+	client.Mock.On("Closed").Return(false)
 	require.NoError(t, cs.start(t.Context(), componenttest.NewNopHost()))
 	_, err := cs.scrape(t.Context())
 	assert.Error(t, err)

@@ -462,8 +462,8 @@ func benchmarkFilter(b *testing.B, mp *filterconfig.MetricMatchProperties) {
 	)
 	pdms := metricSlice(128)
 	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+
+	for b.Loop() {
 		for _, pdm := range pdms {
 			_ = proc.ConsumeMetrics(ctx, pdm)
 		}
@@ -472,7 +472,7 @@ func benchmarkFilter(b *testing.B, mp *filterconfig.MetricMatchProperties) {
 
 func metricSlice(numMetrics int) []pmetric.Metrics {
 	var out []pmetric.Metrics
-	for i := 0; i < numMetrics; i++ {
+	for i := range numMetrics {
 		const size = 2
 		out = append(out, pdm(fmt.Sprintf("p%d_", i), size))
 	}
@@ -764,7 +764,8 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			processor, err := newFilterMetricProcessor(processortest.NewNopSettings(metadata.Type), &Config{Metrics: tt.conditions, ErrorMode: tt.errorMode})
+			cfg := &Config{Metrics: tt.conditions, ErrorMode: tt.errorMode, metricFunctions: defaultMetricFunctionsMap()}
+			processor, err := newFilterMetricProcessor(processortest.NewNopSettings(metadata.Type), cfg)
 			assert.NoError(t, err)
 
 			got, err := processor.processMetrics(t.Context(), constructMetrics())

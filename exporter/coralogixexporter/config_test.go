@@ -73,7 +73,7 @@ func TestLoadConfig(t *testing.T) {
 					BalancerName:    "",
 				},
 				RateLimiter: RateLimiterConfig{
-					Enabled:   false,
+					Enabled:   true,
 					Threshold: 10,
 					Duration:  time.Minute,
 				},
@@ -118,7 +118,7 @@ func TestLoadConfig(t *testing.T) {
 				AppNameAttributes:   []string{"service.namespace", "k8s.namespace.name"},
 				SubSystemAttributes: []string{"service.name", "k8s.deployment.name", "k8s.statefulset.name", "k8s.daemonset.name", "k8s.cronjob.name", "k8s.job.name", "k8s.container.name"},
 				RateLimiter: RateLimiterConfig{
-					Enabled:   false,
+					Enabled:   true,
 					Threshold: 10,
 					Duration:  time.Minute,
 				},
@@ -290,6 +290,97 @@ func TestGetMetadataFromResource(t *testing.T) {
 	appName, subSystemName = c.getMetadataFromResource(r3)
 	assert.Equal(t, "application", appName)
 	assert.Equal(t, "subsystem", subSystemName)
+}
+
+func TestGetDomainGrpcSettings(t *testing.T) {
+	tests := []struct {
+		name             string
+		domain           string
+		privateLink      bool
+		expectedEndpoint string
+	}{
+		{
+			name:             "Standard domain without PrivateLink",
+			domain:           "coralogix.com",
+			privateLink:      false,
+			expectedEndpoint: "ingress.coralogix.com:443",
+		},
+		{
+			name:             "Standard domain with PrivateLink",
+			domain:           "coralogix.com",
+			privateLink:      true,
+			expectedEndpoint: "ingress.private.coralogix.com:443",
+		},
+		{
+			name:             "EU2 domain without PrivateLink",
+			domain:           "eu2.coralogix.com",
+			privateLink:      false,
+			expectedEndpoint: "ingress.eu2.coralogix.com:443",
+		},
+		{
+			name:             "EU2 domain with PrivateLink",
+			domain:           "eu2.coralogix.com",
+			privateLink:      true,
+			expectedEndpoint: "ingress.private.eu2.coralogix.com:443",
+		},
+		{
+			name:             "AP1 domain without PrivateLink",
+			domain:           "coralogix.in",
+			privateLink:      false,
+			expectedEndpoint: "ingress.coralogix.in:443",
+		},
+		{
+			name:             "AP1 domain with PrivateLink",
+			domain:           "coralogix.in",
+			privateLink:      true,
+			expectedEndpoint: "ingress.private.coralogix.in:443",
+		},
+		{
+			name:             "US1 domain with PrivateLink",
+			domain:           "coralogix.us",
+			privateLink:      true,
+			expectedEndpoint: "ingress.private.coralogix.us:443",
+		},
+		{
+			name:             "Domain already contains private prefix with PrivateLink",
+			domain:           "private.coralogix.com",
+			privateLink:      true,
+			expectedEndpoint: "ingress.private.coralogix.com:443",
+		},
+		{
+			name:             "Domain already contains private prefix without PrivateLink",
+			domain:           "private.coralogix.com",
+			privateLink:      false,
+			expectedEndpoint: "ingress.private.coralogix.com:443",
+		},
+		{
+			name:             "EU2 domain already contains private with PrivateLink",
+			domain:           "private.eu2.coralogix.com",
+			privateLink:      true,
+			expectedEndpoint: "ingress.private.eu2.coralogix.com:443",
+		},
+		{
+			name:             "Domain contains private in middle with PrivateLink",
+			domain:           "eu2.private.coralogix.com",
+			privateLink:      true,
+			expectedEndpoint: "ingress.eu2.private.coralogix.com:443",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &Config{
+				Domain:      tt.domain,
+				PrivateLink: tt.privateLink,
+				DomainSettings: configgrpc.ClientConfig{
+					Compression: configcompression.TypeGzip,
+				},
+			}
+
+			settings := cfg.getDomainGrpcSettings()
+			assert.Equal(t, tt.expectedEndpoint, settings.Endpoint)
+		})
+	}
 }
 
 func TestCreateExportersWithBatcher(t *testing.T) {
