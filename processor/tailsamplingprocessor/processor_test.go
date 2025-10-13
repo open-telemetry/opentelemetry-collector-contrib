@@ -308,12 +308,12 @@ func TestConcurrentArrivalAndEvaluation(t *testing.T) {
 	for _, batch := range batches {
 		wg.Add(1)
 		go func(td ptrace.Traces) {
-			for i := 0; i < 10; i++ {
+			for range 10 {
 				assert.NoError(t, tsp.ConsumeTraces(t.Context(), td))
 			}
 			<-evalStarted
 			close(continueEvaluation)
-			for i := 0; i < 10; i++ {
+			for range 10 {
 				assert.NoError(t, tsp.ConsumeTraces(t.Context(), td))
 			}
 			wg.Done()
@@ -856,7 +856,7 @@ func generateIDsAndBatches(numIDs int) ([]pcommon.TraceID, []ptrace.Traces) {
 	traceIDs := make([]pcommon.TraceID, numIDs)
 	spanID := 0
 	var tds []ptrace.Traces
-	for i := 0; i < numIDs; i++ {
+	for i := range numIDs {
 		traceIDs[i] = uInt64ToTraceID(uint64(i))
 		// Send each span in a separate batch
 		for j := 0; j <= i; j++ {

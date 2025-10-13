@@ -159,7 +159,7 @@ func exprConfig(factory processor.Factory, include, exclude []string) component.
 
 func testDataSlice(size int, mdType pmetric.MetricType, mvType pmetric.NumberDataPointValueType) []pmetric.Metrics {
 	var out []pmetric.Metrics
-	for i := 0; i < 16; i++ {
+	for i := range 16 {
 		out = append(out, testData(fmt.Sprintf("p%d_", i), size, mdType, mvType))
 	}
 	return out
