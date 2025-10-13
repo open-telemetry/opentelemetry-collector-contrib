@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 )
 
@@ -171,7 +170,7 @@ func TestConfigValidation(t *testing.T) {
 				MaxConcurrentWorkers:                 5,
 				EnableQueryMonitoring:                true,
 				QueryMonitoringResponseTimeThreshold: 5,
-				QueryMonitoringCountThreshold:        1,
+				QueryMonitoringCountThreshold:        -1,
 			},
 			wantErr: true,
 			errMsg:  "query_monitoring_count_threshold must be positive when query monitoring is enabled",
@@ -224,10 +223,15 @@ func TestConfigDefaults(t *testing.T) {
 	assert.Equal(t, 30*time.Second, cfg.Timeout)
 
 	// Query monitoring defaults
-	assert.False(t, cfg.EnableQueryMonitoring)
+	assert.True(t, cfg.EnableQueryMonitoring)
 	assert.Equal(t, 1, cfg.QueryMonitoringResponseTimeThreshold)
 	assert.Equal(t, 20, cfg.QueryMonitoringCountThreshold)
 	assert.Equal(t, 15, cfg.QueryMonitoringFetchInterval)
+
+	// New configuration defaults
+	assert.False(t, cfg.EnableFailoverClusterMetrics)
+	assert.False(t, cfg.EnableDatabasePrincipalsMetrics)
+	assert.False(t, cfg.EnableDatabaseRoleMembershipMetrics)
 
 	// Collection interval default
 	assert.Equal(t, 15*time.Second, cfg.ControllerConfig.CollectionInterval)
@@ -380,6 +384,9 @@ func TestAllHelperMethods(t *testing.T) {
 		{"IsMemoryTotalMetricsEnabled", config.IsMemoryTotalMetricsEnabled, true},
 		{"IsMemoryAvailableMetricsEnabled", config.IsMemoryAvailableMetricsEnabled, true},
 		{"IsMemoryUtilizationMetricsEnabled", config.IsMemoryUtilizationMetricsEnabled, true},
+		{"IsFailoverClusterMetricsEnabled", config.IsFailoverClusterMetricsEnabled, false},
+		{"IsDatabasePrincipalsMetricsEnabled", config.IsDatabasePrincipalsMetricsEnabled, false},
+		{"IsDatabaseRoleMembershipMetricsEnabled", config.IsDatabaseRoleMembershipMetricsEnabled, false},
 	}
 
 	for _, tt := range tests {

@@ -40,17 +40,43 @@ type Config struct {
 
 	// Performance and feature toggles
 	EnableDatabaseSampleMetrics  bool `mapstructure:"enable_database_sample_metrics"`
-	EnableBufferMetrics          bool `mapstructure:"enable_buffer_metrics"`
-	EnableDatabaseReserveMetrics bool `mapstructure:"enable_database_reserve_metrics"`
-	EnableDiskMetricsInBytes     bool `mapstructure:"enable_disk_metrics_in_bytes"`
-	EnableIOMetrics              bool `mapstructure:"enable_io_metrics"`
-	EnableLogGrowthMetrics       bool `mapstructure:"enable_log_growth_metrics"`
-	EnablePageFileMetrics        bool `mapstructure:"enable_page_file_metrics"`
-	EnablePageFileTotalMetrics   bool `mapstructure:"enable_page_file_total_metrics"`
-	EnableMemoryMetrics          bool `mapstructure:"enable_memory_metrics"`
-	EnableMemoryTotalMetrics     bool `mapstructure:"enable_memory_total_metrics"`
-	EnableMemoryAvailableMetrics bool `mapstructure:"enable_memory_available_metrics"`
-	EnableMemoryUtilizationMetrics bool `mapstructure:"enable_memory_utilization_metrics"`
+	EnableFailoverClusterMetrics bool `mapstructure:"enable_failover_cluster_metrics"`
+
+	// Granular failover cluster metrics configuration
+	EnableFailoverClusterReplicaMetrics                 bool `mapstructure:"enable_failover_cluster_replica_metrics"`
+	EnableFailoverClusterReplicaStateMetrics            bool `mapstructure:"enable_failover_cluster_replica_state_metrics"`
+	EnableFailoverClusterNodeMetrics                    bool `mapstructure:"enable_failover_cluster_node_metrics"`
+	EnableFailoverClusterAvailabilityGroupHealthMetrics bool `mapstructure:"enable_failover_cluster_availability_group_health_metrics"`
+	EnableFailoverClusterAvailabilityGroupMetrics       bool `mapstructure:"enable_failover_cluster_availability_group_metrics"`
+	EnableFailoverClusterPerformanceCounterMetrics      bool `mapstructure:"enable_failover_cluster_performance_counter_metrics"`
+	EnableFailoverClusterClusterPropertiesMetrics       bool `mapstructure:"enable_failover_cluster_cluster_properties_metrics"`
+
+	// Database security metrics configuration
+	EnableDatabasePrincipalsMetrics     bool `mapstructure:"enable_database_principals_metrics"`
+	EnableDatabaseRoleMembershipMetrics bool `mapstructure:"enable_database_role_membership_metrics"`
+
+	// Granular database principals metrics configuration
+	EnableDatabasePrincipalsDetailsMetrics  bool `mapstructure:"enable_database_principals_details_metrics"`  // Database principals and users information
+	EnableDatabasePrincipalsSummaryMetrics  bool `mapstructure:"enable_database_principals_summary_metrics"`  // Database principals summary statistics
+	EnableDatabasePrincipalsActivityMetrics bool `mapstructure:"enable_database_principals_activity_metrics"` // Database principals activity and lifecycle
+
+	// Granular database role membership metrics configuration
+	EnableDatabaseRoleMembershipDetailsMetrics bool `mapstructure:"enable_database_role_membership_details_metrics"` // Database role membership relationships
+	EnableDatabaseRoleMembershipSummaryMetrics bool `mapstructure:"enable_database_role_membership_summary_metrics"` // Database role membership summary statistics
+	EnableDatabaseRoleHierarchyMetrics         bool `mapstructure:"enable_database_role_hierarchy_metrics"`          // Database role hierarchy and nesting information
+	EnableDatabaseRoleActivityMetrics          bool `mapstructure:"enable_database_role_activity_metrics"`           // Database role activity and usage metrics
+	EnableDatabaseRolePermissionMatrixMetrics  bool `mapstructure:"enable_database_role_permission_matrix_metrics"`  // Database role permission matrix analysis
+	EnableBufferMetrics                        bool `mapstructure:"enable_buffer_metrics"`
+	EnableDatabaseReserveMetrics               bool `mapstructure:"enable_database_reserve_metrics"`
+	EnableDiskMetricsInBytes                   bool `mapstructure:"enable_disk_metrics_in_bytes"`
+	EnableIOMetrics                            bool `mapstructure:"enable_io_metrics"`
+	EnableLogGrowthMetrics                     bool `mapstructure:"enable_log_growth_metrics"`
+	EnablePageFileMetrics                      bool `mapstructure:"enable_page_file_metrics"`
+	EnablePageFileTotalMetrics                 bool `mapstructure:"enable_page_file_total_metrics"`
+	EnableMemoryMetrics                        bool `mapstructure:"enable_memory_metrics"`
+	EnableMemoryTotalMetrics                   bool `mapstructure:"enable_memory_total_metrics"`
+	EnableMemoryAvailableMetrics               bool `mapstructure:"enable_memory_available_metrics"`
+	EnableMemoryUtilizationMetrics             bool `mapstructure:"enable_memory_utilization_metrics"`
 
 	// Concurrency and timeouts
 	MaxConcurrentWorkers int           `mapstructure:"max_concurrent_workers"`
@@ -81,17 +107,43 @@ func DefaultConfig() component.Config {
 
 		// Default feature toggles (matching nri-mssql defaults)
 		EnableDatabaseSampleMetrics:  false, // Master toggle - when true, enables all database metrics
-		EnableBufferMetrics:          true,
-		EnableDatabaseReserveMetrics: true,
-		EnableDiskMetricsInBytes:     true,
-		EnableIOMetrics:              true,
-		EnableLogGrowthMetrics:       true,
-		EnablePageFileMetrics:        true,
-		EnablePageFileTotalMetrics:   true,
-		EnableMemoryMetrics:          true,
-		EnableMemoryTotalMetrics:     true,
-		EnableMemoryAvailableMetrics: true,
-		EnableMemoryUtilizationMetrics: true,
+		EnableFailoverClusterMetrics: false, // Failover cluster and Always On metrics
+
+		// Default granular failover cluster metrics (disabled by default)
+		EnableFailoverClusterReplicaMetrics:                 false, // Always On replica performance metrics
+		EnableFailoverClusterReplicaStateMetrics:            false, // Database replica state and synchronization metrics
+		EnableFailoverClusterNodeMetrics:                    false, // Windows Server Failover Cluster node metrics
+		EnableFailoverClusterAvailabilityGroupHealthMetrics: false, // Availability Group health and role status
+		EnableFailoverClusterAvailabilityGroupMetrics:       false, // Availability Group configuration metrics
+		EnableFailoverClusterPerformanceCounterMetrics:      false, // Extended performance counters for Always On
+		EnableFailoverClusterClusterPropertiesMetrics:       false, // Cluster properties and quorum information
+
+		// Database security metrics defaults
+		EnableDatabasePrincipalsMetrics:     false, // Database principals and users information
+		EnableDatabaseRoleMembershipMetrics: false, // Database role membership and security hierarchy
+
+		// Default granular database principals metrics (disabled by default)
+		EnableDatabasePrincipalsDetailsMetrics:  false, // Database principals and users details
+		EnableDatabasePrincipalsSummaryMetrics:  false, // Database principals summary statistics
+		EnableDatabasePrincipalsActivityMetrics: false, // Database principals activity and lifecycle
+
+		// Default granular database role membership metrics (disabled by default)
+		EnableDatabaseRoleMembershipDetailsMetrics: false, // Database role membership relationships
+		EnableDatabaseRoleMembershipSummaryMetrics: false, // Database role membership summary statistics
+		EnableDatabaseRoleHierarchyMetrics:         false, // Database role hierarchy and nesting
+		EnableDatabaseRoleActivityMetrics:          false, // Database role activity and usage
+		EnableDatabaseRolePermissionMatrixMetrics:  false, // Database role permission matrix analysis
+		EnableBufferMetrics:                        true,
+		EnableDatabaseReserveMetrics:               true,
+		EnableDiskMetricsInBytes:                   true,
+		EnableIOMetrics:                            true,
+		EnableLogGrowthMetrics:                     true,
+		EnablePageFileMetrics:                      true,
+		EnablePageFileTotalMetrics:                 true,
+		EnableMemoryMetrics:                        true,
+		EnableMemoryTotalMetrics:                   true,
+		EnableMemoryAvailableMetrics:               true,
+		EnableMemoryUtilizationMetrics:             true,
 
 		// Default concurrency and timeout
 		MaxConcurrentWorkers: 10,
@@ -320,4 +372,100 @@ func (cfg *Config) IsMemoryAvailableMetricsEnabled() bool {
 // IsMemoryUtilizationMetricsEnabled checks if memory utilization metrics should be collected
 func (cfg *Config) IsMemoryUtilizationMetricsEnabled() bool {
 	return cfg.EnableDatabaseSampleMetrics || cfg.EnableMemoryUtilizationMetrics
+}
+
+// IsFailoverClusterMetricsEnabled checks if failover cluster metrics should be collected
+func (cfg *Config) IsFailoverClusterMetricsEnabled() bool {
+	return cfg.EnableFailoverClusterMetrics
+}
+
+// Granular failover cluster metrics helper methods
+
+// IsFailoverClusterReplicaMetricsEnabled checks if failover cluster replica metrics should be collected
+func (cfg *Config) IsFailoverClusterReplicaMetricsEnabled() bool {
+	return cfg.EnableFailoverClusterMetrics || cfg.EnableFailoverClusterReplicaMetrics
+}
+
+// IsFailoverClusterReplicaStateMetricsEnabled checks if failover cluster replica state metrics should be collected
+func (cfg *Config) IsFailoverClusterReplicaStateMetricsEnabled() bool {
+	return cfg.EnableFailoverClusterMetrics || cfg.EnableFailoverClusterReplicaStateMetrics
+}
+
+// IsFailoverClusterNodeMetricsEnabled checks if failover cluster node metrics should be collected
+func (cfg *Config) IsFailoverClusterNodeMetricsEnabled() bool {
+	return cfg.EnableFailoverClusterMetrics || cfg.EnableFailoverClusterNodeMetrics
+}
+
+// IsFailoverClusterAvailabilityGroupHealthMetricsEnabled checks if availability group health metrics should be collected
+func (cfg *Config) IsFailoverClusterAvailabilityGroupHealthMetricsEnabled() bool {
+	return cfg.EnableFailoverClusterMetrics || cfg.EnableFailoverClusterAvailabilityGroupHealthMetrics
+}
+
+// IsFailoverClusterAvailabilityGroupMetricsEnabled checks if availability group configuration metrics should be collected
+func (cfg *Config) IsFailoverClusterAvailabilityGroupMetricsEnabled() bool {
+	return cfg.EnableFailoverClusterMetrics || cfg.EnableFailoverClusterAvailabilityGroupMetrics
+}
+
+// IsFailoverClusterPerformanceCounterMetricsEnabled checks if failover cluster performance counter metrics should be collected
+func (cfg *Config) IsFailoverClusterPerformanceCounterMetricsEnabled() bool {
+	return cfg.EnableFailoverClusterMetrics || cfg.EnableFailoverClusterPerformanceCounterMetrics
+}
+
+// IsFailoverClusterClusterPropertiesMetricsEnabled checks if cluster properties metrics should be collected
+func (cfg *Config) IsFailoverClusterClusterPropertiesMetricsEnabled() bool {
+	return cfg.EnableFailoverClusterMetrics || cfg.EnableFailoverClusterClusterPropertiesMetrics
+}
+
+// IsDatabasePrincipalsMetricsEnabled checks if database principals metrics should be collected
+func (cfg *Config) IsDatabasePrincipalsMetricsEnabled() bool {
+	return cfg.EnableDatabasePrincipalsMetrics
+}
+
+// Granular database principals metrics helper methods
+
+// IsDatabasePrincipalsDetailsMetricsEnabled checks if database principals details metrics should be collected
+func (cfg *Config) IsDatabasePrincipalsDetailsMetricsEnabled() bool {
+	return cfg.EnableDatabasePrincipalsMetrics || cfg.EnableDatabasePrincipalsDetailsMetrics
+}
+
+// IsDatabasePrincipalsSummaryMetricsEnabled checks if database principals summary metrics should be collected
+func (cfg *Config) IsDatabasePrincipalsSummaryMetricsEnabled() bool {
+	return cfg.EnableDatabasePrincipalsMetrics || cfg.EnableDatabasePrincipalsSummaryMetrics
+}
+
+// IsDatabasePrincipalsActivityMetricsEnabled checks if database principals activity metrics should be collected
+func (cfg *Config) IsDatabasePrincipalsActivityMetricsEnabled() bool {
+	return cfg.EnableDatabasePrincipalsMetrics || cfg.EnableDatabasePrincipalsActivityMetrics
+}
+
+// IsDatabaseRoleMembershipMetricsEnabled checks if database role membership metrics should be collected
+func (cfg *Config) IsDatabaseRoleMembershipMetricsEnabled() bool {
+	return cfg.EnableDatabaseRoleMembershipMetrics
+}
+
+// Granular database role membership metrics helper methods
+
+// IsDatabaseRoleMembershipDetailsMetricsEnabled checks if database role membership details metrics should be collected
+func (cfg *Config) IsDatabaseRoleMembershipDetailsMetricsEnabled() bool {
+	return cfg.EnableDatabaseRoleMembershipMetrics || cfg.EnableDatabaseRoleMembershipDetailsMetrics
+}
+
+// IsDatabaseRoleMembershipSummaryMetricsEnabled checks if database role membership summary metrics should be collected
+func (cfg *Config) IsDatabaseRoleMembershipSummaryMetricsEnabled() bool {
+	return cfg.EnableDatabaseRoleMembershipMetrics || cfg.EnableDatabaseRoleMembershipSummaryMetrics
+}
+
+// IsDatabaseRoleHierarchyMetricsEnabled checks if database role hierarchy metrics should be collected
+func (cfg *Config) IsDatabaseRoleHierarchyMetricsEnabled() bool {
+	return cfg.EnableDatabaseRoleMembershipMetrics || cfg.EnableDatabaseRoleHierarchyMetrics
+}
+
+// IsDatabaseRoleActivityMetricsEnabled checks if database role activity metrics should be collected
+func (cfg *Config) IsDatabaseRoleActivityMetricsEnabled() bool {
+	return cfg.EnableDatabaseRoleMembershipMetrics || cfg.EnableDatabaseRoleActivityMetrics
+}
+
+// IsDatabaseRolePermissionMatrixMetricsEnabled checks if database role permission matrix metrics should be collected
+func (cfg *Config) IsDatabaseRolePermissionMatrixMetricsEnabled() bool {
+	return cfg.EnableDatabaseRoleMembershipMetrics || cfg.EnableDatabaseRolePermissionMatrixMetrics
 }
