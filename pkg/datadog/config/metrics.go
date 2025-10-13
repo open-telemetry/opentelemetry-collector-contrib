@@ -187,7 +187,7 @@ func (sm *SummaryMode) UnmarshalText(in []byte) error {
 
 // SummaryConfig customizes export of OTLP Summaries.
 type SummaryConfig struct {
-	// Mode is the the mode for exporting OTLP Summaries.
+	// Mode is the mode for exporting OTLP Summaries.
 	// Valid values are 'noquantiles' or 'gauges'.
 	//  - 'noquantiles' sends no `.quantile` metrics. `.sum` and `.count` metrics will still be sent.
 	//  - 'gauges' sends `.quantile` metrics as gauges tagged by the quantile.

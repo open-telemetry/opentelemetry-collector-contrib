@@ -4,6 +4,7 @@
 package splunkenterprisereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkenterprisereceiver"
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"encoding/xml"
@@ -107,6 +108,7 @@ func (s *splunkScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		s.scrapeHealth,
 		s.scrapeSearch,
 		s.scrapeIndexerClusterManagerStatus,
+		s.scrapeLicenses,
 	}
 	errChan := make(chan error, len(metricScrapes))
 
@@ -2137,5 +2139,70 @@ func (s *splunkScraper) scrapeIndexerClusterManagerStatus(_ context.Context, now
 			s.mb.RecordSplunkIndexerRollingrestartStatusDataPoint(now, 1, ic.Content.SearchableRolling, ic.Content.RollingRestartFlag, i.Build, i.Version)
 		}
 		s.mb.RecordSplunkIndexerRollingrestartStatusDataPoint(now, 0, ic.Content.SearchableRolling, ic.Content.RollingRestartFlag, i.Build, i.Version)
+	}
+}
+
+// Scrape License Endpoint
+func (s *splunkScraper) scrapeLicenses(_ context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
+	if !s.conf.Metrics.SplunkLicenseExpirationSecondsRemaining.Enabled {
+		return
+	}
+
+	var eptType string
+
+	switch {
+	case s.conf.IdxEndpoint.Endpoint != "":
+		errs <- errors.New("splunk.license.remaining cannot be scraped from an indexer")
+		return
+	case s.conf.SHEndpoint.Endpoint != "":
+		errs <- errors.New("splunk.license.remaining cannot be scraped from a search head")
+		return
+	case s.conf.CMEndpoint.Endpoint != "":
+		eptType = typeCm
+	default:
+		errs <- errors.New("no endpoint set for scraping")
+		return
+	}
+
+	i := info[eptType].Entries[0].Content
+	s.settings.Logger.Debug(fmt.Sprintf("endpoint type set: %s", eptType))
+
+	ept := apiDict[`SplunkLicenses`]
+	var licenses licenses
+
+	req, err := s.splunkClient.createAPIRequest(eptType, ept)
+	if err != nil {
+		errs <- err
+		return
+	}
+
+	res, err := s.splunkClient.makeRequest(req)
+	if err != nil {
+		errs <- err
+		return
+	}
+	defer res.Body.Close()
+
+	var body bytes.Buffer
+	_, err = io.Copy(&body, res.Body)
+	if err != nil {
+		errs <- err
+		return
+	}
+	s.settings.Logger.Debug(fmt.Sprintf("license response: %s", body.String()))
+	defer body.Reset()
+
+	if err := json.NewDecoder(&body).Decode(&licenses); err != nil {
+		errs <- err
+		return
+	}
+
+	s.settings.Logger.Debug(fmt.Sprintf("number of licenses found: %d", len(licenses.Entries)))
+
+	for _, entry := range licenses.Entries {
+		expTime := time.Unix(entry.Content.ExpirationTime, 0)
+		timeRemaining := int64(expTime.Sub(time.Now().UTC()).Seconds()) // expiry time - current time in seconds converted to int64
+
+		s.mb.RecordSplunkLicenseExpirationSecondsRemainingDataPoint(now, timeRemaining, entry.Content.Status, entry.Content.Label, entry.Content.Type, i.Build, i.Version)
 	}
 }

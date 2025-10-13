@@ -72,7 +72,7 @@ func (s *Sink) NextToken(t *testing.T) []byte {
 
 func (s *Sink) NextTokens(t *testing.T, n int) [][]byte {
 	emitChan := make([][]byte, 0, n)
-	for i := 0; i < n; i++ {
+	for range n {
 		select {
 		case token := <-s.emitChan:
 			emitChan = append(emitChan, token.Body)
@@ -105,7 +105,7 @@ func (s *Sink) ExpectToken(t *testing.T, expected []byte) {
 
 func (s *Sink) ExpectTokens(t *testing.T, expected ...[]byte) {
 	actual := make([][]byte, 0, len(expected))
-	for i := 0; i < len(expected); i++ {
+	for i := range expected {
 		select {
 		case token := <-s.emitChan:
 			actual = append(actual, token.Body)
@@ -129,7 +129,7 @@ func (s *Sink) ExpectCall(t *testing.T, expected []byte, attrs map[string]any) {
 
 func (s *Sink) ExpectCalls(t *testing.T, expected ...emit.Token) {
 	actual := make([]emit.Token, 0, len(expected))
-	for i := 0; i < len(expected); i++ {
+	for i := range expected {
 		select {
 		case call := <-s.emitChan:
 			actual = append(actual, call)

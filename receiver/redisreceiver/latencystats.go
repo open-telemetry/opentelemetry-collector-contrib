@@ -17,9 +17,7 @@ type latencies map[string]float64
 func parseLatencyStats(str string) (latencies, error) {
 	res := make(latencies)
 
-	pairs := strings.SplitSeq(strings.TrimSpace(str), ",")
-
-	for pairStr := range pairs {
+	for pairStr := range strings.SplitSeq(strings.TrimSpace(str), ",") {
 		pair := strings.Split(pairStr, "=")
 		if len(pair) != 2 {
 			return nil, fmt.Errorf("unexpected latency percentiles pair '%s'", pairStr)
