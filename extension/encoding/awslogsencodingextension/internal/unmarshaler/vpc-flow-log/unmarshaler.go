@@ -350,9 +350,9 @@ func (v *vpcFlowLogUnmarshaler) handleField(
 			return true, fmt.Errorf("value %s for field %s does not correspond to a valid timestamp", value, field)
 		}
 		if v.vpcFlowStartISO8601FormatEnabled {
-			// New behavior: ISO-8601 format
+			// New behavior: ISO-8601 format (RFC3339Nano)
 			timestamp := time.Unix(unixSeconds, 0).UTC()
-			record.Attributes().PutStr("aws.vpc.flow.start", timestamp.Format("2006-01-02T15:04:05.000Z"))
+			record.Attributes().PutStr("aws.vpc.flow.start", timestamp.Format(time.RFC3339Nano))
 		} else {
 			// Legacy behavior: Unix timestamp as integer
 			record.Attributes().PutInt("aws.vpc.flow.start", unixSeconds)
