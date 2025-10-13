@@ -10,12 +10,12 @@ status:
     active: [dmitryax, crobert-1, atoulme]
 
 resource_attributes:
-  oracledb.instance.name:
-    description: The name of the instance that data is coming from.
-    enabled: true
-    type: string
   host.name:
     description: The host name of Oracle Server
+    enabled: true
+    type: string
+  oracledb.instance.name:
+    description: The name of the instance that data is coming from.
     enabled: true
     type: string
   service.instance.id:
@@ -24,38 +24,42 @@ resource_attributes:
     type: string
 
 attributes:
-  session_status:
-    description: Session status
+  client.address:
+    description: Hostname or address of the client.
     type: string
-  session_type:
-    description: Session type
+  client.port:
+    description: TCP port used by the client.
+    type: int
+  db.namespace:
+    description: The database name.
     type: string
-  tablespace_name:
-    description: Tablespace name
-    type: string
-  # attributes for events
-  ## top query
   db.query.text:
     description: The text of the database query being executed.
     type: string
-  oracledb.query_plan:
-    description: The query execution plan used by the SQL Server.
+  db.server.name:
+    description: The name of the server hosting the database.
     type: string
-  oracledb.sql_id:
-    description: The SQL ID of the query.
+  db.system.name:
+    description: The database management system (DBMS) product as identified by the client instrumentation.
     type: string
-  oracledb.child_number:
-    description: The child number of the query.
+  network.peer.address:
+    description: IP address of the peer client.
     type: string
-  oracledb.child_address:
-    description: Address of the child cursor.
-    type: string
+  network.peer.port:
+    description: TCP port used by the peer client.
+    type: int
   oracledb.application_wait_time:
     description: The total time (in seconds) a query spent waiting on the application before it could proceed with execution (reporting delta).
     type: double
   oracledb.buffer_gets:
     description: Number of logical reads (i.e., buffer cache accesses) performed by a query (reporting delta).
     type: int
+  oracledb.child_address:
+    description: Address of the child cursor.
+    type: string
+  oracledb.child_number:
+    description: The child number of the query.
+    type: string
   oracledb.cluster_wait_time:
     description: Total time (in seconds) that a query waited due to Oracle Real Application Clusters (RAC) coordination (reporting delta).
     type: double
@@ -74,12 +78,31 @@ attributes:
   oracledb.disk_reads:
     description: The number of physical reads a query performs — that is, the number of data blocks read from disk (reporting delta).
     type: int
+  oracledb.duration_sec:
+    description: Total time taken by a database query to execute.
+    type: double
+
   oracledb.elapsed_time:
     description: The total time (in seconds) taken by a query from start to finish, including CPU time and all types of waits (reporting delta).
     type: double
+  oracledb.event:
+    description: The specific wait event that a query or session is currently experiencing.
+    type: string
   oracledb.executions:
     description: The number of times a specific SQL query has been executed (reporting delta).
     type: int
+  oracledb.module:
+    description: Logical module name of the client application that initiated a query or session.
+    type: string
+  oracledb.object_name:
+    description: Name of the database object that a query is accessing.
+    type: string
+  oracledb.object_type:
+    description: Type of the database object that a query is accessing.
+    type: string
+  oracledb.osuser:
+    description: Name of the operating system user that initiated or is running the Oracle database session.
+    type: string
   oracledb.physical_read_bytes:
     description: The total number of bytes read from disk by a query (reporting delta).
     type: int
@@ -92,110 +115,61 @@ attributes:
   oracledb.physical_write_requests:
     description: The number of times a query requested to write data to disk (reporting delta).
     type: int
-  oracledb.rows_processed:
-    description: The total number of rows that a query has read, returned, or affected during its execution (reporting delta).
-    type: int
-  oracledb.user_io_wait_time:
-    description: The total time (in seconds) a query spent waiting for user I/O operations—such as reading or writing data to disk or network file systems (reporting delta).
-    type: double
-  db.server.name:
-    description: The name of the server hosting the database.
-    type: string
-  db.system.name:
-    description: The database management system (DBMS) product as identified by the client instrumentation.
-    type: string
   oracledb.plan_hash_value:
     description: Binary hash value calculated on the query execution plan and used to identify similar query execution plans, reported in the HEX format.
-    type: string
-  client.address:
-    description: Hostname or address of the client.
-    type: string
-  client.port:
-    description: TCP port used by the client.
-    type: int
-  db.namespace:
-    description: The database name.
-    type: string
-  network.peer.address:
-    description: IP address of the peer client.
-    type: string
-  network.peer.port:
-    description: TCP port used by the peer client.
-    type: int
-  oracledb.sid:
-    description: ID of the Oracle Server session.
-    type: string
-  oracledb.serial:
-    description: Serial number associated with a session.
     type: string
   oracledb.process:
     description: The operating system process ID (PID) associated with a session.
     type: string
-  user.name:
-    description: Database user name under which a session is connected to
-    type: string
-  oracledb.schemaname:
-    description: Oracle schema under which SQL statements are being executed
-    type: string
   oracledb.program:
     description: Name of the client program or tool that initiated the Oracle database session.
     type: string
-  oracledb.module:
-    description: Logical module name of the client application that initiated a query or session.
+  oracledb.query_plan:
+    description: The query execution plan used by the SQL Server.
     type: string
-  oracledb.status:
-    description: Execution state or result of a database query or session.
+  oracledb.rows_processed:
+    description: The total number of rows that a query has read, returned, or affected during its execution (reporting delta).
+    type: int
+  oracledb.schemaname:
+    description: Oracle schema under which SQL statements are being executed
+    type: string
+  oracledb.serial:
+    description: Serial number associated with a session.
+    type: string
+  oracledb.sid:
+    description: ID of the Oracle Server session.
+    type: string
+  oracledb.sql_id:
+    description: The SQL ID of the query.
     type: string
   oracledb.state:
     description: Current state of the query or the session executing it.
     type: string
+  oracledb.status:
+    description: Execution state or result of a database query or session.
+    type: string
+  oracledb.user_io_wait_time:
+    description: The total time (in seconds) a query spent waiting for user I/O operations—such as reading or writing data to disk or network file systems (reporting delta).
+    type: double
   oracledb.wait_class:
     description: The category of wait events a query or session is currently experiencing in Oracle Database.
     type: string
-  oracledb.event:
-    description: The specific wait event that a query or session is currently experiencing.
+  session_status:
+    description: Session status
     type: string
-  oracledb.object_name:
-    description: Name of the database object that a query is accessing.
+  session_type:
+    description: Session type
     type: string
-  oracledb.object_type:
-    description: Type of the database object that a query is accessing.
+  tablespace_name:
+    description: Tablespace name
     type: string
-  oracledb.osuser:
-    description: Name of the operating system user that initiated or is running the Oracle database session.
+  # attributes for events
+  ## top query
+  user.name:
+    description: Database user name under which a session is connected to
     type: string
-  oracledb.duration_sec:
-    description: Total time taken by a database query to execute.
-    type: double
 
 events:
-  db.server.top_query:
-    enabled: false
-    description: Collection of event metrics for top N queries, filtered based on the highest CPU time consumed (oracledb.elapsed_time).
-    attributes:
-      - db.system.name
-      - db.server.name
-      - db.query.text
-      - oracledb.query_plan
-      - oracledb.sql_id
-      - oracledb.child_number
-      - oracledb.child_address
-      - oracledb.application_wait_time
-      - oracledb.buffer_gets
-      - oracledb.cluster_wait_time
-      - oracledb.concurrency_wait_time
-      - oracledb.cpu_time
-      - oracledb.direct_reads
-      - oracledb.direct_writes
-      - oracledb.disk_reads
-      - oracledb.elapsed_time
-      - oracledb.executions
-      - oracledb.physical_read_bytes
-      - oracledb.physical_read_requests
-      - oracledb.physical_write_bytes
-      - oracledb.physical_write_requests
-      - oracledb.rows_processed
-      - oracledb.user_io_wait_time
   db.server.query_sample:
     enabled: false
     description: sample query
@@ -226,7 +200,45 @@ events:
       - oracledb.object_type
       - oracledb.osuser
       - oracledb.duration_sec
+  db.server.top_query:
+    enabled: false
+    description: Collection of event metrics for top N queries, filtered based on the highest CPU time consumed (oracledb.elapsed_time).
+    attributes:
+      - db.system.name
+      - db.server.name
+      - db.query.text
+      - oracledb.query_plan
+      - oracledb.sql_id
+      - oracledb.child_number
+      - oracledb.child_address
+      - oracledb.application_wait_time
+      - oracledb.buffer_gets
+      - oracledb.cluster_wait_time
+      - oracledb.concurrency_wait_time
+      - oracledb.cpu_time
+      - oracledb.direct_reads
+      - oracledb.direct_writes
+      - oracledb.disk_reads
+      - oracledb.elapsed_time
+      - oracledb.executions
+      - oracledb.physical_read_bytes
+      - oracledb.physical_read_requests
+      - oracledb.physical_write_bytes
+      - oracledb.physical_write_requests
+      - oracledb.rows_processed
+      - oracledb.user_io_wait_time
 metrics:
+  oracledb.consistent_gets:
+    description: Number of times a consistent read was requested for a block from the buffer cache.
+    enabled: false
+    stability:
+      level: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{gets}"
   oracledb.cpu_time:
     description: Cumulative CPU time, in seconds
     enabled: true
@@ -237,9 +249,59 @@ metrics:
       monotonic: true
       value_type: double
     unit: s
+  oracledb.db_block_gets:
+    description: Number of times a current block was requested from the buffer cache.
+    enabled: false
+    stability:
+      level: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{gets}"
+  oracledb.ddl_statements_parallelized:
+    description: Number of DDL statements that were executed in parallel
+    enabled: false
+    stability:
+      level: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{statements}"
+  oracledb.dml_locks.limit:
+    description: Maximum limit of active DML (Data Manipulation Language) locks, -1 if unlimited.
+    enabled: true
+    stability:
+      level: development
+    gauge:
+      value_type: int
+      input_type: string
+    unit: "{locks}"
+  oracledb.dml_locks.usage:
+    description: Current count of active DML (Data Manipulation Language) locks.
+    enabled: true
+    stability:
+      level: development
+    gauge:
+      value_type: int
+      input_type: string
+    unit: "{locks}"
+  oracledb.dml_statements_parallelized:
+    description: Number of DML statements that were executed in parallel
+    enabled: false
+    stability:
+      level: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{statements}"
   oracledb.enqueue_deadlocks:
-    description: Total number of deadlocks between table or row locks in different
-      sessions.
+    description: Total number of deadlocks between table or row locks in different sessions.
     enabled: true
     stability:
       level: development
@@ -249,10 +311,44 @@ metrics:
       value_type: int
       input_type: string
     unit: "{deadlocks}"
+  oracledb.enqueue_locks.limit:
+    description: Maximum limit of active enqueue locks, -1 if unlimited.
+    enabled: true
+    stability:
+      level: development
+    gauge:
+      value_type: int
+      input_type: string
+    unit: "{locks}"
+  oracledb.enqueue_locks.usage:
+    description: Current count of active enqueue locks.
+    enabled: true
+    stability:
+      level: development
+    gauge:
+      value_type: int
+      input_type: string
+    unit: "{locks}"
+  oracledb.enqueue_resources.limit:
+    description: Maximum limit of active enqueue resources, -1 if unlimited.
+    enabled: true
+    stability:
+      level: development
+    gauge:
+      value_type: int
+      input_type: string
+    unit: "{resources}"
+  oracledb.enqueue_resources.usage:
+    description: Current count of active enqueue resources.
+    enabled: true
+    stability:
+      level: development
+    gauge:
+      value_type: int
+      input_type: string
+    unit: "{resources}"
   oracledb.exchange_deadlocks:
-    description: Number of times that a process detected a potential deadlock when
-      exchanging two buffers and raised an internal, restartable error. Index scans
-      are the only operations that perform exchanges.
+    description: Number of times that a process detected a potential deadlock when exchanging two buffers and raised an internal, restartable error. Index scans are the only operations that perform exchanges.
     enabled: true
     stability:
       level: development
@@ -273,17 +369,6 @@ metrics:
       value_type: int
       input_type: string
     unit: "{executions}"
-  oracledb.logical_reads:
-    description: Number of logical reads
-    enabled: true
-    stability:
-      level: development
-    sum:
-      aggregation_temporality: cumulative
-      monotonic: true
-      value_type: int
-      input_type: string
-    unit: "{reads}"
   oracledb.hard_parses:
     description: Number of hard parses
     enabled: true
@@ -295,6 +380,96 @@ metrics:
       value_type: int
       input_type: string
     unit: "{parses}"
+  oracledb.logical_reads:
+    description: Number of logical reads
+    enabled: true
+    stability:
+      level: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{reads}"
+  oracledb.logons:
+    description: Number of logon operations
+    enabled: false
+    stability:
+      level: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{operation}"
+
+
+  oracledb.parallel_operations_downgraded_1_to_25_pct:
+    description: Number of times parallel execution was requested and the degree of parallelism was reduced down to 1-25% because of insufficient parallel execution servers
+    enabled: false
+    stability:
+      level: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{executions}"
+  oracledb.parallel_operations_downgraded_25_to_50_pct:
+    description: Number of times parallel execution was requested and the degree of parallelism was reduced down to 25-50% because of insufficient parallel execution servers
+    enabled: false
+    stability:
+      level: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{executions}"
+  oracledb.parallel_operations_downgraded_50_to_75_pct:
+    description: Number of times parallel execution was requested and the degree of parallelism was reduced down to 50-75% because of insufficient parallel execution servers
+    enabled: false
+    stability:
+      level: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{executions}"
+  oracledb.parallel_operations_downgraded_75_to_99_pct:
+    description: Number of times parallel execution was requested and the degree of parallelism was reduced down to 75-99% because of insufficient parallel execution servers
+    enabled: false
+    stability:
+      level: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{executions}"
+  oracledb.parallel_operations_downgraded_to_serial:
+    description: Number of times parallel execution was requested but execution was serial because of insufficient parallel execution servers
+    enabled: false
+    stability:
+      level: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{executions}"
+  oracledb.parallel_operations_not_downgraded:
+    description: Number of times parallel execution was executed at the requested degree of parallelism
+    enabled: false
+    stability:
+      level: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{executions}"
   oracledb.parse_calls:
     description: Total number of parse calls.
     enabled: true
@@ -317,6 +492,17 @@ metrics:
       value_type: int
       input_type: string
     unit: By
+  oracledb.physical_read_io_requests:
+    description: Number of read requests for application activity
+    enabled: false
+    stability:
+      level: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{requests}"
   oracledb.physical_reads:
     description: Number of physical reads
     enabled: true
@@ -339,8 +525,8 @@ metrics:
       value_type: int
       input_type: string
     unit: "{reads}"
-  oracledb.physical_read_io_requests:
-    description: Number of read requests for application activity
+  oracledb.physical_write_io_requests:
+    description: Number of write requests for application activity
     enabled: false
     stability:
       level: development
@@ -372,8 +558,26 @@ metrics:
       value_type: int
       input_type: string
     unit: "{writes}"
-  oracledb.physical_write_io_requests:
-    description: Number of write requests for application activity
+  oracledb.processes.limit:
+    description: Maximum limit of active processes, -1 if unlimited.
+    enabled: true
+    stability:
+      level: development
+    gauge:
+      value_type: int
+      input_type: string
+    unit: "{processes}"
+  oracledb.processes.usage:
+    description: Current count of active processes.
+    enabled: true
+    stability:
+      level: development
+    gauge:
+      value_type: int
+      input_type: string
+    unit: "{processes}"
+  oracledb.queries_parallelized:
+    description: Number of SELECT statements executed in parallel
     enabled: false
     stability:
       level: development
@@ -382,32 +586,16 @@ metrics:
       monotonic: true
       value_type: int
       input_type: string
-    unit: "{requests}"
-  oracledb.user_commits:
-    description: Number of user commits. When a user commits a transaction, the redo
-      generated that reflects the changes made to database blocks must be written
-      to disk. Commits often represent the closest thing to a user transaction rate.
+    unit: "{queries}"
+  oracledb.sessions.limit:
+    description: Maximum limit of active sessions, -1 if unlimited.
     enabled: true
     stability:
       level: development
-    sum:
-      aggregation_temporality: cumulative
-      monotonic: true
+    gauge:
       value_type: int
       input_type: string
-    unit: "{commits}"
-  oracledb.user_rollbacks:
-    description: Number of times users manually issue the ROLLBACK statement or an
-      error occurs during a user's transactions
-    enabled: true
-    stability:
-      level: development
-    sum:
-      aggregation_temporality: cumulative
-      monotonic: true
-      value_type: int
-      input_type: string
-    unit: "1"
+    unit: "{sessions}"
   oracledb.sessions.usage:
     attributes:
       - session_type
@@ -420,105 +608,6 @@ metrics:
       value_type: int
       input_type: string
     unit: "{sessions}"
-  oracledb.processes.usage:
-    description: Current count of active processes.
-    enabled: true
-    stability:
-      level: development
-    gauge:
-      value_type: int
-      input_type: string
-    unit: "{processes}"
-  oracledb.processes.limit:
-    description: Maximum limit of active processes, -1 if unlimited.
-    enabled: true
-    stability:
-      level: development
-    gauge:
-      value_type: int
-      input_type: string
-    unit: "{processes}"
-  oracledb.sessions.limit:
-    description: Maximum limit of active sessions, -1 if unlimited.
-    enabled: true
-    stability:
-      level: development
-    gauge:
-      value_type: int
-      input_type: string
-    unit: "{sessions}"
-  oracledb.enqueue_locks.usage:
-    description: Current count of active enqueue locks.
-    enabled: true
-    stability:
-      level: development
-    gauge:
-      value_type: int
-      input_type: string
-    unit: "{locks}"
-  oracledb.enqueue_locks.limit:
-    description: Maximum limit of active enqueue locks, -1 if unlimited.
-    enabled: true
-    stability:
-      level: development
-    gauge:
-      value_type: int
-      input_type: string
-    unit: "{locks}"
-  oracledb.dml_locks.usage:
-    description: Current count of active DML (Data Manipulation Language) locks.
-    enabled: true
-    stability:
-      level: development
-    gauge:
-      value_type: int
-      input_type: string
-    unit: "{locks}"
-  oracledb.dml_locks.limit:
-    description: Maximum limit of active DML (Data Manipulation Language) locks, -1 if unlimited.
-    enabled: true
-    stability:
-      level: development
-    gauge:
-      value_type: int
-      input_type: string
-    unit: "{locks}"
-  oracledb.enqueue_resources.usage:
-    description: Current count of active enqueue resources.
-    enabled: true
-    stability:
-      level: development
-    gauge:
-      value_type: int
-      input_type: string
-    unit: "{resources}"
-  oracledb.enqueue_resources.limit:
-    description: Maximum limit of active enqueue resources, -1 if unlimited.
-    enabled: true
-    stability:
-      level: development
-    gauge:
-      value_type: int
-      input_type: string
-    unit: "{resources}"
-  oracledb.transactions.usage:
-    description: Current count of active transactions.
-    enabled: true
-    stability:
-      level: development
-    gauge:
-      value_type: int
-      input_type: string
-    unit: "{transactions}"
-  oracledb.transactions.limit:
-    description: Maximum limit of active transactions, -1 if unlimited.
-    enabled: true
-    stability:
-      level: development
-    gauge:
-      value_type: int
-      input_type: string
-    unit: "{transactions}"
   oracledb.tablespace_size.limit:
     attributes:
       - tablespace_name
@@ -539,9 +628,27 @@ metrics:
     gauge:
       value_type: int
     unit: By
-  oracledb.db_block_gets:
-    description: Number of times a current block was requested from the buffer cache.
-    enabled: false
+  oracledb.transactions.limit:
+    description: Maximum limit of active transactions, -1 if unlimited.
+    enabled: true
+    stability:
+      level: development
+    gauge:
+      value_type: int
+      input_type: string
+    unit: "{transactions}"
+  oracledb.transactions.usage:
+    description: Current count of active transactions.
+    enabled: true
+    stability:
+      level: development
+    gauge:
+      value_type: int
+      input_type: string
+    unit: "{transactions}"
+  oracledb.user_commits:
+    description: Number of user commits. When a user commits a transaction, the redo generated that reflects the changes made to database blocks must be written to disk. Commits often represent the closest thing to a user transaction rate.
+    enabled: true
     stability:
       level: development
     sum:
@@ -549,10 +656,10 @@ metrics:
       monotonic: true
       value_type: int
       input_type: string
-    unit: "{gets}"
-  oracledb.consistent_gets:
-    description: Number of times a consistent read was requested for a block from the buffer cache.
-    enabled: false
+    unit: "{commits}"
+  oracledb.user_rollbacks:
+    description: Number of times users manually issue the ROLLBACK statement or an error occurs during a user's transactions
+    enabled: true
     stability:
       level: development
     sum:
@@ -560,132 +667,11 @@ metrics:
       monotonic: true
       value_type: int
       input_type: string
-    unit: "{gets}"
-  oracledb.queries_parallelized:
-    description: Number of SELECT statements executed in parallel
-    enabled: false
-    stability:
-      level: development
-    sum:
-      aggregation_temporality: cumulative
-      monotonic: true
-      value_type: int
-      input_type: string
-    unit: "{queries}"
-  oracledb.ddl_statements_parallelized:
-    description: Number of DDL statements that were executed in parallel
-    enabled: false
-    stability:
-      level: development
-    sum:
-      aggregation_temporality: cumulative
-      monotonic: true
-      value_type: int
-      input_type: string
-    unit: "{statements}"
-  oracledb.dml_statements_parallelized:
-    description: Number of DML statements that were executed in parallel
-    enabled: false
-    stability:
-      level: development
-    sum:
-      aggregation_temporality: cumulative
-      monotonic: true
-      value_type: int
-      input_type: string
-    unit: "{statements}"
-  oracledb.parallel_operations_not_downgraded:
-    description: Number of times parallel execution was executed at the
-      requested degree of parallelism
-    enabled: false
-    stability:
-      level: development
-    sum:
-      aggregation_temporality: cumulative
-      monotonic: true
-      value_type: int
-      input_type: string
-    unit: "{executions}"
-  oracledb.parallel_operations_downgraded_to_serial:
-    description: Number of times parallel execution was requested but execution
-      was serial because of insufficient parallel execution servers
-    enabled: false
-    stability:
-      level: development
-    sum:
-      aggregation_temporality: cumulative
-      monotonic: true
-      value_type: int
-      input_type: string
-    unit: "{executions}"
-  oracledb.parallel_operations_downgraded_1_to_25_pct:
-    description: Number of times parallel execution was requested and the
-      degree of parallelism was reduced down to 1-25% because of insufficient
-      parallel execution servers
-    enabled: false
-    stability:
-      level: development
-    sum:
-      aggregation_temporality: cumulative
-      monotonic: true
-      value_type: int
-      input_type: string
-    unit: "{executions}"
-  oracledb.parallel_operations_downgraded_25_to_50_pct:
-    description: Number of times parallel execution was requested and the
-      degree of parallelism was reduced down to 25-50% because of insufficient
-      parallel execution servers
-    enabled: false
-    stability:
-      level: development
-    sum:
-      aggregation_temporality: cumulative
-      monotonic: true
-      value_type: int
-      input_type: string
-    unit: "{executions}"
-  oracledb.parallel_operations_downgraded_50_to_75_pct:
-    description: Number of times parallel execution was requested and the
-      degree of parallelism was reduced down to 50-75% because of insufficient
-      parallel execution servers
-    enabled: false
-    stability:
-      level: development
-    sum:
-      aggregation_temporality: cumulative
-      monotonic: true
-      value_type: int
-      input_type: string
-    unit: "{executions}"
-  oracledb.parallel_operations_downgraded_75_to_99_pct:
-    description: Number of times parallel execution was requested and the
-      degree of parallelism was reduced down to 75-99% because of insufficient
-      parallel execution servers
-    enabled: false
-    stability:
-      level: development
-    sum:
-      aggregation_temporality: cumulative
-      monotonic: true
-      value_type: int
-      input_type: string
-    unit: "{executions}"
-  oracledb.logons:
-    description: Number of logon operations
-    enabled: false
-    stability:
-      level: development
-    sum:
-      aggregation_temporality: cumulative
-      monotonic: true
-      value_type: int
-      input_type: string
-    unit: "{operation}"
-
+    unit: "1"
 
 tests:
   config:
   goleak:
     ignore:
       any:
-      - "github.com/cihub/seelog.(*asyncLoopLogger).processQueue" # see https://github.com/cihub/seelog/issues/182
+        - "github.com/cihub/seelog.(*asyncLoopLogger).processQueue" # see https://github.com/cihub/seelog/issues/182
