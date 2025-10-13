@@ -18,17 +18,26 @@ GO_BUILD_TAGS=""
 # These ldflags allow the build tool to omit the symbol table, debug information, and the DWARF symbol table to downscale binary size.
 GO_BUILD_LDFLAGS="-s -w"
 GOTEST_TIMEOUT?= 900s
-GOTEST_OPT?= -race -timeout $(GOTEST_TIMEOUT) -parallel 4 --tags=$(GO_BUILD_TAGS)
-GOTEST_INTEGRATION_OPT?= -race -timeout 360s -parallel 4 -skip Sudo
-GOTEST_INTEGRATION_OPT_SUDO?= -race -timeout 360s -parallel 4 -exec sudo -run Sudo
-COVER_OPT :=-cover -covermode=atomic -test.gocoverdir="$(COVER_DIR_ABS)"
-GOTEST_OPT_WITH_INTEGRATION=$(GOTEST_INTEGRATION_OPT) -tags=integration,$(GO_BUILD_TAGS)
-GOTEST_OPT_WITH_INTEGRATION_SUDO=$(GOTEST_INTEGRATION_OPT_SUDO) -tags=integration,$(GO_BUILD_TAGS)
-GOTEST_OPT_WITH_INTEGRATION_COVERAGE=$(GOTEST_OPT_WITH_INTEGRATION) -coverprofile=integration-coverage.txt -covermode=atomic
 GOCMD?= go
 GOOS=$(shell $(GOCMD) env GOOS)
 GOARCH=$(shell $(GOCMD) env GOARCH)
 GOTESTARCH?=$(GOARCH)
+
+# On Windows arm64 neither `-race` nor cgo are not supported (cgo is not supported due to the GH runner installed gcc not having arm64 libs)
+ifeq ($(GOOS)-$(GOARCH),windows-arm64)
+	CGO_ENABLED_OPT?=0
+else
+	GOTEST_RACE_OPT?=-race
+	CGO_ENABLED_OPT?=1
+endif
+
+GOTEST_OPT?=$(GOTEST_RACE_OPT) -timeout $(GOTEST_TIMEOUT) -parallel 4 --tags=$(GO_BUILD_TAGS)
+GOTEST_INTEGRATION_OPT?=$(GOTEST_RACE_OPT) -timeout 360s -parallel 4 -skip Sudo
+GOTEST_INTEGRATION_OPT_SUDO?=$(GOTEST_RACE_OPT) -timeout 360s -parallel 4 -exec sudo -run Sudo
+COVER_OPT :=-cover -covermode=atomic -test.gocoverdir="$(COVER_DIR_ABS)"
+GOTEST_OPT_WITH_INTEGRATION=$(GOTEST_INTEGRATION_OPT) -tags=integration,$(GO_BUILD_TAGS)
+GOTEST_OPT_WITH_INTEGRATION_SUDO=$(GOTEST_INTEGRATION_OPT_SUDO) -tags=integration,$(GO_BUILD_TAGS)
+GOTEST_OPT_WITH_INTEGRATION_COVERAGE=$(GOTEST_OPT_WITH_INTEGRATION) -coverprofile=integration-coverage.txt -covermode=atomic
 
 DOCKERCMD ?= docker
 
@@ -139,7 +148,7 @@ test-with-junit-and-cover: $(GOTESTSUM)
 .PHONY: buildtest
 buildtest:
 ifneq (,$(wildcard ./*.go))
-	GOARCH=$(GOTESTARCH) CGO_ENABLED=1 $(GOCMD) test -c -o builtunitetest.test
+	GOARCH=$(GOTESTARCH) CGO_ENABLED=$(CGO_ENABLED_OPT) $(GOCMD) test -c -o builtunitetest.test
 endif
 
 .PHONY: runbuilttest

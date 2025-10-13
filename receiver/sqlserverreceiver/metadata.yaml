@@ -286,12 +286,16 @@ metrics:
   sqlserver.user.connection.count:
     enabled: true
     description: Number of users connected to the SQL Server.
+    stability:
+      level: development
     unit: "{connections}"
     gauge:
       value_type: int
   sqlserver.lock.wait_time.avg:
     enabled: true
     description: Average wait time for all lock requests that had to wait.
+    stability:
+      level: development
     unit: ms
     gauge:
       value_type: double
@@ -299,6 +303,8 @@ metrics:
   sqlserver.lock.wait.count:
     enabled: false
     description: Cumulative count of lock waits that occurred.
+    stability:
+      level: development
     unit: "{wait}"
     sum:
       monotonic: true
@@ -308,36 +314,48 @@ metrics:
   sqlserver.lock.wait.rate:
     enabled: true
     description: Number of lock requests resulting in a wait.
+    stability:
+      level: development
     unit: "{requests}/s"
     gauge:
       value_type: double
   sqlserver.batch.request.rate:
     enabled: true
     description: Number of batch requests received by SQL Server.
+    stability:
+      level: development
     unit: "{requests}/s"
     gauge:
       value_type: double
   sqlserver.batch.sql_compilation.rate:
     enabled: true
     description: Number of SQL compilations needed.
+    stability:
+      level: development
     unit: "{compilations}/s"
     gauge:
       value_type: double
   sqlserver.batch.sql_recompilation.rate:
     enabled: true
     description: Number of SQL recompilations needed.
+    stability:
+      level: development
     unit: "{compilations}/s"
     gauge:
       value_type: double
   sqlserver.page.buffer_cache.hit_ratio:
     enabled: true
     description: Pages found in the buffer pool without having to read from disk.
+    stability:
+      level: development
     unit: "%"
     gauge:
       value_type: double
   sqlserver.page.life_expectancy:
     enabled: true
     description: Time a page will stay in the buffer pool.
+    stability:
+      level: development
     unit: s
     gauge:
       value_type: int
@@ -345,6 +363,8 @@ metrics:
   sqlserver.page.split.rate:
     enabled: true
     description: Number of pages split as a result of overflowing index pages.
+    stability:
+      level: development
     unit: "{pages}/s"
     gauge:
       value_type: double
@@ -352,6 +372,8 @@ metrics:
   sqlserver.page.lazy_write.rate:
     enabled: true
     description: Number of lazy writes moving dirty pages to disk.
+    stability:
+      level: development
     unit: "{writes}/s"
     gauge:
       value_type: double
@@ -359,6 +381,8 @@ metrics:
   sqlserver.page.checkpoint.flush.rate:
     enabled: true
     description: Number of pages flushed by operations requiring dirty pages to be flushed.
+    stability:
+      level: development
     unit: "{pages}/s"
     gauge:
       value_type: double
@@ -366,6 +390,8 @@ metrics:
   sqlserver.page.operation.rate:
     enabled: true
     description: Number of physical database page operations issued.
+    stability:
+      level: development
     unit: "{operations}/s"
     gauge:
       value_type: double
@@ -374,6 +400,8 @@ metrics:
   sqlserver.transaction_log.growth.count:
     enabled: true
     description: Total number of transaction log expansions for a database.
+    stability:
+      level: development
     unit: "{growths}"
     sum:
       monotonic: true
@@ -383,6 +411,8 @@ metrics:
   sqlserver.transaction_log.shrink.count:
     enabled: true
     description: Total number of transaction log shrinks for a database.
+    stability:
+      level: development
     unit: "{shrinks}"
     sum:
       monotonic: true
@@ -392,6 +422,8 @@ metrics:
   sqlserver.transaction_log.usage:
     enabled: true
     description: Percent of transaction log space used.
+    stability:
+      level: development
     unit: "%"
     gauge:
       value_type: int
@@ -399,6 +431,8 @@ metrics:
   sqlserver.transaction_log.flush.wait.rate:
     enabled: true
     description: Number of commits waiting for a transaction log flush.
+    stability:
+      level: development
     unit: "{commits}/s"
     gauge:
       value_type: double
@@ -406,6 +440,8 @@ metrics:
   sqlserver.transaction_log.flush.rate:
     enabled: true
     description: Number of log flushes.
+    stability:
+      level: development
     unit: "{flushes}/s"
     gauge:
       value_type: double
@@ -413,6 +449,8 @@ metrics:
   sqlserver.transaction_log.flush.data.rate:
     enabled: true
     description: Total number of log bytes flushed.
+    stability:
+      level: development
     unit: By/s
     gauge:
       value_type: double
@@ -420,6 +458,8 @@ metrics:
   sqlserver.transaction.rate:
     enabled: true
     description: Number of transactions started for the database (not including XTP-only transactions).
+    stability:
+      level: development
     unit: "{transactions}/s"
     gauge:
       value_type: double
@@ -427,6 +467,8 @@ metrics:
   sqlserver.transaction.write.rate:
     enabled: true
     description: Number of transactions that wrote to the database and committed.
+    stability:
+      level: development
     unit: "{transactions}/s"
     gauge:
       value_type: double
@@ -434,6 +476,8 @@ metrics:
   sqlserver.database.latency:
     enabled: false
     description: Total time that the users waited for I/O issued on this file.
+    stability:
+      level: development
     unit: "s"
     sum:
       monotonic: true
@@ -444,6 +488,8 @@ metrics:
   sqlserver.database.operations:
     enabled: false
     description: The number of operations issued on the file.
+    stability:
+      level: development
     unit: "{operations}"
     sum:
       monotonic: true
@@ -455,6 +501,8 @@ metrics:
   sqlserver.database.io:
     enabled: false
     description: The number of bytes of I/O on this file.
+    stability:
+      level: development
     unit: "By"
     sum:
       monotonic: true
@@ -466,6 +514,8 @@ metrics:
   sqlserver.resource_pool.disk.operations:
     enabled: false
     description: The rate of operations issued.
+    stability:
+      level: development
     unit: "{operations}/s"
     gauge:
       value_type: double
@@ -474,6 +524,8 @@ metrics:
   sqlserver.resource_pool.disk.throttled.read.rate:
     enabled: false
     description: The number of read operations that were throttled in the last second
+    stability:
+      level: development
     unit: "{reads}/s"
     gauge:
       value_type: int
@@ -483,6 +535,8 @@ metrics:
   sqlserver.resource_pool.disk.throttled.write.rate:
     enabled: false
     description: The number of write operations that were throttled in the last second
+    stability:
+      level: development
     unit: "{writes}/s"
     gauge:
       value_type: double
@@ -492,6 +546,8 @@ metrics:
   sqlserver.processes.blocked:
     enabled: false
     description: The number of processes that are currently blocked
+    stability:
+      level: development
     unit: "{processes}"
     gauge:
       value_type: int
@@ -501,6 +557,8 @@ metrics:
   sqlserver.database.count:
     enabled: false
     description: The number of databases
+    stability:
+      level: development
     unit: "{databases}"
     gauge:
       value_type: int
@@ -510,6 +568,8 @@ metrics:
   sqlserver.table.count:
     enabled: false
     description: The number of tables.
+    stability:
+      level: development
     unit: “{tables}”
     sum:
       aggregation_temporality: cumulative
@@ -519,6 +579,8 @@ metrics:
   sqlserver.database.backup_or_restore.rate:
     enabled: false
     description: Total number of backups/restores.
+    stability:
+      level: development
     unit: “{backups_or_restores}/s”
     gauge:
       value_type: double
@@ -526,6 +588,8 @@ metrics:
   sqlserver.replica.data.rate:
     enabled: false
     description: Throughput rate of replica data.
+    stability:
+      level: development
     unit: By/s
     gauge:
       value_type: double
@@ -533,6 +597,8 @@ metrics:
   sqlserver.database.execution.errors:
     enabled: false
     description: Number of execution errors.
+    stability:
+      level: development
     unit: “{errors}”
     gauge:
       value_type: int
@@ -540,6 +606,8 @@ metrics:
   sqlserver.page.buffer_cache.free_list.stalls.rate:
     enabled: false
     description: Number of free list stalls.
+    stability:
+      level: development
     unit: “{stalls}/s”
     gauge:
       value_type: int
@@ -547,6 +615,8 @@ metrics:
   sqlserver.database.tempdb.space:
     enabled: false
     description: Total free space in temporary DB.
+    stability:
+      level: development
     unit: “KB”
     sum:
       monotonic: false
@@ -556,6 +626,8 @@ metrics:
   sqlserver.database.full_scan.rate:
     enabled: false
     description: The number of unrestricted full table or index scans.
+    stability:
+      level: development
     unit: "{scans}/s"
     gauge:
       value_type: double
@@ -563,6 +635,8 @@ metrics:
   sqlserver.index.search.rate:
     enabled: false
     description: Total number of index searches.
+    stability:
+      level: development
     unit: “{searches}/s”
     gauge:
       value_type: double
@@ -570,6 +644,8 @@ metrics:
   sqlserver.lock.timeout.rate:
     enabled: false
     description: Total number of lock timeouts.
+    stability:
+      level: development
     unit: “{timeouts}/s”
     gauge:
       value_type: double
@@ -577,6 +653,8 @@ metrics:
   sqlserver.login.rate:
     enabled: false
     description: Total number of logins.
+    stability:
+      level: development
     unit: “{logins}/s”
     gauge:
       value_type: double
@@ -584,6 +662,8 @@ metrics:
   sqlserver.logout.rate:
     enabled: false
     description: Total number of logouts.
+    stability:
+      level: development
     unit: “{logouts}/s”
     gauge:
       value_type: double
@@ -591,6 +671,8 @@ metrics:
   sqlserver.deadlock.rate:
     enabled: false
     description: Total number of deadlocks.
+    stability:
+      level: development
     unit: “{deadlocks}/s”
     gauge:
       value_type: double
@@ -598,6 +680,8 @@ metrics:
   sqlserver.transaction.mirror_write.rate:
     enabled: false
     description: Total number of mirror write transactions.
+    stability:
+      level: development
     unit: “{transactions}/s”
     gauge:
       value_type: double
@@ -605,6 +689,8 @@ metrics:
   sqlserver.memory.grants.pending.count:
     enabled: false
     description: Total number of memory grants pending.
+    stability:
+      level: development
     unit: “{grants}”
     sum:
       aggregation_temporality: cumulative
@@ -614,6 +700,8 @@ metrics:
   sqlserver.page.lookup.rate:
     enabled: false
     description: Total number of page lookups.
+    stability:
+      level: development
     unit: “{lookups}/s”
     gauge:
       value_type: double
@@ -621,6 +709,8 @@ metrics:
   sqlserver.transaction.delay:
     enabled: false
     description: Time consumed in transaction delays.
+    stability:
+      level: development
     unit: ms
     sum:
       aggregation_temporality: cumulative
@@ -630,6 +720,8 @@ metrics:
   sqlserver.memory.usage:
     enabled: false
     description: Total memory in use.
+    stability:
+      level: development
     unit: “KB”
     sum:
       aggregation_temporality: cumulative
@@ -639,6 +731,8 @@ metrics:
   sqlserver.database.tempdb.version_store.size:
     enabled: false
     description: TempDB version store size.
+    stability:
+      level: development
     unit: “KB”
     gauge:
       value_type: double
@@ -646,6 +740,8 @@ metrics:
   sqlserver.os.wait.duration:
     enabled: false
     description: Total wait time for this wait type
+    stability:
+      level: development
     unit: "s"
     sum:
       aggregation_temporality: cumulative
@@ -656,6 +752,8 @@ metrics:
   sqlserver.cpu.count:
     enabled: false
     description: Number of CPUs.
+    stability:
+      level: development
     unit: "{CPUs}"
     gauge:
       value_type: int
@@ -663,6 +761,8 @@ metrics:
   sqlserver.computer.uptime:
     enabled: false
     description: Computer uptime.
+    stability:
+      level: development
     unit: "{seconds}"
     gauge:
       value_type: int

@@ -522,10 +522,6 @@ func (f *factory) createLogsExporter(
 ) (exporter.Logs, error) {
 	cfg := checkAndCastConfig(c, set.Logger)
 
-	if cfg.Logs.DumpPayloads {
-		set.Logger.Warn("logs::dump_payloads is not valid")
-	}
-
 	var pusher consumer.ConsumeLogsFunc
 	var logsAgent logsagentpipeline.LogsAgent
 	hostProvider, err := f.SourceProvider(set.TelemetrySettings, cfg.Hostname, cfg.HostnameDetectionTimeout)

@@ -11,11 +11,6 @@ type LogsConfig struct {
 	// If unset, the value is obtained from the Site.
 	confignet.TCPAddrConfig `mapstructure:",squash"`
 
-	// DumpPayloads report whether payloads should be dumped when logging level is debug.
-	// Note: this config option does not apply when the `exporter.datadogexporter.UseLogsAgentExporter` feature flag is enabled (now enabled by default).
-	// Deprecated: This config option is not supported in the Datadog Agent logs pipeline.
-	DumpPayloads bool `mapstructure:"dump_payloads"`
-
 	// UseCompression enables the logs agent to compress logs before sending them.
 	// Note: this config option does not apply when the `exporter.datadogexporter.UseLogsAgentExporter` feature flag is disabled.
 	UseCompression bool `mapstructure:"use_compression"`

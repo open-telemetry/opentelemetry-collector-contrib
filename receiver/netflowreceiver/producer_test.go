@@ -143,7 +143,7 @@ func TestProduceRaw(t *testing.T) {
 	require.Equal(t, 3, records.Len()) // Should have one record per flow record
 
 	// Each record should be a raw string representation of the ProducerMessage
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		record := records.At(i)
 		msg := messages[i]
 		assert.Equal(t, fmt.Sprintf("%+v", msg), record.Body().Str())

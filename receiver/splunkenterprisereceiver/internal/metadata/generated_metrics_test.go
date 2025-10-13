@@ -136,6 +136,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSplunkKvstoreStatusDataPoint(ts, 1, "splunk.kvstore.storage.engine-val", "splunk.kvstore.external-val", "splunk.kvstore.status.value-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 
 			allMetricsCount++
+			mb.RecordSplunkLicenseExpirationSecondsRemainingDataPoint(ts, 1, "splunk.license.status-val", "splunk.license.label-val", "splunk.license.type-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
+
+			allMetricsCount++
 			mb.RecordSplunkLicenseIndexUsageDataPoint(ts, 1, "splunk.index.name-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 
 			allMetricsCount++
@@ -775,6 +778,33 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("splunk.kvstore.status.value")
 					assert.True(t, ok)
 					assert.Equal(t, "splunk.kvstore.status.value-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+					assert.True(t, ok)
+					assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+					assert.True(t, ok)
+					assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+				case "splunk.license.expiration.seconds_remaining":
+					assert.False(t, validatedMetrics["splunk.license.expiration.seconds_remaining"], "Found a duplicate in the metrics slice: splunk.license.expiration.seconds_remaining")
+					validatedMetrics["splunk.license.expiration.seconds_remaining"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Gauge tracking the seconds remaining on any given Splunk License found via Splunk API. **Note:** This will only work on a Cluster Manager.", ms.At(i).Description())
+					assert.Equal(t, "{seconds}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("splunk.license.status")
+					assert.True(t, ok)
+					assert.Equal(t, "splunk.license.status-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("splunk.license.label")
+					assert.True(t, ok)
+					assert.Equal(t, "splunk.license.label-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("splunk.license.type")
+					assert.True(t, ok)
+					assert.Equal(t, "splunk.license.type-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
 					assert.True(t, ok)
 					assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())

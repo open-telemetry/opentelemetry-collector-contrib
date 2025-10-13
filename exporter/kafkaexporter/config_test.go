@@ -80,6 +80,7 @@ func TestLoadConfig(t *testing.T) {
 				PartitionTracesByID:                  true,
 				PartitionMetricsByResourceAttributes: true,
 				PartitionLogsByResourceAttributes:    true,
+				PartitionLogsByTraceID:               false,
 			},
 		},
 		{
@@ -149,6 +150,37 @@ func TestLoadConfig(t *testing.T) {
 
 			assert.NoError(t, xconfmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
+		})
+	}
+}
+
+func TestLoadConfigFailed(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		id            component.ID
+		expectedError error
+		configFile    string
+	}{
+		{
+			id:            component.NewIDWithName(metadata.Type, ""),
+			expectedError: errLogsPartitionExclusive,
+			configFile:    "config-partitioning-failed.yaml",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			cm, err := confmaptest.LoadConf(filepath.Join("testdata", tt.configFile))
+			require.NoError(t, err)
+
+			cfg := createDefaultConfig().(*Config)
+
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, sub.Unmarshal(cfg))
+
+			assert.ErrorIs(t, xconfmap.Validate(cfg), tt.expectedError)
 		})
 	}
 }

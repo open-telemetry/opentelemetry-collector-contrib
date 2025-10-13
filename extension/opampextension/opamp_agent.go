@@ -8,6 +8,7 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"maps"
 	"net/http"
 	"os"
 	"runtime"
@@ -31,7 +32,7 @@ import (
 	"go.opentelemetry.io/collector/service/hostcapabilities"
 	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
-	"golang.org/x/exp/maps"
+	expmaps "golang.org/x/exp/maps"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 	"gopkg.in/yaml.v3"
@@ -383,9 +384,7 @@ func (o *opampAgent) createAgentDescription() error {
 	nonIdentifyingAttributeMap[string(semconv.HostNameKey)] = hostname
 	nonIdentifyingAttributeMap[string(semconv.OSDescriptionKey)] = description
 
-	for k, v := range o.cfg.AgentDescription.NonIdentifyingAttributes {
-		nonIdentifyingAttributeMap[k] = v
-	}
+	maps.Copy(nonIdentifyingAttributeMap, o.cfg.AgentDescription.NonIdentifyingAttributes)
 	if o.cfg.AgentDescription.IncludeResourceAttributes {
 		for k, v := range o.resourceAttrs {
 			// skip the attributes that are being used in the identifying attributes.
@@ -397,7 +396,7 @@ func (o *opampAgent) createAgentDescription() error {
 	}
 
 	// Sort the non identifying attributes to give them a stable order for tests
-	keys := maps.Keys(nonIdentifyingAttributeMap)
+	keys := expmaps.Keys(nonIdentifyingAttributeMap)
 	sort.Strings(keys)
 
 	nonIdent := make([]*protobufs.KeyValue, 0, len(nonIdentifyingAttributeMap))

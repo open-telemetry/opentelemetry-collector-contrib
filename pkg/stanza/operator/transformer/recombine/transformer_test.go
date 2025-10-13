@@ -791,16 +791,16 @@ func BenchmarkRecombine(b *testing.B) {
 	require.NoError(b, op.SetOutputs([]operator.Operator{fake}))
 
 	go func() {
-		for {
-			<-fake.Received
+		for range fake.Received { //nolint:revive
+			// Nothing to do
 		}
 	}()
 
 	sourcesNum := 10
 	logsNum := 10
 	entries := []*entry.Entry{}
-	for i := 0; i < logsNum; i++ {
-		for j := 0; j < sourcesNum; j++ {
+	for i := range logsNum {
+		for j := range sourcesNum {
 			start := entry.New()
 			start.Timestamp = time.Now()
 			start.Body = strings.Repeat(fmt.Sprintf("log-%d", i), 50)
@@ -810,14 +810,18 @@ func BenchmarkRecombine(b *testing.B) {
 	}
 
 	ctx := b.Context()
-	b.ResetTimer()
+
 	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		for _, e := range entries {
 			require.NoError(b, op.ProcessBatch(b.Context(), []*entry.Entry{e}))
 		}
 		op.(*Transformer).flushAllSources(ctx)
 	}
+	b.StopTimer()
+
+	require.NoError(b, op.Stop())
+	close(fake.Received)
 }
 
 func BenchmarkRecombineLimitTrigger(b *testing.B) {
@@ -835,8 +839,8 @@ func BenchmarkRecombineLimitTrigger(b *testing.B) {
 	require.NoError(b, op.Start(nil))
 
 	go func() {
-		for {
-			<-fake.Received
+		for range fake.Received { //nolint:revive
+			// Nothing to do
 		}
 	}()
 
@@ -849,12 +853,16 @@ func BenchmarkRecombineLimitTrigger(b *testing.B) {
 	next.Body = "next"
 
 	ctx := b.Context()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+
+	for b.Loop() {
 		require.NoError(b, op.ProcessBatch(ctx, []*entry.Entry{start, next}))
 		require.NoError(b, op.ProcessBatch(ctx, []*entry.Entry{start, next}))
 		op.(*Transformer).flushAllSources(ctx)
 	}
+	b.StopTimer()
+
+	require.NoError(b, op.Stop())
+	close(fake.Received)
 }
 
 func TestTimeout(t *testing.T) {

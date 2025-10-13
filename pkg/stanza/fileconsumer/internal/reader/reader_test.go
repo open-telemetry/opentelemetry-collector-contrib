@@ -340,7 +340,7 @@ func BenchmarkFileRead(b *testing.B) {
 	_, err := temp.WriteString(temp.Name() + "\n")
 	require.NoError(b, err)
 	// Write half the content before starting the benchmark
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		_, err := temp.WriteString(string(filetest.TokenWithLength(999)) + "\n")
 		require.NoError(b, err)
 	}
@@ -352,8 +352,8 @@ func BenchmarkFileRead(b *testing.B) {
 		return nil
 	})
 	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+
+	for i := 0; b.Loop(); i++ {
 		file, err := os.OpenFile(temp.Name(), os.O_CREATE|os.O_RDWR, 0o600)
 		require.NoError(b, err)
 		fp, err := f.NewFingerprint(file)

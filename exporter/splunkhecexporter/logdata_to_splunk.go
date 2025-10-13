@@ -23,43 +23,12 @@ const (
 	traceIDFieldKey = "trace_id"
 )
 
-// copyOtelAttrs copies values from HecToOtelAttrs to OtelAttrsToHec struct.
-func copyOtelAttrs(config *Config) {
-	defaultCfg := createDefaultConfig().(*Config)
-	if config.OtelAttrsToHec.Equal(defaultCfg.OtelAttrsToHec) {
-		if !config.HecToOtelAttrs.Equal(defaultCfg.HecToOtelAttrs) {
-			// Copy settings to ease deprecation of HecToOtelAttrs.
-			config.OtelAttrsToHec = config.HecToOtelAttrs
-		}
-	} else {
-		if !config.HecToOtelAttrs.Equal(defaultCfg.HecToOtelAttrs) {
-			// Replace all default fields in OtelAttrsToHec.
-			if config.OtelAttrsToHec.Source == defaultCfg.OtelAttrsToHec.Source {
-				config.OtelAttrsToHec.Source = config.HecToOtelAttrs.Source
-			}
-			if config.OtelAttrsToHec.SourceType == defaultCfg.OtelAttrsToHec.SourceType {
-				config.OtelAttrsToHec.SourceType = config.HecToOtelAttrs.SourceType
-			}
-			if config.OtelAttrsToHec.Index == defaultCfg.OtelAttrsToHec.Index {
-				config.OtelAttrsToHec.Index = config.HecToOtelAttrs.Index
-			}
-			if config.OtelAttrsToHec.Host == defaultCfg.OtelAttrsToHec.Host {
-				config.OtelAttrsToHec.Host = config.HecToOtelAttrs.Host
-			}
-		}
-	}
-}
-
 func mapLogRecordToSplunkEvent(res pcommon.Resource, lr plog.LogRecord, config *Config) *splunk.Event {
 	body := lr.Body().AsRaw()
 	if body == nil || body == "" {
 		// events with no body are rejected by Splunk.
 		return nil
 	}
-
-	// Manage the deprecation of HecToOtelAttrs config parameters.
-	// TODO: remove this once HecToOtelAttrs is removed from Config.
-	copyOtelAttrs(config)
 
 	host := unknownHostName
 	source := config.Source

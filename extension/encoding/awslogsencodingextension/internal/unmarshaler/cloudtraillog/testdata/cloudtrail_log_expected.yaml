@@ -137,9 +137,6 @@ resourceLogs:
                                                         stringValue: stopped
                                       - kvlistValue:
                                           values:
-                                            - key: instanceId
-                                              value:
-                                                stringValue: i-EXAMPLE56126103cb
                                             - key: currentState
                                               value:
                                                 kvlistValue:
@@ -160,6 +157,9 @@ resourceLogs:
                                                     - key: name
                                                       value:
                                                         stringValue: stopped
+                                            - key: instanceId
+                                              value:
+                                                stringValue: i-EXAMPLE56126103cb
             body: {}
             timeUnixNano: "1689801448000000000"
           - attributes:
@@ -238,9 +238,6 @@ resourceLogs:
                         value:
                           kvlistValue:
                             values:
-                              - key: userName
-                                value:
-                                  stringValue: Richard
                               - key: path
                                 value:
                                   stringValue: /
@@ -253,6 +250,9 @@ resourceLogs:
                               - key: createDate
                                 value:
                                   stringValue: Jul 19, 2023 9:25:09 PM
+                              - key: userName
+                                value:
+                                  stringValue: Richard
             body: {}
             timeUnixNano: "1689801909000000000"
           - attributes:
@@ -314,6 +314,9 @@ resourceLogs:
                 value:
                   kvlistValue:
                     values:
+                      - key: topicArn
+                        value:
+                          stringValue: arn:aws:sns:us-east-1:123456789012:ExampleSNSTopic
                       - key: message
                         value:
                           stringValue: HIDDEN_DUE_TO_SECURITY_REASONS
@@ -326,9 +329,6 @@ resourceLogs:
                       - key: messageAttributes
                         value:
                           stringValue: HIDDEN_DUE_TO_SECURITY_REASONS
-                      - key: topicArn
-                        value:
-                          stringValue: arn:aws:sns:us-east-1:123456789012:ExampleSNSTopic
               - key: aws.response.elements
                 value:
                   kvlistValue:
@@ -373,6 +373,15 @@ resourceLogs:
                 value:
                   kvlistValue:
                     values:
+                      - key: state
+                        value:
+                          stringValue: Start
+                      - key: eventSource
+                        value:
+                          stringValue: ssm.amazonaws.com
+                      - key: eventName
+                        value:
+                          stringValue: UpdateInstanceInformation
                       - key: insightType
                         value:
                           stringValue: ApiCallRateInsight
@@ -398,15 +407,6 @@ resourceLogs:
                                               - key: average
                                                 value:
                                                   doubleValue: 669
-                      - key: state
-                        value:
-                          stringValue: Start
-                      - key: eventSource
-                        value:
-                          stringValue: ssm.amazonaws.com
-                      - key: eventName
-                        value:
-                          stringValue: UpdateInstanceInformation
             body: {}
             timeUnixNano: "1672627860000000000"
           - attributes:
@@ -554,8 +554,8 @@ resourceLogs:
             timeUnixNano: "1749997800000000000"
         scope:
           attributes:
-            - key: awslogs_encoding.format
+            - key: encoding.format
               value:
-                stringValue: cloudtrail_log
+                stringValue: aws.cloudtrail
           name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension
           version: test-version

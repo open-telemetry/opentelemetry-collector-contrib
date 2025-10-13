@@ -16,9 +16,9 @@ metrics:
 
 The average amount of CPU being used by the node.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| % | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| % | Gauge | Double | development |
 
 #### Attributes
 
@@ -30,9 +30,9 @@ The average amount of CPU being used by the node.
 
 The amount of storage space used by the node.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | false | development |
 
 #### Attributes
 
@@ -44,33 +44,33 @@ The amount of storage space used by the node.
 
 The percentage of storage space utilized.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| % | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| % | Gauge | Double | development |
 
 ### nsxt.node.memory.cache.usage
 
 The size of the node's memory cache.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| KBy | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| KBy | Sum | Int | Cumulative | false | development |
 
 ### nsxt.node.memory.usage
 
 The memory usage of the node.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| KBy | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| KBy | Sum | Int | Cumulative | false | development |
 
 ### nsxt.node.network.io
 
 The number of bytes which have flowed through the network interface.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | true | development |
 
 #### Attributes
 
@@ -82,9 +82,9 @@ The number of bytes which have flowed through the network interface.
 
 The number of packets which have flowed through the network interface on the node.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {packets} | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {packets} | Sum | Int | Cumulative | true | development |
 
 #### Attributes
 

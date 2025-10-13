@@ -8,7 +8,7 @@
 | Distributions | [contrib], [k8s] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fjournald%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fjournald) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fjournald%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fjournald) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_journald)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_journald&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    |  |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@belimawr](https://www.github.com/belimawr) |
 | Emeritus      | [@djaglowski](https://www.github.com/djaglowski), [@sumo-drosiek](https://www.github.com/sumo-drosiek) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
@@ -182,7 +182,7 @@ The user running the collector must have enough permissions to access the journa
 
 When running in a containerized environment, differences in the systemd version running on the host and on the container may prevent access to logs due to different features and configurations (e.g. zstd compression, keyed hash etc).
 
-### Docker
+### Docker & Kubernetes
 
 When running otelcol in a container, note that:
 
@@ -191,6 +191,8 @@ When running otelcol in a container, note that:
 3. depending on your guest system, you might need to explicitly set the log directory in the configuration
 
 Please note that *the official otelcol images do not contain the journald binary*; you will need to create your custom image or find one that does.
+
+There is a simple example with a step-by-step, including a `Dockerfile` in [`examples/container`](examples/container/README.md).
 
 ### Linux packaging
 
@@ -203,7 +205,3 @@ sudo su -s /bin/bash -c 'journalctl --lines 5' otelcol-contrib
 ```
 
 if the permissions are set correctly you will see some logs, otherwise a clear error message.
-
-### Kubernetes
-
-See the instructions for [Docker](#Docker) and adapt according to your Kubernetes distribution and node OS.

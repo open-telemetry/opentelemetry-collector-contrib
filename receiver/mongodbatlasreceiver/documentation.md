@@ -18,9 +18,9 @@ Database feature size
 
 Aggregate of MongoDB Metrics DATABASE_EXTENT_COUNT, DATABASE_VIEW_COUNT, DATABASE_COLLECTION_COUNT, DATABASE_OBJECT_COUNT, DATABASE_INDEX_COUNT
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {objects} | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {objects} | Gauge | Double | development |
 
 #### Attributes
 
@@ -34,9 +34,9 @@ Database feature size
 
 Aggregate of MongoDB Metrics DATABASE_DATA_SIZE, DATABASE_STORAGE_SIZE, DATABASE_INDEX_SIZE, DATABASE_AVERAGE_OBJECT_SIZE
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| By | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Double | development |
 
 #### Attributes
 
@@ -50,9 +50,9 @@ Disk partition iops
 
 Aggregate of MongoDB Metrics DISK_PARTITION_IOPS_READ, DISK_PARTITION_IOPS_WRITE, DISK_PARTITION_IOPS_TOTAL
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {ops}/s | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {ops}/s | Gauge | Double | development |
 
 #### Attributes
 
@@ -66,9 +66,9 @@ Disk partition iops
 
 Aggregate of MongoDB Metrics MAX_DISK_PARTITION_IOPS_WRITE, MAX_DISK_PARTITION_IOPS_TOTAL, MAX_DISK_PARTITION_IOPS_READ
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {ops}/s | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {ops}/s | Gauge | Double | development |
 
 #### Attributes
 
@@ -82,9 +82,9 @@ Disk partition latency
 
 Aggregate of MongoDB Metrics DISK_PARTITION_LATENCY_WRITE, DISK_PARTITION_LATENCY_READ
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| ms | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| ms | Gauge | Double | development |
 
 #### Attributes
 
@@ -98,9 +98,9 @@ Disk partition latency
 
 Aggregate of MongoDB Metrics MAX_DISK_PARTITION_LATENCY_WRITE, MAX_DISK_PARTITION_LATENCY_READ
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| ms | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| ms | Gauge | Double | development |
 
 #### Attributes
 
@@ -114,9 +114,9 @@ Disk partition space
 
 Aggregate of MongoDB Metrics DISK_PARTITION_SPACE_FREE, DISK_PARTITION_SPACE_USED
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| By | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Double | development |
 
 #### Attributes
 
@@ -130,9 +130,9 @@ Disk partition space
 
 Aggregate of MongoDB Metrics DISK_PARTITION_SPACE_FREE, DISK_PARTITION_SPACE_USED
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| By | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Double | development |
 
 #### Attributes
 
@@ -146,9 +146,9 @@ Disk partition usage (%)
 
 Aggregate of MongoDB Metrics DISK_PARTITION_SPACE_PERCENT_FREE, DISK_PARTITION_SPACE_PERCENT_USED
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | development |
 
 #### Attributes
 
@@ -162,9 +162,9 @@ Disk partition usage (%)
 
 Aggregate of MongoDB Metrics MAX_DISK_PARTITION_SPACE_PERCENT_USED, MAX_DISK_PARTITION_SPACE_PERCENT_FREE
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | development |
 
 #### Attributes
 
@@ -178,9 +178,9 @@ The percentage of time during which requests are being issued to and serviced by
 
 MongoDB Metrics DISK_PARTITION_UTILIZATION
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | development |
 
 ### mongodbatlas.disk.partition.utilization.max
 
@@ -188,9 +188,9 @@ The maximum percentage of time during which requests are being issued to and ser
 
 MongoDB Metrics MAX_DISK_PARTITION_UTILIZATION
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | development |
 
 ### mongodbatlas.process.asserts
 
@@ -198,9 +198,9 @@ Number of assertions per second
 
 Aggregate of MongoDB Metrics ASSERT_REGULAR, ASSERT_USER, ASSERT_MSG, ASSERT_WARNING
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {assertions}/s | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {assertions}/s | Gauge | Double | development |
 
 #### Attributes
 
@@ -214,9 +214,9 @@ Amount of data flushed in the background
 
 MongoDB Metric BACKGROUND_FLUSH_AVG
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | development |
 
 ### mongodbatlas.process.cache.io
 
@@ -224,9 +224,9 @@ Cache throughput (per second)
 
 Aggregate of MongoDB Metrics CACHE_BYTES_READ_INTO, CACHE_BYTES_WRITTEN_FROM
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| By | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Double | development |
 
 #### Attributes
 
@@ -240,9 +240,9 @@ Cache sizes
 
 Aggregate of MongoDB Metrics CACHE_USED_BYTES, CACHE_DIRTY_BYTES
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Double | Cumulative | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Double | Cumulative | false | development |
 
 #### Attributes
 
@@ -256,9 +256,9 @@ Number of current connections
 
 MongoDB Metric CONNECTIONS
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {connections} | Sum | Double | Cumulative | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {connections} | Sum | Double | Cumulative | false | development |
 
 ### mongodbatlas.process.cpu.children.normalized.usage.average
 
@@ -266,9 +266,9 @@ CPU Usage for child processes, normalized to pct
 
 Aggregate of MongoDB Metrics PROCESS_NORMALIZED_CPU_CHILDREN_KERNEL, PROCESS_NORMALIZED_CPU_CHILDREN_USER
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | development |
 
 #### Attributes
 
@@ -282,9 +282,9 @@ CPU Usage for child processes, normalized to pct
 
 Aggregate of MongoDB Metrics MAX_PROCESS_NORMALIZED_CPU_CHILDREN_KERNEL, MAX_PROCESS_NORMALIZED_CPU_CHILDREN_USER
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | development |
 
 #### Attributes
 
@@ -298,9 +298,9 @@ CPU Usage for child processes (%)
 
 Aggregate of MongoDB Metrics PROCESS_CPU_CHILDREN_KERNEL, PROCESS_CPU_CHILDREN_USER
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | development |
 
 #### Attributes
 
@@ -314,9 +314,9 @@ CPU Usage for child processes (%)
 
 Aggregate of MongoDB Metrics MAX_PROCESS_CPU_CHILDREN_USER, MAX_PROCESS_CPU_CHILDREN_KERNEL
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | development |
 
 #### Attributes
 
@@ -330,9 +330,9 @@ CPU Usage, normalized to pct
 
 Aggregate of MongoDB Metrics PROCESS_NORMALIZED_CPU_KERNEL, PROCESS_NORMALIZED_CPU_USER
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | development |
 
 #### Attributes
 
@@ -346,9 +346,9 @@ CPU Usage, normalized to pct
 
 Aggregate of MongoDB Metrics MAX_PROCESS_NORMALIZED_CPU_USER, MAX_PROCESS_NORMALIZED_CPU_KERNEL
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | development |
 
 #### Attributes
 
@@ -362,9 +362,9 @@ CPU Usage (%)
 
 Aggregate of MongoDB Metrics PROCESS_CPU_KERNEL, PROCESS_CPU_USER
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | development |
 
 #### Attributes
 
@@ -378,9 +378,9 @@ CPU Usage (%)
 
 Aggregate of MongoDB Metrics MAX_PROCESS_CPU_KERNEL, MAX_PROCESS_CPU_USER
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | development |
 
 #### Attributes
 
@@ -394,9 +394,9 @@ Number of cursors
 
 Aggregate of MongoDB Metrics CURSORS_TOTAL_OPEN, CURSORS_TOTAL_TIMED_OUT
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {cursors} | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {cursors} | Gauge | Double | development |
 
 #### Attributes
 
@@ -410,9 +410,9 @@ Document access rates
 
 Aggregate of MongoDB Metrics DOCUMENT_METRICS_UPDATED, DOCUMENT_METRICS_DELETED, DOCUMENT_METRICS_RETURNED, DOCUMENT_METRICS_INSERTED
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {documents}/s | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {documents}/s | Gauge | Double | development |
 
 #### Attributes
 
@@ -426,9 +426,9 @@ DB Operation Rates
 
 Aggregate of MongoDB Metrics OPCOUNTER_GETMORE, OPERATIONS_SCAN_AND_ORDER, OPCOUNTER_UPDATE, OPCOUNTER_REPL_UPDATE, OPCOUNTER_CMD, OPCOUNTER_DELETE, OPCOUNTER_REPL_DELETE, OPCOUNTER_REPL_CMD, OPCOUNTER_QUERY, OPCOUNTER_REPL_INSERT, OPCOUNTER_INSERT, OPCOUNTER_TTL_DELETED
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {operations}/s | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {operations}/s | Gauge | Double | development |
 
 #### Attributes
 
@@ -443,9 +443,9 @@ DB Operation Times
 
 Aggregate of MongoDB Metrics OP_EXECUTION_TIME_WRITES, OP_EXECUTION_TIME_COMMANDS, OP_EXECUTION_TIME_READS
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| ms | Sum | Double | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| ms | Sum | Double | Cumulative | true | development |
 
 #### Attributes
 
@@ -459,9 +459,9 @@ Scanned objects
 
 Aggregate of MongoDB Metrics QUERY_EXECUTOR_SCANNED_OBJECTS, QUERY_EXECUTOR_SCANNED
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {objects}/s | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {objects}/s | Gauge | Double | development |
 
 #### Attributes
 
@@ -475,9 +475,9 @@ Scanned objects per returned
 
 Aggregate of MongoDB Metrics QUERY_TARGETING_SCANNED_OBJECTS_PER_RETURNED, QUERY_TARGETING_SCANNED_PER_RETURNED
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {scanned}/{returned} | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {scanned}/{returned} | Gauge | Double | development |
 
 #### Attributes
 
@@ -491,9 +491,9 @@ Storage used by the database
 
 Aggregate of MongoDB Metrics DB_INDEX_SIZE_TOTAL, DB_DATA_SIZE_TOTAL_WO_SYSTEM, DB_STORAGE_TOTAL, DB_DATA_SIZE_TOTAL
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| By | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Double | development |
 
 #### Attributes
 
@@ -507,9 +507,9 @@ Number and status of locks
 
 Aggregate of MongoDB Metrics GLOBAL_LOCK_CURRENT_QUEUE_WRITERS, GLOBAL_LOCK_CURRENT_QUEUE_READERS, GLOBAL_LOCK_CURRENT_QUEUE_TOTAL
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {locks} | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {locks} | Gauge | Double | development |
 
 #### Attributes
 
@@ -523,9 +523,9 @@ Index miss ratio (%)
 
 MongoDB Metric INDEX_COUNTERS_BTREE_MISS_RATIO
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | development |
 
 ### mongodbatlas.process.index.counters
 
@@ -533,9 +533,9 @@ Indexes
 
 Aggregate of MongoDB Metrics INDEX_COUNTERS_BTREE_MISSES, INDEX_COUNTERS_BTREE_ACCESSES, INDEX_COUNTERS_BTREE_HITS
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {indexes} | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {indexes} | Gauge | Double | development |
 
 #### Attributes
 
@@ -549,9 +549,9 @@ Journaling commits
 
 MongoDB Metric JOURNALING_COMMITS_IN_WRITE_LOCK
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {commits} | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {commits} | Gauge | Double | development |
 
 ### mongodbatlas.process.journaling.data_files
 
@@ -559,9 +559,9 @@ Data file sizes
 
 MongoDB Metric JOURNALING_WRITE_DATA_FILES_MB
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| MiBy | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| MiBy | Gauge | Double | development |
 
 ### mongodbatlas.process.journaling.written
 
@@ -569,9 +569,9 @@ Journals written
 
 MongoDB Metric JOURNALING_MB
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| MiBy | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| MiBy | Gauge | Double | development |
 
 ### mongodbatlas.process.memory.usage
 
@@ -579,9 +579,9 @@ Memory Usage
 
 Aggregate of MongoDB Metrics MEMORY_MAPPED, MEMORY_VIRTUAL, COMPUTED_MEMORY, MEMORY_RESIDENT
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| By | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Double | development |
 
 #### Attributes
 
@@ -595,9 +595,9 @@ Network IO
 
 Aggregate of MongoDB Metrics NETWORK_BYTES_OUT, NETWORK_BYTES_IN
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| By/s | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By/s | Gauge | Double | development |
 
 #### Attributes
 
@@ -611,9 +611,9 @@ Network requests
 
 MongoDB Metric NETWORK_NUM_REQUESTS
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {requests} | Sum | Double | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {requests} | Sum | Double | Cumulative | true | development |
 
 ### mongodbatlas.process.oplog.rate
 
@@ -621,9 +621,9 @@ Execution rate by operation
 
 MongoDB Metric OPLOG_RATE_GB_PER_HOUR
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| GiBy/h | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| GiBy/h | Gauge | Double | development |
 
 ### mongodbatlas.process.oplog.time
 
@@ -631,9 +631,9 @@ Execution time by operation
 
 Aggregate of MongoDB Metrics OPLOG_MASTER_TIME, OPLOG_SLAVE_LAG_MASTER_TIME, OPLOG_MASTER_LAG_TIME_DIFF
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| s | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Gauge | Double | development |
 
 #### Attributes
 
@@ -647,9 +647,9 @@ Page faults
 
 Aggregate of MongoDB Metrics GLOBAL_PAGE_FAULT_EXCEPTIONS_THROWN, EXTRA_INFO_PAGE_FAULTS, GLOBAL_ACCESSES_NOT_IN_MEMORY
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {faults}/s | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {faults}/s | Gauge | Double | development |
 
 #### Attributes
 
@@ -663,9 +663,9 @@ Restarts in last hour
 
 Aggregate of MongoDB Metrics RESTARTS_IN_LAST_HOUR
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {restarts}/h | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {restarts}/h | Gauge | Double | development |
 
 ### mongodbatlas.process.tickets
 
@@ -673,9 +673,9 @@ Tickets
 
 Aggregate of MongoDB Metrics TICKETS_AVAILABLE_WRITE, TICKETS_AVAILABLE_READS
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {tickets} | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {tickets} | Gauge | Double | development |
 
 #### Attributes
 
@@ -689,9 +689,9 @@ System CPU Normalized to pct
 
 Aggregate of MongoDB Metrics SYSTEM_NORMALIZED_CPU_IOWAIT, SYSTEM_NORMALIZED_CPU_GUEST, SYSTEM_NORMALIZED_CPU_IRQ, SYSTEM_NORMALIZED_CPU_KERNEL, SYSTEM_NORMALIZED_CPU_STEAL, SYSTEM_NORMALIZED_CPU_SOFTIRQ, SYSTEM_NORMALIZED_CPU_NICE, SYSTEM_NORMALIZED_CPU_USER
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | development |
 
 #### Attributes
 
@@ -705,9 +705,9 @@ System CPU Normalized to pct
 
 Aggregate of MongoDB Metrics MAX_SYSTEM_NORMALIZED_CPU_USER, MAX_SYSTEM_NORMALIZED_CPU_NICE, MAX_SYSTEM_NORMALIZED_CPU_IOWAIT, MAX_SYSTEM_NORMALIZED_CPU_SOFTIRQ, MAX_SYSTEM_NORMALIZED_CPU_STEAL, MAX_SYSTEM_NORMALIZED_CPU_KERNEL, MAX_SYSTEM_NORMALIZED_CPU_GUEST, MAX_SYSTEM_NORMALIZED_CPU_IRQ
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | development |
 
 #### Attributes
 
@@ -721,9 +721,9 @@ System CPU Usage (%)
 
 Aggregate of MongoDB Metrics SYSTEM_CPU_USER, SYSTEM_CPU_GUEST, SYSTEM_CPU_SOFTIRQ, SYSTEM_CPU_IRQ, SYSTEM_CPU_KERNEL, SYSTEM_CPU_IOWAIT, SYSTEM_CPU_NICE, SYSTEM_CPU_STEAL
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | development |
 
 #### Attributes
 
@@ -737,9 +737,9 @@ System CPU Usage (%)
 
 Aggregate of MongoDB Metrics MAX_SYSTEM_CPU_SOFTIRQ, MAX_SYSTEM_CPU_IRQ, MAX_SYSTEM_CPU_GUEST, MAX_SYSTEM_CPU_IOWAIT, MAX_SYSTEM_CPU_NICE, MAX_SYSTEM_CPU_KERNEL, MAX_SYSTEM_CPU_USER, MAX_SYSTEM_CPU_STEAL
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | development |
 
 #### Attributes
 
@@ -753,9 +753,9 @@ Full text search disk usage (%)
 
 Aggregate of MongoDB Metrics FTS_PROCESS_NORMALIZED_CPU_USER, FTS_PROCESS_NORMALIZED_CPU_KERNEL
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | development |
 
 #### Attributes
 
@@ -769,9 +769,9 @@ Full-text search (%)
 
 Aggregate of MongoDB Metrics FTS_PROCESS_CPU_USER, FTS_PROCESS_CPU_KERNEL
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | development |
 
 #### Attributes
 
@@ -785,9 +785,9 @@ Full text search disk usage
 
 MongoDB Metric FTS_DISK_USAGE
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| By | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Double | development |
 
 ### mongodbatlas.system.fts.memory.usage
 
@@ -795,9 +795,9 @@ Full-text search
 
 Aggregate of MongoDB Metrics FTS_MEMORY_MAPPED, FTS_PROCESS_SHARED_MEMORY, FTS_PROCESS_RESIDENT_MEMORY, FTS_PROCESS_VIRTUAL_MEMORY
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| MiBy | Sum | Double | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| MiBy | Sum | Double | Cumulative | true | development |
 
 #### Attributes
 
@@ -811,9 +811,9 @@ System Memory Usage
 
 Aggregate of MongoDB Metrics SYSTEM_MEMORY_AVAILABLE, SYSTEM_MEMORY_BUFFERS, SYSTEM_MEMORY_USED, SYSTEM_MEMORY_CACHED, SYSTEM_MEMORY_SHARED, SYSTEM_MEMORY_FREE
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| KiBy | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| KiBy | Gauge | Double | development |
 
 #### Attributes
 
@@ -827,9 +827,9 @@ System Memory Usage
 
 Aggregate of MongoDB Metrics MAX_SYSTEM_MEMORY_CACHED, MAX_SYSTEM_MEMORY_AVAILABLE, MAX_SYSTEM_MEMORY_USED, MAX_SYSTEM_MEMORY_BUFFERS, MAX_SYSTEM_MEMORY_FREE, MAX_SYSTEM_MEMORY_SHARED
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| KiBy | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| KiBy | Gauge | Double | development |
 
 #### Attributes
 
@@ -843,9 +843,9 @@ System Network IO
 
 Aggregate of MongoDB Metrics SYSTEM_NETWORK_IN, SYSTEM_NETWORK_OUT
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| By/s | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By/s | Gauge | Double | development |
 
 #### Attributes
 
@@ -859,9 +859,9 @@ System Network IO
 
 Aggregate of MongoDB Metrics MAX_SYSTEM_NETWORK_OUT, MAX_SYSTEM_NETWORK_IN
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| By/s | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By/s | Gauge | Double | development |
 
 #### Attributes
 
@@ -875,9 +875,9 @@ Swap IO
 
 Aggregate of MongoDB Metrics SWAP_IO_IN, SWAP_IO_OUT
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {pages}/s | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {pages}/s | Gauge | Double | development |
 
 #### Attributes
 
@@ -891,9 +891,9 @@ Swap IO
 
 Aggregate of MongoDB Metrics MAX_SWAP_IO_IN, MAX_SWAP_IO_OUT
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {pages}/s | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {pages}/s | Gauge | Double | development |
 
 #### Attributes
 
@@ -907,9 +907,9 @@ Swap usage
 
 Aggregate of MongoDB Metrics SWAP_USAGE_FREE, SWAP_USAGE_USED
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| KiBy | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| KiBy | Gauge | Double | development |
 
 #### Attributes
 
@@ -923,9 +923,9 @@ Swap usage
 
 Aggregate of MongoDB Metrics MAX_SWAP_USAGE_FREE, MAX_SWAP_USAGE_USED
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| KiBy | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| KiBy | Gauge | Double | development |
 
 #### Attributes
 
@@ -949,9 +949,9 @@ Disk queue depth
 
 Aggregate of MongoDB Metrics DISK_QUEUE_DEPTH
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | development |
 
 ### mongodbatlas.disk.partition.throughput
 
@@ -959,9 +959,9 @@ Disk throughput
 
 Aggregate of MongoDB Metrics DISK_PARTITION_THROUGHPUT_READ, DISK_PARTITION_THROUGHPUT_WRITE
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| By/s | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By/s | Gauge | Double | development |
 
 #### Attributes
 
@@ -975,9 +975,9 @@ Cache ratios represented as (%)
 
 Aggregate of MongoDB Metrics CACHE_FILL_RATIO, DIRTY_FILL_RATIO
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| % | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| % | Gauge | Double | development |
 
 #### Attributes
 

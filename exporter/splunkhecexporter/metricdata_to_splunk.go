@@ -5,6 +5,7 @@ package splunkhecexporter // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"hash/fnv"
+	"maps"
 	"math"
 	"strconv"
 	"strings"
@@ -52,10 +53,10 @@ func sanitizeFloat(value float64) any {
 }
 
 func mapMetricToSplunkEvent(res pcommon.Resource, m pmetric.Metric, config *Config, logger *zap.Logger) []*splunk.Event {
-	sourceKey := config.HecToOtelAttrs.Source
-	sourceTypeKey := config.HecToOtelAttrs.SourceType
-	indexKey := config.HecToOtelAttrs.Index
-	hostKey := config.HecToOtelAttrs.Host
+	sourceKey := config.OtelAttrsToHec.Source
+	sourceTypeKey := config.OtelAttrsToHec.SourceType
+	indexKey := config.OtelAttrsToHec.Index
+	hostKey := config.OtelAttrsToHec.Host
 	host := unknownHostName
 	source := config.Source
 	sourceType := config.SourceType
@@ -253,9 +254,7 @@ func populateAttributes(fields map[string]any, attributeMap pcommon.Map) {
 
 func cloneMap(fields map[string]any) map[string]any {
 	newFields := make(map[string]any, len(fields))
-	for k, v := range fields {
-		newFields[k] = v
-	}
+	maps.Copy(newFields, fields)
 	return newFields
 }
 

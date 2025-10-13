@@ -18,7 +18,7 @@ import (
 
 func makesketch(n int) *quantile.Sketch {
 	s, c := &quantile.Sketch{}, quantile.Default()
-	for i := 0; i < n; i++ {
+	for i := range n {
 		s.Insert(c, float64(i))
 	}
 	return s

@@ -97,6 +97,8 @@ func (s Supervisor) Validate() error {
 type Storage struct {
 	// Directory is the directory where the Supervisor will store its data.
 	Directory string `mapstructure:"directory"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // Capabilities is the set of capabilities that the Supervisor supports.
@@ -167,6 +169,8 @@ type OpAMPServer struct {
 	Endpoint string                 `mapstructure:"endpoint"`
 	Headers  http.Header            `mapstructure:"headers"`
 	TLS      configtls.ClientConfig `mapstructure:"tls,omitempty"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func (o OpAMPServer) Validate() error {
@@ -266,6 +270,8 @@ var SpecialConfigFiles = []SpecialConfigFile{
 type AgentDescription struct {
 	IdentifyingAttributes    map[string]string `mapstructure:"identifying_attributes"`
 	NonIdentifyingAttributes map[string]string `mapstructure:"non_identifying_attributes"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type Telemetry struct {
@@ -276,10 +282,14 @@ type Telemetry struct {
 	Traces  otelconftelemetry.TracesConfig `mapstructure:"traces"`
 
 	Resource map[string]*string `mapstructure:"resource"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type HealthCheck struct {
 	confighttp.ServerConfig `mapstructure:",squash"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func (h HealthCheck) Port() int64 {
@@ -314,6 +324,8 @@ type Logs struct {
 type Metrics struct {
 	Level   configtelemetry.Level `mapstructure:"level"`
 	Readers []config.MetricReader `mapstructure:"readers"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // DefaultSupervisor returns the default supervisor config

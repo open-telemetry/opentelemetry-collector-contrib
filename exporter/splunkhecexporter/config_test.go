@@ -106,12 +106,6 @@ func TestLoadConfig(t *testing.T) {
 					Index:      "myindex",
 					Host:       "myhost",
 				},
-				HecToOtelAttrs: splunk.HecToOtelAttrs{
-					Source:     "mysource",
-					SourceType: "mysourcetype",
-					Index:      "myindex",
-					Host:       "myhost",
-				},
 				HecFields: OtelToHecFields{
 					SeverityText:   "myseverityfield",
 					SeverityNumber: "myseveritynumfield",

@@ -15,6 +15,8 @@ metrics:
     enabled: true
     description: Average CPU Load over 1 minute.
     unit: "{thread}"
+    stability:
+      level: development
     gauge:
       value_type: double
 
@@ -22,6 +24,8 @@ metrics:
     enabled: true
     description: Average CPU Load over 5 minutes.
     unit: "{thread}"
+    stability:
+      level: development
     gauge:
       value_type: double
 
@@ -29,5 +33,7 @@ metrics:
     enabled: true
     description: Average CPU Load over 15 minutes.
     unit: "{thread}"
+    stability:
+      level: development
     gauge:
       value_type: double

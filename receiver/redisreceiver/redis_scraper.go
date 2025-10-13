@@ -130,6 +130,21 @@ func (rs *redisScraper) recordCommonMetrics(ts pcommon.Timestamp, inf info) {
 					zap.String("val", infoVal), zap.Error(err))
 			}
 			recordDataPoint(ts, val)
+		case func(pcommon.Timestamp, int64, metadata.AttributeClusterState):
+			val, err := strconv.ParseInt(infoVal, 10, 64)
+			if err != nil {
+				rs.settings.Logger.Warn("failed to parse info int val", zap.String("key", infoKey),
+					zap.String("val", infoVal), zap.Error(err))
+			}
+			var state metadata.AttributeClusterState
+			if infoKey == "cluster_state" {
+				if infoVal == "ok" {
+					state = metadata.AttributeClusterStateOk
+				} else {
+					state = metadata.AttributeClusterStateFail
+				}
+			}
+			recordDataPoint(ts, val, state)
 		}
 	}
 }
@@ -199,8 +214,7 @@ func (rs *redisScraper) recordCmdMetrics(ts pcommon.Timestamp, inf info) {
 // Only 'calls' and 'usec' are recorded at the moment.
 // 'cmd' is the Redis command, 'val' is the values string (e.g. "calls=1685,usec=6032,usec_per_call=3.58,rejected_calls=0,failed_calls=0").
 func (rs *redisScraper) recordCmdStatsMetrics(ts pcommon.Timestamp, cmd, val string) {
-	parts := strings.Split(strings.TrimSpace(val), ",")
-	for _, element := range parts {
+	for element := range strings.SplitSeq(strings.TrimSpace(val), ",") {
 		subParts := strings.Split(element, "=")
 		if len(subParts) == 1 {
 			continue

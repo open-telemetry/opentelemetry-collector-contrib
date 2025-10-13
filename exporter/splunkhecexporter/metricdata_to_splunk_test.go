@@ -531,10 +531,10 @@ func Test_metricDataToSplunk(t *testing.T) {
 			},
 			configFn: func() *Config {
 				cfg := createDefaultConfig().(*Config)
-				cfg.HecToOtelAttrs.SourceType = "mysourcetype"
-				cfg.HecToOtelAttrs.Source = "mysource"
-				cfg.HecToOtelAttrs.Host = "myhost"
-				cfg.HecToOtelAttrs.Index = "myindex"
+				cfg.OtelAttrsToHec.SourceType = "mysourcetype"
+				cfg.OtelAttrsToHec.Source = "mysource"
+				cfg.OtelAttrsToHec.Host = "myhost"
+				cfg.OtelAttrsToHec.Index = "myindex"
 				return cfg
 			},
 		},

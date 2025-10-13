@@ -10,12 +10,6 @@ resourceMetrics:
         - key: signaltometrics.service.instance.id
           value:
             stringValue: 627cc493-f310-47de-96bd-71410b7dec09
-        - key: signaltometrics.service.name
-          value:
-            stringValue: signaltometrics
-        - key: signaltometrics.service.namespace
-          value:
-            stringValue: test
     scopeMetrics:
       - metrics:
           - description: Profiles as histogram with duration
@@ -74,12 +68,6 @@ resourceMetrics:
         - key: signaltometrics.service.instance.id
           value:
             stringValue: 627cc493-f310-47de-96bd-71410b7dec09
-        - key: signaltometrics.service.name
-          value:
-            stringValue: signaltometrics
-        - key: signaltometrics.service.namespace
-          value:
-            stringValue: test
     scopeMetrics:
       - metrics:
           - description: Profiles with resource attribute foo as histogram with duration

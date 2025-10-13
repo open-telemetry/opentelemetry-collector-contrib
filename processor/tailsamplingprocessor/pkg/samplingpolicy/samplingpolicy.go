@@ -61,3 +61,7 @@ type Evaluator interface {
 	// Evaluate looks at the trace data and returns a corresponding SamplingDecision.
 	Evaluate(ctx context.Context, traceID pcommon.TraceID, trace *TraceData) (Decision, error)
 }
+
+type Extension interface {
+	NewEvaluator(policyName string, cfg map[string]any) (Evaluator, error)
+}

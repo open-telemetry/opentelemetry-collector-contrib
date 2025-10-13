@@ -272,7 +272,7 @@ func TestProcessorShutdownWithSlowOperator(t *testing.T) {
 	scopeLogs := testLog.ResourceLogs().AppendEmpty().
 		ScopeLogs().AppendEmpty()
 
-	for i := 0; i < 500; i++ {
+	for range 500 {
 		lr := scopeLogs.LogRecords().AppendEmpty()
 		lr.Body().SetStr("Test message")
 	}

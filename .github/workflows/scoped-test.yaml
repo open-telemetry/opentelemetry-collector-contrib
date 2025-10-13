@@ -78,13 +78,8 @@ jobs:
         if: steps.go-setup.outputs.cache-hit != 'true'
         run: make install-tools
 
-      - name: Build gotestsum on Windows
-        if: runner.os == 'Windows'
-        shell: pwsh # Explicitly set the shell to avoid actionlint treating this an attempt to escape single quote
-        run: make "$(${PWD} -replace '\\', '/')/.tools/gotestsum"
-
       - name: Build gotestsum
-        if: runner.os != 'Windows'
+        shell: bash
         run: make "$PWD/.tools/gotestsum"
 
       - name: Run changed tests

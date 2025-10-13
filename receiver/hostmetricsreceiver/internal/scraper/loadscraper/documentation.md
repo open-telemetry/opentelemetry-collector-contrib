@@ -16,22 +16,22 @@ metrics:
 
 Average CPU Load over 15 minutes.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {thread} | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {thread} | Gauge | Double | development |
 
 ### system.cpu.load_average.1m
 
 Average CPU Load over 1 minute.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {thread} | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {thread} | Gauge | Double | development |
 
 ### system.cpu.load_average.5m
 
 Average CPU Load over 5 minutes.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {thread} | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {thread} | Gauge | Double | development |

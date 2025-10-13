@@ -269,10 +269,7 @@ func (ts *telemetrySender) enqueue(record types.TelemetryRecord) {
 // send the records in the queue in batches. Updates the queue.
 func (ts *telemetrySender) send(ctx context.Context) {
 	for i := len(ts.queue); i >= 0; i -= ts.batchSize {
-		startIndex := i - ts.batchSize
-		if startIndex < 0 {
-			startIndex = 0
-		}
+		startIndex := max(i-ts.batchSize, 0)
 		input := &xray.PutTelemetryRecordsInput{
 			EC2InstanceId:    &ts.instanceID,
 			Hostname:         &ts.hostname,

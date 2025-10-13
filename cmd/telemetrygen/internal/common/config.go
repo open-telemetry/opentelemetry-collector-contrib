@@ -5,6 +5,7 @@ package common
 
 import (
 	"errors"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -17,8 +18,10 @@ import (
 )
 
 var (
-	errFormatOTLPAttributes       = errors.New("value should be in one of the following formats: key=\"value\", key=true, key=false, or key=<integer>")
+	errFormatOTLPAttributes       = errors.New("value should be in one of the following formats: key=\"value\", key=true, key=false, key=<integer>, or key=[<value1>, <value2>, ...]")
 	errDoubleQuotesOTLPAttributes = errors.New("value should be a string wrapped in double quotes")
+	errMixedTypeSlice             = errors.New("all items in a slice should be of the same type")
+	errEmptySlice                 = errors.New("slice should not be empty")
 )
 
 const (
@@ -34,29 +37,102 @@ func (*KeyValue) String() string {
 	return ""
 }
 
+func parseValue(val string) (any, error) {
+	if val == "true" {
+		return true, nil
+	}
+	if val == "false" {
+		return false, nil
+	}
+	if intVal, err := strconv.Atoi(val); err == nil {
+		return intVal, nil
+	}
+	if len(val) < 2 || !strings.HasPrefix(val, "\"") || !strings.HasSuffix(val, "\"") {
+		return nil, errDoubleQuotesOTLPAttributes
+	}
+	return val[1 : len(val)-1], nil
+}
+
+// splitItems splits the pre-trimmed content into a list of items separated by commas, respecting quotes
+func splitItems(content string) []string {
+	var items []string
+	var current strings.Builder
+	inQuotes := false
+
+	for _, char := range content {
+		switch char {
+		case '"':
+			inQuotes = !inQuotes
+			current.WriteRune(char)
+		case ',':
+			if !inQuotes {
+				if item := strings.TrimSpace(current.String()); item != "" {
+					items = append(items, item)
+				}
+				current.Reset()
+			} else {
+				current.WriteRune(char)
+			}
+		default:
+			current.WriteRune(char)
+		}
+	}
+	// Add the last item
+	if item := strings.TrimSpace(current.String()); item != "" {
+		items = append(items, item)
+	}
+	return items
+}
+
+// sliceFrom converts items into a slice of a single type
+func sliceFrom(items []string) (any, error) {
+	firstItem, err := parseValue(items[0])
+	if err != nil {
+		return nil, err
+	}
+	sliceType := reflect.TypeOf(firstItem)
+	slice := reflect.MakeSlice(reflect.SliceOf(sliceType), len(items), len(items))
+	for i, item := range items {
+		val, err := parseValue(item)
+		if err != nil {
+			return nil, err
+		}
+		if reflect.TypeOf(val) != sliceType {
+			return nil, errMixedTypeSlice
+		}
+		slice.Index(i).Set(reflect.ValueOf(val))
+	}
+	return slice.Interface(), nil
+}
+
 func (v *KeyValue) Set(s string) error {
 	kv := strings.SplitN(s, "=", 2)
 	if len(kv) != 2 {
 		return errFormatOTLPAttributes
 	}
-	val := kv[1]
-	if val == "true" {
-		(*v)[kv[0]] = true
+	key := kv[0]
+
+	if !strings.HasPrefix(kv[1], "[") || !strings.HasSuffix(kv[1], "]") {
+		val, err := parseValue(kv[1])
+		if err != nil {
+			return err
+		}
+		(*v)[key] = val
 		return nil
-	}
-	if val == "false" {
-		(*v)[kv[0]] = false
-		return nil
-	}
-	if intVal, err := strconv.Atoi(val); err == nil {
-		(*v)[kv[0]] = intVal
-		return nil
-	}
-	if len(val) < 2 || !strings.HasPrefix(val, "\"") || !strings.HasSuffix(val, "\"") {
-		return errDoubleQuotesOTLPAttributes
 	}
 
-	(*v)[kv[0]] = val[1 : len(val)-1]
+	// List of Values
+	content := strings.TrimSpace(kv[1][1 : len(kv[1])-1])
+	if content == "" {
+		return errEmptySlice
+	}
+
+	items := splitItems(content)
+	slice, err := sliceFrom(items)
+	if err != nil {
+		return err
+	}
+	(*v)[key] = slice
 	return nil
 }
 
@@ -127,6 +203,12 @@ func (c *Config) GetAttributes() []attribute.KeyValue {
 				attributes = append(attributes, attribute.Bool(k, v))
 			case int:
 				attributes = append(attributes, attribute.Int(k, v))
+			case []string:
+				attributes = append(attributes, attribute.StringSlice(k, v))
+			case []bool:
+				attributes = append(attributes, attribute.BoolSlice(k, v))
+			case []int:
+				attributes = append(attributes, attribute.IntSlice(k, v))
 			}
 		}
 	}
@@ -145,6 +227,12 @@ func (c *Config) GetTelemetryAttributes() []attribute.KeyValue {
 				attributes = append(attributes, attribute.Bool(k, v))
 			case int:
 				attributes = append(attributes, attribute.Int(k, v))
+			case []string:
+				attributes = append(attributes, attribute.StringSlice(k, v))
+			case []bool:
+				attributes = append(attributes, attribute.BoolSlice(k, v))
+			case []int:
+				attributes = append(attributes, attribute.IntSlice(k, v))
 			}
 		}
 	}
@@ -186,13 +274,13 @@ func (c *Config) CommonFlags(fs *pflag.FlagSet) {
 		`Flag may be repeated to set multiple headers (e.g --otlp-header key1=\"value1\" --otlp-header key2=\"value2\")`)
 
 	// custom resource attributes
-	fs.Var(&c.ResourceAttributes, "otlp-attributes", "Custom telemetry attributes to use. The value is expected in one of the following formats: key=\"value\", key=true, key=false, or key=<integer>. "+
+	fs.Var(&c.ResourceAttributes, "otlp-attributes", "Custom telemetry attributes to use. The value is expected in one of the following formats: key=\"value\", key=true, key=false, key=<integer>, or key=[\"value1\", \"value2\", ...]. "+
 		"Note you may need to escape the quotes when using the tool from a cli. "+
-		`Flag may be repeated to set multiple attributes (e.g --otlp-attributes key1=\"value1\" --otlp-attributes key2=\"value2\" --telemetry-attributes key3=true --telemetry-attributes key4=123)`)
+		`Flag may be repeated to set multiple attributes (e.g --otlp-attributes key1=\"value1\" --otlp-attributes key2=\"value2\" --otlp-attributes key3=true --otlp-attributes key4=123 --otlp-attributes key5=[1,2,3])`)
 
-	fs.Var(&c.TelemetryAttributes, "telemetry-attributes", "Custom telemetry attributes to use. The value is expected in one of the following formats: key=\"value\", key=true, key=false, or key=<integer>. "+
+	fs.Var(&c.TelemetryAttributes, "telemetry-attributes", "Custom telemetry attributes to use. The value is expected in one of the following formats: key=\"value\", key=true, key=false, or key=<integer>, or key=[\"value1\", \"value2\", ...]. "+
 		"Note you may need to escape the quotes when using the tool from a cli. "+
-		`Flag may be repeated to set multiple attributes (e.g --telemetry-attributes key1=\"value1\" --telemetry-attributes key2=\"value2\" --telemetry-attributes key3=true --telemetry-attributes key4=123)`)
+		`Flag may be repeated to set multiple attributes (e.g --telemetry-attributes key1=\"value1\" --telemetry-attributes key2=\"value2\" --telemetry-attributes key3=true --telemetry-attributes key4=123 --telemetry-attributes key5=[1,2,3])`)
 
 	// TLS CA configuration
 	fs.StringVar(&c.CaFile, "ca-cert", c.CaFile, "Trusted Certificate Authority to verify server certificate")

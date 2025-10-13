@@ -6,6 +6,7 @@ package azuremonitorreceiver // import "github.com/open-telemetry/opentelemetry-
 import (
 	"context"
 	"fmt"
+	"maps"
 	"regexp"
 	"slices"
 	"strings"
@@ -412,10 +413,7 @@ func (s *azureScraper) getResourceMetricsValues(ctx context.Context, subscriptio
 		start := 0
 
 		for start < len(metricsByGrain.metrics) {
-			end := start + s.cfg.MaximumNumberOfMetricsInACall
-			if end > len(metricsByGrain.metrics) {
-				end = len(metricsByGrain.metrics)
-			}
+			end := min(start+s.cfg.MaximumNumberOfMetricsInACall, len(metricsByGrain.metrics))
 
 			opts := getResourceMetricsValuesRequestOptions(
 				metricsByGrain.metrics,
@@ -444,9 +442,7 @@ func (s *azureScraper) getResourceMetricsValues(ctx context.Context, subscriptio
 						continue
 					}
 					attributes := map[string]*string{}
-					for name, value := range res.attributes {
-						attributes[name] = value
-					}
+					maps.Copy(attributes, res.attributes)
 					for _, value := range timeseriesElement.Metadatavalues {
 						name := metadataPrefix + *value.Name.Value
 						attributes[name] = value.Value

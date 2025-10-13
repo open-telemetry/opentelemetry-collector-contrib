@@ -71,7 +71,7 @@ func SetValue(value pcommon.Value, val any) error {
 func getIndexableValue[K any](ctx context.Context, tCtx K, value pcommon.Value, keys []ottl.Key[K]) (any, error) {
 	val := value
 	var ok bool
-	for index := 0; index < len(keys); index++ {
+	for index := range keys {
 		switch val.Type() {
 		case pcommon.ValueTypeMap:
 			s, err := GetMapKeyName(ctx, tCtx, keys[index])
@@ -106,7 +106,7 @@ func getIndexableValue[K any](ctx context.Context, tCtx K, value pcommon.Value, 
 }
 
 func SetIndexableValue[K any](ctx context.Context, tCtx K, currentValue pcommon.Value, val any, keys []ottl.Key[K]) error {
-	for index := 0; index < len(keys); index++ {
+	for index := range keys {
 		switch currentValue.Type() {
 		case pcommon.ValueTypeMap:
 			s, err := GetMapKeyName(ctx, tCtx, keys[index])

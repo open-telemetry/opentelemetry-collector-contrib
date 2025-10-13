@@ -30,7 +30,7 @@ func CheckEventsFromSplunk(searchQuery, startTime string, endTimeOptional ...str
 	// post search
 	jobID := postSearchRequest(user, password, baseURL, searchQuery, startTime, endTime)
 	// wait for search status done == true
-	for i := 0; i < 20; i++ { // limit loop - not allowing infinite looping
+	for range 20 { // limit loop - not allowing infinite looping
 		logger.Println("Checking Search Status ...")
 		isDone := checkSearchJobStatusCode(user, password, baseURL, jobID)
 		if isDone == true {

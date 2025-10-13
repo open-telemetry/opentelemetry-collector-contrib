@@ -12,7 +12,7 @@ status:
   codeowners:
     active: [ishleenk17, Mrod1598, pjanotti]
     seeking_new: true
-  unsupported_platforms: [linux, darwin]
+  unsupported_platforms: [linux, darwin, (windows && arm64)]
 
 resource_attributes:
   iis.site:
@@ -52,6 +52,8 @@ metrics:
       aggregation_temporality: cumulative
       value_type: int
     enabled: true
+    stability:
+      level: development
     attributes: [ request ]
   iis.request.rejected:
     description: Total number of requests rejected.
@@ -61,6 +63,8 @@ metrics:
       aggregation_temporality: cumulative
       value_type: int
     enabled: true
+    stability:
+      level: development
   iis.request.queue.count:
     description: Current number of requests in the queue.
     unit: "{requests}"
@@ -69,12 +73,16 @@ metrics:
       aggregation_temporality: cumulative
       value_type: int
     enabled: true
+    stability:
+      level: development
   iis.request.queue.age.max:
     description: Age of oldest request in the queue.
     unit: ms
     gauge:
       value_type: int
     enabled: true
+    stability:
+      level: development
   iis.network.file.count:
     description: Number of transmitted files.
     unit: "{files}"
@@ -83,6 +91,8 @@ metrics:
       aggregation_temporality: cumulative
       value_type: int
     enabled: true
+    stability:
+      level: development
     attributes: [ direction ]
   iis.network.blocked:
     description: Number of bytes blocked due to bandwidth throttling.
@@ -92,6 +102,8 @@ metrics:
       aggregation_temporality: cumulative
       value_type: int
     enabled: true
+    stability:
+      level: development
   iis.network.io:
     description: Total amount of bytes sent and received.
     unit: By
@@ -100,6 +112,8 @@ metrics:
       aggregation_temporality: cumulative
       value_type: int
     enabled: true
+    stability:
+      level: development
     attributes: [ direction ]
   iis.connection.attempt.count:
     description: Total number of attempts to connect to the server.
@@ -109,6 +123,8 @@ metrics:
       aggregation_temporality: cumulative
       value_type: int
     enabled: true
+    stability:
+      level: development
   iis.connection.active:
     description: Number of active connections.
     unit: "{connections}"
@@ -117,6 +133,8 @@ metrics:
       aggregation_temporality: cumulative
       value_type: int
     enabled: true
+    stability:
+      level: development
   iis.connection.anonymous:
     description: Number of connections established anonymously.
     unit: "{connections}"
@@ -125,6 +143,8 @@ metrics:
       aggregation_temporality: cumulative
       value_type: int
     enabled: true
+    stability:
+      level: development
   iis.thread.active:
     description: Current number of active threads.
     unit: "{threads}"
@@ -133,21 +153,29 @@ metrics:
       aggregation_temporality: cumulative
       value_type: int
     enabled: true
+    stability:
+      level: development
   iis.uptime:
     description: The amount of time the server has been up.
     unit: s
     gauge:
       value_type: int
     enabled: true
+    stability:
+      level: development
   iis.application_pool.state:
     description: The current status of the application pool (1 - Uninitialized, 2 - Initialized, 3 - Running, 4 - Disabling, 5 - Disabled, 6 - Shutdown Pending, 7 - Delete Pending).
     unit: "{state}"
     gauge:
       value_type: int
     enabled: true
+    stability:
+      level: development
   iis.application_pool.uptime:
     description: The application pools uptime period since the last restart.
     unit: "{ms}"
     gauge:
       value_type: int
     enabled: true
+    stability:
+      level: development

@@ -20,7 +20,7 @@ const (
 )
 
 var (
-	JsEncoder       = &JSONEncoder{}
+	JsEncoder       = &jsonEncoder{}
 	JSONPbMarshaler = &jsonpb.Marshaler{}
 	MpEncoder       = &msgpackEncoder{}
 )
@@ -39,45 +39,45 @@ type Encoder interface {
 	ContentType() string
 }
 
-type JSONEncoder struct{}
+type jsonEncoder struct{}
 
-func (JSONEncoder) UnmarshalTracesRequest(buf []byte) (ptraceotlp.ExportRequest, error) {
+func (jsonEncoder) UnmarshalTracesRequest(buf []byte) (ptraceotlp.ExportRequest, error) {
 	req := ptraceotlp.NewExportRequest()
 	err := req.UnmarshalJSON(buf)
 	return req, err
 }
 
-func (JSONEncoder) UnmarshalMetricsRequest(buf []byte) (pmetricotlp.ExportRequest, error) {
+func (jsonEncoder) UnmarshalMetricsRequest(buf []byte) (pmetricotlp.ExportRequest, error) {
 	req := pmetricotlp.NewExportRequest()
 	err := req.UnmarshalJSON(buf)
 	return req, err
 }
 
-func (JSONEncoder) UnmarshalLogsRequest(buf []byte) (plogotlp.ExportRequest, error) {
+func (jsonEncoder) UnmarshalLogsRequest(buf []byte) (plogotlp.ExportRequest, error) {
 	req := plogotlp.NewExportRequest()
 	err := req.UnmarshalJSON(buf)
 	return req, err
 }
 
-func (JSONEncoder) MarshalTracesResponse(resp ptraceotlp.ExportResponse) ([]byte, error) {
+func (jsonEncoder) MarshalTracesResponse(resp ptraceotlp.ExportResponse) ([]byte, error) {
 	return resp.MarshalJSON()
 }
 
-func (JSONEncoder) MarshalMetricsResponse(resp pmetricotlp.ExportResponse) ([]byte, error) {
+func (jsonEncoder) MarshalMetricsResponse(resp pmetricotlp.ExportResponse) ([]byte, error) {
 	return resp.MarshalJSON()
 }
 
-func (JSONEncoder) MarshalLogsResponse(resp plogotlp.ExportResponse) ([]byte, error) {
+func (jsonEncoder) MarshalLogsResponse(resp plogotlp.ExportResponse) ([]byte, error) {
 	return resp.MarshalJSON()
 }
 
-func (JSONEncoder) MarshalStatus(resp *spb.Status) ([]byte, error) {
+func (jsonEncoder) MarshalStatus(resp *spb.Status) ([]byte, error) {
 	buf := new(bytes.Buffer)
 	err := JSONPbMarshaler.Marshal(buf, resp)
 	return buf.Bytes(), err
 }
 
-func (JSONEncoder) ContentType() string {
+func (jsonEncoder) ContentType() string {
 	return JSONContentType
 }
 

@@ -7,6 +7,25 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.137.0
+
+### 🛑 Breaking changes 🛑
+
+- `libhoneyreceiver`: Unexport JSONEncoder (#43133)
+
+### 🚩 Deprecations 🚩
+
+- `pkg/datadog, exporter/datadog, extension/datadog`: Deprecates StaticAPIKeyCheck, stops doing validation for API key characters in Datadog exporter and extension. (#42677)
+  This was causing issues to users since validation of secrets is challenging
+  
+
+### 💡 Enhancements 💡
+
+- `pkg/ottl`: Create ctxprofilecommon for common attribute handling in various profiling sub messages (#42107)
+- `logicmonitorexporter`: Send log level along with log data (#41923)
+
+<!-- previous-version -->
+
 ## v0.136.0
 
 ### 🛑 Breaking changes 🛑

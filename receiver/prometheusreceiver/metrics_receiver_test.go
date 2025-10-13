@@ -1504,7 +1504,7 @@ func verifyStartTimeMetricPage(t *testing.T, td *testData, result []pmetric.Reso
 	numTimeseries := 0
 	for _, rm := range result {
 		metrics := getMetrics(rm)
-		for i := 0; i < len(metrics); i++ {
+		for i := range metrics {
 			timestamp := startTimeMetricPageStartTimestamp
 			switch metrics[i].Type() {
 			case pmetric.MetricTypeGauge:

@@ -195,8 +195,7 @@ func Benchmark_PrometheusFormatter_Metric2String(b *testing.B) {
 
 	metric, attributes := buildExampleHistogramMetric(true)
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_ = f.metric2String(metric, attributes)
 	}
 }

@@ -8,7 +8,7 @@
 | Distributions | [core], [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fkafka%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fkafka) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fkafka%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fkafka) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_kafka)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_kafka&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@pavolloffay](https://www.github.com/pavolloffay), [@MovieStoreGuy](https://www.github.com/MovieStoreGuy), [@axw](https://www.github.com/axw) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@pavolloffay](https://www.github.com/pavolloffay), [@MovieStoreGuy](https://www.github.com/MovieStoreGuy), [@axw](https://www.github.com/axw), [@paulojmdias](https://www.github.com/paulojmdias) |
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
@@ -23,7 +23,7 @@ If used in conjunction with the `kafkaexporter` configured with `include_metadat
 ## Getting Started
 
 > [!NOTE]
-> You can opt-in to use [`franz-go`](https://github.com/twmb/franz-go) client by enabling the feature gate
+> You can opt out of using the [`franz-go`](https://github.com/twmb/franz-go) client by disabling the feature gate
 > `receiver.kafkareceiver.UseFranzGo` when you run the OpenTelemetry Collector. See the following page
 > for more details: [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/tree/main/featuregate#controlling-gates)
 >
@@ -60,6 +60,7 @@ The following settings can be optionally configured:
 - `group_id` (default = otel-collector): The consumer group that receiver will be consuming messages from
 - `client_id` (default = otel-collector): The consumer client ID that receiver will use
 - `rack_id` (default = ""): The rack identifier for this client. When set and brokers are configured with a rack-aware replica selector, the client will prefer fetching from the closest replica.
+- `use_leader_epoch` (default = true): (Experimental) When enabled, the consumer uses the leader epoch returned by brokers (KIP-320) to detect log truncation. Setting this to false clears the leader epoch from fetch offsets, disabling KIP-320. Disabling can improve compatibility with brokers that don’t fully support leader epochs (e.g., Azure Event Hubs), at the cost of losing automatic log-truncation safety.
 - `initial_offset` (default = latest): The initial offset to use if no offset was previously committed. Must be `latest` or `earliest`.
 - `session_timeout` (default = `10s`): The request timeout for detecting client failures when using Kafka’s group management facilities.
 - `heartbeat_interval` (default = `3s`): The expected time between heartbeats to the consumer coordinator when using Kafka’s group management facilities.
@@ -75,6 +76,7 @@ The following settings can be optionally configured:
 - `default_fetch_size` (default = `1048576`): The default number of message bytes to fetch in a request, defaults to 1MB.
 - `max_fetch_size` (default = `0`): The maximum number of message bytes to fetch in a request, defaults to unlimited.
 - `max_fetch_wait` (default = `250ms`): The maximum amount of time the broker should wait for `min_fetch_size` bytes to be available before returning anyway.
+- `max_partition_fetch_size` (default = `1048576`): The default number of message bytes to fetch in a request per partition, defaults to 1MB. If a single record batch is larger than this value, the broker will still return it to ensure the consumer can make progress. This setting only applies while using [`franz-go`](https://github.com/twmb/franz-go).
 - `tls`: see [TLS Configuration Settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md) for the full set of available options.
 - `auth`
   - `plain_text` (Deprecated in v0.123.0: use sasl with mechanism set to PLAIN instead.)

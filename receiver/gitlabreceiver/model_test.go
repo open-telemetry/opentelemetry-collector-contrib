@@ -172,24 +172,52 @@ func TestGlPipelineJobSetSpanData(t *testing.T) {
 		{
 			name: "valid job with timestamps",
 			job: &glPipelineJob{
-				ID:         123,
-				Stage:      "test-stage",
-				Name:       "test-job",
-				Status:     "success",
-				CreatedAt:  "2022-01-01 12:00:00 UTC",
-				StartedAt:  "2022-01-01 12:01:00 UTC",
-				FinishedAt: "2022-01-01 12:10:00 UTC",
+				event: &glJobEvent{
+					ID:         123,
+					Stage:      "test-stage",
+					Name:       "test-job",
+					Status:     "success",
+					CreatedAt:  "2022-01-01 12:00:00 UTC",
+					StartedAt:  "2022-01-01 12:01:00 UTC",
+					FinishedAt: "2022-01-01 12:10:00 UTC",
+					Runner: struct {
+						ID          int      `json:"id"`
+						Description string   `json:"description"`
+						Active      bool     `json:"active"`
+						IsShared    bool     `json:"is_shared"`
+						RunnerType  string   `json:"runner_type"`
+						Tags        []string `json:"tags"`
+					}{
+						ID:          1,
+						Description: "test-runner",
+					},
+				},
+				jobURL: "https://example.com/-/jobs/123",
 			},
 			expectError: false,
 		},
 		{
 			name: "job with missing timestamp",
 			job: &glPipelineJob{
-				ID:        123,
-				Stage:     "test-stage",
-				Name:      "test-job",
-				Status:    "success",
-				CreatedAt: "2022-01-01 12:00:00 UTC",
+				event: &glJobEvent{
+					ID:        123,
+					Stage:     "test-stage",
+					Name:      "test-job",
+					Status:    "success",
+					CreatedAt: "2022-01-01 12:00:00 UTC",
+					Runner: struct {
+						ID          int      `json:"id"`
+						Description string   `json:"description"`
+						Active      bool     `json:"active"`
+						IsShared    bool     `json:"is_shared"`
+						RunnerType  string   `json:"runner_type"`
+						Tags        []string `json:"tags"`
+					}{
+						ID:          1,
+						Description: "test-runner",
+					},
+				},
+				jobURL: "https://example.com/-/jobs/123",
 			},
 			expectError: true,
 		},
@@ -208,12 +236,12 @@ func TestGlPipelineJobSetSpanData(t *testing.T) {
 			require.NoError(t, err)
 
 			// Verify name
-			require.Equal(t, tt.job.Name, span.Name())
+			require.Equal(t, tt.job.event.Name, span.Name())
 
 			// Verify timestamps
-			if tt.job.StartedAt != "" && tt.job.FinishedAt != "" {
-				startTime, _ := parseGitlabTime(tt.job.StartedAt)
-				endTime, _ := parseGitlabTime(tt.job.FinishedAt)
+			if tt.job.event.StartedAt != "" && tt.job.event.FinishedAt != "" {
+				startTime, _ := parseGitlabTime(tt.job.event.StartedAt)
+				endTime, _ := parseGitlabTime(tt.job.event.FinishedAt)
 
 				require.Equal(t, pcommon.NewTimestampFromTime(startTime), span.StartTimestamp())
 				require.Equal(t, pcommon.NewTimestampFromTime(endTime), span.EndTimestamp())

@@ -171,7 +171,7 @@ func testNetStatsExporter(t *testing.T, level configtelemetry.Level, expect map[
 			handler := enr.Handler()
 
 			ctx := t.Context()
-			for i := 0; i < 10; i++ {
+			for range 10 {
 				if apiDirect {
 					// use the direct API
 					enr.CountSend(ctx, SizesStruct{
@@ -311,7 +311,7 @@ func testNetStatsReceiver(t *testing.T, level configtelemetry.Level, expect map[
 			handler := rer.Handler()
 
 			ctx := t.Context()
-			for i := 0; i < 10; i++ {
+			for range 10 {
 				if apiDirect {
 					// use the direct API
 					rer.CountReceive(ctx, SizesStruct{
@@ -365,7 +365,7 @@ func TestUncompressedSizeBypass(t *testing.T) {
 	handler := enr.Handler()
 
 	ctx := t.Context()
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		// simulate the RPC path
 		handler.HandleRPC(handler.TagRPC(ctx, &stats.RPCTagInfo{
 			FullMethodName: "my.arrow.v1.method",

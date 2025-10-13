@@ -574,8 +574,6 @@ func TestLibhoneyReceiver_ZstdDecompressionPanic(t *testing.T) {
 		{
 			name: "valid_json_data_nil_pointer_bug",
 			createPayload: func() []byte {
-				// Create valid JSON payload that triggers the nil pointer bug
-				// JSON events don't get MsgPackTimestamp post-processing!
 				events := []libhoneyevent.LibhoneyEvent{
 					{
 						Time:       time.Now().Format(time.RFC3339),
@@ -586,9 +584,21 @@ func TestLibhoneyReceiver_ZstdDecompressionPanic(t *testing.T) {
 				jsonData, _ := json.Marshal(events)
 				return jsonData
 			},
-			expectPanic:     true, // BUG: Line 233 dereferences nil MsgPackTimestamp
-			expectErrorCode: 0,    // Will panic before status code
-			description:     "JSON processing has nil pointer bug in logging code (line 233)",
+			expectPanic:     false,
+			expectErrorCode: 200,
+			description:     "JSON processing handles nil MsgPackTimestamp correctly after fix",
+		},
+		{
+			name: "real_libhoney_json_format",
+			createPayload: func() []byte {
+				// Real JSON format as sent by libhoney clients (S3 handler, etc)
+				// Note: time is at root level, all fields under "data"
+				// This format bypasses custom UnmarshalJSON, leaving MsgPackTimestamp nil
+				return []byte(`[{"data":{"message":"test event from S3","aws.s3.bucket":"test-bucket"},"samplerate":1,"time":"2025-09-24T15:03:49.883965174Z"}]`)
+			},
+			expectPanic:     false,
+			expectErrorCode: 200,
+			description:     "Real libhoney JSON format should be handled without panic",
 		},
 		{
 			name: "valid_msgpack_data",
@@ -604,8 +614,8 @@ func TestLibhoneyReceiver_ZstdDecompressionPanic(t *testing.T) {
 				msgpackData, _ := msgpack.Marshal(events)
 				return msgpackData
 			},
-			expectPanic:     false, // Should work - msgpack post-processing fixes timestamps
-			expectErrorCode: 200,   // Should succeed
+			expectPanic:     false,
+			expectErrorCode: 200,
 			description:     "Msgpack should work correctly due to timestamp post-processing",
 		},
 	}
@@ -629,7 +639,7 @@ func TestLibhoneyReceiver_ZstdDecompressionPanic(t *testing.T) {
 			var contentType string
 
 			switch tt.name {
-			case "valid_json_data_nil_pointer_bug":
+			case "valid_json_data_nil_pointer_bug", "real_libhoney_json_format":
 				reqBody = bytes.NewReader(payload)
 				contentType = "application/json"
 			case "valid_msgpack_data":
@@ -649,7 +659,7 @@ func TestLibhoneyReceiver_ZstdDecompressionPanic(t *testing.T) {
 			req.Header.Set("Content-Type", contentType)
 
 			// Only set compression headers for zstd tests
-			if tt.name != "valid_json_data_nil_pointer_bug" && tt.name != "valid_msgpack_data" {
+			if tt.name != "valid_json_data_nil_pointer_bug" && tt.name != "valid_msgpack_data" && tt.name != "real_libhoney_json_format" {
 				req.Header.Set("Content-Encoding", "zstd")
 			}
 

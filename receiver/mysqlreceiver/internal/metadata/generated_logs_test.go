@@ -131,6 +131,9 @@ func TestLogsBuilder(t *testing.T) {
 			allEventsCount++
 			lb.RecordDbServerQuerySampleEvent(ctx, timestamp, AttributeDbSystemNameMysql, 23, "user.name-val", "db.namespace-val", "mysql.threads.processlist_command-val", "mysql.threads.processlist_state-val", "db.query.text-val", "mysql.events_statements_current.digest-val", 14, "mysql.wait_type-val", 37.100000, "client.address-val", 11, "network.peer.address-val", 17)
 
+			allEventsCount++
+			lb.RecordDbServerTopQueryEvent(ctx, timestamp, AttributeDbSystemNameMysql, "db.query.text-val", "mysql.query_plan-val", "mysql.events_statements_summary_by_digest.digest-val", 52, 56.100000)
+
 			rb := lb.NewResourceBuilder()
 			rb.SetMysqlInstanceEndpoint("mysql.instance.endpoint-val")
 			res := rb.Emit()
@@ -207,6 +210,31 @@ func TestLogsBuilder(t *testing.T) {
 					attrVal, ok = lr.Attributes().Get("network.peer.port")
 					assert.True(t, ok)
 					assert.EqualValues(t, 17, attrVal.Int())
+				case "db.server.top_query":
+					assert.False(t, validatedEvents["db.server.top_query"], "Found a duplicate in the events slice: db.server.top_query")
+					validatedEvents["db.server.top_query"] = true
+					lr := lrs.At(i)
+					assert.Equal(t, timestamp, lr.Timestamp())
+					assert.Equal(t, pcommon.TraceID(traceID), lr.TraceID())
+					assert.Equal(t, pcommon.SpanID(spanID), lr.SpanID())
+					attrVal, ok := lr.Attributes().Get("db.system.name")
+					assert.True(t, ok)
+					assert.Equal(t, "mysql", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("db.query.text")
+					assert.True(t, ok)
+					assert.Equal(t, "db.query.text-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("mysql.query_plan")
+					assert.True(t, ok)
+					assert.Equal(t, "mysql.query_plan-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("mysql.events_statements_summary_by_digest.digest")
+					assert.True(t, ok)
+					assert.Equal(t, "mysql.events_statements_summary_by_digest.digest-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("mysql.events_statements_summary_by_digest.count_star")
+					assert.True(t, ok)
+					assert.EqualValues(t, 52, attrVal.Int())
+					attrVal, ok = lr.Attributes().Get("mysql.events_statements_summary_by_digest.sum_timer_wait")
+					assert.True(t, ok)
+					assert.Equal(t, 56.100000, attrVal.Double())
 				}
 			}
 		})

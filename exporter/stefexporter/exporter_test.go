@@ -395,7 +395,7 @@ func TestCancelBlockedExport(t *testing.T) {
 	md := testdata.GenerateMetrics(1)
 
 	// Do some attempts send with cancellation to help trigger races if there is any.
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		// Trying sending with server down. The connection attempt will block
 		// because listener does not accept connections. However exportMetrics()
 		// will return almost immediately because connection attempt
@@ -446,7 +446,7 @@ func TestCancelAfterExport(t *testing.T) {
 	require.NoError(t, exp.Start(ctx, host))
 
 	var pointCount int64
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		md := testdata.GenerateMetrics(1)
 		pointCount += int64(md.DataPointCount())
 		ctx, cancel = context.WithCancel(t.Context())

@@ -303,7 +303,7 @@ func benchmarkOperator(b *testing.B, parser operator.Operator) {
 
 	e := entry.Entry{Body: string(body)}
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		err := parser.Process(b.Context(), &e)
 		require.NoError(b, err)
 	}

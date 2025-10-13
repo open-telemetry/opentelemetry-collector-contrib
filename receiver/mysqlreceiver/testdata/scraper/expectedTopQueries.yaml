@@ -1,0 +1,30 @@
+resourceLogs:
+  - resource: {}
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: db.system.name
+                value:
+                  stringValue: mysql
+              - key: db.query.text
+                value:
+                  stringValue: SELECT COALESCE ( schema_name, ? ) COALESCE ( digest, ? ) COALESCE ( digest_text, ? ) count_star, sum_timer_wait, query_sample_text FROM performance_schema.events_statements_summary_by_digest WHERE last_seen >= NOW ( ) - INTERVAL ? second AND ( ( digest_text NOT LIKE ? AND digest_text NOT LIKE ? ) OR digest_text IS ? ) ORDER BY count_star DESC LIMIT ?
+              - key: mysql.query_plan
+                value:
+                  stringValue: |
+                    {"query_block":{"select_id":1,"cost_info":{"query_cost":"?"},"ordering_operation":{"using_filesort":true,"table":{"table_name":"events_statements_summary_by_digest","access_type":"ALL","rows_examined_per_scan":"?","rows_produced_per_join":"?","filtered":"?","cost_info":{"read_cost":"?","eval_cost":"?","prefix_cost":"?","data_read_per_join":"?"},"used_columns":["SCHEMA_NAME","DIGEST","DIGEST_TEXT","COUNT_STAR","SUM_TIMER_WAIT","LAST_SEEN","QUERY_SAMPLE_TEXT"],"attached_condition":"( ( performance_schema . events_statements_summary_by_digest . LAST_SEEN >= < cache > ( ( now ( ) - interval ? second ) ) ) and ( ( ( not ( ( performance_schema . events_statements_summary_by_digest . DIGEST_TEXT like ? ) ) ) and ( not ( ( performance_schema . events_statements_summary_by_digest . DIGEST_TEXT like ? ) ) ) ) or ( performance_schema . events_statements_summary_by_digest . DIGEST_TEXT is ? ) ) )"}}}}
+              - key: mysql.events_statements_summary_by_digest.digest
+                value:
+                  stringValue: c16f24f908846019a741db580f6545a5933e9435a7cf1579c50794a6ca287739
+              - key: mysql.events_statements_summary_by_digest.count_star
+                value:
+                  intValue: "5"
+              - key: mysql.events_statements_summary_by_digest.sum_timer_wait
+                value:
+                  doubleValue: 0.001021918999
+            body: {}
+            eventName: db.server.top_query
+            timeUnixNano: "1754297675177556000"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver
+          version: latest

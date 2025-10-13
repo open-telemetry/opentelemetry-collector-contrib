@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 )
 
 // ResourceField is the path to an entry resource
@@ -120,9 +121,7 @@ func (f ResourceField) Merge(entry *Entry, mapValues map[string]any) {
 		currentMap = getNestedMap(currentMap, key)
 	}
 
-	for key, value := range mapValues {
-		currentMap[key] = value
-	}
+	maps.Copy(currentMap, mapValues)
 }
 
 // Delete removes a value from an entry's resource using the field.

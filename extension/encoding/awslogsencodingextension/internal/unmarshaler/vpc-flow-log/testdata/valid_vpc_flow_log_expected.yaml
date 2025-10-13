@@ -26,7 +26,7 @@ resourceLogs:
             timeUnixNano: "1742570142000000000"
         scope:
           attributes:
-            - key: awslogs_encoding.format
+            - key: encoding.format
               value:
-                stringValue: vpc_flow_log
+                stringValue: aws.vpcflow
           name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension

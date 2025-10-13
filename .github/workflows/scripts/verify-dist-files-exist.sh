@@ -12,6 +12,7 @@ files=(
     bin/otelcontribcol_linux_riscv64
     bin/otelcontribcol_linux_s390x
     bin/otelcontribcol_windows_amd64.exe
+    bin/otelcontribcol_windows_arm64.exe
     # skip. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10113
     # dist/otel-contrib-collector-*amd64.msi
 

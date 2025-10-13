@@ -19,6 +19,7 @@ import (
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/value"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
+	"github.com/prometheus/prometheus/schema"
 	promremote "github.com/prometheus/prometheus/storage/remote"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
@@ -250,7 +251,8 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 	for i := range req.Timeseries {
 		ts := &req.Timeseries[i]
 		ls := ts.ToLabels(&labelsBuilder, req.Symbols)
-		if !ls.Has(labels.MetricName) {
+		metadata := schema.NewMetadataFromLabels(ls)
+		if metadata.Name == "" {
 			badRequestErrors = errors.Join(badRequestErrors, errors.New("missing metric name in labels"))
 			continue
 		} else if duplicateLabel, hasDuplicate := ls.HasDuplicateLabelNames(); hasDuplicate {
@@ -260,7 +262,7 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 
 		// If the metric name is equal to target_info, we use its labels as attributes of the resource
 		// Ref: https://opentelemetry.io/docs/specs/otel/compatibility/prometheus_and_openmetrics/#resource-attributes-1
-		if ls.Get(labels.MetricName) == "target_info" {
+		if metadata.Name == "target_info" {
 			var rm pmetric.ResourceMetrics
 			hashedLabels := xxhash.Sum64String(ls.Get("job") + string([]byte{'\xff'}) + ls.Get("instance"))
 
@@ -275,7 +277,7 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 
 			// Add the remaining labels as resource attributes
 			for labelName, labelValue := range ls.Map() {
-				if labelName != "job" && labelName != "instance" && labelName != labels.MetricName {
+				if labelName != "job" && labelName != "instance" && !schema.IsMetadataLabel(labelName) {
 					attrs.PutStr(labelName, labelValue)
 				}
 			}
@@ -284,7 +286,7 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		}
 
 		scopeName, scopeVersion := prw.extractScopeInfo(ls)
-		metricName := ls.Get(labels.MetricName)
+		metricName := metadata.Name
 		if ts.Metadata.UnitRef >= uint32(len(req.Symbols)) {
 			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("unit ref %d is out of bounds of symbolsTable", ts.Metadata.UnitRef))
 			continue

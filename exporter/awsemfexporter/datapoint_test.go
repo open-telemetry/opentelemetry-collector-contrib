@@ -88,7 +88,7 @@ func generateTestSumMetric(name string, valueType metricValueType) pmetric.Metri
 	otelMetrics := pmetric.NewMetrics()
 	rs := otelMetrics.ResourceMetrics().AppendEmpty()
 	metrics := rs.ScopeMetrics().AppendEmpty().Metrics()
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		metric := metrics.AppendEmpty()
 		metric.SetName(name)
 		metric.SetUnit("Count")
@@ -309,7 +309,7 @@ func generateTestSummaryMetric(name string) pmetric.Metrics {
 	rs := otelMetrics.ResourceMetrics().AppendEmpty()
 	metrics := rs.ScopeMetrics().AppendEmpty().Metrics()
 
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		metric := metrics.AppendEmpty()
 		metric.SetName(name)
 		metric.SetUnit("Seconds")
@@ -334,7 +334,7 @@ func generateTestSummaryMetricWithNaN(name string) pmetric.Metrics {
 	rs := otelMetrics.ResourceMetrics().AppendEmpty()
 	metrics := rs.ScopeMetrics().AppendEmpty().Metrics()
 
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		metric := metrics.AppendEmpty()
 		metric.SetName(name)
 		metric.SetUnit("Seconds")
@@ -359,7 +359,7 @@ func generateTestSummaryMetricWithInf(name string) pmetric.Metrics {
 	rs := otelMetrics.ResourceMetrics().AppendEmpty()
 	metrics := rs.ScopeMetrics().AppendEmpty().Metrics()
 
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		metric := metrics.AppendEmpty()
 		metric.SetName(name)
 		metric.SetUnit("Seconds")
@@ -2136,8 +2136,8 @@ func benchmarkGetAndCalculateDeltaDataPoints(b *testing.B, bucketLength int) {
 	metrics := rms.At(0).ScopeMetrics().At(0).Metrics()
 	emfCalcs := setupEmfCalculators()
 	defer require.NoError(b, shutdownEmfCalculators(emfCalcs))
-	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
+
+	for b.Loop() {
 		for i := 0; i < metrics.Len(); i++ {
 			metadata := generateTestMetricMetadata("namespace", time.Now().UnixNano()/int64(time.Millisecond), "log-group", "log-stream", "cloudwatch-otel", metrics.At(i).Type(), 0)
 			dps := getDataPoints(metrics.At(i), metadata, zap.NewNop())

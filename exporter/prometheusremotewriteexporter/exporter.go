@@ -33,6 +33,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter/internal/metadata"
+	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite"
 )
 
@@ -305,7 +306,9 @@ func (prwe *prwExporter) PushMetrics(ctx context.Context, md pmetric.Metrics) er
 }
 
 func validateAndSanitizeExternalLabels(cfg *Config) (map[string]string, error) {
-	namer := otlptranslator.LabelNamer{}
+	namer := otlptranslator.LabelNamer{
+		UnderscoreLabelSanitization: !prometheustranslator.DropSanitizationGate.IsEnabled(),
+	}
 	sanitizedLabels := make(map[string]string)
 	for key, value := range cfg.ExternalLabels {
 		if key == "" || value == "" {
@@ -369,7 +372,7 @@ func (prwe *prwExporter) export(ctx context.Context, requests []*prompb.WriteReq
 	var errs error
 	// Run concurrencyLimit of workers until there
 	// is no more requests to execute in the input channel.
-	for i := 0; i < concurrencyLimit; i++ {
+	for range concurrencyLimit {
 		go func() {
 			defer wg.Done()
 			err := prwe.handleRequests(ctx, input)

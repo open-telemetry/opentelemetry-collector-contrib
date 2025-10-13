@@ -17,7 +17,7 @@ import (
 func TestResolver(t *testing.T) {
 	t.Parallel()
 
-	for i := 0; i < 64; i++ {
+	for i := range 64 {
 		// Create a 6 bit string where each bit represents the value of a config option
 		bitString := fmt.Sprintf("%06b", i)
 

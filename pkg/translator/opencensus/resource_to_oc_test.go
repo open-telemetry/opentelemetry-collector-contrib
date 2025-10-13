@@ -222,8 +222,7 @@ func TestResourceToOCAndBack(t *testing.T) {
 func BenchmarkInternalResourceToOC(b *testing.B) {
 	resource := generateResourceWithOcNodeAndResource()
 
-	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
+	for b.Loop() {
 		ocNode, _ := internalResourceToOC(resource)
 		if ocNode.Identifier.Pid != 123 {
 			b.Fail()
@@ -238,8 +237,7 @@ func BenchmarkOcResourceNodeMarshal(b *testing.B) {
 		Resource: generateOcResource(),
 	}
 
-	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
+	for b.Loop() {
 		if _, err := proto.Marshal(oc); err != nil {
 			b.Fail()
 		}
