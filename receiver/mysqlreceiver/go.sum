@@ -14,8 +14,8 @@ github.com/DataDog/datadog-agent/pkg/util/scrubber v0.68.0 h1:d7iVn4kgFMfVydl50G
 github.com/DataDog/datadog-agent/pkg/util/scrubber v0.68.0/go.mod h1:TE346fTJxI/ONH6UXMNGftWZ1rTOJkcbAbRSktGVuHg=
 github.com/DataDog/datadog-agent/pkg/version v0.68.0 h1:O9K/SxuDrKJp+juA724SS1STQxw7meylHWTHjlHs+rM=
 github.com/DataDog/datadog-agent/pkg/version v0.68.0/go.mod h1:zpRXbtsHTgxP3vMyL6hsKQt/c590KDDaFtDQqPPEezo=
-github.com/DataDog/datadog-go/v5 v5.6.0 h1:2oCLxjF/4htd55piM75baflj/KoE6VYS7alEUqFvRDw=
-github.com/DataDog/datadog-go/v5 v5.6.0/go.mod h1:K9kcYBlxkcPP8tvvjZZKs/m1edNAUFzBbdpTUKfCsuw=
+github.com/DataDog/datadog-go/v5 v5.8.1 h1:+GOES5W9zpKlhwHptZVW2C0NLVf7ilr7pHkDcbNvpIc=
+github.com/DataDog/datadog-go/v5 v5.8.1/go.mod h1:K9kcYBlxkcPP8tvvjZZKs/m1edNAUFzBbdpTUKfCsuw=
 github.com/DataDog/go-sqllexer v0.1.6 h1:skEXpWEVCpeZFIiydoIa2f2rf+ymNpjiIMqpW4w3YAk=
 github.com/DataDog/go-sqllexer v0.1.6/go.mod h1:GGpo1h9/BVSN+6NJKaEcJ9Jn44Hqc63Rakeb+24Mjgo=
 github.com/Microsoft/go-winio v0.5.0/go.mod h1:JPGBdM1cNvN/6ISo+n8V5iA4v8pBzdOpzfwIujj1a84=
