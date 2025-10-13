@@ -12,7 +12,32 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
-<<<<<<< HEAD
+// AttributeClusterState specifies the value cluster_state attribute.
+type AttributeClusterState int
+
+const (
+	_ AttributeClusterState = iota
+	AttributeClusterStateOk
+	AttributeClusterStateFail
+)
+
+// String returns the string representation of the AttributeClusterState.
+func (av AttributeClusterState) String() string {
+	switch av {
+	case AttributeClusterStateOk:
+		return "ok"
+	case AttributeClusterStateFail:
+		return "fail"
+	}
+	return ""
+}
+
+// MapAttributeClusterState is a helper map of string to AttributeClusterState attribute value.
+var MapAttributeClusterState = map[string]AttributeClusterState{
+	"ok":   AttributeClusterStateOk,
+	"fail": AttributeClusterStateFail,
+}
+
 // AttributeMode specifies the value mode attribute.
 type AttributeMode int
 
@@ -32,40 +57,15 @@ func (av AttributeMode) String() string {
 		return "sentinel"
 	case AttributeModeStandalone:
 		return "standalone"
-=======
-// AttributeClusterState specifies the value cluster_state attribute.
-type AttributeClusterState int
-
-const (
-	_ AttributeClusterState = iota
-	AttributeClusterStateOk
-	AttributeClusterStateFail
-)
-
-// String returns the string representation of the AttributeClusterState.
-func (av AttributeClusterState) String() string {
-	switch av {
-	case AttributeClusterStateOk:
-		return "ok"
-	case AttributeClusterStateFail:
-		return "fail"
->>>>>>> b0687d7f57944ce400438563304f4f934f59c4b9
 	}
 	return ""
 }
 
-<<<<<<< HEAD
 // MapAttributeMode is a helper map of string to AttributeMode attribute value.
 var MapAttributeMode = map[string]AttributeMode{
 	"cluster":    AttributeModeCluster,
 	"sentinel":   AttributeModeSentinel,
 	"standalone": AttributeModeStandalone,
-=======
-// MapAttributeClusterState is a helper map of string to AttributeClusterState attribute value.
-var MapAttributeClusterState = map[string]AttributeClusterState{
-	"ok":   AttributeClusterStateOk,
-	"fail": AttributeClusterStateFail,
->>>>>>> b0687d7f57944ce400438563304f4f934f59c4b9
 }
 
 // AttributePercentile specifies the value percentile attribute.
@@ -335,51 +335,6 @@ var MetricsInfo = metricsInfo{
 }
 
 type metricsInfo struct {
-<<<<<<< HEAD
-	RedisClientsBlocked                    metricInfo
-	RedisClientsConnected                  metricInfo
-	RedisClientsMaxInputBuffer             metricInfo
-	RedisClientsMaxOutputBuffer            metricInfo
-	RedisCmdCalls                          metricInfo
-	RedisCmdLatency                        metricInfo
-	RedisCmdUsec                           metricInfo
-	RedisCommands                          metricInfo
-	RedisCommandsProcessed                 metricInfo
-	RedisConnectionsReceived               metricInfo
-	RedisConnectionsRejected               metricInfo
-	RedisCPUTime                           metricInfo
-	RedisDbAvgTTL                          metricInfo
-	RedisDbExpires                         metricInfo
-	RedisDbKeys                            metricInfo
-	RedisKeysEvicted                       metricInfo
-	RedisKeysExpired                       metricInfo
-	RedisKeyspaceHits                      metricInfo
-	RedisKeyspaceMisses                    metricInfo
-	RedisLatestFork                        metricInfo
-	RedisMaxmemory                         metricInfo
-	RedisMemoryFragmentationRatio          metricInfo
-	RedisMemoryLua                         metricInfo
-	RedisMemoryPeak                        metricInfo
-	RedisMemoryRss                         metricInfo
-	RedisMemoryUsed                        metricInfo
-	RedisMode                              metricInfo
-	RedisNetInput                          metricInfo
-	RedisNetOutput                         metricInfo
-	RedisRdbChangesSinceLastSave           metricInfo
-	RedisReplicationBacklogFirstByteOffset metricInfo
-	RedisReplicationOffset                 metricInfo
-	RedisReplicationReplicaOffset          metricInfo
-	RedisRole                              metricInfo
-	RedisSentinelMasters                   metricInfo
-	RedisSentinelRunningScripts            metricInfo
-	RedisSentinelScriptsQueueLength        metricInfo
-	RedisSentinelSimulateFailureFlags      metricInfo
-	RedisSentinelTilt                      metricInfo
-	RedisSentinelTiltSinceSeconds          metricInfo
-	RedisSentinelTotalTilt                 metricInfo
-	RedisSlavesConnected                   metricInfo
-	RedisUptime                            metricInfo
-=======
 	RedisClientsBlocked                       metricInfo
 	RedisClientsConnected                     metricInfo
 	RedisClientsMaxInputBuffer                metricInfo
@@ -418,6 +373,7 @@ type metricsInfo struct {
 	RedisMemoryPeak                           metricInfo
 	RedisMemoryRss                            metricInfo
 	RedisMemoryUsed                           metricInfo
+	RedisMode                                 metricInfo
 	RedisNetInput                             metricInfo
 	RedisNetOutput                            metricInfo
 	RedisRdbChangesSinceLastSave              metricInfo
@@ -425,9 +381,15 @@ type metricsInfo struct {
 	RedisReplicationOffset                    metricInfo
 	RedisReplicationReplicaOffset             metricInfo
 	RedisRole                                 metricInfo
+	RedisSentinelMasters                      metricInfo
+	RedisSentinelRunningScripts               metricInfo
+	RedisSentinelScriptsQueueLength           metricInfo
+	RedisSentinelSimulateFailureFlags         metricInfo
+	RedisSentinelTilt                         metricInfo
+	RedisSentinelTiltSinceSeconds             metricInfo
+	RedisSentinelTotalTilt                    metricInfo
 	RedisSlavesConnected                      metricInfo
 	RedisUptime                               metricInfo
->>>>>>> b0687d7f57944ce400438563304f4f934f59c4b9
 }
 
 type metricInfo struct {
@@ -3197,58 +3159,6 @@ func newMetricRedisUptime(cfg MetricConfig) metricRedisUptime {
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-<<<<<<< HEAD
-	config                                       MetricsBuilderConfig // config of the metrics builder.
-	startTime                                    pcommon.Timestamp    // start time that will be applied to all recorded data points.
-	metricsCapacity                              int                  // maximum observed number of metrics per resource.
-	metricsBuffer                                pmetric.Metrics      // accumulates metrics data before emitting.
-	buildInfo                                    component.BuildInfo  // contains version information.
-	resourceAttributeIncludeFilter               map[string]filter.Filter
-	resourceAttributeExcludeFilter               map[string]filter.Filter
-	metricRedisClientsBlocked                    metricRedisClientsBlocked
-	metricRedisClientsConnected                  metricRedisClientsConnected
-	metricRedisClientsMaxInputBuffer             metricRedisClientsMaxInputBuffer
-	metricRedisClientsMaxOutputBuffer            metricRedisClientsMaxOutputBuffer
-	metricRedisCmdCalls                          metricRedisCmdCalls
-	metricRedisCmdLatency                        metricRedisCmdLatency
-	metricRedisCmdUsec                           metricRedisCmdUsec
-	metricRedisCommands                          metricRedisCommands
-	metricRedisCommandsProcessed                 metricRedisCommandsProcessed
-	metricRedisConnectionsReceived               metricRedisConnectionsReceived
-	metricRedisConnectionsRejected               metricRedisConnectionsRejected
-	metricRedisCPUTime                           metricRedisCPUTime
-	metricRedisDbAvgTTL                          metricRedisDbAvgTTL
-	metricRedisDbExpires                         metricRedisDbExpires
-	metricRedisDbKeys                            metricRedisDbKeys
-	metricRedisKeysEvicted                       metricRedisKeysEvicted
-	metricRedisKeysExpired                       metricRedisKeysExpired
-	metricRedisKeyspaceHits                      metricRedisKeyspaceHits
-	metricRedisKeyspaceMisses                    metricRedisKeyspaceMisses
-	metricRedisLatestFork                        metricRedisLatestFork
-	metricRedisMaxmemory                         metricRedisMaxmemory
-	metricRedisMemoryFragmentationRatio          metricRedisMemoryFragmentationRatio
-	metricRedisMemoryLua                         metricRedisMemoryLua
-	metricRedisMemoryPeak                        metricRedisMemoryPeak
-	metricRedisMemoryRss                         metricRedisMemoryRss
-	metricRedisMemoryUsed                        metricRedisMemoryUsed
-	metricRedisMode                              metricRedisMode
-	metricRedisNetInput                          metricRedisNetInput
-	metricRedisNetOutput                         metricRedisNetOutput
-	metricRedisRdbChangesSinceLastSave           metricRedisRdbChangesSinceLastSave
-	metricRedisReplicationBacklogFirstByteOffset metricRedisReplicationBacklogFirstByteOffset
-	metricRedisReplicationOffset                 metricRedisReplicationOffset
-	metricRedisReplicationReplicaOffset          metricRedisReplicationReplicaOffset
-	metricRedisRole                              metricRedisRole
-	metricRedisSentinelMasters                   metricRedisSentinelMasters
-	metricRedisSentinelRunningScripts            metricRedisSentinelRunningScripts
-	metricRedisSentinelScriptsQueueLength        metricRedisSentinelScriptsQueueLength
-	metricRedisSentinelSimulateFailureFlags      metricRedisSentinelSimulateFailureFlags
-	metricRedisSentinelTilt                      metricRedisSentinelTilt
-	metricRedisSentinelTiltSinceSeconds          metricRedisSentinelTiltSinceSeconds
-	metricRedisSentinelTotalTilt                 metricRedisSentinelTotalTilt
-	metricRedisSlavesConnected                   metricRedisSlavesConnected
-	metricRedisUptime                            metricRedisUptime
-=======
 	config                                          MetricsBuilderConfig // config of the metrics builder.
 	startTime                                       pcommon.Timestamp    // start time that will be applied to all recorded data points.
 	metricsCapacity                                 int                  // maximum observed number of metrics per resource.
@@ -3294,6 +3204,7 @@ type MetricsBuilder struct {
 	metricRedisMemoryPeak                           metricRedisMemoryPeak
 	metricRedisMemoryRss                            metricRedisMemoryRss
 	metricRedisMemoryUsed                           metricRedisMemoryUsed
+	metricRedisMode                                 metricRedisMode
 	metricRedisNetInput                             metricRedisNetInput
 	metricRedisNetOutput                            metricRedisNetOutput
 	metricRedisRdbChangesSinceLastSave              metricRedisRdbChangesSinceLastSave
@@ -3301,9 +3212,15 @@ type MetricsBuilder struct {
 	metricRedisReplicationOffset                    metricRedisReplicationOffset
 	metricRedisReplicationReplicaOffset             metricRedisReplicationReplicaOffset
 	metricRedisRole                                 metricRedisRole
+	metricRedisSentinelMasters                      metricRedisSentinelMasters
+	metricRedisSentinelRunningScripts               metricRedisSentinelRunningScripts
+	metricRedisSentinelScriptsQueueLength           metricRedisSentinelScriptsQueueLength
+	metricRedisSentinelSimulateFailureFlags         metricRedisSentinelSimulateFailureFlags
+	metricRedisSentinelTilt                         metricRedisSentinelTilt
+	metricRedisSentinelTiltSinceSeconds             metricRedisSentinelTiltSinceSeconds
+	metricRedisSentinelTotalTilt                    metricRedisSentinelTotalTilt
 	metricRedisSlavesConnected                      metricRedisSlavesConnected
 	metricRedisUptime                               metricRedisUptime
->>>>>>> b0687d7f57944ce400438563304f4f934f59c4b9
 }
 
 // MetricBuilderOption applies changes to default metrics builder.
@@ -3325,57 +3242,6 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 }
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-<<<<<<< HEAD
-		config:                                       mbc,
-		startTime:                                    pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:                                pmetric.NewMetrics(),
-		buildInfo:                                    settings.BuildInfo,
-		metricRedisClientsBlocked:                    newMetricRedisClientsBlocked(mbc.Metrics.RedisClientsBlocked),
-		metricRedisClientsConnected:                  newMetricRedisClientsConnected(mbc.Metrics.RedisClientsConnected),
-		metricRedisClientsMaxInputBuffer:             newMetricRedisClientsMaxInputBuffer(mbc.Metrics.RedisClientsMaxInputBuffer),
-		metricRedisClientsMaxOutputBuffer:            newMetricRedisClientsMaxOutputBuffer(mbc.Metrics.RedisClientsMaxOutputBuffer),
-		metricRedisCmdCalls:                          newMetricRedisCmdCalls(mbc.Metrics.RedisCmdCalls),
-		metricRedisCmdLatency:                        newMetricRedisCmdLatency(mbc.Metrics.RedisCmdLatency),
-		metricRedisCmdUsec:                           newMetricRedisCmdUsec(mbc.Metrics.RedisCmdUsec),
-		metricRedisCommands:                          newMetricRedisCommands(mbc.Metrics.RedisCommands),
-		metricRedisCommandsProcessed:                 newMetricRedisCommandsProcessed(mbc.Metrics.RedisCommandsProcessed),
-		metricRedisConnectionsReceived:               newMetricRedisConnectionsReceived(mbc.Metrics.RedisConnectionsReceived),
-		metricRedisConnectionsRejected:               newMetricRedisConnectionsRejected(mbc.Metrics.RedisConnectionsRejected),
-		metricRedisCPUTime:                           newMetricRedisCPUTime(mbc.Metrics.RedisCPUTime),
-		metricRedisDbAvgTTL:                          newMetricRedisDbAvgTTL(mbc.Metrics.RedisDbAvgTTL),
-		metricRedisDbExpires:                         newMetricRedisDbExpires(mbc.Metrics.RedisDbExpires),
-		metricRedisDbKeys:                            newMetricRedisDbKeys(mbc.Metrics.RedisDbKeys),
-		metricRedisKeysEvicted:                       newMetricRedisKeysEvicted(mbc.Metrics.RedisKeysEvicted),
-		metricRedisKeysExpired:                       newMetricRedisKeysExpired(mbc.Metrics.RedisKeysExpired),
-		metricRedisKeyspaceHits:                      newMetricRedisKeyspaceHits(mbc.Metrics.RedisKeyspaceHits),
-		metricRedisKeyspaceMisses:                    newMetricRedisKeyspaceMisses(mbc.Metrics.RedisKeyspaceMisses),
-		metricRedisLatestFork:                        newMetricRedisLatestFork(mbc.Metrics.RedisLatestFork),
-		metricRedisMaxmemory:                         newMetricRedisMaxmemory(mbc.Metrics.RedisMaxmemory),
-		metricRedisMemoryFragmentationRatio:          newMetricRedisMemoryFragmentationRatio(mbc.Metrics.RedisMemoryFragmentationRatio),
-		metricRedisMemoryLua:                         newMetricRedisMemoryLua(mbc.Metrics.RedisMemoryLua),
-		metricRedisMemoryPeak:                        newMetricRedisMemoryPeak(mbc.Metrics.RedisMemoryPeak),
-		metricRedisMemoryRss:                         newMetricRedisMemoryRss(mbc.Metrics.RedisMemoryRss),
-		metricRedisMemoryUsed:                        newMetricRedisMemoryUsed(mbc.Metrics.RedisMemoryUsed),
-		metricRedisMode:                              newMetricRedisMode(mbc.Metrics.RedisMode),
-		metricRedisNetInput:                          newMetricRedisNetInput(mbc.Metrics.RedisNetInput),
-		metricRedisNetOutput:                         newMetricRedisNetOutput(mbc.Metrics.RedisNetOutput),
-		metricRedisRdbChangesSinceLastSave:           newMetricRedisRdbChangesSinceLastSave(mbc.Metrics.RedisRdbChangesSinceLastSave),
-		metricRedisReplicationBacklogFirstByteOffset: newMetricRedisReplicationBacklogFirstByteOffset(mbc.Metrics.RedisReplicationBacklogFirstByteOffset),
-		metricRedisReplicationOffset:                 newMetricRedisReplicationOffset(mbc.Metrics.RedisReplicationOffset),
-		metricRedisReplicationReplicaOffset:          newMetricRedisReplicationReplicaOffset(mbc.Metrics.RedisReplicationReplicaOffset),
-		metricRedisRole:                              newMetricRedisRole(mbc.Metrics.RedisRole),
-		metricRedisSentinelMasters:                   newMetricRedisSentinelMasters(mbc.Metrics.RedisSentinelMasters),
-		metricRedisSentinelRunningScripts:            newMetricRedisSentinelRunningScripts(mbc.Metrics.RedisSentinelRunningScripts),
-		metricRedisSentinelScriptsQueueLength:        newMetricRedisSentinelScriptsQueueLength(mbc.Metrics.RedisSentinelScriptsQueueLength),
-		metricRedisSentinelSimulateFailureFlags:      newMetricRedisSentinelSimulateFailureFlags(mbc.Metrics.RedisSentinelSimulateFailureFlags),
-		metricRedisSentinelTilt:                      newMetricRedisSentinelTilt(mbc.Metrics.RedisSentinelTilt),
-		metricRedisSentinelTiltSinceSeconds:          newMetricRedisSentinelTiltSinceSeconds(mbc.Metrics.RedisSentinelTiltSinceSeconds),
-		metricRedisSentinelTotalTilt:                 newMetricRedisSentinelTotalTilt(mbc.Metrics.RedisSentinelTotalTilt),
-		metricRedisSlavesConnected:                   newMetricRedisSlavesConnected(mbc.Metrics.RedisSlavesConnected),
-		metricRedisUptime:                            newMetricRedisUptime(mbc.Metrics.RedisUptime),
-		resourceAttributeIncludeFilter:               make(map[string]filter.Filter),
-		resourceAttributeExcludeFilter:               make(map[string]filter.Filter),
-=======
 		config:                            mbc,
 		startTime:                         pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                     pmetric.NewMetrics(),
@@ -3418,6 +3284,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricRedisMemoryPeak:                           newMetricRedisMemoryPeak(mbc.Metrics.RedisMemoryPeak),
 		metricRedisMemoryRss:                            newMetricRedisMemoryRss(mbc.Metrics.RedisMemoryRss),
 		metricRedisMemoryUsed:                           newMetricRedisMemoryUsed(mbc.Metrics.RedisMemoryUsed),
+		metricRedisMode:                                 newMetricRedisMode(mbc.Metrics.RedisMode),
 		metricRedisNetInput:                             newMetricRedisNetInput(mbc.Metrics.RedisNetInput),
 		metricRedisNetOutput:                            newMetricRedisNetOutput(mbc.Metrics.RedisNetOutput),
 		metricRedisRdbChangesSinceLastSave:              newMetricRedisRdbChangesSinceLastSave(mbc.Metrics.RedisRdbChangesSinceLastSave),
@@ -3425,11 +3292,17 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricRedisReplicationOffset:                    newMetricRedisReplicationOffset(mbc.Metrics.RedisReplicationOffset),
 		metricRedisReplicationReplicaOffset:             newMetricRedisReplicationReplicaOffset(mbc.Metrics.RedisReplicationReplicaOffset),
 		metricRedisRole:                                 newMetricRedisRole(mbc.Metrics.RedisRole),
+		metricRedisSentinelMasters:                      newMetricRedisSentinelMasters(mbc.Metrics.RedisSentinelMasters),
+		metricRedisSentinelRunningScripts:               newMetricRedisSentinelRunningScripts(mbc.Metrics.RedisSentinelRunningScripts),
+		metricRedisSentinelScriptsQueueLength:           newMetricRedisSentinelScriptsQueueLength(mbc.Metrics.RedisSentinelScriptsQueueLength),
+		metricRedisSentinelSimulateFailureFlags:         newMetricRedisSentinelSimulateFailureFlags(mbc.Metrics.RedisSentinelSimulateFailureFlags),
+		metricRedisSentinelTilt:                         newMetricRedisSentinelTilt(mbc.Metrics.RedisSentinelTilt),
+		metricRedisSentinelTiltSinceSeconds:             newMetricRedisSentinelTiltSinceSeconds(mbc.Metrics.RedisSentinelTiltSinceSeconds),
+		metricRedisSentinelTotalTilt:                    newMetricRedisSentinelTotalTilt(mbc.Metrics.RedisSentinelTotalTilt),
 		metricRedisSlavesConnected:                      newMetricRedisSlavesConnected(mbc.Metrics.RedisSlavesConnected),
 		metricRedisUptime:                               newMetricRedisUptime(mbc.Metrics.RedisUptime),
 		resourceAttributeIncludeFilter:                  make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter:                  make(map[string]filter.Filter),
->>>>>>> b0687d7f57944ce400438563304f4f934f59c4b9
 	}
 	if mbc.ResourceAttributes.RedisVersion.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["redis.version"] = filter.CreateFilter(mbc.ResourceAttributes.RedisVersion.MetricsInclude)

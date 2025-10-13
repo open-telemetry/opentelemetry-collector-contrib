@@ -86,7 +86,6 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
 
-
   redis.clients.connected:
     enabled: true
     description: Number of client connections (excluding connections from replicas)
@@ -154,7 +153,6 @@ metrics:
     gauge:
       value_type: int
 
-
   redis.cluster.slots_assigned:
     enabled: false
     description: "Number of slots assigned in the cluster"
@@ -200,6 +198,7 @@ metrics:
     gauge:
       value_type: int
     attributes: [cluster_state]
+
   redis.cluster.stats_messages_received:
     enabled: false
     description: "Total number of messages received by the cluster"
@@ -264,6 +263,7 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
     attributes: [cmd]
+
   redis.commands:
     enabled: true
     description: Number of commands processed per second
@@ -393,13 +393,6 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
 
-  redis.mode:
-    enabled: true
-    description: Redis server mode
-    unit: "{mode}"
-    gauge:
-      value_type: int
-    attributes: [mode]
 
   redis.latest_fork:
     enabled: true
@@ -464,6 +457,14 @@ metrics:
     gauge:
       value_type: int
 
+  redis.mode:
+    enabled: true
+    description: Redis server mode
+    unit: "{mode}"
+    gauge:
+      value_type: int
+    attributes: [mode]
+
   redis.net.input:
     enabled: true
     description: The total number of bytes read from the network
@@ -515,10 +516,53 @@ metrics:
     gauge:
       value_type: int
 
+  # below are all disabled by default
+  redis.replication.replica_offset:
+    enabled: false
+    description: "Offset for redis replica"
+    stability:
+      level: development
+    unit: "By"
+    gauge:
+      value_type: int
+
+  redis.role:
+    enabled: false
+    description: Redis node's role
+    stability:
+      level: development
+    unit: "{role}"
+    sum:
+      value_type: int
+      monotonic: false
+      aggregation_temporality: cumulative
+    attributes: [role]
+
   redis.sentinel.masters:
     enabled: true
     description: Number of masters monitored by Sentinel.
     unit: "{masters}"
+    gauge:
+      value_type: int
+
+  redis.sentinel.running_scripts:
+    enabled: true
+    description: Number of running Sentinel scripts.
+    unit: "{scripts}"
+    gauge:
+      value_type: int
+
+  redis.sentinel.scripts_queue_length:
+    enabled: true
+    description: Length of Sentinel scripts queue.
+    unit: "{scripts}"
+    gauge:
+      value_type: int
+
+  redis.sentinel.simulate_failure_flags:
+    enabled: true
+    description: Simulated failure flags bitmask.
+    unit: "{flags}"
     gauge:
       value_type: int
 
@@ -544,49 +588,6 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
-
-  redis.sentinel.running_scripts:
-    enabled: true
-    description: Number of running Sentinel scripts.
-    unit: "{scripts}"
-    gauge:
-      value_type: int
-
-  redis.sentinel.scripts_queue_length:
-    enabled: true
-    description: Length of Sentinel scripts queue.
-    unit: "{scripts}"
-    gauge:
-      value_type: int
-
-  redis.sentinel.simulate_failure_flags:
-    enabled: true
-    description: Simulated failure flags bitmask.
-    unit: "{flags}"
-    gauge:
-      value_type: int
-
-  # below are all disabled by default
-  redis.replication.replica_offset:
-    enabled: false
-    description: "Offset for redis replica"
-    stability:
-      level: development
-    unit: "By"
-    gauge:
-      value_type: int
-
-  redis.role:
-    enabled: false
-    description: Redis node's role
-    stability:
-      level: development
-    unit: "{role}"
-    sum:
-      value_type: int
-      monotonic: false
-      aggregation_temporality: cumulative
-    attributes: [role]
 
   redis.slaves.connected:
     enabled: true
