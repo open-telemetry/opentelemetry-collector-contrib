@@ -947,18 +947,9 @@ Examples:
 
 `GetSemconvSpanName()`
 
-The `GetSemconvSpanName()` function derives a span name from the
-[OpenTelemetry semantic conventions](https://opentelemetry.io/docs/specs/semconv/) for
-[HTTP](https://opentelemetry.io/docs/specs/semconv/http/http-spans/),
-[RPC](https://opentelemetry.io/docs/specs/semconv/rpc/rpc-spans/),
-[messaging](https://opentelemetry.io/docs/specs/semconv/messaging/messaging-spans/), and
-[database](https://opentelemetry.io/docs/specs/semconv/database/) spans. In all other cases, the original `span.name`
-is returned unchanged.
+The `GetSemconvSpanName()` function derives a span name from the OpenTelemetry semantic conventions for [HTTP](https://opentelemetry.io/docs/specs/semconv/http/http-spans/), [RPC](https://opentelemetry.io/docs/specs/semconv/rpc/rpc-spans/), [messaging](https://opentelemetry.io/docs/specs/semconv/messaging/messaging-spans/), and [database](https://opentelemetry.io/docs/specs/semconv/database/) spans. In other cases, the original `span.name` is returned unchanged.
 
-The primary use of `GetSemconvSpanName()` is alongside the
-[Span Metrics Connector](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/connector/spanmetricsconnector)
-to address high-cardinality issues in span metrics when `span.name` does not comply with the OpenTelemetry requirement
-that span names be low cardinality.
+The primary use of `GetSemconvSpanName()` is alongside the [Span Metrics Connector](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/connector/spanmetricsconnector) to address high-cardinality issues in span metrics when `span.name` does not comply with the OpenTelemetry requirement that span names be low cardinality.
 
 This function is supported with [OTTL span context](../contexts/ottlspan/README.md). In any other context it is not supported.
 
@@ -968,7 +959,7 @@ This function is supported with [OTTL span context](../contexts/ottlspan/README.
 <thead>
 <tr>
 <th>Span</th>
-<th>`GetSemconvSpanName()`</th>
+<th> <code>GetSemconvSpanName()</code> </th>
 <th>Comments</th>
 </tr>
 </thead>
@@ -1011,8 +1002,7 @@ GET /api/v1/users/{id}
 </pre>
 </td>
 <td>
-High cardinality span name `GET /api/v1/users/123` gets sanitized without loss of information when recommended semantic 
-convention span attributes are provided (e.g. `http.request.method` and `http.route`).
+High cardinality span name <code>GET /api/v1/users/123</code> gets sanitized without loss of information when recommended semantic convention span attributes are provided (e.g. <code>http.request.method<code> and <code>http.route</code>).
 </td>
 </tr>
 <tr>
@@ -1031,13 +1021,12 @@ GET
 </pre>
 </td>
 <td>
-High-cardinality span name `GET /api/v1/users/123` is sanitized with some loss of information when recommended semantic
-convention span attributes are missing (e.g., `http.route`).
+High-cardinality span name <code>GET /api/v1/users/123</code> is sanitized with some loss of information when recommended semantic convention span attributes are missing (e.g., <code>http.route</code>).
 </td>
 </tr>
 </table>
 
-Backward compatibility: `GetSemconvSpanName()` supports the version 1.37 of the semantic conventions and backward compatibility 
+Backward compatibility: `GetSemconvSpanName()` supports the version 1.37 of the semantic conventions and backward compatibility
 for the following attributes:
 
 | Attribute             | Backward compatibility |
@@ -1057,8 +1046,7 @@ OTTL syntax examples:
 
     ```yaml
     processors:
-      # ...
-      # prevent high cardinality span names
+      # prevent high-cardinality span names
       transform/sanitize_span_name:
         error_mode: ignore
         trace_statements:
