@@ -429,7 +429,7 @@ func TestResourceFieldUnmarshal(t *testing.T) {
 			require.Equal(t, tc.keys, fy.Keys)
 
 			var fj ResourceField
-			err = json.Unmarshal([]byte(fmt.Sprintf(`%q`, tc.jsonDot)), &fj)
+			err = json.Unmarshal(fmt.Appendf(nil, `%q`, tc.jsonDot), &fj)
 			require.NoError(t, err)
 			require.Equal(t, tc.keys, fy.Keys)
 		})
