@@ -129,7 +129,7 @@ func (gtr *githubTracesReceiver) Shutdown(_ context.Context) error {
 	return err
 }
 
-// handleReq handles incoming request sent to the webhook endoint. On success
+// handleReq handles incoming request sent to the webhook endpoint. On success
 // returns a 200 response code.
 func (gtr *githubTracesReceiver) handleReq(w http.ResponseWriter, req *http.Request) {
 	ctx := gtr.obsrecv.StartTracesOp(req.Context())
