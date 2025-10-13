@@ -947,18 +947,18 @@ Examples:
 
 `GetSemconvSpanName()`
 
-The `GetSemconvSpanName` Converter returns a span name based on 
-[OpenTelemetry semantic conventions](https://opentelemetry.io/docs/specs/semconv/) for 
-[HTTP](https://opentelemetry.io/docs/specs/semconv/http/http-spans/), 
+The `GetSemconvSpanName()` function derives a span name from the
+[OpenTelemetry semantic conventions](https://opentelemetry.io/docs/specs/semconv/) for
+[HTTP](https://opentelemetry.io/docs/specs/semconv/http/http-spans/),
 [RPC](https://opentelemetry.io/docs/specs/semconv/rpc/rpc-spans/),
-[messaging](https://opentelemetry.io/docs/specs/semconv/messaging/messaging-spans/), and 
-[database](https://opentelemetry.io/docs/specs/semconv/database/) spans. In all other scenarios, the original `span.name` 
-is returned.
+[messaging](https://opentelemetry.io/docs/specs/semconv/messaging/messaging-spans/), and
+[database](https://opentelemetry.io/docs/specs/semconv/database/) spans. In all other cases, the original `span.name`
+is returned unchanged.
 
-The primary use case of the `GetSemconvSpanName()` function is to be used in conjunction with the 
+The primary use of `GetSemconvSpanName()` is alongside the
 [Span Metrics Connector](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/connector/spanmetricsconnector)
-to fix span metrics high cardinality problems when the `span.name` doesn't comply with the OpenTelemetry specification 
-that requires it be be low cardinality   
+to address high-cardinality issues in span metrics when `span.name` does not comply with the OpenTelemetry requirement
+that span names be low cardinality.
 
 This function is supported with [OTTL span context](../contexts/ottlspan/README.md). In any other context it is not supported.
 
@@ -1031,8 +1031,8 @@ GET
 </pre>
 </td>
 <td>
-High cardinality span name `GET /api/v1/users/123` gets sanitized with loss of information when recommended semantic 
-convention span attributes are mising (e.g. `http.route` missing)..
+High-cardinality span name `GET /api/v1/users/123` is sanitized with some loss of information when recommended semantic
+convention span attributes are missing (e.g., `http.route`).
 </td>
 </tr>
 </table>
