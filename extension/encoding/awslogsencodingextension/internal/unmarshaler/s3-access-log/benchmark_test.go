@@ -25,7 +25,7 @@ func newLogFileContent(b *testing.B, nLogs int) io.Reader {
 
 	size := len(data) + 1 // + "\n"
 	buf := bytes.NewBuffer(make([]byte, 0, nLogs*size))
-	for i := 0; i < nLogs; i++ {
+	for i := range nLogs {
 		buf.Write(data)
 		if i != nLogs-1 {
 			buf.WriteString("\n")
@@ -52,7 +52,7 @@ func BenchmarkUnmarshalLogs(b *testing.B) {
 		logs := newLogFileContent(b, benchmark.nLogs)
 		b.Run(name, func(b *testing.B) {
 			b.ReportAllocs()
-			for i := 0; i < b.N; i++ {
+			for b.Loop() {
 				_, err := u.UnmarshalAWSLogs(logs)
 				require.NoError(b, err)
 			}

@@ -128,6 +128,7 @@ components:
     - internal/coreinternal
     - internal/datadog
     - internal/docker
+    - internal/e2e
     - internal/exp/metrics
     - internal/filter
     - internal/grpcutil
@@ -255,6 +256,7 @@ components:
     - receiver/hostmetrics
     - receiver/httpcheck
     - receiver/huaweicloudcesreceiver
+    - receiver/icmpcheckreceiver
     - receiver/iis
     - receiver/influxdb
     - receiver/jaeger

@@ -8,16 +8,16 @@ The following telemetry is emitted by this component.
 
 ### otelcol_otelarrow_admission_in_flight_bytes
 
-Number of bytes that have started processing but are not finished.
+Number of bytes that have started processing but are not finished. [development]
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| By | Sum | Int | false |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| By | Sum | Int | false | development |
 
 ### otelcol_otelarrow_admission_waiting_bytes
 
-Number of items waiting to start processing.
+Number of items waiting to start processing. [development]
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| By | Sum | Int | false |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| By | Sum | Int | false | development |
