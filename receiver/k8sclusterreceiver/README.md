@@ -93,6 +93,10 @@ Example:
 The full list of settings exposed for this receiver are documented in [config.go](./config.go)
 with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).
 
+**Note** that with the introduction of the [receiver.k8scluster.allocatableNamespace.enabled](#receiverk8sclusterallocatablenamespaceenabled) feature gate, the metrics for the allocatable resource types
+(`k8s.node.allocatable.cpu`, `k8s.node.allocatable.ephemeral_storage`, `k8s.node.allocatable.memory`, `k8s.node.allocatable.pods`) are enabled/disabled via the metrics section, and are represented by up/down counters, rather than gauges.
+To activate the feature flag, start the collector with `--feature-gates receiver.k8scluster.allocatableNamespace.enabled`.
+
 ### k8s_leader_elector
 Provide name of the k8s leader elector extension defined in config. This allows multiple instances of k8s cluster
 receiver to be executed on a cluster. At a given time only the pod which has the is active.
@@ -453,3 +457,23 @@ Add the following rules to your ClusterRole:
   - watch
 ```
 
+## Feature Gates
+
+### `receiver.k8scluster.allocatableNamespace.enabled`
+
+The `receiver.k8scluster.allocatableNamespace.enabled` [feature gate](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) enables the SemConv valid format of the node allocatable metrics reported by the receiver.
+The feature gate is in `alpha` stage, which means it is disabled by default.
+
+If enabled the SemConv valid format of the node allocatable metrics are reported (if enabled via the metrics section):
+
+- `k8s.node.allocatable.cpu`
+- `k8s.node.allocatable.ephemeral_storage`
+- `k8s.node.allocatable.memory`
+- `k8s.node.allocatable.pods`
+
+instead, the old metrics are disabled and not reported (even if `allocatable_types_to_report` config option is set):
+
+- `k8s.node.allocatable_cpu`
+- `k8s.node.allocatable_ephemeral_storage`
+- `k8s.node.allocatable_memory`
+- `k8s.node.allocatable_pods`
