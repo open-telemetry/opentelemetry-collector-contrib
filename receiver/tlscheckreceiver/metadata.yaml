@@ -15,11 +15,11 @@ resource_attributes:
     type: string
 
 attributes:
-  tlscheck.x509.issuer:
-    description: The entity that issued the certificate.
-    type: string
   tlscheck.x509.cn:
     description: The commonName in the subject of the certificate.
+    type: string
+  tlscheck.x509.issuer:
+    description: The entity that issued the certificate.
     type: string
   tlscheck.x509.san:
     description: The Subject Alternative Name of the certificate.
