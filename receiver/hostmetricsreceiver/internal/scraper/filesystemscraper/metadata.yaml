@@ -33,10 +33,10 @@ attributes:
     description: Filesystem type, such as, "ext4", "tmpfs", etc.
 
 metrics:
-  system.filesystem.usage:
+  system.filesystem.inodes.usage:
     enabled: true
-    description: Filesystem bytes used.
-    unit: By
+    description: FileSystem inodes used.
+    unit: "{inodes}"
     stability:
       level: development
     sum:
@@ -45,10 +45,10 @@ metrics:
       monotonic: false
     attributes: [device, mode, mountpoint, type, state]
 
-  system.filesystem.inodes.usage:
+  system.filesystem.usage:
     enabled: true
-    description: FileSystem inodes used.
-    unit: "{inodes}"
+    description: Filesystem bytes used.
+    unit: By
     stability:
       level: development
     sum:
