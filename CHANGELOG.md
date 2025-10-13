@@ -1668,7 +1668,7 @@ The frequency of recording pipeline lag can be configured with `lag_record_frequ
 - `elasticsearchexporter`: Enable native frame symbolization for Universal Profiling via the symbolization queue indices. (#38577)
 - `hostmetricsreceiver`: Reduced the cost of retrieving number of threads and parent process ID on Windows. Disable the featuregate `hostmetrics.process.onWindowsUseNewGetProcesses` to fallback to the previous implementation.
  (#32947, #38589)
-- `prometheusremotewritereciever`: Add help ref attribute to metric (#37277)
+- `prometheusremotewritereceiver`: Add help ref attribute to metric (#37277)
 - `hostmetricsreceiver`: Reduced the CPU cost of collecting the `process.handles` metric on Windows. (#38886)
   Instead of using WMI to retrieve the number of opened handles by each process
   the scraper now uses the GetProcessHandleCount Win32 API which results in
@@ -1678,7 +1678,7 @@ The frequency of recording pipeline lag can be configured with `lag_record_frequ
 - `rabbitmqreceiver`: Enhance the RabbitMQ receiver to collect and report additional node-level metrics: `rabbitmq.node.disk_free`, `rabbitmq.node.disk_free_limit`, `rabbitmq.node.disk_free_alarm`, `rabbitmq.node.disk_free_details.rate`, `rabbitmq.node.mem_used`, `rabbitmq.node.mem_limit`, `rabbitmq.node.mem_alarm`, `rabbitmq.node.mem_used_details.rate`, `rabbitmq.node.fd_used`, `rabbitmq.node.fd_total`, `rabbitmq.node.fd_used_details.rate`, `rabbitmq.node.sockets_used`, `rabbitmq.node.sockets_total`, `rabbitmq.node.sockets_used_details.rate`, `rabbitmq.node.proc_used`, `rabbitmq.node.proc_total`, `rabbitmq.node.proc_used_details.rate`. These provide additional observability into the state and resource usage of RabbitMQ nodes. (#38976)
 - `rabbitmqreceiver`: Enhance the RabbitMQ receiver to collect and report additional node-level metrics across multiple categories. These include metrics related to memory, file descriptors, sockets, processes, disk, uptime, scheduling, garbage collection (GC), I/O, message store, connections, clustering, configuration, application info, and context switches. This significantly improves visibility into the performance, state, and resource usage of RabbitMQ nodes. (#38997)
 - `resourcedetection`: Adding the os.version resource attribute to system resourcedetection processor (#38087)
-- `prometheusremotewritereciever`: Separate timeseries with the same labels are now translated into the same OTLP metric. (#37791)
+- `prometheusremotewritereceiver`: Separate timeseries with the same labels are now translated into the same OTLP metric. (#37791)
   timeseries that belongs to the same metric should be added to the same datapoints slice.
 - `prometheusremotewritereceiver`: Use Created Timestamps to populate Datapoint's StartTimeUnixNano (#37277)
 - `workflow`: Remove path parts from component label suffixes (#38527)
@@ -1835,7 +1835,7 @@ The frequency of recording pipeline lag can be configured with `lag_record_frequ
 - `pkg/ottl`: Enhance flatten() editor to resolve attribute key conflicts by adding a number suffix to the conflicting keys. (#35793)
 - `geoipprocessor`: Add the `attributes` parameter and consider both `source.address` and `client.address` by default (#37008)
 - `githubreceiver`: add GitHub workflow job spans (#38016)
-- `prometheusremotewritereciever`: Handle `otel_scope_name` and `otel_scope_version` labels in Prometheus Remote Write receiver properly if not present (#37791)
+- `prometheusremotewritereceiver`: Handle `otel_scope_name` and `otel_scope_version` labels in Prometheus Remote Write receiver properly if not present (#37791)
   if otel_scope_name or otel_scope_name is missing, use collector’s version and description according to the otel spec.
 - `exporter/loadbalancing`: Add support for route with composite keys (#35320)
 - `kafka`: Upgrading to aws sdk v2 (#38478)

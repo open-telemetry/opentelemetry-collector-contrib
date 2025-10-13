@@ -40,7 +40,7 @@ const (
 	// request to the time the first byte gets sent to the client.
 	attributeTimeToFirstByte = "azure.time_to_first_byte"
 
-	// attributeDuration holds the the length of time from first byte of
+	// attributeDuration holds the length of time from first byte of
 	// request to last byte of response out, in seconds.
 	attributeDuration = "duration"
 

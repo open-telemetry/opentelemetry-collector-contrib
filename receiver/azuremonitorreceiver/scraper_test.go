@@ -219,7 +219,7 @@ func TestAzureScraperScrape(t *testing.T) {
 func TestAzureScraperScrapeFilterMetrics(t *testing.T) {
 	fakeSubID := "azuremonitor-receiver"
 	metricNamespace1, metricNamespace2 := "Microsoft.ServiceA/namespace1", "Microsoft.ServiceB/namespace2"
-	metricName1, metricName2, metricName3 := "ConnectionsTotal", "IncommingMessages", "TransferedBytes"
+	metricName1, metricName2, metricName3 := "ConnectionsTotal", "IncomingMessages", "TransferredBytes"
 	metricAggregation1, metricAggregation2, metricAggregation3 := "Count", "Maximum", "Minimum"
 	cfgLimitedMertics := createDefaultTestConfig()
 	cfgLimitedMertics.SubscriptionIDs = []string{fakeSubID}
