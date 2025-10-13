@@ -63,15 +63,13 @@ func (fpp *filterProfileProcessor) processProfiles(ctx context.Context, pd pprof
 		rp.ScopeProfiles().RemoveIf(func(sp pprofile.ScopeProfiles) bool {
 			scope := sp.Scope()
 			sp.Profiles().RemoveIf(func(profile pprofile.Profile) bool {
-				if fpp.skipExpr != nil {
-					skip, err := fpp.skipExpr.Eval(ctx, ottlprofile.NewTransformContext(profile, dic, scope, resource, sp, rp))
-					if err != nil {
-						errors = multierr.Append(errors, err)
-						return false
-					}
-					if skip {
-						return true
-					}
+				skip, err := fpp.skipExpr.Eval(ctx, ottlprofile.NewTransformContext(profile, dic, scope, resource, sp, rp))
+				if err != nil {
+					errors = multierr.Append(errors, err)
+					return false
+				}
+				if skip {
+					return true
 				}
 				return false
 			})
