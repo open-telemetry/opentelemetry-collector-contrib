@@ -9,16 +9,16 @@ status:
     active: [nslaughter, celian-garcia, ishleenk17]
 
 resource_attributes:
-  azuremonitor.tenant_id:
-    description: Azure tenant ID
+  azuremonitor.subscription:
+    description: Azure subscription name
     type: string
     enabled: false
   azuremonitor.subscription_id:
     description: Azure subscription ID
     type: string
     enabled: false
-  azuremonitor.subscription:
-    description: Azure subscription name
+  azuremonitor.tenant_id:
+    description: Azure tenant ID
     type: string
     enabled: false
 
