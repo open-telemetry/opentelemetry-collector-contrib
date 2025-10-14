@@ -10,42 +10,43 @@ status:
     seeking_new: true
 
 resource_attributes:
-  bigip.virtual_server.name:
-    description: The name of the Big-IP Virtual Server.
-    type: string
-    enabled: true
-  bigip.virtual_server.destination:
-    description: The destination for the Big-IP Virtual Server.
-    type: string
-    enabled: true
-  bigip.pool.name:
-    description: The name of the Big-IP Pool.
-    type: string
-    enabled: true
-  bigip.pool_member.name:
-    description: The name of the Big-IP Pool Member.
-    type: string
-    enabled: true
-  bigip.pool_member.ip_address:
-    description: The IP Address of the Big-IP Pool Member.
+  bigip.node.ip_address:
+    description: The IP Address of the Big-IP Node.
     type: string
     enabled: true
   bigip.node.name:
     description: The name of the Big-IP Node.
     type: string
     enabled: true
-  bigip.node.ip_address:
-    description: The IP Address of the Big-IP Node.
+  bigip.pool.name:
+    description: The name of the Big-IP Pool.
+    type: string
+    enabled: true
+  bigip.pool_member.ip_address:
+    description: The IP Address of the Big-IP Pool Member.
+    type: string
+    enabled: true
+  bigip.pool_member.name:
+    description: The name of the Big-IP Pool Member.
+    type: string
+    enabled: true
+  bigip.virtual_server.destination:
+    description: The destination for the Big-IP Virtual Server.
+    type: string
+    enabled: true
+  bigip.virtual_server.name:
+    description: The name of the Big-IP Virtual Server.
     type: string
     enabled: true
 
 attributes:
-  direction:
-    description: The direction of data.
+  active.status:
+    name_override: status
+    description: The active status.
     type: string
     enum:
-      - sent
-      - received
+      - active
+      - inactive
   availability.status:
     name_override: status
     description: The availability status.
@@ -54,6 +55,12 @@ attributes:
       - offline
       - unknown
       - available
+  direction:
+    description: The direction of data.
+    type: string
+    enum:
+      - sent
+      - received
   enabled.status:
     name_override: status
     description: The enabled status.
@@ -61,59 +68,10 @@ attributes:
     enum:
       - disabled
       - enabled
-  active.status:
-    name_override: status
-    description: The active status.
-    type: string
-    enum:
-      - active
-      - inactive
 
 metrics:
-  bigip.virtual_server.data.transmitted:
-    description: Amount of data transmitted to and from the virtual server.
-    stability:
-      level: development
-    unit: "By"
-    sum:
-      monotonic: true
-      aggregation_temporality: cumulative
-      value_type: int
-    attributes: [direction]
-    enabled: true
-  bigip.virtual_server.connection.count:
-    description: Current number of connections to the virtual server.
-    stability:
-      level: development
-    unit: "{connections}"
-    sum:
-      monotonic: false
-      aggregation_temporality: cumulative
-      value_type: int
-    enabled: true
-  bigip.virtual_server.request.count:
-    description: Number of requests to the virtual server.
-    stability:
-      level: development
-    unit: "{requests}"
-    sum:
-      monotonic: true
-      aggregation_temporality: cumulative
-      value_type: int
-    enabled: true
-  bigip.virtual_server.packet.count:
-    description: Number of packets transmitted to and from the virtual server.
-    stability:
-      level: development
-    unit: "{packets}"
-    sum:
-      monotonic: true
-      aggregation_temporality: cumulative
-      value_type: int
-    attributes: [direction]
-    enabled: true
-  bigip.virtual_server.availability:
-    description: Availability of the virtual server.
+  bigip.node.availability:
+    description: Availability of the node.
     stability:
       level: development
     unit: "1"
@@ -121,28 +79,8 @@ metrics:
       value_type: int
     attributes: [availability.status]
     enabled: true
-  bigip.virtual_server.enabled:
-    description: Enabled state of of the virtual server.
-    stability:
-      level: development
-    unit: "1"
-    gauge:
-      value_type: int
-    attributes: [enabled.status]
-    enabled: true
-  bigip.pool.data.transmitted:
-    description: Amount of data transmitted to and from the pool.
-    stability:
-      level: development
-    unit: "By"
-    sum:
-      monotonic: true
-      aggregation_temporality: cumulative
-      value_type: int
-    attributes: [direction]
-    enabled: true
-  bigip.pool.connection.count:
-    description: Current number of connections to the pool.
+  bigip.node.connection.count:
+    description: Current number of connections to the node.
     stability:
       level: development
     unit: "{connections}"
@@ -150,126 +88,6 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
       value_type: int
-    enabled: true
-  bigip.pool.request.count:
-    description: Number of requests to the pool.
-    stability:
-      level: development
-    unit: "{requests}"
-    sum:
-      monotonic: true
-      aggregation_temporality: cumulative
-      value_type: int
-    enabled: true
-  bigip.pool.packet.count:
-    description: Number of packets transmitted to and from the pool.
-    stability:
-      level: development
-    unit: "{packets}"
-    sum:
-      monotonic: true
-      aggregation_temporality: cumulative
-      value_type: int
-    attributes: [direction]
-    enabled: true
-  bigip.pool.member.count:
-    description: Total number of pool members.
-    stability:
-      level: development
-    unit: "{members}"
-    sum:
-      monotonic: false
-      aggregation_temporality: cumulative
-      value_type: int
-    attributes: [active.status]
-    enabled: true
-  bigip.pool.availability:
-    description: Availability of the pool.
-    stability:
-      level: development
-    unit: "1"
-    gauge:
-      value_type: int
-    attributes: [availability.status]
-    enabled: true
-  bigip.pool.enabled:
-    description: Enabled state of of the pool.
-    stability:
-      level: development
-    unit: "1"
-    gauge:
-      value_type: int
-    attributes: [enabled.status]
-    enabled: true
-  bigip.pool_member.data.transmitted:
-    description: Amount of data transmitted to and from the pool member.
-    stability:
-      level: development
-    unit: "By"
-    sum:
-      monotonic: true
-      aggregation_temporality: cumulative
-      value_type: int
-    attributes: [direction]
-    enabled: true
-  bigip.pool_member.connection.count:
-    description: Current number of connections to the pool member.
-    stability:
-      level: development
-    unit: "{connections}"
-    sum:
-      monotonic: false
-      aggregation_temporality: cumulative
-      value_type: int
-    enabled: true
-  bigip.pool_member.request.count:
-    description: Number of requests to the pool member.
-    stability:
-      level: development
-    unit: "{requests}"
-    sum:
-      monotonic: true
-      aggregation_temporality: cumulative
-      value_type: int
-    enabled: true
-  bigip.pool_member.packet.count:
-    description: Number of packets transmitted to and from the pool member.
-    stability:
-      level: development
-    unit: "{packets}"
-    sum:
-      monotonic: true
-      aggregation_temporality: cumulative
-      value_type: int
-    attributes: [direction]
-    enabled: true
-  bigip.pool_member.session.count:
-    description: Current number of sessions for the pool member.
-    stability:
-      level: development
-    unit: "{sessions}"
-    sum:
-      monotonic: false
-      aggregation_temporality: cumulative
-      value_type: int
-    enabled: true
-  bigip.pool_member.availability:
-    description: Availability of the pool member.
-    stability:
-      level: development
-    unit: "1"
-    gauge:
-      value_type: int
-    attributes: [availability.status]
-    enabled: true
-  bigip.pool_member.enabled:
-    description: Enabled state of of the pool member.
-    stability:
-      level: development
-    unit: "1"
-    gauge:
-      value_type: int
-    attributes: [enabled.status]
     enabled: true
   bigip.node.data.transmitted:
     description: Amount of data transmitted to and from the node.
@@ -282,25 +100,14 @@ metrics:
       value_type: int
     attributes: [direction]
     enabled: true
-  bigip.node.connection.count:
-    description: Current number of connections to the node.
+  bigip.node.enabled:
+    description: Enabled state of of the node.
     stability:
       level: development
-    unit: "{connections}"
-    sum:
-      monotonic: false
-      aggregation_temporality: cumulative
+    unit: "1"
+    gauge:
       value_type: int
-    enabled: true
-  bigip.node.request.count:
-    description: Number of requests to the node.
-    stability:
-      level: development
-    unit: "{requests}"
-    sum:
-      monotonic: true
-      aggregation_temporality: cumulative
-      value_type: int
+    attributes: [enabled.status]
     enabled: true
   bigip.node.packet.count:
     description: Number of packets transmitted to and from the node.
@@ -313,6 +120,16 @@ metrics:
       value_type: int
     attributes: [direction]
     enabled: true
+  bigip.node.request.count:
+    description: Number of requests to the node.
+    stability:
+      level: development
+    unit: "{requests}"
+    sum:
+      monotonic: true
+      aggregation_temporality: cumulative
+      value_type: int
+    enabled: true
   bigip.node.session.count:
     description: Current number of sessions for the node.
     stability:
@@ -323,8 +140,8 @@ metrics:
       aggregation_temporality: cumulative
       value_type: int
     enabled: true
-  bigip.node.availability:
-    description: Availability of the node.
+  bigip.pool.availability:
+    description: Availability of the pool.
     stability:
       level: development
     unit: "1"
@@ -332,12 +149,195 @@ metrics:
       value_type: int
     attributes: [availability.status]
     enabled: true
-  bigip.node.enabled:
-    description: Enabled state of of the node.
+  bigip.pool.connection.count:
+    description: Current number of connections to the pool.
+    stability:
+      level: development
+    unit: "{connections}"
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    enabled: true
+  bigip.pool.data.transmitted:
+    description: Amount of data transmitted to and from the pool.
+    stability:
+      level: development
+    unit: "By"
+    sum:
+      monotonic: true
+      aggregation_temporality: cumulative
+      value_type: int
+    attributes: [direction]
+    enabled: true
+  bigip.pool.enabled:
+    description: Enabled state of of the pool.
     stability:
       level: development
     unit: "1"
     gauge:
       value_type: int
     attributes: [enabled.status]
+    enabled: true
+  bigip.pool.member.count:
+    description: Total number of pool members.
+    stability:
+      level: development
+    unit: "{members}"
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    attributes: [active.status]
+    enabled: true
+  bigip.pool.packet.count:
+    description: Number of packets transmitted to and from the pool.
+    stability:
+      level: development
+    unit: "{packets}"
+    sum:
+      monotonic: true
+      aggregation_temporality: cumulative
+      value_type: int
+    attributes: [direction]
+    enabled: true
+  bigip.pool.request.count:
+    description: Number of requests to the pool.
+    stability:
+      level: development
+    unit: "{requests}"
+    sum:
+      monotonic: true
+      aggregation_temporality: cumulative
+      value_type: int
+    enabled: true
+  bigip.pool_member.availability:
+    description: Availability of the pool member.
+    stability:
+      level: development
+    unit: "1"
+    gauge:
+      value_type: int
+    attributes: [availability.status]
+    enabled: true
+  bigip.pool_member.connection.count:
+    description: Current number of connections to the pool member.
+    stability:
+      level: development
+    unit: "{connections}"
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    enabled: true
+  bigip.pool_member.data.transmitted:
+    description: Amount of data transmitted to and from the pool member.
+    stability:
+      level: development
+    unit: "By"
+    sum:
+      monotonic: true
+      aggregation_temporality: cumulative
+      value_type: int
+    attributes: [direction]
+    enabled: true
+  bigip.pool_member.enabled:
+    description: Enabled state of of the pool member.
+    stability:
+      level: development
+    unit: "1"
+    gauge:
+      value_type: int
+    attributes: [enabled.status]
+    enabled: true
+  bigip.pool_member.packet.count:
+    description: Number of packets transmitted to and from the pool member.
+    stability:
+      level: development
+    unit: "{packets}"
+    sum:
+      monotonic: true
+      aggregation_temporality: cumulative
+      value_type: int
+    attributes: [direction]
+    enabled: true
+  bigip.pool_member.request.count:
+    description: Number of requests to the pool member.
+    stability:
+      level: development
+    unit: "{requests}"
+    sum:
+      monotonic: true
+      aggregation_temporality: cumulative
+      value_type: int
+    enabled: true
+  bigip.pool_member.session.count:
+    description: Current number of sessions for the pool member.
+    stability:
+      level: development
+    unit: "{sessions}"
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    enabled: true
+  bigip.virtual_server.availability:
+    description: Availability of the virtual server.
+    stability:
+      level: development
+    unit: "1"
+    gauge:
+      value_type: int
+    attributes: [availability.status]
+    enabled: true
+  bigip.virtual_server.connection.count:
+    description: Current number of connections to the virtual server.
+    stability:
+      level: development
+    unit: "{connections}"
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    enabled: true
+  bigip.virtual_server.data.transmitted:
+    description: Amount of data transmitted to and from the virtual server.
+    stability:
+      level: development
+    unit: "By"
+    sum:
+      monotonic: true
+      aggregation_temporality: cumulative
+      value_type: int
+    attributes: [direction]
+    enabled: true
+  bigip.virtual_server.enabled:
+    description: Enabled state of of the virtual server.
+    stability:
+      level: development
+    unit: "1"
+    gauge:
+      value_type: int
+    attributes: [enabled.status]
+    enabled: true
+  bigip.virtual_server.packet.count:
+    description: Number of packets transmitted to and from the virtual server.
+    stability:
+      level: development
+    unit: "{packets}"
+    sum:
+      monotonic: true
+      aggregation_temporality: cumulative
+      value_type: int
+    attributes: [direction]
+    enabled: true
+  bigip.virtual_server.request.count:
+    description: Number of requests to the virtual server.
+    stability:
+      level: development
+    unit: "{requests}"
+    sum:
+      monotonic: true
+      aggregation_temporality: cumulative
+      value_type: int
     enabled: true
