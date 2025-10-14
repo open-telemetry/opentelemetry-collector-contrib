@@ -9,7 +9,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.137.0
 	github.com/prometheus/common v0.67.1
 	github.com/prometheus/otlptranslator v1.0.0
-	github.com/prometheus/prometheus v0.305.1-0.20250808193045-294f36e80261
+	github.com/prometheus/prometheus v0.306.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/pdata v1.43.1-0.20251013162618-a96eab114ea4
 	go.opentelemetry.io/otel v1.38.0
