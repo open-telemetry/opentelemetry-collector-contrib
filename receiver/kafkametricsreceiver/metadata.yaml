@@ -18,18 +18,27 @@ attributes:
   broker:
     description: The ID of the kafka broker
     type: string
-  topic:
-    description: The ID (integer) of a topic
+  group:
+    description: The ID (string) of a consumer group
     type: string
   partition:
     description: The number (integer) of the partition
     type: int
-  group:
-    description: The ID (string) of a consumer group
+  topic:
+    description: The ID (integer) of a topic
     type: string
 
 metrics:
   #  brokers scraper
+  kafka.broker.log_retention_period:
+    enabled: false
+    description: log retention time (s) of a broker.
+    stability:
+      level: development
+    unit: "s"
+    gauge:
+      value_type: int
+    attributes: [broker]
   kafka.brokers:
     enabled: true
     description: Number of brokers in the cluster.
@@ -40,63 +49,55 @@ metrics:
       monotonic: false
       value_type: int
       aggregation_temporality: cumulative
-  kafka.broker.log_retention_period:
-    enabled: false
-    description: log retention time (s) of a broker.
-    stability:
-      level: development
-    unit: "s"
-    gauge:
-      value_type: int
-    attributes: [broker]
-  #  topics scraper
-  kafka.topic.partitions:
+  #  consumers scraper
+  kafka.consumer_group.lag:
     enabled: true
-    description: Number of partitions in topic.
-    stability:
-      level: development
-    unit: "{partitions}"
-    sum:
-      monotonic: false
-      value_type: int
-      aggregation_temporality: cumulative
-    attributes: [topic]
-  kafka.topic.replication_factor:
-    enabled: false
-    description: replication factor of a topic.
+    description: Current approximate lag of consumer group at partition of topic
     stability:
       level: development
     unit: "1"
     gauge:
       value_type: int
-    attributes: [topic]
-  kafka.topic.log_retention_period:
-    enabled: false
-    description: log retention period of a topic (s).
+    attributes: [group, topic, partition]
+  kafka.consumer_group.lag_sum:
+    enabled: true
+    description: Current approximate sum of consumer group lag across all partitions of topic
     stability:
       level: development
-    unit: s
+    unit: "1"
     gauge:
       value_type: int
-    attributes: [topic]
-  kafka.topic.log_retention_size:
-    enabled: false
-    description: log retention size of a topic in Bytes, The value (-1) indicates infinite size.
+    attributes: [group, topic]
+  kafka.consumer_group.members:
+    enabled: true
+    description: Count of members in the consumer group
     stability:
       level: development
-    unit: By
-    gauge:
+    unit: "{members}"
+    sum:
+      monotonic: false
       value_type: int
-    attributes: [topic]
-  kafka.topic.min_insync_replicas:
-    enabled: false
-    description: minimum in-sync replicas of a topic.
+      aggregation_temporality: cumulative
+    attributes: [group]
+  kafka.consumer_group.offset:
+    enabled: true
+    description: Current offset of the consumer group at partition of topic
     stability:
       level: development
-    unit: "{replicas}"
+    unit: "1"
     gauge:
       value_type: int
-    attributes: [topic]
+    attributes: [group, topic, partition]
+  kafka.consumer_group.offset_sum:
+    enabled: true
+    description: Sum of consumer group offset across partitions of topic
+    stability:
+      level: development
+    unit: "1"
+    gauge:
+      value_type: int
+    attributes: [group, topic]
+  #  topics scraper
   kafka.partition.current_offset:
     enabled: true
     description: Current offset of partition of topic.
@@ -137,54 +138,53 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
     attributes: [topic, partition]
-  #  consumers scraper
-  kafka.consumer_group.members:
-    enabled: true
-    description: Count of members in the consumer group
+  kafka.topic.log_retention_period:
+    enabled: false
+    description: log retention period of a topic (s).
     stability:
       level: development
-    unit: "{members}"
+    unit: s
+    gauge:
+      value_type: int
+    attributes: [topic]
+  kafka.topic.log_retention_size:
+    enabled: false
+    description: log retention size of a topic in Bytes, The value (-1) indicates infinite size.
+    stability:
+      level: development
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [topic]
+  kafka.topic.min_insync_replicas:
+    enabled: false
+    description: minimum in-sync replicas of a topic.
+    stability:
+      level: development
+    unit: "{replicas}"
+    gauge:
+      value_type: int
+    attributes: [topic]
+  kafka.topic.partitions:
+    enabled: true
+    description: Number of partitions in topic.
+    stability:
+      level: development
+    unit: "{partitions}"
     sum:
       monotonic: false
       value_type: int
       aggregation_temporality: cumulative
-    attributes: [group]
-  kafka.consumer_group.offset:
-    enabled: true
-    description: Current offset of the consumer group at partition of topic
+    attributes: [topic]
+  kafka.topic.replication_factor:
+    enabled: false
+    description: replication factor of a topic.
     stability:
       level: development
     unit: "1"
     gauge:
       value_type: int
-    attributes: [group, topic, partition]
-  kafka.consumer_group.offset_sum:
-    enabled: true
-    description: Sum of consumer group offset across partitions of topic
-    stability:
-      level: development
-    unit: "1"
-    gauge:
-      value_type: int
-    attributes: [group, topic]
-  kafka.consumer_group.lag:
-    enabled: true
-    description: Current approximate lag of consumer group at partition of topic
-    stability:
-      level: development
-    unit: "1"
-    gauge:
-      value_type: int
-    attributes: [group, topic, partition]
-  kafka.consumer_group.lag_sum:
-    enabled: true
-    description: Current approximate sum of consumer group lag across all partitions of topic
-    stability:
-      level: development
-    unit: "1"
-    gauge:
-      value_type: int
-    attributes: [group, topic]
+    attributes: [topic]
 
 tests:
   config:
