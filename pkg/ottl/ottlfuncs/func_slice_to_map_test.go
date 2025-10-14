@@ -367,6 +367,81 @@ func Test_SliceToMap(t *testing.T) {
 				return m
 			},
 		},
+
+		{
+			name:      "map[string]any with key and value path",
+			keyPath:   []string{"key"},
+			valuePath: []string{"value"},
+			value: func() any {
+				sl := pcommon.NewSlice()
+				thing1 := sl.AppendEmpty().SetEmptyMap()
+				thing1.PutStr("key", "one")
+				thing1.PutStr("value", "1")
+
+				thing2 := sl.AppendEmpty().SetEmptyMap()
+				thing2.PutStr("key", "two")
+				thing2.PutStr("value", "2")
+
+				return sl
+			},
+			want: func() pcommon.Map {
+				m := pcommon.NewMap()
+				m.PutStr("one", "1")
+				m.PutStr("two", "2")
+				return m
+			},
+		},
+
+		{
+			name: "literal slice without key/value path", // SliceToMap(["a", "b"]) should return {"0": "a", "1": "b"}
+			value: func() any {
+				sl := pcommon.NewSlice()
+				sl.AppendEmpty().SetStr("a")
+				sl.AppendEmpty().SetStr("b")
+				return sl
+			},
+			want: func() pcommon.Map {
+				m := pcommon.NewMap()
+				m.PutStr("0", "a")
+				m.PutStr("1", "b")
+				return m
+			},
+		},
+
+		{
+			name: "pcommon.Value slice without key/value path",
+			value: func() any {
+				sl := pcommon.NewSlice()
+				sl.AppendEmpty().SetStr("x")
+				sl.AppendEmpty().SetInt(42)
+				return sl
+			},
+			want: func() pcommon.Map {
+				m := pcommon.NewMap()
+				m.PutStr("0", "x")
+				m.PutInt("1", 42)
+				return m
+			},
+		},
+		{
+			name: "mixed types without key/value path",
+			value: func() any {
+				sl := pcommon.NewSlice()
+				sl.AppendEmpty().SetStr("a")
+				sl.AppendEmpty().SetInt(123)
+				sl.AppendEmpty().SetBool(true)
+				sl.AppendEmpty().SetStr("val")
+				return sl
+			},
+			want: func() pcommon.Map {
+				m := pcommon.NewMap()
+				m.PutStr("0", "a")
+				m.PutInt("1", 123)
+				m.PutBool("2", true)
+				m.PutStr("3", "val")
+				return m
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

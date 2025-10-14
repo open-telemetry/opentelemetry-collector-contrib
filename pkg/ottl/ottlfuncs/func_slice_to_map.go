@@ -53,21 +53,23 @@ func getSliceToMapFunc[K any](target ottl.Getter[K], keyPath, valuePath ottl.Opt
 func sliceToMap(v []any, keyPath, valuePath ottl.Optional[[]string]) (any, error) {
 	m := pcommon.NewMap()
 	m.EnsureCapacity(len(v))
-	for i, elem := range v {
-		e, ok := elem.(map[string]any)
-		if !ok {
-			return nil, fmt.Errorf("could not cast element '%v' to map[string]any", elem)
-		}
 
+	for i, elem := range v {
 		var key string
+		var value any
+
+		// Determine key
 		if keyPath.IsEmpty() {
 			key = strconv.Itoa(i)
 		} else {
+			e, ok := elem.(map[string]any)
+			if !ok {
+				return nil, fmt.Errorf("could not cast element '%v' to map[string]any", elem)
+			}
 			extractedKey, err := extractValue(e, keyPath.Get())
 			if err != nil {
 				return nil, fmt.Errorf("could not extract key from element: %w", err)
 			}
-
 			k, ok := extractedKey.(string)
 			if !ok {
 				return nil, errors.New("extracted key attribute is not of type string")
@@ -75,20 +77,35 @@ func sliceToMap(v []any, keyPath, valuePath ottl.Optional[[]string]) (any, error
 			key = k
 		}
 
+		// Determine value
 		if valuePath.IsEmpty() {
-			if err := m.PutEmpty(key).FromRaw(e); err != nil {
-				return nil, fmt.Errorf("could not convert value from element: %w", err)
+			switch e := elem.(type) {
+			case map[string]any:
+				value = e
+			case pcommon.Map:
+				value = e.AsRaw()
+			case pcommon.Value:
+				value = e.AsString()
+			default:
+				value = e
 			}
-			continue
+		} else {
+			e, ok := elem.(map[string]any)
+			if !ok {
+				return nil, fmt.Errorf("could not cast element '%v' to map[string]any", elem)
+			}
+			extractedValue, err := extractValue(e, valuePath.Get())
+			if err != nil {
+				return nil, fmt.Errorf("could not extract value from element: %w", err)
+			}
+			value = extractedValue
 		}
-		extractedValue, err := extractValue(e, valuePath.Get())
-		if err != nil {
-			return nil, fmt.Errorf("could not extract value from element: %w", err)
-		}
-		if err = m.PutEmpty(key).FromRaw(extractedValue); err != nil {
+
+		if err := m.PutEmpty(key).FromRaw(value); err != nil {
 			return nil, fmt.Errorf("could not convert value from element: %w", err)
 		}
 	}
+
 	return m, nil
 }
 
