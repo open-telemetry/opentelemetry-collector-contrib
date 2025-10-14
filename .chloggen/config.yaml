@@ -151,7 +151,7 @@ components:
     - pkg/faro
     - pkg/fileconsumer
     - pkg/golden
-    - pkg/journald
+    - pkg/stanza/operator/input/journald
     - pkg/kafka/configkafka
     - pkg/otelarrow
     - pkg/ottl
