@@ -236,9 +236,8 @@ func (f *filterProcessorFactory) createProfilesProcessor(
 	cfg component.Config,
 	nextConsumer xconsumer.Profiles,
 ) (xprocessor.Profiles, error) {
-	if f.defaultDataPointFunctionsOverridden || f.defaultProfileFunctionsOverridden {
+	if f.defaultProfileFunctionsOverridden {
 		set.Logger.Debug("non-default OTTL profile functions have been registered in the \"filter\" processor",
-			zap.Bool("datapoint", f.defaultDataPointFunctionsOverridden),
 			zap.Bool("profile", f.defaultProfileFunctionsOverridden),
 		)
 	}
