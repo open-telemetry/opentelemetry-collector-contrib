@@ -139,7 +139,7 @@ func TestObserverMultipleNamespaces(t *testing.T) {
 	)
 
 	require.Eventually(t, func() bool {
-		return len(ts.getAllReceivedItems()) == 2
+		return len(ts.getLastReceivedEventItems()) == 2
 	}, 5*time.Second, 10*time.Millisecond, "Observer should receive events from specified namespaces")
 
 	close(stopChan)
@@ -374,12 +374,6 @@ func (t *testSink) getLastReceivedEventItems() []unstructured.Unstructured {
 	t.mtx.RLock()
 	defer t.mtx.RUnlock()
 	return t.lastEventItems
-}
-
-func (t *testSink) getAllReceivedItems() []unstructured.Unstructured {
-	t.mtx.RLock()
-	defer t.mtx.RUnlock()
-	return t.allReceivedItems
 }
 
 type mockDynamicClient struct {
