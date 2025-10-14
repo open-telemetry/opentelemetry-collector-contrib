@@ -102,12 +102,50 @@ func TestValidateConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			desc:   "MaxRequestBodyBytes too small (below 1KB minimum)",
+			expect: errMaxRequestBodyBytesTooSmall,
+			conf: Config{
+				ServerConfig: confighttp.ServerConfig{
+					Endpoint: "localhost:0",
+				},
+				MaxRequestBodyBytes: 512, // 512 bytes, below 1KB minimum
+			},
+		},
+		{
+			desc:   "MaxRequestBodyBytes at minimum (1KB) is valid",
+			expect: nil,
+			conf: Config{
+				ServerConfig: confighttp.ServerConfig{
+					Endpoint: "localhost:0",
+				},
+				Path:                "/events",
+				HealthPath:          "/health",
+				MaxRequestBodyBytes: 1024, // Exactly 1KB, should be valid
+			},
+		},
+		{
+			desc:   "MaxRequestBodyBytes zero (uses default) is valid",
+			expect: nil,
+			conf: Config{
+				ServerConfig: confighttp.ServerConfig{
+					Endpoint: "localhost:0",
+				},
+				Path:                "/events",
+				HealthPath:          "/health",
+				MaxRequestBodyBytes: 0, // Zero means use default, should be valid
+			},
+		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
 			err := test.conf.Validate()
-			require.ErrorContains(t, err, test.expect.Error())
+			if test.expect != nil {
+				require.ErrorContains(t, err, test.expect.Error())
+			} else {
+				require.NoError(t, err)
+			}
 		})
 	}
 }

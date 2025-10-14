@@ -7,6 +7,8 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -23,10 +25,14 @@ const (
 	headerNamespace = "header"
 )
 
+var (
+	errRequestBodyTooLarge = errors.New("request body exceeds maximum allowed size")
+)
+
 func (er *eventReceiver) reqToLog(sc *bufio.Scanner,
 	headers http.Header,
 	query url.Values,
-) (plog.Logs, int) {
+) (plog.Logs, int, error) {
 	// we simply dont split the data passed into scan (i.e. scan the whole thing)
 	// the downside to this approach is that only 1 log per request can be handled.
 	// NOTE: logs will contain these newline characters which could have formatting
@@ -38,6 +44,16 @@ func (er *eventReceiver) reqToLog(sc *bufio.Scanner,
 		return 0, data, bufio.ErrFinalToken
 	}
 	sc.Split(split)
+
+	// Increase buffer size to handle large payloads when splitting is enabled.
+	// The default bufio.Scanner max token size is 64KB, which causes failures
+	// for request bodies exceeding this size when using split functions.
+	// Use the configured max request body size.
+	maxTokenSize := er.cfg.MaxRequestBodyBytes
+	if maxTokenSize == 0 {
+		maxTokenSize = 10 * 1024 * 1024 // Default to 10MB if not configured
+	}
+	sc.Buffer(make([]byte, bufio.MaxScanTokenSize), maxTokenSize)
 
 	log := plog.NewLogs()
 	resourceLog := log.ResourceLogs().AppendEmpty()
@@ -67,7 +83,15 @@ func (er *eventReceiver) reqToLog(sc *bufio.Scanner,
 		}
 	}
 
-	return log, scopeLog.LogRecords().Len()
+	// Check for scanner errors (e.g., token too long)
+	if err := sc.Err(); err != nil {
+		if errors.Is(err, bufio.ErrTooLong) {
+			return log, scopeLog.LogRecords().Len(), fmt.Errorf("%w: limit is %d bytes", errRequestBodyTooLarge, maxTokenSize)
+		}
+		return log, scopeLog.LogRecords().Len(), fmt.Errorf("failed to scan request body: %w", err)
+	}
+
+	return log, scopeLog.LogRecords().Len(), nil
 }
 
 // append query parameters and webhook source as resource attributes

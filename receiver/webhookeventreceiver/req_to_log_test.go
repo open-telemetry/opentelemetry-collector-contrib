@@ -26,12 +26,13 @@ func TestReqToLog(t *testing.T) {
 	defaultConfig := createDefaultConfig().(*Config)
 
 	tests := []struct {
-		desc    string
-		sc      *bufio.Scanner
-		headers http.Header
-		query   url.Values
-		config  *Config
-		tt      func(t *testing.T, reqLog plog.Logs, reqLen int, settings receiver.Settings)
+		desc        string
+		sc          *bufio.Scanner
+		headers     http.Header
+		query       url.Values
+		config      *Config
+		expectError bool
+		tt          func(t *testing.T, reqLog plog.Logs, reqLen int, err error, settings receiver.Settings)
 	}{
 		{
 			desc: "Valid query valid event",
@@ -46,7 +47,8 @@ func TestReqToLog(t *testing.T) {
 				}
 				return v
 			}(),
-			tt: func(t *testing.T, reqLog plog.Logs, reqLen int, _ receiver.Settings) {
+			tt: func(t *testing.T, reqLog plog.Logs, reqLen int, err error, _ receiver.Settings) {
+				require.NoError(t, err)
 				require.Equal(t, 1, reqLen)
 
 				attributes := reqLog.ResourceLogs().At(0).Resource().Attributes()
@@ -80,7 +82,8 @@ func TestReqToLog(t *testing.T) {
 				}
 				return v
 			}(),
-			tt: func(t *testing.T, reqLog plog.Logs, reqLen int, _ receiver.Settings) {
+			tt: func(t *testing.T, reqLog plog.Logs, reqLen int, err error, _ receiver.Settings) {
+				require.NoError(t, err)
 				require.Equal(t, 1, reqLen)
 
 				attributes := reqLog.ResourceLogs().At(0).Resource().Attributes()
@@ -107,7 +110,8 @@ func TestReqToLog(t *testing.T) {
 				reader := io.NopCloser(bytes.NewReader([]byte("this is a: log")))
 				return bufio.NewScanner(reader)
 			}(),
-			tt: func(t *testing.T, reqLog plog.Logs, reqLen int, _ receiver.Settings) {
+			tt: func(t *testing.T, reqLog plog.Logs, reqLen int, err error, _ receiver.Settings) {
+				require.NoError(t, err)
 				require.Equal(t, 1, reqLen)
 
 				attributes := reqLog.ResourceLogs().At(0).Resource().Attributes()
@@ -127,7 +131,8 @@ func TestReqToLog(t *testing.T) {
 				reader := io.NopCloser(bytes.NewReader([]byte("this is a: log")))
 				return bufio.NewScanner(reader)
 			}(),
-			tt: func(t *testing.T, reqLog plog.Logs, reqLen int, _ receiver.Settings) {
+			tt: func(t *testing.T, reqLog plog.Logs, reqLen int, err error, _ receiver.Settings) {
+				require.NoError(t, err)
 				require.Equal(t, 1, reqLen)
 
 				attributes := reqLog.ResourceLogs().At(0).Resource().Attributes()
@@ -157,7 +162,8 @@ func TestReqToLog(t *testing.T) {
 				reader := io.NopCloser(bytes.NewReader([]byte("this is a: log")))
 				return bufio.NewScanner(reader)
 			}(),
-			tt: func(t *testing.T, reqLog plog.Logs, reqLen int, _ receiver.Settings) {
+			tt: func(t *testing.T, reqLog plog.Logs, reqLen int, err error, _ receiver.Settings) {
+				require.NoError(t, err)
 				require.Equal(t, 1, reqLen)
 
 				attributes := reqLog.ResourceLogs().At(0).Resource().Attributes()
@@ -189,7 +195,8 @@ func TestReqToLog(t *testing.T) {
 				reader := io.NopCloser(bytes.NewReader([]byte("this is a: log")))
 				return bufio.NewScanner(reader)
 			}(),
-			tt: func(t *testing.T, reqLog plog.Logs, reqLen int, _ receiver.Settings) {
+			tt: func(t *testing.T, reqLog plog.Logs, reqLen int, err error, _ receiver.Settings) {
+				require.NoError(t, err)
 				require.Equal(t, 1, reqLen)
 
 				attributes := reqLog.ResourceLogs().At(0).Resource().Attributes()
@@ -230,7 +237,8 @@ func TestReqToLog(t *testing.T) {
 				reader := io.NopCloser(bytes.NewReader([]byte("this is a: log")))
 				return bufio.NewScanner(reader)
 			}(),
-			tt: func(t *testing.T, reqLog plog.Logs, reqLen int, _ receiver.Settings) {
+			tt: func(t *testing.T, reqLog plog.Logs, reqLen int, err error, _ receiver.Settings) {
+				require.NoError(t, err)
 				require.Equal(t, 1, reqLen)
 
 				attributes := reqLog.ResourceLogs().At(0).Resource().Attributes()
@@ -270,7 +278,8 @@ func TestReqToLog(t *testing.T) {
 				HeaderAttributeRegex: "",
 				SplitLogsAtNewLine:   true,
 			},
-			tt: func(t *testing.T, _ plog.Logs, reqLen int, _ receiver.Settings) {
+			tt: func(t *testing.T, _ plog.Logs, reqLen int, err error, _ receiver.Settings) {
+				require.NoError(t, err)
 				// If the bug is present, reqLen will be 1 (both objects in one log record).
 				// The correct behavior is reqLen == 2 (each object in its own log record).
 				require.Equal(t, 2, reqLen)
@@ -298,7 +307,8 @@ func TestReqToLog(t *testing.T) {
 				SplitLogsAtNewLine:      false,
 				SplitLogsAtJSONBoundary: true,
 			},
-			tt: func(t *testing.T, _ plog.Logs, reqLen int, _ receiver.Settings) {
+			tt: func(t *testing.T, _ plog.Logs, reqLen int, err error, _ receiver.Settings) {
+				require.NoError(t, err)
 				// If the bug is present, reqLen will be 1 (both objects in one log record).
 				// The correct behavior is reqLen == 2 (each object in its own log record).
 				require.Equal(t, 3, reqLen)
@@ -328,7 +338,8 @@ func TestReqToLog(t *testing.T) {
 				SplitLogsAtNewLine:      false,
 				SplitLogsAtJSONBoundary: true,
 			},
-			tt: func(t *testing.T, reqLog plog.Logs, reqLen int, _ receiver.Settings) {
+			tt: func(t *testing.T, reqLog plog.Logs, reqLen int, err error, _ receiver.Settings) {
+				require.NoError(t, err)
 				// Should be a single log entry since it's one valid JSON object
 				require.Equal(t, 1, reqLen)
 
@@ -362,7 +373,8 @@ func TestReqToLog(t *testing.T) {
 				SplitLogsAtNewLine:      false,
 				SplitLogsAtJSONBoundary: true,
 			},
-			tt: func(t *testing.T, reqLog plog.Logs, reqLen int, _ receiver.Settings) {
+			tt: func(t *testing.T, reqLog plog.Logs, reqLen int, err error, _ receiver.Settings) {
+				require.NoError(t, err)
 				// Should be a single log entry since there are no JSON boundaries
 				require.Equal(t, 1, reqLen)
 
@@ -373,6 +385,94 @@ func TestReqToLog(t *testing.T) {
 					require.Contains(t, body, "plain text")
 					require.Contains(t, body, "splitting enabled")
 				})
+			},
+		},
+		{
+			desc: "large payload over 64KB with newline splitting",
+			sc: func() *bufio.Scanner {
+				// Create a payload larger than default bufio.Scanner max token size (64KB)
+				// This tests that the buffer size increase fix works correctly
+				largePayload := make([]byte, 100*1024) // 100KB
+				for i := range largePayload {
+					largePayload[i] = 'A'
+				}
+				// Add some newlines to test splitting
+				largePayload[50*1024] = '\n'
+				reader := io.NopCloser(bytes.NewReader(largePayload))
+				return bufio.NewScanner(reader)
+			}(),
+			config: &Config{
+				Path:               defaultPath,
+				HealthPath:         defaultHealthPath,
+				ReadTimeout:        defaultReadTimeout,
+				WriteTimeout:       defaultWriteTimeout,
+				SplitLogsAtNewLine: true,
+			},
+			tt: func(t *testing.T, reqLog plog.Logs, reqLen int, err error, _ receiver.Settings) {
+				require.NoError(t, err)
+				// Should be 2 log entries since there's a newline in the middle
+				require.Equal(t, 2, reqLen)
+			},
+		},
+		{
+			desc: "large payload over 64KB with JSON boundary splitting",
+			sc: func() *bufio.Scanner {
+				// Create multiple JSON objects that together exceed 64KB
+				// This reproduces the issue from PR #41350 where large payloads fail
+				var buf bytes.Buffer
+				for i := 0; i < 800; i++ {
+					// Each JSON object is ~100 bytes, total ~80KB (exceeds 64KB default limit)
+					buf.WriteString(`{"event":"webhook","index":`)
+					buf.WriteString(string(rune('0' + (i % 10))))
+					buf.WriteString(`,"data":"`)
+					// Add padding
+					for j := 0; j < 60; j++ {
+						buf.WriteByte('X')
+					}
+					buf.WriteString(`"}`)
+				}
+				reader := io.NopCloser(&buf)
+				return bufio.NewScanner(reader)
+			}(),
+			config: &Config{
+				Path:                    defaultPath,
+				HealthPath:              defaultHealthPath,
+				ReadTimeout:             defaultReadTimeout,
+				WriteTimeout:            defaultWriteTimeout,
+				SplitLogsAtJSONBoundary: true,
+			},
+			tt: func(t *testing.T, reqLog plog.Logs, reqLen int, err error, _ receiver.Settings) {
+				require.NoError(t, err)
+				// Should be 800 log entries (one per JSON object)
+				require.Equal(t, 800, reqLen)
+			},
+		},
+		{
+			desc: "request body exceeds max size returns error",
+			sc: func() *bufio.Scanner {
+				// Create a payload larger than our test config max size
+				largePayload := make([]byte, 150*1024) // 150KB
+				for i := range largePayload {
+					largePayload[i] = 'X'
+				}
+				reader := io.NopCloser(bytes.NewReader(largePayload))
+				return bufio.NewScanner(reader)
+			}(),
+			config: &Config{
+				Path:                defaultPath,
+				HealthPath:          defaultHealthPath,
+				ReadTimeout:         defaultReadTimeout,
+				WriteTimeout:        defaultWriteTimeout,
+				SplitLogsAtNewLine:  true,
+				MaxRequestBodyBytes: 100 * 1024, // Set to 100KB, smaller than payload
+			},
+			expectError: true,
+			tt: func(t *testing.T, reqLog plog.Logs, reqLen int, err error, _ receiver.Settings) {
+				require.Error(t, err)
+				require.ErrorIs(t, err, errRequestBodyTooLarge)
+				require.Contains(t, err.Error(), "limit is 102400 bytes")
+				// Should process 0 logs when error occurs
+				require.Equal(t, 0, reqLen)
 			},
 		},
 	}
@@ -394,8 +494,8 @@ func TestReqToLog(t *testing.T) {
 				require.NoError(t, err)
 			}()
 
-			reqLog, reqLen := eventReceiver.reqToLog(test.sc, test.headers, test.query)
-			test.tt(t, reqLog, reqLen, receivertest.NewNopSettings(metadata.Type))
+			reqLog, reqLen, err := eventReceiver.reqToLog(test.sc, test.headers, test.query)
+			test.tt(t, reqLog, reqLen, err, receivertest.NewNopSettings(metadata.Type))
 		})
 	}
 }

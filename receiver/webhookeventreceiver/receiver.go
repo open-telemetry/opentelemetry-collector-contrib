@@ -55,6 +55,15 @@ func newLogsReceiver(params receiver.Settings, cfg Config, consumer consumer.Log
 	if err := cfg.Validate(); err != nil {
 		return nil, err
 	}
+
+	// Warn if max_request_body_bytes is set below the default scanner buffer size
+	if cfg.MaxRequestBodyBytes != 0 && cfg.MaxRequestBodyBytes < bufio.MaxScanTokenSize {
+		params.Logger.Info("max_request_body_bytes is set below the default buffer size of 64KB. "+
+			"This may cause legitimate requests to be rejected. Consider using at least 65536 bytes (64KB).",
+			zap.Int("configured_bytes", cfg.MaxRequestBodyBytes),
+			zap.Int("recommended_minimum_bytes", bufio.MaxScanTokenSize))
+	}
+
 	var includeHeaderRegex *regexp.Regexp
 	if cfg.HeaderAttributeRegex != "" {
 		// Valdiate() call above has already ensured this will compile
@@ -158,6 +167,7 @@ func (er *eventReceiver) handleReq(w http.ResponseWriter, r *http.Request, _ htt
 
 	if r.Method != http.MethodPost {
 		er.failBadReq(ctx, w, http.StatusBadRequest, errInvalidRequestMethod)
+		er.obsrecv.EndLogsOp(ctx, metadata.Type.String(), 0, errInvalidRequestMethod)
 		return
 	}
 
@@ -165,6 +175,7 @@ func (er *eventReceiver) handleReq(w http.ResponseWriter, r *http.Request, _ htt
 		requiredHeaderValue := r.Header.Get(er.cfg.RequiredHeader.Key)
 		if requiredHeaderValue != er.cfg.RequiredHeader.Value {
 			er.failBadReq(ctx, w, http.StatusUnauthorized, errMissingRequiredHeader)
+			er.obsrecv.EndLogsOp(ctx, metadata.Type.String(), 0, errMissingRequiredHeader)
 			return
 		}
 	}
@@ -173,12 +184,14 @@ func (er *eventReceiver) handleReq(w http.ResponseWriter, r *http.Request, _ htt
 	// only support gzip if encoding header is set.
 	if encoding != "" && encoding != "gzip" {
 		er.failBadReq(ctx, w, http.StatusUnsupportedMediaType, errInvalidEncodingType)
+		er.obsrecv.EndLogsOp(ctx, metadata.Type.String(), 0, errInvalidEncodingType)
 		return
 	}
 
 	if r.ContentLength == 0 {
-		er.obsrecv.EndLogsOp(ctx, metadata.Type.String(), 0, nil)
 		er.failBadReq(ctx, w, http.StatusBadRequest, errEmptyResponseBody)
+		er.obsrecv.EndLogsOp(ctx, metadata.Type.String(), 0, errEmptyResponseBody)
+		return
 	}
 
 	bodyReader := r.Body
@@ -188,6 +201,7 @@ func (er *eventReceiver) handleReq(w http.ResponseWriter, r *http.Request, _ htt
 		err := reader.Reset(bodyReader)
 		if err != nil {
 			er.failBadReq(ctx, w, http.StatusBadRequest, err)
+			er.obsrecv.EndLogsOp(ctx, metadata.Type.String(), 0, err)
 			_, _ = io.ReadAll(r.Body)
 			_ = r.Body.Close()
 			return
@@ -198,11 +212,17 @@ func (er *eventReceiver) handleReq(w http.ResponseWriter, r *http.Request, _ htt
 
 	// send body into a scanner and then convert the request body into a log
 	sc := bufio.NewScanner(bodyReader)
-	ld, numLogs := er.reqToLog(sc, r.Header, r.URL.Query())
-	consumerErr := er.logConsumer.ConsumeLogs(ctx, ld)
+	ld, numLogs, err := er.reqToLog(sc, r.Header, r.URL.Query())
 
 	_ = bodyReader.Close()
 
+	if err != nil {
+		er.failBadReq(ctx, w, http.StatusBadRequest, err)
+		er.obsrecv.EndLogsOp(ctx, metadata.Type.String(), numLogs, err)
+		return
+	}
+
+	consumerErr := er.logConsumer.ConsumeLogs(ctx, ld)
 	if consumerErr != nil {
 		er.failBadReq(ctx, w, http.StatusInternalServerError, consumerErr)
 	} else {
