@@ -577,3 +577,148 @@ func TestSumLabelDropping(t *testing.T) {
 	t.Logf("  Aggregated value: %f", dp.DoubleValue())
 	t.Logf("  Labels dropped: ✓")
 }
+
+func TestRegexFiltering(t *testing.T) {
+	tests := []struct {
+		name           string
+		metrics        []MetricConfig
+		expectFiltered bool
+		testMetricName string
+	}{
+		{
+			name:           "no regex - all metrics processed",
+			metrics:        []MetricConfig{},
+			expectFiltered: false,
+			testMetricName: "any.metric",
+		},
+		{
+			name: "http regex - http metrics processed",
+			metrics: []MetricConfig{
+				{Match: "^http_.*"},
+			},
+			expectFiltered: false,
+			testMetricName: "http_requests",
+		},
+		{
+			name: "http regex - non-http metrics filtered",
+			metrics: []MetricConfig{
+				{Match: "^http_.*"},
+			},
+			expectFiltered: true,
+			testMetricName: "cpu_usage",
+		},
+		{
+			name: "specific metric name",
+			metrics: []MetricConfig{
+				{Match: "^test\\.gauge$"},
+			},
+			expectFiltered: false,
+			testMetricName: "test.gauge",
+		},
+		{
+			name: "multiple patterns - matches first",
+			metrics: []MetricConfig{
+				{Match: "^http_.*"},
+				{Match: "^cpu_.*"},
+			},
+			expectFiltered: false,
+			testMetricName: "http_requests",
+		},
+		{
+			name: "multiple patterns - matches second",
+			metrics: []MetricConfig{
+				{Match: "^http_.*"},
+				{Match: "^cpu_.*"},
+			},
+			expectFiltered: false,
+			testMetricName: "cpu_usage",
+		},
+		{
+			name: "multiple patterns - matches none",
+			metrics: []MetricConfig{
+				{Match: "^http_.*"},
+				{Match: "^cpu_.*"},
+			},
+			expectFiltered: true,
+			testMetricName: "memory_usage",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &Config{
+				WindowSize:         1 * time.Second,
+				MaxMemoryMB:        10,
+				StaleDataThreshold: 30 * time.Second,
+				Metrics:            tt.metrics,
+			}
+
+			logger := zap.NewNop()
+			proc, err := newStreamingAggregationProcessor(logger, cfg)
+			if err != nil {
+				t.Fatalf("Failed to create processor: %v", err)
+			}
+
+			ctx := context.Background()
+			err = proc.Start(ctx, nil)
+			if err != nil {
+				t.Fatalf("Failed to start processor: %v", err)
+			}
+			defer proc.Shutdown(ctx)
+
+			// Create test metric with the specific name
+			md := createTestMetricWithName(tt.testMetricName)
+
+			// Process the metric
+			_, err = proc.ProcessMetrics(ctx, md)
+			if err != nil {
+				t.Fatalf("Failed to process metrics: %v", err)
+			}
+
+			// Check statistics
+			processed := proc.metricsProcessed.Load()
+			filtered := proc.metricsFiltered.Load()
+
+			if tt.expectFiltered {
+				if filtered == 0 {
+					t.Errorf("Expected metric to be filtered, but it wasn't")
+				}
+				if processed > 0 {
+					t.Errorf("Expected no metrics to be processed, but %d were processed", processed)
+				}
+			} else {
+				if filtered > 0 {
+					t.Errorf("Expected metric not to be filtered, but %d were filtered", filtered)
+				}
+				if processed == 0 {
+					t.Errorf("Expected metrics to be processed, but none were")
+				}
+			}
+
+			patterns := make([]string, len(tt.metrics))
+			for i, m := range tt.metrics {
+				patterns[i] = m.Match
+			}
+			t.Logf("Patterns: %v, Metric: '%s', Processed: %d, Filtered: %d",
+				patterns, tt.testMetricName, processed, filtered)
+		})
+	}
+}
+
+// createTestMetricWithName creates a test metric with a specific name
+func createTestMetricWithName(metricName string) pmetric.Metrics {
+	md := pmetric.NewMetrics()
+	rm := md.ResourceMetrics().AppendEmpty()
+	sm := rm.ScopeMetrics().AppendEmpty()
+
+	metric := sm.Metrics().AppendEmpty()
+	metric.SetName(metricName)
+
+	// Create a simple gauge metric
+	gauge := metric.SetEmptyGauge()
+	dp := gauge.DataPoints().AppendEmpty()
+	dp.SetDoubleValue(42.0)
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+
+	return md
+}

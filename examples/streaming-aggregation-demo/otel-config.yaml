@@ -9,6 +9,9 @@ processors:
     window_size: 30s # Aggregate over 30-second windows
     max_memory_mb: 100 # Memory limit
     stale_data_threshold: 2m # Reset cumulative state after 2 minutes of no data
+    metrics:
+      - match: "^active_connections$" # Only process active_connections metric
+      - match: "^http_.*" # Only process active_connections metric
 
   metricstransform:
     transforms:

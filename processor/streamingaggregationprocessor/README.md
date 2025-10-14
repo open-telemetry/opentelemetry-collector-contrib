@@ -49,11 +49,13 @@ processors:
 
 ### Configuration Options
 
-| Parameter              | Type     | Default | Description                         |
-| ---------------------- | -------- | ------- | ----------------------------------- |
-| `window_size`          | duration | `30s`   | Duration of each aggregation window |
-| `max_memory_mb`        | int      | `100`   | Maximum memory usage in megabytes   |
-| `stale_data_threshold` | duration | `5m`    | Threshold for detecting stale data  |
+| Parameter              | Type       | Default | Description                         |
+| ---------------------- | ---------- | ------- | ----------------------------------- |
+| `window_size`          | duration   | `30s`   | Duration of each aggregation window |
+| `max_memory_mb`        | int        | `100`   | Maximum memory usage in megabytes   |
+| `stale_data_threshold` | duration   | `5m`    | Threshold for detecting stale data  |
+| `metrics`              | []object   | `[]`    | Array of metric filtering rules (empty = process all) |
+| `metrics[].match`      | string     | -       | Regex pattern to match metric names |
 
 ### Complete Example
 
@@ -68,6 +70,9 @@ processors:
   streamingaggregation:
     window_size: 30s
     max_memory_mb: 100
+    metrics:
+      - match: "^http_.*"     # Process HTTP metrics
+      - match: ".*_total$"    # Process counter metrics ending with "_total"
 
 exporters:
   logging:

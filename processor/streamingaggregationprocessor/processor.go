@@ -6,6 +6,7 @@ package streamingaggregationprocessor // import "github.com/open-telemetry/opent
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -48,6 +49,7 @@ type streamingAggregationProcessor struct {
 	metricsReceived  atomic.Int64
 	metricsProcessed atomic.Int64
 	metricsDropped   atomic.Int64
+	metricsFiltered  atomic.Int64  // Metrics filtered out by regex
 	
 	// Memory management
 	memoryUsage   atomic.Int64
@@ -55,7 +57,10 @@ type streamingAggregationProcessor struct {
 	
 	// Export management
 	nextConsumer   consumer.Metrics  // Store the next consumer in the pipeline
-	
+
+	// Metric filtering
+	metricRegexes []*regexp.Regexp // Compiled regexes for metric name matching
+
 	// Mutex for window operations
 	mu sync.RWMutex
 }
@@ -64,7 +69,32 @@ type streamingAggregationProcessor struct {
 func newStreamingAggregationProcessor(logger *zap.Logger, config *Config) (*streamingAggregationProcessor, error) {
 	// Apply defaults to config
 	config.applyDefaults()
-	
+
+	// Compile metric regex patterns
+	var metricRegexes []*regexp.Regexp
+	if len(config.Metrics) > 0 {
+		metricRegexes = make([]*regexp.Regexp, len(config.Metrics))
+		for i, metricConfig := range config.Metrics {
+			regex, err := regexp.Compile(metricConfig.Match)
+			if err != nil {
+				return nil, fmt.Errorf("failed to compile metrics[%d].match pattern: %w", i, err)
+			}
+			metricRegexes[i] = regex
+		}
+		logger.Info("Metric name filtering enabled",
+			zap.Int("pattern_count", len(config.Metrics)),
+			zap.Strings("patterns", func() []string {
+				patterns := make([]string, len(config.Metrics))
+				for i, m := range config.Metrics {
+					patterns[i] = m.Match
+				}
+				return patterns
+			}()),
+		)
+	} else {
+		logger.Info("No metric name filtering - processing all metrics")
+	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 	
 	// Initialize double-buffer windows with proper time alignment
@@ -79,7 +109,8 @@ func newStreamingAggregationProcessor(logger *zap.Logger, config *Config) (*stre
 		windowSize:     config.WindowSize,
 		maxMemoryBytes: int64(config.MaxMemoryMB * 1024 * 1024),
 		aggregators:    make(map[string]*Aggregator),
-		
+		metricRegexes:  metricRegexes,
+
 		// Initialize double-buffer windows
 		windowA:      NewTimeWindow(alignedStart, alignedStart.Add(config.WindowSize)),
 		windowB:      NewTimeWindow(alignedStart.Add(config.WindowSize), alignedStart.Add(2*config.WindowSize)),
@@ -302,7 +333,26 @@ func (p *streamingAggregationProcessor) processMetrics(md pmetric.Metrics) {
 			metrics := sm.Metrics()
 			for k := 0; k < metrics.Len(); k++ {
 				metric := metrics.At(k)
-				
+
+				// Apply metric name filtering if regexes are configured
+				if len(p.metricRegexes) > 0 {
+					matched := false
+					for _, regex := range p.metricRegexes {
+						if regex.MatchString(metric.Name()) {
+							matched = true
+							break
+						}
+					}
+					if !matched {
+						// Metric doesn't match any regex pattern, skip it
+						p.metricsFiltered.Add(1)
+						p.logger.Debug("Metric filtered out by regex",
+							zap.String("metric", metric.Name()),
+						)
+						continue
+					}
+				}
+
 				// Process each metric with automatic type-based aggregation
 				if err := p.aggregateMetric(metric, resource, scope); err != nil {
 					p.metricsDropped.Add(1)
@@ -574,12 +624,15 @@ func (p *streamingAggregationProcessor) reportStatistics() {
 			received := p.metricsReceived.Load()
 			processed := p.metricsProcessed.Load()
 			dropped := p.metricsDropped.Load()
-			
+			filtered := p.metricsFiltered.Load()
+
 			p.logger.Info("Processor statistics",
 				zap.Int64("metrics_received", received),
 				zap.Int64("metrics_processed", processed),
 				zap.Int64("metrics_dropped", dropped),
+				zap.Int64("metrics_filtered", filtered),
 				zap.Float64("drop_rate", float64(dropped)/float64(received)*100),
+				zap.Float64("filter_rate", float64(filtered)/float64(received)*100),
 				zap.Int64("memory_bytes", p.memoryUsage.Load()),
 			)
 			

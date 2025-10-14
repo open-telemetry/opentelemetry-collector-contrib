@@ -5,6 +5,8 @@ package streamingaggregationprocessor // import "github.com/open-telemetry/opent
 
 import (
 	"errors"
+	"fmt"
+	"regexp"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -23,26 +25,51 @@ type Config struct {
 	// If no data is received for longer than this duration, cumulative state will be reset
 	// Default: 5 minutes (to handle laptop sleep scenarios)
 	StaleDataThreshold time.Duration `mapstructure:"stale_data_threshold"`
-	
+
+	// Metrics defines metric-specific processing rules
+	// If empty, all metrics are processed with default behavior
+	Metrics []MetricConfig `mapstructure:"metrics"`
+
 	// Note: NumWindows removed - double-buffer architecture always uses exactly 2 windows
+}
+
+// MetricConfig defines processing rules for specific metrics
+type MetricConfig struct {
+	// Match defines a regex pattern to match metric names
+	// Required field - metrics matching this pattern will be processed
+	Match string `mapstructure:"match"`
+
+	// Future extensibility: aggregation methods, label handling, etc.
+	// Aggregation []string `mapstructure:"aggregation"`
+	// LabelSet    []LabelSetConfig `mapstructure:"label_set"`
 }
 
 // Validate checks if the configuration is valid
 func (cfg *Config) Validate() error {
 	// All fields are optional with sensible defaults
-	
+
 	if cfg.WindowSize < 0 {
 		return errors.New("window_size cannot be negative")
 	}
-	
+
 	if cfg.MaxMemoryMB < 0 {
 		return errors.New("max_memory_mb cannot be negative")
 	}
-	
+
 	if cfg.StaleDataThreshold < 0 {
 		return errors.New("stale_data_threshold cannot be negative")
 	}
-	
+
+	// Validate metric configurations
+	for i, metricConfig := range cfg.Metrics {
+		if metricConfig.Match == "" {
+			return fmt.Errorf("metrics[%d].match cannot be empty", i)
+		}
+		if _, err := regexp.Compile(metricConfig.Match); err != nil {
+			return fmt.Errorf("metrics[%d].match is invalid regex: %w", i, err)
+		}
+	}
+
 	return nil
 }
 
