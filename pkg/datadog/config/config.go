@@ -129,7 +129,7 @@ func (c *Config) AddWarning(warning error) {
 
 // AddWarningf adds a formatted warning message to the configuration.
 // This allows external modules to add formatted warnings that will be logged later.
-func (c *Config) AddWarningf(format string, args ...interface{}) {
+func (c *Config) AddWarningf(format string, args ...any) {
 	c.warnings = append(c.warnings, fmt.Errorf(format, args...))
 }
 
