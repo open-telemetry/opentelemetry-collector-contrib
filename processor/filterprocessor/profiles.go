@@ -48,7 +48,7 @@ func newFilterProfilesProcessor(set processor.Settings, cfg *Config) (*filterPro
 	return fpp, nil
 }
 
-// processProfiles filters the given samples of a profiles based off the filterSampleProcessor's filters.
+// processProfiles filters the given profile based off the filterSampleProcessor's filters.
 func (fpp *filterProfileProcessor) processProfiles(ctx context.Context, pd pprofile.Profiles) (pprofile.Profiles, error) {
 	if fpp.skipExpr == nil {
 		return pd, nil
