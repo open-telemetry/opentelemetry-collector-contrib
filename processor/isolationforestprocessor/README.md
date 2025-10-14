@@ -24,6 +24,7 @@ The **Isolation Forest processor** adds inline, unsupervised anomaly detection t
 | **Realtime Isolation Forest** | Builds an ensemble of random trees over a sliding window of recent data and assigns a 0–1 anomaly score on ingestion (≈ *O(log n)* per point).      |
 | **Multi‑signal support**      | Can be inserted into **traces**, **metrics**, **logs** pipelines – one config powers all three.                                                     |
 | **Per‑entity modelling**      | `features` config lets you maintain a separate model per unique combination of resource / attribute keys (e.g. per‑pod, per‑service).               |
+| **Adaptive Window Sizing**    | Automatically adjusts window size based on traffic patterns, memory usage, and model stability for optimal performance and resource utilization.    |
 | **Flexible output**           | • Add an attribute `iforest.is_anomaly=true` <br>• Emit a gauge metric `iforest.anomaly_score` <br>• Drop anomalous telemetry entirely.             |
 | **Config‑driven**             | Tune tree count, subsample size, contamination rate, sliding‑window length, retraining interval, target metrics, and more – all in `collector.yml`. |
 | **Zero external deps**        | Pure Go implementation; runs wherever the Collector does (edge, gateway, or backend).                                                               |
@@ -35,7 +36,8 @@ The **Isolation Forest processor** adds inline, unsupervised anomaly detection t
 1. **Training window** – The processor keeps up to `window_size` of the most recent data points for every feature‑group.
 2. **Periodic (re‑)training** – Every `training_interval`, it draws `subsample_size` points from that window and grows `forest_size` random isolation trees.
 3. **Scoring** – Each new point is pushed through the forest. Shorter average path length ⇒ higher anomaly score.
-4. **Post‑processing** –
+4. **Adaptive sizing** – When enabled, window size automatically adjusts based on traffic velocity, memory usage, and model stability.
+5. **Post‑processing** –
 
    * If `add_anomaly_score: true`, a gauge metric `iforest.anomaly_score` is emitted with identical attributes/timestamp.
    * If the score ≥ `anomaly_threshold`, the original span/metric/log is flagged with `iforest.is_anomaly=true`.
@@ -61,6 +63,21 @@ Performance is linear in `forest_size` and logarithmic in `window_size`; a defau
 | `metrics_to_analyze`  | \[]string   | `[]`      | Only these metric names are scored (metrics pipeline only). Blank ⇒ all.       |
 | `add_anomaly_score`   | bool        | `false`   | Emit `iforest.anomaly_score` metric.                                           |
 | `drop_anomalous_data` | bool        | `false`   | Remove anomalous items from the batch instead of forwarding.                   |
+| `adaptive_window`     | object      | `null`    | Enables adaptive window sizing (see Adaptive Window section below).            |
+
+### 🔄 Adaptive Window Configuration
+
+When enabled, the processor automatically adjusts window size based on traffic patterns and resource constraints:
+
+| Field                      | Type     | Default | Notes                                                    |
+| -------------------------- | -------- | ------- | -------------------------------------------------------- |
+| `enabled`                  | bool     | `false` | Enable adaptive window sizing.                          |
+| `min_window_size`          | int      | `1000`  | Minimum window size (safety bound).                     |
+| `max_window_size`          | int      | `100000`| Maximum window size (memory protection).                |
+| `memory_limit_mb`          | int      | `256`   | Shrink window when memory usage exceeds this limit.     |
+| `adaptation_rate`          | float    | `0.1`   | Rate of window size changes (0.0-1.0).                  |
+| `velocity_threshold`       | float    | `50.0`  | Samples/sec threshold for triggering window growth.     |
+| `stability_check_interval` | duration | `5m`    | How often to evaluate model stability for expansion.    |
 
 See the sample below for context.
 
@@ -120,7 +137,7 @@ service:
  
 ### What the example does
 
-| Signal      | What’s scored                                              | Feature grouping               | Output                                    | Notes                                                                                            |
+| Signal      | What’s scored                                              | Feature grouping               | Output                                    | Notes                                                                                          |
 | ----------- | ---------------------------------------------------------- | ------------------------------ | ----------------------------------------- | ------------------------------------------------------------------------------------------------ |
 | **Traces**  | Span **duration** (ns)                                     | `service.name`, `k8s.pod.name` | `iforest.is_anomaly` attr + optional drop | Use a span/trace exporter to route anomalies.                                                    |
 | **Metrics** | Only `system.cpu.utilization`, `system.memory.utilization` | Same                           | Attribute + score metric                  | The score appears as `iforest.anomaly_score` gauge.                                              |
@@ -133,6 +150,7 @@ service:
 * **Tune `forest_size` vs. latency** – start with 100 trees; raise to 200–300 if scores look noisy.
 * **Use per‑entity models** – add `features` (service, pod, host) to avoid global comparisons across very different series.
 * **Let contamination drive threshold** – set `contamination_rate` to the % of traffic you’re comfortable labelling outlier; avoid hand‑tuning `anomaly_threshold`.
+* **Use adaptive window sizing** – enable for dynamic workloads; the processor will automatically grow windows during high traffic and shrink under memory pressure.
 * **Route anomalies** – keep `drop_anomalous_data=false` and add a simple \[routing‑processor] downstream to ship anomalies to a dedicated exporter or topic.
 * **Monitor model health** – the emitted `iforest.anomaly_score` metric is perfect for a Grafana panel; watch its distribution and adapt window / contamination accordingly.
 
@@ -147,21 +165,26 @@ service:
                │  • Sliding window (per feature‑group)             │
                │  • Forest of N trees (per feature‑group)          │
 Telemetry ───▶ │  • Score calculator & anomaly decision            │ ───▶  Next processor/exporter
+               │  • Adaptive window sizing (optional)              │
                └───────────────────────────────────────────────────┘
 ```
 
-*Training cost*: **O(window\_size × forest\_size × log subsample\_size)** every `training_interval`
-*Scoring cost*: **O(forest\_size × log subsample\_size)** per item
+
+*Training cost*: **O(current_window_size × forest_size × log subsample_size)** every `training_interval`
+*Scoring cost*: **O(forest_size × log subsample_size)** per item
+
+**Note:** With adaptive window sizing enabled, `current_window_size` dynamically adjusts between `min_window_size` and `max_window_size` based on traffic patterns and memory constraints, making training costs adaptive to workload conditions.
+
 
 ---
 
 ## 🤝 Contributing
 
 * **Bugs / Questions** – please open an issue in the fork first.
+* **Recently added**: Adaptive window sizing for dynamic traffic patterns.
 * **Planned enhancements**
 
   * Multivariate scoring (multiple numeric attributes per point).
-  * Adaptive window size.
   * Expose Prometheus counters for training time / CPU cost.
 
 PRs welcome – please include unit tests and doc updates.

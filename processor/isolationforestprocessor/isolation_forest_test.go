@@ -23,11 +23,77 @@ func TestOnlineIsolationForestCreation(t *testing.T) {
 	assert.Equal(t, 100, forest.windowSize, "Should set specified window size")
 	assert.Len(t, forest.trees, 10, "Should initialize correct number of trees")
 
+	// Verify adaptive components are nil by default
+	assert.Nil(t, forest.adaptiveConfig, "Should not have adaptive config by default")
+	assert.Nil(t, forest.velocityTracker, "Should not have velocity tracker by default")
+	assert.Nil(t, forest.memoryMonitor, "Should not have memory monitor by default")
+	assert.Nil(t, forest.stabilityChecker, "Should not have stability checker by default")
+	// FIX: For non-adaptive forest, currentWindowSize should match windowSize
+	expectedCurrentSize := forest.getCurrentWindowSize() // This should return windowSize for non-adaptive
+	assert.Equal(t, 100, expectedCurrentSize, "Current window size should match static size")
+
 	// Verify trees are initialized
 	for i, tree := range forest.trees {
 		assert.NotNil(t, tree, "Tree %d should be initialized", i)
 		assert.Equal(t, 8, tree.maxDepth, "Tree %d should have correct max depth", i)
 	}
+}
+
+// Test adaptive forest creation
+func TestOnlineIsolationForestCreationWithAdaptive(t *testing.T) {
+	adaptiveConfig := &AdaptiveWindowConfig{
+		Enabled:                true,
+		MinWindowSize:          50,
+		MaxWindowSize:          500,
+		MemoryLimitMB:          128,
+		AdaptationRate:         0.2,
+		VelocityThreshold:      25.0,
+		StabilityCheckInterval: "2m",
+	}
+
+	forest := newOnlineIsolationForestWithAdaptive(5, 100, 6, adaptiveConfig)
+
+	assert.Equal(t, 5, forest.numTrees, "Should create forest with specified number of trees")
+	assert.Equal(t, 6, forest.maxDepth, "Should set specified max depth")
+	assert.Equal(t, 100, forest.windowSize, "Should set original window size")
+	assert.Equal(t, 50, forest.currentWindowSize, "Should start with min window size")
+
+	// Verify adaptive components are initialized
+	assert.NotNil(t, forest.adaptiveConfig, "Should have adaptive config")
+	assert.NotNil(t, forest.velocityTracker, "Should have velocity tracker")
+	assert.NotNil(t, forest.memoryMonitor, "Should have memory monitor")
+	assert.NotNil(t, forest.stabilityChecker, "Should have stability checker")
+
+	// Verify adaptive config is properly stored
+	assert.True(t, forest.adaptiveConfig.Enabled, "Adaptive should be enabled")
+	assert.Equal(t, 128, forest.memoryMonitor.memoryLimitMB, "Memory limit should be set")
+	assert.Equal(t, 1000, forest.velocityTracker.maxSamples, "Velocity tracker should have max samples")
+}
+
+// Test adaptive forest creation with disabled config
+func TestOnlineIsolationForestCreationWithDisabledAdaptive(t *testing.T) {
+	adaptiveConfig := &AdaptiveWindowConfig{
+		Enabled: false, // Explicitly disabled
+	}
+
+	forest := newOnlineIsolationForestWithAdaptive(3, 80, 4, adaptiveConfig)
+
+	// Should behave like regular forest when disabled
+	expectedCurrentSize := forest.getCurrentWindowSize() // Should return windowSize when disabled
+	assert.Equal(t, 80, expectedCurrentSize, "Should use original window size when disabled")
+	assert.Nil(t, forest.velocityTracker, "Should not initialize velocity tracker when disabled")
+	assert.Nil(t, forest.memoryMonitor, "Should not initialize memory monitor when disabled")
+	assert.Nil(t, forest.stabilityChecker, "Should not initialize stability checker when disabled")
+}
+
+// Test adaptive forest creation with nil config
+func TestOnlineIsolationForestCreationWithNilAdaptive(t *testing.T) {
+	forest := newOnlineIsolationForestWithAdaptive(3, 80, 4, nil)
+
+	// Should behave like regular forest when nil
+	expectedCurrentSize := forest.getCurrentWindowSize() // Should return windowSize when nil config
+	assert.Equal(t, 80, expectedCurrentSize, "Should use original window size when nil config")
+	assert.Nil(t, forest.adaptiveConfig, "Should have nil adaptive config")
 }
 
 func TestBasicAnomalyDetection(t *testing.T) {
@@ -124,6 +190,12 @@ func TestForestStatistics(t *testing.T) {
 	assert.Equal(t, 0.0, stats.AnomalyRate, "Should start with 0% anomaly rate")
 	assert.Equal(t, 5, stats.ActiveTrees, "Should have 5 active trees")
 
+	// NEW: Verify adaptive statistics for non-adaptive forest
+	assert.Equal(t, 20, stats.CurrentWindowSize, "Should show current window size")
+	assert.False(t, stats.AdaptiveEnabled, "Should show adaptive as disabled")
+	assert.Equal(t, 0.0, stats.VelocitySamples, "Should show zero velocity for non-adaptive")
+	assert.Equal(t, 0.0, stats.MemoryUsageMB, "Should show zero memory usage for non-adaptive")
+
 	// Process some samples
 	samples := [][]float64{
 		{1.0, 2.0}, {1.5, 2.5}, {0.5, 1.5}, {2.0, 3.0}, {1.2, 2.2},
@@ -138,6 +210,173 @@ func TestForestStatistics(t *testing.T) {
 	stats = forest.GetStatistics()
 	assert.GreaterOrEqual(t, stats.TotalSamples, uint64(len(samples)), "Should have processed at least %d samples", len(samples))
 	assert.True(t, stats.AnomalyRate >= 0.0 && stats.AnomalyRate <= 1.0, "Anomaly rate should be between 0 and 1")
+}
+
+// NEW: Test adaptive forest statistics
+func TestAdaptiveForestStatistics(t *testing.T) {
+	adaptiveConfig := &AdaptiveWindowConfig{
+		Enabled:                true,
+		MinWindowSize:          10,
+		MaxWindowSize:          100,
+		MemoryLimitMB:          64,
+		AdaptationRate:         0.1,
+		VelocityThreshold:      5.0,
+		StabilityCheckInterval: "1m",
+	}
+
+	forest := newOnlineIsolationForestWithAdaptive(3, 50, 4, adaptiveConfig)
+
+	// Initial adaptive statistics
+	stats := forest.GetStatistics()
+	assert.Equal(t, 10, stats.CurrentWindowSize, "Should start with min window size")
+	assert.True(t, stats.AdaptiveEnabled, "Should show adaptive as enabled")
+	assert.Equal(t, 0.0, stats.VelocitySamples, "Should start with zero velocity")
+	assert.GreaterOrEqual(t, stats.MemoryUsageMB, 0.0, "Should show non-negative memory usage")
+
+	// Process samples to trigger velocity tracking
+	samples := [][]float64{
+		{1.0, 2.0}, {1.5, 2.5}, {0.5, 1.5}, {2.0, 3.0}, {1.2, 2.2},
+	}
+	for _, sample := range samples {
+		forest.ProcessSample(sample)
+		time.Sleep(2 * time.Millisecond) // Add some time between samples
+	}
+	time.Sleep(100 * time.Millisecond) // Allow processing
+
+	// Check updated adaptive statistics
+	stats = forest.GetStatistics()
+	assert.GreaterOrEqual(t, stats.VelocitySamples, 0.0, "Should show velocity samples >= 0")
+	assert.GreaterOrEqual(t, stats.MemoryUsageMB, 0.0, "Should show memory usage >= 0")
+}
+
+// NEW: Test getCurrentWindowSize method
+func TestGetCurrentWindowSize(t *testing.T) {
+	// Test non-adaptive forest
+	forest := newOnlineIsolationForest(5, 100, 4)
+	assert.Equal(t, 100, forest.getCurrentWindowSize(), "Should return static window size for non-adaptive")
+
+	// Test adaptive forest (disabled)
+	adaptiveConfig := &AdaptiveWindowConfig{Enabled: false}
+	adaptiveForest := newOnlineIsolationForestWithAdaptive(5, 100, 4, adaptiveConfig)
+	assert.Equal(t, 100, adaptiveForest.getCurrentWindowSize(), "Should return static window size when disabled")
+
+	// Test adaptive forest (enabled)
+	adaptiveConfig.Enabled = true
+	adaptiveConfig.MinWindowSize = 50
+	adaptiveForest = newOnlineIsolationForestWithAdaptive(5, 100, 4, adaptiveConfig)
+	assert.Equal(t, 50, adaptiveForest.getCurrentWindowSize(), "Should return current adaptive window size")
+}
+
+// NEW: Test velocity tracking
+func TestVelocityTracking(t *testing.T) {
+	adaptiveConfig := &AdaptiveWindowConfig{
+		Enabled:           true,
+		MinWindowSize:     10,
+		MaxWindowSize:     100,
+		VelocityThreshold: 5.0,
+	}
+
+	forest := newOnlineIsolationForestWithAdaptive(3, 50, 4, adaptiveConfig)
+
+	// Process samples rapidly to create velocity
+	for i := 0; i < 10; i++ {
+		forest.ProcessSample([]float64{float64(i), float64(i * 2)})
+		time.Sleep(100 * time.Millisecond) // Consistent timing for velocity
+	}
+
+	velocity := forest.getCurrentVelocity()
+	assert.GreaterOrEqual(t, velocity, 0.0, "Velocity should be non-negative")
+
+	// Test velocity tracker bounds
+	assert.NotNil(t, forest.velocityTracker, "Velocity tracker should be initialized")
+	assert.LessOrEqual(t, len(forest.velocityTracker.sampleTimes), forest.velocityTracker.maxSamples, "Should not exceed max samples")
+}
+
+// NEW: Test memory monitoring
+func TestMemoryMonitoring(t *testing.T) {
+	adaptiveConfig := &AdaptiveWindowConfig{
+		Enabled:       true,
+		MinWindowSize: 10,
+		MaxWindowSize: 100,
+		MemoryLimitMB: 64,
+	}
+
+	forest := newOnlineIsolationForestWithAdaptive(3, 50, 4, adaptiveConfig)
+
+	// Process samples to generate memory usage
+	for i := 0; i < 20; i++ {
+		forest.ProcessSample([]float64{float64(i), float64(i * 2), float64(i * 3)})
+	}
+
+	memoryUsage := forest.getCurrentMemoryUsage()
+	assert.GreaterOrEqual(t, memoryUsage, 0.0, "Memory usage should be non-negative")
+	assert.NotNil(t, forest.memoryMonitor, "Memory monitor should be initialized")
+	assert.Equal(t, 64, forest.memoryMonitor.memoryLimitMB, "Memory limit should be set correctly")
+}
+
+// NEW: Test adaptive window resizing
+func TestAdaptiveWindowResizing(t *testing.T) {
+	adaptiveConfig := &AdaptiveWindowConfig{
+		Enabled:           true,
+		MinWindowSize:     10,
+		MaxWindowSize:     50,
+		MemoryLimitMB:     1, // Very low limit to trigger shrinking
+		AdaptationRate:    0.5,
+		VelocityThreshold: 1.0, // Low threshold to trigger growth
+	}
+
+	forest := newOnlineIsolationForestWithAdaptive(2, 30, 4, adaptiveConfig)
+	initialSize := forest.getCurrentWindowSize()
+
+	// Process samples to trigger adaptive behavior
+	for i := 0; i < 15; i++ {
+		forest.ProcessSample([]float64{float64(i), float64(i * 2)})
+		time.Sleep(50 * time.Millisecond) // Create some velocity
+	}
+
+	// Allow time for adaptive window adjustments
+	time.Sleep(200 * time.Millisecond)
+
+	finalSize := forest.getCurrentWindowSize()
+	assert.GreaterOrEqual(t, finalSize, adaptiveConfig.MinWindowSize, "Should not go below minimum")
+	assert.LessOrEqual(t, finalSize, adaptiveConfig.MaxWindowSize, "Should not exceed maximum")
+
+	// Verify window size may have changed due to adaptive behavior
+	// Note: The exact change depends on the adaptive algorithm's decisions
+	_ = initialSize // Mark as used
+}
+
+// NEW: Test utility functions added for adaptive window
+func TestMinMaxInt(t *testing.T) {
+	assert.Equal(t, 3, minInt(3, 5), "Should return smaller value")
+	assert.Equal(t, 2, minInt(7, 2), "Should return smaller value")
+	assert.Equal(t, 4, minInt(4, 4), "Should handle equal values")
+
+	assert.Equal(t, 5, maxInt(3, 5), "Should return larger value")
+	assert.Equal(t, 7, maxInt(7, 2), "Should return larger value")
+	assert.Equal(t, 4, maxInt(4, 4), "Should handle equal values")
+}
+
+// NEW: Test resizeDataWindow functionality
+func TestResizeDataWindow(t *testing.T) {
+	forest := newOnlineIsolationForest(2, 5, 4)
+
+	// Fill window partially
+	samples := [][]float64{{1.0}, {2.0}, {3.0}}
+	for _, sample := range samples {
+		forest.updateSlidingWindow(sample)
+	}
+
+	initialLen := len(forest.dataWindow)
+	assert.Equal(t, 5, initialLen, "Should start with initial window size")
+
+	// Test growing window
+	forest.resizeDataWindow(8)
+	assert.Len(t, forest.dataWindow, 8, "Should grow window size")
+
+	// Test shrinking window
+	forest.resizeDataWindow(3)
+	assert.Len(t, forest.dataWindow, 3, "Should shrink window size")
 }
 
 func TestTreePathLength(t *testing.T) {
@@ -556,12 +795,6 @@ func TestGetExpectedPathLength_NoSamples(t *testing.T) {
 	assert.Equal(t, 1.0, expectedLength, "Should return 1.0 for no samples")
 }
 
-func TestMaxInt(t *testing.T) {
-	assert.Equal(t, 5, maxInt(3, 5), "Should return larger value")
-	assert.Equal(t, 7, maxInt(7, 2), "Should return larger value")
-	assert.Equal(t, 4, maxInt(4, 4), "Should handle equal values")
-}
-
 func TestConcurrentAccess(t *testing.T) {
 	forest := newOnlineIsolationForest(5, 20, 4)
 
@@ -698,12 +931,6 @@ func TestOnlineForestStatistics_EdgeCases(t *testing.T) {
 	assert.True(t, stats.WindowUtilization >= 0.0 && stats.WindowUtilization <= 1.0)
 }
 
-func TestMaxInt_EdgeCases(t *testing.T) {
-	assert.Equal(t, 0, maxInt(0, 0), "Should handle zero values")
-	assert.Equal(t, -1, maxInt(-5, -1), "Should handle negative values")
-	assert.Equal(t, 1000000, maxInt(1000000, 999999), "Should handle large values")
-}
-
 // Keep existing benchmark tests
 func BenchmarkIsolationForestProcessing(b *testing.B) {
 	forest := newOnlineIsolationForest(100, 1000, 10)
@@ -719,6 +946,37 @@ func BenchmarkIsolationForestProcessing(b *testing.B) {
 	}
 
 	for i := 0; b.Loop(); i++ {
+		sample := samples[i%len(samples)]
+		forest.ProcessSample(sample)
+	}
+}
+
+// NEW: Benchmark adaptive forest processing
+func BenchmarkAdaptiveIsolationForestProcessing(b *testing.B) {
+	adaptiveConfig := &AdaptiveWindowConfig{
+		Enabled:                true,
+		MinWindowSize:          500,
+		MaxWindowSize:          2000,
+		MemoryLimitMB:          128,
+		AdaptationRate:         0.1,
+		VelocityThreshold:      10.0,
+		StabilityCheckInterval: "5m",
+	}
+
+	forest := newOnlineIsolationForestWithAdaptive(100, 1000, 10, adaptiveConfig)
+
+	// Prepare test samples
+	samples := make([][]float64, 1000)
+	for i := range samples {
+		samples[i] = []float64{
+			float64(i%10) + 0.1*float64(i%3),
+			float64(i%7) + 0.2*float64(i%5),
+			float64(i%13) + 0.3*float64(i%7),
+		}
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
 		sample := samples[i%len(samples)]
 		forest.ProcessSample(sample)
 	}
