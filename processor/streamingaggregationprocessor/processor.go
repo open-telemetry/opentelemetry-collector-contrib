@@ -92,7 +92,7 @@ func newStreamingAggregationProcessor(logger *zap.Logger, config *Config) (*stre
 			}()),
 		)
 	} else {
-		logger.Info("No metric name filtering - processing all metrics")
+		logger.Info("No metric patterns configured - filtering out all metrics")
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -334,23 +334,26 @@ func (p *streamingAggregationProcessor) processMetrics(md pmetric.Metrics) {
 			for k := 0; k < metrics.Len(); k++ {
 				metric := metrics.At(k)
 
-				// Apply metric name filtering if regexes are configured
+				// Apply metric name filtering - default behavior is to filter everything
+				// unless there are explicit match patterns configured
+				matched := false
 				if len(p.metricRegexes) > 0 {
-					matched := false
+					// Check if metric matches any configured pattern
 					for _, regex := range p.metricRegexes {
 						if regex.MatchString(metric.Name()) {
 							matched = true
 							break
 						}
 					}
-					if !matched {
-						// Metric doesn't match any regex pattern, skip it
-						p.metricsFiltered.Add(1)
-						p.logger.Debug("Metric filtered out by regex",
-							zap.String("metric", metric.Name()),
-						)
-						continue
-					}
+				}
+				// If no patterns configured OR metric doesn't match any pattern, filter it out
+				if !matched {
+					p.metricsFiltered.Add(1)
+					p.logger.Debug("Metric filtered out - no matching pattern",
+						zap.String("metric", metric.Name()),
+						zap.Int("configured_patterns", len(p.metricRegexes)),
+					)
+					continue
 				}
 
 				// Process each metric with automatic type-based aggregation

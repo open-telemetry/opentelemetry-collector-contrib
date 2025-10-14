@@ -586,10 +586,18 @@ func TestRegexFiltering(t *testing.T) {
 		testMetricName string
 	}{
 		{
-			name:           "no regex - all metrics processed",
+			name:           "no regex - all metrics filtered",
 			metrics:        []MetricConfig{},
-			expectFiltered: false,
+			expectFiltered: true,
 			testMetricName: "any.metric",
+		},
+		{
+			name: "match all pattern - all metrics processed",
+			metrics: []MetricConfig{
+				{Match: ".*"},
+			},
+			expectFiltered: false,
+			testMetricName: "any.metric.name",
 		},
 		{
 			name: "http regex - http metrics processed",

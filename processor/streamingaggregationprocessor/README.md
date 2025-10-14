@@ -54,7 +54,7 @@ processors:
 | `window_size`          | duration   | `30s`   | Duration of each aggregation window |
 | `max_memory_mb`        | int        | `100`   | Maximum memory usage in megabytes   |
 | `stale_data_threshold` | duration   | `5m`    | Threshold for detecting stale data  |
-| `metrics`              | []object   | `[]`    | Array of metric filtering rules (empty = process all) |
+| `metrics`              | []object   | `[]`    | Array of metric filtering rules (empty = filter all) |
 | `metrics[].match`      | string     | -       | Regex pattern to match metric names |
 
 ### Complete Example
