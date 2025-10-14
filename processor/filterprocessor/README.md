@@ -34,6 +34,7 @@ See the table below for details on each context and the fields it exposes.
 | `metrics.metric`    | [Metric](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottlmetric/README.md)       |
 | `metrics.datapoint` | [DataPoint](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottldatapoint/README.md) |
 | `logs.log_record`   | [Log](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottllog/README.md)             |
+| `profiles.profile`  | [Profile](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottlprofile/README.md)     |
 
 The OTTL allows the use of `and`, `or`, and `()` in conditions.
 See [OTTL Boolean Expressions](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/LANGUAGE.md#boolean-expressions) for more details.
@@ -80,6 +81,9 @@ processors:
       log_record:
         - 'IsMatch(body, ".*password.*")'
         - 'severity_number < SEVERITY_NUMBER_WARN'
+    profiles:
+      profile:
+        - 'duration > 3000'
 ```
 
 #### Dropping data based on a resource attribute
