@@ -25,9 +25,7 @@ const (
 	headerNamespace = "header"
 )
 
-var (
-	errRequestBodyTooLarge = errors.New("request body exceeds maximum allowed size")
-)
+var errRequestBodyTooLarge = errors.New("request body exceeds maximum allowed size")
 
 func (er *eventReceiver) reqToLog(sc *bufio.Scanner,
 	headers http.Header,
