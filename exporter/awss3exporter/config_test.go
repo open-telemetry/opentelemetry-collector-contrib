@@ -68,12 +68,12 @@ func TestConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	queueCfg := exporterhelper.QueueBatchConfig{
-		Enabled:      true,
-		NumConsumers: 23,
-		QueueSize:    42,
-		Sizer:        exporterhelper.RequestSizerTypeRequests,
-	}
+	queueCfg := func() exporterhelper.QueueBatchConfig {
+		queue := exporterhelper.NewDefaultQueueConfig()
+		queue.NumConsumers = 23
+		queue.QueueSize = 42
+		return queue
+	}()
 
 	timeoutCfg := exporterhelper.TimeoutConfig{
 		Timeout: 8,

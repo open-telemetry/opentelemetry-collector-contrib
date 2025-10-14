@@ -54,12 +54,13 @@ func TestLoadConfig(t *testing.T) {
 					MaxInterval:         1 * time.Minute,
 					MaxElapsedTime:      10 * time.Minute,
 				},
-				QueueConfig: exporterhelper.QueueBatchConfig{
-					Enabled:      true,
-					NumConsumers: 2,
-					QueueSize:    10,
-					Sizer:        exporterhelper.RequestSizerTypeRequests,
-				},
+				QueueConfig: func() exporterhelper.QueueBatchConfig {
+					queue := exporterhelper.NewDefaultQueueConfig()
+					queue.Enabled = true
+					queue.NumConsumers = 2
+					queue.QueueSize = 10
+					return queue
+				}(),
 				ResourceToTelemetryConfig: resourcetotelemetry.Settings{
 					Enabled: true,
 				},

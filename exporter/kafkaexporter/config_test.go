@@ -43,12 +43,12 @@ func TestLoadConfig(t *testing.T) {
 					config.MaxElapsedTime = 10 * time.Minute
 					return config
 				}(),
-				QueueBatchConfig: exporterhelper.QueueBatchConfig{
-					Enabled:      true,
-					NumConsumers: 2,
-					QueueSize:    10,
-					Sizer:        exporterhelper.RequestSizerTypeRequests,
-				},
+				QueueBatchConfig: func() exporterhelper.QueueBatchConfig {
+					queue := exporterhelper.NewDefaultQueueConfig()
+					queue.NumConsumers = 2
+					queue.QueueSize = 10
+					return queue
+				}(),
 				ClientConfig: func() configkafka.ClientConfig {
 					config := configkafka.NewDefaultClientConfig()
 					config.Brokers = []string{"foo:123", "bar:456"}
