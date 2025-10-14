@@ -45,13 +45,15 @@ func TestPushLogData(t *testing.T) {
 		_ = exporter.shutdown(ctx)
 	}()
 
+	srvMux := http.NewServeMux()
 	server := &http.Server{
 		ReadTimeout: 3 * time.Second,
 		Addr:        fmt.Sprintf(":%d", port),
+		Handler:     srvMux,
 	}
 
 	go func() {
-		http.HandleFunc("/api/otel/otel_logs/_stream_load", func(w http.ResponseWriter, _ *http.Request) {
+		srvMux.HandleFunc("/api/otel/otel_logs/_stream_load", func(w http.ResponseWriter, _ *http.Request) {
 			w.WriteHeader(http.StatusOK)
 			_, _ = w.Write([]byte(`{"Status":"Success"}`))
 		})
