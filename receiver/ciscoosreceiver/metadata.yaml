@@ -25,28 +25,28 @@ resource_attributes:
 metrics:
   cisco.interface.transmit.bytes:
     description: Number of bytes transmitted on the interface
-    unit: bytes
+    unit: By
     gauge:
       value_type: int
     enabled: true
     attributes: [interface.name, interface.state]
   cisco.interface.receive.bytes:
     description: Number of bytes received on the interface
-    unit: bytes
+    unit: By
     gauge:
       value_type: int
     enabled: true
     attributes: [interface.name, interface.state]
   cisco.interface.transmit.errors:
     description: Number of transmit errors on the interface
-    unit: errors
+    unit: "{error}"
     gauge:
       value_type: int
     enabled: true
     attributes: [interface.name, interface.state]
   cisco.interface.receive.errors:
     description: Number of receive errors on the interface
-    unit: errors
+    unit: "{error}"
     gauge:
       value_type: int
     enabled: true
@@ -59,14 +59,14 @@ metrics:
     enabled: true
     attributes: [interface.name, interface.state]
   cisco.system.cpu.utilization:
-    description: CPU utilization percentage
-    unit: "%"
+    description: CPU utilization as a fraction
+    unit: "1"
     gauge:
       value_type: double
     enabled: true
   cisco.system.memory.utilization:
-    description: Memory utilization percentage
-    unit: "%"
+    description: Memory utilization as a fraction
+    unit: "1"
     gauge:
       value_type: double
     enabled: true
