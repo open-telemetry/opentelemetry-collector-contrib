@@ -92,7 +92,7 @@ jobs:
           - pkg
           - cmd-0
           - other
-        os: [windows-2022, windows-2025]
+        os: [windows-2022, windows-2025, windows-11-arm]
     runs-on: ${{ matrix.os }}
     if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Windows') || github.event_name == 'push' || github.event_name == 'merge_group') }}
     env:
@@ -100,6 +100,8 @@ jobs:
       # see https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/28682#issuecomment-1802296776
       GOGC: 50
       GOMEMLIMIT: 2GiB
+      # The gcc installed on the Windows arm64 runner doesn't ship native ARM libraries so we need to disable CGO.
+      CGO_ENABLED: ${{ matrix.os == 'windows-11-arm' && '0' || '' }}
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
@@ -168,7 +170,7 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     strategy:
       matrix:
-        os: [windows-2022, windows-2025]
+        os: [windows-2022, windows-2025, windows-11-arm]
     runs-on: ubuntu-24.04
     needs: [windows-unittest-matrix]
     permissions:
