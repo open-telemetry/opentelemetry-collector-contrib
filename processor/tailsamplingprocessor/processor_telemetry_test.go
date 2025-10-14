@@ -70,7 +70,7 @@ func TestMetricsAfterOneEvaluation(t *testing.T) {
 	// verify
 	var md metricdata.ResourceMetrics
 	require.NoError(t, s.reader.Collect(t.Context(), &md))
-	require.Equal(t, 8, s.len(md))
+	require.Equal(t, 9, s.len(md))
 
 	for _, tt := range []struct {
 		opts []metricdatatest.Option
@@ -122,16 +122,37 @@ func TestMetricsAfterOneEvaluation(t *testing.T) {
 		{
 			opts: []metricdatatest.Option{metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue()},
 			m: metricdata.Metrics{
-				Name:        "otelcol_processor_tail_sampling_sampling_decision_latency",
-				Description: "Latency (in microseconds) of a given sampling policy",
+				Name:        "otelcol_processor_tail_sampling_sampling_policy_cpu_time",
+				Description: "Total time spent (in microseconds) executing a specific sampling policy",
 				Unit:        "µs",
-				Data: metricdata.Histogram[int64]{
+				Data: metricdata.Sum[int64]{
 					Temporality: metricdata.CumulativeTemporality,
-					DataPoints: []metricdata.HistogramDataPoint[int64]{
+					IsMonotonic: true,
+					DataPoints: []metricdata.DataPoint[int64]{
 						{
 							Attributes: attribute.NewSet(
 								attribute.String("policy", "always"),
 							),
+						},
+					},
+				},
+			},
+		},
+		{
+			opts: []metricdatatest.Option{metricdatatest.IgnoreTimestamp()},
+			m: metricdata.Metrics{
+				Name:        "otelcol_processor_tail_sampling_sampling_policy_executions",
+				Description: "Total number of executions of a specific sampling policy",
+				Unit:        "{executions}",
+				Data: metricdata.Sum[int64]{
+					Temporality: metricdata.CumulativeTemporality,
+					IsMonotonic: true,
+					DataPoints: []metricdata.DataPoint[int64]{
+						{
+							Attributes: attribute.NewSet(
+								attribute.String("policy", "always"),
+							),
+							Value: 1,
 						},
 					},
 				},
@@ -269,7 +290,7 @@ func TestMetricsWithComponentID(t *testing.T) {
 	// verify
 	var md metricdata.ResourceMetrics
 	require.NoError(t, s.reader.Collect(t.Context(), &md))
-	require.Equal(t, 8, s.len(md))
+	require.Equal(t, 9, s.len(md))
 
 	for _, tt := range []struct {
 		opts []metricdatatest.Option
@@ -300,16 +321,37 @@ func TestMetricsWithComponentID(t *testing.T) {
 		{
 			opts: []metricdatatest.Option{metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue()},
 			m: metricdata.Metrics{
-				Name:        "otelcol_processor_tail_sampling_sampling_decision_latency",
-				Description: "Latency (in microseconds) of a given sampling policy",
+				Name:        "otelcol_processor_tail_sampling_sampling_policy_cpu_time",
+				Description: "Total time spent (in microseconds) executing a specific sampling policy",
 				Unit:        "µs",
-				Data: metricdata.Histogram[int64]{
+				Data: metricdata.Sum[int64]{
 					Temporality: metricdata.CumulativeTemporality,
-					DataPoints: []metricdata.HistogramDataPoint[int64]{
+					IsMonotonic: true,
+					DataPoints: []metricdata.DataPoint[int64]{
 						{
 							Attributes: attribute.NewSet(
 								attribute.String("policy", "unique_id.always"),
 							),
+						},
+					},
+				},
+			},
+		},
+		{
+			opts: []metricdatatest.Option{metricdatatest.IgnoreTimestamp()},
+			m: metricdata.Metrics{
+				Name:        "otelcol_processor_tail_sampling_sampling_policy_executions",
+				Description: "Total number of executions of a specific sampling policy",
+				Unit:        "{executions}",
+				Data: metricdata.Sum[int64]{
+					Temporality: metricdata.CumulativeTemporality,
+					IsMonotonic: true,
+					DataPoints: []metricdata.DataPoint[int64]{
+						{
+							Attributes: attribute.NewSet(
+								attribute.String("policy", "unique_id.always"),
+							),
+							Value: 1,
 						},
 					},
 				},
@@ -596,7 +638,7 @@ func TestMetricsCountSampled(t *testing.T) {
 			// verify
 			var md metricdata.ResourceMetrics
 			require.NoError(t, s.reader.Collect(t.Context(), &md))
-			require.Equal(t, 9, s.len(md))
+			require.Equal(t, 10, s.len(md))
 
 			for _, m := range tt.m {
 				t.Run(m.Name, func(t *testing.T) {
