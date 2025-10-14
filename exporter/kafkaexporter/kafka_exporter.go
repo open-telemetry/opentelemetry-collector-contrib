@@ -220,7 +220,7 @@ func (e *kafkaTracesMessenger) marshalData(td ptrace.Traces) ([]marshaler.Messag
 }
 
 func (e *kafkaTracesMessenger) getTopic(ctx context.Context, td ptrace.Traces) string {
-	return getTopic(ctx, e.config.Traces, e.config.TopicFromAttribute, td.ResourceSpans())
+	return getTopic[ptrace.ResourceSpans](ctx, e.config.Traces, e.config.TopicFromAttribute, td.ResourceSpans())
 }
 
 func (e *kafkaTracesMessenger) partitionData(td ptrace.Traces) iter.Seq2[[]byte, ptrace.Traces] {
@@ -265,23 +265,36 @@ func (e *kafkaLogsMessenger) marshalData(ld plog.Logs) ([]marshaler.Message, err
 }
 
 func (e *kafkaLogsMessenger) getTopic(ctx context.Context, ld plog.Logs) string {
-	return getTopic(ctx, e.config.Logs, e.config.TopicFromAttribute, ld.ResourceLogs())
+	return getTopic[plog.ResourceLogs](ctx, e.config.Logs, e.config.TopicFromAttribute, ld.ResourceLogs())
 }
 
 func (e *kafkaLogsMessenger) partitionData(ld plog.Logs) iter.Seq2[[]byte, plog.Logs] {
 	return func(yield func([]byte, plog.Logs) bool) {
-		if !e.config.PartitionLogsByResourceAttributes {
-			yield(nil, ld)
+		if e.config.PartitionLogsByResourceAttributes {
+			for _, resourceLogs := range ld.ResourceLogs().All() {
+				hash := pdatautil.MapHash(resourceLogs.Resource().Attributes())
+				newLogs := plog.NewLogs()
+				resourceLogs.CopyTo(newLogs.ResourceLogs().AppendEmpty())
+				if !yield(hash[:], newLogs) {
+					return
+				}
+			}
 			return
 		}
-		for _, resourceLogs := range ld.ResourceLogs().All() {
-			hash := pdatautil.MapHash(resourceLogs.Resource().Attributes())
-			newLogs := plog.NewLogs()
-			resourceLogs.CopyTo(newLogs.ResourceLogs().AppendEmpty())
-			if !yield(hash[:], newLogs) {
-				return
+		if e.config.PartitionLogsByTraceID {
+			for _, l := range batchpersignal.SplitLogs(ld) {
+				var key []byte
+				traceID := l.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).TraceID()
+				if !traceID.IsEmpty() {
+					key = []byte(traceutil.TraceIDToHexOrEmptyString(traceID))
+				}
+				if !yield(key, l) {
+					return
+				}
 			}
+			return
 		}
+		yield(nil, ld)
 	}
 }
 
@@ -308,7 +321,7 @@ func (e *kafkaMetricsMessenger) marshalData(md pmetric.Metrics) ([]marshaler.Mes
 }
 
 func (e *kafkaMetricsMessenger) getTopic(ctx context.Context, md pmetric.Metrics) string {
-	return getTopic(ctx, e.config.Metrics, e.config.TopicFromAttribute, md.ResourceMetrics())
+	return getTopic[pmetric.ResourceMetrics](ctx, e.config.Metrics, e.config.TopicFromAttribute, md.ResourceMetrics())
 }
 
 func (e *kafkaMetricsMessenger) partitionData(md pmetric.Metrics) iter.Seq2[[]byte, pmetric.Metrics] {
@@ -351,7 +364,7 @@ func (e *kafkaProfilesMessenger) marshalData(ld pprofile.Profiles) ([]marshaler.
 }
 
 func (e *kafkaProfilesMessenger) getTopic(ctx context.Context, ld pprofile.Profiles) string {
-	return getTopic(ctx, e.config.Profiles, e.config.TopicFromAttribute, ld.ResourceProfiles())
+	return getTopic[pprofile.ResourceProfiles](ctx, e.config.Profiles, e.config.TopicFromAttribute, ld.ResourceProfiles())
 }
 
 func (*kafkaProfilesMessenger) partitionData(ld pprofile.Profiles) iter.Seq2[[]byte, pprofile.Profiles] {
