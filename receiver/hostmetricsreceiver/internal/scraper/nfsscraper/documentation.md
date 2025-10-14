@@ -12,10 +12,188 @@ metrics:
     enabled: false
 ```
 
-### system.nfs.net.count
+### nfs.client.net.count
 
-Reports the count of kernel NFS client network requests handled
+Reports the count of kernel NFS client TCP segments and UDP datagrams handled.
 
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| {request} | Gauge | Int | development |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {record} | Sum | Int | Cumulative | true | development |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| network.transport | OSI transport layer or inter-process communication method. | Str: ``udp``, ``tcp`` | false |
+
+### nfs.client.net.tcp.connection.accepted
+
+Reports the count of kernel NFS client TCP connections accepted
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {connection} | Sum | Int | Cumulative | true | development |
+
+### nfs.client.operation.count
+
+Reports the count of kernel NFSv4+ client operations
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {operation} | Sum | Int | Cumulative | true | development |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| onc_rpc.version | ONC/Sun RPC program version. | Any Int | false |
+| nfs.operation.name | NFSv4+ operation name. | Any Str | false |
+
+### nfs.client.procedure.count
+
+Reports the count of kernel NFS client procedures
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {procedure} | Sum | Int | Cumulative | true | development |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| onc_rpc.version | ONC/Sun RPC program version. | Any Int | false |
+| onc_rpc.procedure.name | ONC/Sun RPC procedure name. | Any Str | false |
+
+### nfs.client.rpc.authrefresh.count
+
+Reports the count of kernel NFS client RPC authentication refreshes
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {authrefresh} | Sum | Int | Cumulative | true | development |
+
+### nfs.client.rpc.count
+
+Reports the count of kernel NFS client RPCs sent, regardless of whether they're accepted/rejected by the server.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {request} | Sum | Int | Cumulative | true | development |
+
+### nfs.client.rpc.retransmit.count
+
+Reports the count of kernel NFS client RPC retransmits
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {retransmit} | Sum | Int | Cumulative | true | development |
+
+### nfs.server.fh.stale.count
+
+Reports the cumulative count of kernel NFS server stale file handles.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {fh} | Sum | Int | Cumulative | true | development |
+
+### nfs.server.io
+
+Reports the count of kernel NFS server bytes returned to receive and transmit (read and write) requests.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | true | development |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| network.io.direction | The network IO operation direction. | Str: ``transmit``, ``receive`` | false |
+
+### nfs.server.net.count
+
+Reports the count of kernel NFS server TCP segments and UDP datagrams handled.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {request} | Sum | Int | Cumulative | true | development |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| network.transport | OSI transport layer or inter-process communication method. | Str: ``udp``, ``tcp`` | false |
+
+### nfs.server.net.tcp.connection.accepted
+
+Reports the count of kernel NFS server TCP connections accepted
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {connection} | Sum | Int | Cumulative | true | development |
+
+### nfs.server.operation.count
+
+Reports the count of kernel NFSv4+ server operations
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {operation} | Sum | Int | Cumulative | true | development |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| onc_rpc.version | ONC/Sun RPC program version. | Any Int | false |
+| nfs.operation.name | NFSv4+ operation name. | Any Str | false |
+
+### nfs.server.procedure.count
+
+Reports the count of kernel NFS server procedures
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {procedure} | Sum | Int | Cumulative | true | development |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| onc_rpc.version | ONC/Sun RPC program version. | Any Int | false |
+| onc_rpc.procedure.name | ONC/Sun RPC procedure name. | Any Str | false |
+
+### nfs.server.repcache.requests
+
+Reports the kernel NFS server reply cache request count by cache hit status.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {request} | Sum | Int | Cumulative | true | development |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| nfs.server.repcache.status | NFS Server replies check a Reply Cache (repcache), which can have one of 3 result states: 'hit', 'miss', or 'nocache'. | Str: ``hit``, ``miss``, ``nocache`` | false |
+
+### nfs.server.rpc.count
+
+Reports the count of kernel NFS server RPCs handled.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {request} | Sum | Int | Cumulative | true | development |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| error.type | Describes a class of error the operation ended with. | Str: ``format``, ``auth``, ``client`` | false |
+
+### nfs.server.thread.count
+
+Reports the count of kernel NFS server available threads
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {thread} | Sum | Int | Cumulative | false | development |
