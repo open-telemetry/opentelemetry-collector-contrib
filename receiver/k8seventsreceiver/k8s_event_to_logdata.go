@@ -60,12 +60,12 @@ func k8sEventToLogData(logger *zap.Logger, ev *corev1.Event, version string) plo
 	// which is best suited for the "Body" of the LogRecordSlice.
 	lr.Body().SetStr(ev.Message)
 
-	lr.SetSeverityText(ev.Type)
-	// Set the "SeverityNumber" if a known type of severity is found.
+	// Set the "SeverityNumber" and "SeverityText" if a known type of
+	// severity is found.
 	if severityNumber, ok := severityMap[strings.ToLower(ev.Type)]; ok {
 		lr.SetSeverityNumber(severityNumber)
+	        lr.SetSeverityText(ev.Type)
 	} else {
-		lr.SetSeverityNumber(plog.SeverityNumberUnspecified)
 		logger.Debug("unknown severity type", zap.String("type", ev.Type))
 	}
 
