@@ -5,14 +5,14 @@ package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import (
 	"context"
-	"errors"
+	"fmt"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 type DeleteKeyArguments[K any] struct {
 	Target ottl.PMapGetSetter[K]
-	Key    string
+	Key    ottl.Getter[K]
 }
 
 func NewDeleteKeyFactory[K any]() ottl.Factory[K] {
@@ -23,19 +23,27 @@ func createDeleteKeyFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments
 	args, ok := oArgs.(*DeleteKeyArguments[K])
 
 	if !ok {
-		return nil, errors.New("DeleteKeysFactory args must be of type *DeleteKeyArguments[K]")
+		return nil, fmt.Errorf("DeleteKeysFactory args must be of type *DeleteKeyArguments[K]")
 	}
 
 	return deleteKey(args.Target, args.Key), nil
 }
 
-func deleteKey[K any](target ottl.PMapGetSetter[K], key string) ottl.ExprFunc[K] {
+func deleteKey[K any](target ottl.PMapGetSetter[K], key ottl.Getter[K]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		val, err := target.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
-		val.Remove(key)
+		keyVal, err := key.Get(ctx, tCtx)
+		if err != nil {
+			return nil, err
+		}
+		keyString, ok := keyVal.(string)
+		if !ok {
+			return nil, fmt.Errorf("key for delete_key must be a string but got '%T'", keyVal)
+		}
+		val.Remove(keyString)
 		return nil, target.Set(ctx, tCtx, val)
 	}
 }
