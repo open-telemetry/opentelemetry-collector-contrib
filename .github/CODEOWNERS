@@ -170,6 +170,7 @@ pkg/resourcetotelemetry/                                         @open-telemetry
 pkg/sampling/                                                    @open-telemetry/collector-contrib-approvers @kentquirk @jmacd
 pkg/stanza/                                                      @open-telemetry/collector-contrib-approvers @andrzej-stencel
 pkg/stanza/fileconsumer/                                         @open-telemetry/collector-contrib-approvers @andrzej-stencel
+pkg/stanza/operator/input/journald/                              @open-telemetry/collector-contrib-approvers @belimawr
 pkg/status/                                                      @open-telemetry/collector-contrib-approvers @mwear
 pkg/translator/azure/                                            @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers @atoulme @cparkins
 pkg/translator/azurelogs/                                        @open-telemetry/collector-contrib-approvers @atoulme @cparkins @MikeGoldsmith @constanca-m
