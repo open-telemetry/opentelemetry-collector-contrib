@@ -83,7 +83,7 @@ processors:
         - 'severity_number < SEVERITY_NUMBER_WARN'
     profiles:
       profile:
-        - 'duration > 3000'
+        - 'duration_unix_nano > 3000'
 ```
 
 #### Dropping data based on a resource attribute
