@@ -15,12 +15,12 @@ tests:
 
 telemetry:
   metrics:
-    exporter_requests_sent:
+    exporter_requests_bytes:
       enabled: true
       stability:
         level: development
-      description: Number of requests
-      unit: "1"
+      description: Total size of requests (in bytes)
+      unit: By
       sum:
         value_type: int
         monotonic: true
@@ -33,21 +33,21 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
-    exporter_requests_bytes:
-      enabled: true
-      stability:
-        level: development
-      description: Total size of requests (in bytes)
-      unit: By
-      sum:
-        value_type: int
-        monotonic: true
     exporter_requests_records:
       enabled: true
       stability:
         level: development
       description: Total size of requests (in number of records)
       unit: "{records}"
+      sum:
+        value_type: int
+        monotonic: true
+    exporter_requests_sent:
+      enabled: true
+      stability:
+        level: development
+      description: Number of requests
+      unit: "1"
       sum:
         value_type: int
         monotonic: true
