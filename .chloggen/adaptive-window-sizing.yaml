@@ -4,7 +4,7 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
-component: isolationforestprocessor
+component: processor/isolationforest
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: Add adaptive window sizing feature that automatically adjusts window size based on traffic patterns, memory usage, and model stability
