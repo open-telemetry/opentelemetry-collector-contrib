@@ -66,6 +66,9 @@ type Config struct {
 	RemoteProfile string `mapstructure:"remote_profile,omitempty"`
 	// The SASL/DIGEST-MD5 realm
 	Realm string `mapstructure:"realm,omitempty"`
+	// AggregateAcrossMBeans for cases where the MBean query returns multiple MBeans (e.g. one of the attributes is *).
+	// When enabled, aggregates the values of the returned beans. Returns the value for the first bean if not enabled.
+	AggregateAcrossMBeans bool `mapstructure:"aggregate_across_mbeans,omitempty"`
 	// Array of additional JARs to be added to the class path when launching the JMX Metric Gatherer JAR
 	AdditionalJars []string `mapstructure:"additional_jars,omitempty"`
 	// Map of resource attributes used by the Java SDK Autoconfigure to set resource attributes

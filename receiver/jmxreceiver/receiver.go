@@ -216,6 +216,7 @@ func (jmx *jmxMetricReceiver) buildJMXMetricGathererConfig() (string, error) {
 		config["otel.exporter.otlp.headers"] = jmx.config.OTLPExporterConfig.headersToString()
 	}
 	config["otel.jmx.remote.registry.ssl"] = strconv.FormatBool(jmx.config.JMXRegistrySSLEnabled)
+	config["otel.jmx.aggregate.across.mbeans"] = strconv.FormatBool(jmx.config.AggregateAcrossMBeans)
 
 	var passwordMap map[string]string
 	if jmx.config.PasswordFile != "" {

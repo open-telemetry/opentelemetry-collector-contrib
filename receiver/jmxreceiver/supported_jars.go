@@ -31,10 +31,21 @@ func oldFormatProperties(c *Config, j supportedJar) error {
 // If you change this variable name, please open an issue in opentelemetry-java-contrib
 // so that repository's release automation can be updated
 var jmxMetricsGathererVersions = map[string]supportedJar{
-	// Remove once https://github.com/open-telemetry/opentelemetry-java-contrib/pull/1366 has been merged and released.
-	"14f28b1c45e6ad91faa7f25462bfd96e6ab3b6980afe5534f92b8a4973895cbb": {
-		version: "1.37.0-fix",
-		jar:     "JMX metrics gatherer w/ Tomcat metrics fix",
+	"0ef4abb0da557fc424867bcd55d73459cf9f6374842775fa2e64a9fcc0fe232c": {
+		version: "1.50.0-alpha",
+		jar:     "JMX metrics gatherer",
+	},
+	"914d590f31aa7fa8d0a8765eaea665fd15a345f3fce447949e09dd78c6e1d68c": {
+		version: "1.49.0-alpha",
+		jar:     "JMX metrics gatherer",
+	},
+	"dd1ab4cb7fd45c30cf4e8090f9289a42b2c7bc1e7377536eef2c40c51d8641ae": {
+		version: "1.48.0-alpha",
+		jar:     "JMX metrics gatherer",
+	},
+	"0344be738295602718934accd0557496b10464582681e69a251dc3b8d3f69b69": {
+		version: "1.47.0-alpha",
+		jar:     "JMX metrics gatherer",
 	},
 	"291c6071e6702ae8d81b712582f8e2f312e6b35633b603eada46e3984e5cd020": {
 		version: "1.46.0-alpha",

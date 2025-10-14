@@ -84,6 +84,7 @@ truststore = trustpass
 					"abc": "123",
 					"one": "two",
 				},
+				AggregateAcrossMBeans: true,
 			},
 			`javax.net.ssl.keyStore = /my/keystore
 javax.net.ssl.keyStorePassword = keypass
@@ -94,6 +95,7 @@ javax.net.ssl.trustStoreType = ASCII
 otel.exporter.otlp.endpoint = https://myotlpendpoint
 otel.exporter.otlp.headers = one=two,three=four
 otel.exporter.otlp.timeout = 234000
+otel.jmx.aggregate.across.mbeans = true
 otel.jmx.interval.milliseconds = 123000
 otel.jmx.password = mypass \nword
 otel.jmx.realm = myrealm
@@ -121,6 +123,7 @@ otel.resource.attributes = abc=123,one=two`,
 javax.net.ssl.trustStorePassword = trustpass
 otel.exporter.otlp.endpoint = https://myotlpendpoint
 otel.exporter.otlp.timeout = 0
+otel.jmx.aggregate.across.mbeans = false
 otel.jmx.interval.milliseconds = 0
 otel.jmx.password = mypassword
 otel.jmx.remote.registry.ssl = false
