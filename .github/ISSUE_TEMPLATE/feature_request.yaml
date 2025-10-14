@@ -136,6 +136,7 @@ body:
       - internal/core
       - internal/datadog
       - internal/docker
+      - internal/e2e
       - internal/exp/metrics
       - internal/filter
       - internal/grpcutil
@@ -270,6 +271,7 @@ body:
       - receiver/hostmetrics/internal/scraper/systemscraper
       - receiver/httpcheck
       - receiver/huaweicloudces
+      - receiver/icmpcheck
       - receiver/iis
       - receiver/influxdb
       - receiver/jaeger

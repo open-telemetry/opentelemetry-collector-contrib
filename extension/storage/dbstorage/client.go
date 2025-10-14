@@ -158,10 +158,7 @@ func (c *dbStorageClient) aggregatedBatch(ctx context.Context, tx *sql.Tx, squas
 	// Iterate over operations in chunks with length = c.dialect.MaxAggregationSize
 	opsLen := len(ops)
 	for i := 0; i < opsLen; i += c.dialect.MaxAggregationSize {
-		end := i + c.dialect.MaxAggregationSize
-		if end > opsLen {
-			end = opsLen
-		}
+		end := min(i+c.dialect.MaxAggregationSize, opsLen)
 
 		if err := opFunc(ctx, tx, ops[i:end]...); err != nil {
 			return err
