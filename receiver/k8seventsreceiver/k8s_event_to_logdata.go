@@ -64,7 +64,7 @@ func k8sEventToLogData(logger *zap.Logger, ev *corev1.Event, version string) plo
 	// severity is found.
 	if severityNumber, ok := severityMap[strings.ToLower(ev.Type)]; ok {
 		lr.SetSeverityNumber(severityNumber)
-        	lr.SetSeverityText(ev.Type)
+		lr.SetSeverityText(ev.Type)
 	} else {
 		logger.Debug("unknown severity type", zap.String("type", ev.Type))
 	}
