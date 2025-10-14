@@ -31,7 +31,7 @@ func createXXH3Function[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ot
 	return XXH3HashString(args.Target)
 }
 
-func XXH3HashString[K any](target ottl.StringGetter[K]) (ottl.ExprFunc[K], error) {
+func xxh3HashString[K any](target ottl.StringGetter[K]) (ottl.ExprFunc[K], error) {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		val, err := target.Get(ctx, tCtx)
 		if err != nil {

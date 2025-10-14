@@ -2589,17 +2589,15 @@ Examples:
 
 `XXH3(value)`
 
-The `XXH3` Converter converts the `value` to a XXH3 hash/digest.
+The `XXH3` Converter generates a 64-bit xxHash digest from the input `value` using the XXH3 hash algorithm.
 
 The returned type is string.
 
 `value` is either a path expression to a string telemetry field or a literal string. If `value` is another type an error is returned.
 
-If an error occurs during hashing it will be returned.
+If an error occurs during hashing, it is returned.
 
 Examples:
 
 - `XXH3(resource.attributes["device.name"])`
-
-
 - `XXH3("name")`
