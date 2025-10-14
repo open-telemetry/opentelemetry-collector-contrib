@@ -981,56 +981,56 @@ func simpleTracesWithID(traceID pcommon.TraceID) ptrace.Traces {
 func TestNumericAttributeCases(t *testing.T) {
 	tests := []struct {
 		name           string
-		minValue       int64
-		maxValue       int64
+		minValue       *int64
+		maxValue       *int64
 		testValue      int64
 		expectedResult samplingpolicy.Decision
 		description    string
 	}{
 		{
 			name:           "Only min_value set (positive)",
-			minValue:       400,
-			maxValue:       0, // not set (default)
+			minValue:       ptr(400),
+			maxValue:       nil, // not set (default)
 			testValue:      500,
 			expectedResult: samplingpolicy.Sampled,
 			description:    "Should sample when value >= min_value and max_value not set",
 		},
 		{
 			name:           "Only min_value set (negative value)",
-			minValue:       -100,
-			maxValue:       0, // not set (default)
+			minValue:       ptr(-100),
+			maxValue:       nil, // not set (default)
 			testValue:      50,
 			expectedResult: samplingpolicy.Sampled,
 			description:    "Should sample when value >= min_value (negative) and max_value not set",
 		},
 		{
 			name:           "Only max_value set (positive)",
-			minValue:       0, // not set (default)
-			maxValue:       1000,
+			minValue:       nil, // not set (default)
+			maxValue:       ptr(1000),
 			testValue:      500,
 			expectedResult: samplingpolicy.Sampled,
 			description:    "Should sample when value <= max_value and min_value not set",
 		},
 		{
 			name:           "Both min and max set",
-			minValue:       100,
-			maxValue:       200,
+			minValue:       ptr(100),
+			maxValue:       ptr(200),
 			testValue:      150,
 			expectedResult: samplingpolicy.Sampled,
 			description:    "Should sample when min_value <= value <= max_value",
 		},
 		{
 			name:           "Value below min_value",
-			minValue:       400,
-			maxValue:       0, // not set (default)
+			minValue:       ptr(400),
+			maxValue:       nil, // not set (default)
 			testValue:      300,
 			expectedResult: samplingpolicy.NotSampled,
 			description:    "Should not sample when value < min_value",
 		},
 		{
 			name:           "Value above max_value",
-			minValue:       0, // not set (default)
-			maxValue:       100,
+			minValue:       nil, // not set (default)
+			maxValue:       ptr(100),
 			testValue:      200,
 			expectedResult: samplingpolicy.NotSampled,
 			description:    "Should not sample when value > max_value",
