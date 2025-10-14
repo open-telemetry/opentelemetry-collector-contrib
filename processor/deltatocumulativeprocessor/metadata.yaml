@@ -12,13 +12,12 @@ status:
 telemetry:
   metrics:
     # streams
-    deltatocumulative_streams_tracked:
-      description: number of streams tracked
-      unit: "{dps}"
+    deltatocumulative_datapoints:
+      description: total number of datapoints processed. may have 'error' attribute, if processing failed
+      unit: "{datapoint}"
       sum:
         value_type: int
-        monotonic: false
-        async: true
+        monotonic: true
       enabled: true
     deltatocumulative_streams_limit:
       description: upper limit of tracked streams
@@ -33,10 +32,11 @@ telemetry:
         value_type: int
       enabled: true
     # datapoints
-    deltatocumulative_datapoints:
-      description: total number of datapoints processed. may have 'error' attribute, if processing failed
-      unit: "{datapoint}"
+    deltatocumulative_streams_tracked:
+      description: number of streams tracked
+      unit: "{dps}"
       sum:
         value_type: int
-        monotonic: true
+        monotonic: false
+        async: true
       enabled: true
