@@ -15,7 +15,8 @@ CREATE TABLE IF NOT EXISTS "%s"."%s" %s (
     ScopeAttributes JSON CODEC(ZSTD(1)),
     LogAttributes JSON CODEC(ZSTD(1)),
 
-    INDEX idx_body Body TYPE tokenbf_v1(32768, 3, 0) GRANULARITY 8
+    INDEX idx_body Body TYPE tokenbf_v1(32768, 3, 0) GRANULARITY 8,
+    INDEX idx_body_ngrambf Body TYPE ngrambf_v1(4, 32768, 3, 0) GRANULARITY 1
 ) ENGINE = %s
 PARTITION BY toDate(Timestamp)
 PRIMARY KEY (ServiceName, toDateTime(Timestamp))
