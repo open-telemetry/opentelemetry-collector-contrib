@@ -19,6 +19,67 @@ resource_attributes:
     type: string
 
 attributes:
+  database_name:
+    description: Oracle database name
+    type: string
+  query_id:
+    description: SQL query identifier
+    type: string
+  query_text:
+    description: SQL query text
+    type: string  
+  schema_name:
+    description: Schema name where the query is executed
+    type: string
+  statement_type:
+    description: Type of SQL statement or application module
+    type: string
+  has_full_table_scan:
+    description: Whether the query has a full table scan
+    type: string
+  user_id:
+    description: Oracle user ID who parsed the SQL
+    type: string
+  username:
+    description: Oracle username who parsed the SQL
+    type: string
+  hostname:
+    description: Hostname or machine name for the query
+    type: string
+  wait_event_name:
+    description: Oracle wait event name for wait events
+    type: string
+  wait_category:
+    description: Oracle wait event category for wait events
+    type: string
+
+  blocking_user:
+    description: Username of the blocking session
+    type: string
+  blocked_user:
+    description: Username of the blocked session
+    type: string
+
+  blocked_sql_id:
+    description: SQL ID of the blocked query
+    type: string
+
+  blocked_sid:
+    description: Session ID of the blocked session
+    type: string
+  blocking_sid:
+    description: Session ID of the blocking session
+    type: string
+  blocked_serial:
+    description: Serial number of the blocked session
+    type: string
+  blocking_serial:
+    description: Serial number of the blocking session
+    type: string
+  blocked_query_text:
+    description: SQL query text of the blocked query
+    type: string
+
   db.instance.name:
     description: Oracle database instance name
     type: string
@@ -42,9 +103,6 @@ attributes:
     type: string
   session.id:
     description: Oracle session identifier (SID)
-    type: string
-  username:
-    description: Oracle database username
     type: string
   program:
     description: Program or application name
@@ -3246,6 +3304,157 @@ metrics:
       - service.name
       - instance.id
       - clb.goal
+  newrelicoracledb.slow_queries.execution_count:
+    description: Number of executions for slow queries
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "{executions}"
+    attributes:
+      - database_name
+      - query_id
+
+  newrelicoracledb.slow_queries.avg_cpu_time:
+    description: Average CPU time per execution for slow queries
+    enabled: true
+    gauge:
+      value_type: double
+    unit: ms
+    attributes:
+      - database_name
+      - query_id
+
+  newrelicoracledb.slow_queries.avg_disk_reads:
+    description: Average disk reads per execution for slow queries
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "{reads}"
+    attributes:
+      - database_name
+      - query_id
+
+  newrelicoracledb.slow_queries.avg_disk_writes:
+    description: Average disk writes per execution for slow queries
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "{writes}"
+    attributes:
+      - database_name
+      - query_id    
+
+  newrelicoracledb.slow_queries.avg_elapsed_time:
+    description: Average elapsed time per execution for slow queries
+    enabled: true
+    gauge:
+      value_type: double
+    unit: ms
+    attributes:
+      - database_name
+      - query_id
+
+  newrelicoracledb.slow_queries.query_details:
+    description: Slow Query Details
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "{count}"
+    attributes:
+      - database_name
+      - query_id
+      - query_text
+      - schema_name
+      - statement_type
+      - has_full_table_scan    
+
+  newrelicoracledb.blocking_queries.wait_time:
+    description: Wait time in seconds for blocked queries
+    enabled: true
+    gauge:
+      value_type: double
+    unit: s
+    attributes:
+      - instance.id
+      - blocked_user
+      - blocking_user
+      - blocked_sql_id
+      - blocked_sid
+      - blocking_sid
+      - blocked_serial
+      - blocking_serial
+      - blocked_query_text
+      - database_name
+
+  newrelicoracledb.wait_events.total_wait_time_ms:
+    description: Total wait time in milliseconds for wait events
+    enabled: true
+    gauge:
+      value_type: double
+    unit: ms
+    attributes:
+      - database_name
+      - query_id
+      - wait_event_name
+      - wait_category
+
+  newrelicoracledb.wait_events.waiting_tasks_count:
+    description: Number of waiting tasks for wait events
+    enabled: true
+    gauge:
+      value_type: double
+    unit: "{tasks}"
+    attributes:
+      - database_name
+      - query_id
+      - wait_event_name
+      - wait_category
+
+  newrelicoracledb.wait_events.avg_wait_time_ms:
+      description: Average wait time in milliseconds for wait events
+      enabled: true
+      gauge:
+        value_type: double
+      unit: ms
+      attributes:
+        - database_name
+        - query_id
+        - wait_event_name
+        - wait_category    
+
+  newrelicoracledb.individual_queries.cpu_time:
+      description: CPU time for individual queries
+      enabled: true
+      gauge:
+        value_type: double
+      unit: ms
+      attributes:
+        - database_name
+        - query_id
+
+  newrelicoracledb.individual_queries.elapsed_time:
+      description: Elapsed time for individual queries
+      enabled: true
+      gauge:
+        value_type: double
+      unit: ms
+      attributes:
+        - database_name
+        - query_id
+
+  newrelicoracledb.individual_queries.query_details:
+      description: Individual Query Details
+      enabled: true
+      gauge:
+        value_type: int
+      unit: "{count}"
+      attributes:
+        - query_id
+        - query_text
+        - database_name
+        - user_id
+        - username
+        - hostname
 
 tests:
   config:

@@ -57,6 +57,29 @@ Total capacity of the ASM disk group in MB
 | db.instance.name | Oracle database instance name | Any Str | false |
 | diskgroup.name | ASM disk group name | Any Str | false |
 
+### newrelicoracledb.blocking_queries.wait_time
+
+Wait time in seconds for blocked queries
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| s | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| instance.id | Oracle database instance ID | Any Str | false |
+| blocked_user | Username of the blocked session | Any Str | false |
+| blocking_user | Username of the blocking session | Any Str | false |
+| blocked_sql_id | SQL ID of the blocked query | Any Str | false |
+| blocked_sid | Session ID of the blocked session | Any Str | false |
+| blocking_sid | Session ID of the blocking session | Any Str | false |
+| blocked_serial | Serial number of the blocked session | Any Str | false |
+| blocking_serial | Serial number of the blocking session | Any Str | false |
+| blocked_query_text | SQL query text of the blocked query | Any Str | false |
+| database_name | Oracle database name | Any Str | false |
+
 ### newrelicoracledb.connection.active_sessions
 
 Number of active Oracle database sessions
@@ -86,7 +109,7 @@ Sessions blocked by other sessions
 | db.instance.name | Oracle database instance name | Any Str | false |
 | session.id | Oracle session identifier (SID) | Any Str | false |
 | blocking.session.id | Oracle blocking session identifier | Any Str | false |
-| username | Oracle database username | Any Str | false |
+| username | Oracle username who parsed the SQL | Any Str | false |
 | wait.event | Oracle wait event name | Any Str | false |
 | program | Program or application name | Any Str | false |
 
@@ -289,7 +312,7 @@ CPU usage by session in seconds
 | ---- | ----------- | ------ | -------- |
 | db.instance.name | Oracle database instance name | Any Str | false |
 | session.id | Oracle session identifier (SID) | Any Str | false |
-| username | Oracle database username | Any Str | false |
+| username | Oracle username who parsed the SQL | Any Str | false |
 | session.status | Oracle session status (ACTIVE, INACTIVE, etc.) | Any Str | false |
 | program | Program or application name | Any Str | false |
 
@@ -307,7 +330,7 @@ Session idle time in seconds
 | ---- | ----------- | ------ | -------- |
 | db.instance.name | Oracle database instance name | Any Str | false |
 | session.id | Oracle session identifier (SID) | Any Str | false |
-| username | Oracle database username | Any Str | false |
+| username | Oracle username who parsed the SQL | Any Str | false |
 | session.status | Oracle session status (ACTIVE, INACTIVE, etc.) | Any Str | false |
 | program | Program or application name | Any Str | false |
 
@@ -325,7 +348,7 @@ Logical reads by session
 | ---- | ----------- | ------ | -------- |
 | db.instance.name | Oracle database instance name | Any Str | false |
 | session.id | Oracle session identifier (SID) | Any Str | false |
-| username | Oracle database username | Any Str | false |
+| username | Oracle username who parsed the SQL | Any Str | false |
 | session.status | Oracle session status (ACTIVE, INACTIVE, etc.) | Any Str | false |
 | program | Program or application name | Any Str | false |
 
@@ -343,7 +366,7 @@ PGA memory usage by session
 | ---- | ----------- | ------ | -------- |
 | db.instance.name | Oracle database instance name | Any Str | false |
 | session.id | Oracle session identifier (SID) | Any Str | false |
-| username | Oracle database username | Any Str | false |
+| username | Oracle username who parsed the SQL | Any Str | false |
 | session.status | Oracle session status (ACTIVE, INACTIVE, etc.) | Any Str | false |
 | program | Program or application name | Any Str | false |
 
@@ -509,7 +532,7 @@ Current wait events and wait time
 | ---- | ----------- | ------ | -------- |
 | db.instance.name | Oracle database instance name | Any Str | false |
 | session.id | Oracle session identifier (SID) | Any Str | false |
-| username | Oracle database username | Any Str | false |
+| username | Oracle username who parsed the SQL | Any Str | false |
 | wait.event | Oracle wait event name | Any Str | false |
 | wait.state | Oracle wait event state | Any Str | false |
 | wait.class | Oracle wait event class | Any Str | false |
@@ -721,6 +744,55 @@ Oracle database global name information
 | db.instance.name | Oracle database instance name | Any Str | false |
 | instance.id | Oracle database instance ID | Any Str | false |
 | global.name | Oracle database global name | Any Str | false |
+
+### newrelicoracledb.individual_queries.cpu_time
+
+CPU time for individual queries
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| ms | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| database_name | Oracle database name | Any Str | false |
+| query_id | SQL query identifier | Any Str | false |
+
+### newrelicoracledb.individual_queries.elapsed_time
+
+Elapsed time for individual queries
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| ms | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| database_name | Oracle database name | Any Str | false |
+| query_id | SQL query identifier | Any Str | false |
+
+### newrelicoracledb.individual_queries.query_details
+
+Individual Query Details
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {count} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| query_id | SQL query identifier | Any Str | false |
+| query_text | SQL query text | Any Str | false |
+| database_name | Oracle database name | Any Str | false |
+| user_id | Oracle user ID who parsed the SQL | Any Str | false |
+| username | Oracle username who parsed the SQL | Any Str | false |
+| hostname | Hostname or machine name for the query | Any Str | false |
 
 ### newrelicoracledb.locked_accounts
 
@@ -2260,6 +2332,100 @@ SGA shared pool library cache reload ratio (reloads/pins)
 | ---- | ----------- | ------ | -------- |
 | db.instance.name | Oracle database instance name | Any Str | false |
 | instance.id | Oracle database instance ID | Any Str | false |
+
+### newrelicoracledb.slow_queries.avg_cpu_time
+
+Average CPU time per execution for slow queries
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| ms | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| database_name | Oracle database name | Any Str | false |
+| query_id | SQL query identifier | Any Str | false |
+
+### newrelicoracledb.slow_queries.avg_disk_reads
+
+Average disk reads per execution for slow queries
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {reads} | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| database_name | Oracle database name | Any Str | false |
+| query_id | SQL query identifier | Any Str | false |
+
+### newrelicoracledb.slow_queries.avg_disk_writes
+
+Average disk writes per execution for slow queries
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {writes} | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| database_name | Oracle database name | Any Str | false |
+| query_id | SQL query identifier | Any Str | false |
+
+### newrelicoracledb.slow_queries.avg_elapsed_time
+
+Average elapsed time per execution for slow queries
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| ms | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| database_name | Oracle database name | Any Str | false |
+| query_id | SQL query identifier | Any Str | false |
+
+### newrelicoracledb.slow_queries.execution_count
+
+Number of executions for slow queries
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {executions} | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| database_name | Oracle database name | Any Str | false |
+| query_id | SQL query identifier | Any Str | false |
+
+### newrelicoracledb.slow_queries.query_details
+
+Slow Query Details
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {count} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| database_name | Oracle database name | Any Str | false |
+| query_id | SQL query identifier | Any Str | false |
+| query_text | SQL query text | Any Str | false |
+| schema_name | Schema name where the query is executed | Any Str | false |
+| statement_type | Type of SQL statement or application module | Any Str | false |
+| has_full_table_scan | Whether the query has a full table scan | Any Str | false |
 
 ### newrelicoracledb.sorts_disk
 
@@ -4588,6 +4754,57 @@ Used percentage of tablespace
 | db.instance.name | Oracle database instance name | Any Str | false |
 | con.id | Oracle container ID (CDB/PDB) | Any Str | false |
 | tablespace.name | Name of the Oracle tablespace | Any Str | false |
+
+### newrelicoracledb.wait_events.avg_wait_time_ms
+
+Average wait time in milliseconds for wait events
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| ms | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| database_name | Oracle database name | Any Str | false |
+| query_id | SQL query identifier | Any Str | false |
+| wait_event_name | Oracle wait event name for wait events | Any Str | false |
+| wait_category | Oracle wait event category for wait events | Any Str | false |
+
+### newrelicoracledb.wait_events.total_wait_time_ms
+
+Total wait time in milliseconds for wait events
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| ms | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| database_name | Oracle database name | Any Str | false |
+| query_id | SQL query identifier | Any Str | false |
+| wait_event_name | Oracle wait event name for wait events | Any Str | false |
+| wait_category | Oracle wait event category for wait events | Any Str | false |
+
+### newrelicoracledb.wait_events.waiting_tasks_count
+
+Number of waiting tasks for wait events
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {tasks} | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| database_name | Oracle database name | Any Str | false |
+| query_id | SQL query identifier | Any Str | false |
+| wait_event_name | Oracle wait event name for wait events | Any Str | false |
+| wait_category | Oracle wait event category for wait events | Any Str | false |
 
 ## Resource Attributes
 

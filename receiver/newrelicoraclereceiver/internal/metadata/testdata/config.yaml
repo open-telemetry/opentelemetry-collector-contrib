@@ -7,6 +7,8 @@ all_set:
       enabled: true
     newrelicoracledb.asm.diskgroup.total_mb:
       enabled: true
+    newrelicoracledb.blocking_queries.wait_time:
+      enabled: true
     newrelicoracledb.connection.active_sessions:
       enabled: true
     newrelicoracledb.connection.blocking_sessions:
@@ -92,6 +94,12 @@ all_set:
     newrelicoracledb.disk.writes:
       enabled: true
     newrelicoracledb.global_name:
+      enabled: true
+    newrelicoracledb.individual_queries.cpu_time:
+      enabled: true
+    newrelicoracledb.individual_queries.elapsed_time:
+      enabled: true
+    newrelicoracledb.individual_queries.query_details:
       enabled: true
     newrelicoracledb.locked_accounts:
       enabled: true
@@ -292,6 +300,18 @@ all_set:
     newrelicoracledb.sga_shared_pool_library_cache_hit_ratio:
       enabled: true
     newrelicoracledb.sga_shared_pool_library_cache_reload_ratio:
+      enabled: true
+    newrelicoracledb.slow_queries.avg_cpu_time:
+      enabled: true
+    newrelicoracledb.slow_queries.avg_disk_reads:
+      enabled: true
+    newrelicoracledb.slow_queries.avg_disk_writes:
+      enabled: true
+    newrelicoracledb.slow_queries.avg_elapsed_time:
+      enabled: true
+    newrelicoracledb.slow_queries.execution_count:
+      enabled: true
+    newrelicoracledb.slow_queries.query_details:
       enabled: true
     newrelicoracledb.sorts_disk:
       enabled: true
@@ -602,6 +622,12 @@ all_set:
     newrelicoracledb.tablespace.used_bytes:
       enabled: true
     newrelicoracledb.tablespace.used_percent:
+      enabled: true
+    newrelicoracledb.wait_events.avg_wait_time_ms:
+      enabled: true
+    newrelicoracledb.wait_events.total_wait_time_ms:
+      enabled: true
+    newrelicoracledb.wait_events.waiting_tasks_count:
       enabled: true
   resource_attributes:
     host.name:
@@ -616,6 +642,8 @@ none_set:
       enabled: false
     newrelicoracledb.asm.diskgroup.total_mb:
       enabled: false
+    newrelicoracledb.blocking_queries.wait_time:
+      enabled: false
     newrelicoracledb.connection.active_sessions:
       enabled: false
     newrelicoracledb.connection.blocking_sessions:
@@ -701,6 +729,12 @@ none_set:
     newrelicoracledb.disk.writes:
       enabled: false
     newrelicoracledb.global_name:
+      enabled: false
+    newrelicoracledb.individual_queries.cpu_time:
+      enabled: false
+    newrelicoracledb.individual_queries.elapsed_time:
+      enabled: false
+    newrelicoracledb.individual_queries.query_details:
       enabled: false
     newrelicoracledb.locked_accounts:
       enabled: false
@@ -901,6 +935,18 @@ none_set:
     newrelicoracledb.sga_shared_pool_library_cache_hit_ratio:
       enabled: false
     newrelicoracledb.sga_shared_pool_library_cache_reload_ratio:
+      enabled: false
+    newrelicoracledb.slow_queries.avg_cpu_time:
+      enabled: false
+    newrelicoracledb.slow_queries.avg_disk_reads:
+      enabled: false
+    newrelicoracledb.slow_queries.avg_disk_writes:
+      enabled: false
+    newrelicoracledb.slow_queries.avg_elapsed_time:
+      enabled: false
+    newrelicoracledb.slow_queries.execution_count:
+      enabled: false
+    newrelicoracledb.slow_queries.query_details:
       enabled: false
     newrelicoracledb.sorts_disk:
       enabled: false
@@ -1211,6 +1257,12 @@ none_set:
     newrelicoracledb.tablespace.used_bytes:
       enabled: false
     newrelicoracledb.tablespace.used_percent:
+      enabled: false
+    newrelicoracledb.wait_events.avg_wait_time_ms:
+      enabled: false
+    newrelicoracledb.wait_events.total_wait_time_ms:
+      enabled: false
+    newrelicoracledb.wait_events.waiting_tasks_count:
       enabled: false
   resource_attributes:
     host.name:
