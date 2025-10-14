@@ -70,7 +70,7 @@ require (
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
-	golang.org/x/text v0.29.0
+	golang.org/x/text v0.30.0
 	google.golang.org/grpc v1.76.0
 )
 
@@ -85,20 +85,20 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4 v4.3.0 // indirect
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.4.2 // indirect
 	github.com/Code-Hex/go-generics-cache v1.5.1 // indirect
-	github.com/DataDog/agent-payload/v5 v5.0.168 // indirect
-	github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.72.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.72.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.72.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics v0.72.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/proto v0.72.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.72.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace v0.72.0-rc.4 // indirect
+	github.com/DataDog/agent-payload/v5 v5.0.169 // indirect
+	github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.72.0-rc.5 // indirect
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.72.0-rc.5 // indirect
+	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.72.0-rc.5 // indirect
+	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics v0.72.0-rc.5 // indirect
+	github.com/DataDog/datadog-agent/pkg/proto v0.72.0-rc.5 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.72.0-rc.5 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace v0.72.0-rc.5 // indirect
 	github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.72.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.72.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/quantile v0.72.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.72.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/version v0.72.0-rc.4 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.72.0-rc.5 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.72.0-rc.5 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/quantile v0.72.0-rc.5 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.72.0-rc.5 // indirect
+	github.com/DataDog/datadog-agent/pkg/version v0.72.0-rc.5 // indirect
 	github.com/DataDog/datadog-api-client-go/v2 v2.47.0 // indirect
 	github.com/DataDog/datadog-go/v5 v5.8.1 // indirect
 	github.com/DataDog/go-sqllexer v0.1.8 // indirect
@@ -393,17 +393,17 @@ require (
 	go.uber.org/zap/exp v0.3.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.3 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	golang.org/x/crypto v0.42.0 // indirect
-	golang.org/x/exp v0.0.0-20250911091902-df9299821621 // indirect
-	golang.org/x/mod v0.28.0 // indirect
-	golang.org/x/net v0.44.0 // indirect
+	golang.org/x/crypto v0.43.0 // indirect
+	golang.org/x/exp v0.0.0-20251009144603-d2f985daa21b // indirect
+	golang.org/x/mod v0.29.0 // indirect
+	golang.org/x/net v0.46.0 // indirect
 	golang.org/x/oauth2 v0.31.0 // indirect
 	golang.org/x/sync v0.17.0 // indirect
-	golang.org/x/sys v0.36.0 // indirect
-	golang.org/x/telemetry v0.0.0-20250908211612-aef8a434d053 // indirect
-	golang.org/x/term v0.35.0 // indirect
-	golang.org/x/time v0.12.0 // indirect
-	golang.org/x/tools v0.37.0 // indirect
+	golang.org/x/sys v0.37.0 // indirect
+	golang.org/x/telemetry v0.0.0-20251008203120-078029d740a8 // indirect
+	golang.org/x/term v0.36.0 // indirect
+	golang.org/x/time v0.14.0 // indirect
+	golang.org/x/tools v0.38.0 // indirect
 	golang.org/x/tools/godoc v0.1.0-deprecated // indirect
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da // indirect
 	gonum.org/v1/gonum v0.16.0 // indirect
