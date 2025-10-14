@@ -10,10 +10,6 @@ status:
   unsupported_platforms: [windows]
 
 resource_attributes:
-  container.runtime:
-    description: "The runtime of the container. For this receiver, it will always be 'podman'."
-    type: string
-    enabled: true
   container.id:
     description: "The ID of the container."
     type: string
@@ -26,6 +22,10 @@ resource_attributes:
     description: "The name of the container."
     type: string
     enabled: true
+  container.runtime:
+    description: "The runtime of the container. For this receiver, it will always be 'podman'."
+    type: string
+    enabled: true
 
 attributes:
   core:
@@ -33,7 +33,51 @@ attributes:
     type: string
 
 metrics:
+  # BlockIO
+  container.blockio.io_service_bytes_recursive.read:
+    enabled: true
+    description: "Number of bytes transferred from the disk by the container"
+    extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt)."
+    stability:
+      level: development
+    unit: "{operations}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+  container.blockio.io_service_bytes_recursive.write:
+    enabled: true
+    description: "Number of bytes transferred to the disk by the container"
+    extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt)."
+    stability:
+      level: development
+    unit: "{operations}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+
   # CPU
+  container.cpu.percent:
+    enabled: true
+    description: "Percent of CPU used by the container."
+    stability:
+      level: development
+    unit: "1"
+    gauge:
+      value_type: double
+  container.cpu.usage.percpu:
+    enabled: true
+    description: "Total CPU time consumed per CPU-core."
+    stability:
+      level: development
+    unit: s
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes:
+      - core
   container.cpu.usage.system:
     enabled: true
     description: "System CPU usage."
@@ -54,27 +98,15 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
-  container.cpu.usage.percpu:
+  # Memory
+  container.memory.percent:
     enabled: true
-    description: "Total CPU time consumed per CPU-core."
-    stability:
-      level: development
-    unit: s
-    sum:
-      value_type: int
-      monotonic: true
-      aggregation_temporality: cumulative
-    attributes:
-      - core
-  container.cpu.percent:
-    enabled: true
-    description: "Percent of CPU used by the container."
+    description: "Percentage of memory used."
     stability:
       level: development
     unit: "1"
     gauge:
       value_type: double
-  # Memory
   container.memory.usage.limit:
     enabled: true
     description: "Memory limit of the container."
@@ -95,14 +127,6 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
       monotonic: false
-  container.memory.percent:
-    enabled: true
-    description: "Percentage of memory used."
-    stability:
-      level: development
-    unit: "1"
-    gauge:
-      value_type: double
   # Network
   container.network.io.usage.rx_bytes:
     enabled: true
@@ -120,29 +144,6 @@ metrics:
     stability:
       level: development
     unit: By
-    sum:
-      value_type: int
-      monotonic: true
-      aggregation_temporality: cumulative
-  # BlockIO
-  container.blockio.io_service_bytes_recursive.read:
-    enabled: true
-    description: "Number of bytes transferred from the disk by the container"
-    extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt)."
-    stability:
-      level: development
-    unit: "{operations}"
-    sum:
-      value_type: int
-      monotonic: true
-      aggregation_temporality: cumulative
-  container.blockio.io_service_bytes_recursive.write:
-    enabled: true
-    description: "Number of bytes transferred to the disk by the container"
-    extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt)."
-    stability:
-      level: development
-    unit: "{operations}"
     sum:
       value_type: int
       monotonic: true
