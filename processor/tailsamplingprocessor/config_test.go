@@ -54,7 +54,7 @@ func TestLoadConfig(t *testing.T) {
 					sharedPolicyCfg: sharedPolicyCfg{
 						Name:                "test-policy-3",
 						Type:                NumericAttribute,
-						NumericAttributeCfg: NumericAttributeCfg{Key: "key1", MinValue: 50, MaxValue: 100},
+						NumericAttributeCfg: NumericAttributeCfg{Key: "key1", MinValue: ptr(50), MaxValue: ptr(100)},
 					},
 				},
 				{
@@ -128,7 +128,7 @@ func TestLoadConfig(t *testing.T) {
 								sharedPolicyCfg: sharedPolicyCfg{
 									Name:                "test-and-policy-1",
 									Type:                NumericAttribute,
-									NumericAttributeCfg: NumericAttributeCfg{Key: "key1", MinValue: 50, MaxValue: 100},
+									NumericAttributeCfg: NumericAttributeCfg{Key: "key1", MinValue: ptr(50), MaxValue: ptr(100)},
 								},
 							},
 							{
@@ -154,7 +154,7 @@ func TestLoadConfig(t *testing.T) {
 								sharedPolicyCfg: sharedPolicyCfg{
 									Name:                "test-composite-policy-1",
 									Type:                NumericAttribute,
-									NumericAttributeCfg: NumericAttributeCfg{Key: "key1", MinValue: 50, MaxValue: 100},
+									NumericAttributeCfg: NumericAttributeCfg{Key: "key1", MinValue: ptr(50), MaxValue: ptr(100)},
 								},
 							},
 							{
@@ -185,4 +185,8 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 		}, cfg)
+}
+
+func ptr(v int64) *int64 {
+	return &v
 }

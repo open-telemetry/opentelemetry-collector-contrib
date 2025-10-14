@@ -32,6 +32,9 @@ func NewNumericAttributeFilter(settings component.TelemetrySettings, key string,
 	if minValue == nil && maxValue == nil {
 		settings.Logger.Error("At least one of minValue or maxValue must be set")
 		return nil
+	} else if minValue != nil && maxValue != nil && *minValue > *maxValue {
+		settings.Logger.Error("minValue must be less than or equal to maxValue")
+		return nil
 	}
 	return &numericAttributeFilter{
 		key:         key,
