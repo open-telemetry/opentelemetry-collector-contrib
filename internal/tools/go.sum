@@ -613,8 +613,6 @@ go.opentelemetry.io/auto/sdk v1.1.0 h1:cH53jehLUN6UFLY71z+NDOiNJqDdPRaXzTel0sJyS
 go.opentelemetry.io/auto/sdk v1.1.0/go.mod h1:3wSPjt5PWp2RhlCcmmOial7AvC4DQqZb7a7wCow3W8A=
 go.opentelemetry.io/build-tools v0.28.1 h1:kqUxg8kpeOZ0wHXLmX2WmpqbeIVLkufZLcjTexi8cak=
 go.opentelemetry.io/build-tools v0.28.1/go.mod h1:3hSt/hRgbNM6phYzQ/CeGsTbfSKBkvXg8WtSZLNkxeQ=
-go.opentelemetry.io/build-tools/checkapi v0.26.2 h1:YdwnuJd0L/4TSmeHwYe5Mdgt+TQumI6X7TLU3pg2dFI=
-go.opentelemetry.io/build-tools/checkapi v0.26.2/go.mod h1:J7KC/+bPtDVUhRWk7eGd61Uxhn3UvuOQuynJ5W6dW5c=
 go.opentelemetry.io/build-tools/checkapi v0.28.1 h1:+oOUE6nHO+dpGGXFZ5xpRFuXOJMawLaEOp7USCy1Iz4=
 go.opentelemetry.io/build-tools/checkapi v0.28.1/go.mod h1:q0rSl7MIY2zJ+HJuN2PLddU3NvtMIDVBvgsarTfAcG0=
 go.opentelemetry.io/build-tools/checkfile v0.28.1 h1:j+7LDT/qmfmbHsfzSAIcQRz5mPcG7CyG8kLlzCmx1pc=
