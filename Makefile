@@ -222,7 +222,7 @@ goporto: $(PORTO)
 
 .PHONY: for-all
 for-all:
-	@set -e; for dir in $(ALL_MODS); do \
+	@set -e; for dir in $${ALL_MODS}; do \
 	  (cd "$${dir}" && \
 	  	echo "running $${CMD} in $${dir}" && \
 	 	$${CMD} ); \

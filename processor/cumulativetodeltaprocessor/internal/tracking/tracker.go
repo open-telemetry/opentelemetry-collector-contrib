@@ -71,11 +71,11 @@ type DeltaValue struct {
 	HistogramValue *HistogramPoint
 }
 
-func NewMetricTracker(ctx context.Context, logger *zap.Logger, maxStaleness time.Duration, initalValue InitialValue) *MetricTracker {
+func NewMetricTracker(ctx context.Context, logger *zap.Logger, maxStaleness time.Duration, initialValue InitialValue) *MetricTracker {
 	t := &MetricTracker{
 		logger:       logger,
 		maxStaleness: maxStaleness,
-		initialValue: initalValue,
+		initialValue: initialValue,
 		startTime:    pcommon.NewTimestampFromTime(time.Now()),
 	}
 	if maxStaleness > 0 {

@@ -486,8 +486,6 @@ jobs:
           - os: windows
             arch: arm
           - os: windows
-            arch: arm64
-          - os: windows
             arch: ppc64le
           - os: windows
             arch: riscv64
@@ -521,6 +519,9 @@ jobs:
     needs: [lint, unittest, integration-tests]
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+        with:
+          sparse-checkout: |
+            .github/workflows/scripts/verify-dist-files-exist.sh
       - name: Download Binaries
         uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
         with:
@@ -550,27 +551,13 @@ jobs:
       - name: Install Tools
         if: steps.go-setup.outputs.cache-hit != 'true'
         run: make install-tools
-      - name: Download Binaries
-        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
-        with:
-          merge-multiple: true
-          path: ./bin/
-          pattern: collector-binaries-*
-      - run: chmod +x bin/*
-      - name: Add Permissions to Tool Binaries
-        run: chmod -R +x ./dist
-      - name: Verify Distribution Files Exist
-        id: check
-        run: ./.github/workflows/scripts/verify-dist-files-exist.sh
       - name: Build Docker Image
-        if: steps.check.outputs.passed == 'true'
         run: |
           make genotelcontribcol
           make docker-otelcontribcol
           docker tag otelcontribcol:latest otel/opentelemetry-collector-contrib-dev:"$GITHUB_SHA"
           docker tag otelcontribcol:latest otel/opentelemetry-collector-contrib-dev:latest
       - name: Validate Docker Image
-        if: steps.check.outputs.passed == 'true'
         run: |
           docker run otel/opentelemetry-collector-contrib-dev:"$GITHUB_SHA" --version
           docker run otel/opentelemetry-collector-contrib-dev:latest --version
@@ -580,7 +567,6 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
       - name: Push Docker Image
-        if: steps.check.outputs.passed == 'true'
         run: |
           docker push otel/opentelemetry-collector-contrib-dev:"$GITHUB_SHA"
           docker push otel/opentelemetry-collector-contrib-dev:latest

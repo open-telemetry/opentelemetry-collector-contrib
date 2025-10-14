@@ -17,17 +17,6 @@ attributes:
     enum: [blocked, daemon, detached, idle, locked, orphan, paging, running, sleeping, stopped, system, unknown, zombies]
 
 metrics:
-  system.processes.created:
-    enabled: true
-    description: Total number of created processes.
-    unit: "{processes}"
-    stability:
-      level: development
-    sum:
-      value_type: int
-      aggregation_temporality: cumulative
-      monotonic: true
-
   system.processes.count:
     enabled: true
     description: Total number of processes in each state.
@@ -39,3 +28,13 @@ metrics:
       aggregation_temporality: cumulative
       monotonic: false
     attributes: [status]
+  system.processes.created:
+    enabled: true
+    description: Total number of created processes.
+    unit: "{processes}"
+    stability:
+      level: development
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: true
