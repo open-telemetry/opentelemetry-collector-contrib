@@ -2,10 +2,51 @@
 
 package metadata
 
-// MetricsBuilderConfig is a configuration for ciscoosreceiver metrics builder.
+// No imports needed for this basic config
+
+// MetricsBuilderConfig is a configuration for building metrics.
 type MetricsBuilderConfig struct {
+	Metrics MetricsConfig `mapstructure:"metrics"`
+}
+
+// MetricsConfig provides configuration for metrics collection.
+type MetricsConfig struct {
+	CiscoCollectDurationSeconds    MetricConfig `mapstructure:"cisco.collect.duration.seconds"`
+	CiscoCollectorDurationSeconds  MetricConfig `mapstructure:"cisco.collector.duration.seconds"`
+	CiscoDeviceUp                  MetricConfig `mapstructure:"cisco.device.up"`
+	CiscoInterfaceErrorStatus      MetricConfig `mapstructure:"cisco.interface.error.status"`
+	CiscoInterfaceReceiveBroadcast MetricConfig `mapstructure:"cisco.interface.receive.broadcast"`
+	CiscoInterfaceReceiveBytes     MetricConfig `mapstructure:"cisco.interface.receive.bytes"`
+	CiscoInterfaceReceiveDrops     MetricConfig `mapstructure:"cisco.interface.receive.drops"`
+	CiscoInterfaceReceiveErrors    MetricConfig `mapstructure:"cisco.interface.receive.errors"`
+	CiscoInterfaceReceiveMulticast MetricConfig `mapstructure:"cisco.interface.receive.multicast"`
+	CiscoInterfaceTransmitBytes    MetricConfig `mapstructure:"cisco.interface.transmit.bytes"`
+	CiscoInterfaceTransmitDrops    MetricConfig `mapstructure:"cisco.interface.transmit.drops"`
+	CiscoInterfaceTransmitErrors   MetricConfig `mapstructure:"cisco.interface.transmit.errors"`
+	CiscoInterfaceUp               MetricConfig `mapstructure:"cisco.interface.up"`
+}
+
+// MetricConfig provides common configuration for a metric.
+type MetricConfig struct {
+	Enabled bool `mapstructure:"enabled"`
 }
 
 func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
-	return MetricsBuilderConfig{}
+	return MetricsBuilderConfig{
+		Metrics: MetricsConfig{
+			CiscoCollectDurationSeconds:    MetricConfig{Enabled: true},
+			CiscoCollectorDurationSeconds:  MetricConfig{Enabled: true},
+			CiscoDeviceUp:                  MetricConfig{Enabled: true},
+			CiscoInterfaceErrorStatus:      MetricConfig{Enabled: true},
+			CiscoInterfaceReceiveBroadcast: MetricConfig{Enabled: true},
+			CiscoInterfaceReceiveBytes:     MetricConfig{Enabled: true},
+			CiscoInterfaceReceiveDrops:     MetricConfig{Enabled: true},
+			CiscoInterfaceReceiveErrors:    MetricConfig{Enabled: true},
+			CiscoInterfaceReceiveMulticast: MetricConfig{Enabled: true},
+			CiscoInterfaceTransmitBytes:    MetricConfig{Enabled: true},
+			CiscoInterfaceTransmitDrops:    MetricConfig{Enabled: true},
+			CiscoInterfaceTransmitErrors:   MetricConfig{Enabled: true},
+			CiscoInterfaceUp:               MetricConfig{Enabled: true},
+		},
+	}
 }
