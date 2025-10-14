@@ -111,6 +111,31 @@ The following format values are supported in the `awslogsencodingextension` to i
 
 If you're using the old format values you should update the encoding extension configuration with the new format values.
 
+## Feature Gates
+
+### VPC Flow Log Start Field ISO-8601 Format
+
+**Feature Gate ID**: `extension.awslogsencoding.vpcflow.start.iso8601`
+
+**Stage**: Alpha
+
+**Description**: When enabled, the `aws.vpc.flow.start` field will be formatted as an ISO-8601 string instead of a Unix timestamp integer in seconds since epoch.
+
+**Default**: Disabled (legacy behavior)
+
+#### Behavior
+
+| **Feature Gate State** | **Field Type** | **Format** | **Example** |
+|------------------------|----------------|------------|-------------|
+| **Disabled (Default)** | `int64` | Unix seconds since epoch | `1609459200` |
+| **Enabled** | `string` | ISO-8601 with milliseconds | `"2021-01-01T00:00:00.000Z"` |
+
+#### Enabling the Feature Gate
+
+**Command Line:**
+```bash
+--feature-gates=extension.awslogsencoding.vpcflow.start.iso8601
+```
 
 ## Produced Records per Format
 
