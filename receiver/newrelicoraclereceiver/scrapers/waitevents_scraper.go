@@ -9,6 +9,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/newrelicoraclereceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/newrelicoraclereceiver/models"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/newrelicoraclereceiver/queries"
 )
 
@@ -62,26 +63,17 @@ func (s *WaitEventsScraper) ScrapeWaitEvents(ctx context.Context) []error {
 	now := pcommon.NewTimestampFromTime(time.Now())
 
 	for rows.Next() {
-		var databaseName sql.NullString
-		var queryID sql.NullString
-		var queryText sql.NullString
-		var waitCategory sql.NullString
-		var waitEventName sql.NullString
-		var collectionTimestamp sql.NullTime
-		var waitingTasksCount sql.NullInt64
-		var totalWaitTimeMs sql.NullFloat64
-		var avgWaitTimeMs sql.NullFloat64
+		var waitEvent models.WaitEvent
 
 		if err := rows.Scan(
-			&databaseName,
-			&queryID,
-			&queryText,
-			&waitCategory,
-			&waitEventName,
-			&collectionTimestamp,
-			&waitingTasksCount,
-			&totalWaitTimeMs,
-			&avgWaitTimeMs,
+			&waitEvent.DatabaseName,
+			&waitEvent.QueryID,
+			&waitEvent.WaitCategory,
+			&waitEvent.WaitEventName,
+			&waitEvent.CollectionTimestamp,
+			&waitEvent.WaitingTasksCount,
+			&waitEvent.TotalWaitTimeMs,
+			&waitEvent.AvgWaitTimeMs,
 		); err != nil {
 			s.logger.Error("Failed to scan wait events row", zap.Error(err))
 			scrapeErrors = append(scrapeErrors, err)
@@ -89,50 +81,36 @@ func (s *WaitEventsScraper) ScrapeWaitEvents(ctx context.Context) []error {
 		}
 
 		// Ensure we have valid values for key fields
-		if !queryID.Valid || !waitEventName.Valid || !totalWaitTimeMs.Valid {
+		if !waitEvent.IsValidForMetrics() {
 			s.logger.Debug("Skipping wait event with null key values",
-				zap.String("query_id", queryID.String),
-				zap.String("wait_event_name", waitEventName.String),
-				zap.Float64("total_wait_time_ms", totalWaitTimeMs.Float64))
+				zap.String("query_id", waitEvent.GetQueryID()),
+				zap.String("wait_event_name", waitEvent.GetWaitEventName()),
+				zap.Float64("total_wait_time_ms", waitEvent.GetTotalWaitTimeMs()))
 			continue
 		}
 
 		// Convert NullString/NullInt64/NullFloat64 to string values for attributes
-		dbName := ""
-		if databaseName.Valid {
-			dbName = databaseName.String
-		}
-
-		qID := queryID.String
-
-		waitCat := ""
-		if waitCategory.Valid {
-			waitCat = waitCategory.String
-		}
-
-		waitEvent := waitEventName.String
+		dbName := waitEvent.GetDatabaseName()
+		qID := waitEvent.GetQueryID()
+		waitCat := waitEvent.GetWaitCategory()
+		waitEventName := waitEvent.GetWaitEventName()
 
 		s.logger.Debug("Processing wait event",
 			zap.String("database_name", dbName),
 			zap.String("query_id", qID),
 			zap.String("wait_category", waitCat),
-			zap.String("wait_event_name", waitEvent),
-			zap.Float64("total_wait_time_ms", totalWaitTimeMs.Float64),
-			zap.Float64("avg_wait_time_ms", func() float64 {
-				if avgWaitTimeMs.Valid {
-					return avgWaitTimeMs.Float64
-				}
-				return 0
-			}()))
+			zap.String("wait_event_name", waitEventName),
+			zap.Float64("total_wait_time_ms", waitEvent.GetTotalWaitTimeMs()),
+			zap.Float64("avg_wait_time_ms", waitEvent.GetAvgWaitTimeMs()))
 
 		// Record waiting tasks count if available
-		if waitingTasksCount.Valid {
+		if waitEvent.HasValidWaitingTasksCount() {
 			s.mb.RecordNewrelicoracledbWaitEventsWaitingTasksCountDataPoint(
 				now,
-				float64(waitingTasksCount.Int64),
+				float64(waitEvent.GetWaitingTasksCount()),
 				dbName,
 				qID,
-				waitEvent,
+				waitEventName,
 				waitCat,
 			)
 		}
@@ -140,22 +118,24 @@ func (s *WaitEventsScraper) ScrapeWaitEvents(ctx context.Context) []error {
 		// Record total wait time
 		s.mb.RecordNewrelicoracledbWaitEventsTotalWaitTimeMsDataPoint(
 			now,
-			totalWaitTimeMs.Float64,
+			waitEvent.GetTotalWaitTimeMs(),
 			dbName,
 			qID,
-			waitEvent,
+			waitEventName,
 			waitCat,
 		)
 
-		// Record average wait time (now calculated in SQL)
-		s.mb.RecordNewrelicoracledbWaitEventsAvgWaitTimeMsDataPoint(
-			now,
-			avgWaitTimeMs.Float64,
-			dbName,
-			qID,
-			waitEvent,
-			waitCat,
-		)
+		// Record average wait time if available
+		if waitEvent.HasValidAvgWaitTime() {
+			s.mb.RecordNewrelicoracledbWaitEventsAvgWaitTimeMsDataPoint(
+				now,
+				waitEvent.GetAvgWaitTimeMs(),
+				dbName,
+				qID,
+				waitEventName,
+				waitCat,
+			)
+		}
 	}
 
 	if err := rows.Err(); err != nil {
