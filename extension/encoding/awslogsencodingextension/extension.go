@@ -13,6 +13,7 @@ import (
 	"github.com/klauspost/compress/gzip"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 
@@ -32,6 +33,17 @@ const (
 	bytesEncoding   = "bytes"
 	parquetEncoding = "parquet"
 )
+
+var vpcFlowStartISO8601FormatFeatureGate *featuregate.Gate
+
+func init() {
+	vpcFlowStartISO8601FormatFeatureGate = featuregate.GlobalRegistry().MustRegister(
+		constants.VPCFlowStartISO8601FormatID,
+		featuregate.StageAlpha,
+		featuregate.WithRegisterDescription("When enabled, aws.vpc.flow.start field will be formatted as ISO-8601 string instead of seconds since epoch integer."),
+		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/43390"),
+	)
+}
 
 var _ encoding.LogsUnmarshalerExtension = (*encodingExtension)(nil)
 
@@ -72,6 +84,7 @@ func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension,
 			fileFormat,
 			settings.BuildInfo,
 			settings.Logger,
+			vpcFlowStartISO8601FormatFeatureGate.IsEnabled(),
 		)
 		return &encodingExtension{
 			unmarshaler: unmarshaler,

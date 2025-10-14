@@ -22,4 +22,7 @@ const (
 	FileFormatPlainText     = "plain-text"
 	FileFormatParquet       = "parquet"
 	FormatIdentificationTag = "encoding.format"
+
+	// Feature gate for VPC flow start field ISO-8601 format
+	VPCFlowStartISO8601FormatID = "extension.awslogsencoding.vpcflow.start.iso8601"
 )
