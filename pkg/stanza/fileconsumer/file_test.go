@@ -468,7 +468,7 @@ func TestMultipleEmpty(t *testing.T) {
 	sink.ExpectNoCallsUntil(t, time.Second)
 }
 
-// TestLeadingEmpty tests that the the operator handles a leading
+// TestLeadingEmpty tests that the operator handles a leading
 // newline, and does not read the file multiple times
 func TestLeadingEmpty(t *testing.T) {
 	t.Parallel()
@@ -664,19 +664,19 @@ func TestMultiFileParallel_PreloadedFiles(t *testing.T) {
 	numMessages := 100
 
 	expected := make([][]byte, 0, numFiles*numMessages)
-	for i := 0; i < numFiles; i++ {
-		for j := 0; j < numMessages; j++ {
+	for i := range numFiles {
+		for j := range numMessages {
 			expected = append(expected, []byte(getMessage(i, j)))
 		}
 	}
 
 	var wg sync.WaitGroup
-	for i := 0; i < numFiles; i++ {
+	for i := range numFiles {
 		temp := filetest.OpenTemp(t, tempDir)
 		wg.Add(1)
 		go func(tf *os.File, f int) {
 			defer wg.Done()
-			for j := 0; j < numMessages; j++ {
+			for j := range numMessages {
 				filetest.WriteString(t, tf, getMessage(f, j)+"\n")
 			}
 		}(temp, i)
@@ -705,8 +705,8 @@ func TestMultiFileParallel_LiveFiles(t *testing.T) {
 	numMessages := 100
 
 	expected := make([][]byte, 0, numFiles*numMessages)
-	for i := 0; i < numFiles; i++ {
-		for j := 0; j < numMessages; j++ {
+	for i := range numFiles {
+		for j := range numMessages {
 			expected = append(expected, []byte(getMessage(i, j)))
 		}
 	}
@@ -717,7 +717,7 @@ func TestMultiFileParallel_LiveFiles(t *testing.T) {
 	}()
 
 	temps := make([]*os.File, 0, numFiles)
-	for i := 0; i < numFiles; i++ {
+	for range numFiles {
 		temps = append(temps, filetest.OpenTemp(t, tempDir))
 	}
 
@@ -726,7 +726,7 @@ func TestMultiFileParallel_LiveFiles(t *testing.T) {
 		wg.Add(1)
 		go func(tf *os.File, f int) {
 			defer wg.Done()
-			for j := 0; j < numMessages; j++ {
+			for j := range numMessages {
 				filetest.WriteString(t, tf, getMessage(f, j)+"\n")
 			}
 		}(temp, i)
@@ -799,7 +799,7 @@ func TestManyLogsDelivered(t *testing.T) {
 
 	count := 1000
 	expectedTokens := make([]string, 0, count)
-	for i := 0; i < count; i++ {
+	for i := range count {
 		expectedTokens = append(expectedTokens, strconv.Itoa(i))
 	}
 
@@ -842,14 +842,14 @@ func TestFileBatching(t *testing.T) {
 	operator.persister = testutil.NewUnscopedMockPersister()
 
 	temps := make([]*os.File, 0, files)
-	for i := 0; i < files; i++ {
+	for range files {
 		temps = append(temps, filetest.OpenTemp(t, tempDir))
 	}
 
 	// Write logs to each file
 	expectedTokens := make([][]byte, 0, files*linesPerFile)
 	for i, temp := range temps {
-		for j := 0; j < linesPerFile; j++ {
+		for j := range linesPerFile {
 			message := fmt.Sprintf("%s %d %d", filetest.TokenWithLength(100), i, j)
 			_, err := temp.WriteString(message + "\n")
 			require.NoError(t, err)
@@ -866,7 +866,7 @@ func TestFileBatching(t *testing.T) {
 	// Write more logs to each file so we can validate that all files are still known
 	expectedTokens = make([][]byte, 0, files*linesPerFile)
 	for i, temp := range temps {
-		for j := 0; j < linesPerFile; j++ {
+		for j := range linesPerFile {
 			message := fmt.Sprintf("%s %d %d", filetest.TokenWithLength(20), i, j)
 			_, err := temp.WriteString(message + "\n")
 			require.NoError(t, err)
@@ -917,7 +917,7 @@ func TestFileBatchingRespectsStartAtEnd(t *testing.T) {
 	operator.persister = testutil.NewUnscopedMockPersister()
 
 	temps := make([]*os.File, 0, initFiles+moreFiles)
-	for i := 0; i < initFiles; i++ {
+	for range initFiles {
 		temps = append(temps, filetest.OpenTemp(t, tempDir))
 	}
 
@@ -933,7 +933,7 @@ func TestFileBatchingRespectsStartAtEnd(t *testing.T) {
 	sink.ExpectNoCalls(t)
 
 	// Create some more files
-	for i := 0; i < moreFiles; i++ {
+	for range moreFiles {
 		temps = append(temps, filetest.OpenTemp(t, tempDir))
 	}
 
@@ -1049,14 +1049,14 @@ func TestDeleteAfterRead(t *testing.T) {
 
 	tempDir := t.TempDir()
 	temps := make([]*os.File, 0, files)
-	for i := 0; i < files; i++ {
+	for range files {
 		temps = append(temps, filetest.OpenTemp(t, tempDir))
 	}
 
 	expectedTokens := make([][]byte, 0, totalLines)
 	actualTokens := make([][]byte, 0, totalLines)
 	for i, temp := range temps {
-		for j := 0; j < linesPerFile; j++ {
+		for j := range linesPerFile {
 			line := filetest.TokenWithLength(100)
 			message := fmt.Sprintf("%s %d %d", line, i, j)
 			_, err := temp.WriteString(message + "\n")
@@ -1086,14 +1086,14 @@ func TestDeleteAfterRead(t *testing.T) {
 
 	// Make more files to ensure deleted files do not cause problems on next poll
 	temps = make([]*os.File, 0, files)
-	for i := 0; i < files; i++ {
+	for range files {
 		temps = append(temps, filetest.OpenTemp(t, tempDir))
 	}
 
 	expectedTokens = make([][]byte, 0, totalLines)
 	actualTokens = make([][]byte, 0, totalLines)
 	for i, temp := range temps {
-		for j := 0; j < linesPerFile; j++ {
+		for j := range linesPerFile {
 			line := filetest.TokenWithLength(200)
 			message := fmt.Sprintf("%s %d %d", line, i, j)
 			_, err := temp.WriteString(message + "\n")
@@ -1135,14 +1135,14 @@ func TestMaxBatching(t *testing.T) {
 	operator.persister = testutil.NewUnscopedMockPersister()
 
 	temps := make([]*os.File, 0, files)
-	for i := 0; i < files; i++ {
+	for range files {
 		temps = append(temps, filetest.OpenTemp(t, tempDir))
 	}
 
 	// Write logs to each file
 	numExpectedTokens := expectedMaxFilesPerPoll * linesPerFile
 	for i, temp := range temps {
-		for j := 0; j < linesPerFile; j++ {
+		for j := range linesPerFile {
 			message := fmt.Sprintf("%s %d %d", filetest.TokenWithLength(100), i, j)
 			_, err := temp.WriteString(message + "\n")
 			require.NoError(t, err)
@@ -1157,7 +1157,7 @@ func TestMaxBatching(t *testing.T) {
 
 	// Write more logs to each file so we can validate that all files are still known
 	for i, temp := range temps {
-		for j := 0; j < linesPerFile; j++ {
+		for j := range linesPerFile {
 			message := fmt.Sprintf("%s %d %d", filetest.TokenWithLength(20), i, j)
 			_, err := temp.WriteString(message + "\n")
 			require.NoError(t, err)
@@ -1220,7 +1220,7 @@ func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 	require.NoError(t, shortFile.Close())
 
 	longFile := filetest.OpenTemp(t, tempDir)
-	for line := 0; line < longFileLines; line++ {
+	for range longFileLines {
 		_, err := longFile.WriteString(string(filetest.TokenWithLength(100)) + "\n")
 		require.NoError(t, err)
 	}
@@ -1533,7 +1533,7 @@ func TestNoTracking(t *testing.T) {
 func symlinkTestCreateLogFile(t *testing.T, tempDir string, fileIdx, numLogLines int) (tokens [][]byte) {
 	logFilePath := fmt.Sprintf("%s/%d.log", tempDir, fileIdx)
 	temp1 := filetest.OpenFile(t, logFilePath)
-	for i := 0; i < numLogLines; i++ {
+	for i := range numLogLines {
 		msg := fmt.Sprintf("[fileIdx %2d] This is a simple log line with the number %3d", fileIdx, i)
 		filetest.WriteString(t, temp1, msg+"\n")
 		tokens = append(tokens, []byte(msg))
