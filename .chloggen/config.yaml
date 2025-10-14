@@ -159,6 +159,7 @@ components:
     - pkg/resourcetotelemetry
     - pkg/sampling
     - pkg/stanza
+    - pkg/stanza/operator/input/journald
     - pkg/status
     - pkg/topic
     - pkg/translator/azure
