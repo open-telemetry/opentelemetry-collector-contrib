@@ -6,6 +6,7 @@ package hostmetricsreceiver
 import (
 	"context"
 	"errors"
+	"maps"
 	"runtime"
 	"testing"
 	"time"
@@ -142,9 +143,9 @@ func assertIncludesExpectedMetrics(t *testing.T, got pmetric.Metrics) {
 		assert.Equal(t, conventions.SchemaURL, rm.SchemaUrl(),
 			"SchemaURL is incorrect for metrics: %v", returnedMetricNames)
 		if rm.Resource().Attributes().Len() == 0 {
-			appendMapInto(returnedMetrics, returnedMetricNames)
+			maps.Copy(returnedMetrics, returnedMetricNames)
 		} else {
-			appendMapInto(returnedResourceMetrics, returnedMetricNames)
+			maps.Copy(returnedResourceMetrics, returnedMetricNames)
 		}
 	}
 
@@ -186,12 +187,6 @@ func getReturnedMetricNames(metrics pmetric.MetricSlice) map[string]struct{} {
 		metricNames[metrics.At(i).Name()] = struct{}{}
 	}
 	return metricNames
-}
-
-func appendMapInto(m1, m2 map[string]struct{}) {
-	for k, v := range m2 {
-		m1[k] = v
-	}
 }
 
 var mockType = component.MustNewType("mock")
@@ -262,8 +257,7 @@ func benchmarkScrapeMetrics(b *testing.B, cfg *Config) {
 
 	require.NoError(b, receiver.Start(b.Context(), componenttest.NewNopHost()))
 
-	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
+	for b.Loop() {
 		tickerCh <- time.Now()
 		<-sink.ch
 	}
