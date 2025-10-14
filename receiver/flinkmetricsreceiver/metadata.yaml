@@ -11,52 +11,122 @@ status:
 
 resource_attributes:
   # These resource attributes are Flinks system scope variables, which contains context information about metrics. These are required to uniquely identify incoming metrics as the same job can run multiple times concurrently. See https://nightlies.apache.org/flink/flink-docs-release-1.14/docs/ops/metrics/#system-scope for more information.
-  host.name:
-    description: The host name.
-    type: string
-    enabled: true
-  flink.taskmanager.id:
-    description: The taskmanager ID.
-    type: string
-    enabled: true
   flink.job.name:
     description: The job name.
-    type: string
-    enabled: true
-  flink.task.name:
-    description: The task name.
-    type: string
-    enabled: true
-  flink.subtask.index:
-    description: The subtask index.
     type: string
     enabled: true
   flink.resource.type:
     description: The flink scope type in which a metric belongs to.
     type: string
     enabled: true
-    enum: [ jobmanager, taskmanager ]
+    enum: [jobmanager, taskmanager]
+  flink.subtask.index:
+    description: The subtask index.
+    type: string
+    enabled: true
+  flink.task.name:
+    description: The task name.
+    type: string
+    enabled: true
+  flink.taskmanager.id:
+    description: The taskmanager ID.
+    type: string
+    enabled: true
+  host.name:
+    description: The host name.
+    type: string
+    enabled: true
 
 attributes:
-  operator_name:
-    name_override: name
-    description: The operator name.
+  checkpoint:
+    description: The number of checkpoints completed or that failed.
     type: string
+    enum: [completed, failed]
   garbage_collector_name:
     name_override: name
     description: The names for the parallel scavenge and garbage first garbage collectors.
     type: string
-    enum: [ PS_MarkSweep, PS_Scavenge, G1_Young_Generation, G1_Old_Generation ]
-  checkpoint:
-    description: The number of checkpoints completed or that failed.
+    enum: [PS_MarkSweep, PS_Scavenge, G1_Young_Generation, G1_Old_Generation]
+  operator_name:
+    name_override: name
+    description: The operator name.
     type: string
-    enum: [ completed, failed ]
   record:
     description: The number of records received in, sent out or dropped due to arriving late.
     type: string
-    enum: [ in, out, dropped ]
+    enum: [in, out, dropped]
 
 metrics:
+  flink.job.checkpoint.count:
+    enabled: true
+    stability:
+      level: development
+    description: The number of checkpoints completed or failed.
+    unit: "{checkpoints}"
+    sum:
+      monotonic: true
+      aggregation_temporality: cumulative
+      value_type: int
+      input_type: string
+    attributes: [checkpoint]
+  flink.job.checkpoint.in_progress:
+    enabled: true
+    stability:
+      level: development
+    description: The number of checkpoints in progress.
+    unit: "{checkpoints}"
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+      input_type: string
+    attributes: []
+  flink.job.last_checkpoint.size:
+    enabled: true
+    stability:
+      level: development
+    description: The total size of the last checkpoint.
+    unit: By
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+      input_type: string
+    attributes: []
+  flink.job.last_checkpoint.time:
+    enabled: true
+    stability:
+      level: development
+    description: The end to end duration of the last checkpoint.
+    unit: ms
+    gauge:
+      value_type: int
+      input_type: string
+    attributes: []
+  flink.job.restart.count:
+    enabled: true
+    stability:
+      level: development
+    description: The total number of restarts since this job was submitted, including full restarts and fine-grained restarts.
+    unit: "{restarts}"
+    sum:
+      monotonic: true
+      aggregation_temporality: cumulative
+      value_type: int
+      input_type: string
+    attributes: []
+  flink.jvm.class_loader.classes_loaded:
+    enabled: true
+    stability:
+      level: development
+    description: The total number of classes loaded since the start of the JVM.
+    unit: "{classes}"
+    sum:
+      monotonic: true
+      aggregation_temporality: cumulative
+      value_type: int
+      input_type: string
+    attributes: []
   flink.jvm.cpu.load:
     enabled: true
     stability:
@@ -79,11 +149,47 @@ metrics:
       value_type: int
       input_type: string
     attributes: []
-  flink.jvm.memory.heap.used:
+  flink.jvm.gc.collections.count:
     enabled: true
     stability:
       level: development
-    description: The amount of heap memory currently used.
+    description: The total number of collections that have occurred.
+    unit: "{collections}"
+    sum:
+      monotonic: true
+      aggregation_temporality: cumulative
+      value_type: int
+      input_type: string
+    attributes: [garbage_collector_name]
+  flink.jvm.gc.collections.time:
+    enabled: true
+    stability:
+      level: development
+    description: The total time spent performing garbage collection.
+    unit: ms
+    sum:
+      monotonic: true
+      aggregation_temporality: cumulative
+      value_type: int
+      input_type: string
+    attributes: [garbage_collector_name]
+  flink.jvm.memory.direct.total_capacity:
+    enabled: true
+    stability:
+      level: development
+    description: The total capacity of all buffers in the direct buffer pool.
+    unit: By
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+      input_type: string
+    attributes: []
+  flink.jvm.memory.direct.used:
+    enabled: true
+    stability:
+      level: development
+    description: The amount of memory used by the JVM for the direct buffer pool.
     unit: By
     sum:
       monotonic: false
@@ -115,11 +221,11 @@ metrics:
       value_type: int
       input_type: string
     attributes: []
-  flink.jvm.memory.nonheap.used:
+  flink.jvm.memory.heap.used:
     enabled: true
     stability:
       level: development
-    description: The amount of non-heap memory currently used.
+    description: The amount of heap memory currently used.
     unit: By
     sum:
       monotonic: false
@@ -127,11 +233,11 @@ metrics:
       value_type: int
       input_type: string
     attributes: []
-  flink.jvm.memory.nonheap.committed:
+  flink.jvm.memory.mapped.total_capacity:
     enabled: true
     stability:
       level: development
-    description: The amount of non-heap memory guaranteed to be available to the JVM.
+    description: The number of buffers in the mapped buffer pool.
     unit: By
     sum:
       monotonic: false
@@ -139,23 +245,11 @@ metrics:
       value_type: int
       input_type: string
     attributes: []
-  flink.jvm.memory.nonheap.max:
+  flink.jvm.memory.mapped.used:
     enabled: true
     stability:
       level: development
-    description: The maximum amount of non-heap memory that can be used for memory management.
-    unit: By
-    sum:
-      monotonic: false
-      aggregation_temporality: cumulative
-      value_type: int
-      input_type: string
-    attributes: []
-  flink.jvm.memory.metaspace.used:
-    enabled: true
-    stability:
-      level: development
-    description: The amount of memory currently used in the Metaspace memory pool.
+    description: The amount of memory used by the JVM for the mapped buffer pool.
     unit: By
     sum:
       monotonic: false
@@ -187,11 +281,11 @@ metrics:
       value_type: int
       input_type: string
     attributes: []
-  flink.jvm.memory.direct.used:
+  flink.jvm.memory.metaspace.used:
     enabled: true
     stability:
       level: development
-    description: The amount of memory used by the JVM for the direct buffer pool.
+    description: The amount of memory currently used in the Metaspace memory pool.
     unit: By
     sum:
       monotonic: false
@@ -199,11 +293,11 @@ metrics:
       value_type: int
       input_type: string
     attributes: []
-  flink.jvm.memory.direct.total_capacity:
+  flink.jvm.memory.nonheap.committed:
     enabled: true
     stability:
       level: development
-    description: The total capacity of all buffers in the direct buffer pool.
+    description: The amount of non-heap memory guaranteed to be available to the JVM.
     unit: By
     sum:
       monotonic: false
@@ -211,11 +305,11 @@ metrics:
       value_type: int
       input_type: string
     attributes: []
-  flink.jvm.memory.mapped.used:
+  flink.jvm.memory.nonheap.max:
     enabled: true
     stability:
       level: development
-    description: The amount of memory used by the JVM for the mapped buffer pool.
+    description: The maximum amount of non-heap memory that can be used for memory management.
     unit: By
     sum:
       monotonic: false
@@ -223,35 +317,11 @@ metrics:
       value_type: int
       input_type: string
     attributes: []
-  flink.jvm.memory.mapped.total_capacity:
+  flink.jvm.memory.nonheap.used:
     enabled: true
     stability:
       level: development
-    description: The number of buffers in the mapped buffer pool.
-    unit: By
-    sum:
-      monotonic: false
-      aggregation_temporality: cumulative
-      value_type: int
-      input_type: string
-    attributes: []
-  flink.memory.managed.used:
-    enabled: true
-    stability:
-      level: development
-    description: The amount of managed memory currently used.
-    unit: By
-    sum:
-      monotonic: false
-      aggregation_temporality: cumulative
-      value_type: int
-      input_type: string
-    attributes: []
-  flink.memory.managed.total:
-    enabled: true
-    stability:
-      level: development
-    description: The total amount of managed memory.
+    description: The amount of non-heap memory currently used.
     unit: By
     sum:
       monotonic: false
@@ -271,69 +341,11 @@ metrics:
       value_type: int
       input_type: string
     attributes: []
-  flink.jvm.gc.collections.count:
+  flink.memory.managed.total:
     enabled: true
     stability:
       level: development
-    description: The total number of collections that have occurred.
-    unit: "{collections}"
-    sum:
-      monotonic: true
-      aggregation_temporality: cumulative
-      value_type: int
-      input_type: string
-    attributes: [ garbage_collector_name ]
-  flink.jvm.gc.collections.time:
-    enabled: true
-    stability:
-      level: development
-    description: The total time spent performing garbage collection.
-    unit: ms
-    sum:
-      monotonic: true
-      aggregation_temporality: cumulative
-      value_type: int
-      input_type: string
-    attributes: [ garbage_collector_name ]
-  flink.jvm.class_loader.classes_loaded:
-    enabled: true
-    stability:
-      level: development
-    description: The total number of classes loaded since the start of the JVM.
-    unit: "{classes}"
-    sum:
-      monotonic: true
-      aggregation_temporality: cumulative
-      value_type: int
-      input_type: string
-    attributes: []
-  flink.job.restart.count:
-    enabled: true
-    stability:
-      level: development
-    description: The total number of restarts since this job was submitted, including full restarts and fine-grained restarts.
-    unit: "{restarts}"
-    sum:
-      monotonic: true
-      aggregation_temporality: cumulative
-      value_type: int
-      input_type: string
-    attributes: []
-  flink.job.last_checkpoint.time:
-    enabled: true
-    stability:
-      level: development
-    description: The end to end duration of the last checkpoint.
-    unit: ms
-    gauge:
-      value_type: int
-      input_type: string
-    attributes: []
-  flink.job.last_checkpoint.size:
-    enabled: true
-    stability:
-      level: development
-    description: The total size of the last checkpoint.
+    description: The total amount of managed memory.
     unit: By
     sum:
       monotonic: false
@@ -341,42 +353,18 @@ metrics:
       value_type: int
       input_type: string
     attributes: []
-  flink.job.checkpoint.count:
+  flink.memory.managed.used:
     enabled: true
     stability:
       level: development
-    description: The number of checkpoints completed or failed.
-    unit: "{checkpoints}"
-    sum:
-      monotonic: true
-      aggregation_temporality: cumulative
-      value_type: int
-      input_type: string
-    attributes: [ checkpoint ]
-  flink.job.checkpoint.in_progress:
-    enabled: true
-    stability:
-      level: development
-    description: The number of checkpoints in progress.
-    unit: "{checkpoints}"
+    description: The amount of managed memory currently used.
+    unit: By
     sum:
       monotonic: false
       aggregation_temporality: cumulative
       value_type: int
       input_type: string
     attributes: []
-  flink.task.record.count:
-    enabled: true
-    stability:
-      level: development
-    description: The number of records a task has.
-    unit: "{records}"
-    sum:
-      monotonic: true
-      aggregation_temporality: cumulative
-      value_type: int
-      input_type: string
-    attributes: [ record ]
   flink.operator.record.count:
     enabled: true
     stability:
@@ -388,7 +376,7 @@ metrics:
       aggregation_temporality: cumulative
       value_type: int
       input_type: string
-    attributes: [ operator_name, record ]
+    attributes: [operator_name, record]
   flink.operator.watermark.output:
     enabled: true
     stability:
@@ -400,6 +388,19 @@ metrics:
       aggregation_temporality: cumulative
       value_type: int
       input_type: string
-    attributes: [ operator_name ]
+    attributes: [operator_name]
+  flink.task.record.count:
+    enabled: true
+    stability:
+      level: development
+    description: The number of records a task has.
+    unit: "{records}"
+    sum:
+      monotonic: true
+      aggregation_temporality: cumulative
+      value_type: int
+      input_type: string
+    attributes: [record]
+
 tests:
   config:
