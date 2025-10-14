@@ -3,16 +3,16 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/e2e
 go 1.24.0
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.135.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.137.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter v0.137.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor v0.135.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor v0.137.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor v0.137.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.135.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.135.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver v0.135.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver v0.135.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.135.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.135.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.137.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.137.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver v0.137.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver v0.137.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.137.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.137.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/connector v0.137.1-0.20251013162618-a96eab114ea4
 	go.opentelemetry.io/collector/exporter v1.43.1-0.20251013162618-a96eab114ea4
