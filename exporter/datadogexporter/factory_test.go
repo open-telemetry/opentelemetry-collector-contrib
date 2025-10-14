@@ -305,3 +305,31 @@ func TestStopExporters(t *testing.T) {
 		t.Fatal("Timed out")
 	}
 }
+
+func TestCheckAndCastConfigError(t *testing.T) {
+	factory := NewFactory()
+	ctx := t.Context()
+	settings := exportertest.NewNopSettings(metadata.Type)
+
+	// Create a mock config of wrong type (using a simple struct instead of *datadogconfig.Config)
+	type wrongConfig struct{}
+	invalidCfg := &wrongConfig{}
+
+	// Test that CreateMetrics returns an error when given wrong config type
+	_, err := factory.CreateMetrics(ctx, settings, invalidCfg)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "expected config of type *datadog.Config")
+	assert.Contains(t, err.Error(), "got *datadogexporter.wrongConfig")
+
+	// Test that CreateTraces returns an error when given wrong config type
+	_, err = factory.CreateTraces(ctx, settings, invalidCfg)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "expected config of type *datadog.Config")
+	assert.Contains(t, err.Error(), "got *datadogexporter.wrongConfig")
+
+	// Test that CreateLogs returns an error when given wrong config type
+	_, err = factory.CreateLogs(ctx, settings, invalidCfg)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "expected config of type *datadog.Config")
+	assert.Contains(t, err.Error(), "got *datadogexporter.wrongConfig")
+}
