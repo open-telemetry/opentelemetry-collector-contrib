@@ -17,10 +17,10 @@ require (
 	go.opentelemetry.io/collector/pdata v1.43.1-0.20251013162618-a96eab114ea4
 	go.opentelemetry.io/collector/pdata/pprofile v0.137.1-0.20251013162618-a96eab114ea4
 	go.opentelemetry.io/collector/pipeline v1.43.1-0.20251013162618-a96eab114ea4
-	go.opentelemetry.io/collector/pipeline/xpipeline v0.137.0
+	go.opentelemetry.io/collector/pipeline/xpipeline v0.137.1-0.20251013162618-a96eab114ea4
 	go.opentelemetry.io/collector/processor v1.43.1-0.20251013162618-a96eab114ea4
 	go.opentelemetry.io/collector/processor/processorhelper v0.137.1-0.20251013162618-a96eab114ea4
-	go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper v0.137.0
+	go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper v0.137.1-0.20251013162618-a96eab114ea4
 	go.opentelemetry.io/collector/processor/processortest v0.137.1-0.20251013162618-a96eab114ea4
 	go.opentelemetry.io/collector/processor/xprocessor v0.137.1-0.20251013162618-a96eab114ea4
 	go.opentelemetry.io/otel v1.38.0
