@@ -11,7 +11,7 @@ require (
 	github.com/jcchavezs/porto v0.6.0
 	github.com/jstemmer/go-junit-report v1.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/cmd/codecovgen v0.137.0
-	github.com/rhysd/actionlint v1.7.7
+	github.com/rhysd/actionlint v1.7.8
 	go.opentelemetry.io/build-tools/checkapi v0.26.2
 	go.opentelemetry.io/build-tools/checkfile v0.28.1
 	go.opentelemetry.io/build-tools/chloggen v0.28.1
@@ -174,7 +174,7 @@ require (
 	github.com/matoous/godox v1.1.0 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
-	github.com/mattn/go-runewidth v0.0.16 // indirect
+	github.com/mattn/go-runewidth v0.0.17 // indirect
 	github.com/mattn/go-shellwords v1.0.12 // indirect
 	github.com/mgechev/revive v1.9.0 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
@@ -271,6 +271,7 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
+	go.yaml.in/yaml/v4 v4.0.0-rc.2 // indirect
 	golang.org/x/crypto v0.42.0 // indirect
 	golang.org/x/exp/typeparams v0.0.0-20250620022241-b7579e27df2b // indirect
 	golang.org/x/mod v0.28.0 // indirect
