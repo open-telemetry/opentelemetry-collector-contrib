@@ -402,11 +402,12 @@ func TestReqToLog(t *testing.T) {
 				return bufio.NewScanner(reader)
 			}(),
 			config: &Config{
-				Path:               defaultPath,
-				HealthPath:         defaultHealthPath,
-				ReadTimeout:        defaultReadTimeout,
-				WriteTimeout:       defaultWriteTimeout,
-				SplitLogsAtNewLine: true,
+				Path:                defaultPath,
+				HealthPath:          defaultHealthPath,
+				ReadTimeout:         defaultReadTimeout,
+				WriteTimeout:        defaultWriteTimeout,
+				SplitLogsAtNewLine:  true,
+				MaxRequestBodyBytes: 150 * 1024, // Set to 150KB to handle the 100KB test payload
 			},
 			tt: func(t *testing.T, reqLog plog.Logs, reqLen int, err error, _ receiver.Settings) {
 				require.NoError(t, err)
