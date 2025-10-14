@@ -402,13 +402,14 @@ func TestReqToLog(t *testing.T) {
 				return bufio.NewScanner(reader)
 			}(),
 			config: &Config{
-				Path:               defaultPath,
-				HealthPath:         defaultHealthPath,
-				ReadTimeout:        defaultReadTimeout,
-				WriteTimeout:       defaultWriteTimeout,
-				SplitLogsAtNewLine: true,
+				Path:                defaultPath,
+				HealthPath:          defaultHealthPath,
+				ReadTimeout:         defaultReadTimeout,
+				WriteTimeout:        defaultWriteTimeout,
+				SplitLogsAtNewLine:  true,
+				MaxRequestBodyBytes: 150 * 1024, // Set to 150KB to handle the 100KB test payload
 			},
-			tt: func(t *testing.T, reqLog plog.Logs, reqLen int, err error, _ receiver.Settings) {
+			tt: func(t *testing.T, _ plog.Logs, reqLen int, err error, _ receiver.Settings) {
 				require.NoError(t, err)
 				// Should be 2 log entries since there's a newline in the middle
 				require.Equal(t, 2, reqLen)
@@ -441,7 +442,7 @@ func TestReqToLog(t *testing.T) {
 				WriteTimeout:            defaultWriteTimeout,
 				SplitLogsAtJSONBoundary: true,
 			},
-			tt: func(t *testing.T, reqLog plog.Logs, reqLen int, err error, _ receiver.Settings) {
+			tt: func(t *testing.T, _ plog.Logs, reqLen int, err error, _ receiver.Settings) {
 				require.NoError(t, err)
 				// Should be 800 log entries (one per JSON object)
 				require.Equal(t, 800, reqLen)
@@ -467,7 +468,7 @@ func TestReqToLog(t *testing.T) {
 				MaxRequestBodyBytes: 100 * 1024, // Set to 100KB, smaller than payload
 			},
 			expectError: true,
-			tt: func(t *testing.T, reqLog plog.Logs, reqLen int, err error, _ receiver.Settings) {
+			tt: func(t *testing.T, _ plog.Logs, reqLen int, err error, _ receiver.Settings) {
 				require.Error(t, err)
 				require.ErrorIs(t, err, errRequestBodyTooLarge)
 				require.Contains(t, err.Error(), "limit is 102400 bytes")
@@ -490,8 +491,8 @@ func TestReqToLog(t *testing.T) {
 			require.NoError(t, err)
 			eventReceiver := receiver.(*eventReceiver)
 			defer func() {
-				err := eventReceiver.Shutdown(t.Context())
-				require.NoError(t, err)
+				shutdownErr := eventReceiver.Shutdown(t.Context())
+				require.NoError(t, shutdownErr)
 			}()
 
 			reqLog, reqLen, err := eventReceiver.reqToLog(test.sc, test.headers, test.query)

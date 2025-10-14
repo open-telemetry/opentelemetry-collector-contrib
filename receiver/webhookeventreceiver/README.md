@@ -36,7 +36,7 @@ The following settings are optional:
 * `split_logs_at_json_boundary` (default: false): If true, the receiver will parse the request body to JSON and send each object as a log. Splitting on new line overrides json boundary so only enable one at a time.
 * `convert_headers_to_attributes` (optional): add all request headers (excluding `required_header` if also set) log attributes
 * `header_attribute_regex` (optional): add headers matching supplied regex as log attributes. Header attributes will be prefixed with `header.`
-* `max_request_body_bytes` (default: 102400 (100KB)): Maximum size in bytes for request body. Requests exceeding this limit will be rejected with an error. Minimum allowed value is 1024 bytes (1KB). Values below 64KB will log a warning as they may cause legitimate requests to be rejected.
+* `max_request_body_bytes` (default: 102400 (100KB)): Maximum size in bytes for request body. Requests exceeding this limit will be rejected with an error. Values below the bufio default (64KB) will be automatically increased to 64KB with a warning.
 
 ### Split logs at newline example
 

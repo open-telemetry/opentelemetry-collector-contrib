@@ -25,9 +25,7 @@ const (
 	headerNamespace = "header"
 )
 
-var (
-	errRequestBodyTooLarge = errors.New("request body exceeds maximum allowed size")
-)
+var errRequestBodyTooLarge = errors.New("request body exceeds maximum allowed size")
 
 func (er *eventReceiver) reqToLog(sc *bufio.Scanner,
 	headers http.Header,
@@ -45,15 +43,8 @@ func (er *eventReceiver) reqToLog(sc *bufio.Scanner,
 	}
 	sc.Split(split)
 
-	// Increase buffer size to handle large payloads when splitting is enabled.
-	// The default bufio.Scanner max token size is 64KB, which causes failures
-	// for request bodies exceeding this size when using split functions.
-	// Use the configured max request body size.
-	maxTokenSize := er.cfg.MaxRequestBodyBytes
-	if maxTokenSize == 0 {
-		maxTokenSize = 10 * 1024 * 1024 // Default to 10MB if not configured
-	}
-	sc.Buffer(make([]byte, bufio.MaxScanTokenSize), maxTokenSize)
+	// Increase max token size from default 64KB to configured value
+	sc.Buffer(make([]byte, bufio.MaxScanTokenSize), er.maxRequestBodyBytes)
 
 	log := plog.NewLogs()
 	resourceLog := log.ResourceLogs().AppendEmpty()
@@ -83,10 +74,9 @@ func (er *eventReceiver) reqToLog(sc *bufio.Scanner,
 		}
 	}
 
-	// Check for scanner errors (e.g., token too long)
 	if err := sc.Err(); err != nil {
 		if errors.Is(err, bufio.ErrTooLong) {
-			return log, scopeLog.LogRecords().Len(), fmt.Errorf("%w: limit is %d bytes", errRequestBodyTooLarge, maxTokenSize)
+			return log, scopeLog.LogRecords().Len(), fmt.Errorf("%w: limit is %d bytes", errRequestBodyTooLarge, er.maxRequestBodyBytes)
 		}
 		return log, scopeLog.LogRecords().Len(), fmt.Errorf("failed to scan request body: %w", err)
 	}

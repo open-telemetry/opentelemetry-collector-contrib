@@ -281,13 +281,13 @@ func TestFailedReq(t *testing.T) {
 			cfg: func() Config {
 				c := createDefaultConfig().(*Config)
 				c.Endpoint = "localhost:0"
-				c.MaxRequestBodyBytes = 1000 // Set to 1KB limit
+				c.MaxRequestBodyBytes = 70 * 1024 // Set to 70KB limit
 				c.SplitLogsAtNewLine = true
 				return *c
 			}(),
 			req: func() *http.Request {
-				// Create a payload larger than 1KB to ensure it exceeds the limit
-				largeBody := strings.Repeat("X", 2000)
+				// Create a payload larger than 70KB to ensure it exceeds the limit
+				largeBody := strings.Repeat("X", 80*1024)
 				return httptest.NewRequest(http.MethodPost, "http://localhost/events", strings.NewReader(largeBody))
 			}(),
 			status: http.StatusBadRequest,
