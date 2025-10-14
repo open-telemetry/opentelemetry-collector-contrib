@@ -30,10 +30,10 @@ func createDeleteMatchingKeysFunction[K any](_ ottl.FunctionContext, oArgs ottl.
 		return nil, errors.New("DeleteMatchingKeysFactory args must be of type *DeleteMatchingKeysArguments[K]")
 	}
 
-	return deleteMatchingKeys(args.Target, args.Pattern)
+	return deleteMatchingKeys(args.Target, args.Pattern), nil
 }
 
-func deleteMatchingKeys[K any](target ottl.PMapGetSetter[K], pattern ottl.Getter[K]) (ottl.ExprFunc[K], error) {
+func deleteMatchingKeys[K any](target ottl.PMapGetSetter[K], pattern ottl.Getter[K]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		patternVal, err := pattern.Get(ctx, tCtx)
 		if err != nil {
@@ -55,5 +55,5 @@ func deleteMatchingKeys[K any](target ottl.PMapGetSetter[K], pattern ottl.Getter
 			return compiledPattern.MatchString(key)
 		})
 		return nil, target.Set(ctx, tCtx, val)
-	}, nil
+	}
 }
