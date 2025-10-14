@@ -151,7 +151,6 @@ components:
     - pkg/faro
     - pkg/fileconsumer
     - pkg/golden
-    - pkg/stanza/operator/input/journald
     - pkg/kafka/configkafka
     - pkg/otelarrow
     - pkg/ottl
@@ -160,6 +159,7 @@ components:
     - pkg/resourcetotelemetry
     - pkg/sampling
     - pkg/stanza
+    - pkg/stanza/operator/input/journald
     - pkg/status
     - pkg/topic
     - pkg/translator/azure
