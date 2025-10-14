@@ -53,17 +53,17 @@ func TestOIDCProvider_GetToken_Success(t *testing.T) {
 	port := <-portCh
 	tokenURL := fmt.Sprintf("http://127.0.0.1:%d/token", port)
 
-	oidcProvider, cancel := NewOIDCfileTokenProvider(t.Context(), testClientID, secretFile, tokenURL,
+	oidcProvider, cancel := NewOIDCTokenProvider(t.Context(), testClientID, secretFile, tokenURL,
 		[]string{testScope}, 0, url.Values{}, oauth2.AuthStyleAutoDetect)
 	defer cancel()
 
-	saramaToken, err := oidcProvider.Token()
+	oauthToken, err := oidcProvider.GetToken()
 	require.NoError(t, err)
-	assert.NotNil(t, saramaToken)
-	assert.NotEmpty(t, saramaToken.Token)
+	assert.NotNil(t, oauthToken)
+	assert.NotEmpty(t, oauthToken.AccessToken)
 
 	parser := jwt.NewParser(jwt.WithoutClaimsValidation())
-	tokenObj, err := parser.Parse(saramaToken.Token, func(_ *jwt.Token) (any, error) {
+	tokenObj, err := parser.Parse(oauthToken.AccessToken, func(_ *jwt.Token) (any, error) {
 		return publicKey, nil
 	})
 	assert.NoError(t, err)
@@ -100,13 +100,13 @@ func TestOIDCProvider_GetToken_Error(t *testing.T) {
 	port := <-portCh
 	tokenURL := fmt.Sprintf("http://127.0.0.1:%d/token", port)
 
-	oidcProvider, cancel := NewOIDCfileTokenProvider(t.Context(), "wrong-client-id", secretFile,
+	oidcProvider, cancel := NewOIDCTokenProvider(t.Context(), "wrong-client-id", secretFile,
 		tokenURL, []string{testScope}, 0, url.Values{}, oauth2.AuthStyleAutoDetect)
 	defer cancel()
 
-	saramaToken, err := oidcProvider.Token()
+	oauthToken, err := oidcProvider.GetToken()
 	require.Error(t, err)
-	assert.Nil(t, saramaToken)
+	assert.Nil(t, oauthToken)
 }
 
 func TestOIDCProvider_TokenCaching(t *testing.T) {
@@ -131,14 +131,15 @@ func TestOIDCProvider_TokenCaching(t *testing.T) {
 	port := <-portCh
 	tokenURL := fmt.Sprintf("http://127.0.0.1:%d/token", port)
 
-	oidcProvider, cancel := NewOIDCfileTokenProvider(t.Context(), testClientID, secretFile, tokenURL, []string{testScope}, 0, url.Values{}, oauth2.AuthStyleAutoDetect)
+	oidcProvider, cancel := NewOIDCTokenProvider(t.Context(), testClientID, secretFile, tokenURL,
+		[]string{testScope}, 0, url.Values{}, oauth2.AuthStyleAutoDetect)
 	defer cancel()
 
-	token1, err1 := oidcProvider.Token()
+	token1, err1 := oidcProvider.GetToken()
 	assert.NoError(t, err1)
 	assert.NotNil(t, token1)
 
-	token2, err2 := oidcProvider.Token()
+	token2, err2 := oidcProvider.GetToken()
 	assert.NoError(t, err2)
 	assert.NotNil(t, token2)
 	assert.Equal(t, token1, token2)
@@ -166,16 +167,17 @@ func TestOIDCProvider_TokenExpired(t *testing.T) {
 	port := <-portCh
 	tokenURL := fmt.Sprintf("http://127.0.0.1:%d/token", port)
 
-	oidcProvider, cancel := NewOIDCfileTokenProvider(t.Context(), testClientID, secretFile, tokenURL, []string{testScope}, 0, url.Values{}, oauth2.AuthStyleAutoDetect)
+	oidcProvider, cancel := NewOIDCTokenProvider(t.Context(), testClientID, secretFile, tokenURL,
+		[]string{testScope}, 0, url.Values{}, oauth2.AuthStyleAutoDetect)
 	defer cancel()
 
-	token1, err1 := oidcProvider.Token()
+	token1, err1 := oidcProvider.GetToken()
 	assert.NoError(t, err1)
 	assert.NotNil(t, token1)
 
 	time.Sleep(time.Duration((tokenTTLsecs*1000)+500) * time.Millisecond)
 
-	token2, err2 := oidcProvider.Token()
+	token2, err2 := oidcProvider.GetToken()
 	assert.NoError(t, err2)
 	assert.NotNil(t, token2)
 	assert.NotEqual(t, token1, token2)
@@ -203,25 +205,25 @@ func TestOIDCProvider_RefreshAhead(t *testing.T) {
 	port := <-portCh
 	tokenURL := fmt.Sprintf("http://127.0.0.1:%d/token", port)
 
-	oidcProvider, cancel := NewOIDCfileTokenProvider(t.Context(), testClientID, secretFile, tokenURL,
+	parser := jwt.NewParser(jwt.WithoutClaimsValidation())
+
+	oidcProvider, cancel := NewOIDCTokenProvider(t.Context(), testClientID, secretFile, tokenURL,
 		[]string{testScope}, 2*time.Second, url.Values{}, oauth2.AuthStyleAutoDetect)
 	defer cancel()
 
-	parser := jwt.NewParser(jwt.WithoutClaimsValidation())
-
-	token1, err1 := oidcProvider.Token()
+	token1, err1 := oidcProvider.GetToken()
 	assert.NoError(t, err1)
 	assert.NotNil(t, token1)
 
 	time.Sleep(time.Duration((tokenTTLsecs*1000)+500) * time.Millisecond)
 
-	token2, err2 := oidcProvider.Token()
+	token2, err2 := oidcProvider.GetToken()
 	assert.NoError(t, err2)
 	assert.NotNil(t, token2)
 	assert.NotEqual(t, token1, token2)
 
 	// Verify second token is different and issued after the first
-	token1obj, err := parser.Parse(token1.Token, func(_ *jwt.Token) (any, error) {
+	token1obj, err := parser.Parse(token1.AccessToken, func(_ *jwt.Token) (any, error) {
 		return publicKey, nil
 	})
 	assert.NoError(t, err)
@@ -232,7 +234,7 @@ func TestOIDCProvider_RefreshAhead(t *testing.T) {
 	tok1IssuedAt := time.Unix(int64(claims1["iat"].(float64)), 0)
 	tok1ExpAt := time.Unix(int64(claims1["exp"].(float64)), 0)
 
-	token2obj, err := parser.Parse(token2.Token, func(_ *jwt.Token) (any, error) {
+	token2obj, err := parser.Parse(token2.AccessToken, func(_ *jwt.Token) (any, error) {
 		return publicKey, nil
 	})
 	assert.NoError(t, err)

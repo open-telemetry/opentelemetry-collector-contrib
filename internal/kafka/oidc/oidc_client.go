@@ -40,30 +40,6 @@ type OIDCfileTokenProvider struct {
 	AuthStyle      oauth2.AuthStyle
 }
 
-func NewOIDCfileTokenProvider(ctx context.Context, clientID, clientSecretFilePath, tokenURL string,
-	scopes []string, refreshAhead time.Duration, endPointParams url.Values, authStyle oauth2.AuthStyle,
-) (sarama.AccessTokenProvider, context.CancelFunc) {
-	ctx, cancel := context.WithCancel(ctx)
-
-	prov := &OIDCfileTokenProvider{
-		Ctx:                  ctx,
-		ClientID:             clientID,
-		ClientSecretFilePath: clientSecretFilePath,
-		TokenURL:             tokenURL,
-		Scopes:               scopes,
-		refreshAhead:         refreshAhead,
-		refreshCooldown:      1 * time.Second,
-		EndpointParams:       endPointParams,
-		AuthStyle:            authStyle,
-	}
-
-	if refreshAhead.Milliseconds() > 0 {
-		prov.startBackgroundRefresher()
-	}
-
-	return prov, cancel
-}
-
 func (p *OIDCfileTokenProvider) Token() (*sarama.AccessToken, error) {
 	oauthTok, err := p.GetToken()
 	if err != nil {
@@ -166,4 +142,31 @@ func (p *OIDCfileTokenProvider) startBackgroundRefresher() {
 			}
 		}()
 	})
+}
+
+// NewOIDCTokenProvider creates a new OIDC token provider for Franz-go clients.
+// This provides the same functionality as NewOIDCfileTokenProvider but returns
+// a provider that can be used directly with Franz-go's oauth.Oauth mechanism.
+func NewOIDCTokenProvider(ctx context.Context, clientID, clientSecretFilePath, tokenURL string,
+	scopes []string, refreshAhead time.Duration, endPointParams url.Values, authStyle oauth2.AuthStyle,
+) (*OIDCfileTokenProvider, context.CancelFunc) {
+	ctx, cancel := context.WithCancel(ctx)
+
+	prov := &OIDCfileTokenProvider{
+		Ctx:                  ctx,
+		ClientID:             clientID,
+		ClientSecretFilePath: clientSecretFilePath,
+		TokenURL:             tokenURL,
+		Scopes:               scopes,
+		refreshAhead:         refreshAhead,
+		refreshCooldown:      1 * time.Second,
+		EndpointParams:       endPointParams,
+		AuthStyle:            authStyle,
+	}
+
+	if refreshAhead.Milliseconds() > 0 {
+		prov.startBackgroundRefresher()
+	}
+
+	return prov, cancel
 }
