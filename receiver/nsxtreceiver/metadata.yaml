@@ -9,24 +9,31 @@ status:
     active: [dashpole, schmikei]
 
 resource_attributes:
-  nsxt.node.name:
-    description: The name of the NSX Node.
+  device.id:
+    description: The name of the network interface.
     enabled: true
     type: string
+
   nsxt.node.id:
     description: The ID of the NSX Node.
+    enabled: true
+    type: string
+  nsxt.node.name:
+    description: The name of the NSX Node.
     enabled: true
     type: string
   nsxt.node.type:
     description: The type of NSX Node.
     enabled: true
     type: string
-  device.id:
-    description: The name of the network interface.
-    enabled: true
-    type: string
 
 attributes:
+  class:
+    description: The CPU usage of the architecture allocated for either DPDK (datapath) or non-DPDK (services) processes.
+    type: string
+    enum:
+      - datapath
+      - services
   direction:
     description: The direction of network flow.
     type: string
@@ -48,14 +55,56 @@ attributes:
       - dropped
       - errored
       - success
-  class:
-    description: The CPU usage of the architecture allocated for either DPDK (datapath) or non-DPDK (services) processes.
-    type: string
-    enum:
-      - datapath
-      - services
 
 metrics:
+  nsxt.node.cpu.utilization:
+    description: The average amount of CPU being used by the node.
+    stability:
+      level: development
+    unit: "%"
+    gauge:
+      value_type: double
+    enabled: true
+    attributes: [class]
+  nsxt.node.filesystem.usage:
+    description: The amount of storage space used by the node.
+    stability:
+      level: development
+    unit: By
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    enabled: true
+    attributes: [disk_state]
+  nsxt.node.filesystem.utilization:
+    description: The percentage of storage space utilized.
+    stability:
+      level: development
+    unit: "%"
+    gauge:
+      value_type: double
+    enabled: true
+  nsxt.node.memory.cache.usage:
+    description: The size of the node's memory cache.
+    stability:
+      level: development
+    unit: KBy
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    enabled: true
+  nsxt.node.memory.usage:
+    description: The memory usage of the node.
+    stability:
+      level: development
+    unit: KBy
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    enabled: true
   nsxt.node.network.io:
     description: The number of bytes which have flowed through the network interface.
     stability:
@@ -78,51 +127,3 @@ metrics:
       value_type: int
     enabled: true
     attributes: [direction, packet.type]
-  nsxt.node.cpu.utilization:
-    description: The average amount of CPU being used by the node.
-    stability:
-      level: development
-    unit: "%"
-    gauge:
-      value_type: double
-    enabled: true
-    attributes: [class]
-  nsxt.node.filesystem.utilization:
-    description: The percentage of storage space utilized.
-    stability:
-      level: development
-    unit: "%"
-    gauge:
-      value_type: double
-    enabled: true
-  nsxt.node.filesystem.usage:
-    description: The amount of storage space used by the node.
-    stability:
-      level: development
-    unit: By
-    sum:
-      monotonic: false
-      value_type: int
-      aggregation_temporality: cumulative
-    enabled: true
-    attributes: [disk_state]
-  nsxt.node.memory.usage:
-    description: The memory usage of the node.
-    stability:
-      level: development
-    unit: KBy
-    sum:
-      monotonic: false
-      value_type: int
-      aggregation_temporality: cumulative
-    enabled: true
-  nsxt.node.memory.cache.usage:
-    description: The size of the node's memory cache.
-    stability:
-      level: development
-    unit: KBy
-    sum:
-      monotonic: false
-      value_type: int
-      aggregation_temporality: cumulative
-    enabled: true
