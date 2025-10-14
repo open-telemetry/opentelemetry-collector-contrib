@@ -12,30 +12,30 @@ status:
 resource_attributes:
 
 attributes:
-  http.url:
-    description: Full HTTP request URL.
+  error.message:
+    description: Error message recorded during check
     type: string
-  http.status_code:
-    description: HTTP response status code
-    type: int
   http.method:
     description: HTTP request method
     type: string
   http.status_class:
     description: HTTP response status class
     type: string
-  error.message:
-    description: Error message recorded during check
+  http.status_code:
+    description: HTTP response status code
+    type: int
+  http.tls.cn:
+    description: The commonName in the subject of the certificate.
     type: string
   http.tls.issuer:
     description: The entity that issued the certificate.
     type: string
-  http.tls.cn:
-    description: The commonName in the subject of the certificate.
-    type: string
   http.tls.san:
     description: The Subject Alternative Name of the certificate.
     type: slice
+  http.url:
+    description: Full HTTP request URL.
+    type: string
   network.transport:
     description: OSI transport layer or inter-process communication method.
     type: string
@@ -44,17 +44,33 @@ attributes:
     type: string
 
 metrics:
-  httpcheck.status:
-    description: 1 if the check resulted in status_code matching the status_class, otherwise 0.
-    enabled: true
+  httpcheck.client.connection.duration:
+    description: Time spent establishing TCP connection to the endpoint.
+    enabled: false
     stability:
       level: development
-    sum:
+    gauge:
       value_type: int
-      aggregation_temporality: cumulative
-      monotonic: false
-    unit: "1"
-    attributes: [http.url, http.status_code, http.method, http.status_class]
+    unit: ms
+    attributes: [http.url, network.transport]
+  httpcheck.client.request.duration:
+    description: Time spent sending the HTTP request to the endpoint.
+    enabled: false
+    stability:
+      level: development
+    gauge:
+      value_type: int
+    unit: ms
+    attributes: [http.url]
+  httpcheck.dns.lookup.duration:
+    description: Time spent performing DNS lookup for the endpoint.
+    enabled: false
+    stability:
+      level: development
+    gauge:
+      value_type: int
+    unit: ms
+    attributes: [http.url]
   httpcheck.duration:
     description: Measures the duration of the HTTP check.
     enabled: true
@@ -75,51 +91,6 @@ metrics:
       monotonic: false
     unit: "{error}"
     attributes: [http.url, error.message]
-  httpcheck.tls.cert_remaining:
-    description: Time in seconds until certificate expiry, as specified by `NotAfter` field in the x.509 certificate. Negative values represent time in seconds since expiration.
-    enabled: false
-    stability:
-      level: development
-    gauge:
-      value_type: int
-    unit: "s"
-    attributes: [http.url, http.tls.issuer, http.tls.cn, http.tls.san]
-  httpcheck.dns.lookup.duration:
-    description: Time spent performing DNS lookup for the endpoint.
-    enabled: false
-    stability:
-      level: development
-    gauge:
-      value_type: int
-    unit: ms
-    attributes: [http.url]
-  httpcheck.client.connection.duration:
-    description: Time spent establishing TCP connection to the endpoint.
-    enabled: false
-    stability:
-      level: development
-    gauge:
-      value_type: int
-    unit: ms
-    attributes: [http.url, network.transport]
-  httpcheck.tls.handshake.duration:
-    description: Time spent performing TLS handshake with the endpoint.
-    enabled: false
-    stability:
-      level: development
-    gauge:
-      value_type: int
-    unit: ms
-    attributes: [http.url]
-  httpcheck.client.request.duration:
-    description: Time spent sending the HTTP request to the endpoint.
-    enabled: false
-    stability:
-      level: development
-    gauge:
-      value_type: int
-    unit: ms
-    attributes: [http.url]
   httpcheck.response.duration:
     description: Time spent receiving the HTTP response from the endpoint.
     enabled: false
@@ -138,8 +109,37 @@ metrics:
       value_type: int
     unit: "By"
     attributes: [http.url]
-  httpcheck.validation.passed:
-    description: Number of response validations that passed.
+  httpcheck.status:
+    description: 1 if the check resulted in status_code matching the status_class, otherwise 0.
+    enabled: true
+    stability:
+      level: development
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+    unit: "1"
+    attributes: [http.url, http.status_code, http.method, http.status_class]
+  httpcheck.tls.cert_remaining:
+    description: Time in seconds until certificate expiry, as specified by `NotAfter` field in the x.509 certificate. Negative values represent time in seconds since expiration.
+    enabled: false
+    stability:
+      level: development
+    gauge:
+      value_type: int
+    unit: "s"
+    attributes: [http.url, http.tls.issuer, http.tls.cn, http.tls.san]
+  httpcheck.tls.handshake.duration:
+    description: Time spent performing TLS handshake with the endpoint.
+    enabled: false
+    stability:
+      level: development
+    gauge:
+      value_type: int
+    unit: ms
+    attributes: [http.url]
+  httpcheck.validation.failed:
+    description: Number of response validations that failed.
     enabled: false
     stability:
       level: development
@@ -149,8 +149,8 @@ metrics:
       monotonic: false
     unit: "{validation}"
     attributes: [http.url, validation.type]
-  httpcheck.validation.failed:
-    description: Number of response validations that failed.
+  httpcheck.validation.passed:
+    description: Number of response validations that passed.
     enabled: false
     stability:
       level: development
