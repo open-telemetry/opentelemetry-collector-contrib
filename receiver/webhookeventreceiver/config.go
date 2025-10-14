@@ -12,12 +12,17 @@ import (
 	"go.uber.org/multierr"
 )
 
+const (
+	minRequestBodyBytes = 1024 // 1KB minimum to prevent misconfiguration
+)
+
 var (
 	errMissingEndpointFromConfig   = errors.New("missing receiver server endpoint from config")
 	errReadTimeoutExceedsMaxValue  = errors.New("the duration specified for read_timeout exceeds the maximum allowed value of 10s")
 	errWriteTimeoutExceedsMaxValue = errors.New("the duration specified for write_timeout exceeds the maximum allowed value of 10s")
 	errRequiredHeader              = errors.New("both key and value are required to assign a required_header")
 	errHeaderAttributeRegexCompile = errors.New("regex for header_attribute_regex failed to compile")
+	errMaxRequestBodyBytesTooSmall = errors.New("max_request_body_bytes must be at least 1024 bytes (1KB)")
 )
 
 // Config defines configuration for the Generic Webhook receiver.
@@ -32,6 +37,7 @@ type Config struct {
 	SplitLogsAtJSONBoundary    bool                     `mapstructure:"split_logs_at_json_boundary"`   // optional setting to split logs at JSON object boundaries
 	ConvertHeadersToAttributes bool                     `mapstructure:"convert_headers_to_attributes"` // optional to convert all headers to attributes
 	HeaderAttributeRegex       string                   `mapstructure:"header_attribute_regex"`        // optional to convert headers matching a regex to log attributes
+	MaxRequestBodyBytes        int                      `mapstructure:"max_request_body_bytes"`        // maximum request body size in bytes. Default is 100KB
 }
 
 type RequiredHeader struct {
@@ -86,6 +92,10 @@ func (cfg *Config) Validate() error {
 			errs = multierr.Append(errs, errHeaderAttributeRegexCompile)
 			errs = multierr.Append(errs, err)
 		}
+	}
+
+	if cfg.MaxRequestBodyBytes != 0 && cfg.MaxRequestBodyBytes < minRequestBodyBytes {
+		errs = multierr.Append(errs, errMaxRequestBodyBytesTooSmall)
 	}
 
 	return errs
