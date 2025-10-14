@@ -29,11 +29,15 @@ type TimerHistogramMapping struct {
 	ObserverType ObserverType    `mapstructure:"observer_type"`
 	Histogram    HistogramConfig `mapstructure:"histogram"`
 	Summary      SummaryConfig   `mapstructure:"summary"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type HistogramConfig struct {
 	MaxSize         int32            `mapstructure:"max_size"`
 	ExplicitBuckets []ExplicitBucket `mapstructure:"explicit_buckets"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type ExplicitBucket struct {
@@ -44,4 +48,6 @@ type ExplicitBucket struct {
 
 type SummaryConfig struct {
 	Percentiles []float64 `mapstructure:"percentiles"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }

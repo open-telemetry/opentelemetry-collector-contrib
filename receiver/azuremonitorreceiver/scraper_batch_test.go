@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 package azuremonitorreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver"
+
 import (
 	"context"
 	"net/http"
@@ -295,29 +296,18 @@ func TestAzureScraperBatchScrape(t *testing.T) {
 
 			s := &azureBatchScraper{
 				cfg:                   tt.fields.cfg,
-				mb:                    metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), settings),
+				mbs:                   newConcurrentMapImpl[*metadata.MetricsBuilder](),
 				mutex:                 &sync.Mutex{},
 				time:                  getTimeMock(),
 				clientOptionsResolver: optionsResolver,
+				receiverSettings:      settings,
 				settings:              settings.TelemetrySettings,
 
 				// From there, initialize everything that is normally initialized in start() func
-				subscriptions: map[string]*azureSubscription{
-					"subscriptionId1": {SubscriptionID: "subscriptionId1"},
-					"subscriptionId3": {SubscriptionID: "subscriptionId3"},
-				},
-				resources: map[string]map[string]*azureResource{
-					"subscriptionId1": {},
-					"subscriptionId3": {},
-				},
-				regions: map[string]map[string]struct{}{
-					"subscriptionId1": {"location1": {}},
-					"subscriptionId3": {"location1": {}},
-				},
-				resourceTypes: map[string]map[string]*azureType{
-					"subscriptionId1": {},
-					"subscriptionId3": {},
-				},
+				subscriptions: map[string]*azureSubscription{},
+				resources:     map[string]map[string]*azureResource{},
+				regions:       map[string]map[string]struct{}{},
+				resourceTypes: map[string]map[string]*azureType{},
 			}
 
 			metrics, err := s.scrape(tt.args.ctx)

@@ -92,7 +92,8 @@ func configureMetricNamer(config *Config) otlptranslator.MetricNamer {
 func configureLabelNamer(config *Config) otlptranslator.LabelNamer {
 	_, utf8Allowed := getTranslationConfiguration(config)
 	return otlptranslator.LabelNamer{
-		UTF8Allowed: utf8Allowed,
+		UTF8Allowed:                 utf8Allowed,
+		PreserveMultipleUnderscores: !prometheustranslator.DropSanitizationGate.IsEnabled(),
 	}
 }
 
@@ -130,7 +131,7 @@ func convertExemplars(exemplars pmetric.ExemplarSlice) []prometheus.Exemplar {
 	length := exemplars.Len()
 	result := make([]prometheus.Exemplar, length)
 
-	for i := 0; i < length; i++ {
+	for i := range length {
 		e := exemplars.At(i)
 		exemplarLabels := make(prometheus.Labels, 0)
 
