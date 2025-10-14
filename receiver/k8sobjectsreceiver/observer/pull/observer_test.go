@@ -139,7 +139,7 @@ func TestObserverMultipleNamespaces(t *testing.T) {
 	)
 
 	require.Eventually(t, func() bool {
-		return len(ts.getLastReceivedEventItems()) == 2
+		return len(ts.getAllReceivedItems()) == 2
 	}, 5*time.Second, 10*time.Millisecond, "Observer should receive events from specified namespaces")
 
 	close(stopChan)
@@ -329,7 +329,7 @@ func TestObserverListError(t *testing.T) {
 	wg.Wait()
 
 	// Should not have received anything due to error
-	require.Empty(t, ts.getLastReceivedEventItems())
+	require.Empty(t, ts.getAllReceivedItems())
 }
 
 func TestNewTicker(t *testing.T) {
@@ -367,13 +367,33 @@ func (t *testSink) receive(objs *unstructured.UnstructuredList) {
 	t.mtx.Lock()
 	defer t.mtx.Unlock()
 	t.lastEventItems = objs.Items
-	t.allReceivedItems = append(t.allReceivedItems, objs.Items...)
+
+	// deduplicate received items
+	found := false
+
+	for _, obj := range objs.Items {
+		for _, existing := range t.allReceivedItems {
+			if obj.GetName() == existing.GetName() {
+				found = true
+				break
+			}
+		}
+	}
+	if !found {
+		t.allReceivedItems = append(t.allReceivedItems, objs.Items...)
+	}
 }
 
 func (t *testSink) getLastReceivedEventItems() []unstructured.Unstructured {
 	t.mtx.RLock()
 	defer t.mtx.RUnlock()
 	return t.lastEventItems
+}
+
+func (t *testSink) getAllReceivedItems() []unstructured.Unstructured {
+	t.mtx.RLock()
+	defer t.mtx.RUnlock()
+	return t.allReceivedItems
 }
 
 type mockDynamicClient struct {
