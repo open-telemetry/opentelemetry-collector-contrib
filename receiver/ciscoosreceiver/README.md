@@ -27,38 +27,48 @@ The following settings are available:
 
 ### Device Configuration
 
+Each device configuration contains device information and authentication settings following semantic conventions:
+
 | Setting | Type | Required | Description |
 |---------|------|----------|-------------|
-| `host` | string | Yes | Device address in `host:port` format |
-| `username` | string | Yes | SSH username for authentication |
-| `password` | string | No* | Password for authentication |
-| `key_file` | string | No* | Path to SSH private key file |
+| `device.host.name` | string | No | Human-readable device name |
+| `device.host.ip` | string | Yes | Device IP address |
+| `device.host.port` | int | Yes | SSH port (typically 22) |
+| `auth.username` | string | Yes | SSH username for authentication |
+| `auth.password` | string | No* | Password for authentication |
+| `auth.key_file` | string | No* | Path to SSH private key file |
 
-*Either `password` or `key_file` is required, but not both.
+*Either `auth.password` or `auth.key_file` is required, but not both.
 
 ### Scrapers Configuration
 
-The scrapers are configured as groups.
+The scrapers are configured as modular components. Each scraper type can be configured individually:
 
 | Setting | Type | Description |
 |---------|------|-------------|
-| `bgp` | map | BGP session metrics configuration |
-| `environment` | map | Temperature and power metrics configuration |
-| `facts` | map | System information metrics configuration |
-| `interfaces` | map | Interface status and statistics configuration |
-| `optics` | map | Optical transceiver metrics configuration |
+| `system` | map | System metrics (CPU, memory, device info) |
+| `interfaces` | map | Interface statistics (bytes, packets, errors) |
+| `bgp` | map | BGP session information and statistics |
+| `environment` | map | Temperature and power consumption metrics |
+| `optics` | map | Optical transceiver metrics |
 
-Each scraper can be enabled by simply including it in the configuration, or disabled by omitting it. Future versions may support scraper-specific configuration options within each group.
+## Metrics Collected
 
-## Scrapers
+### Interface Metrics
+- `cisco.interface.transmit.bytes` - Bytes transmitted per interface
+- `cisco.interface.receive.bytes` - Bytes received per interface  
+- `cisco.interface.transmit.errors` - Transmit errors per interface
+- `cisco.interface.receive.errors` - Receive errors per interface
+- `cisco.interface.up` - Interface operational status (1=up, 0=down)
 
-The receiver supports the following scrapers:
+### System Metrics
+- `cisco.system.cpu.utilization` - CPU utilization percentage
+- `cisco.system.memory.utilization` - Memory utilization percentage
 
-- **BGP**: Collects BGP session information and statistics
-- **Environment**: Collects temperature and power consumption metrics  
-- **Facts**: Collects system information (OS version, memory, CPU utilization)
-- **Interfaces**: Collects interface statistics (bytes, packets, errors)
-- **Optics**: Collects optical signal strength information
+### Resource Attributes
+- `cisco.device.name` - Device name
+- `cisco.device.ip` - Device IP address
+- `cisco.device.model` - Device model
 
 ## Example Configuration
 
@@ -68,15 +78,25 @@ receivers:
     collection_interval: 60s
     timeout: 30s
     devices:
-      - host: "cisco-device:22"
-        username: "admin"
-        password: "password"
+      - device:
+          host:
+            name: "core-switch-01"
+            ip: "192.168.1.10"
+            port: 22
+        auth:
+          username: "admin"
+          password: "secure-password"
+      - device:
+          host:
+            name: "edge-router-01"
+            ip: "192.168.1.20"
+            port: 22
+        auth:
+          username: "admin"
+          key_file: "/path/to/ssh/key"
     scrapers:
-      bgp:
-      environment:
-      facts:
+      system:
       interfaces:
-      optics:
 
 exporters:
   debug:

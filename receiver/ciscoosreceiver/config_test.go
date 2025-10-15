@@ -9,6 +9,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 )
 
@@ -26,10 +28,22 @@ func TestConfigValidate(t *testing.T) {
 					CollectionInterval: 60 * time.Second,
 				},
 				Devices: []DeviceConfig{
-					{Host: "localhost:22", Username: "admin", Password: "password"},
+					{
+						Device: DeviceInfo{
+							Host: HostInfo{
+								Name: "test-device",
+								IP:   "192.168.1.1",
+								Port: 22,
+							},
+						},
+						Auth: AuthConfig{
+							Username: "admin",
+							Password: configopaque.String("password"),
+						},
+					},
 				},
-				Scrapers: ScrapersConfig{
-					BGP: true,
+				Scrapers: map[component.Type]component.Config{
+					component.MustNewType("system"): nil,
 				},
 			},
 			expectedErr: "",
@@ -42,10 +56,22 @@ func TestConfigValidate(t *testing.T) {
 					CollectionInterval: 60 * time.Second,
 				},
 				Devices: []DeviceConfig{
-					{Host: "localhost:22", Username: "admin", KeyFile: "/path/to/key"},
+					{
+						Device: DeviceInfo{
+							Host: HostInfo{
+								Name: "test-device",
+								IP:   "192.168.1.1",
+								Port: 22,
+							},
+						},
+						Auth: AuthConfig{
+							Username: "admin",
+							KeyFile:  "/path/to/key",
+						},
+					},
 				},
-				Scrapers: ScrapersConfig{
-					Facts: true,
+				Scrapers: map[component.Type]component.Config{
+					component.MustNewType("interfaces"): nil,
 				},
 			},
 			expectedErr: "",
@@ -58,79 +84,148 @@ func TestConfigValidate(t *testing.T) {
 					CollectionInterval: 60 * time.Second,
 				},
 				Devices: []DeviceConfig{},
-				Scrapers: ScrapersConfig{
-					BGP: true,
+				Scrapers: map[component.Type]component.Config{
+					component.MustNewType("system"): nil,
 				},
 			},
 			expectedErr: "at least one device must be configured",
 		},
 		{
-			name: "empty host",
+			name: "empty host IP",
 			config: &Config{
 				ControllerConfig: scraperhelper.ControllerConfig{
 					Timeout:            30 * time.Second,
 					CollectionInterval: 60 * time.Second,
 				},
 				Devices: []DeviceConfig{
-					{Host: "", Username: "admin", Password: "password"},
+					{
+						Device: DeviceInfo{
+							Host: HostInfo{
+								Name: "test-device",
+								IP:   "",
+								Port: 22,
+							},
+						},
+						Auth: AuthConfig{
+							Username: "admin",
+							Password: configopaque.String("password"),
+						},
+					},
 				},
-				Scrapers: ScrapersConfig{
-					BGP: true,
+				Scrapers: map[component.Type]component.Config{
+					component.MustNewType("system"): nil,
 				},
 			},
-			expectedErr: "device host cannot be empty",
+			expectedErr: "host.ip cannot be empty",
 		},
 		{
-			name: "missing username for password auth",
+			name: "missing port",
 			config: &Config{
 				ControllerConfig: scraperhelper.ControllerConfig{
 					Timeout:            30 * time.Second,
 					CollectionInterval: 60 * time.Second,
 				},
 				Devices: []DeviceConfig{
-					{Host: "localhost:22", Username: "", Password: "password"},
+					{
+						Device: DeviceInfo{
+							Host: HostInfo{
+								Name: "test-device",
+								IP:   "192.168.1.1",
+								Port: 0,
+							},
+						},
+						Auth: AuthConfig{
+							Username: "admin",
+							Password: configopaque.String("password"),
+						},
+					},
 				},
-				Scrapers: ScrapersConfig{
-					BGP: true,
+				Scrapers: map[component.Type]component.Config{
+					component.MustNewType("system"): nil,
 				},
 			},
-			expectedErr: "device username cannot be empty",
+			expectedErr: "host.port cannot be empty",
 		},
 		{
-			name: "missing password for password auth",
+			name: "missing username",
 			config: &Config{
 				ControllerConfig: scraperhelper.ControllerConfig{
 					Timeout:            30 * time.Second,
 					CollectionInterval: 60 * time.Second,
 				},
 				Devices: []DeviceConfig{
-					{Host: "localhost:22", Username: "admin", Password: ""},
+					{
+						Device: DeviceInfo{
+							Host: HostInfo{
+								Name: "test-device",
+								IP:   "192.168.1.1",
+								Port: 22,
+							},
+						},
+						Auth: AuthConfig{
+							Username: "",
+							Password: configopaque.String("password"),
+						},
+					},
 				},
-				Scrapers: ScrapersConfig{
-					BGP: true,
+				Scrapers: map[component.Type]component.Config{
+					component.MustNewType("system"): nil,
 				},
 			},
-			expectedErr: "device password cannot be empty",
+			expectedErr: "auth.username cannot be empty",
 		},
 		{
-			name: "no scrapers enabled",
+			name: "missing password and key file",
 			config: &Config{
 				ControllerConfig: scraperhelper.ControllerConfig{
 					Timeout:            30 * time.Second,
 					CollectionInterval: 60 * time.Second,
 				},
 				Devices: []DeviceConfig{
-					{Host: "localhost:22", Username: "admin", Password: "password"},
+					{
+						Device: DeviceInfo{
+							Host: HostInfo{
+								Name: "test-device",
+								IP:   "192.168.1.1",
+								Port: 22,
+							},
+						},
+						Auth: AuthConfig{
+							Username: "admin",
+						},
+					},
 				},
-				Scrapers: ScrapersConfig{
-					BGP:         false,
-					Environment: false,
-					Facts:       false,
-					Interfaces:  false,
-					Optics:      false,
+				Scrapers: map[component.Type]component.Config{
+					component.MustNewType("system"): nil,
 				},
 			},
-			expectedErr: "at least one scraper must be enabled",
+			expectedErr: "auth.password or auth.key_file must be provided",
+		},
+		{
+			name: "no scrapers configured",
+			config: &Config{
+				ControllerConfig: scraperhelper.ControllerConfig{
+					Timeout:            30 * time.Second,
+					CollectionInterval: 60 * time.Second,
+				},
+				Devices: []DeviceConfig{
+					{
+						Device: DeviceInfo{
+							Host: HostInfo{
+								Name: "test-device",
+								IP:   "192.168.1.1",
+								Port: 22,
+							},
+						},
+						Auth: AuthConfig{
+							Username: "admin",
+							Password: configopaque.String("password"),
+						},
+					},
+				},
+				Scrapers: map[component.Type]component.Config{},
+			},
+			expectedErr: "must specify at least one scraper",
 		},
 	}
 
