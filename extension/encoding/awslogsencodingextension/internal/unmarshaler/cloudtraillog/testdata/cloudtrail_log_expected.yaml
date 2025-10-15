@@ -55,7 +55,7 @@ resourceLogs:
               - key: user.name
                 value:
                   stringValue: Mateo
-              - key: cloud.account.id
+              - key: aws.owner.account_id
                 value:
                   stringValue: "123456789012"
               - key: aws.access_key.id
@@ -74,12 +74,12 @@ resourceLogs:
                 value:
                   kvlistValue:
                     values:
-                      - key: mfaAuthenticated
-                        value:
-                          stringValue: "false"
                       - key: creationDate
                         value:
                           stringValue: "2023-07-19T21:11:57Z"
+                      - key: mfaAuthenticated
+                        value:
+                          stringValue: "false"
               - key: tls.protocol.version
                 value:
                   stringValue: "1.2"
@@ -128,6 +128,16 @@ resourceLogs:
                                     values:
                                       - kvlistValue:
                                           values:
+                                            - key: previousState
+                                              value:
+                                                kvlistValue:
+                                                  values:
+                                                    - key: code
+                                                      value:
+                                                        doubleValue: 80
+                                                    - key: name
+                                                      value:
+                                                        stringValue: stopped
                                             - key: instanceId
                                               value:
                                                 stringValue: i-EXAMPLEaff4840c22
@@ -141,16 +151,6 @@ resourceLogs:
                                                     - key: code
                                                       value:
                                                         doubleValue: 0
-                                            - key: previousState
-                                              value:
-                                                kvlistValue:
-                                                  values:
-                                                    - key: code
-                                                      value:
-                                                        doubleValue: 80
-                                                    - key: name
-                                                      value:
-                                                        stringValue: stopped
                                       - kvlistValue:
                                           values:
                                             - key: instanceId
@@ -170,12 +170,12 @@ resourceLogs:
                                               value:
                                                 kvlistValue:
                                                   values:
-                                                    - key: name
-                                                      value:
-                                                        stringValue: stopped
                                                     - key: code
                                                       value:
                                                         doubleValue: 80
+                                                    - key: name
+                                                      value:
+                                                        stringValue: stopped
             body: {}
             timeUnixNano: "1689801448000000000"
           - attributes:
@@ -218,7 +218,7 @@ resourceLogs:
               - key: user.name
                 value:
                   stringValue: Mary
-              - key: cloud.account.id
+              - key: aws.owner.account_id
                 value:
                   stringValue: "123456789012"
               - key: aws.access_key.id
@@ -267,6 +267,9 @@ resourceLogs:
                         value:
                           kvlistValue:
                             values:
+                              - key: userName
+                                value:
+                                  stringValue: Richard
                               - key: path
                                 value:
                                   stringValue: /
@@ -279,9 +282,6 @@ resourceLogs:
                               - key: createDate
                                 value:
                                   stringValue: Jul 19, 2023 9:25:09 PM
-                              - key: userName
-                                value:
-                                  stringValue: Richard
             body: {}
             timeUnixNano: "1689801909000000000"
           - attributes:
@@ -318,7 +318,7 @@ resourceLogs:
               - key: user_agent.original
                 value:
                   stringValue: aws-cli/1.29.16 md/Botocore#1.31.16 ua/2.0 os/linux#5.4.250-173.369.amzn2int.x86_64 md/arch#x86_64 lang/python#3.8.17 md/pyimpl#CPython cfg/retry-mode#legacy botocore/1.31.16
-              - key: cloud.account.id
+              - key: aws.owner.account_id
                 value:
                   stringValue: "123456789012"
               - key: aws.access_key.id
@@ -337,25 +337,25 @@ resourceLogs:
                 value:
                   kvlistValue:
                     values:
-                      - key: mfaAuthenticated
-                        value:
-                          stringValue: "false"
                       - key: creationDate
                         value:
                           stringValue: "2023-08-21T16:44:05Z"
-              - key: aws.session.context.issuer.type
+                      - key: mfaAuthenticated
+                        value:
+                          stringValue: "false"
+              - key: aws.session_context.issuer.type
                 value:
                   stringValue: Role
-              - key: aws.session.context.issuer.principal_id
+              - key: aws.session_context.issuer.principal_id
                 value:
                   stringValue: AKIAIOSFODNN7EXAMPLE
-              - key: aws.session.context.issuer.arn
+              - key: aws.session_context.issuer.arn
                 value:
                   stringValue: arn:aws:iam::123456789012:role/Admin
-              - key: aws.session.context.issuer.account_id
+              - key: aws.session_context.issuer.account_id
                 value:
                   stringValue: "123456789012"
-              - key: aws.session.context.issuer.user_name
+              - key: aws.session_context.issuer.user_name
                 value:
                   stringValue: ExampleUser
               - key: tls.protocol.version
@@ -371,9 +371,6 @@ resourceLogs:
                 value:
                   kvlistValue:
                     values:
-                      - key: messageAttributes
-                        value:
-                          stringValue: HIDDEN_DUE_TO_SECURITY_REASONS
                       - key: topicArn
                         value:
                           stringValue: arn:aws:sns:us-east-1:123456789012:ExampleSNSTopic
@@ -386,6 +383,9 @@ resourceLogs:
                       - key: messageStructure
                         value:
                           stringValue: json
+                      - key: messageAttributes
+                        value:
+                          stringValue: HIDDEN_DUE_TO_SECURITY_REASONS
               - key: aws.response.elements
                 value:
                   kvlistValue:
@@ -430,6 +430,9 @@ resourceLogs:
                 value:
                   kvlistValue:
                     values:
+                      - key: state
+                        value:
+                          stringValue: Start
                       - key: eventSource
                         value:
                           stringValue: ssm.amazonaws.com
@@ -461,9 +464,6 @@ resourceLogs:
                                               - key: average
                                                 value:
                                                   doubleValue: 669
-                      - key: state
-                        value:
-                          stringValue: Start
             body: {}
             timeUnixNano: "1672627860000000000"
           - attributes:
@@ -506,7 +506,7 @@ resourceLogs:
               - key: user.name
                 value:
                   stringValue: Terry
-              - key: cloud.account.id
+              - key: aws.owner.account_id
                 value:
                   stringValue: "111122223333"
               - key: aws.access_key.id
@@ -595,7 +595,7 @@ resourceLogs:
               - key: user.id
                 value:
                   stringValue: d-12345abcde
-              - key: cloud.account.id
+              - key: aws.owner.account_id
                 value:
                   stringValue: "123456789012"
               - key: aws.identity_store.arn
@@ -627,15 +627,15 @@ resourceLogs:
                 value:
                   kvlistValue:
                     values:
+                      - key: MobileVersion
+                        value:
+                          stringValue: "No"
                       - key: LoginTo
                         value:
                           stringValue: https://console.aws.amazon.com/console/home?region=us
                       - key: MFAUsed
                         value:
                           boolValue: true
-                      - key: MobileVersion
-                        value:
-                          stringValue: "No"
             body: {}
             timeUnixNano: "1749997800000000000"
           - attributes:
@@ -666,7 +666,7 @@ resourceLogs:
               - key: user_agent.original
                 value:
                   stringValue: AWS Internal
-              - key: cloud.account.id
+              - key: aws.owner.account_id
                 value:
                   stringValue: "111122223333"
               - key: aws.invoked_by
