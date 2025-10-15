@@ -113,7 +113,7 @@ The resulting documents will contain the corresponding `data_stream.*` fields, s
    1. `data_stream.dataset` or `data_stream.namespace` in attributes (precedence: log record / data point / span attribute > scope attribute > resource attribute)
    2. Otherwise, if a scope attribute with the name `encoding.format` exists and contains a string value, `data_stream.dataset` will be set to this value. 
 
-      Note that whilst enabled by default, this behaviour is considered experimental. Some encoding extensions set this field (e.g. [awslogsencodingextension](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/encoding/awslogsencodingextension)), but it is not yet part of Semantic Conventions. There is the potential that the name of this routing field evolves as the [discussion progresses in SemConv](https://github.com/open-telemetry/semantic-conventions/issues/2854). 
+      Note that while enabled by default, this behaviour is considered experimental. Some encoding extensions set this field (e.g. [awslogsencodingextension](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/encoding/awslogsencodingextension)), but it is not yet part of Semantic Conventions. There is the potential that the name of this routing field evolves as the [discussion progresses in SemConv](https://github.com/open-telemetry/semantic-conventions/issues/2854). 
    3. Otherwise, if scope name matches regex `/receiver/(\w*receiver)`, `data_stream.dataset` will be capture group #1
    4. Otherwise, `data_stream.dataset` falls back to `generic` and `data_stream.namespace` falls back to `default`. 
 
@@ -306,7 +306,7 @@ The behaviour of this bulk indexing can be configured with the following setting
   - `initial_interval` (default=100ms): Initial waiting time if a HTTP request failed.
   - `max_interval` (default=1m): Max waiting time if a HTTP request failed.
   - `retry_on_status` (default=[429]): Status codes that trigger request or document level retries. Request level retry and document level retry status codes are shared and cannot be configured separately. To avoid duplicates, it defaults to `[429]`.
-- `sending_queue`: Configures the queueing and batching behaviour. Below are the defaults (which may vary from standard defaults), for full configuration check the [exporterheler docs][exporterhelper].
+- `sending_queue`: Configures the queueing and batching behaviour. Below are the defaults (which may vary from standard defaults), for full configuration check the [`exporterhelper` docs][exporterhelper].
   - `enabled` (default=true): Enable queueing and batching behaviour.
   - `num_consumers` (default=10): Number of consumers that dequeue batches.
   - `wait_for_result` (default=false): If `true`, blocks incoming requests until processed.
@@ -315,7 +315,7 @@ The behaviour of this bulk indexing can be configured with the following setting
   - `queue_size` (default=10): Maximum size the queue can accept.
   - `batch`:
     - `flush_timeout` (default=10s): Time after which batch is exported irrespective of other settings.
-    - `sizer` (default=bytes): Size batches by bytes. Note that bytes here are based on the pdata model and not on the NDJSON docs that will constitute the bulk indexer requests. To address this discrepency the bulk indexers could also flush when their size exceeds the configured max_size due to size of pdata model being smaller than their corresponding NDJSON encoding.
+    - `sizer` (default=bytes): Size batches by bytes. Note that bytes here are based on the pdata model and not on the NDJSON docs that will constitute the bulk indexer requests. To address this discrepancy, the bulk indexers could also flush when their size exceeds the configured max_size due to size of pdata model being smaller than their corresponding NDJSON encoding.
     - `min_size` (default=1MB): Min size of the batch.
     - `max_size` (default=5MB): Max size of the batch. This value should be much lower than [Elasticsearch's `http.max_content_length`](https://www.elastic.co/guide/en/elasticsearch/reference/current/modules-network.html#http-settings) config to avoid HTTP 413 Entity Too Large error. It is recommended to keep this value under 5MB.
 
@@ -420,7 +420,7 @@ exporters:
 
 When `mode` is set to `ecs`, `elasticsearchexporter` performs conversions for resource-level attributes from their Semantic Conventions (SemConv) names to equivalent Elastic Common Schema (ECS) names.
 
-If the target ECS field name is specified as an empty string (""), the converter will neither convert the SemConv key to the equivalent ECS name nor pass through the SemConv key as-is to become the ECS name.
+If the target ECS field name is specified as an empty string (`""`), the converter will neither convert the SemConv key to the equivalent ECS name nor pass through the SemConv key as-is to become the ECS name.
 
 When "Preserved" is true, the attribute will be preserved in the payload and duplicated as mapped to its ECS equivalent.
 
