@@ -157,6 +157,11 @@ func (s3Reader *s3TimeBasedReader) getObjectPrefixForTime(t time.Time, telemetry
 	case S3PartitionHour:
 		timeKey = getTimeKeyPartitionHour(t)
 	}
+
+    if strings.HasPrefix(prefix, "/") && strings.HasSuffix(prefix, "/") {
+        return fmt.Sprintf("%s%s/%s/%s%s_", prefix, "", timeKey, s3Reader.filePrefix, telemetryType)
+    }
+	
 	if s3Reader.s3Prefix != "" {
 		return fmt.Sprintf("%s/%s/%s%s_", s3Reader.s3Prefix, timeKey, s3Reader.filePrefix, telemetryType)
 	}
