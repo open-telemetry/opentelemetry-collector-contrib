@@ -73,7 +73,7 @@ type Resource struct {
 // There is no builtin CloudTrailRecord we can leverage like in S3
 // So we build our own
 type CloudTrailRecord struct {
-	ApiVersion                   string         `json:"apiVersion"`
+	APIVersion                   string         `json:"apiVersion"`
 	EventVersion                 string         `json:"eventVersion"`
 	EventTime                    string         `json:"eventTime"`
 	EventSource                  string         `json:"eventSource"`
@@ -180,8 +180,8 @@ func (*CloudTrailLogUnmarshaler) setLogAttributes(attrs pcommon.Map, record *Clo
 
 	attrs.PutStr(string(conventions.RPCSystemKey), record.EventType)
 
-	if record.ApiVersion != "" {
-		attrs.PutStr(string(conventions.ServiceVersionKey), record.ApiVersion)
+	if record.APIVersion != "" {
+		attrs.PutStr(string(conventions.ServiceVersionKey), record.APIVersion)
 	}
 
 	if record.EventSource != "" {
