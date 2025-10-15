@@ -28,7 +28,7 @@ func createXXH3Function[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ot
 		return nil, errors.New("XXH3Factory args must be of type *XXH3Arguments[K]")
 	}
 
-	return XXH3HashString(args.Target)
+	return xxh3HashString(args.Target)
 }
 
 func xxh3HashString[K any](target ottl.StringGetter[K]) (ottl.ExprFunc[K], error) {
