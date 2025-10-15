@@ -20,16 +20,6 @@ attributes:
     type: string
 
 metrics:
-  sshcheck.status:
-    description: 1 if the SSH client successfully connected, otherwise 0.
-    enabled: true
-    stability:
-      level: development
-    sum:
-      value_type: int
-      aggregation_temporality: cumulative
-      monotonic: false
-    unit: "1"
   sshcheck.duration:
     description: Measures the duration of SSH connection.
     enabled: true
@@ -49,16 +39,6 @@ metrics:
       monotonic: false
     unit: "{error}"
     attributes: [error.message]
-  sshcheck.sftp_status:
-    description: 1 if the SFTP server replied to request, otherwise 0.
-    enabled: false
-    stability:
-      level: development
-    sum:
-      value_type: int
-      aggregation_temporality: cumulative
-      monotonic: false
-    unit: "1"
   sshcheck.sftp_duration:
     description: Measures SFTP request duration.
     enabled: false
@@ -78,3 +58,23 @@ metrics:
       monotonic: false
     unit: "{error}"
     attributes: [error.message]
+  sshcheck.sftp_status:
+    description: 1 if the SFTP server replied to request, otherwise 0.
+    enabled: false
+    stability:
+      level: development
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+    unit: "1"
+  sshcheck.status:
+    description: 1 if the SSH client successfully connected, otherwise 0.
+    enabled: true
+    stability:
+      level: development
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+    unit: "1"
