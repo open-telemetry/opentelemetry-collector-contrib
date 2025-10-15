@@ -64,7 +64,7 @@ func sliceToMap(v []any, keyPath, valuePath ottl.Optional[[]string]) (any, error
 		} else {
 			e, ok := elem.(map[string]any)
 			if !ok {
-				return nil, fmt.Errorf("could not cast element '%v' to map[string]any", elem)
+				return nil, fmt.Errorf("slice elements must be maps when using `key_path`, but could not cast element '%v' to a map", elem)
 			}
 			extractedKey, err := extractValue(e, keyPath.Get())
 			if err != nil {
