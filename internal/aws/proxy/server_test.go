@@ -3,6 +3,8 @@
 
 //go:build !windows
 
+//lint:file-ignore SA1019 WIP in https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36699
+
 // TODO review if tests should succeed on Windows
 package proxy
 

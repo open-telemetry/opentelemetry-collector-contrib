@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//lint:file-ignore SA1019 WIP in https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36699
+
 // Package proxy provides an http server to act as a signing proxy for SDKs calling AWS X-Ray APIs
 package proxy // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy"
 
