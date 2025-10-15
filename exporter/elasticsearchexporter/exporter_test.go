@@ -2622,12 +2622,12 @@ func TestExporterSendingQueueContextPropogation(t *testing.T) {
 		// kept such that test can simulate batching and the batch matures on age.
 		cfg.QueueBatchConfig.WaitForResult = false
 		cfg.QueueBatchConfig.BlockOnOverflow = true
-		cfg.QueueBatchConfig.QueueSize = 100   // big enough to accomodate all requests
-		cfg.QueueBatchConfig.NumConsumers = 10 // we will send 2 requests
+		cfg.QueueBatchConfig.QueueSize = 100 // big enough to accommodate all requests
+		cfg.QueueBatchConfig.NumConsumers = 10
 		batchCfg := cfg.QueueBatchConfig.Batch.Get()
 		batchCfg.FlushTimeout = 100 * time.Millisecond
 		batchCfg.Sizer = exporterhelper.RequestSizerTypeItems
-		batchCfg.MinSize = 100 // big enough to accomodate all requests
+		batchCfg.MinSize = 100 // big enough to accommodate all requests
 		batchCfg.MaxSize = 1000
 	}
 	setupTestHost := func(t *testing.T) (component.Host, *bulkRecorder) {
