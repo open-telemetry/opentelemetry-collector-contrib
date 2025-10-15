@@ -26,9 +26,7 @@ func TestPushLogData(t *testing.T) {
 	config := createDefaultConfig().(*Config)
 	config.Endpoint = fmt.Sprintf("http://127.0.0.1:%d", port)
 	config.CreateSchema = false
-
-	err = config.Validate()
-	require.NoError(t, err)
+	require.NoError(t, config.Validate())
 
 	logger := zap.NewNop()
 	exporter := newLogsExporter(logger, config, componenttest.NewNopTelemetrySettings())
