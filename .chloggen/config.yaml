@@ -337,6 +337,7 @@ components:
     - scraper/process
     - scraper/processes
     - scraper/system
+    - scraper/system
     - scraper/zookeeper
     - testbed
     - testbed/mockdatasenders/mockdatadogagentexporter
