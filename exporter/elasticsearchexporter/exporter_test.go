@@ -2610,8 +2610,8 @@ func TestExporterBatcher(t *testing.T) {
 func TestExporterSendingQueueContextPropogation(t *testing.T) {
 	testCtxKey := component.NewID(component.MustNewType("testctxkey"))
 	metadata := client.NewMetadata(map[string][]string{
-		"key_1": []string{"val_1"},
-		"key_2": []string{"val_2"},
+		"key_1": {"val_1"},
+		"key_2": {"val_2"},
 	})
 	configSetupFn := func(cfg *Config) {
 		cfg.MetadataKeys = slices.Collect(metadata.Keys())
@@ -2661,9 +2661,9 @@ func TestExporterSendingQueueContextPropogation(t *testing.T) {
 		testHost, rec := setupTestHost(t)
 		exporter := newUnstartedTestMetricsExporter(t, "https://ignored", configSetupFn)
 		require.NoError(t, exporter.Start(t.Context(), testHost))
-		t.Cleanup(func() {
-			require.NoError(t, exporter.Shutdown(context.Background()))
-		})
+		defer func() {
+			require.NoError(t, exporter.Shutdown(t.Context()))
+		}()
 
 		sendMetrics := func(name string) {
 			metrics := pmetric.NewMetrics()
@@ -2686,9 +2686,9 @@ func TestExporterSendingQueueContextPropogation(t *testing.T) {
 		testHost, rec := setupTestHost(t)
 		exporter := newUnstartedTestLogsExporter(t, "https://ignored", configSetupFn)
 		require.NoError(t, exporter.Start(t.Context(), testHost))
-		t.Cleanup(func() {
-			require.NoError(t, exporter.Shutdown(context.Background()))
-		})
+		defer func() {
+			require.NoError(t, exporter.Shutdown(t.Context()))
+		}()
 
 		sendLogs := func(log string) {
 			logs := plog.NewLogs()
@@ -2710,9 +2710,9 @@ func TestExporterSendingQueueContextPropogation(t *testing.T) {
 		testHost, rec := setupTestHost(t)
 		exporter := newUnstartedTestTracesExporter(t, "https://ignored", configSetupFn)
 		require.NoError(t, exporter.Start(t.Context(), testHost))
-		t.Cleanup(func() {
-			require.NoError(t, exporter.Shutdown(context.Background()))
-		})
+		defer func() {
+			require.NoError(t, exporter.Shutdown(t.Context()))
+		}()
 
 		sendTraces := func(name string) {
 			traces := ptrace.NewTraces()
@@ -2734,9 +2734,9 @@ func TestExporterSendingQueueContextPropogation(t *testing.T) {
 		testHost, rec := setupTestHost(t)
 		exporter := newUnstartedProfilesExporter(t, "https://ignored", configSetupFn)
 		require.NoError(t, exporter.Start(t.Context(), testHost))
-		t.Cleanup(func() {
-			require.NoError(t, exporter.Shutdown(context.Background()))
-		})
+		defer func() {
+			require.NoError(t, exporter.Shutdown(t.Context()))
+		}()
 
 		sendProfiles := func() {
 			profiles := pprofile.NewProfiles()
