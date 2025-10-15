@@ -45,22 +45,22 @@ func TestPushLogData(t *testing.T) {
 		_ = exporter.shutdown(ctx)
 	}()
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("/api/otel/otel_logs/_stream_load", func(w http.ResponseWriter, _ *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(`{"Status":"Success"}`))
-	})
-
+	srvMux := http.NewServeMux()
 	server := &http.Server{
 		ReadTimeout: 3 * time.Second,
 		Addr:        fmt.Sprintf(":%d", port),
-		Handler:     mux,
+		Handler:     srvMux,
 	}
 
 	// Run the server.
 	serverErr := make(chan error, 1)
 	go func() {
-		serverErr <- server.ListenAndServe()
+		srvMux.HandleFunc("/api/otel/otel_logs/_stream_load", func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{"Status":"Success"}`))
+		})
+		err = server.ListenAndServe()
+		assert.Equal(t, http.ErrServerClosed, err)
 	}()
 
 	err0 := errors.New("Not Started")

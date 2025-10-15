@@ -41,26 +41,26 @@ func TestPushMetricData(t *testing.T) {
 		_ = exporter.shutdown(ctx)
 	}()
 
-	mux := http.NewServeMux()
-	metrics := []string{"gauge", "sum", "histogram", "exponential_histogram", "summary"}
-	for _, metric := range metrics {
-		url := fmt.Sprintf("/api/otel/otel_metrics_%s/_stream_load", metric)
-		mux.HandleFunc(url, func(w http.ResponseWriter, _ *http.Request) {
-			w.WriteHeader(http.StatusOK)
-			_, _ = w.Write([]byte(`{"Status":"Success"}`))
-		})
-	}
-
+	srvMux := http.NewServeMux()
 	server := &http.Server{
 		ReadTimeout: 3 * time.Second,
 		Addr:        fmt.Sprintf(":%d", port),
-		Handler:     mux,
+		Handler:     srvMux,
 	}
 
 	// Run server
 	serverErr := make(chan error, 1)
 	go func() {
-		serverErr <- server.ListenAndServe()
+		metrics := []string{"gauge", "sum", "histogram", "exponential_histogram", "summary"}
+		for _, metric := range metrics {
+			url := fmt.Sprintf("/api/otel/otel_metrics_%s/_stream_load", metric)
+			srvMux.HandleFunc(url, func(w http.ResponseWriter, _ *http.Request) {
+				w.WriteHeader(http.StatusOK)
+				_, _ = w.Write([]byte(`{"Status":"Success"}`))
+			})
+		}
+		err = server.ListenAndServe()
+		assert.Equal(t, http.ErrServerClosed, err)
 	}()
 
 	err0 := errors.New("Not Started")
