@@ -5,7 +5,7 @@ package redfishreceiver // import "github.com/open-telemetry/opentelemetry-colle
 
 import "strings"
 
-type computerSystem struct {
+type ComputerSystem struct {
 	Id           string
 	AssetTag     string
 	BiosVersion  string
@@ -17,7 +17,7 @@ type computerSystem struct {
 	SKU          string
 	SystemType   string
 	PowerState   string // On, Off, Unknown
-	Status       status
+	Status       Status
 	Links        struct {
 		Chassis []struct {
 			Ref string `json:"@odata.id"`
@@ -28,13 +28,13 @@ type computerSystem struct {
 // Redfish Generic Status
 // State (Enabled, Disabled, Unknown)
 // Health (Critical, OK, Warning)
-type status struct {
+type Status struct {
 	State  string
 	Health string
 }
 
 // Redfish Chassis
-type chassis struct {
+type Chassis struct {
 	Id           string
 	AssetTag     string
 	ChassisType  string
@@ -44,32 +44,32 @@ type chassis struct {
 	SKU          string
 	SerialNumber string
 	PowerState   string // On, Off, Unknown
-	Status       status
+	Status       Status
 	Thermal      struct {
 		Ref string `json:"@odata.id"`
 	}
 }
 
-type fan struct {
+type Fan struct {
 	Name         string
 	Reading      *int64
 	ReadingUnits *string
-	Status       status
+	Status       Status
 }
 
-type temperature struct {
+type Temperature struct {
 	Name           string
 	ReadingCelsius *float64
-	Status         status
+	Status         Status
 }
 
-type thermal struct {
-	Fans         []fan
-	Temperatures []temperature
+type Thermal struct {
+	Fans         []Fan
+	Temperatures []Temperature
 }
 
 // powerStateToMetric converts a redfish PowerState to a metric
-func powerStateToMetric(ps string) int64 {
+func PowerStateToMetric(ps string) int64 {
 	switch strings.ToLower(ps) {
 	case "off":
 		return 0
@@ -81,7 +81,7 @@ func powerStateToMetric(ps string) int64 {
 }
 
 // statusHealthToMetric converts a redfish Status.Health to a metric
-func statusHealthToMetric(sh string) int64 {
+func StatusHealthToMetric(sh string) int64 {
 	switch strings.ToLower(sh) {
 	case "critical":
 		return 0
@@ -95,7 +95,7 @@ func statusHealthToMetric(sh string) int64 {
 }
 
 // statusStateToMetric converts a redfish Status.State to a metric
-func statusStateToMetric(ss string) int64 {
+func StatusStateToMetric(ss string) int64 {
 	switch strings.ToLower(ss) {
 	case "disabled":
 		return 0

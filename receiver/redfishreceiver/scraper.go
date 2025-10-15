@@ -10,6 +10,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redfishreceiver/internal/metadata"
+	redfish "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redfishreceiver/internal/redfish"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -20,7 +21,7 @@ import (
 // scraperClient is a struct containing the RedfishClient
 // and the resources it needs to collect.
 type scraperClient struct {
-	*redfishClient
+	*redfish.Client
 	ResourceSet map[Resource]bool
 }
 
@@ -50,19 +51,19 @@ func (s *redfishScraper) start(ctx context.Context, host component.Host) error {
 
 	// create redfish clients
 	for _, server := range s.cfg.Servers {
-		opts := make([]redfishClientOption, 0)
-		opts = append(opts, WithInsecure(server.Insecure))
+		opts := make([]redfish.ClientOption, 0)
+		opts = append(opts, redfish.WithInsecure(server.Insecure))
 
 		if server.Redfish.Version != "" {
-			opts = append(opts, WithRedfishVersion(server.Redfish.Version))
+			opts = append(opts, redfish.WithRedfishVersion(server.Redfish.Version))
 		}
 
 		if timeout, err := time.ParseDuration(server.Timeout); err == nil {
-			opts = append(opts, WithClientTimeout(timeout))
+			opts = append(opts, redfish.WithClientTimeout(timeout))
 		}
 
 		// create redfish client
-		client, err := NewRedfishClient(
+		client, err := redfish.NewClient(
 			server.ComputerSystemID,
 			server.BaseUrl,
 			server.User,
@@ -96,7 +97,7 @@ func (s *redfishScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 
 	errs := &scrapererror.ScrapeErrors{}
 	for _, client := range s.clients {
-		baseUrl := client.baseURL.String()
+		baseURL := client.BaseURL.String()
 
 		compSys, err := client.GetComputerSystem()
 		if err != nil {
@@ -106,7 +107,7 @@ func (s *redfishScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 
 		// only record computer system metrics if it exists in the scraperClient's resourceSet
 		if _, exists := client.ResourceSet[ComputerSystemResource]; exists {
-			s.recordComputerSystem(baseUrl, compSys)
+			s.recordComputerSystem(baseURL, compSys)
 		}
 
 		for _, link := range compSys.Links.Chassis {
@@ -119,7 +120,7 @@ func (s *redfishScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 
 			// only record chassis metrics if it exists in the scraperClient's resourceSet
 			if _, exists := client.ResourceSet[ChassisResource]; exists {
-				s.recordChassis(compSys.HostName, baseUrl, chassis)
+				s.recordChassis(compSys.HostName, baseURL, chassis)
 			}
 
 			// only scrape Fans and Temperatures if they exist in the scraperClient's resourceSet
@@ -132,12 +133,12 @@ func (s *redfishScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 
 				// only record Fans metrics if it exists in the scraperClient's resourceSet
 				if client.ResourceSet[FansResource] {
-					s.recordFans(compSys.HostName, baseUrl, chassis.Id, thermal.Fans)
+					s.recordFans(compSys.HostName, baseURL, chassis.Id, thermal.Fans)
 				}
 
 				// only record Temperatures metrics if it exists in the scraperClient's resourceSet
 				if client.ResourceSet[TemperaturesResource] {
-					s.recordTemperatures(compSys.HostName, baseUrl, chassis.Id, thermal.Temperatures)
+					s.recordTemperatures(compSys.HostName, baseURL, chassis.Id, thermal.Temperatures)
 				}
 
 			}
