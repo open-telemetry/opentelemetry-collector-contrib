@@ -83,7 +83,7 @@ func setupMetricsReceiver(t *testing.T) *prometheusRemoteWriteReceiver {
 
 	// Add cleanup to ensure LRU cache is properly purged
 	t.Cleanup(func() {
-		writeReceiver.rmCache.Purge()
+		writeReceiver.attrCache.Purge()
 	})
 
 	return writeReceiver
@@ -1414,8 +1414,8 @@ func TestTranslateV2(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			// since we are using the rmCache to store values across requests, we need to clear it after each test, otherwise it will affect the next test
-			prwReceiver.rmCache.Purge()
+			// since we are using the attrCache to store values across requests, we need to clear it after each test, otherwise it will affect the next test
+			prwReceiver.attrCache.Purge()
 			metrics, stats, err := prwReceiver.translateV2(ctx, tc.request)
 			if tc.expectError != "" {
 				assert.ErrorContains(t, err, tc.expectError)
@@ -1454,8 +1454,9 @@ func (m *mockConsumer) ConsumeMetrics(_ context.Context, md pmetric.Metrics) err
 
 func TestTargetInfoWithMultipleRequests(t *testing.T) {
 	tests := []struct {
-		name     string
-		requests []*writev2.Request
+		name            string
+		requests        []*writev2.Request
+		expectedMetrics func() pmetric.Metrics
 	}{
 		{
 			name: "target_info first, normal metric second",
@@ -1493,6 +1494,31 @@ func TestTargetInfoWithMultipleRequests(t *testing.T) {
 						},
 					},
 				},
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				metrics := pmetric.NewMetrics()
+				rm := metrics.ResourceMetrics().AppendEmpty()
+				attrs := rm.Resource().Attributes()
+				attrs.PutStr("service.namespace", "production")
+				attrs.PutStr("service.name", "service_a")
+				attrs.PutStr("service.instance.id", "host1")
+				attrs.PutStr("machine_type", "n1-standard-1")
+				attrs.PutStr("cloud_provider", "gcp")
+				attrs.PutStr("region", "us-central1")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("OpenTelemetry Collector")
+				sm.Scope().SetVersion("latest")
+				m1 := sm.Metrics().AppendEmpty()
+				m1.SetName("normal_metric")
+				m1.SetUnit("")
+				m1.SetDescription("")
+				dp1 := m1.SetEmptyGauge().DataPoints().AppendEmpty()
+				dp1.SetDoubleValue(2.0)
+				dp1.SetTimestamp(pcommon.Timestamp(2 * int64(time.Millisecond)))
+				dp1.Attributes().PutStr("foo", "bar")
+
+				return metrics
 			},
 		},
 		{
@@ -1532,36 +1558,32 @@ func TestTargetInfoWithMultipleRequests(t *testing.T) {
 					},
 				},
 			},
+			expectedMetrics: func() pmetric.Metrics {
+				metrics := pmetric.NewMetrics()
+				rm := metrics.ResourceMetrics().AppendEmpty()
+				attrs := rm.Resource().Attributes()
+				attrs.PutStr("service.namespace", "production")
+				attrs.PutStr("service.name", "service_a")
+				attrs.PutStr("service.instance.id", "host1")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("OpenTelemetry Collector")
+				sm.Scope().SetVersion("latest")
+				m1 := sm.Metrics().AppendEmpty()
+				m1.SetName("normal_metric")
+				m1.SetUnit("")
+				m1.SetDescription("")
+				dp1 := m1.SetEmptyGauge().DataPoints().AppendEmpty()
+				dp1.SetDoubleValue(2.0)
+				dp1.SetTimestamp(pcommon.Timestamp(2 * int64(time.Millisecond)))
+				dp1.Attributes().PutStr("foo", "bar")
+
+				return metrics
+			},
 		},
 	}
 
 	// Using the same expected metrics for both tests, because we are just checking if the order of the requests changes the result.
-	expectedMetrics := func() pmetric.Metrics {
-		metrics := pmetric.NewMetrics()
-		rm := metrics.ResourceMetrics().AppendEmpty()
-		attrs := rm.Resource().Attributes()
-		attrs.PutStr("service.namespace", "production")
-		attrs.PutStr("service.name", "service_a")
-		attrs.PutStr("service.instance.id", "host1")
-		attrs.PutStr("machine_type", "n1-standard-1")
-		attrs.PutStr("cloud_provider", "gcp")
-		attrs.PutStr("region", "us-central1")
-
-		sm := rm.ScopeMetrics().AppendEmpty()
-		sm.Scope().SetName("OpenTelemetry Collector")
-		sm.Scope().SetVersion("latest")
-		m1 := sm.Metrics().AppendEmpty()
-		m1.SetName("normal_metric")
-		m1.SetUnit("")
-		m1.SetDescription("")
-		dp1 := m1.SetEmptyGauge().DataPoints().AppendEmpty()
-		dp1.SetDoubleValue(2.0)
-		dp1.SetTimestamp(pcommon.Timestamp(2 * int64(time.Millisecond)))
-		dp1.Attributes().PutStr("foo", "bar")
-
-		return metrics
-	}()
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockConsumer := new(mockConsumer)
@@ -1592,7 +1614,7 @@ func TestTargetInfoWithMultipleRequests(t *testing.T) {
 				assert.Equal(t, http.StatusNoContent, resp.StatusCode, string(body))
 			}
 
-			assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, mockConsumer.metrics[0]))
+			assert.NoError(t, pmetrictest.CompareMetrics(tt.expectedMetrics(), mockConsumer.metrics[0]))
 		})
 	}
 }
@@ -1605,10 +1627,10 @@ func TestLRUCacheResourceMetrics(t *testing.T) {
 	prwReceiver := setupMetricsReceiver(t)
 
 	// Set a small cache size to emulate the cache eviction
-	prwReceiver.rmCache.Resize(1)
+	prwReceiver.attrCache.Resize(1)
 
 	t.Cleanup(func() {
-		prwReceiver.rmCache.Purge()
+		prwReceiver.attrCache.Purge()
 	})
 
 	// Metric 1.
@@ -1747,6 +1769,9 @@ func TestLRUCacheResourceMetrics(t *testing.T) {
 		attrs.PutStr("service.namespace", "production")
 		attrs.PutStr("service.name", "service_a")
 		attrs.PutStr("service.instance.id", "host1")
+		attrs.PutStr("machine_type", "n1-standard-1")
+		attrs.PutStr("cloud_provider", "gcp")
+		attrs.PutStr("region", "us-central1")
 
 		sm := rm.ScopeMetrics().AppendEmpty()
 		sm.Scope().SetName("OpenTelemetry Collector")
@@ -1790,9 +1815,9 @@ func TestLRUCacheResourceMetrics(t *testing.T) {
 	// As target_info and metric1 have the same job/instance, they generate the same end metric: mockConsumer.metrics[0].
 	assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics1, mockConsumer.metrics[0]))
 	// As metric2 have different job/instance, it generates a different end metric: mockConsumer.metrics[2]. At this point, the cache is full it should evict the target_info metric to store the metric2.
-	assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics2, mockConsumer.metrics[2]))
+	assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics2, mockConsumer.metrics[1]))
 	// As just have 1 slot in the cache, but the cache for metric1 was evicted, this metric1_1 should generate a new resource metric, even having the same job/instance than the metric1.
-	assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics1_1, mockConsumer.metrics[3]))
+	assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics1_1, mockConsumer.metrics[2]))
 }
 
 func buildMetaDataMapByID(ms pmetric.Metrics) map[string]map[string]any {

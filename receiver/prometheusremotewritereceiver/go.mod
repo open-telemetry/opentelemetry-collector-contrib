@@ -19,6 +19,8 @@ require (
 	go.opentelemetry.io/collector/confmap v1.43.0
 	go.opentelemetry.io/collector/consumer v1.43.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.137.0
+	go.opentelemetry.io/collector/exporter/debugexporter v0.137.0
+	go.opentelemetry.io/collector/exporter/exportertest v0.137.0
 	go.opentelemetry.io/collector/pdata v1.43.0
 	go.opentelemetry.io/collector/receiver v1.43.0
 	go.opentelemetry.io/collector/receiver/receiverhelper v0.137.0
@@ -50,6 +52,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.33.19 // indirect
 	github.com/aws/smithy-go v1.22.5 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
+	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/dennwc/varint v1.0.0 // indirect
 	github.com/docker/docker v28.3.3+incompatible // indirect
@@ -101,16 +104,27 @@ require (
 	go.opentelemetry.io/collector/config/configmiddleware v1.43.0 // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.43.0 // indirect
 	go.opentelemetry.io/collector/config/configoptional v1.43.0 // indirect
+	go.opentelemetry.io/collector/config/configretry v1.43.0 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.137.0 // indirect
 	go.opentelemetry.io/collector/config/configtls v1.43.0 // indirect
 	go.opentelemetry.io/collector/confmap/xconfmap v0.137.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.137.0 // indirect
+	go.opentelemetry.io/collector/consumer/consumererror/xconsumererror v0.137.0 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.137.0 // indirect
+	go.opentelemetry.io/collector/exporter v1.43.0 // indirect
+	go.opentelemetry.io/collector/exporter/exporterhelper v0.137.0 // indirect
+	go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper v0.137.0 // indirect
+	go.opentelemetry.io/collector/exporter/xexporter v0.137.0 // indirect
+	go.opentelemetry.io/collector/extension v1.43.0 // indirect
 	go.opentelemetry.io/collector/extension/extensionauth v1.43.0 // indirect
 	go.opentelemetry.io/collector/extension/extensionmiddleware v0.137.0 // indirect
+	go.opentelemetry.io/collector/extension/xextension v0.137.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.43.0 // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.137.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.137.0 // indirect
+	go.opentelemetry.io/collector/pdata/xpdata v0.137.0 // indirect
 	go.opentelemetry.io/collector/pipeline v1.43.0 // indirect
+	go.opentelemetry.io/collector/pipeline/xpipeline v0.137.0 // indirect
 	go.opentelemetry.io/collector/processor v1.43.0 // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.137.0 // indirect
 	go.opentelemetry.io/collector/semconv v0.128.1-0.20250610090210-188191247685 // indirect
@@ -129,7 +143,7 @@ require (
 	golang.org/x/crypto v0.41.0 // indirect
 	golang.org/x/net v0.43.0 // indirect
 	golang.org/x/oauth2 v0.30.0 // indirect
-	golang.org/x/sys v0.35.0 // indirect
+	golang.org/x/sys v0.36.0 // indirect
 	golang.org/x/text v0.28.0 // indirect
 	golang.org/x/time v0.12.0 // indirect
 	google.golang.org/api v0.239.0 // indirect
