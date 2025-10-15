@@ -234,7 +234,6 @@ components:
     - receiver/carbon
     - receiver/chrony
     - receiver/ciscoosreceiver
-    - receiver/ciscoosreceiver/internal/scraper/systemscraper
     - receiver/cloudflare
     - receiver/cloudfoundry
     - receiver/collectd
