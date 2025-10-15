@@ -359,6 +359,7 @@ func (s *azureBatchScraper) getResourceMetricsDefinitionsByType(ctx context.Cont
 			timeGrain := *v.MetricAvailabilities[0].TimeGrain
 			dimensions := filterDimensions(v.Dimensions, s.cfg.Dimensions, resourceType, metricName)
 			compositeKey := metricsCompositeKey{
+				namespace:    *v.Namespace,
 				timeGrain:    timeGrain,
 				dimensions:   serializeDimensions(dimensions),
 				aggregations: strings.Join(metricAggregations, ","),
@@ -438,7 +439,7 @@ func (s *azureBatchScraper) getBatchMetricsValues(ctx context.Context, subscript
 					response, err := clientMetrics.QueryResources(
 						ctx,
 						subscriptionID,
-						resourceType,
+						compositeKey.namespace,
 						metricsByGrain.metrics[start:end],
 						azmetrics.ResourceIDList{ResourceIDs: resType.resourceIDs[startResources:endResources]},
 						&opts,
