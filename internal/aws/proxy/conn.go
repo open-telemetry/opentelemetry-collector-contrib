@@ -1,8 +1,6 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//lint:file-ignore SA1019 WIP in https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36699
-
 package proxy // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy"
 
 import (
@@ -16,14 +14,22 @@ import (
 	"strings"
 	"time"
 
+	//nolint:staticcheck // SA1019: WIP in https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36699
 	"github.com/aws/aws-sdk-go/aws"
+	//nolint:staticcheck // SA1019: WIP in https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36699
 	"github.com/aws/aws-sdk-go/aws/arn"
+	//nolint:staticcheck // SA1019: WIP in https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36699
 	"github.com/aws/aws-sdk-go/aws/awserr"
+	//nolint:staticcheck // SA1019: WIP in https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36699
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
+	//nolint:staticcheck // SA1019: WIP in https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36699
 	"github.com/aws/aws-sdk-go/aws/ec2metadata"
+	//nolint:staticcheck // SA1019: WIP in https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36699
 	"github.com/aws/aws-sdk-go/aws/endpoints"
+	//nolint:staticcheck // SA1019: WIP in https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36699
 	"github.com/aws/aws-sdk-go/aws/session"
+	//nolint:staticcheck // SA1019: WIP in https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36699
 	"github.com/aws/aws-sdk-go/service/sts"
 	"go.uber.org/zap"
 )

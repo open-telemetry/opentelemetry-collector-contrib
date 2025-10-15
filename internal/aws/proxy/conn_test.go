@@ -1,8 +1,6 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//lint:file-ignore SA1019 WIP in https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36699
-
 package proxy
 
 import (
@@ -11,9 +9,13 @@ import (
 	"os"
 	"testing"
 
+	//nolint:staticcheck // SA1019: WIP in https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36699
 	"github.com/aws/aws-sdk-go/aws/credentials"
+	//nolint:staticcheck // SA1019: WIP in https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36699
 	"github.com/aws/aws-sdk-go/aws/endpoints"
+	//nolint:staticcheck // SA1019: WIP in https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36699
 	"github.com/aws/aws-sdk-go/aws/session"
+	//nolint:staticcheck // SA1019: WIP in https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36699
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
