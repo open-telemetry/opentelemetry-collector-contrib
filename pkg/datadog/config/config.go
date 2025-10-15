@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -119,6 +120,27 @@ func (c *Config) LogWarnings(logger *zap.Logger) {
 	for _, err := range c.warnings {
 		logger.Warn(fmt.Sprintf("%v", err))
 	}
+}
+
+// AddWarning adds a warning message to the configuration.
+// This allows external modules to add warnings that will be logged later.
+func (c *Config) AddWarning(warning error) {
+	c.warnings = append(c.warnings, warning)
+}
+
+// AddWarningf adds a formatted warning message to the configuration.
+// This allows external modules to add formatted warnings that will be logged later.
+func (c *Config) AddWarningf(format string, args ...any) {
+	c.warnings = append(c.warnings, fmt.Errorf(format, args...))
+}
+
+// GetWarnings returns a copy of all warnings stored in the configuration.
+// This allows external modules to retrieve and process warnings as needed.
+func (c *Config) GetWarnings() []error {
+	// Return a copy to prevent external modification of the internal slice
+	warnings := make([]error, len(c.warnings))
+	copy(warnings, c.warnings)
+	return warnings
 }
 
 var _ component.Config = (*Config)(nil)
@@ -322,12 +344,31 @@ func defaultClientConfig() confighttp.ClientConfig {
 	return client
 }
 
+// newDefaultQueueConfig creates the default exporter queue configuration.
+func newDefaultQueueConfig() exporterhelper.QueueBatchConfig {
+	queueSet := exporterhelper.NewDefaultQueueConfig()
+	// Override batching options since the defaults cause payloads that are over our limits
+	// See e.g. https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16834 or https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/17566
+	//
+	// The limits were chosen based on the API intake limits:
+	// - Trace intake: 3.2MB
+	// - Log intake: https://docs.datadoghq.com/api/latest/logs/
+	// - Metrics V2 intake: https://docs.datadoghq.com/api/latest/metrics/#submit-metrics
+	queueSet.Batch = configoptional.Default(exporterhelper.BatchConfig{
+		FlushTimeout: 10 * time.Second,
+		Sizer:        exporterhelper.RequestSizerTypeItems,
+		MinSize:      10,
+		MaxSize:      100,
+	})
+	return queueSet
+}
+
 // CreateDefaultConfig creates the default exporter configuration
 func CreateDefaultConfig() component.Config {
 	return &Config{
 		ClientConfig:  defaultClientConfig(),
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),
-		QueueSettings: exporterhelper.NewDefaultQueueConfig(),
+		QueueSettings: newDefaultQueueConfig(),
 
 		API: APIConfig{
 			Site: "datadoghq.com",
@@ -384,4 +425,13 @@ func CreateDefaultConfig() component.Config {
 
 		HostnameDetectionTimeout: 25 * time.Second, // set to 25 to prevent 30-second pod restart on K8s as reported in issue #40372 and #40373
 	}
+}
+
+// CheckAndCastConfig checks a component.Config type and casts it to the Datadog Config struct.
+func CheckAndCastConfig(c component.Config) (*Config, error) {
+	cfg, ok := c.(*Config)
+	if !ok {
+		return nil, fmt.Errorf("expected config of type *datadog.Config, got %T", c)
+	}
+	return cfg, nil
 }

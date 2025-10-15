@@ -18,11 +18,6 @@ resource_attributes:
     type: string
 
 attributes:
-  buffer_pool_pages:
-    name_override: kind
-    description: The buffer pool pages types.
-    type: string
-    enum: [data, free, misc, total]
   buffer_pool_data:
     name_override: status
     description: The status of buffer pool data.
@@ -33,11 +28,22 @@ attributes:
     description: The buffer pool operations types.
     type: string
     enum: [read_ahead_rnd, read_ahead, read_ahead_evicted, read_requests, reads, wait_free, write_requests]
-  prepared_statements_command:
-    name_override: command
-    description: The prepare statement command types.
+  buffer_pool_pages:
+    name_override: kind
+    description: The buffer pool pages types.
     type: string
-    enum: [execute, close, fetch, prepare, reset, send_long_data]
+    enum: [data, free, misc, total]
+  cache_status:
+    name_override: status
+    description: The status of cache access.
+    type: string
+    enum: [hit, miss, overflow]
+  client.address:
+    description: Hostname or address of the client.
+    type: string
+  client.port:
+    description: TCP port used by the client.
+    type: int
   command:
     description: The command types.
     type: string
@@ -47,21 +53,121 @@ attributes:
     description: The connection error type.
     type: string
     enum: [accept, internal, max_connections, peer_address, select, tcpwrap, aborted, aborted_clients, locked]
-  handler:
-    name_override: kind
-    description: The handler types.
+  connection_status:
+    name_override: status
+    description: The connection status.
     type: string
-    enum: [commit, delete, discover, external_lock, mrr_init, prepare, read_first, read_key, read_last, read_next, read_prev, read_rnd, read_rnd_next, rollback, savepoint, savepoint_rollback, update, write]
+    enum: [accepted, closed, rejected]
+  db.namespace:
+    description: The default database for the thread, or empty if none has been selected (originally processlist_db).
+    type: string
+  db.query.text:
+    description: The SQL statement text for the event.
+    type: string
+  db.system.name:
+    description: The name of the database system.
+    type: string
+    enum: [mysql]
+  digest:
+    description: Digest.
+    type: string
+  digest_text:
+    description: Text before digestion.
+    type: string
+  direction:
+    name_override: kind
+    description: The name of the transmission direction.
+    type: string
+    enum: [received, sent]
   double_writes:
     name_override: kind
     description: The doublewrite types.
     type: string
     enum: [pages_written, writes]
+  event_state:
+    name_override: kind
+    description: Possible event states.
+    type: string
+    enum: [errors, warnings, rows_affected, rows_sent, rows_examined, created_tmp_disk_tables, created_tmp_tables, sort_merge_passes, sort_rows, no_index_used]
+  handler:
+    name_override: kind
+    description: The handler types.
+    type: string
+    enum: [commit, delete, discover, external_lock, mrr_init, prepare, read_first, read_key, read_last, read_next, read_prev, read_rnd, read_rnd_next, rollback, savepoint, savepoint_rollback, update, write]
+  index_name:
+    name_override: index
+    type: string
+    description: The name of the index.
+  io_waits_operations:
+    name_override: operation
+    description: The io_waits operation type.
+    type: string
+    enum: [delete, fetch, insert, update]
+  join_kind:
+    name_override: kind
+    description: The kind of join.
+    type: string
+    enum: [full, full_range, range, range_check, scan]
+  locks:
+    name_override: kind
+    description: The table locks type.
+    type: string
+    enum: [immediate, waited]
   log_operations:
     name_override: operation
     description: The log operation types. 'fsyncs' aren't available in MariaDB 10.8 or later.
     type: string
     enum: [waits, write_requests, writes, fsyncs]
+  mysql.event_id:
+    description: The thread associated with the event and the thread current event number when the event starts.
+    type: int
+  mysql.events_statements_current.digest:
+    description: The statement digest SHA-256 value as a string of 64 hexadecimal characters, or empty if the statements_digest consumer is no.
+    type: string
+  mysql.events_statements_summary_by_digest.count_star:
+    description: The number of times the statement was executed, report in delta value.
+    type: int
+  mysql.events_statements_summary_by_digest.digest:
+    description: The statement digest SHA-256 value as a string of 64 hexadecimal characters, or empty if the statements_digest consumer is no.
+    type: string
+  mysql.events_statements_summary_by_digest.sum_timer_wait:
+    description: The total time spent executing the statement, report in delta seconds.
+    type: double
+
+  mysql.events_waits_current.timer_wait:
+    description: Timing information for the event, indicating elapsed time the event waited in seconds.
+    type: double
+  mysql.query_plan:
+    description: The query plan for the statement, if available.
+    type: string
+  mysql.threads.processlist_command:
+    description: The type of command the thread is executing on behalf of the client for foreground threads, or `Sleep` if the session is idle.
+    type: string
+  mysql.threads.processlist_state:
+    description: An action, event, or state that indicates what the thread is doing.
+    type: string
+  mysql.threads.thread_id:
+    description: The unique identifier for the thread executing the statement.
+    type: int
+  mysql.wait_type:
+    description: The name of the instrument that produced the event.
+    type: string
+  mysqlx_threads:
+    name_override: kind
+    description: The worker thread count kind.
+    type: string
+    enum: [available, active]
+  network.peer.address:
+    description: IP address of the peer client.
+    type: string
+  network.peer.port:
+    description: TCP port used by the peer client.
+    type: int
+  opened_resources:
+    name_override: kind
+    description: The kind of the resource.
+    type: string
+    enum: [file, table_definition, table]
   operations:
     name_override: operation
     description: The operation types.
@@ -72,6 +178,16 @@ attributes:
     description: The page operation types.
     type: string
     enum: [created, read, written]
+  prepared_statements_command:
+    name_override: command
+    description: The prepare statement command types.
+    type: string
+    enum: [execute, close, fetch, prepare, reset, send_long_data]
+  read_lock_type:
+    name_override: kind
+    description: Read operation types.
+    type: string
+    enum: [normal, with_shared_locks, high_priority, no_insert, external]
   row_locks:
     name_override: kind
     description: The row lock type.
@@ -82,170 +198,42 @@ attributes:
     description: The row operation type.
     type: string
     enum: [deleted, inserted, read, updated]
-  locks:
-    name_override: kind
-    description: The table locks type.
+  schema:
+    description: The schema of the object.
     type: string
-    enum: [immediate, waited]
   sorts:
     name_override: kind
     description: The sort count type.
     type: string
     enum: [merge_passes, range, rows, scan]
-  threads:
-    name_override: kind
-    description: The thread count type.
-    type: string
-    enum: [cached, connected, created, running]
-  schema:
-    description: The schema of the object.
-    type: string
-  io_waits_operations:
-    name_override: operation
-    description: The io_waits operation type.
-    type: string
-    enum: [delete, fetch, insert, update]
   table_name:
     name_override: table
     type: string
     description: Table name for event or process.
-  index_name:
-    name_override: index
-    type: string
-    description: The name of the index.
-  direction:
-    name_override: kind
-    description: The name of the transmission direction.
-    type: string
-    enum: [received, sent]
-  digest:
-    description: Digest.
-    type: string
-  digest_text:
-    description: Text before digestion.
-    type: string
-  event_state:
-    name_override: kind
-    description: Possible event states.
-    type: string
-    enum: [errors, warnings, rows_affected, rows_sent, rows_examined, created_tmp_disk_tables, created_tmp_tables, sort_merge_passes, sort_rows, no_index_used]
-  opened_resources:
-    name_override: kind
-    description: The kind of the resource.
-    type: string
-    enum: [file, table_definition, table]
-  join_kind:
-    name_override: kind
-    description: The kind of join.
-    type: string
-    enum: [full, full_range, range, range_check, scan]
-  read_lock_type:
-    name_override: kind
-    description: Read operation types.
-    type: string
-    enum: [normal, with_shared_locks, high_priority, no_insert, external]
-  write_lock_type:
-    name_override: kind
-    description: Write operation types.
-    type: string
-    enum: [allow_write, concurrent_insert, low_priority, normal, external]
-  tmp_resource:
-    name_override: resource
-    description: The kind of temporary resources.
-    type: string
-    enum: [disk_tables, files, tables]
-  mysqlx_threads:
-    name_override: kind
-    description: The worker thread count kind.
-    type: string
-    enum: [available, active]
-  connection_status:
-    name_override: status
-    description: The connection status.
-    type: string
-    enum: [accepted, closed, rejected]
-  cache_status:
-    name_override: status
-    description: The status of cache access.
-    type: string
-    enum: [hit, miss, overflow]
   table_size_type:
     name_override: kind
     description: The table size types.
     type: string
     enum: [data, index]
-  db.system.name:
-    description: The name of the database system.
+  threads:
+    name_override: kind
+    description: The thread count type.
     type: string
-    enum: [mysql]
-  mysql.threads.thread_id:
-    description: The unique identifier for the thread executing the statement.
-    type: int
+    enum: [cached, connected, created, running]
+  tmp_resource:
+    name_override: resource
+    description: The kind of temporary resources.
+    type: string
+    enum: [disk_tables, files, tables]
   user.name:
     description: The user associated with a foreground thread, empty for a background thread (originally processlist_user).
     type: string
-  db.namespace:
-    description: The default database for the thread, or empty if none has been selected (originally processlist_db).
+  write_lock_type:
+    name_override: kind
+    description: Write operation types.
     type: string
-  mysql.threads.processlist_command:
-    description: The type of command the thread is executing on behalf of the client for foreground threads, or `Sleep` if the session is idle.
-    type: string
-  mysql.threads.processlist_state:
-    description: An action, event, or state that indicates what the thread is doing.
-    type: string
-  db.query.text:
-    description: The SQL statement text for the event.
-    type: string
-  mysql.events_statements_current.digest:
-    description: The statement digest SHA-256 value as a string of 64 hexadecimal characters, or empty if the statements_digest consumer is no.
-    type: string
-  mysql.event_id:
-    description: The thread associated with the event and the thread current event number when the event starts.
-    type: int
-  mysql.wait_type:
-    description: The name of the instrument that produced the event.
-    type: string
-  mysql.events_waits_current.timer_wait:
-    description: Timing information for the event, indicating elapsed time the event waited in seconds.
-    type: double
-  client.address:
-    description: Hostname or address of the client.
-    type: string
-  client.port:
-    description: TCP port used by the client.
-    type: int
-  network.peer.address:
-    description: IP address of the peer client.
-    type: string
-  network.peer.port:
-    description: TCP port used by the peer client.
-    type: int
-  mysql.query_plan:
-    description: The query plan for the statement, if available.
-    type: string
-  mysql.events_statements_summary_by_digest.digest:
-    description: The statement digest SHA-256 value as a string of 64 hexadecimal characters, or empty if the statements_digest consumer is no.
-    type: string
-  mysql.events_statements_summary_by_digest.count_star:
-    description: The number of times the statement was executed, report in delta value.
-    type: int
-  mysql.events_statements_summary_by_digest.sum_timer_wait:
-    description: The total time spent executing the statement, report in delta seconds.
-    type: double
-
+    enum: [allow_write, concurrent_insert, low_priority, normal, external]
 events:
-  db.server.top_query:
-    enabled: false
-    description: |
-      Top query collection enables monitoring of the queries that consumed the most CPU in the database.
-      This provides insights into query performance and resource usage, helping users identify and optimize high-impact queries as part of their observability pipeline.
-    attributes:
-      - db.system.name
-      - db.query.text
-      - mysql.query_plan
-      - mysql.events_statements_summary_by_digest.digest
-      - mysql.events_statements_summary_by_digest.count_star
-      - mysql.events_statements_summary_by_digest.sum_timer_wait
   db.server.query_sample:
     enabled: true
     description: |
@@ -268,19 +256,20 @@ events:
       - network.peer.address
       - network.peer.port
 
+  db.server.top_query:
+    enabled: false
+    description: |
+      Top query collection enables monitoring of the queries that consumed the most CPU in the database.
+      This provides insights into query performance and resource usage, helping users identify and optimize high-impact queries as part of their observability pipeline.
+    attributes:
+      - db.system.name
+      - db.query.text
+      - mysql.query_plan
+      - mysql.events_statements_summary_by_digest.digest
+      - mysql.events_statements_summary_by_digest.count_star
+      - mysql.events_statements_summary_by_digest.sum_timer_wait
+
 metrics:
-  mysql.buffer_pool.pages:
-    enabled: true
-    description: The number of pages in the InnoDB buffer pool.
-    stability:
-      level: development
-    unit: "1"
-    sum:
-      value_type: int
-      input_type: string
-      monotonic: false
-      aggregation_temporality: cumulative
-    attributes: [buffer_pool_pages]
   mysql.buffer_pool.data_pages:
     enabled: true
     description: The number of data pages in the InnoDB buffer pool.
@@ -292,16 +281,16 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
     attributes: [buffer_pool_data]
-  mysql.buffer_pool.page_flushes:
+  mysql.buffer_pool.limit:
     enabled: true
-    description: The number of requests to flush pages from the InnoDB buffer pool.
+    description: The configured size of the InnoDB buffer pool.
     stability:
       level: development
-    unit: "1"
+    unit: By
     sum:
       value_type: int
       input_type: string
-      monotonic: true
+      monotonic: false
       aggregation_temporality: cumulative
   mysql.buffer_pool.operations:
     enabled: true
@@ -315,17 +304,29 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
     attributes: [buffer_pool_operations]
-  mysql.buffer_pool.limit:
+  mysql.buffer_pool.page_flushes:
     enabled: true
-    description: The configured size of the InnoDB buffer pool.
+    description: The number of requests to flush pages from the InnoDB buffer pool.
     stability:
       level: development
-    unit: By
+    unit: "1"
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: true
+      aggregation_temporality: cumulative
+  mysql.buffer_pool.pages:
+    enabled: true
+    description: The number of pages in the InnoDB buffer pool.
+    stability:
+      level: development
+    unit: "1"
     sum:
       value_type: int
       input_type: string
       monotonic: false
       aggregation_temporality: cumulative
+    attributes: [buffer_pool_pages]
   mysql.buffer_pool.usage:
     enabled: true
     description: The number of bytes in the InnoDB buffer pool.
@@ -337,18 +338,18 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
     attributes: [buffer_pool_data]
-  mysql.prepared_statements:
-    enabled: true
-    description: The number of times each type of prepared statement command has been issued.
+  mysql.client.network.io:
+    enabled: false
+    description: The number of transmitted bytes between server and clients.
     stability:
       level: development
-    unit: "1"
+    unit: By
     sum:
       value_type: int
       input_type: string
       monotonic: true
       aggregation_temporality: cumulative
-    attributes: [prepared_statements_command]
+    attributes: [direction]
   mysql.commands:
     enabled: false
     description: The number of times each type of command has been executed.
@@ -361,9 +362,9 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
     attributes: [command]
-  mysql.handlers:
-    enabled: true
-    description: The number of requests to various MySQL handlers.
+  mysql.connection.count:
+    enabled: false
+    description: The number of connection attempts (successful or not) to the MySQL server.
     stability:
       level: development
     unit: "1"
@@ -372,7 +373,18 @@ metrics:
       input_type: string
       monotonic: true
       aggregation_temporality: cumulative
-    attributes: [handler]
+  mysql.connection.errors:
+    enabled: false
+    description: Errors that occur during the client connection process.
+    stability:
+      level: development
+    unit: "1"
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [connection_error]
   mysql.double_writes:
     enabled: true
     description: The number of writes to the InnoDB doublewrite buffer.
@@ -385,6 +397,64 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
     attributes: [double_writes]
+  mysql.handlers:
+    enabled: true
+    description: The number of requests to various MySQL handlers.
+    stability:
+      level: development
+    unit: "1"
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [handler]
+  mysql.index.io.wait.count:
+    enabled: true
+    description: The total count of I/O wait events for an index.
+    stability:
+      level: development
+    unit: "1"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [io_waits_operations, table_name, schema, index_name]
+  mysql.index.io.wait.time:
+    enabled: true
+    description: The total time of I/O wait events for an index.
+    stability:
+      level: development
+    unit: ns
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [io_waits_operations, table_name, schema, index_name]
+  mysql.joins:
+    enabled: false
+    description: The number of joins that perform table scans.
+    stability:
+      level: development
+    unit: "1"
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [join_kind]
+  mysql.locks:
+    enabled: true
+    description: The number of MySQL locks.
+    stability:
+      level: development
+    unit: "1"
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [locks]
   mysql.log_operations:
     enabled: true
     description: The number of InnoDB log operations.
@@ -397,6 +467,55 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
     attributes: [log_operations]
+  mysql.max_used_connections:
+    enabled: false
+    description: Maximum number of connections used simultaneously since the server started.
+    stability:
+      level: development
+    unit: "1"
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: false
+      aggregation_temporality: cumulative
+  mysql.mysqlx_connections:
+    enabled: true
+    description: The number of mysqlx connections.
+    extended_documentation: This metric is specific for MySQL working as Document Store (X-Plugin). [more docs](https://dev.mysql.com/doc/refman/8.0/en/document-store.html)
+    stability:
+      level: development
+    unit: "1"
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [connection_status]
+  mysql.mysqlx_worker_threads:
+    enabled: false
+    description: The number of worker threads available.
+    unit: "1"
+    extended_documentation: This metric is specific for MySQL working as Document Store (X-Plugin). [more docs](https://dev.mysql.com/doc/refman/8.0/en/document-store.html)
+    stability:
+      level: development
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: false
+      aggregation_temporality: cumulative
+    attributes: [mysqlx_threads]
+  mysql.opened_resources:
+    enabled: true
+    description: The number of opened resources.
+    stability:
+      level: development
+    unit: "1"
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [opened_resources]
   mysql.operations:
     enabled: true
     description: The number of InnoDB operations.
@@ -421,83 +540,85 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
     attributes: [page_operations]
-  mysql.table.io.wait.count:
-    enabled: true
-    description: The total count of I/O wait events for a table.
-    stability:
-      level: development
-    unit: "1"
-    sum:
-      value_type: int
-      monotonic: true
-      aggregation_temporality: cumulative
-    attributes: [io_waits_operations, table_name, schema]
-  mysql.table.io.wait.time:
-    enabled: true
-    description: The total time of I/O wait events for a table.
-    stability:
-      level: development
-    unit: ns
-    sum:
-      value_type: int
-      monotonic: true
-      aggregation_temporality: cumulative
-    attributes: [io_waits_operations, table_name, schema]
-  mysql.table.rows:
+  mysql.page_size:
     enabled: false
-    description: The number of rows for a given table.
-    stability:
-      level: development
-    unit: "1"
-    sum:
-      value_type: int
-      monotonic: false
-      aggregation_temporality: cumulative
-    attributes: [table_name, schema]
-  mysql.table.average_row_length:
-    enabled: false
-    description: The average row length in bytes for a given table.
+    description: InnoDB page size.
     stability:
       level: development
     unit: By
     sum:
       value_type: int
+      input_type: string
       monotonic: false
       aggregation_temporality: cumulative
-    attributes: [table_name, schema]
-  mysql.table.size:
-    enabled: false
-    description: The table size in bytes for a given table.
-    stability:
-      level: development
-    unit: By
-    sum:
-      value_type: int
-      monotonic: false
-      aggregation_temporality: cumulative
-    attributes: [table_name, schema, table_size_type]
-  mysql.index.io.wait.count:
+
+  mysql.prepared_statements:
     enabled: true
-    description: The total count of I/O wait events for an index.
+    description: The number of times each type of prepared statement command has been issued.
     stability:
       level: development
     unit: "1"
     sum:
       value_type: int
+      input_type: string
       monotonic: true
       aggregation_temporality: cumulative
-    attributes: [io_waits_operations, table_name, schema, index_name]
-  mysql.index.io.wait.time:
-    enabled: true
-    description: The total time of I/O wait events for an index.
+    attributes: [prepared_statements_command]
+  mysql.query.client.count:
+    enabled: false
+    description: The number of statements executed by the server. This includes only statements sent to the server by clients.
     stability:
       level: development
-    unit: ns
+    unit: "1"
     sum:
       value_type: int
+      input_type: string
       monotonic: true
       aggregation_temporality: cumulative
-    attributes: [io_waits_operations, table_name, schema, index_name]
+  mysql.query.count:
+    enabled: false
+    description: The number of statements executed by the server.
+    stability:
+      level: development
+    unit: "1"
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: true
+      aggregation_temporality: cumulative
+  mysql.query.slow.count:
+    enabled: false
+    description: The number of slow queries.
+    stability:
+      level: development
+    unit: "1"
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: true
+      aggregation_temporality: cumulative
+  mysql.replica.sql_delay:
+    enabled: false
+    description: The number of seconds that the replica must lag the source.
+    stability:
+      level: development
+    unit: s
+    sum:
+      value_type: int
+      monotonic: false
+      aggregation_temporality: cumulative
+    attributes: []
+  mysql.replica.time_behind_source:
+    enabled: false
+    description: This field is an indication of how “late” the replica is.
+    stability:
+      level: development
+    unit: s
+    sum:
+      value_type: int
+      monotonic: false
+      aggregation_temporality: cumulative
+    attributes: []
   mysql.row_locks:
     enabled: true
     description: The number of InnoDB row locks.
@@ -522,18 +643,6 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
     attributes: [row_operations]
-  mysql.locks:
-    enabled: true
-    description: The number of MySQL locks.
-    stability:
-      level: development
-    unit: "1"
-    sum:
-      value_type: int
-      input_type: string
-      monotonic: true
-      aggregation_temporality: cumulative
-    attributes: [locks]
   mysql.sorts:
     enabled: true
     description: The number of MySQL sorts.
@@ -546,53 +655,61 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
     attributes: [sorts]
-  mysql.threads:
-    enabled: true
-    description: The state of MySQL threads.
+  mysql.statement_event.count:
+    enabled: false
+    description: Summary of current and recent statement events.
     stability:
       level: development
     unit: "1"
     sum:
       value_type: int
-      input_type: string
       monotonic: false
       aggregation_temporality: cumulative
-    attributes: [threads]
-  mysql.client.network.io:
+    attributes: [schema, digest, digest_text, event_state]
+  mysql.statement_event.wait.time:
     enabled: false
-    description: The number of transmitted bytes between server and clients.
+    description: The total wait time of the summarized timed events.
+    stability:
+      level: development
+    unit: ns
+    sum:
+      value_type: int
+      monotonic: false
+      aggregation_temporality: cumulative
+    attributes: [schema, digest, digest_text]
+  mysql.table.average_row_length:
+    enabled: false
+    description: The average row length in bytes for a given table.
     stability:
       level: development
     unit: By
     sum:
       value_type: int
-      input_type: string
-      monotonic: true
+      monotonic: false
       aggregation_temporality: cumulative
-    attributes: [direction]
-  mysql.opened_resources:
+    attributes: [table_name, schema]
+  mysql.table.io.wait.count:
     enabled: true
-    description: The number of opened resources.
+    description: The total count of I/O wait events for a table.
     stability:
       level: development
     unit: "1"
     sum:
       value_type: int
-      input_type: string
       monotonic: true
       aggregation_temporality: cumulative
-    attributes: [opened_resources]
-  mysql.uptime:
+    attributes: [io_waits_operations, table_name, schema]
+  mysql.table.io.wait.time:
     enabled: true
-    description: The number of seconds that the server has been up.
+    description: The total time of I/O wait events for a table.
     stability:
       level: development
-    unit: s
+    unit: ns
     sum:
       value_type: int
-      input_type: string
       monotonic: true
       aggregation_temporality: cumulative
+    attributes: [io_waits_operations, table_name, schema]
   mysql.table.lock_wait.read.count:
     enabled: false
     description: The total table lock wait read events.
@@ -637,102 +754,9 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
     attributes: [schema, table_name, write_lock_type]
-  mysql.connection.count:
+  mysql.table.rows:
     enabled: false
-    description: The number of connection attempts (successful or not) to the MySQL server.
-    stability:
-      level: development
-    unit: "1"
-    sum:
-      value_type: int
-      input_type: string
-      monotonic: true
-      aggregation_temporality: cumulative
-  mysql.max_used_connections:
-    enabled: false
-    description: Maximum number of connections used simultaneously since the server started.
-    stability:
-      level: development
-    unit: "1"
-    sum:
-      value_type: int
-      input_type: string
-      monotonic: false
-      aggregation_temporality: cumulative
-  mysql.connection.errors:
-    enabled: false
-    description: Errors that occur during the client connection process.
-    stability:
-      level: development
-    unit: "1"
-    sum:
-      value_type: int
-      input_type: string
-      monotonic: true
-      aggregation_temporality: cumulative
-    attributes: [connection_error]
-  mysql.mysqlx_connections:
-    enabled: true
-    description: The number of mysqlx connections.
-    extended_documentation: This metric is specific for MySQL working as Document Store (X-Plugin). [more docs](https://dev.mysql.com/doc/refman/8.0/en/document-store.html)
-    stability:
-      level: development
-    unit: "1"
-    sum:
-      value_type: int
-      input_type: string
-      monotonic: true
-      aggregation_temporality: cumulative
-    attributes: [connection_status]
-  mysql.joins:
-    enabled: false
-    description: The number of joins that perform table scans.
-    stability:
-      level: development
-    unit: "1"
-    sum:
-      value_type: int
-      input_type: string
-      monotonic: true
-      aggregation_temporality: cumulative
-    attributes: [join_kind]
-  mysql.tmp_resources:
-    enabled: true
-    description: The number of created temporary resources.
-    stability:
-      level: development
-    unit: "1"
-    sum:
-      value_type: int
-      input_type: string
-      monotonic: true
-      aggregation_temporality: cumulative
-    attributes: [tmp_resource]
-  mysql.replica.time_behind_source:
-    enabled: false
-    description: This field is an indication of how “late” the replica is.
-    stability:
-      level: development
-    unit: s
-    sum:
-      value_type: int
-      monotonic: false
-      aggregation_temporality: cumulative
-    attributes: []
-  mysql.replica.sql_delay:
-    enabled: false
-    description: The number of seconds that the replica must lag the source.
-    stability:
-      level: development
-    unit: s
-    sum:
-      value_type: int
-      monotonic: false
-      aggregation_temporality: cumulative
-    attributes: []
-  mysql.statement_event.count:
-    enabled: false
-    description: Summary of current and recent statement events.
+    description: The number of rows for a given table.
     stability:
       level: development
     unit: "1"
@@ -740,31 +764,18 @@ metrics:
       value_type: int
       monotonic: false
       aggregation_temporality: cumulative
-    attributes: [schema, digest, digest_text, event_state]
-  mysql.statement_event.wait.time:
+    attributes: [table_name, schema]
+  mysql.table.size:
     enabled: false
-    description: The total wait time of the summarized timed events.
+    description: The table size in bytes for a given table.
     stability:
       level: development
-    unit: ns
+    unit: By
     sum:
       value_type: int
       monotonic: false
       aggregation_temporality: cumulative
-    attributes: [schema, digest, digest_text]
-  mysql.mysqlx_worker_threads:
-    enabled: false
-    description: The number of worker threads available.
-    unit: "1"
-    extended_documentation: This metric is specific for MySQL working as Document Store (X-Plugin). [more docs](https://dev.mysql.com/doc/refman/8.0/en/document-store.html)
-    stability:
-      level: development
-    sum:
-      value_type: int
-      input_type: string
-      monotonic: false
-      aggregation_temporality: cumulative
-    attributes: [mysqlx_threads]
+    attributes: [table_name, schema, table_size_type]
   mysql.table_open_cache:
     enabled: false
     description: The number of hits, misses or overflows for open tables cache lookups.
@@ -777,49 +788,40 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
     attributes: [cache_status]
-  mysql.query.client.count:
-    enabled: false
-    description: The number of statements executed by the server. This includes only statements sent to the server by clients.
+  mysql.threads:
+    enabled: true
+    description: The state of MySQL threads.
     stability:
       level: development
     unit: "1"
-    sum:
-      value_type: int
-      input_type: string
-      monotonic: true
-      aggregation_temporality: cumulative
-  mysql.query.count:
-    enabled: false
-    description: The number of statements executed by the server.
-    stability:
-      level: development
-    unit: "1"
-    sum:
-      value_type: int
-      input_type: string
-      monotonic: true
-      aggregation_temporality: cumulative
-  mysql.query.slow.count:
-    enabled: false
-    description: The number of slow queries.
-    stability:
-      level: development
-    unit: "1"
-    sum:
-      value_type: int
-      input_type: string
-      monotonic: true
-      aggregation_temporality: cumulative
-  mysql.page_size:
-    enabled: false
-    description: InnoDB page size.
-    stability:
-      level: development
-    unit: By
     sum:
       value_type: int
       input_type: string
       monotonic: false
+      aggregation_temporality: cumulative
+    attributes: [threads]
+  mysql.tmp_resources:
+    enabled: true
+    description: The number of created temporary resources.
+    stability:
+      level: development
+    unit: "1"
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [tmp_resource]
+  mysql.uptime:
+    enabled: true
+    description: The number of seconds that the server has been up.
+    stability:
+      level: development
+    unit: s
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: true
       aggregation_temporality: cumulative
 
 tests:
