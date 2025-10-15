@@ -1,0 +1,21 @@
+default:
+all_set:
+  metrics:
+    cisco.collector.duration.seconds:
+      enabled: true
+    cisco.device.up:
+      enabled: true
+    system.cpu.utilization:
+      enabled: true
+    system.memory.utilization:
+      enabled: true
+none_set:
+  metrics:
+    cisco.collector.duration.seconds:
+      enabled: false
+    cisco.device.up:
+      enabled: false
+    system.cpu.utilization:
+      enabled: false
+    system.memory.utilization:
+      enabled: false

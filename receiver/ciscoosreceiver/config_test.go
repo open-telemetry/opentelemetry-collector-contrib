@@ -71,7 +71,7 @@ func TestConfigValidate(t *testing.T) {
 					},
 				},
 				Scrapers: map[component.Type]component.Config{
-					component.MustNewType("interfaces"): nil,
+					component.MustNewType("system"): nil,
 				},
 			},
 			expectedErr: "",

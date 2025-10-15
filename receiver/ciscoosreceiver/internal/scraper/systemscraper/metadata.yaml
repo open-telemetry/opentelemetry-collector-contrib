@@ -1,0 +1,51 @@
+type: system
+
+status:
+  class: scraper
+  stability:
+    development: [metrics]
+  distributions: []
+  codeowners:
+    active: []
+
+attributes:
+  target:
+    description: The target network device hostname/IP (used for K8s node correlation)
+    type: string
+
+metrics:
+  cisco.collector.duration.seconds:
+    enabled: true
+    description: Duration of all collector scrapes for one target (total collection time)
+    unit: s
+    gauge:
+      value_type: double
+    attributes: [target]
+
+  cisco.device.up:
+    enabled: true
+    description: Device availability (1 = up, 0 = down)
+    unit: "1"
+    gauge:
+      value_type: int
+    attributes: [target]
+
+  system.cpu.utilization:
+    enabled: true
+    description: Percentage of CPU time in use.
+    unit: "1"
+    gauge:
+      value_type: double
+    attributes: [target]
+
+  system.memory.utilization:
+    enabled: true
+    description: Percentage of memory bytes in use.
+    unit: "1"
+    gauge:
+      value_type: double
+    attributes: [target]
+
+# TODO: Update the scraper to support test mode or mock SSH connections
+tests:
+  skip_lifecycle: true

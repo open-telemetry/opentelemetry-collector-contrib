@@ -1,15 +1,9 @@
 default:
 all_set:
   metrics:
-    cisco.interface.receive.bytes:
+    cisco.collector.duration.seconds:
       enabled: true
-    cisco.interface.receive.errors:
-      enabled: true
-    cisco.interface.transmit.bytes:
-      enabled: true
-    cisco.interface.transmit.errors:
-      enabled: true
-    cisco.interface.up:
+    cisco.device.up:
       enabled: true
     cisco.system.cpu.utilization:
       enabled: true
@@ -24,15 +18,9 @@ all_set:
       enabled: true
 none_set:
   metrics:
-    cisco.interface.receive.bytes:
+    cisco.collector.duration.seconds:
       enabled: false
-    cisco.interface.receive.errors:
-      enabled: false
-    cisco.interface.transmit.bytes:
-      enabled: false
-    cisco.interface.transmit.errors:
-      enabled: false
-    cisco.interface.up:
+    cisco.device.up:
       enabled: false
     cisco.system.cpu.utilization:
       enabled: false

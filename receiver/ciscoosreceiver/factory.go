@@ -10,10 +10,17 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/ciscoosreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/ciscoosreceiver/internal/scraper/systemscraper"
 )
+
+var scraperFactories = map[component.Type]scraper.Factory{
+	component.MustNewType("system"): systemscraper.NewFactory(),
+}
 
 // NewFactory creates a factory for Cisco OS receiver.
 func NewFactory() receiver.Factory {
@@ -44,12 +51,55 @@ func createMetricsReceiver(
 ) (receiver.Metrics, error) {
 	conf := cfg.(*Config)
 
-	// TODO: Implement actual scraper logic when scraper directories are added
-	// For now, return nop receiver to satisfy component lifecycle tests
-	_ = conf
-	_ = set
-	_ = consumer
-	return &nopMetricsReceiver{}, nil
+	if len(conf.Devices) == 0 || len(conf.Scrapers) == 0 {
+		return &nopMetricsReceiver{}, nil
+	}
+
+	var scraperOptions []scraperhelper.ControllerOption
+	for scraperType, scraperCfg := range conf.Scrapers {
+		factory, exists := scraperFactories[scraperType]
+		if !exists {
+			set.Logger.Warn("Unsupported scraper type", zap.String("type", scraperType.String()))
+			continue
+		}
+
+		// Inject device configuration into scraper config
+		if sysCfg, ok := scraperCfg.(*systemscraper.Config); ok {
+			sysCfg.Devices = convertToSystemScraperDeviceConfigs(conf.Devices)
+		}
+
+		scraperOptions = append(scraperOptions, scraperhelper.AddFactoryWithConfig(factory, scraperCfg))
+	}
+
+	if len(scraperOptions) == 0 {
+		return &nopMetricsReceiver{}, nil
+	}
+
+	return scraperhelper.NewMetricsController(
+		&conf.ControllerConfig,
+		set,
+		consumer,
+		scraperOptions...,
+	)
+}
+
+func convertToSystemScraperDeviceConfigs(devices []DeviceConfig) []systemscraper.DeviceConfig {
+	scraperDevices := make([]systemscraper.DeviceConfig, len(devices))
+	for i, dev := range devices {
+		scraperDevices[i] = systemscraper.DeviceConfig{
+			Host: systemscraper.HostInfo{
+				Name: dev.Device.Host.Name,
+				IP:   dev.Device.Host.IP,
+				Port: dev.Device.Host.Port,
+			},
+			Auth: systemscraper.AuthConfig{
+				Username: dev.Auth.Username,
+				Password: string(dev.Auth.Password),
+				KeyFile:  dev.Auth.KeyFile,
+			},
+		}
+	}
+	return scraperDevices
 }
 
 type nopMetricsReceiver struct{}

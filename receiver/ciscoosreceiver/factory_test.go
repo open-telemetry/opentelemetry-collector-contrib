@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/ciscoosreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/ciscoosreceiver/internal/scraper/systemscraper"
 )
 
 func TestNewFactory(t *testing.T) {
@@ -58,8 +59,10 @@ func TestCreateMetricsReceiver(t *testing.T) {
 			},
 		},
 	}
+	// Add system scraper with default config
+	systemFactory := systemscraper.NewFactory()
 	config.Scrapers = map[component.Type]component.Config{
-		component.MustNewType("system"): nil,
+		component.MustNewType("system"): systemFactory.CreateDefaultConfig(),
 	}
 
 	set := receivertest.NewNopSettings(metadata.Type)

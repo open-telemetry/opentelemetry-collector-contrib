@@ -46,24 +46,19 @@ The scrapers are configured as modular components. Each scraper type can be conf
 
 | Setting | Type | Description |
 |---------|------|-------------|
-| `system` | map | System metrics (CPU, memory, device info) |
-| `interfaces` | map | Interface statistics (bytes, packets, errors) |
-| `bgp` | map | BGP session information and statistics |
-| `environment` | map | Temperature and power consumption metrics |
-| `optics` | map | Optical transceiver metrics |
+| `system` | map | System metrics (device availability, collection duration) |
 
 ## Metrics Collected
 
-### Interface Metrics
-- `cisco.interface.transmit.bytes` - Bytes transmitted per interface
-- `cisco.interface.receive.bytes` - Bytes received per interface  
-- `cisco.interface.transmit.errors` - Transmit errors per interface
-- `cisco.interface.receive.errors` - Receive errors per interface
-- `cisco.interface.up` - Interface operational status (1=up, 0=down)
-
 ### System Metrics
-- `cisco.system.cpu.utilization` - CPU utilization percentage
-- `cisco.system.memory.utilization` - Memory utilization percentage
+- `cisco.device.up` - Device availability (1=up, 0=down)
+- `cisco.collector.duration.seconds` - Duration of collector scrape in seconds
+- `cisco.system.cpu.utilization` - CPU utilization as a fraction (0-1)
+  - NX-OS: Calculated from `show system resources` (user + kernel)
+  - IOS/IOS XE: Calculated from `show process cpu` (5-second average)
+- `cisco.system.memory.utilization` - Memory utilization as a fraction (0-1)
+  - NX-OS: Calculated from `show system resources` (used / total)
+  - IOS/IOS XE: Calculated from `show process memory` (Processor Pool used / total)
 
 ### Resource Attributes
 - `cisco.device.name` - Device name
@@ -96,7 +91,6 @@ receivers:
           key_file: "/path/to/ssh/key"
     scrapers:
       system:
-      interfaces:
 
 exporters:
   debug:
