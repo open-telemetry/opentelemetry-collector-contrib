@@ -103,6 +103,7 @@ func (sw *s3manager) contentBuffer(raw []byte) (*bytes.Buffer, error) {
 	switch sw.builder.Compression {
 	case configcompression.TypeGzip:
 		content := bytes.NewBuffer(nil)
+
 		zipper := gzip.NewWriter(content)
 		if _, err := zipper.Write(raw); err != nil {
 			return nil, err
@@ -110,6 +111,7 @@ func (sw *s3manager) contentBuffer(raw []byte) (*bytes.Buffer, error) {
 		if err := zipper.Close(); err != nil {
 			return nil, err
 		}
+
 		return content, nil
 	default:
 		return bytes.NewBuffer(raw), nil
