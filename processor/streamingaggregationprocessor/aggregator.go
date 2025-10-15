@@ -4,7 +4,6 @@
 package streamingaggregationprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/streamingaggregationprocessor"
 
 import (
-	"fmt"
 	"sort"
 	"sync"
 	"time"

@@ -304,11 +304,40 @@ func createAndEmitMetrics(ctx context.Context, rawMeter, aggMeter metric.Meter, 
 	defer ticker.Stop()
 
 	totalRequests := int64(0)
-	activeConns := int64(100)  // Start with a higher baseline
-	
-	// Initialize the UpDownCounter with the starting value
-	rawActiveConnections.Add(ctx, activeConns)
-	aggActiveConnections.Add(ctx, activeConns)
+
+	// Initialize active connections for each service/region/protocol/instance combination
+	services := []string{"web", "api", "database"}
+	regions := []string{"us-east-1", "us-west-2", "eu-west-1"}
+	protocols := []string{"http", "grpc", "tcp"}
+	instances := []string{"srv-01", "srv-02", "srv-03"}
+
+	// Initialize with baseline connections (10-30 per combination)
+	for _, service := range services {
+		for _, region := range regions {
+			for _, protocol := range protocols {
+				for _, instance := range instances {
+					initialConns := rand.Int63n(21) + 10 // 10-30 connections
+
+					rawActiveConnections.Add(ctx, initialConns,
+						metric.WithAttributes(
+							attribute.String("service", service),
+							attribute.String("region", region),
+							attribute.String("protocol", protocol),
+							attribute.String("instance", instance),
+						),
+					)
+					aggActiveConnections.Add(ctx, initialConns,
+						metric.WithAttributes(
+							attribute.String("service", service),
+							attribute.String("region", region),
+							attribute.String("protocol", protocol),
+							attribute.String("instance", instance),
+						),
+					)
+				}
+			}
+		}
+	}
 
 	log.Println("Starting metric generation... Press Ctrl+C to stop")
 	
@@ -380,30 +409,49 @@ func createAndEmitMetrics(ctx context.Context, rawMeter, aggMeter metric.Meter, 
 				)
 			}
 
-			// Update active connections (simulate connection changes)
-			// Keep connections between 50 and 150
-			connChange := rand.Int63n(21) - 10 // -10 to +10
-			newActiveConns := activeConns + connChange
-			
-			// Ensure we stay within reasonable bounds (50-150)
-			if newActiveConns < 50 {
-				newActiveConns = 50
-				connChange = newActiveConns - activeConns
-			} else if newActiveConns > 150 {
-				newActiveConns = 150
-				connChange = newActiveConns - activeConns
-			}
-			
-			activeConns = newActiveConns
-			
-			// Add the change to the up-down counter
-			if connChange != 0 {
-				rawActiveConnections.Add(ctx, connChange)
-				aggActiveConnections.Add(ctx, connChange)
+			// Update active connections with realistic labels
+			// Simulate different services, regions, protocols, and instances
+			services := []string{"web", "api", "database"}
+			regions := []string{"us-east-1", "us-west-2", "eu-west-1"}
+			protocols := []string{"http", "grpc", "tcp"}
+			instances := []string{"srv-01", "srv-02", "srv-03"}
+
+			for _, service := range services {
+				for _, region := range regions {
+					for _, protocol := range protocols {
+						for _, instance := range instances {
+							// Generate connection change for each combination (-5 to +5)
+							connChange := rand.Int63n(11) - 5
+
+							// Skip if no change
+							if connChange == 0 {
+								continue
+							}
+
+							// Add the change to the up-down counter with labels
+							rawActiveConnections.Add(ctx, connChange,
+								metric.WithAttributes(
+									attribute.String("service", service),
+									attribute.String("region", region),
+									attribute.String("protocol", protocol),
+									attribute.String("instance", instance),
+								),
+							)
+							aggActiveConnections.Add(ctx, connChange,
+								metric.WithAttributes(
+									attribute.String("service", service),
+									attribute.String("region", region),
+									attribute.String("protocol", protocol),
+									attribute.String("instance", instance),
+								),
+							)
+						}
+					}
+				}
 			}
 
-			log.Printf("Emitted metrics - Requests: %d (Total: %d), Active Connections: %d, Temp: %.2f°C",
-				requests, totalRequests, activeConns, temperature)
+			log.Printf("Emitted metrics - Requests: %d (Total: %d), Connection changes emitted, Temp metrics updated",
+				requests, totalRequests)
 			
 			// Force a flush to ensure metrics are sent immediately
 			// This helps with debugging to ensure metrics are actually being sent
