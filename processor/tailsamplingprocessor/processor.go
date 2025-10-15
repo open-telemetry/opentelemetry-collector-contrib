@@ -62,7 +62,7 @@ type tailSamplingSpanProcessor struct {
 	sampledIDCache     cache.Cache[bool]
 	nonSampledIDCache  cache.Cache[bool]
 	traceLimiter       traceLimiter
-	numTracesOnMap     *atomic.Uint64
+	numTracesOnMap     atomic.Uint64
 	recordPolicy       bool
 	setPolicyMux       sync.Mutex
 	pendingPolicy      []PolicyCfg
@@ -134,7 +134,6 @@ func newTracesProcessor(ctx context.Context, set processor.Settings, nextConsume
 		sampledIDCache:     sampledDecisions,
 		nonSampledIDCache:  nonSampledDecisions,
 		logger:             telemetrySettings.Logger,
-		numTracesOnMap:     &atomic.Uint64{},
 		sampleOnFirstMatch: cfg.SampleOnFirstMatch,
 	}
 	tsp.policyTicker = &timeutils.PolicyTicker{OnTickFunc: tsp.samplingPolicyOnTick}
@@ -575,14 +574,11 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans ptrace.Resourc
 
 		d, loaded := tsp.idToTrace.Load(id)
 		if !loaded {
-			spanCount := &atomic.Int64{}
-			spanCount.Store(lenSpans)
-
 			td := &samplingpolicy.TraceData{
 				ArrivalTime:     currTime,
-				SpanCount:       spanCount,
 				ReceivedBatches: ptrace.NewTraces(),
 			}
+			td.SpanCount.Store(lenSpans)
 
 			if d, loaded = tsp.idToTrace.LoadOrStore(id, td); !loaded {
 				newTraceIDs++
