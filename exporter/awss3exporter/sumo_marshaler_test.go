@@ -345,6 +345,8 @@ func TestMarshalerEmptyAttributes(t *testing.T) {
 	output := string(buf)
 
 	assert.Contains(t, output, `"fields":{}`)
+
 	assert.Contains(t, output, `"message":{"log":"minimal log"}`)
+
 	assert.Equal(t, 3, ra.Len(), "Should still have exactly 3 source attributes")
 }
