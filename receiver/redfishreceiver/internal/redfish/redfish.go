@@ -22,7 +22,7 @@ type Client struct {
 	host             string
 	userName         string
 	password         configopaque.String
-	computerSystemId string
+	computerSystemID string
 }
 
 // redfish client options
@@ -47,7 +47,7 @@ func WithInsecure(insecure bool) ClientOption {
 }
 
 // NewRedfishClient is a function to create new redfish clients
-func NewClient(computerSystemId, addr, user string, pwd configopaque.String, opts ...ClientOption) (*Client, error) {
+func NewClient(computerSystemID, addr, user string, pwd configopaque.String, opts ...ClientOption) (*Client, error) {
 	baseURL, err := url.Parse(addr)
 	if err != nil {
 		return nil, err
@@ -75,7 +75,7 @@ func NewClient(computerSystemId, addr, user string, pwd configopaque.String, opt
 			},
 			Timeout: clientOpts.ClientTimeout,
 		},
-		computerSystemId: computerSystemId,
+		computerSystemID: computerSystemID,
 		BaseURL:          baseURL,
 		host:             address,
 		redfishVersion:   clientOpts.RedfishVersion,
@@ -94,7 +94,7 @@ func (c *Client) setHeaders(req *http.Request) {
 // GetComputerSystem is a method to get the client's computer system data
 func (c *Client) GetComputerSystem() (*ComputerSystem, error) {
 	url := c.BaseURL.ResolveReference(&url.URL{
-		Path: path.Join("/redfish/", c.redfishVersion, "/Systems/", c.computerSystemId),
+		Path: path.Join("/redfish/", c.redfishVersion, "/Systems/", c.computerSystemID),
 	}).String()
 	req, err := http.NewRequest(http.MethodGet, url, http.NoBody)
 	if err != nil {
@@ -107,7 +107,8 @@ func (c *Client) GetComputerSystem() (*ComputerSystem, error) {
 	}
 	defer resp.Body.Close()
 	var system ComputerSystem
-	if err = json.NewDecoder(resp.Body).Decode(&system); err != nil {
+	err = json.NewDecoder(resp.Body).Decode(&system)
+	if err != nil {
 		return nil, err
 	}
 	return &system, nil
@@ -127,7 +128,8 @@ func (c *Client) GetChassis(ref string) (*Chassis, error) {
 	}
 	defer resp.Body.Close()
 	var chassis Chassis
-	if err = json.NewDecoder(resp.Body).Decode(&chassis); err != nil {
+	err = json.NewDecoder(resp.Body).Decode(&chassis)
+	if err != nil {
 		return nil, err
 	}
 	return &chassis, nil
@@ -147,7 +149,8 @@ func (c *Client) GetThermal(ref string) (*Thermal, error) {
 	}
 	defer resp.Body.Close()
 	var thermal Thermal
-	if err = json.NewDecoder(resp.Body).Decode(&thermal); err != nil {
+	err = json.NewDecoder(resp.Body).Decode(&thermal)
+	if err != nil {
 		return nil, err
 	}
 	return &thermal, nil

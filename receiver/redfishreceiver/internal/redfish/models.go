@@ -6,7 +6,7 @@ package redfishreceiver // import "github.com/open-telemetry/opentelemetry-colle
 import "strings"
 
 type ComputerSystem struct {
-	Id           string
+	ID           string `json:"Id"`
 	AssetTag     string
 	BiosVersion  string
 	HostName     string
@@ -35,7 +35,7 @@ type Status struct {
 
 // Redfish Chassis
 type Chassis struct {
-	Id           string
+	ID           string `json:"Id"`
 	AssetTag     string
 	ChassisType  string
 	Manufacturer string

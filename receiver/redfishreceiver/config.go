@@ -20,7 +20,7 @@ type redfishConfig struct {
 }
 
 type Server struct {
-	BaseUrl          string              `mapstructure:"base_url"`
+	BaseURL          string              `mapstructure:"base_url"`
 	User             string              `mapstructure:"username"`
 	Pwd              configopaque.String `mapstructure:"password"`
 	Insecure         bool                `mapstructure:"insecure"`
@@ -45,7 +45,7 @@ func (cfg *Config) Validate() error {
 	}
 
 	for i := range cfg.Servers {
-		if _, err := url.Parse(cfg.Servers[i].BaseUrl); err != nil {
+		if _, err := url.Parse(cfg.Servers[i].BaseURL); err != nil {
 			return err
 		}
 

@@ -7,15 +7,14 @@ import (
 	"context"
 	"time"
 
-	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redfishreceiver/internal/metadata"
-	redfish "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redfishreceiver/internal/redfish"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
+	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redfishreceiver/internal/metadata"
+	redfish "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redfishreceiver/internal/redfish"
 )
 
 // scraperClient is a struct containing the RedfishClient
@@ -46,11 +45,13 @@ func newScraper(conf *Config, settings receiver.Settings) *redfishScraper {
 }
 
 // start is a method to initialize our redfishScraper scraperClients
-func (s *redfishScraper) start(ctx context.Context, host component.Host) error {
+func (s *redfishScraper) start(_ context.Context, _ component.Host) error {
 	s.logger.Info("starting redfish scraper")
 
 	// create redfish clients
-	for _, server := range s.cfg.Servers {
+	for i := range s.cfg.Servers {
+		server := s.cfg.Servers[i]
+
 		opts := make([]redfish.ClientOption, 0)
 		opts = append(opts, redfish.WithInsecure(server.Insecure))
 
@@ -65,7 +66,7 @@ func (s *redfishScraper) start(ctx context.Context, host component.Host) error {
 		// create redfish client
 		client, err := redfish.NewClient(
 			server.ComputerSystemID,
-			server.BaseUrl,
+			server.BaseURL,
 			server.User,
 			server.Pwd,
 			opts...,
@@ -92,7 +93,7 @@ func (s *redfishScraper) start(ctx context.Context, host component.Host) error {
 
 // scrape is a method invoked periodically to scrape all server redfish apis
 // and add their metrics to a metrics buffer
-func (s *redfishScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
+func (s *redfishScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 	s.logger.Info("scraping redfish...")
 
 	errs := &scrapererror.ScrapeErrors{}
@@ -133,18 +134,15 @@ func (s *redfishScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 
 				// only record Fans metrics if it exists in the scraperClient's resourceSet
 				if client.ResourceSet[FansResource] {
-					s.recordFans(compSys.HostName, baseURL, chassis.Id, thermal.Fans)
+					s.recordFans(compSys.HostName, baseURL, chassis.ID, thermal.Fans)
 				}
 
 				// only record Temperatures metrics if it exists in the scraperClient's resourceSet
 				if client.ResourceSet[TemperaturesResource] {
-					s.recordTemperatures(compSys.HostName, baseURL, chassis.Id, thermal.Temperatures)
+					s.recordTemperatures(compSys.HostName, baseURL, chassis.ID, thermal.Temperatures)
 				}
-
 			}
-
 		}
-
 	}
 
 	return s.mb.Emit(), errs.Combine()
