@@ -321,11 +321,31 @@ func createAndEmitMetrics(ctx context.Context, rawMeter, aggMeter metric.Meter, 
 			// Emit counter metrics (simulate 5-15 requests per second)
 			requests := rand.Int63n(11) + 5
 			totalRequests += requests
-			
-			// Emit to both raw and aggregated WITHOUT any attributes
-			// This ensures we're always updating the same time series
-			rawRequestCounter.Add(ctx, requests)
-			aggRequestCounter.Add(ctx, requests)
+
+			// Generate HTTP requests with essential labels for testing aggregation
+			for i := int64(0); i < requests; i++ {
+				method := randomMethod()
+				status := randomStatus()
+				endpoint := randomEndpoint()
+				instance := randomInstance()
+
+				rawRequestCounter.Add(ctx, 1,
+					metric.WithAttributes(
+						attribute.String("method", method),
+						attribute.String("status_code", status),
+						attribute.String("endpoint", endpoint),
+						attribute.String("instance", instance),
+					),
+				)
+				aggRequestCounter.Add(ctx, 1,
+					metric.WithAttributes(
+						attribute.String("method", method),
+						attribute.String("status_code", status),
+						attribute.String("endpoint", endpoint),
+						attribute.String("instance", instance),
+					),
+				)
+			}
 
 			// Emit histogram metrics (simulate response times)
 			for i := int64(0); i < requests; i++ {
@@ -420,6 +440,11 @@ func randomStatus() string {
 func randomEndpoint() string {
 	endpoints := []string{"/api/users", "/api/products", "/api/orders", "/health", "/metrics"}
 	return endpoints[rand.Intn(len(endpoints))]
+}
+
+func randomInstance() string {
+	instances := []string{"web-01", "web-02", "web-03", "api-01", "api-02"}
+	return instances[rand.Intn(len(instances))]
 }
 
 func generateResponseTime() float64 {
