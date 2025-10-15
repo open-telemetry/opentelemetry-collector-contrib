@@ -18,7 +18,7 @@ type redfishConfig struct {
 }
 
 type Server struct {
-	Host             string              `mapstructure:"host"`
+	BaseUrl          string              `mapstructure:"base_url"`
 	User             string              `mapstructure:"username"`
 	Pwd              configopaque.String `mapstructure:"password"`
 	Insecure         bool                `mapstructure:"insecure"`
