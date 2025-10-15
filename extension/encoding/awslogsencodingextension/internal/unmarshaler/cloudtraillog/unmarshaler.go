@@ -27,14 +27,32 @@ var _ unmarshaler.AWSUnmarshaler = (*CloudTrailLogUnmarshaler)(nil)
 
 // UserIdentity represents the user identity information in CloudTrail logs
 type UserIdentity struct {
-	Type             string `json:"type"`
-	PrincipalID      string `json:"principalId"`
-	ARN              string `json:"arn"`
-	AccountID        string `json:"accountId"`
-	AccessKeyID      string `json:"accessKeyId"`
-	UserName         string `json:"userName"`
-	UserID           string `json:"userId"`
-	IdentityStoreARN string `json:"identityStoreArn"`
+	Type             string          `json:"type"`
+	PrincipalID      string          `json:"principalId"`
+	ARN              string          `json:"arn"`
+	AccountID        string          `json:"accountId"`
+	AccessKeyID      string          `json:"accessKeyId"`
+	UserName         string          `json:"userName"`
+	UserID           string          `json:"userId"`
+	IdentityStoreARN string          `json:"identityStoreArn"`
+	InvokedBy        string          `json:"invokedBy"`
+	SessionContext   *SessionContext `json:"sessionContext"`
+}
+
+// SessionContext if request was made with temporary security credentials,
+// provides information about the session created for credentials.
+type SessionContext struct {
+	Attributes    map[string]any `json:"attributes"`
+	SessionIssuer *SessionIssuer `json:"sessionIssuer"`
+}
+
+// SessionIssuer provides information about how the user obtained credentials.
+type SessionIssuer struct {
+	Type        string `json:"type"`
+	PrincipalID string `json:"principalId"`
+	ARN         string `json:"arn"`
+	AccountID   string `json:"accountId"`
+	UserName    string `json:"userName"`
 }
 
 // TLSDetails represents the TLS connection details in CloudTrail logs
@@ -55,6 +73,7 @@ type Resource struct {
 // There is no builtin CloudTrailRecord we can leverage like in S3
 // So we build our own
 type CloudTrailRecord struct {
+	ApiVersion                   string         `json:"apiVersion"`
 	EventVersion                 string         `json:"eventVersion"`
 	EventTime                    string         `json:"eventTime"`
 	EventSource                  string         `json:"eventSource"`
@@ -70,6 +89,7 @@ type CloudTrailRecord struct {
 	UserIdentity                 *UserIdentity  `json:"userIdentity"`
 	ResponseElements             map[string]any `json:"responseElements"`
 	RequestParameters            map[string]any `json:"requestParameters"`
+	AdditionalEventData          map[string]any `json:"additionalEventData"`
 	Resources                    []*Resource    `json:"resources"`
 	ReadOnly                     *bool          `json:"readOnly"`
 	ManagementEvent              *bool          `json:"managementEvent"`
@@ -152,7 +172,6 @@ func (u *CloudTrailLogUnmarshaler) setLogRecord(logRecord plog.LogRecord, record
 
 func (*CloudTrailLogUnmarshaler) setLogAttributes(attrs pcommon.Map, record *CloudTrailRecord) {
 	attrs.PutStr("aws.cloudtrail.event_version", record.EventVersion)
-
 	attrs.PutStr("aws.cloudtrail.event_id", record.EventID)
 
 	if record.EventName != "" {
@@ -160,6 +179,10 @@ func (*CloudTrailLogUnmarshaler) setLogAttributes(attrs pcommon.Map, record *Clo
 	}
 
 	attrs.PutStr(string(conventions.RPCSystemKey), record.EventType)
+
+	if record.ApiVersion != "" {
+		attrs.PutStr(string(conventions.ServiceVersionKey), record.ApiVersion)
+	}
 
 	if record.EventSource != "" {
 		attrs.PutStr(string(conventions.RPCServiceKey), record.EventSource)
@@ -200,6 +223,10 @@ func (*CloudTrailLogUnmarshaler) setLogAttributes(attrs pcommon.Map, record *Clo
 			attrs.PutStr(string(conventions.UserNameKey), record.UserIdentity.UserName)
 		}
 
+		if record.UserIdentity.AccountID != "" {
+			attrs.PutStr(string(conventions.CloudAccountIDKey), record.UserIdentity.AccountID)
+		}
+
 		if record.UserIdentity.AccessKeyID != "" {
 			attrs.PutStr("aws.access_key.id", record.UserIdentity.AccessKeyID)
 		}
@@ -208,6 +235,10 @@ func (*CloudTrailLogUnmarshaler) setLogAttributes(attrs pcommon.Map, record *Clo
 		// since there are no standard conventions for them
 		if record.UserIdentity.IdentityStoreARN != "" {
 			attrs.PutStr("aws.identity_store.arn", record.UserIdentity.IdentityStoreARN)
+		}
+
+		if record.UserIdentity.InvokedBy != "" {
+			attrs.PutStr("aws.invoked_by", record.UserIdentity.InvokedBy)
 		}
 
 		if record.UserIdentity.PrincipalID != "" {
@@ -220,6 +251,11 @@ func (*CloudTrailLogUnmarshaler) setLogAttributes(attrs pcommon.Map, record *Clo
 
 		if record.UserIdentity.Type != "" {
 			attrs.PutStr("aws.principal.type", record.UserIdentity.Type)
+		}
+
+		// Add session context details if available
+		if record.UserIdentity.SessionContext != nil {
+			enrichWithSessionContext(attrs, record.UserIdentity.SessionContext)
 		}
 	}
 
@@ -264,6 +300,11 @@ func (*CloudTrailLogUnmarshaler) setLogAttributes(attrs pcommon.Map, record *Clo
 		_ = responseElementsMap.FromRaw(record.ResponseElements)
 	}
 
+	if record.AdditionalEventData != nil {
+		additionalDataMap := attrs.PutEmptyMap("aws.additional_event_data")
+		_ = additionalDataMap.FromRaw(record.AdditionalEventData)
+	}
+
 	if len(record.Resources) > 0 {
 		resourcesArray := attrs.PutEmptySlice("aws.resources")
 		for _, resource := range record.Resources {
@@ -277,6 +318,38 @@ func (*CloudTrailLogUnmarshaler) setLogAttributes(attrs pcommon.Map, record *Clo
 			if resource.ARN != "" {
 				resourceMap.PutStr("arn", resource.ARN)
 			}
+		}
+	}
+}
+
+// enrichWithSessionContext is a helper to add SessionContext details to log attributes.
+// Root level Attributes will be added with aws.session.context prefix.
+// SessionIssuer details will be added with aws.session.context.issuer prefix.
+func enrichWithSessionContext(attrs pcommon.Map, sessionContext *SessionContext) {
+	if sessionContext.Attributes != nil {
+		attributesMap := attrs.PutEmptyMap("aws.session.context.attributes")
+		_ = attributesMap.FromRaw(sessionContext.Attributes)
+	}
+
+	if sessionContext.SessionIssuer != nil {
+		if sessionContext.SessionIssuer.Type != "" {
+			attrs.PutStr("aws.session.context.issuer.type", sessionContext.SessionIssuer.Type)
+		}
+
+		if sessionContext.SessionIssuer.PrincipalID != "" {
+			attrs.PutStr("aws.session.context.issuer.principal_id", sessionContext.SessionIssuer.PrincipalID)
+		}
+
+		if sessionContext.SessionIssuer.ARN != "" {
+			attrs.PutStr("aws.session.context.issuer.arn", sessionContext.SessionIssuer.ARN)
+		}
+
+		if sessionContext.SessionIssuer.AccountID != "" {
+			attrs.PutStr("aws.session.context.issuer.account_id", sessionContext.SessionIssuer.AccountID)
+		}
+
+		if sessionContext.SessionIssuer.UserName != "" {
+			attrs.PutStr("aws.session.context.issuer.user_name", sessionContext.SessionIssuer.UserName)
 		}
 	}
 }
