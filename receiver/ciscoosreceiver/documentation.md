@@ -18,7 +18,7 @@ Number of bytes received on the interface
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| bytes | Gauge | Int |
+| By | Gauge | Int |
 
 #### Attributes
 
@@ -33,7 +33,7 @@ Number of receive errors on the interface
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| errors | Gauge | Int |
+| {error} | Gauge | Int |
 
 #### Attributes
 
@@ -48,7 +48,7 @@ Number of bytes transmitted on the interface
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| bytes | Gauge | Int |
+| By | Gauge | Int |
 
 #### Attributes
 
@@ -63,7 +63,7 @@ Number of transmit errors on the interface
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| errors | Gauge | Int |
+| {error} | Gauge | Int |
 
 #### Attributes
 
@@ -89,19 +89,19 @@ Interface operational status (1 for up, 0 for down)
 
 ### cisco.system.cpu.utilization
 
-CPU utilization percentage
+CPU utilization as a fraction
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| % | Gauge | Double |
+| 1 | Gauge | Double |
 
 ### cisco.system.memory.utilization
 
-Memory utilization percentage
+Memory utilization as a fraction
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| % | Gauge | Double |
+| 1 | Gauge | Double |
 
 ## Resource Attributes
 

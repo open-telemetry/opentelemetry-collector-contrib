@@ -60,7 +60,7 @@ type metricCiscoInterfaceReceiveBytes struct {
 func (m *metricCiscoInterfaceReceiveBytes) init() {
 	m.data.SetName("cisco.interface.receive.bytes")
 	m.data.SetDescription("Number of bytes received on the interface")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
@@ -112,7 +112,7 @@ type metricCiscoInterfaceReceiveErrors struct {
 func (m *metricCiscoInterfaceReceiveErrors) init() {
 	m.data.SetName("cisco.interface.receive.errors")
 	m.data.SetDescription("Number of receive errors on the interface")
-	m.data.SetUnit("errors")
+	m.data.SetUnit("{error}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
@@ -164,7 +164,7 @@ type metricCiscoInterfaceTransmitBytes struct {
 func (m *metricCiscoInterfaceTransmitBytes) init() {
 	m.data.SetName("cisco.interface.transmit.bytes")
 	m.data.SetDescription("Number of bytes transmitted on the interface")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
@@ -216,7 +216,7 @@ type metricCiscoInterfaceTransmitErrors struct {
 func (m *metricCiscoInterfaceTransmitErrors) init() {
 	m.data.SetName("cisco.interface.transmit.errors")
 	m.data.SetDescription("Number of transmit errors on the interface")
-	m.data.SetUnit("errors")
+	m.data.SetUnit("{error}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
@@ -319,8 +319,8 @@ type metricCiscoSystemCPUUtilization struct {
 // init fills cisco.system.cpu.utilization metric with initial data.
 func (m *metricCiscoSystemCPUUtilization) init() {
 	m.data.SetName("cisco.system.cpu.utilization")
-	m.data.SetDescription("CPU utilization percentage")
-	m.data.SetUnit("%")
+	m.data.SetDescription("CPU utilization as a fraction")
+	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 }
 
@@ -368,8 +368,8 @@ type metricCiscoSystemMemoryUtilization struct {
 // init fills cisco.system.memory.utilization metric with initial data.
 func (m *metricCiscoSystemMemoryUtilization) init() {
 	m.data.SetName("cisco.system.memory.utilization")
-	m.data.SetDescription("Memory utilization percentage")
-	m.data.SetUnit("%")
+	m.data.SetDescription("Memory utilization as a fraction")
+	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 }
 
