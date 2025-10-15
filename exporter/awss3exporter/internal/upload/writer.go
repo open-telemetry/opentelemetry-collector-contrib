@@ -7,7 +7,6 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
-	"fmt"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
@@ -59,16 +58,10 @@ func (sw *s3manager) Upload(ctx context.Context, data []byte, opts *UploadOption
 		return nil
 	}
 
-	fmt.Printf("DEBUG: Original data size: %d\n", len(data))
-
 	content, err := sw.contentBuffer(data)
 	if err != nil {
 		return err
 	}
-
-	fmt.Printf("DEBUG: Content buffer size: %d\n", content.Len())
-	fmt.Printf("DEBUG: Content buffer bytes (first 10): %x\n", content.Bytes()[:10])
-	fmt.Printf("DEBUG: current archive format: %d\n", sw.builder.IsArchiveFormat)
 
 	encoding := ""
 	// Only use ContentEncoding for non-archive formats
@@ -107,12 +100,8 @@ func (sw *s3manager) Upload(ctx context.Context, data []byte, opts *UploadOption
 }
 
 func (sw *s3manager) contentBuffer(raw []byte) (*bytes.Buffer, error) {
-	fmt.Printf("DEBUG: Compression type: %s\n", sw.builder.Compression)
-	fmt.Printf("DEBUG: IsCompressed: %v\n", sw.builder.Compression.IsCompressed())
-
 	switch sw.builder.Compression {
 	case configcompression.TypeGzip:
-		fmt.Printf("DEBUG: Applying GZIP compression\n")
 		content := bytes.NewBuffer(nil)
 		zipper := gzip.NewWriter(content)
 		if _, err := zipper.Write(raw); err != nil {
@@ -121,10 +110,8 @@ func (sw *s3manager) contentBuffer(raw []byte) (*bytes.Buffer, error) {
 		if err := zipper.Close(); err != nil {
 			return nil, err
 		}
-		fmt.Printf("DEBUG: Original size: %d, Compressed size: %d\n", len(raw), content.Len())
 		return content, nil
 	default:
-		fmt.Printf("DEBUG: No compression applied\n")
 		return bytes.NewBuffer(raw), nil
 	}
 }

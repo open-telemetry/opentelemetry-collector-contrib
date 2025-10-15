@@ -35,6 +35,7 @@ func newMarshalerFromEncoding(encoding *component.ID, fileFormat string, host co
 	marshaler.metricsMarshaler, _ = e.(pmetric.Marshaler)
 	marshaler.tracesMarshaler, _ = e.(ptrace.Marshaler)
 	marshaler.fileFormat = fileFormat
+	marshaler.isArchiveFormat = false
 	return marshaler, nil
 }
 
