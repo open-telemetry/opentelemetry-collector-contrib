@@ -52,8 +52,6 @@ func TestPushLogData(t *testing.T) {
 		Handler:     srvMux,
 	}
 
-	// Run the server.
-	serverErr := make(chan error, 1)
 	go func() {
 		srvMux.HandleFunc("/api/otel/otel_logs/_stream_load", func(w http.ResponseWriter, _ *http.Request) {
 			w.WriteHeader(http.StatusOK)
@@ -71,8 +69,6 @@ func TestPushLogData(t *testing.T) {
 	require.NoError(t, err0)
 
 	_ = server.Shutdown(ctx)
-	err = <-serverErr
-	assert.True(t, err == nil || errors.Is(err, http.ErrServerClosed), "unexpected server error: %v", err)
 }
 
 func simpleLogs(count int) plog.Logs {

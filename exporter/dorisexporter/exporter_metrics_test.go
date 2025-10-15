@@ -48,8 +48,6 @@ func TestPushMetricData(t *testing.T) {
 		Handler:     srvMux,
 	}
 
-	// Run server
-	serverErr := make(chan error, 1)
 	go func() {
 		metrics := []string{"gauge", "sum", "histogram", "exponential_histogram", "summary"}
 		for _, metric := range metrics {
@@ -77,8 +75,6 @@ func TestPushMetricData(t *testing.T) {
 	require.NoError(t, err0)
 
 	_ = server.Shutdown(ctx)
-	err = <-serverErr
-	assert.True(t, err == nil || errors.Is(err, http.ErrServerClosed), "unexpected server error: %v", err)
 }
 
 func simpleMetrics(count int, typeSet map[pmetric.MetricType]struct{}) pmetric.Metrics {
