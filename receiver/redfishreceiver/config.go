@@ -49,7 +49,7 @@ func (cfg *Config) Validate() error {
 			return err
 		}
 
-		if len(strings.TrimSpace(cfg.Servers[i].ComputerSystemID)) == 0 {
+		if strings.TrimSpace(cfg.Servers[i].ComputerSystemID) == "" {
 			return errors.New("computer_system_id must not be empty")
 		}
 
