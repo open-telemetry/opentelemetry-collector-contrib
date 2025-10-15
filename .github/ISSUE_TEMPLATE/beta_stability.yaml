@@ -1,6 +1,6 @@
 name: Beta stability promotion
 description: Promote a component to beta stability
-labels: ["needs triage"]
+labels: ["needs triage", "promote-beta"]
 body:
   - type: markdown
     attributes:
