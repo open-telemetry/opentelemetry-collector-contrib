@@ -16,6 +16,26 @@ processors:
           type: "keep"
           names: ["datacenter", "location"]
 
+      # Counter aggregation examples
+      # - match: "http_requests_total"
+      #   aggregate_type: "sum"  # Total requests across all instances
+      #   labels:
+      #     type: "remove"
+      #     names: ["instance"]  # Remove instance-specific labels, keep method/status/endpoint
+
+      # Uncomment to test other counter strategies:
+      # - match: "http_requests_total"
+      #   aggregate_type: "average" # Average requests per instance
+      #   labels:
+      #     type: "keep"
+      #     names: ["method", "status_code"] # Keep only HTTP semantics
+
+      - match: "^http_requests_total$" # Use explicit regex anchors
+        aggregate_type: "rate" # Requests per second (exported as gauge)
+        labels:
+          type: "remove"
+          names: ["instance", "endpoint"] # Service-level rate by method/status
+
   metricstransform:
     transforms:
       - include: ".*"

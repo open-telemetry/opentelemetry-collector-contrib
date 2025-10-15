@@ -35,19 +35,21 @@ type Config struct {
 	// Note: NumWindows removed - double-buffer architecture always uses exactly 2 windows
 }
 
-// AggregationType defines the aggregation strategy for gauge metrics
+// AggregationType defines the aggregation strategy for metrics
 type AggregationType string
 
 const (
 	// Last keeps the most recent value (default for gauges)
 	Last AggregationType = "last"
-	// Average calculates mean of all values
+	// Average calculates mean of all values (gauges, counters)
 	Average AggregationType = "average"
-	// Sum adds all values together
+	// Sum adds all values together (gauges, counters)
 	Sum AggregationType = "sum"
-	// Max keeps the maximum value
+	// Rate calculates rate of change per second (counters only)
+	Rate AggregationType = "rate"
+	// Max keeps the maximum value (gauges only)
 	Max AggregationType = "max"
-	// Min keeps the minimum value
+	// Min keeps the minimum value (gauges only)
 	Min AggregationType = "min"
 )
 
@@ -159,9 +161,9 @@ func (mc *MetricConfig) ValidateAggregationType() error {
 		return nil // Empty is allowed, defaults to "last"
 	}
 
-	validTypes := []AggregationType{Last, Average, Sum, Max, Min}
+	validTypes := []AggregationType{Last, Average, Sum, Rate, Max, Min}
 	if !slices.Contains(validTypes, mc.AggregateType) {
-		return fmt.Errorf("invalid aggregation type %q, must be one of: last, average, sum, max, min", mc.AggregateType)
+		return fmt.Errorf("invalid aggregation type %q, must be one of: last, average, sum, rate, max, min", mc.AggregateType)
 	}
 
 	return nil

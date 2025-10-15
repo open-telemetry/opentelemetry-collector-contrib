@@ -4,6 +4,7 @@
 package streamingaggregationprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/streamingaggregationprocessor"
 
 import (
+	"fmt"
 	"sort"
 	"sync"
 	"time"
@@ -14,7 +15,8 @@ import (
 
 // Aggregator handles aggregation for a single metric series
 type Aggregator struct {
-	metricType pmetric.MetricType
+	metricType       pmetric.MetricType
+	aggregateType    string // Track the aggregation strategy for export decisions
 
 	// ===== GAUGE METRICS =====
 	// For gauge metrics
@@ -87,12 +89,35 @@ type histogramCumulativeState struct {
 func NewAggregator(metricType pmetric.MetricType) *Aggregator {
 	return &Aggregator{
 		metricType:            metricType,
+		aggregateType:         "", // Default to empty (no custom aggregation)
 		min:                   1e308,  // Max float64
 		max:                   -1e308, // Min float64
 		histogramBuckets:      make(map[float64]uint64),
 		histogramTotalBuckets: make(map[float64]uint64),
 		lastHistogramValues:   make(map[string]*histogramCumulativeState),
 	}
+}
+
+// SetAggregateType sets the aggregation strategy for this aggregator
+func (a *Aggregator) SetAggregateType(aggregateType string) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	a.aggregateType = aggregateType
+}
+
+// SetCounterTotal directly sets the total counter value (for average aggregation)
+func (a *Aggregator) SetCounterTotal(value float64, timestamp pcommon.Timestamp) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
+	// Set the total sum directly without delta computation
+	a.counterTotalSum = value
+	a.counterLastTimestamp = timestamp
+	a.hasCounterCumulative = true
+
+	// For window delta sum, this represents the new value for this window
+	// Since we're setting the total directly, the window delta is the total
+	a.counterWindowDeltaSum = value
 }
 
 // UpdateLast updates the last value (for gauges)
@@ -557,6 +582,31 @@ func (a *Aggregator) exportGauge(metric pmetric.Metric, labels map[string]string
 func (a *Aggregator) exportSum(metric pmetric.Metric, windowStart, windowEnd time.Time, labels map[string]string) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
+
+	// Check if this should be exported as a rate (gauge)
+	if a.aggregateType == "rate" {
+		gauge := metric.SetEmptyGauge()
+		dp := gauge.DataPoints().AppendEmpty()
+
+		// Calculate rate: window delta / window duration
+		windowSeconds := windowEnd.Sub(windowStart).Seconds()
+		var rate float64
+		if windowSeconds > 0 && a.hasCounterCumulative {
+			rate = a.counterWindowDeltaSum / windowSeconds
+		} else {
+			// For rate aggregation, export 0 if no data yet
+			rate = 0
+		}
+
+		dp.SetDoubleValue(rate)
+		dp.SetTimestamp(pcommon.NewTimestampFromTime(windowEnd))
+
+		// Set labels
+		for k, v := range labels {
+			dp.Attributes().PutStr(k, v)
+		}
+		return // Early return for rate aggregation
+	}
 
 	// Check if this is an UpDownCounter (non-monotonic sum)
 	if a.hasUpDownFirstValue {
