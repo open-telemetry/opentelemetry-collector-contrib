@@ -22,12 +22,12 @@ func Test_deleteKey(t *testing.T) {
 
 	tests := []struct {
 		name string
-		key  ottl.Getter[pcommon.Map]
+		key  ottl.StringGetter[pcommon.Map]
 		want func(pcommon.Map)
 	}{
 		{
 			name: "delete test",
-			key: ottl.StandardGetSetter[pcommon.Map]{
+			key: ottl.StandardStringGetter[pcommon.Map]{
 				Getter: func(_ context.Context, _ pcommon.Map) (any, error) {
 					return "test", nil
 				},
@@ -39,7 +39,7 @@ func Test_deleteKey(t *testing.T) {
 		},
 		{
 			name: "delete test2",
-			key: ottl.StandardGetSetter[pcommon.Map]{
+			key: ottl.StandardStringGetter[pcommon.Map]{
 				Getter: func(_ context.Context, _ pcommon.Map) (any, error) {
 					return "test2", nil
 				},
@@ -51,7 +51,7 @@ func Test_deleteKey(t *testing.T) {
 		},
 		{
 			name: "delete nothing",
-			key: ottl.StandardGetSetter[pcommon.Map]{
+			key: ottl.StandardStringGetter[pcommon.Map]{
 				Getter: func(_ context.Context, _ pcommon.Map) (any, error) {
 					return "not a valid key", nil
 				},
@@ -108,7 +108,7 @@ func Test_deleteKey_bad_input(t *testing.T) {
 		},
 	}
 
-	key := ottl.StandardGetSetter[any]{
+	key := ottl.StandardStringGetter[any]{
 		Getter: func(_ context.Context, _ any) (any, error) {
 			return "anything", nil
 		},
@@ -129,7 +129,7 @@ func Test_deleteKey_get_nil(t *testing.T) {
 		},
 	}
 
-	key := ottl.StandardGetSetter[any]{
+	key := ottl.StandardStringGetter[any]{
 		Getter: func(_ context.Context, _ any) (any, error) {
 			return "anything", nil
 		},

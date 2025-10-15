@@ -22,26 +22,26 @@ func Test_deleteMatchingKeys(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		pattern ottl.Getter[pcommon.Map]
+		pattern ottl.StringGetter[pcommon.Map]
 		want    func(pcommon.Map)
 	}{
 		{
 			name:    "delete everything",
-			pattern: ottl.StandardGetSetter[pcommon.Map]{Getter: func(_ context.Context, _ pcommon.Map) (any, error) { return "test.*", nil }},
+			pattern: ottl.StandardStringGetter[pcommon.Map]{Getter: func(_ context.Context, _ pcommon.Map) (any, error) { return "test.*", nil }},
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.EnsureCapacity(3)
 			},
 		},
 		{
 			name:    "delete attributes that end in a number",
-			pattern: ottl.StandardGetSetter[pcommon.Map]{Getter: func(_ context.Context, _ pcommon.Map) (any, error) { return "\\d$", nil }},
+			pattern: ottl.StandardStringGetter[pcommon.Map]{Getter: func(_ context.Context, _ pcommon.Map) (any, error) { return "\\d$", nil }},
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.PutStr("test", "hello world")
 			},
 		},
 		{
 			name:    "delete nothing",
-			pattern: ottl.StandardGetSetter[pcommon.Map]{Getter: func(_ context.Context, _ pcommon.Map) (any, error) { return "not a matching pattern", nil }},
+			pattern: ottl.StandardStringGetter[pcommon.Map]{Getter: func(_ context.Context, _ pcommon.Map) (any, error) { return "not a matching pattern", nil }},
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.PutStr("test", "hello world")
 				expectedMap.PutInt("test2", 3)
@@ -94,7 +94,7 @@ func Test_deleteMatchingKeys_bad_input(t *testing.T) {
 		},
 	}
 
-	pattern := ottl.StandardGetSetter[any]{
+	pattern := ottl.StandardStringGetter[any]{
 		Getter: func(_ context.Context, _ any) (any, error) {
 			return "anything", nil
 		},
@@ -115,7 +115,7 @@ func Test_deleteMatchingKeys_get_nil(t *testing.T) {
 		},
 	}
 
-	pattern := ottl.StandardGetSetter[any]{
+	pattern := ottl.StandardStringGetter[any]{
 		Getter: func(_ context.Context, _ any) (any, error) {
 			return "anything", nil
 		},
@@ -134,7 +134,7 @@ func Test_deleteMatchingKeys_invalid_pattern(t *testing.T) {
 		},
 	}
 
-	invalidRegexPattern := ottl.StandardGetSetter[any]{
+	invalidRegexPattern := ottl.StandardStringGetter[any]{
 		Getter: func(_ context.Context, _ any) (any, error) {
 			return "*", nil
 		},
