@@ -13,11 +13,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
-	corev1 "k8s.io/api/core/v1"
+	discoveryv1 "k8s.io/api/discovery/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes/fake"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -30,42 +31,42 @@ func TestK8sResolve(t *testing.T) {
 		returnHostnames bool
 	}
 	type suiteContext struct {
-		endpoint  *corev1.Endpoints
-		clientset *fake.Clientset
-		resolver  *k8sResolver
+		endpointSlice *discoveryv1.EndpointSlice
+		clientset     *fake.Clientset
+		resolver      *k8sResolver
 	}
 	setupSuite := func(t *testing.T, args args) (*suiteContext, func(*testing.T)) {
 		service, defaultNs, ports, returnHostnames := args.service, args.namespace, args.ports, args.returnHostnames
-		endpoint := &corev1.Endpoints{
+		endpointSlice := &discoveryv1.EndpointSlice{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      service,
+				Name:      fmt.Sprintf("%s-abc123", service),
 				Namespace: defaultNs,
+				Labels: map[string]string{
+					discoveryv1.LabelServiceName: service,
+				},
 			},
-			Subsets: []corev1.EndpointSubset{
+			AddressType: discoveryv1.AddressTypeIPv4,
+			Endpoints: []discoveryv1.Endpoint{
 				{
-					Addresses: []corev1.EndpointAddress{
-						{
-							Hostname: "pod-0",
-							IP:       "192.168.10.100",
-						},
-					},
+					Addresses: []string{"192.168.10.100"},
+					Hostname:  ptr.To("pod-0"),
 				},
 			},
 		}
 		var expectInit []string
-		for _, subset := range endpoint.Subsets {
-			for _, address := range subset.Addresses {
-				for _, port := range args.ports {
-					if returnHostnames {
-						expectInit = append(expectInit, fmt.Sprintf("%s.%s.%s:%d", address.Hostname, service, defaultNs, port))
-					} else {
-						expectInit = append(expectInit, fmt.Sprintf("%s:%d", address.IP, port))
+		for _, endpoint := range endpointSlice.Endpoints {
+			for _, port := range args.ports {
+				if returnHostnames {
+					expectInit = append(expectInit, fmt.Sprintf("%s.%s.%s:%d", *endpoint.Hostname, service, defaultNs, port))
+				} else {
+					for _, addr := range endpoint.Addresses {
+						expectInit = append(expectInit, fmt.Sprintf("%s:%d", addr, port))
 					}
 				}
 			}
 		}
 
-		cl := fake.NewClientset(endpoint)
+		cl := fake.NewClientset(endpointSlice)
 		_, tb := getTelemetryAssets(t)
 		res, err := newK8sResolver(cl, zap.NewNop(), service, ports, defaultListWatchTimeout, returnHostnames, tb)
 		require.NoError(t, err)
@@ -76,9 +77,9 @@ func TestK8sResolve(t *testing.T) {
 		assert.Equal(t, expectInit, res.Endpoints())
 
 		return &suiteContext{
-				endpoint:  endpoint,
-				clientset: cl,
-				resolver:  res,
+				endpointSlice: endpointSlice,
+				clientset:     cl,
+				resolver:      res,
 			}, func(*testing.T) {
 				require.NoError(t, res.shutdown(t.Context()))
 			}
@@ -99,17 +100,17 @@ func TestK8sResolve(t *testing.T) {
 				ports:     []int32{8080, 9090},
 			},
 			simulateFn: func(suiteCtx *suiteContext, args args) error {
-				endpoint, exist := suiteCtx.endpoint.DeepCopy(), suiteCtx.endpoint.DeepCopy()
-				endpoint.Subsets = append(endpoint.Subsets, corev1.EndpointSubset{
-					Addresses: []corev1.EndpointAddress{{IP: "10.10.0.11"}},
+				endpointSlice, exist := suiteCtx.endpointSlice.DeepCopy(), suiteCtx.endpointSlice.DeepCopy()
+				endpointSlice.Endpoints = append(endpointSlice.Endpoints, discoveryv1.Endpoint{
+					Addresses: []string{"10.10.0.11"},
 				})
 				patch := client.MergeFrom(exist)
-				data, err := patch.Data(endpoint)
+				data, err := patch.Data(endpointSlice)
 				if err != nil {
 					return err
 				}
-				_, err = suiteCtx.clientset.CoreV1().Endpoints(args.namespace).
-					Patch(t.Context(), args.service, types.MergePatchType, data, metav1.PatchOptions{})
+				_, err = suiteCtx.clientset.DiscoveryV1().EndpointSlices(args.namespace).
+					Patch(t.Context(), endpointSlice.Name, types.MergePatchType, data, metav1.PatchOptions{})
 				return err
 			},
 			expectedEndpoints: []string{
@@ -128,14 +129,14 @@ func TestK8sResolve(t *testing.T) {
 				ports:     []int32{8080, 9090},
 			},
 			simulateFn: func(suiteCtx *suiteContext, args args) error {
-				exist := suiteCtx.endpoint.DeepCopy()
+				exist := suiteCtx.endpointSlice.DeepCopy()
 				patch := client.MergeFrom(exist)
 				data, err := patch.Data(exist)
 				if err != nil {
 					return err
 				}
-				_, err = suiteCtx.clientset.CoreV1().Endpoints(args.namespace).
-					Patch(t.Context(), args.service, types.MergePatchType, data, metav1.PatchOptions{})
+				_, err = suiteCtx.clientset.DiscoveryV1().EndpointSlices(args.namespace).
+					Patch(t.Context(), exist.Name, types.MergePatchType, data, metav1.PatchOptions{})
 				return err
 			},
 			onChangeFn: func([]string) {
@@ -156,17 +157,18 @@ func TestK8sResolve(t *testing.T) {
 				returnHostnames: true,
 			},
 			simulateFn: func(suiteCtx *suiteContext, args args) error {
-				endpoint, exist := suiteCtx.endpoint.DeepCopy(), suiteCtx.endpoint.DeepCopy()
-				endpoint.Subsets = append(endpoint.Subsets, corev1.EndpointSubset{
-					Addresses: []corev1.EndpointAddress{{IP: "10.10.0.11", Hostname: "pod-1"}},
+				endpointSlice, exist := suiteCtx.endpointSlice.DeepCopy(), suiteCtx.endpointSlice.DeepCopy()
+				endpointSlice.Endpoints = append(endpointSlice.Endpoints, discoveryv1.Endpoint{
+					Addresses: []string{"10.10.0.11"},
+					Hostname:  ptr.To("pod-1"),
 				})
 				patch := client.MergeFrom(exist)
-				data, err := patch.Data(endpoint)
+				data, err := patch.Data(endpointSlice)
 				if err != nil {
 					return err
 				}
-				_, err = suiteCtx.clientset.CoreV1().Endpoints(args.namespace).
-					Patch(t.Context(), args.service, types.MergePatchType, data, metav1.PatchOptions{})
+				_, err = suiteCtx.clientset.DiscoveryV1().EndpointSlices(args.namespace).
+					Patch(t.Context(), endpointSlice.Name, types.MergePatchType, data, metav1.PatchOptions{})
 				return err
 			},
 			expectedEndpoints: []string{
@@ -185,17 +187,17 @@ func TestK8sResolve(t *testing.T) {
 				ports:     []int32{4317},
 			},
 			simulateFn: func(suiteCtx *suiteContext, args args) error {
-				endpoint, exist := suiteCtx.endpoint.DeepCopy(), suiteCtx.endpoint.DeepCopy()
-				endpoint.Subsets = []corev1.EndpointSubset{
-					{Addresses: []corev1.EndpointAddress{{IP: "10.10.0.11"}}},
+				endpointSlice, exist := suiteCtx.endpointSlice.DeepCopy(), suiteCtx.endpointSlice.DeepCopy()
+				endpointSlice.Endpoints = []discoveryv1.Endpoint{
+					{Addresses: []string{"10.10.0.11"}},
 				}
 				patch := client.MergeFrom(exist)
-				data, err := patch.Data(endpoint)
+				data, err := patch.Data(endpointSlice)
 				if err != nil {
 					return err
 				}
-				_, err = suiteCtx.clientset.CoreV1().Endpoints(args.namespace).
-					Patch(t.Context(), args.service, types.MergePatchType, data, metav1.PatchOptions{})
+				_, err = suiteCtx.clientset.DiscoveryV1().EndpointSlices(args.namespace).
+					Patch(t.Context(), endpointSlice.Name, types.MergePatchType, data, metav1.PatchOptions{})
 				return err
 			},
 			expectedEndpoints: []string{
@@ -211,8 +213,8 @@ func TestK8sResolve(t *testing.T) {
 				ports:     []int32{8080, 9090},
 			},
 			simulateFn: func(suiteCtx *suiteContext, args args) error {
-				return suiteCtx.clientset.CoreV1().Endpoints(args.namespace).
-					Delete(t.Context(), args.service, metav1.DeleteOptions{})
+				return suiteCtx.clientset.DiscoveryV1().EndpointSlices(args.namespace).
+					Delete(t.Context(), suiteCtx.endpointSlice.Name, metav1.DeleteOptions{})
 			},
 			expectedEndpoints: nil,
 		},
