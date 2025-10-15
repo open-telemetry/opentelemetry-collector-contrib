@@ -6,7 +6,10 @@ package tailsamplingprocessor // import "github.com/open-telemetry/opentelemetry
 import (
 	"time"
 
+	"go.opentelemetry.io/collector/config/configoptional"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 )
 
 // PolicyType indicates the type of sampling policy.
@@ -159,9 +162,9 @@ type NumericAttributeCfg struct {
 	// Tag that the filter is going to be matching against.
 	Key string `mapstructure:"key"`
 	// MinValue is the minimum value of the attribute to be considered a match.
-	MinValue *int64 `mapstructure:"min_value"`
+	MinValue configoptional.Optional[sampling.NumericValue] `mapstructure:"min_value"`
 	// MaxValue is the maximum value of the attribute to be considered a match.
-	MaxValue *int64 `mapstructure:"max_value"`
+	MaxValue configoptional.Optional[sampling.NumericValue] `mapstructure:"max_value"`
 	// InvertMatch indicates that values must not match against attribute values.
 	// If InvertMatch is true and Values is equal to '123', all other values will be sampled except '123'.
 	// Also, if the specified Key does not match any resource or span attributes, data will be sampled.

@@ -1,0 +1,15 @@
+tail_sampling:
+  decision_wait: 10s
+  num_traces: 100
+  expected_new_traces_per_sec: 10
+  decision_cache:
+    sampled_cache_size: 1000
+    non_sampled_cache_size: 10000
+  policies:
+    [
+        {
+          name: test-policy-3,
+          type: numeric_attribute,
+          numeric_attribute: {key: key1, min_value: 500, max_value: 100}
+        },
+    ]

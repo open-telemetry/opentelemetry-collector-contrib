@@ -17,6 +17,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -30,6 +31,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/idbatcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/pkg/samplingpolicy"
 )
 
@@ -981,56 +983,56 @@ func simpleTracesWithID(traceID pcommon.TraceID) ptrace.Traces {
 func TestNumericAttributeCases(t *testing.T) {
 	tests := []struct {
 		name           string
-		minValue       *int64
-		maxValue       *int64
+		minValue       configoptional.Optional[sampling.NumericValue]
+		maxValue       configoptional.Optional[sampling.NumericValue]
 		testValue      int64
 		expectedResult samplingpolicy.Decision
 		description    string
 	}{
 		{
 			name:           "Only min_value set (positive)",
-			minValue:       ptr(400),
-			maxValue:       nil, // not set (default)
+			minValue:       configoptional.Some(sampling.NumericValue{Value: 400}),
+			maxValue:       configoptional.None[sampling.NumericValue](), // not set (default)
 			testValue:      500,
 			expectedResult: samplingpolicy.Sampled,
 			description:    "Should sample when value >= min_value and max_value not set",
 		},
 		{
 			name:           "Only min_value set (negative value)",
-			minValue:       ptr(-100),
-			maxValue:       nil, // not set (default)
+			minValue:       configoptional.Some(sampling.NumericValue{Value: -100}),
+			maxValue:       configoptional.None[sampling.NumericValue](), // not set (default)
 			testValue:      50,
 			expectedResult: samplingpolicy.Sampled,
 			description:    "Should sample when value >= min_value (negative) and max_value not set",
 		},
 		{
 			name:           "Only max_value set (positive)",
-			minValue:       nil, // not set (default)
-			maxValue:       ptr(1000),
+			minValue:       configoptional.None[sampling.NumericValue](), // not set (default)
+			maxValue:       configoptional.Some(sampling.NumericValue{Value: 1000}),
 			testValue:      500,
 			expectedResult: samplingpolicy.Sampled,
 			description:    "Should sample when value <= max_value and min_value not set",
 		},
 		{
 			name:           "Both min and max set",
-			minValue:       ptr(100),
-			maxValue:       ptr(200),
+			minValue:       configoptional.Some(sampling.NumericValue{Value: 100}),
+			maxValue:       configoptional.Some(sampling.NumericValue{Value: 200}),
 			testValue:      150,
 			expectedResult: samplingpolicy.Sampled,
 			description:    "Should sample when min_value <= value <= max_value",
 		},
 		{
 			name:           "Value below min_value",
-			minValue:       ptr(400),
-			maxValue:       nil, // not set (default)
+			minValue:       configoptional.Some(sampling.NumericValue{Value: 400}),
+			maxValue:       configoptional.None[sampling.NumericValue](), // not set (default)
 			testValue:      300,
 			expectedResult: samplingpolicy.NotSampled,
 			description:    "Should not sample when value < min_value",
 		},
 		{
 			name:           "Value above max_value",
-			minValue:       nil, // not set (default)
-			maxValue:       ptr(100),
+			minValue:       configoptional.None[sampling.NumericValue](), // not set (default)
+			maxValue:       configoptional.Some(sampling.NumericValue{Value: 100}),
 			testValue:      200,
 			expectedResult: samplingpolicy.NotSampled,
 			description:    "Should not sample when value > max_value",
