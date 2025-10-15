@@ -12,6 +12,34 @@ metrics:
     enabled: false
 ```
 
+### cisco.collector.duration.seconds
+
+Duration of all collector scrapes for one target (total collection time)
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| s | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| target | The target network device hostname/IP | Any Str | false |
+
+### cisco.device.up
+
+Device availability (1 = up, 0 = down)
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| target | The target network device hostname/IP | Any Str | false |
+
 ### cisco.interface.receive.bytes
 
 Number of bytes received on the interface

@@ -1,6 +1,10 @@
 default:
 all_set:
   metrics:
+    cisco.collector.duration.seconds:
+      enabled: true
+    cisco.device.up:
+      enabled: true
     cisco.interface.receive.bytes:
       enabled: true
     cisco.interface.receive.errors:
@@ -24,6 +28,10 @@ all_set:
       enabled: true
 none_set:
   metrics:
+    cisco.collector.duration.seconds:
+      enabled: false
+    cisco.device.up:
+      enabled: false
     cisco.interface.receive.bytes:
       enabled: false
     cisco.interface.receive.errors:
