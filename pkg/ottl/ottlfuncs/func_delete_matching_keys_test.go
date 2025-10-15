@@ -69,9 +69,10 @@ func Test_deleteMatchingKeys(t *testing.T) {
 				},
 			}
 
-			exprFunc := deleteMatchingKeys(target, tt.pattern)
+			exprFunc, err := deleteMatchingKeys(target, tt.pattern)
+			assert.NoError(t, err)
 
-			_, err := exprFunc(nil, scenarioMap)
+			_, err = exprFunc(nil, scenarioMap)
 			assert.NoError(t, err)
 			assert.True(t, setterWasCalled)
 
@@ -100,8 +101,9 @@ func Test_deleteMatchingKeys_bad_input(t *testing.T) {
 		},
 	}
 
-	exprFunc := deleteMatchingKeys(target, pattern)
-	_, err := exprFunc(nil, input)
+	exprFunc, err := deleteMatchingKeys(target, pattern)
+	assert.NoError(t, err)
+	_, err = exprFunc(nil, input)
 	assert.Error(t, err)
 }
 
@@ -121,8 +123,9 @@ func Test_deleteMatchingKeys_get_nil(t *testing.T) {
 		},
 	}
 
-	exprFunc := deleteMatchingKeys(target, pattern)
-	_, err := exprFunc(nil, nil)
+	exprFunc, err := deleteMatchingKeys(target, pattern)
+	assert.NoError(t, err)
+	_, err = exprFunc(nil, nil)
 	assert.Error(t, err)
 }
 
@@ -139,7 +142,8 @@ func Test_deleteMatchingKeys_invalid_pattern(t *testing.T) {
 			return "*", nil
 		},
 	}
-	exprFunc := deleteMatchingKeys(target, invalidRegexPattern)
-	_, err := exprFunc(nil, nil)
+	exprFunc, err := deleteMatchingKeys(target, invalidRegexPattern)
+	assert.NoError(t, err)
+	_, err = exprFunc(nil, nil)
 	assert.ErrorContains(t, err, "error parsing regexp:")
 }

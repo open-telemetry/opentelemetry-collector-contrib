@@ -30,26 +30,38 @@ func createDeleteMatchingKeysFunction[K any](_ ottl.FunctionContext, oArgs ottl.
 		return nil, errors.New("DeleteMatchingKeysFactory args must be of type *DeleteMatchingKeysArguments[K]")
 	}
 
-	return deleteMatchingKeys(args.Target, args.Pattern), nil
+	return deleteMatchingKeys(args.Target, args.Pattern)
 }
 
-func deleteMatchingKeys[K any](target ottl.PMapGetSetter[K], pattern ottl.StringGetter[K]) ottl.ExprFunc[K] {
-	return func(ctx context.Context, tCtx K) (any, error) {
-		patternVal, err := pattern.Get(ctx, tCtx)
-		if err != nil {
-			return nil, err
-		}
-		compiledPattern, err := regexp.Compile(patternVal)
+func deleteMatchingKeys[K any](target ottl.PMapGetSetter[K], pattern ottl.StringGetter[K]) (ottl.ExprFunc[K], error) {
+	literalPattern, ok := ottl.GetLiteralValue(pattern)
+	var compiledPattern *regexp.Regexp
+	var err error
+	if ok {
+		compiledPattern, err = regexp.Compile(literalPattern)
 		if err != nil {
 			return nil, fmt.Errorf("the regex pattern supplied to delete_matching_keys is not a valid pattern: %w", err)
+		}
+	}
+	return func(ctx context.Context, tCtx K) (any, error) {
+		cp := compiledPattern
+		if cp == nil {
+			patternVal, err := pattern.Get(ctx, tCtx)
+			if err != nil {
+				return nil, err
+			}
+			cp, err = regexp.Compile(patternVal)
+			if err != nil {
+				return nil, fmt.Errorf("the regex pattern supplied to delete_matching_keys is not a valid pattern: %w", err)
+			}
 		}
 		val, err := target.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
 		val.RemoveIf(func(key string, _ pcommon.Value) bool {
-			return compiledPattern.MatchString(key)
+			return cp.MatchString(key)
 		})
 		return nil, target.Set(ctx, tCtx, val)
-	}
+	}, nil
 }
