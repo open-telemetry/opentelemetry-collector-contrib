@@ -392,28 +392,26 @@ func (s *sqlServerScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 		defer cancel()
 
 		// Use config values for query execution plan parameters
+		intervalSeconds := s.config.QueryMonitoringFetchInterval
 		topN := s.config.QueryMonitoringCountThreshold
 		elapsedTimeThreshold := s.config.QueryMonitoringResponseTimeThreshold
-		queryIDs := "0x24A0E7B8ECADA462,0xB972C2F06F9D2327" // Sample query IDs - in production this would come from slow query results
-		intervalSeconds := s.config.QueryMonitoringFetchInterval
 		textTruncateLimit := 4094 // Default text truncate limit from nri-mssql
 
-		if err := s.queryPerformanceScraper.ScrapeQueryExecutionPlanMetrics(scrapeCtx, scopeMetrics, topN, elapsedTimeThreshold, queryIDs, intervalSeconds, textTruncateLimit); err != nil {
+		// Dynamic QueryID extraction from slow queries - no more hardcoded values!
+		if err := s.queryPerformanceScraper.ScrapeQueryExecutionPlanMetrics(scrapeCtx, scopeMetrics, intervalSeconds, topN, elapsedTimeThreshold, textTruncateLimit); err != nil {
 			s.logger.Warn("Failed to scrape query execution plan metrics - continuing with other metrics",
 				zap.Error(err),
 				zap.Duration("timeout", s.config.Timeout),
+				zap.Int("interval_seconds", intervalSeconds),
 				zap.Int("top_n", topN),
 				zap.Int("elapsed_time_threshold", elapsedTimeThreshold),
-				zap.String("query_ids", queryIDs),
-				zap.Int("interval_seconds", intervalSeconds),
 				zap.Int("text_truncate_limit", textTruncateLimit))
 			// Don't add to scrapeErrors - just warn and continue with other metrics
 		} else {
-			s.logger.Debug("Successfully scraped query execution plan metrics",
+			s.logger.Debug("Successfully scraped query execution plan metrics with dynamic QueryID extraction",
+				zap.Int("interval_seconds", intervalSeconds),
 				zap.Int("top_n", topN),
 				zap.Int("elapsed_time_threshold", elapsedTimeThreshold),
-				zap.String("query_ids", queryIDs),
-				zap.Int("interval_seconds", intervalSeconds),
 				zap.Int("text_truncate_limit", textTruncateLimit))
 		}
 	}

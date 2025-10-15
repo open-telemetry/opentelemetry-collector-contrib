@@ -218,20 +218,47 @@ func (s *QueryPerformanceScraper) ScrapeWaitTimeAnalysisMetrics(ctx context.Cont
     return nil
 }
 
-// ScrapeQueryExecutionPlanMetrics collects execution plan analysis metrics using engine-specific queries
-func (s *QueryPerformanceScraper) ScrapeQueryExecutionPlanMetrics(ctx context.Context, scopeMetrics pmetric.ScopeMetrics, topN, elapsedTimeThreshold int, queryIDs string, intervalSeconds, textTruncateLimit int) error {
-    s.logger.Debug("Scraping SQL Server query execution plan metrics")
+// ScrapeQueryExecutionPlanMetrics collects execution plan analysis metrics for slow queries
+// This method dynamically fetches QueryIDs from slow query results and analyzes their execution plans
+func (s *QueryPerformanceScraper) ScrapeQueryExecutionPlanMetrics(ctx context.Context, scopeMetrics pmetric.ScopeMetrics, intervalSeconds, topN, elapsedTimeThreshold, textTruncateLimit int) error {
+    s.logger.Debug("Scraping SQL Server query execution plan metrics with dynamic QueryID extraction")
 
-    // Format the query execution plan query with parameters
-    formattedQuery := fmt.Sprintf(queries.QueryExecutionPlan, topN, elapsedTimeThreshold, queryIDs, intervalSeconds, textTruncateLimit)
+    // Step 1: First get slow queries to extract QueryIDs
+    slowQueryResults, err := s.getSlowQueryResults(ctx, intervalSeconds, topN, elapsedTimeThreshold, textTruncateLimit)
+    if err != nil {
+        s.logger.Error("Failed to fetch slow queries for execution plan analysis", zap.Error(err))
+        return fmt.Errorf("failed to fetch slow queries: %w", err)
+    }
 
-    // Execute query execution plan query
+    if len(slowQueryResults) == 0 {
+        s.logger.Debug("No slow queries found, skipping execution plan analysis")
+        return nil
+    }
+
+    // Step 2: Extract QueryIDs from slow query results
+    queryIDs := s.extractQueryIDsFromSlowQueries(slowQueryResults)
+    if len(queryIDs) == 0 {
+        s.logger.Debug("No valid QueryIDs extracted from slow queries")
+        return nil
+    }
+
+    s.logger.Debug("Extracted QueryIDs from slow queries",
+        zap.Int("slow_query_count", len(slowQueryResults)),
+        zap.Int("query_id_count", len(queryIDs)),
+        zap.Strings("query_ids", queryIDs))
+
+    // Step 3: Convert QueryIDs to comma-separated string for SQL query
+    queryIDsString := s.formatQueryIDsForSQL(queryIDs)
+
+    // Step 4: Format and execute the query execution plan query
+    formattedQuery := fmt.Sprintf(queries.QueryExecutionPlan, topN, elapsedTimeThreshold, queryIDsString, intervalSeconds, textTruncateLimit)
+
     s.logger.Debug("Executing query execution plan query",
         zap.String("query", queries.TruncateQuery(formattedQuery, 100)),
         zap.String("engine_type", queries.GetEngineTypeName(s.engineEdition)),
         zap.Int("top_n", topN),
         zap.Int("elapsed_time_threshold", elapsedTimeThreshold),
-        zap.String("query_ids", queryIDs),
+        zap.String("query_ids", queryIDsString),
         zap.Int("interval_seconds", intervalSeconds),
         zap.Int("text_truncate_limit", textTruncateLimit))
 
@@ -694,5 +721,73 @@ func (s *QueryPerformanceScraper) processQueryExecutionPlanMetrics(result models
         logAttributes()...)
 
     return nil
+}
+
+// getSlowQueryResults fetches slow query results to extract QueryIDs for execution plan analysis
+func (s *QueryPerformanceScraper) getSlowQueryResults(ctx context.Context, intervalSeconds, topN, elapsedTimeThreshold, textTruncateLimit int) ([]models.SlowQuery, error) {
+    // Format the slow query with parameters
+    formattedQuery := fmt.Sprintf(queries.SlowQuery, intervalSeconds, topN, elapsedTimeThreshold, textTruncateLimit)
+
+    s.logger.Debug("Executing slow query to extract QueryIDs for execution plan analysis",
+        zap.String("query", queries.TruncateQuery(formattedQuery, 100)),
+        zap.Int("interval_seconds", intervalSeconds),
+        zap.Int("top_n", topN),
+        zap.Int("elapsed_time_threshold", elapsedTimeThreshold))
+
+    var results []models.SlowQuery
+    if err := s.connection.Query(ctx, &results, formattedQuery); err != nil {
+        return nil, fmt.Errorf("failed to execute slow query for QueryID extraction: %w", err)
+    }
+
+    s.logger.Debug("Successfully fetched slow queries for QueryID extraction", 
+        zap.Int("result_count", len(results)))
+
+    return results, nil
+}
+
+// extractQueryIDsFromSlowQueries extracts unique QueryIDs from slow query results
+func (s *QueryPerformanceScraper) extractQueryIDsFromSlowQueries(slowQueries []models.SlowQuery) []string {
+    queryIDMap := make(map[string]bool)
+    var queryIDs []string
+
+    for _, slowQuery := range slowQueries {
+        if slowQuery.QueryID != nil && !slowQuery.QueryID.IsEmpty() {
+            queryIDStr := slowQuery.QueryID.String()
+            if !queryIDMap[queryIDStr] {
+                queryIDMap[queryIDStr] = true
+                queryIDs = append(queryIDs, queryIDStr)
+            }
+        }
+    }
+
+    s.logger.Debug("Extracted unique QueryIDs from slow queries",
+        zap.Int("total_slow_queries", len(slowQueries)),
+        zap.Int("unique_query_ids", len(queryIDs)))
+
+    return queryIDs
+}
+
+// formatQueryIDsForSQL converts QueryID slice to comma-separated string for SQL IN clause
+// Follows nri-mssql pattern for QueryID formatting
+func (s *QueryPerformanceScraper) formatQueryIDsForSQL(queryIDs []string) string {
+    if len(queryIDs) == 0 {
+        return "0x0" // Return placeholder if no QueryIDs
+    }
+
+    // Join QueryIDs with commas for SQL STRING_SPLIT
+    // QueryIDs are already in hex format (0x...), so we can use them directly
+    queryIDsString := ""
+    for i, queryID := range queryIDs {
+        if i > 0 {
+            queryIDsString += ","
+        }
+        queryIDsString += queryID
+    }
+
+    s.logger.Debug("Formatted QueryIDs for SQL query",
+        zap.Int("query_id_count", len(queryIDs)),
+        zap.String("formatted_query_ids", queries.TruncateQuery(queryIDsString, 100)))
+
+    return queryIDsString
 }
 
