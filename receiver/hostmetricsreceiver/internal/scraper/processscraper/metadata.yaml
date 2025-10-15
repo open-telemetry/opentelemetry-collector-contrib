@@ -11,27 +11,9 @@ status:
 sem_conv_version: 1.9.0
 
 resource_attributes:
-  process.pid:
-    description: Process identifier (PID).
-    enabled: true
-    type: int
-  process.parent_pid:
-    description: Parent Process identifier (PPID).
-    enabled: true
-    type: int
-  process.executable.name:
-    description: >-
-      The name of the process executable. On Linux based systems, can be set to the
-      Name in proc/[pid]/status. On Windows, can be set to the base name of
-      GetProcessImageFileNameW.
-    enabled: true
-    type: string
-  process.executable.path:
-    description: >-
-      The full path to the process executable. On Linux based systems, can be set to
-      the target of proc/[pid]/exe. On Windows, can be set to the result of
-      GetProcessImageFileNameW.
-    enabled: true
+  process.cgroup:
+    description: cgroup associated with the process (Linux only).
+    enabled: false
     type: string
   process.command:
     description: >-
@@ -48,39 +30,67 @@ resource_attributes:
       process.command_args instead.
     enabled: true
     type: string
+  process.executable.name:
+    description: >-
+      The name of the process executable. On Linux based systems, can be set to the
+      Name in proc/[pid]/status. On Windows, can be set to the base name of
+      GetProcessImageFileNameW.
+    enabled: true
+    type: string
+  process.executable.path:
+    description: >-
+      The full path to the process executable. On Linux based systems, can be set to
+      the target of proc/[pid]/exe. On Windows, can be set to the result of
+      GetProcessImageFileNameW.
+    enabled: true
+    type: string
   process.owner:
     description: The username of the user that owns the process.
     enabled: true
     type: string
-  process.cgroup:
-    description: cgroup associated with the process (Linux only).
-    enabled: false
-    type: string
+  process.parent_pid:
+    description: Parent Process identifier (PPID).
+    enabled: true
+    type: int
+  process.pid:
+    description: Process identifier (PID).
+    enabled: true
+    type: int
 
 attributes:
+  context_switch_type:
+    name_override: type
+    description: Type of context switched.
+    type: string
+    enum: [involuntary, voluntary]
   direction:
     description: Direction of flow of bytes (read or write).
     type: string
     enum: [read, write]
-
-  state:
-    description: Breakdown of CPU usage by type.
-    type: string
-    enum: [system, user, wait]
 
   paging_fault_type:
     name_override: type
     description: Type of memory paging fault.
     type: string
     enum: [major, minor]
-
-  context_switch_type:
-    name_override: type
-    description: Type of context switched.
+  state:
+    description: Breakdown of CPU usage by type.
     type: string
-    enum: [involuntary, voluntary]
+    enum: [system, user, wait]
 
 metrics:
+  process.context_switches:
+    enabled: false
+    description: Number of times the process has been context switched.
+    extended_documentation: This metric is only available on Linux.
+    unit: '{count}'
+    stability:
+      level: development
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: true
+    attributes: [context_switch_type]
   process.cpu.time:
     enabled: true
     description: Total CPU seconds broken down by different states.
@@ -105,11 +115,34 @@ metrics:
     gauge:
       value_type: double
     attributes: [state]
-
-  process.memory.usage:
+  process.disk.io:
     enabled: true
-    description: The amount of physical memory in use.
+    description: Disk bytes transferred.
     unit: By
+    stability:
+      level: development
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: true
+    attributes: [direction]
+
+  process.disk.operations:
+    enabled: false
+    description: Number of disk operations performed by the process.
+    unit: "{operations}"
+    stability:
+      level: development
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: true
+    attributes: [direction]
+  process.handles:
+    enabled: false
+    description: Number of open handles held by the process.
+    extended_documentation: This metric is only available on Windows.
+    unit: '{count}'
     stability:
       level: development
     sum:
@@ -117,9 +150,9 @@ metrics:
       aggregation_temporality: cumulative
       monotonic: false
 
-  process.memory.virtual:
+  process.memory.usage:
     enabled: true
-    description: Virtual memory size.
+    description: The amount of physical memory in use.
     unit: By
     stability:
       level: development
@@ -137,17 +170,31 @@ metrics:
     gauge:
       value_type: double
 
-  process.disk.io:
+  process.memory.virtual:
     enabled: true
-    description: Disk bytes transferred.
+    description: Virtual memory size.
     unit: By
     stability:
       level: development
     sum:
       value_type: int
       aggregation_temporality: cumulative
-      monotonic: true
-    attributes: [direction]
+      monotonic: false
+
+  process.open_file_descriptors:
+    enabled: false
+    description: Number of file descriptors in use by the process.
+    extended_documentation: >-
+      On Windows this metric captures the number of open handles currently held
+      by the process. If you want to capture this data on Windows use the
+      `process.handles` metric instead to avoid any confusion.
+    unit: '{count}'
+    stability:
+      level: development
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
 
   process.paging.faults:
     enabled: false
@@ -185,58 +232,6 @@ metrics:
       aggregation_temporality: cumulative
       monotonic: false
 
-  process.open_file_descriptors:
-    enabled: false
-    description: Number of file descriptors in use by the process.
-    extended_documentation: >-
-      On Windows this metric captures the number of open handles currently held
-      by the process. If you want to capture this data on Windows use the
-      `process.handles` metric instead to avoid any confusion.
-    unit: '{count}'
-    stability:
-      level: development
-    sum:
-      value_type: int
-      aggregation_temporality: cumulative
-      monotonic: false
-
-  process.handles:
-    enabled: false
-    description: Number of open handles held by the process.
-    extended_documentation: This metric is only available on Windows.
-    unit: '{count}'
-    stability:
-      level: development
-    sum:
-      value_type: int
-      aggregation_temporality: cumulative
-      monotonic: false
-  
-  process.context_switches:
-    enabled: false
-    description: Number of times the process has been context switched.
-    extended_documentation: This metric is only available on Linux.
-    unit: '{count}'
-    stability:
-      level: development
-    sum:
-      value_type: int
-      aggregation_temporality: cumulative
-      monotonic: true
-    attributes: [context_switch_type]
-
-  process.disk.operations:
-    enabled: false
-    description: Number of disk operations performed by the process.
-    unit: "{operations}"
-    stability:
-      level: development
-    sum:
-      value_type: int
-      aggregation_temporality: cumulative
-      monotonic: true
-    attributes: [direction]
-  
   process.uptime:
     enabled: false
     description: The time the process has been running.

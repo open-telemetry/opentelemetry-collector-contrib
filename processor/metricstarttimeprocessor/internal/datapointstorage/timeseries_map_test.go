@@ -550,7 +550,7 @@ func TestTimeseriesInfo_IsResetSum(t *testing.T) {
 			name: "Double Value decreased",
 			setupTsi: func() *TimeseriesInfo {
 				tsi := &TimeseriesInfo{}
-				tsi.Number = NumberInfo{PreviousValue: 10}
+				tsi.Number = NumberInfo{PreviousDoubleValue: 10}
 				return tsi
 			},
 			setupS: func() pmetric.NumberDataPoint {
@@ -564,12 +564,40 @@ func TestTimeseriesInfo_IsResetSum(t *testing.T) {
 			name: "No Reset",
 			setupTsi: func() *TimeseriesInfo {
 				tsi := &TimeseriesInfo{}
-				tsi.Number = NumberInfo{PreviousValue: 10}
+				tsi.Number = NumberInfo{PreviousDoubleValue: 10}
 				return tsi
 			},
 			setupS: func() pmetric.NumberDataPoint {
 				s := pmetric.NewNumberDataPoint()
 				s.SetDoubleValue(15)
+				return s
+			},
+			expectedReset: false,
+		},
+		{
+			name: "Double Value decreased - INT",
+			setupTsi: func() *TimeseriesInfo {
+				tsi := &TimeseriesInfo{}
+				tsi.Number = NumberInfo{PreviousIntValue: 10}
+				return tsi
+			},
+			setupS: func() pmetric.NumberDataPoint {
+				s := pmetric.NewNumberDataPoint()
+				s.SetIntValue(5)
+				return s
+			},
+			expectedReset: true,
+		},
+		{
+			name: "No Reset - INT",
+			setupTsi: func() *TimeseriesInfo {
+				tsi := &TimeseriesInfo{}
+				tsi.Number = NumberInfo{PreviousIntValue: 10}
+				return tsi
+			},
+			setupS: func() pmetric.NumberDataPoint {
+				s := pmetric.NewNumberDataPoint()
+				s.SetIntValue(15)
 				return s
 			},
 			expectedReset: false,

@@ -12,26 +12,6 @@ status:
 sem_conv_version: 1.18.0
 
 resource_attributes:
-  k8s.namespace.uid:
-    description: The k8s namespace uid.
-    type: string
-    enabled: true
-
-  k8s.namespace.name:
-    description: The k8s namespace name.
-    type: string
-    enabled: true
-
-  k8s.node.uid:
-    description: The k8s node uid.
-    type: string
-    enabled: true
-
-  k8s.node.name:
-    description: The k8s node name.
-    type: string
-    enabled: true
-
   container.id:
     description: The container id.
     type: string
@@ -47,8 +27,113 @@ resource_attributes:
     type: string
     enabled: true
 
+  container.runtime:
+    description: The container runtime used by Kubernetes Node.
+    type: string
+    enabled: false
+
+  container.runtime.version:
+    description: The version of container runtime used by Kubernetes Node.
+    type: string
+    enabled: false
+
   k8s.container.name:
     description: The k8s container name
+    type: string
+    enabled: true
+
+  k8s.container.status.last_terminated_reason:
+    description: Last terminated reason of a container.
+    type: string
+    enabled: false
+
+  k8s.cronjob.name:
+    description: The k8s CronJob name
+    type: string
+    enabled: true
+
+  k8s.cronjob.uid:
+    description: The k8s CronJob uid.
+    type: string
+    enabled: true
+
+  k8s.daemonset.name:
+    description: The k8s daemonset name.
+    type: string
+    enabled: true
+
+  k8s.daemonset.uid:
+    description: The k8s daemonset uid.
+    type: string
+    enabled: true
+
+  k8s.deployment.name:
+    description: The name of the Deployment.
+    type: string
+    enabled: true
+
+  k8s.deployment.uid:
+    description: The UID of the Deployment.
+    type: string
+    enabled: true
+
+  k8s.hpa.name:
+    description: The k8s hpa name.
+    type: string
+    enabled: true
+
+  k8s.hpa.scaletargetref.apiversion:
+    description: The API version of the target resource to scale for the HorizontalPodAutoscaler.
+    type: string
+    enabled: false
+
+  k8s.hpa.scaletargetref.kind:
+    description: The kind of the target resource to scale for the HorizontalPodAutoscaler.
+    type: string
+    enabled: false
+
+  k8s.hpa.scaletargetref.name:
+    description: The name of the target resource to scale for the HorizontalPodAutoscaler.
+    type: string
+    enabled: false
+
+  k8s.hpa.uid:
+    description: The k8s hpa uid.
+    type: string
+    enabled: true
+
+  k8s.job.name:
+    description: The k8s pod name.
+    type: string
+    enabled: true
+
+  k8s.job.uid:
+    description: The k8s job uid.
+    type: string
+    enabled: true
+
+  k8s.kubelet.version:
+    description: The version of Kubelet running on the node.
+    type: string
+    enabled: false
+
+  k8s.namespace.name:
+    description: The k8s namespace name.
+    type: string
+    enabled: true
+
+  k8s.namespace.uid:
+    description: The k8s namespace uid.
+    type: string
+    enabled: true
+
+  k8s.node.name:
+    description: The k8s node name.
+    type: string
+    enabled: true
+
+  k8s.node.uid:
+    description: The k8s node uid.
     type: string
     enabled: true
 
@@ -57,15 +142,15 @@ resource_attributes:
     type: string
     enabled: true
 
-  k8s.pod.uid:
-    description: The k8s pod uid.
-    type: string
-    enabled: true
-
   k8s.pod.qos_class:
     description: "The k8s pod qos class name. One of Guaranteed, Burstable, BestEffort."
     type: string
     enabled: false
+
+  k8s.pod.uid:
+    description: The k8s pod uid.
+    type: string
+    enabled: true
 
   k8s.replicaset.name:
     description: The k8s replicaset name
@@ -87,18 +172,13 @@ resource_attributes:
     type: string
     enabled: true
 
-  k8s.resourcequota.uid:
-    description: The k8s resourcequota uid.
-    type: string
-    enabled: true
-
   k8s.resourcequota.name:
     description: The k8s resourcequota name.
     type: string
     enabled: true
 
-  k8s.statefulset.uid:
-    description: The k8s statefulset uid.
+  k8s.resourcequota.uid:
+    description: The k8s resourcequota uid.
     type: string
     enabled: true
 
@@ -107,85 +187,20 @@ resource_attributes:
     type: string
     enabled: true
 
-  k8s.deployment.uid:
-    description: The UID of the Deployment.
+  k8s.statefulset.uid:
+    description: The k8s statefulset uid.
     type: string
     enabled: true
 
-  k8s.deployment.name:
-    description: The name of the Deployment.
+  openshift.clusterquota.name:
+    description: The k8s ClusterResourceQuota name.
     type: string
     enabled: true
 
-  k8s.cronjob.uid:
-    description: The k8s CronJob uid.
+  openshift.clusterquota.uid:
+    description: The k8s ClusterResourceQuota uid.
     type: string
     enabled: true
-
-  k8s.cronjob.name:
-    description: The k8s CronJob name
-    type: string
-    enabled: true
-
-  k8s.daemonset.name:
-    description: The k8s daemonset name.
-    type: string
-    enabled: true
-
-  k8s.daemonset.uid:
-    description: The k8s daemonset uid.
-    type: string
-    enabled: true
-
-  k8s.hpa.uid:
-    description: The k8s hpa uid.
-    type: string
-    enabled: true
-
-  k8s.hpa.name:
-    description: The k8s hpa name.
-    type: string
-    enabled: true
-
-  k8s.hpa.scaletargetref.kind:
-    description: The kind of the target resource to scale for the HorizontalPodAutoscaler.
-    type: string
-    enabled: false
-
-  k8s.hpa.scaletargetref.name:
-    description: The name of the target resource to scale for the HorizontalPodAutoscaler.
-    type: string
-    enabled: false
-
-  k8s.hpa.scaletargetref.apiversion:
-    description: The API version of the target resource to scale for the HorizontalPodAutoscaler.
-    type: string
-    enabled: false
-
-  k8s.job.name:
-    description: The k8s pod name.
-    type: string
-    enabled: true
-
-  k8s.job.uid:
-    description: The k8s job uid.
-    type: string
-    enabled: true
-
-  k8s.kubelet.version:
-    description: The version of Kubelet running on the node.
-    type: string
-    enabled: false
-
-  container.runtime:
-    description: The container runtime used by Kubernetes Node.
-    type: string
-    enabled: false
-
-  container.runtime.version:
-    description: The version of container runtime used by Kubernetes Node.
-    type: string
-    enabled: false
 
   os.description:
     description: The os description used by Kubernetes Node.
@@ -197,38 +212,10 @@ resource_attributes:
     type: string
     enabled: false
 
-  openshift.clusterquota.uid:
-    description: The k8s ClusterResourceQuota uid.
-    type: string
-    enabled: true
-
-  openshift.clusterquota.name:
-    description: The k8s ClusterResourceQuota name.
-    type: string
-    enabled: true
-
-  k8s.container.status.last_terminated_reason:
-    description: Last terminated reason of a container.
-    type: string
-    enabled: false
-
 attributes:
-  k8s.namespace.name:
-    description: The k8s namespace name.
-    type: string
-  resource:
-    description: the name of the resource on which the quota is applied
-    type: string
   condition:
     description: "the name of Kubernetes Node condition. Example: Ready, Memory, PID, DiskPressure"
     type: string
-  k8s.container.status.state:
-    description: The state of the container (terminated, running, waiting). See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.30/#containerstate-v1-core for details.
-    type: string
-    enum:
-      - terminated
-      - running
-      - waiting
   k8s.container.status.reason:
     description: The reason of the current container status.
     type: string
@@ -242,15 +229,21 @@ attributes:
       - Completed
       - Error
       - ContainerCannotRun
+  k8s.container.status.state:
+    description: The state of the container (terminated, running, waiting). See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.30/#containerstate-v1-core for details.
+    type: string
+    enum:
+      - terminated
+      - running
+      - waiting
+  k8s.namespace.name:
+    description: The k8s namespace name.
+    type: string
+  resource:
+    description: the name of the resource on which the quota is applied
+    type: string
+
 metrics:
-  k8s.container.cpu_request:
-    enabled: true
-    description: Resource requested for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
-    unit: "{cpu}"
-    stability:
-      level: development
-    gauge:
-      value_type: double
   k8s.container.cpu_limit:
     enabled: true
     description: Maximum resource limit set for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
@@ -259,31 +252,15 @@ metrics:
       level: development
     gauge:
       value_type: double
-  k8s.container.memory_request:
+  k8s.container.cpu_request:
     enabled: true
     description: Resource requested for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
-    unit: "By"
+    unit: "{cpu}"
     stability:
       level: development
     gauge:
-      value_type: int
-  k8s.container.memory_limit:
-    enabled: true
-    description: Maximum resource limit set for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
-    unit: "By"
-    stability:
-      level: development
-    gauge:
-      value_type: int
-  k8s.container.storage_request:
-    enabled: true
-    description: Resource requested for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
-    unit: "By"
-    stability:
-      level: development
-    gauge:
-      value_type: int
-  k8s.container.storage_limit:
+      value_type: double
+  k8s.container.ephemeralstorage_limit:
     enabled: true
     description: Maximum resource limit set for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
     unit: "By"
@@ -299,7 +276,7 @@ metrics:
       level: development
     gauge:
       value_type: int
-  k8s.container.ephemeralstorage_limit:
+  k8s.container.memory_limit:
     enabled: true
     description: Maximum resource limit set for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
     unit: "By"
@@ -307,10 +284,10 @@ metrics:
       level: development
     gauge:
       value_type: int
-  k8s.container.restarts:
+  k8s.container.memory_request:
     enabled: true
-    description: How many times the container has restarted in the recent past. This value is pulled directly from the K8s API and the value can go indefinitely high and be reset to 0 at any time depending on how your kubelet is configured to prune dead containers. It is best to not depend too much on the exact value but rather look at it as either == 0, in which case you can conclude there were no restarts in the recent past, or > 0, in which case you can conclude there were restarts in the recent past, and not try and analyze the value beyond that.
-    unit: "{restart}"
+    description: Resource requested for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
+    unit: "By"
     stability:
       level: development
     gauge:
@@ -323,18 +300,14 @@ metrics:
       level: development
     gauge:
       value_type: int
-  k8s.container.status.state:
-    enabled: false
-    description: Experimental metric, may experience breaking changes. Describes the number of K8s containers that are currently in a given state. All possible container states will be reported at each time interval to avoid missing metrics. Only the value corresponding to the current state will be non-zero.
-    unit: "{container}"
+  k8s.container.restarts:
+    enabled: true
+    description: How many times the container has restarted in the recent past. This value is pulled directly from the K8s API and the value can go indefinitely high and be reset to 0 at any time depending on how your kubelet is configured to prune dead containers. It is best to not depend too much on the exact value but rather look at it as either == 0, in which case you can conclude there were no restarts in the recent past, or > 0, in which case you can conclude there were restarts in the recent past, and not try and analyze the value beyond that.
+    unit: "{restart}"
     stability:
       level: development
-    sum:
-      aggregation_temporality: cumulative
-      monotonic: false
+    gauge:
       value_type: int
-    attributes:
-      - k8s.container.status.state
   k8s.container.status.reason:
     enabled: false
     description: Experimental metric, may experience breaking changes. Describes the number of K8s containers that are currently in a state for a given reason. All possible container state reasons will be reported at each time interval to avoid missing metrics. Only the value corresponding to the current state reason will be non-zero.
@@ -347,40 +320,34 @@ metrics:
       value_type: int
     attributes:
       - k8s.container.status.reason
-  k8s.pod.phase:
-    enabled: true
-    description: Current phase of the pod (1 - Pending, 2 - Running, 3 - Succeeded, 4 - Failed, 5 - Unknown)
-    unit: ""
-    stability:
-      level: development
-    gauge:
-      value_type: int
-  k8s.pod.status_reason:
+  k8s.container.status.state:
     enabled: false
-    description: Current status reason of the pod (1 - Evicted, 2 - NodeAffinity, 3 - NodeLost, 4 - Shutdown, 5 - UnexpectedAdmissionError, 6 - Unknown)
-    unit: ""
+    description: Experimental metric, may experience breaking changes. Describes the number of K8s containers that are currently in a given state. All possible container states will be reported at each time interval to avoid missing metrics. Only the value corresponding to the current state will be non-zero.
+    unit: "{container}"
+    stability:
+      level: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: false
+      value_type: int
+    attributes:
+      - k8s.container.status.state
+  k8s.container.storage_limit:
+    enabled: true
+    description: Maximum resource limit set for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
+    unit: "By"
     stability:
       level: development
     gauge:
       value_type: int
-
-  k8s.deployment.desired:
+  k8s.container.storage_request:
     enabled: true
-    description: Number of desired pods in this deployment
-    unit: "{pod}"
+    description: Resource requested for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
+    unit: "By"
     stability:
       level: development
     gauge:
       value_type: int
-  k8s.deployment.available:
-    enabled: true
-    description: Total number of available pods (ready for at least minReadySeconds) targeted by this deployment
-    unit: "{pod}"
-    stability:
-      level: development
-    gauge:
-     value_type: int
-
   k8s.cronjob.active_jobs:
     enabled: true
     description: The number of actively running jobs for a cronjob
@@ -423,24 +390,23 @@ metrics:
     gauge:
       value_type: int
 
-  k8s.hpa.max_replicas:
+  k8s.deployment.available:
     enabled: true
-    description: Maximum number of replicas to which the autoscaler can scale up.
+    description: Total number of available pods (ready for at least minReadySeconds) targeted by this deployment
     unit: "{pod}"
     stability:
       level: development
     gauge:
       value_type: int
 
-  k8s.hpa.min_replicas:
+  k8s.deployment.desired:
     enabled: true
-    description: Minimum number of replicas to which the autoscaler can scale up.
+    description: Number of desired pods in this deployment
     unit: "{pod}"
     stability:
       level: development
     gauge:
       value_type: int
-
   k8s.hpa.current_replicas:
     enabled: true
     description: Current number of pod replicas managed by this autoscaler.
@@ -453,6 +419,24 @@ metrics:
   k8s.hpa.desired_replicas:
     enabled: true
     description: Desired number of pod replicas managed by this autoscaler.
+    unit: "{pod}"
+    stability:
+      level: development
+    gauge:
+      value_type: int
+
+  k8s.hpa.max_replicas:
+    enabled: true
+    description: Maximum number of replicas to which the autoscaler can scale up.
+    unit: "{pod}"
+    stability:
+      level: development
+    gauge:
+      value_type: int
+
+  k8s.hpa.min_replicas:
+    enabled: true
+    description: Minimum number of replicas to which the autoscaler can scale up.
     unit: "{pod}"
     stability:
       level: development
@@ -509,14 +493,39 @@ metrics:
     gauge:
       value_type: int
 
-  k8s.replicaset.desired:
-    enabled: true
-    description: Number of desired pods in this replicaset
-    unit: "{pod}"
+  k8s.node.condition:
+    enabled: false
+    description: The condition of a particular Node.
+    unit: "{condition}"
     stability:
       level: development
     gauge:
       value_type: int
+    attributes:
+      - condition
+  # k8s.node.condition_* metrics (k8s.node.condition_ready, k8s.node.condition_memory_pressure, etc) are controlled
+  # by node_conditions_to_report config option. By default, only k8s.node.condition_ready is enabled.
+
+  # k8s.node.allocatable_* metrics (k8s.node.allocatable_cpu, k8s.node.allocatable_memory, etc) are controlled
+  # by allocatable_types_to_report config option. By default, none of them are reported.
+
+  k8s.pod.phase:
+    enabled: true
+    description: Current phase of the pod (1 - Pending, 2 - Running, 3 - Succeeded, 4 - Failed, 5 - Unknown)
+    unit: ""
+    stability:
+      level: development
+    gauge:
+      value_type: int
+  k8s.pod.status_reason:
+    enabled: false
+    description: Current status reason of the pod (1 - Evicted, 2 - NodeAffinity, 3 - NodeLost, 4 - Shutdown, 5 - UnexpectedAdmissionError, 6 - Unknown)
+    unit: ""
+    stability:
+      level: development
+    gauge:
+      value_type: int
+
   k8s.replicaset.available:
     enabled: true
     description: Total number of available pods (ready for at least minReadySeconds) targeted by this replicaset
@@ -526,9 +535,9 @@ metrics:
     gauge:
       value_type: int
 
-  k8s.replication_controller.desired:
+  k8s.replicaset.desired:
     enabled: true
-    description: Number of desired pods in this replication_controller
+    description: Number of desired pods in this replicaset
     unit: "{pod}"
     stability:
       level: development
@@ -543,6 +552,14 @@ metrics:
     gauge:
       value_type: int
 
+  k8s.replication_controller.desired:
+    enabled: true
+    description: Number of desired pods in this replication_controller
+    unit: "{pod}"
+    stability:
+      level: development
+    gauge:
+      value_type: int
   k8s.resource_quota.hard_limit:
     enabled: true
     description: The upper limit for a particular resource in a specific namespace. Will only be sent if a quota is specified. CPU requests/limits will be sent as millicores
@@ -564,6 +581,15 @@ metrics:
     attributes:
       - resource
 
+  k8s.statefulset.current_pods:
+    enabled: true
+    description: The number of pods created by the StatefulSet controller from the StatefulSet version
+    unit: "{pod}"
+    stability:
+      level: development
+    gauge:
+      value_type: int
+
   k8s.statefulset.desired_pods:
     enabled: true
     description: Number of desired pods in the stateful set (the `spec.replicas` field)
@@ -582,15 +608,6 @@ metrics:
     gauge:
       value_type: int
 
-  k8s.statefulset.current_pods:
-    enabled: true
-    description: The number of pods created by the StatefulSet controller from the StatefulSet version
-    unit: "{pod}"
-    stability:
-      level: development
-    gauge:
-      value_type: int
-
   k8s.statefulset.updated_pods:
     enabled: true
     description: Number of pods created by the StatefulSet controller from the StatefulSet version
@@ -600,26 +617,6 @@ metrics:
     gauge:
       value_type: int
 
-  openshift.clusterquota.limit:
-    enabled: true
-    description: The configured upper limit for a particular resource.
-    unit: "{resource}"
-    stability:
-      level: development
-    gauge:
-      value_type: int
-    attributes:
-      - resource
-  openshift.clusterquota.used:
-    enabled: true
-    description: The usage for a particular resource with a configured limit.
-    unit: "{resource}"
-    stability:
-      level: development
-    gauge:
-      value_type: int
-    attributes:
-      - resource
   openshift.appliedclusterquota.limit:
     enabled: true
     description: The upper limit for a particular resource in a specific namespace.
@@ -642,25 +639,29 @@ metrics:
     attributes:
       - k8s.namespace.name
       - resource
-  k8s.node.condition:
-    enabled: false
-    description: The condition of a particular Node.
-    unit: "{condition}"
+  openshift.clusterquota.limit:
+    enabled: true
+    description: The configured upper limit for a particular resource.
+    unit: "{resource}"
     stability:
       level: development
     gauge:
       value_type: int
     attributes:
-      - condition
-  # k8s.node.condition_* metrics (k8s.node.condition_ready, k8s.node.condition_memory_pressure, etc) are controlled 
-  # by node_conditions_to_report config option. By default, only k8s.node.condition_ready is enabled.
-
-  # k8s.node.allocatable_* metrics (k8s.node.allocatable_cpu, k8s.node.allocatable_memory, etc) are controlled
-  # by allocatable_types_to_report config option. By default, none of them are reported.
+      - resource
+  openshift.clusterquota.used:
+    enabled: true
+    description: The usage for a particular resource with a configured limit.
+    unit: "{resource}"
+    stability:
+      level: development
+    gauge:
+      value_type: int
+    attributes:
+      - resource
 
 tests:
   config:
   skip_lifecycle: true
   goleak:
     skip: true
-

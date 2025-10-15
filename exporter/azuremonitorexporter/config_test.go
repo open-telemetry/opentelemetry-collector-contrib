@@ -43,13 +43,13 @@ func TestLoadConfig(t *testing.T) {
 				MaxBatchSize:       100,
 				MaxBatchInterval:   10 * time.Second,
 				SpanEventsEnabled:  false,
-				QueueSettings: exporterhelper.QueueBatchConfig{
-					QueueSize:    1000,
-					Enabled:      true,
-					NumConsumers: 10,
-					StorageID:    &disk,
-					Sizer:        exporterhelper.RequestSizerTypeRequests,
-				},
+				QueueSettings: func() exporterhelper.QueueBatchConfig {
+					queue := exporterhelper.NewDefaultQueueConfig()
+					queue.QueueSize = 1000
+					queue.NumConsumers = 10
+					queue.StorageID = &disk
+					return queue
+				}(),
 				ShutdownTimeout: 2 * time.Second,
 			},
 		},

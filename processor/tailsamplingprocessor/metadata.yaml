@@ -14,6 +14,11 @@ tests:
   config:
 
 attributes:
+  decision:
+    description: The sampling decision
+    enum: [sampled, not_sampled, dropped]
+    type: string
+
   policy:
     description: Name of the policy
     type: string
@@ -22,13 +27,52 @@ attributes:
     description: Whether the sampling decision was sampled or not, false can mean either not sampled or dropped
     type: bool
 
-  decision:
-    description: The sampling decision
-    enum: [sampled, not_sampled, dropped]
-    type: string
-
 telemetry:
   metrics:
+    processor_tail_sampling_count_spans_sampled:
+      description: Count of spans that were sampled or not per sampling policy
+      unit: "{spans}"
+      enabled: true
+      sum:
+        value_type: int
+        monotonic: true
+      attributes: [policy, sampled, decision]
+
+    processor_tail_sampling_count_traces_sampled:
+      description: Count of traces that were sampled or not per sampling policy
+      unit: "{traces}"
+      enabled: true
+      sum:
+        value_type: int
+        monotonic: true
+      attributes: [policy, sampled, decision]
+
+    processor_tail_sampling_early_releases_from_cache_decision:
+      description: Number of spans that were able to be immediately released due to a decision cache hit.
+      unit: "{spans}"
+      enabled: true
+      sum:
+        value_type: int
+        monotonic: true
+      attributes: [sampled]
+
+    processor_tail_sampling_global_count_traces_sampled:
+      description: Global count of traces that were sampled or not by at least one policy
+      unit: "{traces}"
+      enabled: true
+      sum:
+        value_type: int
+        monotonic: true
+      attributes: [sampled, decision]
+
+    processor_tail_sampling_new_trace_id_received:
+      description: Counts the arrival of new traces
+      unit: "{traces}"
+      enabled: true
+      sum:
+        value_type: int
+        monotonic: true
+
     processor_tail_sampling_sampling_decision_latency:
       description: Latency (in microseconds) of a given sampling policy
       unit: µs
@@ -44,14 +88,6 @@ telemetry:
       histogram:
         value_type: int
         bucket_boundaries: [1, 2, 5, 10, 25, 50, 75, 100, 150, 200, 300, 400, 500, 750, 1000, 2000, 3000, 4000, 5000, 10000, 20000, 30000, 50000]
-
-    processor_tail_sampling_sampling_trace_removal_age:
-      description: Time (in seconds) from arrival of a new trace until its removal from memory
-      unit: s
-      enabled: true
-      histogram:
-        value_type: int
-
     processor_tail_sampling_sampling_late_span_age:
       description: Time (in seconds) from the sampling decision was taken and the arrival of a late span
       unit: s
@@ -67,32 +103,6 @@ telemetry:
         value_type: int
         monotonic: true
 
-    processor_tail_sampling_count_traces_sampled:
-      description: Count of traces that were sampled or not per sampling policy
-      unit: "{traces}"
-      enabled: true
-      sum:
-        value_type: int
-        monotonic: true
-      attributes: [policy, sampled, decision]
-
-    processor_tail_sampling_count_spans_sampled:
-      description: Count of spans that were sampled or not per sampling policy
-      unit: "{spans}"
-      enabled: true
-      sum:
-        value_type: int
-        monotonic: true
-      attributes: [policy, sampled, decision]
-
-    processor_tail_sampling_global_count_traces_sampled:
-      description: Global count of traces that were sampled or not by at least one policy
-      unit: "{traces}"
-      enabled: true
-      sum:
-        value_type: int
-        monotonic: true
-      attributes: [sampled, decision]
 
     processor_tail_sampling_sampling_trace_dropped_too_early:
       description: Count of traces that needed to be dropped before the configured wait time
@@ -102,13 +112,12 @@ telemetry:
         value_type: int
         monotonic: true
 
-    processor_tail_sampling_new_trace_id_received:
-      description: Counts the arrival of new traces
-      unit: "{traces}"
+    processor_tail_sampling_sampling_trace_removal_age:
+      description: Time (in seconds) from arrival of a new trace until its removal from memory
+      unit: s
       enabled: true
-      sum:
+      histogram:
         value_type: int
-        monotonic: true
 
     processor_tail_sampling_sampling_traces_on_memory:
       description: Tracks the number of traces current on memory
@@ -116,12 +125,3 @@ telemetry:
       enabled: true
       gauge:
         value_type: int
-
-    processor_tail_sampling_early_releases_from_cache_decision:
-      description: Number of spans that were able to be immediately released due to a decision cache hit.
-      unit: "{spans}"
-      enabled: true
-      sum:
-        value_type: int
-        monotonic: true
-      attributes: [sampled]

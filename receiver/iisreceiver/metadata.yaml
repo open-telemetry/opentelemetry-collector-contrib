@@ -15,12 +15,12 @@ status:
   unsupported_platforms: [linux, darwin, (windows && arm64)]
 
 resource_attributes:
-  iis.site:
-    description: The site of the web server.
-    enabled: true
-    type: string
   iis.application_pool:
     description: The application pool, which is associated with worker processes of one or more applications.
+    enabled: true
+    type: string
+  iis.site:
+    description: The site of the web server.
     enabled: true
     type: string
 
@@ -44,83 +44,18 @@ attributes:
       - trace
 
 metrics:
-  iis.request.count:
-    description: Total number of requests of a given type.
-    unit: "{requests}"
-    sum:
-      monotonic: true
-      aggregation_temporality: cumulative
-      value_type: int
-    enabled: true
-    stability:
-      level: development
-    attributes: [ request ]
-  iis.request.rejected:
-    description: Total number of requests rejected.
-    unit: "{requests}"
-    sum:
-      monotonic: true
-      aggregation_temporality: cumulative
-      value_type: int
-    enabled: true
-    stability:
-      level: development
-  iis.request.queue.count:
-    description: Current number of requests in the queue.
-    unit: "{requests}"
-    sum:
-      monotonic: false
-      aggregation_temporality: cumulative
-      value_type: int
-    enabled: true
-    stability:
-      level: development
-  iis.request.queue.age.max:
-    description: Age of oldest request in the queue.
-    unit: ms
+  iis.application_pool.state:
+    description: The current status of the application pool (1 - Uninitialized, 2 - Initialized, 3 - Running, 4 - Disabling, 5 - Disabled, 6 - Shutdown Pending, 7 - Delete Pending).
+    unit: "{state}"
     gauge:
       value_type: int
     enabled: true
     stability:
       level: development
-  iis.network.file.count:
-    description: Number of transmitted files.
-    unit: "{files}"
-    sum:
-      monotonic: true
-      aggregation_temporality: cumulative
-      value_type: int
-    enabled: true
-    stability:
-      level: development
-    attributes: [ direction ]
-  iis.network.blocked:
-    description: Number of bytes blocked due to bandwidth throttling.
-    unit: By
-    sum:
-      monotonic: true
-      aggregation_temporality: cumulative
-      value_type: int
-    enabled: true
-    stability:
-      level: development
-  iis.network.io:
-    description: Total amount of bytes sent and received.
-    unit: By
-    sum:
-      monotonic: true
-      aggregation_temporality: cumulative
-      value_type: int
-    enabled: true
-    stability:
-      level: development
-    attributes: [ direction ]
-  iis.connection.attempt.count:
-    description: Total number of attempts to connect to the server.
-    unit: "{attempts}"
-    sum:
-      monotonic: true
-      aggregation_temporality: cumulative
+  iis.application_pool.uptime:
+    description: The application pools uptime period since the last restart.
+    unit: "{ms}"
+    gauge:
       value_type: int
     enabled: true
     stability:
@@ -145,6 +80,87 @@ metrics:
     enabled: true
     stability:
       level: development
+  iis.connection.attempt.count:
+    description: Total number of attempts to connect to the server.
+    unit: "{attempts}"
+    sum:
+      monotonic: true
+      aggregation_temporality: cumulative
+      value_type: int
+    enabled: true
+    stability:
+      level: development
+  iis.network.blocked:
+    description: Number of bytes blocked due to bandwidth throttling.
+    unit: By
+    sum:
+      monotonic: true
+      aggregation_temporality: cumulative
+      value_type: int
+    enabled: true
+    stability:
+      level: development
+  iis.network.file.count:
+    description: Number of transmitted files.
+    unit: "{files}"
+    sum:
+      monotonic: true
+      aggregation_temporality: cumulative
+      value_type: int
+    enabled: true
+    stability:
+      level: development
+    attributes: [direction]
+  iis.network.io:
+    description: Total amount of bytes sent and received.
+    unit: By
+    sum:
+      monotonic: true
+      aggregation_temporality: cumulative
+      value_type: int
+    enabled: true
+    stability:
+      level: development
+    attributes: [direction]
+  iis.request.count:
+    description: Total number of requests of a given type.
+    unit: "{requests}"
+    sum:
+      monotonic: true
+      aggregation_temporality: cumulative
+      value_type: int
+    enabled: true
+    stability:
+      level: development
+    attributes: [request]
+  iis.request.queue.age.max:
+    description: Age of oldest request in the queue.
+    unit: ms
+    gauge:
+      value_type: int
+    enabled: true
+    stability:
+      level: development
+  iis.request.queue.count:
+    description: Current number of requests in the queue.
+    unit: "{requests}"
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    enabled: true
+    stability:
+      level: development
+  iis.request.rejected:
+    description: Total number of requests rejected.
+    unit: "{requests}"
+    sum:
+      monotonic: true
+      aggregation_temporality: cumulative
+      value_type: int
+    enabled: true
+    stability:
+      level: development
   iis.thread.active:
     description: Current number of active threads.
     unit: "{threads}"
@@ -158,22 +174,6 @@ metrics:
   iis.uptime:
     description: The amount of time the server has been up.
     unit: s
-    gauge:
-      value_type: int
-    enabled: true
-    stability:
-      level: development
-  iis.application_pool.state:
-    description: The current status of the application pool (1 - Uninitialized, 2 - Initialized, 3 - Running, 4 - Disabling, 5 - Disabled, 6 - Shutdown Pending, 7 - Delete Pending).
-    unit: "{state}"
-    gauge:
-      value_type: int
-    enabled: true
-    stability:
-      level: development
-  iis.application_pool.uptime:
-    description: The application pools uptime period since the last restart.
-    unit: "{ms}"
     gauge:
       value_type: int
     enabled: true

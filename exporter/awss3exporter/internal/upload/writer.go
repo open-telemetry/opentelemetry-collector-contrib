@@ -64,7 +64,10 @@ func (sw *s3manager) Upload(ctx context.Context, data []byte, opts *UploadOption
 	}
 
 	encoding := ""
-	if sw.builder.Compression.IsCompressed() {
+	// Only use ContentEncoding for non-archive formats
+	// Archive formats store files compressed permanently (like .tar.gz)
+	// while ContentEncoding is for HTTP transfer compression
+	if sw.builder.Compression.IsCompressed() && !sw.builder.IsCompressed {
 		encoding = string(sw.builder.Compression)
 	}
 
@@ -79,15 +82,20 @@ func (sw *s3manager) Upload(ctx context.Context, data []byte, opts *UploadOption
 		}
 	}
 
-	_, err = sw.uploader.Upload(ctx, &s3.PutObjectInput{
-		Bucket:          aws.String(overrideBucket),
-		Key:             aws.String(sw.builder.Build(now, overridePrefix)),
-		Body:            content,
-		ContentEncoding: aws.String(encoding),
-		StorageClass:    sw.storageClass,
-		ACL:             sw.acl,
-	})
+	uploadInput := &s3.PutObjectInput{
+		Bucket:       aws.String(overrideBucket),
+		Key:          aws.String(sw.builder.Build(now, overridePrefix)),
+		Body:         content,
+		StorageClass: sw.storageClass,
+		ACL:          sw.acl,
+	}
 
+	// Only set ContentEncoding if we have a non-empty encoding value
+	if encoding != "" {
+		uploadInput.ContentEncoding = aws.String(encoding)
+	}
+
+	_, err = sw.uploader.Upload(ctx, uploadInput)
 	return err
 }
 

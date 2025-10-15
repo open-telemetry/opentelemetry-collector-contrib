@@ -109,6 +109,7 @@ extension/encoding/textencodingextension/                        @open-telemetry
 extension/encoding/zipkinencodingextension/                      @open-telemetry/collector-contrib-approvers @MovieStoreGuy @dao-jun
 extension/googleclientauthextension/                             @open-telemetry/collector-contrib-approvers @dashpole @aabmass @braydonk @jsuereth @psx95 @ridwanmsharif
 extension/headerssetterextension/                                @open-telemetry/collector-contrib-approvers @VihasMakwana
+extension/healthcheckextension/                                  @open-telemetry/collector-contrib-approvers @evan-bradley
 extension/healthcheckv2extension/                                @open-telemetry/collector-contrib-approvers @mwear @evan-bradley
 extension/httpforwarderextension/                                @open-telemetry/collector-contrib-approvers @atoulme
 extension/jaegerremotesampling/                                  @open-telemetry/collector-contrib-approvers @yurishkuro @frzifus
@@ -170,6 +171,7 @@ pkg/resourcetotelemetry/                                         @open-telemetry
 pkg/sampling/                                                    @open-telemetry/collector-contrib-approvers @kentquirk @jmacd
 pkg/stanza/                                                      @open-telemetry/collector-contrib-approvers @andrzej-stencel
 pkg/stanza/fileconsumer/                                         @open-telemetry/collector-contrib-approvers @andrzej-stencel
+pkg/stanza/operator/input/journald/                              @open-telemetry/collector-contrib-approvers @belimawr
 pkg/status/                                                      @open-telemetry/collector-contrib-approvers @mwear
 pkg/translator/azure/                                            @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers @atoulme @cparkins
 pkg/translator/azurelogs/                                        @open-telemetry/collector-contrib-approvers @atoulme @cparkins @MikeGoldsmith @constanca-m
@@ -310,6 +312,7 @@ receiver/purefareceiver/                                         @open-telemetry
 receiver/purefbreceiver/                                         @open-telemetry/collector-contrib-approvers @dgoscn @chrroberts-pure
 receiver/rabbitmqreceiver/                                       @open-telemetry/collector-contrib-approvers @VenuEmmadi
 receiver/receivercreator/                                        @open-telemetry/collector-contrib-approvers @dmitryax @ChrsMark
+receiver/redfishreceiver/                                        @open-telemetry/collector-contrib-approvers @steven-freed
 receiver/redisreceiver/                                          @open-telemetry/collector-contrib-approvers @dmitryax @hughesjj
 receiver/riakreceiver/                                           @open-telemetry/collector-contrib-approvers @armstrmi
 receiver/saphanareceiver/                                        @open-telemetry/collector-contrib-approvers @dehaansa
@@ -370,7 +373,6 @@ reports/distributions/otlp.yaml    @open-telemetry/collector-contrib-approvers
 # Start unmaintained components list
 
 exporter/carbonexporter/                                         @open-telemetry/collector-contrib-approvers
-extension/healthcheckextension/                                  @open-telemetry/collector-contrib-approvers
 extension/observer/ecstaskobserver/                              @open-telemetry/collector-contrib-approvers
 receiver/bigipreceiver/                                          @open-telemetry/collector-contrib-approvers
 receiver/carbonreceiver/                                         @open-telemetry/collector-contrib-approvers

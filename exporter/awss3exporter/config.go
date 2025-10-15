@@ -146,10 +146,6 @@ func (c *Config) Validate() error {
 		if compression != configcompression.TypeGzip {
 			errs = multierr.Append(errs, errors.New("unknown compression type"))
 		}
-
-		if c.MarshalerName == SumoIC {
-			errs = multierr.Append(errs, errors.New("marshaler does not support compression"))
-		}
 	}
 
 	if c.S3Uploader.RetryMode != "nop" && c.S3Uploader.RetryMode != "standard" && c.S3Uploader.RetryMode != "adaptive" {

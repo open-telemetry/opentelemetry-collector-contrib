@@ -90,6 +90,7 @@ extension/encoding/textencodingextension extension/encoding/textencoding
 extension/encoding/zipkinencodingextension extension/encoding/zipkinencoding
 extension/googleclientauthextension extension/googleclientauth
 extension/headerssetterextension extension/headerssetter
+extension/healthcheckextension extension/healthcheck
 extension/healthcheckv2extension extension/healthcheckv2
 extension/httpforwarderextension extension/httpforwarder
 extension/jaegerremotesampling extension/jaegerremotesampling
@@ -151,6 +152,7 @@ pkg/resourcetotelemetry pkg/resourcetotelemetry
 pkg/sampling pkg/sampling
 pkg/stanza pkg/stanza
 pkg/stanza/fileconsumer pkg/stanza/fileconsumer
+pkg/stanza/operator/input/journald pkg/stanza/operator/input/journald
 pkg/status pkg/status
 pkg/translator/azure pkg/translator/azure
 pkg/translator/azurelogs pkg/translator/azurelogs
@@ -291,6 +293,7 @@ receiver/purefareceiver receiver/purefa
 receiver/purefbreceiver receiver/purefb
 receiver/rabbitmqreceiver receiver/rabbitmq
 receiver/receivercreator receiver/receivercreator
+receiver/redfishreceiver receiver/redfish
 receiver/redisreceiver receiver/redis
 receiver/riakreceiver receiver/riak
 receiver/saphanareceiver receiver/saphana
@@ -329,7 +332,6 @@ reports/distributions/contrib.yaml reports/distributions/contrib.yaml
 reports/distributions/k8s.yaml reports/distributions/k8s.yaml
 reports/distributions/otlp.yaml reports/distributions/otlp.yaml
 exporter/carbonexporter exporter/carbon
-extension/healthcheckextension extension/healthcheck
 extension/observer/ecstaskobserver extension/observer/ecstaskobserver
 receiver/bigipreceiver receiver/bigip
 receiver/carbonreceiver receiver/carbon

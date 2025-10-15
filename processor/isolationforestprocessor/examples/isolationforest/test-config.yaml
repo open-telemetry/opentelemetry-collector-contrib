@@ -18,6 +18,14 @@ processors:
     training_interval: 1m
     add_anomaly_score: true
     drop_anomalous_metrics: false
+    adaptive_window:
+      enabled: true
+      min_window_size: 200
+      max_window_size: 2000
+      memory_limit_mb: 64
+      adaptation_rate: 0.15
+      velocity_threshold: 10.0
+      stability_check_interval: 2m
 
   batch:
     timeout: 1s

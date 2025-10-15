@@ -3,18 +3,6 @@ type: resourcedetectionprocessor/lambda
 parent: resourcedetection
 
 resource_attributes:
-  cloud.provider:
-    description: The cloud.provider
-    type: string
-    enabled: true
-  cloud.platform:
-    description: The cloud.platform
-    type: string
-    enabled: true
-  cloud.region:
-    description: The cloud.region
-    type: string
-    enabled: true
   aws.log.group.names:
     description: The aws.log.group.names
     type: slice
@@ -23,12 +11,16 @@ resource_attributes:
     description: The aws.log.stream.names
     type: slice
     enabled: true
-  faas.name:
-    description: faas.name
+  cloud.platform:
+    description: The cloud.platform
     type: string
     enabled: true
-  faas.version:
-    description: The faas.version
+  cloud.provider:
+    description: The cloud.provider
+    type: string
+    enabled: true
+  cloud.region:
+    description: The cloud.region
     type: string
     enabled: true
   faas.instance:
@@ -37,6 +29,14 @@ resource_attributes:
     enabled: true
   faas.max_memory:
     description: The faas.max_memory
+    type: string
+    enabled: true
+  faas.name:
+    description: faas.name
+    type: string
+    enabled: true
+  faas.version:
+    description: The faas.version
     type: string
     enabled: true
 

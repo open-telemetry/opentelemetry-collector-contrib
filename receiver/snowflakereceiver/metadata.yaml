@@ -16,43 +16,42 @@ resource_attributes:
     type: string
 
 attributes:
-  service_type:
-    description: Service type associated with metric query.
+  database_name:
+    description: Name of database being queried (default is snowflake).
     type: string
   error_message:
     description: Error message reported by query if present.
-    type: string 
-  reported_client_type:
-    description: Client type used for attempt.
-    type: string
-  is_success:
-    description: Login status (success or failure).
-    type: string
-  schema_name:
-    description: Name of schema associated with query result. 
     type: string
   execution_status:
     description: Execution status of query being reported.
     type: string
+  is_success:
+    description: Login status (success or failure).
+    type: string
+  pipe_name:
+    description: Name of snowpipe.
+    type: string
   query_type:
     description: Type of query performed.
     type: string
-  database_name:
-    description: Name of database being queried (default is snowflake).
+  reported_client_type:
+    description: Client type used for attempt.
     type: string
-  warehouse_size:
-    description: Size of warehouse being reported on.
+  schema_name:
+    description: Name of schema associated with query result.
     type: string
-  pipe_name:
-    description: Name of snowpipe. 
-    type: string
-  warehouse_name:
-    description: Name of warehouse in query being reported on.
+  service_type:
+    description: Service type associated with metric query.
     type: string
   user_name:
     description: Username in query being reported.
     type: string
-
+  warehouse_name:
+    description: Name of warehouse in query being reported on.
+    type: string
+  warehouse_size:
+    description: Size of warehouse being reported on.
+    type: string
 
 # sql query associated with each group of metrics included
 metrics:
@@ -91,7 +90,7 @@ metrics:
     stability:
       level: development
     unit: "{credits}"
-    gauge: 
+    gauge:
       value_type: double
     enabled: false
     attributes: [warehouse_name]
@@ -100,7 +99,7 @@ metrics:
     stability:
       level: development
     unit: "{credits}"
-    gauge: 
+    gauge:
       value_type: double
     enabled: false
     attributes: [warehouse_name]
@@ -113,66 +112,6 @@ metrics:
       value_type: double
     enabled: false
     attributes: [warehouse_name]
-
-  # Login (Security) metrics 
-  snowflake.logins.total:
-    description: Total login attempts for account over the last 24 hour window.
-    stability:
-      level: development
-    unit: "1"
-    gauge:
-      value_type: int 
-    enabled: false 
-    attributes: [error_message, reported_client_type, is_success]
-
-  # High level low dimensionality query metrics 
-  snowflake.query.blocked:
-    description: Blocked query count for warehouse over the last 24 hour window.
-    stability:
-      level: development
-    unit: "1"
-    gauge:
-      value_type: double
-    enabled: true 
-    attributes: [warehouse_name]
-  snowflake.query.executed:
-    description: Executed query count for warehouse over the last 24 hour window.
-    stability:
-      level: development
-    unit: "1"
-    gauge:
-      value_type: double
-    enabled: true 
-    attributes: [warehouse_name]
-  snowflake.query.queued_overload:
-    description: Overloaded query count for warehouse over the last 24 hour window.
-    stability:
-      level: development
-    unit: "1"
-    gauge:
-      value_type: double
-    enabled: true 
-    attributes: [warehouse_name]
-  snowflake.query.queued_provision:
-    description: Number of compute resources queued for provisioning over the last 24 hour window.
-    stability:
-      level: development
-    unit: "1"
-    gauge:
-      value_type: double 
-    enabled: true 
-    attributes: [warehouse_name]
-
-  # DB metrics
-  snowflake.database.query.count:
-    description: Total query count for database over the last 24 hour window.
-    stability:
-      level: development
-    unit: "1"
-    gauge:
-      value_type: int 
-    enabled: true
-    attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
   snowflake.database.bytes_scanned.avg:
     description: Average bytes scanned in a database over the last 24 hour window.
     stability:
@@ -182,23 +121,66 @@ metrics:
       value_type: double
     enabled: true
     attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
+
+  # DB metrics
+  snowflake.database.query.count:
+    description: Total query count for database over the last 24 hour window.
+    stability:
+      level: development
+    unit: "1"
+    gauge:
+      value_type: int
+    enabled: true
+    attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
+
+  # Login (Security) metrics
+  snowflake.logins.total:
+    description: Total login attempts for account over the last 24 hour window.
+    stability:
+      level: development
+    unit: "1"
+    gauge:
+      value_type: int
+    enabled: false
+    attributes: [error_message, reported_client_type, is_success]
+  # Snowpipe usage metrics
+  snowflake.pipe.credits_used.total:
+    description: Snow pipe credits contotaled over the last 24 hour window.
+    stability:
+      level: development
+    unit: "{credits}"
+    gauge:
+      value_type: double
+    enabled: false
+    attributes: [pipe_name]
+
+  # High level low dimensionality query metrics
+  snowflake.query.blocked:
+    description: Blocked query count for warehouse over the last 24 hour window.
+    stability:
+      level: development
+    unit: "1"
+    gauge:
+      value_type: double
+    enabled: true
+    attributes: [warehouse_name]
   snowflake.query.bytes_deleted.avg:
     description: Average bytes deleted in database over the last 24 hour window.
     stability:
       level: development
     unit: By
     gauge:
-      value_type: double 
+      value_type: double
     enabled: true
     attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
   snowflake.query.bytes_spilled.local.avg:
     description: Average bytes spilled (intermediate results do not fit in memory) by local storage over the last 24 hour window.
     stability:
       level: development
-    unit: By 
+    unit: By
     gauge:
       value_type: double
-    enabled: false 
+    enabled: false
     attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
   snowflake.query.bytes_spilled.remote.avg:
     description: Average bytes spilled (intermediate results do not fit in memory) by remote storage over the last 24 hour window.
@@ -213,8 +195,8 @@ metrics:
     description: Average bytes written by database over the last 24 hour window.
     stability:
       level: development
-    unit: By 
-    gauge: 
+    unit: By
+    gauge:
       value_type: double
     enabled: true
     attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
@@ -234,19 +216,28 @@ metrics:
     unit: "1"
     gauge:
       value_type: double
-    enabled: false 
+    enabled: false
     attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
+  snowflake.query.executed:
+    description: Executed query count for warehouse over the last 24 hour window.
+    stability:
+      level: development
+    unit: "1"
+    gauge:
+      value_type: double
+    enabled: true
+    attributes: [warehouse_name]
   snowflake.query.execution_time.avg:
     description: Average time spent executing queries in database over the last 24 hour window.
     stability:
       level: development
-    unit: s 
-    gauge: 
+    unit: s
+    gauge:
       value_type: double
     enabled: true
     attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
   snowflake.query.partitions_scanned.avg:
-    description: Number of partitions scanned during query so far over the last 24 hour window. 
+    description: Number of partitions scanned during query so far over the last 24 hour window.
     stability:
       level: development
     unit: "1"
@@ -254,20 +245,38 @@ metrics:
       value_type: double
     enabled: false
     attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
+  snowflake.query.queued_overload:
+    description: Overloaded query count for warehouse over the last 24 hour window.
+    stability:
+      level: development
+    unit: "1"
+    gauge:
+      value_type: double
+    enabled: true
+    attributes: [warehouse_name]
+  snowflake.query.queued_provision:
+    description: Number of compute resources queued for provisioning over the last 24 hour window.
+    stability:
+      level: development
+    unit: "1"
+    gauge:
+      value_type: double
+    enabled: true
+    attributes: [warehouse_name]
   snowflake.queued_overload_time.avg:
     description: Average time spent in warehouse queue due to warehouse being overloaded over the last 24 hour window.
     stability:
       level: development
-    unit: s 
-    gauge: 
+    unit: s
+    gauge:
       value_type: double
-    enabled: true 
+    enabled: true
     attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
   snowflake.queued_provisioning_time.avg:
     description: Average time spent in warehouse queue waiting for resources to provision over the last 24 hour window.
     stability:
       level: development
-    unit: s 
+    unit: s
     gauge:
       value_type: double
     enabled: true
@@ -276,10 +285,19 @@ metrics:
     description: Average time spent in warehouse queue waiting for compute resources to be repaired over the last 24 hour window.
     stability:
       level: development
-    unit: s 
+    unit: s
     gauge:
       value_type: double
     enabled: true
+    attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
+  snowflake.rows_deleted.avg:
+    description: Number of rows deleted from a table (or tables) over the last 24 hour window.
+    stability:
+      level: development
+    unit: "{rows}"
+    gauge:
+      value_type: double
+    enabled: false
     attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
   snowflake.rows_inserted.avg:
     description: Number of rows inserted into a table (or tables) over the last 24 hour window.
@@ -290,20 +308,11 @@ metrics:
       value_type: double
     enabled: false
     attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
-  snowflake.rows_deleted.avg:
-    description: Number of rows deleted from a table (or tables) over the last 24 hour window.
-    stability:
-      level: development
-    unit: "{rows}" 
-    gauge:
-      value_type: double
-    enabled: false
-    attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
   snowflake.rows_produced.avg:
     description: Average number of rows produced by statement over the last 24 hour window.
     stability:
       level: development
-    unit: "{rows}" 
+    unit: "{rows}"
     gauge:
       value_type: double
     enabled: false
@@ -321,22 +330,13 @@ metrics:
     description: Average number of rows updated in a table over the last 24 hour window.
     stability:
       level: development
-    unit: "{rows}" 
+    unit: "{rows}"
     gauge:
       value_type: double
     enabled: false
     attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
-  snowflake.total_elapsed_time.avg:
-    description: Average elapsed time over the last 24 hour window.
-    stability:
-      level: development
-    unit: s 
-    gauge:
-      value_type: double 
-    enabled: true 
-    attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
 
-  # Session metric 
+  # Session metric
   snowflake.session_id.count:
     description: Distinct session id's associated with snowflake username over the last 24 hour window.
     stability:
@@ -346,27 +346,17 @@ metrics:
       value_type: int
     enabled: false
     attributes: [user_name]
-  
-  # Snowpipe usage metrics
-  snowflake.pipe.credits_used.total:
-    description: Snow pipe credits contotaled over the last 24 hour window.
-    stability:
-      level: development
-    unit: "{credits}"
-    gauge:
-      value_type: double
-    enabled: false
-    attributes: [pipe_name]
 
-  # Storage usage metrics 
-  snowflake.storage.storage_bytes.total:
-    description: Number of bytes of table storage used, including bytes for data currently in Time Travel.
+  # Storage usage metrics
+  snowflake.storage.failsafe_bytes.total:
+    description: Number of bytes of data in Fail-safe.
     stability:
       level: development
     unit: By
     gauge:
       value_type: double
-    enabled: true
+    enabled: false
+
   snowflake.storage.stage_bytes.total:
     description: Number of bytes of stage storage used by files in all internal stages (named, table, user).
     stability:
@@ -375,14 +365,24 @@ metrics:
     gauge:
       value_type: double
     enabled: true
-  snowflake.storage.failsafe_bytes.total:
-    description: Number of bytes of data in Fail-safe.
+
+  snowflake.storage.storage_bytes.total:
+    description: Number of bytes of table storage used, including bytes for data currently in Time Travel.
     stability:
       level: development
     unit: By
     gauge:
       value_type: double
-    enabled: false 
+    enabled: true
+  snowflake.total_elapsed_time.avg:
+    description: Average elapsed time over the last 24 hour window.
+    stability:
+      level: development
+    unit: s
+    gauge:
+      value_type: double
+    enabled: true
+    attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
 
 tests:
   config:
