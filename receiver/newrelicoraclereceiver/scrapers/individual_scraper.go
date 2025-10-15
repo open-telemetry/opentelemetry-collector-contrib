@@ -25,18 +25,18 @@ type IndividualQueriesScraper struct {
 }
 
 // NewIndividualQueriesScraper creates a new Individual Queries Scraper instance
-func NewIndividualQueriesScraper(db *sql.DB, mb *metadata.MetricsBuilder, logger *zap.Logger, instanceName string, metricsBuilderConfig metadata.MetricsBuilderConfig) *IndividualQueriesScraper {
+func NewIndividualQueriesScraper(db *sql.DB, mb *metadata.MetricsBuilder, logger *zap.Logger, instanceName string, metricsBuilderConfig metadata.MetricsBuilderConfig) (*IndividualQueriesScraper, error) {
 	if db == nil {
-		panic("database connection cannot be nil")
+		return nil, fmt.Errorf("database connection cannot be nil")
 	}
 	if mb == nil {
-		panic("metrics builder cannot be nil")
+		return nil, fmt.Errorf("metrics builder cannot be nil")
 	}
 	if logger == nil {
-		panic("logger cannot be nil")
+		return nil, fmt.Errorf("logger cannot be nil")
 	}
 	if instanceName == "" {
-		panic("instance name cannot be empty")
+		return nil, fmt.Errorf("instance name cannot be empty")
 	}
 
 	return &IndividualQueriesScraper{
@@ -45,7 +45,7 @@ func NewIndividualQueriesScraper(db *sql.DB, mb *metadata.MetricsBuilder, logger
 		logger:               logger,
 		instanceName:         instanceName,
 		metricsBuilderConfig: metricsBuilderConfig,
-	}
+	}, nil
 }
 
 // ScrapeIndividualQueries collects Oracle individual queries metrics filtered by query IDs
@@ -85,7 +85,11 @@ func (s *IndividualQueriesScraper) ScrapeIndividualQueries(ctx context.Context, 
 		s.logger.Error("Failed to execute individual queries query", zap.Error(err))
 		return []error{err}
 	}
-	defer rows.Close()
+	defer func() {
+		if closeErr := rows.Close(); closeErr != nil {
+			s.logger.Warn("Failed to close individual queries result set", zap.Error(closeErr))
+		}
+	}()
 
 	now := pcommon.NewTimestampFromTime(time.Now())
 

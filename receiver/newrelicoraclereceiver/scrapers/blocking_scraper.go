@@ -25,10 +25,18 @@ type BlockingScraper struct {
 }
 
 // NewBlockingScraper creates a new Blocking Queries Scraper instance
-func NewBlockingScraper(db *sql.DB, mb *metadata.MetricsBuilder, logger *zap.Logger, instanceName string, metricsBuilderConfig metadata.MetricsBuilderConfig) *BlockingScraper {
+func NewBlockingScraper(db *sql.DB, mb *metadata.MetricsBuilder, logger *zap.Logger, instanceName string, metricsBuilderConfig metadata.MetricsBuilderConfig) (*BlockingScraper, error) {
 	if db == nil {
-		logger.Error("Database connection is nil in NewBlockingScraper")
-		return nil
+		return nil, fmt.Errorf("database connection cannot be nil")
+	}
+	if mb == nil {
+		return nil, fmt.Errorf("metrics builder cannot be nil")
+	}
+	if logger == nil {
+		return nil, fmt.Errorf("logger cannot be nil")
+	}
+	if instanceName == "" {
+		return nil, fmt.Errorf("instance name cannot be empty")
 	}
 
 	return &BlockingScraper{
@@ -37,7 +45,7 @@ func NewBlockingScraper(db *sql.DB, mb *metadata.MetricsBuilder, logger *zap.Log
 		logger:               logger,
 		instanceName:         instanceName,
 		metricsBuilderConfig: metricsBuilderConfig,
-	}
+	}, nil
 }
 
 // ScrapeBlockingQueries collects Oracle blocking queries metrics
@@ -52,11 +60,17 @@ func (s *BlockingScraper) ScrapeBlockingQueries(ctx context.Context) []error {
 		s.logger.Error("Failed to execute blocking queries query", zap.Error(err))
 		return []error{err}
 	}
-	defer rows.Close()
+	defer func() {
+		if closeErr := rows.Close(); closeErr != nil {
+			s.logger.Warn("Failed to close blocking queries result set", zap.Error(closeErr))
+		}
+	}()
 
 	now := pcommon.NewTimestampFromTime(time.Now())
+	rowCount := 0
 
 	for rows.Next() {
+		rowCount++
 		var blockingQuery models.BlockingQuery
 
 		if err := rows.Scan(
@@ -145,6 +159,8 @@ func (s *BlockingScraper) ScrapeBlockingQueries(ctx context.Context) []error {
 		scrapeErrors = append(scrapeErrors, err)
 	}
 
-	s.logger.Debug("Completed blocking queries scrape")
+	s.logger.Debug("Completed blocking queries scrape", 
+		zap.Int("rows_processed", rowCount),
+		zap.Int("errors_encountered", len(scrapeErrors)))
 	return scrapeErrors
 }

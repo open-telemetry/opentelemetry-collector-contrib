@@ -134,3 +134,70 @@ func TestConfig_Validate(t *testing.T) {
 		})
 	}
 }
+
+func TestConfig_SetDefaults(t *testing.T) {
+	config := &Config{}
+	config.SetDefaults()
+
+	assert.Equal(t, defaultMaxOpenConnections, config.MaxOpenConnections)
+	assert.Equal(t, defaultCollectionInterval, config.ControllerConfig.CollectionInterval)
+}
+
+func TestConfig_ValidateEnhanced(t *testing.T) {
+	tests := []struct {
+		name      string
+		config    Config
+		expectErr bool
+		errorMsg  string
+	}{
+		{
+			name: "invalid config - max connections too high",
+			config: Config{
+				Endpoint:           "localhost:1521",
+				Username:           "user",
+				Password:           "password",
+				Service:            "XE",
+				MaxOpenConnections: 2000,
+			},
+			expectErr: true,
+			errorMsg:  "max_open_connections must be between 1 and 1000",
+		},
+		{
+			name: "invalid config - username with dangerous characters",
+			config: Config{
+				Endpoint:           "localhost:1521",
+				Username:           "user';DROP TABLE--",
+				Password:           "password",
+				Service:            "XE",
+				MaxOpenConnections: 5,
+			},
+			expectErr: true,
+			errorMsg:  "username cannot contain special characters",
+		},
+		{
+			name: "invalid config - service with invalid characters",
+			config: Config{
+				Endpoint:           "localhost:1521",
+				Username:           "user",
+				Password:           "password",
+				Service:            "XE; DROP DATABASE",
+				MaxOpenConnections: 5,
+			},
+			expectErr: true,
+			errorMsg:  "service name cannot contain special characters",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.config.SetDefaults()
+			err := tt.config.Validate()
+			if tt.expectErr {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tt.errorMsg)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}

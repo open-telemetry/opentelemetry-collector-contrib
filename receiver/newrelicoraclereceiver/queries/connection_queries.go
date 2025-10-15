@@ -60,7 +60,8 @@ const (
 		LEFT JOIN V$SESSTAT ss_logical ON s.SID = ss_logical.SID 
 			AND ss_logical.STATISTIC# = (SELECT STATISTIC# FROM V$STATNAME WHERE NAME = 'session logical reads')
 		WHERE s.TYPE = 'USER'
-		ORDER BY ss_cpu.VALUE DESC NULLS LAST`
+		ORDER BY ss_cpu.VALUE DESC NULLS LAST
+		FETCH FIRST 500 ROWS ONLY`
 
 	// Wait Events & Locks - Current Wait Events
 	CurrentWaitEventsSQL = `
@@ -75,7 +76,9 @@ const (
 		FROM V$SESSION 
 		WHERE STATUS = 'ACTIVE' 
 		AND WAIT_CLASS != 'Idle'
-		AND EVENT IS NOT NULL`
+		AND EVENT IS NOT NULL
+		ORDER BY SECONDS_IN_WAIT DESC
+		FETCH FIRST 200 ROWS ONLY`
 
 	// Blocking Sessions
 	BlockingSessionsSQL = `
@@ -88,7 +91,9 @@ const (
 			PROGRAM,
 			SECONDS_IN_WAIT
 		FROM V$SESSION 
-		WHERE BLOCKING_SESSION IS NOT NULL`
+		WHERE BLOCKING_SESSION IS NOT NULL
+		ORDER BY SECONDS_IN_WAIT DESC
+		FETCH FIRST 100 ROWS ONLY`
 
 	// Wait Event Summary (Top 20 by time waited)
 	WaitEventSummarySQL = `

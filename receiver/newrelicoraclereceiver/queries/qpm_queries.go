@@ -89,13 +89,13 @@ const (
 		WHERE
 			s2.blocking_session IS NOT NULL
 		ORDER BY
-			s2.seconds_in_wait DESC`
+			s2.seconds_in_wait DESC
+		FETCH FIRST 100 ROWS ONLY`
 	// Oracle SQL query for wait event queries metrics
 	WaitEventQueriesSQL = `
 		SELECT
 			d.name AS database_name,
 			ash.sql_id AS query_id,
-			MAX(s.sql_text) AS query_text,
 			ash.wait_class AS wait_category,
 			ash.event AS wait_event_name,
 			SYSTIMESTAMP AS collection_timestamp,
@@ -109,8 +109,6 @@ const (
 			) AS avg_wait_time_ms
 		FROM
 			v$active_session_history ash
-		JOIN
-			v$sql s ON ash.sql_id = s.sql_id
 		CROSS JOIN
 			v$database d
 		WHERE

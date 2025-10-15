@@ -3,6 +3,7 @@ package scrapers
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -24,18 +25,18 @@ type SlowQueriesScraper struct {
 }
 
 // NewSlowQueriesScraper creates a new Slow Queries Scraper instance
-func NewSlowQueriesScraper(db *sql.DB, mb *metadata.MetricsBuilder, logger *zap.Logger, instanceName string, metricsBuilderConfig metadata.MetricsBuilderConfig) *SlowQueriesScraper {
+func NewSlowQueriesScraper(db *sql.DB, mb *metadata.MetricsBuilder, logger *zap.Logger, instanceName string, metricsBuilderConfig metadata.MetricsBuilderConfig) (*SlowQueriesScraper, error) {
 	if db == nil {
-		panic("database connection cannot be nil")
+		return nil, fmt.Errorf("database connection cannot be nil")
 	}
 	if mb == nil {
-		panic("metrics builder cannot be nil")
+		return nil, fmt.Errorf("metrics builder cannot be nil")
 	}
 	if logger == nil {
-		panic("logger cannot be nil")
+		return nil, fmt.Errorf("logger cannot be nil")
 	}
 	if instanceName == "" {
-		panic("instance name cannot be empty")
+		return nil, fmt.Errorf("instance name cannot be empty")
 	}
 
 	return &SlowQueriesScraper{
@@ -44,7 +45,7 @@ func NewSlowQueriesScraper(db *sql.DB, mb *metadata.MetricsBuilder, logger *zap.
 		logger:               logger,
 		instanceName:         instanceName,
 		metricsBuilderConfig: metricsBuilderConfig,
-	}
+	}, nil
 }
 
 // ScrapeSlowQueries collects Oracle slow queries metrics and returns a list of query IDs
@@ -60,11 +61,17 @@ func (s *SlowQueriesScraper) ScrapeSlowQueries(ctx context.Context) ([]string, [
 		s.logger.Error("Failed to execute slow queries query", zap.Error(err))
 		return nil, []error{err}
 	}
-	defer rows.Close()
+	defer func() {
+		if closeErr := rows.Close(); closeErr != nil {
+			s.logger.Warn("Failed to close slow queries result set", zap.Error(closeErr))
+		}
+	}()
 
 	now := pcommon.NewTimestampFromTime(time.Now())
+	rowCount := 0
 
 	for rows.Next() {
+		rowCount++
 		var slowQuery models.SlowQuery
 
 		if err := rows.Scan(
@@ -178,6 +185,9 @@ func (s *SlowQueriesScraper) ScrapeSlowQueries(ctx context.Context) ([]string, [
 		s.logger.Error("Error iterating over slow queries rows", zap.Error(err))
 		scrapeErrors = append(scrapeErrors, err)
 	}
-	s.logger.Debug("Completed Oracle slow queries scrape", zap.Int("query_ids_collected", len(queryIDs)))
+	s.logger.Debug("Completed Oracle slow queries scrape", 
+		zap.Int("rows_processed", rowCount),
+		zap.Int("query_ids_collected", len(queryIDs)),
+		zap.Int("errors_encountered", len(scrapeErrors)))
 	return queryIDs, scrapeErrors
 }

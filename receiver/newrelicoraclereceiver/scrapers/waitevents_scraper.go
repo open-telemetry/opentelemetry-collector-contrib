@@ -3,6 +3,7 @@ package scrapers
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -23,18 +24,18 @@ type WaitEventsScraper struct {
 }
 
 // NewWaitEventsScraper creates a new Wait Events Scraper instance
-func NewWaitEventsScraper(db *sql.DB, mb *metadata.MetricsBuilder, logger *zap.Logger, instanceName string, metricsBuilderConfig metadata.MetricsBuilderConfig) *WaitEventsScraper {
+func NewWaitEventsScraper(db *sql.DB, mb *metadata.MetricsBuilder, logger *zap.Logger, instanceName string, metricsBuilderConfig metadata.MetricsBuilderConfig) (*WaitEventsScraper, error) {
 	if db == nil {
-		panic("database connection cannot be nil")
+		return nil, fmt.Errorf("database connection cannot be nil")
 	}
 	if mb == nil {
-		panic("metrics builder cannot be nil")
+		return nil, fmt.Errorf("metrics builder cannot be nil")
 	}
 	if logger == nil {
-		panic("logger cannot be nil")
+		return nil, fmt.Errorf("logger cannot be nil")
 	}
 	if instanceName == "" {
-		panic("instance name cannot be empty")
+		return nil, fmt.Errorf("instance name cannot be empty")
 	}
 
 	return &WaitEventsScraper{
@@ -43,7 +44,7 @@ func NewWaitEventsScraper(db *sql.DB, mb *metadata.MetricsBuilder, logger *zap.L
 		logger:               logger,
 		instanceName:         instanceName,
 		metricsBuilderConfig: metricsBuilderConfig,
-	}
+	}, nil
 }
 
 // ScrapeWaitEvents collects Oracle wait events metrics
@@ -58,11 +59,17 @@ func (s *WaitEventsScraper) ScrapeWaitEvents(ctx context.Context) []error {
 		s.logger.Error("Failed to execute wait events query", zap.Error(err))
 		return []error{err}
 	}
-	defer rows.Close()
+	defer func() {
+		if closeErr := rows.Close(); closeErr != nil {
+			s.logger.Warn("Failed to close wait events result set", zap.Error(closeErr))
+		}
+	}()
 
 	now := pcommon.NewTimestampFromTime(time.Now())
+	rowCount := 0
 
 	for rows.Next() {
+		rowCount++
 		var waitEvent models.WaitEvent
 
 		if err := rows.Scan(
@@ -143,6 +150,8 @@ func (s *WaitEventsScraper) ScrapeWaitEvents(ctx context.Context) []error {
 		scrapeErrors = append(scrapeErrors, err)
 	}
 
-	s.logger.Debug("Completed Oracle wait events scrape")
+	s.logger.Debug("Completed Oracle wait events scrape", 
+		zap.Int("rows_processed", rowCount),
+		zap.Int("errors_encountered", len(scrapeErrors)))
 	return scrapeErrors
 }

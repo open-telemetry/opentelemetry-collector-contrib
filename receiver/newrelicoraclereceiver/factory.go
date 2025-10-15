@@ -34,17 +34,19 @@ func NewFactory() receiver.Factory {
 
 func createDefaultConfig() component.Config {
 	cfg := scraperhelper.NewDefaultControllerConfig()
-	cfg.CollectionInterval = 10 * time.Second
+	cfg.CollectionInterval = defaultCollectionInterval
 	cfg.Timeout = 30 * time.Second // Increased from default to handle Oracle database timeouts
 
-	return &Config{
+	config := &Config{
 		ControllerConfig:     cfg,
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
-
-		// Connection Pool Defaults
-		MaxOpenConnections:    5, // Standard default for Oracle connections
 		DisableConnectionPool: false,
 	}
+
+	// Apply defaults
+	config.SetDefaults()
+	
+	return config
 }
 
 type sqlOpenerFunc func(dataSourceName string) (*sql.DB, error)
@@ -57,6 +59,13 @@ func createReceiverFunc(sqlOpenerFunc sqlOpenerFunc) receiver.CreateMetricsFunc 
 		consumer consumer.Metrics,
 	) (receiver.Metrics, error) {
 		sqlCfg := cfg.(*Config)
+		
+		// Ensure defaults are set and configuration is valid
+		sqlCfg.SetDefaults()
+		if err := sqlCfg.Validate(); err != nil {
+			return nil, fmt.Errorf("invalid configuration: %w", err)
+		}
+		
 		metricsBuilder := metadata.NewMetricsBuilder(sqlCfg.MetricsBuilderConfig, settings)
 
 		instanceName, err := getInstanceName(getDataSource(*sqlCfg))

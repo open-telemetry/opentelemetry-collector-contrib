@@ -96,14 +96,28 @@ func (s *newRelicOracleScraper) start(context.Context, component.Host) error {
 	s.systemScraper = scrapers.NewSystemScraper(s.db, s.mb, s.logger, s.instanceName, s.metricsBuilderConfig)
 
 	// Initialize slow queries scraper with direct DB connection
-	s.slowQueriesScraper = scrapers.NewSlowQueriesScraper(s.db, s.mb, s.logger, s.instanceName, s.metricsBuilderConfig)
+	s.slowQueriesScraper, err = scrapers.NewSlowQueriesScraper(s.db, s.mb, s.logger, s.instanceName, s.metricsBuilderConfig)
+	if err != nil {
+		return fmt.Errorf("failed to create slow queries scraper: %w", err)
+	}
 
 	// Initialize individual queries scraper with direct DB connection
-	s.individualQueriesScraper = scrapers.NewIndividualQueriesScraper(s.db, s.mb, s.logger, s.instanceName, s.metricsBuilderConfig)
+	s.individualQueriesScraper, err = scrapers.NewIndividualQueriesScraper(s.db, s.mb, s.logger, s.instanceName, s.metricsBuilderConfig)
+	if err != nil {
+		return fmt.Errorf("failed to create individual queries scraper: %w", err)
+	}
+
 	// Initialize blocking scraper with direct DB connection
-	s.blockingScraper = scrapers.NewBlockingScraper(s.db, s.mb, s.logger, s.instanceName, s.metricsBuilderConfig)
+	s.blockingScraper, err = scrapers.NewBlockingScraper(s.db, s.mb, s.logger, s.instanceName, s.metricsBuilderConfig)
+	if err != nil {
+		return fmt.Errorf("failed to create blocking scraper: %w", err)
+	}
+
 	// Initialize wait events scraper with direct DB connection
-	s.waitEventsScraper = scrapers.NewWaitEventsScraper(s.db, s.mb, s.logger, s.instanceName, s.metricsBuilderConfig)
+	s.waitEventsScraper, err = scrapers.NewWaitEventsScraper(s.db, s.mb, s.logger, s.instanceName, s.metricsBuilderConfig)
+	if err != nil {
+		return fmt.Errorf("failed to create wait events scraper: %w", err)
+	}
 	// Initialize connection scraper with direct DB connection
 	s.connectionScraper = scrapers.NewConnectionScraper(s.db, s.mb, s.logger, s.instanceName, s.metricsBuilderConfig)
 
