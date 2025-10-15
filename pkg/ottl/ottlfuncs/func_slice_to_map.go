@@ -55,46 +55,36 @@ func sliceToMap(v []any, keyPath, valuePath ottl.Optional[[]string]) (any, error
 	m.EnsureCapacity(len(v))
 
 	for i, elem := range v {
-		var key string
-		var value any
+		// Default key is index
+		key := strconv.Itoa(i)
 
-		// Determine key
-		if keyPath.IsEmpty() {
-			key = strconv.Itoa(i)
-		} else {
-			e, ok := elem.(map[string]any)
-			if !ok {
-				return nil, fmt.Errorf("slice elements must be maps when using `key_path`, but could not cast element '%v' to a map", elem)
-			}
-			extractedKey, err := extractValue(e, keyPath.Get())
-			if err != nil {
-				return nil, fmt.Errorf("could not extract key from element: %w", err)
-			}
-			k, ok := extractedKey.(string)
-			if !ok {
-				return nil, errors.New("extracted key attribute is not of type string")
-			}
-			key = k
+		mapData, rawValue, err := normalizeElement(elem)
+		if err != nil {
+			return nil, fmt.Errorf("element %d: %w", i, err)
 		}
 
-		// Determine value
-		if valuePath.IsEmpty() {
-			switch e := elem.(type) {
-			case map[string]any:
-				value = e
-			case pcommon.Map:
-				value = e.AsRaw()
-			case pcommon.Value:
-				value = e.AsString()
-			default:
-				value = e
+		value := rawValue
+
+		if !keyPath.IsEmpty() {
+			if mapData == nil {
+				return nil, fmt.Errorf("slice elements must be maps when using `key_path`, but could not cast element '%v' to a map", elem)
 			}
-		} else {
-			e, ok := elem.(map[string]any)
+			extractedKey, err := extractValue(mapData, keyPath.Get())
+			if err != nil {
+				return nil, fmt.Errorf("element %d: could not extract key from element: %w", i, err)
+			}
+			strKey, ok := extractedKey.(string)
 			if !ok {
-				return nil, fmt.Errorf("could not cast element '%v' to map[string]any", elem)
+				return nil, fmt.Errorf("element %d: extracted key attribute is not of type string", i)
 			}
-			extractedValue, err := extractValue(e, valuePath.Get())
+			key = strKey
+		}
+
+		if !valuePath.IsEmpty() {
+			if mapData == nil {
+				return nil, fmt.Errorf("element %d: cannot extract value, not a map-like structure", elem)
+			}
+			extractedValue, err := extractValue(mapData, valuePath.Get())
 			if err != nil {
 				return nil, fmt.Errorf("could not extract value from element: %w", err)
 			}
@@ -125,4 +115,24 @@ func extractValue(v map[string]any, path []string) (any, error) {
 		return extractValue(o, path[1:])
 	}
 	return nil, fmt.Errorf("provided object does not contain the path %v", path)
+}
+
+func normalizeElement(elem any) (map[string]any, any, error) {
+	switch e := elem.(type) {
+	case map[string]any:
+		return e, e, nil
+	case pcommon.Map:
+		raw := e.AsRaw()
+		return raw, raw, nil
+
+	case pcommon.Value:
+		if e.Type() == pcommon.ValueTypeMap {
+			raw := e.Map().AsRaw()
+			return raw, raw, nil
+
+		}
+		return nil, e.AsString(), nil
+	default:
+		return nil, e, nil
+	}
 }
