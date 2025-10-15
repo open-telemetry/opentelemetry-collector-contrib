@@ -218,6 +218,50 @@ func (s *QueryPerformanceScraper) ScrapeWaitTimeAnalysisMetrics(ctx context.Cont
     return nil
 }
 
+// ScrapeQueryExecutionPlanMetrics collects execution plan analysis metrics using engine-specific queries
+func (s *QueryPerformanceScraper) ScrapeQueryExecutionPlanMetrics(ctx context.Context, scopeMetrics pmetric.ScopeMetrics, topN, elapsedTimeThreshold int, queryIDs string, intervalSeconds, textTruncateLimit int) error {
+    s.logger.Debug("Scraping SQL Server query execution plan metrics")
+
+    // Format the query execution plan query with parameters
+    formattedQuery := fmt.Sprintf(queries.QueryExecutionPlan, topN, elapsedTimeThreshold, queryIDs, intervalSeconds, textTruncateLimit)
+
+    // Execute query execution plan query
+    s.logger.Debug("Executing query execution plan query",
+        zap.String("query", queries.TruncateQuery(formattedQuery, 100)),
+        zap.String("engine_type", queries.GetEngineTypeName(s.engineEdition)),
+        zap.Int("top_n", topN),
+        zap.Int("elapsed_time_threshold", elapsedTimeThreshold),
+        zap.String("query_ids", queryIDs),
+        zap.Int("interval_seconds", intervalSeconds),
+        zap.Int("text_truncate_limit", textTruncateLimit))
+
+    var results []models.QueryExecutionPlan
+    if err := s.connection.Query(ctx, &results, formattedQuery); err != nil {
+        s.logger.Error("Failed to execute query execution plan query",
+            zap.Error(err),
+            zap.String("query", queries.TruncateQuery(formattedQuery, 100)),
+            zap.Int("engine_edition", s.engineEdition))
+        return fmt.Errorf("failed to execute query execution plan query: %w", err)
+    }
+
+    s.logger.Debug("Query execution plan executed successfully", zap.Int("result_count", len(results)))
+
+    // Process each query execution plan result
+    for i, result := range results {
+        if err := s.processQueryExecutionPlanMetrics(result, scopeMetrics, i); err != nil {
+            s.logger.Error("Failed to process query execution plan metrics", 
+                zap.Error(err), 
+                zap.Int("result_index", i))
+            continue // Continue processing other results
+        }
+    }
+
+    s.logger.Debug("Successfully scraped query execution plan metrics",
+        zap.Int("execution_plan_count", len(results)))
+
+    return nil
+}
+
 // processSlowQueryMetrics processes slow query metrics and creates separate OpenTelemetry metrics for each measurement
 func (s *QueryPerformanceScraper) processSlowQueryMetrics(result models.SlowQuery, scopeMetrics pmetric.ScopeMetrics, index int) error {
     timestamp := pcommon.NewTimestampFromTime(time.Now())
@@ -229,7 +273,7 @@ func (s *QueryPerformanceScraper) processSlowQueryMetrics(result models.SlowQuer
             attrs.PutStr("DatabaseName", *result.DatabaseName)
         }
         if result.QueryID != nil {
-            attrs.PutStr("QueryID", fmt.Sprintf("%x", *result.QueryID))
+            attrs.PutStr("QueryID", result.QueryID.String())
         }
         if result.StatementType != nil {
             attrs.PutStr("statement_type", *result.StatementType) 
@@ -449,8 +493,8 @@ func (s *QueryPerformanceScraper) processWaitTimeAnalysisMetrics(result models.W
         if result.DatabaseName != nil {
             attrs.PutStr("DatabaseName", *result.DatabaseName)
         }
-        if len(result.QueryID) > 0 {
-            attrs.PutStr("QueryID", fmt.Sprintf("%x", result.QueryID))
+        if result.QueryID != nil {
+            attrs.PutStr("QueryID", result.QueryID.String())
         }
         if result.WaitCategory != nil {
             attrs.PutStr("WaitCategory", *result.WaitCategory)
@@ -549,6 +593,105 @@ func (s *QueryPerformanceScraper) processWaitTimeAnalysisMetrics(result models.W
         zap.Any("total_wait_time_ms", result.TotalWaitTimeMs),
         zap.Any("avg_wait_time_ms", result.AvgWaitTimeMs),
         zap.Any("wait_event_count", result.WaitEventCount))
+
+    return nil
+}
+
+// processQueryExecutionPlanMetrics processes query execution plan metrics with cardinality safety
+func (s *QueryPerformanceScraper) processQueryExecutionPlanMetrics(result models.QueryExecutionPlan, scopeMetrics pmetric.ScopeMetrics, index int) error {
+    timestamp := pcommon.NewTimestampFromTime(time.Now())
+    
+    // CARDINALITY-SAFE: Create limited common attributes
+    // Only include QueryID as the primary identifier, avoid full SQL text and multiple hashes
+    createSafeAttributes := func() pcommon.Map {
+        attrs := pcommon.NewMap()
+        if result.QueryID != nil {
+            attrs.PutStr("QueryID", result.QueryID.String())
+        }
+        // NOTE: Not including PlanHandle, QueryPlanID, and SQLText as attributes to prevent cardinality explosion
+        // These can be logged or stored separately for drill-down analysis
+        return attrs
+    }
+    
+    // Create detailed attributes for logging/debugging (not used in metrics)
+    logAttributes := func() []zap.Field {
+        var fields []zap.Field
+        if result.QueryID != nil {
+            fields = append(fields, zap.String("query_id", result.QueryID.String()))
+        }
+        if result.PlanHandle != nil {
+            fields = append(fields, zap.String("plan_handle", result.PlanHandle.String()))
+        }
+        if result.QueryPlanID != nil {
+            fields = append(fields, zap.String("query_plan_id", result.QueryPlanID.String()))
+        }
+        if result.SQLText != nil {
+            // Truncate SQL text for logging
+            sqlText := *result.SQLText
+            if len(sqlText) > 100 {
+                sqlText = sqlText[:100] + "..."
+            }
+            fields = append(fields, zap.String("sql_text_preview", sqlText))
+        }
+        return fields
+    }
+
+    // Create TotalCPUMs metric - CARDINALITY SAFE
+    if result.TotalCPUMs != nil {
+        metric := scopeMetrics.Metrics().AppendEmpty()
+        metric.SetName("sqlserver.individual_query.total_cpu_ms")
+        metric.SetDescription("Total CPU time in milliseconds for individual query analysis")
+        metric.SetUnit("ms")
+        
+        gauge := metric.SetEmptyGauge()
+        dataPoint := gauge.DataPoints().AppendEmpty()
+        dataPoint.SetTimestamp(timestamp)
+        dataPoint.SetStartTimestamp(s.startTime)
+        dataPoint.SetDoubleValue(*result.TotalCPUMs)
+        
+        // Only use safe attributes (QueryID only)
+        createSafeAttributes().CopyTo(dataPoint.Attributes())
+    }
+
+    // Create TotalElapsedMs metric - CARDINALITY SAFE  
+    if result.TotalElapsedMs != nil {
+        metric := scopeMetrics.Metrics().AppendEmpty()
+        metric.SetName("sqlserver.individual_query.total_elapsed_ms")
+        metric.SetDescription("Total elapsed time in milliseconds for individual query analysis")
+        metric.SetUnit("ms")
+        
+        gauge := metric.SetEmptyGauge()
+        dataPoint := gauge.DataPoints().AppendEmpty()
+        dataPoint.SetTimestamp(timestamp)
+        dataPoint.SetStartTimestamp(s.startTime)
+        dataPoint.SetDoubleValue(*result.TotalElapsedMs)
+        
+        // Only use safe attributes (QueryID only)
+        createSafeAttributes().CopyTo(dataPoint.Attributes())
+    }
+
+    // Create execution plan info metric with full XML content
+    if result.ExecutionPlanXML != nil {
+        metric := scopeMetrics.Metrics().AppendEmpty()
+        metric.SetName("sqlserver.query_execution_plan.execution_plan_xml")
+        metric.SetDescription("Execution plan XML content for detailed query analysis")
+        metric.SetUnit("1")
+        
+        gauge := metric.SetEmptyGauge()
+        dataPoint := gauge.DataPoints().AppendEmpty()
+        dataPoint.SetTimestamp(timestamp)
+        dataPoint.SetStartTimestamp(s.startTime)
+        dataPoint.SetIntValue(1) // 1 = plan available, 0 = no plan
+        
+        // Include full XML content and QueryID
+        attrs := createSafeAttributes()
+        attrs.PutStr("execution_plan_xml", *result.ExecutionPlanXML)
+        attrs.CopyTo(dataPoint.Attributes())
+    }
+
+    // Log detailed information for debugging/analysis (not in metrics)
+    s.logger.Debug("Processed query execution plan metrics with cardinality safety",
+        logAttributes()...)
 
     return nil
 }

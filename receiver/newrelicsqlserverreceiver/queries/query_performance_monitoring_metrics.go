@@ -579,3 +579,76 @@ const WaitQuery = `DECLARE @TopN INT = %d; 				-- Number of results to retrieve
 				DEALLOCATE db_cursor;
 				SELECT TOP (@TopN) * FROM @resultTable 
 				ORDER BY total_wait_time_ms DESC;`
+
+const QueryExecutionPlan = `
+DECLARE @TopN INT = %d; 
+DECLARE @ElapsedTimeThreshold INT = %d;  -- Define the elapsed time threshold in milliseconds
+DECLARE @QueryIDs NVARCHAR(1000) = '%s';      -- Change the query ID to a string
+DECLARE @IntervalSeconds INT = %d;       -- Define the interval in seconds (e.g., 3600 for the last hour)
+DECLARE @TextTruncateLimit INT = %d;     -- Define the dynamic limit for truncation of SQL text
+
+-- Declare and fill the temporary table
+DECLARE @QueryIdTable TABLE (QueryId BINARY(8));
+
+-- Handle the case where QueryIDs is a placeholder like '0x0' - skip parsing and return empty results
+IF @QueryIDs = '0x0' OR @QueryIDs = '' OR @QueryIDs IS NULL
+BEGIN
+    -- Return empty result set when using placeholder query IDs
+    SELECT 
+        CAST(NULL AS VARBINARY(8)) as query_id,
+        CAST(NULL AS VARBINARY(64)) as plan_handle,
+        CAST(NULL AS VARBINARY(8)) as query_plan_id,
+        CAST(NULL AS NVARCHAR(MAX)) AS sql_text,
+        CAST(NULL AS FLOAT) AS total_cpu_ms,
+        CAST(NULL AS FLOAT) AS total_elapsed_ms,
+        CAST(NULL AS INT) AS creation_time,
+        CAST(NULL AS INT) AS last_execution_time,
+        CAST(NULL AS NVARCHAR(MAX)) AS execution_plan_xml
+    WHERE 1 = 0; -- Ensure no rows are returned
+    RETURN;
+END
+
+-- Use exact nri-mssql approach: simple STRING_SPLIT with CONVERT BINARY
+-- This matches the proven nri-mssql implementation
+INSERT INTO @QueryIdTable (QueryId)
+SELECT CONVERT(BINARY(8), value, 1)
+FROM STRING_SPLIT(@QueryIDs, ',')
+WHERE LTRIM(RTRIM(value)) != '';
+
+SELECT
+    -- Identifiers
+    qs.query_hash as query_id,
+    qs.plan_handle,
+    qs.query_plan_hash as query_plan_id,
+    
+    -- Query Text Details (the individual query text)
+    LEFT(SUBSTRING(st.text, (qs.statement_start_offset / 2) + 1,
+        ((CASE qs.statement_end_offset
+            WHEN -1 THEN DATALENGTH(st.text)
+            ELSE qs.statement_end_offset
+        END - qs.statement_start_offset) / 2) + 1), @TextTruncateLimit) AS sql_text,
+        
+    -- Performance Metrics for this Plan Handle
+    qs.total_worker_time / 1000.0 AS total_cpu_ms,
+    qs.total_elapsed_time / 1000.0 AS total_elapsed_ms,
+    
+    -- Timestamps converted to Unix epoch (seconds) to avoid cardinality issues
+    DATEDIFF(SECOND, '1970-01-01 00:00:00', qs.creation_time) AS creation_time,
+    DATEDIFF(SECOND, '1970-01-01 00:00:00', qs.last_execution_time) AS last_execution_time,
+    
+    -- The Execution Plan XML
+    CAST(qp.query_plan AS NVARCHAR(MAX)) AS execution_plan_xml
+FROM
+    sys.dm_exec_query_stats AS qs
+CROSS APPLY 
+    sys.dm_exec_sql_text(qs.sql_handle) AS st
+CROSS APPLY 
+    sys.dm_exec_query_plan(qs.plan_handle) AS qp
+WHERE
+    qs.query_hash IN (SELECT QueryId FROM @QueryIdTable)
+    -- Use flexible filtering conditions
+    AND (@IntervalSeconds <= 0 OR qs.last_execution_time >= DATEADD(SECOND, -@IntervalSeconds, GETUTCDATE())) 
+    AND (@ElapsedTimeThreshold <= 0 OR COALESCE((qs.total_elapsed_time / NULLIF(qs.execution_count, 0)) / 1000, 0) > @ElapsedTimeThreshold)
+    AND qp.query_plan IS NOT NULL
+ORDER BY
+    qs.total_worker_time DESC;`

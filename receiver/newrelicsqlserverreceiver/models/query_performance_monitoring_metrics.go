@@ -115,7 +115,7 @@ package models
 // SlowQuery represents slow query performance data collected from SQL Server
 // This struct is modeled after nri-mssql's TopNSlowQueryDetails for compatibility
 type SlowQuery struct {
-	QueryID                *string  `db:"query_id" metric_name:"query_id" source_type:"attribute"`
+	QueryID                *QueryID `db:"query_id" metric_name:"query_id" source_type:"attribute"`
 	QueryText              *string  `db:"query_text" metric_name:"query_text" source_type:"attribute"`
 	DatabaseName           *string  `db:"database_name" metric_name:"database_name" source_type:"attribute"`
 	SchemaName             *string  `db:"schema_name" metric_name:"schema_name" source_type:"attribute"`
@@ -145,9 +145,8 @@ BlockingSPID          *int64   `db:"blocking_spid" metric_name:"sqlserver.blocki
 }
 
 // WaitTimeAnalysis represents wait time analysis data for SQL Server queries
-
 type WaitTimeAnalysis struct {
-	QueryID             []byte     `db:"query_id" metric_name:"query_id" source_type:"attribute"`
+	QueryID             *QueryID   `db:"query_id" metric_name:"query_id" source_type:"attribute"`
 	DatabaseName        *string    `db:"database_name" metric_name:"database_name" source_type:"attribute"`
 	QueryText           *string    `db:"query_text" metric_name:"query_text" source_type:"attribute"`
 	WaitCategory        *string    `db:"wait_category" metric_name:"wait_category" source_type:"attribute"`
@@ -156,4 +155,18 @@ type WaitTimeAnalysis struct {
 	WaitEventCount      *int64     `db:"wait_event_count" metric_name:"wait_event_count" source_type:"gauge"`
 	LastExecutionTime   *string    `db:"last_execution_time" metric_name:"last_execution_time" source_type:"attribute"`
 	CollectionTimestamp *string    `db:"collection_timestamp" metric_name:"collection_timestamp" source_type:"attribute"`
+}
+
+// QueryExecutionPlan represents detailed execution plan analysis data for SQL Server queries
+// This model is used for drill-down analysis from slow query detection to specific execution plans
+type QueryExecutionPlan struct {
+	QueryID            *QueryID `db:"query_id" metric_name:"query_id" source_type:"attribute"`
+	PlanHandle         *QueryID `db:"plan_handle" metric_name:"plan_handle" source_type:"attribute"`
+	QueryPlanID        *QueryID `db:"query_plan_id" metric_name:"query_plan_id" source_type:"attribute"`
+	SQLText            *string  `db:"sql_text" metric_name:"sql_text" source_type:"attribute"`
+	TotalCPUMs         *float64 `db:"total_cpu_ms" metric_name:"total_cpu_ms" source_type:"gauge"`
+	TotalElapsedMs     *float64 `db:"total_elapsed_ms" metric_name:"total_elapsed_ms" source_type:"gauge"`
+	CreationTime       *int64   `db:"creation_time" metric_name:"creation_time" source_type:"gauge"`
+	LastExecutionTime  *int64   `db:"last_execution_time" metric_name:"last_execution_time" source_type:"gauge"`
+	ExecutionPlanXML   *string  `db:"execution_plan_xml" metric_name:"execution_plan_xml" source_type:"attribute"`
 }
