@@ -203,7 +203,7 @@ func writeLibhoneyError(resp http.ResponseWriter, enc encoder.Encoder, errorMsg 
 
 // decompressBody handles decompression based on Content-Encoding header
 // Returns an io.ReadCloser that must be closed by the caller
-func (r *libhoneyReceiver) decompressBody(body io.ReadCloser, contentEncoding string) (io.ReadCloser, error) {
+func decompressBody(body io.ReadCloser, contentEncoding string) (io.ReadCloser, error) {
 	switch contentEncoding {
 	case "", "identity":
 		// No compression
@@ -270,15 +270,44 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 		originalUserAgent = req.Header.Get("User-Agent") // Fallback to standard header
 	}
 
-	// Handle decompression internally to capture content-encoding for debugging
+	// Buffer the compressed body first (like api.honeycomb.io does)
+	// This separates network issues from decompression issues
 	contentEncoding := req.Header.Get("Content-Encoding")
-	bodyReader, err := r.decompressBody(req.Body, contentEncoding)
+	var compressedBody []byte
+	func() {
+		defer func() {
+			if panicVal := recover(); panicVal != nil {
+				r.settings.Logger.Error("Panic during network read",
+					zap.Any("panic", panicVal),
+					zap.String("content-encoding", contentEncoding))
+				err = errors.New("failed to read from network")
+			}
+		}()
+		compressedBody, err = io.ReadAll(req.Body)
+	}()
+
+	if err != nil {
+		r.settings.Logger.Error("Failed to read request body from network",
+			zap.Error(err),
+			zap.String("content-encoding", contentEncoding),
+			zap.String("content-type", req.Header.Get("Content-Type")),
+			zap.Int64("content-length", req.ContentLength),
+			zap.String("endpoint", req.RequestURI),
+			zap.String("source_ip", sourceIP),
+			zap.String("api-key-masked", maskedKey),
+			zap.String("original-user-agent", originalUserAgent))
+		writeLibhoneyError(resp, enc, "failed to read request body")
+		return
+	}
+
+	// Now decompress from the complete buffered data
+	bodyReader, err := decompressBody(io.NopCloser(bytes.NewReader(compressedBody)), contentEncoding)
 	if err != nil {
 		r.settings.Logger.Error("Failed to decompress request body",
 			zap.Error(err),
 			zap.String("content-encoding", contentEncoding),
 			zap.String("content-type", req.Header.Get("Content-Type")),
-			zap.Int64("content-length", req.ContentLength),
+			zap.Int("compressed-size", len(compressedBody)),
 			zap.String("endpoint", req.RequestURI),
 			zap.String("source_ip", sourceIP),
 			zap.String("api-key-masked", maskedKey),
@@ -297,32 +326,32 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 		defer func() {
 			if panicVal := recover(); panicVal != nil {
 				// Log the panic but don't expose internal details to the client
-				r.settings.Logger.Error("Panic during request body read (likely malformed compressed data)",
+				r.settings.Logger.Error("Panic during decompression (likely malformed compressed data)",
 					zap.Any("panic", panicVal),
 					zap.String("content-encoding", contentEncoding),
 					zap.String("content-type", req.Header.Get("Content-Type")),
-					zap.Int64("content-length", req.ContentLength),
+					zap.Int("compressed-size", len(compressedBody)),
 					zap.String("endpoint", req.RequestURI),
 					zap.String("source_ip", sourceIP),
 					zap.String("api-key-masked", maskedKey),
 					zap.String("original-user-agent", originalUserAgent))
-				err = errors.New("failed to read request body: panic during decompression")
+				err = errors.New("failed to decompress: panic during decompression")
 			}
 		}()
 		body, err = io.ReadAll(bodyReader)
 	}()
 
 	if err != nil {
-		r.settings.Logger.Error("Failed to read request body",
+		r.settings.Logger.Error("Failed to decompress buffered body",
 			zap.Error(err),
 			zap.String("content-encoding", contentEncoding),
 			zap.String("content-type", req.Header.Get("Content-Type")),
-			zap.Int64("content-length", req.ContentLength),
+			zap.Int("compressed-size", len(compressedBody)),
 			zap.String("endpoint", req.RequestURI),
 			zap.String("source_ip", sourceIP),
 			zap.String("api-key-masked", maskedKey),
 			zap.String("original-user-agent", originalUserAgent))
-		writeLibhoneyError(resp, enc, "failed to read request body")
+		writeLibhoneyError(resp, enc, "failed to decompress request body")
 		return
 	}
 	func() {
