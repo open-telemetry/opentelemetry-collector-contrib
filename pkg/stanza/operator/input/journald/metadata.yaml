@@ -1,0 +1,11 @@
+type: journald
+
+status:
+  disable_codecov_badge: true
+  class: pkg/stanza/operator/input
+  stability:
+    alpha: [logs]
+  codeowners:
+    active: [belimawr]
+    emeritus: [djaglowski, sumo-drosiek]
+  unsupported_platforms: [darwin, windows]

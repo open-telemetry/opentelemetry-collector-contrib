@@ -222,7 +222,7 @@ goporto: $(PORTO)
 
 .PHONY: for-all
 for-all:
-	@set -e; for dir in $(ALL_MODS); do \
+	@set -e; for dir in $${ALL_MODS}; do \
 	  (cd "$${dir}" && \
 	  	echo "running $${CMD} in $${dir}" && \
 	 	$${CMD} ); \
@@ -386,6 +386,10 @@ update-codeowners: generate gengithub
 .PHONY: gencodeowners
 gencodeowners: install-tools
 	$(GITHUBGEN) -skipgithub
+
+.PHONY: generate-chloggen-components
+generate-chloggen-components: $(GITHUBGEN)
+	$(GITHUBGEN) chloggen-components
 
 FILENAME?=$(shell git branch --show-current)
 .PHONY: chlog-new
