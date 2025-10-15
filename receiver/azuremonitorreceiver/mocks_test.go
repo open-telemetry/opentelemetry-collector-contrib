@@ -71,10 +71,10 @@ func newMockMetricsDefinitionListPager(metricDefinitionsPagesByResourceURI map[s
 
 // newMockMetricList is a helper function to create a list metrics API.
 // Don't use it, it's designed to be called in the newMockClientOptionsResolver ctor only.
-func newMockMetricList(metricsByResourceURIAndMetricName map[string]map[string]armmonitor.MetricsClientListResponse) func(ctx context.Context, resourceURI string, options *armmonitor.MetricsClientListOptions) (resp azfake.Responder[armmonitor.MetricsClientListResponse], errResp azfake.ErrorResponder) {
+func newMockMetricList(metricsByResourceURIAndMetricName map[string]map[string]map[string]armmonitor.MetricsClientListResponse) func(ctx context.Context, resourceURI string, options *armmonitor.MetricsClientListOptions) (resp azfake.Responder[armmonitor.MetricsClientListResponse], errResp azfake.ErrorResponder) {
 	return func(_ context.Context, resourceURI string, options *armmonitor.MetricsClientListOptions) (resp azfake.Responder[armmonitor.MetricsClientListResponse], errResp azfake.ErrorResponder) {
 		resourceURI = fmt.Sprintf("/%s", resourceURI) // Hack the fake API as it's not taking starting slash from called request
-		resp.SetResponse(http.StatusOK, metricsByResourceURIAndMetricName[resourceURI][*options.Metricnames], nil)
+		resp.SetResponse(http.StatusOK, metricsByResourceURIAndMetricName[resourceURI][*options.Metricnamespace][*options.Metricnames], nil)
 		return resp, errResp
 	}
 }
@@ -151,7 +151,7 @@ func newMockClientOptionsResolver(
 	subscriptionsListResponse []armsubscriptions.ClientListResponse,
 	resources map[string][]armresources.ClientListResponse,
 	metricsDefinitions map[string][]armmonitor.MetricDefinitionsClientListResponse,
-	metrics map[string]map[string]armmonitor.MetricsClientListResponse,
+	metrics map[string]map[string]map[string]armmonitor.MetricsClientListResponse,
 	metricsQueryResponses []queryResourcesResponseMock,
 ) ClientOptionsResolver {
 	// Init resources client options from resources mock data
@@ -384,27 +384,31 @@ type metricsClientListResponseMockInput struct {
 // newMetricsClientListResponseMockData is a helper function to create an armmonitor metrics list response.
 // It is used ONLY for testing and ONLY to simplify the construction of mock data. Don't put intelligence in here.
 // Use it for readability of the tests to avoid using verbose armmonitor.MetricsClientListResponse.
-func newMetricsClientListResponseMockData(inputMap map[string]map[string][]metricsClientListResponseMockInput) map[string]map[string]armmonitor.MetricsClientListResponse {
-	result := make(map[string]map[string]armmonitor.MetricsClientListResponse)
+func newMetricsClientListResponseMockData(inputMap map[string]map[string]map[string][]metricsClientListResponseMockInput) map[string]map[string]map[string]armmonitor.MetricsClientListResponse {
+	result := make(map[string]map[string]map[string]armmonitor.MetricsClientListResponse)
 	for resourceID, inputMap2 := range inputMap {
-		result2 := make(map[string]armmonitor.MetricsClientListResponse)
-		for metricNames, inputSlice := range inputMap2 {
-			result3 := armmonitor.MetricsClientListResponse{
-				Response: armmonitor.Response{
-					Value: make([]*armmonitor.Metric, len(inputSlice)),
-				},
-			}
-
-			for i, input := range inputSlice {
-				result3.Value[i] = &armmonitor.Metric{
-					Name: &armmonitor.LocalizableString{
-						Value: &input.Name,
+		result2 := make(map[string]map[string]armmonitor.MetricsClientListResponse)
+		for metricNamespace, inputMap3 := range inputMap2 {
+			result3 := make(map[string]armmonitor.MetricsClientListResponse)
+			for metricNames, inputSlice := range inputMap3 {
+				result4 := armmonitor.MetricsClientListResponse{
+					Response: armmonitor.Response{
+						Value: make([]*armmonitor.Metric, len(inputSlice)),
 					},
-					Unit:       &input.Unit,
-					Timeseries: input.TimeSeries,
 				}
+
+				for i, input := range inputSlice {
+					result4.Value[i] = &armmonitor.Metric{
+						Name: &armmonitor.LocalizableString{
+							Value: &input.Name,
+						},
+						Unit:       &input.Unit,
+						Timeseries: input.TimeSeries,
+					}
+				}
+				result3[metricNames] = result4
 			}
-			result2[metricNames] = result3
+			result2[metricNamespace] = result3
 		}
 		result[resourceID] = result2
 	}

@@ -30,6 +30,7 @@ import (
 type azureType struct {
 	name                      *string
 	resourceIDs               []string
+	metricsNamespaces         []string
 	metricsByCompositeKey     map[metricsCompositeKey]*azureResourceMetrics
 	metricsDefinitionsUpdated time.Time
 }
@@ -236,6 +237,22 @@ func (s *azureBatchScraper) getSubscriptions(ctx context.Context) {
 	s.subscriptionsUpdated = time.Now()
 }
 
+func getMetricsNamespaces(resourceType string, filters map[string][]string) []string {
+	// default behavior when no metric filters specified: pass the resource type as namespace
+	if len(filters) == 0 {
+		return []string{resourceType}
+	}
+
+	namespaces, ok := mapFindInsensitive(filters, resourceType)
+	// resource type not found: pass the resource type as namespace
+	if !ok || len(namespaces) == 0 {
+		return []string{resourceType}
+	}
+
+	// collect give namespaces
+	return namespaces
+}
+
 // TODO: partially duplicate
 func (s *azureBatchScraper) getResourcesAndTypes(ctx context.Context, subscriptionID string) {
 	if time.Since(s.subscriptions[subscriptionID].resourcesUpdated).Seconds() < s.cfg.CacheResources {
@@ -287,8 +304,9 @@ func (s *azureBatchScraper) getResourcesAndTypes(ctx context.Context, subscripti
 				}
 				if resourceTypes[*resource.Type] == nil {
 					resourceTypes[*resource.Type] = &azureType{
-						name:        resource.Type,
-						resourceIDs: []string{*resource.ID},
+						name:              resource.Type,
+						resourceIDs:       []string{*resource.ID},
+						metricsNamespaces: getMetricsNamespaces(*resource.Type, s.cfg.MetricsNamespaces),
 					}
 				} else {
 					resourceTypes[*resource.Type].resourceIDs = append(resourceTypes[*resource.Type].resourceIDs, *resource.ID)
@@ -341,29 +359,33 @@ func (s *azureBatchScraper) getResourceMetricsDefinitionsByType(ctx context.Cont
 		return
 	}
 
-	pager := clientMetricsDefinitions.NewListPager(resourceIDs[0], nil)
-	for pager.More() {
-		nextResult, err := pager.NextPage(ctx)
-		if err != nil {
-			s.settings.Logger.Error("failed to get Azure Metrics definitions data", zap.Error(err))
-			return
-		}
-
-		for _, v := range nextResult.Value {
-			metricName := *v.Name.Value
-			metricAggregations := getMetricAggregations(*v.Namespace, metricName, s.cfg.Metrics)
-			if len(metricAggregations) == 0 {
-				continue
+	for _, namespace := range s.resourceTypes[subscriptionID][resourceType].metricsNamespaces {
+		resourceURI, opts := buildMetricsDefinitionParameters(resourceIDs[0], namespace)
+		pager := clientMetricsDefinitions.NewListPager(resourceURI, opts)
+		for pager.More() {
+			nextResult, err := pager.NextPage(ctx)
+			if err != nil {
+				s.settings.Logger.Error("failed to get Azure Metrics definitions data", zap.Error(err))
+				return
 			}
 
-			timeGrain := *v.MetricAvailabilities[0].TimeGrain
-			dimensions := filterDimensions(v.Dimensions, s.cfg.Dimensions, resourceType, metricName)
-			compositeKey := metricsCompositeKey{
-				timeGrain:    timeGrain,
-				dimensions:   serializeDimensions(dimensions),
-				aggregations: strings.Join(metricAggregations, ","),
+			for _, v := range nextResult.Value {
+				metricName := *v.Name.Value
+				metricAggregations := getMetricAggregations(*v.Namespace, metricName, s.cfg.Metrics)
+				if len(metricAggregations) == 0 {
+					continue
+				}
+
+				timeGrain := *v.MetricAvailabilities[0].TimeGrain
+				dimensions := filterDimensions(v.Dimensions, s.cfg.Dimensions, resourceType, metricName)
+				compositeKey := metricsCompositeKey{
+					namespace:    *v.Namespace,
+					timeGrain:    timeGrain,
+					dimensions:   serializeDimensions(dimensions),
+					aggregations: strings.Join(metricAggregations, ","),
+				}
+				s.storeMetricsDefinitionByType(subscriptionID, resourceType, metricName, compositeKey)
 			}
-			s.storeMetricsDefinitionByType(subscriptionID, resourceType, metricName, compositeKey)
 		}
 	}
 	s.resourceTypes[subscriptionID][resourceType].metricsDefinitionsUpdated = time.Now()
@@ -438,7 +460,7 @@ func (s *azureBatchScraper) getBatchMetricsValues(ctx context.Context, subscript
 					response, err := clientMetrics.QueryResources(
 						ctx,
 						subscriptionID,
-						resourceType,
+						compositeKey.namespace,
 						metricsByGrain.metrics[start:end],
 						azmetrics.ResourceIDList{ResourceIDs: resType.resourceIDs[startResources:endResources]},
 						&opts,
@@ -475,7 +497,8 @@ func (s *azureBatchScraper) getBatchMetricsValues(ctx context.Context, subscript
 									name := tagPrefix + tagName
 									attributes[name] = value
 								}
-								attributes["timegrain"] = &compositeKey.timeGrain
+								attributes[attributeTimegrain] = &compositeKey.timeGrain
+								attributes[attributeMetricNamespace] = &compositeKey.namespace
 								for i := len(timeseriesElement.Data) - 1; i >= 0; i-- { // reverse for loop because newest timestamp is at the end of the slice
 									metricValue := timeseriesElement.Data[i]
 									if metricValueIsNotEmpty(metricValue) {

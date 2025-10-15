@@ -25,7 +25,7 @@ func getMetricsQueryResponseMockData() []queryResourcesResponseMock {
 		{
 			params: queryResourcesResponseMockParams{
 				subscriptionID:  "subscriptionId3",
-				metricNamespace: "type1",
+				metricNamespace: "namespace1",
 				metricNames:     []string{"metric7"},
 				resourceIDs:     []string{"/subscriptions/subscriptionId3/resourceGroups/group1/resourceId1"},
 			},
@@ -59,7 +59,7 @@ func getMetricsQueryResponseMockData() []queryResourcesResponseMock {
 		{
 			params: queryResourcesResponseMockParams{
 				subscriptionID:  "subscriptionId1",
-				metricNamespace: "type1",
+				metricNamespace: "namespace1",
 				metricNames:     []string{"metric1", "metric2"},
 				resourceIDs: []string{
 					"/subscriptions/subscriptionId1/resourceGroups/group1/resourceId1",
@@ -106,7 +106,7 @@ func getMetricsQueryResponseMockData() []queryResourcesResponseMock {
 		{
 			params: queryResourcesResponseMockParams{
 				subscriptionID:  "subscriptionId1",
-				metricNamespace: "type1",
+				metricNamespace: "namespace1",
 				metricNames:     []string{"metric3"},
 				resourceIDs: []string{
 					"/subscriptions/subscriptionId1/resourceGroups/group1/resourceId1",
