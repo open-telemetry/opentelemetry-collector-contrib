@@ -49,10 +49,10 @@ type PartitionKeyBuilder struct {
 	// generating a new unique string to avoid collisions on file upload
 	// across many different instances.
 	UniqueKeyFunc func() string
-	// IsArchiveFormat when true keeps files compressed in S3
+	// IsCompressed when true keeps files compressed in S3
 	// by omitting ContentEncoding headers. When false, ContentEncoding
 	// is set for HTTP transfer compression (AWS auto-decompresses).
-	IsArchiveFormat bool
+	IsCompressed bool
 }
 
 func (pki *PartitionKeyBuilder) Build(ts time.Time, overridePrefix string) string {

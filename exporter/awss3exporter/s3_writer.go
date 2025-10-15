@@ -24,7 +24,7 @@ func newUploadManager(
 	conf *Config,
 	metadata string,
 	format string,
-	isArchiveFormat bool,
+	isCompressed bool,
 ) (upload.Manager, error) {
 	configOpts := []func(*config.LoadOptions) error{}
 
@@ -111,7 +111,7 @@ func newUploadManager(
 			Metadata:              metadata,
 			Compression:           conf.S3Uploader.Compression,
 			UniqueKeyFunc:         uniqueKeyFunc,
-			IsArchiveFormat:       isArchiveFormat,
+			IsCompressed:          isCompressed,
 		},
 		s3.NewFromConfig(cfg, s3Opts...),
 		s3types.StorageClass(conf.S3Uploader.StorageClass),

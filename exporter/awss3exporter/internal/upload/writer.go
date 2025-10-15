@@ -67,7 +67,7 @@ func (sw *s3manager) Upload(ctx context.Context, data []byte, opts *UploadOption
 	// Only use ContentEncoding for non-archive formats
 	// Archive formats store files compressed permanently (like .tar.gz)
 	// while ContentEncoding is for HTTP transfer compression
-	if sw.builder.Compression.IsCompressed() && !sw.builder.IsArchiveFormat {
+	if sw.builder.Compression.IsCompressed() && !sw.builder.IsCompressed {
 		encoding = string(sw.builder.Compression)
 	}
 
