@@ -51,10 +51,13 @@ func (s *redfishScraper) start(ctx context.Context, host component.Host) error {
 	// create redfish clients
 	for _, server := range s.cfg.Servers {
 		opts := make([]redfishClientOption, 0)
-		opts = append(opts, WithRedfishVersion(server.Redfish.Version))
 		opts = append(opts, WithInsecure(server.Insecure))
 
-		if timeout, err := time.ParseDuration(server.Timeout); err != nil {
+		if server.Redfish.Version != "" {
+			opts = append(opts, WithRedfishVersion(server.Redfish.Version))
+		}
+
+		if timeout, err := time.ParseDuration(server.Timeout); err == nil {
 			opts = append(opts, WithClientTimeout(timeout))
 		}
 
