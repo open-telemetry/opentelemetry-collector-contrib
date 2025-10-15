@@ -219,7 +219,7 @@ func Test_SliceToMap(t *testing.T) {
 
 				return sl
 			},
-			wantExecutionErr: "could not cast element 'unsupported' to map[string]any",
+			wantExecutionErr: "could not cast element 'unsupported' to a map",
 		},
 		{
 			name:      "mixed data types with invalid element",
@@ -239,7 +239,7 @@ func Test_SliceToMap(t *testing.T) {
 
 				return sl
 			},
-			wantExecutionErr: "could not cast element 'nothingToSeeHere' to map[string]any",
+			wantExecutionErr: "could not cast element 'nothingToSeeHere' to a map",
 		},
 		{
 			name:      "nested with different value data types",
