@@ -26,9 +26,7 @@ func TestPushTraceData(t *testing.T) {
 	config := createDefaultConfig().(*Config)
 	config.Endpoint = fmt.Sprintf("http://127.0.0.1:%d", port)
 	config.CreateSchema = false
-
-	err = config.Validate()
-	require.NoError(t, err)
+	require.NoError(t, config.Validate())
 
 	exporter := newTracesExporter(zap.NewNop(), config, componenttest.NewNopTelemetrySettings())
 
@@ -83,7 +81,7 @@ func simpleTraces(count int) ptrace.Traces {
 	ss.Scope().SetDroppedAttributesCount(20)
 	ss.Scope().Attributes().PutStr("lib", "doris")
 	timestamp := time.Now()
-	for i := 0; i < count; i++ {
+	for i := range count {
 		s := ss.Spans().AppendEmpty()
 		s.SetTraceID([16]byte{1, 2, 3, byte(i)})
 		s.SetSpanID([8]byte{1, 2, 3, byte(i)})

@@ -25,9 +25,7 @@ func TestPushMetricData(t *testing.T) {
 	config := createDefaultConfig().(*Config)
 	config.Endpoint = fmt.Sprintf("http://127.0.0.1:%d", port)
 	config.CreateSchema = false
-
-	err = config.Validate()
-	require.NoError(t, err)
+	require.NoError(t, config.Validate())
 
 	exporter := newMetricsExporter(zap.NewNop(), config, componenttest.NewNopTelemetrySettings())
 
@@ -90,7 +88,7 @@ func simpleMetrics(count int, typeSet map[pmetric.MetricType]struct{}) pmetric.M
 	sm.Scope().SetName("Scope name 1")
 	sm.Scope().SetVersion("Scope version 1")
 	timestamp := time.Now()
-	for i := 0; i < count; i++ {
+	for i := range count {
 		// gauge
 		if _, ok := typeSet[pmetric.MetricTypeGauge]; ok {
 			m := sm.Metrics().AppendEmpty()
@@ -219,7 +217,7 @@ func simpleMetrics(count int, typeSet map[pmetric.MetricType]struct{}) pmetric.M
 	sm.Scope().SetDroppedAttributesCount(20)
 	sm.Scope().SetName("Scope name 2")
 	sm.Scope().SetVersion("Scope version 2")
-	for i := 0; i < count; i++ {
+	for i := range count {
 		// gauge
 		if _, ok := typeSet[pmetric.MetricTypeGauge]; ok {
 			m := sm.Metrics().AppendEmpty()
@@ -336,7 +334,7 @@ func simpleMetrics(count int, typeSet map[pmetric.MetricType]struct{}) pmetric.M
 	sm.Scope().SetDroppedAttributesCount(20)
 	sm.Scope().SetName("Scope name 3")
 	sm.Scope().SetVersion("Scope version 3")
-	for i := 0; i < count; i++ {
+	for i := range count {
 		// gauge
 		if _, ok := typeSet[pmetric.MetricTypeGauge]; ok {
 			m := sm.Metrics().AppendEmpty()
