@@ -297,6 +297,7 @@ receiver/purefareceiver
 receiver/purefbreceiver
 receiver/rabbitmqreceiver
 receiver/receivercreator
+receiver/redfishreceiver
 receiver/redisreceiver
 receiver/riakreceiver
 receiver/saphanareceiver
