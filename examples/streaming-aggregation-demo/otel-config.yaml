@@ -10,7 +10,11 @@ processors:
     max_memory_mb: 100 # Memory limit
     stale_data_threshold: 2m # Reset cumulative state after 2 minutes of no data
     metrics:
-      - match: ".*" # Process all metrics (any character, zero or more times)
+      - match: "temperature_celsius"
+        aggregate_type: "average"
+        labels:
+          type: "keep"
+          names: ["datacenter", "location"]
 
   metricstransform:
     transforms:

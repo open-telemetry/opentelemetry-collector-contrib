@@ -13,7 +13,6 @@ type TimeWindow struct {
 	end   time.Time
 }
 
-
 // NewTimeWindow creates a new time window boundary
 func NewTimeWindow(start, end time.Time) *TimeWindow {
 	return &TimeWindow{
@@ -27,20 +26,12 @@ func (tw *TimeWindow) Contains(timestamp time.Time) bool {
 	return !timestamp.Before(tw.start) && timestamp.Before(tw.end)
 }
 
-
-
-
-
-
-
-
-
 // Helper function to parse series key
 func parseSeriesKey(seriesKey string) (string, map[string]string) {
 	// Format: metricName|label1=value1,label2=value2
-	
+
 	labels := make(map[string]string)
-	
+
 	// Find the pipe separator
 	pipeIdx := -1
 	for i, ch := range seriesKey {
@@ -49,22 +40,22 @@ func parseSeriesKey(seriesKey string) (string, map[string]string) {
 			break
 		}
 	}
-	
+
 	var metricName string
 	var labelsPart string
-	
+
 	if pipeIdx == -1 {
 		// No pipe found, entire key is the metric name
 		metricName = seriesKey
 		return metricName, labels
 	}
-	
+
 	// Split metric name and labels
 	metricName = seriesKey[:pipeIdx]
 	if pipeIdx < len(seriesKey)-1 {
 		labelsPart = seriesKey[pipeIdx+1:]
 	}
-	
+
 	// Parse labels if present
 	if labelsPart != "" {
 		// Split by comma
@@ -78,7 +69,7 @@ func parseSeriesKey(seriesKey string) (string, map[string]string) {
 					break
 				}
 			}
-			
+
 			if eqIdx > 0 && eqIdx < len(pair)-1 {
 				key := pair[:eqIdx]
 				value := pair[eqIdx+1:]
@@ -86,7 +77,7 @@ func parseSeriesKey(seriesKey string) (string, map[string]string) {
 			}
 		}
 	}
-	
+
 	return metricName, labels
 }
 
@@ -94,7 +85,7 @@ func parseSeriesKey(seriesKey string) (string, map[string]string) {
 func splitLabels(s string) []string {
 	var result []string
 	var current string
-	
+
 	for _, ch := range s {
 		if ch == ',' {
 			if current != "" {
@@ -105,10 +96,10 @@ func splitLabels(s string) []string {
 			current += string(ch)
 		}
 	}
-	
+
 	if current != "" {
 		result = append(result, current)
 	}
-	
+
 	return result
 }

@@ -4,7 +4,6 @@
 package streamingaggregationprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/streamingaggregationprocessor"
 
 import (
-	"fmt"
 	"sort"
 	"sync"
 	"time"
@@ -46,23 +45,23 @@ type Aggregator struct {
 
 	// ===== COUNTER-SPECIFIC FIELDS =====
 	// Counter-specific fields for proper delta aggregation
-	counterWindowDeltaSum float64      // Sum of deltas in current window only
-	counterLastCumulative float64      // Last cumulative value seen (persistent across windows)
-	counterTotalSum       float64      // Total accumulated sum across all windows
-	hasCounterCumulative  bool         // Whether we've seen a cumulative value
-	isCounterReset        bool         // Flag to track counter resets
+	counterWindowDeltaSum float64           // Sum of deltas in current window only
+	counterLastCumulative float64           // Last cumulative value seen (persistent across windows)
+	counterTotalSum       float64           // Total accumulated sum across all windows
+	hasCounterCumulative  bool              // Whether we've seen a cumulative value
+	isCounterReset        bool              // Flag to track counter resets
 	counterLastTimestamp  pcommon.Timestamp // Last timestamp for gap detection
 
 	// ===== HISTOGRAM WINDOW-SPECIFIC STATE (reset each window) =====
-	histogramBuckets map[float64]uint64  // Current window bucket counts
-	histogramSum     float64              // Current window sum
-	histogramCount   uint64               // Current window count
+	histogramBuckets map[float64]uint64 // Current window bucket counts
+	histogramSum     float64            // Current window sum
+	histogramCount   uint64             // Current window count
 
 	// ===== HISTOGRAM CUMULATIVE TRACKING (persistent across windows) =====
 	// Total accumulated values - these are what get exported
-	histogramTotalBuckets map[float64]uint64  // Total accumulated bucket counts
-	histogramTotalSum     float64              // Total accumulated sum
-	histogramTotalCount   uint64               // Total accumulated count
+	histogramTotalBuckets map[float64]uint64 // Total accumulated bucket counts
+	histogramTotalSum     float64            // Total accumulated sum
+	histogramTotalCount   uint64             // Total accumulated count
 
 	// Last seen cumulative values for delta computation
 	// Track per source (label combination) for proper aggregation
@@ -100,6 +99,7 @@ func NewAggregator(metricType pmetric.MetricType) *Aggregator {
 func (a *Aggregator) UpdateLast(value float64, timestamp pcommon.Timestamp) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
+
 	a.lastValue = value
 	a.lastTimestamp = timestamp
 }
@@ -155,7 +155,6 @@ func (a *Aggregator) ComputeDeltaFromCumulativeWithGapDetection(cumulativeValue 
 	defer a.mu.Unlock()
 
 	currentTime := timestamp.AsTime()
-	fmt.Printf("GAP DETECTION: Checking cumulative value %.2f at %v (threshold: %v)\n", cumulativeValue, currentTime, staleThreshold)
 
 	// Check if we have existing cumulative state and if it's stale
 	if a.hasCounterCumulative {
@@ -165,7 +164,6 @@ func (a *Aggregator) ComputeDeltaFromCumulativeWithGapDetection(cumulativeValue 
 		// If data is stale (gap detected), reset cumulative state
 		if timeSinceLastData > staleThreshold {
 			// Reset cumulative state - treat new value as initial value
-			fmt.Printf("GAP DETECTED: Counter reset after %v gap (threshold: %v), old value: %.2f, new value: %.2f\n", timeSinceLastData, staleThreshold, a.counterLastCumulative, cumulativeValue)
 			a.counterLastCumulative = cumulativeValue
 			a.counterLastTimestamp = timestamp
 			a.counterWindowDeltaSum = cumulativeValue
@@ -410,7 +408,6 @@ func (a *Aggregator) MergeHistogramWithTemporalityAndGapDetection(dp pmetric.His
 				timeSinceLastData := currentTime.Sub(lastTime)
 				if timeSinceLastData > staleThreshold {
 					// Gap detected for this source - check if we need to reset everything
-					fmt.Printf("GAP DETECTED: Source %s has %v gap (threshold: %v)\\n", sourceKey, timeSinceLastData, staleThreshold)
 					gapDetected = true
 					exists = false
 				}
@@ -419,7 +416,6 @@ func (a *Aggregator) MergeHistogramWithTemporalityAndGapDetection(dp pmetric.His
 
 		// If any gap was detected, reset all histogram totals once
 		if gapDetected {
-			fmt.Printf("GAP DETECTED: Resetting all histogram totals due to stale data\\n")
 			a.histogramTotalSum = 0
 			a.histogramTotalCount = 0
 			a.histogramTotalBuckets = make(map[float64]uint64)

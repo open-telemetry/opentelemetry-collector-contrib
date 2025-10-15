@@ -7,6 +7,8 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"slices"
+	"sort"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -18,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/aggregateutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/streamingaggregationprocessor/internal/aggregation"
 )
 
@@ -26,37 +29,37 @@ import (
 type streamingAggregationProcessor struct {
 	logger *zap.Logger
 	config *Config
-	
+
 	// Double-buffer window architecture
-	windowA      *TimeWindow       // First window (time boundaries only)
-	windowB      *TimeWindow       // Second window (time boundaries only)  
-	activeWindow *TimeWindow       // Points to current writable window
-	nextSwapTime time.Time         // When to swap windows
+	windowA      *TimeWindow // First window (time boundaries only)
+	windowB      *TimeWindow // Second window (time boundaries only)
+	activeWindow *TimeWindow // Points to current writable window
+	nextSwapTime time.Time   // When to swap windows
 	windowSize   time.Duration
-	
+
 	// Aggregators stored at processor level (persistent across window swaps)
-	aggregators   map[string]*Aggregator  // Key: series key
+	aggregators   map[string]*Aggregator // Key: series key
 	aggregatorsMu sync.RWMutex           // Protect aggregator map
-	
+
 	// Lifecycle management
 	startOnce sync.Once
 	stopOnce  sync.Once
 	ctx       context.Context
 	cancel    context.CancelFunc
 	wg        sync.WaitGroup
-	
+
 	// Statistics
 	metricsReceived  atomic.Int64
 	metricsProcessed atomic.Int64
 	metricsDropped   atomic.Int64
-	metricsFiltered  atomic.Int64  // Metrics filtered out by regex
-	
+	metricsFiltered  atomic.Int64 // Metrics filtered out by regex
+
 	// Memory management
-	memoryUsage   atomic.Int64
+	memoryUsage    atomic.Int64
 	maxMemoryBytes int64
-	
+
 	// Export management
-	nextConsumer   consumer.Metrics  // Store the next consumer in the pipeline
+	nextConsumer consumer.Metrics // Store the next consumer in the pipeline
 
 	// Metric filtering
 	metricRegexes []*regexp.Regexp // Compiled regexes for metric name matching
@@ -92,15 +95,15 @@ func newStreamingAggregationProcessor(logger *zap.Logger, config *Config) (*stre
 			}()),
 		)
 	} else {
-		logger.Info("No metric patterns configured - filtering out all metrics")
+		logger.Info("No metric patterns configured - processing all metrics (backward compatibility)")
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
-	
+
 	// Initialize double-buffer windows with proper time alignment
 	now := time.Now()
 	alignedStart := now.Truncate(config.WindowSize)
-	
+
 	p := &streamingAggregationProcessor{
 		logger:         logger,
 		config:         config,
@@ -116,10 +119,10 @@ func newStreamingAggregationProcessor(logger *zap.Logger, config *Config) (*stre
 		windowB:      NewTimeWindow(alignedStart.Add(config.WindowSize), alignedStart.Add(2*config.WindowSize)),
 		nextSwapTime: alignedStart.Add(config.WindowSize),
 	}
-	
+
 	// Start with window A as the active window
 	p.activeWindow = p.windowA
-	
+
 	return p, nil
 }
 
@@ -131,23 +134,23 @@ func (p *streamingAggregationProcessor) getOrCreateAggregator(seriesKey string, 
 		return agg
 	}
 	p.aggregatorsMu.RUnlock()
-	
+
 	// Create new aggregator under write lock
 	p.aggregatorsMu.Lock()
 	defer p.aggregatorsMu.Unlock()
-	
+
 	// Double-check in case another goroutine created it
 	if agg, exists := p.aggregators[seriesKey]; exists {
 		return agg
 	}
-	
+
 	// Create new aggregator
 	agg := NewAggregator(metricType)
 	p.aggregators[seriesKey] = agg
-	
+
 	// Update memory usage estimate
 	p.memoryUsage.Add(agg.EstimateMemoryUsage())
-	
+
 	return agg
 }
 
@@ -155,7 +158,7 @@ func (p *streamingAggregationProcessor) getOrCreateAggregator(seriesKey string, 
 func (p *streamingAggregationProcessor) resetAggregatorsForNewWindow() {
 	p.aggregatorsMu.RLock()
 	defer p.aggregatorsMu.RUnlock()
-	
+
 	for _, agg := range p.aggregators {
 		agg.ResetForNewWindow()
 	}
@@ -165,7 +168,7 @@ func (p *streamingAggregationProcessor) resetAggregatorsForNewWindow() {
 func (p *streamingAggregationProcessor) hasActiveWindowData() bool {
 	p.aggregatorsMu.RLock()
 	defer p.aggregatorsMu.RUnlock()
-	
+
 	return len(p.aggregators) > 0
 }
 
@@ -175,7 +178,7 @@ func (p *streamingAggregationProcessor) Start(ctx context.Context, host componen
 		p.logger.Info("Starting streaming aggregation processor (double-buffer mode)",
 			zap.Duration("window_size", p.config.WindowSize),
 		)
-		
+
 		// Start window swap checker (checks every second for swap time)
 		p.wg.Add(1)
 		go func() {
@@ -183,14 +186,14 @@ func (p *streamingAggregationProcessor) Start(ctx context.Context, host componen
 			p.logger.Debug("Window swap checker started")
 			p.runWindowSwapChecker()
 		}()
-		
+
 		// Start memory monitor
 		p.wg.Add(1)
 		go func() {
 			defer p.wg.Done()
 			p.monitorMemory()
 		}()
-		
+
 		// Start statistics reporter
 		p.wg.Add(1)
 		go func() {
@@ -198,27 +201,27 @@ func (p *streamingAggregationProcessor) Start(ctx context.Context, host componen
 			p.reportStatistics()
 		}()
 	})
-	
+
 	return nil
 }
 
 // Shutdown shuts down the processor
 func (p *streamingAggregationProcessor) Shutdown(ctx context.Context) error {
 	var shutdownErr error
-	
+
 	p.stopOnce.Do(func() {
 		p.logger.Info("Shutting down streaming aggregation processor")
-		
+
 		// Signal all goroutines to stop
 		p.cancel()
-		
+
 		// Wait for all goroutines to finish with timeout
 		done := make(chan struct{})
 		go func() {
 			p.wg.Wait()
 			close(done)
 		}()
-		
+
 		select {
 		case <-done:
 			p.logger.Info("All goroutines stopped successfully")
@@ -226,11 +229,11 @@ func (p *streamingAggregationProcessor) Shutdown(ctx context.Context) error {
 			shutdownErr = fmt.Errorf("shutdown timeout exceeded")
 			p.logger.Error("Shutdown timeout exceeded", zap.Error(shutdownErr))
 		}
-		
+
 		// Export any remaining aggregated metrics
 		p.forceExportActiveWindow()
 	})
-	
+
 	return shutdownErr
 }
 
@@ -238,7 +241,7 @@ func (p *streamingAggregationProcessor) Shutdown(ctx context.Context) error {
 func (p *streamingAggregationProcessor) runWindowSwapChecker() {
 	ticker := time.NewTicker(1 * time.Second)
 	defer ticker.Stop()
-	
+
 	for {
 		select {
 		case <-ticker.C:
@@ -262,41 +265,41 @@ func (p *streamingAggregationProcessor) checkWindowSwap() {
 func (p *streamingAggregationProcessor) swapWindows() {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	
+
 	p.logger.Info("Swapping windows",
 		zap.Time("current_window_start", p.activeWindow.start),
 		zap.Time("current_window_end", p.activeWindow.end),
 		zap.Time("swap_time", time.Now()),
 	)
-	
+
 	// Export current active window if it has data
 	if p.hasActiveWindowData() {
 		p.logger.Debug("Exporting active window before swap")
 		p.exportActiveWindow()
 	}
-	
+
 	// Reset window-specific state in all aggregators for new window
 	p.resetAggregatorsForNewWindow()
-	
+
 	// Swap to the other window
 	if p.activeWindow == p.windowA {
 		p.activeWindow = p.windowB
 	} else {
 		p.activeWindow = p.windowA
 	}
-	
+
 	// Set new time boundaries for the now-active window
 	now := time.Now()
 	alignedStart := now.Truncate(p.windowSize)
 	// If we're very close to the boundary, move to next boundary
-	if alignedStart.Add(p.windowSize/2).Before(now) {
+	if alignedStart.Add(p.windowSize / 2).Before(now) {
 		alignedStart = alignedStart.Add(p.windowSize)
 	}
-	
+
 	p.activeWindow.start = alignedStart
 	p.activeWindow.end = alignedStart.Add(p.windowSize)
 	p.nextSwapTime = p.activeWindow.end
-	
+
 	p.logger.Debug("Window swap completed",
 		zap.Time("new_window_start", p.activeWindow.start),
 		zap.Time("new_window_end", p.activeWindow.end),
@@ -307,38 +310,38 @@ func (p *streamingAggregationProcessor) swapWindows() {
 // ProcessMetrics processes incoming metrics
 func (p *streamingAggregationProcessor) ProcessMetrics(ctx context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
 	p.metricsReceived.Add(int64(md.DataPointCount()))
-	
+
 	// Process metrics directly (no routing needed - upstream handles sharding)
 	p.processMetrics(md)
-	
+
 	// Always return empty metrics - aggregated metrics are exported at window boundaries
 	// through the nextConsumer
 	return pmetric.NewMetrics(), nil
 }
 
-
 // processMetrics processes a batch of metrics
 func (p *streamingAggregationProcessor) processMetrics(md pmetric.Metrics) {
 	rms := md.ResourceMetrics()
-	
+
 	for i := 0; i < rms.Len(); i++ {
 		rm := rms.At(i)
 		resource := rm.Resource()
-		
+
 		sms := rm.ScopeMetrics()
 		for j := 0; j < sms.Len(); j++ {
 			sm := sms.At(j)
 			scope := sm.Scope()
-			
+
 			metrics := sm.Metrics()
 			for k := 0; k < metrics.Len(); k++ {
 				metric := metrics.At(k)
 
-				// Apply metric name filtering - default behavior is to filter everything
-				// unless there are explicit match patterns configured
-				matched := false
+				// Apply metric name filtering - default behavior is to process all metrics
+				// when no patterns are configured (backward compatibility)
+				matched := true // Default to processing metrics
 				if len(p.metricRegexes) > 0 {
-					// Check if metric matches any configured pattern
+					// If patterns are configured, check if metric matches any pattern
+					matched = false
 					for _, regex := range p.metricRegexes {
 						if regex.MatchString(metric.Name()) {
 							matched = true
@@ -346,7 +349,7 @@ func (p *streamingAggregationProcessor) processMetrics(md pmetric.Metrics) {
 						}
 					}
 				}
-				// If no patterns configured OR metric doesn't match any pattern, filter it out
+				// If patterns are configured AND metric doesn't match any pattern, filter it out
 				if !matched {
 					p.metricsFiltered.Add(1)
 					p.logger.Debug("Metric filtered out - no matching pattern",
@@ -371,20 +374,34 @@ func (p *streamingAggregationProcessor) processMetrics(md pmetric.Metrics) {
 	}
 }
 
-// aggregateMetric aggregates a single metric based on its type
+// aggregateMetric aggregates a single metric based on its type with enhanced label handling
 func (p *streamingAggregationProcessor) aggregateMetric(
 	metric pmetric.Metric,
 	resource pcommon.Resource,
 	scope pcommon.InstrumentationScope,
 ) error {
-	// For streaming aggregation, we aggregate all data points together regardless of attributes
-	// This provides true cardinality reduction by dropping all labels
-	// Use just the metric name as the key for all metric types
+	// Find metric configuration for this metric
+	metricConfig := p.findMetricConfig(metric.Name())
+
+	// For all metric types, use the enhanced aggregation with label filtering
+	// but integrate with the existing aggregator system
+	return p.aggregateMetricWithEnhancedLabels(metric, metricConfig)
+}
+
+// aggregateMetricWithEnhancedLabels provides label filtering and integrates with existing aggregation
+func (p *streamingAggregationProcessor) aggregateMetricWithEnhancedLabels(
+	metric pmetric.Metric,
+	metricConfig *MetricConfig,
+) error {
+	// If we have label filtering config, we need to group data points by filtered labels first
+	if metricConfig != nil && metricConfig.Labels.Type != DropAll {
+		return p.aggregateMetricWithGrouping(metric, metricConfig)
+	}
+
+	// Default behavior: use single series key for all data points (drop all labels)
 	seriesKey := metric.Name() + "|"
-	
-	// Get or create aggregator at processor level (persistent across window swaps)
 	aggregator := p.getOrCreateAggregator(seriesKey, metric.Type())
-	
+
 	// Aggregate based on metric type using internal aggregation package
 	switch metric.Type() {
 	case pmetric.MetricTypeSum:
@@ -394,6 +411,20 @@ func (p *streamingAggregationProcessor) aggregateMetric(
 		}
 		return aggregation.AggregateSum(metric.Sum(), aggregator, config, p.forceExportActiveWindow)
 	case pmetric.MetricTypeGauge:
+		// Handle custom gauge aggregation strategies
+		if metricConfig != nil && metricConfig.AggregateType != Last {
+			p.logger.Debug("Using custom gauge aggregation",
+				zap.String("metric", metric.Name()),
+				zap.String("aggregate_type", string(metricConfig.AggregateType)),
+				zap.Int("data_points", metric.Gauge().DataPoints().Len()),
+			)
+			return p.aggregateGaugeWithCustomStrategy(metric.Gauge(), aggregator, metricConfig)
+		}
+		// Default gauge aggregation (last value)
+		p.logger.Debug("Using default gauge aggregation (last)",
+			zap.String("metric", metric.Name()),
+			zap.Bool("has_config", metricConfig != nil),
+		)
 		config := aggregation.GaugeAggregationConfig{
 			Logger: p.logger,
 		}
@@ -413,11 +444,10 @@ func (p *streamingAggregationProcessor) aggregateMetric(
 	}
 }
 
-
 // exportActiveWindow exports aggregated metrics from processor-level aggregators
 func (p *streamingAggregationProcessor) exportActiveWindow() {
 	metrics := p.exportAggregatedMetrics(p.activeWindow.start, p.activeWindow.end)
-	
+
 	if metrics.DataPointCount() > 0 && p.nextConsumer != nil {
 		ctx := context.Background()
 		if err := p.nextConsumer.ConsumeMetrics(ctx, metrics); err != nil {
@@ -440,24 +470,24 @@ func (p *streamingAggregationProcessor) exportActiveWindow() {
 // exportAggregatedMetrics creates metrics from processor-level aggregators
 func (p *streamingAggregationProcessor) exportAggregatedMetrics(windowStart, windowEnd time.Time) pmetric.Metrics {
 	md := pmetric.NewMetrics()
-	
+
 	p.aggregatorsMu.RLock()
 	defer p.aggregatorsMu.RUnlock()
-	
+
 	if len(p.aggregators) == 0 {
 		return md
 	}
-	
+
 	// Create single resource and scope for all metrics
 	rm := md.ResourceMetrics().AppendEmpty()
 	sm := rm.ScopeMetrics().AppendEmpty()
 	sm.Scope().SetName("streamingaggregation")
-	
+
 	// Export each aggregator
 	for seriesKey, agg := range p.aggregators {
 		// Parse series key to extract metric name and labels
 		metricName, labels := parseSeriesKey(seriesKey)
-		
+
 		// Create metric with enhanced metadata handling using aggregateutil
 		metric := sm.Metrics().AppendEmpty()
 		metric.SetName(metricName)
@@ -468,7 +498,7 @@ func (p *streamingAggregationProcessor) exportAggregatedMetrics(windowStart, win
 		// Then apply aggregateutil metadata enhancements (preserves the type setup)
 		p.applyMetricMetadataEnhancements(metric, agg.metricType)
 	}
-	
+
 	return md
 }
 
@@ -528,7 +558,7 @@ func containsSizeUnit(name string) bool {
 func (p *streamingAggregationProcessor) forceExportActiveWindow() {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
-	
+
 	if p.hasActiveWindowData() {
 		p.logger.Info("Force exporting active window during shutdown",
 			zap.Time("window_start", p.activeWindow.start),
@@ -547,12 +577,12 @@ func (p *streamingAggregationProcessor) GetAggregatedMetrics() pmetric.Metrics {
 func (p *streamingAggregationProcessor) monitorMemory() {
 	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
-	
+
 	for {
 		select {
 		case <-ticker.C:
 			usage := p.memoryUsage.Load()
-			
+
 			if usage > p.maxMemoryBytes {
 				p.logger.Warn("Memory limit exceeded, triggering eviction",
 					zap.Int64("usage_bytes", usage),
@@ -566,7 +596,7 @@ func (p *streamingAggregationProcessor) monitorMemory() {
 					zap.Float64("usage_percent", float64(usage)/float64(p.maxMemoryBytes)*100),
 				)
 			}
-			
+
 		case <-p.ctx.Done():
 			return
 		}
@@ -577,22 +607,22 @@ func (p *streamingAggregationProcessor) monitorMemory() {
 func (p *streamingAggregationProcessor) performEviction() {
 	p.aggregatorsMu.Lock()
 	defer p.aggregatorsMu.Unlock()
-	
+
 	if len(p.aggregators) == 0 {
 		return
 	}
-	
+
 	// Evict 20% of least recently used aggregators
 	numToEvict := len(p.aggregators) / 5
 	if numToEvict == 0 && len(p.aggregators) > 0 {
 		numToEvict = 1 // Evict at least one
 	}
-	
+
 	// Simple eviction: remove the first N aggregators
 	// In a production system, you'd want proper LRU tracking
 	var bytesFreed int64
 	var keysToDelete []string
-	
+
 	count := 0
 	for key, agg := range p.aggregators {
 		if count >= numToEvict {
@@ -602,14 +632,14 @@ func (p *streamingAggregationProcessor) performEviction() {
 		keysToDelete = append(keysToDelete, key)
 		count++
 	}
-	
+
 	// Delete the selected aggregators
 	for _, key := range keysToDelete {
 		delete(p.aggregators, key)
 	}
-	
+
 	p.memoryUsage.Add(-bytesFreed)
-	
+
 	p.logger.Debug("Evicted aggregators",
 		zap.Int("evicted_count", len(keysToDelete)),
 		zap.Int64("bytes_freed", bytesFreed),
@@ -620,7 +650,7 @@ func (p *streamingAggregationProcessor) performEviction() {
 func (p *streamingAggregationProcessor) reportStatistics() {
 	ticker := time.NewTicker(30 * time.Second)
 	defer ticker.Stop()
-	
+
 	for {
 		select {
 		case <-ticker.C:
@@ -638,10 +668,635 @@ func (p *streamingAggregationProcessor) reportStatistics() {
 				zap.Float64("filter_rate", float64(filtered)/float64(received)*100),
 				zap.Int64("memory_bytes", p.memoryUsage.Load()),
 			)
-			
+
 		case <-p.ctx.Done():
 			return
 		}
 	}
 }
 
+// Label filtering and series key generation utilities
+
+// findMetricConfig finds the MetricConfig for a given metric name
+func (p *streamingAggregationProcessor) findMetricConfig(metricName string) *MetricConfig {
+	for i, metricConfig := range p.config.Metrics {
+		if i < len(p.metricRegexes) && p.metricRegexes[i].MatchString(metricName) {
+			p.logger.Debug("Found metric config match",
+				zap.String("metric", metricName),
+				zap.String("pattern", metricConfig.Match),
+				zap.String("aggregate_type", string(metricConfig.AggregateType)),
+				zap.String("label_type", string(metricConfig.Labels.Type)),
+			)
+			return &metricConfig
+		}
+	}
+	p.logger.Debug("No metric config found",
+		zap.String("metric", metricName),
+		zap.Int("total_configs", len(p.config.Metrics)),
+		zap.Int("total_regexes", len(p.metricRegexes)),
+	)
+	return nil // No matching config found
+}
+
+// getLabelFilteredAttributes applies label filtering based on VictoriaMetrics pattern
+// Adapted from VictoriaMetrics getInputOutputLabels function
+func getLabelFilteredAttributes(attrs pcommon.Map, labelConfig LabelConfig) pcommon.Map {
+	filteredAttrs := pcommon.NewMap()
+
+	switch labelConfig.Type {
+	case Keep: // Equivalent to VictoriaMetrics "by" - keep only specified labels
+		attrs.Range(func(k string, v pcommon.Value) bool {
+			if slices.Contains(labelConfig.Names, k) {
+				v.CopyTo(filteredAttrs.PutEmpty(k))
+			}
+			return true
+		})
+	case Remove: // Equivalent to VictoriaMetrics "without" - remove specified labels
+		attrs.Range(func(k string, v pcommon.Value) bool {
+			if !slices.Contains(labelConfig.Names, k) {
+				v.CopyTo(filteredAttrs.PutEmpty(k))
+			}
+			return true
+		})
+	case DropAll: // Default behavior - return empty map
+		// filteredAttrs remains empty
+	}
+
+	return filteredAttrs
+}
+
+// generateSeriesKey creates a series key with filtered labels
+func (p *streamingAggregationProcessor) generateSeriesKey(metricName string, attrs pcommon.Map, labelConfig LabelConfig) string {
+	if labelConfig.Type == DropAll {
+		return metricName + "|" // Current behavior
+	}
+
+	filteredAttrs := getLabelFilteredAttributes(attrs, labelConfig)
+	if filteredAttrs.Len() == 0 {
+		return metricName + "|" // No labels to keep
+	}
+
+	// Create deterministic label string
+	var labelPairs []string
+	filteredAttrs.Range(func(k string, v pcommon.Value) bool {
+		labelPairs = append(labelPairs, k+"="+v.AsString())
+		return true
+	})
+	sort.Strings(labelPairs) // Ensure deterministic order
+
+	return metricName + "|" + strings.Join(labelPairs, ",")
+}
+
+// getFilterAttrKeys converts LabelConfig to filter keys for aggregateutil.FilterAttrs
+func getFilterAttrKeys(labelConfig LabelConfig) []string {
+	switch labelConfig.Type {
+	case Keep:
+		return labelConfig.Names // Keep only these
+	case Remove:
+		return []string{} // Keep all except those in Names (handled differently)
+	case DropAll:
+		return []string{} // Remove all attributes
+	default:
+		return []string{} // Default to remove all
+	}
+}
+
+// aggregateGaugeWithStrategy aggregates gauge metrics using aggregateutil
+func (p *streamingAggregationProcessor) aggregateGaugeWithStrategy(
+	metric pmetric.Metric,
+	metricConfig *MetricConfig,
+) error {
+	if metric.Type() != pmetric.MetricTypeGauge {
+		return fmt.Errorf("aggregateGaugeWithStrategy can only be used with gauge metrics")
+	}
+
+	// Apply label filtering using aggregateutil.FilterAttrs
+	if metricConfig.Labels.Type == Remove {
+		// For "remove" type, we need custom filtering since aggregateutil.FilterAttrs
+		// only supports keeping specified labels
+		p.filterRemoveLabels(metric, metricConfig.Labels.Names)
+	} else {
+		// For "keep" and "drop_all" types, use aggregateutil.FilterAttrs
+		filterKeys := getFilterAttrKeys(metricConfig.Labels)
+		aggregateutil.FilterAttrs(metric, filterKeys)
+	}
+
+	// Group data points by the filtered attributes
+	aggGroups := &aggregateutil.AggGroups{}
+	aggregateutil.GroupDataPoints(metric, aggGroups)
+
+	// Create output metric
+	outputMetric := pmetric.NewMetric()
+	aggregateutil.CopyMetricDetails(metric, outputMetric)
+
+	// Apply aggregation strategy
+	if metricConfig.AggregateType == Last {
+		// Special handling for "last" - we need to use a custom approach
+		// since aggregateutil doesn't support "last" aggregation
+		p.applyLastAggregation(metric, outputMetric)
+	} else {
+		// Use existing aggregation types from aggregateutil
+		aggregateutil.MergeDataPoints(outputMetric, metricConfig.getAggregateUtilType(), *aggGroups)
+	}
+
+	// Store the aggregated metric (integrate with existing aggregator system)
+	return p.storeAggregatedGaugeMetric(outputMetric, metricConfig)
+}
+
+// filterRemoveLabels removes specified labels from all data points
+func (p *streamingAggregationProcessor) filterRemoveLabels(metric pmetric.Metric, labelsToRemove []string) {
+	aggregateutil.RangeDataPointAttributes(metric, func(attrs pcommon.Map) bool {
+		for _, labelName := range labelsToRemove {
+			attrs.Remove(labelName)
+		}
+		return true
+	})
+}
+
+// applyLabelFiltering applies label filtering to all data points in a metric
+func (p *streamingAggregationProcessor) applyLabelFiltering(metric pmetric.Metric, labelConfig LabelConfig) {
+	switch labelConfig.Type {
+	case Keep:
+		// Keep only specified labels
+		aggregateutil.FilterAttrs(metric, labelConfig.Names)
+	case Remove:
+		// Remove specified labels
+		aggregateutil.RangeDataPointAttributes(metric, func(attrs pcommon.Map) bool {
+			for _, labelName := range labelConfig.Names {
+				attrs.Remove(labelName)
+			}
+			return true
+		})
+	case DropAll:
+		// Remove all labels
+		aggregateutil.FilterAttrs(metric, []string{})
+	}
+}
+
+// generateSeriesKeyFromMetric generates a series key from a metric after label filtering
+func (p *streamingAggregationProcessor) generateSeriesKeyFromMetric(metric pmetric.Metric, metricConfig *MetricConfig) string {
+	if metricConfig == nil || metricConfig.Labels.Type == DropAll {
+		return metric.Name() + "|" // Default behavior
+	}
+
+	// Since we already applied label filtering, we can use any data point to get the filtered attributes
+	var attrs pcommon.Map
+	switch metric.Type() {
+	case pmetric.MetricTypeGauge:
+		if metric.Gauge().DataPoints().Len() > 0 {
+			attrs = metric.Gauge().DataPoints().At(0).Attributes()
+		}
+	case pmetric.MetricTypeSum:
+		if metric.Sum().DataPoints().Len() > 0 {
+			attrs = metric.Sum().DataPoints().At(0).Attributes()
+		}
+	case pmetric.MetricTypeHistogram:
+		if metric.Histogram().DataPoints().Len() > 0 {
+			attrs = metric.Histogram().DataPoints().At(0).Attributes()
+		}
+	case pmetric.MetricTypeExponentialHistogram:
+		if metric.ExponentialHistogram().DataPoints().Len() > 0 {
+			attrs = metric.ExponentialHistogram().DataPoints().At(0).Attributes()
+		}
+	case pmetric.MetricTypeSummary:
+		if metric.Summary().DataPoints().Len() > 0 {
+			attrs = metric.Summary().DataPoints().At(0).Attributes()
+		}
+	}
+
+	if attrs.Len() == 0 {
+		return metric.Name() + "|"
+	}
+
+	// Create deterministic label string from filtered attributes
+	var labelPairs []string
+	attrs.Range(func(k string, v pcommon.Value) bool {
+		labelPairs = append(labelPairs, k+"="+v.AsString())
+		return true
+	})
+	sort.Strings(labelPairs)
+
+	return metric.Name() + "|" + strings.Join(labelPairs, ",")
+}
+
+// applyLastAggregation implements "last" aggregation strategy for gauge metrics
+func (p *streamingAggregationProcessor) applyLastAggregation(inputMetric, outputMetric pmetric.Metric) {
+	if inputMetric.Type() != pmetric.MetricTypeGauge {
+		return
+	}
+
+	inputDps := inputMetric.Gauge().DataPoints()
+	outputDps := outputMetric.Gauge().DataPoints()
+
+	if inputDps.Len() == 0 {
+		return
+	}
+
+	// Find the data point with the latest timestamp
+	latestIdx := 0
+	latestTimestamp := inputDps.At(0).Timestamp()
+
+	for i := 1; i < inputDps.Len(); i++ {
+		if inputDps.At(i).Timestamp() > latestTimestamp {
+			latestIdx = i
+			latestTimestamp = inputDps.At(i).Timestamp()
+		}
+	}
+
+	// Copy the latest data point to output
+	dp := outputDps.AppendEmpty()
+	inputDps.At(latestIdx).CopyTo(dp)
+}
+
+// storeAggregatedGaugeMetric integrates with existing aggregator system
+func (p *streamingAggregationProcessor) storeAggregatedGaugeMetric(metric pmetric.Metric, metricConfig *MetricConfig) error {
+	// For now, we'll integrate this with the existing system by processing the aggregated metric
+	// through the normal flow but with the enhanced series key
+
+	if metric.Gauge().DataPoints().Len() == 0 {
+		return nil // No data points to store
+	}
+
+	// Get the first data point to extract attributes for series key generation
+	dp := metric.Gauge().DataPoints().At(0)
+	seriesKey := p.generateSeriesKey(metric.Name(), dp.Attributes(), metricConfig.Labels)
+
+	// Get or create aggregator with enhanced series key
+	aggregator := p.getOrCreateAggregator(seriesKey, metric.Type())
+
+	// Store the aggregated value using our enhanced aggregator
+	// For gauge metrics with custom aggregation, we store the final aggregated value
+	aggregator.UpdateLast(extractDoubleValue(dp), dp.Timestamp())
+
+	return nil
+}
+
+// aggregateGaugeWithCustomStrategy implements custom aggregation strategies for gauge metrics
+func (p *streamingAggregationProcessor) aggregateGaugeWithCustomStrategy(
+	gauge pmetric.Gauge,
+	aggregator *Aggregator,
+	metricConfig *MetricConfig,
+) error {
+	dps := gauge.DataPoints()
+	if dps.Len() == 0 {
+		return nil
+	}
+
+	// Collect all values for custom aggregation
+	var values []float64
+	var latestTimestamp pcommon.Timestamp
+
+	for i := 0; i < dps.Len(); i++ {
+		dp := dps.At(i)
+
+		// Get the value based on the data point type
+		var value float64
+		switch dp.ValueType() {
+		case pmetric.NumberDataPointValueTypeInt:
+			value = float64(dp.IntValue())
+		case pmetric.NumberDataPointValueTypeDouble:
+			value = dp.DoubleValue()
+		default:
+			continue // Skip if neither int nor double
+		}
+
+		values = append(values, value)
+
+		// Keep track of the latest timestamp
+		if dp.Timestamp() > latestTimestamp {
+			latestTimestamp = dp.Timestamp()
+		}
+	}
+
+	if len(values) == 0 {
+		return nil
+	}
+
+	// Apply the aggregation strategy
+	var aggregatedValue float64
+	switch metricConfig.AggregateType {
+	case Sum:
+		for _, v := range values {
+			aggregatedValue += v
+		}
+	case Average:
+		sum := 0.0
+		for _, v := range values {
+			sum += v
+		}
+		aggregatedValue = sum / float64(len(values))
+	case Max:
+		aggregatedValue = values[0]
+		for _, v := range values[1:] {
+			if v > aggregatedValue {
+				aggregatedValue = v
+			}
+		}
+	case Min:
+		aggregatedValue = values[0]
+		for _, v := range values[1:] {
+			if v < aggregatedValue {
+				aggregatedValue = v
+			}
+		}
+	case Last:
+		// Find the value with the latest timestamp (already handled above)
+		aggregatedValue = values[len(values)-1] // Use last value as fallback
+	default:
+		// Default to last value
+		aggregatedValue = values[len(values)-1]
+	}
+
+	// Update the aggregator with the computed value
+	aggregator.UpdateLast(aggregatedValue, latestTimestamp)
+
+	return nil
+}
+
+// aggregateMetricWithGrouping groups data points by filtered labels before aggregating
+func (p *streamingAggregationProcessor) aggregateMetricWithGrouping(
+	metric pmetric.Metric,
+	metricConfig *MetricConfig,
+) error {
+
+	// Group data points by their filtered labels
+	groups := make(map[string][]dataPointInfo)
+
+	// Process based on metric type
+	switch metric.Type() {
+	case pmetric.MetricTypeGauge:
+		p.groupGaugeDataPoints(metric.Gauge(), metricConfig, groups, metric.Name())
+	case pmetric.MetricTypeSum:
+		p.groupSumDataPoints(metric.Sum(), metricConfig, groups, metric.Name())
+	default:
+		// For other types, fall back to default behavior
+		return p.aggregateMetricDefault(metric, metricConfig)
+	}
+
+	// Process each group separately
+	for seriesKey, dataPoints := range groups {
+		err := p.processDataPointGroup(metric, seriesKey, dataPoints, metricConfig)
+		if err != nil {
+			p.logger.Error("Failed to process data point group",
+				zap.String("series_key", seriesKey),
+				zap.Error(err),
+			)
+			return err
+		}
+	}
+
+	return nil
+}
+
+// dataPointInfo holds information about a data point
+type dataPointInfo struct {
+	value      float64
+	timestamp  pcommon.Timestamp
+	attributes pcommon.Map
+}
+
+// groupGaugeDataPoints groups gauge data points by filtered labels
+func (p *streamingAggregationProcessor) groupGaugeDataPoints(
+	gauge pmetric.Gauge,
+	metricConfig *MetricConfig,
+	groups map[string][]dataPointInfo,
+	metricName string,
+) {
+	dps := gauge.DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dp := dps.At(i)
+
+		// Apply label filtering to get the filtered attributes
+		filteredAttrs := getLabelFilteredAttributes(dp.Attributes(), metricConfig.Labels)
+
+		// Generate series key from filtered attributes
+		seriesKey := p.generateSeriesKeyFromAttributes(metricName, filteredAttrs)
+
+		// Extract value
+		var value float64
+		switch dp.ValueType() {
+		case pmetric.NumberDataPointValueTypeInt:
+			value = float64(dp.IntValue())
+		case pmetric.NumberDataPointValueTypeDouble:
+			value = dp.DoubleValue()
+		default:
+			continue
+		}
+
+		// Add to group
+		groups[seriesKey] = append(groups[seriesKey], dataPointInfo{
+			value:      value,
+			timestamp:  dp.Timestamp(),
+			attributes: filteredAttrs,
+		})
+	}
+}
+
+// groupSumDataPoints groups sum data points by filtered labels
+func (p *streamingAggregationProcessor) groupSumDataPoints(
+	sum pmetric.Sum,
+	metricConfig *MetricConfig,
+	groups map[string][]dataPointInfo,
+	metricName string,
+) {
+	dps := sum.DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dp := dps.At(i)
+
+		// Apply label filtering to get the filtered attributes
+		filteredAttrs := getLabelFilteredAttributes(dp.Attributes(), metricConfig.Labels)
+
+		// Generate series key from filtered attributes
+		seriesKey := p.generateSeriesKeyFromAttributes(metricName, filteredAttrs)
+
+		// Extract value
+		var value float64
+		switch dp.ValueType() {
+		case pmetric.NumberDataPointValueTypeInt:
+			value = float64(dp.IntValue())
+		case pmetric.NumberDataPointValueTypeDouble:
+			value = dp.DoubleValue()
+		default:
+			continue
+		}
+
+		// Add to group
+		groups[seriesKey] = append(groups[seriesKey], dataPointInfo{
+			value:      value,
+			timestamp:  dp.Timestamp(),
+			attributes: filteredAttrs,
+		})
+	}
+}
+
+// generateSeriesKeyFromAttributes generates a series key from filtered attributes
+func (p *streamingAggregationProcessor) generateSeriesKeyFromAttributes(metricName string, attrs pcommon.Map) string {
+	if attrs.Len() == 0 {
+		return metricName + "|"
+	}
+
+	// Create deterministic label string from attributes
+	var labelPairs []string
+	attrs.Range(func(k string, v pcommon.Value) bool {
+		labelPairs = append(labelPairs, k+"="+v.AsString())
+		return true
+	})
+	sort.Strings(labelPairs)
+
+	return metricName + "|" + strings.Join(labelPairs, ",")
+}
+
+// countTotalDataPoints counts total data points across all groups
+func (p *streamingAggregationProcessor) countTotalDataPoints(groups map[string][]dataPointInfo) int {
+	total := 0
+	for _, dataPoints := range groups {
+		total += len(dataPoints)
+	}
+	return total
+}
+
+// processDataPointGroup processes a single group of data points
+func (p *streamingAggregationProcessor) processDataPointGroup(
+	originalMetric pmetric.Metric,
+	seriesKey string,
+	dataPoints []dataPointInfo,
+	metricConfig *MetricConfig,
+) error {
+	if len(dataPoints) == 0 {
+		return nil
+	}
+
+	// Get or create aggregator for this series key
+	aggregator := p.getOrCreateAggregator(seriesKey, originalMetric.Type())
+
+	// Handle gauge metrics with custom aggregation (including "last" for proper timestamp handling)
+	if originalMetric.Type() == pmetric.MetricTypeGauge {
+		return p.processGaugeGroupWithStrategy(dataPoints, aggregator, metricConfig)
+	}
+
+	// For non-gauge metrics: use simple last value
+	lastDataPoint := dataPoints[len(dataPoints)-1]
+	aggregator.UpdateLast(lastDataPoint.value, lastDataPoint.timestamp)
+
+	return nil
+}
+
+// processGaugeGroupWithStrategy applies custom aggregation strategy to a group
+func (p *streamingAggregationProcessor) processGaugeGroupWithStrategy(
+	dataPoints []dataPointInfo,
+	aggregator *Aggregator,
+	metricConfig *MetricConfig,
+) error {
+	if len(dataPoints) == 0 {
+		return nil
+	}
+
+	// Extract values and find latest timestamp
+	var values []float64
+	var latestTimestamp pcommon.Timestamp
+
+	for _, dp := range dataPoints {
+		values = append(values, dp.value)
+		if dp.timestamp > latestTimestamp {
+			latestTimestamp = dp.timestamp
+		}
+	}
+
+	// Apply aggregation strategy
+	var aggregatedValue float64
+	switch metricConfig.AggregateType {
+	case Sum:
+		for _, v := range values {
+			aggregatedValue += v
+		}
+	case Average:
+		sum := 0.0
+		for _, v := range values {
+			sum += v
+		}
+		aggregatedValue = sum / float64(len(values))
+	case Max:
+		aggregatedValue = values[0]
+		for _, v := range values[1:] {
+			if v > aggregatedValue {
+				aggregatedValue = v
+			}
+		}
+	case Min:
+		aggregatedValue = values[0]
+		for _, v := range values[1:] {
+			if v < aggregatedValue {
+				aggregatedValue = v
+			}
+		}
+	case Last:
+		// Find the value with the latest timestamp
+		latestIdx := 0
+		latestTimestamp = dataPoints[0].timestamp
+		for i := 1; i < len(dataPoints); i++ {
+			if dataPoints[i].timestamp > latestTimestamp {
+				latestIdx = i
+				latestTimestamp = dataPoints[i].timestamp
+			}
+		}
+		aggregatedValue = dataPoints[latestIdx].value
+	default:
+		aggregatedValue = values[len(values)-1]
+	}
+
+	// Update aggregator
+	aggregator.UpdateLast(aggregatedValue, latestTimestamp)
+
+	return nil
+}
+
+// aggregateMetricDefault provides the original aggregation logic for backward compatibility
+func (p *streamingAggregationProcessor) aggregateMetricDefault(
+	metric pmetric.Metric,
+	metricConfig *MetricConfig,
+) error {
+	// Generate series key (default behavior - all metrics get same key)
+	seriesKey := metric.Name() + "|"
+
+	// Get or create aggregator at processor level (persistent across window swaps)
+	aggregator := p.getOrCreateAggregator(seriesKey, metric.Type())
+
+	// Aggregate based on metric type using internal aggregation package
+	switch metric.Type() {
+	case pmetric.MetricTypeSum:
+		config := aggregation.CounterAggregationConfig{
+			StaleDataThreshold: p.config.StaleDataThreshold,
+			Logger:             p.logger,
+		}
+		return aggregation.AggregateSum(metric.Sum(), aggregator, config, p.forceExportActiveWindow)
+	case pmetric.MetricTypeGauge:
+		config := aggregation.GaugeAggregationConfig{
+			Logger: p.logger,
+		}
+		return aggregation.AggregateGauge(metric.Gauge(), aggregator, config)
+	case pmetric.MetricTypeHistogram:
+		config := aggregation.HistogramAggregationConfig{
+			StaleDataThreshold: p.config.StaleDataThreshold,
+			Logger:             p.logger,
+		}
+		return aggregation.AggregateHistogram(metric.Histogram(), aggregator, config)
+	case pmetric.MetricTypeExponentialHistogram:
+		return aggregation.AggregateExponentialHistogram(metric, metric.ExponentialHistogram(), aggregator)
+	case pmetric.MetricTypeSummary:
+		return aggregation.AggregateSummary(metric.Summary(), aggregator)
+	default:
+		return fmt.Errorf("unsupported metric type: %v", metric.Type())
+	}
+}
+
+// extractDoubleValue extracts double value from NumberDataPoint
+func extractDoubleValue(dp pmetric.NumberDataPoint) float64 {
+	switch dp.ValueType() {
+	case pmetric.NumberDataPointValueTypeDouble:
+		return dp.DoubleValue()
+	case pmetric.NumberDataPointValueTypeInt:
+		return float64(dp.IntValue())
+	default:
+		return 0
+	}
+}

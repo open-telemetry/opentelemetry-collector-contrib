@@ -207,27 +207,64 @@ func createAndEmitMetrics(ctx context.Context, rawMeter, aggMeter metric.Meter, 
 	}
 
 	// Register callbacks for observable gauges
-	temperature := 20.0
+	temperature := map[string]float64{}
+
+	// Initialize temperature for each combination
+	datacenters := []string{"dc-1", "dc-2"}
+	locations := []string{"server-room-1", "server-room-2", "server-room-3"}
+	sensors := []string{"sensor-1", "sensor-2", "sensor-3", "sensor-4"}
+
+	for _, dc := range datacenters {
+		for _, loc := range locations {
+			for _, sensor := range sensors {
+				key := fmt.Sprintf("%s-%s-%s", dc, loc, sensor)
+				temperature[key] = 20.0 + rand.Float64()*10 // Start with 20-30°C range
+			}
+		}
+	}
+
 	_, err = rawMeter.RegisterCallback(
 		func(_ context.Context, o metric.Observer) error {
-			// Simulate temperature fluctuation with bounds
-			// Add random change between -1 and +1 degree
-			temperature += (rand.Float64() - 0.5) * 2
-			
-			// Keep temperature within realistic bounds (15°C to 30°C)
-			// This represents typical server room temperature range
-			if temperature < 15.0 {
-				temperature = 15.0
-			} else if temperature > 30.0 {
-				temperature = 30.0
+			// Generate temperature readings for each datacenter/location/sensor combination
+			for _, dc := range datacenters {
+				for _, loc := range locations {
+					for _, sensor := range sensors {
+						key := fmt.Sprintf("%s-%s-%s", dc, loc, sensor)
+
+						// Simulate temperature fluctuation with bounds
+						// Add random change between -1 and +1 degree
+						temperature[key] += (rand.Float64() - 0.5) * 2
+
+						// Keep temperature within realistic bounds (15°C to 35°C)
+						// Different ranges for different datacenters/locations
+						minTemp := 15.0
+						maxTemp := 35.0
+
+						// dc-1 tends to run cooler
+						if dc == "dc-1" {
+							maxTemp = 30.0
+						}
+						// dc-2 tends to run warmer
+						if dc == "dc-2" {
+							minTemp = 18.0
+						}
+
+						if temperature[key] < minTemp {
+							temperature[key] = minTemp
+						} else if temperature[key] > maxTemp {
+							temperature[key] = maxTemp
+						}
+
+						o.ObserveFloat64(rawTempGauge, temperature[key],
+							metric.WithAttributes(
+								attribute.String("datacenter", dc),
+								attribute.String("location", loc),
+								attribute.String("sensor", sensor),
+							),
+						)
+					}
+				}
 			}
-			
-			o.ObserveFloat64(rawTempGauge, temperature,
-				metric.WithAttributes(
-					attribute.String("location", "server_room"),
-					attribute.String("sensor", "sensor_1"),
-				),
-			)
 			return nil
 		},
 		rawTempGauge,
@@ -238,12 +275,22 @@ func createAndEmitMetrics(ctx context.Context, rawMeter, aggMeter metric.Meter, 
 
 	_, err = aggMeter.RegisterCallback(
 		func(_ context.Context, o metric.Observer) error {
-			o.ObserveFloat64(aggTempGauge, temperature,
-				metric.WithAttributes(
-					attribute.String("location", "server_room"),
-					attribute.String("sensor", "sensor_1"),
-				),
-			)
+			// Generate the same temperature readings for aggregated metrics
+			for _, dc := range datacenters {
+				for _, loc := range locations {
+					for _, sensor := range sensors {
+						key := fmt.Sprintf("%s-%s-%s", dc, loc, sensor)
+
+						o.ObserveFloat64(aggTempGauge, temperature[key],
+							metric.WithAttributes(
+								attribute.String("datacenter", dc),
+								attribute.String("location", loc),
+								attribute.String("sensor", sensor),
+							),
+						)
+					}
+				}
+			}
 			return nil
 		},
 		aggTempGauge,

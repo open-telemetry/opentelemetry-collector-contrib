@@ -26,10 +26,10 @@ type HistogramAccumulator struct {
 	ZeroCount     uint64
 
 	// Aggregated values
-	Count     uint64
-	Sum       float64
-	Min       float64
-	Max       float64
+	Count uint64
+	Sum   float64
+	Min   float64
+	Max   float64
 
 	// Bucket data
 	PositiveBuckets *BucketData
@@ -52,17 +52,17 @@ type BucketData struct {
 // NewHistogramAccumulator creates a new accumulator from an initial data point
 func NewHistogramAccumulator(metric pmetric.Metric, dp pmetric.ExponentialHistogramDataPoint) *HistogramAccumulator {
 	acc := &HistogramAccumulator{
-		Name:          metric.Name(),
-		Description:   metric.Description(),
-		Unit:          metric.Unit(),
-		Attributes:    pcommon.NewMap(),
-		Scale:         dp.Scale(),
-		ZeroThreshold: dp.ZeroThreshold(),
-		ZeroCount:     dp.ZeroCount(),
-		Count:         dp.Count(),
-		Sum:           dp.Sum(),
+		Name:           metric.Name(),
+		Description:    metric.Description(),
+		Unit:           metric.Unit(),
+		Attributes:     pcommon.NewMap(),
+		Scale:          dp.Scale(),
+		ZeroThreshold:  dp.ZeroThreshold(),
+		ZeroCount:      dp.ZeroCount(),
+		Count:          dp.Count(),
+		Sum:            dp.Sum(),
 		StartTimestamp: dp.StartTimestamp(),
-		Timestamp:     dp.Timestamp(),
+		Timestamp:      dp.Timestamp(),
 	}
 
 	// Copy attributes
@@ -154,8 +154,6 @@ func (acc *HistogramAccumulator) Merge(dp pmetric.ExponentialHistogramDataPoint)
 
 	return nil
 }
-
-
 
 // ToDataPoint converts the accumulator back to an exponential histogram data point
 func (acc *HistogramAccumulator) ToDataPoint(dp pmetric.ExponentialHistogramDataPoint) {
@@ -511,7 +509,7 @@ func (acc *HistogramAccumulator) mergeDownscaledBuckets(existing *BucketData, in
 
 	// Add incoming bucket counts
 	for i, count := range incomingCounts {
-		idx := int(incomingOffset - existing.Offset) + i
+		idx := int(incomingOffset-existing.Offset) + i
 		if idx >= 0 && idx < len(existing.BucketCounts) {
 			existing.BucketCounts[idx] += count
 		}
