@@ -102,7 +102,7 @@ func rpcSpanName(span ptrace.Span) string {
 		if okService {
 			return service.AsString() + "/*"
 		}
-		return "(" + system.AsString() + ")"
+		return system.AsString()
 	}
 	return ""
 }
@@ -121,7 +121,7 @@ func dbSpanName(span ptrace.Span) string {
 			spanName += collection.AsString()
 		}
 		if spanName == "" {
-			return "(" + system.AsString() + ")"
+			return system.AsString()
 		}
 		return spanName
 	}
@@ -143,7 +143,7 @@ func messagingSpanName(span ptrace.Span) string {
 		if okOperation {
 			return operation.AsString()
 		}
-		return "(" + system.AsString() + ")"
+		return system.AsString()
 	}
 	return ""
 }
