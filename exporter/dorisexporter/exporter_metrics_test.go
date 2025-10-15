@@ -43,16 +43,18 @@ func TestPushMetricData(t *testing.T) {
 		_ = exporter.shutdown(ctx)
 	}()
 
+	srvMux := http.NewServeMux()
 	server := &http.Server{
 		ReadTimeout: 3 * time.Second,
 		Addr:        fmt.Sprintf(":%d", port),
+		Handler:     srvMux,
 	}
 
 	go func() {
 		metrics := []string{"gauge", "sum", "histogram", "exponential_histogram", "summary"}
 		for _, metric := range metrics {
 			url := fmt.Sprintf("/api/otel/otel_metrics_%s/_stream_load", metric)
-			http.HandleFunc(url, func(w http.ResponseWriter, _ *http.Request) {
+			srvMux.HandleFunc(url, func(w http.ResponseWriter, _ *http.Request) {
 				w.WriteHeader(http.StatusOK)
 				_, _ = w.Write([]byte(`{"Status":"Success"}`))
 			})
