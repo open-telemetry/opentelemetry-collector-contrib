@@ -19,6 +19,7 @@ type marshaler interface {
 	MarshalLogs(ld plog.Logs) ([]byte, error)
 	MarshalMetrics(md pmetric.Metrics) ([]byte, error)
 	format() string
+	isArchive() bool
 }
 
 var ErrUnknownMarshaler = errors.New("unknown marshaler")
@@ -45,19 +46,23 @@ func newMarshaler(mType MarshalerType, logger *zap.Logger) (marshaler, error) {
 		marshaler.tracesMarshaler = &ptrace.ProtoMarshaler{}
 		marshaler.metricsMarshaler = &pmetric.ProtoMarshaler{}
 		marshaler.fileFormat = "binpb"
+		marshaler.isArchiveFormat = false
 	case OtlpJSON:
 		marshaler.logsMarshaler = &plog.JSONMarshaler{}
 		marshaler.tracesMarshaler = &ptrace.JSONMarshaler{}
 		marshaler.metricsMarshaler = &pmetric.JSONMarshaler{}
 		marshaler.fileFormat = "json"
+		marshaler.isArchiveFormat = false
 	case SumoIC:
 		sumomarshaler := newSumoICMarshaler()
 		marshaler.logsMarshaler = &sumomarshaler
-		marshaler.fileFormat = "json.gz"
+		marshaler.fileFormat = "json"
+		marshaler.isArchiveFormat = true
 	case Body:
 		exportbodyMarshaler := newbodyMarshaler()
 		marshaler.logsMarshaler = &exportbodyMarshaler
 		marshaler.fileFormat = exportbodyMarshaler.format()
+		marshaler.isArchiveFormat = false
 	default:
 		return nil, ErrUnknownMarshaler
 	}
