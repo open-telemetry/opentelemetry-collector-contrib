@@ -36,7 +36,6 @@ require (
 	go.opentelemetry.io/collector/extension/extensionauth v1.43.1-0.20251013162618-a96eab114ea4
 	go.opentelemetry.io/collector/pdata v1.43.1-0.20251013162618-a96eab114ea4
 	go.opentelemetry.io/collector/pdata/pprofile v0.137.1-0.20251013162618-a96eab114ea4
-	go.opentelemetry.io/collector/pdata/testdata v0.137.1-0.20251013162618-a96eab114ea4
 	go.opentelemetry.io/ebpf-profiler v0.0.202540
 	go.opentelemetry.io/otel v1.38.0
 	go.opentelemetry.io/otel/metric v1.38.0
