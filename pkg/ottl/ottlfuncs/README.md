@@ -1050,9 +1050,9 @@ OTTL syntax examples:
       transform/sanitize_span_name:
         error_mode: ignore
         trace_statements:
-          - set(span.attributes["original_name"], span.name)
+          - set(span.cache["original_name"], span.name)
           - set(span.name, GetSemconvSpanName())
-          - delete_key(span.attributes, "original_name") where span.attributes["original_name"] == span.name
+          - set(span.attributes["original_name"], span.cache["original_name"]) where span.cache["original_name"] != span.name
     connectors:
       spanmetrics:
     service:
