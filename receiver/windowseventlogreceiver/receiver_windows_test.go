@@ -385,8 +385,8 @@ func assertEventSourceInstallation(t *testing.T, src string) (func(), error) {
 	}
 	assert.NoError(t, err)
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
-		rk, err := registry.OpenKey(registry.LOCAL_MACHINE, "SYSTEM\\CurrentControlSet\\Services\\EventLog\\Application\\"+src, registry.QUERY_VALUE)
-		assert.NoError(c, err)
+		rk, inErr := registry.OpenKey(registry.LOCAL_MACHINE, "SYSTEM\\CurrentControlSet\\Services\\EventLog\\Application\\"+src, registry.QUERY_VALUE)
+		assert.NoError(c, inErr)
 		defer rk.Close()
 		_, _, err = rk.GetIntegerValue("TypesSupported")
 		assert.NoError(c, err)
