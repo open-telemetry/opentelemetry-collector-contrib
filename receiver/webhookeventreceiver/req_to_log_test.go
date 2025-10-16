@@ -508,8 +508,8 @@ func TestReqToLog(t *testing.T) {
 			if test.config != nil {
 				testConfig = test.config
 			}
-			// validate test config to set the default max request body bytes if not set
-			testConfig.Validate()
+			// Intentionally ignore config validation errors as they're not relevant for this test
+			_ = testConfig.Validate()
 
 			// receiver will fail to create if endpoint is empty
 			testConfig.Endpoint = "localhost:8080"
