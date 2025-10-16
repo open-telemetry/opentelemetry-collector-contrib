@@ -52,6 +52,8 @@ github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/serialize
 github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/serializerexporter v0.72.0-rc.5/go.mod h1:d1jwXX7WQdCLgRufIuRUp3OQtsgUGyZKTwwLxpYNaWY=
 github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient v0.72.0-rc.5 h1:jCAnRMpZPIzxAS762LQ7Xf7ECodRheIJN3G+6zC04Hk=
 github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient v0.72.0-rc.5/go.mod h1:0bsKB0S3WhMfx3x2WU8Ux/tcSwfQSl+YW0De0p3viJA=
+github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/statsprocessor v0.71.2 h1:l7iXU0htsp7n5oj15pZw1AsCcyZgklXjBUXs122yCC8=
+github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/statsprocessor v0.71.2/go.mod h1:1KDwYXb+YQax5kaTC2v2oySuBn7aFrBqm1dcGjuXCeI=
 github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil v0.72.0-rc.5 h1:Dmv9p1wlFegNm8Socs3t5r8z9kHzRp8p2jaQ16HssUc=
 github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil v0.72.0-rc.5/go.mod h1:CE6duikn8TD88XSpwfzJ4lzJS/UxqzvKWR79j43k6lY=
 github.com/DataDog/datadog-agent/comp/serializer/logscompression v0.72.0-rc.5 h1:fAZ0N0QCJ+Jcl2H2avaSn9y31HKbVajOYVfoRlvxloI=
@@ -671,6 +673,12 @@ go.opentelemetry.io/collector/confmap v1.43.1-0.20251013162618-a96eab114ea4 h1:3
 go.opentelemetry.io/collector/confmap v1.43.1-0.20251013162618-a96eab114ea4/go.mod h1:N5GZpFCmwD1GynDu3IWaZW5Ycfc/7YxSU0q1/E3vLdg=
 go.opentelemetry.io/collector/confmap/xconfmap v0.137.1-0.20251013162618-a96eab114ea4 h1:yA2m7hdE+LELLWJ8BQWLV6PWrxqlI6Ni/u72A4Abp/E=
 go.opentelemetry.io/collector/confmap/xconfmap v0.137.1-0.20251013162618-a96eab114ea4/go.mod h1:psXdQr13pVrCqNPdoER2QZZorvONAR5ZUEHURe4POh4=
+go.opentelemetry.io/collector/connector v0.137.1-0.20251013162618-a96eab114ea4 h1:W98PYYhj00HnLuT+z9QDL/ucXrn2HpoHgDlIqktE/lQ=
+go.opentelemetry.io/collector/connector v0.137.1-0.20251013162618-a96eab114ea4/go.mod h1:ipm2LscGOkEYLRSh9o/Rvna/2TaXw21SCSQDrinCPL0=
+go.opentelemetry.io/collector/connector/connectortest v0.137.1-0.20251013162618-a96eab114ea4 h1:bS/fJQEHbwYvlP+wpgyrTOYS8VffddEgCil0Tbtk6VQ=
+go.opentelemetry.io/collector/connector/connectortest v0.137.1-0.20251013162618-a96eab114ea4/go.mod h1:RpEzK/SdNq2lfWOT3vroWQjvB7mQdfJMphdOPWMJTFI=
+go.opentelemetry.io/collector/connector/xconnector v0.137.1-0.20251013162618-a96eab114ea4 h1:PiM3HICkqHIwbjpXc6d9HyyFx7o7W7vNnxQ+B0OFZZ8=
+go.opentelemetry.io/collector/connector/xconnector v0.137.1-0.20251013162618-a96eab114ea4/go.mod h1:NAZ7sAOeLJpF1TEG4OBck7tA3gnIfTjoBK+j6RBI6OY=
 go.opentelemetry.io/collector/consumer v1.43.1-0.20251013162618-a96eab114ea4 h1:UiudlwgYJGaSmhV3i2RWDgpWaS73B62tRe3Q+blKb3g=
 go.opentelemetry.io/collector/consumer v1.43.1-0.20251013162618-a96eab114ea4/go.mod h1:wO/uVbt7tB2OsNGD3GdixgjEKL2wKOGrK4hTJ494pYU=
 go.opentelemetry.io/collector/consumer/consumererror v0.137.1-0.20251013162618-a96eab114ea4 h1:096Li86qsuBbW5BFE0ui/Wqb/2jnxgzKI7ZkjfehS+E=
@@ -703,6 +711,8 @@ go.opentelemetry.io/collector/extension/xextension v0.137.1-0.20251013162618-a96
 go.opentelemetry.io/collector/extension/xextension v0.137.1-0.20251013162618-a96eab114ea4/go.mod h1:pLZ12DoONzYj9fTM7JSMub8inGJCVr+4VKcrxd4k/7E=
 go.opentelemetry.io/collector/featuregate v1.43.1-0.20251013162618-a96eab114ea4 h1:IXK7EGifr3Lic3mnMlkVXFb1HBlkBoYfoy/AYzsevko=
 go.opentelemetry.io/collector/featuregate v1.43.1-0.20251013162618-a96eab114ea4/go.mod h1:d0tiRzVYrytB6LkcYgz2ESFTv7OktRPQe0QEQcPt1L4=
+go.opentelemetry.io/collector/internal/fanoutconsumer v0.137.1-0.20251013162618-a96eab114ea4 h1:DBkHHU7rC431EmRnnh6HUnjzXF2ttYpvrDzWqVcPZXM=
+go.opentelemetry.io/collector/internal/fanoutconsumer v0.137.1-0.20251013162618-a96eab114ea4/go.mod h1:rawRluXfYgIWtmTc0UPxJEOqyewKKbNKXzTcqGc9MnE=
 go.opentelemetry.io/collector/internal/telemetry v0.137.1-0.20251013162618-a96eab114ea4 h1:E94fKydbFNkR6Zfhix/alvOftJx6e6srYQ8PIr9xYRw=
 go.opentelemetry.io/collector/internal/telemetry v0.137.1-0.20251013162618-a96eab114ea4/go.mod h1:ui3HnaeyvIe6tpjUFcL70Ev3aw5UxQnzoBGhuXfbbfs=
 go.opentelemetry.io/collector/pdata v1.43.1-0.20251013162618-a96eab114ea4 h1:lmaRPm+HIMu/Tz4Ht9/NcGCd7FVOUXBmC3fXDZYN6+E=
@@ -715,6 +725,8 @@ go.opentelemetry.io/collector/pdata/xpdata v0.137.1-0.20251013162618-a96eab114ea
 go.opentelemetry.io/collector/pdata/xpdata v0.137.1-0.20251013162618-a96eab114ea4/go.mod h1:B7G6Rrl3sSTVFh41Y8NEc7sD4UqP/6gzXxXsYuFxCY4=
 go.opentelemetry.io/collector/pipeline v1.43.1-0.20251013162618-a96eab114ea4 h1:Fak0kW9jeCaXsdx9lTF8ben4Exnpo3kff9btUc7aXhI=
 go.opentelemetry.io/collector/pipeline v1.43.1-0.20251013162618-a96eab114ea4/go.mod h1:xUrAqiebzYbrgxyoXSkk6/Y3oi5Sy3im2iCA51LwUAI=
+go.opentelemetry.io/collector/pipeline/xpipeline v0.137.1-0.20251013162618-a96eab114ea4 h1:zAVkJfuNFcHJ514dWdqsom9/X3otXddpcOxsKJmf4+I=
+go.opentelemetry.io/collector/pipeline/xpipeline v0.137.1-0.20251013162618-a96eab114ea4/go.mod h1:nQmJ9w3UWOwNmaUR1EalDLyswzHfJcBPMm/NmcytH74=
 go.opentelemetry.io/collector/processor v1.43.1-0.20251013162618-a96eab114ea4 h1:N2Vh16kIGAYbFNIz+c0grX0fdsd+RKSDIX2D0cFnf6E=
 go.opentelemetry.io/collector/processor v1.43.1-0.20251013162618-a96eab114ea4/go.mod h1:QNIpPdWyF7/m76lY24vl8oPv9NA6R5hkppbCjrnCeSs=
 go.opentelemetry.io/collector/processor/processorhelper v0.137.1-0.20251013162618-a96eab114ea4 h1:Wxl51AXqBQIZD7Mtqkt4kpmet2zvp/KIsThfjQ276jg=

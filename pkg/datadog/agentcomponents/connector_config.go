@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package agentcomponents // import "github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/connector/datadogconnector"
+package agentcomponents // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/agentcomponents"
 
 import (
 	"go.opentelemetry.io/collector/component"

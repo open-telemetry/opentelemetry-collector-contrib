@@ -129,6 +129,7 @@ require (
 )
 
 require (
+	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/statsprocessor v0.71.2 // indirect
 	github.com/DataDog/go-tuf v1.1.1-0.5.2 // indirect
 	github.com/DataDog/gohai v0.0.0-20230524154621-4316413895ee // indirect
 	github.com/DataDog/mmh3 v0.0.0-20210722141835-012dc69a9e49 // indirect
@@ -257,6 +258,8 @@ require (
 	go.opentelemetry.io/collector/config/configopaque v1.43.1-0.20251013162618-a96eab114ea4 // indirect
 	go.opentelemetry.io/collector/config/configoptional v1.43.1-0.20251013162618-a96eab114ea4 // indirect
 	go.opentelemetry.io/collector/confmap/xconfmap v0.137.1-0.20251013162618-a96eab114ea4 // indirect
+	go.opentelemetry.io/collector/connector v0.137.1-0.20251013162618-a96eab114ea4 // indirect
+	go.opentelemetry.io/collector/connector/connectortest v0.137.1-0.20251013162618-a96eab114ea4 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.137.1-0.20251013162618-a96eab114ea4 // indirect
 	go.opentelemetry.io/collector/consumer/consumertest v0.137.1-0.20251013162618-a96eab114ea4 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.137.1-0.20251013162618-a96eab114ea4 // indirect
@@ -266,9 +269,9 @@ require (
 	go.opentelemetry.io/collector/extension/extensionmiddleware v0.137.1-0.20251013162618-a96eab114ea4 // indirect
 	go.opentelemetry.io/collector/extension/extensiontest v0.137.1-0.20251013162618-a96eab114ea4 // indirect
 	go.opentelemetry.io/collector/extension/xextension v0.137.1-0.20251013162618-a96eab114ea4 // indirect
+	go.opentelemetry.io/collector/internal/fanoutconsumer v0.137.1-0.20251013162618-a96eab114ea4 // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.137.1-0.20251013162618-a96eab114ea4 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.137.1-0.20251013162618-a96eab114ea4 // indirect
-	go.opentelemetry.io/collector/pdata/testdata v0.137.1-0.20251013162618-a96eab114ea4 // indirect
 	go.opentelemetry.io/collector/pdata/xpdata v0.137.1-0.20251013162618-a96eab114ea4 // indirect
 	go.opentelemetry.io/collector/pipeline v1.43.1-0.20251013162618-a96eab114ea4 // indirect
 	go.opentelemetry.io/collector/processor/processortest v0.137.1-0.20251013162618-a96eab114ea4 // indirect

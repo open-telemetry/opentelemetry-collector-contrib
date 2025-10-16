@@ -241,6 +241,7 @@ require (
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.137.0 // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.137.1-0.20251013162618-a96eab114ea4 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.137.1-0.20251013162618-a96eab114ea4 // indirect
+	go.opentelemetry.io/collector/pdata/testdata v0.137.1-0.20251013162618-a96eab114ea4 // indirect
 	go.opentelemetry.io/collector/pdata/xpdata v0.137.1-0.20251013162618-a96eab114ea4 // indirect
 	go.opentelemetry.io/collector/pipeline v1.43.1-0.20251013162618-a96eab114ea4 // indirect
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.137.0 // indirect
@@ -298,3 +299,9 @@ replace github.com/openshift/api v3.9.0+incompatible => github.com/openshift/api
 
 // Replace old monolithic genproto with newer version to avoid ambiguous import with split modules
 replace google.golang.org/genproto => google.golang.org/genproto v0.0.0-20231030173426-d783a09b4405
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../pdatatest
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../pdatautil
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../golden
