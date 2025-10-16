@@ -54,7 +54,7 @@ func dedupDimensionSet(dimensions []string) (deduped []string, hasDuplicate bool
 	hasDuplicate = (len(seen) < len(dimensions))
 	if !hasDuplicate {
 		deduped = dimensions
-		return
+		return deduped, hasDuplicate
 	}
 	deduped = make([]string, len(seen))
 	idx := 0
@@ -62,7 +62,7 @@ func dedupDimensionSet(dimensions []string) (deduped []string, hasDuplicate bool
 		deduped[idx] = dim
 		idx++
 	}
-	return
+	return deduped, hasDuplicate
 }
 
 // init initializes the MetricDeclaration struct. Performs validation and compiles
@@ -114,7 +114,7 @@ func (m *MetricDeclaration) init(logger *zap.Logger) (err error) {
 			return err
 		}
 	}
-	return
+	return err
 }
 
 // MatchesName returns true if the given OTLP Metric's name matches any of the Metric
@@ -160,7 +160,7 @@ func (m *MetricDeclaration) ExtractDimensions(labels map[string]string) (dimensi
 			dimensions = append(dimensions, dimensionSet)
 		}
 	}
-	return
+	return dimensions
 }
 
 // init LabelMatcher with default values and compile regex string.

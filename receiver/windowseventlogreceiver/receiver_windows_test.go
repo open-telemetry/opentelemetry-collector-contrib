@@ -392,7 +392,7 @@ func assertEventSourceInstallation(t *testing.T, src string) (uninstallEventSour
 		assert.NoError(c, err)
 	}, 10*time.Second, 250*time.Millisecond)
 
-	return
+	return uninstallEventSource, err
 }
 
 //nolint:unparam // expectedEventCount might be greater than one in the future
@@ -432,7 +432,7 @@ func filterAllLogRecordsBySource(t *testing.T, sink *consumertest.LogsSink, src 
 		}
 	}
 
-	return
+	return filteredLogRecords
 }
 
 func extractEventSourceFromLogRecord(t *testing.T, logRecord plog.LogRecord) string {
