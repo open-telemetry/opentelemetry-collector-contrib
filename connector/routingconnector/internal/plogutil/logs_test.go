@@ -236,7 +236,7 @@ func TestMoveRecordsWithContextIf(t *testing.T) {
 
 func BenchmarkMoveResourcesIfLogs(b *testing.B) {
 	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		from := plogutiltest.NewLogs("AB", "CD", "EF")
 		to := plog.NewLogs()
 		plogutil.MoveResourcesIf(from, to, func(plog.ResourceLogs) bool {

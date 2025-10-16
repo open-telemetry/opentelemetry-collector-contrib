@@ -183,7 +183,7 @@ func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Expor
 
 			// Add random values to the histogram
 			count := 10 + w.rand.IntN(20) // Random count between 10-30
-			for j := 0; j < count; j++ {
+			for range count {
 				value := float64(w.rand.IntN(1000))
 				hist.Update(value)
 			}

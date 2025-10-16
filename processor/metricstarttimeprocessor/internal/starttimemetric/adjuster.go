@@ -88,7 +88,8 @@ func (a *Adjuster) AdjustMetrics(_ context.Context, metrics pmetric.Metrics) (pm
 						} else if refTsi.IsResetSum(dp) {
 							refTsi.Number.StartTime = pcommon.NewTimestampFromTime(dp.Timestamp().AsTime().Add(-1 * time.Millisecond))
 						}
-						refTsi.Number.PreviousValue = dp.DoubleValue()
+						refTsi.Number.PreviousDoubleValue = dp.DoubleValue()
+						refTsi.Number.PreviousIntValue = dp.IntValue()
 						dp.SetStartTimestamp(refTsi.Number.StartTime)
 					}
 

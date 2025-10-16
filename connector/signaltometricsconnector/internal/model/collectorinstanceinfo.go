@@ -20,8 +20,6 @@ var prefix = metadata.Type.String()
 type CollectorInstanceInfo struct {
 	size              int
 	serviceInstanceID string
-	serviceName       string
-	serviceNamespace  string
 }
 
 func NewCollectorInstanceInfo(
@@ -29,20 +27,9 @@ func NewCollectorInstanceInfo(
 ) CollectorInstanceInfo {
 	var info CollectorInstanceInfo
 	for k, v := range set.Resource.Attributes().All() {
-		switch k {
-		case string(semconv.ServiceInstanceIDKey):
+		if k == string(semconv.ServiceInstanceIDKey) {
 			if str := v.Str(); str != "" {
-				info.serviceInstanceID = str
-				info.size++
-			}
-		case string(semconv.ServiceNameKey):
-			if str := v.Str(); str != "" {
-				info.serviceName = str
-				info.size++
-			}
-		case string(semconv.ServiceNamespaceKey):
-			if str := v.Str(); str != "" {
-				info.serviceNamespace = str
+				info.serviceInstanceID = v.Str()
 				info.size++
 			}
 		}
@@ -60,12 +47,6 @@ func (info CollectorInstanceInfo) Copy(to pcommon.Map) {
 	to.EnsureCapacity(info.Size())
 	if info.serviceInstanceID != "" {
 		to.PutStr(keyWithPrefix(string(semconv.ServiceInstanceIDKey)), info.serviceInstanceID)
-	}
-	if info.serviceName != "" {
-		to.PutStr(keyWithPrefix(string(semconv.ServiceNameKey)), info.serviceName)
-	}
-	if info.serviceNamespace != "" {
-		to.PutStr(keyWithPrefix(string(semconv.ServiceNamespaceKey)), info.serviceNamespace)
 	}
 }
 
