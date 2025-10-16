@@ -67,11 +67,11 @@ func (c *logsConnector) ConsumeTraces(ctx context.Context, traces ptrace.Traces)
 			spans := ils.Spans()
 			for k := 0; k < spans.Len(); k++ {
 				span := spans.At(k)
-				if span.Kind() == ptrace.SpanKindClient {
+				if span.Kind() == ptrace.SpanKindClient && spanDuration(span) >= c.config.Threshold.Nanoseconds() {
 					// through db.Statement exists represents db client
 					if _, dbSystem := findAttributeValue(dbSystemKey, span.Attributes()); dbSystem {
 						for _, db := range c.config.DBSystem {
-							if db == getValue(span.Attributes(), dbSystemKey) && spanDuration(span) >= c.config.Threshold.Nanoseconds() {
+							if db == getValue(span.Attributes(), dbSystemKey) {
 								c.attrToLogRecord(sl, serviceName, span, resourceAttr)
 							}
 						}

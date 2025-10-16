@@ -30,9 +30,9 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		Threshold: time.Millisecond * 500,
 		DBSystem: []string{
-			string(conventions.DBSystemH2.Key), string(conventions.DBSystemMongoDB.Key),
-			string(conventions.DBSystemMySQL.Key), string(conventions.DBSystemOracle.Key),
-			string(conventions.DBSystemPostgreSQL.Key), string(conventions.DBSystemMariaDB.Key),
+			conventions.DBSystemH2.Value.AsString(), conventions.DBSystemMongoDB.Value.AsString(),
+			conventions.DBSystemMySQL.Value.AsString(), conventions.DBSystemOracle.Value.AsString(),
+			conventions.DBSystemPostgreSQL.Value.AsString(), conventions.DBSystemMariaDB.Value.AsString(),
 		},
 		Dimensions: []Dimension{},
 	}
