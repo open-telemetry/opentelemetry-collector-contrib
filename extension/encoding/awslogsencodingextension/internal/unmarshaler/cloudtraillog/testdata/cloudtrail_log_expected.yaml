@@ -70,16 +70,12 @@ resourceLogs:
               - key: aws.principal.type
                 value:
                   stringValue: IAMUser
-              - key: aws.session.context.attributes
+              - key: aws.session_context.attributes.mfa_authenticated
                 value:
-                  kvlistValue:
-                    values:
-                      - key: creationDate
-                        value:
-                          stringValue: "2023-07-19T21:11:57Z"
-                      - key: mfaAuthenticated
-                        value:
-                          stringValue: "false"
+                  boolValue: false
+              - key: aws.session_context.attributes.creation_date
+                value:
+                  stringValue: "2023-07-19T21:11:57Z"
               - key: tls.protocol.version
                 value:
                   stringValue: "1.2"
@@ -128,6 +124,16 @@ resourceLogs:
                                     values:
                                       - kvlistValue:
                                           values:
+                                            - key: currentState
+                                              value:
+                                                kvlistValue:
+                                                  values:
+                                                    - key: code
+                                                      value:
+                                                        doubleValue: 0
+                                                    - key: name
+                                                      value:
+                                                        stringValue: pending
                                             - key: previousState
                                               value:
                                                 kvlistValue:
@@ -141,16 +147,6 @@ resourceLogs:
                                             - key: instanceId
                                               value:
                                                 stringValue: i-EXAMPLEaff4840c22
-                                            - key: currentState
-                                              value:
-                                                kvlistValue:
-                                                  values:
-                                                    - key: name
-                                                      value:
-                                                        stringValue: pending
-                                                    - key: code
-                                                      value:
-                                                        doubleValue: 0
                                       - kvlistValue:
                                           values:
                                             - key: instanceId
@@ -170,12 +166,12 @@ resourceLogs:
                                               value:
                                                 kvlistValue:
                                                   values:
-                                                    - key: code
-                                                      value:
-                                                        doubleValue: 80
                                                     - key: name
                                                       value:
                                                         stringValue: stopped
+                                                    - key: code
+                                                      value:
+                                                        doubleValue: 80
             body: {}
             timeUnixNano: "1689801448000000000"
           - attributes:
@@ -233,16 +229,12 @@ resourceLogs:
               - key: aws.principal.type
                 value:
                   stringValue: IAMUser
-              - key: aws.session.context.attributes
+              - key: aws.session_context.attributes.mfa_authenticated
                 value:
-                  kvlistValue:
-                    values:
-                      - key: creationDate
-                        value:
-                          stringValue: "2023-07-19T21:11:57Z"
-                      - key: mfaAuthenticated
-                        value:
-                          stringValue: "false"
+                  boolValue: false
+              - key: aws.session_context.attributes.creation_date
+                value:
+                  stringValue: "2023-07-19T21:11:57Z"
               - key: tls.protocol.version
                 value:
                   stringValue: "1.2"
@@ -267,9 +259,6 @@ resourceLogs:
                         value:
                           kvlistValue:
                             values:
-                              - key: userName
-                                value:
-                                  stringValue: Richard
                               - key: path
                                 value:
                                   stringValue: /
@@ -282,6 +271,9 @@ resourceLogs:
                               - key: createDate
                                 value:
                                   stringValue: Jul 19, 2023 9:25:09 PM
+                              - key: userName
+                                value:
+                                  stringValue: Richard
             body: {}
             timeUnixNano: "1689801909000000000"
           - attributes:
@@ -333,16 +325,12 @@ resourceLogs:
               - key: aws.principal.type
                 value:
                   stringValue: AssumedRole
-              - key: aws.session.context.attributes
+              - key: aws.session_context.attributes.mfa_authenticated
                 value:
-                  kvlistValue:
-                    values:
-                      - key: creationDate
-                        value:
-                          stringValue: "2023-08-21T16:44:05Z"
-                      - key: mfaAuthenticated
-                        value:
-                          stringValue: "false"
+                  boolValue: true
+              - key: aws.session_context.attributes.creation_date
+                value:
+                  stringValue: "2023-08-21T16:44:05Z"
               - key: aws.session_context.issuer.type
                 value:
                   stringValue: Role
@@ -521,16 +509,12 @@ resourceLogs:
               - key: aws.principal.type
                 value:
                   stringValue: IAMUser
-              - key: aws.session.context.attributes
+              - key: aws.session_context.attributes.mfa_authenticated
                 value:
-                  kvlistValue:
-                    values:
-                      - key: creationDate
-                        value:
-                          stringValue: "2023-07-19T21:11:57Z"
-                      - key: mfaAuthenticated
-                        value:
-                          stringValue: "false"
+                  boolValue: false
+              - key: aws.session_context.attributes.creation_date
+                value:
+                  stringValue: "2023-07-19T21:11:57Z"
               - key: tls.protocol.version
                 value:
                   stringValue: "1.2"
@@ -627,15 +611,15 @@ resourceLogs:
                 value:
                   kvlistValue:
                     values:
+                      - key: MFAUsed
+                        value:
+                          boolValue: true
                       - key: MobileVersion
                         value:
                           stringValue: "No"
                       - key: LoginTo
                         value:
                           stringValue: https://console.aws.amazon.com/console/home?region=us
-                      - key: MFAUsed
-                        value:
-                          boolValue: true
             body: {}
             timeUnixNano: "1749997800000000000"
           - attributes:

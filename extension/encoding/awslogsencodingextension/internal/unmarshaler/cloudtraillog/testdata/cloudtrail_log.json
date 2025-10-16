@@ -148,7 +148,7 @@
                     },
                     "attributes": {
                         "creationDate": "2023-08-21T16:44:05Z",
-                        "mfaAuthenticated": "false"
+                        "mfaAuthenticated": "true"
                     }
                 }
             },

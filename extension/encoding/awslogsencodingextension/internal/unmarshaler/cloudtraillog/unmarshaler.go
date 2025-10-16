@@ -6,6 +6,7 @@ package cloudtraillog // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"fmt"
 	"io"
+	"strconv"
 	"time"
 
 	gojson "github.com/goccy/go-json"
@@ -42,8 +43,14 @@ type UserIdentity struct {
 // SessionContext if request was made with temporary security credentials,
 // provides information about the session created for credentials.
 type SessionContext struct {
-	Attributes    map[string]any `json:"attributes"`
-	SessionIssuer *SessionIssuer `json:"sessionIssuer"`
+	Attributes    *SessionContextAttributes `json:"attributes"`
+	SessionIssuer *SessionIssuer            `json:"sessionIssuer"`
+}
+
+// SessionContextAttributes provides additional attributes for the session.
+type SessionContextAttributes struct {
+	MFAAuthenticated string `json:"mfaAuthenticated"`
+	CreationDate     string `json:"creationDate"`
 }
 
 // SessionIssuer provides information about how the user obtained credentials.
@@ -324,11 +331,21 @@ func (*CloudTrailLogUnmarshaler) setLogAttributes(attrs pcommon.Map, record *Clo
 
 // enrichWithSessionContext is a helper to add SessionContext details to log attributes.
 // Root level Attributes will be added with aws.session_context prefix.
+// SessionContextAttributes will be added with aws.session_context.attributes prefix.
 // SessionIssuer details will be added with aws.session_context.issuer prefix.
 func enrichWithSessionContext(attrs pcommon.Map, sessionContext *SessionContext) {
 	if sessionContext.Attributes != nil {
-		attributesMap := attrs.PutEmptyMap("aws.session.context.attributes")
-		_ = attributesMap.FromRaw(sessionContext.Attributes)
+		if sessionContext.Attributes.MFAAuthenticated != "" {
+			b, err := strconv.ParseBool(sessionContext.Attributes.MFAAuthenticated)
+			if err == nil {
+				// only append boolean converted value if no error in conversion
+				attrs.PutBool("aws.session_context.attributes.mfa_authenticated", b)
+			}
+		}
+
+		if sessionContext.Attributes.CreationDate != "" {
+			attrs.PutStr("aws.session_context.attributes.creation_date", sessionContext.Attributes.CreationDate)
+		}
 	}
 
 	if sessionContext.SessionIssuer != nil {
