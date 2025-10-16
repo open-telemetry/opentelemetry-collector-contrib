@@ -41,7 +41,7 @@ Measures the health of a chassis (-1 unknown, 0 critical, 1 ok, 2 warning).
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {health} | Gauge | Int | development |
+| {statushealth} | Gauge | Int | development |
 
 #### Attributes
 
@@ -64,7 +64,7 @@ Measures the state of a chassis (-1 unknown, 0 disabled, 1 enabled).
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {state} | Gauge | Int | development |
+| {statusstate} | Gauge | Int | development |
 
 #### Attributes
 
@@ -104,7 +104,7 @@ Measures the health of a chassis fan (-1 unknown, 0 critical, 1 ok, 2 warning).
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {health} | Gauge | Int | development |
+| {statushealth} | Gauge | Int | development |
 
 #### Attributes
 
@@ -121,7 +121,7 @@ Measures the state of a chassis fan (-1 unknown, 0 disabled, 1 enabled).
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {state} | Gauge | Int | development |
+| {statusstate} | Gauge | Int | development |
 
 #### Attributes
 
@@ -162,7 +162,7 @@ Measures the health of a system (-1 unknown, 0 critical, 1 ok, 2 warning).
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {health} | Gauge | Int | development |
+| {statushealth} | Gauge | Int | development |
 
 #### Attributes
 
@@ -186,7 +186,7 @@ Measures the state of a system (-1 unknown, 0 disabled, 1 enabled).
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {state} | Gauge | Int | development |
+| {statusstate} | Gauge | Int | development |
 
 #### Attributes
 
@@ -210,7 +210,7 @@ Measures the reading of a chassis temperature.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {%} | Gauge | Int | development |
+| °C | Gauge | Int | development |
 
 #### Attributes
 
@@ -227,7 +227,7 @@ Measures the health of a chassis temperature (-1 unknown, 0 critical, 1 ok, 2 wa
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {health} | Gauge | Int | development |
+| {statushealth} | Gauge | Int | development |
 
 #### Attributes
 
@@ -244,7 +244,7 @@ Measures the state of a chassis temperature (-1 unknown, 0 disabled, 1 enabled).
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {state} | Gauge | Int | development |
+| {statusstate} | Gauge | Int | development |
 
 #### Attributes
 
