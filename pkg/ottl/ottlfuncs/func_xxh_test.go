@@ -32,12 +32,11 @@ func Test_XXH3(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := xxh3HashString[any](&ottl.StandardStringGetter[any]{
+			exprFunc := xxh3HashString[any](&ottl.StandardStringGetter[any]{
 				Getter: func(context.Context, any) (any, error) {
 					return tt.value, nil
 				},
 			})
-			assert.NoError(t, err)
 			result, err := exprFunc(nil, nil)
 			if tt.err {
 				assert.Error(t, err)
@@ -69,13 +68,12 @@ func Test_XXH3Error(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := xxh3HashString[any](&ottl.StandardStringGetter[any]{
+			exprFunc := xxh3HashString[any](&ottl.StandardStringGetter[any]{
 				Getter: func(context.Context, any) (any, error) {
 					return tt.value, nil
 				},
 			})
-			assert.NoError(t, err)
-			_, err = exprFunc(nil, nil)
+			_, err := exprFunc(nil, nil)
 			assert.ErrorContains(t, err, tt.expectedError)
 		})
 	}

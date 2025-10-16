@@ -28,10 +28,10 @@ func createXXH3Function[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ot
 		return nil, errors.New("XXH3Factory args must be of type *XXH3Arguments[K]")
 	}
 
-	return xxh3HashString(args.Target)
+	return xxh3HashString(args.Target), nil
 }
 
-func xxh3HashString[K any](target ottl.StringGetter[K]) (ottl.ExprFunc[K], error) {
+func xxh3HashString[K any](target ottl.StringGetter[K]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		val, err := target.Get(ctx, tCtx)
 		if err != nil {
@@ -44,5 +44,5 @@ func xxh3HashString[K any](target ottl.StringGetter[K]) (ottl.ExprFunc[K], error
 		}
 		hashValue := hex.EncodeToString(hash.Sum(nil))
 		return hashValue, nil
-	}, nil
+	}
 }
