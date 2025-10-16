@@ -253,6 +253,9 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		resourceMetricCache = make(map[uint64]pmetric.ResourceMetrics)
 	)
 
+	// First, extract any target_info metric, if any.
+	prw.extractTargetInfo(req, &labelsBuilder)
+
 	for i := range req.Timeseries {
 		ts := &req.Timeseries[i]
 		ls := ts.ToLabels(&labelsBuilder, req.Symbols)
@@ -265,29 +268,8 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 			continue
 		}
 
-		// If the metric name is equal to target_info, we use its labels as attributes of the resource
-		// Ref: https://opentelemetry.io/docs/specs/otel/compatibility/prometheus_and_openmetrics/#resource-attributes-1
 		if metadata.Name == "target_info" {
-			var rm pmetric.ResourceMetrics
-			hashedLabels := xxhash.Sum64String(ls.Get("job") + string([]byte{'\xff'}) + ls.Get("instance"))
-
-			if existingRM, ok := resourceMetricCache[hashedLabels]; ok {
-				rm = existingRM
-			} else {
-				rm = otelMetrics.ResourceMetrics().AppendEmpty()
-			}
-
-			attrs := rm.Resource().Attributes()
-			parseJobAndInstance(attrs, ls.Get("job"), ls.Get("instance"))
-
-			// Add the remaining labels as resource attributes
-			for labelName, labelValue := range ls.Map() {
-				if labelName != "job" && labelName != "instance" && !schema.IsMetadataLabel(labelName) {
-					attrs.PutStr(labelName, labelValue)
-				}
-			}
-			prw.attrCache.Add(hashedLabels, attrs)
-			resourceMetricCache[hashedLabels] = rm
+			// We already converted the target_info labels into resource attributes. Continue.
 			continue
 		}
 
@@ -402,6 +384,29 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 	}
 
 	return otelMetrics, stats, badRequestErrors
+}
+
+func (prw *prometheusRemoteWriteReceiver) extractTargetInfo(req *writev2.Request, labelsBuilder *labels.ScratchBuilder) {
+	for i := range req.Timeseries {
+		ts := &req.Timeseries[i]
+		ls := ts.ToLabels(labelsBuilder, req.Symbols)
+		metadata := schema.NewMetadataFromLabels(ls)
+		// If the metric name is equal to target_info, we use its labels as attributes of the resource
+		// Ref: https://opentelemetry.io/docs/specs/otel/compatibility/prometheus_and_openmetrics/#resource-attributes-1
+		if metadata.Name == "target_info" {
+			attrs := pcommon.NewMap()
+			parseJobAndInstance(attrs, ls.Get("job"), ls.Get("instance"))
+			// Add the remaining labels as resource attributes
+			for labelName, labelValue := range ls.Map() {
+				if labelName != "job" && labelName != "instance" && !schema.IsMetadataLabel(labelName) {
+					attrs.PutStr(labelName, labelValue)
+				}
+			}
+
+			hashedLabels := xxhash.Sum64String(ls.Get("job") + string([]byte{'\xff'}) + ls.Get("instance"))
+			prw.attrCache.Add(hashedLabels, attrs)
+		}
+	}
 }
 
 // processHistogramTimeSeries handles all histogram processing, including validation and mixed schemas.
