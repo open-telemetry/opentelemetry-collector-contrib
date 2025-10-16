@@ -1034,7 +1034,7 @@ for the following attributes:
 | `http.request.method` | `http.method`          |
 | `rpc.method`          | `rpc.grpc.method`      |
 | `rpc.service`         | `rpc.grpc.service`     |
-| `db.system`           | `db.system.name`       |
+| `db.system.name`           | `db.system`       |
 | `db.operation.name`   | `db.operation`         |
 | `db.collection.name`  | `db.name`              |
 
