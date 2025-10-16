@@ -15,6 +15,20 @@ import (
 )
 
 func Test_SliceToMap(t *testing.T) {
+	nestedObj := func() any {
+		sl := pcommon.NewSlice()
+		thing1 := sl.AppendEmpty().SetEmptyMap()
+		thing1.PutStr("name", "foo")
+		thing1.PutEmptyMap("value").PutStr("test", "x")
+
+		thing2 := sl.AppendEmpty().SetEmptyMap()
+		thing2.PutStr("name", "bar")
+		thing2.PutInt("value", 5)
+		thing2.PutEmptyMap("value").PutStr("test", "y")
+
+		return sl
+	}
+
 	type testCase struct {
 		name             string
 		value            func() any
@@ -97,19 +111,7 @@ func Test_SliceToMap(t *testing.T) {
 		{
 			name:    "nested object with key path only",
 			keyPath: []string{"value", "test"},
-			value: func() any {
-				sl := pcommon.NewSlice()
-				thing1 := sl.AppendEmpty().SetEmptyMap()
-				thing1.PutStr("name", "foo")
-				thing1.PutEmptyMap("value").PutStr("test", "x")
-
-				thing2 := sl.AppendEmpty().SetEmptyMap()
-				thing2.PutStr("name", "bar")
-				thing2.PutInt("value", 5)
-				thing2.PutEmptyMap("value").PutStr("test", "y")
-
-				return sl
-			},
+			value:   nestedObj,
 			want: func() pcommon.Map {
 				m := pcommon.NewMap()
 				thing1 := m.PutEmptyMap("x")
@@ -127,19 +129,7 @@ func Test_SliceToMap(t *testing.T) {
 			name:      "nested object with key path and value path",
 			keyPath:   []string{"value", "test"},
 			valuePath: []string{"name"},
-			value: func() any {
-				sl := pcommon.NewSlice()
-				thing1 := sl.AppendEmpty().SetEmptyMap()
-				thing1.PutStr("name", "foo")
-				thing1.PutEmptyMap("value").PutStr("test", "x")
-
-				thing2 := sl.AppendEmpty().SetEmptyMap()
-				thing2.PutStr("name", "bar")
-				thing2.PutInt("value", 5)
-				thing2.PutEmptyMap("value").PutStr("test", "y")
-
-				return sl
-			},
+			value:     nestedObj,
 			want: func() pcommon.Map {
 				m := pcommon.NewMap()
 				m.PutStr("x", "foo")
@@ -166,41 +156,17 @@ func Test_SliceToMap(t *testing.T) {
 			wantExecutionErr: "extracted key attribute is not of type string",
 		},
 		{
-			name:      "nested object with value path not resolving to a value",
-			keyPath:   []string{"value", "test"},
-			valuePath: []string{"notfound"},
-			value: func() any {
-				sl := pcommon.NewSlice()
-				thing1 := sl.AppendEmpty().SetEmptyMap()
-				thing1.PutStr("name", "foo")
-				thing1.PutEmptyMap("value").PutStr("test", "x")
-
-				thing2 := sl.AppendEmpty().SetEmptyMap()
-				thing2.PutStr("name", "bar")
-				thing2.PutInt("value", 5)
-				thing2.PutEmptyMap("value").PutStr("test", "y")
-
-				return sl
-			},
+			name:             "nested object with value path not resolving to a value",
+			keyPath:          []string{"value", "test"},
+			valuePath:        []string{"notfound"},
+			value:            nestedObj,
 			wantExecutionErr: "could not extract value from element: provided object does not contain the path [notfound]",
 		},
 		{
-			name:      "nested object with value path segment resolving to non-map value",
-			keyPath:   []string{"value", "test"},
-			valuePath: []string{"name", "nothing"},
-			value: func() any {
-				sl := pcommon.NewSlice()
-				thing1 := sl.AppendEmpty().SetEmptyMap()
-				thing1.PutStr("name", "foo")
-				thing1.PutEmptyMap("value").PutStr("test", "x")
-
-				thing2 := sl.AppendEmpty().SetEmptyMap()
-				thing2.PutStr("name", "bar")
-				thing2.PutInt("value", 5)
-				thing2.PutEmptyMap("value").PutStr("test", "y")
-
-				return sl
-			},
+			name:             "nested object with value path segment resolving to non-map value",
+			keyPath:          []string{"value", "test"},
+			valuePath:        []string{"name", "nothing"},
+			value:            nestedObj,
 			wantExecutionErr: "could not extract value from element: provided object does not contain the path [name nothing]",
 		},
 		{
@@ -394,7 +360,7 @@ func Test_SliceToMap(t *testing.T) {
 		},
 
 		{
-			name: "literal slice without key/value path", // SliceToMap(["a", "b"]) should return {"0": "a", "1": "b"}
+			name: "literal slice without key/value path",
 			value: func() any {
 				sl := pcommon.NewSlice()
 				sl.AppendEmpty().SetStr("a")
@@ -460,15 +426,14 @@ func Test_SliceToMap(t *testing.T) {
 			associateFunc, err := sliceToMapFunction[any](ottl.FunctionContext{}, &SliceToMapArguments[any]{
 				Target: ottl.StandardPSliceGetter[any]{
 					Getter: func(ctx context.Context, tCtx any) (any, error) {
-
 						val := tt.value()
 						slice, ok := val.(pcommon.Slice)
 						if !ok {
 							return nil, fmt.Errorf("expected pcommon.Slice, got %T", val)
 						}
 						return slice, nil
-
-					}},
+					},
+				},
 				KeyPath:   keyPathOptional,
 				ValuePath: valuePathOptional,
 			})
