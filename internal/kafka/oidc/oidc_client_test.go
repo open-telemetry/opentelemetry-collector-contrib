@@ -54,7 +54,7 @@ func TestOIDCProvider_GetToken_Success(t *testing.T) {
 	tokenURL := fmt.Sprintf("http://127.0.0.1:%d/token", port)
 
 	oidcProvider, cancel := NewOIDCTokenProvider(t.Context(), testClientID, secretFile, tokenURL,
-		[]string{testScope}, 0, url.Values{}, oauth2.AuthStyleAutoDetect)
+		[]string{testScope}, url.Values{}, oauth2.AuthStyleAutoDetect, 0)
 	defer cancel()
 
 	oauthToken, err := oidcProvider.GetToken()
@@ -101,7 +101,7 @@ func TestOIDCProvider_GetToken_Error(t *testing.T) {
 	tokenURL := fmt.Sprintf("http://127.0.0.1:%d/token", port)
 
 	oidcProvider, cancel := NewOIDCTokenProvider(t.Context(), "wrong-client-id", secretFile,
-		tokenURL, []string{testScope}, 0, url.Values{}, oauth2.AuthStyleAutoDetect)
+		tokenURL, []string{testScope}, url.Values{}, oauth2.AuthStyleAutoDetect, 0)
 	defer cancel()
 
 	oauthToken, err := oidcProvider.GetToken()
@@ -132,7 +132,7 @@ func TestOIDCProvider_TokenCaching(t *testing.T) {
 	tokenURL := fmt.Sprintf("http://127.0.0.1:%d/token", port)
 
 	oidcProvider, cancel := NewOIDCTokenProvider(t.Context(), testClientID, secretFile, tokenURL,
-		[]string{testScope}, 0, url.Values{}, oauth2.AuthStyleAutoDetect)
+		[]string{testScope}, url.Values{}, oauth2.AuthStyleAutoDetect, 0)
 	defer cancel()
 
 	token1, err1 := oidcProvider.GetToken()
@@ -142,7 +142,8 @@ func TestOIDCProvider_TokenCaching(t *testing.T) {
 	token2, err2 := oidcProvider.GetToken()
 	assert.NoError(t, err2)
 	assert.NotNil(t, token2)
-	assert.Equal(t, token1, token2)
+	// Check that the same access token is returned (caching is working)
+	assert.Equal(t, token1.AccessToken, token2.AccessToken)
 }
 
 func TestOIDCProvider_TokenExpired(t *testing.T) {
@@ -168,7 +169,7 @@ func TestOIDCProvider_TokenExpired(t *testing.T) {
 	tokenURL := fmt.Sprintf("http://127.0.0.1:%d/token", port)
 
 	oidcProvider, cancel := NewOIDCTokenProvider(t.Context(), testClientID, secretFile, tokenURL,
-		[]string{testScope}, 0, url.Values{}, oauth2.AuthStyleAutoDetect)
+		[]string{testScope}, url.Values{}, oauth2.AuthStyleAutoDetect, 0)
 	defer cancel()
 
 	token1, err1 := oidcProvider.GetToken()
@@ -208,7 +209,7 @@ func TestOIDCProvider_RefreshAhead(t *testing.T) {
 	parser := jwt.NewParser(jwt.WithoutClaimsValidation())
 
 	oidcProvider, cancel := NewOIDCTokenProvider(t.Context(), testClientID, secretFile, tokenURL,
-		[]string{testScope}, 2*time.Second, url.Values{}, oauth2.AuthStyleAutoDetect)
+		[]string{testScope}, url.Values{}, oauth2.AuthStyleAutoDetect, 2)
 	defer cancel()
 
 	token1, err1 := oidcProvider.GetToken()

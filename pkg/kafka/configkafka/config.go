@@ -411,6 +411,7 @@ type OIDCFileConfig struct {
 	RefreshAheadSecs     int              `mapstructure:"refresh_ahead_secs"`
 	EndPointParams       url.Values       `mapstructure:"endpoint_params"`
 	AuthStyle            oauth2.AuthStyle `mapstructure:"auth_style"`
+	ExpiryBuffer         int              `mapstructure:"expiry_buffer"`
 }
 
 // KerberosConfig defines kerberos configuration.

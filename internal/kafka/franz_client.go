@@ -322,8 +322,8 @@ func configureKgoSASL(cfg *configkafka.SASLConfig, clientID string) (kgo.Opt, er
 		m = oauth.Oauth(func(ctx context.Context) (oauth.Auth, error) {
 			tokenProvider, cancel := oidc.NewOIDCTokenProvider(ctx, clientID,
 				cfg.OIDCFILE.ClientSecretFilePath, cfg.OIDCFILE.TokenURL,
-				cfg.OIDCFILE.Scopes, time.Duration(cfg.OIDCFILE.RefreshAheadSecs)*time.Second,
-				cfg.OIDCFILE.EndPointParams, cfg.OIDCFILE.AuthStyle)
+				cfg.OIDCFILE.Scopes, cfg.OIDCFILE.EndPointParams,
+				cfg.OIDCFILE.AuthStyle, cfg.OIDCFILE.ExpiryBuffer)
 			_ = cancel // Store cancel function for cleanup if needed
 			token, err := tokenProvider.GetToken()
 			if err != nil {

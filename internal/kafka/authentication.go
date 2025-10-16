@@ -7,7 +7,6 @@ import (
 	"context"
 	"crypto/sha256"
 	"crypto/sha512"
-	"time"
 
 	"github.com/IBM/sarama"
 	"github.com/aws/aws-msk-iam-sasl-signer-go/signer"
@@ -63,8 +62,8 @@ func configureSASL(ctx context.Context, config configkafka.SASLConfig, saramaCon
 		saramaConfig.Net.SASL.Mechanism = sarama.SASLTypeOAuth
 		saramaConfig.Net.SASL.TokenProvider, _ = oidc.NewOIDCTokenProvider(ctx, saramaConfig.ClientID,
 			config.OIDCFILE.ClientSecretFilePath, config.OIDCFILE.TokenURL,
-			config.OIDCFILE.Scopes, time.Duration(config.OIDCFILE.RefreshAheadSecs)*time.Second,
-			config.OIDCFILE.EndPointParams, config.OIDCFILE.AuthStyle)
+			config.OIDCFILE.Scopes, config.OIDCFILE.EndPointParams,
+			config.OIDCFILE.AuthStyle, config.OIDCFILE.ExpiryBuffer)
 	}
 }
 

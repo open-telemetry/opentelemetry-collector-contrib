@@ -6,7 +6,6 @@ package kafka
 import (
 	"net/url"
 	"testing"
-	"time"
 
 	"github.com/IBM/sarama"
 	"github.com/stretchr/testify/assert"
@@ -63,7 +62,7 @@ func TestAuthentication(t *testing.T) {
 	// configuration setup here.
 	saramaSASLOIDCFILEConfig.Net.SASL.TokenProvider, _ = oidc.NewOIDCTokenProvider(
 		t.Context(), saramaSASLOIDCFILEConfig.ClientID, "/etc/hosts", "http://127.0.0.1:3000/oidc",
-		[]string{"mock-scope"}, time.Duration(0)*time.Second, url.Values{}, oauth2.AuthStyleAutoDetect)
+		[]string{"mock-scope"}, url.Values{}, oauth2.AuthStyleAutoDetect, 0)
 
 	saramaKerberosCfg := &sarama.Config{}
 	saramaKerberosCfg.Net.SASL.Mechanism = sarama.SASLTypeGSSAPI
