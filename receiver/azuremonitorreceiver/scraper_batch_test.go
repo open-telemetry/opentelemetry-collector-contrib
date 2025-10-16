@@ -16,11 +16,11 @@ import (
 	azfake "github.com/Azure/azure-sdk-for-go/sdk/azcore/fake"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/monitor/query/azmetrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver/internal/metadata"
 )
 
@@ -69,9 +69,11 @@ func getMetricsQueryResponseMockData() []queryResourcesResponseMock {
 		{
 			params: queryResourcesResponseMockParams{
 				subscriptionID:  "subscriptionId3",
-				metricNamespace: "type1",
+				metricNamespace: "namespace2",
 				metricNames:     []string{"metric7"},
-				resourceIDs:     azmetrics.ResourceIDList{ResourceIDs: []string{"/subscriptions/subscriptionId3/resourceGroups/group1/resourceId1"}},
+				resourceIDs: azmetrics.ResourceIDList{ResourceIDs: []string{
+					"/subscriptions/subscriptionId3/resourceGroups/group1/resourceId1"},
+				},
 			},
 			response: azmetrics.QueryResourcesResponse{
 				MetricResults: azmetrics.MetricResults{Values: []azmetrics.MetricData{
@@ -109,8 +111,8 @@ func getMetricsQueryResponseMockData() []queryResourcesResponseMock {
 		{
 			params: queryResourcesResponseMockParams{
 				subscriptionID:  "subscriptionId1",
-				metricNamespace: "type1",
-				metricNames:     []string{"metric1", "metric2"},
+				metricNamespace: "namespace1",
+				metricNames:     []string{"metric1", "metric3"},
 				resourceIDs: azmetrics.ResourceIDList{ResourceIDs: []string{
 					"/subscriptions/subscriptionId1/resourceGroups/group1/resourceId1",
 					"/subscriptions/subscriptionId1/resourceGroups/group1/resourceId2",
@@ -142,11 +144,16 @@ func getMetricsQueryResponseMockData() []queryResourcesResponseMock {
 									},
 								},
 							},
+						},
+					},
+					{
+						ResourceID: to.Ptr("/subscriptions/subscriptionId1/resourceGroups/group1/resourceId2"),
+						Values: []azmetrics.Metric{
 							{
 								Name: &azmetrics.LocalizableString{
-									Value: to.Ptr("metric2"),
+									Value: to.Ptr("metric3"),
 								},
-								Unit: to.Ptr(azmetrics.MetricUnitCount),
+								Unit: to.Ptr(azmetrics.MetricUnitBytes),
 								TimeSeries: []azmetrics.TimeSeriesElement{
 									{
 										Data: []azmetrics.MetricValue{
@@ -170,8 +177,8 @@ func getMetricsQueryResponseMockData() []queryResourcesResponseMock {
 		{
 			params: queryResourcesResponseMockParams{
 				subscriptionID:  "subscriptionId1",
-				metricNamespace: "type1",
-				metricNames:     []string{"metric3"},
+				metricNamespace: "namespace2",
+				metricNames:     []string{"metric2"},
 				resourceIDs: azmetrics.ResourceIDList{ResourceIDs: []string{
 					"/subscriptions/subscriptionId1/resourceGroups/group1/resourceId1",
 					"/subscriptions/subscriptionId1/resourceGroups/group1/resourceId2",
@@ -181,13 +188,13 @@ func getMetricsQueryResponseMockData() []queryResourcesResponseMock {
 			response: azmetrics.QueryResourcesResponse{
 				MetricResults: azmetrics.MetricResults{Values: []azmetrics.MetricData{
 					{
-						ResourceID: to.Ptr("/subscriptions/subscriptionId1/resourceGroups/group1/resourceId2"),
+						ResourceID: to.Ptr("/subscriptions/subscriptionId1/resourceGroups/group1/resourceId1"),
 						Values: []azmetrics.Metric{
 							{
 								Name: &azmetrics.LocalizableString{
-									Value: to.Ptr("metric3"),
+									Value: to.Ptr("metric2"),
 								},
-								Unit: to.Ptr(azmetrics.MetricUnitBytes),
+								Unit: to.Ptr(azmetrics.MetricUnitCount),
 								TimeSeries: []azmetrics.TimeSeriesElement{
 									{
 										Data: []azmetrics.MetricValue{
@@ -327,6 +334,10 @@ func TestAzureScraperBatchScrape(t *testing.T) {
 				pmetrictest.IgnoreMetricsOrder(),
 				pmetrictest.IgnoreResourceMetricsOrder(),
 			))
+
+			//expectedFile := filepath.Join("testdata", "expected_metrics_batch_actual", tt.name+".yaml")
+			//err = golden.WriteMetrics(t, expectedFile, metrics)
+			//require.NoError(t, err)
 		})
 	}
 }

@@ -77,10 +77,10 @@ func newMockMetricsDefinitionListPager(metricDefinitionsPagesByResourceURI map[s
 	}
 }
 
-func newMockMetricList(metricsByResourceURIAndMetricName map[string]map[string]armmonitor.MetricsClientListResponse) func(ctx context.Context, resourceURI string, options *armmonitor.MetricsClientListOptions) (resp azfake.Responder[armmonitor.MetricsClientListResponse], errResp azfake.ErrorResponder) {
+func newMockMetricList(metricsByResourceURIAndMetricName map[string]map[string]map[string]armmonitor.MetricsClientListResponse) func(ctx context.Context, resourceURI string, options *armmonitor.MetricsClientListOptions) (resp azfake.Responder[armmonitor.MetricsClientListResponse], errResp azfake.ErrorResponder) {
 	return func(_ context.Context, resourceURI string, options *armmonitor.MetricsClientListOptions) (resp azfake.Responder[armmonitor.MetricsClientListResponse], errResp azfake.ErrorResponder) {
 		resourceURI = fmt.Sprintf("/%s", resourceURI) // Hack the fake API as it's not taking starting slash from called request
-		resp.SetResponse(http.StatusOK, metricsByResourceURIAndMetricName[resourceURI][*options.Metricnames], nil)
+		resp.SetResponse(http.StatusOK, metricsByResourceURIAndMetricName[resourceURI][*options.Metricnamespace][*options.Metricnames], nil)
 		return
 	}
 }
@@ -212,6 +212,10 @@ func TestAzureScraperScrape(t *testing.T) {
 				pmetrictest.IgnoreMetricsOrder(),
 				pmetrictest.IgnoreResourceMetricsOrder(),
 			))
+
+			//expectedFile := filepath.Join("testdata", "expected_metrics_actual", tt.name+".yaml")
+			//err = golden.WriteMetrics(t, expectedFile, metrics)
+			//require.NoError(t, err)
 		})
 	}
 }
@@ -332,21 +336,23 @@ func TestAzureScraperScrapeFilterMetrics(t *testing.T) {
 			},
 		}
 
-		metricsMockData := map[string]map[string]armmonitor.MetricsClientListResponse{
+		metricsMockData := map[string]map[string]map[string]armmonitor.MetricsClientListResponse{
 			id1: {
-				metricName1: {
-					Response: armmonitor.Response{
-						Value: []*armmonitor.Metric{
-							{
-								Name: &armmonitor.LocalizableString{
-									Value: &metricName1,
-								},
-								Unit: &unit,
-								Timeseries: []*armmonitor.TimeSeriesElement{
-									{
-										Data: []*armmonitor.MetricValue{
-											{
-												Count: &valueCount,
+				metricNamespace1: {
+					metricName1: {
+						Response: armmonitor.Response{
+							Value: []*armmonitor.Metric{
+								{
+									Name: &armmonitor.LocalizableString{
+										Value: &metricName1,
+									},
+									Unit: &unit,
+									Timeseries: []*armmonitor.TimeSeriesElement{
+										{
+											Data: []*armmonitor.MetricValue{
+												{
+													Count: &valueCount,
+												},
 											},
 										},
 									},
@@ -357,23 +363,25 @@ func TestAzureScraperScrapeFilterMetrics(t *testing.T) {
 				},
 			},
 			id2: {
-				metricName2: {
-					Response: armmonitor.Response{
-						Value: []*armmonitor.Metric{
-							{
-								Name: &armmonitor.LocalizableString{
-									Value: &metricName2,
-								},
-								Unit: &unit,
-								Timeseries: []*armmonitor.TimeSeriesElement{
-									{
-										Data: []*armmonitor.MetricValue{
-											{
-												Average: &valueMaximum,
-												Count:   &valueCount,
-												Maximum: &valueMaximum,
-												Minimum: &valueMinimum,
-												Total:   &valueCount,
+				metricNamespace2: {
+					metricName2: {
+						Response: armmonitor.Response{
+							Value: []*armmonitor.Metric{
+								{
+									Name: &armmonitor.LocalizableString{
+										Value: &metricName2,
+									},
+									Unit: &unit,
+									Timeseries: []*armmonitor.TimeSeriesElement{
+										{
+											Data: []*armmonitor.MetricValue{
+												{
+													Average: &valueMaximum,
+													Count:   &valueCount,
+													Maximum: &valueMaximum,
+													Minimum: &valueMinimum,
+													Total:   &valueCount,
+												},
 											},
 										},
 									},
@@ -381,21 +389,21 @@ func TestAzureScraperScrapeFilterMetrics(t *testing.T) {
 							},
 						},
 					},
-				},
-				metricName3: {
-					Response: armmonitor.Response{
-						Value: []*armmonitor.Metric{
-							{
-								Name: &armmonitor.LocalizableString{
-									Value: &metricName3,
-								},
-								Unit: &unit,
-								Timeseries: []*armmonitor.TimeSeriesElement{
-									{
-										Data: []*armmonitor.MetricValue{
-											{
-												Maximum: &valueMaximum,
-												Minimum: &valueMinimum,
+					metricName3: {
+						Response: armmonitor.Response{
+							Value: []*armmonitor.Metric{
+								{
+									Name: &armmonitor.LocalizableString{
+										Value: &metricName3,
+									},
+									Unit: &unit,
+									Timeseries: []*armmonitor.TimeSeriesElement{
+										{
+											Data: []*armmonitor.MetricValue{
+												{
+													Maximum: &valueMaximum,
+													Minimum: &valueMinimum,
+												},
 											},
 										},
 									},
@@ -686,7 +694,7 @@ func getMetricsDefinitionsMockData() map[string][]armmonitor.MetricDefinitionsCl
 							},
 						},
 						{
-							Namespace: &namespace1,
+							Namespace: &namespace2,
 							Name: &armmonitor.LocalizableString{
 								Value: &name2,
 							},
@@ -816,50 +824,52 @@ func getMetricsDefinitionsMockData() map[string][]armmonitor.MetricDefinitionsCl
 	}
 }
 
-func getMetricsValuesMockData() map[string]map[string]armmonitor.MetricsClientListResponse {
+func getMetricsValuesMockData() map[string]map[string]map[string]armmonitor.MetricsClientListResponse {
 	name1, name2, name3, name4, name5, name6, name7, dimension1, dimension2, dimensionValue := "metric1", "metric2",
 		"metric3", "metric4", "metric5", "metric6", "metric7", "dimension1", "dimension2", "dimension value"
 	var unit1 armmonitor.Unit = "unit1"
 	var value1 float64 = 1
 
-	return map[string]map[string]armmonitor.MetricsClientListResponse{
+	return map[string]map[string]map[string]armmonitor.MetricsClientListResponse{
 		"/subscriptions/subscriptionId1/resourceGroups/group1/resourceId1": {
-			name1 + "," + name2: {
-				Response: armmonitor.Response{
-					Value: []*armmonitor.Metric{
-						{
-							Name: &armmonitor.LocalizableString{
-								Value: &name1,
-							},
-							Unit: &unit1,
-							Timeseries: []*armmonitor.TimeSeriesElement{
-								{
-									Data: []*armmonitor.MetricValue{
-										{
-											Average: &value1,
-											Count:   &value1,
-											Maximum: &value1,
-											Minimum: &value1,
-											Total:   &value1,
+			"namespace1": {
+				name1 + "," + name3: {
+					Response: armmonitor.Response{
+						Value: []*armmonitor.Metric{
+							{
+								Name: &armmonitor.LocalizableString{
+									Value: &name1,
+								},
+								Unit: &unit1,
+								Timeseries: []*armmonitor.TimeSeriesElement{
+									{
+										Data: []*armmonitor.MetricValue{
+											{
+												Average: &value1,
+												Count:   &value1,
+												Maximum: &value1,
+												Minimum: &value1,
+												Total:   &value1,
+											},
 										},
 									},
 								},
 							},
-						},
-						{
-							Name: &armmonitor.LocalizableString{
-								Value: &name2,
-							},
-							Unit: &unit1,
-							Timeseries: []*armmonitor.TimeSeriesElement{
-								{
-									Data: []*armmonitor.MetricValue{
-										{
-											Average: &value1,
-											Count:   &value1,
-											Maximum: &value1,
-											Minimum: &value1,
-											Total:   &value1,
+							{
+								Name: &armmonitor.LocalizableString{
+									Value: &name3,
+								},
+								Unit: &unit1,
+								Timeseries: []*armmonitor.TimeSeriesElement{
+									{
+										Data: []*armmonitor.MetricValue{
+											{
+												Average: &value1,
+												Count:   &value1,
+												Maximum: &value1,
+												Minimum: &value1,
+												Total:   &value1,
+											},
 										},
 									},
 								},
@@ -868,23 +878,25 @@ func getMetricsValuesMockData() map[string]map[string]armmonitor.MetricsClientLi
 					},
 				},
 			},
-			name3: {
-				Response: armmonitor.Response{
-					Value: []*armmonitor.Metric{
-						{
-							Name: &armmonitor.LocalizableString{
-								Value: &name3,
-							},
-							Unit: &unit1,
-							Timeseries: []*armmonitor.TimeSeriesElement{
-								{
-									Data: []*armmonitor.MetricValue{
-										{
-											Average: &value1,
-											Count:   &value1,
-											Maximum: &value1,
-											Minimum: &value1,
-											Total:   &value1,
+			"namespace2": {
+				name2: {
+					Response: armmonitor.Response{
+						Value: []*armmonitor.Metric{
+							{
+								Name: &armmonitor.LocalizableString{
+									Value: &name2,
+								},
+								Unit: &unit1,
+								Timeseries: []*armmonitor.TimeSeriesElement{
+									{
+										Data: []*armmonitor.MetricValue{
+											{
+												Average: &value1,
+												Count:   &value1,
+												Maximum: &value1,
+												Minimum: &value1,
+												Total:   &value1,
+											},
 										},
 									},
 								},
@@ -895,23 +907,25 @@ func getMetricsValuesMockData() map[string]map[string]armmonitor.MetricsClientLi
 			},
 		},
 		"/subscriptions/subscriptionId1/resourceGroups/group1/resourceId2": {
-			name4: {
-				Response: armmonitor.Response{
-					Value: []*armmonitor.Metric{
-						{
-							Name: &armmonitor.LocalizableString{
-								Value: &name4,
-							},
-							Unit: &unit1,
-							Timeseries: []*armmonitor.TimeSeriesElement{
-								{
-									Data: []*armmonitor.MetricValue{
-										{
-											Average: &value1,
-											Count:   &value1,
-											Maximum: &value1,
-											Minimum: &value1,
-											Total:   &value1,
+			"namespace1": {
+				name4: {
+					Response: armmonitor.Response{
+						Value: []*armmonitor.Metric{
+							{
+								Name: &armmonitor.LocalizableString{
+									Value: &name4,
+								},
+								Unit: &unit1,
+								Timeseries: []*armmonitor.TimeSeriesElement{
+									{
+										Data: []*armmonitor.MetricValue{
+											{
+												Average: &value1,
+												Count:   &value1,
+												Maximum: &value1,
+												Minimum: &value1,
+												Total:   &value1,
+											},
 										},
 									},
 								},
@@ -919,38 +933,38 @@ func getMetricsValuesMockData() map[string]map[string]armmonitor.MetricsClientLi
 						},
 					},
 				},
-			},
-			name5: {
-				Response: armmonitor.Response{
-					Value: []*armmonitor.Metric{
-						{
-							Name: &armmonitor.LocalizableString{
-								Value: &name5,
-							},
-							Unit: &unit1,
-							Timeseries: []*armmonitor.TimeSeriesElement{
-								{
-									Data: []*armmonitor.MetricValue{
-										{
-											Average: &value1,
-											Count:   &value1,
-											Maximum: &value1,
-											Minimum: &value1,
-											Total:   &value1,
-										},
-									},
-									Metadatavalues: []*armmonitor.MetadataValue{
-										{
-											Name: &armmonitor.LocalizableString{
-												Value: &dimension1,
+				name5: {
+					Response: armmonitor.Response{
+						Value: []*armmonitor.Metric{
+							{
+								Name: &armmonitor.LocalizableString{
+									Value: &name5,
+								},
+								Unit: &unit1,
+								Timeseries: []*armmonitor.TimeSeriesElement{
+									{
+										Data: []*armmonitor.MetricValue{
+											{
+												Average: &value1,
+												Count:   &value1,
+												Maximum: &value1,
+												Minimum: &value1,
+												Total:   &value1,
 											},
-											Value: &dimensionValue,
 										},
-										{
-											Name: &armmonitor.LocalizableString{
-												Value: &dimension2,
+										Metadatavalues: []*armmonitor.MetadataValue{
+											{
+												Name: &armmonitor.LocalizableString{
+													Value: &dimension1,
+												},
+												Value: &dimensionValue,
 											},
-											Value: &dimensionValue,
+											{
+												Name: &armmonitor.LocalizableString{
+													Value: &dimension2,
+												},
+												Value: &dimensionValue,
+											},
 										},
 									},
 								},
@@ -958,32 +972,32 @@ func getMetricsValuesMockData() map[string]map[string]armmonitor.MetricsClientLi
 						},
 					},
 				},
-			},
-			name6: {
-				Response: armmonitor.Response{
-					Value: []*armmonitor.Metric{
-						{
-							Name: &armmonitor.LocalizableString{
-								Value: &name6,
-							},
-							Unit: &unit1,
-							Timeseries: []*armmonitor.TimeSeriesElement{
-								{
-									Data: []*armmonitor.MetricValue{
-										{
-											Average: &value1,
-											Count:   &value1,
-											Maximum: &value1,
-											Minimum: &value1,
-											Total:   &value1,
-										},
-									},
-									Metadatavalues: []*armmonitor.MetadataValue{
-										{
-											Name: &armmonitor.LocalizableString{
-												Value: &dimension1,
+				name6: {
+					Response: armmonitor.Response{
+						Value: []*armmonitor.Metric{
+							{
+								Name: &armmonitor.LocalizableString{
+									Value: &name6,
+								},
+								Unit: &unit1,
+								Timeseries: []*armmonitor.TimeSeriesElement{
+									{
+										Data: []*armmonitor.MetricValue{
+											{
+												Average: &value1,
+												Count:   &value1,
+												Maximum: &value1,
+												Minimum: &value1,
+												Total:   &value1,
 											},
-											Value: &dimensionValue,
+										},
+										Metadatavalues: []*armmonitor.MetadataValue{
+											{
+												Name: &armmonitor.LocalizableString{
+													Value: &dimension1,
+												},
+												Value: &dimensionValue,
+											},
 										},
 									},
 								},
@@ -994,27 +1008,29 @@ func getMetricsValuesMockData() map[string]map[string]armmonitor.MetricsClientLi
 			},
 		},
 		"/subscriptions/subscriptionId1/resourceGroups/group1/resourceId3": {
-			name7: {
-				Response: armmonitor.Response{
-					Value: []*armmonitor.Metric{
-						{
-							Name: &armmonitor.LocalizableString{
-								Value: &name7,
-							},
-							Unit: &unit1,
-							Timeseries: []*armmonitor.TimeSeriesElement{
-								{
-									Data: []*armmonitor.MetricValue{
-										{
-											Count: &value1,
-										},
-									},
-									Metadatavalues: []*armmonitor.MetadataValue{
-										{
-											Name: &armmonitor.LocalizableString{
-												Value: &dimension1,
+			"namespace2": {
+				name7: {
+					Response: armmonitor.Response{
+						Value: []*armmonitor.Metric{
+							{
+								Name: &armmonitor.LocalizableString{
+									Value: &name7,
+								},
+								Unit: &unit1,
+								Timeseries: []*armmonitor.TimeSeriesElement{
+									{
+										Data: []*armmonitor.MetricValue{
+											{
+												Count: &value1,
 											},
-											Value: &dimensionValue,
+										},
+										Metadatavalues: []*armmonitor.MetadataValue{
+											{
+												Name: &armmonitor.LocalizableString{
+													Value: &dimension1,
+												},
+												Value: &dimensionValue,
+											},
 										},
 									},
 								},
@@ -1025,27 +1041,29 @@ func getMetricsValuesMockData() map[string]map[string]armmonitor.MetricsClientLi
 			},
 		},
 		"/subscriptions/subscriptionId3/resourceGroups/group1/resourceId1": {
-			name7: {
-				Response: armmonitor.Response{
-					Value: []*armmonitor.Metric{
-						{
-							Name: &armmonitor.LocalizableString{
-								Value: &name7,
-							},
-							Unit: &unit1,
-							Timeseries: []*armmonitor.TimeSeriesElement{
-								{
-									Data: []*armmonitor.MetricValue{
-										{
-											Count: &value1,
-										},
-									},
-									Metadatavalues: []*armmonitor.MetadataValue{
-										{
-											Name: &armmonitor.LocalizableString{
-												Value: &dimension1,
+			"namespace2": {
+				name7: {
+					Response: armmonitor.Response{
+						Value: []*armmonitor.Metric{
+							{
+								Name: &armmonitor.LocalizableString{
+									Value: &name7,
+								},
+								Unit: &unit1,
+								Timeseries: []*armmonitor.TimeSeriesElement{
+									{
+										Data: []*armmonitor.MetricValue{
+											{
+												Count: &value1,
 											},
-											Value: &dimensionValue,
+										},
+										Metadatavalues: []*armmonitor.MetadataValue{
+											{
+												Name: &armmonitor.LocalizableString{
+													Value: &dimension1,
+												},
+												Value: &dimensionValue,
+											},
 										},
 									},
 								},
