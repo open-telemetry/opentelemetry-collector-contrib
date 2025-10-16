@@ -21,101 +21,26 @@ resource_attributes:
     type: string
 
 attributes:
-  state:
-    description: State of followers
-    type: string
-    enum:
-      - synced
-      - unsynced
   direction:
     description: State of a packet based on io direction.
     type: string
     enum:
       - received
       - sent
+  state:
+    description: State of followers
+    type: string
+    enum:
+      - synced
+      - unsynced
 
 metrics:
-  zookeeper.follower.count:
-    enabled: true
-    description: The number of followers. Only exposed by the leader.
-    stability:
-      level: development
-    unit: "{followers}"
-    attributes: [state]
-    sum:
-      monotonic: false
-      aggregation_temporality: cumulative
-      value_type: int
-  zookeeper.sync.pending:
-    enabled: true
-    description: The number of pending syncs from the followers. Only exposed by the leader.
-    stability:
-      level: development
-    unit: "{syncs}"
-    sum:
-      monotonic: false
-      aggregation_temporality: cumulative
-      value_type: int
-  zookeeper.latency.avg:
-    enabled: true
-    description: Average time in milliseconds for requests to be processed.
-    stability:
-      level: development
-    unit: ms
-    gauge:
-      value_type: int
-  zookeeper.latency.max:
-    enabled: true
-    description: Maximum time in milliseconds for requests to be processed.
-    stability:
-      level: development
-    unit: ms
-    gauge:
-      value_type: int
-  zookeeper.latency.min:
-    enabled: true
-    description: Minimum time in milliseconds for requests to be processed.
-    stability:
-      level: development
-    unit: ms
-    gauge:
-      value_type: int
   zookeeper.connection.active:
     enabled: true
     description: Number of active clients connected to a ZooKeeper server.
     stability:
       level: development
     unit: "{connections}"
-    sum:
-      monotonic: false
-      aggregation_temporality: cumulative
-      value_type: int
-  zookeeper.request.active:
-    enabled: true
-    description: Number of currently executing requests.
-    stability:
-      level: development
-    unit: "{requests}"
-    sum:
-      monotonic: false
-      aggregation_temporality: cumulative
-      value_type: int
-  zookeeper.znode.count:
-    enabled: true
-    description: Number of z-nodes that a ZooKeeper server has in its data tree.
-    stability:
-      level: development
-    unit: "{znodes}"
-    sum:
-      monotonic: false
-      aggregation_temporality: cumulative
-      value_type: int
-  zookeeper.watch.count:
-    enabled: true
-    description: Number of watches placed on Z-Nodes on a ZooKeeper server.
-    stability:
-      level: development
-    unit: "{watches}"
     sum:
       monotonic: false
       aggregation_temporality: cumulative
@@ -140,6 +65,14 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
       value_type: int
+  zookeeper.file_descriptor.limit:
+    enabled: true
+    description: Maximum number of file descriptors that a ZooKeeper server can open.
+    stability:
+      level: development
+    unit: "{file_descriptors}"
+    gauge:
+      value_type: int
   zookeeper.file_descriptor.open:
     enabled: true
     description: Number of file descriptors that a ZooKeeper server has open.
@@ -150,12 +83,49 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
       value_type: int
-  zookeeper.file_descriptor.limit:
+  zookeeper.follower.count:
     enabled: true
-    description: Maximum number of file descriptors that a ZooKeeper server can open.
+    description: The number of followers. Only exposed by the leader.
     stability:
       level: development
-    unit: "{file_descriptors}"
+    unit: "{followers}"
+    attributes: [state]
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+  zookeeper.fsync.exceeded_threshold.count:
+    enabled: true
+    description: Number of times fsync duration has exceeded warning threshold.
+    stability:
+      level: development
+    unit: "{events}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+  zookeeper.latency.avg:
+    enabled: true
+    description: Average time in milliseconds for requests to be processed.
+    stability:
+      level: development
+    unit: ms
+    gauge:
+      value_type: int
+  zookeeper.latency.max:
+    enabled: true
+    description: Maximum time in milliseconds for requests to be processed.
+    stability:
+      level: development
+    unit: ms
+    gauge:
+      value_type: int
+  zookeeper.latency.min:
+    enabled: true
+    description: Minimum time in milliseconds for requests to be processed.
+    stability:
+      level: development
+    unit: ms
     gauge:
       value_type: int
   zookeeper.packet.count:
@@ -169,16 +139,16 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
-  zookeeper.fsync.exceeded_threshold.count:
+  zookeeper.request.active:
     enabled: true
-    description: Number of times fsync duration has exceeded warning threshold.
+    description: Number of currently executing requests.
     stability:
       level: development
-    unit: "{events}"
+    unit: "{requests}"
     sum:
-      value_type: int
-      monotonic: true
+      monotonic: false
       aggregation_temporality: cumulative
+      value_type: int
   zookeeper.ruok:
     enabled: true
     description: Response from zookeeper ruok command
@@ -188,5 +158,35 @@ metrics:
     gauge:
       value_type: int
 
+  zookeeper.sync.pending:
+    enabled: true
+    description: The number of pending syncs from the followers. Only exposed by the leader.
+    stability:
+      level: development
+    unit: "{syncs}"
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+  zookeeper.watch.count:
+    enabled: true
+    description: Number of watches placed on Z-Nodes on a ZooKeeper server.
+    stability:
+      level: development
+    unit: "{watches}"
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+  zookeeper.znode.count:
+    enabled: true
+    description: Number of z-nodes that a ZooKeeper server has in its data tree.
+    stability:
+      level: development
+    unit: "{znodes}"
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
 tests:
   config:

@@ -83,7 +83,7 @@ func (s *azureBatchScraper) start(_ context.Context, host component.Host) (err e
 	s.resources = map[string]map[string]*azureResource{}
 	s.regions = map[string]map[string]struct{}{}
 
-	return
+	return err
 }
 
 func (s *azureBatchScraper) loadSubscription(sub azureSubscription) {
@@ -406,17 +406,11 @@ func (s *azureBatchScraper) getBatchMetricsValues(ctx context.Context, subscript
 
 			start := 0
 			for start < len(metricsByGrain.metrics) {
-				end := start + s.cfg.MaximumNumberOfMetricsInACall
-				if end > len(metricsByGrain.metrics) {
-					end = len(metricsByGrain.metrics)
-				}
+				end := min(start+s.cfg.MaximumNumberOfMetricsInACall, len(metricsByGrain.metrics))
 
 				startResources := 0
 				for startResources < len(resType.resourceIDs) {
-					endResources := startResources + maxPerBatch
-					if endResources > len(resType.resourceIDs) {
-						endResources = len(resType.resourceIDs)
-					}
+					endResources := min(startResources+maxPerBatch, len(resType.resourceIDs))
 
 					s.settings.Logger.Debug(
 						"scrape",
@@ -472,9 +466,7 @@ func (s *azureBatchScraper) getBatchMetricsValues(ctx context.Context, subscript
 									continue
 								}
 								attributes := map[string]*string{}
-								for name, value := range res.attributes {
-									attributes[name] = value
-								}
+								maps.Copy(attributes, res.attributes)
 								for _, value := range timeseriesElement.MetadataValues {
 									name := metadataPrefix + *value.Name.Value
 									attributes[name] = value.Value
