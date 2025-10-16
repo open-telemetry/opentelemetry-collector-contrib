@@ -27,172 +27,244 @@ func TestDecode(t *testing.T) {
 	type testCase struct {
 		name          string
 		value         any
-		encoding      string
+		encoding      ottl.StringGetter[any]
 		want          any
 		expectedError string
 	}
 	tests := []testCase{
 		{
-			name:     "convert base64 byte array",
-			value:    []byte("dGVzdAo="),
-			encoding: "base64",
-			want:     "test\n",
+			name:  "convert base64 byte array",
+			value: []byte("dGVzdAo="),
+			encoding: ottl.StandardStringGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return "base64", nil
+				},
+			},
+			want: "test\n",
 		},
 		{
-			name:     "convert base64 string",
-			value:    "aGVsbG8gd29ybGQ=",
-			encoding: "base64",
-			want:     "hello world",
+			name:  "convert base64 string",
+			value: "aGVsbG8gd29ybGQ=",
+			encoding: ottl.StandardStringGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return "base64", nil
+				},
+			},
+			want: "hello world",
 		},
 		{
-			name:     "convert base64 ByteSlice",
-			value:    testByteSliceB64,
-			encoding: "base64",
-			want:     "hello world",
+			name:  "convert base64 ByteSlice",
+			value: testByteSliceB64,
+			encoding: ottl.StandardStringGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return "base64", nil
+				},
+			},
+			want: "hello world",
 		},
 		{
-			name:     "convert base64 Value",
-			value:    testValueB64,
-			encoding: "base64",
-			want:     "hello world",
+			name:  "convert base64 Value",
+			value: testValueB64,
+			encoding: ottl.StandardStringGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return "base64", nil
+				},
+			},
+			want: "hello world",
 		},
 		{
-			name:     "convert base64 ByteSlice pointer",
-			value:    &testByteSliceB64,
-			encoding: "base64",
-			want:     "hello world",
+			name:  "convert base64 ByteSlice pointer",
+			value: &testByteSliceB64,
+			encoding: ottl.StandardStringGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return "base64", nil
+				},
+			},
+			want: "hello world",
 		},
 		{
-			name:     "convert base64 Value pointer",
-			value:    &testValueB64,
-			encoding: "base64",
-			want:     "hello world",
+			name:  "convert base64 Value pointer",
+			value: &testValueB64,
+			encoding: ottl.StandardStringGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return "base64", nil
+				},
+			},
+			want: "hello world",
 		},
 		{
-			name:     "decode us-ascii encoded string",
-			value:    "test string",
-			encoding: "us-ascii",
-			want:     "test string",
+			name:  "decode us-ascii encoded string",
+			value: "test string",
+			encoding: ottl.StandardStringGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return "us-ascii", nil
+				},
+			},
+			want: "test string",
 		},
 		{
-			name:     "decode us-ascii encoded byte array",
-			value:    []byte("test string"),
-			encoding: "us-ascii",
-			want:     "test string",
+			name:  "decode us-ascii encoded byte array",
+			value: []byte("test string"),
+			encoding: ottl.StandardStringGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return "us-ascii", nil
+				},
+			},
+			want: "test string",
 		},
 		{
-			name:     "decode us-ascii encoded byte slice",
-			value:    testByteSlice,
-			encoding: "us-ascii",
-			want:     "test string",
+			name:  "decode us-ascii encoded byte slice",
+			value: testByteSlice,
+			encoding: ottl.StandardStringGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return "us-ascii", nil
+				},
+			},
+			want: "test string",
 		},
 		{
-			name:     "decode us-ascii encoded Value",
-			value:    testValue,
-			encoding: "us-ascii",
-			want:     "test string",
+			name:  "decode us-ascii encoded Value",
+			value: testValue,
+			encoding: ottl.StandardStringGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return "us-ascii", nil
+				},
+			},
+			want: "test string",
 		},
 		{
-			name:     "decode us-ascii encoded byte slice pointer",
-			value:    &testByteSlice,
-			encoding: "us-ascii",
-			want:     "test string",
+			name:  "decode us-ascii encoded byte slice pointer",
+			value: &testByteSlice,
+			encoding: ottl.StandardStringGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return "us-ascii", nil
+				},
+			},
+			want: "test string",
 		},
 		{
-			name:     "decode us-ascii encoded Value pointer",
-			value:    &testValue,
-			encoding: "us-ascii",
-			want:     "test string",
+			name:  "decode us-ascii encoded Value pointer",
+			value: &testValue,
+			encoding: ottl.StandardStringGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return "us-ascii", nil
+				},
+			},
+			want: "test string",
 		},
 		{
-			name:     "decode ISO-8859-1 encoded string",
-			value:    "test string",
-			encoding: "ISO-8859-1",
-			want:     "test string",
+			name:  "decode ISO-8859-1 encoded string",
+			value: "test string",
+			encoding: ottl.StandardStringGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return "ISO-8859-1", nil
+				},
+			},
+			want: "test string",
 		},
 		{
-			name:     "decode WINDOWS-1251 encoded string",
-			value:    "test string",
-			encoding: "WINDOWS-1251",
-			want:     "test string",
+			name:  "decode WINDOWS-1251 encoded string",
+			value: "test string",
+			encoding: ottl.StandardStringGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return "WINDOWS-1251", nil
+				},
+			},
+			want: "test string",
 		},
 		{
-			name:     "decode WINDOWS-1252 encoded string",
-			value:    "test string",
-			encoding: "WINDOWS-1252",
-			want:     "test string",
+			name:  "decode WINDOWS-1252 encoded string",
+			value: "test string",
+			encoding: ottl.StandardStringGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return "WINDOWS-1252", nil
+				},
+			},
+			want: "test string",
 		},
 		{
-			name:     "decode UTF-8 encoded string",
-			value:    "test string",
-			encoding: "UTF-8",
-			want:     "test string",
+			name:  "decode UTF-8 encoded string",
+			value: "test string",
+			encoding: ottl.StandardStringGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return "UTF-8", nil
+				},
+			},
+			want: "test string",
 		},
 		{
-			name:     "decode UTF-16 encoded string 1",
-			value:    []byte{116, 0, 101, 0, 115, 0, 116, 0, 32, 0, 115, 0, 116, 0, 114, 0, 105, 0, 110, 0, 103, 0},
-			encoding: "UTF-16",
-			want:     "test string",
+			name:  "decode UTF-16 encoded string 1",
+			value: []byte{116, 0, 101, 0, 115, 0, 116, 0, 32, 0, 115, 0, 116, 0, 114, 0, 105, 0, 110, 0, 103, 0},
+			encoding: ottl.StandardStringGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return "UTF-16", nil
+				},
+			},
+			want: "test string",
 		},
 		{
-			name:     "decode UTF-16 encoded string 2",
-			value:    []byte{116, 0, 101, 0, 115, 0, 116, 0, 32, 0, 115, 0, 116, 0, 114, 0, 105, 0, 110, 0, 103, 0},
-			encoding: "UTF16",
-			want:     "test string",
+			name:  "decode UTF-16 encoded string 2",
+			value: []byte{116, 0, 101, 0, 115, 0, 116, 0, 32, 0, 115, 0, 116, 0, 114, 0, 105, 0, 110, 0, 103, 0},
+			encoding: ottl.StandardStringGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return "UTF16", nil
+				},
+			},
+			want: "test string",
 		},
 		{
 			name:          "decode GB2312 encoded string; no decoder available",
 			value:         "test string",
-			encoding:      "GB2312",
+			encoding:      ottl.StandardStringGetter[any]{Getter: func(_ context.Context, _ any) (any, error) { return "GB2312", nil }},
 			want:          nil,
 			expectedError: "no charmap defined for encoding 'GB2312'",
 		},
 		{
 			name:          "non-string",
 			value:         10,
-			encoding:      "base64",
+			encoding:      ottl.StandardStringGetter[any]{Getter: func(_ context.Context, _ any) (any, error) { return "base64", nil }},
 			expectedError: "unsupported type provided to Decode function: int",
 		},
 		{
 			name:          "nil",
 			value:         nil,
-			encoding:      "base64",
+			encoding:      ottl.StandardStringGetter[any]{Getter: func(_ context.Context, _ any) (any, error) { return "base64", nil }},
 			expectedError: "unsupported type provided to Decode function: <nil>",
 		},
 		{
 			name:          "not-base64-string",
 			value:         "!@#$%^&*()_+",
-			encoding:      "base64",
+			encoding:      ottl.StandardStringGetter[any]{Getter: func(_ context.Context, _ any) (any, error) { return "base64", nil }},
 			expectedError: "illegal base64 data at input byte",
 		},
 		{
 			name:          "missing-base64-padding",
 			value:         "cmVtb3ZlZCBwYWRkaW5nCg",
-			encoding:      "base64",
+			encoding:      ottl.StandardStringGetter[any]{Getter: func(_ context.Context, _ any) (any, error) { return "base64", nil }},
 			expectedError: "illegal base64 data at input byte",
 		},
 		{
 			name:     "base64 with url-safe sensitive characters",
 			value:    "R28/L1p+eA==",
-			encoding: "base64",
+			encoding: ottl.StandardStringGetter[any]{Getter: func(_ context.Context, _ any) (any, error) { return "base64", nil }},
 			want:     "Go?/Z~x",
 		},
 		{
 			name:     "base64-raw with url-safe sensitive characters",
 			value:    "R28/L1p+eA",
-			encoding: "base64-raw",
+			encoding: ottl.StandardStringGetter[any]{Getter: func(_ context.Context, _ any) (any, error) { return "base64-raw", nil }},
 			want:     "Go?/Z~x",
 		},
 		{
 			name:     "base64-url with url-safe sensitive characters",
 			value:    "R28_L1p-eA==",
-			encoding: "base64-url",
+			encoding: ottl.StandardStringGetter[any]{Getter: func(_ context.Context, _ any) (any, error) { return "base64-url", nil }},
 			want:     "Go?/Z~x",
 		},
 		{
 			name:     "base64-raw-url with url-safe sensitive characters",
 			value:    "R28_L1p-eA",
-			encoding: "base64-raw-url",
+			encoding: ottl.StandardStringGetter[any]{Getter: func(_ context.Context, _ any) (any, error) { return "base64-raw-url", nil }},
 			want:     "Go?/Z~x",
 		},
 	}
