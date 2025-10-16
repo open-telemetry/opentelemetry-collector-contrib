@@ -13,7 +13,7 @@ import (
 
 type HasPrefixArguments[K any] struct {
 	Target ottl.StringGetter[K]
-	Prefix string
+	Prefix ottl.StringGetter[K]
 }
 
 func NewHasPrefixFactory[K any]() ottl.Factory[K] {
@@ -30,12 +30,16 @@ func createHasPrefixFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments
 	return HasPrefix(args.Target, args.Prefix)
 }
 
-func HasPrefix[K any](target ottl.StringGetter[K], prefix string) (ottl.ExprFunc[K], error) {
+func HasPrefix[K any](target ottl.StringGetter[K], prefix ottl.StringGetter[K]) (ottl.ExprFunc[K], error) {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		val, err := target.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
-		return strings.HasPrefix(val, prefix), nil
+		prefixVal, err := prefix.Get(ctx, tCtx)
+		if err != nil {
+			return nil, err
+		}
+		return strings.HasPrefix(val, prefixVal), nil
 	}, nil
 }
