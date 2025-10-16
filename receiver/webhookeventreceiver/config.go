@@ -4,6 +4,7 @@
 package webhookeventreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/webhookeventreceiver"
 
 import (
+	"bufio"
 	"errors"
 	"regexp"
 	"time"
@@ -74,8 +75,11 @@ func (cfg *Config) Validate() error {
 		}
 	}
 
-	if cfg.MaxRequestBodyBytes != 0 && cfg.MaxRequestBodyBytes < 1024 {
-		errs = multierr.Append(errs, errMaxRequestBodyBytes)
+	if cfg.MaxRequestBodyBytes == 0 {
+		cfg.MaxRequestBodyBytes = bufio.MaxScanTokenSize
+	} else if cfg.MaxRequestBodyBytes < bufio.MaxScanTokenSize {
+		cfg.MaxRequestBodyBytes = bufio.MaxScanTokenSize
+		// errs = multierr.Append(errs, errMaxRequestBodyBytes)
 	}
 
 	if (cfg.RequiredHeader.Key != "" && cfg.RequiredHeader.Value == "") || (cfg.RequiredHeader.Value != "" && cfg.RequiredHeader.Key == "") {

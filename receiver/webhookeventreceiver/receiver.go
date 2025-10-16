@@ -57,20 +57,6 @@ func newLogsReceiver(params receiver.Settings, cfg Config, consumer consumer.Log
 		return nil, err
 	}
 
-	// Calculate max buffer size for scanner
-	maxTokenSize := cfg.MaxRequestBodyBytes
-	if maxTokenSize == 0 {
-		maxTokenSize = 100 * 1024 // Default to 100KB if not configured
-	}
-
-	// Enforce minimum of 64KB to prevent legitimate requests from being rejected
-	if maxTokenSize < bufio.MaxScanTokenSize {
-		params.Logger.Warn("max_request_body_bytes is below the minimum safe size. Using 64KB minimum.",
-			zap.Int("configured_bytes", maxTokenSize),
-			zap.Int("using_bytes", bufio.MaxScanTokenSize))
-		maxTokenSize = bufio.MaxScanTokenSize
-	}
-
 	var includeHeaderRegex *regexp.Regexp
 	if cfg.HeaderAttributeRegex != "" {
 		// Valdiate() call above has already ensured this will compile
@@ -99,7 +85,7 @@ func newLogsReceiver(params receiver.Settings, cfg Config, consumer consumer.Log
 		obsrecv:             obsrecv,
 		gzipPool:            &sync.Pool{New: func() any { return new(gzip.Reader) }},
 		includeHeadersRegex: includeHeaderRegex,
-		maxRequestBodyBytes: maxTokenSize,
+		maxRequestBodyBytes: cfg.MaxRequestBodyBytes,
 	}
 
 	return er, nil
