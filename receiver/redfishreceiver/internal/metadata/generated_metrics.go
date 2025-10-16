@@ -609,7 +609,7 @@ func (m *metricTemperatureReading) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricTemperatureReading) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, systemHostNameAttributeValue string, baseURLAttributeValue string, chassisIDAttributeValue string, fanNameAttributeValue string) {
+func (m *metricTemperatureReading) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, systemHostNameAttributeValue string, baseURLAttributeValue string, chassisIDAttributeValue string, temperatureNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -620,7 +620,7 @@ func (m *metricTemperatureReading) recordDataPoint(start pcommon.Timestamp, ts p
 	dp.Attributes().PutStr("system.host_name", systemHostNameAttributeValue)
 	dp.Attributes().PutStr("base_url", baseURLAttributeValue)
 	dp.Attributes().PutStr("chassis.id", chassisIDAttributeValue)
-	dp.Attributes().PutStr("fan.name", fanNameAttributeValue)
+	dp.Attributes().PutStr("temperature.name", temperatureNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -957,8 +957,8 @@ func (mb *MetricsBuilder) RecordSystemStatusStateDataPoint(ts pcommon.Timestamp,
 }
 
 // RecordTemperatureReadingDataPoint adds a data point to temperature.reading metric.
-func (mb *MetricsBuilder) RecordTemperatureReadingDataPoint(ts pcommon.Timestamp, val int64, systemHostNameAttributeValue string, baseURLAttributeValue string, chassisIDAttributeValue string, fanNameAttributeValue string) {
-	mb.metricTemperatureReading.recordDataPoint(mb.startTime, ts, val, systemHostNameAttributeValue, baseURLAttributeValue, chassisIDAttributeValue, fanNameAttributeValue)
+func (mb *MetricsBuilder) RecordTemperatureReadingDataPoint(ts pcommon.Timestamp, val int64, systemHostNameAttributeValue string, baseURLAttributeValue string, chassisIDAttributeValue string, temperatureNameAttributeValue string) {
+	mb.metricTemperatureReading.recordDataPoint(mb.startTime, ts, val, systemHostNameAttributeValue, baseURLAttributeValue, chassisIDAttributeValue, temperatureNameAttributeValue)
 }
 
 // RecordTemperatureStatusHealthDataPoint adds a data point to temperature.status.health metric.

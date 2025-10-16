@@ -219,7 +219,7 @@ Measures the reading of a chassis temperature.
 | system.host_name | System host name. | Any Str | false |
 | base_url | base url. | Any Str | false |
 | chassis.id | Chassis id. | Any Str | false |
-| fan.name | Fan name. | Any Str | false |
+| temperature.name | Temperature name. | Any Str | false |
 
 ### temperature.status.health
 

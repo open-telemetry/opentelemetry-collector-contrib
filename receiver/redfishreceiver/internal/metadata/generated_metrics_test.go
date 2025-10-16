@@ -97,7 +97,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordTemperatureReadingDataPoint(ts, 1, "system.host_name-val", "base_url-val", "chassis.id-val", "fan.name-val")
+			mb.RecordTemperatureReadingDataPoint(ts, 1, "system.host_name-val", "base_url-val", "chassis.id-val", "temperature.name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -483,9 +483,9 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("chassis.id")
 					assert.True(t, ok)
 					assert.Equal(t, "chassis.id-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("fan.name")
+					attrVal, ok = dp.Attributes().Get("temperature.name")
 					assert.True(t, ok)
-					assert.Equal(t, "fan.name-val", attrVal.Str())
+					assert.Equal(t, "temperature.name-val", attrVal.Str())
 				case "temperature.status.health":
 					assert.False(t, validatedMetrics["temperature.status.health"], "Found a duplicate in the metrics slice: temperature.status.health")
 					validatedMetrics["temperature.status.health"] = true

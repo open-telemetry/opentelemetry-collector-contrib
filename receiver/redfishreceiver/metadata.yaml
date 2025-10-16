@@ -165,7 +165,7 @@ metrics:
     gauge:
       value_type: int
     unit: "°C"
-    attributes: [system.host_name, base_url, chassis.id, fan.name]
+    attributes: [system.host_name, base_url, chassis.id, temperature.name]
   temperature.status.state:
     description: Measures the state of a chassis temperature (-1 unknown, 0 disabled, 1 enabled).
     enabled: true
