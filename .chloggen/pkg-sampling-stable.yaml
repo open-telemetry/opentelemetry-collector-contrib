@@ -1,0 +1,13 @@
+# Use this changelog template to create an entry for release notes.
+
+change_type: enhancement
+
+component: pkg/sampling
+
+note: Note that pkg/sampling implements the new OpenTelemetry specification
+
+issues: [43396]
+
+subtext:
+
+change_logs: [user]

@@ -13,13 +13,6 @@ tests:
 
 telemetry:
   metrics:
-    fluent_opened_connections:
-      enabled: true
-      description: Number of connections opened to the fluentforward receiver
-      unit: "1"
-      sum:
-        value_type: int
-        monotonic:
     fluent_closed_connections:
       enabled: true
       description: Number of connections closed to the fluentforward receiver
@@ -30,6 +23,13 @@ telemetry:
     fluent_events_parsed:
       enabled: true
       description: Number of Fluent events parsed successfully
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic:
+    fluent_opened_connections:
+      enabled: true
+      description: Number of connections opened to the fluentforward receiver
       unit: "1"
       sum:
         value_type: int
