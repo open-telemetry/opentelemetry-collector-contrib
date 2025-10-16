@@ -92,7 +92,7 @@ func (a *lastValueAccumulator) addMetric(metric pmetric.Metric, scopeName, scope
 		return a.accumulateSummary(metric, scopeName, scopeVersion, scopeSchemaURL, scopeAttributes, resourceAttrs, now)
 	default:
 		a.logger.With(
-			zap.String("data_type", string(metric.Type())),
+			zap.String("data_type", metric.Type().String()),
 			zap.String("metric_name", metric.Name()),
 		).Error("failed to translate metric")
 	}
