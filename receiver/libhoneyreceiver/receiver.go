@@ -238,36 +238,18 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 		r.settings.Logger.Info("No dataset found in URL", zap.String("req.RequestURI", req.RequestURI))
 	}
 
-	// handleEvent is only called if an HTTP config is set, so HTTP must have a value.
 	httpCfg := r.cfg.HTTP.Get()
 	for _, p := range httpCfg.TracesURLPaths {
 		dataset = strings.Replace(dataset, p, "", 1)
 		r.settings.Logger.Debug("dataset parsed", zap.String("dataset.parsed", dataset))
 	}
 
-	// Mask API key for security but keep enough to identify the client
 	apiKey := req.Header.Get("x-honeycomb-team")
 	maskedKey := ""
 	if len(apiKey) > 8 {
 		maskedKey = apiKey[:4] + "..." + apiKey[len(apiKey)-4:]
 	} else if apiKey != "" {
 		maskedKey = "***"
-	}
-
-	// Capture proxy headers to trace through Refinery to the original client
-	sourceIP := req.RemoteAddr
-	if xff := req.Header.Get("X-Forwarded-For"); xff != "" {
-		sourceIP = xff // Contains chain of IPs, first is original client
-	} else if xri := req.Header.Get("X-Real-IP"); xri != "" {
-		sourceIP = xri
-	}
-
-	// Try to get original user agent from Refinery-forwarded header
-	// If Refinery adds this header from meta.refinery.incoming_user_agent,
-	// we can identify the original sender even when decompression fails
-	originalUserAgent := req.Header.Get("X-Refinery-Original-User-Agent")
-	if originalUserAgent == "" {
-		originalUserAgent = req.Header.Get("User-Agent") // Fallback to standard header
 	}
 
 	// Buffer the compressed body first (like api.honeycomb.io does)
@@ -293,9 +275,7 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 			zap.String("content-type", req.Header.Get("Content-Type")),
 			zap.Int64("content-length", req.ContentLength),
 			zap.String("endpoint", req.RequestURI),
-			zap.String("source_ip", sourceIP),
-			zap.String("api-key-masked", maskedKey),
-			zap.String("original-user-agent", originalUserAgent))
+			zap.String("api-key-masked", maskedKey))
 		writeLibhoneyError(resp, enc, "failed to read request body")
 		return
 	}
@@ -309,9 +289,7 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 			zap.String("content-type", req.Header.Get("Content-Type")),
 			zap.Int("compressed-size", len(compressedBody)),
 			zap.String("endpoint", req.RequestURI),
-			zap.String("source_ip", sourceIP),
-			zap.String("api-key-masked", maskedKey),
-			zap.String("original-user-agent", originalUserAgent))
+			zap.String("api-key-masked", maskedKey))
 		writeLibhoneyError(resp, enc, "failed to decompress request body")
 		return
 	}
@@ -332,9 +310,7 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 					zap.String("content-type", req.Header.Get("Content-Type")),
 					zap.Int("compressed-size", len(compressedBody)),
 					zap.String("endpoint", req.RequestURI),
-					zap.String("source_ip", sourceIP),
-					zap.String("api-key-masked", maskedKey),
-					zap.String("original-user-agent", originalUserAgent))
+					zap.String("api-key-masked", maskedKey))
 				err = errors.New("failed to decompress: panic during decompression")
 			}
 		}()
@@ -348,9 +324,7 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 			zap.String("content-type", req.Header.Get("Content-Type")),
 			zap.Int("compressed-size", len(compressedBody)),
 			zap.String("endpoint", req.RequestURI),
-			zap.String("source_ip", sourceIP),
-			zap.String("api-key-masked", maskedKey),
-			zap.String("original-user-agent", originalUserAgent))
+			zap.String("api-key-masked", maskedKey))
 		writeLibhoneyError(resp, enc, "failed to decompress request body")
 		return
 	}
