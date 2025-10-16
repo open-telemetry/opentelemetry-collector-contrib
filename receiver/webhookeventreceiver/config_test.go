@@ -4,6 +4,7 @@
 package webhookeventreceiver
 
 import (
+	"bufio"
 	"path/filepath"
 	"testing"
 
@@ -102,13 +103,6 @@ func TestValidateConfig(t *testing.T) {
 				},
 			},
 		},
-		{
-			desc:   "MaxRequestBodyBytes is less than 1 kb",
-			expect: errMaxRequestBodyBytes,
-			conf: Config{
-				MaxRequestBodyBytes: 10,
-			},
-		},
 	}
 
 	for _, test := range tests {
@@ -119,6 +113,75 @@ func TestValidateConfig(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 			}
+		})
+	}
+}
+
+func TestMaxRequestBodyBytesAutoCorrection(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		desc     string
+		conf     Config
+		expected int
+	}{
+		{
+			desc: "MaxRequestBodyBytes is 0, should be set to default",
+			conf: Config{
+				ServerConfig: confighttp.ServerConfig{
+					Endpoint: "localhost:0",
+				},
+				MaxRequestBodyBytes: 0,
+			},
+			expected: bufio.MaxScanTokenSize,
+		},
+		{
+			desc: "MaxRequestBodyBytes is less than minimum, should be corrected",
+			conf: Config{
+				ServerConfig: confighttp.ServerConfig{
+					Endpoint: "localhost:0",
+				},
+				MaxRequestBodyBytes: 10,
+			},
+			expected: bufio.MaxScanTokenSize,
+		},
+		{
+			desc: "MaxRequestBodyBytes is exactly the minimum, should remain unchanged",
+			conf: Config{
+				ServerConfig: confighttp.ServerConfig{
+					Endpoint: "localhost:0",
+				},
+				MaxRequestBodyBytes: bufio.MaxScanTokenSize,
+			},
+			expected: bufio.MaxScanTokenSize,
+		},
+		{
+			desc: "MaxRequestBodyBytes is greater than minimum, should remain unchanged",
+			conf: Config{
+				ServerConfig: confighttp.ServerConfig{
+					Endpoint: "localhost:0",
+				},
+				MaxRequestBodyBytes: 65538,
+			},
+			expected: 65538,
+		},
+		{
+			desc: "MaxRequestBodyBytes is way greater than minimum, should remain unchanged",
+			conf: Config{
+				ServerConfig: confighttp.ServerConfig{
+					Endpoint: "localhost:0",
+				},
+				MaxRequestBodyBytes: 100 * 1024 * 1024, // 100MB
+			},
+			expected: 100 * 1024 * 1024, // 100MB
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.desc, func(t *testing.T) {
+			err := test.conf.Validate()
+			require.NoError(t, err)
+			require.Equal(t, test.expected, test.conf.MaxRequestBodyBytes)
 		})
 	}
 }
