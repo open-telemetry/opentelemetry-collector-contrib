@@ -72,9 +72,8 @@ func Test_HasSuffix_Error(t *testing.T) {
 			return "test", nil
 		},
 	}
-	exprFunc, err := HasSuffix[any](target, suffix)
-	assert.NoError(t, err)
-	_, err = exprFunc(t.Context(), nil)
+	exprFunc := HasSuffix[any](target, suffix)
+	_, err := exprFunc(t.Context(), nil)
 	require.Error(t, err)
 }
 
@@ -89,8 +88,7 @@ func Test_HasSuffix_Error_suffix(t *testing.T) {
 			return true, nil
 		},
 	}
-	exprFunc, err := HasSuffix[any](target, suffix)
-	assert.NoError(t, err)
-	_, err = exprFunc(t.Context(), nil)
+	exprFunc := HasSuffix[any](target, suffix)
+	_, err := exprFunc(t.Context(), nil)
 	require.Error(t, err)
 }

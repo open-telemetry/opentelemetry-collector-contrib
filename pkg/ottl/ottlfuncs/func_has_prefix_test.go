@@ -72,9 +72,8 @@ func Test_HasPrefix_Error(t *testing.T) {
 			return "test", nil
 		},
 	}
-	exprFunc, err := HasPrefix[any](target, prefix)
-	assert.NoError(t, err)
-	_, err = exprFunc(t.Context(), nil)
+	exprFunc := HasPrefix[any](target, prefix)
+	_, err := exprFunc(t.Context(), nil)
 	require.Error(t, err)
 }
 
@@ -89,8 +88,7 @@ func Test_HasPrefix_Error_prefix(t *testing.T) {
 			return true, nil
 		},
 	}
-	exprFunc, err := HasPrefix[any](target, prefix)
-	assert.NoError(t, err)
-	_, err = exprFunc(t.Context(), nil)
+	exprFunc := HasPrefix[any](target, prefix)
+	_, err := exprFunc(t.Context(), nil)
 	require.Error(t, err)
 }
