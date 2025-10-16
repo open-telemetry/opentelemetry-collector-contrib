@@ -14,7 +14,7 @@ with qstats as (
 		SUM(qs.total_rows) AS total_rows,
 		SUM(qs.total_grant_kb) as total_grant_kb
 	FROM sys.dm_exec_query_stats AS qs
-	WHERE qs.last_execution_time BETWEEN DATEADD(SECOND, @lookbackTime, GETDATE()) AND GETDATE() AND (@instanceName = '' OR @@SERVERNAME = @instanceName)
+	WHERE qs.last_execution_time BETWEEN DATEADD(SECOND, @lookbackTime, GETDATE()) AND GETDATE()
 	GROUP BY
 		qs.query_hash,
 		qs.query_plan_hash
