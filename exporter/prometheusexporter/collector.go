@@ -37,6 +37,7 @@ type collector struct {
 	constLabels      prometheus.Labels
 	metricFamilies   sync.Map
 	metricExpiration time.Duration
+	withoutScopeInfo bool
 
 	metricNamer otlptranslator.MetricNamer
 	labelNamer  otlptranslator.LabelNamer
@@ -57,6 +58,7 @@ func newCollector(config *Config, logger *zap.Logger) *collector {
 		sendTimestamps:   config.SendTimestamps,
 		constLabels:      config.ConstLabels,
 		metricExpiration: config.MetricExpiration,
+		withoutScopeInfo: config.WithoutScopeInfo,
 		metricNamer:      configureMetricNamer(config),
 		labelNamer:       labelNamer,
 	}
@@ -222,12 +224,14 @@ func (c *collector) getMetricMetadata(metric pmetric.Metric, mType *dto.MetricTy
 		values = append(values, v.AsString())
 	}
 
-	keys = append(keys, "otel_scope_name")
-	values = append(values, scopeName)
-	keys = append(keys, "otel_scope_version")
-	values = append(values, scopeVersion)
-	keys = append(keys, "otel_scope_schema_url")
-	values = append(values, scopeSchemaURL)
+	if !c.withoutScopeInfo {
+		keys = append(keys, "otel_scope_name")
+		values = append(values, scopeName)
+		keys = append(keys, "otel_scope_version")
+		values = append(values, scopeVersion)
+		keys = append(keys, "otel_scope_schema_url")
+		values = append(values, scopeSchemaURL)
+	}
 
 	if job, ok := extractJob(resourceAttrs); ok {
 		keys = append(keys, model.JobLabel)

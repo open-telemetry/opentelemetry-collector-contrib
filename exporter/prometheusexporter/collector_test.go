@@ -359,6 +359,48 @@ func TestCollectMetricsLabelSanitize(t *testing.T) {
 	require.Empty(t, loggerCore.errorMessages, "labels were not sanitized properly")
 }
 
+func TestCollectMetricsWithoutOtelScope(t *testing.T) {
+	metric := pmetric.NewMetric()
+	metric.SetName("test_metric")
+	metric.SetDescription("test description")
+	dp := metric.SetEmptyGauge().DataPoints().AppendEmpty()
+	dp.SetIntValue(42)
+	dp.Attributes().PutStr("label", "1")
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+
+	loggerCore := errorCheckCore{}
+
+	c := newCollector(&Config{
+		Namespace:        "test_space",
+		SendTimestamps:   false,
+		WithoutScopeInfo: true,
+	}, zap.New(&loggerCore))
+	// Replace accumulator with mock for test control
+	c.accumulator = &mockAccumulator{
+		[]pmetric.Metric{metric},
+		pcommon.NewMap(),
+		[]string{""},
+		[]string{""},
+		[]string{""},
+		[]pcommon.Map{pcommon.NewMap()},
+	}
+
+	ch := make(chan prometheus.Metric, 1)
+	go func() {
+		c.Collect(ch)
+		close(ch)
+	}()
+
+	for m := range ch {
+		pbMetric := io_prometheus_client.Metric{}
+		require.NoError(t, m.Write(&pbMetric))
+		require.Equal(t, 1, len(pbMetric.Label))
+		require.Equal(t, "label", *pbMetric.Label[0].Name)
+	}
+
+	require.Empty(t, loggerCore.errorMessages, "collector unexpectedly returned an error")
+}
+
 func TestCollectMetrics(t *testing.T) {
 	tests := []struct {
 		name       string
