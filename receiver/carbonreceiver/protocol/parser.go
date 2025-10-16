@@ -23,5 +23,5 @@ type Parser interface {
 	//
 	// The <metric_timestamp> is the Unix time text of when the measurement was
 	// made.
-	Parse(line string) (pmetric.Metric, error)
+	Parse(data []byte) (pmetric.Metric, error)
 }

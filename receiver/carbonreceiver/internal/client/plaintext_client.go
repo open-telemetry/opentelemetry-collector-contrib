@@ -93,7 +93,8 @@ func (g *Graphite) Disconnect() (err error) {
 // SendMetric method can be used to just pass a metric name and value and
 // have it be sent to the Graphite host
 func (g *Graphite) SendMetric(metric Metric) error {
-	_, err := fmt.Fprint(g.Conn, metric.String())
+	data := []byte(metric.String())
+	_, err := g.Conn.Write(data)
 	if err != nil {
 		return err
 	}
