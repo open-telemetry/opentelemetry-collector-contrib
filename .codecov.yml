@@ -348,6 +348,10 @@ component_management:
     name: extension_k8sleaderelector
     paths:
     - extension/k8sleaderelector/**
+  - component_id: extension_lookup_nooplookup
+    name: extension_lookup_nooplookup
+    paths:
+    - extension/lookup/nooplookupextension/**
   - component_id: extension_oauth2clientauth
     name: extension_oauth2clientauth
     paths:
@@ -496,6 +500,10 @@ component_management:
     name: processor_logstransform
     paths:
     - processor/logstransformprocessor/**
+  - component_id: processor_lookup
+    name: processor_lookup
+    paths:
+    - processor/lookupprocessor/**
   - component_id: processor_metricsgeneration
     name: processor_metricsgeneration
     paths:
