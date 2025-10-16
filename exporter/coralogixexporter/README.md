@@ -34,6 +34,9 @@ exporters:
     # Your Coralogix private key is sensitive
     private_key: "xxx"
 
+    # (Optional) Protocol to use for communication: "grpc" (default) or "http"
+    protocol: "grpc"
+
     # (Optional) Ordered list of Resource attributes that are used for Coralogix
     # AppName and SubSystem values. The first non-empty Resource attribute is used.
     # Example: application_name_attributes: ["k8s.namespace.name", "service.namespace"]
@@ -43,7 +46,7 @@ exporters:
     subsystem_name_attributes:
     - "service.name"
 
-    # Traces, Metrics and Logs emitted by this OpenTelemetry exporter 
+    # Traces, Metrics and Logs emitted by this OpenTelemetry exporter
     # are tagged in Coralogix with the default application and subsystem constants.
     application_name: "MyBusinessEnvironment"
     subsystem_name: "MyBusinessSystem"
@@ -52,11 +55,48 @@ exporters:
     sending_queue:
       sizer: bytes
       batch:
-        min_size: 4194304 
+        min_size: 4194304
         max_size: 8388608
 
     # (Optional) Timeout is the timeout for every attempt to send data to the backend.
     timeout: 30s
+```
+
+### Transport Protocol
+
+The Coralogix exporter supports two transport protocols:
+- **gRPC** (default): Uses gRPC for efficient binary communication
+- **HTTP**: Uses HTTP with protobuf encoding, useful for proxy support or environments where gRPC is restricted
+
+To use HTTP protocol:
+```yaml
+exporters:
+  coralogix:
+    protocol: "http"
+    domain: "coralogix.com"
+```
+
+#### Using HTTP Protocol with Proxy
+
+When using HTTP protocol, you can configure proxy settings:
+
+```yaml
+exporters:
+  coralogix:
+    protocol: "http"
+    domain: "coralogix.com"
+    private_key: "xxx"
+    application_name: "MyApp"
+    subsystem_name: "MySubsystem"
+    domain_settings:
+      proxy_url: "http://proxy.example.com:8080"
+      timeout: 30s
+```
+
+**Notes**:
+- Proxy support (`proxy_url`) is only available when using the HTTP protocol. gRPC protocol does not support this setting.
+- Signal-specific settings (logs, traces, metrics) take precedence over `domain_settings`.
+- **The profiles signal is not supported when using HTTP protocol**. Use gRPC protocol (default) if you need to send profiles data.
 ```
 
 ### Compression
@@ -70,7 +110,7 @@ exporters:
       compression: "zstd"
 ```
 
-### v0.76.0 Coralogix Domain 
+### v0.76.0 Coralogix Domain
 
 Since v0.76.0 you can specify Coralogix domain in the configuration file instead of specifying different endpoints for traces, metrics and logs. For example, the configuration below, can be replaced with domain field:
 
