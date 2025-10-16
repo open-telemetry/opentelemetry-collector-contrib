@@ -305,7 +305,13 @@ func createAndEmitMetrics(ctx context.Context, rawMeter, aggMeter metric.Meter, 
 
 	totalRequests := int64(0)
 
-	// Initialize active connections for each service/region/protocol/instance combination
+	// Track active connections for each service/region/protocol/instance combination
+	// This ensures we never go below zero
+	type connKey struct {
+		service, region, protocol, instance string
+	}
+	activeConnections := make(map[connKey]int64)
+
 	services := []string{"web", "api", "database"}
 	regions := []string{"us-east-1", "us-west-2", "eu-west-1"}
 	protocols := []string{"http", "grpc", "tcp"}
@@ -317,6 +323,8 @@ func createAndEmitMetrics(ctx context.Context, rawMeter, aggMeter metric.Meter, 
 			for _, protocol := range protocols {
 				for _, instance := range instances {
 					initialConns := rand.Int63n(21) + 10 // 10-30 connections
+					key := connKey{service, region, protocol, instance}
+					activeConnections[key] = initialConns
 
 					rawActiveConnections.Add(ctx, initialConns,
 						metric.WithAttributes(
@@ -409,19 +417,37 @@ func createAndEmitMetrics(ctx context.Context, rawMeter, aggMeter metric.Meter, 
 				)
 			}
 
-			// Update active connections with realistic labels
-			// Simulate different services, regions, protocols, and instances
-			services := []string{"web", "api", "database"}
-			regions := []string{"us-east-1", "us-west-2", "eu-west-1"}
-			protocols := []string{"http", "grpc", "tcp"}
-			instances := []string{"srv-01", "srv-02", "srv-03"}
-
+			// Update active connections with realistic labels (ensuring never negative)
 			for _, service := range services {
 				for _, region := range regions {
 					for _, protocol := range protocols {
 						for _, instance := range instances {
-							// Generate connection change for each combination (-5 to +5)
-							connChange := rand.Int63n(11) - 5
+							key := connKey{service, region, protocol, instance}
+							currentConns := activeConnections[key]
+
+							// Generate realistic connection change based on current state
+							var connChange int64
+
+							// If we have many connections, bias toward reducing them
+							if currentConns > 50 {
+								connChange = rand.Int63n(7) - 4 // -4 to +2 (bias toward reduction)
+							} else if currentConns < 10 {
+								// If we have few connections, bias toward increasing them
+								connChange = rand.Int63n(7) - 2 // -2 to +4 (bias toward increase)
+							} else {
+								// Normal range, balanced change
+								connChange = rand.Int63n(7) - 3 // -3 to +3
+							}
+
+							// Ensure we never go below 0
+							newConns := currentConns + connChange
+							if newConns < 0 {
+								connChange = -currentConns // Only reduce to 0
+								newConns = 0
+							}
+
+							// Update our tracking
+							activeConnections[key] = newConns
 
 							// Skip if no change
 							if connChange == 0 {

@@ -214,27 +214,27 @@ func TestCounterAggregationStrategies(t *testing.T) {
 		validateResult func(t *testing.T, metric pmetric.Metric)
 	}{
 		{
-			name:         "sum_aggregation",
+			name:          "sum_aggregation",
 			aggregateType: Sum,
-			expectedType: pmetric.MetricTypeSum,
+			expectedType:  pmetric.MetricTypeSum,
 			validateResult: func(t *testing.T, metric pmetric.Metric) {
 				require.Equal(t, pmetric.MetricTypeSum, metric.Type())
 				require.Greater(t, metric.Sum().DataPoints().At(0).DoubleValue(), 0.0)
 			},
 		},
 		{
-			name:         "average_aggregation",
+			name:          "average_aggregation",
 			aggregateType: Average,
-			expectedType: pmetric.MetricTypeSum,
+			expectedType:  pmetric.MetricTypeSum,
 			validateResult: func(t *testing.T, metric pmetric.Metric) {
 				require.Equal(t, pmetric.MetricTypeSum, metric.Type())
 				require.Greater(t, metric.Sum().DataPoints().At(0).DoubleValue(), 0.0)
 			},
 		},
 		{
-			name:         "rate_aggregation",
+			name:          "rate_aggregation",
 			aggregateType: Rate,
-			expectedType: pmetric.MetricTypeGauge, // Rate exports as gauge
+			expectedType:  pmetric.MetricTypeGauge, // Rate exports as gauge
 			validateResult: func(t *testing.T, metric pmetric.Metric) {
 				require.Equal(t, pmetric.MetricTypeGauge, metric.Type())
 				require.GreaterOrEqual(t, metric.Gauge().DataPoints().At(0).DoubleValue(), 0.0)
@@ -333,6 +333,155 @@ func TestCounterAggregationStrategies(t *testing.T) {
 			require.True(t, found, "Expected to find aggregated http_requests_total metric")
 
 			t.Logf("Successfully tested %s counter aggregation strategy", tt.name)
+		})
+	}
+}
+
+func TestUpDownCounterAggregationStrategies(t *testing.T) {
+	tests := []struct {
+		name           string
+		aggregateType  AggregationType
+		expectedType   pmetric.MetricType
+		validateResult func(t *testing.T, metric pmetric.Metric)
+	}{
+		{
+			name:          "sum_aggregation",
+			aggregateType: Sum,
+			expectedType:  pmetric.MetricTypeGauge, // UpDownCounters export as gauges
+			validateResult: func(t *testing.T, metric pmetric.Metric) {
+				require.Equal(t, pmetric.MetricTypeGauge, metric.Type())
+				require.Greater(t, metric.Gauge().DataPoints().At(0).DoubleValue(), 0.0)
+			},
+		},
+		{
+			name:          "average_aggregation",
+			aggregateType: Average,
+			expectedType:  pmetric.MetricTypeGauge,
+			validateResult: func(t *testing.T, metric pmetric.Metric) {
+				require.Equal(t, pmetric.MetricTypeGauge, metric.Type())
+				require.Greater(t, metric.Gauge().DataPoints().At(0).DoubleValue(), 0.0)
+			},
+		},
+		{
+			name:          "max_aggregation",
+			aggregateType: Max,
+			expectedType:  pmetric.MetricTypeGauge,
+			validateResult: func(t *testing.T, metric pmetric.Metric) {
+				require.Equal(t, pmetric.MetricTypeGauge, metric.Type())
+				require.Greater(t, metric.Gauge().DataPoints().At(0).DoubleValue(), 0.0)
+			},
+		},
+		{
+			name:          "min_aggregation",
+			aggregateType: Min,
+			expectedType:  pmetric.MetricTypeGauge,
+			validateResult: func(t *testing.T, metric pmetric.Metric) {
+				require.Equal(t, pmetric.MetricTypeGauge, metric.Type())
+				require.GreaterOrEqual(t, metric.Gauge().DataPoints().At(0).DoubleValue(), 0.0)
+			},
+		},
+		{
+			name:          "last_aggregation",
+			aggregateType: Last,
+			expectedType:  pmetric.MetricTypeGauge,
+			validateResult: func(t *testing.T, metric pmetric.Metric) {
+				require.Equal(t, pmetric.MetricTypeGauge, metric.Type())
+				require.GreaterOrEqual(t, metric.Gauge().DataPoints().At(0).DoubleValue(), 0.0)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &Config{
+				WindowSize:         1 * time.Second,
+				MaxMemoryMB:        10,
+				StaleDataThreshold: 30 * time.Second,
+				Metrics: []MetricConfig{
+					{
+						Match:         "active_connections",
+						AggregateType: tt.aggregateType,
+						Labels: LabelConfig{
+							Type:  Remove,
+							Names: []string{"instance"}, // Remove instance, keep service/region/protocol
+						},
+					},
+				},
+			}
+
+			logger := zap.NewNop()
+			proc, err := newStreamingAggregationProcessor(logger, cfg)
+			require.NoError(t, err)
+
+			ctx := context.Background()
+			err = proc.Start(ctx, nil)
+			require.NoError(t, err)
+			defer proc.Shutdown(ctx)
+
+			// Create test UpDownCounter metric with multiple instances
+			md := pmetric.NewMetrics()
+			rm := md.ResourceMetrics().AppendEmpty()
+			sm := rm.ScopeMetrics().AppendEmpty()
+			metric := sm.Metrics().AppendEmpty()
+			metric.SetName("active_connections")
+			sum := metric.SetEmptySum()
+			sum.SetIsMonotonic(false) // UpDownCounter is non-monotonic
+			sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+
+			// Simulate multiple instances with different connection counts
+			instances := []struct {
+				service  string
+				region   string
+				protocol string
+				instance string
+				value    int64
+			}{
+				{"web", "us-east-1", "http", "srv-01", 25},
+				{"web", "us-east-1", "http", "srv-02", 30},
+				{"web", "us-east-1", "http", "srv-03", 20},
+				{"api", "us-west-2", "grpc", "srv-01", 15},
+				{"api", "us-west-2", "grpc", "srv-02", 18},
+			}
+
+			for _, inst := range instances {
+				dp := sum.DataPoints().AppendEmpty()
+				dp.SetIntValue(inst.value)
+				dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+				dp.Attributes().PutStr("service", inst.service)
+				dp.Attributes().PutStr("region", inst.region)
+				dp.Attributes().PutStr("protocol", inst.protocol)
+				dp.Attributes().PutStr("instance", inst.instance)
+			}
+
+			// Process the metrics
+			_, err = proc.ProcessMetrics(ctx, md)
+			require.NoError(t, err)
+
+			// Wait for processing
+			time.Sleep(100 * time.Millisecond)
+
+			// Get aggregated results
+			result := proc.GetAggregatedMetrics()
+			require.Greater(t, result.DataPointCount(), 0, "Expected aggregated metrics")
+
+			// Find the aggregated active_connections metric
+			found := false
+			for i := 0; i < result.ResourceMetrics().Len(); i++ {
+				rm := result.ResourceMetrics().At(i)
+				for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+					sm := rm.ScopeMetrics().At(j)
+					for k := 0; k < sm.Metrics().Len(); k++ {
+						m := sm.Metrics().At(k)
+						if m.Name() == "active_connections" {
+							tt.validateResult(t, m)
+							found = true
+						}
+					}
+				}
+			}
+			require.True(t, found, "Expected to find aggregated active_connections metric")
+
+			t.Logf("Successfully tested %s UpDownCounter aggregation strategy", tt.name)
 		})
 	}
 }

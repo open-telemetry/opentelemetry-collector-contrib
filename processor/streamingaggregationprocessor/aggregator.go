@@ -14,8 +14,8 @@ import (
 
 // Aggregator handles aggregation for a single metric series
 type Aggregator struct {
-	metricType       pmetric.MetricType
-	aggregateType    string // Track the aggregation strategy for export decisions
+	metricType    pmetric.MetricType
+	aggregateType string // Track the aggregation strategy for export decisions
 
 	// ===== GAUGE METRICS =====
 	// For gauge metrics
@@ -42,6 +42,7 @@ type Aggregator struct {
 	// For UpDownCounter tracking (non-monotonic sums)
 	upDownFirstValue    float64
 	upDownLastValue     float64
+	upDownLastTimestamp pcommon.Timestamp
 	hasUpDownFirstValue bool
 
 	// ===== COUNTER-SPECIFIC FIELDS =====
@@ -88,7 +89,7 @@ type histogramCumulativeState struct {
 func NewAggregator(metricType pmetric.MetricType) *Aggregator {
 	return &Aggregator{
 		metricType:            metricType,
-		aggregateType:         "", // Default to empty (no custom aggregation)
+		aggregateType:         "",     // Default to empty (no custom aggregation)
 		min:                   1e308,  // Max float64
 		max:                   -1e308, // Min float64
 		histogramBuckets:      make(map[float64]uint64),
@@ -102,6 +103,18 @@ func (a *Aggregator) SetAggregateType(aggregateType string) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	a.aggregateType = aggregateType
+}
+
+// UpdateUpDownCounter updates the UpDownCounter value (for current state metrics like active_connections)
+func (a *Aggregator) UpdateUpDownCounter(value float64, timestamp pcommon.Timestamp) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
+	// UpDownCounters represent current state, not cumulative values
+	// Store the current aggregated value directly
+	a.upDownLastValue = value
+	a.upDownLastTimestamp = timestamp
+	a.hasUpDownFirstValue = true
 }
 
 // SetCounterTotal directly sets the total counter value (for average aggregation)
@@ -263,20 +276,6 @@ func (a *Aggregator) UpdateCount(count uint64) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	a.count += int64(count)
-}
-
-// UpdateUpDownCounter updates values for UpDownCounter (non-monotonic sum)
-// For UpDownCounters, we track the net change within the window
-func (a *Aggregator) UpdateUpDownCounter(value float64, timestamp pcommon.Timestamp) {
-	a.mu.Lock()
-	defer a.mu.Unlock()
-
-	if !a.hasUpDownFirstValue {
-		a.upDownFirstValue = value
-		a.hasUpDownFirstValue = true
-	}
-	a.upDownLastValue = value
-	a.lastTimestamp = timestamp
 }
 
 // updateMinMaxLocked updates min and max values (must be called with lock held)

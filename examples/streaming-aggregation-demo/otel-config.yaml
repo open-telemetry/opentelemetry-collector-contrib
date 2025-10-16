@@ -36,6 +36,26 @@ processors:
           type: "remove"
           names: ["instance", "endpoint"] # Service-level rate by method/status
 
+      # UpDownCounter aggregation examples
+      # - match: "^active_connections$"
+      #   aggregate_type: "sum"  # Total connections across all instances
+      #   labels:
+      #     type: "remove"
+      #     names: ["instance"]  # Service-level total by service/region/protocol
+
+      # Uncomment to test other UpDownCounter strategies:
+      # - match: "^active_connections$"
+      #   aggregate_type: "average" # Average connections per instance
+      #   labels:
+      #     type: "keep"
+      #     names: ["service", "region"] # Per service-region average
+
+      - match: "^active_connections$"
+        aggregate_type: "max" # Peak connections (capacity monitoring)
+        labels:
+          type: "remove"
+          names: ["instance", "protocol"] # Peak per service-region
+
   metricstransform:
     transforms:
       - include: ".*"

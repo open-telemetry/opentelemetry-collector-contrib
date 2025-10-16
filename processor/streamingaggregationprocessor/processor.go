@@ -1174,9 +1174,19 @@ func (p *streamingAggregationProcessor) processDataPointGroup(
 		return p.processGaugeGroupWithStrategy(dataPoints, aggregator, metricConfig)
 	}
 
-	// Handle sum metrics (counters and up-down counters) with custom aggregation
-	if originalMetric.Type() == pmetric.MetricTypeSum && metricConfig != nil && metricConfig.AggregateType != Last {
-		return p.processSumGroupWithStrategy(dataPoints, aggregator, metricConfig, originalMetric.Sum().IsMonotonic())
+	// Handle sum metrics with custom aggregation (separate logic for counters vs up-down counters)
+	if originalMetric.Type() == pmetric.MetricTypeSum && metricConfig != nil {
+		if originalMetric.Sum().IsMonotonic() {
+			// Monotonic counter (http_requests_total) - cumulative, only increases
+			// Exclude "Last" for counters as it doesn't make sense for cumulative metrics
+			if metricConfig.AggregateType != Last {
+				return p.processCounterGroupWithStrategy(dataPoints, aggregator, metricConfig)
+			}
+		} else {
+			// UpDownCounter (active_connections) - current state, can increase/decrease
+			// "Last" is valid for UpDownCounters (current state snapshot)
+			return p.processUpDownCounterGroupWithStrategy(dataPoints, aggregator, metricConfig)
+		}
 	}
 
 	// For other metrics or default behavior: use simple last value
@@ -1255,18 +1265,17 @@ func (p *streamingAggregationProcessor) processGaugeGroupWithStrategy(
 	return nil
 }
 
-// processSumGroupWithStrategy applies custom aggregation strategy to sum metrics (counters)
-func (p *streamingAggregationProcessor) processSumGroupWithStrategy(
+// processUpDownCounterGroupWithStrategy applies aggregation strategies specifically for UpDownCounters
+func (p *streamingAggregationProcessor) processUpDownCounterGroupWithStrategy(
 	dataPoints []dataPointInfo,
 	aggregator *Aggregator,
 	metricConfig *MetricConfig,
-	isMonotonic bool,
 ) error {
 	if len(dataPoints) == 0 {
 		return nil
 	}
 
-	// Extract values and find latest timestamp
+	// Extract current values and find latest timestamp
 	var values []float64
 	var latestTimestamp pcommon.Timestamp
 
@@ -1277,27 +1286,53 @@ func (p *streamingAggregationProcessor) processSumGroupWithStrategy(
 		}
 	}
 
-	// Apply aggregation strategy based on metric type
+	// Apply UpDownCounter-specific aggregation strategies
 	var aggregatedValue float64
 	switch metricConfig.AggregateType {
 	case Sum:
-		// Sum: Add all counter values together
+		// Sum: Add all current connection values together
+		// Example: Total connections across all instances
 		for _, v := range values {
 			aggregatedValue += v
 		}
 	case Average:
-		// Average: Calculate mean counter value across instances
+		// Average: Calculate mean current value across instances
+		// Example: Average connections per instance
 		sum := 0.0
 		for _, v := range values {
 			sum += v
 		}
 		aggregatedValue = sum / float64(len(values))
-	case Rate:
-		// Rate: For monotonic counters, sum all the values and let the aggregator
-		// handle delta computation and rate calculation at export time
-		for _, v := range values {
-			aggregatedValue += v
+	case Max:
+		// Max: Find the highest current value
+		// Example: Peak connections from any instance
+		aggregatedValue = values[0]
+		for _, v := range values[1:] {
+			if v > aggregatedValue {
+				aggregatedValue = v
+			}
 		}
+	case Min:
+		// Min: Find the lowest current value
+		// Example: Minimum connections (could indicate issues)
+		aggregatedValue = values[0]
+		for _, v := range values[1:] {
+			if v < aggregatedValue {
+				aggregatedValue = v
+			}
+		}
+	case Last:
+		// Last: Most recent current value (by timestamp)
+		// Example: Current connection state snapshot
+		latestIdx := 0
+		latestTimestamp = dataPoints[0].timestamp
+		for i := 1; i < len(dataPoints); i++ {
+			if dataPoints[i].timestamp > latestTimestamp {
+				latestIdx = i
+				latestTimestamp = dataPoints[i].timestamp
+			}
+		}
+		aggregatedValue = dataPoints[latestIdx].value
 	default:
 		// Fallback to sum for unknown strategies
 		for _, v := range values {
@@ -1305,36 +1340,80 @@ func (p *streamingAggregationProcessor) processSumGroupWithStrategy(
 		}
 	}
 
-	// Set the aggregation strategy on the aggregator for proper export handling
+	// Set the aggregation strategy on the aggregator
 	aggregator.SetAggregateType(string(metricConfig.AggregateType))
 
+	// For UpDownCounters, always use current value semantics (not cumulative)
+	// Store the aggregated current value directly
+	aggregator.UpdateUpDownCounter(aggregatedValue, latestTimestamp)
 
-	// Update the aggregator based on strategy
+	return nil
+}
+
+// processCounterGroupWithStrategy applies aggregation strategies specifically for monotonic Counters
+func (p *streamingAggregationProcessor) processCounterGroupWithStrategy(
+	dataPoints []dataPointInfo,
+	aggregator *Aggregator,
+	metricConfig *MetricConfig,
+) error {
+	if len(dataPoints) == 0 {
+		return nil
+	}
+
+	// Extract cumulative values and find latest timestamp
+	var values []float64
+	var latestTimestamp pcommon.Timestamp
+
+	for _, dp := range dataPoints {
+		values = append(values, dp.value)
+		if dp.timestamp > latestTimestamp {
+			latestTimestamp = dp.timestamp
+		}
+	}
+
+	// Apply Counter-specific aggregation strategies
+	var aggregatedValue float64
+	switch metricConfig.AggregateType {
+	case Sum:
+		// Sum: Add all cumulative counter values together
+		// Example: Total requests across all instances
+		for _, v := range values {
+			aggregatedValue += v
+		}
+	case Average:
+		// Average: Calculate mean cumulative value across instances
+		// Example: Average requests per instance since startup
+		sum := 0.0
+		for _, v := range values {
+			sum += v
+		}
+		aggregatedValue = sum / float64(len(values))
+	case Rate:
+		// Rate: Sum all values and let aggregator calculate rate at export time
+		// Example: Total requests per second across all instances
+		for _, v := range values {
+			aggregatedValue += v
+		}
+	default:
+		// Fallback to sum for unknown strategies (Max/Min don't make sense for counters)
+		for _, v := range values {
+			aggregatedValue += v
+		}
+	}
+
+	// Set the aggregation strategy on the aggregator
+	aggregator.SetAggregateType(string(metricConfig.AggregateType))
+
+	// Handle Counter-specific storage based on strategy
 	if metricConfig.AggregateType == Rate {
-		// For rate, we still use counter delta logic but will export as gauge
-		if isMonotonic {
-			aggregator.ComputeDeltaFromCumulative(aggregatedValue)
-		} else {
-			aggregator.UpdateLast(aggregatedValue, latestTimestamp)
-		}
+		// For rate, use counter delta logic but will export as gauge
+		aggregator.ComputeDeltaFromCumulative(aggregatedValue)
 	} else if metricConfig.AggregateType == Average {
-		// For average strategy, the aggregated value IS the final cumulative counter value
-		// We don't want delta computation - we want to set this as the total cumulative value
-		if isMonotonic {
-			// For average aggregation, directly set the counter total without delta computation
-			aggregator.SetCounterTotal(aggregatedValue, latestTimestamp)
-		} else {
-			aggregator.UpdateLast(aggregatedValue, latestTimestamp)
-		}
+		// For average strategy, set the averaged value as the final cumulative total
+		aggregator.SetCounterTotal(aggregatedValue, latestTimestamp)
 	} else {
 		// For sum strategy, treat as counter delta and let aggregator handle cumulation
-		if isMonotonic {
-			// For monotonic counters, process as delta
-			aggregator.ComputeDeltaFromCumulative(aggregatedValue)
-		} else {
-			// For up-down counters, use last value semantics
-			aggregator.UpdateLast(aggregatedValue, latestTimestamp)
-		}
+		aggregator.ComputeDeltaFromCumulative(aggregatedValue)
 	}
 
 	return nil
