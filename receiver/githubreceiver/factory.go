@@ -164,5 +164,5 @@ func createGitHubScraper(
 		return nil, err
 	}
 
-	return
+	return s, err
 }

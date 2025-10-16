@@ -56,11 +56,11 @@ func newMockMetricsQueryResponse(metricsByParam []queryResourcesResponseMock) fu
 		for _, param := range metricsByParam {
 			if param.params.Evaluate(subscriptionID, metricNamespace, metricNames, resourceIDs) {
 				resp.SetResponse(http.StatusOK, param.response, nil)
-				return
+				return resp, errResp
 			}
 		}
 		errResp.SetResponseError(http.StatusNotImplemented, "error from tests")
-		return
+		return resp, errResp
 	}
 }
 
