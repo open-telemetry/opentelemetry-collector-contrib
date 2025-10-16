@@ -87,7 +87,7 @@ Measures the reading of a chassis fan.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {%} | Gauge | Int | development |
+| {} | Gauge | Int | development |
 
 #### Attributes
 
@@ -97,6 +97,7 @@ Measures the reading of a chassis fan.
 | base_url | base url. | Any Str | false |
 | chassis.id | Chassis id. | Any Str | false |
 | fan.name | Fan name. | Any Str | false |
+| fan.reading_units | Fan reading units. | Any Str | false |
 
 ### fan.status.health
 

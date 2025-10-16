@@ -70,6 +70,9 @@ attributes:
   fan.name:
     description: Fan name.
     type: string
+  fan.reading_units:
+    description: Fan reading units.
+    type: string
   temperature.name:
     description: Temperature name.
     type: string
@@ -137,8 +140,8 @@ metrics:
       level: development
     gauge:
       value_type: int
-    unit: "{%}"
-    attributes: [system.host_name, base_url, chassis.id, fan.name]
+    unit: "{}"
+    attributes: [system.host_name, base_url, chassis.id, fan.name, fan.reading_units]
   fan.status.state:
     description: Measures the state of a chassis fan (-1 unknown, 0 disabled, 1 enabled).
     enabled: true

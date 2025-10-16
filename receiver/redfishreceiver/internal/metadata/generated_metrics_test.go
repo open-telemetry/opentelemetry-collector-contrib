@@ -73,7 +73,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordFanReadingDataPoint(ts, 1, "system.host_name-val", "base_url-val", "chassis.id-val", "fan.name-val")
+			mb.RecordFanReadingDataPoint(ts, 1, "system.host_name-val", "base_url-val", "chassis.id-val", "fan.name-val", "fan.reading_units-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -261,7 +261,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "Measures the reading of a chassis fan.", ms.At(i).Description())
-					assert.Equal(t, "{%}", ms.At(i).Unit())
+					assert.Equal(t, "{}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -279,6 +279,9 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("fan.name")
 					assert.True(t, ok)
 					assert.Equal(t, "fan.name-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("fan.reading_units")
+					assert.True(t, ok)
+					assert.Equal(t, "fan.reading_units-val", attrVal.Str())
 				case "fan.status.health":
 					assert.False(t, validatedMetrics["fan.status.health"], "Found a duplicate in the metrics slice: fan.status.health")
 					validatedMetrics["fan.status.health"] = true

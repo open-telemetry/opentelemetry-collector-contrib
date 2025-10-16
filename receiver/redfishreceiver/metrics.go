@@ -108,14 +108,17 @@ func (s *redfishScraper) recordChassis(hostName, baseURL string, chassis *redfis
 func (s *redfishScraper) recordFans(hostName, baseURL, chassisID string, fans []redfish.Fan) {
 	now := pcommon.NewTimestampFromTime(time.Now())
 	for _, fan := range fans {
-		s.mb.RecordFanReadingDataPoint(
-			now,
-			*fan.Reading,
-			hostName,
-			baseURL,
-			chassisID,
-			fan.Name,
-		)
+		if fan.Reading != nil {
+			s.mb.RecordFanReadingDataPoint(
+				now,
+				*fan.Reading,
+				hostName,
+				baseURL,
+				chassisID,
+				fan.Name,
+				fan.ReadingUnits,
+			)
+		}
 		s.mb.RecordFanStatusHealthDataPoint(
 			now,
 			redfish.StatusHealthToMetric(fan.Status.Health),
@@ -138,14 +141,16 @@ func (s *redfishScraper) recordFans(hostName, baseURL, chassisID string, fans []
 func (s *redfishScraper) recordTemperatures(hostName, baseURL, chassisID string, temps []redfish.Temperature) {
 	now := pcommon.NewTimestampFromTime(time.Now())
 	for _, temp := range temps {
-		s.mb.RecordTemperatureReadingDataPoint(
-			now,
-			*temp.ReadingCelsius,
-			hostName,
-			baseURL,
-			chassisID,
-			temp.Name,
-		)
+		if temp.ReadingCelsius != nil {
+			s.mb.RecordTemperatureReadingDataPoint(
+				now,
+				*temp.ReadingCelsius,
+				hostName,
+				baseURL,
+				chassisID,
+				temp.Name,
+			)
+		}
 		s.mb.RecordTemperatureStatusHealthDataPoint(
 			now,
 			redfish.StatusHealthToMetric(temp.Status.Health),

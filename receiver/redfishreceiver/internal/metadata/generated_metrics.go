@@ -259,12 +259,12 @@ type metricFanReading struct {
 func (m *metricFanReading) init() {
 	m.data.SetName("fan.reading")
 	m.data.SetDescription("Measures the reading of a chassis fan.")
-	m.data.SetUnit("{%}")
+	m.data.SetUnit("{}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricFanReading) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, systemHostNameAttributeValue string, baseURLAttributeValue string, chassisIDAttributeValue string, fanNameAttributeValue string) {
+func (m *metricFanReading) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, systemHostNameAttributeValue string, baseURLAttributeValue string, chassisIDAttributeValue string, fanNameAttributeValue string, fanReadingUnitsAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -276,6 +276,7 @@ func (m *metricFanReading) recordDataPoint(start pcommon.Timestamp, ts pcommon.T
 	dp.Attributes().PutStr("base_url", baseURLAttributeValue)
 	dp.Attributes().PutStr("chassis.id", chassisIDAttributeValue)
 	dp.Attributes().PutStr("fan.name", fanNameAttributeValue)
+	dp.Attributes().PutStr("fan.reading_units", fanReadingUnitsAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -927,8 +928,8 @@ func (mb *MetricsBuilder) RecordChassisStatusStateDataPoint(ts pcommon.Timestamp
 }
 
 // RecordFanReadingDataPoint adds a data point to fan.reading metric.
-func (mb *MetricsBuilder) RecordFanReadingDataPoint(ts pcommon.Timestamp, val int64, systemHostNameAttributeValue string, baseURLAttributeValue string, chassisIDAttributeValue string, fanNameAttributeValue string) {
-	mb.metricFanReading.recordDataPoint(mb.startTime, ts, val, systemHostNameAttributeValue, baseURLAttributeValue, chassisIDAttributeValue, fanNameAttributeValue)
+func (mb *MetricsBuilder) RecordFanReadingDataPoint(ts pcommon.Timestamp, val int64, systemHostNameAttributeValue string, baseURLAttributeValue string, chassisIDAttributeValue string, fanNameAttributeValue string, fanReadingUnitsAttributeValue string) {
+	mb.metricFanReading.recordDataPoint(mb.startTime, ts, val, systemHostNameAttributeValue, baseURLAttributeValue, chassisIDAttributeValue, fanNameAttributeValue, fanReadingUnitsAttributeValue)
 }
 
 // RecordFanStatusHealthDataPoint adds a data point to fan.status.health metric.
