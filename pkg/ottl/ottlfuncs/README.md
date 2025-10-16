@@ -2570,21 +2570,6 @@ Examples:
 
 - `Weekday(Now())`
 
-### Year
-
-`Year(value)`
-
-The `Year` Converter returns the year component from the specified time using the Go stdlib [`time.Year` function](https://pkg.go.dev/time#Time.Year).
-
-`value` is a `time.Time`. If `value` is another type, an error is returned.
-
-The returned type is `int64`.
-
-Examples:
-
-- `Year(Now())`
-
-
 ### XXH3
 
 `XXH3(value)`
@@ -2601,3 +2586,17 @@ Examples:
 
 - `XXH3(resource.attributes["device.name"])`
 - `XXH3("name")`
+
+### Year
+
+`Year(value)`
+
+The `Year` Converter returns the year component from the specified time using the Go stdlib [`time.Year` function](https://pkg.go.dev/time#Time.Year).
+
+`value` is a `time.Time`. If `value` is another type, an error is returned.
+
+The returned type is `int64`.
+
+Examples:
+
+- `Year(Now())`
