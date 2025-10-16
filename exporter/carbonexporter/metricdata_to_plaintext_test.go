@@ -325,9 +325,9 @@ func expectedSummaryLines(
 
 func BenchmarkConsumeMetricsDefault(b *testing.B) {
 	md := generateSmallBatch()
-	b.ResetTimer()
+
 	b.ReportAllocs()
-	for n := 0; n < b.N; n++ {
+	for b.Loop() {
 		assert.Len(b, metricDataToPlaintext(md), 62)
 	}
 }

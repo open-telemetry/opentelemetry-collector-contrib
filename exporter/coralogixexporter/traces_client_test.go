@@ -392,12 +392,12 @@ func BenchmarkTracesExporter_PushTraces(b *testing.B) {
 	}
 	for _, numTraces := range testCases {
 		b.Run("numTraces="+fmt.Sprint(numTraces), func(b *testing.B) {
-			for i := 0; i < b.N; i++ {
+			for b.Loop() {
 				traces := ptrace.NewTraces()
 				rs := traces.ResourceSpans().AppendEmpty()
 				rs.Resource().Attributes().PutStr("service.name", "benchmark-service")
 				ss := rs.ScopeSpans().AppendEmpty()
-				for j := 0; j < numTraces; j++ {
+				for j := range numTraces {
 					span := ss.Spans().AppendEmpty()
 					span.SetTraceID(getTraceID(fmt.Sprintf("trace%d", j)))
 					span.SetSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
@@ -454,7 +454,7 @@ func TestTracesExporter_PushTraces_Performance(t *testing.T) {
 		ss := rs.ScopeSpans().AppendEmpty()
 
 		spanCount := 3000
-		for i := 0; i < spanCount; i++ {
+		for i := range spanCount {
 			span := ss.Spans().AppendEmpty()
 			span.SetName(fmt.Sprintf("test_span_%d", i))
 			span.SetTraceID(getTraceID(fmt.Sprintf("trace%d", i)))
@@ -475,7 +475,7 @@ func TestTracesExporter_PushTraces_Performance(t *testing.T) {
 	t.Run("Over rate limit", func(t *testing.T) {
 		mockSrv.recvCount = 0
 
-		for i := 0; i < 5; i++ {
+		for range 5 {
 			exp.EnableRateLimit()
 		}
 
@@ -485,7 +485,7 @@ func TestTracesExporter_PushTraces_Performance(t *testing.T) {
 		ss := rs.ScopeSpans().AppendEmpty()
 
 		spanCount := 7000
-		for i := 0; i < spanCount; i++ {
+		for i := range spanCount {
 			span := ss.Spans().AppendEmpty()
 			span.SetName(fmt.Sprintf("test_span_%d", i))
 			span.SetTraceID(getTraceID(fmt.Sprintf("trace%d", i)))
@@ -529,7 +529,7 @@ func TestTracesExporter_PushTraces_Performance(t *testing.T) {
 		ss := rs.ScopeSpans().AppendEmpty()
 
 		spanCount := 3000
-		for i := 0; i < spanCount; i++ {
+		for i := range spanCount {
 			span := ss.Spans().AppendEmpty()
 			span.SetName(fmt.Sprintf("test_span_%d", i))
 			span.SetTraceID(getTraceID(fmt.Sprintf("trace%d", i)))
@@ -578,7 +578,7 @@ func TestTracesExporter_RateLimitErrorCountReset(t *testing.T) {
 		require.NoError(t, err)
 	}()
 
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		exp.EnableRateLimit()
 	}
 	assert.Equal(t, int32(5), exp.rateError.errorCount.Load())
@@ -657,7 +657,7 @@ func TestTracesExporter_RateLimitCounterResetOnSuccess(t *testing.T) {
 	})
 
 	t.Run("Trigger errors below threshold", func(t *testing.T) {
-		for i := 0; i < 4; i++ {
+		for range 4 {
 			exp.EnableRateLimit()
 		}
 		assert.Equal(t, int32(4), exp.rateError.errorCount.Load())

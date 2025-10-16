@@ -730,6 +730,30 @@ processors:
     detectors: ["scaleway"]
 ```
 
+### Upcloud
+
+Uses the [Upcloud metadata API](https://upcloud.com/docs/guides/upcloud-metadata-service/) to read resource information from the instance metadata service and populate related resource attributes.
+
+The list of the populated resource attributes can be found at [Upcloud Detector Resource Attributes](./internal/upcloud/documentation.md).
+
+Upcloud custom configuration example:
+
+```yaml
+processors:
+  resourcedetection/upcloud:
+    detectors: ["upcloud"]
+```
+
+The Upcloud detector will report an error in logs if the metadata endpoint is unavailable. You can configure the detector to instead fail with this flag:
+
+```yaml
+processors:
+  resourcedetection/upcloud:
+    detectors: ["upcloud"]
+    upcloud:
+      fail_on_missing_metadata: true
+```
+
 ### Vultr
 
 Uses the [Vultr metadata API](https://www.vultr.com/metadata/) to read resource information from the instance metadata service and populate related resource attributes.
@@ -768,10 +792,41 @@ processors:
       fail_on_missing_metadata: true
 ```
 
+### Openstack Nova
+
+Uses the [OpenStack Nova metadata API](https://docs.openstack.org/nova/latest/user/metadata.html) to read resource information from the instance metadata service and populate related resource attributes.
+
+The list of the populated resource attributes can be found at [Nova Detector Resource Attributes](./internal/openstack/nova/documentation.md).
+
+It can also optionally capture metadata keys from the `"meta"` section of `meta_data.json` as resource attributes, using regular expressions to match the keys you want.
+
+Nova custom configuration example:
+```yaml
+processors:
+  resourcedetection/nova:
+    detectors: ["nova"]
+    nova:
+      # A list of regex's to match label keys to add as resource attributes can be specified
+      labels:
+        - ^tag1$
+        - ^tag2$
+        - ^label.*$
+```
+
+The Nova detector will report an error in logs if the metadata endpoint is unavailable. You can configure the detector to instead fail with this flag:
+
+```yaml
+processors:
+  resourcedetection/nova:
+    detectors: ["nova"]
+    nova:
+      fail_on_missing_metadata: true
+```
+
 ## Configuration
 
 ```yaml
-# a list of resource detectors to run, valid options are: "env", "system", "gcp", "ec2", "ecs", "elastic_beanstalk", "eks", "lambda", "azure", "aks", "heroku", "openshift", "dynatrace", "consul", "docker", "k8snode, "kubeadm", "hetzner", "akamai", "scaleway", "vultr", "oraclecloud", "digitalocean"
+# a list of resource detectors to run, valid options are: "env", "system", "gcp", "ec2", "ecs", "elastic_beanstalk", "eks", "lambda", "azure", "aks", "heroku", "openshift", "dynatrace", "consul", "docker", "k8snode, "kubeadm", "hetzner", "akamai", "scaleway", "vultr", "oraclecloud", "digitalocean", "nova", "upcloud"
 detectors: [ <string> ]
 # determines if existing resource attributes should be overridden or preserved, defaults to true
 override: <bool>

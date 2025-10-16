@@ -11,7 +11,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/google/go-github/v74/github"
+	"github.com/google/go-github/v76/github"
 	"github.com/gorilla/mux"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
@@ -129,7 +129,7 @@ func (gtr *githubTracesReceiver) Shutdown(_ context.Context) error {
 	return err
 }
 
-// handleReq handles incoming request sent to the webhook endoint. On success
+// handleReq handles incoming request sent to the webhook endpoint. On success
 // returns a 200 response code.
 func (gtr *githubTracesReceiver) handleReq(w http.ResponseWriter, req *http.Request) {
 	ctx := gtr.obsrecv.StartTracesOp(req.Context())
