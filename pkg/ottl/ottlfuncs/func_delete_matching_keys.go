@@ -19,6 +19,8 @@ type DeleteMatchingKeysArguments[K any] struct {
 	Pattern ottl.StringGetter[K]
 }
 
+const invalidRegexErrMsg = "the regex pattern supplied to delete_matching_keys '%q' is not a valid pattern: %w"
+
 func NewDeleteMatchingKeysFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("delete_matching_keys", &DeleteMatchingKeysArguments[K]{}, createDeleteMatchingKeysFunction[K])
 }
@@ -40,7 +42,7 @@ func deleteMatchingKeys[K any](target ottl.PMapGetSetter[K], pattern ottl.String
 	if ok {
 		compiledPattern, err = regexp.Compile(literalPattern)
 		if err != nil {
-			return nil, fmt.Errorf("the regex pattern supplied to delete_matching_keys is not a valid pattern: %w", err)
+			return nil, fmt.Errorf(invalidRegexErrMsg, literalPattern, err)
 		}
 	}
 	return func(ctx context.Context, tCtx K) (any, error) {
@@ -52,7 +54,7 @@ func deleteMatchingKeys[K any](target ottl.PMapGetSetter[K], pattern ottl.String
 			}
 			cp, err = regexp.Compile(patternVal)
 			if err != nil {
-				return nil, fmt.Errorf("the regex pattern supplied to delete_matching_keys is not a valid pattern: %w", err)
+				return nil, fmt.Errorf(invalidRegexErrMsg, patternVal, err)
 			}
 		}
 		val, err := target.Get(ctx, tCtx)
