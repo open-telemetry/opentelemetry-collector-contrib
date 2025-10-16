@@ -1,0 +1,8 @@
+change_type: bug_fix
+component: receiver/libhoney
+note: fix panic when decompressing poorly formatted data
+issues: [42272]
+subtext:
+  When decompressing poorly formatted data, the receiver would panic.
+  This has now been fixed.
+change_logs: [user]
