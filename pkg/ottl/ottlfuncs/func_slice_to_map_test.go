@@ -5,6 +5,7 @@ package ottlfuncs
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -208,7 +209,7 @@ func Test_SliceToMap(t *testing.T) {
 			value: func() any {
 				return pcommon.NewMap()
 			},
-			wantExecutionErr: "unsupported type provided to SliceToMap function: pcommon.Map",
+			wantExecutionErr: "error getting value in ottl.StandardPSliceGetter[interface {}]: expected pcommon.Slice, got pcommon.Map",
 		},
 		{
 			name:    "slice containing unsupported value type",
@@ -266,7 +267,7 @@ func Test_SliceToMap(t *testing.T) {
 			},
 		},
 		{
-			name: "flat object with no key path and value path",
+			name: "flat object with no key path and value path", //(SliceToMap([{"one": 1}, {"two": 2}])
 			value: func() any {
 				sl := pcommon.NewSlice()
 				thing1 := sl.AppendEmpty().SetEmptyMap()
@@ -457,11 +458,17 @@ func Test_SliceToMap(t *testing.T) {
 			}
 
 			associateFunc, err := sliceToMapFunction[any](ottl.FunctionContext{}, &SliceToMapArguments[any]{
-				Target: &ottl.StandardGetSetter[any]{
-					Getter: func(context.Context, any) (any, error) {
-						return tt.value(), nil
-					},
-				},
+				Target: ottl.StandardPSliceGetter[any]{
+					Getter: func(ctx context.Context, tCtx any) (any, error) {
+
+						val := tt.value()
+						slice, ok := val.(pcommon.Slice)
+						if !ok {
+							return nil, fmt.Errorf("expected pcommon.Slice, got %T", val)
+						}
+						return slice, nil
+
+					}},
 				KeyPath:   keyPathOptional,
 				ValuePath: valuePathOptional,
 			})
@@ -479,7 +486,7 @@ func Test_SliceToMap(t *testing.T) {
 			}
 
 			require.NoError(t, err)
-			require.Equal(t, tt.want().AsRaw(), result.(pcommon.Map).AsRaw())
+			require.EqualValues(t, tt.want(), result.(pcommon.Map))
 		})
 	}
 }
