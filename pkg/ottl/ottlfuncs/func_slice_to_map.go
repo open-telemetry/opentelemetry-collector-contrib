@@ -40,7 +40,6 @@ func getSliceToMapFunc[K any](target ottl.PSliceGetter[K], keyPath, valuePath ot
 		}
 
 		return sliceToMapFromPcommon(val, keyPath, valuePath)
-
 	}
 }
 
@@ -89,7 +88,6 @@ func sliceToMapFromPcommon(v pcommon.Slice, keyPath, valuePath ottl.Optional[[]s
 		if err != nil {
 			return pcommon.Map{}, err
 		}
-
 	}
 	return m, nil
 }
