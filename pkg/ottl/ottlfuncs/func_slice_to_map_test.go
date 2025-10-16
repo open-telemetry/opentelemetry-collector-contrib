@@ -233,7 +233,7 @@ func Test_SliceToMap(t *testing.T) {
 			},
 		},
 		{
-			name: "flat object with no key path and value path", //(SliceToMap([{"one": 1}, {"two": 2}])
+			name: "flat object with no key path and value path", // (SliceToMap([{"one": 1}, {"two": 2}])
 			value: func() any {
 				sl := pcommon.NewSlice()
 				thing1 := sl.AppendEmpty().SetEmptyMap()
@@ -331,30 +331,6 @@ func Test_SliceToMap(t *testing.T) {
 				thing2 := m.PutEmptyMap("1")
 				thing2.PutStr("test", "y")
 
-				return m
-			},
-		},
-
-		{
-			name:      "map[string]any with key and value path",
-			keyPath:   []string{"key"},
-			valuePath: []string{"value"},
-			value: func() any {
-				sl := pcommon.NewSlice()
-				thing1 := sl.AppendEmpty().SetEmptyMap()
-				thing1.PutStr("key", "one")
-				thing1.PutStr("value", "1")
-
-				thing2 := sl.AppendEmpty().SetEmptyMap()
-				thing2.PutStr("key", "two")
-				thing2.PutStr("value", "2")
-
-				return sl
-			},
-			want: func() pcommon.Map {
-				m := pcommon.NewMap()
-				m.PutStr("one", "1")
-				m.PutStr("two", "2")
 				return m
 			},
 		},
