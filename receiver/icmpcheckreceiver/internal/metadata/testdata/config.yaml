@@ -1,0 +1,25 @@
+default:
+all_set:
+  metrics:
+    ping.loss.ratio:
+      enabled: true
+    ping.rtt.avg:
+      enabled: true
+    ping.rtt.max:
+      enabled: true
+    ping.rtt.min:
+      enabled: true
+    ping.rtt.stddev:
+      enabled: true
+none_set:
+  metrics:
+    ping.loss.ratio:
+      enabled: false
+    ping.rtt.avg:
+      enabled: false
+    ping.rtt.max:
+      enabled: false
+    ping.rtt.min:
+      enabled: false
+    ping.rtt.stddev:
+      enabled: false
