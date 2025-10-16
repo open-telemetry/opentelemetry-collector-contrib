@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package datadogconnector
+package agentcomponents
 
 import (
 	"testing"
@@ -14,7 +14,7 @@ import (
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
-	factory := NewFactory()
+	factory := NewConnectorFactory()
 	cfg := factory.CreateDefaultConfig()
 
 	assert.Equal(t,

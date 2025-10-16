@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package datadogconnector
+package agentcomponents
 
 import (
 	"testing"
@@ -98,15 +98,6 @@ func TestValidate(t *testing.T) {
 				Traces: datadogconfig.TracesConnectorConfig{BucketInterval: -30 * time.Second},
 			},
 			err: "bucket interval must be non-negative",
-		},
-		{
-			name: "With ignore_missing_datadog_fields",
-			cfg: &Config{
-				Traces: datadogconfig.TracesConnectorConfig{
-					IgnoreMissingDatadogFields: true,
-				},
-			},
-			err: "ignore_missing_datadog_fields is not yet supported in the connector",
 		},
 	}
 	for _, testInstance := range tests {

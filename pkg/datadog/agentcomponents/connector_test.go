@@ -1,17 +1,20 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package datadogconnector
+package agentcomponents
 
 import (
-	"errors"
+	"context"
 	"sort"
 	"testing"
 	"time"
 
-	"github.com/DataDog/datadog-agent/pkg/obfuscate"
-	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+
+	otlpmetrics "github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics"
+
 	"github.com/google/go-cmp/cmp"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/featuregates"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -25,84 +28,168 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/testing/protocmp"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector/internal/metadata"
-	pkgdatadog "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog"
+	"github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil"
+	"github.com/DataDog/datadog-agent/pkg/obfuscate"
+	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes"
+	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 )
 
-var _ component.Component = (*traceToMetricConnectorNative)(nil) // testing that the connectorImp properly implements the type Component interface
+var _ component.Component = (*traceToMetricConnector)(nil) // testing that the connectorImp properly implements the type Component interface
 
 // create test to create a connector, check that basic code compiles
 func TestNewConnectorNative(t *testing.T) {
-	factory := NewFactory()
+	factory := NewConnectorFactory()
 
-	creationParams := connectortest.NewNopSettings(metadata.Type)
+	creationParams := connectortest.NewNopSettings(Type)
 	cfg := factory.CreateDefaultConfig().(*Config)
 
-	tconn, err := factory.CreateTracesToMetrics(t.Context(), creationParams, cfg, consumertest.NewNop())
+	tconn, err := factory.CreateTracesToMetrics(context.Background(), creationParams, cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 
-	_, ok := tconn.(*traceToMetricConnectorNative)
+	_, ok := tconn.(*traceToMetricConnector)
 	assert.True(t, ok) // checks if the created connector implements the connectorImp struct
 }
 
 func TestTraceToTraceConnectorNative(t *testing.T) {
-	factory := NewFactory()
+	factory := NewConnectorFactory()
 
-	creationParams := connectortest.NewNopSettings(metadata.Type)
+	creationParams := connectortest.NewNopSettings(Type)
 	cfg := factory.CreateDefaultConfig().(*Config)
 
-	tconn, err := factory.CreateTracesToTraces(t.Context(), creationParams, cfg, consumertest.NewNop())
+	tconn, err := factory.CreateTracesToTraces(context.Background(), creationParams, cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 
 	_, ok := tconn.(*traceToTraceConnector)
 	assert.True(t, ok) // checks if the created connector implements the connectorImp struct
 }
 
-func creteConnectorNative(t *testing.T) (*traceToMetricConnectorNative, *consumertest.MetricsSink) {
-	cfg := NewFactory().CreateDefaultConfig().(*Config)
+func createConnector(t *testing.T) (*traceToMetricConnector, *consumertest.MetricsSink) {
+	cfg := NewConnectorFactory().CreateDefaultConfig().(*Config)
 	cfg.Traces.ResourceAttributesAsContainerTags = []string{string(semconv.CloudAvailabilityZoneKey), string(semconv.CloudRegionKey), "az"}
-	return creteConnectorNativeWithCfg(t, cfg)
+	return createConnectorCfg(t, cfg)
 }
 
-func creteConnectorNativeWithCfg(t *testing.T, cfg *Config) (*traceToMetricConnectorNative, *consumertest.MetricsSink) {
-	factory := NewFactory()
+const (
+	fallBackHostname = "test-host"
+)
 
-	creationParams := connectortest.NewNopSettings(metadata.Type)
+func createConnectorCfg(t *testing.T, cfg *Config) (*traceToMetricConnector, *consumertest.MetricsSink) {
+	factory := NewConnectorFactoryForAgent(testutil.NewTestTaggerClient(), func(_ context.Context) (string, error) {
+		return fallBackHostname, nil
+	}, nil)
+
+	creationParams := connectortest.NewNopSettings(Type)
 	metricsSink := &consumertest.MetricsSink{}
 
 	cfg.Traces.BucketInterval = 1 * time.Second
-	tconn, err := factory.CreateTracesToMetrics(t.Context(), creationParams, cfg, metricsSink)
+	tconn, err := factory.CreateTracesToMetrics(context.Background(), creationParams, cfg, metricsSink)
 	assert.NoError(t, err)
 
-	connector, ok := tconn.(*traceToMetricConnectorNative)
+	connector, ok := tconn.(*traceToMetricConnector)
 	require.True(t, ok)
 	oconf := obfuscate.Config{Redis: obfuscate.RedisConfig{Enabled: false}}
 	connector.obfuscator = obfuscate.NewObfuscator(oconf)
 	return connector, metricsSink
 }
 
-func TestContainerTagsNative(t *testing.T) {
-	connector, metricsSink := creteConnectorNative(t)
-	err := connector.Start(t.Context(), componenttest.NewNopHost())
+var (
+	spanStartTimestamp = pcommon.NewTimestampFromTime(time.Date(2020, 2, 11, 20, 26, 12, 321, time.UTC))
+	spanEventTimestamp = pcommon.NewTimestampFromTime(time.Date(2020, 2, 11, 20, 26, 13, 123, time.UTC))
+	spanEndTimestamp   = pcommon.NewTimestampFromTime(time.Date(2020, 2, 11, 20, 26, 13, 789, time.UTC))
+)
+
+func generateTrace(extraAttributes map[string]string) ptrace.Traces {
+	td := ptrace.NewTraces()
+	res := td.ResourceSpans().AppendEmpty().Resource()
+	res.Attributes().EnsureCapacity(3)
+	res.Attributes().PutStr("resource-attr1", "resource-attr-val1")
+	res.Attributes().PutStr("container.id", "my-container-id")
+	res.Attributes().PutStr("cloud.availability_zone", "my-zone")
+	res.Attributes().PutStr("cloud.region", "my-region")
+	// add a custom Resource attribute
+	res.Attributes().PutStr("az", "my-az")
+	for k, v := range extraAttributes {
+		res.Attributes().PutStr(k, v)
+	}
+
+	ss := td.ResourceSpans().At(0).ScopeSpans().AppendEmpty().Spans()
+	ss.EnsureCapacity(1)
+	fillSpanOne(ss.AppendEmpty())
+	return td
+}
+
+func fillSpanOne(span ptrace.Span) {
+	span.SetName("operationA")
+	span.SetStartTimestamp(spanStartTimestamp)
+	span.SetEndTimestamp(spanEndTimestamp)
+	span.SetDroppedAttributesCount(1)
+	span.SetTraceID([16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10})
+	span.SetSpanID([8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18})
+	evs := span.Events()
+	ev0 := evs.AppendEmpty()
+	ev0.SetTimestamp(spanEventTimestamp)
+	ev0.SetName("event-with-attr")
+	ev0.Attributes().PutStr("span-event-attr", "span-event-attr-val")
+	ev0.SetDroppedAttributesCount(2)
+	ev1 := evs.AppendEmpty()
+	ev1.SetTimestamp(spanEventTimestamp)
+	ev1.SetName("event")
+	ev1.SetDroppedAttributesCount(2)
+	span.SetDroppedEventsCount(1)
+	status := span.Status()
+	status.SetCode(ptrace.StatusCodeError)
+	status.SetMessage("status-cancelled")
+}
+
+func newTranslatorWithStatsChannel(t *testing.T, logger *zap.Logger, ch chan []byte) *otlpmetrics.Translator {
+	options := []otlpmetrics.TranslatorOption{
+		otlpmetrics.WithHistogramMode(otlpmetrics.HistogramModeDistributions),
+
+		otlpmetrics.WithNumberMode(otlpmetrics.NumberModeCumulativeToDelta),
+		otlpmetrics.WithHistogramAggregations(),
+		otlpmetrics.WithStatsOut(ch),
+	}
+
+	set := componenttest.NewNopTelemetrySettings()
+	set.Logger = logger
+
+	attributesTranslator, err := attributes.NewTranslator(set)
+	require.NoError(t, err)
+	tr, err := otlpmetrics.NewTranslator(
+		set,
+		attributesTranslator,
+		options...,
+	)
+
+	require.NoError(t, err)
+	return tr
+}
+
+func TestContainerTagsAndHostnameNative(t *testing.T) {
+	connector, metricsSink := createConnector(t)
+	err := connector.Start(context.Background(), componenttest.NewNopHost())
 	if err != nil {
 		t.Errorf("Error starting connector: %v", err)
 		return
 	}
 	defer func() {
-		_ = connector.Shutdown(t.Context())
+		_ = connector.Shutdown(context.Background())
 	}()
 
-	trace1 := generateTrace()
+	trace1 := generateTrace(nil)
 
-	err = connector.ConsumeTraces(t.Context(), trace1)
+	err = connector.ConsumeTraces(context.Background(), trace1)
 	assert.NoError(t, err)
 
 	// Send two traces to ensure unique container tags are added to the cache
-	trace2 := generateTrace()
-	err = connector.ConsumeTraces(t.Context(), trace2)
+	trace2 := generateTrace(nil)
+	err = connector.ConsumeTraces(context.Background(), trace2)
 	assert.NoError(t, err)
 
-	for len(metricsSink.AllMetrics()) == 0 {
+	for {
+		if len(metricsSink.AllMetrics()) > 0 {
+			break
+		}
 		time.Sleep(100 * time.Millisecond)
 	}
 
@@ -112,7 +199,7 @@ func TestContainerTagsNative(t *testing.T) {
 
 	ch := make(chan []byte, 100)
 	tr := newTranslatorWithStatsChannel(t, zap.NewNop(), ch)
-	_, err = tr.MapMetrics(t.Context(), metrics[0], nil, nil)
+	_, err = tr.MapMetrics(context.Background(), metrics[0], nil, nil)
 	require.NoError(t, err)
 	msg := <-ch
 	sp := &pb.StatsPayload{}
@@ -123,6 +210,59 @@ func TestContainerTagsNative(t *testing.T) {
 	tags := sp.Stats[0].Tags
 	assert.Len(t, tags, 3)
 	assert.ElementsMatch(t, []string{"region:my-region", "zone:my-zone", "az:my-az"}, tags)
+
+	hostname := sp.Stats[0].Hostname
+	assert.Equal(t, fallBackHostname, hostname)
+}
+
+func TestHostnameFromAttributesPreferred(t *testing.T) {
+	connector, metricsSink := createConnector(t)
+	err := connector.Start(context.Background(), componenttest.NewNopHost())
+	if err != nil {
+		t.Errorf("Error starting connector: %v", err)
+		return
+	}
+	defer func() {
+		_ = connector.Shutdown(context.Background())
+	}()
+
+	trace1 := generateTrace(map[string]string{"host": "preferred-host"})
+
+	err = connector.ConsumeTraces(context.Background(), trace1)
+	assert.NoError(t, err)
+
+	// Send two traces to ensure unique container tags are added to the cache
+	trace2 := generateTrace(map[string]string{"host": "preferred-host"})
+	err = connector.ConsumeTraces(context.Background(), trace2)
+	assert.NoError(t, err)
+
+	for {
+		if len(metricsSink.AllMetrics()) > 0 {
+			break
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+
+	// check if the container tags are added to the metrics
+	metrics := metricsSink.AllMetrics()
+	assert.Len(t, metrics, 1)
+
+	ch := make(chan []byte, 100)
+	tr := newTranslatorWithStatsChannel(t, zap.NewNop(), ch)
+	_, err = tr.MapMetrics(context.Background(), metrics[0], nil, nil)
+	require.NoError(t, err)
+	msg := <-ch
+	sp := &pb.StatsPayload{}
+
+	err = proto.Unmarshal(msg, sp)
+	require.NoError(t, err)
+
+	tags := sp.Stats[0].Tags
+	assert.Len(t, tags, 3)
+	assert.ElementsMatch(t, []string{"region:my-region", "zone:my-zone", "az:my-az"}, tags)
+
+	hostname := sp.Stats[0].Hostname
+	assert.Equal(t, "preferred-host", hostname)
 }
 
 var (
@@ -146,16 +286,16 @@ func testMeasuredAndClientKindNative(t *testing.T, enableOperationAndResourceNam
 	if err := featuregate.GlobalRegistry().Set("datadog.EnableOperationAndResourceNameV2", enableOperationAndResourceNameV2); err != nil {
 		t.Fatal(err)
 	}
-	cfg := NewFactory().CreateDefaultConfig().(*Config)
+	cfg := NewConnectorFactory().CreateDefaultConfig().(*Config)
 	cfg.Traces.ComputeTopLevelBySpanKind = true
-	connector, metricsSink := creteConnectorNativeWithCfg(t, cfg)
-	err := connector.Start(t.Context(), componenttest.NewNopHost())
+	connector, metricsSink := createConnectorCfg(t, cfg)
+	err := connector.Start(context.Background(), componenttest.NewNopHost())
 	if err != nil {
 		t.Errorf("Error starting connector: %v", err)
 		return
 	}
 	defer func() {
-		require.NoError(t, connector.Shutdown(t.Context()))
+		require.NoError(t, connector.Shutdown(context.Background()))
 	}()
 
 	td := ptrace.NewTraces()
@@ -193,7 +333,7 @@ func testMeasuredAndClientKindNative(t *testing.T, enableOperationAndResourceNam
 	s4.SetSpanID(testSpanID4)
 	s4.SetParentSpanID(testSpanID1)
 
-	err = connector.ConsumeTraces(t.Context(), td)
+	err = connector.ConsumeTraces(context.Background(), td)
 	assert.NoError(t, err)
 
 	timeout := time.Now().Add(1 * time.Minute)
@@ -209,7 +349,7 @@ func testMeasuredAndClientKindNative(t *testing.T, enableOperationAndResourceNam
 
 	ch := make(chan []byte, 100)
 	tr := newTranslatorWithStatsChannel(t, zap.NewNop(), ch)
-	_, err = tr.MapMetrics(t.Context(), metrics[0], nil, nil)
+	_, err = tr.MapMetrics(context.Background(), metrics[0], nil, nil)
 	require.NoError(t, err)
 	msg := <-ch
 	sp := &pb.StatsPayload{}
@@ -273,10 +413,10 @@ func testMeasuredAndClientKindNative(t *testing.T, enableOperationAndResourceNam
 }
 
 func TestObfuscate(t *testing.T) {
-	cfg := NewFactory().CreateDefaultConfig().(*Config)
+	cfg := NewConnectorFactory().CreateDefaultConfig().(*Config)
 	cfg.Traces.BucketInterval = time.Second
 
-	prevVal := pkgdatadog.ReceiveResourceSpansV2FeatureGate.IsEnabled()
+	prevVal := featuregates.ReceiveResourceSpansV2FeatureGate.IsEnabled()
 	require.NoError(t, featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", true))
 	defer func() {
 		require.NoError(t, featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", prevVal))
@@ -285,12 +425,12 @@ func TestObfuscate(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	connector, metricsSink := creteConnectorNativeWithCfg(t, cfg)
+	connector, metricsSink := createConnectorCfg(t, cfg)
 
-	err := connector.Start(t.Context(), componenttest.NewNopHost())
+	err := connector.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	defer func() {
-		require.NoError(t, connector.Shutdown(t.Context()))
+		require.NoError(t, connector.Shutdown(context.Background()))
 	}()
 
 	td := ptrace.NewTraces()
@@ -308,7 +448,7 @@ func TestObfuscate(t *testing.T) {
 	s.Attributes().PutStr(string(semconv.DBOperationNameKey), "SELECT")
 	s.Attributes().PutStr(string(semconv.DBQueryTextKey), "SELECT username FROM users WHERE id = 123") // id value 123 should be obfuscated
 
-	err = connector.ConsumeTraces(t.Context(), td)
+	err = connector.ConsumeTraces(context.Background(), td)
 	require.NoError(t, err)
 
 	timeout := time.Now().Add(1 * time.Minute)
@@ -324,7 +464,7 @@ func TestObfuscate(t *testing.T) {
 
 	ch := make(chan []byte, 100)
 	tr := newTranslatorWithStatsChannel(t, zap.NewNop(), ch)
-	_, err = tr.MapMetrics(t.Context(), metrics[0], nil, nil)
+	_, err = tr.MapMetrics(context.Background(), metrics[0], nil, nil)
 	require.NoError(t, err)
 	msg := <-ch
 	sp := &pb.StatsPayload{}
@@ -356,19 +496,4 @@ func TestObfuscate(t *testing.T) {
 		protocmp.IgnoreFields(&pb.ClientGroupedStats{}, "duration", "okSummary", "errorSummary")); diff != "" {
 		t.Errorf("Diff between APM stats -want +got:\n%v", diff)
 	}
-}
-
-func TestNoPanic(t *testing.T) {
-	c, _ := creteConnectorNative(t)
-	c.metricsConsumer = consumertest.NewErr(errors.New("error"))
-	require.NoError(t, c.Start(t.Context(), componenttest.NewNopHost()))
-	trace1 := generateTrace()
-
-	err := c.ConsumeTraces(t.Context(), trace1)
-	assert.NoError(t, err)
-
-	time.Sleep(2 * time.Second)
-
-	err = c.Shutdown(t.Context())
-	require.NoError(t, err)
 }
