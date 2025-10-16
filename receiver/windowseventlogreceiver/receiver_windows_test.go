@@ -374,13 +374,13 @@ func createTestConfigWithQuery() *WindowsLogConfig {
 
 // assertEventSourceInstallation installs an event source and verifies that the registry key was created.
 // It returns a function that can be used to uninstall the event source, that function is never nil
-func assertEventSourceInstallation(t *testing.T, src string) (uninstallEventSource func(), err error) {
-	err = eventlog.InstallAsEventCreate(src, eventlog.Info|eventlog.Warning|eventlog.Error)
+func assertEventSourceInstallation(t *testing.T, src string) (func(), error) {
+	err := eventlog.InstallAsEventCreate(src, eventlog.Info|eventlog.Warning|eventlog.Error)
 	if err != nil && strings.HasSuffix(err.Error(), " registry key already exists") {
 		// If the event source already exists ignore the error
 		err = nil
 	}
-	uninstallEventSource = func() {
+	uninstallEventSource := func() {
 		assert.NoError(t, eventlog.Remove(src))
 	}
 	assert.NoError(t, err)
