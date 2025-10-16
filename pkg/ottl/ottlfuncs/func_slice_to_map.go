@@ -14,7 +14,7 @@ import (
 )
 
 type SliceToMapArguments[K any] struct {
-	Target    ottl.Getter[K]
+	Target    ottl.PSliceGetter[K]
 	KeyPath   ottl.Optional[[]string]
 	ValuePath ottl.Optional[[]string]
 }
@@ -32,107 +32,109 @@ func sliceToMapFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ot
 	return getSliceToMapFunc(args.Target, args.KeyPath, args.ValuePath), nil
 }
 
-func getSliceToMapFunc[K any](target ottl.Getter[K], keyPath, valuePath ottl.Optional[[]string]) ottl.ExprFunc[K] {
+func getSliceToMapFunc[K any](target ottl.PSliceGetter[K], keyPath, valuePath ottl.Optional[[]string]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		val, err := target.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
 
-		switch v := val.(type) {
-		case []any:
-			return sliceToMap(v, keyPath, valuePath)
-		case pcommon.Slice:
-			return sliceToMap(v.AsRaw(), keyPath, valuePath)
-		default:
-			return nil, fmt.Errorf("unsupported type provided to SliceToMap function: %T", v)
-		}
+		return sliceToMapFromPcommon(val, keyPath, valuePath)
+
 	}
 }
 
-func sliceToMap(v []any, keyPath, valuePath ottl.Optional[[]string]) (any, error) {
+func sliceToMapFromPcommon(v pcommon.Slice, keyPath, valuePath ottl.Optional[[]string]) (pcommon.Map, error) {
 	m := pcommon.NewMap()
-	m.EnsureCapacity(len(v))
+	m.EnsureCapacity(v.Len())
 
-	for i, elem := range v {
-		// Default key is index
+	useKeyPath := !keyPath.IsEmpty()
+	useValuePath := !valuePath.IsEmpty()
+
+	for i := 0; i < v.Len(); i++ {
+		elem := v.At(i)
+
+		// If key_path is not set, key is the index
 		key := strconv.Itoa(i)
+		// If value_path is not set, value is the whole element
+		value := elem
 
-		mapData, rawValue, err := normalizeElement(elem)
-		if err != nil {
-			return nil, fmt.Errorf("element %d: %w", i, err)
+		// If using key_path or value_path, element must be a map
+		if useKeyPath || useValuePath {
+			if elem.Type() != pcommon.ValueTypeMap {
+				return pcommon.Map{}, fmt.Errorf("slice elements must be maps when using `key_path` or 'value_path', but could not cast element '%s' to a map", elem.Str())
+			}
 		}
 
-		value := rawValue
-
-		if !keyPath.IsEmpty() {
-			if mapData == nil {
-				return nil, fmt.Errorf("slice elements must be maps when using `key_path`, but could not cast element '%v' to a map", elem)
-			}
-			extractedKey, err := extractValue(mapData, keyPath.Get())
+		if useKeyPath {
+			extractedKey, err := extractPcommonValue(elem.Map(), keyPath.Get())
 			if err != nil {
-				return nil, fmt.Errorf("element %d: could not extract key from element: %w", i, err)
+				return pcommon.Map{}, fmt.Errorf("element %d: could not extract key from element: %w", i, err)
 			}
-			strKey, ok := extractedKey.(string)
-			if !ok {
-				return nil, fmt.Errorf("element %d: extracted key attribute is not of type string", i)
+			if extractedKey.Type() != pcommon.ValueTypeStr {
+				return pcommon.Map{}, fmt.Errorf("element %d: extracted key attribute is not of type string", i)
 			}
-			key = strKey
+			key = extractedKey.Str()
 		}
 
-		if !valuePath.IsEmpty() {
-			if mapData == nil {
-				return nil, fmt.Errorf("element %d: cannot extract value, not a map-like structure", elem)
-			}
-			extractedValue, err := extractValue(mapData, valuePath.Get())
+		if useValuePath {
+			extractedValue, err := extractPcommonValue(elem.Map(), valuePath.Get())
 			if err != nil {
-				return nil, fmt.Errorf("could not extract value from element: %w", err)
+				return pcommon.Map{}, fmt.Errorf("could not extract value from element: %w", err)
 			}
 			value = extractedValue
 		}
 
-		if err := m.PutEmpty(key).FromRaw(value); err != nil {
-			return nil, fmt.Errorf("could not convert value from element: %w", err)
+		err := putValue(value, m, key)
+		if err != nil {
+			return pcommon.Map{}, err
 		}
-	}
 
+	}
 	return m, nil
 }
 
-func extractValue(v map[string]any, path []string) (any, error) {
-	if len(path) == 0 {
-		return nil, errors.New("must provide at least one path item")
+func putValue(value pcommon.Value, m pcommon.Map, key string) error {
+	switch value.Type() {
+	case pcommon.ValueTypeStr:
+		m.PutStr(key, value.Str())
+	case pcommon.ValueTypeInt:
+		m.PutInt(key, value.Int())
+	case pcommon.ValueTypeDouble:
+		m.PutDouble(key, value.Double())
+	case pcommon.ValueTypeBool:
+		m.PutBool(key, value.Bool())
+	case pcommon.ValueTypeBytes:
+		m.PutEmptyBytes(key).FromRaw(value.Bytes().AsRaw())
+	case pcommon.ValueTypeMap:
+		value.Map().CopyTo(m.PutEmptyMap(key))
+	case pcommon.ValueTypeSlice:
+		value.Slice().CopyTo(m.PutEmptySlice(key))
+	case pcommon.ValueTypeEmpty:
+		m.PutEmpty(key)
+	default:
+		return fmt.Errorf("unsupported value type %s for key %q", value.Type().String(), key)
 	}
-	obj, ok := v[path[0]]
-	if !ok {
-		return nil, fmt.Errorf("provided object does not contain the path %v", path)
-	}
-	if len(path) == 1 {
-		return obj, nil
-	}
-
-	if o, ok := obj.(map[string]any); ok {
-		return extractValue(o, path[1:])
-	}
-	return nil, fmt.Errorf("provided object does not contain the path %v", path)
+	return nil
 }
 
-func normalizeElement(elem any) (map[string]any, any, error) {
-	switch e := elem.(type) {
-	case map[string]any:
-		return e, e, nil
-	case pcommon.Map:
-		raw := e.AsRaw()
-		return raw, raw, nil
-
-	case pcommon.Value:
-		if e.Type() == pcommon.ValueTypeMap {
-			raw := e.Map().AsRaw()
-			return raw, raw, nil
-
-		}
-		return nil, e.AsString(), nil
-	default:
-		return nil, e, nil
+func extractPcommonValue(m pcommon.Map, path []string) (pcommon.Value, error) {
+	if len(path) == 0 {
+		return pcommon.NewValueEmpty(), errors.New("must provide at least one path item")
 	}
+
+	val, ok := m.Get(path[0])
+	if !ok {
+		return pcommon.NewValueEmpty(), fmt.Errorf("provided object does not contain the path %v", path)
+	}
+
+	if len(path) == 1 {
+		return val, nil
+	}
+
+	if val.Type() != pcommon.ValueTypeMap {
+		return pcommon.NewValueEmpty(), fmt.Errorf("provided object does not contain the path %v", path)
+	}
+
+	return extractPcommonValue(val.Map(), path[1:])
 }
