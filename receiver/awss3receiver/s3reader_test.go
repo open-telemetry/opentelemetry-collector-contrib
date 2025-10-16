@@ -122,7 +122,7 @@ func Test_s3Reader_getObjectPrefixForTime(t *testing.T) {
 				telemetryType: "logs",
 			},
 			want: "//raw///year=2021/month=02/day=01/hour=17/minute=32/filelogs_",
-		}
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
