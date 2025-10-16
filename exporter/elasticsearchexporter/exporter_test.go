@@ -2732,7 +2732,7 @@ func TestExporterSendingQueueContextPropogation(t *testing.T) {
 
 	t.Run("profiles", func(t *testing.T) {
 		testHost, rec := setupTestHost(t)
-		exporter := newUnstartedProfilesExporter(t, "https://ignored", configSetupFn)
+		exporter := newUnstartedTestProfilesExporter(t, "https://ignored", configSetupFn)
 		require.NoError(t, exporter.Start(t.Context(), testHost))
 		defer func() {
 			require.NoError(t, exporter.Shutdown(t.Context()))
@@ -2817,7 +2817,7 @@ func newUnstartedTestTracesExporter(t *testing.T, url string, fns ...func(*Confi
 }
 
 func newTestProfilesExporter(t *testing.T, url string, fns ...func(*Config)) xexporter.Profiles {
-	exp := newUnstartedProfilesExporter(t, url, fns...)
+	exp := newUnstartedTestProfilesExporter(t, url, fns...)
 	err := exp.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	t.Cleanup(func() {
@@ -2826,7 +2826,7 @@ func newTestProfilesExporter(t *testing.T, url string, fns ...func(*Config)) xex
 	return exp
 }
 
-func newUnstartedProfilesExporter(t *testing.T, url string, fns ...func(*Config)) xexporter.Profiles {
+func newUnstartedTestProfilesExporter(t *testing.T, url string, fns ...func(*Config)) xexporter.Profiles {
 	f := NewFactory().(xexporter.Factory)
 	cfg := withDefaultConfig(append([]func(*Config){func(cfg *Config) {
 		cfg.Endpoints = []string{url}
