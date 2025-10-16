@@ -53,13 +53,13 @@ type Chassis struct {
 type Fan struct {
 	Name         string
 	Reading      *int64
-	ReadingUnits *string
+	ReadingUnits string
 	Status       Status
 }
 
 type Temperature struct {
 	Name           string
-	ReadingCelsius *float64
+	ReadingCelsius *int64
 	Status         Status
 }
 

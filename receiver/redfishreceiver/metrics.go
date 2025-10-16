@@ -140,7 +140,7 @@ func (s *redfishScraper) recordTemperatures(hostName, baseURL, chassisID string,
 	for _, temp := range temps {
 		s.mb.RecordTemperatureReadingDataPoint(
 			now,
-			int64(*temp.ReadingCelsius),
+			*temp.ReadingCelsius,
 			hostName,
 			baseURL,
 			chassisID,
