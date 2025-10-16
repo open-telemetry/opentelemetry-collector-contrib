@@ -57,7 +57,7 @@ jobs:
     if: needs.changedfiles.outputs.go_sources != '' || needs.changedfiles.outputs.go_tests != ''
     strategy:
       matrix:
-        runner: [windows-latest, ubuntu-latest]
+        runner: [windows-2022, windows-2025, windows-11-arm, ubuntu-latest]
     runs-on: ${{ matrix.runner }}
     steps:
       - name: Echo changed files
