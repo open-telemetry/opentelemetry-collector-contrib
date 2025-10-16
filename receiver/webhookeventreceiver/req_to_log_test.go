@@ -441,6 +441,7 @@ func TestReqToLog(t *testing.T) {
 				ReadTimeout:             defaultReadTimeout,
 				WriteTimeout:            defaultWriteTimeout,
 				SplitLogsAtJSONBoundary: true,
+				MaxRequestBodyBytes:     100 * 1024, // 100KB to handle the ~80KB test payload
 			},
 			tt: func(t *testing.T, _ plog.Logs, reqLen int, err error, _ receiver.Settings) {
 				require.NoError(t, err)
@@ -476,6 +477,29 @@ func TestReqToLog(t *testing.T) {
 				require.Equal(t, 0, reqLen)
 			},
 		},
+		{
+			desc: "request body with tiny MaxRequestBodyBytes uses default",
+			sc: func() *bufio.Scanner {
+				largePayload := make([]byte, 60*1024)
+				for i := range largePayload {
+					largePayload[i] = 'X'
+				}
+				reader := io.NopCloser(bytes.NewReader(largePayload))
+				return bufio.NewScanner(reader)
+			}(),
+			config: &Config{
+				Path:                defaultPath,
+				HealthPath:          defaultHealthPath,
+				ReadTimeout:         defaultReadTimeout,
+				WriteTimeout:        defaultWriteTimeout,
+				SplitLogsAtNewLine:  true,
+				MaxRequestBodyBytes: 64, // Set smaller than allowed
+			},
+			tt: func(t *testing.T, _ plog.Logs, reqLen int, err error, _ receiver.Settings) {
+				require.NoError(t, err)
+				require.Equal(t, 1, reqLen)
+			},
+		},
 	}
 
 	for _, test := range tests {
@@ -484,6 +508,8 @@ func TestReqToLog(t *testing.T) {
 			if test.config != nil {
 				testConfig = test.config
 			}
+			// validate test config to set the default max request body bytes if not set
+			testConfig.Validate()
 
 			// receiver will fail to create if endpoint is empty
 			testConfig.Endpoint = "localhost:8080"

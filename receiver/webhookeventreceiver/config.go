@@ -77,8 +77,9 @@ func (cfg *Config) Validate() error {
 
 	if cfg.MaxRequestBodyBytes == 0 {
 		cfg.MaxRequestBodyBytes = bufio.MaxScanTokenSize
-	} else if cfg.MaxRequestBodyBytes < 1024 {
-		errs = multierr.Append(errs, errMaxRequestBodyBytes)
+	} else if cfg.MaxRequestBodyBytes < bufio.MaxScanTokenSize {
+		cfg.MaxRequestBodyBytes = bufio.MaxScanTokenSize
+		// errs = multierr.Append(errs, errMaxRequestBodyBytes)
 	}
 
 	if (cfg.RequiredHeader.Key != "" && cfg.RequiredHeader.Value == "") || (cfg.RequiredHeader.Value != "" && cfg.RequiredHeader.Key == "") {
