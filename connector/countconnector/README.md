@@ -99,7 +99,8 @@ connectors:
 
 #### Attributes
 
-`spans`, `spanevents`, `datapoints`, and `logs` may be counted according to attributes.
+`spans`, `spanevents`, `datapoints`, and `logs` may be counted according to attributes. In such cases, attribute precedence follows this order:
+span(logRecord, DataPoint, profile) attributes > scope attributes > resource attributes.
 
 If attributes are specified for custom metrics, a separate count will be generated for each unique
 set of attribute values. Each count will be emitted as a data point on the same metric.
