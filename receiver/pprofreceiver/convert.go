@@ -183,11 +183,6 @@ func convertPprofToPprofile(src *profile.Profile) (*pprofile.Profiles, error) {
 			st.LocationIndices().FromRaw(locTableIDs)
 
 			// pprof.Sample.value
-			if len(sample.Value) != len(src.SampleType) {
-				return nil, fmt.Errorf("length of Sample.value (%d) is not equal to "+
-					"length of Profile.sample_type (%d): %w",
-					len(sample.Value), len(src.SampleType), errInvalPprof)
-			}
 			s.Values().Append(sample.Value[stIdx])
 
 			// pprof.Sample.label - this field is split into string and numeric labels.
