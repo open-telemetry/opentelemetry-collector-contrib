@@ -27,7 +27,7 @@ type azureMonitorExporter struct {
 func (exporter *azureMonitorExporter) Start(_ context.Context, _ component.Host) (err error) {
 	connectionVars, err := parseConnectionString(exporter.config)
 	if err != nil {
-		return
+		return err
 	}
 
 	exporter.config.InstrumentationKey = configopaque.String(connectionVars.InstrumentationKey)

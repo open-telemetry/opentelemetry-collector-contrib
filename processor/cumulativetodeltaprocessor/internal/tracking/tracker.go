@@ -96,14 +96,14 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
 	metricID := in.Identity
 	metricPoint := in.Value
 	if !metricID.IsSupportedMetricType() {
-		return
+		return out, valid
 	}
 
 	// NaN is used to signal "stale" metrics.
 	// These are ignored for now.
 	// https://github.com/open-telemetry/opentelemetry-collector/pull/3423
 	if metricID.IsFloatVal() && math.IsNaN(metricPoint.FloatValue) {
-		return
+		return out, valid
 	}
 
 	b := identityBufferPool.Get().(*bytes.Buffer)
@@ -128,7 +128,7 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
 		switch t.initialValue {
 		case InitialValueAuto:
 			if metricID.StartTimestamp < t.startTime || metricPoint.ObservedTimestamp == metricID.StartTimestamp {
-				return
+				return out, valid
 			}
 			out.StartTimestamp = metricID.StartTimestamp
 			valid = true
@@ -136,7 +136,7 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
 			valid = true
 		case InitialValueDrop:
 		}
-		return
+		return out, valid
 	}
 
 	valid = true
@@ -199,7 +199,7 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
 	}
 
 	state.prevPoint = metricPoint
-	return
+	return out, valid
 }
 
 func (t *MetricTracker) removeStale(staleBefore pcommon.Timestamp) {

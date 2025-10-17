@@ -188,7 +188,7 @@ func (cfg *Config) getURL() (out *url.URL, err error) {
 		out.Path = path.Join(out.Path, hecPath)
 	}
 
-	return
+	return out, err
 }
 
 // Validate checks if the exporter configuration is valid.

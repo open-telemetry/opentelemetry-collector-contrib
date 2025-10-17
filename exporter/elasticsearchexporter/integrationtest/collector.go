@@ -110,7 +110,7 @@ func createConfigSection(m map[string]string) (sections, list string) {
 			first = false
 		}
 	}
-	return
+	return sections, list
 }
 
 // recreatableOtelCol creates an otel collector that can be used to simulate

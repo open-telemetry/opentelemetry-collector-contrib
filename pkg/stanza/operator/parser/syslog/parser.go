@@ -314,7 +314,7 @@ func newOctetCountingParseFunc(maxOctets int) parseFunc {
 		parser := octetcounting.NewParser(parserOpts...)
 		reader := bytes.NewReader(input)
 		parser.Parse(reader)
-		return
+		return message, err
 	}
 }
 
@@ -328,6 +328,6 @@ func newNonTransparentFramingParseFunc(trailerType nontransparent.TrailerType) p
 		parser := nontransparent.NewParser(sl.WithBestEffort(), nontransparent.WithTrailer(trailerType), sl.WithListener(listener))
 		reader := bytes.NewReader(input)
 		parser.Parse(reader)
-		return
+		return message, err
 	}
 }

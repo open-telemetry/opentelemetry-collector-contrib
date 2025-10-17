@@ -13,8 +13,32 @@ attributes:
   base_url:
     description: base url.
     type: string
-  system.id:
-    description: System id.
+  chassis.asset_tag:
+    description: Chassis asset tag.
+    type: string
+  chassis.chassis_type:
+    description: Chassis type.
+    type: string
+  chassis.id:
+    description: Chassis id.
+    type: string
+  chassis.manufacturer:
+    description: Chassis manufacturer.
+    type: string
+  chassis.model:
+    description: Chassis model.
+    type: string
+  chassis.name:
+    description: Chassis name.
+    type: string
+  chassis.serial_number:
+    description: Chassis serial number.
+    type: string
+  chassis.sku:
+    description: Chassis sku.
+    type: string
+  fan.name:
+    description: Fan name.
     type: string
   system.asset_tag:
     description: System asset tag.
@@ -25,14 +49,17 @@ attributes:
   system.host_name:
     description: System host name.
     type: string
+  system.id:
+    description: System id.
+    type: string
+  system.manufacturer:
+    description: System manufacturer.
+    type: string
   system.model:
     description: System model.
     type: string
   system.name:
     description: System name.
-    type: string
-  system.manufacturer:
-    description: System manufacturer.
     type: string
   system.serial_number:
     description: System serial number.
@@ -43,67 +70,12 @@ attributes:
   system.system_type:
     description: System type.
     type: string
-  chassis.id:
-    description: Chassis id.
-    type: string
-  chassis.asset_tag:
-    description: Chassis asset tag.
-    type: string
-  chassis.model:
-    description: Chassis model.
-    type: string
-  chassis.name:
-    description: Chassis name.
-    type: string
-  chassis.manufacturer:
-    description: Chassis manufacturer.
-    type: string
-  chassis.serial_number:
-    description: Chassis serial number.
-    type: string
-  chassis.sku:
-    description: Chassis sku.
-    type: string
-  chassis.chassis_type:
-    description: Chassis type.
-    type: string
-  fan.name:
-    description: Fan name.
-    type: string
   temperature.name:
     description: Temperature name.
     type: string
 
-
-metrics:    
-  system.powerstate:
-    description: Measures the power state of a system (-1 unknown, 0 off, 1 on).
-    enabled: true
-    stability:
-      level: development
-    gauge:
-      value_type: int
-    unit: "{powerstate}"
-    attributes: [base_url, system.id, system.asset_tag, system.bios_version, system.host_name, system.model, system.name, system.manufacturer, system.serial_number, system.sku, system.system_type]
-  system.status.state:
-    description: Measures the state of a system (-1 unknown, 0 disabled, 1 enabled).
-    enabled: true
-    stability:
-      level: development
-    gauge:
-      value_type: int
-    unit: "{state}"
-    attributes: [base_url, system.id, system.asset_tag, system.bios_version, system.host_name, system.model, system.name, system.manufacturer, system.serial_number, system.sku, system.system_type]
-  system.status.health:
-    description: Measures the health of a system (-1 unknown, 0 critical, 1 ok, 2 warning).
-    enabled: true
-    stability:
-      level: development
-    gauge:
-      value_type: int
-    unit: "{health}"
-    attributes: [base_url, system.id, system.asset_tag, system.bios_version, system.host_name, system.model, system.name, system.manufacturer, system.serial_number, system.sku, system.system_type]
-  chassis.powerstate:    
+metrics:
+  chassis.powerstate:
     description: Measures the power state of a chassis (-1 unknown, 0 off, 1 on).
     enabled: true
     stability:
@@ -111,15 +83,6 @@ metrics:
     gauge:
       value_type: int
     unit: "{powerstate}"
-    attributes: [system.host_name, base_url, chassis.id, chassis.asset_tag, chassis.model, chassis.name, chassis.manufacturer, chassis.serial_number, chassis.sku, chassis.chassis_type]
-  chassis.status.state:
-    description: Measures the state of a chassis (-1 unknown, 0 disabled, 1 enabled).
-    enabled: true
-    stability:
-      level: development
-    gauge:
-      value_type: int
-    unit: "{state}"
     attributes: [system.host_name, base_url, chassis.id, chassis.asset_tag, chassis.model, chassis.name, chassis.manufacturer, chassis.serial_number, chassis.sku, chassis.chassis_type]
   chassis.status.health:
     description: Measures the health of a chassis (-1 unknown, 0 critical, 1 ok, 2 warning).
@@ -130,6 +93,15 @@ metrics:
       value_type: int
     unit: "{health}"
     attributes: [system.host_name, base_url, chassis.id, chassis.asset_tag, chassis.model, chassis.name, chassis.manufacturer, chassis.serial_number, chassis.sku, chassis.chassis_type]
+  chassis.status.state:
+    description: Measures the state of a chassis (-1 unknown, 0 disabled, 1 enabled).
+    enabled: true
+    stability:
+      level: development
+    gauge:
+      value_type: int
+    unit: "{state}"
+    attributes: [system.host_name, base_url, chassis.id, chassis.asset_tag, chassis.model, chassis.name, chassis.manufacturer, chassis.serial_number, chassis.sku, chassis.chassis_type]
   fan.reading:
     description: Measures the reading of a chassis fan.
     enabled: true
@@ -138,15 +110,6 @@ metrics:
     gauge:
       value_type: int
     unit: "{%}"
-    attributes: [system.host_name, base_url, chassis.id, fan.name]
-  fan.status.state:
-    description: Measures the state of a chassis fan (-1 unknown, 0 disabled, 1 enabled).
-    enabled: true
-    stability:
-      level: development
-    gauge:
-      value_type: int
-    unit: "{state}"
     attributes: [system.host_name, base_url, chassis.id, fan.name]
   fan.status.health:
     description: Measures the health of a chassis fan (-1 unknown, 0 critical, 1 ok, 2 warning).
@@ -157,6 +120,42 @@ metrics:
       value_type: int
     unit: "{health}"
     attributes: [system.host_name, base_url, chassis.id, fan.name]
+  fan.status.state:
+    description: Measures the state of a chassis fan (-1 unknown, 0 disabled, 1 enabled).
+    enabled: true
+    stability:
+      level: development
+    gauge:
+      value_type: int
+    unit: "{state}"
+    attributes: [system.host_name, base_url, chassis.id, fan.name]
+  system.powerstate:
+    description: Measures the power state of a system (-1 unknown, 0 off, 1 on).
+    enabled: true
+    stability:
+      level: development
+    gauge:
+      value_type: int
+    unit: "{powerstate}"
+    attributes: [base_url, system.id, system.asset_tag, system.bios_version, system.host_name, system.model, system.name, system.manufacturer, system.serial_number, system.sku, system.system_type]
+  system.status.health:
+    description: Measures the health of a system (-1 unknown, 0 critical, 1 ok, 2 warning).
+    enabled: true
+    stability:
+      level: development
+    gauge:
+      value_type: int
+    unit: "{health}"
+    attributes: [base_url, system.id, system.asset_tag, system.bios_version, system.host_name, system.model, system.name, system.manufacturer, system.serial_number, system.sku, system.system_type]
+  system.status.state:
+    description: Measures the state of a system (-1 unknown, 0 disabled, 1 enabled).
+    enabled: true
+    stability:
+      level: development
+    gauge:
+      value_type: int
+    unit: "{state}"
+    attributes: [base_url, system.id, system.asset_tag, system.bios_version, system.host_name, system.model, system.name, system.manufacturer, system.serial_number, system.sku, system.system_type]
   temperature.reading:
     description: Measures the reading of a chassis temperature.
     enabled: true
@@ -166,15 +165,6 @@ metrics:
       value_type: int
     unit: "{%}"
     attributes: [system.host_name, base_url, chassis.id, fan.name]
-  temperature.status.state:
-    description: Measures the state of a chassis temperature (-1 unknown, 0 disabled, 1 enabled).
-    enabled: true
-    stability:
-      level: development
-    gauge:
-      value_type: int
-    unit: "{state}"
-    attributes: [system.host_name, base_url, chassis.id, temperature.name]
   temperature.status.health:
     description: Measures the health of a chassis temperature (-1 unknown, 0 critical, 1 ok, 2 warning).
     enabled: true
@@ -184,4 +174,12 @@ metrics:
       value_type: int
     unit: "{health}"
     attributes: [system.host_name, base_url, chassis.id, temperature.name]
-    
+  temperature.status.state:
+    description: Measures the state of a chassis temperature (-1 unknown, 0 disabled, 1 enabled).
+    enabled: true
+    stability:
+      level: development
+    gauge:
+      value_type: int
+    unit: "{state}"
+    attributes: [system.host_name, base_url, chassis.id, temperature.name]

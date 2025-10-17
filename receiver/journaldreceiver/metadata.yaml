@@ -6,6 +6,6 @@ status:
     alpha: [logs]
   distributions: [contrib, k8s]
   codeowners:
-    active: [belimawr]
+    active: [belimawr, namco1992]
     emeritus: [djaglowski, sumo-drosiek]
   unsupported_platforms: [darwin, windows]
