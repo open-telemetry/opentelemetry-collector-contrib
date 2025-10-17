@@ -26,7 +26,7 @@ GOTESTARCH?=$(GOARCH)
 # On Windows arm64 neither `-race` nor cgo are not supported (cgo is not supported due to the GH runner installed gcc not having arm64 libs)
 ifeq ($(GOOS)-$(GOARCH),windows-arm64)
 	CGO_ENABLED_OPT?=0
-	TOOLS_BUILD_ENV_VARS?=CGO_ENABLED=1 GOOS="" GOARCH=""
+	TOOLS_BUILD_ENV_VARS?=CGO_ENABLED=$(CGO_ENABLED_OPT) GOOS="" GOARCH=""
 else
 	GOTEST_RACE_OPT?=-race
 	CGO_ENABLED_OPT?=1
