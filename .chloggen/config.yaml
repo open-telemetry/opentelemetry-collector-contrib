@@ -127,8 +127,8 @@ components:
     - internal/common
     - internal/coreinternal
     - internal/datadog
+    - internal/datadog/e2e
     - internal/docker
-    - internal/e2e
     - internal/exp/metrics
     - internal/filter
     - internal/grpcutil

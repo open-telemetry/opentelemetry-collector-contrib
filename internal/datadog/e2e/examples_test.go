@@ -1,12 +1,11 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package e2e // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/e2e"
+package e2e // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/e2e"
 
 import (
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -39,7 +38,7 @@ import (
 func TestExamples(t *testing.T) {
 	factories := newTestComponents(t)
 
-	const folder = "./examples"
+	const folder = "../../../exporter/datadogexporter/examples"
 	files, err := os.ReadDir(folder)
 	require.NoError(t, err)
 	for _, f := range files {
@@ -61,8 +60,8 @@ func TestExamples(t *testing.T) {
 		})
 	}
 
-	const chartConfigFile = "./examples/k8s-chart/configmap.yaml"
-	t.Run(strings.TrimPrefix(chartConfigFile, "./examples/"), func(t *testing.T) {
+	const chartConfigFile = folder + "/k8s-chart/configmap.yaml"
+	t.Run("k8s-chart/configmap.yaml", func(t *testing.T) {
 		var out struct {
 			Kind string `yaml:"kind"`
 			Data struct {
