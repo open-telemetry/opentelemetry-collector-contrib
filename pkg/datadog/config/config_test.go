@@ -179,10 +179,12 @@ func TestValidate(t *testing.T) {
 			cfg: &Config{
 				API: APIConfig{Key: "aaaaaaa"},
 				ClientConfig: confighttp.ClientConfig{
-					Endpoint:             "endpoint",
-					Compression:          "gzip",
-					Auth:                 someAuth,
-					Headers:              map[string]configopaque.String{"key": "val"},
+					Endpoint:    "endpoint",
+					Compression: "gzip",
+					Auth:        someAuth,
+					Headers: &configopaque.MapList{
+						{Name: "key", Value: "val"},
+					},
 					HTTP2ReadIdleTimeout: 250,
 					HTTP2PingTimeout:     200,
 				},
