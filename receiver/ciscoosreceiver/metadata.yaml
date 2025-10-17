@@ -9,10 +9,6 @@ status:
     active: [dmitryax]
 
 resource_attributes:
-  cisco.device.name:
-    description: Name of the Cisco device
-    type: string
-    enabled: true
   cisco.device.ip:
     description: IP address of the Cisco device
     type: string
@@ -21,15 +17,12 @@ resource_attributes:
     description: Model of the Cisco device
     type: string
     enabled: true
+  cisco.device.name:
+    description: Name of the Cisco device
+    type: string
+    enabled: true
 
 metrics:
-  cisco.interface.transmit.bytes:
-    description: Number of bytes transmitted on the interface
-    unit: By
-    gauge:
-      value_type: int
-    enabled: true
-    attributes: [interface.name, interface.state]
   cisco.interface.receive.bytes:
     description: Number of bytes received on the interface
     unit: By
@@ -37,15 +30,22 @@ metrics:
       value_type: int
     enabled: true
     attributes: [interface.name, interface.state]
-  cisco.interface.transmit.errors:
-    description: Number of transmit errors on the interface
+  cisco.interface.receive.errors:
+    description: Number of receive errors on the interface
     unit: "{error}"
     gauge:
       value_type: int
     enabled: true
     attributes: [interface.name, interface.state]
-  cisco.interface.receive.errors:
-    description: Number of receive errors on the interface
+  cisco.interface.transmit.bytes:
+    description: Number of bytes transmitted on the interface
+    unit: By
+    gauge:
+      value_type: int
+    enabled: true
+    attributes: [interface.name, interface.state]
+  cisco.interface.transmit.errors:
+    description: Number of transmit errors on the interface
     unit: "{error}"
     gauge:
       value_type: int
