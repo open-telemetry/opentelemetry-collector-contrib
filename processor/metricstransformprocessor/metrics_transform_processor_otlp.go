@@ -262,7 +262,7 @@ func (mtp *metricsTransformProcessor) processMetrics(_ context.Context, md pmetr
 				case Insert:
 					// Save len, so we don't iterate over the newly generated metrics that are appended at the end.
 					mLen := metrics.Len()
-					for i := 0; i < mLen; i++ {
+					for i := range mLen {
 						metric := metrics.At(i)
 						newMetric := transform.MetricIncludeFilter.extractMatchedMetric(metric)
 						if newMetric == (pmetric.Metric{}) {
