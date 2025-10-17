@@ -35,6 +35,13 @@ attributes:
   db:
     description: Redis database identifier
     type: string
+  mode:
+    description: Redis server mode
+    type: string
+    enum:
+      - cluster
+      - sentinel
+      - standalone
   percentile:
     description: Percentile
     type: string
@@ -78,7 +85,6 @@ metrics:
       value_type: int
       monotonic: false
       aggregation_temporality: cumulative
-
 
   redis.clients.connected:
     enabled: true
@@ -147,7 +153,6 @@ metrics:
     gauge:
       value_type: int
 
-
   redis.cluster.slots_assigned:
     enabled: false
     description: "Number of slots assigned in the cluster"
@@ -193,6 +198,7 @@ metrics:
     gauge:
       value_type: int
     attributes: [cluster_state]
+
   redis.cluster.stats_messages_received:
     enabled: false
     description: "Total number of messages received by the cluster"
@@ -257,6 +263,7 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
     attributes: [cmd]
+
   redis.commands:
     enabled: true
     description: Number of commands processed per second
@@ -330,6 +337,7 @@ metrics:
     gauge:
       value_type: int
     attributes: [db]
+
   redis.db.keys:
     enabled: true
     description: "Number of keyspace keys"
@@ -339,6 +347,7 @@ metrics:
     gauge:
       value_type: int
     attributes: [db]
+
   redis.keys.evicted:
     enabled: true
     description: Number of evicted keys due to maxmemory limit
@@ -383,6 +392,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
+
 
   redis.latest_fork:
     enabled: true
@@ -446,6 +456,14 @@ metrics:
     unit: By
     gauge:
       value_type: int
+
+  redis.mode:
+    enabled: true
+    description: Redis server mode
+    unit: "{mode}"
+    gauge:
+      value_type: int
+    attributes: [mode]
 
   redis.net.input:
     enabled: true
@@ -519,6 +537,58 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
     attributes: [role]
+
+  redis.sentinel.masters:
+    enabled: true
+    description: Number of masters monitored by Sentinel.
+    unit: "{masters}"
+    gauge:
+      value_type: int
+
+  redis.sentinel.running_scripts:
+    enabled: true
+    description: Number of running Sentinel scripts.
+    unit: "{scripts}"
+    gauge:
+      value_type: int
+
+  redis.sentinel.scripts_queue_length:
+    enabled: true
+    description: Length of Sentinel scripts queue.
+    unit: "{scripts}"
+    gauge:
+      value_type: int
+
+  redis.sentinel.simulate_failure_flags:
+    enabled: true
+    description: Simulated failure flags bitmask.
+    unit: "{flags}"
+    gauge:
+      value_type: int
+
+  redis.sentinel.tilt:
+    enabled: true
+    description: Whether Sentinel is in TILT mode (1 = tilt, 0 = normal).
+    unit: "{state}"
+    gauge:
+      value_type: int
+
+  redis.sentinel.tilt_since_seconds:
+    enabled: true
+    description: Duration in seconds of current TILT, or -1 if not in TILT mode.
+    unit: "s"
+    gauge:
+      value_type: int
+
+  redis.sentinel.total_tilt:
+    enabled: true
+    description: Total TILT occurrences since start.
+    unit: "{events}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+
   redis.slaves.connected:
     enabled: true
     description: Number of connected replicas
@@ -529,7 +599,6 @@ metrics:
       value_type: int
       monotonic: false
       aggregation_temporality: cumulative
-
 
   redis.uptime:
     enabled: true
