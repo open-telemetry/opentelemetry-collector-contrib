@@ -1,0 +1,38 @@
+type: alertsgen
+
+status:
+  class: connector
+  stability:
+    development: [traces_to_logs, metrics_to_logs]
+  distributions: [contrib]
+  codeowners:
+    active: [aarvee11]   # update to your GitHub handle(s)
+
+# (Optional but good practice) basic telemetry we emit
+telemetry:
+  metrics:
+    alerts_emitted_total:
+      enabled: true
+      description: Number of alert log records emitted.
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+        aggregation_temporality: cumulative
+
+    alerts_suppressed_total:
+      enabled: true
+      description: Alerts suppressed due to dedup, storm control, or cardinality caps.
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+        aggregation_temporality: cumulative
+
+    eval_latency_ms:
+      enabled: true
+      description: Time spent evaluating a batch (milliseconds).
+      unit: "ms"
+      histogram:
+        value_type: double
+        aggregation_temporality: cumulative
