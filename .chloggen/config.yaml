@@ -329,6 +329,7 @@ components:
     - scraper/cpu
     - scraper/disk
     - scraper/filesystem
+    - scraper/hw
     - scraper/load
     - scraper/memory
     - scraper/network
