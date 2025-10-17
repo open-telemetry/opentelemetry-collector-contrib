@@ -401,7 +401,7 @@ func Test_SliceToMap(t *testing.T) {
 
 			associateFunc, err := sliceToMapFunction[any](ottl.FunctionContext{}, &SliceToMapArguments[any]{
 				Target: ottl.StandardPSliceGetter[any]{
-					Getter: func(ctx context.Context, tCtx any) (any, error) {
+					Getter: func(context.Context, any) (any, error) {
 						val := tt.value()
 						slice, ok := val.(pcommon.Slice)
 						if !ok {
@@ -427,7 +427,7 @@ func Test_SliceToMap(t *testing.T) {
 			}
 
 			require.NoError(t, err)
-			require.EqualValues(t, tt.want(), result.(pcommon.Map))
+			require.Equal(t, tt.want(), result.(pcommon.Map))
 		})
 	}
 }
