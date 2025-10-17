@@ -1,4 +1,4 @@
-INSERT INTO "%s"."%s" (
+INSERT INTO %q.%q (
     Timestamp,
     TraceId,
     SpanId,
@@ -21,6 +21,7 @@ INSERT INTO "%s"."%s" (
     Links.SpanId,
     Links.TraceState,
     Links.Attributes
+    %s
 ) VALUES (
     ?,
     ?,
@@ -44,4 +45,5 @@ INSERT INTO "%s"."%s" (
     ?,
     ?,
     ?
+    %s
 )
