@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package redfish
 
 import (
@@ -40,56 +43,56 @@ func createRedfishTestServer(oem, computerSystemID string) *httptest.Server {
 
 // Test_HPE is a function to test all HPE redfish endpoints
 func Test_HPE(t *testing.T) {
-	compSysId := "S7"
+	compSysID := "S7"
 
-	ts := createRedfishTestServer(HPE, compSysId)
+	ts := createRedfishTestServer(HPE, compSysID)
 	defer ts.Close()
 
-	client, err := NewClient(compSysId, ts.URL, USER, PASS, WithInsecure(true))
+	client, err := NewClient(compSysID, ts.URL, USER, PASS, WithInsecure(true))
 	require.NoError(t, err)
 
 	system, err := client.GetComputerSystem()
 	require.NoError(t, err)
-	require.Equal(t, system.HostName, "otel-test-host")
+	require.Equal(t, "otel-test-host", system.HostName)
 
 	chassis, err := client.GetChassis(system.Links.Chassis[0].Ref)
 	require.NoError(t, err)
-	require.Equal(t, chassis.SerialNumber, "2M131992H0")
+	require.Equal(t, "2M131992H0", chassis.SerialNumber)
 
 	thermal, err := client.GetThermal(chassis.Thermal.Ref)
 	require.NoError(t, err)
 
 	require.NotNil(t, thermal.Fans[0].Reading)
-	require.Equal(t, *thermal.Fans[0].Reading, int64(50))
+	require.Equal(t, int64(50), *thermal.Fans[0].Reading)
 
 	require.NotNil(t, thermal.Temperatures[0].ReadingCelsius)
-	require.Equal(t, *thermal.Temperatures[0].ReadingCelsius, int64(70))
+	require.Equal(t, int64(70), *thermal.Temperatures[0].ReadingCelsius)
 }
 
 // Test_Dell is a function to test all Dell redfish endpoints
 func Test_Dell(t *testing.T) {
-	compSysId := "System.Embedded.1"
-	ts := createRedfishTestServer(DELL, compSysId)
+	compSysID := "System.Embedded.1"
+	ts := createRedfishTestServer(DELL, compSysID)
 	defer ts.Close()
 
-	client, err := NewClient(compSysId, ts.URL, USER, PASS, WithInsecure(true))
+	client, err := NewClient(compSysID, ts.URL, USER, PASS, WithInsecure(true))
 	require.NoError(t, err)
 
 	system, err := client.GetComputerSystem()
 	require.NoError(t, err)
-	require.Equal(t, system.HostName, "test-dell")
+	require.Equal(t, "test-dell", system.HostName)
 
 	chassis, err := client.GetChassis(system.Links.Chassis[0].Ref)
 	require.NoError(t, err)
-	require.Equal(t, chassis.SerialNumber, "MX777")
+	require.Equal(t, "MX777", chassis.SerialNumber)
 
 	thermal, err := client.GetThermal(chassis.Thermal.Ref)
 	require.NoError(t, err)
 
 	require.NotNil(t, thermal.Fans[0].Reading)
-	require.Equal(t, *thermal.Fans[0].Reading, int64(7091))
+	require.Equal(t, int64(7091), *thermal.Fans[0].Reading)
 
 	require.Nil(t, thermal.Temperatures[0].ReadingCelsius)
 	require.NotNil(t, thermal.Temperatures[1].ReadingCelsius)
-	require.Equal(t, *thermal.Temperatures[1].ReadingCelsius, int64(28))
+	require.Equal(t, int64(28), *thermal.Temperatures[1].ReadingCelsius)
 }

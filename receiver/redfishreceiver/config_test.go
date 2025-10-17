@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package redfishreceiver
 
 import (
@@ -7,7 +10,6 @@ import (
 )
 
 func TestConfig_Validate(t *testing.T) {
-
 	validResources := make([]Resource, 2)
 	validResources[0] = ChassisResource
 	validResources[1] = TemperaturesResource
