@@ -4,6 +4,7 @@ status:
   class: processor
   stability:
     alpha: [traces, metrics, logs]
+    development: [profiles]
   distributions: [core, contrib, k8s]
   warnings: [Orphaned Telemetry, Other]
   codeowners:
@@ -30,6 +31,13 @@ telemetry:
     processor_filter_spans.filtered:
       enabled: true
       description: Number of spans dropped by the filter processor
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    processor_filter_profiles.filtered:
+      enabled: true
+      description: Number of profiles dropped by the filter processor
       unit: "1"
       sum:
         value_type: int

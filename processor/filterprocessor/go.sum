@@ -56,6 +56,8 @@ github.com/json-iterator/go v1.1.12 h1:PV8peI4a0ysnczrg+LtxykD8LfKY9ML6u2jnxaEnr
 github.com/json-iterator/go v1.1.12/go.mod h1:e30LSqwooZae/UwlEbR2852Gd8hjQvJoHmT4TnhNGBo=
 github.com/kisielk/errcheck v1.5.0/go.mod h1:pFxgyoBC7bSaBwPgfKdkLd5X25qrDl4LWUI2bnpBCr8=
 github.com/kisielk/gotool v1.0.0/go.mod h1:XhKaO+MFFWcvkIS/tQcRk01m1F5IRFswLeQ+oQHNcck=
+github.com/klauspost/cpuid/v2 v2.0.9 h1:lgaqFMSdTdQYdZ04uHyN2d/eKdOMyi2YLSvlQIBFYa4=
+github.com/klauspost/cpuid/v2 v2.0.9/go.mod h1:FInQzS24/EEf25PyTYn52gqo7WaD8xa0213Md/qVLRg=
 github.com/knadh/koanf/maps v0.1.2 h1:RBfmAW5CnZT+PJ1CVc1QSJKf4Xu9kxfQgYVQSu8hpbo=
 github.com/knadh/koanf/maps v0.1.2/go.mod h1:npD/QZY3V6ghQDdcQzl1W4ICNVTkohC8E73eI2xW4yI=
 github.com/knadh/koanf/providers/confmap v1.0.0 h1:mHKLJTE7iXEys6deO5p6olAiZdG5zwp8Aebir+/EaRE=
@@ -93,6 +95,10 @@ github.com/ua-parser/uap-go v0.0.0-20240611065828-3a4781585db6/go.mod h1:BUbeWZi
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.4.13/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5taEt/CY=
+github.com/zeebo/assert v1.3.0 h1:g7C04CbJuIDKNPFHmsk4hwZDO5O+kntRxzaUoNXj+IQ=
+github.com/zeebo/assert v1.3.0/go.mod h1:Pq9JiuJQpG8JLJdtkwrJESF0Foym2/D9XMU5ciN/wJ0=
+github.com/zeebo/xxh3 v1.0.2 h1:xZmwmqxHZA8AI603jOQ0tMqmBr9lPeFwGg6d+xy9DC0=
+github.com/zeebo/xxh3 v1.0.2/go.mod h1:5NWz9Sef7zIDm2JHfFlcQvNekmcEl9ekUZQQKCYaDcA=
 go.opentelemetry.io/auto/sdk v1.1.0 h1:cH53jehLUN6UFLY71z+NDOiNJqDdPRaXzTel0sJySYA=
 go.opentelemetry.io/auto/sdk v1.1.0/go.mod h1:3wSPjt5PWp2RhlCcmmOial7AvC4DQqZb7a7wCow3W8A=
 go.opentelemetry.io/collector/component v1.43.1-0.20251013162618-a96eab114ea4 h1:w1VjKgmFktbRwdt5L1C4j6jL60sLhThh9dRRBqArUiA=
@@ -123,10 +129,14 @@ go.opentelemetry.io/collector/pdata/testdata v0.137.1-0.20251013162618-a96eab114
 go.opentelemetry.io/collector/pdata/testdata v0.137.1-0.20251013162618-a96eab114ea4/go.mod h1:at1eFWgRJAkb5orLtHb36eADf6TqLdYuMRFGndB6fkA=
 go.opentelemetry.io/collector/pipeline v1.43.1-0.20251013162618-a96eab114ea4 h1:Fak0kW9jeCaXsdx9lTF8ben4Exnpo3kff9btUc7aXhI=
 go.opentelemetry.io/collector/pipeline v1.43.1-0.20251013162618-a96eab114ea4/go.mod h1:xUrAqiebzYbrgxyoXSkk6/Y3oi5Sy3im2iCA51LwUAI=
+go.opentelemetry.io/collector/pipeline/xpipeline v0.137.1-0.20251013162618-a96eab114ea4 h1:zAVkJfuNFcHJ514dWdqsom9/X3otXddpcOxsKJmf4+I=
+go.opentelemetry.io/collector/pipeline/xpipeline v0.137.1-0.20251013162618-a96eab114ea4/go.mod h1:nQmJ9w3UWOwNmaUR1EalDLyswzHfJcBPMm/NmcytH74=
 go.opentelemetry.io/collector/processor v1.43.1-0.20251013162618-a96eab114ea4 h1:N2Vh16kIGAYbFNIz+c0grX0fdsd+RKSDIX2D0cFnf6E=
 go.opentelemetry.io/collector/processor v1.43.1-0.20251013162618-a96eab114ea4/go.mod h1:QNIpPdWyF7/m76lY24vl8oPv9NA6R5hkppbCjrnCeSs=
 go.opentelemetry.io/collector/processor/processorhelper v0.137.1-0.20251013162618-a96eab114ea4 h1:Wxl51AXqBQIZD7Mtqkt4kpmet2zvp/KIsThfjQ276jg=
 go.opentelemetry.io/collector/processor/processorhelper v0.137.1-0.20251013162618-a96eab114ea4/go.mod h1:SI8Nvf9J4XbQgZ4VAnnL60Uli3IIi9XuUxnMs39s/CI=
+go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper v0.137.1-0.20251013162618-a96eab114ea4 h1:Xv5ft3hCJ/21ITkhxCK29c+MhMv6xAIgdKJlw5pufxM=
+go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper v0.137.1-0.20251013162618-a96eab114ea4/go.mod h1:aV6pO28IP23hAP5R6ytOnwDqbWmm/vS0fw86P8iYgaI=
 go.opentelemetry.io/collector/processor/processortest v0.137.1-0.20251013162618-a96eab114ea4 h1:hegalBgS3l5d7XRYum4IWwEJs1RWfyCPmhsuCkWcaBE=
 go.opentelemetry.io/collector/processor/processortest v0.137.1-0.20251013162618-a96eab114ea4/go.mod h1:ZaIyVMl9ekg8GTtTG7IRl5kpy5FVjrbV4wwxR195u2Q=
 go.opentelemetry.io/collector/processor/xprocessor v0.137.1-0.20251013162618-a96eab114ea4 h1:fa7pHqxpCw8ZXeFY+juXbthVQG+xnRvf5VkEClfGHBs=
