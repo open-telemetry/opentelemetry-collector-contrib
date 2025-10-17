@@ -277,7 +277,7 @@ If you're using the old format values you should update the encoding extension c
 | `requestID`                                               | `aws.request_id`                                          |
 | `resources`                                               | `aws.resources` (as an array, if available)               |
 | `responseElements`                                        | `aws.response.elements` (map of all response elements)    |
-| `additionalEventData`                                     | `aws.additional_event_data`(map of all response elements) |
+| `additionalEventData`                                     | `aws.cloudtrail.additional_event_data` (map of all additional event data) |
 | `sessionCredentialFromConsole`                            | `aws.session.console` (set to true if value is "true")    |
 | `sharedEventID`                                           | `aws.shared_event_id`                                     |
 | `recipientAccountId`                                      | `cloud.account.id`                                        |
