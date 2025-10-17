@@ -161,7 +161,7 @@ func (s3Reader *s3TimeBasedReader) getObjectPrefixForTime(t time.Time, telemetry
 	// Retrieve the configured S3 prefix (may be empty, "/", "//", "logs/", etc.)
 	prefix := s3Reader.s3Prefix
 
-	//Case 1: No prefix provided → use only timeKey + filePrefix
+	// Case 1: No prefix provided → use only timeKey + filePrefix
 	if prefix == "" {
 		return fmt.Sprintf("%s/%s%s_", timeKey, s3Reader.filePrefix, telemetryType)
 	}
@@ -170,7 +170,7 @@ func (s3Reader *s3TimeBasedReader) getObjectPrefixForTime(t time.Time, telemetry
 	if strings.Trim(prefix, "/") == "" {
 		return fmt.Sprintf("%s%s/%s%s_", prefix, timeKey, s3Reader.filePrefix, telemetryType)
 	}
-	//Case 3: Normal prefix (e.g., "logs", "logs/", "/logs/", "//raw//")
+	// Case 3: Normal prefix (e.g., "logs", "logs/", "/logs/", "//raw//")
 	// Always add a "/" between prefix and timeKey to build a valid S3 path
 	return fmt.Sprintf("%s/%s/%s%s_", prefix, timeKey, s3Reader.filePrefix, telemetryType)
 }
