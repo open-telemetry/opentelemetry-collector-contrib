@@ -25,6 +25,9 @@ resourceLogs:
               - key: rpc.system
                 value:
                   stringValue: AwsApiCall
+              - key: aws.cloudtrail.api_version
+                value:
+                  stringValue: v1
               - key: rpc.service
                 value:
                   stringValue: ec2.amazonaws.com
@@ -52,6 +55,9 @@ resourceLogs:
               - key: user.name
                 value:
                   stringValue: Mateo
+              - key: aws.user_identity.account_id
+                value:
+                  stringValue: "123456789012"
               - key: aws.access_key.id
                 value:
                   stringValue: AKIAIOSFODNN7EXAMPLE
@@ -64,6 +70,12 @@ resourceLogs:
               - key: aws.principal.type
                 value:
                   stringValue: IAMUser
+              - key: aws.user_identity.session_context.attributes.mfa_authenticated
+                value:
+                  boolValue: false
+              - key: aws.user_identity.session_context.attributes.creation_date
+                value:
+                  stringValue: "2023-07-19T21:11:57Z"
               - key: tls.protocol.version
                 value:
                   stringValue: "1.2"
@@ -119,12 +131,12 @@ resourceLogs:
                                               value:
                                                 kvlistValue:
                                                   values:
-                                                    - key: code
-                                                      value:
-                                                        doubleValue: 0
                                                     - key: name
                                                       value:
                                                         stringValue: pending
+                                                    - key: code
+                                                      value:
+                                                        doubleValue: 0
                                             - key: previousState
                                               value:
                                                 kvlistValue:
@@ -137,6 +149,9 @@ resourceLogs:
                                                         stringValue: stopped
                                       - kvlistValue:
                                           values:
+                                            - key: instanceId
+                                              value:
+                                                stringValue: i-EXAMPLE56126103cb
                                             - key: currentState
                                               value:
                                                 kvlistValue:
@@ -157,9 +172,6 @@ resourceLogs:
                                                     - key: name
                                                       value:
                                                         stringValue: stopped
-                                            - key: instanceId
-                                              value:
-                                                stringValue: i-EXAMPLE56126103cb
             body: {}
             timeUnixNano: "1689801448000000000"
           - attributes:
@@ -202,6 +214,9 @@ resourceLogs:
               - key: user.name
                 value:
                   stringValue: Mary
+              - key: aws.user_identity.account_id
+                value:
+                  stringValue: "123456789012"
               - key: aws.access_key.id
                 value:
                   stringValue: AKIAIOSFODNN7EXAMPLE
@@ -214,6 +229,12 @@ resourceLogs:
               - key: aws.principal.type
                 value:
                   stringValue: IAMUser
+              - key: aws.user_identity.session_context.attributes.mfa_authenticated
+                value:
+                  boolValue: false
+              - key: aws.user_identity.session_context.attributes.creation_date
+                value:
+                  stringValue: "2023-07-19T21:11:57Z"
               - key: tls.protocol.version
                 value:
                   stringValue: "1.2"
@@ -238,12 +259,6 @@ resourceLogs:
                         value:
                           kvlistValue:
                             values:
-                              - key: path
-                                value:
-                                  stringValue: /
-                              - key: arn
-                                value:
-                                  stringValue: arn:aws:iam::123456789012:user/Richard
                               - key: userId
                                 value:
                                   stringValue: AIDA6ON6E4XEP7EXAMPLE
@@ -253,6 +268,12 @@ resourceLogs:
                               - key: userName
                                 value:
                                   stringValue: Richard
+                              - key: path
+                                value:
+                                  stringValue: /
+                              - key: arn
+                                value:
+                                  stringValue: arn:aws:iam::123456789012:user/Richard
             body: {}
             timeUnixNano: "1689801909000000000"
           - attributes:
@@ -289,6 +310,9 @@ resourceLogs:
               - key: user_agent.original
                 value:
                   stringValue: aws-cli/1.29.16 md/Botocore#1.31.16 ua/2.0 os/linux#5.4.250-173.369.amzn2int.x86_64 md/arch#x86_64 lang/python#3.8.17 md/pyimpl#CPython cfg/retry-mode#legacy botocore/1.31.16
+              - key: aws.user_identity.account_id
+                value:
+                  stringValue: "123456789012"
               - key: aws.access_key.id
                 value:
                   stringValue: AKIAIOSFODNN7EXAMPLE
@@ -301,6 +325,27 @@ resourceLogs:
               - key: aws.principal.type
                 value:
                   stringValue: AssumedRole
+              - key: aws.user_identity.session_context.attributes.mfa_authenticated
+                value:
+                  boolValue: true
+              - key: aws.user_identity.session_context.attributes.creation_date
+                value:
+                  stringValue: "2023-08-21T16:44:05Z"
+              - key: aws.user_identity.session_context.issuer.type
+                value:
+                  stringValue: Role
+              - key: aws.user_identity.session_context.issuer.principal_id
+                value:
+                  stringValue: AKIAIOSFODNN7EXAMPLE
+              - key: aws.user_identity.session_context.issuer.arn
+                value:
+                  stringValue: arn:aws:iam::123456789012:role/Admin
+              - key: aws.user_identity.session_context.issuer.account_id
+                value:
+                  stringValue: "123456789012"
+              - key: aws.user_identity.session_context.issuer.user_name
+                value:
+                  stringValue: ExampleUser
               - key: tls.protocol.version
                 value:
                   stringValue: "1.2"
@@ -449,6 +494,9 @@ resourceLogs:
               - key: user.name
                 value:
                   stringValue: Terry
+              - key: aws.user_identity.account_id
+                value:
+                  stringValue: "111122223333"
               - key: aws.access_key.id
                 value:
                   stringValue: AKIAIOSFODNN7EXAMPLE
@@ -461,6 +509,12 @@ resourceLogs:
               - key: aws.principal.type
                 value:
                   stringValue: IAMUser
+              - key: aws.user_identity.session_context.attributes.mfa_authenticated
+                value:
+                  boolValue: false
+              - key: aws.user_identity.session_context.attributes.creation_date
+                value:
+                  stringValue: "2023-07-19T21:11:57Z"
               - key: tls.protocol.version
                 value:
                   stringValue: "1.2"
@@ -480,12 +534,12 @@ resourceLogs:
                 value:
                   kvlistValue:
                     values:
-                      - key: name
-                        value:
-                          stringValue: myTrail2
                       - key: isMultiRegionTrail
                         value:
                           boolValue: true
+                      - key: name
+                        value:
+                          stringValue: myTrail2
             body: {}
             timeUnixNano: "1689802503000000000"
           - attributes:
@@ -525,6 +579,9 @@ resourceLogs:
               - key: user.id
                 value:
                   stringValue: d-12345abcde
+              - key: aws.user_identity.account_id
+                value:
+                  stringValue: "123456789012"
               - key: aws.identity_store.arn
                 value:
                   stringValue: arn:aws:identitystore::123456789012:identitystore/d-12345abcde
@@ -550,8 +607,72 @@ resourceLogs:
                       - key: ConsoleLogin
                         value:
                           stringValue: Success
+              - key: aws.cloudtrail.additional_event_data
+                value:
+                  kvlistValue:
+                    values:
+                      - key: MFAUsed
+                        value:
+                          boolValue: true
+                      - key: MobileVersion
+                        value:
+                          stringValue: "No"
+                      - key: LoginTo
+                        value:
+                          stringValue: https://console.aws.amazon.com/console/home?region=us
             body: {}
             timeUnixNano: "1749997800000000000"
+          - attributes:
+              - key: aws.cloudtrail.event_version
+                value:
+                  stringValue: "1.08"
+              - key: aws.cloudtrail.event_id
+                value:
+                  stringValue: a24b3967-ddad-417f-9b22-2332b918db06
+              - key: rpc.method
+                value:
+                  stringValue: RotateKey
+              - key: rpc.system
+                value:
+                  stringValue: AwsServiceEvent
+              - key: rpc.service
+                value:
+                  stringValue: kms.amazonaws.com
+              - key: aws.event.category
+                value:
+                  stringValue: Management
+              - key: aws.event.read_only
+                value:
+                  boolValue: false
+              - key: source.address
+                value:
+                  stringValue: AWS Internal
+              - key: user_agent.original
+                value:
+                  stringValue: AWS Internal
+              - key: aws.user_identity.account_id
+                value:
+                  stringValue: "111122223333"
+              - key: aws.user_identity.invoked_by
+                value:
+                  stringValue: AWS Internal
+              - key: aws.resources
+                value:
+                  arrayValue:
+                    values:
+                      - kvlistValue:
+                          values:
+                            - key: account.id
+                              value:
+                                stringValue: "111122223333"
+                            - key: type
+                              value:
+                                stringValue: AWS::KMS::Key
+                            - key: arn
+                              value:
+                                stringValue: arn:aws:kms:us-west-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab
+            body: {}
+            timeUnixNano: "1610588519000000000"
         scope:
           attributes:
             - key: encoding.format
