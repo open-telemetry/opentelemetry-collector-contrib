@@ -61,6 +61,7 @@ func (e *logsJSONExporter) shutdown(_ context.Context) error {
 	if e.db != nil {
 		if err := e.db.Close(); err != nil {
 			e.logger.Warn("failed to close json logs db connection", zap.Error(err))
+			return err
 		}
 	}
 
