@@ -68,4 +68,3 @@ func BenchmarkUnmarshalNetworkFirewallTLSLog(b *testing.B) {
 		}
 	}
 }
-

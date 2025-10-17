@@ -40,15 +40,15 @@ resourceLogs:
               - key: destination.port
                 value:
                   intValue: "443"
-              - key: network.protocol.name
+              - key: network.transport
                 value:
                   stringValue: TCP
-              - key: aws.networkfirewall.tls.name_indication
+              - key: server.address
                 value:
                   stringValue: example.com
-              - key: aws.networkfirewall.tls.subject
+              - key: tls.client.subject
                 value:
                   stringValue: CN=example.com
-              - key: aws.networkfirewall.tls.issuer
+              - key: tls.client.issuer
                 value:
                   stringValue: CN=Let's Encrypt Authority X3,O=Let's Encrypt,C=US

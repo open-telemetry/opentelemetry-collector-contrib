@@ -40,7 +40,7 @@ resourceLogs:
               - key: destination.port
                 value:
                   intValue: "80"
-              - key: network.protocol.name
+              - key: network.transport
                 value:
                   stringValue: TCP
               - key: aws.networkfirewall.netflow.packets
@@ -64,3 +64,6 @@ resourceLogs:
               - key: aws.networkfirewall.netflow.min_ttl
                 value:
                   intValue: "64"
+              - key: aws.networkfirewall.netflow.transaction.count
+                value:
+                  intValue: "10"

@@ -11,13 +11,14 @@ import (
 	"time"
 
 	gojson "github.com/goccy/go-json"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/constants"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/constants"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler"
 )
 
 type networkFirewallLogUnmarshaler struct {
@@ -45,8 +46,8 @@ type networkFirewallLog struct {
 		Proto     string `json:"proto"`
 		SNI       string `json:"sni"` // TLS SNI at event level
 		Netflow   struct {
-			Pkts   int64 `json:"pkts"`
-			Bytes  int64 `json:"bytes"`
+			Pkts   int64  `json:"pkts"`
+			Bytes  int64  `json:"bytes"`
 			Start  string `json:"start"`
 			End    string `json:"end"`
 			Age    int64  `json:"age"`
@@ -83,15 +84,16 @@ type networkFirewallLog struct {
 			ErrorMessage string `json:"error_message"`
 		} `json:"tls_error"`
 		TLS struct {
-			Subject         string `json:"subject"`
-			Issuer          string `json:"issuer"`
-			SessionResumed  bool   `json:"session_resumed"`
+			Subject        string `json:"subject"`
+			Issuer         string `json:"issuer"`
+			SessionResumed bool   `json:"session_resumed"`
 		} `json:"tls"`
 		HTTP struct {
 			Hostname        string `json:"hostname"`
 			URL             string `json:"url"`
 			HTTPUserAgent   string `json:"http_user_agent"`
 			HTTPContentType string `json:"http_content_type"`
+			Cookie          string `json:"cookie"`
 		} `json:"http"`
 	} `json:"event"`
 }
@@ -218,7 +220,7 @@ func (*networkFirewallLogUnmarshaler) addNetworkFirewallLog(log networkFirewallL
 		putInt(string(semconv.DestinationPortKey), log.Event.DestPort)
 	}
 	if log.Event.Proto != "" {
-		putStr(string(semconv.NetworkProtocolNameKey), log.Event.Proto)
+		putStr("network.transport", log.Event.Proto)
 	}
 
 	// Add netflow fields if present (Flow event type) - check each field individually
@@ -299,10 +301,9 @@ func (*networkFirewallLogUnmarshaler) addNetworkFirewallLog(log networkFirewallL
 		putStrSlice("aws.networkfirewall.alert.metadata.updated_at", log.Event.Alert.Metadata.UpdatedAt)
 	}
 
-	// Add TLS fields if present (TLS event type) - check each field individually
 	// SNI can be at event level
 	if log.Event.SNI != "" {
-		putStr("aws.networkfirewall.tls.name_indication", log.Event.SNI)
+		putStr(string(semconv.ServerAddressKey), log.Event.SNI)
 	}
 
 	// Revocation check fields (check each field individually)
@@ -323,27 +324,30 @@ func (*networkFirewallLogUnmarshaler) addNetworkFirewallLog(log networkFirewallL
 
 	// TLS details (check each field individually)
 	if log.Event.TLS.Subject != "" {
-		putStr("aws.networkfirewall.tls.subject", log.Event.TLS.Subject)
+		putStr("tls.client.subject", log.Event.TLS.Subject)
 	}
 	if log.Event.TLS.Issuer != "" {
-		putStr("aws.networkfirewall.tls.issuer", log.Event.TLS.Issuer)
+		putStr("tls.client.issuer", log.Event.TLS.Issuer)
 	}
 	if log.Event.TLS.SessionResumed {
-		putBool("aws.networkfirewall.tls.session_resumed", log.Event.TLS.SessionResumed)
+		putBool("tls.resumed", log.Event.TLS.SessionResumed)
 	}
 
 	// Add HTTP fields if present (HTTP event type) - check each field individually
 	if log.Event.HTTP.Hostname != "" {
-		putStr("aws.networkfirewall.http.hostname", log.Event.HTTP.Hostname)
+		putStr("http.request.header.host", log.Event.HTTP.Hostname)
 	}
 	if log.Event.HTTP.URL != "" {
-		putStr("aws.networkfirewall.http.url", log.Event.HTTP.URL)
+		putStr(string(semconv.URLPathKey), log.Event.HTTP.URL)
 	}
 	if log.Event.HTTP.HTTPUserAgent != "" {
-		putStr("aws.networkfirewall.http.user_agent", log.Event.HTTP.HTTPUserAgent)
+		putStr(string(semconv.UserAgentOriginalKey), log.Event.HTTP.HTTPUserAgent)
 	}
 	if log.Event.HTTP.HTTPContentType != "" {
-		putStr("aws.networkfirewall.http.http_content_type", log.Event.HTTP.HTTPContentType)
+		putStr("http.request.header.content-type", log.Event.HTTP.HTTPContentType)
+	}
+	if log.Event.HTTP.Cookie != "" {
+		putStr("aws.networkfirewall.http.cookie", log.Event.HTTP.Cookie)
 	}
 
 	return nil

@@ -142,4 +142,3 @@ func TestSetResourceAttributes(t *testing.T) {
 		})
 	}
 }
-

@@ -410,18 +410,18 @@ See the following field references for more information:
 
 The following fields are common across all log types:
 
-| Common log fields   | Attribute in OpenTelemetry log            |
-|---------------------|-------------------------------------------|
-| `firewall_name`     | `aws.networkfirewall.name`                |
-| `availability_zone` | `cloud.availability_zone`                 |
-| `event_timestamp`   | Log timestamp                             |
-| `event.event_type`  | `aws.networkfirewall.event.type`          |
-| `event.src_ip`      | `source.address`                          |
-| `event.src_port`    | `source.port`                             |
-| `event.dest_ip`     | `destination.address`                     |
-| `event.dest_port`   | `destination.port`                        |
-| `event.proto`       | `network.protocol.name`                   |
-| `event.flow_id`     | `aws.networkfirewall.flow_id`             |
+| Common log fields   | Attribute in OpenTelemetry log   |
+|---------------------|----------------------------------|
+| `firewall_name`     | `aws.networkfirewall.name`       |
+| `availability_zone` | `cloud.availability_zone`        |
+| `event_timestamp`   | Log timestamp                    |
+| `event.event_type`  | `aws.networkfirewall.event.type` |
+| `event.src_ip`      | `source.address`                 |
+| `event.src_port`    | `source.port`                    |
+| `event.dest_ip`     | `destination.address`            |
+| `event.dest_port`   | `destination.port`               |
+| `event.proto`       | `network.transport`              |
+| `event.flow_id`     | `aws.networkfirewall.flow_id`    |
 
 #### Flow or `netflow` type log fields
 
@@ -463,21 +463,21 @@ The following fields are common across all log types:
 
 | TLS log fields                         | Attribute in OpenTelemetry log                           |
 |----------------------------------------|----------------------------------------------------------|
-| `event.sni`                            | `aws.networkfirewall.tls.name_indication`                |
+| `event.sni`                            | `server.address`                |
 | `event.revocation_check.leaf_cert_fpr` | `aws.networkfirewall.tls.revocation_check.leaf_cert_fpr` |
 | `event.revocation_check.action`        | `aws.networkfirewall.tls.revocation_check.action`        |
 | `event.revocation_check.status`        | `aws.networkfirewall.tls.revocation_check.status`        |
 | `event.tls_error.error_message`        | `aws.networkfirewall.tls.error.message`                  |
-| `event.tls.subject`                    | `aws.networkfirewall.tls.subject`                        |
-| `event.tls.issuer`                     | `aws.networkfirewall.tls.issuer`                         |
-| `event.tls.session_resumed`            | `aws.networkfirewall.tls.session_resumed`                |
+| `event.tls.subject`                    | `tls.client.subject`                                     |
+| `event.tls.issuer`                     | `tls.client.issuer`                                      |
+| `event.tls.session_resumed`            | `tls.resumed`                                            |
 
 #### [HTTP log fields]((https://docs.suricata.io/en/latest/output/eve/eve-json-format.html#event-type-http))
 
-| HTTP log fields                | Attribute in OpenTelemetry log               |
-|--------------------------------|----------------------------------------------|
-| `event.http.hostname`          | `aws.networkfirewall.http.hostname`          |
-| `event.http.url`               | `aws.networkfirewall.http.url`               |
-| `event.http.http_user_agent`   | `aws.networkfirewall.http.user_agent`        |
-| `event.http.http_content_type` | `aws.networkfirewall.http.http_content_type` |
-| `event.http.cookie`            | `aws.networkfirewall.http.cookie`            |
+| HTTP log fields                | Attribute in OpenTelemetry log     |
+|--------------------------------|------------------------------------|
+| `event.http.hostname`          | `http.request.header.host`         |
+| `event.http.url`               | `url.path`                         |
+| `event.http.http_user_agent`   | `user_agent.original`              |
+| `event.http.http_content_type` | `http.request.header.content-type` |
+| `event.http.cookie`            | `aws.networkfirewall.http.cookie`  |
