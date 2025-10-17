@@ -41,6 +41,9 @@ type Config struct {
 	// EnableOpenMetrics enables the use of the OpenMetrics encoding option for the prometheus exporter.
 	EnableOpenMetrics bool `mapstructure:"enable_open_metrics"`
 
+	// WithoutOtelScope controls the addition of labels for the instrumentation scope
+	WithoutOtelScope bool `mapstructure:"without_otel_scope"`
+
 	// AddMetricSuffixes controls whether suffixes are added to metric names. Defaults to true.
 	// Deprecated: Use TranslationStrategy instead. This setting is ignored when TranslationStrategy is explicitly set.
 	AddMetricSuffixes bool `mapstructure:"add_metric_suffixes"`
