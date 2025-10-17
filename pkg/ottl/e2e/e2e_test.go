@@ -1292,6 +1292,12 @@ func Test_e2e_converters(t *testing.T) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", "d447b1ea40e6988b")
 			},
 		},
+		{
+			statement: `set(attributes["test"], XXH128("hello world"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "d447b1ea40e6988bd447b1ea40e6988b")
+			},
+		},
 	}
 
 	for _, tt := range tests {
