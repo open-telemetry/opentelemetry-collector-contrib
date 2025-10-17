@@ -17,14 +17,15 @@ type OIDCTokenProvider struct {
 	tokenSource oauth2.TokenSource
 }
 
-// Token implements sarama.AccessTokenProvider for Sarama-based Kafka clients
+// Token returns a sarama.AccessToken for Sarama-based Kafka clients
 func (p *OIDCTokenProvider) Token() (*sarama.AccessToken, error) {
-	oauthTok, err := p.tokenSource.Token()
+	token, err := p.tokenSource.Token()
 	if err != nil {
 		return nil, err
 	}
-
-	return &sarama.AccessToken{Token: oauthTok.AccessToken}, nil
+	return &sarama.AccessToken{
+		Token: token.AccessToken,
+	}, nil
 }
 
 // GetToken returns the oauth2.Token directly for franz-go based clients
@@ -33,7 +34,7 @@ func (p *OIDCTokenProvider) GetToken() (*oauth2.Token, error) {
 }
 
 // NewOIDCTokenProvider creates a new OIDC token provider using oauth2clientauthextension.
-// This provides token functionality for both Sarama and Franz-go Kafka clients.
+// This provides token functionality for Franz-go Kafka clients.
 func NewOIDCTokenProvider(
 	ctx context.Context,
 	clientID string,
