@@ -174,7 +174,7 @@ func TestLoadConfig(t *testing.T) {
 					client := confighttp.NewDefaultClientConfig()
 					client.Timeout = 10000000000
 					client.Endpoint = "http://example.com:9200"
-					client.Headers = map[string]configopaque.String{}
+					client.Headers = new(configopaque.MapList)
 					return client
 				}(),
 			},
