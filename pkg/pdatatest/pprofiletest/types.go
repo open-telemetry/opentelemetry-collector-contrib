@@ -285,7 +285,8 @@ func (a *Attribute) Transform(dic pprofile.ProfilesDictionary, record attributab
 		panic(fmt.Sprintf("failed to put key string: %s: %v", a.Key, err))
 	}
 	kvu.SetKeyStrindex(keyIdx)
-	if err := kvu.Value().FromRaw(a.Value); err != nil {
+	err = kvu.Value().FromRaw(a.Value)
+	if err != nil {
 		panic(fmt.Sprintf("unsupported attribute value: {%s: %v (type %T)}",
 			a.Key, a.Value, a.Value))
 	}
