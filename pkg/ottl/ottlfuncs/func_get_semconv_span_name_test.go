@@ -164,7 +164,7 @@ func TestSemconvSpanName(t *testing.T) {
 				attrs.PutStr("db.system", "redis")
 				attrs.PutStr("server.address", "valkey-cart")
 			},
-			want: "redis",
+			want: "valkey-cart",
 		},
 		{
 			name:                   "DB client - OTel Demo - accounting",
