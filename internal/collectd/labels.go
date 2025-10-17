@@ -35,7 +35,7 @@ func LabelsFromName(val *string) (metricName string, labels map[string]string) {
 				piece := dimensions[prev:cindex]
 				tindex := strings.Index(piece, "=")
 				if tindex == -1 || strings.Contains(piece[tindex+1:], "=") {
-					return
+					return metricName, labels
 				}
 				working[piece[:tindex]] = piece[tindex+1:]
 				if cindex == len(dimensions) {
@@ -48,5 +48,5 @@ func LabelsFromName(val *string) (metricName string, labels map[string]string) {
 			metricName = left + rest
 		}
 	}
-	return
+	return metricName, labels
 }

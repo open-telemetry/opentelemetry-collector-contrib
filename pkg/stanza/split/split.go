@@ -76,7 +76,7 @@ func LineStartSplitFunc(re *regexp.Regexp, omitPattern, flushAtEOF bool) bufio.S
 
 			// return if non-matching pattern is not only whitespaces
 			if token != nil {
-				return
+				return advance, token, err
 			}
 		}
 

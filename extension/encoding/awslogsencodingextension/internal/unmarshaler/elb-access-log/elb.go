@@ -458,27 +458,27 @@ func parseRequestField(raw string) (method, uri, protoName, protoVersion string,
 	method, remaining, _ := strings.Cut(raw, " ")
 	if method == "" {
 		err = fmt.Errorf("unexpected: request field %q has no method", raw)
-		return
+		return method, uri, protoName, protoVersion, err
 	}
 
 	uri, remaining, _ = strings.Cut(remaining, " ")
 	if uri == "" {
 		err = fmt.Errorf("unexpected: request field %q has no URI", raw)
-		return
+		return method, uri, protoName, protoVersion, err
 	}
 
 	protocol, leftover, _ := strings.Cut(remaining, " ")
 	if protocol == "" || leftover != "" {
 		err = fmt.Errorf(`request field %q does not match expected format "<method> <uri> <protocol>"`, raw)
-		return
+		return method, uri, protoName, protoVersion, err
 	}
 
 	protoName, protoVersion, err = netProtocol(protocol)
 	if err != nil {
 		err = fmt.Errorf("invalid protocol in request field: %w", err)
-		return
+		return method, uri, protoName, protoVersion, err
 	}
-	return
+	return method, uri, protoName, protoVersion, err
 }
 
 // netProtocol returns protocol name and version based on proto value

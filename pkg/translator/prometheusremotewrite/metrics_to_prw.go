@@ -140,7 +140,7 @@ func (c *prometheusConverter) fromMetrics(md pmetric.Metrics, settings Settings)
 		errs = multierr.Append(errs, addResourceTargetInfo(resource, settings, mostRecentTimestamp, c))
 	}
 
-	return
+	return errs
 }
 
 // timeSeries returns a slice of the prompb.TimeSeries that were converted from OTel format.

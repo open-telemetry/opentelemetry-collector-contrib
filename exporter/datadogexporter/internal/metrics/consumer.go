@@ -52,7 +52,7 @@ func (*Consumer) toDataType(dt metrics.DataType) (out datadogV2.MetricIntakeType
 		out = datadogV2.METRICINTAKETYPE_GAUGE
 	}
 
-	return
+	return out
 }
 
 // runningMetrics gets the running metrics for the exporter.
@@ -81,7 +81,7 @@ func (c *Consumer) runningMetrics(timestamp uint64, buildInfo component.BuildInf
 		series = append(series, runningMetric...)
 	}
 
-	return
+	return series
 }
 
 // All gets all metrics (consumed metrics and running metrics).

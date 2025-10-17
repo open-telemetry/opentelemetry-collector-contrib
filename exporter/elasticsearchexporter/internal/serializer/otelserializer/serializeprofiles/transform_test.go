@@ -50,7 +50,7 @@ func formatFileIDFormat(hi, lo uint64) (fileID libpf.FileID, fileIDHex, fileIDBa
 	fileID = libpf.NewFileID(hi, lo)
 	fileIDHex = fileID.StringNoQuotes()
 	fileIDBase64 = fileID.Base64()
-	return
+	return fileID, fileIDHex, fileIDBase64
 }
 
 func TestTransform(t *testing.T) {

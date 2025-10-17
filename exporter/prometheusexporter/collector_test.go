@@ -383,7 +383,7 @@ func TestCollectMetrics(t *testing.T) {
 					dp.SetStartTimestamp(pcommon.NewTimestampFromTime(ts))
 				}
 
-				return
+				return metric
 			},
 		},
 		{
@@ -403,7 +403,7 @@ func TestCollectMetrics(t *testing.T) {
 					dp.SetStartTimestamp(pcommon.NewTimestampFromTime(ts))
 				}
 
-				return
+				return metric
 			},
 		},
 		{
@@ -425,7 +425,7 @@ func TestCollectMetrics(t *testing.T) {
 					dp.SetStartTimestamp(pcommon.NewTimestampFromTime(ts))
 				}
 
-				return
+				return metric
 			},
 		},
 		{
@@ -447,7 +447,7 @@ func TestCollectMetrics(t *testing.T) {
 					dp.SetStartTimestamp(pcommon.NewTimestampFromTime(ts))
 				}
 
-				return
+				return metric
 			},
 		},
 		{
@@ -469,7 +469,7 @@ func TestCollectMetrics(t *testing.T) {
 					dp.SetStartTimestamp(pcommon.NewTimestampFromTime(ts))
 				}
 
-				return
+				return metric
 			},
 		},
 		{
@@ -491,7 +491,7 @@ func TestCollectMetrics(t *testing.T) {
 					dp.SetStartTimestamp(pcommon.NewTimestampFromTime(ts))
 				}
 
-				return
+				return metric
 			},
 		},
 		{
@@ -512,7 +512,7 @@ func TestCollectMetrics(t *testing.T) {
 					dp.SetStartTimestamp(pcommon.NewTimestampFromTime(ts))
 				}
 
-				return
+				return metric
 			},
 		},
 	}
@@ -647,7 +647,7 @@ func TestAccumulateHistograms(t *testing.T) {
 				if withStartTime {
 					dp.SetStartTimestamp(pcommon.NewTimestampFromTime(ts))
 				}
-				return
+				return metric
 			},
 		},
 	}
@@ -761,7 +761,7 @@ func TestAccumulateSummary(t *testing.T) {
 				fillQuantileValue(0.50, 190, sp.QuantileValues().AppendEmpty())
 				fillQuantileValue(0.99, 817, sp.QuantileValues().AppendEmpty())
 
-				return
+				return metric
 			},
 		},
 	}

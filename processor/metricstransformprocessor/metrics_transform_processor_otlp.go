@@ -143,7 +143,7 @@ func matchDps(metric pmetric.Metric, f internalFilter) (matchedDps []bool, match
 		matchedDps = append(matchedDps, match)
 		return true
 	})
-	return
+	return matchedDps, matchedDpsCount
 }
 
 // extractMetricWithMatchingAttrs returns a metric with data points matching attrMatchers.

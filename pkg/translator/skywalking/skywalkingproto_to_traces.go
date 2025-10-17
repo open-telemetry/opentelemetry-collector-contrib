@@ -300,7 +300,7 @@ func swStringToUUID(s string, extra uint32) (dst [16]byte) {
 	// uid = UUID(start) XOR [4]byte(extra)
 
 	if len(s) < 32 {
-		return
+		return dst
 	}
 
 	t := unsafeGetBytes(s)
@@ -322,17 +322,17 @@ func swStringToUUID(s string, extra uint32) (dst [16]byte) {
 	index1 := bytes.IndexByte(t, '.')
 	index2 := bytes.LastIndexByte(t, '.')
 	if index1 != 32 || index2 < 0 {
-		return
+		return dst
 	}
 
 	mid, err := strconv.Atoi(s[index1+1 : index2])
 	if err != nil {
-		return
+		return dst
 	}
 
 	last, err := strconv.Atoi(s[index2+1:])
 	if err != nil {
-		return
+		return dst
 	}
 
 	for i := 4; i < 8; i++ {

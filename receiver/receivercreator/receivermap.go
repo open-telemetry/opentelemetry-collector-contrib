@@ -33,7 +33,7 @@ func (rm receiverMap) Values() (out []component.Component) {
 	for _, m := range rm {
 		out = append(out, m...)
 	}
-	return
+	return out
 }
 
 // Size is the number of total receivers in the map.
@@ -41,5 +41,5 @@ func (rm receiverMap) Size() (out int) {
 	for _, m := range rm {
 		out += len(m)
 	}
-	return
+	return out
 }

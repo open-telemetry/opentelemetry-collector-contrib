@@ -116,7 +116,7 @@ func ScanLinesStrict(data []byte, atEOF bool) (advance int, token []byte, err er
 	if advance == len(token) {
 		return 0, nil, nil
 	}
-	return
+	return advance, token, err
 }
 
 func GenerateBytes(length int) []byte {
