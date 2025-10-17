@@ -352,7 +352,7 @@ func Test_e2e_editors(t *testing.T) {
 	}
 }
 
-func putAttribute(t *testing.T, dic pprofile.ProfilesDictionary, profile pprofile.Profile, key string, value pcommon.Value) { // nolint:unparam // we want to keep a dynamic key
+func putAttribute(t *testing.T, dic pprofile.ProfilesDictionary, profile pprofile.Profile, key string, value pcommon.Value) {
 	t.Helper()
 
 	kvu := pprofile.NewKeyValueAndUnit()
@@ -1699,21 +1699,21 @@ func putProfileAttribute(t *testing.T, tCtx ottlprofile.TransformContext, key st
 	profile := tCtx.GetProfile()
 	switch v := value.(type) {
 	case string:
-		require.NoError(t, pprofile.PutAttribute(dic.AttributeTable(), profile, dic, key, pcommon.NewValueStr(v)))
+		putAttribute(t, tCtx.GetProfilesDictionary(), tCtx.GetProfile(), key, pcommon.NewValueStr(v))
 	case float64:
-		require.NoError(t, pprofile.PutAttribute(dic.AttributeTable(), profile, dic, key, pcommon.NewValueDouble(v)))
+		putAttribute(t, tCtx.GetProfilesDictionary(), tCtx.GetProfile(), key, pcommon.NewValueDouble(v))
 	case int:
-		require.NoError(t, pprofile.PutAttribute(dic.AttributeTable(), profile, dic, key, pcommon.NewValueInt(int64(v))))
+		putAttribute(t, tCtx.GetProfilesDictionary(), tCtx.GetProfile(), key, pcommon.NewValueInt(int64(v)))
 	case bool:
-		require.NoError(t, pprofile.PutAttribute(dic.AttributeTable(), profile, dic, key, pcommon.NewValueBool(v)))
+		putAttribute(t, tCtx.GetProfilesDictionary(), tCtx.GetProfile(), key, pcommon.NewValueBool(v))
 	case []any:
 		sl := pcommon.NewValueSlice()
 		require.NoError(t, sl.FromRaw(v))
-		require.NoError(t, pprofile.PutAttribute(dic.AttributeTable(), profile, dic, key, sl))
+		putAttribute(t, dic, profile, key, sl)
 	case map[string]any:
 		m := pcommon.NewValueMap()
 		require.NoError(t, m.FromRaw(v))
-		require.NoError(t, pprofile.PutAttribute(dic.AttributeTable(), profile, dic, key, m))
+		putAttribute(t, dic, profile, key, m)
 	default:
 		t.Fatalf("unsupported value type: %T", v)
 	}
