@@ -83,7 +83,7 @@ func (s *azureBatchScraper) start(_ context.Context, host component.Host) (err e
 	s.resources = map[string]map[string]*azureResource{}
 	s.regions = map[string]map[string]struct{}{}
 
-	return
+	return err
 }
 
 func (s *azureBatchScraper) loadSubscription(sub azureSubscription) {
