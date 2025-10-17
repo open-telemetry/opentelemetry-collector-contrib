@@ -29,3 +29,17 @@ metrics:
     gauge:
       value_type: double
     attributes: [target]
+
+  cisco.system.cpu.utilization:
+    enabled: true
+    description: CPU utilization as a fraction (0-1)
+    unit: "1"
+    gauge:
+      value_type: double
+
+  cisco.system.memory.utilization:
+    enabled: true
+    description: Memory utilization as a fraction (0-1)
+    unit: "1"
+    gauge:
+      value_type: double
