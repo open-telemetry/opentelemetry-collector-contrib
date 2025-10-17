@@ -297,7 +297,7 @@ func getIdxForFunction(lts lookupTables, name, systemName, fileName string, star
 }
 
 // getIdxForString returns the corresponding index for the string.
-// If the string does not yet exist in the cache, it will be adedd.
+// If the string does not yet exist in the cache, it will be added.
 func getIdxForString(lts lookupTables, s string) int32 {
 	if idx, exists := lts.stringTable[s]; exists {
 		return idx
