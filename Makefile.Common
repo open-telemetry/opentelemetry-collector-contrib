@@ -26,11 +26,9 @@ GOTESTARCH?=$(GOARCH)
 # On Windows arm64 neither `-race` nor cgo are not supported (cgo is not supported due to the GH runner installed gcc not having arm64 libs)
 ifeq ($(GOOS)-$(GOARCH),windows-arm64)
 	CGO_ENABLED_OPT?=0
-	TOOLS_BUILD_ENV_VARS?=CGO_ENABLED=$(CGO_ENABLED_OPT) GOOS="" GOARCH=""
 else
 	GOTEST_RACE_OPT?=-race
 	CGO_ENABLED_OPT?=1
-	TOOLS_BUILD_ENV_VARS?=GOOS="" GOARCH=""
 endif
 
 GOTEST_OPT?=$(GOTEST_RACE_OPT) -timeout $(GOTEST_TIMEOUT) -parallel 4 --tags=$(GO_BUILD_TAGS)
@@ -67,7 +65,7 @@ $(TOOLS_BIN_DIR):
 	mkdir -p $@
 
 $(TOOLS_BIN_NAMES): $(TOOLS_BIN_DIR) $(TOOLS_MOD_DIR)/go.mod
-	cd $(TOOLS_MOD_DIR) && $(TOOLS_BUILD_ENV_VARS) $(GOCMD) build -o $@ -trimpath $(filter %/$(notdir $@),$(TOOLS_PKG_NAMES))
+	cd $(TOOLS_MOD_DIR) && GOOS="" GOARCH="" $(GOCMD) build -o $@ -trimpath $(filter %/$(notdir $@),$(TOOLS_PKG_NAMES))
 
 ACTIONLINT          := $(TOOLS_BIN_DIR)/actionlint
 ADDLICENSE          := $(TOOLS_BIN_DIR)/addlicense
