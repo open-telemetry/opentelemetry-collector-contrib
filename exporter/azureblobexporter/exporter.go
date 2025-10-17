@@ -347,9 +347,8 @@ func (e *azureBlobExporter) generateBlobName(signal pipeline.Signal, telemetryDa
 func (e *azureBlobExporter) parseTimeInBlobName(now time.Time, format string) string {
 	if !e.config.BlobNameFormat.TimeParserEnabled {
 		return format
-	} else {
-		return now.Format(format)
 	}
+	return now.Format(format)
 }
 
 func (*azureBlobExporter) Capabilities() consumer.Capabilities {
