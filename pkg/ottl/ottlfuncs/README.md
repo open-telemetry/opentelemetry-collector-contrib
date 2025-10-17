@@ -479,6 +479,7 @@ Available Converters:
 - [Int](#int)
 - [IsBool](#isbool)
 - [IsDouble](#isdouble)
+- [IsInCIDR](#isincidr)
 - [IsInt](#isint)
 - [IsRootSpan](#isrootspan)
 - [IsMap](#ismap)
@@ -1192,6 +1193,20 @@ Examples:
 - `IsDouble(log.body)`
 
 - `IsDouble(log.attributes["maybe a double"])`
+
+### IsInCIDR
+
+`IsInCIDR(target, []addresses)`
+
+The `IsInCIDR` Converter returns true if the given target ip is included in networks.
+
+The `target` is either a path expression to a telemetry field to retrieve, or a literal. The `addresses` is a list of CIDR address.
+
+Examples:
+
+- `IsInCIDR(resource.attributes["server.ip"], ["192.168.0.0/16"])`
+
+- `IsInCIDR(resource.attributes["server.ip"], ["192.168.0.0/16", "10.0.0.0/8"])`
 
 ### IsInt
 
