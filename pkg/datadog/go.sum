@@ -872,6 +872,10 @@ github.com/onsi/ginkgo/v2 v2.21.0 h1:7rg/4f3rB88pb5obDgNZrNHrQ4e6WpjonchcpuBRnZM
 github.com/onsi/ginkgo/v2 v2.21.0/go.mod h1:7Du3c42kxCUegi0IImZ1wUQzMBVecgIHjR1C+NkhLQo=
 github.com/onsi/gomega v1.35.1 h1:Cwbd75ZBPxFSuZ6T+rN/WCb/gOc6YgFBXLlZLhC7Ds4=
 github.com/onsi/gomega v1.35.1/go.mod h1:PvZbdDc8J6XJEpDK4HCuRBm8a6Fzp9/DmhC9C7yFlog=
+github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.137.0 h1:tB1BUL/FhdhuqTwdnMNcCQESxJyyXo7yGcd2OAczjes=
+github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.137.0/go.mod h1:0ZHtUmj2/58P4OuI0MVQaNtBUQ/cCYvJy7tUtVi9Pls=
+github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.137.0 h1:gzYqqK2ZOnbrEQfbS/2LnQa4t4oCofJdPKC9TkMJUQY=
+github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.137.0/go.mod h1:unML3A0mPOFWZcDJkzNEmv46eUwFxN9FqMcaNWxLh4g=
 github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling v0.133.0 h1:iPei+89a2EK4LuN4HeIRzZNE6XxCyrKfBKG3BkK/ViU=
 github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling v0.133.0/go.mod h1:asV77TgnGfc7A+a9jggdsnlLlW5dnJT8RroVuf5slko=
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor v0.133.0 h1:4ca2pM3+xDMB9H3UnhjAiNg7EpIydZ7HdohOexU8xb8=

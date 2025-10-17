@@ -3,7 +3,7 @@
 
 //go:generate mdatagen metadata.yaml
 
-package agentcomponents // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/agentcomponents"
+package apmstats // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/apmstats"
 
 import (
 	"context"

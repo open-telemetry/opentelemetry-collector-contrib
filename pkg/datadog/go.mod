@@ -299,9 +299,3 @@ replace github.com/openshift/api v3.9.0+incompatible => github.com/openshift/api
 
 // Replace old monolithic genproto with newer version to avoid ambiguous import with split modules
 replace google.golang.org/genproto => google.golang.org/genproto v0.0.0-20231030173426-d783a09b4405
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../pdatatest
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../pdatautil
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../golden

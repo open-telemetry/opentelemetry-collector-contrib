@@ -1,10 +1,9 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package agentcomponents // import "github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/connector/datadogconnector"
+package apmstats // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/apmstats"
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -50,22 +49,22 @@ func BenchmarkPeerTags(b *testing.B) {
 	creationParams := connectortest.NewNopSettings(Type)
 	metricsSink := &consumertest.MetricsSink{}
 
-	tconn, err := factory.CreateTracesToMetrics(context.Background(), creationParams, cfg, metricsSink)
+	tconn, err := factory.CreateTracesToMetrics(b.Context(), creationParams, cfg, metricsSink)
 	assert.NoError(b, err)
 
-	err = tconn.Start(context.Background(), componenttest.NewNopHost())
+	err = tconn.Start(b.Context(), componenttest.NewNopHost())
 	if err != nil {
 		b.Errorf("Error starting connector: %v", err)
 		return
 	}
 	defer func() {
-		require.NoError(b, tconn.Shutdown(context.Background()))
+		require.NoError(b, tconn.Shutdown(b.Context()))
 	}()
 
 	b.ResetTimer()
 
-	for n := 0; n < b.N; n++ {
-		err = tconn.ConsumeTraces(context.Background(), genTrace())
+	for b.Loop() {
+		err = tconn.ConsumeTraces(b.Context(), genTrace())
 		assert.NoError(b, err)
 		for {
 			metrics := metricsSink.AllMetrics()

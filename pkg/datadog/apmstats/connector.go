@@ -1,10 +1,11 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package agentcomponents // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/agentcomponents"
+package apmstats // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/apmstats"
 
 import (
 	"context"
+	"sync"
 
 	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/featuregates"
@@ -31,6 +32,8 @@ import (
 type traceToMetricConnector struct {
 	metricsConsumer consumer.Metrics // the next component in the pipeline to ingest metrics after connector
 	logger          *zap.Logger
+
+	wg sync.WaitGroup
 
 	// concentrator ingests spans and produces APM stats
 	concentrator *stats.Concentrator
@@ -116,6 +119,7 @@ var _ component.Component = (*traceToMetricConnector)(nil) // testing that the c
 func (c *traceToMetricConnector) Start(_ context.Context, _ component.Host) error {
 	c.logger.Info("Starting datadogconnector")
 	c.concentrator.Start()
+	c.wg.Add(1)
 	go c.run()
 	c.isStarted = true
 	return nil
@@ -133,8 +137,8 @@ func (c *traceToMetricConnector) Shutdown(context.Context) error {
 	// stop the obfuscator and concentrator and wait for the run loop to exit
 	c.obfuscator.Stop()
 	c.concentrator.Stop()
-	c.exit <- struct{}{} // signal exit
-	<-c.exit             // wait for close
+	close(c.exit)
+	c.wg.Wait() // wait for close
 	return nil
 }
 
@@ -155,7 +159,7 @@ func (c *traceToMetricConnector) ConsumeTraces(_ context.Context, traces ptrace.
 // run awaits incoming stats resulting from the agent's ingestion, converts them
 // to metrics and flushes them using the configured metrics exporter.
 func (c *traceToMetricConnector) run() {
-	defer close(c.exit)
+	defer c.wg.Done()
 	for {
 		select {
 		case stats := <-c.statsout:

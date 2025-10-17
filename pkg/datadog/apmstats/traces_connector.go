@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package agentcomponents // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/agentcomponents"
+package apmstats // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/apmstats"
 
 import (
 	"context"
@@ -26,18 +26,18 @@ func newTraceToTraceConnector(logger *zap.Logger, nextConsumer consumer.Traces) 
 }
 
 // Start implements the component interface.
-func (c *traceToTraceConnector) Start(_ context.Context, _ component.Host) error {
+func (*traceToTraceConnector) Start(context.Context, component.Host) error {
 	return nil
 }
 
 // Shutdown implements the component interface.
-func (c *traceToTraceConnector) Shutdown(_ context.Context) error {
+func (*traceToTraceConnector) Shutdown(context.Context) error {
 	return nil
 }
 
 // Capabilities implements the consumer interface.
 // tells use whether the component(connector) will mutate the data passed into it. if set to true the connector does modify the data
-func (c *traceToTraceConnector) Capabilities() consumer.Capabilities {
+func (*traceToTraceConnector) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 

@@ -1,10 +1,11 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package agentcomponents
+package apmstats // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/apmstats"
 
 import (
 	"context"
+	"errors"
 	"sort"
 	"testing"
 	"time"
@@ -498,4 +499,19 @@ func TestObfuscate(t *testing.T) {
 		protocmp.IgnoreFields(&pb.ClientGroupedStats{}, "duration", "okSummary", "errorSummary")); diff != "" {
 		t.Errorf("Diff between APM stats -want +got:\n%v", diff)
 	}
+}
+
+func TestNoPanic(t *testing.T) {
+	c, _ := createConnector(t)
+	c.metricsConsumer = consumertest.NewErr(errors.New("error"))
+	require.NoError(t, c.Start(t.Context(), componenttest.NewNopHost()))
+	trace1 := generateTrace(nil)
+
+	err := c.ConsumeTraces(t.Context(), trace1)
+	assert.NoError(t, err)
+
+	time.Sleep(2 * time.Second)
+
+	err = c.Shutdown(t.Context())
+	require.NoError(t, err)
 }
