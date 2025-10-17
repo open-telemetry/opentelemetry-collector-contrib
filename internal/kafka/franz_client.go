@@ -30,7 +30,6 @@ import (
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/oidc"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 )
 
@@ -320,7 +319,7 @@ func configureKgoSASL(cfg *configkafka.SASLConfig, clientID string) (kgo.Opt, er
 		})
 	case OIDCFILE:
 		m = oauth.Oauth(func(ctx context.Context) (oauth.Auth, error) {
-			tokenProvider, cancel := oidc.NewOIDCTokenProvider(ctx, clientID,
+			tokenProvider, cancel := NewOIDCTokenProvider(ctx, clientID,
 				cfg.OIDCFILE.ClientSecretFilePath, cfg.OIDCFILE.TokenURL,
 				cfg.OIDCFILE.Scopes, cfg.OIDCFILE.EndPointParams,
 				cfg.OIDCFILE.AuthStyle, cfg.OIDCFILE.ExpiryBuffer)

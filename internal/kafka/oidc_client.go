@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package oidc // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/oidc"
+package kafka // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 
 import (
 	"context"

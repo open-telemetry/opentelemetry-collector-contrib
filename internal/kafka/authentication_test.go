@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/oauth2"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/oidc"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 )
 
@@ -60,7 +59,7 @@ func TestAuthentication(t *testing.T) {
 	// Specify 0 seconds for the RefreshAhead, as we don't want to have it launch
 	// the background refresher goroutine - we are just verifying authentication
 	// configuration setup here.
-	saramaSASLOIDCFILEConfig.Net.SASL.TokenProvider, _ = oidc.NewOIDCTokenProvider(
+	saramaSASLOIDCFILEConfig.Net.SASL.TokenProvider, _ = NewOIDCTokenProvider(
 		t.Context(), saramaSASLOIDCFILEConfig.ClientID, "/etc/hosts", "http://127.0.0.1:3000/oidc",
 		[]string{"mock-scope"}, url.Values{}, oauth2.AuthStyleAutoDetect, 0)
 
