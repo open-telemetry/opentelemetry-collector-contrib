@@ -280,7 +280,7 @@ func convertPprofToPprofile(src *profile.Profile) (*pprofile.Profiles, error) {
 }
 
 // getIdxForFunction returns the corresponding index for the function.
-// If the function does not yet exist in the cache, it will be adedd.
+// If the function does not yet exist in the cache, it will be added.
 func getIdxForFunction(lts lookupTables, name, systemName, fileName string, startLine int64) int32 {
 	key := fn{
 		name:       name,
