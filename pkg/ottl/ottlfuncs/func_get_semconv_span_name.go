@@ -110,20 +110,59 @@ func rpcSpanName(span ptrace.Span) string {
 // https://opentelemetry.io/docs/specs/semconv/database/database-spans/
 func dbSpanName(span ptrace.Span) string {
 	if system, ok := attributeValue(span, semconv.DBSystemNameKey, "db.system"); ok {
-		spanName := ""
+		if summary, ok := span.Attributes().Get(string(semconv.DBQuerySummaryKey)); ok {
+			return summary.AsString()
+		}
+		operationName := ""
 		if operation, ok := attributeValue(span, semconv.DBOperationNameKey, "db.operation"); ok {
-			spanName += operation.AsString() + " "
+			operationName = operation.AsString()
 		}
-		if namespace, ok := span.Attributes().Get(string(semconv.DBNamespaceKey)); ok {
-			spanName += namespace.AsString() + "."
+
+		target := databaseTarget(span)
+
+		if operationName != "" && target != "" {
+			return operationName + " " + target
 		}
-		if collection, ok := attributeValue(span, semconv.DBCollectionNameKey, "db.name"); ok {
-			spanName += collection.AsString()
+		if operationName != "" {
+			return operationName
 		}
-		if spanName == "" {
-			return system.AsString()
+		if target != "" {
+			return target
 		}
-		return spanName
+		return system.AsString()
+	}
+	return ""
+}
+
+func databaseTarget(span ptrace.Span) string {
+	dbNamespace := ""
+	if namespace, ok := attributeValue(span, semconv.DBNamespaceKey, "db.name"); ok {
+		dbNamespace = namespace.AsString()
+	}
+
+	if collection, ok := span.Attributes().Get(string(semconv.DBCollectionNameKey)); ok {
+		if dbNamespace != "" {
+			return dbNamespace + "." + collection.AsString()
+		}
+		return collection.AsString()
+	}
+
+	if storedProcedure, ok := span.Attributes().Get(string(semconv.DBStoredProcedureNameKey)); ok {
+		if dbNamespace != "" {
+			return dbNamespace + "." + storedProcedure.AsString()
+		}
+		return storedProcedure.AsString()
+	}
+
+	if dbNamespace != "" {
+		return dbNamespace
+	}
+
+	if serverAddress, ok := span.Attributes().Get(string(semconv.ServerAddressKey)); ok {
+		if serverPort, ok := span.Attributes().Get(string(semconv.ServerPortKey)); ok {
+			return serverAddress.AsString() + ":" + serverPort.AsString()
+		}
+		return serverAddress.AsString()
 	}
 	return ""
 }

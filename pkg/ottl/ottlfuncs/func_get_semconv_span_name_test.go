@@ -487,3 +487,89 @@ func Test_rpcSpanName(t *testing.T) {
 		})
 	}
 }
+
+func Test_dbSpanName(t *testing.T) {
+	tests := []struct {
+		name                   string
+		spanName               string
+		instrumentationLibrary string
+		kind                   ptrace.SpanKind
+		attributeNames         []string
+		addAttributes          func(pcommon.Map)
+		want                   string
+	}{
+		{
+			name:                   "Spring Boot JPA",
+			spanName:               "INSERT ecommerce_db.product to overwrite",
+			instrumentationLibrary: "io.opentelemetry.jdbc:2.20.1-alpha",
+			kind:                   ptrace.SpanKindClient,
+			addAttributes: func(attrs pcommon.Map) {
+				attrs.PutStr("db.collection.name", "product")
+				attrs.PutStr("db.namespace", "ecommerce_db")
+				attrs.PutStr("db.operation.name", "INSERT")
+				attrs.PutStr("db.query.text", "insert into product (id, name, picture_url, price) values (?,?, ?, ?) on conflict do nothing")
+				attrs.PutStr("db.system.name", "postgresql")
+				attrs.PutStr("server.address", "pg_ecommerce_db")
+				attrs.PutInt("server.port", 5432)
+			},
+			want: "INSERT ecommerce_db.product",
+		},
+		{
+			name:                   "Simulate db.query.summary",
+			spanName:               "INSERT ecommerce_db.product",
+			instrumentationLibrary: "hand crafted",
+			kind:                   ptrace.SpanKindClient,
+			addAttributes: func(attrs pcommon.Map) {
+				attrs.PutStr("db.query.summary", "insert product")
+				attrs.PutStr("db.collection.name", "product")
+				attrs.PutStr("db.namespace", "ecommerce_db")
+				attrs.PutStr("db.operation.name", "INSERT")
+				attrs.PutStr("db.query.text", "insert into product (id, name, picture_url, price) values (?,?, ?, ?) on conflict do nothing")
+				attrs.PutStr("db.system.name", "postgresql")
+				attrs.PutStr("server.address", "pg_ecommerce_db")
+				attrs.PutInt("server.port", 5432)
+			},
+			want: "insert product",
+		},
+		{
+			name:                   "Simulate missing db.query.summary and db.collection.name",
+			spanName:               "INSERT ecommerce.product to overwrite",
+			instrumentationLibrary: "hand crafted",
+			kind:                   ptrace.SpanKindClient,
+			addAttributes: func(attrs pcommon.Map) {
+				attrs.PutStr("db.namespace", "ecommerce_db")
+				attrs.PutStr("db.operation.name", "INSERT")
+				attrs.PutStr("db.query.text", "insert into product (id, name, picture_url, price) values (?,?, ?, ?) on conflict do nothing")
+				attrs.PutStr("db.system.name", "postgresql")
+				attrs.PutStr("server.address", "pg_ecommerce_db")
+				attrs.PutInt("server.port", 5432)
+			},
+			want: "INSERT ecommerce_db",
+		},
+		{
+			name:                   "Simulate fallback to server.address:server.port",
+			spanName:               "INSERT ecommerce.product to overwrite",
+			instrumentationLibrary: "hand crafted",
+			kind:                   ptrace.SpanKindClient,
+			addAttributes: func(attrs pcommon.Map) {
+				attrs.PutStr("db.operation.name", "INSERT")
+				attrs.PutStr("db.query.text", "insert into product (id, name, picture_url, price) values (?,?, ?, ?) on conflict do nothing")
+				attrs.PutStr("db.system.name", "postgresql")
+				attrs.PutStr("server.address", "pg_ecommerce_db")
+				attrs.PutInt("server.port", 5432)
+			},
+			want: "INSERT pg_ecommerce_db:5432",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			span := ptrace.NewSpan()
+			span.SetName(tt.spanName)
+			span.SetKind(tt.kind)
+			tt.addAttributes(span.Attributes())
+			got := dbSpanName(span)
+			assert.Equalf(t, tt.want, got, "dbSpanName(%v)", span)
+		})
+	}
+}
