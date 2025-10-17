@@ -36,7 +36,7 @@ Logz.io exporter is utilizing opentelemetry [exporter helper](https://github.com
 - `timeout`: Time to wait per individual attempt to send data to a backend. default = 30s
 
 #### Tracing example:
-* We recommend using `batch` processor. Batching helps better compress the data and reduce the number of outgoing connections required to transmit the data.
+* We recommend using `sending_queue::batch` option. Batching helps better compress the data and reduce the number of outgoing connections required to transmit the data.
 
 ```yaml
 receivers:
@@ -70,7 +70,7 @@ service:
       level: "debug"
 ```
 #### Logs example:
-* We recommend using `batch` processor. Batching helps better compress the data and reduce the number of outgoing connections required to transmit the data.
+* We recommend using `sending_queue::batch` option. Batching helps better compress the data and reduce the number of outgoing connections required to transmit the data.
 * We recommend adding `type` attribute to classify your log records
 * We recommend adding `resourcedetection` processor to add metadata to your log records
 
