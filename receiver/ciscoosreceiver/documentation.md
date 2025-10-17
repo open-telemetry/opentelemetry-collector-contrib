@@ -12,69 +12,23 @@ metrics:
     enabled: false
 ```
 
-### cisco.interface.receive.bytes
+### cisco.collector.duration.seconds
 
-Number of bytes received on the interface
+Duration of all collector scrapes for one target (total collection time)
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| By | Gauge | Int |
+| s | Gauge | Double |
 
 #### Attributes
 
 | Name | Description | Values | Optional |
 | ---- | ----------- | ------ | -------- |
-| interface.name | Name of the network interface | Any Str | false |
-| interface.state | Administrative state of the interface | Any Str | false |
+| target | The target network device hostname/IP | Any Str | false |
 
-### cisco.interface.receive.errors
+### cisco.device.up
 
-Number of receive errors on the interface
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {error} | Gauge | Int |
-
-#### Attributes
-
-| Name | Description | Values | Optional |
-| ---- | ----------- | ------ | -------- |
-| interface.name | Name of the network interface | Any Str | false |
-| interface.state | Administrative state of the interface | Any Str | false |
-
-### cisco.interface.transmit.bytes
-
-Number of bytes transmitted on the interface
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| By | Gauge | Int |
-
-#### Attributes
-
-| Name | Description | Values | Optional |
-| ---- | ----------- | ------ | -------- |
-| interface.name | Name of the network interface | Any Str | false |
-| interface.state | Administrative state of the interface | Any Str | false |
-
-### cisco.interface.transmit.errors
-
-Number of transmit errors on the interface
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {error} | Gauge | Int |
-
-#### Attributes
-
-| Name | Description | Values | Optional |
-| ---- | ----------- | ------ | -------- |
-| interface.name | Name of the network interface | Any Str | false |
-| interface.state | Administrative state of the interface | Any Str | false |
-
-### cisco.interface.up
-
-Interface operational status (1 for up, 0 for down)
+Device availability (1 = up, 0 = down)
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -84,8 +38,7 @@ Interface operational status (1 for up, 0 for down)
 
 | Name | Description | Values | Optional |
 | ---- | ----------- | ------ | -------- |
-| interface.name | Name of the network interface | Any Str | false |
-| interface.state | Administrative state of the interface | Any Str | false |
+| target | The target network device hostname/IP | Any Str | false |
 
 ### cisco.system.cpu.utilization
 

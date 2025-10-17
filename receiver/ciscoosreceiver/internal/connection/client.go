@@ -28,31 +28,18 @@ func (r *RPCClient) GetOSType() string {
 // GetCommand returns the appropriate command for the OS type and feature
 func (r *RPCClient) GetCommand(feature string) string {
 	switch feature {
-	case "interfaces":
-		if r.OSType == "NX-OS" {
-			return "show interface"
-		}
-		// For IOS/IOS XE, use standard command
-		return "show interfaces"
-	case "bgp":
-		if r.OSType == "NX-OS" {
-			return "show bgp all summary"
-		}
-		return "show ip bgp summary"
-	case "environment":
-		return "show environment"
-	case "facts_version":
+	case "version":
 		return "show version"
-	case "facts_memory":
+	case "cpu":
 		if r.OSType == "NX-OS" {
 			return "show system resources"
 		}
-		return "show memory statistics"
-	case "interfaces_vlans":
-		if r.OSType == "IOS XE" {
-			return "show vlans"
+		return "show process cpu"
+	case "memory":
+		if r.OSType == "NX-OS" {
+			return "show system resources"
 		}
-		return ""
+		return "show process memory"
 	default:
 		return ""
 	}

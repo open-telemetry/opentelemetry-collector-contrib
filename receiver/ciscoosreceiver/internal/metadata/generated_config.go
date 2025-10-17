@@ -28,30 +28,18 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for ciscoosreceiver metrics.
 type MetricsConfig struct {
-	CiscoInterfaceReceiveBytes   MetricConfig `mapstructure:"cisco.interface.receive.bytes"`
-	CiscoInterfaceReceiveErrors  MetricConfig `mapstructure:"cisco.interface.receive.errors"`
-	CiscoInterfaceTransmitBytes  MetricConfig `mapstructure:"cisco.interface.transmit.bytes"`
-	CiscoInterfaceTransmitErrors MetricConfig `mapstructure:"cisco.interface.transmit.errors"`
-	CiscoInterfaceUp             MetricConfig `mapstructure:"cisco.interface.up"`
-	CiscoSystemCPUUtilization    MetricConfig `mapstructure:"cisco.system.cpu.utilization"`
-	CiscoSystemMemoryUtilization MetricConfig `mapstructure:"cisco.system.memory.utilization"`
+	CiscoCollectorDurationSeconds MetricConfig `mapstructure:"cisco.collector.duration.seconds"`
+	CiscoDeviceUp                 MetricConfig `mapstructure:"cisco.device.up"`
+	CiscoSystemCPUUtilization     MetricConfig `mapstructure:"cisco.system.cpu.utilization"`
+	CiscoSystemMemoryUtilization  MetricConfig `mapstructure:"cisco.system.memory.utilization"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		CiscoInterfaceReceiveBytes: MetricConfig{
+		CiscoCollectorDurationSeconds: MetricConfig{
 			Enabled: true,
 		},
-		CiscoInterfaceReceiveErrors: MetricConfig{
-			Enabled: true,
-		},
-		CiscoInterfaceTransmitBytes: MetricConfig{
-			Enabled: true,
-		},
-		CiscoInterfaceTransmitErrors: MetricConfig{
-			Enabled: true,
-		},
-		CiscoInterfaceUp: MetricConfig{
+		CiscoDeviceUp: MetricConfig{
 			Enabled: true,
 		},
 		CiscoSystemCPUUtilization: MetricConfig{

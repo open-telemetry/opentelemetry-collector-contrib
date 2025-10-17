@@ -27,13 +27,10 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					CiscoInterfaceReceiveBytes:   MetricConfig{Enabled: true},
-					CiscoInterfaceReceiveErrors:  MetricConfig{Enabled: true},
-					CiscoInterfaceTransmitBytes:  MetricConfig{Enabled: true},
-					CiscoInterfaceTransmitErrors: MetricConfig{Enabled: true},
-					CiscoInterfaceUp:             MetricConfig{Enabled: true},
-					CiscoSystemCPUUtilization:    MetricConfig{Enabled: true},
-					CiscoSystemMemoryUtilization: MetricConfig{Enabled: true},
+					CiscoCollectorDurationSeconds: MetricConfig{Enabled: true},
+					CiscoDeviceUp:                 MetricConfig{Enabled: true},
+					CiscoSystemCPUUtilization:     MetricConfig{Enabled: true},
+					CiscoSystemMemoryUtilization:  MetricConfig{Enabled: true},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					CiscoDeviceIP:    ResourceAttributeConfig{Enabled: true},
@@ -46,13 +43,10 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					CiscoInterfaceReceiveBytes:   MetricConfig{Enabled: false},
-					CiscoInterfaceReceiveErrors:  MetricConfig{Enabled: false},
-					CiscoInterfaceTransmitBytes:  MetricConfig{Enabled: false},
-					CiscoInterfaceTransmitErrors: MetricConfig{Enabled: false},
-					CiscoInterfaceUp:             MetricConfig{Enabled: false},
-					CiscoSystemCPUUtilization:    MetricConfig{Enabled: false},
-					CiscoSystemMemoryUtilization: MetricConfig{Enabled: false},
+					CiscoCollectorDurationSeconds: MetricConfig{Enabled: false},
+					CiscoDeviceUp:                 MetricConfig{Enabled: false},
+					CiscoSystemCPUUtilization:     MetricConfig{Enabled: false},
+					CiscoSystemMemoryUtilization:  MetricConfig{Enabled: false},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					CiscoDeviceIP:    ResourceAttributeConfig{Enabled: false},

@@ -1,0 +1,45 @@
+type: system
+
+status:
+  class: scraper
+  stability:
+    development: [metrics]
+  distributions: []
+  codeowners:
+    active: []
+
+attributes:
+  target:
+    description: The target network device hostname/IP (used for K8s node correlation)
+    type: string
+
+metrics:
+  cisco.device.up:
+    enabled: true
+    description: Device availability (1 = up, 0 = down)
+    unit: "1"
+    gauge:
+      value_type: int
+    attributes: [target]
+
+  cisco.collector.duration.seconds:
+    enabled: true
+    description: Duration of all collector scrapes for one target (total collection time)
+    unit: s
+    gauge:
+      value_type: double
+    attributes: [target]
+
+  cisco.system.cpu.utilization:
+    enabled: true
+    description: CPU utilization as a fraction (0-1)
+    unit: "1"
+    gauge:
+      value_type: double
+
+  cisco.system.memory.utilization:
+    enabled: true
+    description: Memory utilization as a fraction (0-1)
+    unit: "1"
+    gauge:
+      value_type: double
