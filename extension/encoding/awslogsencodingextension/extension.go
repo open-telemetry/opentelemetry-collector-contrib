@@ -22,6 +22,7 @@ import (
 	awsunmarshaler "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler"
 	cloudtraillog "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/cloudtraillog"
 	elbaccesslogs "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/elb-access-log"
+	networkfirewall "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/network-firewall-log"
 	s3accesslog "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/s3-access-log"
 	subscriptionfilter "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/subscription-filter"
 	vpcflowlog "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/vpc-flow-log"
@@ -138,6 +139,11 @@ func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension,
 			),
 			format: constants.FormatELBAccessLog,
 		}, nil
+	case constants.FormatNetworkFirewallLog:
+		return &encodingExtension{
+			unmarshaler: networkfirewall.NewNetworkFirewallLogUnmarshaler(settings.BuildInfo),
+			format:      constants.FormatNetworkFirewallLog,
+		}, nil
 	default:
 		// Format will have been validated by Config.Validate,
 		// so we'll only get here if we haven't handled a valid
@@ -189,7 +195,7 @@ func (e *encodingExtension) getReaderForData(buf []byte) (string, io.Reader, err
 
 func (e *encodingExtension) getReaderFromFormat(buf []byte) (string, io.Reader, error) {
 	switch e.format {
-	case constants.FormatWAFLog, constants.FormatCloudWatchLogsSubscriptionFilter, constants.FormatCloudTrailLog, constants.FormatELBAccessLog:
+	case constants.FormatWAFLog, constants.FormatCloudWatchLogsSubscriptionFilter, constants.FormatCloudTrailLog, constants.FormatELBAccessLog, constants.FormatNetworkFirewallLog:
 		return e.getReaderForData(buf)
 
 	case constants.FormatS3AccessLog:
