@@ -122,6 +122,9 @@ func TestItemCardinalityFilter_Filter(t *testing.T) {
 	items = additionalTestData(t)
 	filteredItems = filter.Filter(items)
 
+	// Start TTL eviction loop
+	filterCasted.StartCache()
+
 	// Cache timeout hasn't been reached, so filtered out all items
 	assert.Empty(t, filteredItems)
 
@@ -169,6 +172,9 @@ func TestItemCardinalityFilter_FilterItems(t *testing.T) {
 
 	// Cache timeout hasn't been reached, so no more new items expected
 	assert.Len(t, filteredItems, totalLimit)
+
+	// Start TTL eviction loop
+	filterCasted.StartCache()
 
 	// Doing this to avoid of relying on timeouts and sleeps(avoid potential flaky tests)
 	syncChannel := make(chan bool, 10)

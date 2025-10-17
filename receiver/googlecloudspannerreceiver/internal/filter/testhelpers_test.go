@@ -37,7 +37,7 @@ const (
 func assertGroupedByKey(t *testing.T, items []*Item, groupedItems map[time.Time][]*Item, key time.Time, offsetInItems int) {
 	assert.Len(t, groupedItems[key], 3)
 
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		assert.Equal(t, items[i+offsetInItems].SeriesKey, groupedItems[key][i].SeriesKey)
 	}
 }
