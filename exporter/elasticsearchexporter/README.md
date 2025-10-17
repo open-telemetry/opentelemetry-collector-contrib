@@ -363,10 +363,10 @@ when `sending_queue` is enabled with batching support and enrich internal teleme
 ⚠️ This is experimental and may change at any time.
 
 - `metadata_keys` (optional): List of metadata keys that will be used to partition the data
-into batches if [sending_queue][exporterhelper] is enabled with batching support OR
-`batcher::enabled` is set. The keys will also be used to enrich the exporter's internal
-telemetry if defined. The keys are extracted from the client metadata available via the context
-and added to the internal telemetry as attributes.
+into batches if [sending_queue][exporterhelper] is enabled with batching support. With
+batching enabled only these metadata keys are guaranteed to be propagated. The keys will also
+be used to enrich the exporter's internal telemetry if defined. The keys are extracted from
+the client metadata available via the context and added to the internal telemetry as attributes.
 
 NOTE: The metadata keys are converted to lower case as key lookups for client metadata is case insensitive. This means that the metric produced by internal telemetry will also have the attribute in lower case.
 

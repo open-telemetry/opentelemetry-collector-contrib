@@ -110,7 +110,9 @@ func createLogsExporter(
 
 	qbs := xexporterhelper.NewLogsQueueBatchSettings()
 	if len(cf.MetadataKeys) > 0 {
-		qbs.Partitioner = metadataKeysPartitioner{keys: cf.MetadataKeys}
+		partitioner := metadataKeysPartitioner{keys: cf.MetadataKeys}
+		qbs.Partitioner = partitioner
+		qbs.MergeCtx = partitioner.MergeCtx
 	}
 
 	return exporterhelper.NewLogs(
@@ -138,7 +140,9 @@ func createMetricsExporter(
 
 	qbs := xexporterhelper.NewMetricsQueueBatchSettings()
 	if len(cf.MetadataKeys) > 0 {
-		qbs.Partitioner = metadataKeysPartitioner{keys: cf.MetadataKeys}
+		partitioner := metadataKeysPartitioner{keys: cf.MetadataKeys}
+		qbs.Partitioner = partitioner
+		qbs.MergeCtx = partitioner.MergeCtx
 	}
 
 	return exporterhelper.NewMetrics(
@@ -165,7 +169,9 @@ func createTracesExporter(ctx context.Context,
 
 	qbs := xexporterhelper.NewTracesQueueBatchSettings()
 	if len(cf.MetadataKeys) > 0 {
-		qbs.Partitioner = metadataKeysPartitioner{keys: cf.MetadataKeys}
+		partitioner := metadataKeysPartitioner{keys: cf.MetadataKeys}
+		qbs.Partitioner = partitioner
+		qbs.MergeCtx = partitioner.MergeCtx
 	}
 
 	return exporterhelper.NewTraces(
@@ -197,7 +203,9 @@ func createProfilesExporter(
 
 	qbs := xexporterhelper.NewProfilesQueueBatchSettings()
 	if len(cf.MetadataKeys) > 0 {
-		qbs.Partitioner = metadataKeysPartitioner{keys: cf.MetadataKeys}
+		partitioner := metadataKeysPartitioner{keys: cf.MetadataKeys}
+		qbs.Partitioner = partitioner
+		qbs.MergeCtx = partitioner.MergeCtx
 	}
 
 	return xexporterhelper.NewProfiles(
