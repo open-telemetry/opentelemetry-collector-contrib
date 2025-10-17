@@ -22,15 +22,17 @@ const (
 	resourceRouting
 	streamIDRouting
 	attrRouting
+	resourceKeysRouting
 )
 
 const (
-	svcRoutingStr        = "service"
-	traceIDRoutingStr    = "traceID"
-	metricNameRoutingStr = "metric"
-	resourceRoutingStr   = "resource"
-	streamIDRoutingStr   = "streamID"
-	attrRoutingStr       = "attributes"
+	svcRoutingStr          = "service"
+	traceIDRoutingStr      = "traceID"
+	metricNameRoutingStr   = "metric"
+	resourceRoutingStr     = "resource"
+	streamIDRoutingStr     = "streamID"
+	attrRoutingStr         = "attributes"
+	resourceKeysRoutingStr = "resource_keys"
 )
 
 // Config defines configuration for the exporter.
@@ -50,6 +52,9 @@ type Config struct {
 	// Supports all attributes available (both resource and span), as well as the pseudo attributes "span.kind" and
 	// "span.name".
 	RoutingAttributes []string `mapstructure:"routing_attributes"`
+
+	// ResourceKeys is used for resource_keys routing - routes based on resource attributes only
+	ResourceKeys []string `mapstructure:"resource_keys"`
 }
 
 // Protocol holds the individual protocol-specific settings. Only OTLP is supported at the moment.

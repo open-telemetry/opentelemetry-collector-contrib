@@ -911,3 +911,59 @@ func (e *mockTracesExporter) ConsumeTraces(ctx context.Context, td ptrace.Traces
 	}
 	return e.ConsumeTracesFn(ctx, td)
 }
+
+func TestResourceKeysBasedRoutingIdentifiers(t *testing.T) {
+	b := pcommon.TraceID([16]byte{1, 2, 3, 4})
+	for _, tt := range []struct {
+		te    *traceExporterImp
+		desc  string
+		batch ptrace.Traces
+		res   map[string]bool
+	}{
+		{
+			&traceExporterImp{
+				routingKey:          resourceKeysRouting,
+				routingResourceKeys: []string{"resource.key_1", "resource.key_2"},
+			},
+			"two resource_keys values",
+			simpleTracesWithResourceKeys(),
+			map[string]bool{
+				"val-1": true,
+				"val-2": true,
+			},
+		},
+		{
+			&traceExporterImp{
+				routingKey:          resourceKeysRouting,
+				routingResourceKeys: []string{"resource.key_1"},
+			},
+			"single resource_keys value with trace ID as default",
+			simpleTracesWithResourceKeys(),
+			map[string]bool{
+				"val-1":      true,
+				string(b[:]): true,
+			},
+		},
+	} {
+		t.Run(tt.desc, func(t *testing.T) {
+			res, err := tt.te.routingIdentifiersFromResourceKeys(tt.batch)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.res, res)
+		})
+	}
+}
+
+func simpleTracesWithResourceKeys() ptrace.Traces {
+	t := ptrace.NewTraces()
+	rs1 := t.ResourceSpans().AppendEmpty()
+	rs1.Resource().Attributes().PutStr("resource.key_1", "val-1")
+	ils1 := rs1.ScopeSpans().AppendEmpty()
+	ils1.Spans().AppendEmpty().SetTraceID([16]byte{1, 2, 3, 4})
+
+	rs2 := t.ResourceSpans().AppendEmpty()
+	rs2.Resource().Attributes().PutStr("resource.key_2", "val-2")
+	ils2 := rs2.ScopeSpans().AppendEmpty()
+	ils2.Spans().AppendEmpty().SetTraceID([16]byte{1, 2, 3, 4})
+
+	return t
+}
