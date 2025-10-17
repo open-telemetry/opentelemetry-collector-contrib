@@ -78,26 +78,6 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordCiscoInterfaceReceiveBytesDataPoint(ts, 1, "interface.name-val", "interface.state-val")
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordCiscoInterfaceReceiveErrorsDataPoint(ts, 1, "interface.name-val", "interface.state-val")
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordCiscoInterfaceTransmitBytesDataPoint(ts, 1, "interface.name-val", "interface.state-val")
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordCiscoInterfaceTransmitErrorsDataPoint(ts, 1, "interface.name-val", "interface.state-val")
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordCiscoInterfaceUpDataPoint(ts, 1, "interface.name-val", "interface.state-val")
-
-			defaultMetricsCount++
-			allMetricsCount++
 			mb.RecordCiscoSystemCPUUtilizationDataPoint(ts, 1)
 
 			defaultMetricsCount++
@@ -160,96 +140,6 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("target")
 					assert.True(t, ok)
 					assert.Equal(t, "target-val", attrVal.Str())
-				case "cisco.interface.receive.bytes":
-					assert.False(t, validatedMetrics["cisco.interface.receive.bytes"], "Found a duplicate in the metrics slice: cisco.interface.receive.bytes")
-					validatedMetrics["cisco.interface.receive.bytes"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Number of bytes received on the interface", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("interface.name")
-					assert.True(t, ok)
-					assert.Equal(t, "interface.name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("interface.state")
-					assert.True(t, ok)
-					assert.Equal(t, "interface.state-val", attrVal.Str())
-				case "cisco.interface.receive.errors":
-					assert.False(t, validatedMetrics["cisco.interface.receive.errors"], "Found a duplicate in the metrics slice: cisco.interface.receive.errors")
-					validatedMetrics["cisco.interface.receive.errors"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Number of receive errors on the interface", ms.At(i).Description())
-					assert.Equal(t, "{error}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("interface.name")
-					assert.True(t, ok)
-					assert.Equal(t, "interface.name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("interface.state")
-					assert.True(t, ok)
-					assert.Equal(t, "interface.state-val", attrVal.Str())
-				case "cisco.interface.transmit.bytes":
-					assert.False(t, validatedMetrics["cisco.interface.transmit.bytes"], "Found a duplicate in the metrics slice: cisco.interface.transmit.bytes")
-					validatedMetrics["cisco.interface.transmit.bytes"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Number of bytes transmitted on the interface", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("interface.name")
-					assert.True(t, ok)
-					assert.Equal(t, "interface.name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("interface.state")
-					assert.True(t, ok)
-					assert.Equal(t, "interface.state-val", attrVal.Str())
-				case "cisco.interface.transmit.errors":
-					assert.False(t, validatedMetrics["cisco.interface.transmit.errors"], "Found a duplicate in the metrics slice: cisco.interface.transmit.errors")
-					validatedMetrics["cisco.interface.transmit.errors"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Number of transmit errors on the interface", ms.At(i).Description())
-					assert.Equal(t, "{error}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("interface.name")
-					assert.True(t, ok)
-					assert.Equal(t, "interface.name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("interface.state")
-					assert.True(t, ok)
-					assert.Equal(t, "interface.state-val", attrVal.Str())
-				case "cisco.interface.up":
-					assert.False(t, validatedMetrics["cisco.interface.up"], "Found a duplicate in the metrics slice: cisco.interface.up")
-					validatedMetrics["cisco.interface.up"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Interface operational status (1 for up, 0 for down)", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("interface.name")
-					assert.True(t, ok)
-					assert.Equal(t, "interface.name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("interface.state")
-					assert.True(t, ok)
-					assert.Equal(t, "interface.state-val", attrVal.Str())
 				case "cisco.system.cpu.utilization":
 					assert.False(t, validatedMetrics["cisco.system.cpu.utilization"], "Found a duplicate in the metrics slice: cisco.system.cpu.utilization")
 					validatedMetrics["cisco.system.cpu.utilization"] = true

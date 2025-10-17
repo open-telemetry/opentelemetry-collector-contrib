@@ -19,21 +19,6 @@ var MetricsInfo = metricsInfo{
 	CiscoDeviceUp: metricInfo{
 		Name: "cisco.device.up",
 	},
-	CiscoInterfaceReceiveBytes: metricInfo{
-		Name: "cisco.interface.receive.bytes",
-	},
-	CiscoInterfaceReceiveErrors: metricInfo{
-		Name: "cisco.interface.receive.errors",
-	},
-	CiscoInterfaceTransmitBytes: metricInfo{
-		Name: "cisco.interface.transmit.bytes",
-	},
-	CiscoInterfaceTransmitErrors: metricInfo{
-		Name: "cisco.interface.transmit.errors",
-	},
-	CiscoInterfaceUp: metricInfo{
-		Name: "cisco.interface.up",
-	},
 	CiscoSystemCPUUtilization: metricInfo{
 		Name: "cisco.system.cpu.utilization",
 	},
@@ -45,11 +30,6 @@ var MetricsInfo = metricsInfo{
 type metricsInfo struct {
 	CiscoCollectorDurationSeconds metricInfo
 	CiscoDeviceUp                 metricInfo
-	CiscoInterfaceReceiveBytes    metricInfo
-	CiscoInterfaceReceiveErrors   metricInfo
-	CiscoInterfaceTransmitBytes   metricInfo
-	CiscoInterfaceTransmitErrors  metricInfo
-	CiscoInterfaceUp              metricInfo
 	CiscoSystemCPUUtilization     metricInfo
 	CiscoSystemMemoryUtilization  metricInfo
 }
@@ -153,266 +133,6 @@ func (m *metricCiscoDeviceUp) emit(metrics pmetric.MetricSlice) {
 
 func newMetricCiscoDeviceUp(cfg MetricConfig) metricCiscoDeviceUp {
 	m := metricCiscoDeviceUp{config: cfg}
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricCiscoInterfaceReceiveBytes struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills cisco.interface.receive.bytes metric with initial data.
-func (m *metricCiscoInterfaceReceiveBytes) init() {
-	m.data.SetName("cisco.interface.receive.bytes")
-	m.data.SetDescription("Number of bytes received on the interface")
-	m.data.SetUnit("By")
-	m.data.SetEmptyGauge()
-	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricCiscoInterfaceReceiveBytes) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, interfaceNameAttributeValue string, interfaceStateAttributeValue string) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-	dp.Attributes().PutStr("interface.name", interfaceNameAttributeValue)
-	dp.Attributes().PutStr("interface.state", interfaceStateAttributeValue)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricCiscoInterfaceReceiveBytes) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricCiscoInterfaceReceiveBytes) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricCiscoInterfaceReceiveBytes(cfg MetricConfig) metricCiscoInterfaceReceiveBytes {
-	m := metricCiscoInterfaceReceiveBytes{config: cfg}
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricCiscoInterfaceReceiveErrors struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills cisco.interface.receive.errors metric with initial data.
-func (m *metricCiscoInterfaceReceiveErrors) init() {
-	m.data.SetName("cisco.interface.receive.errors")
-	m.data.SetDescription("Number of receive errors on the interface")
-	m.data.SetUnit("{error}")
-	m.data.SetEmptyGauge()
-	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricCiscoInterfaceReceiveErrors) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, interfaceNameAttributeValue string, interfaceStateAttributeValue string) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-	dp.Attributes().PutStr("interface.name", interfaceNameAttributeValue)
-	dp.Attributes().PutStr("interface.state", interfaceStateAttributeValue)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricCiscoInterfaceReceiveErrors) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricCiscoInterfaceReceiveErrors) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricCiscoInterfaceReceiveErrors(cfg MetricConfig) metricCiscoInterfaceReceiveErrors {
-	m := metricCiscoInterfaceReceiveErrors{config: cfg}
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricCiscoInterfaceTransmitBytes struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills cisco.interface.transmit.bytes metric with initial data.
-func (m *metricCiscoInterfaceTransmitBytes) init() {
-	m.data.SetName("cisco.interface.transmit.bytes")
-	m.data.SetDescription("Number of bytes transmitted on the interface")
-	m.data.SetUnit("By")
-	m.data.SetEmptyGauge()
-	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricCiscoInterfaceTransmitBytes) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, interfaceNameAttributeValue string, interfaceStateAttributeValue string) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-	dp.Attributes().PutStr("interface.name", interfaceNameAttributeValue)
-	dp.Attributes().PutStr("interface.state", interfaceStateAttributeValue)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricCiscoInterfaceTransmitBytes) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricCiscoInterfaceTransmitBytes) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricCiscoInterfaceTransmitBytes(cfg MetricConfig) metricCiscoInterfaceTransmitBytes {
-	m := metricCiscoInterfaceTransmitBytes{config: cfg}
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricCiscoInterfaceTransmitErrors struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills cisco.interface.transmit.errors metric with initial data.
-func (m *metricCiscoInterfaceTransmitErrors) init() {
-	m.data.SetName("cisco.interface.transmit.errors")
-	m.data.SetDescription("Number of transmit errors on the interface")
-	m.data.SetUnit("{error}")
-	m.data.SetEmptyGauge()
-	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricCiscoInterfaceTransmitErrors) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, interfaceNameAttributeValue string, interfaceStateAttributeValue string) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-	dp.Attributes().PutStr("interface.name", interfaceNameAttributeValue)
-	dp.Attributes().PutStr("interface.state", interfaceStateAttributeValue)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricCiscoInterfaceTransmitErrors) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricCiscoInterfaceTransmitErrors) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricCiscoInterfaceTransmitErrors(cfg MetricConfig) metricCiscoInterfaceTransmitErrors {
-	m := metricCiscoInterfaceTransmitErrors{config: cfg}
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricCiscoInterfaceUp struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills cisco.interface.up metric with initial data.
-func (m *metricCiscoInterfaceUp) init() {
-	m.data.SetName("cisco.interface.up")
-	m.data.SetDescription("Interface operational status (1 for up, 0 for down)")
-	m.data.SetUnit("1")
-	m.data.SetEmptyGauge()
-	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricCiscoInterfaceUp) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, interfaceNameAttributeValue string, interfaceStateAttributeValue string) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-	dp.Attributes().PutStr("interface.name", interfaceNameAttributeValue)
-	dp.Attributes().PutStr("interface.state", interfaceStateAttributeValue)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricCiscoInterfaceUp) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricCiscoInterfaceUp) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricCiscoInterfaceUp(cfg MetricConfig) metricCiscoInterfaceUp {
-	m := metricCiscoInterfaceUp{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -530,11 +250,6 @@ type MetricsBuilder struct {
 	resourceAttributeExcludeFilter      map[string]filter.Filter
 	metricCiscoCollectorDurationSeconds metricCiscoCollectorDurationSeconds
 	metricCiscoDeviceUp                 metricCiscoDeviceUp
-	metricCiscoInterfaceReceiveBytes    metricCiscoInterfaceReceiveBytes
-	metricCiscoInterfaceReceiveErrors   metricCiscoInterfaceReceiveErrors
-	metricCiscoInterfaceTransmitBytes   metricCiscoInterfaceTransmitBytes
-	metricCiscoInterfaceTransmitErrors  metricCiscoInterfaceTransmitErrors
-	metricCiscoInterfaceUp              metricCiscoInterfaceUp
 	metricCiscoSystemCPUUtilization     metricCiscoSystemCPUUtilization
 	metricCiscoSystemMemoryUtilization  metricCiscoSystemMemoryUtilization
 }
@@ -564,11 +279,6 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		buildInfo:                           settings.BuildInfo,
 		metricCiscoCollectorDurationSeconds: newMetricCiscoCollectorDurationSeconds(mbc.Metrics.CiscoCollectorDurationSeconds),
 		metricCiscoDeviceUp:                 newMetricCiscoDeviceUp(mbc.Metrics.CiscoDeviceUp),
-		metricCiscoInterfaceReceiveBytes:    newMetricCiscoInterfaceReceiveBytes(mbc.Metrics.CiscoInterfaceReceiveBytes),
-		metricCiscoInterfaceReceiveErrors:   newMetricCiscoInterfaceReceiveErrors(mbc.Metrics.CiscoInterfaceReceiveErrors),
-		metricCiscoInterfaceTransmitBytes:   newMetricCiscoInterfaceTransmitBytes(mbc.Metrics.CiscoInterfaceTransmitBytes),
-		metricCiscoInterfaceTransmitErrors:  newMetricCiscoInterfaceTransmitErrors(mbc.Metrics.CiscoInterfaceTransmitErrors),
-		metricCiscoInterfaceUp:              newMetricCiscoInterfaceUp(mbc.Metrics.CiscoInterfaceUp),
 		metricCiscoSystemCPUUtilization:     newMetricCiscoSystemCPUUtilization(mbc.Metrics.CiscoSystemCPUUtilization),
 		metricCiscoSystemMemoryUtilization:  newMetricCiscoSystemMemoryUtilization(mbc.Metrics.CiscoSystemMemoryUtilization),
 		resourceAttributeIncludeFilter:      make(map[string]filter.Filter),
@@ -663,11 +373,6 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricCiscoCollectorDurationSeconds.emit(ils.Metrics())
 	mb.metricCiscoDeviceUp.emit(ils.Metrics())
-	mb.metricCiscoInterfaceReceiveBytes.emit(ils.Metrics())
-	mb.metricCiscoInterfaceReceiveErrors.emit(ils.Metrics())
-	mb.metricCiscoInterfaceTransmitBytes.emit(ils.Metrics())
-	mb.metricCiscoInterfaceTransmitErrors.emit(ils.Metrics())
-	mb.metricCiscoInterfaceUp.emit(ils.Metrics())
 	mb.metricCiscoSystemCPUUtilization.emit(ils.Metrics())
 	mb.metricCiscoSystemMemoryUtilization.emit(ils.Metrics())
 
@@ -709,31 +414,6 @@ func (mb *MetricsBuilder) RecordCiscoCollectorDurationSecondsDataPoint(ts pcommo
 // RecordCiscoDeviceUpDataPoint adds a data point to cisco.device.up metric.
 func (mb *MetricsBuilder) RecordCiscoDeviceUpDataPoint(ts pcommon.Timestamp, val int64, targetAttributeValue string) {
 	mb.metricCiscoDeviceUp.recordDataPoint(mb.startTime, ts, val, targetAttributeValue)
-}
-
-// RecordCiscoInterfaceReceiveBytesDataPoint adds a data point to cisco.interface.receive.bytes metric.
-func (mb *MetricsBuilder) RecordCiscoInterfaceReceiveBytesDataPoint(ts pcommon.Timestamp, val int64, interfaceNameAttributeValue string, interfaceStateAttributeValue string) {
-	mb.metricCiscoInterfaceReceiveBytes.recordDataPoint(mb.startTime, ts, val, interfaceNameAttributeValue, interfaceStateAttributeValue)
-}
-
-// RecordCiscoInterfaceReceiveErrorsDataPoint adds a data point to cisco.interface.receive.errors metric.
-func (mb *MetricsBuilder) RecordCiscoInterfaceReceiveErrorsDataPoint(ts pcommon.Timestamp, val int64, interfaceNameAttributeValue string, interfaceStateAttributeValue string) {
-	mb.metricCiscoInterfaceReceiveErrors.recordDataPoint(mb.startTime, ts, val, interfaceNameAttributeValue, interfaceStateAttributeValue)
-}
-
-// RecordCiscoInterfaceTransmitBytesDataPoint adds a data point to cisco.interface.transmit.bytes metric.
-func (mb *MetricsBuilder) RecordCiscoInterfaceTransmitBytesDataPoint(ts pcommon.Timestamp, val int64, interfaceNameAttributeValue string, interfaceStateAttributeValue string) {
-	mb.metricCiscoInterfaceTransmitBytes.recordDataPoint(mb.startTime, ts, val, interfaceNameAttributeValue, interfaceStateAttributeValue)
-}
-
-// RecordCiscoInterfaceTransmitErrorsDataPoint adds a data point to cisco.interface.transmit.errors metric.
-func (mb *MetricsBuilder) RecordCiscoInterfaceTransmitErrorsDataPoint(ts pcommon.Timestamp, val int64, interfaceNameAttributeValue string, interfaceStateAttributeValue string) {
-	mb.metricCiscoInterfaceTransmitErrors.recordDataPoint(mb.startTime, ts, val, interfaceNameAttributeValue, interfaceStateAttributeValue)
-}
-
-// RecordCiscoInterfaceUpDataPoint adds a data point to cisco.interface.up metric.
-func (mb *MetricsBuilder) RecordCiscoInterfaceUpDataPoint(ts pcommon.Timestamp, val int64, interfaceNameAttributeValue string, interfaceStateAttributeValue string) {
-	mb.metricCiscoInterfaceUp.recordDataPoint(mb.startTime, ts, val, interfaceNameAttributeValue, interfaceStateAttributeValue)
 }
 
 // RecordCiscoSystemCPUUtilizationDataPoint adds a data point to cisco.system.cpu.utilization metric.

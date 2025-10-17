@@ -29,11 +29,6 @@ func TestMetricsBuilderConfig(t *testing.T) {
 				Metrics: MetricsConfig{
 					CiscoCollectorDurationSeconds: MetricConfig{Enabled: true},
 					CiscoDeviceUp:                 MetricConfig{Enabled: true},
-					CiscoInterfaceReceiveBytes:    MetricConfig{Enabled: true},
-					CiscoInterfaceReceiveErrors:   MetricConfig{Enabled: true},
-					CiscoInterfaceTransmitBytes:   MetricConfig{Enabled: true},
-					CiscoInterfaceTransmitErrors:  MetricConfig{Enabled: true},
-					CiscoInterfaceUp:              MetricConfig{Enabled: true},
 					CiscoSystemCPUUtilization:     MetricConfig{Enabled: true},
 					CiscoSystemMemoryUtilization:  MetricConfig{Enabled: true},
 				},
@@ -50,11 +45,6 @@ func TestMetricsBuilderConfig(t *testing.T) {
 				Metrics: MetricsConfig{
 					CiscoCollectorDurationSeconds: MetricConfig{Enabled: false},
 					CiscoDeviceUp:                 MetricConfig{Enabled: false},
-					CiscoInterfaceReceiveBytes:    MetricConfig{Enabled: false},
-					CiscoInterfaceReceiveErrors:   MetricConfig{Enabled: false},
-					CiscoInterfaceTransmitBytes:   MetricConfig{Enabled: false},
-					CiscoInterfaceTransmitErrors:  MetricConfig{Enabled: false},
-					CiscoInterfaceUp:              MetricConfig{Enabled: false},
 					CiscoSystemCPUUtilization:     MetricConfig{Enabled: false},
 					CiscoSystemMemoryUtilization:  MetricConfig{Enabled: false},
 				},

@@ -23,41 +23,6 @@ resource_attributes:
     enabled: true
 
 metrics:
-  cisco.interface.receive.bytes:
-    description: Number of bytes received on the interface
-    unit: By
-    gauge:
-      value_type: int
-    enabled: true
-    attributes: [interface.name, interface.state]
-  cisco.interface.receive.errors:
-    description: Number of receive errors on the interface
-    unit: "{error}"
-    gauge:
-      value_type: int
-    enabled: true
-    attributes: [interface.name, interface.state]
-  cisco.interface.transmit.bytes:
-    description: Number of bytes transmitted on the interface
-    unit: By
-    gauge:
-      value_type: int
-    enabled: true
-    attributes: [interface.name, interface.state]
-  cisco.interface.transmit.errors:
-    description: Number of transmit errors on the interface
-    unit: "{error}"
-    gauge:
-      value_type: int
-    enabled: true
-    attributes: [interface.name, interface.state]
-  cisco.interface.up:
-    description: Interface operational status (1 for up, 0 for down)
-    unit: "1"
-    gauge:
-      value_type: int
-    enabled: true
-    attributes: [interface.name, interface.state]
   cisco.system.cpu.utilization:
     description: CPU utilization as a fraction
     unit: "1"
@@ -88,12 +53,6 @@ metrics:
 attributes:
   target:
     description: The target network device hostname/IP
-    type: string
-  interface.name:
-    description: Name of the network interface
-    type: string
-  interface.state:
-    description: Administrative state of the interface
     type: string
 
 tests:

@@ -5,16 +5,6 @@ all_set:
       enabled: true
     cisco.device.up:
       enabled: true
-    cisco.interface.receive.bytes:
-      enabled: true
-    cisco.interface.receive.errors:
-      enabled: true
-    cisco.interface.transmit.bytes:
-      enabled: true
-    cisco.interface.transmit.errors:
-      enabled: true
-    cisco.interface.up:
-      enabled: true
     cisco.system.cpu.utilization:
       enabled: true
     cisco.system.memory.utilization:
@@ -31,16 +21,6 @@ none_set:
     cisco.collector.duration.seconds:
       enabled: false
     cisco.device.up:
-      enabled: false
-    cisco.interface.receive.bytes:
-      enabled: false
-    cisco.interface.receive.errors:
-      enabled: false
-    cisco.interface.transmit.bytes:
-      enabled: false
-    cisco.interface.transmit.errors:
-      enabled: false
-    cisco.interface.up:
       enabled: false
     cisco.system.cpu.utilization:
       enabled: false

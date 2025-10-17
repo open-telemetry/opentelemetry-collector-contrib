@@ -83,8 +83,6 @@ func (s *systemScraper) Shutdown(_ context.Context) error {
 		s.connected = false
 	}
 
-	delete(connection.SharedConnectionRegistry, s.deviceTarget)
-
 	return nil
 }
 
@@ -127,7 +125,6 @@ func (s *systemScraper) ScrapeMetrics(ctx context.Context) (pmetric.Metrics, err
 				zap.Float64("cisco.device.up", 0),
 				zap.Float64("cisco.collector.duration.seconds", collectionDuration))
 
-			// Return system metrics only - no interface/BGP/environment data when device is down
 			return s.mb.Emit(), nil
 		}
 
@@ -149,56 +146,31 @@ func (s *systemScraper) ScrapeMetrics(ctx context.Context) (pmetric.Metrics, err
 	// Step 2: Connection is established - device is up
 	s.mb.RecordCiscoDeviceUpDataPoint(now, 1, s.deviceTarget)
 
-	// Step 3: Register shared connection for other scrapers
-	connection.SharedConnectionRegistry[s.deviceTarget] = &connection.SharedConnection{
-		SSHClient: s.sshClient,
-		RPCClient: s.rpcClient,
-		Target:    s.deviceTarget,
-		OSType:    s.rpcClient.GetOSType(),
-		Connected: true,
+	// Step 2a: Collect CPU utilization metrics
+	if cpuUtil, err := s.collectCPUUtilization(ctx); err == nil {
+		s.mb.RecordCiscoSystemCPUUtilizationDataPoint(now, cpuUtil)
+		s.logger.Debug("Recorded CPU utilization metric",
+			zap.Float64("value", cpuUtil))
+	} else {
+		s.logger.Warn("Failed to collect CPU utilization, skipping metric",
+			zap.Error(err))
 	}
 
-	// Step 4: Coordinate interface collection for counting
-	_, err := s.collectInterfaceMetrics(ctx, s.rpcClient, s.deviceTarget, now)
-	if err != nil {
-		s.logger.Warn("Interface collection failed", zap.Error(err))
+	// Step 2b: Collect memory utilization metrics
+	if memUtil, err := s.collectMemoryUtilization(ctx); err == nil {
+		s.mb.RecordCiscoSystemMemoryUtilizationDataPoint(now, memUtil)
+		s.logger.Debug("Recorded memory utilization metric",
+			zap.Float64("value", memUtil))
+	} else {
+		s.logger.Warn("Failed to collect memory utilization, skipping metric",
+			zap.Error(err))
 	}
 
-	// Record total collector duration
+	// Step 3: Record total collector duration
 	collectionDuration := time.Since(collectionStart).Seconds()
 	s.mb.RecordCiscoCollectorDurationSecondsDataPoint(now, collectionDuration, s.deviceTarget)
 
 	return s.mb.Emit(), nil
-}
-
-// collectInterfaceMetrics executes interface collection using shared SSH connection
-func (s *systemScraper) collectInterfaceMetrics(_ context.Context, rpcClient *connection.RPCClient, _ string, _ pcommon.Timestamp) (int, error) {
-	// Get appropriate interface command for detected OS type
-	command := rpcClient.GetCommand("interfaces")
-	if command == "" {
-		return 0, fmt.Errorf("interfaces command not supported on OS type: %s", rpcClient.GetOSType())
-	}
-
-	// Execute interface command using shared RPC client
-	output, err := rpcClient.ExecuteCommand(command)
-	if err != nil {
-		// Try fallback command if primary fails
-		fallbackCommand := "show interface brief"
-		s.logger.Warn("Primary interface command failed, trying fallback",
-			zap.String("primary", command),
-			zap.String("fallback", fallbackCommand),
-			zap.Error(err))
-
-		output, err = rpcClient.ExecuteCommand(fallbackCommand)
-		if err != nil {
-			return 0, fmt.Errorf("failed to execute interface commands '%s' and '%s': %w", command, fallbackCommand, err)
-		}
-	}
-
-	// Parse interface data from command output
-	interfaces := parseInterfaceOutput(output, s.logger)
-
-	return len(interfaces), nil
 }
 
 // establishDeviceConnection establishes SSH connection to Cisco device
@@ -283,4 +255,86 @@ func (s *systemScraper) getDeviceConfig(target string) *DeviceConfig {
 		zap.String("configured_username", device.Auth.Username))
 
 	return device
+}
+
+// collectCPUUtilization collects CPU utilization metric from the device
+func (s *systemScraper) collectCPUUtilization(_ context.Context) (float64, error) {
+	if s.rpcClient == nil {
+		return 0, errors.New("RPC client not initialized")
+	}
+
+	osType := s.rpcClient.GetOSType()
+	command := s.rpcClient.GetCommand("cpu")
+	if command == "" {
+		return 0, fmt.Errorf("no CPU command available for OS type: %s", osType)
+	}
+
+	s.logger.Debug("Collecting CPU utilization",
+		zap.String("os_type", osType),
+		zap.String("command", command))
+
+	output, err := s.rpcClient.ExecuteCommand(command)
+	if err != nil {
+		return 0, fmt.Errorf("failed to execute CPU command: %w", err)
+	}
+
+	// Parse based on OS type
+	var cpuUtil float64
+	if osType == "NX-OS" {
+		cpuUtil, err = parseCPUUtilizationNXOS(output)
+	} else {
+		// IOS or IOS XE
+		cpuUtil, err = parseCPUUtilizationIOS(output)
+	}
+
+	if err != nil {
+		return 0, fmt.Errorf("failed to parse CPU utilization: %w", err)
+	}
+
+	s.logger.Debug("CPU utilization collected",
+		zap.Float64("utilization", cpuUtil),
+		zap.Float64("percentage", cpuUtil*100))
+
+	return cpuUtil, nil
+}
+
+// collectMemoryUtilization collects memory utilization metric from the device
+func (s *systemScraper) collectMemoryUtilization(_ context.Context) (float64, error) {
+	if s.rpcClient == nil {
+		return 0, errors.New("RPC client not initialized")
+	}
+
+	osType := s.rpcClient.GetOSType()
+	command := s.rpcClient.GetCommand("memory")
+	if command == "" {
+		return 0, fmt.Errorf("no memory command available for OS type: %s", osType)
+	}
+
+	s.logger.Debug("Collecting memory utilization",
+		zap.String("os_type", osType),
+		zap.String("command", command))
+
+	output, err := s.rpcClient.ExecuteCommand(command)
+	if err != nil {
+		return 0, fmt.Errorf("failed to execute memory command: %w", err)
+	}
+
+	// Parse based on OS type
+	var memUtil float64
+	if osType == "NX-OS" {
+		memUtil, err = parseMemoryUtilizationNXOS(output)
+	} else {
+		// IOS or IOS XE
+		memUtil, err = parseMemoryUtilizationIOS(output)
+	}
+
+	if err != nil {
+		return 0, fmt.Errorf("failed to parse memory utilization: %w", err)
+	}
+
+	s.logger.Debug("Memory utilization collected",
+		zap.Float64("utilization", memUtil),
+		zap.Float64("percentage", memUtil*100))
+
+	return memUtil, nil
 }
