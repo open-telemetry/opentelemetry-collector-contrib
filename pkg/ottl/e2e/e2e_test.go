@@ -1357,8 +1357,22 @@ func Test_e2e_ottl_features(t *testing.T) {
 			},
 		},
 		{
+			name:      "Using HasPrefix with dynamic prefix",
+			statement: `set(attributes["test"], "pass") where HasPrefix(body, attributes["dynamicprefix"])`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
 			name:      "Using HasSuffix",
 			statement: `set(attributes["test"], "pass") where HasSuffix(body, "tionA")`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			name:      "Using HasSuffix with dynamic suffix",
+			statement: `set(attributes["test"], "pass") where HasSuffix(body, attributes["dynamicsuffix"])`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
 			},
@@ -1790,6 +1804,8 @@ func constructLogTransformContext() ottllog.TransformContext {
 	logRecord.SetTraceID(traceID)
 	logRecord.SetSpanID(spanID)
 	logRecord.Attributes().PutStr("http.method", "get")
+	logRecord.Attributes().PutStr("dynamicprefix", "operation")
+	logRecord.Attributes().PutStr("dynamicsuffix", "tionA")
 	logRecord.Attributes().PutStr("http.path", "/health")
 	logRecord.Attributes().PutStr("http.url", "http://localhost/health")
 	logRecord.Attributes().PutStr("flags", "A|B|C")
