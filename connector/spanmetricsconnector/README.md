@@ -59,7 +59,7 @@ across all spans:
 - `service.name`
 - `span.name`
 - `span.kind`
-- `status.code`
+- `status.code` (or `otel.status_code` when the `spanmetrics.statusCodeConvention.useOtelPrefix` feature gate is enabled)
 - `collector.instance.id`
 
 The `collector.instance.id` dimension is intended to add a unique UUID to all metrics, ensuring that the spanmetrics connector
