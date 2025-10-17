@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package datadogconnector // import "github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector"
+package apmstats // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/apmstats"
 
 import (
 	"testing"
@@ -14,8 +14,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector/internal/metadata"
 )
 
 func genTrace() ptrace.Traces {
@@ -40,19 +38,15 @@ func genTrace() ptrace.Traces {
 	return traces
 }
 
-func BenchmarkPeerTags_Native(b *testing.B) {
-	benchmarkPeerTags(b)
-}
-
-func benchmarkPeerTags(b *testing.B) {
-	cfg := NewFactory().CreateDefaultConfig().(*Config)
+func BenchmarkPeerTags(b *testing.B) {
+	cfg := NewConnectorFactory().CreateDefaultConfig().(*Config)
 	cfg.Traces.ComputeStatsBySpanKind = true
 	cfg.Traces.PeerTagsAggregation = true
 	cfg.Traces.BucketInterval = 1 * time.Millisecond
 	cfg.Traces.TraceBuffer = 0
 
-	factory := NewFactory()
-	creationParams := connectortest.NewNopSettings(metadata.Type)
+	factory := NewConnectorFactory()
+	creationParams := connectortest.NewNopSettings(Type)
 	metricsSink := &consumertest.MetricsSink{}
 
 	tconn, err := factory.CreateTracesToMetrics(b.Context(), creationParams, cfg, metricsSink)
@@ -66,6 +60,8 @@ func benchmarkPeerTags(b *testing.B) {
 	defer func() {
 		require.NoError(b, tconn.Shutdown(b.Context()))
 	}()
+
+	b.ResetTimer()
 
 	for b.Loop() {
 		err = tconn.ConsumeTraces(b.Context(), genTrace())
