@@ -51,9 +51,6 @@ func Transform(pod *corev1.Pod) *corev1.Pod {
 	}
 	for i := range pod.Status.ContainerStatuses {
 		cs := &pod.Status.ContainerStatuses[i]
-		if cs.ContainerID == "" {
-			continue
-		}
 		newPod.Status.ContainerStatuses = append(newPod.Status.ContainerStatuses, corev1.ContainerStatus{
 			Name:                 cs.Name,
 			Image:                cs.Image,

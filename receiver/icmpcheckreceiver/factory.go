@@ -5,14 +5,18 @@ package icmpcheckreceiver // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
+	"errors"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/icmpcheckreceiver/internal/metadata"
 )
+
+var errConfigNotICMPCheck = errors.New("config was not a ICMP check receiver config")
 
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
@@ -22,11 +26,10 @@ func NewFactory() receiver.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	cfg := scraperhelper.NewDefaultControllerConfig()
-
 	return &Config{
-		ControllerConfig: cfg,
-		Targets:          []PingTarget{},
+		ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		Targets:              []PingTarget{},
 	}
 }
 
@@ -36,22 +39,21 @@ func createMetricsReceiver(
 	cfg component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
-	config := cfg.(*Config)
-	_ = config
-	_ = settings
-	_ = consumer
-	return &noopMetricsReceiver{}, nil
-}
+	config, ok := cfg.(*Config)
+	if !ok {
+		return nil, errConfigNotICMPCheck
+	}
 
-// noopMetricsReceiver is a minimal receiver to satisfy component lifecycle tests.
-type noopMetricsReceiver struct{}
+	icmpCheckScraper := newScraper(config, settings)
+	s, err := scraper.NewMetrics(icmpCheckScraper.scrape, scraper.WithStart(icmpCheckScraper.start))
+	if err != nil {
+		return nil, err
+	}
 
-func (r *noopMetricsReceiver) Start(_ context.Context, _ component.Host) error {
-	_ = r
-	return nil
-}
-
-func (r *noopMetricsReceiver) Shutdown(_ context.Context) error {
-	_ = r
-	return nil
+	return scraperhelper.NewMetricsController(
+		&config.ControllerConfig,
+		settings,
+		consumer,
+		scraperhelper.AddScraper(metadata.Type, s),
+	)
 }
