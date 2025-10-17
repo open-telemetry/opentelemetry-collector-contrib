@@ -7,7 +7,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.137.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.137.0
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/pdata v1.43.1-0.20251013162618-a96eab114ea4
+	go.opentelemetry.io/collector/pdata v1.43.1-0.20251017074200-266beca6ce0b
 	go.opentelemetry.io/otel v1.38.0
 )
 
@@ -20,7 +20,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.43.1-0.20251013162618-a96eab114ea4 // indirect
+	go.opentelemetry.io/collector/featuregate v1.43.1-0.20251017074200-266beca6ce0b // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.137.1-0.20251013162618-a96eab114ea4 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/net v0.42.0 // indirect
