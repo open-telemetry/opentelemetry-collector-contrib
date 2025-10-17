@@ -46,6 +46,7 @@ body:
       - exporter/awsxray
       - exporter/azureblob
       - exporter/azuredataexplorer
+      - exporter/azureeventhubs
       - exporter/azuremonitor
       - exporter/bmchelix
       - exporter/carbon
