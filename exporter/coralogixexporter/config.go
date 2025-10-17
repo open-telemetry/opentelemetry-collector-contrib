@@ -40,9 +40,9 @@ type TransportConfig struct {
 func (c *TransportConfig) ToHTTPClient(ctx context.Context, host component.Host, settings component.TelemetrySettings) (*http.Client, error) {
 	headers := c.Headers
 	if headers == nil {
-		headers = make(map[string]configopaque.String)
+		headers = configopaque.NewMapList()
 	}
-	headers["Content-Type"] = "application/x-protobuf"
+	headers.Set("Content-Type", "application/x-protobuf")
 
 	httpClientConfig := confighttp.ClientConfig{
 		ProxyURL:        c.ProxyURL,
@@ -226,16 +226,16 @@ func (c *Config) getMergedTransportConfig(signalConfig *TransportConfig) *Transp
 	if signalConfig.TLS.Insecure || signalConfig.TLS.InsecureSkipVerify || signalConfig.TLS.CAFile != "" {
 		merged.TLS = signalConfig.TLS
 	}
-	if len(signalConfig.Headers) > 0 {
+	if signalConfig.Headers.Len() > 0 {
 		// Deep-copy domain headers to avoid mutating the shared map
 		headers := make(map[string]configopaque.String)
-		for k, v := range merged.Headers {
+		for k, v := range merged.Headers.Iter {
 			headers[k] = v
 		}
-		for k, v := range signalConfig.Headers {
+		for k, v := range signalConfig.Headers.Iter {
 			headers[k] = v
 		}
-		merged.Headers = headers
+		merged.Headers = configopaque.MapListFromMap(headers)
 	}
 	if signalConfig.WriteBufferSize > 0 {
 		merged.WriteBufferSize = signalConfig.WriteBufferSize

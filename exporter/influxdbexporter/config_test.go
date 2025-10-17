@@ -26,7 +26,7 @@ func TestLoadConfig(t *testing.T) {
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.Endpoint = "http://localhost:8080"
 	clientConfig.Timeout = 500 * time.Millisecond
-	clientConfig.Headers = map[string]configopaque.String{"User-Agent": "OpenTelemetry -> Influx"}
+	clientConfig.Headers = configopaque.MapListFromMap(map[string]configopaque.String{"User-Agent": "OpenTelemetry -> Influx"})
 	t.Parallel()
 
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))

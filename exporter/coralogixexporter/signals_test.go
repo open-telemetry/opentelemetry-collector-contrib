@@ -171,7 +171,7 @@ func TestSignalExporter_AuthorizationHeader(t *testing.T) {
 		PrivateKey: configopaque.String(privateKey),
 		Logs: TransportConfig{
 			ClientConfig: configgrpc.ClientConfig{
-				Headers: map[string]configopaque.String{},
+				Headers: configopaque.NewMapList(),
 			},
 		},
 	}
@@ -186,7 +186,7 @@ func TestSignalExporter_AuthorizationHeader(t *testing.T) {
 		require.NoError(t, exp.shutdown(t.Context()))
 	}()
 
-	authHeader, ok := wrapper.config.Headers["Authorization"]
+	authHeader, ok := wrapper.config.Headers.TryGet("Authorization")
 	require.True(t, ok, "Authorization header should be present")
 	assert.Equal(t, configopaque.String("Bearer "+privateKey), authHeader, "Authorization header should be in Bearer format")
 
@@ -203,37 +203,37 @@ func TestSignalExporter_CustomHeadersAndAuthorization(t *testing.T) {
 		{
 			name: "logs",
 			config: configgrpc.ClientConfig{
-				Headers: map[string]configopaque.String{
+				Headers: configopaque.MapListFromMap(map[string]configopaque.String{
 					"Custom-Header": "custom-value",
 					"X-Test":        "test-value",
-				},
+				}),
 			},
 		},
 		{
 			name: "traces",
 			config: configgrpc.ClientConfig{
-				Headers: map[string]configopaque.String{
+				Headers: configopaque.MapListFromMap(map[string]configopaque.String{
 					"Custom-Header": "custom-value",
 					"X-Test":        "test-value",
-				},
+				}),
 			},
 		},
 		{
 			name: "metrics",
 			config: configgrpc.ClientConfig{
-				Headers: map[string]configopaque.String{
+				Headers: configopaque.MapListFromMap(map[string]configopaque.String{
 					"Custom-Header": "custom-value",
 					"X-Test":        "test-value",
-				},
+				}),
 			},
 		},
 		{
 			name: "profiles",
 			config: configgrpc.ClientConfig{
-				Headers: map[string]configopaque.String{
+				Headers: configopaque.MapListFromMap(map[string]configopaque.String{
 					"Custom-Header": "custom-value",
 					"X-Test":        "test-value",
-				},
+				}),
 			},
 		},
 	}
@@ -269,17 +269,17 @@ func TestSignalExporter_CustomHeadersAndAuthorization(t *testing.T) {
 			}()
 
 			headers := wrapper.config.Headers
-			require.Len(t, headers, 3)
+			require.Equal(t, 3, headers.Len())
 
-			authHeader, ok := headers["Authorization"]
+			authHeader, ok := headers.TryGet("Authorization")
 			require.True(t, ok)
 			assert.Equal(t, configopaque.String("Bearer "+privateKey), authHeader)
 
-			customHeader, ok := headers["Custom-Header"]
+			customHeader, ok := headers.TryGet("Custom-Header")
 			require.True(t, ok)
 			assert.Equal(t, configopaque.String("custom-value"), customHeader)
 
-			testHeader, ok := headers["X-Test"]
+			testHeader, ok := headers.TryGet("X-Test")
 			require.True(t, ok)
 			assert.Equal(t, configopaque.String("test-value"), testHeader)
 

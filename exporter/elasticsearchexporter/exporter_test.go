@@ -288,7 +288,7 @@ func TestExporterLogs(t *testing.T) {
 		})
 
 		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Headers = map[string]configopaque.String{"foo": "bah"}
+			cfg.Headers = configopaque.MapListFromMap(map[string]configopaque.String{"foo": "bah"})
 		})
 		mustSendLogRecords(t, exporter, plog.NewLogRecord())
 		<-done
@@ -309,7 +309,7 @@ func TestExporterLogs(t *testing.T) {
 		})
 
 		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Headers = map[string]configopaque.String{"User-Agent": "overridden"}
+			cfg.Headers = configopaque.MapListFromMap(map[string]configopaque.String{"User-Agent": "overridden"})
 		})
 		mustSendLogRecords(t, exporter, plog.NewLogRecord())
 		<-done

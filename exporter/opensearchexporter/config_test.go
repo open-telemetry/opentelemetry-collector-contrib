@@ -61,9 +61,9 @@ func TestLoadConfig(t *testing.T) {
 				ClientConfig: withDefaultHTTPClientConfig(func(config *confighttp.ClientConfig) {
 					config.Endpoint = sampleEndpoint
 					config.Timeout = 2 * time.Minute
-					config.Headers = map[string]configopaque.String{
+					config.Headers = configopaque.MapListFromMap(map[string]configopaque.String{
 						"myheader": "test",
-					}
+					})
 					config.MaxIdleConns = maxIdleConns
 					config.IdleConnTimeout = idleConnTimeout
 					config.Auth = configoptional.Some(configauth.Config{AuthenticatorID: component.MustNewID("sample_basic_auth")})
