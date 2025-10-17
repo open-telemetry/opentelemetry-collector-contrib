@@ -188,7 +188,7 @@ func (*CloudTrailLogUnmarshaler) setLogAttributes(attrs pcommon.Map, record *Clo
 	attrs.PutStr(string(conventions.RPCSystemKey), record.EventType)
 
 	if record.APIVersion != "" {
-		attrs.PutStr(string(conventions.ServiceVersionKey), record.APIVersion)
+		attrs.PutStr("aws.cloudtrail.api_version", record.APIVersion)
 	}
 
 	if record.EventSource != "" {
@@ -231,7 +231,7 @@ func (*CloudTrailLogUnmarshaler) setLogAttributes(attrs pcommon.Map, record *Clo
 		}
 
 		if record.UserIdentity.AccountID != "" {
-			attrs.PutStr("aws.owner.account_id", record.UserIdentity.AccountID)
+			attrs.PutStr("aws.user_identity.account_id", record.UserIdentity.AccountID)
 		}
 
 		if record.UserIdentity.AccessKeyID != "" {
@@ -245,7 +245,7 @@ func (*CloudTrailLogUnmarshaler) setLogAttributes(attrs pcommon.Map, record *Clo
 		}
 
 		if record.UserIdentity.InvokedBy != "" {
-			attrs.PutStr("aws.invoked_by", record.UserIdentity.InvokedBy)
+			attrs.PutStr("aws.user_identity.invoked_by", record.UserIdentity.InvokedBy)
 		}
 
 		if record.UserIdentity.PrincipalID != "" {
@@ -308,7 +308,7 @@ func (*CloudTrailLogUnmarshaler) setLogAttributes(attrs pcommon.Map, record *Clo
 	}
 
 	if record.AdditionalEventData != nil {
-		additionalDataMap := attrs.PutEmptyMap("aws.additional_event_data")
+		additionalDataMap := attrs.PutEmptyMap("aws.cloudtrail.additional_event_data")
 		_ = additionalDataMap.FromRaw(record.AdditionalEventData)
 	}
 
@@ -330,43 +330,43 @@ func (*CloudTrailLogUnmarshaler) setLogAttributes(attrs pcommon.Map, record *Clo
 }
 
 // enrichWithSessionContext is a helper to add SessionContext details to log attributes.
-// Root level Attributes will be added with aws.session_context prefix.
-// SessionContextAttributes will be added with aws.session_context.attributes prefix.
-// SessionIssuer details will be added with aws.session_context.issuer prefix.
+// Root level Attributes will be added with aws.user_identity.session_context prefix.
+// SessionContextAttributes will be added with aws.user_identity.session_context.attributes prefix.
+// SessionIssuer details will be added with aws.user_identity.session_context.issuer prefix.
 func enrichWithSessionContext(attrs pcommon.Map, sessionContext *SessionContext) {
 	if sessionContext.Attributes != nil {
 		if sessionContext.Attributes.MFAAuthenticated != "" {
 			b, err := strconv.ParseBool(sessionContext.Attributes.MFAAuthenticated)
 			if err == nil {
 				// only append boolean converted value if no error in conversion
-				attrs.PutBool("aws.session_context.attributes.mfa_authenticated", b)
+				attrs.PutBool("aws.user_identity.session_context.attributes.mfa_authenticated", b)
 			}
 		}
 
 		if sessionContext.Attributes.CreationDate != "" {
-			attrs.PutStr("aws.session_context.attributes.creation_date", sessionContext.Attributes.CreationDate)
+			attrs.PutStr("aws.user_identity.session_context.attributes.creation_date", sessionContext.Attributes.CreationDate)
 		}
 	}
 
 	if sessionContext.SessionIssuer != nil {
 		if sessionContext.SessionIssuer.Type != "" {
-			attrs.PutStr("aws.session_context.issuer.type", sessionContext.SessionIssuer.Type)
+			attrs.PutStr("aws.user_identity.session_context.issuer.type", sessionContext.SessionIssuer.Type)
 		}
 
 		if sessionContext.SessionIssuer.PrincipalID != "" {
-			attrs.PutStr("aws.session_context.issuer.principal_id", sessionContext.SessionIssuer.PrincipalID)
+			attrs.PutStr("aws.user_identity.session_context.issuer.principal_id", sessionContext.SessionIssuer.PrincipalID)
 		}
 
 		if sessionContext.SessionIssuer.ARN != "" {
-			attrs.PutStr("aws.session_context.issuer.arn", sessionContext.SessionIssuer.ARN)
+			attrs.PutStr("aws.user_identity.session_context.issuer.arn", sessionContext.SessionIssuer.ARN)
 		}
 
 		if sessionContext.SessionIssuer.AccountID != "" {
-			attrs.PutStr("aws.session_context.issuer.account_id", sessionContext.SessionIssuer.AccountID)
+			attrs.PutStr("aws.user_identity.session_context.issuer.account_id", sessionContext.SessionIssuer.AccountID)
 		}
 
 		if sessionContext.SessionIssuer.UserName != "" {
-			attrs.PutStr("aws.session_context.issuer.user_name", sessionContext.SessionIssuer.UserName)
+			attrs.PutStr("aws.user_identity.session_context.issuer.user_name", sessionContext.SessionIssuer.UserName)
 		}
 	}
 }
