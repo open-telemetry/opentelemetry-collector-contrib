@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -20,9 +21,9 @@ import (
 
 func TestNumericTagFilter(t *testing.T) {
 	empty := map[string]any{}
-	minVal := int64(math.MinInt32)
-	maxVal := int64(math.MaxInt32)
-	filter := NewNumericAttributeFilter(componenttest.NewNopTelemetrySettings(), "example", &minVal, &maxVal, false)
+	minVal := configoptional.Some(NumericValue{Value: math.MinInt32})
+	maxVal := configoptional.Some(NumericValue{Value: math.MaxInt32})
+	filter := NewNumericAttributeFilter(componenttest.NewNopTelemetrySettings(), "example", minVal, maxVal, false)
 
 	resAttr := map[string]any{}
 	resAttr["example"] = 8
@@ -91,9 +92,9 @@ func TestNumericTagFilter(t *testing.T) {
 
 func TestNumericTagFilterInverted(t *testing.T) {
 	empty := map[string]any{}
-	minVal := int64(math.MinInt32)
-	maxVal := int64(math.MaxInt32)
-	filter := NewNumericAttributeFilter(componenttest.NewNopTelemetrySettings(), "example", &minVal, &maxVal, true)
+	minVal := configoptional.Some(NumericValue{Value: math.MinInt32})
+	maxVal := configoptional.Some(NumericValue{Value: math.MaxInt32})
+	filter := NewNumericAttributeFilter(componenttest.NewNopTelemetrySettings(), "example", minVal, maxVal, true)
 
 	resAttr := map[string]any{}
 	resAttr["example"] = 8
@@ -184,66 +185,66 @@ func TestNumericTagFilterInverted(t *testing.T) {
 func TestNumericTagFilterOptionalBounds(t *testing.T) {
 	tests := []struct {
 		name        string
-		min         *int64
-		max         *int64
+		min         configoptional.Optional[NumericValue]
+		max         configoptional.Optional[NumericValue]
 		value       int64
 		invertMatch bool
 		want        samplingpolicy.Decision
 	}{
 		{
 			name:  "only min set - value above min",
-			min:   ptr(int64(100)),
-			max:   nil,
+			min:   configoptional.Some[NumericValue](NumericValue{Value: 100}),
+			max:   configoptional.None[NumericValue](),
 			value: 200,
 			want:  samplingpolicy.Sampled,
 		},
 		{
 			name:  "only min set - value below min",
-			min:   ptr(int64(100)),
-			max:   nil,
+			min:   configoptional.Some[NumericValue](NumericValue{Value: 100}),
+			max:   configoptional.None[NumericValue](),
 			value: 50,
 			want:  samplingpolicy.NotSampled,
 		},
 		{
 			name:  "only max set - value below max",
-			min:   nil,
-			max:   ptr(int64(100)),
+			min:   configoptional.None[NumericValue](),
+			max:   configoptional.Some[NumericValue](NumericValue{Value: 100}),
 			value: 50,
 			want:  samplingpolicy.Sampled,
 		},
 		{
 			name:  "only max set - value above max",
-			min:   nil,
-			max:   ptr(int64(100)),
+			min:   configoptional.None[NumericValue](),
+			max:   configoptional.Some[NumericValue](NumericValue{Value: 100}),
 			value: 200,
 			want:  samplingpolicy.NotSampled,
 		},
 		{
 			name:  "both set - value in range",
-			min:   ptr(int64(100)),
-			max:   ptr(int64(200)),
+			min:   configoptional.Some[NumericValue](NumericValue{Value: 100}),
+			max:   configoptional.Some[NumericValue](NumericValue{Value: 200}),
 			value: 150,
 			want:  samplingpolicy.Sampled,
 		},
 		{
 			name:  "both set - value out of range",
-			min:   ptr(int64(100)),
-			max:   ptr(int64(200)),
+			min:   configoptional.Some[NumericValue](NumericValue{Value: 100}),
+			max:   configoptional.Some[NumericValue](NumericValue{Value: 200}),
 			value: 50,
 			want:  samplingpolicy.NotSampled,
 		},
 		{
 			name:        "inverted match - only min set - value above min",
-			min:         ptr(int64(100)),
-			max:         nil,
+			min:         configoptional.Some[NumericValue](NumericValue{Value: 100}),
+			max:         configoptional.None[NumericValue](),
 			value:       200,
 			invertMatch: true,
 			want:        samplingpolicy.InvertNotSampled,
 		},
 		{
 			name:        "inverted match - only max set - value below max",
-			min:         nil,
-			max:         ptr(int64(100)),
+			min:         configoptional.None[NumericValue](),
+			max:         configoptional.Some[NumericValue](NumericValue{Value: 100}),
 			value:       50,
 			invertMatch: true,
 			want:        samplingpolicy.InvertNotSampled,
@@ -265,25 +266,20 @@ func TestNumericTagFilterOptionalBounds(t *testing.T) {
 
 func TestNumericTagFilterNilBounds(t *testing.T) {
 	settings := componenttest.NewNopTelemetrySettings()
-	filter := NewNumericAttributeFilter(settings, "example", nil, nil, false)
+	filter := NewNumericAttributeFilter(settings, "example", configoptional.None[NumericValue](), configoptional.None[NumericValue](), false)
 	assert.Nil(t, filter, "filter should be nil when both bounds are nil")
 
 	// Test that the filter is created successfully when at least one bound is set
 	minBound := int64(100)
-	filter = NewNumericAttributeFilter(settings, "example", &minBound, nil, false)
+	filter = NewNumericAttributeFilter(settings, "example", configoptional.Some(NumericValue{Value: minBound}), configoptional.None[NumericValue](), false)
 	assert.NotNil(t, filter, "filter should not be nil when min is set")
 
 	maxBound := int64(200)
-	filter = NewNumericAttributeFilter(settings, "example", nil, &maxBound, false)
+	filter = NewNumericAttributeFilter(settings, "example", configoptional.None[NumericValue](), configoptional.Some(NumericValue{Value: maxBound}), false)
 	assert.NotNil(t, filter, "filter should not be nil when max is set")
 
-	filter = NewNumericAttributeFilter(settings, "example", &minBound, &maxBound, false)
+	filter = NewNumericAttributeFilter(settings, "example", configoptional.Some(NumericValue{Value: minBound}), configoptional.Some(NumericValue{Value: maxBound}), false)
 	assert.NotNil(t, filter, "filter should not be nil when both bounds are set")
-}
-
-// helper function to create int64 pointer
-func ptr(i int64) *int64 {
-	return &i
 }
 
 func newTraceIntAttrs(nodeAttrs map[string]any, spanAttrKey string, spanAttrValue int64) *samplingpolicy.TraceData {
