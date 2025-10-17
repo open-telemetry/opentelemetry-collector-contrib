@@ -55,5 +55,5 @@ func (c Config) Validate() (err error) {
 		err = multierr.Append(err, errMissingPasswordAndKeyFile)
 	}
 
-	return
+	return err
 }

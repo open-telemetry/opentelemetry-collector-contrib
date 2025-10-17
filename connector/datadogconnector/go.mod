@@ -15,7 +15,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter v0.137.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog v0.137.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor v0.137.0
-	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.43.1-0.20251013162618-a96eab114ea4
 	go.opentelemetry.io/collector/component/componenttest v0.137.1-0.20251013162618-a96eab114ea4
@@ -207,6 +206,7 @@ require (
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.18.0 // indirect
+	github.com/klauspost/cpuid/v2 v2.0.9 // indirect
 	github.com/knadh/koanf/maps v0.1.2 // indirect
 	github.com/knadh/koanf/providers/confmap v1.0.0 // indirect
 	github.com/knadh/koanf/v2 v2.3.0 // indirect
@@ -236,6 +236,7 @@ require (
 	github.com/openshift/api v3.9.0+incompatible // indirect
 	github.com/openshift/client-go v0.0.0-20241203091221-452dfb8fa071 // indirect
 	github.com/outcaste-io/ristretto v0.2.3 // indirect
+	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect
 	github.com/philhofer/fwd v1.2.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
@@ -266,6 +267,7 @@ require (
 	github.com/ua-parser/uap-go v0.0.0-20240611065828-3a4781585db6 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
+	github.com/zeebo/xxh3 v1.0.2 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector v0.137.1-0.20251013162618-a96eab114ea4 // indirect
 	go.opentelemetry.io/collector/client v1.43.1-0.20251013162618-a96eab114ea4 // indirect
