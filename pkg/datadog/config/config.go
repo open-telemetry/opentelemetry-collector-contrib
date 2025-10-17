@@ -201,7 +201,7 @@ func validateClientConfig(cfg confighttp.ClientConfig) error {
 	if cfg.Compression != "" {
 		unsupported = append(unsupported, "compression")
 	}
-	if len(cfg.Headers) > 0 {
+	if cfg.Headers.Len() > 0 {
 		unsupported = append(unsupported, "headers")
 	}
 	if cfg.HTTP2ReadIdleTimeout != 0 {

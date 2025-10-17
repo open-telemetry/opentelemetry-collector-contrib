@@ -64,7 +64,7 @@ func createDefaultConfig() component.Config {
 		RetryConfig:     configretry.NewDefaultBackOffConfig(),
 		QueueSettings:   queueCfg,
 		ClientConfig: configgrpc.ClientConfig{
-			Headers: map[string]configopaque.String{},
+			Headers: configopaque.NewMapList(),
 			// Default to zstd compression
 			Compression: configcompression.TypeZstd,
 			// We almost read 0 bytes, so no need to tune ReadBufferSize.

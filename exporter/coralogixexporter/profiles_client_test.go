@@ -82,7 +82,7 @@ func TestProfilesExporter_Start(t *testing.T) {
 		Domain:     "test.domain.com",
 		PrivateKey: "test-key",
 		Profiles: configgrpc.ClientConfig{
-			Headers: map[string]configopaque.String{},
+			Headers: configopaque.NewMapList(),
 		},
 	}
 
@@ -93,7 +93,8 @@ func TestProfilesExporter_Start(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, exp.clientConn)
 	assert.NotNil(t, exp.profilesExporter)
-	assert.Contains(t, exp.config.Profiles.Headers, "Authorization")
+	_, ok := exp.config.Profiles.Headers.Get("Authorization")
+	assert.True(t, ok)
 
 	// Test shutdown
 	err = exp.shutdown(t.Context())
@@ -105,8 +106,8 @@ func TestProfilesExporter_EnhanceContext(t *testing.T) {
 		Domain:     "test.domain.com",
 		PrivateKey: "test-key",
 		Profiles: configgrpc.ClientConfig{
-			Headers: map[string]configopaque.String{
-				"test-header": "test-value",
+			Headers: &configopaque.MapList{
+				{Name: "test-header", Value: "test-value"},
 			},
 		},
 	}
@@ -124,7 +125,7 @@ func TestProfilesExporter_PushProfiles(t *testing.T) {
 		Domain:     "test.domain.com",
 		PrivateKey: "test-key",
 		Profiles: configgrpc.ClientConfig{
-			Headers: map[string]configopaque.String{},
+			Headers: configopaque.NewMapList(),
 		},
 	}
 
@@ -172,7 +173,7 @@ func TestProfilesExporter_PushProfiles_WhenCannotSend(t *testing.T) {
 				Domain:     "test.domain.com",
 				PrivateKey: "test-key",
 				Profiles: configgrpc.ClientConfig{
-					Headers: map[string]configopaque.String{},
+					Headers: configopaque.NewMapList(),
 				},
 				RateLimiter: RateLimiterConfig{
 					Enabled:   tt.enabled,
@@ -279,7 +280,7 @@ func BenchmarkProfilesExporter_PushProfiles(b *testing.B) {
 			TLS: configtls.ClientConfig{
 				Insecure: true,
 			},
-			Headers: map[string]configopaque.String{},
+			Headers: configopaque.NewMapList(),
 		},
 		PrivateKey: "test-key",
 	}
@@ -334,7 +335,7 @@ func TestProfilesExporter_PushProfiles_PartialSuccess(t *testing.T) {
 			TLS: configtls.ClientConfig{
 				Insecure: true,
 			},
-			Headers: map[string]configopaque.String{},
+			Headers: configopaque.NewMapList(),
 		},
 		PrivateKey: "test-key",
 	}
@@ -407,7 +408,7 @@ func TestProfilesExporter_PushProfiles_Performance(t *testing.T) {
 			TLS: configtls.ClientConfig{
 				Insecure: true,
 			},
-			Headers: map[string]configopaque.String{},
+			Headers: configopaque.NewMapList(),
 		},
 		PrivateKey: "test-key",
 		RateLimiter: RateLimiterConfig{

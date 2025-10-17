@@ -49,7 +49,7 @@ func TestLoadConfig(t *testing.T) {
 					MaxIdleConnsPerHost: defaultMaxIdleConnsPerHost,
 					MaxConnsPerHost:     defaultMaxConnsPerHost,
 					IdleConnTimeout:     defaultIdleConnTimeout,
-					Headers:             map[string]configopaque.String{},
+					Headers:             configopaque.NewMapList(),
 					ForceAttemptHTTP2:   true,
 				},
 				BackOffConfig: configretry.BackOffConfig{
