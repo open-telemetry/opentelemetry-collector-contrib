@@ -45,7 +45,7 @@ func (cfg *Config) Validate() error {
 	}
 
 	for i := range cfg.Servers {
-		if _, err := url.Parse(cfg.Servers[i].BaseURL); err != nil {
+		if _, err := url.ParseRequestURI(cfg.Servers[i].BaseURL); err != nil {
 			return err
 		}
 
