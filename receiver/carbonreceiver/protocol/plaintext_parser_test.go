@@ -119,19 +119,22 @@ func Test_plaintextParser_Parse(t *testing.T) {
 	for _, tt := range fpTests {
 		t.Run(tt.line, func(t *testing.T) {
 			got, err := p.Parse([]byte(tt.line))
+
+			m := got.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
+
 			require.NoError(t, err)
 
 			// allow for rounding difference in float conversion.
 			assert.WithinDuration(
 				t,
 				tt.want.Gauge().DataPoints().At(0).Timestamp().AsTime(),
-				got.Gauge().DataPoints().At(0).Timestamp().AsTime(),
+				m.Gauge().DataPoints().At(0).Timestamp().AsTime(),
 				100*time.Nanosecond,
 			)
 
 			// if the delta on the timestamp is OK, copy them onto the test
 			// object so that we can test for equality on the remaining properties.
-			got.Gauge().DataPoints().At(0).SetTimestamp(
+			m.Gauge().DataPoints().At(0).SetTimestamp(
 				tt.want.Gauge().DataPoints().At(0).Timestamp(),
 			)
 			assert.Equal(t, tt.want, got)

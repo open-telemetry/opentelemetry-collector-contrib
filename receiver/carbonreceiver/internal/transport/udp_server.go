@@ -90,9 +90,7 @@ func (u *udpServer) handlePacket(
 ) {
 	ctx := u.reporter.OnDataReceived(context.Background())
 	var numReceivedMetricPoints int
-	metrics := pmetric.NewMetrics()
-	sm := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
-
+	var metrics pmetric.Metrics
 	buf := bytes.NewBuffer(data)
 	for {
 		data, err := buf.ReadBytes(byte('\n'))
@@ -105,13 +103,11 @@ func (u *udpServer) handlePacket(
 		trimmedData := bytes.TrimSpace(data)
 		if len(trimmedData) != 0 {
 			numReceivedMetricPoints++
-			metric, err := p.Parse(trimmedData)
+			metrics, err = p.Parse(trimmedData)
 			if err != nil {
 				u.reporter.OnTranslationError(ctx, err)
 				continue
 			}
-			newMetric := sm.Metrics().AppendEmpty()
-			metric.MoveTo(newMetric)
 		}
 	}
 

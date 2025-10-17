@@ -149,15 +149,12 @@ func (t *tcpServer) handleConnection(
 				reporterActive = true
 			}
 			numReceivedMetricPoints++
-			var metric pmetric.Metric
-			metric, err = p.Parse(trimmedData)
+			var metrics pmetric.Metrics
+			metrics, err = p.Parse(trimmedData)
 			if err != nil {
 				t.reporter.OnTranslationError(ctx, err)
 				continue
 			}
-			metrics := pmetric.NewMetrics()
-			newMetric := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
-			metric.MoveTo(newMetric)
 			err = nextConsumer.ConsumeMetrics(ctx, metrics)
 			t.reporter.OnMetricsProcessed(ctx, numReceivedMetricPoints, err)
 			reporterActive = false
