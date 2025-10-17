@@ -472,7 +472,7 @@ The following fields are common across all log types:
 | `event.tls.issuer`                     | `tls.client.issuer`                                      |
 | `event.tls.session_resumed`            | `tls.resumed`                                            |
 
-#### [HTTP log fields]((https://docs.suricata.io/en/latest/output/eve/eve-json-format.html#event-type-http))
+#### [HTTP log fields](https://docs.suricata.io/en/latest/output/eve/eve-json-format.html#event-type-http)
 
 | HTTP log fields                | Attribute in OpenTelemetry log     |
 |--------------------------------|------------------------------------|
