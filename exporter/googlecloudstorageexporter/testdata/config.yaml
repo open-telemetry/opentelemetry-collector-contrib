@@ -1,0 +1,18 @@
+googlecloudstorage:
+  encoding: test
+  bucket:
+    region: test-region
+    name: test-bucket
+    project_id: test-project-id
+
+googlecloudstorage/empty_bucket_name:
+  encoding: test
+  bucket:
+    region: test-region
+    project_id: test-project-id
+
+googlecloudstorage/empty_encoding:
+  bucket:
+    region: test-region
+    name: test-bucket
+    project_id: test-project-id

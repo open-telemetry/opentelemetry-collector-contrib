@@ -67,7 +67,7 @@ type esDataReceiver struct {
 	receiver          receiver.Logs
 	endpoint          string
 	decodeBulkRequest bool
-	batcherEnabled    *bool
+	enableBatching    bool
 	t                 testing.TB
 }
 
@@ -92,9 +92,9 @@ func withDecodeBulkRequest(decode bool) dataReceiverOption {
 	}
 }
 
-func withBatcherEnabled(enabled bool) dataReceiverOption {
+func withBatching(enabled bool) dataReceiverOption {
 	return func(r *esDataReceiver) {
-		r.batcherEnabled = &enabled
+		r.enableBatching = enabled
 	}
 }
 
@@ -153,9 +153,6 @@ func (es *esDataReceiver) GenConfigYAMLStr() string {
     logs_index: %s
     metrics_index: %s
     traces_index: %s
-    sending_queue:
-      enabled: true
-      block_on_overflow: true
     mapping:
       mode: otel
     retry:
@@ -169,17 +166,24 @@ func (es *esDataReceiver) GenConfigYAMLStr() string {
 		es.endpoint, TestLogsIndex, TestMetricsIndex, TestTracesIndex,
 	)
 
-	if es.batcherEnabled == nil {
+	if es.enableBatching {
 		cfgFormat += `
-    flush:
-      interval: 1s`
+    sending_queue:
+      enabled: true
+      block_on_overflow: true
+      batch:
+        flush_timeout: 1s
+        sizer: bytes`
 	} else {
-		cfgFormat += fmt.Sprintf(`
-    batcher:
-      flush_timeout: 1s
-      enabled: %v`,
-			*es.batcherEnabled,
-		)
+		// Batching is disabled using `min_size` as we are setting batching
+		// as a default behavior.
+		cfgFormat += `
+    sending_queue:
+      enabled: true
+      block_on_overflow: true
+      batch:
+        min_size: 0
+        sizer: bytes`
 	}
 	return cfgFormat + "\n"
 }
