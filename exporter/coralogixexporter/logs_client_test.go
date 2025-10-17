@@ -84,7 +84,7 @@ func TestLogsExporter_Start(t *testing.T) {
 		PrivateKey: "test-key",
 		Logs: TransportConfig{
 			ClientConfig: configgrpc.ClientConfig{
-				Headers: map[string]configopaque.String{},
+				Headers: new(configopaque.MapList),
 			},
 		},
 	}
@@ -96,7 +96,7 @@ func TestLogsExporter_Start(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, exp.clientConn)
 	assert.NotNil(t, exp.grpcLogsExporter)
-	assert.Contains(t, exp.config.Logs.Headers, "Authorization")
+	assert.Contains(t, exp.config.Logs.Headers.ToMap(), "Authorization")
 
 	// Test shutdown
 	err = exp.shutdown(t.Context())
@@ -109,9 +109,9 @@ func TestLogsExporter_EnhanceContext(t *testing.T) {
 		PrivateKey: "test-key",
 		Logs: TransportConfig{
 			ClientConfig: configgrpc.ClientConfig{
-				Headers: map[string]configopaque.String{
+				Headers: configopaque.MapListFromMap(map[string]configopaque.String{
 					"test-header": "test-value",
-				},
+				}),
 			},
 		},
 	}
@@ -130,7 +130,7 @@ func TestLogsExporter_PushLogs(t *testing.T) {
 		PrivateKey: "test-key",
 		Logs: TransportConfig{
 			ClientConfig: configgrpc.ClientConfig{
-				Headers: map[string]configopaque.String{},
+				Headers: new(configopaque.MapList),
 			},
 		},
 	}
@@ -178,7 +178,7 @@ func TestLogsExporter_PushLogs_WhenCannotSend(t *testing.T) {
 				PrivateKey: "test-key",
 				Logs: TransportConfig{
 					ClientConfig: configgrpc.ClientConfig{
-						Headers: map[string]configopaque.String{},
+						Headers: new(configopaque.MapList),
 					},
 				},
 				RateLimiter: RateLimiterConfig{
@@ -280,7 +280,7 @@ func BenchmarkLogsExporter_PushLogs(b *testing.B) {
 				TLS: configtls.ClientConfig{
 					Insecure: true,
 				},
-				Headers: map[string]configopaque.String{},
+				Headers: new(configopaque.MapList),
 			},
 		},
 		PrivateKey: "test-key",
@@ -335,7 +335,7 @@ func TestLogsExporter_PushLogs_PartialSuccess(t *testing.T) {
 				TLS: configtls.ClientConfig{
 					Insecure: true,
 				},
-				Headers: map[string]configopaque.String{},
+				Headers: new(configopaque.MapList),
 			},
 		},
 		PrivateKey: "test-key",
@@ -406,7 +406,7 @@ func TestLogsExporter_PushLogs_Performance(t *testing.T) {
 				TLS: configtls.ClientConfig{
 					Insecure: true,
 				},
-				Headers: map[string]configopaque.String{},
+				Headers: new(configopaque.MapList),
 			},
 		},
 		PrivateKey: "test-key",
