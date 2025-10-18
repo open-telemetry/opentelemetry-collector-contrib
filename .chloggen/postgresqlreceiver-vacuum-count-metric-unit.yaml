@@ -7,7 +7,7 @@ change_type: enhancement
 component: receiver/postgresql
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note:
+note: "Change the unit of the metric `postgresql.table.vacuum.count` to be `vacuum` instead of vacuums"
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [43272]
