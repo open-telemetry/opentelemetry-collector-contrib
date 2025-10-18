@@ -26,7 +26,7 @@ type TopQueryCollection struct {
 	// The query statement will also be reported, hence, it is not ideal to send it as a metric. Hence
 	// we are reporting them as logs.
 	// The `N` is configured via `TopQueryCount`
-	LookbackTime        uint          `mapstructure:"lookback_time"`
+	LookbackTime        time.Duration `mapstructure:"lookback_time"`
 	MaxQuerySampleCount uint          `mapstructure:"max_query_sample_count"`
 	TopQueryCount       uint          `mapstructure:"top_query_count"`
 	CollectionInterval  time.Duration `mapstructure:"collection_interval"`

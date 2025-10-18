@@ -17,7 +17,7 @@ sqlserver/named:
     service.instance.id:
       enabled: false
   top_query_collection:
-    lookback_time: 60
+    lookback_time: 60s
     max_query_sample_count: 1000
     top_query_count: 200
     collection_interval: 80s

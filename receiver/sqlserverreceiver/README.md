@@ -59,7 +59,7 @@ sqlserver:
     db.server.top_query:
       enabled: true
   top_query_collection:                        # this collection exports the most expensive queries as logs
-    lookback_time: 60                          # which time window should we look for the top queries
+    lookback_time: 60s                         # which time window should we look for the top queries
     max_query_sample_count: 1000               # maximum number query we store in cache for top queries.
     top_query_count: 200                       # The maximum number of active queries to report in a single run.
     collection_interval: 60s                   # collection interval for top query collection specifically
@@ -87,7 +87,7 @@ Windows-specific options:
   If specified, `instance_name` is also required to be defined. This option is ignored in non-Windows environments.
 
 Top-Query collection specific options (only useful when top-query collection are enabled):
-- `lookback_time` (optional, example = `60`, default = `2 * collection_interval`): The time window (in second) in which to query for top queries.
+- `lookback_time` (optional, example = `60s`, default = `2 * collection_interval`): The time window (in second) in which to query for top queries.
   - Queries that were finished execution outside the lookback window are not included in the collection. Increasing the lookback window (in seconds) will be useful for capturing long-running queries.
 - `max_query_sample_count` (optional, example = `5000`, default = `1000`): The maximum number of records to fetch in a single run.
 - `top_query_count`: (optional, example = `100`, default = `200`): The maximum number of active queries to report (to the next consumer) in a single run.
@@ -143,7 +143,7 @@ Top query collection enabled:
         server: 0.0.0.0
         port: 1433
         top_query_collection:
-          lookback_time: 60
+          lookback_time: 60s
           max_query_sample_count: 1000
           top_query_count: 200
         query_sample_collection:
