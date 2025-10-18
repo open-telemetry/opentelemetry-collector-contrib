@@ -17,13 +17,8 @@ telemetry:
       description: Number of spans dropped when trying to add edges
       unit: "1"
       enabled: true
-      sum:
-        value_type: int
-        monotonic: true
-    connector_servicegraph_total_edges:
-      description: Total number of unique edges
-      unit: "1"
-      enabled: true
+      stability:
+        level: development
       sum:
         value_type: int
         monotonic: true
@@ -31,7 +26,17 @@ telemetry:
       description: Number of edges that expired before finding its matching span
       unit: "1"
       enabled: true
+      stability:
+        level: development
       sum:
         value_type: int
         monotonic: true
-
+    connector_servicegraph_total_edges:
+      description: Total number of unique edges
+      unit: "1"
+      enabled: true
+      stability:
+        level: development
+      sum:
+        value_type: int
+        monotonic: true
