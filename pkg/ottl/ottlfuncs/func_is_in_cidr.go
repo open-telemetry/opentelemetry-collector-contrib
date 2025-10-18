@@ -12,7 +12,7 @@ import (
 
 type IsInCIDRArguments[K any] struct {
 	Target    ottl.StringGetter[K]
-	addresses []string
+	Addresses []string
 }
 
 func NewIsInCIDRFactory[K any]() ottl.Factory[K] {
@@ -25,7 +25,7 @@ func createIsInCIDRFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments)
 		return nil, errors.New("InInCIDRFactory args must be of type *IsInCIDRArguments[K]")
 	}
 
-	return isInCIDR(args.Target, args.addresses), nil
+	return isInCIDR(args.Target, args.Addresses), nil
 }
 
 func isInCIDR[K any](target ottl.StringGetter[K], networks []string) ottl.ExprFunc[K] {

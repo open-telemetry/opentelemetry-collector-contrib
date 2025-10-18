@@ -72,7 +72,7 @@ func Test_isInCIDR_Error(t *testing.T) {
 			expectedError: "expected string but got int",
 		},
 		{
-			name:          "addresses is not a valid address",
+			name:          "Addresses is not a valid address",
 			target:        "192.0.0.1",
 			networks:      []string{"192.0.2/24"},
 			expectedError: "invalid CIDR address: 192.0.2/24",
