@@ -70,12 +70,11 @@ const (
 		FROM DBA_TABLESPACE_USAGE_METRICS um INNER JOIN DBA_TABLESPACES ts
 		ON um.TABLESPACE_NAME = ts.TABLESPACE_NAME`
 
-	dbTimeReferenceFormat = "2006-01-02 15:04:05"
-	sqlIDAttr             = "SQL_ID"
-	childAddressAttr      = "CHILD_ADDRESS"
-	childNumberAttr       = "CHILD_NUMBER"
-	sqlTextAttr           = "SQL_FULLTEXT"
-	dbSystemNameVal       = "oracle"
+	sqlIDAttr        = "SQL_ID"
+	childAddressAttr = "CHILD_ADDRESS"
+	childNumberAttr  = "CHILD_NUMBER"
+	sqlTextAttr      = "SQL_FULLTEXT"
+	dbSystemNameVal  = "oracle"
 
 	queryExecutionMetric        = "EXECUTIONS"
 	elapsedTimeMetric           = "ELAPSED_TIME"
@@ -102,6 +101,8 @@ var (
 	oracleQueryMetricsSQL string
 	//go:embed templates/oracleQueryPlanSql.tmpl
 	oracleQueryPlanDataSQL string
+
+	racMode *string
 )
 
 type dbProviderFunc func() (*sql.DB, error)
@@ -116,6 +117,7 @@ type oracleScraper struct {
 	oracleQueryMetricsClient   dbClient
 	oraclePlanDataClient       dbClient
 	samplesQueryClient         dbClient
+	racCheckClient             dbClient
 	db                         *sql.DB
 	clientProviderFunc         clientProviderFunc
 	mb                         *metadata.MetricsBuilder
@@ -546,14 +548,34 @@ func (s *oracleScraper) scrapeLogs(ctx context.Context) (plog.Logs, error) {
 	return logs, errors.Join(scrapeErrors...)
 }
 
+func (s *oracleScraper) getRACMode(ctx context.Context) string {
+	if racMode != nil {
+		return *racMode
+	}
+
+	s.racCheckClient = s.clientProviderFunc(s.db, "SELECT VALUE FROM V$PARAMETER WHERE NAME = 'cluster_database'", s.logger)
+	res, err := s.racCheckClient.metricRows(ctx)
+
+	if err != nil || len(res) == 0 {
+		return "FALSE"
+	}
+
+	val := fmt.Sprintf("%v", res[0]["VALUE"])
+	racMode = &val
+	s.logger.Info("Cluster mode obtained from database. racMode:" + *racMode)
+	return *racMode
+}
+
 func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Logs) error {
 	var errs []error
+
+	s.getRACMode(ctx)
+
 	// get metrics and query texts from DB
 	timestamp := pcommon.NewTimestampFromTime(time.Now())
 	intervalSeconds := int(s.scrapeCfg.CollectionInterval.Seconds())
 	s.oracleQueryMetricsClient = s.clientProviderFunc(s.db, oracleQueryMetricsSQL, s.logger)
-	now := timestamp.AsTime().Format(dbTimeReferenceFormat)
-	metricRows, metricError := s.oracleQueryMetricsClient.metricRows(ctx, now, intervalSeconds, s.topQueryCollectCfg.MaxQuerySampleCount)
+	metricRows, metricError := s.oracleQueryMetricsClient.metricRows(ctx, intervalSeconds, s.topQueryCollectCfg.MaxQuerySampleCount)
 
 	if metricError != nil {
 		return fmt.Errorf("error executing oracleQueryMetricsSQL: %w", metricError)
