@@ -264,7 +264,7 @@ func TestContextClientAddr(t *testing.T) {
 
 	err = getter.Set(ctx, testContext{}, "ignored")
 	require.Error(t, err)
-	assert.Equal(t, "cannot set value in context.client.addr", err.Error())
+	assert.Equal(t, "context.client.addr is read-only and cannot be modified", err.Error())
 }
 
 func TestContextClientAuthAttributes_AllAndKey(t *testing.T) {

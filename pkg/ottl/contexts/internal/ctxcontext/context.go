@@ -119,7 +119,7 @@ func convertGRPCMetadataToMap(md metadata.MD) pcommon.Map {
 	return mdMap
 }
 
-func getIndexableValueFromStringArr[K any](ctx context.Context, tCtx K, keys []ottl.Key[K], strArr []string) (any, error) {
+func getIndexableValueFromStringArr[K any](ctx context.Context, tCtx K, keys []ottl.Key[K], strSlice []string) (any, error) {
 	if len(keys) == 0 {
 		slice := pcommon.NewSlice()
 		slice.EnsureCapacity(len(strSlice))
@@ -311,7 +311,7 @@ func accessClientMetadataKey[K any](keys []ottl.Key[K]) ottl.StandardGetSetter[K
 			if len(mdVal) == 0 {
 				return nil, nil
 			}
-			return getIndexableValueFromStringArr(ctx, tCtx, keys, mdVal)
+			return getIndexableValueFromStringArr(ctx, tCtx, keys[1:], mdVal)
 		},
 		Setter: func(_ context.Context, _ K, _ any) error {
 			return errors.New("cannot set value in context.client.metadata")
