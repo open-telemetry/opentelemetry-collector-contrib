@@ -1,0 +1,50 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package pprofreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pprofreceiver"
+
+import (
+	"bytes"
+	"errors"
+	"os"
+	"path/filepath"
+	"testing"
+
+	"github.com/google/pprof/profile"
+)
+
+func TestConvertPprofToPprofile(t *testing.T) {
+	tests := map[string]struct {
+		expectedError error
+	}{
+		"cppbench.cpu": {},
+		"gobench.cpu":  {},
+		"java.cpu":     {},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			inbytes, err := os.ReadFile(filepath.Join("internal/testdata/", name))
+			if err != nil {
+				t.Fatal(err)
+			}
+			p, err := profile.Parse(bytes.NewBuffer(inbytes))
+			if err != nil {
+				t.Fatalf("%s: %s", name, err)
+			}
+
+			pprofile, err := convertPprofToPprofile(p)
+			switch {
+			case errors.Is(err, tc.expectedError):
+				// The expected error equals the returned error,
+				// so we can just continue.
+			default:
+				t.Fatalf("expected error '%s' but got '%s'", tc.expectedError, err)
+			}
+			if err != nil {
+				t.Fatalf("%s: %s", name, err)
+			}
+			_ = pprofile
+		})
+	}
+}
