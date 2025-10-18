@@ -89,7 +89,8 @@ func NewParser(pathParser PathParser) (Parser, error) {
 //
 // The <metric_timestamp> is the Unix time text of when the measurement was
 // made.
-func (pph *PathParserHelper) Parse(line string) (pmetric.Metric, error) {
+func (pph *PathParserHelper) Parse(data []byte) (pmetric.Metric, error) {
+	line := strings.TrimSpace(string(data))
 	parts := strings.SplitN(line, " ", 4)
 	if len(parts) != 3 {
 		return pmetric.Metric{}, fmt.Errorf("invalid carbon metric [%s]", line)

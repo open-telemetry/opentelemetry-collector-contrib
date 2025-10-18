@@ -85,7 +85,7 @@ func Test_plaintextParser_Parse(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.line, func(t *testing.T) {
-			got, err := p.Parse(tt.line)
+			got, err := p.Parse([]byte(tt.line))
 			assert.Equal(t, tt.want, got)
 			assert.Equal(t, tt.wantErr, err != nil)
 		})
@@ -118,7 +118,7 @@ func Test_plaintextParser_Parse(t *testing.T) {
 
 	for _, tt := range fpTests {
 		t.Run(tt.line, func(t *testing.T) {
-			got, err := p.Parse(tt.line)
+			got, err := p.Parse([]byte(tt.line))
 			require.NoError(t, err)
 
 			// allow for rounding difference in float conversion.

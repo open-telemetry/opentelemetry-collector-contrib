@@ -53,7 +53,8 @@ func (wp *wavefrontParser) BuildParser() (protocol.Parser, error) {
 //	"<metricName> <metricValue> [<timestamp>] source=<source> [pointTags]"
 //
 // Detailed description of each element is available on the link above.
-func (wp *wavefrontParser) Parse(line string) (pmetric.Metric, error) {
+func (wp *wavefrontParser) Parse(data []byte) (pmetric.Metric, error) {
+	line := strings.TrimSpace(string(data))
 	parts := strings.SplitN(line, " ", 3)
 	if len(parts) < 3 {
 		return pmetric.Metric{}, fmt.Errorf("invalid wavefront metric [%s]", line)
