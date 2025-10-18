@@ -37,7 +37,7 @@ The following configuration options are supported:
 * `log_record_dimensions` (default = service.name) Log Record attributes to use as dimensions (InfluxDB tags)
 * `payload_max_lines` (default = 10_000) Maximum number of lines allowed per HTTP POST request
 * `payload_max_bytes` (default = 10_000_000) Maximum number of bytes allowed per HTTP POST request
-* `precision` (default = nanosecond) Timestamp precision for writing data to InfluxDB [details here](https://docs.influxdata.com/influxdb3/core/write-data/http-api/)
+* `precision` (default = ns) Timestamp precision for writing data to InfluxDB [details here](https://docs.influxdata.com/influxdb3/core/write-data/http-api/)
 * `metrics_schema` (default = telegraf-prometheus-v1) The chosen metrics schema to write; must be one of:
   * `telegraf-prometheus-v1`
   * `telegraf-prometheus-v2`
