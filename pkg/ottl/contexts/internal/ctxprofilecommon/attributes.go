@@ -40,7 +40,7 @@ func AccessAttributes[K any](source attributeSource[K]) ottl.StandardGetSetter[K
 					return err
 				}
 				kvu.SetKeyStrindex(keyIdx)
-				v.MoveTo(kvu.Value())
+				v.CopyTo(kvu.Value())
 				idx, err := pprofile.SetAttribute(dict.AttributeTable(), kvu)
 				if err != nil {
 					return err
@@ -77,7 +77,7 @@ func AccessAttributesKey[K any](key []ottl.Key[K], source attributeSource[K]) ot
 				return err
 			}
 			kvu.SetKeyStrindex(keyIdx)
-			v.MoveTo(kvu.Value())
+			v.CopyTo(kvu.Value())
 			idx, err := pprofile.SetAttribute(dict.AttributeTable(), kvu)
 			if err != nil {
 				return err
