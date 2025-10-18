@@ -43,9 +43,9 @@ func createDefaultConfig() component.Config {
 	cfg := &Config{
 		ClientConfig: confighttp.ClientConfig{
 			Timeout: 5 * time.Second,
-			Headers: map[string]configopaque.String{
+			Headers: configopaque.MapListFromMap(map[string]configopaque.String{
 				"User-Agent": "OpenTelemetry -> Sematext",
-			},
+			}),
 		},
 		QueueSettings: exporterhelper.NewDefaultQueueConfig(),
 		MetricsConfig: MetricsConfig{

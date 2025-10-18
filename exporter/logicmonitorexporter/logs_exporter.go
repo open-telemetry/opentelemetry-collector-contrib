@@ -108,7 +108,7 @@ func buildLogIngestOpts(config *Config, client *http.Client) []lmsdklogs.Option 
 	authParams := utils.AuthParams{
 		AccessID:    config.APIToken.AccessID,
 		AccessKey:   string(config.APIToken.AccessKey),
-		BearerToken: string(config.Headers["Authorization"]),
+		BearerToken: string(config.Headers.Get("Authorization")),
 	}
 
 	opts := []lmsdklogs.Option{

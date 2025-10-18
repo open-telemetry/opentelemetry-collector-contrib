@@ -187,7 +187,7 @@ func TestConsumeMetrics(t *testing.T) {
 			cfg := &Config{
 				ClientConfig: confighttp.ClientConfig{
 					Timeout: 1 * time.Second,
-					Headers: map[string]configopaque.String{"test_header_": "test"},
+					Headers: configopaque.MapListFromMap(map[string]configopaque.String{"test_header_": "test"}),
 				},
 			}
 
@@ -546,11 +546,12 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.IngestURL = server.URL
 			cfg.APIURL = server.URL
-			cfg.Headers = make(map[string]configopaque.String)
-			for k, v := range tt.additionalHeaders {
-				cfg.Headers[k] = configopaque.String(v)
+			cfg.Headers = &configopaque.MapList{
+				configopaque.OpaquePair{Name: "test_header_", Value: configopaque.String(tt.name)},
 			}
-			cfg.Headers["test_header_"] = configopaque.String(tt.name)
+			for k, v := range tt.additionalHeaders {
+				cfg.Headers.Set(k, configopaque.String(v))
+			}
 			cfg.AccessToken = configopaque.String(fromHeaders)
 			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
 			cfg.SendOTLPHistograms = tt.sendOTLPHistograms
@@ -669,11 +670,12 @@ func TestConsumeMetricsAccessTokenPassthroughPriorityToContext(t *testing.T) {
 			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.IngestURL = server.URL
 			cfg.APIURL = server.URL
-			cfg.Headers = make(map[string]configopaque.String)
-			for k, v := range tt.additionalHeaders {
-				cfg.Headers[k] = configopaque.String(v)
+			cfg.Headers = &configopaque.MapList{
+				configopaque.OpaquePair{Name: "test_header_", Value: configopaque.String(tt.name)},
 			}
-			cfg.Headers["test_header_"] = configopaque.String(tt.name)
+			for k, v := range tt.additionalHeaders {
+				cfg.Headers.Set(k, configopaque.String(v))
+			}
 			cfg.AccessToken = configopaque.String(fromHeaders)
 			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
 			cfg.SendOTLPHistograms = tt.sendOTLPHistograms
@@ -773,8 +775,9 @@ func TestConsumeLogsAccessTokenPassthrough(t *testing.T) {
 			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.IngestURL = server.URL
 			cfg.APIURL = server.URL
-			cfg.Headers = make(map[string]configopaque.String)
-			cfg.Headers["test_header_"] = configopaque.String(tt.name)
+			cfg.Headers = &configopaque.MapList{
+				configopaque.OpaquePair{Name: "test_header_", Value: configopaque.String(tt.name)},
+			}
 			cfg.AccessToken = configopaque.String(fromHeaders)
 			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
 			cfg.QueueSettings.Enabled = false
@@ -934,7 +937,7 @@ func TestConsumeEventData(t *testing.T) {
 			cfg := &Config{
 				ClientConfig: confighttp.ClientConfig{
 					Timeout: 1 * time.Second,
-					Headers: map[string]configopaque.String{"test_header_": "test"},
+					Headers: configopaque.MapListFromMap(map[string]configopaque.String{"test_header_": "test"}),
 				},
 			}
 
@@ -1028,8 +1031,9 @@ func TestConsumeLogsDataWithAccessTokenPassthrough(t *testing.T) {
 			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.IngestURL = server.URL
 			cfg.APIURL = server.URL
-			cfg.Headers = make(map[string]configopaque.String)
-			cfg.Headers["test_header_"] = configopaque.String(tt.name)
+			cfg.Headers = &configopaque.MapList{
+				configopaque.OpaquePair{Name: "test_header_", Value: configopaque.String(tt.name)},
+			}
 			cfg.AccessToken = configopaque.String(fromHeaders)
 			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
 			sfxExp, err := NewFactory().CreateLogs(t.Context(), exportertest.NewNopSettings(componentmetadata.Type), cfg)
@@ -2052,7 +2056,7 @@ func TestConsumeMixedMetrics(t *testing.T) {
 			cfg := &Config{
 				ClientConfig: confighttp.ClientConfig{
 					Timeout: 1 * time.Second,
-					Headers: map[string]configopaque.String{"test_header_": "test"},
+					Headers: configopaque.MapListFromMap(map[string]configopaque.String{"test_header_": "test"}),
 				},
 			}
 

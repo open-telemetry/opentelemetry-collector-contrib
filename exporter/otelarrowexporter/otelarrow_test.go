@@ -313,9 +313,9 @@ func TestSendTraces(t *testing.T) {
 		TLS: configtls.ClientConfig{
 			Insecure: true,
 		},
-		Headers: map[string]configopaque.String{
+		Headers: configopaque.MapListFromMap(map[string]configopaque.String{
 			"header": configopaque.String(expectedHeader[0]),
-		},
+		}),
 		Auth: configoptional.Some(configauth.Config{
 			AuthenticatorID: authID,
 		}),
@@ -519,9 +519,9 @@ func TestSendMetrics(t *testing.T) {
 		TLS: configtls.ClientConfig{
 			Insecure: true,
 		},
-		Headers: map[string]configopaque.String{
+		Headers: configopaque.MapListFromMap(map[string]configopaque.String{
 			"header": "header-value",
-		},
+		}),
 	}
 	cfg.Arrow.MaxStreamLifetime = 100 * time.Second
 	set := exportertest.NewNopSettings(factory.Type())
@@ -923,9 +923,9 @@ func testSendArrowTraces(t *testing.T, clientWaitForReady, streamServiceAvailabl
 			Insecure: true,
 		},
 		WaitForReady: clientWaitForReady,
-		Headers: map[string]configopaque.String{
+		Headers: configopaque.MapListFromMap(map[string]configopaque.String{
 			"header": configopaque.String(expectedHeader[0]),
-		},
+		}),
 		Auth: configoptional.Some(configauth.Config{
 			AuthenticatorID: authID,
 		}),

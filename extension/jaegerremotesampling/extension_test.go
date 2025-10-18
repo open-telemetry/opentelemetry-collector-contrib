@@ -106,7 +106,7 @@ func TestRemote(t *testing.T) {
 					Insecure: true, // test only
 				},
 				WaitForReady: true,
-				Headers:      tc.remoteClientHeaderConfig,
+				Headers:      configopaque.MapListFromMap(tc.remoteClientHeaderConfig),
 			}
 
 			// create the extension

@@ -42,7 +42,7 @@ func (e *tracesExporter) start(ctx context.Context, host component.Host) error {
 	authParams := utils.AuthParams{
 		AccessID:    e.config.APIToken.AccessID,
 		AccessKey:   string(e.config.APIToken.AccessKey),
-		BearerToken: string(e.config.Headers["Authorization"]),
+		BearerToken: string(e.config.Headers.Get("Authorization")),
 	}
 
 	ctx, e.cancel = context.WithCancel(ctx)
