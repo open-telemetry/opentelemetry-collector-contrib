@@ -1286,6 +1286,12 @@ func Test_e2e_converters(t *testing.T) {
 				tCtx.GetLogRecord().Attributes().PutInt("indexof", 2)
 			},
 		},
+		{
+			statement: `set(attributes["test"], XXH3("hello world"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "d447b1ea40e6988b")
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -2006,8 +2012,8 @@ func Benchmark_XML_Functions(b *testing.B) {
 
 	actualCtx := tCtxWithTestBody()
 	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+
+	for b.Loop() {
 		_, _, _ = logStatements.Execute(b.Context(), actualCtx)
 	}
 

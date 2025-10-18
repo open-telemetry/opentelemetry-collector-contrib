@@ -910,14 +910,14 @@ func randomMetrics(t require.TestingT, rmCount, smCount, mCount, dpCount int) pm
 	timeStamp := pcommon.Timestamp(rand.IntN(256))
 	value := rand.Int64N(256)
 
-	for i := 0; i < rmCount; i++ {
+	for range rmCount {
 		rm := md.ResourceMetrics().AppendEmpty()
 		err := rm.Resource().Attributes().FromRaw(map[string]any{
 			string(conventions.ServiceNameKey): fmt.Sprintf("service-%d", rand.IntN(512)),
 		})
 		require.NoError(t, err)
 
-		for j := 0; j < smCount; j++ {
+		for range smCount {
 			sm := rm.ScopeMetrics().AppendEmpty()
 			scope := sm.Scope()
 			scope.SetName("MyTestInstrument")
@@ -927,7 +927,7 @@ func randomMetrics(t require.TestingT, rmCount, smCount, mCount, dpCount int) pm
 			})
 			require.NoError(t, err)
 
-			for k := 0; k < mCount; k++ {
+			for range mCount {
 				m := sm.Metrics().AppendEmpty()
 				m.SetName(fmt.Sprintf("metric.%d.test", rand.IntN(512)))
 
@@ -935,7 +935,7 @@ func randomMetrics(t require.TestingT, rmCount, smCount, mCount, dpCount int) pm
 				sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 				sum.SetIsMonotonic(true)
 
-				for l := 0; l < dpCount; l++ {
+				for range dpCount {
 					dp := sum.DataPoints().AppendEmpty()
 
 					dp.SetTimestamp(timeStamp)
@@ -965,7 +965,7 @@ func benchConsumeMetrics(b *testing.B, routingKey string, endpointsCount, rmCoun
 	}
 
 	endpoints := []string{}
-	for i := 0; i < endpointsCount; i++ {
+	for i := range endpointsCount {
 		endpoints = append(endpoints, fmt.Sprintf("endpoint-%d", i))
 	}
 
@@ -991,9 +991,7 @@ func benchConsumeMetrics(b *testing.B, routingKey string, endpointsCount, rmCoun
 
 	md := randomMetrics(b, rmCount, smCount, mCount, dpCount)
 
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		err = p.ConsumeMetrics(b.Context(), md)
 		require.NoError(b, err)
 	}

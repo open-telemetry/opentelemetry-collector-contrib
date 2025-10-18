@@ -712,6 +712,10 @@ component_management:
     name: receiver_huaweicloudces
     paths:
     - receiver/huaweicloudcesreceiver/**
+  - component_id: receiver_icmpcheck
+    name: receiver_icmpcheck
+    paths:
+    - receiver/icmpcheckreceiver/**
   - component_id: receiver_iis
     name: receiver_iis
     paths:
@@ -860,6 +864,10 @@ component_management:
     name: receiver_receivercreator
     paths:
     - receiver/receivercreator/**
+  - component_id: receiver_redfish
+    name: receiver_redfish
+    paths:
+    - receiver/redfishreceiver/**
   - component_id: receiver_redis
     name: receiver_redis
     paths:

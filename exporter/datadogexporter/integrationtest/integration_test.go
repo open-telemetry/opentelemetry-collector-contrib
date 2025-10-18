@@ -49,7 +49,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
 	commonTestutil "github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
-	pkgdatadog "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/featuregates"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver"
 )
@@ -243,7 +243,7 @@ func sendTraces(t *testing.T, endpoint string) {
 	}()
 
 	tracer := otel.Tracer("test-tracer")
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		_, span := tracer.Start(ctx, fmt.Sprintf("TestSpan%d", i), apitrace.WithSpanKind(apitrace.SpanKindClient))
 
 		if i == 3 {
@@ -412,7 +412,7 @@ func sendTracesComputeTopLevelBySpanKind(t *testing.T, endpoint string) {
 	}()
 
 	tracer := otel.Tracer("test-tracer")
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		var spanKind apitrace.SpanKind
 		switch i {
 		case 0, 1:
@@ -544,11 +544,11 @@ func sendLogs(t *testing.T, numLogs int, endpoint string) {
 }
 
 func TestIntegrationHostMetrics_WithRemapping_LegacyMetricClient(t *testing.T) {
-	prevVal := pkgdatadog.MetricRemappingDisabledFeatureGate.IsEnabled()
-	require.NoError(t, featuregate.GlobalRegistry().Set(pkgdatadog.MetricRemappingDisabledFeatureGate.ID(), false))
+	prevVal := featuregates.MetricRemappingDisabledFeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.MetricRemappingDisabledFeatureGate.ID(), false))
 	require.NoError(t, featuregate.GlobalRegistry().Set("exporter.datadogexporter.metricexportserializerclient", false))
 	defer func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(pkgdatadog.MetricRemappingDisabledFeatureGate.ID(), prevVal))
+		require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.MetricRemappingDisabledFeatureGate.ID(), prevVal))
 		require.NoError(t, featuregate.GlobalRegistry().Set("exporter.datadogexporter.metricexportserializerclient", true))
 	}()
 
@@ -568,11 +568,11 @@ func TestIntegrationHostMetrics_WithRemapping_LegacyMetricClient(t *testing.T) {
 }
 
 func TestIntegrationHostMetrics_WithoutRemapping_LegacyMetricClient(t *testing.T) {
-	prevVal := pkgdatadog.MetricRemappingDisabledFeatureGate.IsEnabled()
-	require.NoError(t, featuregate.GlobalRegistry().Set(pkgdatadog.MetricRemappingDisabledFeatureGate.ID(), true))
+	prevVal := featuregates.MetricRemappingDisabledFeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.MetricRemappingDisabledFeatureGate.ID(), true))
 	require.NoError(t, featuregate.GlobalRegistry().Set("exporter.datadogexporter.metricexportserializerclient", false))
 	defer func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(pkgdatadog.MetricRemappingDisabledFeatureGate.ID(), prevVal))
+		require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.MetricRemappingDisabledFeatureGate.ID(), prevVal))
 		require.NoError(t, featuregate.GlobalRegistry().Set("exporter.datadogexporter.metricexportserializerclient", true))
 	}()
 
@@ -586,11 +586,11 @@ func TestIntegrationHostMetrics_WithoutRemapping_LegacyMetricClient(t *testing.T
 }
 
 func TestIntegrationHostMetrics_WithRemapping_Serializer(t *testing.T) {
-	prevVal := pkgdatadog.MetricRemappingDisabledFeatureGate.IsEnabled()
-	require.NoError(t, featuregate.GlobalRegistry().Set(pkgdatadog.MetricRemappingDisabledFeatureGate.ID(), false))
+	prevVal := featuregates.MetricRemappingDisabledFeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.MetricRemappingDisabledFeatureGate.ID(), false))
 
 	defer func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(pkgdatadog.MetricRemappingDisabledFeatureGate.ID(), prevVal))
+		require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.MetricRemappingDisabledFeatureGate.ID(), prevVal))
 	}()
 
 	expectedMetrics := map[string]struct{}{
@@ -609,10 +609,10 @@ func TestIntegrationHostMetrics_WithRemapping_Serializer(t *testing.T) {
 }
 
 func TestIntegrationHostMetrics_WithoutRemapping_Serializer(t *testing.T) {
-	prevVal := pkgdatadog.MetricRemappingDisabledFeatureGate.IsEnabled()
-	require.NoError(t, featuregate.GlobalRegistry().Set(pkgdatadog.MetricRemappingDisabledFeatureGate.ID(), true))
+	prevVal := featuregates.MetricRemappingDisabledFeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.MetricRemappingDisabledFeatureGate.ID(), true))
 	defer func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(pkgdatadog.MetricRemappingDisabledFeatureGate.ID(), prevVal))
+		require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.MetricRemappingDisabledFeatureGate.ID(), prevVal))
 	}()
 
 	expectedMetrics := map[string]struct{}{
