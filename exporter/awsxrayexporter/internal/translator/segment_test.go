@@ -1165,6 +1165,7 @@ func TestProducerSpanWithAwsRemoteServiceName(t *testing.T) {
 	segment, _ := MakeSegment(span, resource, nil, false, nil, false)
 	assert.Equal(t, "ProducerService", *segment.Name)
 	assert.Equal(t, "subsegment", *segment.Type)
+	assert.Equal(t, "remote", *segment.Namespace)
 
 	jsonStr, err := MakeSegmentDocumentString(span, resource, nil, false, nil, false)
 
@@ -1173,6 +1174,22 @@ func TestProducerSpanWithAwsRemoteServiceName(t *testing.T) {
 	assert.Contains(t, jsonStr, "ProducerService")
 	assert.NotContains(t, jsonStr, user)
 	assert.NotContains(t, jsonStr, "user")
+}
+
+func TestProducerSpanNonAwsRemoteServiceName(t *testing.T) {
+	spanName := "my-topic send"
+	parentSpanID := newSegmentID()
+	attributes := make(map[string]any)
+	attributes[string(conventionsv112.PeerServiceKey)] = "ProducerService"
+	resource := constructDefaultResource()
+	span := constructProducerSpan(parentSpanID, spanName, ptrace.StatusCodeOk, "OK", attributes)
+
+	segment, _ := MakeSegment(span, resource, nil, false, nil, false)
+
+	assert.NotNil(t, segment)
+	assert.Equal(t, "ProducerService", *segment.Name)
+	assert.Equal(t, "subsegment", *segment.Type)
+	assert.Equal(t, "remote", *segment.Namespace)
 }
 
 func TestConsumerSpanWithAwsRemoteServiceName(t *testing.T) {
@@ -1288,6 +1305,72 @@ func validateLocalRootServiceSegment(t *testing.T, segment *awsxray.Segment, spa
 	assert.Nil(t, segment.Namespace)
 }
 
+func validateLocalRootSegmentTypeDependencySubsegment(t *testing.T, segment *awsxray.Segment, span ptrace.Span, parentID string) {
+	tempTraceID := span.TraceID()
+	expectedTraceID := "1-" + fmt.Sprintf("%x", tempTraceID[0:4]) + "-" + fmt.Sprintf("%x", tempTraceID[4:16])
+
+	assert.Equal(t, "subsegment", *segment.Type)
+	assert.Equal(t, "myRemoteService", *segment.Name)
+	assert.Equal(t, span.SpanID().String(), *segment.ID)
+	assert.Equal(t, parentID, *segment.ParentID)
+	assert.Equal(t, expectedTraceID, *segment.TraceID)
+	assert.NotNil(t, segment.HTTP)
+	assert.Equal(t, "POST", *segment.HTTP.Request.Method)
+	assert.Len(t, segment.Annotations, 2)
+	assert.Nil(t, segment.Annotations[awsRemoteService])
+	assert.Nil(t, segment.Annotations[remoteTarget])
+	assert.Equal(t, "myAnnotationValue", segment.Annotations["myAnnotationKey"])
+
+	assert.Len(t, segment.Metadata["default"], 30)
+	assert.Equal(t, "receive", segment.Metadata["default"][string(conventionsv112.MessagingOperationKey)])
+	assert.Equal(t, "LOCAL_ROOT", segment.Metadata["default"][awsSpanKind])
+	assert.Equal(t, "myRemoteOperation", segment.Metadata["default"][awsRemoteOperation])
+	assert.Equal(t, "myTarget", segment.Metadata["default"][remoteTarget])
+	assert.Equal(t, "k8sRemoteNamespace", segment.Metadata["default"][k8sRemoteNamespace])
+	assert.Equal(t, "myLocalService", segment.Metadata["default"][awsLocalService])
+	assert.Equal(t, "awsLocalOperation", segment.Metadata["default"][awsLocalOperation])
+	assert.Equal(t, "service.name=myTest", segment.Metadata["default"]["otel.resource.attributes"])
+
+	assert.Equal(t, "MySDK", *segment.AWS.XRay.SDK)
+	assert.Equal(t, "1.20.0", *segment.AWS.XRay.SDKVersion)
+	assert.True(t, *segment.AWS.XRay.AutoInstrumentation)
+
+	assert.Equal(t, "UpdateItem", *segment.AWS.Operation)
+	assert.Equal(t, "AWSAccountAttribute", *segment.AWS.AccountID)
+	assert.Equal(t, "AWSRegionAttribute", *segment.AWS.RemoteRegion)
+	assert.Equal(t, "AWSRequestIDAttribute", *segment.AWS.RequestID)
+	assert.Equal(t, "AWSQueueURLAttribute", *segment.AWS.QueueURL)
+	assert.Equal(t, "TableName", *segment.AWS.TableName)
+
+	assert.Equal(t, "remote", *segment.Namespace)
+}
+
+func validateLocalRootSegmentTypeServiceSegment(t *testing.T, segment *awsxray.Segment, span ptrace.Span) {
+	tempTraceID := span.TraceID()
+	expectedTraceID := "1-" + fmt.Sprintf("%x", tempTraceID[0:4]) + "-" + fmt.Sprintf("%x", tempTraceID[4:16])
+
+	assert.Nil(t, segment.Type)
+	assert.Equal(t, "myLocalService", *segment.Name)
+	assert.Equal(t, expectedTraceID, *segment.TraceID)
+	assert.Nil(t, segment.HTTP)
+	assert.Len(t, segment.Annotations, 1)
+	assert.Equal(t, "myAnnotationValue", segment.Annotations["myAnnotationKey"])
+	assert.Len(t, segment.Metadata["default"], 23)
+	assert.Equal(t, "service.name=myTest", segment.Metadata["default"]["otel.resource.attributes"])
+	assert.Equal(t, "MySDK", *segment.AWS.XRay.SDK)
+	assert.Equal(t, "1.20.0", *segment.AWS.XRay.SDKVersion)
+	assert.True(t, *segment.AWS.XRay.AutoInstrumentation)
+	assert.Nil(t, segment.AWS.Operation)
+	assert.Nil(t, segment.AWS.AccountID)
+	assert.Nil(t, segment.AWS.RemoteRegion)
+	assert.Nil(t, segment.AWS.RequestID)
+	assert.Nil(t, segment.AWS.QueueURL)
+	assert.Nil(t, segment.AWS.TableName)
+	assert.Nil(t, segment.Namespace)
+
+	assert.Nil(t, segment.Namespace)
+}
+
 func getBasicAttributes() map[string]any {
 	attributes := make(map[string]any)
 
@@ -1352,10 +1435,10 @@ func TestLocalRootConsumer(t *testing.T) {
 	assert.Len(t, segments, 2)
 	assert.NoError(t, err)
 
-	validateLocalRootDependencySubsegment(t, segments[0], span, *segments[1].ID)
+	validateLocalRootSegmentTypeDependencySubsegment(t, segments[0], span, *segments[1].ID)
 	assert.Nil(t, segments[0].Links)
 
-	validateLocalRootServiceSegment(t, segments[1], span)
+	validateLocalRootSegmentTypeServiceSegment(t, segments[1], span)
 	assert.Len(t, segments[1].Links, 1)
 
 	// Checks these values are the same for both
@@ -1387,7 +1470,7 @@ func TestNonLocalRootConsumerProcess(t *testing.T) {
 	expectedTraceID := "1-" + fmt.Sprintf("%x", tempTraceID[0:4]) + "-" + fmt.Sprintf("%x", tempTraceID[4:16])
 
 	// Validate segment 1 (dependency subsegment)
-	assert.Equal(t, "subsegment", *segments[0].Type)
+	assert.Nil(t, segments[0].Type)
 	assert.Equal(t, "destination operation", *segments[0].Name)
 	assert.NotEqual(t, parentSpanID.String(), *segments[0].ID)
 	assert.Equal(t, span.SpanID().String(), *segments[0].ID)
@@ -1397,7 +1480,7 @@ func TestNonLocalRootConsumerProcess(t *testing.T) {
 	assert.Equal(t, http.MethodPost, *segments[0].HTTP.Request.Method)
 	assert.Len(t, segments[0].Annotations, 1)
 	assert.Equal(t, "myAnnotationValue", segments[0].Annotations["myAnnotationKey"])
-	assert.Len(t, segments[0].Metadata["default"], 7)
+	assert.Len(t, segments[0].Metadata["default"], 29)
 	assert.Equal(t, "Consumer", segments[0].Metadata["default"][awsSpanKind])
 	assert.Equal(t, "myLocalService", segments[0].Metadata["default"][awsLocalService])
 	assert.Equal(t, "receive", segments[0].Metadata["default"][string(conventionsv112.MessagingOperationKey)])
@@ -1662,8 +1745,8 @@ func TestNotLocalRootConsumer(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Validate segment
-	assert.Equal(t, "subsegment", *segments[0].Type)
-	assert.Equal(t, "remote", *segments[0].Namespace)
+	assert.Nil(t, segments[0].Type)
+	assert.Nil(t, segments[0].Namespace)
 	assert.Equal(t, "myRemoteService", *segments[0].Name)
 }
 

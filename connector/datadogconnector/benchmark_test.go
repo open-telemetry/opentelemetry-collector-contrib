@@ -12,7 +12,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
@@ -45,16 +44,6 @@ func BenchmarkPeerTags_Native(b *testing.B) {
 	benchmarkPeerTags(b)
 }
 
-func BenchmarkPeerTags_Legacy(b *testing.B) {
-	err := featuregate.GlobalRegistry().Set(NativeIngestFeatureGate.ID(), false)
-	assert.NoError(b, err)
-	defer func() {
-		_ = featuregate.GlobalRegistry().Set(NativeIngestFeatureGate.ID(), true)
-	}()
-
-	benchmarkPeerTags(b)
-}
-
 func benchmarkPeerTags(b *testing.B) {
 	cfg := NewFactory().CreateDefaultConfig().(*Config)
 	cfg.Traces.ComputeStatsBySpanKind = true
@@ -78,9 +67,7 @@ func benchmarkPeerTags(b *testing.B) {
 		require.NoError(b, tconn.Shutdown(b.Context()))
 	}()
 
-	b.ResetTimer()
-
-	for n := 0; n < b.N; n++ {
+	for b.Loop() {
 		err = tconn.ConsumeTraces(b.Context(), genTrace())
 		assert.NoError(b, err)
 		for {

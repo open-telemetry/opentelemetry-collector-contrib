@@ -202,7 +202,7 @@ func (r *splunkReceiver) processSuccessResponseWithAck(resp http.ResponseWriter,
 
 	ackID := r.ackExt.ProcessEvent(channelID)
 	r.ackExt.Ack(channelID, ackID)
-	return r.processSuccessResponse(resp, []byte(fmt.Sprintf(responseOKWithAckID, ackID)))
+	return r.processSuccessResponse(resp, fmt.Appendf(nil, responseOKWithAckID, ackID))
 }
 
 func (*splunkReceiver) processSuccessResponse(resp http.ResponseWriter, bodyContent []byte) error {
@@ -252,7 +252,7 @@ func (r *splunkReceiver) handleAck(resp http.ResponseWriter, req *http.Request) 
 
 	queriedAcks := r.ackExt.QueryAcks(channelID, ackRequest.Acks)
 	ackString, _ := json.Marshal(queriedAcks)
-	if err := r.processSuccessResponse(resp, []byte(fmt.Sprintf(ackResponse, ackString))); err != nil {
+	if err := r.processSuccessResponse(resp, fmt.Appendf(nil, ackResponse, ackString)); err != nil {
 		r.failRequest(resp, http.StatusInternalServerError, errInternalServerError, err)
 	}
 }
@@ -427,7 +427,7 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 
 		for _, v := range msg.Fields {
 			if !isFlatJSONField(v) {
-				r.failRequest(resp, http.StatusBadRequest, []byte(fmt.Sprintf(responseErrHandlingIndexedFields, len(events)+len(metricEvents))), nil)
+				r.failRequest(resp, http.StatusBadRequest, fmt.Appendf(nil, responseErrHandlingIndexedFields, len(events)+len(metricEvents)), nil)
 				return
 			}
 		}
