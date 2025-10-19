@@ -144,6 +144,7 @@ func (pph *PathParserHelper) Parse(data []byte) (pmetric.Metrics, error) {
 		dp.SetIntValue(intVal)
 	}
 	parsedPath.Attributes.CopyTo(dp.Attributes())
+	// NewMetrics used only for tests
 	metrics := pmetric.NewMetrics()
 	newMetric := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 	m.MoveTo(newMetric)

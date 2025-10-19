@@ -86,8 +86,12 @@ func Test_plaintextParser_Parse(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.line, func(t *testing.T) {
 			got, err := p.Parse([]byte(tt.line))
-			assert.Equal(t, tt.want, got)
-			assert.Equal(t, tt.wantErr, err != nil)
+			if tt.wantErr {
+				assert.Equal(t, tt.wantErr, err != nil)
+			} else {
+				m := got.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
+				assert.Equal(t, tt.want, m)
+			}
 		})
 	}
 
@@ -119,9 +123,7 @@ func Test_plaintextParser_Parse(t *testing.T) {
 	for _, tt := range fpTests {
 		t.Run(tt.line, func(t *testing.T) {
 			got, err := p.Parse([]byte(tt.line))
-
 			m := got.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
-
 			require.NoError(t, err)
 
 			// allow for rounding difference in float conversion.
@@ -137,7 +139,7 @@ func Test_plaintextParser_Parse(t *testing.T) {
 			m.Gauge().DataPoints().At(0).SetTimestamp(
 				tt.want.Gauge().DataPoints().At(0).Timestamp(),
 			)
-			assert.Equal(t, tt.want, got)
+			assert.Equal(t, tt.want, m)
 		})
 	}
 }

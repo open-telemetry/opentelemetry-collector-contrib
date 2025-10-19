@@ -53,16 +53,16 @@ func (wp *wavefrontParser) BuildParser() (protocol.Parser, error) {
 //	"<metricName> <metricValue> [<timestamp>] source=<source> [pointTags]"
 //
 // Detailed description of each element is available on the link above.
-func (wp *wavefrontParser) Parse(data []byte) (pmetric.Metric, error) {
+func (wp *wavefrontParser) Parse(data []byte) (pmetric.Metrics, error) {
 	line := strings.TrimSpace(string(data))
 	parts := strings.SplitN(line, " ", 3)
 	if len(parts) < 3 {
-		return pmetric.Metric{}, fmt.Errorf("invalid wavefront metric [%s]", line)
+		return pmetric.NewMetrics(), fmt.Errorf("invalid wavefront metric [%s]", line)
 	}
 
 	metricName := unDoubleQuote(parts[0])
 	if metricName == "" {
-		return pmetric.Metric{}, fmt.Errorf("empty name for wavefront metric [%s]", line)
+		return pmetric.NewMetrics(), fmt.Errorf("empty name for wavefront metric [%s]", line)
 	}
 	valueStr := parts[1]
 	rest := parts[2]
@@ -79,7 +79,7 @@ func (wp *wavefrontParser) Parse(data []byte) (pmetric.Metric, error) {
 	} else {
 		// Timestamp can be omitted so it is only correct if the string was a tag.
 		if strings.IndexByte(timestampStr, '=') == -1 {
-			return pmetric.Metric{}, fmt.Errorf(
+			return pmetric.NewMetrics(), fmt.Errorf(
 				"invalid timestamp for wavefront metric [%s]", line)
 		}
 		// Assume timestamp was omitted, get current time and adjust index.
@@ -92,7 +92,7 @@ func (wp *wavefrontParser) Parse(data []byte) (pmetric.Metric, error) {
 		// no need for special treatment for source, treat it as a normal tag since
 		// tags are separated by space and are optionally double-quoted.
 		if err := buildLabels(attributes, tags); err != nil {
-			return pmetric.Metric{}, fmt.Errorf("invalid wavefront metric [%s]: %w", line, err)
+			return pmetric.NewMetrics(), fmt.Errorf("invalid wavefront metric [%s]: %w", line, err)
 		}
 	}
 
@@ -109,12 +109,14 @@ func (wp *wavefrontParser) Parse(data []byte) (pmetric.Metric, error) {
 	} else {
 		dblVal, err := strconv.ParseFloat(valueStr, 64)
 		if err != nil {
-			return pmetric.Metric{}, fmt.Errorf("invalid wavefront metric value [%s]: %w", line, err)
+			return pmetric.NewMetrics(), fmt.Errorf("invalid wavefront metric value [%s]: %w", line, err)
 		}
 		dp.SetDoubleValue(dblVal)
 	}
-
-	return metric, nil
+	metrics := pmetric.NewMetrics()
+	newMetric := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+	metric.MoveTo(newMetric)
+	return metrics, nil
 }
 
 func (*wavefrontParser) injectCollectDLabels(
