@@ -17,7 +17,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/slowsqlconnector/internal/metadata"
 )
 
-// NewFactory creates a factory for the exceptions connector.
+// NewFactory creates a factory for the slowsql connector.
 func NewFactory() connector.Factory {
 	return connector.NewFactory(
 		metadata.Type,
