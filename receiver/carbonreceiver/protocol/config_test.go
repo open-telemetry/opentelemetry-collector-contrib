@@ -58,6 +58,14 @@ func TestLoadParserConfig(t *testing.T) {
 				Config: &PlaintextConfig{},
 			},
 		},
+		{
+			name:   "pickle",
+			cfgMap: map[string]any{"type": "pickle"},
+			want: Config{
+				Type:   "pickle",
+				Config: &PickleConfig{},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
