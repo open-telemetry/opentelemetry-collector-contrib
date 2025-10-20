@@ -32,7 +32,6 @@ func TestMetricsAfterOneEvaluation(t *testing.T) {
 	controller := newTestTSPController()
 
 	cfg := Config{
-		NumWorkers:   1,
 		DecisionWait: 1,
 		NumTraces:    100,
 		PolicyCfgs: []PolicyCfg{
@@ -90,7 +89,6 @@ func TestMetricsAfterOneEvaluation(t *testing.T) {
 								attribute.String("policy", "always"),
 								attribute.String("sampled", "true"),
 								attribute.String("decision", "sampled"),
-								attribute.Int("worker", 0),
 							),
 							Value: 1,
 						},
@@ -112,7 +110,6 @@ func TestMetricsAfterOneEvaluation(t *testing.T) {
 							Attributes: attribute.NewSet(
 								attribute.String("sampled", "true"),
 								attribute.String("decision", "sampled"),
-								attribute.Int("worker", 0),
 							),
 							Value: 1,
 						},
@@ -132,7 +129,6 @@ func TestMetricsAfterOneEvaluation(t *testing.T) {
 						{
 							Attributes: attribute.NewSet(
 								attribute.String("policy", "always"),
-								attribute.Int("worker", 0),
 							),
 						},
 					},
@@ -147,11 +143,7 @@ func TestMetricsAfterOneEvaluation(t *testing.T) {
 				Unit:        "ms",
 				Data: metricdata.Histogram[int64]{
 					Temporality: metricdata.CumulativeTemporality,
-					DataPoints: []metricdata.HistogramDataPoint[int64]{{
-						Attributes: attribute.NewSet(
-							attribute.Int("worker", 0),
-						),
-					}},
+					DataPoints:  []metricdata.HistogramDataPoint[int64]{{}},
 				},
 			},
 		},
@@ -166,9 +158,6 @@ func TestMetricsAfterOneEvaluation(t *testing.T) {
 					Temporality: metricdata.CumulativeTemporality,
 					DataPoints: []metricdata.DataPoint[int64]{
 						{
-							Attributes: attribute.NewSet(
-								attribute.Int("worker", 0),
-							),
 							Value: 1,
 						},
 					},
@@ -186,9 +175,6 @@ func TestMetricsAfterOneEvaluation(t *testing.T) {
 					Temporality: metricdata.CumulativeTemporality,
 					DataPoints: []metricdata.DataPoint[int64]{
 						{
-							Attributes: attribute.NewSet(
-								attribute.Int("worker", 0),
-							),
 							Value: 0,
 						},
 					},
@@ -206,9 +192,6 @@ func TestMetricsAfterOneEvaluation(t *testing.T) {
 					Temporality: metricdata.CumulativeTemporality,
 					DataPoints: []metricdata.DataPoint[int64]{
 						{
-							Attributes: attribute.NewSet(
-								attribute.Int("worker", 0),
-							),
 							Value: 0,
 						},
 					},
@@ -225,9 +208,6 @@ func TestMetricsAfterOneEvaluation(t *testing.T) {
 					DataPoints: []metricdata.DataPoint[int64]{
 						{
 							Value: 1,
-							Attributes: attribute.NewSet(
-								attribute.Int("worker", 0),
-							),
 						},
 					},
 				},
@@ -250,7 +230,6 @@ func TestMetricsWithComponentID(t *testing.T) {
 	controller := newTestTSPController()
 
 	cfg := Config{
-		NumWorkers:   1,
 		DecisionWait: 1,
 		NumTraces:    100,
 		PolicyCfgs: []PolicyCfg{
@@ -309,7 +288,6 @@ func TestMetricsWithComponentID(t *testing.T) {
 								attribute.String("policy", "unique_id.always"),
 								attribute.String("sampled", "true"),
 								attribute.String("decision", "sampled"),
-								attribute.Int("worker", 0),
 							),
 							Value: 1,
 						},
@@ -329,7 +307,6 @@ func TestMetricsWithComponentID(t *testing.T) {
 						{
 							Attributes: attribute.NewSet(
 								attribute.String("policy", "unique_id.always"),
-								attribute.Int("worker", 0),
 							),
 						},
 					},
@@ -382,7 +359,6 @@ func TestMetricsCountSampled(t *testing.T) {
 								Attributes: attribute.NewSet(
 									attribute.String("sampled", "true"),
 									attribute.String("decision", "sampled"),
-									attribute.Int("worker", 0),
 								),
 								Value: 1,
 							},
@@ -402,7 +378,6 @@ func TestMetricsCountSampled(t *testing.T) {
 									attribute.String("policy", "always"),
 									attribute.String("sampled", "true"),
 									attribute.String("decision", "sampled"),
-									attribute.Int("worker", 0),
 								),
 								Value: 1,
 							},
@@ -422,7 +397,6 @@ func TestMetricsCountSampled(t *testing.T) {
 									attribute.String("policy", "always"),
 									attribute.String("sampled", "true"),
 									attribute.String("decision", "sampled"),
-									attribute.Int("worker", 0),
 								),
 								Value: 1,
 							},
@@ -457,7 +431,6 @@ func TestMetricsCountSampled(t *testing.T) {
 								Attributes: attribute.NewSet(
 									attribute.String("sampled", "false"),
 									attribute.String("decision", "not_sampled"),
-									attribute.Int("worker", 0),
 								),
 								Value: 1,
 							},
@@ -477,7 +450,6 @@ func TestMetricsCountSampled(t *testing.T) {
 									attribute.String("policy", "never"),
 									attribute.String("sampled", "false"),
 									attribute.String("decision", "not_sampled"),
-									attribute.Int("worker", 0),
 								),
 								Value: 1,
 							},
@@ -497,7 +469,6 @@ func TestMetricsCountSampled(t *testing.T) {
 									attribute.String("policy", "never"),
 									attribute.String("sampled", "false"),
 									attribute.String("decision", "not_sampled"),
-									attribute.Int("worker", 0),
 								),
 								Value: 1,
 							},
@@ -539,7 +510,6 @@ func TestMetricsCountSampled(t *testing.T) {
 								Attributes: attribute.NewSet(
 									attribute.String("sampled", "false"),
 									attribute.String("decision", "dropped"),
-									attribute.Int("worker", 0),
 								),
 								Value: 1,
 							},
@@ -559,7 +529,6 @@ func TestMetricsCountSampled(t *testing.T) {
 									attribute.String("policy", "drop"),
 									attribute.String("sampled", "false"),
 									attribute.String("decision", "dropped"),
-									attribute.Int("worker", 0),
 								),
 								Value: 1,
 							},
@@ -579,7 +548,6 @@ func TestMetricsCountSampled(t *testing.T) {
 									attribute.String("policy", "drop"),
 									attribute.String("sampled", "false"),
 									attribute.String("decision", "dropped"),
-									attribute.Int("worker", 0),
 								),
 								Value: 1,
 							},
@@ -595,7 +563,6 @@ func TestMetricsCountSampled(t *testing.T) {
 			controller := newTestTSPController()
 
 			cfg := Config{
-				NumWorkers:   1,
 				DecisionWait: 1,
 				NumTraces:    100,
 				PolicyCfgs:   tt.policyCfgs,
@@ -643,7 +610,6 @@ func TestProcessorTailSamplingSamplingTraceRemovalAge(t *testing.T) {
 	controller := newTestTSPController()
 
 	cfg := Config{
-		NumWorkers:   1,
 		DecisionWait: 1,
 		NumTraces:    2,
 		PolicyCfgs: []PolicyCfg{
@@ -690,11 +656,7 @@ func TestProcessorTailSamplingSamplingTraceRemovalAge(t *testing.T) {
 		Unit:        "s",
 		Data: metricdata.Histogram[int64]{
 			Temporality: metricdata.CumulativeTemporality,
-			DataPoints: []metricdata.HistogramDataPoint[int64]{{
-				Attributes: attribute.NewSet(
-					attribute.Int("worker", 0),
-				),
-			}},
+			DataPoints:  []metricdata.HistogramDataPoint[int64]{{}},
 		},
 	}
 	got := s.getMetric(m.Name, md)
@@ -707,7 +669,6 @@ func TestProcessorTailSamplingSamplingLateSpanAge(t *testing.T) {
 	controller := newTestTSPController()
 
 	cfg := Config{
-		NumWorkers:   1,
 		DecisionWait: 1,
 		NumTraces:    100,
 		PolicyCfgs: []PolicyCfg{
@@ -770,9 +731,6 @@ func TestProcessorTailSamplingSamplingLateSpanAge(t *testing.T) {
 			Temporality: metricdata.CumulativeTemporality,
 			DataPoints: []metricdata.HistogramDataPoint[int64]{
 				{
-					Attributes: attribute.NewSet(
-						attribute.Int("worker", 0),
-					),
 					Count:        10,
 					Bounds:       []float64{0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000},
 					BucketCounts: []uint64{10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
@@ -795,7 +753,6 @@ func TestProcessorTailSamplingSamplingTraceDroppedTooEarly(t *testing.T) {
 	controller := newTestTSPController()
 
 	cfg := Config{
-		NumWorkers:   1,
 		DecisionWait: 1,
 		NumTraces:    2,
 		PolicyCfgs: []PolicyCfg{
@@ -845,9 +802,6 @@ func TestProcessorTailSamplingSamplingTraceDroppedTooEarly(t *testing.T) {
 			Temporality: metricdata.CumulativeTemporality,
 			DataPoints: []metricdata.DataPoint[int64]{
 				{
-					Attributes: attribute.NewSet(
-						attribute.Int("worker", 0),
-					),
 					Value: 1,
 				},
 			},
@@ -864,7 +818,6 @@ func TestProcessorTailSamplingSamplingPolicyEvaluationError(t *testing.T) {
 	controller := newTestTSPController()
 
 	cfg := Config{
-		NumWorkers:   1,
 		DecisionWait: 1,
 		NumTraces:    100,
 		PolicyCfgs: []PolicyCfg{
@@ -918,9 +871,6 @@ func TestProcessorTailSamplingSamplingPolicyEvaluationError(t *testing.T) {
 			Temporality: metricdata.CumulativeTemporality,
 			DataPoints: []metricdata.DataPoint[int64]{
 				{
-					Attributes: attribute.NewSet(
-						attribute.Int("worker", 0),
-					),
 					Value: 2,
 				},
 			},
@@ -941,7 +891,6 @@ func TestProcessorTailSamplingEarlyReleasesFromCacheDecision(t *testing.T) {
 	require.NoError(t, err)
 
 	cfg := Config{
-		NumWorkers:   1,
 		DecisionWait: 1,
 		NumTraces:    100,
 		PolicyCfgs: []PolicyCfg{
@@ -996,7 +945,6 @@ func TestProcessorTailSamplingEarlyReleasesFromCacheDecision(t *testing.T) {
 					Value: 1,
 					Attributes: attribute.NewSet(
 						attribute.String("sampled", "true"),
-						attribute.Int("worker", 0),
 					),
 				},
 			},

@@ -279,9 +279,6 @@ type Config struct {
 	// BlockOnOverflow determines the behavior when the component's NumTraces limit is reached.
 	// If true, the component will wait for space; otherwise, old traces will be evicted to make space.
 	BlockOnOverflow bool `mapstructure:"block_on_overflow"`
-	// TickOnOverflow determines the behavior when the component's NumTraces limit is reached.
-	// If true, the component will make sample decisions earlier than the DecisionWait.
-	TickOnOverflow bool `mapstructure:"tick_on_overflow"`
 	// ExpectedNewTracesPerSec sets the expected number of new traces sending to the tail sampling processor
 	// per second. This helps with allocating data structures with closer to actual usage size.
 	ExpectedNewTracesPerSec uint64 `mapstructure:"expected_new_traces_per_sec"`
@@ -294,8 +291,6 @@ type Config struct {
 	Options []Option `mapstructure:"-"`
 	// Make decision as soon as a policy matches
 	SampleOnFirstMatch bool `mapstructure:"sample_on_first_match"`
-	// NumWorkers sets the number of parallel workers to use for the tail-based sampling processor.
-	NumWorkers int `mapstructure:"num_workers"`
 	// WorkChanCapacity sets the capacity of the work channel.
 	WorkChanCapacity int `mapstructure:"work_chan_capacity"`
 }
