@@ -7,6 +7,29 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.138.0
+
+### 🛑 Breaking changes 🛑
+
+- `exporter/tencentcloud_logservice`: Unexport Log_Content, LogTag, Log, LogGroupList, LogGroup (#43138)
+- `pkg/datadog`: Move feature gates ReceiveResourceSpansV2FeatureGate, OperationAndResourceNameV2FeatureGate, and MetricRemappingDisabledFeatureGate from pkg/datadog to new submodule pkg/datadog/featuregates (#43631)
+
+### 🚩 Deprecations 🚩
+
+- `pkg/datadog`: Remove `logs::dump_payloads` config option from `pkg/datadog` config. (#43427)
+
+### 💡 Enhancements 💡
+
+- `pkg/ottl`: Add support for literal getters (#40222)
+  This enhancement introduces the `ottl.GetLiteralValue` function to OTTL, enabling compile-time optimization for getters that 
+  contain literal values. When a getter is identified as containing a literal value, OTTL functions can now access that value 
+  at build time rather than runtime, improving performance for common use cases like pattern matching with static strings.
+  
+- `processor/filter`: Add profiles support (#42762)
+- `receiver/hostmetrics`: Add metrics, Linux scraper, and tests to hostmetricsreceiver's nfsscraper (#40134)
+
+<!-- previous-version -->
+
 ## v0.137.0
 
 ### 🛑 Breaking changes 🛑
