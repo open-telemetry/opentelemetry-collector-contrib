@@ -335,7 +335,7 @@ func (*networkFirewallLogUnmarshaler) addNetworkFirewallLog(log networkFirewallL
 
 	// Add HTTP fields if present (HTTP event type) - check each field individually
 	if log.Event.HTTP.Hostname != "" {
-		putStr("http.request.header.host", log.Event.HTTP.Hostname)
+		putStr("url.domain", log.Event.HTTP.Hostname)
 	}
 	if log.Event.HTTP.URL != "" {
 		putStr(string(semconv.URLPathKey), log.Event.HTTP.URL)

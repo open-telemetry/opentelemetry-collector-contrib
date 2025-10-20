@@ -476,7 +476,7 @@ The following fields are common across all log types:
 
 | HTTP log fields                | Attribute in OpenTelemetry log     |
 |--------------------------------|------------------------------------|
-| `event.http.hostname`          | `http.request.header.host`         |
+| `event.http.hostname`          | `url.domain`                       |
 | `event.http.url`               | `url.path`                         |
 | `event.http.http_user_agent`   | `user_agent.original`              |
 | `event.http.http_content_type` | `http.request.header.content-type` |
