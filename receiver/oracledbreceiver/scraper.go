@@ -70,12 +70,11 @@ const (
 		FROM DBA_TABLESPACE_USAGE_METRICS um INNER JOIN DBA_TABLESPACES ts
 		ON um.TABLESPACE_NAME = ts.TABLESPACE_NAME`
 
-	dbTimeReferenceFormat = "2006-01-02 15:04:05"
-	sqlIDAttr             = "SQL_ID"
-	childAddressAttr      = "CHILD_ADDRESS"
-	childNumberAttr       = "CHILD_NUMBER"
-	sqlTextAttr           = "SQL_FULLTEXT"
-	dbSystemNameVal       = "oracle"
+	sqlIDAttr        = "SQL_ID"
+	childAddressAttr = "CHILD_ADDRESS"
+	childNumberAttr  = "CHILD_NUMBER"
+	sqlTextAttr      = "SQL_FULLTEXT"
+	dbSystemNameVal  = "oracle"
 
 	queryExecutionMetric        = "EXECUTIONS"
 	elapsedTimeMetric           = "ELAPSED_TIME"
@@ -552,8 +551,7 @@ func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Log
 	timestamp := pcommon.NewTimestampFromTime(time.Now())
 	intervalSeconds := int(s.scrapeCfg.CollectionInterval.Seconds())
 	s.oracleQueryMetricsClient = s.clientProviderFunc(s.db, oracleQueryMetricsSQL, s.logger)
-	now := timestamp.AsTime().Format(dbTimeReferenceFormat)
-	metricRows, metricError := s.oracleQueryMetricsClient.metricRows(ctx, now, intervalSeconds, s.topQueryCollectCfg.MaxQuerySampleCount)
+	metricRows, metricError := s.oracleQueryMetricsClient.metricRows(ctx, intervalSeconds, s.topQueryCollectCfg.MaxQuerySampleCount)
 
 	if metricError != nil {
 		return fmt.Errorf("error executing oracleQueryMetricsSQL: %w", metricError)
