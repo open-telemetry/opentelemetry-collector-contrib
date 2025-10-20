@@ -5,6 +5,7 @@ package icmpcheckreceiver // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -102,7 +103,7 @@ func addMetrics(result pingResult, mb *metadata.MetricsBuilder, logger *zap.Logg
 
 	if result.err != nil {
 		logger.Error(
-			"failed to ping host",
+			fmt.Sprintf(`failed to ping host "%s", caused by: "%s"`, result.targetHost, result.err),
 			zap.String("host", result.targetHost),
 			zap.Error(result.err))
 		return
