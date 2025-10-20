@@ -52,7 +52,7 @@ func (e *ecsTaskObserver) ListEndpoints() []observer.Endpoint {
 // container instance. We only need to report running ones since state is maintained by our EndpointsWatcher.
 func (e *ecsTaskObserver) endpointsFromTaskMetadata(taskMetadata *ecsutil.TaskMetadata) (endpoints []observer.Endpoint) {
 	if taskMetadata == nil {
-		return
+		return endpoints
 	}
 
 	for i := range taskMetadata.Containers {

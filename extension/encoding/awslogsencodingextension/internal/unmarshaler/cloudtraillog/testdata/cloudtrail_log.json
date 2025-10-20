@@ -69,6 +69,7 @@
             "eventID": "e755e09c-42f9-4c5c-9064-EXAMPLE228c7",
             "readOnly": false,
             "eventType": "AwsApiCall",
+            "apiVersion": "v1",
             "managementEvent": true,
             "recipientAccountId": "123456789012",
             "eventCategory": "Management",
@@ -147,7 +148,7 @@
                     },
                     "attributes": {
                         "creationDate": "2023-08-21T16:44:05Z",
-                        "mfaAuthenticated": "false"
+                        "mfaAuthenticated": "true"
                     }
                 }
             },
@@ -277,6 +278,11 @@
             "responseElements": {
                 "ConsoleLogin": "Success"
             },
+            "additionalEventData": {
+                "MFAUsed": true,
+                "MobileVersion": "No",
+                "LoginTo": "https://console.aws.amazon.com/console/home?region=us"
+            },
             "requestID": "a1b2c3d4-5678-90ab-cdef-EXAMPLE11111",
             "eventID": "a1b2c3d4-5678-90ab-cdef-EXAMPLE22222",
             "readOnly": true,
@@ -289,6 +295,37 @@
                 "cipherSuite": "TLS_AES_256_GCM_SHA384",
                 "clientProvidedHostHeader": "signin.aws.amazon.com"
             }
+        }
+    ,{
+            "eventVersion": "1.08",
+            "userIdentity": {
+                "accountId": "111122223333",
+                "invokedBy": "AWS Internal"
+            },
+            "eventTime": "2021-01-14T01:41:59Z",
+            "eventSource": "kms.amazonaws.com",
+            "eventName": "RotateKey",
+            "awsRegion": "us-west-2",
+            "sourceIPAddress": "AWS Internal",
+            "userAgent": "AWS Internal",
+            "requestParameters": null,
+            "responseElements": null,
+            "eventID": "a24b3967-ddad-417f-9b22-2332b918db06",
+            "readOnly": false,
+            "resources": [
+                {
+                    "accountId": "111122223333",
+                    "type": "AWS::KMS::Key",
+                    "ARN": "arn:aws:kms:us-west-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab"
+                }
+            ],
+            "eventType": "AwsServiceEvent",
+            "recipientAccountId": "111122223333",
+            "serviceEventDetails": {
+                "rotationType": "AUTOMATIC",
+                "keyId": "1234abcd-12ab-34cd-56ef-1234567890ab"
+            },
+            "eventCategory": "Management"
         }
     ]
 }
