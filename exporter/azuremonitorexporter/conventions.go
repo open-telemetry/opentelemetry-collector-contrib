@@ -184,6 +184,7 @@ func (attrs *httpAttributes) MapAttribute(k string, v pcommon.Value) bool {
 		attrs.UrlAttributes.UrlQuery = v.Str()
 	case string(conventions.URLSchemeKey):
 		attrs.UrlAttributes.UrlScheme = v.Str()
+
 	// Network/server/client address attributes (new, replacing http.host)
 	case string(conventions.ServerAddressKey):
 		attrs.ServerAttributes.ServerAddress = v.Str()
@@ -218,6 +219,9 @@ type rpcAttributes struct {
 	RPCService        string
 	RPCMethod         string
 	RPCGRPCStatusCode int64
+
+	ClientAttributes  clientAttributes
+	ServerAttributes  serverAttributes
 	NetworkAttributes networkAttributes
 }
 
@@ -232,6 +236,19 @@ func (attrs *rpcAttributes) MapAttribute(k string, v pcommon.Value) bool {
 		attrs.RPCMethod = v.Str()
 	case string(conventions.RPCGRPCStatusCodeKey):
 		attrs.RPCGRPCStatusCode = v.Int()
+
+	case string(conventions.ServerAddressKey):
+		attrs.ServerAttributes.ServerAddress = v.Str()
+	case string(conventions.ServerPortKey):
+		if val, err := getAttributeValueAsInt(v); err == nil {
+			attrs.ServerAttributes.ServerPort = val
+		}
+	case string(conventions.ClientAddressKey):
+		attrs.ClientAttributes.ClientAddress = v.Str()
+	case string(conventions.ClientPortKey):
+		if val, err := getAttributeValueAsInt(v); err == nil {
+			attrs.ClientAttributes.ClientPort = val
+		}
 
 	default:
 		attrs.NetworkAttributes.MapAttribute(k, v)
@@ -250,6 +267,9 @@ type databaseAttributes struct {
 	DBResponseStatusCode  string
 	DBStoredProcedureName string
 	DBSystemName          string
+
+	ClientAttributes clientAttributes
+	ServerAttributes serverAttributes
 
 	NetworkAttributes networkAttributes
 }
@@ -278,6 +298,19 @@ func (attrs *databaseAttributes) MapAttribute(k string, v pcommon.Value) bool {
 	case string(conventions.DBSystemNameKey):
 		attrs.DBSystemName = v.Str()
 
+	case string(conventions.ServerAddressKey):
+		attrs.ServerAttributes.ServerAddress = v.Str()
+	case string(conventions.ServerPortKey):
+		if val, err := getAttributeValueAsInt(v); err == nil {
+			attrs.ServerAttributes.ServerPort = val
+		}
+	case string(conventions.ClientAddressKey):
+		attrs.ClientAttributes.ClientAddress = v.Str()
+	case string(conventions.ClientPortKey):
+		if val, err := getAttributeValueAsInt(v); err == nil {
+			attrs.ClientAttributes.ClientPort = val
+		}
+
 	default:
 		attrs.NetworkAttributes.MapAttribute(k, v)
 	}
@@ -291,7 +324,6 @@ type messagingAttributes struct {
 	MessagingConsumerGroup          string
 	MessagingDestinationAnonymous   bool
 	MessagingDestination            string
-	MessagingDestinationKind        string
 	MessagingDestinationPartitionID string
 	MessagingDestinationSubName     string
 	MessagingDestinationTemplate    string
@@ -303,6 +335,9 @@ type messagingAttributes struct {
 	MessagingOperation              string
 	MessagingOperationType          string
 	MessagingSystem                 string
+
+	ClientAttributes clientAttributes
+	ServerAttributes serverAttributes
 
 	NetworkAttributes networkAttributes
 }
@@ -348,6 +383,19 @@ func (attrs *messagingAttributes) MapAttribute(k string, v pcommon.Value) bool {
 		attrs.MessagingOperationType = v.Str()
 	case string(conventions.MessagingSystemKey):
 		attrs.MessagingSystem = v.Str()
+
+	case string(conventions.ServerAddressKey):
+		attrs.ServerAttributes.ServerAddress = v.Str()
+	case string(conventions.ServerPortKey):
+		if val, err := getAttributeValueAsInt(v); err == nil {
+			attrs.ServerAttributes.ServerPort = val
+		}
+	case string(conventions.ClientAddressKey):
+		attrs.ClientAttributes.ClientAddress = v.Str()
+	case string(conventions.ClientPortKey):
+		if val, err := getAttributeValueAsInt(v); err == nil {
+			attrs.ClientAttributes.ClientPort = val
+		}
 
 	default:
 		attrs.NetworkAttributes.MapAttribute(k, v)
