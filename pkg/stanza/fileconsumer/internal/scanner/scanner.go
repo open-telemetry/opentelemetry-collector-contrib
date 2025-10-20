@@ -26,7 +26,7 @@ func New(r io.Reader, maxLogSize int, buf []byte, startOffset int64, splitFunc b
 	scanFunc := func(data []byte, atEOF bool) (advance int, token []byte, err error) {
 		advance, token, err = splitFunc(data, atEOF)
 		s.pos += int64(advance)
-		return
+		return advance, token, err
 	}
 	s.Split(scanFunc)
 	return s
