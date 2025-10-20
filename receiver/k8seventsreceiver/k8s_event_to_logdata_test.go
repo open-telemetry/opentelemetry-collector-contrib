@@ -96,8 +96,7 @@ func TestK8sEventToLogDataWithApiAndResourceVersion(t *testing.T) {
 }
 
 func TestUnknownSeverity(t *testing.T) {
-	k8sEvent := getEvent("Normal")
-	k8sEvent.Type = "Unknown"
+	k8sEvent := getEvent("Unknown")
 
 	ld := k8sEventToLogData(zap.NewNop(), k8sEvent, "latest")
 	rl := ld.ResourceLogs().At(0)
