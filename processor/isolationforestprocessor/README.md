@@ -133,7 +133,7 @@ service:
 
 ```
 
-> Note: Use `routingconnector` to seggregate the different kind of spans(db, messaging etc.) and send them to separate `isolationforestprocessor` deployments so the anomaly detection is pertianing to the respective category of signals.
+> Note: Use `routingconnector` to segregate the different kinds of spans (db, messaging etc.) and send them to separate `isolationforestprocessor` deployments so the anomaly detection is pertaining to the respective category of signals.
  
 ### What the example does
 
