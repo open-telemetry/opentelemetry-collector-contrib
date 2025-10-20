@@ -23,5 +23,5 @@ func (t *fileTracker) EndConsume() (filesClosed int) {
 
 	t.unmatchedFiles = make([]*os.File, 0)
 	t.unmatchedFps = make([]*fingerprint.Fingerprint, 0)
-	return
+	return filesClosed
 }

@@ -11,7 +11,7 @@ The following telemetry is emitted by this component.
 Number of times a message couldn't be decoded by the configured encoder
 
 The receiver reads messages from Google Cloud Pub/Sub and tries to decode the message using the configured
-encoder. Each time a message fails to decoded the counter is increased. 
+encoder. Each time a message fails to decoded the counter is increased.
 
 
 | Unit | Metric Type | Value Type | Monotonic |
