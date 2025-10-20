@@ -5,12 +5,12 @@ package googlecloudstorageexporter
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	gojson "github.com/goccy/go-json"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -223,22 +223,22 @@ func newTestStorageEmulator(t *testing.T, bucketExistsName, uploadBucketName str
 			var body struct {
 				Name string `json:"name"`
 			}
-			errDecode := gojson.NewDecoder(r.Body).Decode(&body)
+			errDecode := json.NewDecoder(r.Body).Decode(&body)
 			assert.NoError(t, errDecode)
 
 			if body.Name == bucketExistsName {
 				// Simulate bucket already exists
 				w.WriteHeader(http.StatusConflict)
-				errEncode := gojson.NewEncoder(w).Encode(googleapi.Error{Code: http.StatusConflict})
+				errEncode := json.NewEncoder(w).Encode(googleapi.Error{Code: http.StatusConflict})
 				assert.NoError(t, errEncode)
 				return
 			}
 			w.WriteHeader(http.StatusOK)
-			errEncode := gojson.NewEncoder(w).Encode(body)
+			errEncode := json.NewEncoder(w).Encode(body)
 			assert.NoError(t, errEncode)
 		case "POST /upload/storage/v1/b/" + uploadBucketName + "/o":
 			w.WriteHeader(http.StatusOK)
-			errEncode := gojson.NewEncoder(w).Encode(map[string]any{
+			errEncode := json.NewEncoder(w).Encode(map[string]any{
 				"bucket": uploadBucketName,
 			})
 			assert.NoError(t, errEncode)

@@ -80,14 +80,13 @@ func isBucketConflictError(err error) bool {
 }
 
 func (s *storageExporter) Start(ctx context.Context, host component.Host) error {
+	s.logsMarshaler = &plog.JSONMarshaler{}
 	if s.cfg.Encoding != nil {
 		encoding, err := loadExtension[plog.Marshaler](host, *s.cfg.Encoding, "logs marshaler")
 		if err != nil {
 			return fmt.Errorf("failed to load logs extension: %w", err)
 		}
 		s.logsMarshaler = encoding
-	} else {
-		s.logsMarshaler = &plog.JSONMarshaler{}
 	}
 
 	// TODO Add option for authenticator
