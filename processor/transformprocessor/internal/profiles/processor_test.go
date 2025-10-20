@@ -1349,15 +1349,37 @@ func putProfileAttribute(t *testing.T, td pprofile.Profiles, profileIndex int, k
 	dic := td.Dictionary()
 	profile := td.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(profileIndex)
 	switch v := value.(type) {
-	case string:
-		require.NoError(t, pprofile.PutAttribute(dic.AttributeTable(), profile, dic, key, pcommon.NewValueStr(v)))
-	case []any:
-		sl := pcommon.NewValueSlice()
-		require.NoError(t, sl.FromRaw(v))
-		require.NoError(t, pprofile.PutAttribute(dic.AttributeTable(), profile, dic, key, sl))
+	case string, []any:
+		putAttribute(t, dic, profile, key, value)
 	default:
 		t.Fatalf("unsupported value type: %T", v)
 	}
+}
+
+func putAttribute(t *testing.T, dic pprofile.ProfilesDictionary, profile pprofile.Profile, key string, value any) {
+	t.Helper()
+
+	kvu := pprofile.NewKeyValueAndUnit()
+	keyIdx, err := pprofile.SetString(dic.StringTable(), key)
+	require.NoError(t, err)
+
+	kvu.SetKeyStrindex(keyIdx)
+	require.NoError(t, kvu.Value().FromRaw(value))
+	idx, err := pprofile.SetAttribute(dic.AttributeTable(), kvu)
+	require.NoError(t, err)
+
+	for k, i := range profile.AttributeIndices().All() {
+		if i == idx {
+			return
+		}
+
+		attr := dic.AttributeTable().At(int(i))
+		if attr.KeyStrindex() == keyIdx {
+			profile.AttributeIndices().SetAt(k, idx)
+			return
+		}
+	}
+	profile.AttributeIndices().Append(idx)
 }
 
 func clearProfileAttributes(pp pprofile.Profiles, idx int) {
