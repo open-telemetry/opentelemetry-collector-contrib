@@ -103,7 +103,7 @@ func addMetrics(result pingResult, mb *metadata.MetricsBuilder, logger *zap.Logg
 
 	if result.err != nil {
 		logger.Error(
-			fmt.Sprintf(`failed to ping host "%s", caused by: "%s"`, result.targetHost, result.err),
+			fmt.Sprintf(`failed to ping host %q, caused by: %q`, result.targetHost, result.err),
 			zap.String("host", result.targetHost),
 			zap.Error(result.err))
 		return
