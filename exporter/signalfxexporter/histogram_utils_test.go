@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package utils
+package signalfxexporter
 
 import (
 	"testing"
@@ -383,7 +383,7 @@ func TestHistogramsAreRetrieved(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			md := tt.inMetricsFunc()
-			gotMetrics, gotCount := GetHistograms(md)
+			gotMetrics, gotCount := getHistograms(md)
 			assert.Equal(t, tt.wantMetricCount, gotCount)
 			if tt.wantMetricCount == 0 {
 				assert.Equal(t, tt.wantMetrics(), gotMetrics)
