@@ -673,3 +673,78 @@ func TestPodContainerReasonMetrics(t *testing.T) {
 	),
 	)
 }
+
+func TestGetIDForCache(t *testing.T) {
+	ns := "namespace"
+	resName := "resName"
+
+	actual := getIDForCache(ns, resName)
+
+	require.Equal(t, ns+"/"+resName, actual)
+}
+
+func TestGetObjectFromStore_ObjectInClusterWideStore(t *testing.T) {
+	ms := metadata.NewStore()
+
+	store := &testutils.MockStore{
+		Cache: map[string]any{},
+	}
+
+	ms.Setup(gvk.Job, metadata.ClusterWideInformerKey, store)
+	store.Cache["test-namespace/test-job-0"] = testutils.NewJob("0")
+
+	obj, err := getObjectFromStore("test-namespace", "test-job-0", ms.Get(gvk.Job))
+
+	require.NoError(t, err)
+	require.NotNil(t, obj)
+}
+
+func TestGetObjectFromStore_ObjectInNamespacedStore(t *testing.T) {
+	ms := metadata.NewStore()
+
+	store := &testutils.MockStore{
+		Cache: map[string]any{},
+	}
+
+	ms.Setup(gvk.Job, "test-namespace", store)
+	store.Cache["test-namespace/test-job-0"] = testutils.NewJob("0")
+
+	obj, err := getObjectFromStore("test-namespace", "test-job-0", ms.Get(gvk.Job))
+
+	require.NoError(t, err)
+	require.NotNil(t, obj)
+}
+
+func TestGetObjectFromStore_ObjectNotFound(t *testing.T) {
+	ms := metadata.NewStore()
+
+	store := &testutils.MockStore{
+		Cache: map[string]any{},
+	}
+
+	ms.Setup(gvk.Job, "other-test-namespace", store)
+	store.Cache["test-namespace/test-job-0"] = testutils.NewJob("0")
+
+	obj, err := getObjectFromStore("test-namespace", "test-job-0", ms.Get(gvk.Job))
+
+	require.NoError(t, err)
+	require.Nil(t, obj)
+}
+
+func TestGetObjectFromStore_ReturnsError(t *testing.T) {
+	ms := metadata.NewStore()
+
+	store := &testutils.MockStore{
+		Cache: map[string]any{},
+	}
+
+	store.WantErr = true
+
+	ms.Setup(gvk.Job, "test-namespace", store)
+	store.Cache["test-namespace/test-job-0"] = testutils.NewJob("0")
+
+	obj, err := getObjectFromStore("test-namespace", "test-job-0", ms.Get(gvk.Job))
+
+	require.Error(t, err)
+	require.Nil(t, obj)
+}
