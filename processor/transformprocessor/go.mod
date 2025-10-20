@@ -24,15 +24,15 @@ require (
 )
 
 require (
-	go.opentelemetry.io/collector/component/componenttest v0.137.1-0.20251017185755-ee0bf522ea7c
-	go.opentelemetry.io/collector/confmap/xconfmap v0.137.1-0.20251017185755-ee0bf522ea7c
-	go.opentelemetry.io/collector/consumer/consumertest v0.137.1-0.20251017185755-ee0bf522ea7c
-	go.opentelemetry.io/collector/consumer/xconsumer v0.137.1-0.20251017185755-ee0bf522ea7c
-	go.opentelemetry.io/collector/pdata/pprofile v0.137.1-0.20251017185755-ee0bf522ea7c
-	go.opentelemetry.io/collector/processor/processorhelper v0.137.1-0.20251017185755-ee0bf522ea7c
-	go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper v0.137.1-0.20251017185755-ee0bf522ea7c
-	go.opentelemetry.io/collector/processor/processortest v0.137.1-0.20251017185755-ee0bf522ea7c
-	go.opentelemetry.io/collector/processor/xprocessor v0.137.1-0.20251017185755-ee0bf522ea7c
+	go.opentelemetry.io/collector/component/componenttest v0.138.0
+	go.opentelemetry.io/collector/confmap/xconfmap v0.138.0
+	go.opentelemetry.io/collector/consumer/consumertest v0.138.0
+	go.opentelemetry.io/collector/consumer/xconsumer v0.138.0
+	go.opentelemetry.io/collector/pdata/pprofile v0.138.0
+	go.opentelemetry.io/collector/processor/processorhelper v0.138.0
+	go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper v0.138.0
+	go.opentelemetry.io/collector/processor/processortest v0.138.0
+	go.opentelemetry.io/collector/processor/xprocessor v0.138.0
 	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842
 )
 
@@ -73,9 +73,9 @@ require (
 	github.com/ua-parser/uap-go v0.0.0-20240611065828-3a4781585db6 // indirect
 	github.com/zeebo/xxh3 v1.0.2 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/component/componentstatus v0.137.1-0.20251017185755-ee0bf522ea7c // indirect
-	go.opentelemetry.io/collector/internal/telemetry v0.137.1-0.20251017185755-ee0bf522ea7c // indirect
-	go.opentelemetry.io/collector/pdata/testdata v0.137.1-0.20251017185755-ee0bf522ea7c // indirect
+	go.opentelemetry.io/collector/component/componentstatus v0.138.0 // indirect
+	go.opentelemetry.io/collector/internal/telemetry v0.138.0 // indirect
+	go.opentelemetry.io/collector/pdata/testdata v0.138.0 // indirect
 	go.opentelemetry.io/collector/pipeline v1.44.0 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.13.0 // indirect
 	go.opentelemetry.io/otel v1.38.0 // indirect
