@@ -1,0 +1,97 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: gcp.project
+          value:
+            stringValue: test-project-id
+        - key: cloud.resource_id
+          value:
+            stringValue: compute.googleapis.com%2Fvpc_flows
+        - key: gcp.resource_type
+          value:
+            stringValue: gce_subnetwork
+        - key: gcp.label.subnetwork_id
+          value:
+            stringValue: "1234548292813243874"
+        - key: gcp.label.subnetwork_name
+          value:
+            stringValue: default
+        - key: gcp.label.project_id
+          value:
+            stringValue: test-project-id
+        - key: gcp.label.location
+          value:
+            stringValue: us-central1
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: log.record.uid
+                value:
+                  stringValue: x1ty6xe56du7
+              - key: network.protocol.name
+                value:
+                  stringValue: tcp
+              - key: source.address
+                value:
+                  stringValue: 203.0.113.4
+              - key: destination.address
+                value:
+                  stringValue: 192.0.2.4
+              - key: source.port
+                value:
+                  intValue: "55524"
+              - key: destination.port
+                value:
+                  intValue: "443"
+              - key: gcp.vpc.flow.reporter
+                value:
+                  stringValue: DEST
+              - key: gcp.vpc.flow.bytes_sent
+                value:
+                  intValue: "0"
+              - key: gcp.vpc.flow.packets_sent
+                value:
+                  intValue: "16"
+              - key: gcp.vpc.flow.start_time
+                value:
+                  stringValue: "2025-09-27T21:34:39.250342106Z"
+              - key: gcp.vpc.flow.end_time
+                value:
+                  stringValue: "2025-09-27T21:34:39.250342106Z"
+              - key: gcp.vpc.flow.destination.instance.project.id
+                value:
+                  stringValue: test-project-id
+              - key: gcp.vpc.flow.destination.instance.vm.region
+                value:
+                  stringValue: us-central1
+              - key: gcp.vpc.flow.destination.instance.vm.name
+                value:
+                  stringValue: test-vm-4
+              - key: gcp.vpc.flow.destination.instance.vm.zone
+                value:
+                  stringValue: us-central1-a
+              - key: gcp.vpc.flow.destination.instance.managed_instance_group.name
+                value:
+                  stringValue: test-mig-2
+              - key: gcp.vpc.flow.destination.instance.managed_instance_group.zone
+                value:
+                  stringValue: us-central1-a
+              - key: gcp.vpc.flow.destination.project.id
+                value:
+                  stringValue: test-project-id
+              - key: gcp.vpc.flow.destination.subnet.name
+                value:
+                  stringValue: default
+              - key: gcp.vpc.flow.destination.subnet.region
+                value:
+                  stringValue: us-central1
+              - key: gcp.vpc.flow.destination.vpc.name
+                value:
+                  stringValue: default
+              - key: gcp.vpc.flow.network_service.dscp
+                value:
+                  intValue: "32"
+            body: {}
+            observedTimeUnixNano: "1759008881615575788"
+            timeUnixNano: "1759008881615575788"
+        scope: {}
