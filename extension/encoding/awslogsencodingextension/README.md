@@ -262,39 +262,50 @@ If you're using the old format values you should update the encoding extension c
 
 [CloudTrail log record fields](https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-event-reference-record-contents.html) are mapped this way in the resulting OpenTelemetry log:
 
-| CloudTrail field                      | Attribute in OpenTelemetry log                                |
-|---------------------------------------|---------------------------------------------------------------|
-| `eventID`                             | `aws.cloudtrail.event_id`                                     |
-| `eventVersion`                        | `aws.cloudtrail.event_version`                                |
-| `eventCategory`                       | `aws.event.category`                                          |
-| `errorCode`                           | `aws.error.code`                                              |
-| `managementEvent`                     | `aws.event.management`                                        |
-| `errorMessage`                        | `aws.error.message`                                           |
-| `readOnly`                            | `aws.event.read_only`                                         |
-| `userIdentity.identityStoreArn`       | `aws.identity_store.arn`                                      |
-| `insightDetails`                      | `aws.insight_details` (as a map, if available)                |
-| `userIdentity.arn`                    | `aws.principal.arn`                                           |
-| `userIdentity.principalId`            | `aws.principal.id`                                            |
-| `userIdentity.type`                   | `aws.principal.type`                                          |
-| `userIdentity.accessKeyId`            | `aws.access_key.id`                                           |
-| `requestParameters`                   | `aws.request.parameters` (map of all request parameters)      |
-| `requestID`                           | `aws.request_id`                                              |
-| `resources`                           | `aws.resources` (as an array, if available)                   |
-| `responseElements`                    | `aws.response.elements` (map of all response elements)        |
-| `sessionCredentialFromConsole`        | `aws.session.console` (set to true if value is "true")        |
-| `sharedEventID`                       | `aws.shared_event_id`                                         |
-| `recipientAccountId`                  | `cloud.account.id`                                            |
-| `awsRegion`                           | `cloud.region`                                                |
-| `eventName`                           | `rpc.method`                                                  |
-| `eventSource`                         | `rpc.service`                                                 |
-| `eventType`                           | `rpc.system`                                                  |
-| `tlsDetails.clientProvidedHostHeader` | `server.address`                                              |
-| `sourceIPAddress`                     | `source.address`                                              |
-| `tlsDetails.cipherSuite`              | `tls.cipher`                                                  |
-| `tlsDetails.tlsVersion`               | `tls.protocol.version`                                        |
-| `userAgent`                           | `user_agent.original`                                         |
-| `userIdentity.userId`                 | `user.id`                                                     |
-| `userIdentity.userName`               | `user.name`                                                   |
+| CloudTrail field                                          | Attribute in OpenTelemetry log                                            |
+|-----------------------------------------------------------|---------------------------------------------------------------------------|
+| `apiVersion`                                              | `aws.cloudtrail.api_version`                                              |
+| `eventID`                                                 | `aws.cloudtrail.event_id`                                                 |
+| `eventVersion`                                            | `aws.cloudtrail.event_version`                                            |
+| `eventCategory`                                           | `aws.event.category`                                                      |
+| `errorCode`                                               | `aws.error.code`                                                          |
+| `managementEvent`                                         | `aws.event.management`                                                    |
+| `errorMessage`                                            | `aws.error.message`                                                       |
+| `readOnly`                                                | `aws.event.read_only`                                                     |
+| `insightDetails`                                          | `aws.insight_details` (as a map, if available)                            |
+| `requestParameters`                                       | `aws.request.parameters` (map of all request parameters)                  |
+| `requestID`                                               | `aws.request_id`                                                          |
+| `resources`                                               | `aws.resources` (as an array, if available)                               |
+| `responseElements`                                        | `aws.response.elements` (map of all response elements)                    |
+| `additionalEventData`                                     | `aws.cloudtrail.additional_event_data` (map of all additional event data) |
+| `sessionCredentialFromConsole`                            | `aws.session.console` (set to true if value is "true")                    |
+| `sharedEventID`                                           | `aws.shared_event_id`                                                     |
+| `recipientAccountId`                                      | `cloud.account.id`                                                        |
+| `awsRegion`                                               | `cloud.region`                                                            |
+| `eventName`                                               | `rpc.method`                                                              |
+| `eventSource`                                             | `rpc.service`                                                             |
+| `eventType`                                               | `rpc.system`                                                              |
+| `tlsDetails.clientProvidedHostHeader`                     | `server.address`                                                          |
+| `sourceIPAddress`                                         | `source.address`                                                          |
+| `tlsDetails.cipherSuite`                                  | `tls.cipher`                                                              |
+| `tlsDetails.tlsVersion`                                   | `tls.protocol.version`                                                    |
+| `userAgent`                                               | `user_agent.original`                                                     |
+| `userIdentity.type`                                       | `aws.principal.type`                                                      |
+| `userIdentity.principalId`                                | `aws.principal.id`                                                        |
+| `userIdentity.arn`                                        | `aws.principal.arn`                                                       |
+| `userIdentity.accessKeyId`                                | `aws.access_key.id`                                                       |
+| `userIdentity.userId`                                     | `user.id`                                                                 |
+| `userIdentity.userName`                                   | `user.name`                                                               |
+| `userIdentity.identityStoreArn`                           | `aws.identity_store.arn`                                                  |
+| `userIdentity.accountId`                                  | `aws.user_identity.account_id`                                            |
+| `userIdentity.invokedBy`                                  | `aws.user_identity.invoked_by`                                            |
+| `userIdentity.sessionContext.attributes.creationDate`     | `aws.user_identity.session_context.attributes.creation_date`              |
+| `userIdentity.sessionContext.attributes.mfaAuthenticated` | `aws.user_identity.session_context.attributes.mfa_authenticated`          |
+| `userIdentity.sessionContext.sessionIssuer.type`          | `aws.user_identity.session_context.issuer.type`                           |
+| `userIdentity.sessionContext.sessionIssuer.principalId`   | `aws.user_identity.session_context.issuer.principal_id`                   |
+| `userIdentity.sessionContext.sessionIssuer.arn`           | `aws.user_identity.session_context.issuer.arn`                            |
+| `userIdentity.sessionContext.sessionIssuer.accountId`     | `aws.user_identity.session_context.issuer.account_id`                     |
+| `userIdentity.sessionContext.sessionIssuer.userName`      | `aws.user_identity.session_context.issuer.user_name`                      |
 
 All request parameters and response elements are included directly as nested maps in the attributes, preserving their original structure.
 
