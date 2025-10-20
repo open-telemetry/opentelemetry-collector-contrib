@@ -65,7 +65,7 @@ func TestHandleEvent(t *testing.T) {
 	require.NotNil(t, r)
 	recv := r.(*k8seventsReceiver)
 	recv.ctx = t.Context()
-	k8sEvent := getEvent()
+	k8sEvent := getEvent("Normal")
 	recv.handleEvent(k8sEvent)
 
 	assert.Equal(t, 1, sink.LogRecordCount())
@@ -83,7 +83,7 @@ func TestDropEventsOlderThanStartupTime(t *testing.T) {
 	require.NotNil(t, r)
 	recv := r.(*k8seventsReceiver)
 	recv.ctx = t.Context()
-	k8sEvent := getEvent()
+	k8sEvent := getEvent("Normal")
 	k8sEvent.FirstTimestamp = v1.Time{Time: time.Now().Add(-time.Hour)}
 	recv.handleEvent(k8sEvent)
 
@@ -91,7 +91,7 @@ func TestDropEventsOlderThanStartupTime(t *testing.T) {
 }
 
 func TestGetEventTimestamp(t *testing.T) {
-	k8sEvent := getEvent()
+	k8sEvent := getEvent("Normal")
 	eventTimestamp := getEventTimestamp(k8sEvent)
 	assert.Equal(t, k8sEvent.FirstTimestamp.Time, eventTimestamp)
 
@@ -117,7 +117,7 @@ func TestAllowEvent(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, r)
 	recv := r.(*k8seventsReceiver)
-	k8sEvent := getEvent()
+	k8sEvent := getEvent("Normal")
 
 	shouldAllowEvent := recv.allowEvent(k8sEvent)
 	assert.True(t, shouldAllowEvent)
@@ -158,7 +158,7 @@ func TestReceiverWithLeaderElection(t *testing.T) {
 
 	// Become leader: start processing events
 	le.InvokeOnLeading()
-	recv.handleEvent(getEvent())
+	recv.handleEvent(getEvent("Normal"))
 
 	require.Eventually(t, func() bool {
 		return sink.LogRecordCount() == 1
@@ -174,14 +174,14 @@ func TestReceiverWithLeaderElection(t *testing.T) {
 
 	// regain leadership and inject again
 	le.InvokeOnLeading()
-	recv.handleEvent(getEvent())
+	recv.handleEvent(getEvent("Normal"))
 
 	require.Eventually(t, func() bool {
 		return sink.LogRecordCount() == 2
 	}, 5*time.Second, 100*time.Millisecond, "logs not collected after regaining leadership")
 }
 
-func getEvent() *corev1.Event {
+func getEvent(eventType string) *corev1.Event {
 	return &corev1.Event{
 		InvolvedObject: corev1.ObjectReference{
 			APIVersion: "v1",
@@ -193,7 +193,7 @@ func getEvent() *corev1.Event {
 		Reason:         "testing_event_1",
 		Count:          2,
 		FirstTimestamp: v1.Now(),
-		Type:           "Normal",
+		Type:           eventType,
 		Message:        "testing event message",
 		ObjectMeta: v1.ObjectMeta{
 			UID:               types.UID("289686f9-a5c0"),
