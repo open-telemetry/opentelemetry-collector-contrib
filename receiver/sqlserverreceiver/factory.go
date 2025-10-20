@@ -56,7 +56,7 @@ func createDefaultConfig() component.Config {
 			MaxRowsPerQuery: 100,
 		},
 		TopQueryCollection: TopQueryCollection{
-			LookbackTime:        uint(2 * cfg.CollectionInterval / time.Second),
+			LookbackTime:        2 * cfg.CollectionInterval / time.Second,
 			MaxQuerySampleCount: 1000,
 			TopQueryCount:       200,
 			CollectionInterval:  time.Minute,
