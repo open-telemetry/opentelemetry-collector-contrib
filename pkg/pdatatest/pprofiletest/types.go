@@ -279,15 +279,23 @@ type attributable interface {
 }
 
 func (a *Attribute) Transform(dic pprofile.ProfilesDictionary, record attributable) {
-	v := pcommon.NewValueEmpty()
-	if err := v.FromRaw(a.Value); err != nil {
+	kvu := pprofile.NewKeyValueAndUnit()
+	keyIdx, err := pprofile.SetString(dic.StringTable(), a.Key)
+	if err != nil {
+		panic(fmt.Sprintf("failed to put key string: %s: %v", a.Key, err))
+	}
+	kvu.SetKeyStrindex(keyIdx)
+	err = kvu.Value().FromRaw(a.Value)
+	if err != nil {
 		panic(fmt.Sprintf("unsupported attribute value: {%s: %v (type %T)}",
 			a.Key, a.Value, a.Value))
 	}
-	if err := pprofile.PutAttribute(dic.AttributeTable(), record, dic, a.Key, v); err != nil {
-		panic(fmt.Sprintf("failed to put attribute: {%s: %v (type %T)}: %v",
+	idx, err := pprofile.SetAttribute(dic.AttributeTable(), kvu)
+	if err != nil {
+		panic(fmt.Sprintf("failed to set attribute: {%s: %v (type %T)}: %v",
 			a.Key, a.Value, a.Value, err))
 	}
+	record.AttributeIndices().Append(idx)
 }
 
 type KeyValueAndUnit struct {
