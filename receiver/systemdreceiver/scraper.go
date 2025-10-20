@@ -48,7 +48,7 @@ func (s *systemdScraper) start(ctx context.Context, _ component.Host) (err error
 
 	s.conn = conn
 
-	return
+	return err
 }
 
 func (s *systemdScraper) shutdown(_ context.Context) (err error) {
@@ -56,7 +56,7 @@ func (s *systemdScraper) shutdown(_ context.Context) (err error) {
 		err = s.conn.Close()
 	}
 
-	return
+	return err
 }
 
 type unitTuple struct {
