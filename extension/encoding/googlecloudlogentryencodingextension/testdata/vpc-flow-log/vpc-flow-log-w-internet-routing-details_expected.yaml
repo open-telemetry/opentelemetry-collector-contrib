@@ -1,0 +1,117 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: gcp.project
+          value:
+            stringValue: test-project-id
+        - key: cloud.resource_id
+          value:
+            stringValue: networkmanagement.googleapis.com%2Fvpc_flows
+        - key: gcp.resource_type
+          value:
+            stringValue: vpc_flow_logs_config
+        - key: gcp.label.name
+          value:
+            stringValue: "test-flow-logs-config"
+        - key: gcp.label.location
+          value:
+            stringValue: global
+        - key: gcp.label.resource_container
+          value:
+            stringValue: projects/123456789012
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: log.record.uid
+                value:
+                  stringValue: 79c1kvepzqvr
+              - key: gcp.label.target_resource_name
+                value:
+                  stringValue: projects/123456789012/global/networks/default
+              - key: network.protocol.name
+                value:
+                  stringValue: icmp
+              - key: source.address
+                value:
+                  stringValue: 192.0.2.6
+              - key: destination.address
+                value:
+                  stringValue: 203.0.113.6
+              - key: gcp.vpc.flow.reporter
+                value:
+                  stringValue: SRC
+              - key: gcp.vpc.flow.bytes_sent
+                value:
+                  intValue: "800"
+              - key: gcp.vpc.flow.packets_sent
+                value:
+                  intValue: "20"
+              - key: gcp.vpc.flow.start_time
+                value:
+                  stringValue: "2025-09-27T21:13:05.056628399Z"
+              - key: gcp.vpc.flow.end_time
+                value:
+                  stringValue: "2025-09-27T21:13:05.056628399Z"
+              - key: gcp.vpc.flow.egress.as_paths
+                value:
+                  arrayValue:
+                    values:
+                      - kvlistValue:
+                          values:
+                            - key: as_details
+                              value:
+                                arrayValue:
+                                  values:
+                                    - kvlistValue:
+                                        values:
+                                          - key: asn
+                                            value:
+                                              intValue: "16509"
+                                    - kvlistValue:
+                                        values:
+                                          - key: asn
+                                            value:
+                                              intValue: "14618"
+              - key: gcp.vpc.flow.source.instance.project.id
+                value:
+                  stringValue: test-project-id
+              - key: gcp.vpc.flow.source.instance.vm.region
+                value:
+                  stringValue: asia-south1
+              - key: gcp.vpc.flow.source.instance.vm.name
+                value:
+                  stringValue: test-vm-6
+              - key: gcp.vpc.flow.source.instance.vm.zone
+                value:
+                  stringValue: asia-south1-c
+              - key: gcp.vpc.flow.source.project.id
+                value:
+                  stringValue: test-project-id
+              - key: gcp.vpc.flow.source.subnet.name
+                value:
+                  stringValue: default
+              - key: gcp.vpc.flow.source.subnet.region
+                value:
+                  stringValue: asia-south1
+              - key: gcp.vpc.flow.source.vpc.name
+                value:
+                  stringValue: default
+              - key: gcp.vpc.flow.destination.asn
+                value:
+                  intValue: "14618"
+              - key: gcp.vpc.flow.destination.geo.city
+                value:
+                  stringValue: Ashburn
+              - key: gcp.vpc.flow.destination.geo.continent
+                value:
+                  stringValue: America
+              - key: gcp.vpc.flow.destination.geo.country.iso_code.alpha3
+                value:
+                  stringValue: usa
+              - key: gcp.vpc.flow.destination.geo.region
+                value:
+                  stringValue: Virginia
+            body: {}
+            observedTimeUnixNano: "1759007596799966252"
+            timeUnixNano: "1759007596799966252"
+        scope: {}
