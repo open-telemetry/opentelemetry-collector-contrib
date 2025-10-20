@@ -253,6 +253,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/huaweicloudcesreceiver      
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/httpcheckreceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/icmpcheckreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/influxdbreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver
@@ -290,6 +291,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefbreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redfishreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/riakreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphanareceiver

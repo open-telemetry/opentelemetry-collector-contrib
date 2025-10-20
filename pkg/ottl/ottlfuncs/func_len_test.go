@@ -44,103 +44,103 @@ func Test_Len(t *testing.T) {
 
 	plogLogRecordSlice := plog.NewLogRecordSlice()
 	plogLogRecordSlice.EnsureCapacity(5)
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		plogLogRecordSlice.AppendEmpty()
 	}
 
 	plogResourceLogsSlice := plog.NewResourceLogsSlice()
 	plogResourceLogsSlice.EnsureCapacity(5)
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		plogResourceLogsSlice.AppendEmpty()
 	}
 
 	plogScopeLogsSlice := plog.NewScopeLogsSlice()
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		plogScopeLogsSlice.AppendEmpty()
 	}
 	plogScopeLogsSlice.EnsureCapacity(5)
 
 	pmetricExemplarSlice := pmetric.NewExemplarSlice()
 	pmetricExemplarSlice.EnsureCapacity(5)
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		pmetricExemplarSlice.AppendEmpty()
 	}
 
 	pmetricExponentialHistogramDataPointSlice := pmetric.NewExponentialHistogramDataPointSlice()
 	pmetricExponentialHistogramDataPointSlice.EnsureCapacity(5)
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		pmetricExponentialHistogramDataPointSlice.AppendEmpty()
 	}
 
 	pmetricHistogramDataPointSlice := pmetric.NewHistogramDataPointSlice()
 	pmetricHistogramDataPointSlice.EnsureCapacity(5)
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		pmetricHistogramDataPointSlice.AppendEmpty()
 	}
 
 	pmetricMetricSlice := pmetric.NewMetricSlice()
 	pmetricMetricSlice.EnsureCapacity(5)
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		pmetricMetricSlice.AppendEmpty()
 	}
 
 	pmetricNumberDataPointSlice := pmetric.NewNumberDataPointSlice()
 	pmetricNumberDataPointSlice.EnsureCapacity(5)
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		pmetricNumberDataPointSlice.AppendEmpty()
 	}
 
 	pmetricResourceSlice := pmetric.NewResourceMetricsSlice()
 	pmetricResourceSlice.EnsureCapacity(5)
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		pmetricResourceSlice.AppendEmpty()
 	}
 
 	pmetricScopeMetricsSlice := pmetric.NewScopeMetricsSlice()
 	pmetricScopeMetricsSlice.EnsureCapacity(5)
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		pmetricScopeMetricsSlice.AppendEmpty()
 	}
 
 	pmetricSummaryDataPointSlice := pmetric.NewSummaryDataPointSlice()
 	pmetricSummaryDataPointSlice.EnsureCapacity(5)
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		pmetricSummaryDataPointSlice.AppendEmpty()
 	}
 
 	pmetricSummaryDataPointValueAtQuantileSlice := pmetric.NewSummaryDataPointValueAtQuantileSlice()
 	pmetricSummaryDataPointValueAtQuantileSlice.EnsureCapacity(5)
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		pmetricSummaryDataPointValueAtQuantileSlice.AppendEmpty()
 	}
 
 	ptraceResourceSpansSlice := ptrace.NewResourceSpansSlice()
 	ptraceResourceSpansSlice.EnsureCapacity(5)
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		ptraceResourceSpansSlice.AppendEmpty()
 	}
 
 	ptraceScopeSpansSlice := ptrace.NewScopeSpansSlice()
 	ptraceScopeSpansSlice.EnsureCapacity(5)
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		ptraceScopeSpansSlice.AppendEmpty()
 	}
 
 	ptraceSpanEventSlice := ptrace.NewSpanEventSlice()
 	ptraceSpanEventSlice.EnsureCapacity(5)
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		ptraceSpanEventSlice.AppendEmpty()
 	}
 
 	ptraceSpanLinkSlice := ptrace.NewSpanLinkSlice()
 	ptraceSpanLinkSlice.EnsureCapacity(5)
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		ptraceSpanLinkSlice.AppendEmpty()
 	}
 
 	ptraceSpanSlice := ptrace.NewSpanSlice()
 	ptraceSpanSlice.EnsureCapacity(5)
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		ptraceSpanSlice.AppendEmpty()
 	}
 
@@ -297,7 +297,7 @@ func Test_Len(t *testing.T) {
 
 func dummyMap(size int) map[string]any {
 	m := make(map[string]any, size)
-	for i := 0; i < size; i++ {
+	for i := range size {
 		m[strconv.Itoa(i)] = i
 	}
 	return m

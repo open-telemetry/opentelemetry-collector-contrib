@@ -62,9 +62,9 @@ across all spans:
 - `status.code`
 - `collector.instance.id`
 
-The `collector.instance.id` dimension is intended to add a unique UUID to all metrics, ensuring that the spanmetrics connector 
+The `collector.instance.id` dimension is intended to add a unique UUID to all metrics, ensuring that the spanmetrics connector
 does not violate the **Single Writer Principle** when spanmetrics is used in a multi-deployment model.
-Currently, `collector.instance.id` must be manually enabled via the feature gate: `connector.spanmetrics.includeServiceInstanceID`.
+Currently, `collector.instance.id` must be manually enabled via the feature gate: `connector.spanmetrics.includeCollectorInstanceID`.
 More detail, please see [Known Limitation: the Single Writer Principle](#known-limitation-the-single-writer-principle)
 
 ## Span to Metrics processor to Span to metrics connector
@@ -283,7 +283,7 @@ connectors:
       - telemetry.sdk.language
       - telemetry.sdk.name
 ```
-* Manually enable the feature gate: `connector.spanmetrics.includeServiceInstanceID` to produce uniquely identified metrics.
+* Manually enable the feature gate: `connector.spanmetrics.includeCollectorInstanceID` to produce uniquely identified metrics.
 * For exporters like Prometheus, which rely on the single writer assumption, use a dedicated pipeline with a single `spanmetricsconnector` instance
 
 More context is available in [GitHub issue #21101](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21101).
