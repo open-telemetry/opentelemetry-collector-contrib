@@ -265,7 +265,7 @@ func (c *ProducerConfig) Unmarshal(conf *confmap.Conf) error {
 	return conf.Unmarshal(c)
 }
 
-// RequiredAcks defines record acknowledgement behavior for for producers.
+// RequiredAcks defines record acknowledgement behavior for producers.
 type RequiredAcks int
 
 const (

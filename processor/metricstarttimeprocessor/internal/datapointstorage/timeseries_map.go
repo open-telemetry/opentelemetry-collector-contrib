@@ -26,13 +26,15 @@ type TimeseriesInfo struct {
 }
 
 type NumberInfo struct {
-	StartTime     pcommon.Timestamp
-	PreviousValue float64
+	StartTime           pcommon.Timestamp
+	PreviousDoubleValue float64
+	PreviousIntValue    int64
 
 	// These are the optional reference values for strategies that need to cache
 	// additional data from the initial points.
 	// For example - storing the initial point for the subtract_initial_point strategy.
-	RefValue float64
+	RefDoubleValue float64
+	RefIntValue    int64
 }
 
 type HistogramInfo struct {
@@ -246,7 +248,7 @@ func (ref *TimeseriesInfo) IsResetSummary(s pmetric.SummaryDataPoint) bool {
 // whether the metric has been reset based on the values.  It is a reset if the
 // value has decreased.
 func (ref *TimeseriesInfo) IsResetSum(s pmetric.NumberDataPoint) bool {
-	return s.DoubleValue() < ref.Number.PreviousValue
+	return s.DoubleValue() < ref.Number.PreviousDoubleValue || s.IntValue() < ref.Number.PreviousIntValue
 }
 
 func newTimeseriesMap() *TimeseriesMap {

@@ -7,8 +7,6 @@ import (
 	"context"
 	"fmt"
 	"math"
-	"os"
-	"path/filepath"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -17,13 +15,11 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"gopkg.in/yaml.v3"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/storagetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/consumerretry"
@@ -141,7 +137,6 @@ func TestShutdownFlush(t *testing.T) {
 			select {
 			case <-closeCh:
 				assert.NoError(t, logsReceiver.Shutdown(t.Context()))
-				fmt.Println(">> Shutdown called")
 				return
 			default:
 				err := stanzaReceiver.emitter.Process(t.Context(), entry.New())
@@ -246,161 +241,15 @@ func benchmarkReceiver(b *testing.B, logsPerIteration int, batchingInput, batchi
 	rcv.set = set
 	rcv.emitter = emitter
 
-	b.ResetTimer()
-
 	require.NoError(b, rcv.Start(b.Context(), nil))
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		nextIteration <- struct{}{}
 		<-iterationComplete
 		mockConsumer.receivedLogs.Store(0)
 	}
 
 	require.NoError(b, rcv.Shutdown(b.Context()))
-}
-
-func BenchmarkReadLine(b *testing.B) {
-	receivedAllLogs := make(chan struct{})
-	filePath := filepath.Join(b.TempDir(), "bench.log")
-
-	pipelineYaml := fmt.Sprintf(`
-pipeline:
-  type: file_input
-  include:
-    - %s
-  start_at: beginning`,
-		filePath)
-
-	confmapFilePath := filepath.Join(b.TempDir(), "conf.yaml")
-	require.NoError(b, os.WriteFile(confmapFilePath, []byte(pipelineYaml), 0o600))
-
-	testConfMaps, err := confmaptest.LoadConf(confmapFilePath)
-	require.NoError(b, err)
-
-	conf, err := testConfMaps.Sub("pipeline")
-	require.NoError(b, err)
-	require.NotNil(b, conf)
-
-	operatorCfg := operator.Config{}
-	require.NoError(b, conf.Unmarshal(&operatorCfg))
-
-	operatorCfgs := []operator.Config{operatorCfg}
-
-	storageClient := storagetest.NewInMemoryClient(
-		component.KindReceiver,
-		component.MustNewID("foolog"),
-		"test",
-	)
-
-	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings(component.MustNewType("foolog"))})
-	require.NoError(b, err)
-
-	mockConsumer := &testConsumer{
-		receivedAllLogs: receivedAllLogs,
-		expectedLogs:    uint32(b.N),
-		receivedLogs:    atomic.Uint32{},
-	}
-	rcv := &receiver{
-		consumer:      mockConsumer,
-		obsrecv:       obsrecv,
-		storageClient: storageClient,
-	}
-
-	set := componenttest.NewNopTelemetrySettings()
-	emitter := helper.NewBatchingLogEmitter(set, rcv.consumeEntries)
-	defer func() {
-		require.NoError(b, emitter.Stop())
-	}()
-
-	pipe, err := pipeline.Config{
-		Operators:     operatorCfgs,
-		DefaultOutput: emitter,
-	}.Build(set)
-	require.NoError(b, err)
-
-	rcv.pipe = pipe
-	rcv.set = set
-	rcv.emitter = emitter
-
-	// Populate the file that will be consumed
-	file, err := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE, 0o666)
-	require.NoError(b, err)
-	for i := 0; i < b.N; i++ {
-		_, err := file.WriteString("testlog\n")
-		require.NoError(b, err)
-	}
-
-	// Run the actual benchmark
-	b.ResetTimer()
-	require.NoError(b, rcv.Start(b.Context(), nil))
-
-	<-receivedAllLogs
-
-	require.NoError(b, rcv.Shutdown(b.Context()))
-}
-
-func BenchmarkParseAndMap(b *testing.B) {
-	filePath := filepath.Join(b.TempDir(), "bench.log")
-
-	fileInputYaml := fmt.Sprintf(`
-- type: file_input
-  include:
-    - %s
-  start_at: beginning`, filePath)
-
-	regexParserYaml := `
-- type: regex_parser
-  regex: '(?P<remote_host>[^\s]+) - (?P<remote_user>[^\s]+) \[(?P<timestamp>[^\]]+)\] "(?P<http_method>[A-Z]+) (?P<path>[^\s]+)[^"]+" (?P<http_status>\d+) (?P<bytes_sent>[^\s]+)'
-  timestamp:
-    parse_from: timestamp
-    layout: '%d/%b/%Y:%H:%M:%S %z'
-  severity:
-    parse_from: http_status
-    preserve: true
-    mapping:
-      critical: 5xx
-      error: 4xx
-      info: 3xx
-      debug: 2xx`
-
-	pipelineYaml := fmt.Sprintf("%s%s", fileInputYaml, regexParserYaml)
-
-	var operatorCfgs []operator.Config
-	require.NoError(b, yaml.Unmarshal([]byte(pipelineYaml), &operatorCfgs))
-
-	set := componenttest.NewNopTelemetrySettings()
-	emitter := helper.NewBatchingLogEmitter(set, func(_ context.Context, entries []*entry.Entry) {
-		for _, e := range entries {
-			convert(e)
-		}
-	})
-	defer func() {
-		require.NoError(b, emitter.Stop())
-	}()
-
-	pipe, err := pipeline.Config{
-		Operators:     operatorCfgs,
-		DefaultOutput: emitter,
-	}.Build(set)
-	require.NoError(b, err)
-
-	// Populate the file that will be consumed
-	file, err := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE, 0o666)
-	require.NoError(b, err)
-	for i := 0; i < b.N; i++ {
-		_, err := fmt.Fprintf(file, "10.33.121.119 - - [11/Aug/2020:00:00:00 -0400] \"GET /index.html HTTP/1.1\" 404 %d\n", i%1000)
-		require.NoError(b, err)
-	}
-
-	storageClient := storagetest.NewInMemoryClient(
-		component.KindReceiver,
-		component.MustNewID("foolog"),
-		"test",
-	)
-
-	// Run the actual benchmark
-	b.ResetTimer()
-	require.NoError(b, pipe.Start(storageClient))
 }
 
 const testInputOperatorTypeStr = "test_input"
