@@ -537,6 +537,7 @@ Available Converters:
 - [UUIDv7](#UUIDv7)
 - [Values](#values)
 - [Weekday](#weekday)
+- [XXH3](#xxh3)
 - [Year](#year)
 
 ### Base64Decode (Deprecated)
@@ -2568,6 +2569,23 @@ The returned range is 0-6 (Sun-Sat)
 Examples:
 
 - `Weekday(Now())`
+
+### XXH3
+
+`XXH3(value)`
+
+The `XXH3` Converter generates a 64-bit xxHash digest from the input `value` using the XXH3 hash algorithm.
+
+The returned type is string.
+
+`value` is either a path expression to a string telemetry field or a literal string. If `value` is another type an error is returned.
+
+If an error occurs during hashing, it is returned.
+
+Examples:
+
+- `XXH3(resource.attributes["device.name"])`
+- `XXH3("name")`
 
 ### Year
 

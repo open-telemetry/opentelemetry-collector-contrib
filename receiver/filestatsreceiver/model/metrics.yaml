@@ -1,14 +1,25 @@
 groups:
-  - id: file.mtime
+  - id: file.atime
     type: metric
-    metric_name: file.mtime
+    metric_name: file.atime
     stability: development
-    brief: "Elapsed time since the last modification of the file or folder, in seconds since Epoch."
+    brief: Elapsed time since last access of the file or folder, in seconds since Epoch.
     instrument: updowncounter
     unit: "s"
     annotations:
       scraper:
-        enabled: true
+        enabled: false
+        value_type: int
+  - id: file.count
+    type: metric
+    metric_name: file.count
+    stability: development
+    brief: The number of files matched
+    instrument: gauge
+    unit: "{file}"
+    annotations:
+      scraper:
+        enabled: false
         value_type: int
   - id: file.ctime
     type: metric
@@ -24,16 +35,16 @@ groups:
       scraper:
         enabled: false
         value_type: int
-  - id: file.atime
+  - id: file.mtime
     type: metric
-    metric_name: file.atime
+    metric_name: file.mtime
     stability: development
-    brief: Elapsed time since last access of the file or folder, in seconds since Epoch.
+    brief: "Elapsed time since the last modification of the file or folder, in seconds since Epoch."
     instrument: updowncounter
     unit: "s"
     annotations:
       scraper:
-        enabled: false
+        enabled: true
         value_type: int
   - id: file.size
     type: metric
@@ -45,15 +56,4 @@ groups:
     annotations:
       scraper:
         enabled: true
-        value_type: int
-  - id: file.count
-    type: metric
-    metric_name: file.count
-    stability: development
-    brief: The number of files matched
-    instrument: gauge
-    unit: "{file}"
-    annotations:
-      scraper:
-        enabled: false
         value_type: int

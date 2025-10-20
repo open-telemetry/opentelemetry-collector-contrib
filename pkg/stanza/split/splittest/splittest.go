@@ -116,13 +116,13 @@ func ScanLinesStrict(data []byte, atEOF bool) (advance int, token []byte, err er
 	if advance == len(token) {
 		return 0, nil, nil
 	}
-	return
+	return advance, token, err
 }
 
 func GenerateBytes(length int) []byte {
 	chars := []byte(`abcdefghijklmnopqrstuvwxyz`)
 	newSlice := make([]byte, length)
-	for i := 0; i < length; i++ {
+	for i := range length {
 		newSlice[i] = chars[i%len(chars)]
 	}
 	return newSlice
