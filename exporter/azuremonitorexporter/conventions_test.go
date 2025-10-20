@@ -4,34 +4,34 @@
 package azuremonitorexporter
 
 import (
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/otel/semconv/v1.7.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.34.0"
 )
 
 func TestHTTPAttributeMapping(t *testing.T) {
 	httpAttributeValues := map[string]any{
-		string(conventions.HTTPMethodKey): string(conventions.HTTPMethodKey),
-		string(conventions.HTTPURLKey):    string(conventions.HTTPURLKey),
-		string(conventions.HTTPTargetKey): string(conventions.HTTPTargetKey),
-		string(conventions.HTTPHostKey):   string(conventions.HTTPHostKey),
-		string(conventions.HTTPSchemeKey): string(conventions.HTTPSchemeKey),
+		string(conventions.HTTPRequestMethodKey): string(conventions.HTTPRequestMethodKey),
+		string(conventions.URLFullKey):           string(conventions.URLFullKey),
+		string(conventions.URLPathKey):           string(conventions.URLPathKey),
+		string(conventions.URLQueryKey):          string(conventions.URLQueryKey),
+		string(conventions.URLSchemeKey):         string(conventions.URLSchemeKey),
 
 		// Exercise the INT or STRING logic
-		string(conventions.HTTPStatusCodeKey):                        "200",
-		"http.status_text":                                           "http.status_text",
-		string(conventions.HTTPFlavorKey):                            string(conventions.HTTPFlavorKey),
-		string(conventions.HTTPUserAgentKey):                         string(conventions.HTTPUserAgentKey),
-		string(conventions.HTTPRequestContentLengthKey):              1,
-		string(conventions.HTTPRequestContentLengthUncompressedKey):  2,
-		string(conventions.HTTPResponseContentLengthKey):             3,
-		string(conventions.HTTPResponseContentLengthUncompressedKey): 4,
+		string(conventions.HTTPResponseStatusCodeKey):                "200",
+		string(conventions.NetworkProtocolNameKey):                   string(conventions.NetworkProtocolNameKey),
+		string(conventions.UserAgentOriginalKey):                     string(conventions.UserAgentOriginalKey),
+		string(conventions.HTTPRequestHeader("content-length").Key):  "1",
+		string(conventions.HTTPRequestBodySizeKey):                   2,
+		string(conventions.HTTPResponseHeader("content-length").Key): "3",
+		string(conventions.HTTPResponseBodySizeKey):                  4,
 
-		string(conventions.HTTPRouteKey):      string(conventions.HTTPRouteKey),
-		string(conventions.HTTPServerNameKey): string(conventions.HTTPServerNameKey),
-		string(conventions.HTTPClientIPKey):   string(conventions.HTTPClientIPKey),
+		string(conventions.HTTPRouteKey):     string(conventions.HTTPRouteKey),
+		string(conventions.ServerAddressKey): string(conventions.ServerAddressKey),
+		string(conventions.ClientAddressKey): string(conventions.ClientAddressKey),
 	}
 
 	attributeMap := pcommon.NewMap()
@@ -42,22 +42,32 @@ func TestHTTPAttributeMapping(t *testing.T) {
 	httpAttributes := &httpAttributes{}
 	attributeMap.Range(httpAttributes.MapAttribute)
 
-	assert.Equal(t, string(conventions.HTTPMethodKey), httpAttributes.HTTPMethod)
-	assert.Equal(t, string(conventions.HTTPURLKey), httpAttributes.HTTPURL)
-	assert.Equal(t, string(conventions.HTTPTargetKey), httpAttributes.HTTPTarget)
-	assert.Equal(t, string(conventions.HTTPHostKey), httpAttributes.HTTPHost)
-	assert.Equal(t, string(conventions.HTTPSchemeKey), httpAttributes.HTTPScheme)
-	assert.Equal(t, int64(200), httpAttributes.HTTPStatusCode)
-	assert.Equal(t, "http.status_text", httpAttributes.HTTPStatusText)
-	assert.Equal(t, string(conventions.HTTPFlavorKey), httpAttributes.HTTPFlavor)
-	assert.Equal(t, string(conventions.HTTPUserAgentKey), httpAttributes.HTTPUserAgent)
-	assert.Equal(t, int64(1), httpAttributes.HTTPRequestContentLength)
-	assert.Equal(t, int64(2), httpAttributes.HTTPRequestContentLengthUncompressed)
-	assert.Equal(t, int64(3), httpAttributes.HTTPResponseContentLength)
-	assert.Equal(t, int64(4), httpAttributes.HTTPResponseContentLengthUncompressed)
-	assert.Equal(t, string(conventions.HTTPRouteKey), httpAttributes.HTTPRoute)
-	assert.Equal(t, string(conventions.HTTPServerNameKey), httpAttributes.HTTPServerName)
-	assert.Equal(t, string(conventions.HTTPClientIPKey), httpAttributes.HTTPClientIP)
+	assert.Equal(t, string(conventions.HTTPRequestMethodKey), httpAttributes.HttpRequestMethod)
+	assert.Equal(t, string(conventions.URLFullKey), httpAttributes.UrlAttributes.UrlFull)
+	assert.Equal(t, string(conventions.URLPathKey), httpAttributes.UrlAttributes.UrlPath)
+	assert.Equal(t, string(conventions.URLQueryKey), httpAttributes.UrlAttributes.UrlQuery)
+
+	assert.Equal(t, string(conventions.URLSchemeKey), httpAttributes.UrlAttributes.UrlScheme)
+	assert.Equal(t, int64(200), httpAttributes.HttpResponseStatusCode)
+	assert.Equal(t, string(conventions.NetworkProtocolNameKey), httpAttributes.NetworkAttributes.NetworkProtocolName)
+	assert.Equal(t, string(conventions.UserAgentOriginalKey), httpAttributes.UserAgentAttributes.UserAgentOriginal)
+
+	reqCL := httpAttributes.HttpRequestHeaders["content-length"][0]
+	reqCLInt, err := strconv.ParseInt(reqCL, 10, 64)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(1), reqCLInt)
+
+	assert.Equal(t, int64(2), httpAttributes.HttpRequestBodySize)
+
+	resCL := httpAttributes.HttpResponseHeaders["content-length"][0]
+	resCLInt, err := strconv.ParseInt(resCL, 10, 64)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(3), resCLInt)
+
+	assert.Equal(t, int64(4), httpAttributes.HttpResponseBodySize)
+	assert.Equal(t, string(conventions.HTTPRouteKey), httpAttributes.HttpRoute)
+	assert.Equal(t, string(conventions.ServerAddressKey), httpAttributes.ServerAttributes.ServerAddress)
+	assert.Equal(t, string(conventions.ClientAddressKey), httpAttributes.ClientAttributes.ClientAddress)
 
 	networkAttributesValidations(t, httpAttributes.NetworkAttributes)
 }
@@ -172,21 +182,27 @@ func TestAttributeMappingWithSomeBadValues(t *testing.T) {
 }
 
 func addNetworkAttributes(m pcommon.Map) {
-	m.PutStr(string(conventions.NetTransportKey), string(conventions.NetTransportKey))
-	m.PutStr(string(conventions.NetPeerIPKey), string(conventions.NetPeerIPKey))
-	m.PutInt(string(conventions.NetPeerPortKey), 1)
-	m.PutStr(string(conventions.NetPeerNameKey), string(conventions.NetPeerNameKey))
-	m.PutStr(string(conventions.NetHostIPKey), string(conventions.NetHostIPKey))
-	m.PutInt(string(conventions.NetHostPortKey), 2)
-	m.PutStr(string(conventions.NetHostNameKey), string(conventions.NetHostNameKey))
+	m.PutStr(string(conventions.NetworkTransportKey), string(conventions.NetworkTransportKey))
+	m.PutStr(string(conventions.NetworkPeerAddressKey), string(conventions.NetworkPeerAddressKey))
+	m.PutInt(string(conventions.NetworkPeerPortKey), 1)
+	//TODO: This is either client address or server address, not both
+	m.PutStr(string(conventions.NetworkPeerNameKey), string(conventions.NetworkPeerNameKey))
+
+	m.PutStr(string(conventions.NetworkLocalAddressKey), string(conventions.NetworkLocalAddressKey))
+	m.PutInt(string(conventions.ServerPortKey), 2)
+	m.PutStr(string(conventions.ServerAddressKey), string(conventions.ServerAddressKey))
 }
 
 func networkAttributesValidations(t *testing.T, networkAttributes networkAttributes) {
-	assert.Equal(t, string(conventions.NetTransportKey), networkAttributes.NetTransport)
-	assert.Equal(t, string(conventions.NetPeerIPKey), networkAttributes.NetPeerIP)
-	assert.Equal(t, int64(1), networkAttributes.NetPeerPort)
-	assert.Equal(t, string(conventions.NetPeerNameKey), networkAttributes.NetPeerName)
-	assert.Equal(t, string(conventions.NetHostIPKey), networkAttributes.NetHostIP)
-	assert.Equal(t, int64(2), networkAttributes.NetHostPort)
-	assert.Equal(t, string(conventions.NetHostNameKey), networkAttributes.NetHostName)
+	assert.Equal(t, string(conventions.NetworkTransportKey), networkAttributes.NetworkTransport)
+	assert.Equal(t, string(conventions.NetworkPeerAddressKey), networkAttributes.NetworkPeerAddress)
+	assert.Equal(t, int64(1), networkAttributes.NetworkPeerPort)
+	//TODO: This is either client address or server address, not both
+	assert.Equal(t, string(conventions.NetworkPeerNameKey), networkAttributes.NetworkPeerName)
+
+	assert.Equal(t, string(conventions.NetworkLocalAddressKey), networkAttributes.NetworkLocalAddress)
+	//TODO: Replace with SeverPort
+	assert.Equal(t, int64(2), networkAttributes.NetworkHostPort)
+	//TODO: Replace with ServerAddress
+	assert.Equal(t, string(conventions.NetworkHostNameKey), networkAttributes.NetworkHostName)
 }

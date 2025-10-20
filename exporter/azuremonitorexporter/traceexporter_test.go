@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.34.0"
 	"go.uber.org/zap"
 )
 

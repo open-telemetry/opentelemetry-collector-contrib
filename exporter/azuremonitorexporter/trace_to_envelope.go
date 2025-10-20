@@ -16,7 +16,7 @@ import (
 	"github.com/microsoft/ApplicationInsights-Go/appinsights/contracts"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/otel/semconv/v1.12.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.34.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
@@ -691,12 +691,12 @@ func mapIncomingSpanToType(attributeMap pcommon.Map) spanType {
 	}
 
 	// HTTP
-	if _, exists := attributeMap.Get(string(conventions.HTTPMethodKey)); exists {
+	if _, exists := attributeMap.Get(string(conventions.HTTPRequestMethodKey)); exists {
 		return httpSpanType
 	}
 
 	// Database
-	if _, exists := attributeMap.Get(string(conventions.DBSystemKey)); exists {
+	if _, exists := attributeMap.Get(string(conventions.DBSystemNameKey)); exists {
 		return databaseSpanType
 	}
 
