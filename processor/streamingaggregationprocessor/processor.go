@@ -393,8 +393,9 @@ func (p *streamingAggregationProcessor) aggregateMetricWithEnhancedLabels(
 	metric pmetric.Metric,
 	metricConfig *MetricConfig,
 ) error {
-	// If we have label filtering config, we need to group data points by filtered labels first
-	if metricConfig != nil && metricConfig.Labels.Type != DropAll {
+	// Always use aggregateMetricWithGrouping for proper handling of custom aggregation strategies
+	// For drop_all, it will create a single group with no labels
+	if metricConfig != nil {
 		return p.aggregateMetricWithGrouping(metric, metricConfig)
 	}
 
@@ -1028,6 +1029,8 @@ func (p *streamingAggregationProcessor) aggregateMetricWithGrouping(
 		p.groupGaugeDataPoints(metric.Gauge(), metricConfig, groups, metric.Name())
 	case pmetric.MetricTypeSum:
 		p.groupSumDataPoints(metric.Sum(), metricConfig, groups, metric.Name())
+	case pmetric.MetricTypeHistogram:
+		p.groupHistogramDataPoints(metric.Histogram(), metricConfig, groups, metric.Name())
 	default:
 		// For other types, fall back to default behavior
 		return p.aggregateMetricDefault(metric, metricConfig)
@@ -1129,6 +1132,36 @@ func (p *streamingAggregationProcessor) groupSumDataPoints(
 	}
 }
 
+// groupHistogramDataPoints groups histogram data points by filtered labels
+func (p *streamingAggregationProcessor) groupHistogramDataPoints(
+	histogram pmetric.Histogram,
+	metricConfig *MetricConfig,
+	groups map[string][]dataPointInfo,
+	metricName string,
+) {
+	dps := histogram.DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dp := dps.At(i)
+
+		// Apply label filtering to get the filtered attributes
+		filteredAttrs := getLabelFilteredAttributes(dp.Attributes(), metricConfig.Labels)
+
+		// Generate series key from filtered attributes
+		seriesKey := p.generateSeriesKeyFromAttributes(metricName, filteredAttrs)
+
+		// For histograms, use the sum as the placeholder value for grouping
+		// The actual histogram processing will happen later in processHistogramMetricWithStrategy
+		value := dp.Sum()
+
+		// Add to group
+		groups[seriesKey] = append(groups[seriesKey], dataPointInfo{
+			value:      value,
+			timestamp:  dp.Timestamp(),
+			attributes: filteredAttrs,
+		})
+	}
+}
+
 // generateSeriesKeyFromAttributes generates a series key from filtered attributes
 func (p *streamingAggregationProcessor) generateSeriesKeyFromAttributes(metricName string, attrs pcommon.Map) string {
 	if attrs.Len() == 0 {
@@ -1172,6 +1205,11 @@ func (p *streamingAggregationProcessor) processDataPointGroup(
 	// Handle gauge metrics with custom aggregation (including "last" for proper timestamp handling)
 	if originalMetric.Type() == pmetric.MetricTypeGauge {
 		return p.processGaugeGroupWithStrategy(dataPoints, aggregator, metricConfig)
+	}
+
+	// Handle histogram metrics with custom aggregation (sum and quantile strategies)
+	if originalMetric.Type() == pmetric.MetricTypeHistogram && metricConfig != nil {
+		return p.processHistogramMetricWithStrategy(originalMetric, aggregator, metricConfig, seriesKey)
 	}
 
 	// Handle sum metrics with custom aggregation (separate logic for counters vs up-down counters)
@@ -1417,6 +1455,162 @@ func (p *streamingAggregationProcessor) processCounterGroupWithStrategy(
 	}
 
 	return nil
+}
+
+// processHistogramGroupWithStrategy applies aggregation strategies specifically for classic Histograms
+func (p *streamingAggregationProcessor) processHistogramGroupWithStrategy(
+	dataPoints []dataPointInfo,
+	aggregator *Aggregator,
+	metricConfig *MetricConfig,
+	originalHistogram pmetric.Histogram,
+) error {
+	if len(dataPoints) == 0 {
+		return nil
+	}
+
+	// Set the aggregation strategy on the aggregator
+	aggregator.SetAggregateType(string(metricConfig.AggregateType))
+
+	// For histograms, we need to aggregate across the grouped histogram data points
+	// The dataPoints represent the grouped data, but we need to process histogram buckets
+	return p.processHistogramDataPointsGrouped(originalHistogram, aggregator, metricConfig)
+}
+
+// processHistogramDataPoints processes histogram data points for aggregation
+func (p *streamingAggregationProcessor) processHistogramDataPoints(
+	histogram pmetric.Histogram,
+	aggregator *Aggregator,
+	metricConfig *MetricConfig,
+) error {
+	// Set the aggregation strategy on the aggregator
+	aggregator.SetAggregateType(string(metricConfig.AggregateType))
+
+	// Apply histogram-specific aggregation strategies
+	switch metricConfig.AggregateType {
+	case Sum:
+		// Sum: Aggregate histogram buckets, counts, and sums across instances
+		return p.aggregateHistogramSum(histogram, aggregator)
+	case P50, P90, P95, P99:
+		// Quantile: Calculate percentile from histogram buckets
+		return p.aggregateHistogramQuantile(histogram, aggregator, metricConfig.AggregateType)
+	default:
+		return fmt.Errorf("unsupported aggregation type %q for histogram metrics", metricConfig.AggregateType)
+	}
+}
+
+// aggregateHistogramSum aggregates histogram by summing buckets, counts, and sums
+func (p *streamingAggregationProcessor) aggregateHistogramSum(
+	histogram pmetric.Histogram,
+	aggregator *Aggregator,
+) error {
+	// Process each data point in the histogram
+	dataPoints := histogram.DataPoints()
+	for i := 0; i < dataPoints.Len(); i++ {
+		dp := dataPoints.At(i)
+
+		// Update histogram aggregation with this data point
+		err := aggregator.UpdateHistogramSum(dp)
+		if err != nil {
+			return fmt.Errorf("failed to update histogram sum: %w", err)
+		}
+	}
+	return nil
+}
+
+// aggregateHistogramQuantile calculates a specific percentile from histogram data
+func (p *streamingAggregationProcessor) aggregateHistogramQuantile(
+	histogram pmetric.Histogram,
+	aggregator *Aggregator,
+	quantileType AggregationType,
+) error {
+	// First aggregate all histogram data points
+	err := p.aggregateHistogramSum(histogram, aggregator)
+	if err != nil {
+		return err
+	}
+
+	// Calculate the requested quantile from aggregated histogram
+	quantile := getQuantileValue(quantileType)
+	value, timestamp := aggregator.CalculateHistogramQuantile(quantile)
+
+	// Store the quantile result as a gauge value
+	aggregator.UpdateLast(value, timestamp)
+
+	return nil
+}
+
+// getQuantileValue returns the quantile value for the aggregation type
+func getQuantileValue(aggregateType AggregationType) float64 {
+	switch aggregateType {
+	case P50:
+		return 0.50
+	case P90:
+		return 0.90
+	case P95:
+		return 0.95
+	case P99:
+		return 0.99
+	default:
+		return 0.95 // Default to P95
+	}
+}
+
+// processHistogramMetricWithStrategy processes histogram metrics with custom aggregation strategies
+func (p *streamingAggregationProcessor) processHistogramMetricWithStrategy(
+	originalMetric pmetric.Metric,
+	aggregator *Aggregator,
+	metricConfig *MetricConfig,
+	seriesKey string,
+) error {
+	if originalMetric.Type() != pmetric.MetricTypeHistogram {
+		return fmt.Errorf("expected histogram metric, got %s", originalMetric.Type())
+	}
+
+	// Create a filtered histogram containing only data points for this series key
+	histogram := originalMetric.Histogram()
+	filteredHistogram := p.createFilteredHistogram(histogram, metricConfig, seriesKey)
+
+	return p.processHistogramDataPoints(filteredHistogram, aggregator, metricConfig)
+}
+
+// createFilteredHistogram creates a histogram containing only data points matching the series key
+func (p *streamingAggregationProcessor) createFilteredHistogram(
+	originalHistogram pmetric.Histogram,
+	metricConfig *MetricConfig,
+	targetSeriesKey string,
+) pmetric.Histogram {
+	// Create a new histogram with only matching data points
+	filteredHistogram := pmetric.NewHistogram()
+
+	originalDPs := originalHistogram.DataPoints()
+	for i := 0; i < originalDPs.Len(); i++ {
+		dp := originalDPs.At(i)
+
+		// Apply label filtering to get the filtered attributes
+		filteredAttrs := getLabelFilteredAttributes(dp.Attributes(), metricConfig.Labels)
+
+		// Generate series key from filtered attributes
+		seriesKey := p.generateSeriesKeyFromAttributes("http_response_time_ms", filteredAttrs)
+
+		// Only include data points that match this series key
+		if seriesKey == targetSeriesKey {
+			// Copy this data point to the filtered histogram
+			newDP := filteredHistogram.DataPoints().AppendEmpty()
+			dp.CopyTo(newDP)
+		}
+	}
+
+	return filteredHistogram
+}
+
+// processHistogramDataPointsGrouped processes grouped histogram data points for aggregation
+func (p *streamingAggregationProcessor) processHistogramDataPointsGrouped(
+	originalHistogram pmetric.Histogram,
+	aggregator *Aggregator,
+	metricConfig *MetricConfig,
+) error {
+	// For grouped processing, we directly process the entire histogram
+	return p.processHistogramDataPoints(originalHistogram, aggregator, metricConfig)
 }
 
 // aggregateMetricDefault provides the original aggregation logic for backward compatibility

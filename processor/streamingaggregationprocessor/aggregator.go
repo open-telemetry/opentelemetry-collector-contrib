@@ -4,6 +4,7 @@
 package streamingaggregationprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/streamingaggregationprocessor"
 
 import (
+	"math"
 	"sort"
 	"sync"
 	"time"
@@ -115,6 +116,81 @@ func (a *Aggregator) UpdateUpDownCounter(value float64, timestamp pcommon.Timest
 	a.upDownLastValue = value
 	a.upDownLastTimestamp = timestamp
 	a.hasUpDownFirstValue = true
+}
+
+// UpdateHistogramSum updates histogram aggregation by summing deltas from cumulative data
+func (a *Aggregator) UpdateHistogramSum(dp pmetric.HistogramDataPoint) error {
+	// For sum aggregation, we need to use the same delta calculation approach as MergeHistogram
+	// because we're receiving cumulative histogram data that needs to be converted to deltas
+	a.MergeHistogram(dp)
+	return nil
+}
+
+// CalculateHistogramQuantile calculates a percentile from the aggregated histogram
+func (a *Aggregator) CalculateHistogramQuantile(quantile float64) (float64, pcommon.Timestamp) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
+	// If no data, return 0
+	if a.histogramTotalCount == 0 {
+		return 0, a.lastTimestamp
+	}
+
+	// Calculate the target count for the quantile
+	targetCount := float64(a.histogramTotalCount) * quantile
+
+	// Sort bucket bounds for ordered iteration
+	var bounds []float64
+	for bound := range a.histogramTotalBuckets {
+		bounds = append(bounds, bound)
+	}
+	sort.Float64s(bounds)
+
+	// Find the bucket that contains the target count
+	// Use the exact same algorithm as VictoriaMetrics/Prometheus
+	vPrev := 0.0
+	lePrev := 0.0
+
+	for i, bound := range bounds {
+		cumulativeCount := uint64(0)
+		// Calculate cumulative count up to this bucket
+		for _, b := range bounds[:i+1] {
+			cumulativeCount += a.histogramTotalBuckets[b]
+		}
+		v := float64(cumulativeCount)
+
+		if v <= 0 {
+			// Skip zero buckets
+			lePrev = bound
+			continue
+		}
+
+		if v < targetCount {
+			vPrev = v
+			lePrev = bound
+			continue
+		}
+
+		if v == vPrev {
+			return lePrev, a.lastTimestamp
+		}
+
+		if math.IsInf(bound, 0) {
+			break
+		}
+
+		// Linear interpolation exactly like VictoriaMetrics/Prometheus
+		// vv := lePrev + (le-lePrev)*(vReq-vPrev)/(v-vPrev)
+		interpolatedValue := lePrev + (bound-lePrev)*(targetCount-vPrev)/(v-vPrev)
+		return interpolatedValue, a.lastTimestamp
+	}
+
+	// Fallback: return the highest bound
+	if len(bounds) > 0 {
+		return bounds[len(bounds)-1], a.lastTimestamp
+	}
+
+	return 0, a.lastTimestamp
 }
 
 // SetCounterTotal directly sets the total counter value (for average aggregation)
@@ -538,6 +614,9 @@ func (a *Aggregator) MergeExponentialHistogram(metric pmetric.Metric, dp pmetric
 
 // ExportTo exports the aggregated data to a metric
 func (a *Aggregator) ExportTo(metric pmetric.Metric, windowStart, windowEnd time.Time, labels map[string]string) {
+	// Note: For quantile aggregation strategies (p95, p99, etc.), we still export as histogram
+	// The quantile calculation will be done client-side using histogram_quantile() function
+
 	switch a.metricType {
 	case pmetric.MetricTypeGauge:
 		a.exportGauge(metric, labels)
@@ -548,6 +627,11 @@ func (a *Aggregator) ExportTo(metric pmetric.Metric, windowStart, windowEnd time
 	case pmetric.MetricTypeExponentialHistogram:
 		a.exportExponentialHistogram(metric, windowStart, windowEnd, labels)
 	}
+}
+
+// isQuantileAggregation checks if this aggregator is using a quantile strategy
+func (a *Aggregator) isQuantileAggregation() bool {
+	return a.aggregateType == "p50" || a.aggregateType == "p90" || a.aggregateType == "p95" || a.aggregateType == "p99"
 }
 
 // exportGauge exports as a gauge metric
@@ -563,11 +647,34 @@ func (a *Aggregator) exportGauge(metric pmetric.Metric, labels map[string]string
 		return
 	}
 
+	// Clear any existing metric data and set as gauge (important for temporality)
 	gauge := metric.SetEmptyGauge()
 	dp := gauge.DataPoints().AppendEmpty()
 
-	// Use the last value (proper gauge semantics)
-	dp.SetDoubleValue(a.lastValue)
+	// For quantile aggregation, calculate the quantile value instead of using lastValue
+	var value float64
+	if a.isQuantileAggregation() {
+		var quantile float64
+		switch a.aggregateType {
+		case "p50":
+			quantile = 0.50
+		case "p90":
+			quantile = 0.90
+		case "p95":
+			quantile = 0.95
+		case "p99":
+			quantile = 0.99
+		default:
+			quantile = 0.95 // Default to P95
+		}
+		quantileResult, _ := a.CalculateHistogramQuantile(quantile)
+		value = quantileResult
+	} else {
+		// Use the last value (proper gauge semantics) for regular gauges
+		value = a.lastValue
+	}
+
+	dp.SetDoubleValue(value)
 	dp.SetTimestamp(a.lastTimestamp)
 
 	// Set labels

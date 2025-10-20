@@ -57,6 +57,103 @@ processors:
 | `metrics`              | []object   | `[]`    | Array of metric filtering rules (empty = filter all) |
 | `metrics[].match`      | string     | -       | Regex pattern to match metric names |
 
+### Advanced Configuration
+
+#### Supported Aggregation Types and Label Handling
+
+The processor supports different aggregation strategies and label handling per metric type:
+
+##### **Gauge Metrics**
+**Supported `aggregate_type`:**
+- `last` (default) - Keeps the most recent value
+- `average` - Calculates mean of all values
+- `sum` - Adds all values together
+- `max` - Keeps the maximum value
+- `min` - Keeps the minimum value
+
+**Supported `labels.type`:**
+- `drop_all` (default) - Removes all labels
+- `keep` - Preserves specified labels, removes others
+- `remove` - Removes specified labels, keeps others
+
+##### **Counter/Sum Metrics**
+**Supported `aggregate_type`:**
+- `sum` - Adds all cumulative counter values together
+- `average` - Calculates mean cumulative value across instances
+- `rate` - Calculates rate of change per second
+
+**Supported `labels.type`:**
+- `drop_all` (default) - Removes all labels
+- `keep` - Preserves specified labels, removes others
+- `remove` - Removes specified labels, keeps others
+
+##### **UpDown Counter Metrics**
+**Supported `aggregate_type`:**
+- `sum` - Adds all current values together
+- `average` - Calculates mean current value across instances
+- `max` - Finds the highest current value
+- `min` - Finds the lowest current value
+- `last` - Most recent current value by timestamp
+
+**Supported `labels.type`:**
+- `drop_all` (default) - Removes all labels
+- `keep` - Preserves specified labels, removes others
+- `remove` - Removes specified labels, keeps others
+
+##### **Histogram Metrics**
+**Supported `aggregate_type`:**
+- `sum` - Aggregates histogram buckets, counts, and sums across instances
+- `p50` - Calculates 50th percentile (exported as histogram for client-side calculation)
+- `p90` - Calculates 90th percentile (exported as histogram for client-side calculation)
+- `p95` - Calculates 95th percentile (exported as histogram for client-side calculation)
+- `p99` - Calculates 99th percentile (exported as histogram for client-side calculation)
+
+**Supported `labels.type`:**
+- `drop_all` (default) - Removes all labels
+- `keep` - Preserves specified labels, removes others
+- `remove` - Removes specified labels, keeps others
+
+#### Configuration Examples
+
+**Example 1: Custom Aggregation Strategies**
+```yaml
+processors:
+  streamingaggregation:
+    window_size: 30s
+    max_memory_mb: 100
+    metrics:
+      - match: "^http_response_time_.*"
+        aggregate_type: "p95"
+        labels:
+          type: "keep"
+          names: ["endpoint", "status_code"]
+      - match: "^cpu_usage$"
+        aggregate_type: "average"
+        labels:
+          type: "remove"
+          names: ["instance_id"]
+      - match: "^memory_total$"
+        aggregate_type: "max"
+        labels:
+          type: "drop_all"
+```
+
+**Example 2: Histogram Quantile Aggregation**
+```yaml
+processors:
+  streamingaggregation:
+    window_size: 60s
+    metrics:
+      - match: "^response_time_histogram$"
+        aggregate_type: "p99"
+        labels:
+          type: "drop_all"
+```
+
+This configuration will:
+- Aggregate histogram data across all labels
+- Export as histogram metric for client-side P99 calculation using `histogram_quantile(0.99, response_time_histogram_bucket)`
+
 ### Complete Example
 
 ```yaml
@@ -166,16 +263,16 @@ The processor exports these internal metrics:
 
 ## Limitations
 
-- **All labels are dropped** - only metric names are preserved
-- **Memory usage grows** with the number of unique metric names
-- **Window boundaries are fixed** - metrics are aggregated within time windows only
-- **No label-based aggregation** - cannot aggregate by specific label values
+- **Fixed window boundaries** - metrics are aggregated within time windows only
+- **Memory usage grows** with the number of unique metric series (after label filtering)
+- **Label filtering is per-metric** - cannot combine different label strategies within a single aggregation
+- **Quantile accuracy** - histogram quantiles depend on bucket boundaries and distribution
 
 ## When Not to Use
 
 This processor may not be suitable if you:
 
-- Need to preserve specific labels or dimensions
-- Require per-instance or per-service metric breakdowns
-- Want to aggregate only specific label combinations
-- Need real-time (non-windowed) aggregation
+- Need complex label aggregation patterns (e.g., by specific combinations of labels)
+- Require real-time (non-windowed) aggregation
+- Need server-side quantile calculation with exact percentile values
+- Want to preserve original histogram bucket structures for downstream processing

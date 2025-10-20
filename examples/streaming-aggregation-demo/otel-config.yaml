@@ -6,7 +6,7 @@ receivers:
 
 processors:
   streamingaggregation:
-    window_size: 30s # Aggregate over 30-second windows
+    window_size: 10s # Aggregate over 30-second windows
     max_memory_mb: 100 # Memory limit
     stale_data_threshold: 2m # Reset cumulative state after 2 minutes of no data
     metrics:
@@ -55,6 +55,25 @@ processors:
         labels:
           type: "remove"
           names: ["instance", "protocol"] # Peak per service-region
+
+      # Histogram aggregation examples
+      # - match: "^http_response_time_ms$"
+      #   aggregate_type: "p95" # 95th percentile response time (exported as gauge)
+      #   labels:
+      #     type: "remove"
+      #     names: ["instance"] # Per-endpoint P95 across all instances
+
+      # Uncomment to test other histogram strategies:
+      # - match: "^http_response_time_ms$"
+      #   aggregate_type: "sum" # Sum histogram buckets (exported as histogram)
+      #   labels:
+      #     type: "keep"
+      #     names: ["endpoint"] # Keep only endpoint, remove instance and other labels
+
+      - match: "^http_response_time_ms$"
+        aggregate_type: "sum" # Sum histogram buckets
+        labels:
+          type: "drop_all" # Global histogram across all endpoints and instances
 
   metricstransform:
     transforms:

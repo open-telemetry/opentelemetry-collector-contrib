@@ -485,3 +485,156 @@ func TestUpDownCounterAggregationStrategies(t *testing.T) {
 		})
 	}
 }
+
+func TestHistogramAggregationStrategies(t *testing.T) {
+	tests := []struct {
+		name           string
+		aggregateType  AggregationType
+		expectedType   pmetric.MetricType
+		validateResult func(t *testing.T, metric pmetric.Metric)
+	}{
+		{
+			name:         "sum_aggregation",
+			aggregateType: Sum,
+			expectedType: pmetric.MetricTypeHistogram,
+			validateResult: func(t *testing.T, metric pmetric.Metric) {
+				require.Equal(t, pmetric.MetricTypeHistogram, metric.Type())
+				require.Greater(t, metric.Histogram().DataPoints().Len(), 0)
+				// Check that buckets have been summed
+				dp := metric.Histogram().DataPoints().At(0)
+				require.Greater(t, dp.Count(), uint64(0))
+				require.Greater(t, dp.Sum(), 0.0)
+			},
+		},
+		{
+			name:         "p95_aggregation",
+			aggregateType: P95,
+			expectedType: pmetric.MetricTypeHistogram, // Quantiles export as histograms for client-side calculation
+			validateResult: func(t *testing.T, metric pmetric.Metric) {
+				require.Equal(t, pmetric.MetricTypeHistogram, metric.Type())
+				require.Greater(t, metric.Histogram().DataPoints().Len(), 0)
+				// Verify histogram has bucket data for client-side P95 calculation
+				dp := metric.Histogram().DataPoints().At(0)
+				require.Greater(t, dp.Count(), uint64(0))
+				require.Greater(t, dp.Sum(), 0.0)
+			},
+		},
+		{
+			name:         "p99_aggregation",
+			aggregateType: P99,
+			expectedType: pmetric.MetricTypeHistogram,
+			validateResult: func(t *testing.T, metric pmetric.Metric) {
+				require.Equal(t, pmetric.MetricTypeHistogram, metric.Type())
+				require.Greater(t, metric.Histogram().DataPoints().Len(), 0)
+				// Verify histogram has bucket data for client-side P99 calculation
+				dp := metric.Histogram().DataPoints().At(0)
+				require.Greater(t, dp.Count(), uint64(0))
+				require.Greater(t, dp.Sum(), 0.0)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &Config{
+				WindowSize:         1 * time.Second,
+				MaxMemoryMB:        10,
+				StaleDataThreshold: 30 * time.Second,
+				Metrics: []MetricConfig{
+					{
+						Match:         "http_response_time_ms",
+						AggregateType: tt.aggregateType,
+						Labels: LabelConfig{
+							Type:  Remove,
+							Names: []string{"instance"}, // Remove instance, keep endpoint
+						},
+					},
+				},
+			}
+
+			logger := zap.NewNop()
+			proc, err := newStreamingAggregationProcessor(logger, cfg)
+			require.NoError(t, err)
+
+			ctx := context.Background()
+			err = proc.Start(ctx, nil)
+			require.NoError(t, err)
+			defer proc.Shutdown(ctx)
+
+			// Create test histogram metric with multiple instances
+			md := pmetric.NewMetrics()
+			rm := md.ResourceMetrics().AppendEmpty()
+			sm := rm.ScopeMetrics().AppendEmpty()
+			metric := sm.Metrics().AppendEmpty()
+			metric.SetName("http_response_time_ms")
+			hist := metric.SetEmptyHistogram()
+
+			// Create histogram data points from different instances
+			instances := []struct {
+				endpoint string
+				instance string
+				buckets  []uint64 // Bucket counts for response times
+				sum      float64
+				count    uint64
+			}{
+				{"/api/users", "web-01", []uint64{10, 15, 8, 3, 1}, 2500.0, 37},
+				{"/api/users", "web-02", []uint64{12, 18, 6, 2, 1}, 2200.0, 39},
+				{"/api/users", "web-03", []uint64{8, 20, 10, 4, 2}, 3100.0, 44},
+			}
+
+			// Define bucket boundaries: 10ms, 50ms, 100ms, 500ms, +Inf
+			bucketBounds := []float64{10, 50, 100, 500}
+
+			for _, inst := range instances {
+				dp := hist.DataPoints().AppendEmpty()
+				dp.SetCount(inst.count)
+				dp.SetSum(inst.sum)
+				dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+
+				// Set bucket boundaries
+				for _, bound := range bucketBounds {
+					dp.ExplicitBounds().Append(bound)
+				}
+
+				// Set bucket counts
+				for _, bucketCount := range inst.buckets {
+					dp.BucketCounts().Append(bucketCount)
+				}
+
+				// Set attributes
+				dp.Attributes().PutStr("endpoint", inst.endpoint)
+				dp.Attributes().PutStr("instance", inst.instance)
+			}
+
+			// Process the metrics
+			_, err = proc.ProcessMetrics(ctx, md)
+			require.NoError(t, err)
+
+			// Wait for processing
+			time.Sleep(100 * time.Millisecond)
+
+			// Get aggregated results
+			result := proc.GetAggregatedMetrics()
+			require.Greater(t, result.DataPointCount(), 0, "Expected aggregated metrics")
+
+			// Find the aggregated histogram metric
+			found := false
+			for i := 0; i < result.ResourceMetrics().Len(); i++ {
+				rm := result.ResourceMetrics().At(i)
+				for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+					sm := rm.ScopeMetrics().At(j)
+					for k := 0; k < sm.Metrics().Len(); k++ {
+						m := sm.Metrics().At(k)
+						if m.Name() == "http_response_time_ms" {
+							tt.validateResult(t, m)
+							found = true
+						}
+					}
+				}
+			}
+			require.True(t, found, "Expected to find aggregated http_response_time_ms metric")
+
+			t.Logf("Successfully tested %s histogram aggregation strategy", tt.name)
+		})
+	}
+}

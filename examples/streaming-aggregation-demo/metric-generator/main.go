@@ -387,14 +387,19 @@ func createAndEmitMetrics(ctx context.Context, rawMeter, aggMeter metric.Meter, 
 			// Emit histogram metrics (simulate response times)
 			for i := int64(0); i < requests; i++ {
 				responseTime := generateResponseTime()
+				endpoint := randomEndpoint()
+				instance := randomInstance()
+
 				rawResponseHist.Record(ctx, responseTime,
 					metric.WithAttributes(
-						attribute.String("endpoint", randomEndpoint()),
+						attribute.String("endpoint", endpoint),
+						attribute.String("instance", instance),
 					),
 				)
 				aggResponseHist.Record(ctx, responseTime,
 					metric.WithAttributes(
-						attribute.String("endpoint", randomEndpoint()),
+						attribute.String("endpoint", endpoint),
+						attribute.String("instance", instance),
 					),
 				)
 			}

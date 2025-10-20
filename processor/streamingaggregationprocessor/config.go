@@ -43,7 +43,7 @@ const (
 	Last AggregationType = "last"
 	// Average calculates mean of all values (gauges, counters)
 	Average AggregationType = "average"
-	// Sum adds all values together (gauges, counters)
+	// Sum adds all values together (gauges, counters, histograms)
 	Sum AggregationType = "sum"
 	// Rate calculates rate of change per second (counters only)
 	Rate AggregationType = "rate"
@@ -51,6 +51,14 @@ const (
 	Max AggregationType = "max"
 	// Min keeps the minimum value (gauges only)
 	Min AggregationType = "min"
+	// P50 calculates 50th percentile (histograms only)
+	P50 AggregationType = "p50"
+	// P90 calculates 90th percentile (histograms only)
+	P90 AggregationType = "p90"
+	// P95 calculates 95th percentile (histograms only)
+	P95 AggregationType = "p95"
+	// P99 calculates 99th percentile (histograms only)
+	P99 AggregationType = "p99"
 )
 
 // LabelType defines how to handle labels
@@ -161,9 +169,9 @@ func (mc *MetricConfig) ValidateAggregationType() error {
 		return nil // Empty is allowed, defaults to "last"
 	}
 
-	validTypes := []AggregationType{Last, Average, Sum, Rate, Max, Min}
+	validTypes := []AggregationType{Last, Average, Sum, Rate, Max, Min, P50, P90, P95, P99}
 	if !slices.Contains(validTypes, mc.AggregateType) {
-		return fmt.Errorf("invalid aggregation type %q, must be one of: last, average, sum, rate, max, min", mc.AggregateType)
+		return fmt.Errorf("invalid aggregation type %q, must be one of: last, average, sum, rate, max, min, p50, p90, p95, p99", mc.AggregateType)
 	}
 
 	return nil
