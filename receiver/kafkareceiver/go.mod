@@ -22,25 +22,25 @@ require (
 	github.com/twmb/franz-go/pkg/kfake v0.0.0-20250729165834-29dc44e616cd
 	go.opentelemetry.io/collector/client v1.43.1-0.20251017185755-ee0bf522ea7c
 	go.opentelemetry.io/collector/component v1.43.1-0.20251017185755-ee0bf522ea7c
-	go.opentelemetry.io/collector/component/componentstatus v0.137.1-0.20251013162618-a96eab114ea4
-	go.opentelemetry.io/collector/component/componenttest v0.137.1-0.20251013162618-a96eab114ea4
+	go.opentelemetry.io/collector/component/componentstatus v0.137.1-0.20251017185755-ee0bf522ea7c
+	go.opentelemetry.io/collector/component/componenttest v0.137.1-0.20251017185755-ee0bf522ea7c
 	go.opentelemetry.io/collector/config/configretry v1.43.1-0.20251017185755-ee0bf522ea7c
 	go.opentelemetry.io/collector/config/configtls v1.43.1-0.20251017185755-ee0bf522ea7c
 	go.opentelemetry.io/collector/confmap v1.43.1-0.20251017185755-ee0bf522ea7c
-	go.opentelemetry.io/collector/confmap/xconfmap v0.137.1-0.20251013162618-a96eab114ea4
+	go.opentelemetry.io/collector/confmap/xconfmap v0.137.1-0.20251017185755-ee0bf522ea7c
 	go.opentelemetry.io/collector/consumer v1.43.1-0.20251017185755-ee0bf522ea7c
-	go.opentelemetry.io/collector/consumer/consumererror v0.137.1-0.20251013162618-a96eab114ea4
-	go.opentelemetry.io/collector/consumer/consumertest v0.137.1-0.20251013162618-a96eab114ea4
-	go.opentelemetry.io/collector/consumer/xconsumer v0.137.1-0.20251013162618-a96eab114ea4
-	go.opentelemetry.io/collector/exporter/exporterhelper v0.137.1-0.20251013162618-a96eab114ea4
+	go.opentelemetry.io/collector/consumer/consumererror v0.137.1-0.20251017185755-ee0bf522ea7c
+	go.opentelemetry.io/collector/consumer/consumertest v0.137.1-0.20251017185755-ee0bf522ea7c
+	go.opentelemetry.io/collector/consumer/xconsumer v0.137.1-0.20251017185755-ee0bf522ea7c
+	go.opentelemetry.io/collector/exporter/exporterhelper v0.137.1-0.20251017185755-ee0bf522ea7c
 	go.opentelemetry.io/collector/featuregate v1.43.1-0.20251017185755-ee0bf522ea7c
 	go.opentelemetry.io/collector/pdata v1.43.1-0.20251017185755-ee0bf522ea7c
-	go.opentelemetry.io/collector/pdata/pprofile v0.137.1-0.20251013162618-a96eab114ea4
-	go.opentelemetry.io/collector/pdata/testdata v0.137.1-0.20251013162618-a96eab114ea4
+	go.opentelemetry.io/collector/pdata/pprofile v0.137.1-0.20251017185755-ee0bf522ea7c
+	go.opentelemetry.io/collector/pdata/testdata v0.137.1-0.20251017185755-ee0bf522ea7c
 	go.opentelemetry.io/collector/receiver v1.43.1-0.20251017185755-ee0bf522ea7c
-	go.opentelemetry.io/collector/receiver/receiverhelper v0.137.1-0.20251013162618-a96eab114ea4
-	go.opentelemetry.io/collector/receiver/receivertest v0.137.1-0.20251013162618-a96eab114ea4
-	go.opentelemetry.io/collector/receiver/xreceiver v0.137.1-0.20251013162618-a96eab114ea4
+	go.opentelemetry.io/collector/receiver/receiverhelper v0.137.1-0.20251017185755-ee0bf522ea7c
+	go.opentelemetry.io/collector/receiver/receivertest v0.137.1-0.20251017185755-ee0bf522ea7c
+	go.opentelemetry.io/collector/receiver/xreceiver v0.137.1-0.20251017185755-ee0bf522ea7c
 	go.opentelemetry.io/otel v1.38.0
 	go.opentelemetry.io/otel/metric v1.38.0
 	go.opentelemetry.io/otel/sdk/metric v1.38.0
@@ -114,9 +114,9 @@ require (
 	go.opentelemetry.io/collector/config/configoptional v1.43.1-0.20251017185755-ee0bf522ea7c // indirect
 	go.opentelemetry.io/collector/exporter v1.43.1-0.20251017185755-ee0bf522ea7c // indirect
 	go.opentelemetry.io/collector/extension v1.43.1-0.20251017185755-ee0bf522ea7c // indirect
-	go.opentelemetry.io/collector/extension/xextension v0.137.1-0.20251013162618-a96eab114ea4 // indirect
-	go.opentelemetry.io/collector/internal/telemetry v0.137.1-0.20251013162618-a96eab114ea4 // indirect
-	go.opentelemetry.io/collector/pdata/xpdata v0.137.1-0.20251013162618-a96eab114ea4 // indirect
+	go.opentelemetry.io/collector/extension/xextension v0.137.1-0.20251017185755-ee0bf522ea7c // indirect
+	go.opentelemetry.io/collector/internal/telemetry v0.137.1-0.20251017185755-ee0bf522ea7c // indirect
+	go.opentelemetry.io/collector/pdata/xpdata v0.137.1-0.20251017185755-ee0bf522ea7c // indirect
 	go.opentelemetry.io/collector/pipeline v1.43.1-0.20251017185755-ee0bf522ea7c // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.13.0 // indirect
 	go.opentelemetry.io/otel/log v0.14.0 // indirect
