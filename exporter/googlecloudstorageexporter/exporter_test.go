@@ -54,7 +54,7 @@ func TestNewStorageExporter(t *testing.T) {
 					ProjectID: "test",
 				},
 			},
-			expectsErr: "failed to get region from metadata",
+			expectsErr: "failed to determine region",
 		},
 		"project ID missing and provider works": {
 			getProjectID: func(_ context.Context) (string, error) {
@@ -75,7 +75,7 @@ func TestNewStorageExporter(t *testing.T) {
 					Region: "test",
 				},
 			},
-			expectsErr: "failed to get project ID from metadata",
+			expectsErr: "failed to determine project ID",
 		},
 	}
 
@@ -110,11 +110,11 @@ func TestStart(t *testing.T) {
 	}
 
 	id := component.MustNewID("unset")
-	gcsExporter := &storageExporter{cfg: &Config{
+	gcsExporter := newTestGCSExporter(t, &Config{
 		Bucket: bucketConfig{
 			Name: newBucketName,
 		},
-	}, logger: zap.NewNop()}
+	})
 
 	t.Run("unset encoding", func(t *testing.T) {
 		err := gcsExporter.Start(t.Context(), mHost)
@@ -170,12 +170,12 @@ func TestUploadFile(t *testing.T) {
 		},
 	}
 	id := component.MustNewID(encodingSucceedsID)
-	gcsExporter := &storageExporter{cfg: &Config{
+	gcsExporter := newTestGCSExporter(t, &Config{
 		Bucket: bucketConfig{
 			Name: uploadBucketName,
 		},
 		Encoding: &id,
-	}, logger: zap.NewNop()}
+	})
 
 	t.Run("empty content", func(t *testing.T) {
 		err := gcsExporter.uploadFile(t.Context(), []byte{})
@@ -201,18 +201,34 @@ func TestConsumeLogs(t *testing.T) {
 		},
 	}
 	id := component.MustNewID(encodingSucceedsID)
-	gcsExporter := &storageExporter{cfg: &Config{
+	gcsExporter := newTestGCSExporter(t, &Config{
 		Bucket: bucketConfig{
 			Name: uploadBucketName,
 		},
 		Encoding: &id,
-	}, logger: zap.NewNop()}
+	})
 
 	errStart := gcsExporter.Start(t.Context(), mHost)
 	require.NoError(t, errStart)
 
 	err := gcsExporter.ConsumeLogs(t.Context(), plog.NewLogs())
 	require.NoError(t, err)
+}
+
+func newTestGCSExporter(t *testing.T, cfg *Config) *storageExporter {
+	exp, err := newStorageExporter(
+		t.Context(),
+		cfg,
+		func(_ context.Context) (string, error) {
+			return "test", nil
+		},
+		func(_ context.Context) (string, error) {
+			return "test", nil
+		},
+		zap.NewNop(),
+	)
+	require.NoError(t, err)
+	return exp
 }
 
 func newTestStorageEmulator(t *testing.T, bucketExistsName, uploadBucketName string) {

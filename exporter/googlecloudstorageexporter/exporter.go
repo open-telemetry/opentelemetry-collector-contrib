@@ -51,17 +51,19 @@ func newStorageExporter(
 	getProjectID func(context.Context) (string, error),
 	logger *zap.Logger,
 ) (*storageExporter, error) {
+	errMsg := "failed to determine %s: not set in exporter config '%s' and unable to retrieve from metadata: %w"
+
 	if cfg.Bucket.Region == "" {
 		var err error
 		if cfg.Bucket.Region, err = getZone(ctx); err != nil {
-			return nil, fmt.Errorf("failed to get region from metadata: %w", err)
+			return nil, fmt.Errorf(errMsg, "region", "bucket.region", err)
 		}
 	}
 
 	if cfg.Bucket.ProjectID == "" {
 		var err error
 		if cfg.Bucket.ProjectID, err = getProjectID(ctx); err != nil {
-			return nil, fmt.Errorf("failed to get project ID from metadata: %w", err)
+			return nil, fmt.Errorf(errMsg, "project ID", "bucket.project_id", err)
 		}
 	}
 
