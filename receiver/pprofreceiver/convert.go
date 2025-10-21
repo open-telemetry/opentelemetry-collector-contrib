@@ -7,6 +7,9 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"slices"
+	"strconv"
+	"strings"
 
 	"github.com/google/pprof/profile"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -14,8 +17,12 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 )
 
-// errInvalPprof is returned for invalid pprof data.
-var errInvalPprof = errors.New("invalid pprof data")
+var (
+	// errInvalPprof is returned for invalid pprof data.
+	errInvalPprof = errors.New("invalid pprof data")
+	// errInalIdxFomrat is returned on invalid string formats for indices.
+	errInalIdxFomrat = errors.New("invalid format of attribute indices")
+)
 
 const (
 	// noAttrUnit is an internal helper to indicate that no
@@ -38,8 +45,20 @@ type fn struct {
 	startLine  int64
 }
 
+// mm is a hleper struct to build pprofile.ProfilesDictionary.mapping_table.
+type mm struct {
+	memoryStart    uint64
+	memoryLimit    uint64
+	fileOffset     uint64
+	filenameStrIdx int32
+	attrIdxs       string // List of consecutive increasing indices separated by a semicolon.
+}
+
 // lookupTables is a helper struct around pprofile.ProfilesDictionary.
 type lookupTables struct {
+	mappingTable        map[mm]int32
+	lastMappingTableIdx int32
+
 	stringTable        map[string]int32
 	lastStringTableIdx int32
 
@@ -55,10 +74,6 @@ func convertPprofToPprofile(src *profile.Profile) (*pprofile.Profiles, error) {
 		return nil, fmt.Errorf("%w: %w", err, errInvalPprof)
 	}
 	dst := pprofile.NewProfiles()
-
-	// mapping_table[0] must always be zero value (Mapping{}) and present.
-	dst.Dictionary().MappingTable().AppendEmpty()
-	lastMappingTableIdx := int32(0)
 
 	// location_table[0] must always be zero value (Location{}) and present.
 	dst.Dictionary().LocationTable().AppendEmpty()
@@ -100,52 +115,15 @@ func convertPprofToPprofile(src *profile.Profile) (*pprofile.Profiles, error) {
 
 				// pprof.Location.mapping_id
 				if loc.Mapping != nil {
-					// Insert the backing mapping information first.
-					m := dst.Dictionary().MappingTable().AppendEmpty()
-					lastMappingTableIdx++
-
-					// pprof.Mapping.memory_start
-					m.SetMemoryStart(loc.Mapping.Start)
-
-					// pprof.Mapping.memory_limit
-					m.SetMemoryLimit(loc.Mapping.Limit)
-
-					// pprof.Mapping.file_offset
-					m.SetFileOffset(loc.Mapping.Offset)
-
-					// pprof.Mapping.filename
-					m.SetFilenameStrindex(lts.getIdxForString(loc.Mapping.File))
-
-					// pprof.Mapping.build_id
-					// Assume all build_ids are GNU build IDs
-					buildIDIdx := lts.getIdxForAttribute(
-						string(semconv.ProcessExecutableBuildIDGNUKey), loc.Mapping.BuildID)
-					m.AttributeIndices().Append(buildIDIdx)
-
-					// pprof.Mapping.has_*
-					// The current Go release of SemConv does not yet include the changes from
-					// https://github.com/open-telemetry/semantic-conventions/pull/2522
-					// Therefore hardcode the values in the meantime.
-					if loc.Mapping.HasFunctions {
-						idx := lts.getIdxForAttribute("pprof.mapping.has_functions", true)
-						m.AttributeIndices().Append(idx)
-					}
-
-					if loc.Mapping.HasFilenames {
-						idx := lts.getIdxForAttribute("pprof.mapping.has_filenames", true)
-						m.AttributeIndices().Append(idx)
-					}
-
-					if loc.Mapping.HasLineNumbers {
-						idx := lts.getIdxForAttribute("pprof.mapping.has_line_numbers", true)
-						m.AttributeIndices().Append(idx)
-					}
-
-					if loc.Mapping.HasInlineFrames {
-						idx := lts.getIdxForAttribute("pprof.mapping.has_inline_frames", true)
-						m.AttributeIndices().Append(idx)
-					}
-					l.SetMappingIndex(lastMappingTableIdx)
+					mmAttrIDs := lts.getIdxForMMAttributes(loc.Mapping)
+					mmIdx := lts.getIdxForMapping(
+						loc.Mapping.Start,
+						loc.Mapping.Limit,
+						loc.Mapping.Offset,
+						lts.getIdxForString(loc.Mapping.File),
+						mmAttrIDs,
+					)
+					l.SetMappingIndex(mmIdx)
 				}
 
 				// pprof.Location.address
@@ -157,7 +135,7 @@ func convertPprofToPprofile(src *profile.Profile) (*pprofile.Profiles, error) {
 
 					// pprof.Line.function_id
 					if line.Function != nil {
-						ln.SetFunctionIndex(getIdxForFunction(lts,
+						ln.SetFunctionIndex(lts.getIdxForFunction(
 							line.Function.Name,
 							line.Function.SystemName,
 							line.Function.Filename,
@@ -276,7 +254,7 @@ func convertPprofToPprofile(src *profile.Profile) (*pprofile.Profiles, error) {
 
 // getIdxForFunction returns the corresponding index for the function.
 // If the function does not yet exist in the cache, it will be added.
-func getIdxForFunction(lts lookupTables, name, systemName, fileName string, startLine int64) int32 {
+func (lts *lookupTables) getIdxForFunction(name, systemName, fileName string, startLine int64) int32 {
 	key := fn{
 		name:       name,
 		systemName: systemName,
@@ -340,6 +318,63 @@ func (lts *lookupTables) getIdxForAttributeWithUnit(key, unit string, value any)
 	return lts.lastAttributeTableIdx
 }
 
+// getIdxForMapping returns the correspoinding index for the mapping.
+// If the mapping does not yet exist in the cache, it will be added.
+func (lts *lookupTables) getIdxForMapping(start, limit, offset uint64, fnStrIdx int32, attrIdx []int32) int32 {
+	attrIdxs := attrIdxToString(attrIdx)
+	key := mm{
+		memoryStart:    start,
+		memoryLimit:    limit,
+		fileOffset:     offset,
+		filenameStrIdx: fnStrIdx,
+		attrIdxs:       attrIdxs,
+	}
+	if idx, exists := lts.mappingTable[key]; exists {
+		return idx
+	}
+	lts.lastMappingTableIdx++
+	lts.mappingTable[key] = lts.lastMappingTableIdx
+	return lts.lastMappingTableIdx
+}
+
+// getIdxForMMAttributes returns a list of indices to attributes related
+// to the mapping.
+func (lts *lookupTables) getIdxForMMAttributes(m *profile.Mapping) []int32 {
+	ids := []int32{}
+
+	// pprof.Mapping.build_id
+	// Assume all build_ids are GNU build IDs
+	buildIDIdx := lts.getIdxForAttribute(
+		string(semconv.ProcessExecutableBuildIDGNUKey), m.BuildID)
+	ids = append(ids, buildIDIdx)
+
+	// pprof.Mapping.has_*
+	// The current Go release of SemConv does not yet include the changes from
+	// https://github.com/open-telemetry/semantic-conventions/pull/2522
+	// Therefore hardcode the values in the meantime.
+	if m.HasFunctions {
+		idx := lts.getIdxForAttribute("pprof.mapping.has_functions", true)
+		ids = append(ids, idx)
+	}
+
+	if m.HasFilenames {
+		idx := lts.getIdxForAttribute("pprof.mapping.has_filenames", true)
+		ids = append(ids, idx)
+	}
+
+	if m.HasLineNumbers {
+		idx := lts.getIdxForAttribute("pprof.mapping.has_line_numbers", true)
+		ids = append(ids, idx)
+	}
+
+	if m.HasInlineFrames {
+		idx := lts.getIdxForAttribute("pprof.mapping.has_inline_frames", true)
+		ids = append(ids, idx)
+	}
+
+	return ids
+}
+
 func isEqualValue(a, b any) bool {
 	return reflect.DeepEqual(a, b)
 }
@@ -347,10 +382,15 @@ func isEqualValue(a, b any) bool {
 // initLookupTables returns a supporting elements to construct pprofile.ProfilesDictionary.
 func initLookupTables() lookupTables {
 	lts := lookupTables{
+		mappingTable:   make(map[mm]int32),
 		stringTable:    make(map[string]int32),
 		attributeTable: make(map[attr]int32),
 		functionTable:  make(map[fn]int32),
 	}
+
+	// mapping_table[0] must always be zero value (Mapping{}) and present.
+	lts.lastMappingTableIdx = 0
+	lts.mappingTable[mm{}] = lts.lastMappingTableIdx
 
 	// string_table[0] must always be "" and present.
 	lts.lastStringTableIdx = 0
@@ -379,6 +419,21 @@ func (lts *lookupTables) dumpLookupTables(dic pprofile.ProfilesDictionary) error
 		dic.FunctionTable().At(int(id)).SetStartLine(fn.startLine)
 	}
 
+	for i := 0; i < len(lts.mappingTable); i++ {
+		dic.MappingTable().AppendEmpty()
+	}
+	for m, id := range lts.mappingTable {
+		dic.MappingTable().At(int(id)).SetMemoryStart(m.memoryStart)
+		dic.MappingTable().At(int(id)).SetMemoryLimit(m.memoryLimit)
+		dic.MappingTable().At(int(id)).SetFileOffset(m.fileOffset)
+		dic.MappingTable().At(int(id)).SetFilenameStrindex(m.filenameStrIdx)
+		attrIndices, err := stringToAttrIdx(m.attrIdxs)
+		if err != nil {
+			return err
+		}
+		dic.MappingTable().At(int(id)).AttributeIndices().Append(attrIndices...)
+	}
+
 	for i := 0; i < len(lts.stringTable); i++ {
 		dic.StringTable().Append("")
 	}
@@ -400,4 +455,44 @@ func (lts *lookupTables) dumpLookupTables(dic pprofile.ProfilesDictionary) error
 	}
 
 	return nil
+}
+
+// attrIdxToString is a helper function to convert a list of indices
+// into a string.
+func attrIdxToString(indices []int32) string {
+	if len(indices) == 0 {
+		return ""
+	}
+	slices.Sort(indices)
+
+	stringNumbers := make([]string, len(indices))
+
+	for i, n := range indices {
+		stringNumbers[i] = strconv.FormatInt(int64(n), 10)
+	}
+
+	return strings.Join(stringNumbers, ";")
+}
+
+// stringToAttrIdx is a helper function to convert a string into
+// a list of indices.
+func stringToAttrIdx(indices string) ([]int32, error) {
+	if indices == "" {
+		return []int32{}, nil
+	}
+	parts := strings.Split(indices, ";")
+
+	result := make([]int32, 0, len(parts))
+	for _, s := range parts {
+		n, err := strconv.ParseInt(s, 10, 32)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse '%s' as int32. %w", s, err)
+		}
+		result = append(result, int32(n))
+	}
+	if !slices.IsSorted(result) {
+		return nil, fmt.Errorf("invalid order of indices '%s': %w", indices, errInalIdxFomrat)
+	}
+
+	return result, nil
 }
