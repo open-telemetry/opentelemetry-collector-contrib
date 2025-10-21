@@ -43,7 +43,7 @@ require (
 	github.com/DataDog/datadog-agent/comp/core/telemetry v0.72.0-rc.8 // indirect
 	github.com/DataDog/datadog-agent/comp/def v0.72.0-rc.8 // indirect
 	github.com/DataDog/datadog-agent/comp/forwarder/orchestrator/orchestratorinterface v0.72.0-rc.8 // indirect
-	github.com/DataDog/datadog-agent/comp/logs/agent/config v0.72.0-rc.5 // indirect
+	github.com/DataDog/datadog-agent/comp/logs/agent/config v0.72.0-rc.8 // indirect
 	github.com/DataDog/datadog-agent/comp/serializer/metricscompression v0.72.0-rc.8 // indirect
 	github.com/DataDog/datadog-agent/pkg/aggregator/ckey v0.72.0-rc.8 // indirect
 	github.com/DataDog/datadog-agent/pkg/api v0.72.0-rc.8 // indirect
@@ -58,12 +58,12 @@ require (
 	github.com/DataDog/datadog-agent/pkg/config/utils v0.72.0-rc.8 // indirect
 	github.com/DataDog/datadog-agent/pkg/config/viperconfig v0.72.0-rc.8 // indirect
 	github.com/DataDog/datadog-agent/pkg/fips v0.72.0-rc.8 // indirect
-	github.com/DataDog/datadog-agent/pkg/logs/types v0.72.0-rc.5 // indirect
-	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/inframetadata v0.72.0-rc.5 // indirect
-	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics v0.72.0-rc.5 // indirect
+	github.com/DataDog/datadog-agent/pkg/logs/types v0.72.0-rc.8 // indirect
+	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/inframetadata v0.72.0-rc.8 // indirect
+	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics v0.72.0-rc.8 // indirect
 	github.com/DataDog/datadog-agent/pkg/orchestrator/model v0.72.0-rc.8 // indirect
 	github.com/DataDog/datadog-agent/pkg/process/util/api v0.72.0-rc.8 // indirect
-	github.com/DataDog/datadog-agent/pkg/proto v0.72.0-rc.5 // indirect
+	github.com/DataDog/datadog-agent/pkg/proto v0.72.0-rc.8 // indirect
 	github.com/DataDog/datadog-agent/pkg/status/health v0.72.0-rc.8 // indirect
 	github.com/DataDog/datadog-agent/pkg/tagger/types v0.72.0-rc.8 // indirect
 	github.com/DataDog/datadog-agent/pkg/tagset v0.72.0-rc.8 // indirect
