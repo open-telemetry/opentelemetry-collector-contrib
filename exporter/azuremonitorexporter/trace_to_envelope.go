@@ -355,7 +355,7 @@ func fillRequestDataHTTP(span ptrace.Span, data *contracts.RequestData) {
 		sb.WriteString(attrs.ServerAttributes.ServerAddress)
 		sb.WriteString(attrs.URLAttributes.URLPath)
 		if attrs.URLAttributes.URLQuery != "" {
-			sb.WriteString(attrs.URLAttributes.URLQuery)
+			sb.WriteString(prefixIfNecessary(attrs.URLAttributes.URLQuery, "?"))
 		}
 		data.Url = sb.String()
 	case attrs.URLAttributes.URLScheme != "" && attrs.ServerAttributes.ServerAddress != "" && serverPort != "" && attrs.URLAttributes.URLPath != "":
@@ -366,7 +366,7 @@ func fillRequestDataHTTP(span ptrace.Span, data *contracts.RequestData) {
 		sb.WriteString(serverPort)
 		sb.WriteString(attrs.URLAttributes.URLPath)
 		if attrs.URLAttributes.URLQuery != "" {
-			sb.WriteString(attrs.URLAttributes.URLQuery)
+			sb.WriteString(prefixIfNecessary(attrs.URLAttributes.URLQuery, "?"))
 		}
 		data.Url = sb.String()
 	case attrs.URLAttributes.URLFull != "":
@@ -427,7 +427,7 @@ func fillRemoteDependencyDataHTTP(span ptrace.Span, data *contracts.RemoteDepend
 		sb.WriteString(attrs.ClientAttributes.ClientAddress)
 		sb.WriteString(attrs.URLAttributes.URLPath)
 		if attrs.URLAttributes.URLQuery != "" {
-			sb.WriteString(attrs.URLAttributes.URLQuery)
+			sb.WriteString(prefixIfNecessary(attrs.URLAttributes.URLQuery, "?"))
 		}
 		data.Data = sb.String()
 		data.Target = attrs.ClientAttributes.ClientAddress
@@ -440,7 +440,7 @@ func fillRemoteDependencyDataHTTP(span ptrace.Span, data *contracts.RemoteDepend
 		sb.WriteString(clientPortStr)
 		sb.WriteString(attrs.URLAttributes.URLPath)
 		if attrs.URLAttributes.URLQuery != "" {
-			sb.WriteString(attrs.URLAttributes.URLQuery)
+			sb.WriteString(prefixIfNecessary(attrs.URLAttributes.URLQuery, "?"))
 		}
 		data.Data = sb.String()
 
@@ -458,7 +458,7 @@ func fillRemoteDependencyDataHTTP(span ptrace.Span, data *contracts.RemoteDepend
 		sb.WriteString(clientPortStr)
 		sb.WriteString(attrs.URLAttributes.URLPath)
 		if attrs.URLAttributes.URLQuery != "" {
-			sb.WriteString(attrs.URLAttributes.URLQuery)
+			sb.WriteString(prefixIfNecessary(attrs.URLAttributes.URLQuery, "?"))
 		}
 		data.Data = sb.String()
 
