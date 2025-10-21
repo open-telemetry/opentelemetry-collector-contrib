@@ -204,7 +204,6 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordRedisMemoryUsedDataPoint(ts, 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisModeDataPoint(ts, 1, AttributeModeCluster)
 
@@ -234,35 +233,24 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordRedisRoleDataPoint(ts, 1, AttributeRoleReplica)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisSentinelMastersDataPoint(ts, 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisSentinelRunningScriptsDataPoint(ts, 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisSentinelScriptsQueueLengthDataPoint(ts, 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisSentinelSimulateFailureFlagsDataPoint(ts, 1)
 
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordRedisSentinelTiltDataPoint(ts, 1)
-
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisSentinelTiltSinceSecondsDataPoint(ts, 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisSentinelTotalTiltDataPoint(ts, 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisSlavesConnectedDataPoint(ts, 1)
 
@@ -925,7 +913,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "Number of masters monitored by Sentinel.", ms.At(i).Description())
-					assert.Equal(t, "{masters}", ms.At(i).Unit())
+					assert.Equal(t, "{master}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -937,7 +925,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "Number of running Sentinel scripts.", ms.At(i).Description())
-					assert.Equal(t, "{scripts}", ms.At(i).Unit())
+					assert.Equal(t, "{script}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -949,7 +937,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "Length of Sentinel scripts queue.", ms.At(i).Description())
-					assert.Equal(t, "{scripts}", ms.At(i).Unit())
+					assert.Equal(t, "{script}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -961,19 +949,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "Simulated failure flags bitmask.", ms.At(i).Description())
-					assert.Equal(t, "{flags}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-				case "redis.sentinel.tilt":
-					assert.False(t, validatedMetrics["redis.sentinel.tilt"], "Found a duplicate in the metrics slice: redis.sentinel.tilt")
-					validatedMetrics["redis.sentinel.tilt"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Whether Sentinel is in TILT mode (1 = tilt, 0 = normal).", ms.At(i).Description())
-					assert.Equal(t, "{state}", ms.At(i).Unit())
+					assert.Equal(t, "{flag}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -997,7 +973,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "Total TILT occurrences since start.", ms.At(i).Description())
-					assert.Equal(t, "{events}", ms.At(i).Unit())
+					assert.Equal(t, "{event}", ms.At(i).Unit())
 					assert.True(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)

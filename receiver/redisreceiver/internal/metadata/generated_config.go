@@ -78,7 +78,6 @@ type MetricsConfig struct {
 	RedisSentinelRunningScripts               MetricConfig `mapstructure:"redis.sentinel.running_scripts"`
 	RedisSentinelScriptsQueueLength           MetricConfig `mapstructure:"redis.sentinel.scripts_queue_length"`
 	RedisSentinelSimulateFailureFlags         MetricConfig `mapstructure:"redis.sentinel.simulate_failure_flags"`
-	RedisSentinelTilt                         MetricConfig `mapstructure:"redis.sentinel.tilt"`
 	RedisSentinelTiltSinceSeconds             MetricConfig `mapstructure:"redis.sentinel.tilt_since_seconds"`
 	RedisSentinelTotalTilt                    MetricConfig `mapstructure:"redis.sentinel.total_tilt"`
 	RedisSlavesConnected                      MetricConfig `mapstructure:"redis.slaves.connected"`
@@ -202,7 +201,7 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		RedisMode: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		RedisNetInput: MetricConfig{
 			Enabled: true,
@@ -226,28 +225,25 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		RedisSentinelMasters: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		RedisSentinelRunningScripts: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		RedisSentinelScriptsQueueLength: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		RedisSentinelSimulateFailureFlags: MetricConfig{
-			Enabled: true,
-		},
-		RedisSentinelTilt: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		RedisSentinelTiltSinceSeconds: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		RedisSentinelTotalTilt: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		RedisSlavesConnected: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		RedisUptime: MetricConfig{
 			Enabled: true,

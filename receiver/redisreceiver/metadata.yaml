@@ -458,7 +458,7 @@ metrics:
       value_type: int
 
   redis.mode:
-    enabled: true
+    enabled: false
     description: Redis server mode
     unit: "{mode}"
     gauge:
@@ -539,58 +539,51 @@ metrics:
     attributes: [role]
 
   redis.sentinel.masters:
-    enabled: true
+    enabled: false
     description: Number of masters monitored by Sentinel.
-    unit: "{masters}"
+    unit: "{master}"
     gauge:
       value_type: int
 
   redis.sentinel.running_scripts:
-    enabled: true
+    enabled: false
     description: Number of running Sentinel scripts.
-    unit: "{scripts}"
+    unit: "{script}"
     gauge:
       value_type: int
 
   redis.sentinel.scripts_queue_length:
-    enabled: true
+    enabled: false
     description: Length of Sentinel scripts queue.
-    unit: "{scripts}"
+    unit: "{script}"
     gauge:
       value_type: int
 
   redis.sentinel.simulate_failure_flags:
-    enabled: true
+    enabled: false
     description: Simulated failure flags bitmask.
-    unit: "{flags}"
-    gauge:
-      value_type: int
-
-  redis.sentinel.tilt:
-    enabled: true
-    description: Whether Sentinel is in TILT mode (1 = tilt, 0 = normal).
-    unit: "{state}"
+    unit: "{flag}"
     gauge:
       value_type: int
 
   redis.sentinel.tilt_since_seconds:
-    enabled: true
+    enabled: false
     description: Duration in seconds of current TILT, or -1 if not in TILT mode.
     unit: "s"
     gauge:
       value_type: int
 
   redis.sentinel.total_tilt:
-    enabled: true
+    enabled: false
     description: Total TILT occurrences since start.
-    unit: "{events}"
+    unit: "{event}"
     sum:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
 
   redis.slaves.connected:
-    enabled: true
+    enabled: false
     description: Number of connected replicas
     stability:
       level: development

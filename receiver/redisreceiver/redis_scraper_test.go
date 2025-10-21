@@ -32,8 +32,7 @@ func TestRedisRunnable(t *testing.T) {
 	require.NoError(t, err)
 	// + 9 because there are three keyspace entries each of which has three metrics
 	// -2 because maxmemory and slave_repl_offset is by default disabled, so recorder is there, but there won't be data point
-	// +1 for redis.mode (one-hot, exactly one sample per scrape)
-	assert.Equal(t, len(rs.dataPointRecorders())+9-14+1, md.DataPointCount())
+	assert.Equal(t, len(rs.dataPointRecorders())+9-15, md.DataPointCount())
 	rm := md.ResourceMetrics().At(0)
 	ilm := rm.ScopeMetrics().At(0)
 	il := ilm.Scope()

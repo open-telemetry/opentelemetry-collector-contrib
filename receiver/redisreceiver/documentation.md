@@ -212,20 +212,6 @@ Total number of bytes allocated by Redis using its allocator
 | ---- | ----------- | ---------- | --------- |
 | By | Gauge | Int | development |
 
-### redis.mode
-
-Redis server mode
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {mode} | Gauge | Int |
-
-#### Attributes
-
-| Name | Description | Values | Optional |
-| ---- | ----------- | ------ | -------- |
-| mode | Redis server mode | Str: ``cluster``, ``sentinel``, ``standalone`` | false |
-
 ### redis.net.input
 
 The total number of bytes read from the network
@@ -265,70 +251,6 @@ The server's current replication offset
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | By | Gauge | Int | development |
-
-### redis.sentinel.masters
-
-Number of masters monitored by Sentinel.
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {masters} | Gauge | Int |
-
-### redis.sentinel.running_scripts
-
-Number of running Sentinel scripts.
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {scripts} | Gauge | Int |
-
-### redis.sentinel.scripts_queue_length
-
-Length of Sentinel scripts queue.
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {scripts} | Gauge | Int |
-
-### redis.sentinel.simulate_failure_flags
-
-Simulated failure flags bitmask.
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {flags} | Gauge | Int |
-
-### redis.sentinel.tilt
-
-Whether Sentinel is in TILT mode (1 = tilt, 0 = normal).
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {state} | Gauge | Int |
-
-### redis.sentinel.tilt_since_seconds
-
-Duration in seconds of current TILT, or -1 if not in TILT mode.
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| s | Gauge | Int |
-
-### redis.sentinel.total_tilt
-
-Total TILT occurrences since start.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {events} | Sum | Int | Cumulative | true |
-
-### redis.slaves.connected
-
-Number of connected replicas
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
-| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {replica} | Sum | Int | Cumulative | false | development |
 
 ### redis.uptime
 
@@ -501,6 +423,20 @@ The value of the maxmemory configuration directive
 | ---- | ----------- | ---------- | --------- |
 | By | Gauge | Int | development |
 
+### redis.mode
+
+Redis server mode
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {mode} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| mode | Redis server mode | Str: ``cluster``, ``sentinel``, ``standalone`` | false |
+
 ### redis.replication.replica_offset
 
 Offset for redis replica
@@ -522,6 +458,62 @@ Redis node's role
 | Name | Description | Values | Optional |
 | ---- | ----------- | ------ | -------- |
 | role | Redis node's role | Str: ``replica``, ``primary`` | false |
+
+### redis.sentinel.masters
+
+Number of masters monitored by Sentinel.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {master} | Gauge | Int |
+
+### redis.sentinel.running_scripts
+
+Number of running Sentinel scripts.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {script} | Gauge | Int |
+
+### redis.sentinel.scripts_queue_length
+
+Length of Sentinel scripts queue.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {script} | Gauge | Int |
+
+### redis.sentinel.simulate_failure_flags
+
+Simulated failure flags bitmask.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {flag} | Gauge | Int |
+
+### redis.sentinel.tilt_since_seconds
+
+Duration in seconds of current TILT, or -1 if not in TILT mode.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| s | Gauge | Int |
+
+### redis.sentinel.total_tilt
+
+Total TILT occurrences since start.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {event} | Sum | Int | Cumulative | true |
+
+### redis.slaves.connected
+
+Number of connected replicas
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {replica} | Sum | Int | Cumulative | false | development |
 
 ## Resource Attributes
 

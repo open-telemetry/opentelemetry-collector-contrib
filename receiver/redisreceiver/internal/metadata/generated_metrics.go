@@ -317,9 +317,6 @@ var MetricsInfo = metricsInfo{
 	RedisSentinelSimulateFailureFlags: metricInfo{
 		Name: "redis.sentinel.simulate_failure_flags",
 	},
-	RedisSentinelTilt: metricInfo{
-		Name: "redis.sentinel.tilt",
-	},
 	RedisSentinelTiltSinceSeconds: metricInfo{
 		Name: "redis.sentinel.tilt_since_seconds",
 	},
@@ -385,7 +382,6 @@ type metricsInfo struct {
 	RedisSentinelRunningScripts               metricInfo
 	RedisSentinelScriptsQueueLength           metricInfo
 	RedisSentinelSimulateFailureFlags         metricInfo
-	RedisSentinelTilt                         metricInfo
 	RedisSentinelTiltSinceSeconds             metricInfo
 	RedisSentinelTotalTilt                    metricInfo
 	RedisSlavesConnected                      metricInfo
@@ -2719,7 +2715,7 @@ type metricRedisSentinelMasters struct {
 func (m *metricRedisSentinelMasters) init() {
 	m.data.SetName("redis.sentinel.masters")
 	m.data.SetDescription("Number of masters monitored by Sentinel.")
-	m.data.SetUnit("{masters}")
+	m.data.SetUnit("{master}")
 	m.data.SetEmptyGauge()
 }
 
@@ -2768,7 +2764,7 @@ type metricRedisSentinelRunningScripts struct {
 func (m *metricRedisSentinelRunningScripts) init() {
 	m.data.SetName("redis.sentinel.running_scripts")
 	m.data.SetDescription("Number of running Sentinel scripts.")
-	m.data.SetUnit("{scripts}")
+	m.data.SetUnit("{script}")
 	m.data.SetEmptyGauge()
 }
 
@@ -2817,7 +2813,7 @@ type metricRedisSentinelScriptsQueueLength struct {
 func (m *metricRedisSentinelScriptsQueueLength) init() {
 	m.data.SetName("redis.sentinel.scripts_queue_length")
 	m.data.SetDescription("Length of Sentinel scripts queue.")
-	m.data.SetUnit("{scripts}")
+	m.data.SetUnit("{script}")
 	m.data.SetEmptyGauge()
 }
 
@@ -2866,7 +2862,7 @@ type metricRedisSentinelSimulateFailureFlags struct {
 func (m *metricRedisSentinelSimulateFailureFlags) init() {
 	m.data.SetName("redis.sentinel.simulate_failure_flags")
 	m.data.SetDescription("Simulated failure flags bitmask.")
-	m.data.SetUnit("{flags}")
+	m.data.SetUnit("{flag}")
 	m.data.SetEmptyGauge()
 }
 
@@ -2898,55 +2894,6 @@ func (m *metricRedisSentinelSimulateFailureFlags) emit(metrics pmetric.MetricSli
 
 func newMetricRedisSentinelSimulateFailureFlags(cfg MetricConfig) metricRedisSentinelSimulateFailureFlags {
 	m := metricRedisSentinelSimulateFailureFlags{config: cfg}
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricRedisSentinelTilt struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills redis.sentinel.tilt metric with initial data.
-func (m *metricRedisSentinelTilt) init() {
-	m.data.SetName("redis.sentinel.tilt")
-	m.data.SetDescription("Whether Sentinel is in TILT mode (1 = tilt, 0 = normal).")
-	m.data.SetUnit("{state}")
-	m.data.SetEmptyGauge()
-}
-
-func (m *metricRedisSentinelTilt) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricRedisSentinelTilt) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricRedisSentinelTilt) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricRedisSentinelTilt(cfg MetricConfig) metricRedisSentinelTilt {
-	m := metricRedisSentinelTilt{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3013,7 +2960,7 @@ type metricRedisSentinelTotalTilt struct {
 func (m *metricRedisSentinelTotalTilt) init() {
 	m.data.SetName("redis.sentinel.total_tilt")
 	m.data.SetDescription("Total TILT occurrences since start.")
-	m.data.SetUnit("{events}")
+	m.data.SetUnit("{event}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -3216,7 +3163,6 @@ type MetricsBuilder struct {
 	metricRedisSentinelRunningScripts               metricRedisSentinelRunningScripts
 	metricRedisSentinelScriptsQueueLength           metricRedisSentinelScriptsQueueLength
 	metricRedisSentinelSimulateFailureFlags         metricRedisSentinelSimulateFailureFlags
-	metricRedisSentinelTilt                         metricRedisSentinelTilt
 	metricRedisSentinelTiltSinceSeconds             metricRedisSentinelTiltSinceSeconds
 	metricRedisSentinelTotalTilt                    metricRedisSentinelTotalTilt
 	metricRedisSlavesConnected                      metricRedisSlavesConnected
@@ -3296,7 +3242,6 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricRedisSentinelRunningScripts:               newMetricRedisSentinelRunningScripts(mbc.Metrics.RedisSentinelRunningScripts),
 		metricRedisSentinelScriptsQueueLength:           newMetricRedisSentinelScriptsQueueLength(mbc.Metrics.RedisSentinelScriptsQueueLength),
 		metricRedisSentinelSimulateFailureFlags:         newMetricRedisSentinelSimulateFailureFlags(mbc.Metrics.RedisSentinelSimulateFailureFlags),
-		metricRedisSentinelTilt:                         newMetricRedisSentinelTilt(mbc.Metrics.RedisSentinelTilt),
 		metricRedisSentinelTiltSinceSeconds:             newMetricRedisSentinelTiltSinceSeconds(mbc.Metrics.RedisSentinelTiltSinceSeconds),
 		metricRedisSentinelTotalTilt:                    newMetricRedisSentinelTotalTilt(mbc.Metrics.RedisSentinelTotalTilt),
 		metricRedisSlavesConnected:                      newMetricRedisSlavesConnected(mbc.Metrics.RedisSlavesConnected),
@@ -3441,7 +3386,6 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricRedisSentinelRunningScripts.emit(ils.Metrics())
 	mb.metricRedisSentinelScriptsQueueLength.emit(ils.Metrics())
 	mb.metricRedisSentinelSimulateFailureFlags.emit(ils.Metrics())
-	mb.metricRedisSentinelTilt.emit(ils.Metrics())
 	mb.metricRedisSentinelTiltSinceSeconds.emit(ils.Metrics())
 	mb.metricRedisSentinelTotalTilt.emit(ils.Metrics())
 	mb.metricRedisSlavesConnected.emit(ils.Metrics())
@@ -3725,11 +3669,6 @@ func (mb *MetricsBuilder) RecordRedisSentinelScriptsQueueLengthDataPoint(ts pcom
 // RecordRedisSentinelSimulateFailureFlagsDataPoint adds a data point to redis.sentinel.simulate_failure_flags metric.
 func (mb *MetricsBuilder) RecordRedisSentinelSimulateFailureFlagsDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricRedisSentinelSimulateFailureFlags.recordDataPoint(mb.startTime, ts, val)
-}
-
-// RecordRedisSentinelTiltDataPoint adds a data point to redis.sentinel.tilt metric.
-func (mb *MetricsBuilder) RecordRedisSentinelTiltDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricRedisSentinelTilt.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordRedisSentinelTiltSinceSecondsDataPoint adds a data point to redis.sentinel.tilt_since_seconds metric.

@@ -101,8 +101,6 @@ all_set:
       enabled: true
     redis.sentinel.simulate_failure_flags:
       enabled: true
-    redis.sentinel.tilt:
-      enabled: true
     redis.sentinel.tilt_since_seconds:
       enabled: true
     redis.sentinel.total_tilt:
@@ -219,8 +217,6 @@ none_set:
     redis.sentinel.scripts_queue_length:
       enabled: false
     redis.sentinel.simulate_failure_flags:
-      enabled: false
-    redis.sentinel.tilt:
       enabled: false
     redis.sentinel.tilt_since_seconds:
       enabled: false
