@@ -107,7 +107,8 @@ func withTestController(t *testTSPController) Option {
 		tsp.tickChan = make(chan chan struct{})
 		t.tickChans = append(t.tickChans, tsp.tickChan)
 
-		// use a sync ID batcher to avoid waiting on lots of empty ticks
+		// use a sync ID batcher to avoid waiting on lots of empty ticks.
+		// We need to close the old one before creating a new one.
 		tsp.decisionBatcher = newSyncIDBatcher()
 
 		// Use a slow tick frequency to effectively disable automatic ticks.
@@ -941,6 +942,7 @@ type syncIDBatcher struct {
 	sync.Mutex
 	openBatch idbatcher.Batch
 	batchPipe chan idbatcher.Batch
+	stopped   bool
 }
 
 var _ idbatcher.Batcher = (*syncIDBatcher)(nil)
@@ -955,6 +957,9 @@ func newSyncIDBatcher() idbatcher.Batcher {
 
 func (s *syncIDBatcher) AddToCurrentBatch(id pcommon.TraceID) {
 	s.Lock()
+	if s.stopped {
+		panic("cannot add to stopped batcher!")
+	}
 	s.openBatch = append(s.openBatch, id)
 	s.Unlock()
 }
@@ -962,13 +967,24 @@ func (s *syncIDBatcher) AddToCurrentBatch(id pcommon.TraceID) {
 func (s *syncIDBatcher) CloseCurrentAndTakeFirstBatch() (idbatcher.Batch, bool) {
 	s.Lock()
 	defer s.Unlock()
-	firstBatch := <-s.batchPipe
-	s.batchPipe <- s.openBatch
-	s.openBatch = nil
+	firstBatch, ok := <-s.batchPipe
+	// When batchPipe is closed it means we have stopped and just need to return the openBatch as the last entries.
+	if !ok {
+		return s.openBatch, false
+	}
+	// Do not move the open batch to the channel if we are stopped. It will panic, we return it once the channel is closed instead.
+	if !s.stopped {
+		s.batchPipe <- s.openBatch
+		s.openBatch = nil
+	}
 	return firstBatch, true
 }
 
-func (*syncIDBatcher) Stop() {
+func (s *syncIDBatcher) Stop() {
+	s.Lock()
+	defer s.Unlock()
+	s.stopped = true
+	close(s.batchPipe)
 }
 
 func simpleTraces() ptrace.Traces {

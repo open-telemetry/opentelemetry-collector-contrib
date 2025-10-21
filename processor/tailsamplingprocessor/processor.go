@@ -43,8 +43,7 @@ type policy struct {
 }
 
 type tailSamplingSpanProcessor struct {
-	ctx    context.Context
-	cancel context.CancelFunc
+	ctx context.Context
 
 	set       processor.Settings
 	telemetry *metadata.TelemetryBuilder
@@ -96,10 +95,8 @@ func newTracesProcessor(ctx context.Context, set processor.Settings, nextConsume
 		}
 	}
 
-	ctx, cancel := context.WithCancel(ctx)
 	tsp := &tailSamplingSpanProcessor{
 		ctx:                ctx,
-		cancel:             cancel,
 		cfg:                cfg,
 		set:                set,
 		telemetry:          telemetry,
@@ -127,17 +124,6 @@ func newTracesProcessor(ctx context.Context, set processor.Settings, nextConsume
 		tsp.tickerFrequency = time.Second
 	}
 
-	if tsp.decisionBatcher == nil {
-		// this will start a goroutine in the background, so we run it only if everything went
-		// well in creating the policies
-		numDecisionBatches := math.Max(1, cfg.DecisionWait.Seconds())
-		inBatcher, err := idbatcher.New(uint64(numDecisionBatches), cfg.ExpectedNewTracesPerSec, uint64(2*runtime.NumCPU()))
-		if err != nil {
-			return nil, err
-		}
-		tsp.decisionBatcher = inBatcher
-	}
-
 	return tsp, nil
 }
 
@@ -158,6 +144,18 @@ func (tsp *tailSamplingSpanProcessor) Start(_ context.Context, host component.Ho
 	if tsp.policies == nil {
 		tsp.policies = policies
 	}
+
+	if tsp.decisionBatcher == nil {
+		// this will start a goroutine in the background, so we run it only if everything went
+		// well in creating the policies, and only when the processor starts.
+		numDecisionBatches := math.Max(1, tsp.cfg.DecisionWait.Seconds())
+		inBatcher, err := idbatcher.New(uint64(numDecisionBatches), tsp.cfg.ExpectedNewTracesPerSec, uint64(2*runtime.NumCPU()))
+		if err != nil {
+			return err
+		}
+		tsp.decisionBatcher = inBatcher
+	}
+
 	tsp.doneChan = make(chan struct{})
 	go tsp.loop()
 	return nil
@@ -383,8 +381,22 @@ func (tsp *tailSamplingSpanProcessor) loop() {
 func (tsp *tailSamplingSpanProcessor) iter(tickChan <-chan time.Time, workChan <-chan ptrace.Traces) bool {
 	select {
 	case <-tsp.ctx.Done():
+		// If the context is done then we can't send anything anymore so just exit.
 		return false
-	case td := <-workChan:
+	case td, ok := <-workChan:
+		// No more traces to process as we are shutting down. Clear the queue and make decisions for all batches based on the current data.
+		if !ok {
+			// Stop the batcher so that we can read all batches without creating new ones.
+			tsp.decisionBatcher.Stop()
+
+			// Do the best decision we can for any traces we have already ingested unless a user wants to drop them.
+			if !tsp.cfg.DropPendingTracesOnShutdown {
+				for tsp.samplingPolicyOnTick() {
+				}
+			}
+			return false
+		}
+
 		for _, rss := range td.ResourceSpans().All() {
 			idToSpansAndScope := groupSpansByTraceKey(rss)
 			for traceID, spans := range idToSpansAndScope {
@@ -463,14 +475,15 @@ func (tsp *tailSamplingSpanProcessor) waitForSpace(tickChan <-chan time.Time) {
 	tsp.deleteTraceQueue.Remove(front)
 }
 
-func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
+// samplingPolicyOnTick takes the next batch and process all traces in that batch. Returns if there are more batches in the batcher.
+func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() bool {
 	tsp.logger.Debug("Sampling Policy Evaluation ticked")
 
 	ctx := context.Background()
 	metrics := newPolicyMetrics(len(tsp.policies))
 	startTime := time.Now()
 
-	batch, _ := tsp.decisionBatcher.CloseCurrentAndTakeFirstBatch()
+	batch, hasMore := tsp.decisionBatcher.CloseCurrentAndTakeFirstBatch()
 	batchLen := len(batch)
 
 	for _, id := range batch {
@@ -519,6 +532,7 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 		zap.Int64("droppedPriorToEvaluation", metrics.idNotFoundOnMapCount),
 		zap.Int64("policyEvaluationErrors", metrics.evaluateErrorCount),
 	)
+	return hasMore
 }
 
 func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *samplingpolicy.TraceData, metrics *policyMetrics) samplingpolicy.Decision {
@@ -693,11 +707,11 @@ func extensions(host component.Host) map[string]samplingpolicy.Extension {
 
 // Shutdown is invoked during service shutdown.
 func (tsp *tailSamplingSpanProcessor) Shutdown(context.Context) error {
-	tsp.cancel()
+	// All receivers will be shutdown before processors so no sends will be done anymore.
+	close(tsp.workChan)
 	if tsp.doneChan != nil {
 		<-tsp.doneChan
 	}
-	tsp.decisionBatcher.Stop()
 	return nil
 }
 
