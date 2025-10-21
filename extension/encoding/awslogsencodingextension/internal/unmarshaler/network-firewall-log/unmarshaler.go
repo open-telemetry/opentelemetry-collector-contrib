@@ -86,7 +86,7 @@ type networkFirewallLog struct {
 		TLS struct {
 			Subject        string `json:"subject"`
 			Issuer         string `json:"issuer"`
-			SessionResumed bool   `json:"session_resumed"`
+			SessionResumed *bool  `json:"session_resumed"`
 		} `json:"tls"`
 		HTTP struct {
 			Hostname        string `json:"hostname"`
@@ -198,7 +198,7 @@ func (*networkFirewallLogUnmarshaler) addNetworkFirewallLog(log networkFirewallL
 		}
 	}
 
-	// Add common event-level fields (check each field for existence)
+	// Add common event-level fields
 	if log.Event.EventType != "" {
 		putStr("aws.networkfirewall.event.type", log.Event.EventType)
 	}
@@ -206,7 +206,7 @@ func (*networkFirewallLogUnmarshaler) addNetworkFirewallLog(log networkFirewallL
 		putInt("aws.networkfirewall.flow_id", log.Event.FlowID)
 	}
 
-	// Add network fields (check each field for existence)
+	// Add network fields
 	if log.Event.Src != "" {
 		putStr(string(semconv.SourceAddressKey), log.Event.Src)
 	}
@@ -223,7 +223,7 @@ func (*networkFirewallLogUnmarshaler) addNetworkFirewallLog(log networkFirewallL
 		putStr("network.transport", log.Event.Proto)
 	}
 
-	// Add netflow fields if present (Flow event type) - check each field individually
+	// Add netflow fields if present (Flow event type)
 	if log.Event.Netflow.Pkts != 0 {
 		putInt("aws.networkfirewall.netflow.packets", log.Event.Netflow.Pkts)
 	}
@@ -249,7 +249,7 @@ func (*networkFirewallLogUnmarshaler) addNetworkFirewallLog(log networkFirewallL
 		putInt("aws.networkfirewall.netflow.transaction.count", log.Event.Netflow.TxCnt)
 	}
 
-	// Add alert fields if present (Alert event type) - check each field individually
+	// Add alert fields if present (Alert event type)
 	if log.Event.Alert.Action != "" {
 		putStr("aws.networkfirewall.alert.action", log.Event.Alert.Action)
 	}
@@ -272,7 +272,7 @@ func (*networkFirewallLogUnmarshaler) addNetworkFirewallLog(log networkFirewallL
 		putInt("aws.networkfirewall.alert.gid", log.Event.Alert.Gid)
 	}
 
-	// Add alert metadata if present (check each array individually)
+	// Add alert metadata if present
 	if len(log.Event.Alert.Metadata.AffectedProduct) > 0 {
 		putStrSlice("aws.networkfirewall.alert.metadata.affected_product", log.Event.Alert.Metadata.AffectedProduct)
 	}
@@ -322,18 +322,20 @@ func (*networkFirewallLogUnmarshaler) addNetworkFirewallLog(log networkFirewallL
 		putStr("aws.networkfirewall.tls.error.message", log.Event.TLSError.ErrorMessage)
 	}
 
-	// TLS details (check each field individually)
+	// TLS details
 	if log.Event.TLS.Subject != "" {
 		putStr("tls.client.subject", log.Event.TLS.Subject)
 	}
 	if log.Event.TLS.Issuer != "" {
 		putStr("tls.client.issuer", log.Event.TLS.Issuer)
 	}
-	if log.Event.TLS.SessionResumed {
-		putBool("tls.resumed", log.Event.TLS.SessionResumed)
+
+	// TLS session resumed (only if field is present in JSON)
+	if log.Event.TLS.SessionResumed != nil {
+		putBool("tls.resumed", *log.Event.TLS.SessionResumed)
 	}
 
-	// Add HTTP fields if present (HTTP event type) - check each field individually
+	// Set HTTP fields if present
 	if log.Event.HTTP.Hostname != "" {
 		putStr("url.domain", log.Event.HTTP.Hostname)
 	}

@@ -20,47 +20,41 @@ resourceLogs:
                 stringValue: aws.networkfirewall
         logRecords:
           - observedTimeUnixNano: "0"
-            timeUnixNano: "1760697045123000000"
+            timeUnixNano: "1760956245123000000"
             attributes:
               - key: aws.networkfirewall.event.type
                 value:
-                  stringValue: alert
+                  stringValue: http
               - key: aws.networkfirewall.flow_id
                 value:
-                  intValue: "1234567890"
+                  intValue: "1234567893"
               - key: source.address
                 value:
                   stringValue: 192.168.1.100
               - key: source.port
                 value:
-                  intValue: "54321"
+                  intValue: "54324"
               - key: destination.address
                 value:
-                  stringValue: 10.0.1.50
+                  stringValue: 10.0.1.53
               - key: destination.port
                 value:
-                  intValue: "443"
+                  intValue: "80"
               - key: network.transport
                 value:
                   stringValue: TCP
-              - key: aws.networkfirewall.alert.action
+              - key: url.domain
                 value:
-                  stringValue: allowed
-              - key: aws.networkfirewall.alert.signature
+                  stringValue: example.com
+              - key: url.path
                 value:
-                  stringValue: ET MALWARE Suspicious TLS Connection
-              - key: aws.networkfirewall.alert.signature_id
+                  stringValue: /api/v1/users
+              - key: user_agent.original
                 value:
-                  intValue: "2027758"
-              - key: aws.networkfirewall.alert.rev
+                  stringValue: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36
+              - key: http.request.header.content-type
                 value:
-                  intValue: "3"
-              - key: aws.networkfirewall.alert.category
+                  stringValue: application/json
+              - key: http.request.header.cookie
                 value:
-                  stringValue: Malware
-              - key: aws.networkfirewall.alert.severity
-                value:
-                  intValue: "1"
-              - key: aws.networkfirewall.alert.gid
-                value:
-                  intValue: "1"
+                  stringValue: session_id=abc123; user_pref=dark_mode

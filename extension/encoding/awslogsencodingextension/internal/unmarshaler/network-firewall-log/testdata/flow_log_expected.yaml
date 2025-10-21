@@ -20,7 +20,7 @@ resourceLogs:
                 stringValue: aws.networkfirewall
         logRecords:
           - observedTimeUnixNano: "0"
-            timeUnixNano: "1760697045123000000"
+            timeUnixNano: "1760956245123000000"
             attributes:
               - key: aws.networkfirewall.event.type
                 value:
@@ -51,10 +51,10 @@ resourceLogs:
                   intValue: "45000"
               - key: aws.networkfirewall.netflow.start
                 value:
-                  stringValue: "2025-10-17T10:30:40.000Z"
+                  stringValue: "2025-10-20T10:30:40.000Z"
               - key: aws.networkfirewall.netflow.end
                 value:
-                  stringValue: "2025-10-17T10:30:45.000Z"
+                  stringValue: "2025-10-20T10:30:45.000Z"
               - key: aws.networkfirewall.netflow.age
                 value:
                   intValue: "5"

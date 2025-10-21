@@ -53,17 +53,29 @@ func TestUnmarshalLogs(t *testing.T) {
 		expectedFilename string
 		expectedErr      string
 	}{
-		"valid_alert_log": {
-			reader:           readAndCompressLogFile(t, dir, "valid_alert_log.json"),
-			expectedFilename: "valid_alert_log_expected.yaml",
+		"alert_log": {
+			reader:           readAndCompressLogFile(t, dir, "alert_log.json"),
+			expectedFilename: "alert_log_expected.yaml",
 		},
-		"valid_flow_log": {
-			reader:           readAndCompressLogFile(t, dir, "valid_flow_log.json"),
-			expectedFilename: "valid_flow_log_expected.yaml",
+		"flow_log": {
+			reader:           readAndCompressLogFile(t, dir, "flow_log.json"),
+			expectedFilename: "flow_log_expected.yaml",
 		},
-		"valid_tls_log": {
-			reader:           readAndCompressLogFile(t, dir, "valid_tls_log.json"),
-			expectedFilename: "valid_tls_log_expected.yaml",
+		"tls_log": {
+			reader:           readAndCompressLogFile(t, dir, "tls_log.json"),
+			expectedFilename: "tls_log_expected.yaml",
+		},
+		"alert_with_metadata_log": {
+			reader:           readAndCompressLogFile(t, dir, "alert_with_metadata_log.json"),
+			expectedFilename: "alert_with_metadata_log_expected.yaml",
+		},
+		"tls_with_revocation_log": {
+			reader:           readAndCompressLogFile(t, dir, "tls_with_revocation_log.json"),
+			expectedFilename: "tls_with_revocation_log_expected.yaml",
+		},
+		"http_log": {
+			reader:           readAndCompressLogFile(t, dir, "http_log.json"),
+			expectedFilename: "http_log_expected.yaml",
 		},
 		"missing_firewall_name": {
 			reader:      readAndCompressLogFile(t, dir, "missing_firewall_name.json"),

@@ -1,7 +1,7 @@
 {
     "firewall_name": "test-firewall",
     "availability_zone": "us-east-1a",
-    "event_timestamp": "2025-10-17T10:30:45.123Z",
+    "event_timestamp": "2025-10-20T10:30:45.123Z",
     "event": {
         "event_type": "netflow",
         "flow_id": 1234567891,
@@ -13,8 +13,8 @@
         "netflow": {
             "pkts": 150,
             "bytes": 45000,
-            "start": "2025-10-17T10:30:40.000Z",
-            "end": "2025-10-17T10:30:45.000Z",
+            "start": "2025-10-20T10:30:40.000Z",
+            "end": "2025-10-20T10:30:45.000Z",
             "age": 5,
             "min_ttl": 64,
             "max_ttl": 64,

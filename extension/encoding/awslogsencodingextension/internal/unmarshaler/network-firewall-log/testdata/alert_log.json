@@ -1,7 +1,7 @@
 {
     "firewall_name": "test-firewall",
     "availability_zone": "us-east-1a",
-    "event_timestamp": "2025-10-17T10:30:45.123Z",
+    "event_timestamp": "2025-10-20T10:30:45.123Z",
     "event": {
         "event_type": "alert",
         "flow_id": 1234567890,

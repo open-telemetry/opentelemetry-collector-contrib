@@ -20,35 +20,47 @@ resourceLogs:
                 stringValue: aws.networkfirewall
         logRecords:
           - observedTimeUnixNano: "0"
-            timeUnixNano: "1760697045123000000"
+            timeUnixNano: "1760956245123000000"
             attributes:
               - key: aws.networkfirewall.event.type
                 value:
-                  stringValue: tls
+                  stringValue: alert
               - key: aws.networkfirewall.flow_id
                 value:
-                  intValue: "1234567892"
+                  intValue: "1234567890"
               - key: source.address
                 value:
                   stringValue: 192.168.1.100
               - key: source.port
                 value:
-                  intValue: "54323"
+                  intValue: "54321"
               - key: destination.address
                 value:
-                  stringValue: 10.0.1.52
+                  stringValue: 10.0.1.50
               - key: destination.port
                 value:
                   intValue: "443"
               - key: network.transport
                 value:
                   stringValue: TCP
-              - key: server.address
+              - key: aws.networkfirewall.alert.action
                 value:
-                  stringValue: example.com
-              - key: tls.client.subject
+                  stringValue: allowed
+              - key: aws.networkfirewall.alert.signature
                 value:
-                  stringValue: CN=example.com
-              - key: tls.client.issuer
+                  stringValue: ET MALWARE Suspicious TLS Connection
+              - key: aws.networkfirewall.alert.signature_id
                 value:
-                  stringValue: CN=Let's Encrypt Authority X3,O=Let's Encrypt,C=US
+                  intValue: "2027758"
+              - key: aws.networkfirewall.alert.rev
+                value:
+                  intValue: "3"
+              - key: aws.networkfirewall.alert.category
+                value:
+                  stringValue: Malware
+              - key: aws.networkfirewall.alert.severity
+                value:
+                  intValue: "1"
+              - key: aws.networkfirewall.alert.gid
+                value:
+                  intValue: "1"
