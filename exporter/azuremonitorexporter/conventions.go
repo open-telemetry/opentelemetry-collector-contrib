@@ -80,11 +80,11 @@ func (attrs *networkAttributes) MapAttribute(k string, v pcommon.Value) bool {
 type urlAttributes struct {
 	// common attributes
 	// https://github.com/open-telemetry/semantic-conventions/blob/v1.34.0/docs/registry/attributes/url.md
-	UrlFragment string
-	UrlFull     string
-	UrlPath     string
-	UrlQuery    string
-	UrlScheme   string
+	URLFragment string
+	URLFull     string
+	URLPath     string
+	URLQuery    string
+	URLScheme   string
 }
 
 type userAgentAttributes struct {
@@ -97,18 +97,18 @@ type userAgentAttributes struct {
 type httpAttributes struct {
 	// common attributes
 	// https://github.com/open-telemetry/semantic-conventions/blob/v1.34.0/docs/registry/attributes/http.md
-	HttpRequestHeaders        map[string][]string
-	HttpRequestMethod         string
-	HttpRequestMethodOriginal string
-	HttpRequestResendCount    int64
-	HttpResponseHeaders       map[string][]string
-	HttpResponseStatusCode    int64
-	HttpRoute                 string
+	HTTPRequestHeaders        map[string][]string
+	HTTPRequestMethod         string
+	HTTPRequestMethodOriginal string
+	HTTPRequestResendCount    int64
+	HTTPResponseHeaders       map[string][]string
+	HTTPResponseStatusCode    int64
+	HTTPRoute                 string
 
-	HttpRequestBodySize  int64
-	HttpResponseBodySize int64
+	HTTPRequestBodySize  int64
+	HTTPResponseBodySize int64
 
-	UrlAttributes       urlAttributes
+	URLAttributes       urlAttributes
 	ClientAttributes    clientAttributes
 	ServerAttributes    serverAttributes
 	UserAgentAttributes userAgentAttributes
@@ -136,57 +136,56 @@ func setHeader(headers *map[string][]string, key string, v pcommon.Value) {
 
 // MapAttribute attempts to map a Span attribute to one of the known types
 func (attrs *httpAttributes) MapAttribute(k string, v pcommon.Value) bool {
-
 	const reqHeaderPrefix = "http.request.header."
 	const respHeaderPrefix = "http.response.header."
 
 	switch {
 	case strings.HasPrefix(k, reqHeaderPrefix):
 		headerName := k[len(reqHeaderPrefix):]
-		setHeader(&attrs.HttpRequestHeaders, headerName, v)
+		setHeader(&attrs.HTTPRequestHeaders, headerName, v)
 		return true
 
 	case strings.HasPrefix(k, respHeaderPrefix):
 		headerName := k[len(respHeaderPrefix):]
-		setHeader(&attrs.HttpResponseHeaders, headerName, v)
+		setHeader(&attrs.HTTPResponseHeaders, headerName, v)
 		return true
 	}
 
 	switch k {
 	case string(conventions.HTTPRequestMethodKey):
-		attrs.HttpRequestMethod = v.Str()
+		attrs.HTTPRequestMethod = v.Str()
 	case string(conventions.HTTPRequestMethodOriginalKey):
-		attrs.HttpRequestMethodOriginal = v.Str()
+		attrs.HTTPRequestMethodOriginal = v.Str()
 	case string(conventions.HTTPRequestResendCountKey):
 		if val, err := getAttributeValueAsInt(v); err == nil {
-			attrs.HttpRequestResendCount = val
+			attrs.HTTPRequestResendCount = val
 		}
 	case string(conventions.HTTPResponseStatusCodeKey):
 		if val, err := getAttributeValueAsInt(v); err == nil {
-			attrs.HttpResponseStatusCode = val
+			attrs.HTTPResponseStatusCode = val
 		}
 	case string(conventions.HTTPRouteKey):
-		attrs.HttpRoute = v.Str()
+		attrs.HTTPRoute = v.Str()
 
 	case string(conventions.HTTPResponseBodySizeKey):
 		if val, err := getAttributeValueAsInt(v); err == nil {
-			attrs.HttpResponseBodySize = val
+			attrs.HTTPResponseBodySize = val
 		}
 	case string(conventions.HTTPRequestBodySizeKey):
 		if val, err := getAttributeValueAsInt(v); err == nil {
-			attrs.HttpRequestBodySize = val
+			attrs.HTTPRequestBodySize = val
 		}
 	// URL attributes
 	case string(conventions.URLFragmentKey):
-		attrs.UrlAttributes.UrlFragment = v.Str()
+		attrs.URLAttributes.URLFragment = v.Str()
 	case string(conventions.URLFullKey):
-		attrs.UrlAttributes.UrlFull = v.Str()
+		attrs.URLAttributes.URLFull = v.Str()
 	case string(conventions.URLPathKey):
-		attrs.UrlAttributes.UrlPath = v.Str()
+		attrs.URLAttributes.URLPath = v.Str()
 	case string(conventions.URLQueryKey):
-		attrs.UrlAttributes.UrlQuery = v.Str()
+		attrs.URLAttributes.URLQuery = v.Str()
 	case string(conventions.URLSchemeKey):
-		attrs.UrlAttributes.UrlScheme = v.Str()
+		attrs.URLAttributes.URLScheme = v.Str()
 
 	// Network/server/client address attributes (new, replacing http.host)
 	case string(conventions.ServerAddressKey):

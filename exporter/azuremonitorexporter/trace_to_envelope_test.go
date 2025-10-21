@@ -34,8 +34,8 @@ const (
 	defaultScopeName                        = "myinstrumentationlib"
 	defaultScopeVersion                     = "1.0"
 	defaultHTTPMethod                       = http.MethodGet
-	defaultHttpServerPort                   = 80
-	defaultUrlFull                          = "https://foo/bar/12345?biz=baz"
+	defaultHTTPServerPort                   = 80
+	defaultURLFull                          = "https://foo/bar/12345?biz=baz"
 	defaultHTTPServerSpanName               = "/bar"
 	defaultHTTPClientSpanName               = defaultHTTPMethod
 	defaultHTTPStatusCode                   = 200
@@ -75,8 +75,8 @@ var (
 	requiredHTTPAttributes = map[string]any{
 		string(conventions.HTTPRequestMethodKey): defaultHTTPMethod,
 		string(conventions.ServerAddressKey):     defaultServerAddress,
-		string(conventions.ServerPortKey):        defaultHttpServerPort,
-		string(conventions.URLFullKey):           defaultUrlFull,
+		string(conventions.ServerPortKey):        defaultHTTPServerPort,
+		string(conventions.URLFullKey):           defaultURLFull,
 	}
 
 	// Required attribute for any RPC Span
@@ -127,7 +127,7 @@ func TestHTTPServerSpanToRequestDataAttributeSet1(t *testing.T) {
 	spanAttributes.PutStr(string(conventions.URLPathKey), "/bar")
 	spanAttributes.PutStr(string(conventions.URLQueryKey), "biz=baz")
 
-	//Reset server port to null
+	// Reset server port to null
 	spanAttributes.PutStr(string(conventions.ServerPortKey), "")
 
 	// A non 2xx status code

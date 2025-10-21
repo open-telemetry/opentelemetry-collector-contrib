@@ -49,16 +49,16 @@ func testHTTPAttributeMapping(t *testing.T, variant string) {
 
 	attributeMap.Range(httpAttributes.MapAttribute)
 
-	assert.Equal(t, string(conventions.HTTPRequestMethodKey), httpAttributes.HttpRequestMethod)
-	assert.Equal(t, string(conventions.URLFullKey), httpAttributes.UrlAttributes.UrlFull)
-	assert.Equal(t, string(conventions.URLPathKey), httpAttributes.UrlAttributes.UrlPath)
-	assert.Equal(t, string(conventions.URLQueryKey), httpAttributes.UrlAttributes.UrlQuery)
-	assert.Equal(t, string(conventions.URLSchemeKey), httpAttributes.UrlAttributes.UrlScheme)
-	assert.Equal(t, int64(200), httpAttributes.HttpResponseStatusCode)
+	assert.Equal(t, string(conventions.HTTPRequestMethodKey), httpAttributes.HTTPRequestMethod)
+	assert.Equal(t, string(conventions.URLFullKey), httpAttributes.URLAttributes.URLFull)
+	assert.Equal(t, string(conventions.URLPathKey), httpAttributes.URLAttributes.URLPath)
+	assert.Equal(t, string(conventions.URLQueryKey), httpAttributes.URLAttributes.URLQuery)
+	assert.Equal(t, string(conventions.URLSchemeKey), httpAttributes.URLAttributes.URLScheme)
+	assert.Equal(t, int64(200), httpAttributes.HTTPResponseStatusCode)
 	assert.Equal(t, string(conventions.NetworkProtocolNameKey), httpAttributes.NetworkAttributes.NetworkProtocolName)
 	assert.Equal(t, string(conventions.UserAgentOriginalKey), httpAttributes.UserAgentAttributes.UserAgentOriginal)
 
-	vals, ok := httpAttributes.HttpRequestHeaders["content-length"]
+	vals, ok := httpAttributes.HTTPRequestHeaders["content-length"]
 	require.True(t, ok)
 	require.NotEmpty(t, vals)
 	reqCL := vals[0]
@@ -66,9 +66,9 @@ func testHTTPAttributeMapping(t *testing.T, variant string) {
 	assert.NoError(t, err)
 	assert.Equal(t, int64(1), reqCLInt)
 
-	assert.Equal(t, int64(2), httpAttributes.HttpRequestBodySize)
+	assert.Equal(t, int64(2), httpAttributes.HTTPRequestBodySize)
 
-	valsRes, okRes := httpAttributes.HttpResponseHeaders["content-length"]
+	valsRes, okRes := httpAttributes.HTTPResponseHeaders["content-length"]
 	require.True(t, okRes)
 	require.NotEmpty(t, valsRes)
 	reqRes := valsRes[0]
@@ -76,8 +76,8 @@ func testHTTPAttributeMapping(t *testing.T, variant string) {
 	assert.NoError(t, err)
 	assert.Equal(t, int64(3), reqResInt)
 
-	assert.Equal(t, int64(4), httpAttributes.HttpResponseBodySize)
-	assert.Equal(t, string(conventions.HTTPRouteKey), httpAttributes.HttpRoute)
+	assert.Equal(t, int64(4), httpAttributes.HTTPResponseBodySize)
+	assert.Equal(t, string(conventions.HTTPRouteKey), httpAttributes.HTTPRoute)
 
 	networkAttributesValidations(t, httpAttributes.NetworkAttributes)
 
@@ -238,12 +238,12 @@ func testMessagingAttributeMapping(t *testing.T, variant string) {
 	assert.Equal(t, int64(0), messagingAttributes.MessagingBatchMessageCount)
 	assert.Equal(t, string(conventions.MessagingClientIDKey), messagingAttributes.MessagingClientID)
 	assert.Equal(t, string(conventions.MessagingConsumerGroupNameKey), messagingAttributes.MessagingConsumerGroup)
-	assert.Equal(t, true, messagingAttributes.MessagingDestinationAnonymous)
+	assert.True(t, messagingAttributes.MessagingDestinationAnonymous)
 	assert.Equal(t, string(conventions.MessagingDestinationNameKey), messagingAttributes.MessagingDestination)
 	assert.Equal(t, string(conventions.MessagingDestinationPartitionIDKey), messagingAttributes.MessagingDestinationPartitionID)
 	assert.Equal(t, string(conventions.MessagingDestinationSubscriptionNameKey), messagingAttributes.MessagingDestinationSubName)
 	assert.Equal(t, string(conventions.MessagingDestinationTemplateKey), messagingAttributes.MessagingDestinationTemplate)
-	assert.Equal(t, false, messagingAttributes.MessagingDestinationTemporary)
+	assert.False(t, messagingAttributes.MessagingDestinationTemporary)
 	assert.Equal(t, int64(1), messagingAttributes.MessagingMessageBodySize)
 	assert.Equal(t, string(conventions.MessagingMessageConversationIDKey), messagingAttributes.MessagingMessageConversationID)
 	assert.Equal(t, int64(2), messagingAttributes.MessagingMessageEnvelopeSize)
@@ -295,7 +295,6 @@ func addNetworkAttributes(m pcommon.Map) {
 	m.PutStr(string(conventions.NetworkPeerAddressKey), string(conventions.NetworkPeerAddressKey))
 	m.PutInt(string(conventions.NetworkPeerPortKey), 1)
 	m.PutStr(string(conventions.NetworkLocalAddressKey), string(conventions.NetworkLocalAddressKey))
-
 }
 
 func networkAttributesValidations(t *testing.T, networkAttributes networkAttributes) {

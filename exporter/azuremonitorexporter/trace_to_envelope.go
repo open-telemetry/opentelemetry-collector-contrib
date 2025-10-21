@@ -307,8 +307,8 @@ func getFormattedHTTPStatusValues(statusCode int64) (statusAsString string, succ
 func fillRequestDataHTTP(span ptrace.Span, data *contracts.RequestData) {
 	attrs := copyAndExtractHTTPAttributes(span.Attributes(), data.Properties)
 
-	if attrs.HttpResponseStatusCode != 0 {
-		data.ResponseCode, data.Success = getFormattedHTTPStatusValues(attrs.HttpResponseStatusCode)
+	if attrs.HTTPResponseStatusCode != 0 {
+		data.ResponseCode, data.Success = getFormattedHTTPStatusValues(attrs.HTTPResponseStatusCode)
 	}
 
 	var sb strings.Builder
@@ -316,13 +316,13 @@ func fillRequestDataHTTP(span ptrace.Span, data *contracts.RequestData) {
 	// Construct data.Name
 	// The data.Name should be {HTTP METHOD} {HTTP SERVER ROUTE TEMPLATE}
 	// https://github.com/microsoft/ApplicationInsights-Home/blob/f1f9f619d74557c8db3dbde4b49c4193e10d8a81/EndpointSpecs/Schemas/Bond/RequestData.bond#L32
-	sb.WriteString(attrs.HttpRequestMethod)
+	sb.WriteString(attrs.HTTPRequestMethod)
 	sb.WriteString(" ")
 
 	// Use httpRoute if available otherwise fallback to the span name
 	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/http.md#name
-	if attrs.HttpRoute != "" {
-		sb.WriteString(prefixIfNecessary(attrs.HttpRoute, "/"))
+	if attrs.HTTPRoute != "" {
+		sb.WriteString(prefixIfNecessary(attrs.HTTPRoute, "/"))
 	} else {
 		sb.WriteString(span.Name())
 	}
@@ -339,8 +339,8 @@ func fillRequestDataHTTP(span ptrace.Span, data *contracts.RequestData) {
 		http.url
 	*/
 
-	if attrs.UrlAttributes.UrlPath != "" {
-		attrs.UrlAttributes.UrlPath = prefixIfNecessary(attrs.UrlAttributes.UrlPath, "/")
+	if attrs.URLAttributes.URLPath != "" {
+		attrs.URLAttributes.URLPath = prefixIfNecessary(attrs.URLAttributes.URLPath, "/")
 	}
 
 	serverPort := ""
@@ -349,29 +349,29 @@ func fillRequestDataHTTP(span ptrace.Span, data *contracts.RequestData) {
 	}
 
 	switch {
-	case attrs.UrlAttributes.UrlScheme != "" && attrs.ServerAttributes.ServerAddress != "" && serverPort == "" && attrs.UrlAttributes.UrlPath != "":
-		sb.WriteString(attrs.UrlAttributes.UrlScheme)
+	case attrs.URLAttributes.URLScheme != "" && attrs.ServerAttributes.ServerAddress != "" && serverPort == "" && attrs.URLAttributes.URLPath != "":
+		sb.WriteString(attrs.URLAttributes.URLScheme)
 		sb.WriteString("://")
 		sb.WriteString(attrs.ServerAttributes.ServerAddress)
-		sb.WriteString(attrs.UrlAttributes.UrlPath)
-		if attrs.UrlAttributes.UrlQuery != "" {
-			sb.WriteString(attrs.UrlAttributes.UrlQuery)
+		sb.WriteString(attrs.URLAttributes.URLPath)
+		if attrs.URLAttributes.URLQuery != "" {
+			sb.WriteString(attrs.URLAttributes.URLQuery)
 		}
 		data.Url = sb.String()
-	case attrs.UrlAttributes.UrlScheme != "" && attrs.ServerAttributes.ServerAddress != "" && serverPort != "" && attrs.UrlAttributes.UrlPath != "":
-		sb.WriteString(attrs.UrlAttributes.UrlScheme)
+	case attrs.URLAttributes.URLScheme != "" && attrs.ServerAttributes.ServerAddress != "" && serverPort != "" && attrs.URLAttributes.URLPath != "":
+		sb.WriteString(attrs.URLAttributes.URLScheme)
 		sb.WriteString("://")
 		sb.WriteString(attrs.ServerAttributes.ServerAddress)
 		sb.WriteString(":")
 		sb.WriteString(serverPort)
-		sb.WriteString(attrs.UrlAttributes.UrlPath)
-		if attrs.UrlAttributes.UrlQuery != "" {
-			sb.WriteString(attrs.UrlAttributes.UrlQuery)
+		sb.WriteString(attrs.URLAttributes.URLPath)
+		if attrs.URLAttributes.URLQuery != "" {
+			sb.WriteString(attrs.URLAttributes.URLQuery)
 		}
 		data.Url = sb.String()
-	case attrs.UrlAttributes.UrlFull != "":
-		if _, err := url.Parse(attrs.UrlAttributes.UrlFull); err == nil {
-			data.Url = attrs.UrlAttributes.UrlFull
+	case attrs.URLAttributes.URLFull != "":
+		if _, err := url.Parse(attrs.URLAttributes.URLFull); err == nil {
+			data.Url = attrs.URLAttributes.URLFull
 		}
 	}
 
@@ -390,24 +390,24 @@ func fillRemoteDependencyDataHTTP(span ptrace.Span, data *contracts.RemoteDepend
 	attrs := copyAndExtractHTTPAttributes(span.Attributes(), data.Properties)
 
 	data.Type = "HTTP"
-	if attrs.HttpResponseStatusCode != 0 {
-		data.ResultCode, data.Success = getFormattedHTTPStatusValues(attrs.HttpResponseStatusCode)
+	if attrs.HTTPResponseStatusCode != 0 {
+		data.ResultCode, data.Success = getFormattedHTTPStatusValues(attrs.HTTPResponseStatusCode)
 	}
 
 	var sb strings.Builder
 
-	sb.WriteString(attrs.HttpRequestMethod)
+	sb.WriteString(attrs.HTTPRequestMethod)
 
-	if attrs.HttpRoute != "" {
+	if attrs.HTTPRoute != "" {
 		sb.WriteString(" ")
-		sb.WriteString(attrs.HttpRoute)
+		sb.WriteString(attrs.HTTPRoute)
 	}
 
 	data.Name = sb.String()
 	sb.Reset()
 
-	if attrs.UrlAttributes.UrlPath != "" {
-		attrs.UrlAttributes.UrlPath = prefixIfNecessary(attrs.UrlAttributes.UrlPath, "/")
+	if attrs.URLAttributes.URLPath != "" {
+		attrs.URLAttributes.URLPath = prefixIfNecessary(attrs.URLAttributes.URLPath, "/")
 	}
 
 	clientPortStr := ""
@@ -416,31 +416,31 @@ func fillRemoteDependencyDataHTTP(span ptrace.Span, data *contracts.RemoteDepend
 	}
 
 	switch {
-	case attrs.UrlAttributes.UrlFull != "":
-		if u, err := url.Parse(attrs.UrlAttributes.UrlFull); err == nil {
-			data.Data = attrs.UrlAttributes.UrlFull
+	case attrs.URLAttributes.URLFull != "":
+		if u, err := url.Parse(attrs.URLAttributes.URLFull); err == nil {
+			data.Data = attrs.URLAttributes.URLFull
 			data.Target = u.Host
 		}
-	case attrs.UrlAttributes.UrlScheme != "" && attrs.ClientAttributes.ClientAddress != "" && clientPortStr == "" && attrs.UrlAttributes.UrlPath != "":
-		sb.WriteString(attrs.UrlAttributes.UrlScheme)
+	case attrs.URLAttributes.URLScheme != "" && attrs.ClientAttributes.ClientAddress != "" && clientPortStr == "" && attrs.URLAttributes.URLPath != "":
+		sb.WriteString(attrs.URLAttributes.URLScheme)
 		sb.WriteString("://")
 		sb.WriteString(attrs.ClientAttributes.ClientAddress)
-		sb.WriteString(attrs.UrlAttributes.UrlPath)
-		if attrs.UrlAttributes.UrlQuery != "" {
-			sb.WriteString(attrs.UrlAttributes.UrlQuery)
+		sb.WriteString(attrs.URLAttributes.URLPath)
+		if attrs.URLAttributes.URLQuery != "" {
+			sb.WriteString(attrs.URLAttributes.URLQuery)
 		}
 		data.Data = sb.String()
 		data.Target = attrs.ClientAttributes.ClientAddress
 
-	case attrs.UrlAttributes.UrlScheme != "" && attrs.ClientAttributes.ClientAddress != "" && clientPortStr != "" && attrs.UrlAttributes.UrlPath != "":
-		sb.WriteString(attrs.UrlAttributes.UrlScheme)
+	case attrs.URLAttributes.URLScheme != "" && attrs.ClientAttributes.ClientAddress != "" && clientPortStr != "" && attrs.URLAttributes.URLPath != "":
+		sb.WriteString(attrs.URLAttributes.URLScheme)
 		sb.WriteString("://")
 		sb.WriteString(attrs.ClientAttributes.ClientAddress)
 		sb.WriteString(":")
 		sb.WriteString(clientPortStr)
-		sb.WriteString(attrs.UrlAttributes.UrlPath)
-		if attrs.UrlAttributes.UrlQuery != "" {
-			sb.WriteString(attrs.UrlAttributes.UrlQuery)
+		sb.WriteString(attrs.URLAttributes.URLPath)
+		if attrs.URLAttributes.URLQuery != "" {
+			sb.WriteString(attrs.URLAttributes.URLQuery)
 		}
 		data.Data = sb.String()
 
@@ -450,15 +450,15 @@ func fillRemoteDependencyDataHTTP(span ptrace.Span, data *contracts.RemoteDepend
 		sb.WriteString(clientPortStr)
 		data.Target = sb.String()
 
-	case attrs.UrlAttributes.UrlScheme != "" && attrs.NetworkAttributes.NetworkPeerAddress != "" && clientPortStr != "" && attrs.UrlAttributes.UrlPath != "":
-		sb.WriteString(attrs.UrlAttributes.UrlScheme)
+	case attrs.URLAttributes.URLScheme != "" && attrs.NetworkAttributes.NetworkPeerAddress != "" && clientPortStr != "" && attrs.URLAttributes.URLPath != "":
+		sb.WriteString(attrs.URLAttributes.URLScheme)
 		sb.WriteString("://")
 		sb.WriteString(attrs.NetworkAttributes.NetworkPeerAddress)
 		sb.WriteString(":")
 		sb.WriteString(clientPortStr)
-		sb.WriteString(attrs.UrlAttributes.UrlPath)
-		if attrs.UrlAttributes.UrlQuery != "" {
-			sb.WriteString(attrs.UrlAttributes.UrlQuery)
+		sb.WriteString(attrs.URLAttributes.URLPath)
+		if attrs.URLAttributes.URLQuery != "" {
+			sb.WriteString(attrs.URLAttributes.URLQuery)
 		}
 		data.Data = sb.String()
 
@@ -550,7 +550,6 @@ func fillRequestDataMessaging(span ptrace.Span, data *contracts.RequestData) {
 	var sb strings.Builder
 	writeFormatedFromNetworkServerOrClient(&attrs.NetworkAttributes, attrs.ServerAttributes.ServerAddress, attrs.ServerAttributes.ServerPort, &sb)
 	data.Source = sb.String()
-
 }
 
 // Maps Messaging Producer/Client Span to AppInsights RemoteDependencyData
@@ -564,7 +563,6 @@ func fillRemoteDependencyDataMessaging(span ptrace.Span, data *contracts.RemoteD
 	var sb strings.Builder
 	writeFormatedFromNetworkServerOrClient(&attrs.NetworkAttributes, attrs.ClientAttributes.ClientAddress, attrs.ClientAttributes.ClientPort, &sb)
 	data.Target = sb.String()
-
 }
 
 // Copies all attributes to either properties or measurements and passes the key/value to another mapping function
@@ -707,8 +705,7 @@ func getDefaultFormattedSpanStatus(spanStatus ptrace.Status) (statusCodeAsString
 }
 
 func writeFormatedFromNetworkServerOrClient(networkAttributes *networkAttributes, addressName string, addressPort int64, sb *strings.Builder) {
-
-	//server.address or client.address
+	// server.address or client.address
 	if addressName != "" {
 		sb.WriteString(addressName)
 	} else {
