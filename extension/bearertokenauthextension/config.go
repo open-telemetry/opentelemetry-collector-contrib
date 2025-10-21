@@ -27,14 +27,22 @@ type Config struct {
 	// Filename points to a file that contains the bearer token(s) to use for every RPC.
 	Filename string `mapstructure:"filename,omitempty"`
 
+	// EncryptionType specifies the encryption type used to encrypt the bearer token(s) in the file.
+	EncryptionType string `mapstructure:"encryption_type,omitempty"`
+
+	// EncryptionKey specifies the encryption key used to encrypt the bearer token(s) in the file.
+	EncryptionKey string `mapstructure:"encryption_key,omitempty"`
+
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
 
 var (
-	_                         component.Config = (*Config)(nil)
-	errNoTokenProvided                         = errors.New("no bearer token provided")
-	errTokensAndTokenProvided                  = errors.New("either tokens or token should be provided, not both")
+	_                            component.Config = (*Config)(nil)
+	errNoTokenProvided                            = errors.New("no bearer token provided")
+	errTokensAndTokenProvided                     = errors.New("either tokens or token should be provided, not both")
+	errEncyptionTypeNotSupported                  = errors.New("encryption type not supported")
+	errInvalidAESEncryptionKey                    = errors.New("invalid AES encryption key")
 )
 
 // Validate checks if the extension configuration is valid
@@ -44,6 +52,12 @@ func (cfg *Config) Validate() error {
 	}
 	if cfg.BearerToken != "" && len(cfg.Tokens) > 0 {
 		return errTokensAndTokenProvided
+	}
+	if cfg.EncryptionType == "AES" && cfg.EncryptionKey == "" {
+		return errInvalidAESEncryptionKey
+	}
+	if cfg.EncryptionType != "AES" && cfg.EncryptionType != "" {
+		return errEncyptionTypeNotSupported
 	}
 	return nil
 }
