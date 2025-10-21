@@ -259,10 +259,12 @@ func TestBuildConfigCmd(t *testing.T) {
 			Config: func(_ *Config) {},
 			RequireCmd: func(cmd *exec.Cmd) {
 				require.Nil(t, cmd.SysProcAttr)
+				require.NotEmpty(t, cmd.Args)
+				assert.Equal(t, "journalctl", cmd.Args[0])
 			},
 		},
 		{
-			Name: "custom chroot",
+			Name: "custom root_path",
 			Config: func(cfg *Config) {
 				cfg.RootPath = "/host"
 			},
@@ -270,6 +272,37 @@ func TestBuildConfigCmd(t *testing.T) {
 				require.NotNil(t, cmd.SysProcAttr)
 				assert.Equal(t, "/host", cmd.SysProcAttr.Chroot)
 			},
+		},
+		{
+			Name: "custom journalctl_path",
+			Config: func(cfg *Config) {
+				cfg.JournalctlPath = "/usr/bin/journalctl"
+			},
+			RequireCmd: func(cmd *exec.Cmd) {
+				require.NotEmpty(t, cmd.Args)
+				assert.Equal(t, "/usr/bin/journalctl", cmd.Args[0])
+			},
+		},
+		{
+			Name: "custom root_path and journalctl_path",
+			Config: func(cfg *Config) {
+				cfg.RootPath = "/host"
+				cfg.JournalctlPath = "/usr/bin/journalctl"
+			},
+			RequireCmd: func(cmd *exec.Cmd) {
+				require.NotNil(t, cmd.SysProcAttr)
+				require.NotEmpty(t, cmd.Args)
+				assert.Equal(t, "/host", cmd.SysProcAttr.Chroot)
+				// root_path should *not* be prepended to journalctl_path
+				assert.Equal(t, "/usr/bin/journalctl", cmd.Args[0])
+			},
+		},
+		{
+			Name: "invalid journalctl_path",
+			Config: func(cfg *Config) {
+				cfg.JournalctlPath = " "
+			},
+			ExpectedError: "invalid value for parameter 'journalctl_path': must be non-whitespace",
 		},
 	}
 

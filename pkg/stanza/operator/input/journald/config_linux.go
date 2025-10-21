@@ -7,10 +7,12 @@ package journald // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os/exec"
 	"regexp"
 	"sort"
+	"strings"
 	"syscall"
 	"time"
 
@@ -156,13 +158,17 @@ func (c Config) buildNewCmdFunc() (func(ctx context.Context, cursor []byte) cmd,
 		return nil, err
 	}
 
+	if strings.TrimSpace(c.JournalctlPath) == "" {
+		return nil, errors.New("invalid value for parameter 'journalctl_path': must be non-whitespace")
+	}
+
 	return func(ctx context.Context, cursor []byte) cmd {
 		// Copy args and if needed, add the cursor flag
 		journalArgs := append([]string{}, args...)
 		if cursor != nil {
 			journalArgs = append(journalArgs, "--after-cursor", string(cursor))
 		}
-		cmd := exec.CommandContext(ctx, "journalctl", journalArgs...) // #nosec - ...
+		cmd := exec.CommandContext(ctx, c.JournalctlPath, journalArgs...) // #nosec - ...
 		// journalctl is an executable that is required for this operator to function
 		if c.RootPath != "" {
 			cmd.SysProcAttr = &syscall.SysProcAttr{
