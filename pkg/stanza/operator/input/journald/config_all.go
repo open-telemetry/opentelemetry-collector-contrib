@@ -17,9 +17,10 @@ func NewConfig() *Config {
 // NewConfigWithID creates a new input config with default values
 func NewConfigWithID(operatorID string) *Config {
 	return &Config{
-		InputConfig: helper.NewInputConfig(operatorID, operatorType),
-		StartAt:     "end",
-		Priority:    "info",
+		InputConfig:    helper.NewInputConfig(operatorID, operatorType),
+		StartAt:        "end",
+		Priority:       "info",
+		JournalctlPath: "journalctl",
 	}
 }
 
@@ -28,6 +29,7 @@ type Config struct {
 	helper.InputConfig `mapstructure:",squash"`
 
 	RootPath            string        `mapstructure:"root_path,omitempty"`
+	JournalctlPath      string        `mapstructure:"journalctl_path,omitempty"`
 	Directory           *string       `mapstructure:"directory,omitempty"`
 	Files               []string      `mapstructure:"files,omitempty"`
 	StartAt             string        `mapstructure:"start_at,omitempty"`

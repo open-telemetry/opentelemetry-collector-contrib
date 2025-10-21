@@ -19,7 +19,7 @@
 Parses Journald events from systemd journal.
 Journald receiver requires that:
 
-- the `journalctl` binary is present in the $PATH of the agent; and
+- the `journalctl` binary is present in the $PATH of the agent, or is present at `journalctl_path` if configured; and
 - the collector's user has sufficient permissions to access the journal through `journalctl`.
 
 ## Configuration
@@ -45,6 +45,7 @@ Journald receiver requires that:
 | `retry_on_failure.max_interval`     | `30 seconds`                         | Upper bound on retry backoff interval. Once this value is reached the delay between consecutive retries will remain constant at the specified value.                                                                                     |
 | `retry_on_failure.max_elapsed_time` | `5 minutes`                          | Maximum amount of time (including retries) spent trying to send a logs batch to a downstream consumer. Once this value is reached, the data is discarded. Retrying never stops if set to `0`.                                            |
 | `root_path`                         |                                      | Chroot to use when executing the journalctl command. When empty (default), no chroot is used when executing journalctl.                                                                                                                  |
+| `journalctl_path`                   | `journalctl`                         | journalctl command to execute. Relative to `root_path`. See below for more details                                                                                                            |
 | `operators`                         | []                                   | An array of [operators](../../pkg/stanza/docs/operators/README.md#what-operators-are-available). See below for more details                                                                                                              |
 
 ### Operators
@@ -214,6 +215,15 @@ Then, you can configure the receiver with `root_path` to use that mount as a chr
 receivers:
   journald:
     root_path: /host
+```
+
+Due to a [Golang issue](https://github.com/golang/go/issues/39341), running executables from $PATH does not work well in a chroot. To avoid this, use `journalctl_path` to configure a full path to `journalctl` inside of the chroot:
+
+```yaml
+receivers:
+  journald:
+    root_path: /host
+    journalctl_path: /usr/bin/journalctl
 ```
 
 ### Linux packaging

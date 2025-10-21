@@ -7,7 +7,7 @@ change_type: enhancement
 component: receiver/journald
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add root_path config for running journald in a chroot
+note: Add root_path and journalctl_path config for running journald in a chroot
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [43731]
