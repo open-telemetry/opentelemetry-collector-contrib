@@ -5,7 +5,6 @@ package samplingpolicy // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
-	"sync"
 	"sync/atomic"
 	"time"
 
@@ -15,7 +14,6 @@ import (
 
 // TraceData stores the sampling related trace data.
 type TraceData struct {
-	sync.Mutex
 	// Arrival time the first span for the trace was received.
 	ArrivalTime time.Time
 	// DecisionTime time when sampling decision was taken.

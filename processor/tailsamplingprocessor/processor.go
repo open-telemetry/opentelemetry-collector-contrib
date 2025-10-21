@@ -487,11 +487,9 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 		tsp.telemetry.ProcessorTailSamplingGlobalCountTracesSampled.Add(tsp.ctx, 1, decisionToAttributes[decision])
 
 		// Sampled or not, remove the batches
-		trace.Lock()
 		allSpans := trace.ReceivedBatches
 		trace.FinalDecision = decision
 		trace.ReceivedBatches = ptrace.NewTraces()
-		trace.Unlock()
 
 		if decision == samplingpolicy.Sampled {
 			tsp.releaseSampledTrace(ctx, id, allSpans)
@@ -655,17 +653,13 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans ptrace.Resourc
 		actualData.SpanCount.Add(lenSpans)
 	}
 
-	actualData.Lock()
 	finalDecision := actualData.FinalDecision
 
 	if finalDecision == samplingpolicy.Unspecified {
 		// If the final decision hasn't been made, add the new spans under the lock.
 		appendToTraces(actualData.ReceivedBatches, resourceSpans, spans)
-		actualData.Unlock()
 		return
 	}
-
-	actualData.Unlock()
 
 	switch finalDecision {
 	case samplingpolicy.Sampled:
