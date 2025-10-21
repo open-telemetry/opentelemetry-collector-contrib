@@ -355,7 +355,6 @@ func fillRequestDataHTTP(span ptrace.Span, data *contracts.RequestData) {
 		sb.WriteString(attrs.ServerAttributes.ServerAddress)
 		sb.WriteString(attrs.UrlAttributes.UrlPath)
 		if attrs.UrlAttributes.UrlQuery != "" {
-			sb.WriteString("?")
 			sb.WriteString(attrs.UrlAttributes.UrlQuery)
 		}
 		data.Url = sb.String()
@@ -367,7 +366,6 @@ func fillRequestDataHTTP(span ptrace.Span, data *contracts.RequestData) {
 		sb.WriteString(serverPort)
 		sb.WriteString(attrs.UrlAttributes.UrlPath)
 		if attrs.UrlAttributes.UrlQuery != "" {
-			sb.WriteString("?")
 			sb.WriteString(attrs.UrlAttributes.UrlQuery)
 		}
 		data.Url = sb.String()
@@ -429,7 +427,6 @@ func fillRemoteDependencyDataHTTP(span ptrace.Span, data *contracts.RemoteDepend
 		sb.WriteString(attrs.ClientAttributes.ClientAddress)
 		sb.WriteString(attrs.UrlAttributes.UrlPath)
 		if attrs.UrlAttributes.UrlQuery != "" {
-			sb.WriteString("?")
 			sb.WriteString(attrs.UrlAttributes.UrlQuery)
 		}
 		data.Data = sb.String()
@@ -443,7 +440,6 @@ func fillRemoteDependencyDataHTTP(span ptrace.Span, data *contracts.RemoteDepend
 		sb.WriteString(clientPortStr)
 		sb.WriteString(attrs.UrlAttributes.UrlPath)
 		if attrs.UrlAttributes.UrlQuery != "" {
-			sb.WriteString("?")
 			sb.WriteString(attrs.UrlAttributes.UrlQuery)
 		}
 		data.Data = sb.String()
@@ -462,7 +458,6 @@ func fillRemoteDependencyDataHTTP(span ptrace.Span, data *contracts.RemoteDepend
 		sb.WriteString(clientPortStr)
 		sb.WriteString(attrs.UrlAttributes.UrlPath)
 		if attrs.UrlAttributes.UrlQuery != "" {
-			sb.WriteString("?")
 			sb.WriteString(attrs.UrlAttributes.UrlQuery)
 		}
 		data.Data = sb.String()
