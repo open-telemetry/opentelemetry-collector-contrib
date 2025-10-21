@@ -659,16 +659,6 @@ metrics:
       value_type: int
     attributes:
       - resource
-  k8s.node.condition:
-    enabled: false
-    description: The condition of a particular Node.
-    unit: "{condition}"
-    stability:
-      level: development
-    gauge:
-      value_type: int
-    attributes:
-      - condition
   k8s.node.allocatable.cpu:
     enabled: true
     description: Amount of cpu allocatable on the node
