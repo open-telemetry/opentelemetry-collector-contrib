@@ -23,6 +23,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/otel/metric/noop"
 	"go.uber.org/zap"
+
+	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/featuregates"
 )
 
 // traceToMetricConnectorNative is the schema for connector
@@ -97,6 +100,38 @@ func newTraceToMetricConnectorNative(set component.TelemetrySettings, cfg compon
 		obfuscator:      obfuscate.NewObfuscator(oconf),
 		exit:            make(chan struct{}),
 	}, nil
+}
+
+func getTraceAgentCfg(logger *zap.Logger, cfg datadogconfig.TracesConnectorConfig, attributesTranslator *attributes.Translator) *config.AgentConfig {
+	acfg := config.New()
+	acfg.OTLPReceiver.AttributesTranslator = attributesTranslator
+	acfg.OTLPReceiver.SpanNameRemappings = cfg.SpanNameRemappings
+	acfg.OTLPReceiver.SpanNameAsResourceName = cfg.SpanNameAsResourceName
+	acfg.Ignore["resource"] = cfg.IgnoreResources
+	acfg.ComputeStatsBySpanKind = cfg.ComputeStatsBySpanKind
+	acfg.PeerTagsAggregation = cfg.PeerTagsAggregation
+	acfg.PeerTags = cfg.PeerTags
+	if len(cfg.ResourceAttributesAsContainerTags) > 0 {
+		acfg.Features["enable_cid_stats"] = struct{}{}
+		delete(acfg.Features, "disable_cid_stats")
+	}
+	if v := cfg.TraceBuffer; v > 0 {
+		acfg.TraceBuffer = v
+	}
+	if cfg.ComputeTopLevelBySpanKind {
+		logger.Info("traces::compute_top_level_by_span_kind needs to be enabled in both the Datadog connector and Datadog exporter configs if both components are being used")
+		acfg.Features["enable_otlp_compute_top_level_by_span_kind"] = struct{}{}
+	}
+	if !featuregates.ReceiveResourceSpansV2FeatureGate.IsEnabled() {
+		acfg.Features["disable_receive_resource_spans_v2"] = struct{}{}
+	}
+	if !featuregates.OperationAndResourceNameV2FeatureGate.IsEnabled() {
+		acfg.Features["disable_operation_and_resource_name_logic_v2"] = struct{}{}
+	}
+	if v := cfg.BucketInterval; v > 0 {
+		acfg.BucketInterval = v
+	}
+	return acfg
 }
 
 // Start implements the component.Component interface.

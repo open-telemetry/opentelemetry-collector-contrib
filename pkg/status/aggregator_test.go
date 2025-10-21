@@ -489,7 +489,7 @@ func collectStatuses(
 		key := toComponentKey(id)
 		result = append(result, aggregateStatus.ComponentStatusMap[key])
 	}
-	return
+	return result
 }
 
 func assertEventsRecvdMatch(t *testing.T,
