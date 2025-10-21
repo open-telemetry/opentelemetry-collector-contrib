@@ -75,9 +75,6 @@ type MetricsConfig struct {
 	NewrelicoracledbDiskWriteTimeMilliseconds                          MetricConfig `mapstructure:"newrelicoracledb.disk.write_time_milliseconds"`
 	NewrelicoracledbDiskWrites                                         MetricConfig `mapstructure:"newrelicoracledb.disk.writes"`
 	NewrelicoracledbGlobalName                                         MetricConfig `mapstructure:"newrelicoracledb.global_name"`
-	NewrelicoracledbIndividualQueriesCPUTime                           MetricConfig `mapstructure:"newrelicoracledb.individual_queries.cpu_time"`
-	NewrelicoracledbIndividualQueriesElapsedTime                       MetricConfig `mapstructure:"newrelicoracledb.individual_queries.elapsed_time"`
-	NewrelicoracledbIndividualQueriesQueryDetails                      MetricConfig `mapstructure:"newrelicoracledb.individual_queries.query_details"`
 	NewrelicoracledbLockedAccounts                                     MetricConfig `mapstructure:"newrelicoracledb.locked_accounts"`
 	NewrelicoracledbLongRunningQueries                                 MetricConfig `mapstructure:"newrelicoracledb.long_running_queries"`
 	NewrelicoracledbMemoryPgaAllocatedBytes                            MetricConfig `mapstructure:"newrelicoracledb.memory.pga_allocated_bytes"`
@@ -183,7 +180,10 @@ type MetricsConfig struct {
 	NewrelicoracledbSlowQueriesAvgDiskWrites                           MetricConfig `mapstructure:"newrelicoracledb.slow_queries.avg_disk_writes"`
 	NewrelicoracledbSlowQueriesAvgElapsedTime                          MetricConfig `mapstructure:"newrelicoracledb.slow_queries.avg_elapsed_time"`
 	NewrelicoracledbSlowQueriesExecutionCount                          MetricConfig `mapstructure:"newrelicoracledb.slow_queries.execution_count"`
+	NewrelicoracledbSlowQueriesPersistentMemory                        MetricConfig `mapstructure:"newrelicoracledb.slow_queries.persistent_memory"`
 	NewrelicoracledbSlowQueriesQueryDetails                            MetricConfig `mapstructure:"newrelicoracledb.slow_queries.query_details"`
+	NewrelicoracledbSlowQueriesRuntimeMemory                           MetricConfig `mapstructure:"newrelicoracledb.slow_queries.runtime_memory"`
+	NewrelicoracledbSlowQueriesSharableMemory                          MetricConfig `mapstructure:"newrelicoracledb.slow_queries.sharable_memory"`
 	NewrelicoracledbSortsDisk                                          MetricConfig `mapstructure:"newrelicoracledb.sorts_disk"`
 	NewrelicoracledbSortsMemory                                        MetricConfig `mapstructure:"newrelicoracledb.sorts_memory"`
 	NewrelicoracledbSystemActiveParallelSessions                       MetricConfig `mapstructure:"newrelicoracledb.system.active_parallel_sessions"`
@@ -485,15 +485,6 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		NewrelicoracledbGlobalName: MetricConfig{
-			Enabled: true,
-		},
-		NewrelicoracledbIndividualQueriesCPUTime: MetricConfig{
-			Enabled: true,
-		},
-		NewrelicoracledbIndividualQueriesElapsedTime: MetricConfig{
-			Enabled: true,
-		},
-		NewrelicoracledbIndividualQueriesQueryDetails: MetricConfig{
 			Enabled: true,
 		},
 		NewrelicoracledbLockedAccounts: MetricConfig{
@@ -811,7 +802,16 @@ func DefaultMetricsConfig() MetricsConfig {
 		NewrelicoracledbSlowQueriesExecutionCount: MetricConfig{
 			Enabled: true,
 		},
+		NewrelicoracledbSlowQueriesPersistentMemory: MetricConfig{
+			Enabled: true,
+		},
 		NewrelicoracledbSlowQueriesQueryDetails: MetricConfig{
+			Enabled: true,
+		},
+		NewrelicoracledbSlowQueriesRuntimeMemory: MetricConfig{
+			Enabled: true,
+		},
+		NewrelicoracledbSlowQueriesSharableMemory: MetricConfig{
 			Enabled: true,
 		},
 		NewrelicoracledbSortsDisk: MetricConfig{

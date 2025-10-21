@@ -159,7 +159,7 @@ func (s *BlockingScraper) ScrapeBlockingQueries(ctx context.Context) []error {
 		scrapeErrors = append(scrapeErrors, err)
 	}
 
-	s.logger.Debug("Completed blocking queries scrape", 
+	s.logger.Debug("Completed blocking queries scrape",
 		zap.Int("rows_processed", rowCount),
 		zap.Int("errors_encountered", len(scrapeErrors)))
 	return scrapeErrors

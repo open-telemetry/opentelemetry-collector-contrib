@@ -7,14 +7,14 @@ import (
 
 // WaitEvent represents a wait event record from Oracle wait events queries
 type WaitEvent struct {
-	DatabaseName         sql.NullString
-	QueryID              sql.NullString
-	WaitCategory         sql.NullString
-	WaitEventName        sql.NullString
-	CollectionTimestamp  sql.NullTime
-	WaitingTasksCount    sql.NullInt64
-	TotalWaitTimeMs      sql.NullFloat64
-	AvgWaitTimeMs        sql.NullFloat64
+	DatabaseName        sql.NullString
+	QueryID             sql.NullString
+	WaitCategory        sql.NullString
+	WaitEventName       sql.NullString
+	CollectionTimestamp sql.NullTime
+	WaitingTasksCount   sql.NullInt64
+	TotalWaitTimeMs     sql.NullFloat64
+	AvgWaitTimeMs       sql.NullFloat64
 }
 
 // GetDatabaseName returns the database name as a string, empty if null

@@ -37,14 +37,11 @@ attributes:
   has_full_table_scan:
     description: Whether the query has a full table scan
     type: string
-  user_id:
-    description: Oracle user ID who parsed the SQL
-    type: string
   username:
     description: Oracle username who parsed the SQL
     type: string
-  hostname:
-    description: Hostname or machine name for the query
+  user_name:
+    description: Oracle username for slow queries
     type: string
   wait_event_name:
     description: Oracle wait event name for wait events
@@ -3313,6 +3310,7 @@ metrics:
     attributes:
       - database_name
       - query_id
+      - user_name
 
   newrelicoracledb.slow_queries.avg_cpu_time:
     description: Average CPU time per execution for slow queries
@@ -3323,6 +3321,7 @@ metrics:
     attributes:
       - database_name
       - query_id
+      - user_name
 
   newrelicoracledb.slow_queries.avg_disk_reads:
     description: Average disk reads per execution for slow queries
@@ -3333,6 +3332,7 @@ metrics:
     attributes:
       - database_name
       - query_id
+      - user_name
 
   newrelicoracledb.slow_queries.avg_disk_writes:
     description: Average disk writes per execution for slow queries
@@ -3342,7 +3342,8 @@ metrics:
     unit: "{writes}"
     attributes:
       - database_name
-      - query_id    
+      - query_id
+      - user_name    
 
   newrelicoracledb.slow_queries.avg_elapsed_time:
     description: Average elapsed time per execution for slow queries
@@ -3353,6 +3354,40 @@ metrics:
     attributes:
       - database_name
       - query_id
+      - user_name
+
+  newrelicoracledb.slow_queries.sharable_memory:
+    description: Total memory used in the Shared Pool by slow queries
+    enabled: true
+    gauge:
+      value_type: int
+    unit: By
+    attributes:
+      - database_name
+      - query_id
+      - user_name
+
+  newrelicoracledb.slow_queries.persistent_memory:
+    description: Persistent memory used by slow query cursors
+    enabled: true
+    gauge:
+      value_type: int
+    unit: By
+    attributes:
+      - database_name
+      - query_id
+      - user_name
+
+  newrelicoracledb.slow_queries.runtime_memory:
+    description: Runtime memory used by slow query cursors
+    enabled: true
+    gauge:
+      value_type: int
+    unit: By
+    attributes:
+      - database_name
+      - query_id
+      - user_name
 
   newrelicoracledb.slow_queries.query_details:
     description: Slow Query Details
@@ -3366,7 +3401,8 @@ metrics:
       - query_text
       - schema_name
       - statement_type
-      - has_full_table_scan    
+      - has_full_table_scan
+      - user_name    
 
   newrelicoracledb.blocking_queries.wait_time:
     description: Wait time in seconds for blocked queries
@@ -3421,40 +3457,6 @@ metrics:
         - query_id
         - wait_event_name
         - wait_category    
-
-  newrelicoracledb.individual_queries.cpu_time:
-      description: CPU time for individual queries
-      enabled: true
-      gauge:
-        value_type: double
-      unit: ms
-      attributes:
-        - database_name
-        - query_id
-
-  newrelicoracledb.individual_queries.elapsed_time:
-      description: Elapsed time for individual queries
-      enabled: true
-      gauge:
-        value_type: double
-      unit: ms
-      attributes:
-        - database_name
-        - query_id
-
-  newrelicoracledb.individual_queries.query_details:
-      description: Individual Query Details
-      enabled: true
-      gauge:
-        value_type: int
-      unit: "{count}"
-      attributes:
-        - query_id
-        - query_text
-        - database_name
-        - user_id
-        - username
-        - hostname
 
 tests:
   config:

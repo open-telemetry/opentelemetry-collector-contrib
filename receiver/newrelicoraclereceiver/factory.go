@@ -38,14 +38,14 @@ func createDefaultConfig() component.Config {
 	cfg.Timeout = 30 * time.Second // Increased from default to handle Oracle database timeouts
 
 	config := &Config{
-		ControllerConfig:     cfg,
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		ControllerConfig:      cfg,
+		MetricsBuilderConfig:  metadata.DefaultMetricsBuilderConfig(),
 		DisableConnectionPool: false,
 	}
 
 	// Apply defaults
 	config.SetDefaults()
-	
+
 	return config
 }
 
@@ -59,13 +59,13 @@ func createReceiverFunc(sqlOpenerFunc sqlOpenerFunc) receiver.CreateMetricsFunc 
 		consumer consumer.Metrics,
 	) (receiver.Metrics, error) {
 		sqlCfg := cfg.(*Config)
-		
+
 		// Ensure defaults are set and configuration is valid
 		sqlCfg.SetDefaults()
 		if err := sqlCfg.Validate(); err != nil {
 			return nil, fmt.Errorf("invalid configuration: %w", err)
 		}
-		
+
 		metricsBuilder := metadata.NewMetricsBuilder(sqlCfg.MetricsBuilderConfig, settings)
 
 		instanceName, err := getInstanceName(getDataSource(*sqlCfg))

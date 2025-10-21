@@ -16,6 +16,11 @@ const (
 			d.name AS database_name,
 			sa.sql_id AS query_id,
 			sa.parsing_schema_name AS schema_name,
+			au.username AS user_name, -- NEW: The user who parsed the statement
+			TO_CHAR(sa.last_load_time, 'YYYY-MM-DD HH24:MI:SS') AS last_load_time, -- NEW: Time the cursor was last loaded (proxy for last active)
+			sa.sharable_mem AS sharable_memory_bytes, -- NEW: Total memory used in the Shared Pool
+			sa.persistent_mem AS persistent_memory_bytes, -- NEW: Persistent memory used by the cursor
+			sa.runtime_mem AS runtime_memory_bytes, -- NEW: Runtime memory used by the cursor
 			COALESCE(sa.module,
 				CASE
 					WHEN UPPER(LTRIM(sa.sql_text)) LIKE 'SELECT%' THEN 'SELECT'
@@ -34,6 +39,8 @@ const (
 			CASE WHEN fs.sql_id IS NOT NULL THEN 'Yes' ELSE 'No' END AS has_full_table_scan
 		FROM
 			v$sqlarea sa
+		INNER JOIN
+			ALL_USERS au ON sa.parsing_user_id = au.user_id -- Join to get the user name
 		CROSS JOIN
 			v$database d
 		LEFT JOIN
@@ -41,31 +48,11 @@ const (
 		WHERE
 			sa.executions > 0
 			AND sa.sql_text NOT LIKE '%full_scans AS%'
+			AND sa.sql_text NOT LIKE '%ALL_USERS%' -- Exclude this query itself
 		ORDER BY
 			avg_elapsed_time_ms DESC
 		FETCH FIRST 10 ROWS ONLY`
 
-	// Oracle SQL query for individual queries metrics with user information
-	IndividualQueriesFilteredSQL = `
-		SELECT
-		    a.sql_id AS query_id,
-		    a.parsing_user_id AS user_id,
-		    u.username AS username,
-		    a.sql_text AS query_text,
-		    a.cpu_time / 1000 AS cpu_time_ms,
-		    a.elapsed_time / 1000 AS elapsed_time_ms,
-		    'Multiple' AS hostname,
-		    d.name AS database_name
-		FROM
-		    v$sql a
-		JOIN
-		    dba_users u ON a.parsing_user_id = u.user_id
-		CROSS JOIN
-		    v$database d
-		WHERE
-		    a.sql_id IN (%s)
-		ORDER BY
-		    elapsed_time_ms DESC`
 	BlockingQueriesSQL = `
 		SELECT
 			s2.sid AS blocked_sid,

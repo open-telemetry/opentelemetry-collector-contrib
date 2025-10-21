@@ -21,7 +21,7 @@ import (
 
 const (
 	// Default configuration values
-	defaultMaxOpenConnections = 5  // Standard default for Oracle connections
+	defaultMaxOpenConnections = 5 // Standard default for Oracle connections
 	defaultCollectionInterval = 10 * time.Second
 
 	// Validation ranges
@@ -34,17 +34,17 @@ const (
 )
 
 var (
-	errBadDataSource       = errors.New("datasource is invalid")
-	errBadEndpoint         = errors.New("endpoint must be specified as host:port")
-	errBadPort             = errors.New("invalid port in endpoint")
-	errEmptyEndpoint       = errors.New("endpoint must be specified")
-	errEmptyPassword       = errors.New("password must be set")
-	errEmptyService        = errors.New("service must be specified")
-	errEmptyUsername       = errors.New("username must be set")
-	errInvalidConnections  = errors.New("max_open_connections must be between 1 and 1000")
-	errInvalidTimeout      = errors.New("collection_interval must be between 10s and 3600s")
-	errInvalidUsername     = errors.New("username cannot contain special characters that could cause SQL injection")
-	errInvalidService      = errors.New("service name cannot contain special characters")
+	errBadDataSource      = errors.New("datasource is invalid")
+	errBadEndpoint        = errors.New("endpoint must be specified as host:port")
+	errBadPort            = errors.New("invalid port in endpoint")
+	errEmptyEndpoint      = errors.New("endpoint must be specified")
+	errEmptyPassword      = errors.New("password must be set")
+	errEmptyService       = errors.New("service must be specified")
+	errEmptyUsername      = errors.New("username must be set")
+	errInvalidConnections = errors.New("max_open_connections must be between 1 and 1000")
+	errInvalidTimeout     = errors.New("collection_interval must be between 10s and 3600s")
+	errInvalidUsername    = errors.New("username cannot contain special characters that could cause SQL injection")
+	errInvalidService     = errors.New("service name cannot contain special characters")
 )
 
 type Config struct {
@@ -67,7 +67,7 @@ func (c *Config) SetDefaults() {
 	if c.MaxOpenConnections == 0 {
 		c.MaxOpenConnections = defaultMaxOpenConnections
 	}
-	
+
 	// Set scraper controller defaults if not set
 	if c.ControllerConfig.CollectionInterval == 0 {
 		c.ControllerConfig.CollectionInterval = defaultCollectionInterval

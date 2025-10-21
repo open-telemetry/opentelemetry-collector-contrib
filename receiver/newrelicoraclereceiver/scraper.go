@@ -43,10 +43,9 @@ type newRelicOracleScraper struct {
 	slowQueriesScraper *scrapers.SlowQueriesScraper
 	blockingScraper    *scrapers.BlockingScraper
 	waitEventsScraper  *scrapers.WaitEventsScraper
-	individualQueriesScraper *scrapers.IndividualQueriesScraper
-	connectionScraper *scrapers.ConnectionScraper
-	containerScraper  *scrapers.ContainerScraper
-	racScraper        *scrapers.RacScraper
+	connectionScraper  *scrapers.ConnectionScraper
+	containerScraper   *scrapers.ContainerScraper
+	racScraper         *scrapers.RacScraper
 
 	db                   *sql.DB
 	mb                   *metadata.MetricsBuilder
@@ -99,12 +98,6 @@ func (s *newRelicOracleScraper) start(context.Context, component.Host) error {
 	s.slowQueriesScraper, err = scrapers.NewSlowQueriesScraper(s.db, s.mb, s.logger, s.instanceName, s.metricsBuilderConfig)
 	if err != nil {
 		return fmt.Errorf("failed to create slow queries scraper: %w", err)
-	}
-
-	// Initialize individual queries scraper with direct DB connection
-	s.individualQueriesScraper, err = scrapers.NewIndividualQueriesScraper(s.db, s.mb, s.logger, s.instanceName, s.metricsBuilderConfig)
-	if err != nil {
-		return fmt.Errorf("failed to create individual queries scraper: %w", err)
 	}
 
 	// Initialize blocking scraper with direct DB connection
@@ -229,39 +222,6 @@ func (s *newRelicOracleScraper) scrape(ctx context.Context) (pmetric.Metrics, er
 		}(i, scraperFunc)
 	}
 
-	// Execute individual queries scraper with filtered query IDs
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-
-		s.logger.Debug("Starting individual queries scraper with filtered IDs", zap.Int("query_ids_count", len(queryIDs)))
-		s.logger.Info("Individual queries scraper about to start",
-			zap.Int("query_ids_available", len(queryIDs)),
-			zap.Strings("available_query_ids", queryIDs))
-		startTime := time.Now()
-
-		// Execute the individual queries scraper with query ID filter
-		errs := s.individualQueriesScraper.ScrapeIndividualQueries(scrapeCtx, queryIDs)
-
-		duration := time.Since(startTime)
-		s.logger.Debug("Completed individual queries scraper",
-			zap.Duration("duration", duration),
-			zap.Int("error_count", len(errs)))
-
-		// Send errors to the error channel
-		for _, err := range errs {
-			select {
-			case errChan <- err:
-			case <-scrapeCtx.Done():
-				// Context cancelled, stop sending errors
-				return
-			default:
-				// Channel is full, log and continue
-				s.logger.Warn("Error channel full, dropping individual query error", zap.Error(err))
-			}
-		}
-	}()
-
 	// Close error channel when all scrapers are done
 	// Close error channel when all scrapers are done, with timeout protection
 	done := make(chan struct{})
@@ -305,7 +265,7 @@ func (s *newRelicOracleScraper) scrape(ctx context.Context) (pmetric.Metrics, er
 	s.logger.Debug("Done New Relic Oracle scraping",
 		zap.Int("total_errors", len(scrapeErrors)),
 		zap.Int("independent_scrapers_count", len(independentScraperFuncs)),
-		zap.Int("total_scrapers_count", len(independentScraperFuncs)+2)) // +2 for slow queries and individual queries
+		zap.Int("total_scrapers_count", len(independentScraperFuncs)+1)) // +1 for slow queries
 
 	if len(scrapeErrors) > 0 {
 		return out, scrapererror.NewPartialScrapeError(multierr.Combine(scrapeErrors...), len(scrapeErrors))

@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"time"
 
+	commonutils "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/newrelicoraclereceiver/common-utils"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
-	commonutils "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/newrelicoraclereceiver/common-utils"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/newrelicoraclereceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/newrelicoraclereceiver/models"
@@ -78,6 +78,11 @@ func (s *SlowQueriesScraper) ScrapeSlowQueries(ctx context.Context) ([]string, [
 			&slowQuery.DatabaseName,
 			&slowQuery.QueryID,
 			&slowQuery.SchemaName,
+			&slowQuery.UserName,
+			&slowQuery.LastLoadTime,
+			&slowQuery.SharableMemoryBytes,
+			&slowQuery.PersistentMemoryBytes,
+			&slowQuery.RuntimeMemoryBytes,
 			&slowQuery.StatementType,
 			&slowQuery.ExecutionCount,
 			&slowQuery.QueryText,
@@ -106,6 +111,8 @@ func (s *SlowQueriesScraper) ScrapeSlowQueries(ctx context.Context) ([]string, [
 		qText := commonutils.AnonymizeAndNormalize(slowQuery.GetQueryText())
 
 		schName := slowQuery.GetSchemaName()
+		userName := slowQuery.GetUserName()
+		lastLoadTime := slowQuery.GetLastLoadTime()
 		stmtType := slowQuery.GetStatementType()
 		fullScan := slowQuery.GetHasFullTableScan()
 
@@ -113,7 +120,12 @@ func (s *SlowQueriesScraper) ScrapeSlowQueries(ctx context.Context) ([]string, [
 			zap.String("database_name", dbName),
 			zap.String("query_id", qID),
 			zap.String("schema_name", schName),
+			zap.String("user_name", userName),
+			zap.String("last_load_time", lastLoadTime),
 			zap.String("statement_type", stmtType),
+			zap.Int64("sharable_memory_bytes", slowQuery.GetSharableMemoryBytes()),
+			zap.Int64("persistent_memory_bytes", slowQuery.GetPersistentMemoryBytes()),
+			zap.Int64("runtime_memory_bytes", slowQuery.GetRuntimeMemoryBytes()),
 			zap.Float64("avg_elapsed_time_ms", slowQuery.AvgElapsedTimeMs.Float64))
 
 		// Record execution count if available
@@ -123,6 +135,7 @@ func (s *SlowQueriesScraper) ScrapeSlowQueries(ctx context.Context) ([]string, [
 				float64(slowQuery.ExecutionCount.Int64),
 				dbName,
 				qID,
+				userName,
 			)
 		}
 
@@ -133,6 +146,7 @@ func (s *SlowQueriesScraper) ScrapeSlowQueries(ctx context.Context) ([]string, [
 				slowQuery.AvgCPUTimeMs.Float64,
 				dbName,
 				qID,
+				userName,
 			)
 		}
 
@@ -143,6 +157,7 @@ func (s *SlowQueriesScraper) ScrapeSlowQueries(ctx context.Context) ([]string, [
 				slowQuery.AvgDiskReads.Float64,
 				dbName,
 				qID,
+				userName,
 			)
 		}
 
@@ -153,6 +168,7 @@ func (s *SlowQueriesScraper) ScrapeSlowQueries(ctx context.Context) ([]string, [
 				slowQuery.AvgDiskWrites.Float64,
 				dbName,
 				qID,
+				userName,
 			)
 		}
 
@@ -162,7 +178,39 @@ func (s *SlowQueriesScraper) ScrapeSlowQueries(ctx context.Context) ([]string, [
 			slowQuery.AvgElapsedTimeMs.Float64,
 			dbName,
 			qID,
+			userName,
 		)
+
+		// Record memory metrics if available
+		if slowQuery.SharableMemoryBytes.Valid {
+			s.mb.RecordNewrelicoracledbSlowQueriesSharableMemoryDataPoint(
+				now,
+				slowQuery.SharableMemoryBytes.Int64,
+				dbName,
+				qID,
+				userName,
+			)
+		}
+
+		if slowQuery.PersistentMemoryBytes.Valid {
+			s.mb.RecordNewrelicoracledbSlowQueriesPersistentMemoryDataPoint(
+				now,
+				slowQuery.PersistentMemoryBytes.Int64,
+				dbName,
+				qID,
+				userName,
+			)
+		}
+
+		if slowQuery.RuntimeMemoryBytes.Valid {
+			s.mb.RecordNewrelicoracledbSlowQueriesRuntimeMemoryDataPoint(
+				now,
+				slowQuery.RuntimeMemoryBytes.Int64,
+				dbName,
+				qID,
+				userName,
+			)
+		}
 
 		s.mb.RecordNewrelicoracledbSlowQueriesQueryDetailsDataPoint(
 			now,
@@ -173,6 +221,7 @@ func (s *SlowQueriesScraper) ScrapeSlowQueries(ctx context.Context) ([]string, [
 			schName,
 			stmtType,
 			fullScan,
+			userName,
 		)
 
 		// Add query ID to the list for individual queries processing
@@ -185,7 +234,7 @@ func (s *SlowQueriesScraper) ScrapeSlowQueries(ctx context.Context) ([]string, [
 		s.logger.Error("Error iterating over slow queries rows", zap.Error(err))
 		scrapeErrors = append(scrapeErrors, err)
 	}
-	s.logger.Debug("Completed Oracle slow queries scrape", 
+	s.logger.Debug("Completed Oracle slow queries scrape",
 		zap.Int("rows_processed", rowCount),
 		zap.Int("query_ids_collected", len(queryIDs)),
 		zap.Int("errors_encountered", len(scrapeErrors)))
