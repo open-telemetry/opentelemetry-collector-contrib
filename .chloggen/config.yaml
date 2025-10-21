@@ -24,6 +24,7 @@ components:
     - connector/routing
     - connector/servicegraph
     - connector/signaltometrics
+    - connector/slowsql
     - connector/spanmetrics
     - connector/sum
     - exporter/alertmanager
