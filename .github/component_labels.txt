@@ -19,6 +19,7 @@ connector/roundrobinconnector connector/roundrobin
 connector/routingconnector connector/routing
 connector/servicegraphconnector connector/servicegraph
 connector/signaltometricsconnector connector/signaltometrics
+connector/slowsqlconnector connector/slowsql
 connector/spanmetricsconnector connector/spanmetrics
 connector/sumconnector connector/sum
 exporter/alertmanagerexporter exporter/alertmanager

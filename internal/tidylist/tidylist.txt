@@ -79,6 +79,7 @@ connector/otlpjsonconnector
 connector/roundrobinconnector
 connector/servicegraphconnector
 connector/signaltometricsconnector
+connector/slowsqlconnector
 connector/sumconnector
 exporter/alertmanagerexporter
 exporter/alibabacloudlogserviceexporter

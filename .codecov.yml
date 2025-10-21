@@ -84,6 +84,10 @@ component_management:
     name: connector_signaltometrics
     paths:
     - connector/signaltometricsconnector/**
+  - component_id: connector_slowsql
+    name: connector_slowsql
+    paths:
+    - connector/slowsqlconnector/**
   - component_id: connector_spanmetrics
     name: connector_spanmetrics
     paths:
