@@ -94,6 +94,11 @@ type Config struct {
 	IncludeInstrumentationScope []string `mapstructure:"include_instrumentation_scope"`
 
 	AggregationCardinalityLimit int `mapstructure:"aggregation_cardinality_limit"`
+
+	// Add the resource attributes to the resulting metrics (disabled by default)
+	// This option enables the old behavior
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42103
+	AddResourceAttributes bool `mapstructure:"add_resource_attributes"`
 }
 
 type HistogramConfig struct {

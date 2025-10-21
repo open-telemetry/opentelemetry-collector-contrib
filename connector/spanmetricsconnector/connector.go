@@ -279,7 +279,7 @@ func (p *connectorImp) buildMetrics() pmetric.Metrics {
 
 	p.resourceMetrics.ForEach(func(_ resourceKey, rawMetrics *resourceMetrics) {
 		rm := m.ResourceMetrics().AppendEmpty()
-		if !excludeResourceMetrics.IsEnabled() {
+		if !excludeResourceMetrics.IsEnabled() || p.config.AddResourceAttributes {
 			rawMetrics.attributes.CopyTo(rm.Resource().Attributes())
 		}
 
