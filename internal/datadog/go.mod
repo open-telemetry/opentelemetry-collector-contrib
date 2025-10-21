@@ -3,17 +3,17 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/datado
 go 1.24.0
 
 require (
-	github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil v0.72.0-rc.5
-	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/inframetadata v0.72.0-rc.5
-	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.72.0-rc.5
-	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.72.0-rc.5
+	github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil v0.72.0-rc.8
+	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/inframetadata v0.72.0-rc.8
+	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.72.0-rc.8
+	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.72.0-rc.8
 	github.com/DataDog/datadog-api-client-go/v2 v2.47.0
 	github.com/DataDog/gohai v0.0.0-20230524154621-4316413895ee
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.30.0
-	github.com/aws/aws-sdk-go-v2 v1.39.2
-	github.com/aws/aws-sdk-go-v2/config v1.31.12
-	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.18.9
-	github.com/aws/aws-sdk-go-v2/service/ec2 v1.256.0
+	github.com/aws/aws-sdk-go-v2 v1.39.3
+	github.com/aws/aws-sdk-go-v2/config v1.31.13
+	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.18.10
+	github.com/aws/aws-sdk-go-v2/service/ec2 v1.257.2
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/google/go-cmp v0.7.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.138.0
@@ -39,47 +39,47 @@ require (
 
 require (
 	cloud.google.com/go/compute/metadata v0.9.0 // indirect
-	github.com/DataDog/datadog-agent/comp/core/secrets/def v0.72.0-rc.5 // indirect
-	github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.72.0-rc.5 // indirect
-	github.com/DataDog/datadog-agent/comp/core/tagger/types v0.72.0-rc.5 // indirect
-	github.com/DataDog/datadog-agent/comp/core/tagger/utils v0.72.0-rc.5 // indirect
-	github.com/DataDog/datadog-agent/pkg/collector/check/defaults v0.72.0-rc.5 // indirect
-	github.com/DataDog/datadog-agent/pkg/config/create v0.72.0-rc.5 // indirect
-	github.com/DataDog/datadog-agent/pkg/config/env v0.72.0-rc.5 // indirect
-	github.com/DataDog/datadog-agent/pkg/config/mock v0.72.0-rc.5 // indirect
-	github.com/DataDog/datadog-agent/pkg/config/model v0.72.0-rc.5 // indirect
-	github.com/DataDog/datadog-agent/pkg/config/nodetreemodel v0.72.0-rc.5 // indirect
-	github.com/DataDog/datadog-agent/pkg/config/setup v0.72.0-rc.5 // indirect
-	github.com/DataDog/datadog-agent/pkg/config/structure v0.72.0-rc.5 // indirect
-	github.com/DataDog/datadog-agent/pkg/config/teeconfig v0.72.0-rc.5 // indirect
-	github.com/DataDog/datadog-agent/pkg/config/viperconfig v0.72.0-rc.5 // indirect
-	github.com/DataDog/datadog-agent/pkg/fips v0.72.0-rc.5 // indirect
-	github.com/DataDog/datadog-agent/pkg/proto v0.72.0-rc.5 // indirect
-	github.com/DataDog/datadog-agent/pkg/serializer v0.72.0-rc.5 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/executable v0.72.0-rc.5 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/filesystem v0.72.0-rc.5 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.72.0-rc.5 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/option v0.72.0-rc.5 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/pointer v0.72.0-rc.5 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.72.0-rc.5 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/system v0.72.0-rc.5 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/system/socket v0.72.0-rc.5 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/winutil v0.72.0-rc.5 // indirect
-	github.com/DataDog/datadog-agent/pkg/version v0.72.0-rc.5 // indirect
+	github.com/DataDog/datadog-agent/comp/core/secrets/def v0.72.0-rc.8 // indirect
+	github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.72.0-rc.8 // indirect
+	github.com/DataDog/datadog-agent/comp/core/tagger/types v0.72.0-rc.8 // indirect
+	github.com/DataDog/datadog-agent/comp/core/tagger/utils v0.72.0-rc.8 // indirect
+	github.com/DataDog/datadog-agent/pkg/collector/check/defaults v0.72.0-rc.8 // indirect
+	github.com/DataDog/datadog-agent/pkg/config/create v0.72.0-rc.8 // indirect
+	github.com/DataDog/datadog-agent/pkg/config/env v0.72.0-rc.8 // indirect
+	github.com/DataDog/datadog-agent/pkg/config/mock v0.72.0-rc.8 // indirect
+	github.com/DataDog/datadog-agent/pkg/config/model v0.72.0-rc.8 // indirect
+	github.com/DataDog/datadog-agent/pkg/config/nodetreemodel v0.72.0-rc.8 // indirect
+	github.com/DataDog/datadog-agent/pkg/config/setup v0.72.0-rc.8 // indirect
+	github.com/DataDog/datadog-agent/pkg/config/structure v0.72.0-rc.8 // indirect
+	github.com/DataDog/datadog-agent/pkg/config/teeconfig v0.72.0-rc.8 // indirect
+	github.com/DataDog/datadog-agent/pkg/config/viperconfig v0.72.0-rc.8 // indirect
+	github.com/DataDog/datadog-agent/pkg/fips v0.72.0-rc.8 // indirect
+	github.com/DataDog/datadog-agent/pkg/proto v0.72.0-rc.8 // indirect
+	github.com/DataDog/datadog-agent/pkg/serializer v0.72.0-rc.8 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/executable v0.72.0-rc.8 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/filesystem v0.72.0-rc.8 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.72.0-rc.8 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/option v0.72.0-rc.8 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/pointer v0.72.0-rc.8 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.72.0-rc.8 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/system v0.72.0-rc.8 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/system/socket v0.72.0-rc.8 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/winutil v0.72.0-rc.8 // indirect
+	github.com/DataDog/datadog-agent/pkg/version v0.72.0-rc.8 // indirect
 	github.com/DataDog/sketches-go v1.4.7 // indirect
 	github.com/DataDog/viper v1.14.1-0.20251002211519-52225e3aeac8 // indirect
 	github.com/DataDog/zstd v1.5.6 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
-	github.com/aws/aws-sdk-go-v2/credentials v1.18.16 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.9 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.7.9 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/ini v1.8.3 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.1 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.13.9 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sso v1.29.6 // indirect
-	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.35.1 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sts v1.38.6 // indirect
-	github.com/aws/smithy-go v1.23.0 // indirect
+	github.com/aws/aws-sdk-go-v2/credentials v1.18.17 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.10 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.7.10 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/ini v1.8.4 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.2 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.13.10 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sso v1.29.7 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.35.2 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sts v1.38.7 // indirect
+	github.com/aws/smithy-go v1.23.1 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/cihub/seelog v0.0.0-20170130134532-f561c5e57575 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
