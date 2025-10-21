@@ -538,12 +538,12 @@ otel-from-tree:
 	replace_args=""; \
 	echo "# BEGIN otel-from-tree" >> "./cmd/otelcontribcol/builder-config.yaml"; \
 	echo "# BEGIN otel-from-tree" >> "./cmd/oteltestbedcol/builder-config.yaml"; \
-	for module in "$${beta_modules[@]}" "$${stable_modules[@]}"; do \
+	for module in "$${pr_modules[@]}"; do \
 		subpath=$${module#go.opentelemetry.io/collector}; \
 		if [ "$${subpath}" = "$${module}" ]; then subpath=""; fi; \
-		replace_args="$${replace_args} -replace $${module}=$(SRC_PARENT_DIR)/opentelemetry-collector$${subpath}"; \
-		echo "  - $${module} => $(SRC_PARENT_DIR)/opentelemetry-collector$${subpath}" >> "./cmd/otelcontribcol/builder-config.yaml"; \
-		echo "  - $${module} => $(SRC_PARENT_DIR)/opentelemetry-collector$${subpath}" >> "./cmd/oteltestbedcol/builder-config.yaml"; \
+		replace_args="$${replace_args} -replace $${module}=github.com/jade-guiton-dd/opentelemetry-collector$${subpath}@v0.0.0-20251023145606-417796e61f83"; \
+		echo "  - $${module} => github.com/jade-guiton-dd/opentelemetry-collector$${subpath} v0.0.0-20251023145606-417796e61f83" >> "./cmd/otelcontribcol/builder-config.yaml"; \
+		echo "  - $${module} => github.com/jade-guiton-dd/opentelemetry-collector$${subpath} v0.0.0-20251023145606-417796e61f83" >> "./cmd/oteltestbedcol/builder-config.yaml"; \
 	done; \
 	$(MAKE) for-all CMD="$(GOCMD) mod edit $${replace_args}"
 

@@ -102,6 +102,8 @@ github.com/hamba/avro/v2 v2.29.0 h1:fkqoWEPxfygZxrkktgSHEpd0j/P7RKTBTDbcEeMdVEY=
 github.com/hamba/avro/v2 v2.29.0/go.mod h1:Pk3T+x74uJoJOFmHrdJ8PRdgSEL/kEKteJ31NytCKxI=
 github.com/hashicorp/go-version v1.7.0 h1:5tqGy27NaOTB8yJKUZELlFAS/LTKJkrmONwQKeRZfjY=
 github.com/hashicorp/go-version v1.7.0/go.mod h1:fltr4n8CU8Ke44wwGCBoEymUuxUHl09ZGVZPK5anwXA=
+github.com/jade-guiton-dd/opentelemetry-collector/config/configopaque v0.0.0-20251023145606-417796e61f83 h1:Pq/FHHvG9w/YK7/fHhJZxVIjWaEje/wJr4krOueVkw0=
+github.com/jade-guiton-dd/opentelemetry-collector/config/configopaque v0.0.0-20251023145606-417796e61f83/go.mod h1:z4EOVwhc3D7IT4W58Ez7Pjqm1pJkM+oVOWFuxxMHvWA=
 github.com/jaegertracing/jaeger-idl v0.6.0 h1:LOVQfVby9ywdMPI9n3hMwKbyLVV3BL1XH2QqsP5KTMk=
 github.com/jaegertracing/jaeger-idl v0.6.0/go.mod h1:mpW0lZfG907/+o5w5OlnNnig7nHJGT3SfKmRqC42HGQ=
 github.com/json-iterator/go v1.1.12 h1:PV8peI4a0ysnczrg+LtxykD8LfKY9ML6u2jnxaEnrnM=
@@ -221,8 +223,6 @@ go.opentelemetry.io/collector/component v1.44.1-0.20251021231522-c657d5d4e920 h1
 go.opentelemetry.io/collector/component v1.44.1-0.20251021231522-c657d5d4e920/go.mod h1:geKbCTNoQfu55tOPiDuxLzNZsoO9//HRRg10/8WusWk=
 go.opentelemetry.io/collector/component/componenttest v0.138.1-0.20251021231522-c657d5d4e920 h1:yxoV0n3rfi2uMu5nEO838fANnWtxG0G4c2MtaDUuZh4=
 go.opentelemetry.io/collector/component/componenttest v0.138.1-0.20251021231522-c657d5d4e920/go.mod h1:ODaEuyS6BrCnTVHCsLSRUtNklT3gnAIq0txYAAI2PKM=
-go.opentelemetry.io/collector/config/configopaque v1.44.1-0.20251021231522-c657d5d4e920 h1:HnXZNedeXUOgKdpM8IdpW1wpnyb7URWAi66KMbqCA2Q=
-go.opentelemetry.io/collector/config/configopaque v1.44.1-0.20251021231522-c657d5d4e920/go.mod h1:9uzLyGsWX0FtPWkomQXqLtblmSHgJFaM4T0gMBrCma0=
 go.opentelemetry.io/collector/config/configoptional v1.44.1-0.20251021231522-c657d5d4e920 h1:JKtuflg5oNFWUmQu2gkxXcGNikxrbQOagpA/NWZT4sc=
 go.opentelemetry.io/collector/config/configoptional v1.44.1-0.20251021231522-c657d5d4e920/go.mod h1:AGi2klVapjAEHVPrBVdq+3dW9l3wfA2MLH9qn5Q8nSg=
 go.opentelemetry.io/collector/config/configretry v1.44.1-0.20251021231522-c657d5d4e920 h1:MORDfnjCiN8qI7chgI+fzptBzh7GidPdi9+mWbgIgwo=

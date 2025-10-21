@@ -42,6 +42,8 @@ github.com/google/uuid v1.6.0 h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=
 github.com/google/uuid v1.6.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
 github.com/hashicorp/go-version v1.7.0 h1:5tqGy27NaOTB8yJKUZELlFAS/LTKJkrmONwQKeRZfjY=
 github.com/hashicorp/go-version v1.7.0/go.mod h1:fltr4n8CU8Ke44wwGCBoEymUuxUHl09ZGVZPK5anwXA=
+github.com/jade-guiton-dd/opentelemetry-collector/config/configopaque v0.0.0-20251023145606-417796e61f83 h1:Pq/FHHvG9w/YK7/fHhJZxVIjWaEje/wJr4krOueVkw0=
+github.com/jade-guiton-dd/opentelemetry-collector/config/configopaque v0.0.0-20251023145606-417796e61f83/go.mod h1:z4EOVwhc3D7IT4W58Ez7Pjqm1pJkM+oVOWFuxxMHvWA=
 github.com/jpillora/backoff v1.0.0 h1:uvFg412JmmHBHw7iwprIxkPMI+sGQ4kzOWsMeHnm2EA=
 github.com/jpillora/backoff v1.0.0/go.mod h1:J/6gKK9jxlEcS3zixgDgUAsiuZ7yrSoa/FX5e0EB2j4=
 github.com/json-iterator/go v1.1.12 h1:PV8peI4a0ysnczrg+LtxykD8LfKY9ML6u2jnxaEnrnM=
@@ -94,8 +96,6 @@ go.opentelemetry.io/collector/component v1.44.1-0.20251021231522-c657d5d4e920 h1
 go.opentelemetry.io/collector/component v1.44.1-0.20251021231522-c657d5d4e920/go.mod h1:geKbCTNoQfu55tOPiDuxLzNZsoO9//HRRg10/8WusWk=
 go.opentelemetry.io/collector/component/componenttest v0.138.1-0.20251021231522-c657d5d4e920 h1:yxoV0n3rfi2uMu5nEO838fANnWtxG0G4c2MtaDUuZh4=
 go.opentelemetry.io/collector/component/componenttest v0.138.1-0.20251021231522-c657d5d4e920/go.mod h1:ODaEuyS6BrCnTVHCsLSRUtNklT3gnAIq0txYAAI2PKM=
-go.opentelemetry.io/collector/config/configopaque v1.44.1-0.20251021231522-c657d5d4e920 h1:HnXZNedeXUOgKdpM8IdpW1wpnyb7URWAi66KMbqCA2Q=
-go.opentelemetry.io/collector/config/configopaque v1.44.1-0.20251021231522-c657d5d4e920/go.mod h1:9uzLyGsWX0FtPWkomQXqLtblmSHgJFaM4T0gMBrCma0=
 go.opentelemetry.io/collector/config/configtls v1.44.1-0.20251021231522-c657d5d4e920 h1:eogWWTUFG6hy67BHUFC3UVXLo2+LXEgorjFMbvG5kT0=
 go.opentelemetry.io/collector/config/configtls v1.44.1-0.20251021231522-c657d5d4e920/go.mod h1:wsOaG0LRnZjhRXpl0epNxba2HJzfZwmnKdu6NO7l7pw=
 go.opentelemetry.io/collector/confmap v1.44.1-0.20251021231522-c657d5d4e920 h1:ydxO2ykoZ/gzXDlwaBp8vSHciH+S5lhm3aC+OWuJGjc=
