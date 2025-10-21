@@ -40,6 +40,26 @@ func TestCloudTrailLogUnmarshaler_UnmarshalAWSLogs_Valid(t *testing.T) {
 	require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, compareOptions...))
 }
 
+func TestCloudtrailLogUnmarshaler_UnmarshalAWSDigest_valid(t *testing.T) {
+	t.Parallel()
+	unmarshaler := NewCloudTrailLogUnmarshaler(component.BuildInfo{Version: "test-version"})
+
+	content := readLogFile(t, filesDirectory, "cloudtrail_digest.json")
+	logs, err := unmarshaler.UnmarshalAWSLogs(content)
+	require.NoError(t, err)
+
+	expectedLogs, err := golden.ReadLogs(filepath.Join(filesDirectory, "cloudtrail_digest_expected.yaml"))
+	require.NoError(t, err)
+
+	compareLogsOptions := []plogtest.CompareLogsOption{
+		plogtest.IgnoreResourceLogsOrder(),
+		plogtest.IgnoreScopeLogsOrder(),
+		plogtest.IgnoreLogRecordsOrder(),
+	}
+
+	require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, compareLogsOptions...))
+}
+
 func TestCloudTrailLogUnmarshaler_UnmarshalAWSLogs_EmptyRecords(t *testing.T) {
 	t.Parallel()
 	unmarshaler := NewCloudTrailLogUnmarshaler(component.BuildInfo{Version: "test-version"})
