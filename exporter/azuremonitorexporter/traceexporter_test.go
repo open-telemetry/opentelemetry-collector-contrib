@@ -10,9 +10,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter/internal/metadata"
 )
 
 var defaultConfig = createDefaultConfig().(*Config)
@@ -155,6 +158,7 @@ func getExporter(config *Config, transportChannel appinsights.TelemetryChannel) 
 	return &azureMonitorExporter{
 		config,
 		transportChannel,
+		exportertest.NewNopSettings(metadata.Type).TelemetrySettings,
 		zap.NewNop(),
 		newMetricPacker(zap.NewNop()),
 	}
