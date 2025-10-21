@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	conventions "go.opentelemetry.io/otel/semconv/v1.34.0"
 )
@@ -57,17 +58,23 @@ func testHTTPAttributeMapping(t *testing.T, variant string) {
 	assert.Equal(t, string(conventions.NetworkProtocolNameKey), httpAttributes.NetworkAttributes.NetworkProtocolName)
 	assert.Equal(t, string(conventions.UserAgentOriginalKey), httpAttributes.UserAgentAttributes.UserAgentOriginal)
 
-	reqCL := httpAttributes.HttpRequestHeaders["content-length"][0]
+	vals, ok := httpAttributes.HttpRequestHeaders["content-length"]
+	require.True(t, ok)
+	require.NotEmpty(t, vals)
+	reqCL := vals[0]
 	reqCLInt, err := strconv.ParseInt(reqCL, 10, 64)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(1), reqCLInt)
 
 	assert.Equal(t, int64(2), httpAttributes.HttpRequestBodySize)
 
-	resCL := httpAttributes.HttpResponseHeaders["content-length"][0]
-	resCLInt, err := strconv.ParseInt(resCL, 10, 64)
+	valsRes, okRes := httpAttributes.HttpResponseHeaders["content-length"]
+	require.True(t, okRes)
+	require.NotEmpty(t, valsRes)
+	reqRes := valsRes[0]
+	reqResInt, err := strconv.ParseInt(reqRes, 10, 64)
 	assert.NoError(t, err)
-	assert.Equal(t, int64(3), resCLInt)
+	assert.Equal(t, int64(3), reqResInt)
 
 	assert.Equal(t, int64(4), httpAttributes.HttpResponseBodySize)
 	assert.Equal(t, string(conventions.HTTPRouteKey), httpAttributes.HttpRoute)
@@ -138,7 +145,7 @@ func testDatabaseAttributeMapping(t *testing.T, variant string) {
 	databaseAttributeValues := map[string]any{
 		string(conventions.DBCollectionNameKey):      string(conventions.DBCollectionNameKey),
 		string(conventions.DBNamespaceKey):           string(conventions.DBNamespaceKey),
-		string(conventions.DBOperationBatchSizeKey):  string(conventions.DBOperationBatchSizeKey),
+		string(conventions.DBOperationBatchSizeKey):  0,
 		string(conventions.DBOperationNameKey):       string(conventions.DBOperationNameKey),
 		string(conventions.DBQuerySummaryKey):        string(conventions.DBQuerySummaryKey),
 		string(conventions.DBQueryTextKey):           string(conventions.DBQueryTextKey),
@@ -166,7 +173,7 @@ func testDatabaseAttributeMapping(t *testing.T, variant string) {
 
 	assert.Equal(t, string(conventions.DBCollectionNameKey), databaseAttributes.DBCollectionName)
 	assert.Equal(t, string(conventions.DBNamespaceKey), databaseAttributes.DBNamespace)
-	assert.Equal(t, string(conventions.DBOperationBatchSizeKey), databaseAttributes.DBOperationBatchSize)
+	assert.Equal(t, int64(0), databaseAttributes.DBOperationBatchSize)
 	assert.Equal(t, string(conventions.DBOperationNameKey), databaseAttributes.DBOperationName)
 	assert.Equal(t, string(conventions.DBQuerySummaryKey), databaseAttributes.DBQuerySummary)
 	assert.Equal(t, string(conventions.DBQueryTextKey), databaseAttributes.DBQueryText)
@@ -193,7 +200,7 @@ func TestDatabaseAttributeMapping(t *testing.T) {
 
 func testMessagingAttributeMapping(t *testing.T, variant string) {
 	messagingAttributeValues := map[string]any{
-		string(conventions.MessagingBatchMessageCountKey):           string(conventions.MessagingBatchMessageCountKey),
+		string(conventions.MessagingBatchMessageCountKey):           0,
 		string(conventions.MessagingClientIDKey):                    string(conventions.MessagingClientIDKey),
 		string(conventions.MessagingConsumerGroupNameKey):           string(conventions.MessagingConsumerGroupNameKey),
 		string(conventions.MessagingDestinationAnonymousKey):        true,
@@ -228,7 +235,7 @@ func testMessagingAttributeMapping(t *testing.T, variant string) {
 	messagingAttributes := &messagingAttributes{}
 	attributeMap.Range(messagingAttributes.MapAttribute)
 
-	assert.Equal(t, string(conventions.MessagingBatchMessageCountKey), messagingAttributes.MessagingBatchMessageCount)
+	assert.Equal(t, int64(0), messagingAttributes.MessagingBatchMessageCount)
 	assert.Equal(t, string(conventions.MessagingClientIDKey), messagingAttributes.MessagingClientID)
 	assert.Equal(t, string(conventions.MessagingConsumerGroupNameKey), messagingAttributes.MessagingConsumerGroup)
 	assert.Equal(t, true, messagingAttributes.MessagingDestinationAnonymous)

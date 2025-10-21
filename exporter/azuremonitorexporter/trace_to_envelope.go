@@ -307,8 +307,8 @@ func getFormattedHTTPStatusValues(statusCode int64) (statusAsString string, succ
 func fillRequestDataHTTP(span ptrace.Span, data *contracts.RequestData) {
 	attrs := copyAndExtractHTTPAttributes(span.Attributes(), data.Properties)
 
-	if attrs.HTTPStatusCode != 0 {
-		data.ResponseCode, data.Success = getFormattedHTTPStatusValues(attrs.HTTPStatusCode)
+	if attrs.HttpResponseStatusCode != 0 {
+		data.ResponseCode, data.Success = getFormattedHTTPStatusValues(attrs.HttpResponseStatusCode)
 	}
 
 	var sb strings.Builder
@@ -316,13 +316,13 @@ func fillRequestDataHTTP(span ptrace.Span, data *contracts.RequestData) {
 	// Construct data.Name
 	// The data.Name should be {HTTP METHOD} {HTTP SERVER ROUTE TEMPLATE}
 	// https://github.com/microsoft/ApplicationInsights-Home/blob/f1f9f619d74557c8db3dbde4b49c4193e10d8a81/EndpointSpecs/Schemas/Bond/RequestData.bond#L32
-	sb.WriteString(attrs.HTTPMethod)
+	sb.WriteString(attrs.HttpRequestMethod)
 	sb.WriteString(" ")
 
 	// Use httpRoute if available otherwise fallback to the span name
 	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/http.md#name
-	if attrs.HTTPRoute != "" {
-		sb.WriteString(prefixIfNecessary(attrs.HTTPRoute, "/"))
+	if attrs.HttpRoute != "" {
+		sb.WriteString(prefixIfNecessary(attrs.HttpRoute, "/"))
 	} else {
 		sb.WriteString(span.Name())
 	}
@@ -339,53 +339,50 @@ func fillRequestDataHTTP(span ptrace.Span, data *contracts.RequestData) {
 		http.url
 	*/
 
-	if attrs.HTTPTarget != "" {
-		attrs.HTTPTarget = prefixIfNecessary(attrs.HTTPTarget, "/")
+	if attrs.UrlAttributes.UrlPath != "" {
+		attrs.UrlAttributes.UrlPath = prefixIfNecessary(attrs.UrlAttributes.UrlPath, "/")
 	}
 
-	netHostPortAsString := ""
-	if attrs.NetworkAttributes.NetHostPort != 0 {
-		netHostPortAsString = strconv.FormatInt(attrs.NetworkAttributes.NetHostPort, 10)
+	serverPort := ""
+	if attrs.ServerAttributes.ServerPort != 0 {
+		serverPort = strconv.FormatInt(attrs.ServerAttributes.ServerPort, 10)
 	}
 
 	switch {
-	case attrs.HTTPScheme != "" && attrs.HTTPHost != "" && attrs.HTTPTarget != "":
-		sb.WriteString(attrs.HTTPScheme)
+	case attrs.UrlAttributes.UrlScheme != "" && attrs.ServerAttributes.ServerAddress != "" && serverPort == "" && attrs.UrlAttributes.UrlPath != "":
+		sb.WriteString(attrs.UrlAttributes.UrlScheme)
 		sb.WriteString("://")
-		sb.WriteString(attrs.HTTPHost)
-		sb.WriteString(attrs.HTTPTarget)
+		sb.WriteString(attrs.ServerAttributes.ServerAddress)
+		sb.WriteString(attrs.UrlAttributes.UrlPath)
+		if attrs.UrlAttributes.UrlQuery != "" {
+			sb.WriteString("?")
+			sb.WriteString(attrs.UrlAttributes.UrlQuery)
+		}
 		data.Url = sb.String()
-	case attrs.HTTPScheme != "" && attrs.HTTPServerName != "" && netHostPortAsString != "" && attrs.HTTPTarget != "":
-		sb.WriteString(attrs.HTTPScheme)
+	case attrs.UrlAttributes.UrlScheme != "" && attrs.ServerAttributes.ServerAddress != "" && serverPort != "" && attrs.UrlAttributes.UrlPath != "":
+		sb.WriteString(attrs.UrlAttributes.UrlScheme)
 		sb.WriteString("://")
-		sb.WriteString(attrs.HTTPServerName)
+		sb.WriteString(attrs.ServerAttributes.ServerAddress)
 		sb.WriteString(":")
-		sb.WriteString(netHostPortAsString)
-		sb.WriteString(attrs.HTTPTarget)
+		sb.WriteString(serverPort)
+		sb.WriteString(attrs.UrlAttributes.UrlPath)
+		if attrs.UrlAttributes.UrlQuery != "" {
+			sb.WriteString("?")
+			sb.WriteString(attrs.UrlAttributes.UrlQuery)
+		}
 		data.Url = sb.String()
-	case attrs.HTTPScheme != "" && attrs.NetworkAttributes.NetHostName != "" && netHostPortAsString != "" && attrs.HTTPTarget != "":
-		sb.WriteString(attrs.HTTPScheme)
-		sb.WriteString("://")
-		sb.WriteString(attrs.NetworkAttributes.NetHostName)
-		sb.WriteString(":")
-		sb.WriteString(netHostPortAsString)
-		sb.WriteString(attrs.HTTPTarget)
-		data.Url = sb.String()
-	case attrs.HTTPURL != "":
-		if _, err := url.Parse(attrs.HTTPURL); err == nil {
-			data.Url = attrs.HTTPURL
+	case attrs.UrlAttributes.UrlFull != "":
+		if _, err := url.Parse(attrs.UrlAttributes.UrlFull); err == nil {
+			data.Url = attrs.UrlAttributes.UrlFull
 		}
 	}
 
 	sb.Reset()
 
-	// data.Source should be the client ip if available or fallback to net.peer.ip
-	// https://github.com/microsoft/ApplicationInsights-Home/blob/f1f9f619d74557c8db3dbde4b49c4193e10d8a81/EndpointSpecs/Schemas/Bond/RequestData.bond#L28
-	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/http.md#http-server-semantic-conventions
-	if attrs.HTTPClientIP != "" {
-		data.Source = attrs.HTTPClientIP
-	} else if attrs.NetworkAttributes.NetPeerIP != "" {
-		data.Source = attrs.NetworkAttributes.NetPeerIP
+	if attrs.ClientAttributes.ClientAddress != "" {
+		data.Source = attrs.ClientAttributes.ClientAddress
+	} else if attrs.NetworkAttributes.NetworkPeerAddress != "" {
+		data.Source = attrs.NetworkAttributes.NetworkPeerAddress
 	}
 }
 
@@ -395,84 +392,85 @@ func fillRemoteDependencyDataHTTP(span ptrace.Span, data *contracts.RemoteDepend
 	attrs := copyAndExtractHTTPAttributes(span.Attributes(), data.Properties)
 
 	data.Type = "HTTP"
-	if attrs.HTTPStatusCode != 0 {
-		data.ResultCode, data.Success = getFormattedHTTPStatusValues(attrs.HTTPStatusCode)
+	if attrs.HttpResponseStatusCode != 0 {
+		data.ResultCode, data.Success = getFormattedHTTPStatusValues(attrs.HttpResponseStatusCode)
 	}
 
 	var sb strings.Builder
 
-	// Construct data.Name
-	// The data.Name should default to {HTTP METHOD} and include {HTTP ROUTE TEMPLATE} (if available)
-	sb.WriteString(attrs.HTTPMethod)
+	sb.WriteString(attrs.HttpRequestMethod)
 
-	// Use httpRoute if available otherwise fallback to the HTTP method
-	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/http.md#name
-	if attrs.HTTPRoute != "" {
+	if attrs.HttpRoute != "" {
 		sb.WriteString(" ")
-		sb.WriteString(attrs.HTTPRoute)
+		sb.WriteString(attrs.HttpRoute)
 	}
 
 	data.Name = sb.String()
 	sb.Reset()
 
-	/*
-		Order of preference is:
-		http.url
-		http.scheme, http.host, http.target
-		http.scheme, net.peer.name, net.peer.port, http.target
-		http.scheme, net.peer.ip, net.peer.port, http.target
-	*/
-
-	// prefix httpTarget, if specified
-	if attrs.HTTPTarget != "" {
-		attrs.HTTPTarget = prefixIfNecessary(attrs.HTTPTarget, "/")
+	if attrs.UrlAttributes.UrlPath != "" {
+		attrs.UrlAttributes.UrlPath = prefixIfNecessary(attrs.UrlAttributes.UrlPath, "/")
 	}
 
-	netPeerPortAsString := ""
-	if attrs.NetworkAttributes.NetPeerPort != 0 {
-		netPeerPortAsString = strconv.FormatInt(attrs.NetworkAttributes.NetPeerPort, 10)
+	clientPortStr := ""
+	if attrs.ClientAttributes.ClientPort != 0 {
+		clientPortStr = strconv.FormatInt(attrs.ClientAttributes.ClientPort, 10)
 	}
 
 	switch {
-	case attrs.HTTPURL != "":
-		if u, err := url.Parse(attrs.HTTPURL); err == nil {
-			data.Data = attrs.HTTPURL
+	case attrs.UrlAttributes.UrlFull != "":
+		if u, err := url.Parse(attrs.UrlAttributes.UrlFull); err == nil {
+			data.Data = attrs.UrlAttributes.UrlFull
 			data.Target = u.Host
 		}
-	case attrs.HTTPScheme != "" && attrs.HTTPHost != "" && attrs.HTTPTarget != "":
-		sb.WriteString(attrs.HTTPScheme)
+	case attrs.UrlAttributes.UrlScheme != "" && attrs.ClientAttributes.ClientAddress != "" && clientPortStr == "" && attrs.UrlAttributes.UrlPath != "":
+		sb.WriteString(attrs.UrlAttributes.UrlScheme)
 		sb.WriteString("://")
-		sb.WriteString(attrs.HTTPHost)
-		sb.WriteString(attrs.HTTPTarget)
+		sb.WriteString(attrs.ClientAttributes.ClientAddress)
+		sb.WriteString(attrs.UrlAttributes.UrlPath)
+		if attrs.UrlAttributes.UrlQuery != "" {
+			sb.WriteString("?")
+			sb.WriteString(attrs.UrlAttributes.UrlQuery)
+		}
 		data.Data = sb.String()
-		data.Target = attrs.HTTPHost
-	case attrs.HTTPScheme != "" && attrs.NetworkAttributes.NetPeerName != "" && netPeerPortAsString != "" && attrs.HTTPTarget != "":
-		sb.WriteString(attrs.HTTPScheme)
+		data.Target = attrs.ClientAttributes.ClientAddress
+
+	case attrs.UrlAttributes.UrlScheme != "" && attrs.ClientAttributes.ClientAddress != "" && clientPortStr != "" && attrs.UrlAttributes.UrlPath != "":
+		sb.WriteString(attrs.UrlAttributes.UrlScheme)
 		sb.WriteString("://")
-		sb.WriteString(attrs.NetworkAttributes.NetPeerName)
+		sb.WriteString(attrs.ClientAttributes.ClientAddress)
 		sb.WriteString(":")
-		sb.WriteString(netPeerPortAsString)
-		sb.WriteString(attrs.HTTPTarget)
+		sb.WriteString(clientPortStr)
+		sb.WriteString(attrs.UrlAttributes.UrlPath)
+		if attrs.UrlAttributes.UrlQuery != "" {
+			sb.WriteString("?")
+			sb.WriteString(attrs.UrlAttributes.UrlQuery)
+		}
 		data.Data = sb.String()
 
 		sb.Reset()
-		sb.WriteString(attrs.NetworkAttributes.NetPeerName)
+		sb.WriteString(attrs.ClientAttributes.ClientAddress)
 		sb.WriteString(":")
-		sb.WriteString(netPeerPortAsString)
+		sb.WriteString(clientPortStr)
 		data.Target = sb.String()
-	case attrs.HTTPScheme != "" && attrs.NetworkAttributes.NetPeerIP != "" && netPeerPortAsString != "" && attrs.HTTPTarget != "":
-		sb.WriteString(attrs.HTTPScheme)
+
+	case attrs.UrlAttributes.UrlScheme != "" && attrs.NetworkAttributes.NetworkPeerAddress != "" && clientPortStr != "" && attrs.UrlAttributes.UrlPath != "":
+		sb.WriteString(attrs.UrlAttributes.UrlScheme)
 		sb.WriteString("://")
-		sb.WriteString(attrs.NetworkAttributes.NetPeerIP)
+		sb.WriteString(attrs.NetworkAttributes.NetworkPeerAddress)
 		sb.WriteString(":")
-		sb.WriteString(netPeerPortAsString)
-		sb.WriteString(attrs.HTTPTarget)
+		sb.WriteString(clientPortStr)
+		sb.WriteString(attrs.UrlAttributes.UrlPath)
+		if attrs.UrlAttributes.UrlQuery != "" {
+			sb.WriteString("?")
+			sb.WriteString(attrs.UrlAttributes.UrlQuery)
+		}
 		data.Data = sb.String()
 
 		sb.Reset()
-		sb.WriteString(attrs.NetworkAttributes.NetPeerIP)
+		sb.WriteString(attrs.NetworkAttributes.NetworkPeerAddress)
 		sb.WriteString(":")
-		sb.WriteString(netPeerPortAsString)
+		sb.WriteString(clientPortStr)
 		data.Target = sb.String()
 	}
 }
@@ -498,7 +496,7 @@ func fillRequestDataRPC(span ptrace.Span, data *contracts.RequestData) {
 
 	sb.Reset()
 
-	writeFormattedPeerAddressFromNetworkAttributes(&attrs.NetworkAttributes, &sb)
+	writeFormatedFromNetworkServerOrClient(&attrs.NetworkAttributes, attrs.ServerAttributes.ServerAddress, attrs.ServerAttributes.ServerPort, &sb)
 
 	data.Source = sb.String()
 }
@@ -516,7 +514,8 @@ func fillRemoteDependencyDataRPC(span ptrace.Span, data *contracts.RemoteDepende
 	data.Type = attrs.RPCSystem
 
 	var sb strings.Builder
-	writeFormattedPeerAddressFromNetworkAttributes(&attrs.NetworkAttributes, &sb)
+
+	writeFormatedFromNetworkServerOrClient(&attrs.NetworkAttributes, attrs.ClientAttributes.ClientAddress, attrs.ClientAttributes.ClientPort, &sb)
 	data.Target = sb.String()
 }
 
@@ -534,16 +533,16 @@ func getRPCStatusCodeAsString(rpcAttributes *rpcAttributes) (statusCodeAsString 
 func fillRemoteDependencyDataDatabase(span ptrace.Span, data *contracts.RemoteDependencyData) {
 	attrs := copyAndExtractDatabaseAttributes(span.Attributes(), data.Properties)
 
-	data.Type = attrs.DBSystem
+	data.Type = attrs.DBSystemName
 
-	if attrs.DBStatement != "" {
-		data.Data = attrs.DBStatement
-	} else if attrs.DBOperation != "" {
-		data.Data = attrs.DBOperation
+	if attrs.DBQueryText != "" {
+		data.Data = attrs.DBQueryText
+	} else if attrs.DBOperationName != "" {
+		data.Data = attrs.DBOperationName
 	}
 
 	var sb strings.Builder
-	writeFormattedPeerAddressFromNetworkAttributes(&attrs.NetworkAttributes, &sb)
+	writeFormatedFromNetworkServerOrClient(&attrs.NetworkAttributes, attrs.ClientAttributes.ClientAddress, attrs.ClientAttributes.ClientPort, &sb)
 	data.Target = sb.String()
 }
 
@@ -553,13 +552,10 @@ func fillRequestDataMessaging(span ptrace.Span, data *contracts.RequestData) {
 	attrs := copyAndExtractMessagingAttributes(span.Attributes(), data.Properties)
 
 	// TODO Understand how to map attributes to RequestData fields
-	if attrs.MessagingURL != "" {
-		data.Source = attrs.MessagingURL
-	} else {
-		var sb strings.Builder
-		writeFormattedPeerAddressFromNetworkAttributes(&attrs.NetworkAttributes, &sb)
-		data.Source = sb.String()
-	}
+	var sb strings.Builder
+	writeFormatedFromNetworkServerOrClient(&attrs.NetworkAttributes, attrs.ServerAttributes.ServerAddress, attrs.ServerAttributes.ServerPort, &sb)
+	data.Source = sb.String()
+
 }
 
 // Maps Messaging Producer/Client Span to AppInsights RemoteDependencyData
@@ -568,16 +564,12 @@ func fillRemoteDependencyDataMessaging(span ptrace.Span, data *contracts.RemoteD
 	attrs := copyAndExtractMessagingAttributes(span.Attributes(), data.Properties)
 
 	// TODO Understand how to map attributes to RemoteDependencyData fields
-	data.Data = attrs.MessagingURL
 	data.Type = attrs.MessagingSystem
 
-	if attrs.MessagingURL != "" {
-		data.Target = attrs.MessagingURL
-	} else {
-		var sb strings.Builder
-		writeFormattedPeerAddressFromNetworkAttributes(&attrs.NetworkAttributes, &sb)
-		data.Target = sb.String()
-	}
+	var sb strings.Builder
+	writeFormatedFromNetworkServerOrClient(&attrs.NetworkAttributes, attrs.ClientAttributes.ClientAddress, attrs.ClientAttributes.ClientPort, &sb)
+	data.Target = sb.String()
+
 }
 
 // Copies all attributes to either properties or measurements and passes the key/value to another mapping function
@@ -719,17 +711,18 @@ func getDefaultFormattedSpanStatus(spanStatus ptrace.Status) (statusCodeAsString
 	return strconv.FormatInt(int64(code), 10), code != ptrace.StatusCodeError
 }
 
-func writeFormattedPeerAddressFromNetworkAttributes(networkAttributes *networkAttributes, sb *strings.Builder) {
-	// Favor name over IP for
-	if networkAttributes.NetPeerName != "" {
-		sb.WriteString(networkAttributes.NetPeerName)
-	} else if networkAttributes.NetPeerIP != "" {
-		sb.WriteString(networkAttributes.NetPeerIP)
+func writeFormatedFromNetworkServerOrClient(networkAttributes *networkAttributes, addressName string, addressPort int64, sb *strings.Builder) {
+
+	//server.address or client.address
+	if addressName != "" {
+		sb.WriteString(addressName)
+	} else {
+		sb.WriteString(networkAttributes.NetworkPeerAddress)
 	}
 
-	if networkAttributes.NetPeerPort != 0 {
+	if addressPort != 0 {
 		sb.WriteString(":")
-		sb.WriteString(strconv.FormatInt(networkAttributes.NetPeerPort, 10))
+		sb.WriteString(strconv.FormatInt(addressPort, 10))
 	}
 }
 

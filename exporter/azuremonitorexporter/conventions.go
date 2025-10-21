@@ -121,13 +121,16 @@ func setHeader(headers *map[string][]string, key string, v pcommon.Value) {
 	if *headers == nil {
 		*headers = make(map[string][]string)
 	}
-	if v.Type() == pcommon.ValueTypeSlice {
+	switch v.Type() {
+	case pcommon.ValueTypeSlice:
 		slice := v.Slice()
 		var vals []string
 		for i := 0; i < slice.Len(); i++ {
 			vals = append(vals, slice.At(i).Str())
 		}
 		(*headers)[key] = vals
+	case pcommon.ValueTypeStr:
+		(*headers)[key] = []string{v.Str()}
 	}
 }
 
