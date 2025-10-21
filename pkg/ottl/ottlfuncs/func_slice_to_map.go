@@ -43,7 +43,7 @@ func getSliceToMapFunc[K any](target ottl.PSliceGetter[K], keyPath, valuePath ot
 	}
 }
 
-func sliceToMapFromPcommon(v pcommon.Slice, keyPath, valuePath ottl.Optional[[]string]) (pcommon.Map, error) {
+func sliceToMap(v pcommon.Slice, keyPath, valuePath ottl.Optional[[]string]) (pcommon.Map, error) {
 	m := pcommon.NewMap()
 	m.EnsureCapacity(v.Len())
 
