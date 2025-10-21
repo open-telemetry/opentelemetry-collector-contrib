@@ -12,7 +12,7 @@ resourceMetrics:
                         stringValue: github.com
                     - key: net.peer.name
                       value:
-                        stringValue: 140.82.121.3
+                        stringValue: 127.0.0.1
             name: ping.loss.ratio
             unit: '%'
           - description: Average round-trip time in milliseconds.
@@ -25,7 +25,7 @@ resourceMetrics:
                         stringValue: github.com
                     - key: net.peer.name
                       value:
-                        stringValue: 140.82.121.3
+                        stringValue: 127.0.0.1
             name: ping.rtt.avg
             unit: ms
           - description: Maximum round-trip time in milliseconds.
@@ -35,7 +35,7 @@ resourceMetrics:
                   attributes:
                     - key: net.peer.ip
                       value:
-                        stringValue: github.com
+                        stringValue: docker.internal
                     - key: net.peer.name
                       value:
                         stringValue: 140.82.121.3
@@ -49,7 +49,7 @@ resourceMetrics:
                   attributes:
                     - key: net.peer.ip
                       value:
-                        stringValue: github.com
+                        stringValue: docker.internal
                     - key: net.peer.name
                       value:
                         stringValue: 140.82.121.3

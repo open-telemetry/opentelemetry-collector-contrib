@@ -384,6 +384,8 @@ jobs:
         uses: AndreKurait/docker-cache@0fe76702a40db986d9663c24954fc14c6a6031b7 # 0.6.0
         with:
           key: docker-${{ matrix.group }}
+      - name: Allow unprivileged ICMP
+        run: sudo sysctl -w net.ipv4.ping_group_range="0 2147483647"
       - name: Run Integration Tests
         run: make --no-print-directory -C ${{ matrix.group }} mod-integration-sudo-test
 
