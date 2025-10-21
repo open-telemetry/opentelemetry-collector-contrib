@@ -158,8 +158,12 @@ func (s *splunkScraper) scrapeLicenseUsageByIndex(_ context.Context, now pcommon
 	}
 	i := info[typeCm].Entries[0].Content
 
+	var fields []*field
+
 	sr := searchResponse{
 		search: searchDict[`SplunkLicenseIndexUsageSearch`],
+		count:  100,
+		offset: 0,
 	}
 
 	var (
@@ -192,8 +196,13 @@ func (s *splunkScraper) scrapeLicenseUsageByIndex(_ context.Context, now pcommon
 
 		// if no errors and 200 returned scrape was successful, return. Note we must make sure that
 		// the 200 is coming after the first request which provides a jobId to retrieve results
-		if sr.Return == 200 && sr.Jobid != nil {
+		if (sr.Return == 200 && sr.Jobid != nil) && (sr.count >= sr.TotalCount.Count || sr.offset >= sr.TotalCount.Count) {
+			fields = append(fields, sr.Fields...)
 			break
+		} else if (sr.Return == 200 && sr.Jobid != nil) && sr.offset < sr.TotalCount.Count {
+			// get the next page
+			fields = append(fields, sr.Fields...)
+			sr.offset += sr.count
 		}
 
 		if sr.Return == 204 {
@@ -208,7 +217,7 @@ func (s *splunkScraper) scrapeLicenseUsageByIndex(_ context.Context, now pcommon
 
 	// Record the results
 	var indexName string
-	for _, f := range sr.Fields {
+	for _, f := range fields {
 		switch fieldName := f.FieldName; fieldName {
 		case "indexname":
 			indexName = f.Value
