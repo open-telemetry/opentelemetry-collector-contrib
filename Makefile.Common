@@ -167,7 +167,7 @@ INTEGRATION_TESTS := $(if $(INTEGRATION_TEST_FILES), $(shell cat $(INTEGRATION_T
 .PHONY: mod-integration-test
 mod-integration-test: $(GOTESTSUM)
 	@echo "running $(GOCMD) integration test $(INTEGRATION_TESTS) in `pwd`"
-	@if [ -n "$(INTEGRATION_TESTS)" ]; then \
+	if [ -n "$(INTEGRATION_TESTS)" ]; then \
 		$(GOTESTSUM) $(GOTESTSUM_OPT) --packages="./..." -- -run "$(INTEGRATION_TESTS)" $(GOTEST_OPT_WITH_INTEGRATION); \
 	else \
         echo "No integration tests in `pwd`"; \
