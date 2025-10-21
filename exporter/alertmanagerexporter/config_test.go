@@ -68,9 +68,9 @@ func TestLoadConfig(t *testing.T) {
 				ClientConfig: func() confighttp.ClientConfig {
 					client := confighttp.NewDefaultClientConfig()
 					client.Headers = &configopaque.MapList{
+						{Name: "another", Value: "somevalue"},
 						{Name: "can you have a . here?", Value: "F0000000-0000-0000-0000-000000000000"},
 						{Name: "header1", Value: "234"},
-						{Name: "another", Value: "somevalue"},
 					}
 					client.Endpoint = "a.new.alertmanager.target:9093"
 					client.TLS = configtls.ClientConfig{
