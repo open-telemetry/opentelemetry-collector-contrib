@@ -39,7 +39,7 @@ func getSliceToMapFunc[K any](target ottl.PSliceGetter[K], keyPath, valuePath ot
 			return nil, err
 		}
 
-		return sliceToMapFromPcommon(val, keyPath, valuePath)
+		return sliceToMap(val, keyPath, valuePath)
 	}
 }
 
@@ -50,28 +50,26 @@ func sliceToMapFromPcommon(v pcommon.Slice, keyPath, valuePath ottl.Optional[[]s
 	useKeyPath := !keyPath.IsEmpty()
 	useValuePath := !valuePath.IsEmpty()
 
-	for i := 0; i < v.Len(); i++ {
-		elem := v.At(i)
+	for i, elem := range v.All() {
 
 		// If key_path is not set, key is the index
 		key := strconv.Itoa(i)
 		// If value_path is not set, value is the whole element
 		value := elem
 
-		// If using key_path or value_path, element must be a map
 		if useKeyPath || useValuePath {
 			if elem.Type() != pcommon.ValueTypeMap {
-				return pcommon.Map{}, fmt.Errorf("slice elements must be maps when using `key_path` or 'value_path', but could not cast element '%s' to a map", elem.Str())
+				return pcommon.Map{}, fmt.Errorf("slice elements must be maps when using `key_path` or `value_path`, but could not cast element of type `%s` to a map", elem.Type())
 			}
 		}
 
 		if useKeyPath {
 			extractedKey, err := extractPcommonValue(elem.Map(), keyPath.Get())
 			if err != nil {
-				return pcommon.Map{}, fmt.Errorf("element %d: could not extract key from element: %w", i, err)
+				return pcommon.Map{}, fmt.Errorf("could not extract key from element %d: %w", i, err)
 			}
 			if extractedKey.Type() != pcommon.ValueTypeStr {
-				return pcommon.Map{}, fmt.Errorf("element %d: extracted key attribute is not of type string", i)
+				return pcommon.Map{}, fmt.Errorf("element %d: extracted key attribute is not of type string, got %q", i, extractedKey.Type())
 			}
 			key = extractedKey.Str()
 		}
@@ -116,9 +114,9 @@ func putValue(value pcommon.Value, m pcommon.Map, key string) error {
 	return nil
 }
 
-func extractPcommonValue(m pcommon.Map, path []string) (pcommon.Value, error) {
+func extractValue(m pcommon.Map, path []string) (pcommon.Value, error) {
 	if len(path) == 0 {
-		return pcommon.NewValueEmpty(), errors.New("must provide at least one path item")
+		return pcommon.Value{}, errors.New("must provide at least one path item")
 	}
 
 	val, ok := m.Get(path[0])
