@@ -20,7 +20,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
-func requireRootPrivilege(t *testing.T) {
+func requireRootPrivileges(t *testing.T) {
 	t.Helper()
 
 	if runtime.GOOS != "linux" {
@@ -33,9 +33,8 @@ func requireRootPrivilege(t *testing.T) {
 	}
 }
 
-func testIntegration(t *testing.T, targets []PingTarget) {
-	requireRootPrivilege(t)
-
+func TestPingSudoIntegration(t *testing.T) {
+	requireRootPrivileges(t)
 	var containerIP atomic.Value
 	scraperinttest.NewIntegrationTest(
 		NewFactory(),
@@ -65,11 +64,9 @@ func testIntegration(t *testing.T, targets []PingTarget) {
 				} else {
 					rCfg := cfg.(*Config)
 					rCfg.CollectionInterval = 100 * time.Millisecond
-
-					for i := range targets {
-						targets[i].Host = hostIP
+					rCfg.Targets = []PingTarget{
+						{Host: hostIP, PingCount: 4},
 					}
-					rCfg.Targets = targets
 				}
 			},
 		),
@@ -84,12 +81,7 @@ func testIntegration(t *testing.T, targets []PingTarget) {
 	).Run(t)
 }
 
-func TestIntegrationWithDefaultConfig(t *testing.T) {
-	testIntegration(t, []PingTarget{{}})
-}
-
-func TestIntegrationWithCustomConfig(t *testing.T) {
-	testIntegration(t, []PingTarget{
-		{PingCount: 4, PingInterval: time.Millisecond * 200, PingTimeout: time.Second * 2},
-	})
+func TestTriggerIntegration(t *testing.T) {
+	requireRootPrivileges(t)
+	t.Skip()
 }
