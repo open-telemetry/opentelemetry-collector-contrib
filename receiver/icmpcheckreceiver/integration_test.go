@@ -33,7 +33,7 @@ func requireRootPrivileges(t *testing.T) {
 	}
 }
 
-func TestPingSudoIntegration(t *testing.T) {
+func TestIntegration(t *testing.T) {
 	requireRootPrivileges(t)
 	var containerIP atomic.Value
 	scraperinttest.NewIntegrationTest(
@@ -79,9 +79,4 @@ func TestPingSudoIntegration(t *testing.T) {
 			pmetrictest.IgnoreTimestamp(),
 		),
 	).Run(t)
-}
-
-func TestTriggerIntegration(t *testing.T) {
-	requireRootPrivileges(t)
-	t.Skip()
 }
