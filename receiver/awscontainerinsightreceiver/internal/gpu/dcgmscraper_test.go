@@ -7,6 +7,7 @@ import (
 	"context"
 	"strings"
 	"testing"
+	"time"
 
 	configutil "github.com/prometheus/common/config"
 	"github.com/prometheus/common/model"
@@ -165,7 +166,7 @@ func TestNewDcgmScraperEndToEnd(t *testing.T) {
 		Consumer:          mConsumer,
 		Host:              componenttest.NewNopHost(),
 		HostInfoProvider:  mockHostInfoProvider{},
-		ScraperConfigs:    GetScraperConfig(mockHostInfoProvider{}),
+		ScraperConfigs:    GetScraperConfig(mockHostInfoProvider{}, 30*time.Second),
 		Logger:            settings.Logger,
 	})
 	assert.NoError(t, err)
@@ -243,4 +244,14 @@ func TestNewDcgmScraperEndToEnd(t *testing.T) {
 func TestDcgmScraperJobName(t *testing.T) {
 	// needs to start with containerInsights
 	assert.True(t, strings.HasPrefix(jobName, "containerInsightsDCGMExporterScraper"))
+}
+
+func TestGetScraperConfig(t *testing.T) {
+	hostInfoProvider := mockHostInfoProvider{}
+	customInterval := 30 * time.Second
+	config := GetScraperConfig(hostInfoProvider, customInterval)
+
+	// Verify the custom collection interval is used
+	assert.Equal(t, model.Duration(customInterval), config.ScrapeInterval)
+	assert.Equal(t, model.Duration(customInterval), config.ScrapeTimeout)
 }

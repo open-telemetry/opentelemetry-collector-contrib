@@ -18,7 +18,6 @@ import (
 
 const (
 	caFile                    = "/etc/amazon-cloudwatch-observability-agent-cert/tls-ca.crt"
-	collectionInterval        = 60 * time.Second
 	jobName                   = "containerInsightsDCGMExporterScraper"
 	scraperMetricsPath        = "/metrics"
 	scraperK8sServiceSelector = "k8s-app=dcgm-exporter-service"
@@ -30,7 +29,7 @@ type hostInfoProvider interface {
 	GetInstanceType() string
 }
 
-func GetScraperConfig(hostInfoProvider hostInfoProvider) *config.ScrapeConfig {
+func GetScraperConfig(hostInfoProvider hostInfoProvider, collectionInterval time.Duration) *config.ScrapeConfig {
 	return &config.ScrapeConfig{
 		HTTPClientConfig: configutil.HTTPClientConfig{
 			TLSConfig: configutil.TLSConfig{

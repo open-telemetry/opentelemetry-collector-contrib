@@ -319,7 +319,7 @@ func (acir *awsContainerInsightReceiver) initDcgmScraper(ctx context.Context, ho
 		TelemetrySettings: acir.settings,
 		Consumer:          &decoConsumer,
 		Host:              host,
-		ScraperConfigs:    gpu.GetScraperConfig(hostInfo),
+		ScraperConfigs:    gpu.GetScraperConfig(hostInfo, acir.config.AcceleratedComputeGPUMetricsCollectionInterval),
 		HostInfoProvider:  hostInfo,
 		Logger:            acir.settings.Logger,
 	}

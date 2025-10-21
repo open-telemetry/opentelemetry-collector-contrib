@@ -74,6 +74,9 @@ type Config struct {
 	// EnableAcceleratedComputeMetrics enables features with accelerated compute resources where metrics are scraped from vendor specific sources
 	EnableAcceleratedComputeMetrics bool `mapstructure:"accelerated_compute_metrics"`
 
+	// AcceleratedComputeGPUMetricsCollectionInterval is the interval at which gpu metrics should be collected. The default is 60 second.
+	AcceleratedComputeGPUMetricsCollectionInterval time.Duration `mapstructure:"accelerated_compute_gpu_metrics_collection_interval"`
+
 	// KubeConfigPath is an optional attribute to override the default kube config path in an EC2 environment
 	KubeConfigPath string `mapstructure:"kube_config_path"`
 
