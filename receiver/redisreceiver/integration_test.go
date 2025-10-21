@@ -123,6 +123,13 @@ func TestIntegrationV8Sentinel(t *testing.T) {
 			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
 				rCfg.Endpoint = fmt.Sprintf("%s:%s", ci.Host(t), ci.MappedPort(t, sentinelPort))
+				rCfg.MetricsBuilderConfig.Metrics.RedisMode.Enabled = true
+				rCfg.MetricsBuilderConfig.Metrics.RedisSentinelMasters.Enabled = true
+				rCfg.MetricsBuilderConfig.Metrics.RedisSentinelRunningScripts.Enabled = true
+				rCfg.MetricsBuilderConfig.Metrics.RedisSentinelScriptsQueueLength.Enabled = true
+				rCfg.MetricsBuilderConfig.Metrics.RedisSentinelSimulateFailureFlags.Enabled = true
+				rCfg.MetricsBuilderConfig.Metrics.RedisSentinelTiltSinceSeconds.Enabled = true
+				rCfg.MetricsBuilderConfig.Metrics.RedisSentinelTotalTilt.Enabled = true
 			}),
 		scraperinttest.WithCompareOptions(
 			pmetrictest.IgnoreMetricValues(),
