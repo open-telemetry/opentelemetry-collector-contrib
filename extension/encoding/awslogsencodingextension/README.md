@@ -480,4 +480,4 @@ The following fields are common across all log types:
 | `event.http.url`               | `url.path`                         |
 | `event.http.http_user_agent`   | `user_agent.original`              |
 | `event.http.http_content_type` | `http.request.header.content-type` |
-| `event.http.cookie`            | `aws.networkfirewall.http.cookie`  |
+| `event.http.cookie`            | `http.request.header.cookie`       |

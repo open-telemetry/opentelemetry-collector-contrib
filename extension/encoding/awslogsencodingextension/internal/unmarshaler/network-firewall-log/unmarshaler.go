@@ -347,7 +347,7 @@ func (*networkFirewallLogUnmarshaler) addNetworkFirewallLog(log networkFirewallL
 		putStr("http.request.header.content-type", log.Event.HTTP.HTTPContentType)
 	}
 	if log.Event.HTTP.Cookie != "" {
-		putStr("aws.networkfirewall.http.cookie", log.Event.HTTP.Cookie)
+		putStr("http.request.header.cookie", log.Event.HTTP.Cookie)
 	}
 
 	return nil
