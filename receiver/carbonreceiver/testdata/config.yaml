@@ -9,7 +9,7 @@ carbon/receiver_settings:
   # new data. This value is ignored is the transport is not "tcp". The default
   # value is 30 seconds.
   tcp_idle_timeout: 5s
-  # parser section is used to to configure the actual parser to handle the
+  # parser section is used to configure the actual parser to handle the
   # received data. The default is "plaintext", see
   # https://graphite.readthedocs.io/en/latest/feeding-carbon.html#the-plaintext-protocol.
   parser:

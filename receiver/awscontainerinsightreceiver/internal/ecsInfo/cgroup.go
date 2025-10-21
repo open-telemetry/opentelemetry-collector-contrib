@@ -222,7 +222,7 @@ func getCGroupMountPoint(mountConfigPath string) (string, error) {
 			return "", fmt.Errorf("Found no fields post '-' in %q", text)
 		}
 		if postSeparatorFields[0] == "cgroup" {
-			// check that the mount is properly formated.
+			// check that the mount is properly formatted.
 			if numPostFields < 3 {
 				return "", fmt.Errorf("Error found less than 3 fields post '-' in %q", text)
 			}

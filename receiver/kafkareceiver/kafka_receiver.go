@@ -53,7 +53,7 @@ type messageHandler[T plog.Logs | pmetric.Metrics | ptrace.Traces | pprofile.Pro
 
 	// startObsReport starts an observation report for the unmarshaled data.
 	//
-	// This simply calls the the signal-specific receiverhelper.ObsReport.Start*Op method.
+	// This simply calls the signal-specific receiverhelper.ObsReport.Start*Op method.
 	startObsReport(ctx context.Context) context.Context
 
 	// endObsReport ends the observation report for the unmarshaled data.

@@ -30,13 +30,13 @@ func TestCreateDefaultConfig(t *testing.T) {
 	config, ok := cfg.(*Config)
 	require.True(t, ok)
 	assert.Empty(t, config.Targets)
+	assert.Equal(t, metadata.DefaultMetricsBuilderConfig(), config.MetricsBuilderConfig)
 }
 
 func TestCreateMetricsReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	// Add a device to make config valid
 	config := cfg.(*Config)
 	config.Targets = []PingTarget{
 		{Host: "example.com", PingCount: 5, PingTimeout: 1 * time.Second, PingInterval: 10 * time.Second},
@@ -45,10 +45,20 @@ func TestCreateMetricsReceiver(t *testing.T) {
 	set := receivertest.NewNopSettings(metadata.Type)
 	consumer := consumertest.NewNop()
 
-	// For skeleton, we expect a no-op receiver and no error
 	receiver, err := factory.CreateMetrics(t.Context(), set, cfg, consumer)
 	assert.NotNil(t, receiver)
 	assert.NoError(t, err)
+}
+
+func TestCreateMetricReturnsErrorOnInvalidConfig(t *testing.T) {
+	factory := NewFactory()
+
+	_, err := factory.CreateMetrics(
+		t.Context(),
+		receivertest.NewNopSettings(metadata.Type),
+		&struct{}{},
+		consumertest.NewNop())
+	assert.Error(t, err)
 }
 
 func TestFactoryCanBeUsed(t *testing.T) {

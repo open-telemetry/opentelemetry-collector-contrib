@@ -19,28 +19,10 @@ tests:
 
 telemetry:
   metrics:
-    solacereceiver_failed_reconnections:
+    solacereceiver_dropped_egress_spans:
       enabled: true
       unit: "1"
-      description: Number of failed broker reconnections
-      stability:
-        level: development
-      sum:
-        value_type: int
-        monotonic: true
-    solacereceiver_recoverable_unmarshalling_errors:
-      enabled: true
-      unit: "1"
-      description: Number of recoverable message unmarshalling errors
-      stability:
-        level: development
-      sum:
-        value_type: int
-        monotonic: true
-    solacereceiver_fatal_unmarshalling_errors:
-      enabled: true
-      unit: "1"
-      description: Number of fatal message unmarshalling errors
+      description: Number of dropped egress spans
       stability:
         level: development
       sum:
@@ -55,6 +37,32 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
+    solacereceiver_failed_reconnections:
+      enabled: true
+      unit: "1"
+      description: Number of failed broker reconnections
+      stability:
+        level: development
+      sum:
+        value_type: int
+        monotonic: true
+    solacereceiver_fatal_unmarshalling_errors:
+      enabled: true
+      unit: "1"
+      description: Number of fatal message unmarshalling errors
+      stability:
+        level: development
+      sum:
+        value_type: int
+        monotonic: true
+    solacereceiver_need_upgrade:
+      enabled: true
+      unit: "1"
+      description: Indicates with value 1 that receiver requires an upgrade and is not compatible with messages received from a broker
+      stability:
+        level: development
+      gauge:
+        value_type: int
     solacereceiver_received_span_messages:
       enabled: true
       unit: "1"
@@ -64,27 +72,10 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
-    solacereceiver_reported_spans:
+    solacereceiver_receiver_flow_control_recent_retries:
       enabled: true
       unit: "1"
-      description: Number of reported spans
-      stability:
-        level: development
-      sum:
-        value_type: int
-        monotonic: true
-    solacereceiver_receiver_status:
-      enabled: true
-      unit: "1"
-      description: Indicates the status of the receiver as an enum. 0 = starting, 1 = connecting, 2 = connected, 3 = disabled (often paired with needs_upgrade), 4 = terminating, 5 = terminated
-      stability:
-        level: development
-      gauge:
-        value_type: int
-    solacereceiver_need_upgrade:
-      enabled: true
-      unit: "1"
-      description: Indicates with value 1 that receiver requires an upgrade and is not compatible with messages received from a broker
+      description: Most recent/current retry count when flow controlled
       stability:
         level: development
       gauge:
@@ -93,14 +84,6 @@ telemetry:
       enabled: true
       unit: "1"
       description: Indicates the flow control status of the receiver. 0 = not flow controlled, 1 = currently flow controlled
-      stability:
-        level: development
-      gauge:
-        value_type: int
-    solacereceiver_receiver_flow_control_recent_retries:
-      enabled: true
-      unit: "1"
-      description: Most recent/current retry count when flow controlled
       stability:
         level: development
       gauge:
@@ -123,10 +106,27 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
-    solacereceiver_dropped_egress_spans:
+    solacereceiver_receiver_status:
       enabled: true
       unit: "1"
-      description: Number of dropped egress spans
+      description: Indicates the status of the receiver as an enum. 0 = starting, 1 = connecting, 2 = connected, 3 = disabled (often paired with needs_upgrade), 4 = terminating, 5 = terminated
+      stability:
+        level: development
+      gauge:
+        value_type: int
+    solacereceiver_recoverable_unmarshalling_errors:
+      enabled: true
+      unit: "1"
+      description: Number of recoverable message unmarshalling errors
+      stability:
+        level: development
+      sum:
+        value_type: int
+        monotonic: true
+    solacereceiver_reported_spans:
+      enabled: true
+      unit: "1"
+      description: Number of reported spans
       stability:
         level: development
       sum:

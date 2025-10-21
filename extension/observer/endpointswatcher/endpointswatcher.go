@@ -134,7 +134,7 @@ func (ew *EndpointsWatcher) updateEndpoints(notify observer.Notify, endpoints []
 	var ok bool
 	if storedEndpoints, ok = le.(map[observer.EndpointID]observer.Endpoint); !ok {
 		ew.logger.Warn("failed to load Endpoint store from EndpointsWatcher", zap.Any("endpoints", le))
-		return
+		return removed, added, changed
 	}
 	// copy to not modify sync.Map value directly (will be reloaded)
 	existingEndpoints := map[observer.EndpointID]observer.Endpoint{}
@@ -165,7 +165,7 @@ func (ew *EndpointsWatcher) updateEndpoints(notify observer.Notify, endpoints []
 	}
 
 	ew.existingEndpoints.Store(notifyID, existingEndpoints)
-	return
+	return removed, added, changed
 }
 
 // StopListAndWatch polling the ListEndpoints.

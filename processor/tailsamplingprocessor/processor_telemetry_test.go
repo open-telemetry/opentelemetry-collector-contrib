@@ -29,8 +29,7 @@ import (
 func TestMetricsAfterOneEvaluation(t *testing.T) {
 	// prepare
 	s := setupTestTelemetry()
-	b := newSyncIDBatcher()
-	syncBatcher := b.(*syncIDBatcher)
+	controller := newTestTSPController()
 
 	cfg := Config{
 		DecisionWait: 1,
@@ -44,7 +43,7 @@ func TestMetricsAfterOneEvaluation(t *testing.T) {
 			},
 		},
 		Options: []Option{
-			withDecisionBatcher(syncBatcher),
+			withTestController(controller),
 		},
 	}
 	cs := &consumertest.TracesSink{}
@@ -63,9 +62,8 @@ func TestMetricsAfterOneEvaluation(t *testing.T) {
 	err = proc.ConsumeTraces(t.Context(), simpleTraces())
 	require.NoError(t, err)
 
-	tsp := proc.(*tailSamplingSpanProcessor)
-	tsp.policyTicker.OnTick() // the first tick always gets an empty batch
-	tsp.policyTicker.OnTick()
+	controller.waitForTick() // the first tick always gets an empty batch
+	controller.waitForTick()
 
 	// verify
 	var md metricdata.ResourceMetrics
@@ -227,8 +225,7 @@ func TestMetricsAfterOneEvaluation(t *testing.T) {
 func TestMetricsWithComponentID(t *testing.T) {
 	// prepare
 	s := setupTestTelemetry()
-	b := newSyncIDBatcher()
-	syncBatcher := b.(*syncIDBatcher)
+	controller := newTestTSPController()
 
 	cfg := Config{
 		DecisionWait: 1,
@@ -242,7 +239,7 @@ func TestMetricsWithComponentID(t *testing.T) {
 			},
 		},
 		Options: []Option{
-			withDecisionBatcher(syncBatcher),
+			withTestController(controller),
 		},
 	}
 	cs := &consumertest.TracesSink{}
@@ -262,9 +259,8 @@ func TestMetricsWithComponentID(t *testing.T) {
 	err = proc.ConsumeTraces(t.Context(), simpleTraces())
 	require.NoError(t, err)
 
-	tsp := proc.(*tailSamplingSpanProcessor)
-	tsp.policyTicker.OnTick() // the first tick always gets an empty batch
-	tsp.policyTicker.OnTick()
+	controller.waitForTick() // the first tick always gets an empty batch
+	controller.waitForTick()
 
 	// verify
 	var md metricdata.ResourceMetrics
@@ -562,15 +558,14 @@ func TestMetricsCountSampled(t *testing.T) {
 		t.Run(tt.desc, func(t *testing.T) {
 			// prepare
 			s := setupTestTelemetry()
-			b := newSyncIDBatcher()
-			syncBatcher := b.(*syncIDBatcher)
+			controller := newTestTSPController()
 
 			cfg := Config{
 				DecisionWait: 1,
 				NumTraces:    100,
 				PolicyCfgs:   tt.policyCfgs,
 				Options: []Option{
-					withDecisionBatcher(syncBatcher),
+					withTestController(controller),
 				},
 			}
 			cs := &consumertest.TracesSink{}
@@ -589,9 +584,8 @@ func TestMetricsCountSampled(t *testing.T) {
 			err = proc.ConsumeTraces(t.Context(), simpleTraces())
 			require.NoError(t, err)
 
-			tsp := proc.(*tailSamplingSpanProcessor)
-			tsp.policyTicker.OnTick() // the first tick always gets an empty batch
-			tsp.policyTicker.OnTick()
+			controller.waitForTick() // the first tick always gets an empty batch
+			controller.waitForTick()
 
 			// verify
 			var md metricdata.ResourceMetrics
@@ -611,8 +605,7 @@ func TestMetricsCountSampled(t *testing.T) {
 func TestProcessorTailSamplingSamplingTraceRemovalAge(t *testing.T) {
 	// prepare
 	s := setupTestTelemetry()
-	b := newSyncIDBatcher()
-	syncBatcher := b.(*syncIDBatcher)
+	controller := newTestTSPController()
 
 	cfg := Config{
 		DecisionWait: 1,
@@ -626,7 +619,7 @@ func TestProcessorTailSamplingSamplingTraceRemovalAge(t *testing.T) {
 			},
 		},
 		Options: []Option{
-			withDecisionBatcher(syncBatcher),
+			withTestController(controller),
 		},
 	}
 	cs := &consumertest.TracesSink{}
@@ -648,9 +641,8 @@ func TestProcessorTailSamplingSamplingTraceRemovalAge(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	tsp := proc.(*tailSamplingSpanProcessor)
-	tsp.policyTicker.OnTick() // the first tick always gets an empty batch
-	tsp.policyTicker.OnTick()
+	controller.waitForTick() // the first tick always gets an empty batch
+	controller.waitForTick()
 
 	// verify
 	var md metricdata.ResourceMetrics
@@ -672,8 +664,7 @@ func TestProcessorTailSamplingSamplingTraceRemovalAge(t *testing.T) {
 func TestProcessorTailSamplingSamplingLateSpanAge(t *testing.T) {
 	// prepare
 	s := setupTestTelemetry()
-	b := newSyncIDBatcher()
-	syncBatcher := b.(*syncIDBatcher)
+	controller := newTestTSPController()
 
 	cfg := Config{
 		DecisionWait: 1,
@@ -690,7 +681,7 @@ func TestProcessorTailSamplingSamplingLateSpanAge(t *testing.T) {
 			},
 		},
 		Options: []Option{
-			withDecisionBatcher(syncBatcher),
+			withTestController(controller),
 		},
 	}
 	cs := &consumertest.TracesSink{}
@@ -712,9 +703,8 @@ func TestProcessorTailSamplingSamplingLateSpanAge(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	tsp := proc.(*tailSamplingSpanProcessor)
-	tsp.policyTicker.OnTick() // the first tick always gets an empty batch
-	tsp.policyTicker.OnTick()
+	controller.waitForTick() // the first tick always gets an empty batch
+	controller.waitForTick()
 
 	for _, traceID := range traceIDs {
 		lateSpan := ptrace.NewTraces()
@@ -755,8 +745,7 @@ func TestProcessorTailSamplingSamplingLateSpanAge(t *testing.T) {
 func TestProcessorTailSamplingSamplingTraceDroppedTooEarly(t *testing.T) {
 	// prepare
 	s := setupTestTelemetry()
-	b := newSyncIDBatcher()
-	syncBatcher := b.(*syncIDBatcher)
+	controller := newTestTSPController()
 
 	cfg := Config{
 		DecisionWait: 1,
@@ -770,7 +759,7 @@ func TestProcessorTailSamplingSamplingTraceDroppedTooEarly(t *testing.T) {
 			},
 		},
 		Options: []Option{
-			withDecisionBatcher(syncBatcher),
+			withTestController(controller),
 		},
 	}
 	cs := &consumertest.TracesSink{}
@@ -792,9 +781,8 @@ func TestProcessorTailSamplingSamplingTraceDroppedTooEarly(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	tsp := proc.(*tailSamplingSpanProcessor)
-	tsp.policyTicker.OnTick() // the first tick always gets an empty batch
-	tsp.policyTicker.OnTick()
+	controller.waitForTick() // the first tick always gets an empty batch
+	controller.waitForTick()
 
 	// verify
 	var md metricdata.ResourceMetrics
@@ -822,8 +810,7 @@ func TestProcessorTailSamplingSamplingTraceDroppedTooEarly(t *testing.T) {
 func TestProcessorTailSamplingSamplingPolicyEvaluationError(t *testing.T) {
 	// prepare
 	s := setupTestTelemetry()
-	b := newSyncIDBatcher()
-	syncBatcher := b.(*syncIDBatcher)
+	controller := newTestTSPController()
 
 	cfg := Config{
 		DecisionWait: 1,
@@ -841,7 +828,7 @@ func TestProcessorTailSamplingSamplingPolicyEvaluationError(t *testing.T) {
 			},
 		},
 		Options: []Option{
-			withDecisionBatcher(syncBatcher),
+			withTestController(controller),
 		},
 	}
 	cs := &consumertest.TracesSink{}
@@ -863,9 +850,8 @@ func TestProcessorTailSamplingSamplingPolicyEvaluationError(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	tsp := proc.(*tailSamplingSpanProcessor)
-	tsp.policyTicker.OnTick() // the first tick always gets an empty batch
-	tsp.policyTicker.OnTick()
+	controller.waitForTick() // the first tick always gets an empty batch
+	controller.waitForTick()
 
 	// verify
 	var md metricdata.ResourceMetrics
@@ -893,8 +879,7 @@ func TestProcessorTailSamplingSamplingPolicyEvaluationError(t *testing.T) {
 func TestProcessorTailSamplingEarlyReleasesFromCacheDecision(t *testing.T) {
 	// prepare
 	s := setupTestTelemetry()
-	b := newSyncIDBatcher()
-	syncBatcher := b.(*syncIDBatcher)
+	controller := newTestTSPController()
 
 	// Use this instead of the default no-op cache
 	c, err := cache.NewLRUDecisionCache[bool](200)
@@ -912,7 +897,7 @@ func TestProcessorTailSamplingEarlyReleasesFromCacheDecision(t *testing.T) {
 			},
 		},
 		Options: []Option{
-			withDecisionBatcher(syncBatcher),
+			withTestController(controller),
 			WithSampledDecisionCache(c),
 		},
 	}
@@ -932,13 +917,12 @@ func TestProcessorTailSamplingEarlyReleasesFromCacheDecision(t *testing.T) {
 	err = proc.ConsumeTraces(t.Context(), simpleTraces())
 	require.NoError(t, err)
 
-	tsp := proc.(*tailSamplingSpanProcessor)
-	tsp.policyTicker.OnTick() // the first tick always gets an empty batch
-	tsp.policyTicker.OnTick() // ensure a sampling decision was made and cached
+	controller.waitForTick() // the first tick always gets an empty batch
+	controller.waitForTick() // ensure a sampling decision was made and cached
 
 	err = proc.ConsumeTraces(t.Context(), simpleTraces())
 	require.NoError(t, err)
-	tsp.policyTicker.OnTick()
+	controller.waitForTick()
 
 	// verify
 	var md metricdata.ResourceMetrics

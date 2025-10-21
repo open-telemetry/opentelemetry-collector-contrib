@@ -134,7 +134,7 @@ func (s *azureScraper) start(_ context.Context, host component.Host) (err error)
 	s.subscriptions = map[string]*azureSubscription{}
 	s.resources = map[string]map[string]*azureResource{}
 
-	return
+	return err
 }
 
 func (s *azureScraper) loadSubscription(sub azureSubscription) {

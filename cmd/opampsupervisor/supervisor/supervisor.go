@@ -1400,7 +1400,7 @@ func (s *Supervisor) setupOwnTelemetry(_ context.Context, settings *protobufs.Co
 		err := s.ownTelemetryTemplate.Execute(&cfg, data)
 		if err != nil {
 			s.telemetrySettings.Logger.Error("Could not setup own telemetry", zap.Error(err))
-			return
+			return configChanged
 		}
 	}
 	s.agentConfigOwnTelemetrySection.Store(cfg.String())
@@ -1409,7 +1409,7 @@ func (s *Supervisor) setupOwnTelemetry(_ context.Context, settings *protobufs.Co
 	configChanged, err := s.composeMergedConfig(s.remoteConfig)
 	if err != nil {
 		s.telemetrySettings.Logger.Error("Error composing merged config for own metrics. Ignoring agent self metrics config", zap.Error(err))
-		return
+		return configChanged
 	}
 
 	return configChanged

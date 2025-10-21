@@ -2,7 +2,7 @@ azuremonitor:
 azuremonitor/2:
   # endpoint is the uri used to communicate with Azure Monitor
   endpoint: "https://dc.services.visualstudio.com/v2/track"
-  # instrumentation_key is the unique identifer for your Application Insights resource
+  # instrumentation_key is the unique identifier for your Application Insights resource
   instrumentation_key: 00000000-0000-0000-0000-000000000000
   # connection string specifies Application Insights InstrumentationKey and IngestionEndpoint
   connection_string: InstrumentationKey=00000000-0000-0000-0000-000000000000;IngestionEndpoint=https://ingestion.azuremonitor.com/

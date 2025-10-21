@@ -166,7 +166,7 @@ func convertEvents(events ptrace.SpanEventSlice) (times []time.Time, names []str
 		attrs = append(attrs, internal.AttributesToMap(event.Attributes()))
 	}
 
-	return
+	return times, names, attrs
 }
 
 func convertLinks(links ptrace.SpanLinkSlice) (traceIDs, spanIDs, states []string, attrs []column.IterableOrderedMap) {
@@ -178,7 +178,7 @@ func convertLinks(links ptrace.SpanLinkSlice) (traceIDs, spanIDs, states []strin
 		attrs = append(attrs, internal.AttributesToMap(link.Attributes()))
 	}
 
-	return
+	return traceIDs, spanIDs, states, attrs
 }
 
 func renderInsertTracesSQL(cfg *Config) string {

@@ -8,6 +8,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"slices"
 
 	"github.com/opensearch-project/opensearch-go/v4/opensearchapi"
 	"github.com/opensearch-project/opensearch-go/v4/opensearchutil"
@@ -126,12 +127,7 @@ func attributesToMapString(attributes pcommon.Map) map[string]string {
 
 func shouldRetryEvent(status int) bool {
 	retryOnStatus := []int{500, 502, 503, 504, 429}
-	for _, retryable := range retryOnStatus {
-		if status == retryable {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(retryOnStatus, status)
 }
 
 func (tbi *traceBulkIndexer) newBulkIndexerItem(document []byte) opensearchutil.BulkIndexerItem {

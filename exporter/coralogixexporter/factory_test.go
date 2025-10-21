@@ -91,10 +91,12 @@ func TestCreateTraces(t *testing.T) {
 		{
 			name: "UseSecure",
 			config: &Config{
-				Traces: configgrpc.ClientConfig{
-					Endpoint: endpoint,
-					TLS: configtls.ClientConfig{
-						Insecure: false,
+				Traces: TransportConfig{
+					ClientConfig: configgrpc.ClientConfig{
+						Endpoint: endpoint,
+						TLS: configtls.ClientConfig{
+							Insecure: false,
+						},
 					},
 				},
 			},
@@ -102,60 +104,72 @@ func TestCreateTraces(t *testing.T) {
 		{
 			name: "Keepalive",
 			config: &Config{
-				Traces: configgrpc.ClientConfig{
-					Endpoint: endpoint,
-					Keepalive: configoptional.Some(configgrpc.KeepaliveClientConfig{
-						Time:                30 * time.Second,
-						Timeout:             25 * time.Second,
-						PermitWithoutStream: true,
-					}),
+				Traces: TransportConfig{
+					ClientConfig: configgrpc.ClientConfig{
+						Endpoint: endpoint,
+						Keepalive: configoptional.Some(configgrpc.KeepaliveClientConfig{
+							Time:                30 * time.Second,
+							Timeout:             25 * time.Second,
+							PermitWithoutStream: true,
+						}),
+					},
 				},
 			},
 		},
 		{
 			name: "NoneCompression",
 			config: &Config{
-				Traces: configgrpc.ClientConfig{
-					Endpoint:    endpoint,
-					Compression: "none",
+				Traces: TransportConfig{
+					ClientConfig: configgrpc.ClientConfig{
+						Endpoint:    endpoint,
+						Compression: "none",
+					},
 				},
 			},
 		},
 		{
 			name: "GzipCompression",
 			config: &Config{
-				Traces: configgrpc.ClientConfig{
-					Endpoint:    endpoint,
-					Compression: configcompression.TypeGzip,
+				Traces: TransportConfig{
+					ClientConfig: configgrpc.ClientConfig{
+						Endpoint:    endpoint,
+						Compression: configcompression.TypeGzip,
+					},
 				},
 			},
 		},
 		{
 			name: "SnappyCompression",
 			config: &Config{
-				Traces: configgrpc.ClientConfig{
-					Endpoint:    endpoint,
-					Compression: configcompression.TypeSnappy,
+				Traces: TransportConfig{
+					ClientConfig: configgrpc.ClientConfig{
+						Endpoint:    endpoint,
+						Compression: configcompression.TypeSnappy,
+					},
 				},
 			},
 		},
 		{
 			name: "ZstdCompression",
 			config: &Config{
-				Traces: configgrpc.ClientConfig{
-					Endpoint:    endpoint,
-					Compression: configcompression.TypeZstd,
+				Traces: TransportConfig{
+					ClientConfig: configgrpc.ClientConfig{
+						Endpoint:    endpoint,
+						Compression: configcompression.TypeZstd,
+					},
 				},
 			},
 		},
 		{
 			name: "Headers",
 			config: &Config{
-				Traces: configgrpc.ClientConfig{
-					Endpoint: endpoint,
-					Headers: map[string]configopaque.String{
-						"hdr1": "val1",
-						"hdr2": "val2",
+				Traces: TransportConfig{
+					ClientConfig: configgrpc.ClientConfig{
+						Endpoint: endpoint,
+						Headers: map[string]configopaque.String{
+							"hdr1": "val1",
+							"hdr2": "val2",
+						},
 					},
 				},
 			},
@@ -163,19 +177,23 @@ func TestCreateTraces(t *testing.T) {
 		{
 			name: "NumConsumers",
 			config: &Config{
-				Traces: configgrpc.ClientConfig{
-					Endpoint: endpoint,
+				Traces: TransportConfig{
+					ClientConfig: configgrpc.ClientConfig{
+						Endpoint: endpoint,
+					},
 				},
 			},
 		},
 		{
 			name: "CertPemFileError",
 			config: &Config{
-				Traces: configgrpc.ClientConfig{
-					Endpoint: endpoint,
-					TLS: configtls.ClientConfig{
-						Config: configtls.Config{
-							CAFile: "nosuchfile",
+				Traces: TransportConfig{
+					ClientConfig: configgrpc.ClientConfig{
+						Endpoint: endpoint,
+						TLS: configtls.ClientConfig{
+							Config: configtls.Config{
+								CAFile: "nosuchfile",
+							},
 						},
 					},
 				},
@@ -186,9 +204,11 @@ func TestCreateTraces(t *testing.T) {
 			name: "UseDomain",
 			config: &Config{
 				Domain: "localhost",
-				DomainSettings: configgrpc.ClientConfig{
-					TLS: configtls.ClientConfig{
-						Insecure: false,
+				DomainSettings: TransportConfig{
+					ClientConfig: configgrpc.ClientConfig{
+						TLS: configtls.ClientConfig{
+							Insecure: false,
+						},
 					},
 				},
 			},

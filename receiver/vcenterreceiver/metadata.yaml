@@ -11,103 +11,63 @@ status:
     seeking_new: true
 
 resource_attributes:
-  vcenter.datacenter.name:
-    description: The name of the vCenter datacenter.
-    enabled: true
-    type: string
   vcenter.cluster.name:
     description: The name of the vCenter cluster.
     enabled: true
     type: string
-  vcenter.host.name:
-    description: The hostname of the vCenter ESXi host.
-    enabled: true
-    type: string
-  vcenter.resource_pool.name:
-    description: The name of the resource pool.
-    enabled: true
-    type: string
-  vcenter.resource_pool.inventory_path:
-    description: The inventory path of the resource pool.
-    enabled: true
-    type: string
-  vcenter.virtual_app.name:
-    description: The name of the vApp.
-    enabled: true
-    type: string
-  vcenter.virtual_app.inventory_path:
-    description: The inventory path of the vApp.
+  vcenter.datacenter.name:
+    description: The name of the vCenter datacenter.
     enabled: true
     type: string
   vcenter.datastore.name:
     description: The name of the vCenter datastore.
     enabled: true
     type: string
-  vcenter.vm.name:
-    description: The name of the virtual machine.
+  vcenter.host.name:
+    description: The hostname of the vCenter ESXi host.
+    enabled: true
+    type: string
+  vcenter.resource_pool.inventory_path:
+    description: The inventory path of the resource pool.
+    enabled: true
+    type: string
+  vcenter.resource_pool.name:
+    description: The name of the resource pool.
+    enabled: true
+    type: string
+  vcenter.virtual_app.inventory_path:
+    description: The inventory path of the vApp.
+    enabled: true
+    type: string
+  vcenter.virtual_app.name:
+    description: The name of the vApp.
     enabled: true
     type: string
   vcenter.vm.id:
     description: The instance UUID of the virtual machine.
     enabled: true
     type: string
-  vcenter.vm_template.name:
-    description: The name of the virtual machine template.
+  vcenter.vm.name:
+    description: The name of the virtual machine.
     enabled: true
     type: string
   vcenter.vm_template.id:
     description: The instance UUID of the virtual machine template.
     enabled: true
     type: string
+  vcenter.vm_template.name:
+    description: The name of the virtual machine template.
+    enabled: true
+    type: string
 
 attributes:
-  disk_state:
-    description: The state of storage and whether it is already allocated or free.
-    type: string
-    enum:
-      - available
-      - used
-  disk_type:
-    description: The type of storage device that is being recorded.
-    type: string
-    enum:
-      - virtual
-      - physical
-  memory_usage_type:
-    name_override: type
-    description: The type of memory usage.
-    type: string
-    enum:
-      - guest
-      - host
-      - overhead
-  memory_granted_type:
-    name_override: type
-    description: The type of memory granted.
-    type: string
-    enum:
-      - private
-      - shared
   cpu_reservation_type:
     type: string
     enum:
       - total
       - used
     description: The type of CPU reservation for the host.
-  host_effective:
-    type: bool
-    name_override: effective
-    description: Whether the host is effective in the vCenter cluster.
-  host_power_state:
-    name_override: power_state
-    description: The current power state of the host.
-    type: string
-    enum:
-      - "on"
-      - "off"
-      - "standby"
-      - "unknown"
-  cpu_state: 
+  cpu_state:
     description: CPU time spent in idle, ready or idle state.
     type: string
     enum:
@@ -121,6 +81,59 @@ attributes:
     enum:
       - read
       - write
+  disk_state:
+    description: The state of storage and whether it is already allocated or free.
+    type: string
+    enum:
+      - available
+      - used
+  disk_type:
+    description: The type of storage device that is being recorded.
+    type: string
+    enum:
+      - virtual
+      - physical
+  entity_status:
+    name_override: status
+    description: The current status of the managed entity.
+    type: string
+    enum:
+      - "red"
+      - "yellow"
+      - "green"
+      - "gray"
+  host_effective:
+    type: bool
+    name_override: effective
+    description: Whether the host is effective in the vCenter cluster.
+  host_power_state:
+    name_override: power_state
+    description: The current power state of the host.
+    type: string
+    enum:
+      - "on"
+      - "off"
+      - "standby"
+      - "unknown"
+  memory_granted_type:
+    name_override: type
+    description: The type of memory granted.
+    type: string
+    enum:
+      - private
+      - shared
+  memory_usage_type:
+    name_override: type
+    description: The type of memory usage.
+    type: string
+    enum:
+      - guest
+      - host
+      - overhead
+  object_name:
+    name_override: object
+    description: The object on the virtual machine or host that is being reported on.
+    type: string
   throughput_direction:
     name_override: direction
     description: The direction of network throughput.
@@ -137,26 +150,6 @@ attributes:
       - "off"
       - "suspended"
       - "unknown"
-  entity_status:
-    name_override: status
-    description: The current status of the managed entity.
-    type: string
-    enum:
-      - "red"
-      - "yellow"
-      - "green"
-      - "gray"
-  object_name:
-    name_override: object
-    description: The object on the virtual machine or host that is being reported on.
-    type: string
-  vsan_throughput_direction:
-    name_override: direction
-    description: The type of vSAN throughput.
-    type: string
-    enum:
-      - read
-      - write
   vsan_latency_type:
     name_override: type
     description: The type of vSAN latency.
@@ -173,65 +166,19 @@ attributes:
       - write
       - unmap
 
+  vsan_throughput_direction:
+    name_override: direction
+    description: The type of vSAN throughput.
+    type: string
+    enum:
+      - read
+      - write
+
 metrics:
-  vcenter.datacenter.cluster.count:
+  vcenter.cluster.cpu.effective:
     enabled: true
-    description: The number of clusters in the datacenter.
-    unit: "{clusters}"
-    sum:
-      monotonic: false
-      value_type: int
-      aggregation_temporality: cumulative
-    attributes: [entity_status]
-  vcenter.datacenter.host.count:
-    enabled: true
-    description: The number of hosts in the datacenter.
-    unit: "{hosts}"
-    sum:
-      monotonic: false
-      value_type: int
-      aggregation_temporality: cumulative
-    attributes: [entity_status, host_power_state]
-  vcenter.datacenter.vm.count:
-    enabled: true
-    description: The number of VM's in the datacenter.
-    unit: "{virtual_machines}"
-    sum:
-      monotonic: false
-      value_type: int
-      aggregation_temporality: cumulative
-    attributes: [entity_status, vm_count_power_state]
-  vcenter.datacenter.datastore.count:
-    enabled: true
-    description: The number of datastores in the datacenter.
-    unit: "{datastores}"
-    sum:
-      monotonic: false
-      value_type: int
-      aggregation_temporality: cumulative
-    attributes: []
-  vcenter.datacenter.disk.space:
-    enabled: true
-    description: The amount of available and used disk space in the datacenter.
-    unit: "By"
-    sum:
-      monotonic: false
-      value_type: int
-      aggregation_temporality: cumulative
-    attributes: [disk_state]
-  vcenter.datacenter.cpu.limit:
-    enabled: true
-    description: The total amount of CPU available to the datacenter.
+    description: The effective CPU available to the cluster. This value excludes CPU from hosts in maintenance mode or are unresponsive.
     unit: "MHz"
-    sum:
-      monotonic: false
-      value_type: int
-      aggregation_temporality: cumulative
-    attributes: []
-  vcenter.datacenter.memory.limit:
-    enabled: true
-    description: The total amount of memory available to the datacenter.
-    unit: "By"
     sum:
       monotonic: false
       value_type: int
@@ -246,24 +193,15 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
     attributes: []
-  vcenter.cluster.cpu.effective:
+  vcenter.cluster.host.count:
     enabled: true
-    description: The effective CPU available to the cluster. This value excludes CPU from hosts in maintenance mode or are unresponsive.
-    unit: "MHz"
+    description: The number of hosts in the cluster.
+    unit: "{hosts}"
     sum:
       monotonic: false
       value_type: int
       aggregation_temporality: cumulative
-    attributes: []
-  vcenter.cluster.memory.limit:
-    enabled: true
-    description: The available memory of the cluster.
-    unit: By
-    sum:
-      monotonic: false
-      value_type: int
-      aggregation_temporality: cumulative
-    attributes: []
+    attributes: [host_effective]
   vcenter.cluster.memory.effective:
     enabled: true
     description: The effective available memory of the cluster.
@@ -274,6 +212,15 @@ metrics:
       aggregation_temporality: cumulative
     attributes: []
     extended_documentation: This value excludes memory from hosts that are either in maintenance mode or are unresponsive. It also excludes memory used by the VMware Service Console.
+  vcenter.cluster.memory.limit:
+    enabled: true
+    description: The available memory of the cluster.
+    unit: By
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: []
   vcenter.cluster.vm.count:
     enabled: true
     description: The number of virtual machines in the cluster.
@@ -292,36 +239,6 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
     attributes: []
-  vcenter.cluster.host.count:
-    enabled: true
-    description: The number of hosts in the cluster.
-    unit: "{hosts}"
-    sum:
-      monotonic: false
-      value_type: int
-      aggregation_temporality: cumulative
-    attributes: [host_effective]
-  vcenter.cluster.vsan.throughput:
-    enabled: true
-    description: The vSAN throughput of a cluster.
-    unit: "By/s"
-    gauge:
-      value_type: double
-    attributes: [vsan_throughput_direction]
-  vcenter.cluster.vsan.operations:
-    enabled: true
-    description: The vSAN IOPs of a cluster.
-    unit: "{operations/s}"
-    gauge:
-      value_type: int
-    attributes: [vsan_operation_type]
-  vcenter.cluster.vsan.latency.avg:
-    enabled: true
-    description: The overall cluster latency while accessing vSAN storage.
-    unit: "us"
-    gauge:
-      value_type: int
-    attributes: [vsan_latency_type]
   vcenter.cluster.vsan.congestions:
     enabled: true
     description: The congestions of IOs generated by all vSAN clients in the cluster.
@@ -329,6 +246,90 @@ metrics:
     gauge:
       value_type: double
     attributes: []
+  vcenter.cluster.vsan.latency.avg:
+    enabled: true
+    description: The overall cluster latency while accessing vSAN storage.
+    unit: "us"
+    gauge:
+      value_type: int
+    attributes: [vsan_latency_type]
+  vcenter.cluster.vsan.operations:
+    enabled: true
+    description: The vSAN IOPs of a cluster.
+    unit: "{operations/s}"
+    gauge:
+      value_type: int
+    attributes: [vsan_operation_type]
+  vcenter.cluster.vsan.throughput:
+    enabled: true
+    description: The vSAN throughput of a cluster.
+    unit: "By/s"
+    gauge:
+      value_type: double
+    attributes: [vsan_throughput_direction]
+  vcenter.datacenter.cluster.count:
+    enabled: true
+    description: The number of clusters in the datacenter.
+    unit: "{clusters}"
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: [entity_status]
+  vcenter.datacenter.cpu.limit:
+    enabled: true
+    description: The total amount of CPU available to the datacenter.
+    unit: "MHz"
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: []
+  vcenter.datacenter.datastore.count:
+    enabled: true
+    description: The number of datastores in the datacenter.
+    unit: "{datastores}"
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: []
+  vcenter.datacenter.disk.space:
+    enabled: true
+    description: The amount of available and used disk space in the datacenter.
+    unit: "By"
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: [disk_state]
+  vcenter.datacenter.host.count:
+    enabled: true
+    description: The number of hosts in the datacenter.
+    unit: "{hosts}"
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: [entity_status, host_power_state]
+  vcenter.datacenter.memory.limit:
+    enabled: true
+    description: The total amount of memory available to the datacenter.
+    unit: "By"
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: []
+  vcenter.datacenter.vm.count:
+    enabled: true
+    description: The number of VM's in the datacenter.
+    unit: "{virtual_machines}"
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: [entity_status, vm_count_power_state]
   vcenter.datastore.disk.usage:
     enabled: true
     description: The amount of space in the datastore.
@@ -344,22 +345,6 @@ metrics:
     unit: "%"
     gauge:
       value_type: double
-    attributes: []
-  vcenter.host.cpu.utilization:
-    enabled: true
-    description: The CPU utilization of the host system.
-    unit: "%"
-    gauge:
-      value_type: double
-    attributes: []
-  vcenter.host.cpu.usage:
-    enabled: true
-    description: The amount of CPU used by the host.
-    unit: "MHz"
-    sum:
-      monotonic: false
-      value_type: int
-      aggregation_temporality: cumulative
     attributes: []
   vcenter.host.cpu.capacity:
     enabled: true
@@ -379,16 +364,22 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
     attributes: [cpu_reservation_type]
-  vcenter.host.disk.throughput:
+  vcenter.host.cpu.usage:
     enabled: true
-    description: Average number of kilobytes read from or written to the disk each second.
-    unit: "{KiBy/s}"
+    description: The amount of CPU used by the host.
+    unit: "MHz"
     sum:
       monotonic: false
       value_type: int
       aggregation_temporality: cumulative
-    attributes: [disk_direction, object_name]
-    extended_documentation: As measured over the most recent 20s interval. Aggregated disk I/O rate. Requires Performance Level 4.
+    attributes: []
+  vcenter.host.cpu.utilization:
+    enabled: true
+    description: The CPU utilization of the host system.
+    unit: "%"
+    gauge:
+      value_type: double
+    attributes: []
   vcenter.host.disk.latency.avg:
     enabled: true
     description: The latency of operations to the host system's disk.
@@ -405,12 +396,24 @@ metrics:
       value_type: int
     attributes: [object_name]
     extended_documentation: As measured over the most recent 20s interval. Requires Performance Level 3.
-  vcenter.host.memory.utilization:
+  vcenter.host.disk.throughput:
     enabled: true
-    description: The percentage of the host system's memory capacity that is being utilized.
-    unit: "%"
-    gauge:
+    description: Average number of kilobytes read from or written to the disk each second.
+    unit: "{KiBy/s}"
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: [disk_direction, object_name]
+    extended_documentation: As measured over the most recent 20s interval. Aggregated disk I/O rate. Requires Performance Level 4.
+  vcenter.host.memory.capacity:
+    enabled: false
+    description: Total memory  capacity of the host system.
+    unit: MiBy
+    sum:
+      monotonic: false
       value_type: double
+      aggregation_temporality: cumulative
     attributes: []
   vcenter.host.memory.usage:
     enabled: true
@@ -421,15 +424,37 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
     attributes: []
-  vcenter.host.memory.capacity:
-    enabled: false
-    description: Total memory  capacity of the host system.
-    unit: MiBy
-    sum:
-      monotonic: false
+  vcenter.host.memory.utilization:
+    enabled: true
+    description: The percentage of the host system's memory capacity that is being utilized.
+    unit: "%"
+    gauge:
       value_type: double
-      aggregation_temporality: cumulative
     attributes: []
+  vcenter.host.network.packet.drop.rate:
+    enabled: true
+    description: The rate of packets dropped across each physical NIC (network interface controller) instance on the host.
+    unit: "{packets/s}"
+    gauge:
+      value_type: double
+    attributes: [throughput_direction, object_name]
+    extended_documentation: As measured over the most recent 20s interval.
+  vcenter.host.network.packet.error.rate:
+    enabled: true
+    description: The rate of packet errors transmitted or received on the host network.
+    unit: "{errors/s}"
+    gauge:
+      value_type: double
+    attributes: [throughput_direction, object_name]
+    extended_documentation: As measured over the most recent 20s interval.
+  vcenter.host.network.packet.rate:
+    enabled: true
+    description: The rate of packets transmitted or received across each physical NIC (network interface controller) instance on the host.
+    unit: "{packets/s}"
+    gauge:
+      value_type: double
+    attributes: [throughput_direction, object_name]
+    extended_documentation: As measured over the most recent 20s interval.
   vcenter.host.network.throughput:
     enabled: true
     description: The amount of data that was transmitted or received over the network by the host.
@@ -449,53 +474,13 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
     attributes: [object_name]
-  vcenter.host.network.packet.error.rate:
+  vcenter.host.vsan.cache.hit_rate:
     enabled: true
-    description: The rate of packet errors transmitted or received on the host network.
-    unit: "{errors/s}"
-    gauge:
-      value_type: double
-    attributes: [throughput_direction, object_name]
-    extended_documentation: As measured over the most recent 20s interval.
-  vcenter.host.network.packet.rate:
-    enabled: true
-    description: The rate of packets transmitted or received across each physical NIC (network interface controller) instance on the host.
-    unit: "{packets/s}"
-    gauge:
-      value_type: double
-    attributes: [throughput_direction, object_name]
-    extended_documentation: As measured over the most recent 20s interval.
-  vcenter.host.network.packet.drop.rate:
-    enabled: true
-    description: The rate of packets dropped across each physical NIC (network interface controller) instance on the host.
-    unit: "{packets/s}"
-    gauge:
-      value_type: double
-    attributes: [throughput_direction, object_name]
-    extended_documentation: As measured over the most recent 20s interval.
-  vcenter.host.vsan.throughput:
-    enabled: true
-    description: The vSAN throughput of a host.
-    unit: "By/s"
-    gauge:
-      value_type: double
-    attributes: [vsan_throughput_direction]
-    extended_documentation: As measured over the most recent 5m interval.
-  vcenter.host.vsan.operations:
-    enabled: true
-    description: The vSAN IOPs of a host.
-    unit: "{operations/s}"
+    description: The host's read IOs which could be satisfied by the local client cache.
+    unit: "%"
     gauge:
       value_type: int
-    attributes: [vsan_operation_type]
-    extended_documentation: As measured over the most recent 5m interval.
-  vcenter.host.vsan.latency.avg:
-    enabled: true
-    description: The host latency while accessing vSAN storage.
-    unit: "us"
-    gauge:
-      value_type: int
-    attributes: [vsan_latency_type]
+    attributes: []
     extended_documentation: As measured over the most recent 5m interval.
   vcenter.host.vsan.congestions:
     enabled: true
@@ -505,36 +490,43 @@ metrics:
       value_type: double
     attributes: []
     extended_documentation: As measured over the most recent 5m interval.
-  vcenter.host.vsan.cache.hit_rate:
+  vcenter.host.vsan.latency.avg:
     enabled: true
-    description: The host's read IOs which could be satisfied by the local client cache.
-    unit: "%"
+    description: The host latency while accessing vSAN storage.
+    unit: "us"
     gauge:
       value_type: int
-    attributes: []
+    attributes: [vsan_latency_type]
     extended_documentation: As measured over the most recent 5m interval.
-  vcenter.resource_pool.memory.usage:
+  vcenter.host.vsan.operations:
     enabled: true
-    description: The usage of the memory by the resource pool.
-    unit: MiBy
-    sum:
-      monotonic: false
+    description: The vSAN IOPs of a host.
+    unit: "{operations/s}"
+    gauge:
       value_type: int
-      aggregation_temporality: cumulative
-    attributes: [memory_usage_type]
-  vcenter.resource_pool.memory.shares:
+    attributes: [vsan_operation_type]
+    extended_documentation: As measured over the most recent 5m interval.
+  vcenter.host.vsan.throughput:
     enabled: true
-    description: The amount of shares of memory in the resource pool.
+    description: The vSAN throughput of a host.
+    unit: "By/s"
+    gauge:
+      value_type: double
+    attributes: [vsan_throughput_direction]
+    extended_documentation: As measured over the most recent 5m interval.
+  vcenter.resource_pool.cpu.shares:
+    enabled: true
+    description: The amount of shares of CPU in the resource pool.
     unit: "{shares}"
     sum:
       monotonic: false
       value_type: int
       aggregation_temporality: cumulative
     attributes: []
-  vcenter.resource_pool.memory.swapped:
+  vcenter.resource_pool.cpu.usage:
     enabled: true
-    description: The amount of memory that is granted to VMs in the resource pool from the host's swap space.
-    unit: MiBy
+    description: The usage of the CPU used by the resource pool.
+    unit: "MHz"
     sum:
       monotonic: false
       value_type: int
@@ -558,89 +550,60 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
     attributes: [memory_granted_type]
-  vcenter.resource_pool.cpu.usage:
+  vcenter.resource_pool.memory.shares:
     enabled: true
-    description: The usage of the CPU used by the resource pool.
-    unit: "MHz"
-    sum:
-      monotonic: false
-      value_type: int
-      aggregation_temporality: cumulative
-    attributes: []
-  vcenter.resource_pool.cpu.shares:
-    enabled: true
-    description: The amount of shares of CPU in the resource pool.
+    description: The amount of shares of memory in the resource pool.
     unit: "{shares}"
     sum:
       monotonic: false
       value_type: int
       aggregation_temporality: cumulative
     attributes: []
-  vcenter.vm.cpu.time:
-    enabled: false
-    description:  CPU time spent in idle, ready or wait state.
+  vcenter.resource_pool.memory.swapped:
+    enabled: true
+    description: The amount of memory that is granted to VMs in the resource pool from the host's swap space.
+    unit: MiBy
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: []
+  vcenter.resource_pool.memory.usage:
+    enabled: true
+    description: The usage of the memory by the resource pool.
+    unit: MiBy
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: [memory_usage_type]
+  vcenter.vm.cpu.readiness:
+    enabled: true
+    description: Percentage of time that the virtual machine was ready, but could not get scheduled to run on the physical CPU.
     unit: "%"
     gauge:
-      value_type: double 
+      value_type: int
+    attributes: []
+  vcenter.vm.cpu.time:
+    enabled: false
+    description: CPU time spent in idle, ready or wait state.
+    unit: "%"
+    gauge:
+      value_type: double
     attributes: [cpu_state, object_name]
     extended_documentation: As measured over the most recent 20s interval.
-  vcenter.vm.memory.ballooned:
+  vcenter.vm.cpu.usage:
     enabled: true
-    description: The amount of memory that is ballooned due to virtualization.
-    unit: MiBy
+    description: The amount of CPU used by the VM.
+    unit: "MHz"
     sum:
       monotonic: false
       value_type: int
       aggregation_temporality: cumulative
     attributes: []
-  vcenter.vm.memory.granted:
-    enabled: false
-    description: The amount of memory that is granted to a VM.
-    unit: MiBy
-    sum:
-      monotonic: false
-      value_type: int
-      aggregation_temporality: cumulative
-    attributes: []
-  vcenter.vm.memory.usage:
+  vcenter.vm.cpu.utilization:
     enabled: true
-    description: The amount of memory that is used by the virtual machine.
-    unit: MiBy
-    sum:
-      monotonic: false
-      value_type: int
-      aggregation_temporality: cumulative
-    attributes: []
-  vcenter.vm.memory.swapped:
-    enabled: true
-    description: The portion of memory that is granted to this VM from the host's swap space.
-    unit: MiBy
-    sum:
-      monotonic: false
-      value_type: int
-      aggregation_temporality: cumulative
-    attributes: []
-  vcenter.vm.memory.swapped_ssd:
-    enabled: true
-    description: The amount of memory swapped to fast disk device such as SSD.
-    unit: KiBy
-    sum:
-      monotonic: false
-      value_type: int
-      aggregation_temporality: cumulative
-    attributes: []
-  vcenter.vm.disk.usage:
-    enabled: true
-    description: The amount of storage space used by the virtual machine.
-    unit: By
-    sum:
-      monotonic: false
-      value_type: int
-      aggregation_temporality: cumulative
-    attributes: [disk_state]
-  vcenter.vm.disk.utilization:
-    enabled: true
-    description: The utilization of storage on the virtual machine.
+    description: The CPU utilization of the VM.
     unit: "%"
     gauge:
       value_type: double
@@ -668,16 +631,74 @@ metrics:
       value_type: int
     attributes: [disk_direction, object_name]
     extended_documentation: As measured over the most recent 20s interval. Requires Performance Level 2.
-  vcenter.vm.network.throughput:
+  vcenter.vm.disk.usage:
     enabled: true
-    description: The amount of data that was transmitted or received over the network of the virtual machine.
-    unit: "By/s"
+    description: The amount of storage space used by the virtual machine.
+    unit: By
     sum:
       monotonic: false
       value_type: int
       aggregation_temporality: cumulative
-    attributes: [throughput_direction, object_name]
-    extended_documentation: As measured over the most recent 20s interval.
+    attributes: [disk_state]
+  vcenter.vm.disk.utilization:
+    enabled: true
+    description: The utilization of storage on the virtual machine.
+    unit: "%"
+    gauge:
+      value_type: double
+    attributes: []
+  vcenter.vm.memory.ballooned:
+    enabled: true
+    description: The amount of memory that is ballooned due to virtualization.
+    unit: MiBy
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: []
+  vcenter.vm.memory.granted:
+    enabled: false
+    description: The amount of memory that is granted to a VM.
+    unit: MiBy
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: []
+  vcenter.vm.memory.swapped:
+    enabled: true
+    description: The portion of memory that is granted to this VM from the host's swap space.
+    unit: MiBy
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: []
+  vcenter.vm.memory.swapped_ssd:
+    enabled: true
+    description: The amount of memory swapped to fast disk device such as SSD.
+    unit: KiBy
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: []
+  vcenter.vm.memory.usage:
+    enabled: true
+    description: The amount of memory that is used by the virtual machine.
+    unit: MiBy
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: []
+  vcenter.vm.memory.utilization:
+    enabled: true
+    description: The memory utilization of the VM.
+    unit: "%"
+    gauge:
+      value_type: double
+    attributes: []
   vcenter.vm.network.broadcast.packet.rate:
     enabled: false
     description: The rate of broadcast packets transmitted or received by each vNIC (virtual network interface controller) on the virtual machine.
@@ -694,6 +715,14 @@ metrics:
       value_type: double
     attributes: [throughput_direction, object_name]
     extended_documentation: As measured over the most recent 20s interval.
+  vcenter.vm.network.packet.drop.rate:
+    enabled: true
+    description: The rate of transmitted or received packets dropped by each vNIC (virtual network interface controller) on the virtual machine.
+    unit: "{packets/s}"
+    gauge:
+      value_type: double
+    attributes: [throughput_direction, object_name]
+    extended_documentation: As measured over the most recent 20s interval.
   vcenter.vm.network.packet.rate:
     enabled: true
     description: The rate of packets transmitted or received by each vNIC (virtual network interface controller) on the virtual machine.
@@ -702,12 +731,14 @@ metrics:
       value_type: double
     attributes: [throughput_direction, object_name]
     extended_documentation: As measured over the most recent 20s interval.
-  vcenter.vm.network.packet.drop.rate:
+  vcenter.vm.network.throughput:
     enabled: true
-    description: The rate of transmitted or received packets dropped by each vNIC (virtual network interface controller) on the virtual machine.
-    unit: "{packets/s}"
-    gauge:
-      value_type: double
+    description: The amount of data that was transmitted or received over the network of the virtual machine.
+    unit: "By/s"
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
     attributes: [throughput_direction, object_name]
     extended_documentation: As measured over the most recent 20s interval.
   vcenter.vm.network.usage:
@@ -720,50 +751,6 @@ metrics:
       aggregation_temporality: cumulative
     attributes: [object_name]
     extended_documentation: As measured over the most recent 20s interval.
-  vcenter.vm.cpu.utilization:
-    enabled: true
-    description: The CPU utilization of the VM.
-    unit: "%"
-    gauge:
-      value_type: double
-    attributes: []
-  vcenter.vm.cpu.usage:
-    enabled: true
-    description: The amount of CPU used by the VM.
-    unit: "MHz"
-    sum:
-      monotonic: false
-      value_type: int
-      aggregation_temporality: cumulative
-    attributes: []
-  vcenter.vm.cpu.readiness:
-    enabled: true
-    description: Percentage of time that the virtual machine was ready, but could not get scheduled to run on the physical CPU.
-    unit: "%"
-    gauge:
-      value_type: int
-    attributes: []
-  vcenter.vm.memory.utilization:
-    enabled: true
-    description: The memory utilization of the VM.
-    unit: "%"
-    gauge:
-      value_type: double
-    attributes: []
-  vcenter.vm.vsan.throughput:
-    enabled: true
-    description: The vSAN throughput of a virtual machine.
-    unit: "By/s"
-    gauge:
-      value_type: double
-    attributes: [vsan_throughput_direction]
-  vcenter.vm.vsan.operations:
-    enabled: true
-    description: The vSAN IOPs of a virtual machine.
-    unit: "{operations/s}"
-    gauge:
-      value_type: int
-    attributes: [vsan_operation_type]
   vcenter.vm.vsan.latency.avg:
     enabled: true
     description: The virtual machine latency while accessing vSAN storage.
@@ -771,4 +758,17 @@ metrics:
     gauge:
       value_type: int
     attributes: [vsan_latency_type]
- 
+  vcenter.vm.vsan.operations:
+    enabled: true
+    description: The vSAN IOPs of a virtual machine.
+    unit: "{operations/s}"
+    gauge:
+      value_type: int
+    attributes: [vsan_operation_type]
+  vcenter.vm.vsan.throughput:
+    enabled: true
+    description: The vSAN throughput of a virtual machine.
+    unit: "By/s"
+    gauge:
+      value_type: double
+    attributes: [vsan_throughput_direction]

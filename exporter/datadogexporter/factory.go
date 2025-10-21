@@ -198,17 +198,6 @@ func (*factory) createDefaultConfig() component.Config {
 	return datadogconfig.CreateDefaultConfig()
 }
 
-// checkAndCastConfig checks the configuration type and its warnings, and casts it to
-// the Datadog Config struct.
-func checkAndCastConfig(c component.Config, logger *zap.Logger) *datadogconfig.Config {
-	cfg, ok := c.(*datadogconfig.Config)
-	if !ok {
-		panic("programming error: config structure is not of type *datadogconfig.Config")
-	}
-	cfg.LogWarnings(logger)
-	return cfg
-}
-
 func (*factory) consumeStatsPayload(ctx context.Context, wg *sync.WaitGroup, statsIn <-chan []byte, statsWriter *writer.DatadogStatsWriter, tracerVersion, agentVersion string, logger *zap.Logger) {
 	for i := 0; i < runtime.NumCPU(); i++ {
 		wg.Add(1)
@@ -246,7 +235,11 @@ func (f *factory) createMetricsExporter(
 	set exporter.Settings,
 	c component.Config,
 ) (exporter.Metrics, error) {
-	cfg := checkAndCastConfig(c, set.Logger)
+	cfg, err := datadogconfig.CheckAndCastConfig(c)
+	if err != nil {
+		return nil, err
+	}
+	cfg.LogWarnings(set.Logger)
 	hostProvider, err := f.SourceProvider(set.TelemetrySettings, cfg.Hostname, cfg.HostnameDetectionTimeout)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build hostname provider: %w", err)
@@ -418,7 +411,11 @@ func (f *factory) createTracesExporter(
 	set exporter.Settings,
 	c component.Config,
 ) (exporter.Traces, error) {
-	cfg := checkAndCastConfig(c, set.Logger)
+	cfg, err := datadogconfig.CheckAndCastConfig(c)
+	if err != nil {
+		return nil, err
+	}
+	cfg.LogWarnings(set.Logger)
 	if noAPMStatsFeatureGate.IsEnabled() {
 		set.Logger.Info(
 			"Trace metrics are now disabled in the Datadog Exporter by default. To continue receiving Trace Metrics, configure the Datadog Connector or disable the feature gate.",
@@ -520,7 +517,11 @@ func (f *factory) createLogsExporter(
 	set exporter.Settings,
 	c component.Config,
 ) (exporter.Logs, error) {
-	cfg := checkAndCastConfig(c, set.Logger)
+	cfg, err := datadogconfig.CheckAndCastConfig(c)
+	if err != nil {
+		return nil, err
+	}
+	cfg.LogWarnings(set.Logger)
 
 	var pusher consumer.ConsumeLogsFunc
 	var logsAgent logsagentpipeline.LogsAgent

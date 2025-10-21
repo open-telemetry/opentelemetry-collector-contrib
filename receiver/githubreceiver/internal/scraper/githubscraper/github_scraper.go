@@ -35,7 +35,7 @@ type githubScraper struct {
 func (ghs *githubScraper) start(ctx context.Context, host component.Host) (err error) {
 	ghs.logger.Sugar().Info("starting the GitHub scraper")
 	ghs.client, err = ghs.cfg.ToClient(ctx, host, ghs.settings)
-	return
+	return err
 }
 
 func newGitHubScraper(

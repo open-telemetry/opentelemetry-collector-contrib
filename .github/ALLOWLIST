@@ -30,7 +30,6 @@ internal/common
 # Start unmaintained components list
 
 exporter/carbonexporter
-extension/healthcheckextension
 extension/observer/ecstaskobserver
 receiver/bigipreceiver
 receiver/carbonreceiver

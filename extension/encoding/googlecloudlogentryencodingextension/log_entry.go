@@ -20,6 +20,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/auditlog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/shared"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/vpcflowlog"
 )
 
 const (
@@ -464,6 +465,12 @@ func handlePayload(logType string, log logEntry, logRecord plog.LogRecord, cfg C
 		auditlog.PolicyLogNameSuffix:
 		if err := auditlog.ParsePayloadIntoAttributes(log.ProtoPayload, logRecord.Attributes()); err != nil {
 			return fmt.Errorf("failed to parse audit log proto payload: %w", err)
+		}
+		return nil
+	case vpcflowlog.NetworkManagementNameSuffix,
+		vpcflowlog.ComputeNameSuffix:
+		if err := vpcflowlog.ParsePayloadIntoAttributes(log.JSONPayload, logRecord.Attributes()); err != nil {
+			return fmt.Errorf("failed to parse VPC flow log JSON payload: %w", err)
 		}
 		return nil
 		// TODO Add support for more log types

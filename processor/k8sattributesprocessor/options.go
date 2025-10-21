@@ -148,7 +148,7 @@ func enabledAttributes() (attributes []string) {
 	if defaultConfig.ServiceInstanceID.Enabled {
 		attributes = append(attributes, string(conventions.ServiceInstanceIDKey))
 	}
-	return
+	return attributes
 }
 
 // withExtractMetadata allows specifying options to control extraction of pod metadata.
