@@ -107,14 +107,6 @@ Count of sampling policy evaluation errors
 | ---- | ----------- | ---------- | --------- |
 | {errors} | Sum | Int | true |
 
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| policy | Name of the policy | Any Str |
-| sampled | Whether the sampling decision was sampled or not, false can mean either not sampled or dropped | Any Bool |
-| decision | The sampling decision | Str: ``sampled``, ``not_sampled``, ``dropped`` |
-
 ### otelcol_processor_tail_sampling_sampling_trace_dropped_too_early
 
 Count of traces that needed to be dropped before the configured wait time
