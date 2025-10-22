@@ -24,6 +24,7 @@ components:
     - connector/routing
     - connector/servicegraph
     - connector/signaltometrics
+    - connector/slowsql
     - connector/spanmetrics
     - connector/sum
     - exporter/alertmanager
@@ -159,6 +160,7 @@ components:
     - pkg/resourcetotelemetry
     - pkg/sampling
     - pkg/stanza
+    - pkg/stanza/operator/input/journald
     - pkg/status
     - pkg/topic
     - pkg/translator/azure
@@ -295,6 +297,7 @@ components:
     - receiver/purefb
     - receiver/rabbitmq
     - receiver/receiver_creator
+    - receiver/redfish
     - receiver/redis
     - receiver/riak
     - receiver/saphana

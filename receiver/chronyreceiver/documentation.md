@@ -30,9 +30,9 @@ The number of seconds difference between the system's clock and the reference cl
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| leap.status | how the chrony is handling leap seconds | Str: ``normal``, ``insert_second``, ``delete_second``, ``unsynchronised`` | false |
+| leap.status | how the chrony is handling leap seconds | Str: ``normal``, ``insert_second``, ``delete_second``, ``unsynchronised`` | Recommended |
 
 ### ntp.time.last_offset
 
@@ -44,9 +44,9 @@ The estimated local offset on the last clock update
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| leap.status | how the chrony is handling leap seconds | Str: ``normal``, ``insert_second``, ``delete_second``, ``unsynchronised`` | false |
+| leap.status | how the chrony is handling leap seconds | Str: ``normal``, ``insert_second``, ``delete_second``, ``unsynchronised`` | Recommended |
 
 ## Optional Metrics
 
@@ -70,9 +70,9 @@ It is expressed in ppm (parts per million). For example, a value of 1 ppm would 
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| leap.status | how the chrony is handling leap seconds | Str: ``normal``, ``insert_second``, ``delete_second``, ``unsynchronised`` | false |
+| leap.status | how the chrony is handling leap seconds | Str: ``normal``, ``insert_second``, ``delete_second``, ``unsynchronised`` | Recommended |
 
 ### ntp.stratum
 
@@ -94,9 +94,9 @@ the long term average of the offset value
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| leap.status | how the chrony is handling leap seconds | Str: ``normal``, ``insert_second``, ``delete_second``, ``unsynchronised`` | false |
+| leap.status | how the chrony is handling leap seconds | Str: ``normal``, ``insert_second``, ``delete_second``, ``unsynchronised`` | Recommended |
 
 ### ntp.time.root_delay
 
@@ -108,6 +108,6 @@ This is the total of the network path delays to the stratum-1 system from which 
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| leap.status | how the chrony is handling leap seconds | Str: ``normal``, ``insert_second``, ``delete_second``, ``unsynchronised`` | false |
+| leap.status | how the chrony is handling leap seconds | Str: ``normal``, ``insert_second``, ``delete_second``, ``unsynchronised`` | Recommended |

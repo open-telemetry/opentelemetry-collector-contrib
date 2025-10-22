@@ -12,9 +12,69 @@ metrics:
     enabled: false
 ```
 
-### cisco.device.connected
+### cisco.interface.receive.bytes
 
-Device connectivity status (1=connected, 0=disconnected)
+Number of bytes received on the interface
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level |
+| ---- | ----------- | ------ | -------- |
+| interface.name | Name of the network interface | Any Str | Recommended |
+| interface.state | Administrative state of the interface | Any Str | Recommended |
+
+### cisco.interface.receive.errors
+
+Number of receive errors on the interface
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {error} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level |
+| ---- | ----------- | ------ | -------- |
+| interface.name | Name of the network interface | Any Str | Recommended |
+| interface.state | Administrative state of the interface | Any Str | Recommended |
+
+### cisco.interface.transmit.bytes
+
+Number of bytes transmitted on the interface
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level |
+| ---- | ----------- | ------ | -------- |
+| interface.name | Name of the network interface | Any Str | Recommended |
+| interface.state | Administrative state of the interface | Any Str | Recommended |
+
+### cisco.interface.transmit.errors
+
+Number of transmit errors on the interface
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {error} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level |
+| ---- | ----------- | ------ | -------- |
+| interface.name | Name of the network interface | Any Str | Recommended |
+| interface.state | Administrative state of the interface | Any Str | Recommended |
+
+### cisco.interface.up
+
+Interface operational status (1 for up, 0 for down)
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -22,6 +82,31 @@ Device connectivity status (1=connected, 0=disconnected)
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| host | The Cisco device hostname or IP address | Any Str | false |
+| interface.name | Name of the network interface | Any Str | Recommended |
+| interface.state | Administrative state of the interface | Any Str | Recommended |
+
+### cisco.system.cpu.utilization
+
+CPU utilization as a fraction
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
+
+### cisco.system.memory.utilization
+
+Memory utilization as a fraction
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
+
+## Resource Attributes
+
+| Name | Description | Values | Enabled |
+| ---- | ----------- | ------ | ------- |
+| cisco.device.ip | IP address of the Cisco device | Any Str | true |
+| cisco.device.model | Model of the Cisco device | Any Str | true |
+| cisco.device.name | Name of the Cisco device | Any Str | true |

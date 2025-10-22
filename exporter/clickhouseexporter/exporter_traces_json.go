@@ -61,6 +61,7 @@ func (e *tracesJSONExporter) shutdown(_ context.Context) error {
 	if e.db != nil {
 		if err := e.db.Close(); err != nil {
 			e.logger.Warn("failed to close json traces db connection", zap.Error(err))
+			return err
 		}
 	}
 
@@ -183,7 +184,7 @@ func convertEventsJSON(events ptrace.SpanEventSlice) (times []time.Time, names, 
 		attrs = append(attrs, string(eventAttrBytes))
 	}
 
-	return
+	return times, names, attrs, err
 }
 
 func convertLinksJSON(links ptrace.SpanLinkSlice) (traceIDs, spanIDs, states, attrs []string, err error) {
@@ -200,7 +201,7 @@ func convertLinksJSON(links ptrace.SpanLinkSlice) (traceIDs, spanIDs, states, at
 		attrs = append(attrs, string(linkAttrBytes))
 	}
 
-	return
+	return traceIDs, spanIDs, states, attrs, err
 }
 
 func renderInsertTracesJSONSQL(cfg *Config) string {
