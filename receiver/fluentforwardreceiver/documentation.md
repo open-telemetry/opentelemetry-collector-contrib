@@ -8,40 +8,40 @@ The following telemetry is emitted by this component.
 
 ### otelcol_fluent_closed_connections
 
-Number of connections closed to the fluentforward receiver
+Number of connections closed to the fluentforward receiver [development]
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | false |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | false | development |
 
 ### otelcol_fluent_events_parsed
 
-Number of Fluent events parsed successfully
+Number of Fluent events parsed successfully [development]
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | false |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | false | development |
 
 ### otelcol_fluent_opened_connections
 
-Number of connections opened to the fluentforward receiver
+Number of connections opened to the fluentforward receiver [development]
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | false |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | false | development |
 
 ### otelcol_fluent_parse_failures
 
-Number of times Fluent messages failed to be decoded
+Number of times Fluent messages failed to be decoded [development]
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | false |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | false | development |
 
 ### otelcol_fluent_records_generated
 
-Number of log records generated from Fluent forward input
+Number of log records generated from Fluent forward input [development]
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | false |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | false | development |
