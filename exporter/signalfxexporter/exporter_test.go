@@ -186,7 +186,7 @@ func TestConsumeMetrics(t *testing.T) {
 			cfg := &Config{
 				ClientConfig: confighttp.ClientConfig{
 					Timeout: 1 * time.Second,
-					Headers: &configopaque.MapList{
+					Headers: configopaque.MapList{
 						{Name: "test_header_", Value: "test"},
 					},
 				},
@@ -547,7 +547,6 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.IngestURL = server.URL
 			cfg.APIURL = server.URL
-			cfg.Headers = configopaque.NewMapList()
 			for k, v := range tt.additionalHeaders {
 				cfg.Headers.Set(k, configopaque.String(v))
 			}
@@ -670,7 +669,6 @@ func TestConsumeMetricsAccessTokenPassthroughPriorityToContext(t *testing.T) {
 			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.IngestURL = server.URL
 			cfg.APIURL = server.URL
-			cfg.Headers = configopaque.NewMapList()
 			for k, v := range tt.additionalHeaders {
 				cfg.Headers.Set(k, configopaque.String(v))
 			}
@@ -774,7 +772,6 @@ func TestConsumeLogsAccessTokenPassthrough(t *testing.T) {
 			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.IngestURL = server.URL
 			cfg.APIURL = server.URL
-			cfg.Headers = configopaque.NewMapList()
 			cfg.Headers.Set("test_header_", configopaque.String(tt.name))
 			cfg.AccessToken = configopaque.String(fromHeaders)
 			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
@@ -935,7 +932,7 @@ func TestConsumeEventData(t *testing.T) {
 			cfg := &Config{
 				ClientConfig: confighttp.ClientConfig{
 					Timeout: 1 * time.Second,
-					Headers: &configopaque.MapList{
+					Headers: configopaque.MapList{
 						{Name: "test_header_", Value: "test"},
 					},
 				},
@@ -1031,7 +1028,6 @@ func TestConsumeLogsDataWithAccessTokenPassthrough(t *testing.T) {
 			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.IngestURL = server.URL
 			cfg.APIURL = server.URL
-			cfg.Headers = configopaque.NewMapList()
 			cfg.Headers.Set("test_header_", configopaque.String(tt.name))
 			cfg.AccessToken = configopaque.String(fromHeaders)
 			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
@@ -2055,7 +2051,7 @@ func TestConsumeMixedMetrics(t *testing.T) {
 			cfg := &Config{
 				ClientConfig: confighttp.ClientConfig{
 					Timeout: 1 * time.Second,
-					Headers: &configopaque.MapList{
+					Headers: configopaque.MapList{
 						{Name: "test_header_", Value: "test"},
 					},
 				},

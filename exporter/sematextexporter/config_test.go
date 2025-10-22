@@ -53,7 +53,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				ClientConfig: confighttp.ClientConfig{
 					Timeout: 500 * time.Millisecond,
-					Headers: &configopaque.MapList{
+					Headers: configopaque.MapList{
 						{Name: "User-Agent", Value: "OpenTelemetry -> Sematext"},
 					},
 				},

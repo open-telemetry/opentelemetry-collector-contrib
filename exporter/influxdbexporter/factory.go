@@ -36,7 +36,7 @@ func NewFactory() exporter.Factory {
 func createDefaultConfig() component.Config {
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.Timeout = 5 * time.Second
-	clientConfig.Headers = &configopaque.MapList{
+	clientConfig.Headers = configopaque.MapList{
 		{Name: "User-Agent", Value: "OpenTelemetry -> Influx"},
 	}
 

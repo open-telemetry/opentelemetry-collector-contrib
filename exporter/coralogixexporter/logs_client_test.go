@@ -82,11 +82,6 @@ func TestLogsExporter_Start(t *testing.T) {
 	cfg := &Config{
 		Domain:     "test.domain.com",
 		PrivateKey: "test-key",
-		Logs: TransportConfig{
-			ClientConfig: configgrpc.ClientConfig{
-				Headers: configopaque.NewMapList(),
-			},
-		},
 	}
 
 	exp, err := newLogsExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
@@ -110,7 +105,7 @@ func TestLogsExporter_EnhanceContext(t *testing.T) {
 		PrivateKey: "test-key",
 		Logs: TransportConfig{
 			ClientConfig: configgrpc.ClientConfig{
-				Headers: &configopaque.MapList{
+				Headers: configopaque.MapList{
 					{Name: "test-header", Value: "test-value"},
 				},
 			},
@@ -129,11 +124,6 @@ func TestLogsExporter_PushLogs(t *testing.T) {
 	cfg := &Config{
 		Domain:     "test.domain.com",
 		PrivateKey: "test-key",
-		Logs: TransportConfig{
-			ClientConfig: configgrpc.ClientConfig{
-				Headers: configopaque.NewMapList(),
-			},
-		},
 	}
 
 	exp, err := newLogsExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
@@ -177,11 +167,6 @@ func TestLogsExporter_PushLogs_WhenCannotSend(t *testing.T) {
 			cfg := &Config{
 				Domain:     "test.domain.com",
 				PrivateKey: "test-key",
-				Logs: TransportConfig{
-					ClientConfig: configgrpc.ClientConfig{
-						Headers: configopaque.NewMapList(),
-					},
-				},
 				RateLimiter: RateLimiterConfig{
 					Enabled:   tt.enabled,
 					Threshold: 1,
@@ -281,7 +266,6 @@ func BenchmarkLogsExporter_PushLogs(b *testing.B) {
 				TLS: configtls.ClientConfig{
 					Insecure: true,
 				},
-				Headers: configopaque.NewMapList(),
 			},
 		},
 		PrivateKey: "test-key",
@@ -336,7 +320,6 @@ func TestLogsExporter_PushLogs_PartialSuccess(t *testing.T) {
 				TLS: configtls.ClientConfig{
 					Insecure: true,
 				},
-				Headers: configopaque.NewMapList(),
 			},
 		},
 		PrivateKey: "test-key",
@@ -407,7 +390,6 @@ func TestLogsExporter_PushLogs_Performance(t *testing.T) {
 				TLS: configtls.ClientConfig{
 					Insecure: true,
 				},
-				Headers: configopaque.NewMapList(),
 			},
 		},
 		PrivateKey: "test-key",

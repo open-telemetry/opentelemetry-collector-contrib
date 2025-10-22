@@ -42,7 +42,7 @@ func TestLoadConfig(t *testing.T) {
 	clientConfig.ReadBufferSize = 0
 	clientConfig.WriteBufferSize = 512 * 1024
 	clientConfig.Timeout = 5 * time.Second
-	clientConfig.Headers = &configopaque.MapList{
+	clientConfig.Headers = configopaque.MapList{
 		{Name: "Prometheus-Remote-Write-Version", Value: "0.1.0"},
 		{Name: "X-Scope-OrgID", Value: "234"},
 	}
