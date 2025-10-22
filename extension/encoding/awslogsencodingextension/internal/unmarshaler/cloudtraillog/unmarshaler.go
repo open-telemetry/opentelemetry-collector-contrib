@@ -151,7 +151,7 @@ func (u *CloudTrailLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs
 		return plog.Logs{}, fmt.Errorf("failed to unmarshal payload as CloudTrail logs: %w", err)
 	}
 
-	if len(cloudTrailLog.Records) > 0 {
+	if cloudTrailLog.Records != nil {
 		return u.processRecords(cloudTrailLog.Records)
 	}
 

@@ -96,7 +96,7 @@ func TestCloudTrailLogUnmarshaler_UnmarshalAWSLogs_InvalidJSON(t *testing.T) {
 	unmarshaler := NewCloudTrailLogUnmarshaler(component.BuildInfo{Version: "test-version"})
 	reader := bytes.NewReader([]byte(`{invalid-json}`))
 	_, err := unmarshaler.UnmarshalAWSLogs(reader)
-	require.ErrorContains(t, err, "failed to unmarshal CloudTrail logs")
+	require.ErrorContains(t, err, "failed to unmarshal payload as CloudTrail logs")
 }
 
 func TestCloudTrailLogUnmarshaler_UnmarshalAWSLogs_InvalidTimestamp(t *testing.T) {
