@@ -116,6 +116,8 @@ type Config struct {
 	//
 	// Keys are case-insensitive and duplicates will trigger a validation error.
 	MetadataKeys []string `mapstructure:"metadata_keys"`
+
+	Kerberos KerberosSettings `mapstructure:"kerberos"`
 }
 
 type TelemetrySettings struct {
@@ -302,9 +304,54 @@ func (m MappingMode) String() string {
 	return ""
 }
 
+type AuthType uint
+
+const (
+	authPassword = 1
+	authKeytab   = 2
+
+	authPasswordStr = "password"
+	authKeytabStr   = "keytab"
+)
+
+var authTypes = map[string]AuthType{
+	authPasswordStr: authPassword,
+	authKeytabStr:   authKeytab,
+}
+
+// Unpack validates and unpack "auth_type" config option
+func (t *AuthType) UnmarshalText(b []byte) error {
+	authT, ok := authTypes[string(b)]
+	if !ok {
+		return fmt.Errorf("%w '%s'", ErrInvalidAuthType, string(b))
+	}
+
+	*t = authT
+
+	return nil
+}
+
+type KerberosSettings struct {
+	Enabled     *bool               `mapstructure:"enabled"`
+	AuthType    AuthType            `mapstructure:"auth_type"`
+	KeyTabPath  string              `mapstructure:"keytab"`
+	ConfigPath  string              `mapstructure:"config_path"`
+	ServiceName string              `mapstructure:"service_name"`
+	Username    string              `mapstructure:"username"`
+	Password    configopaque.String `mapstructure:"password"`
+	Realm       string              `mapstructure:"realm"`
+	EnableFAST  bool                `mapstructure:"enable_krb5_fast"`
+}
+
+// IsEnabled returns true if the `enable` field is set to true in the yaml.
+func (k *KerberosSettings) IsEnabled() bool {
+	return k != nil && (k.Enabled == nil || *k.Enabled)
+}
+
 var (
 	errConfigEndpointRequired = errors.New("exactly one of [endpoint, endpoints, cloudid] must be specified")
 	errConfigEmptyEndpoint    = errors.New("endpoint must not be empty")
+	ErrInvalidAuthType        = errors.New("invalid authentication type")
 )
 
 const defaultElasticsearchEnvName = "ELASTICSEARCH_URL"
@@ -374,6 +421,25 @@ func (cfg *Config) Validate() error {
 	}
 	if cfg.TracesIndex != "" && cfg.TracesDynamicIndex.Enabled {
 		return errors.New("must not specify both traces_index and traces_dynamic_index; traces_index should be empty unless all documents should be sent to the same index")
+	}
+
+	if cfg.Kerberos.IsEnabled() {
+		switch cfg.Kerberos.AuthType {
+		case authPassword:
+			if cfg.Kerberos.Username == "" {
+				return fmt.Errorf("password authentication is selected for Kerberos, but username is not configured")
+			}
+			if string(cfg.Kerberos.Password) == "" {
+				return fmt.Errorf("password authentication is selected for Kerberos, but password is not configured")
+			}
+
+		case authKeytab:
+			if cfg.Kerberos.KeyTabPath == "" {
+				return fmt.Errorf("keytab authentication is selected for Kerberos, but path to keytab is not configured")
+			}
+		default:
+			return ErrInvalidAuthType
+		}
 	}
 
 	uniq := map[string]struct{}{}

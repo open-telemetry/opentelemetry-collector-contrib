@@ -14,6 +14,7 @@ import (
 
 	elasticsearchv8 "github.com/elastic/go-elasticsearch/v8"
 	"github.com/elastic/go-elasticsearch/v8/esapi"
+	krbclient "github.com/jcmturner/gokrb5/v8/client"
 	"github.com/klauspost/compress/gzip"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
@@ -122,6 +123,14 @@ func newElasticsearchClient(
 		return nil, err
 	}
 
+	var kerberosClient *krbclient.Client
+	if config.Kerberos.IsEnabled() {
+		kerberosClient, err = NewKerberosClient(config.Kerberos)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	esLogger := &clientLogger{
 		Logger:          telemetry.Logger,
 		logRequestBody:  config.LogRequestBody,
@@ -134,7 +143,7 @@ func newElasticsearchClient(
 		maxRetries = config.Retry.MaxRetries
 	}
 
-	return elasticsearchv8.NewClient(elasticsearchv8.Config{
+	esClient, err := elasticsearchv8.NewClient(elasticsearchv8.Config{
 		Transport: httpClient.Transport,
 
 		// configure connection setup
@@ -164,8 +173,11 @@ func newElasticsearchClient(
 			telemetry.TracerProvider,
 			false, /* captureSearchBody */
 		),
-		Logger: esLogger,
+		Logger:         esLogger,
+		KerberosClient: kerberosClient,
 	})
+
+	return esClient, err
 }
 
 func createElasticsearchBackoffFunc(config *RetrySettings) func(int) time.Duration {

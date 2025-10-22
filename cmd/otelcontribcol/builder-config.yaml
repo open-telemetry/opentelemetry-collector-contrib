@@ -278,3 +278,4 @@ providers:
 # file before passing it to OCB, to ensure that local versions are used for all
 # Contrib modules.
 replaces:
+  -  github.com/elastic/go-elasticsearch/v8 => github.com/khushijain21/go-elasticsearch/v8 v8.0.0-20251017062652-e4846885e54c
