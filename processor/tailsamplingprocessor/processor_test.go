@@ -65,47 +65,37 @@ func (t *TestPolicyEvaluator) Evaluate(ctx context.Context, traceID pcommon.Trac
 // testTSPController is a set of mechanisms to make the TSP do predictable
 // things in tests.
 type testTSPController struct {
-	tickChans []chan chan struct{}
+	tickChan chan chan struct{}
 }
 
 func newTestTSPController() *testTSPController {
 	return &testTSPController{
-		tickChans: make([]chan chan struct{}, 0),
+		tickChan: make(chan chan struct{}),
 	}
 }
 
-func (t *testTSPController) triggerTicks() []chan struct{} {
-	promises := make([]chan struct{}, 0, len(t.tickChans))
-	for _, tickChan := range t.tickChans {
-		// We need a buffer so the ticker can signal completion without
-		// blocking.
-		ch := make(chan struct{}, 1)
-		promises = append(promises, ch)
-		tickChan <- ch
-	}
-	return promises
-}
-
-func awaitTicks(promises []chan struct{}) {
-	for _, ch := range promises {
-		<-ch
-	}
+func (t *testTSPController) triggerTicks() chan struct{} {
+	// We need a buffer so the ticker can signal completion without
+	// blocking.
+	tickDone := make(chan struct{}, 1)
+	t.tickChan <- tickDone
+	return tickDone
 }
 
 func (t *testTSPController) concurrentWithTick(f func()) {
-	promises := t.triggerTicks()
+	tickDone := t.triggerTicks()
 	f()
-	awaitTicks(promises)
+	<-tickDone
 }
 
 func (t *testTSPController) waitForTick() {
-	awaitTicks(t.triggerTicks())
+	<-t.triggerTicks()
 }
 
 func withTestController(t *testTSPController) Option {
 	return func(tsp *tailSamplingSpanProcessor) {
 		tsp.tickChan = make(chan chan struct{})
-		t.tickChans = append(t.tickChans, tsp.tickChan)
+		t.tickChan = tsp.tickChan
 
 		// use a sync ID batcher to avoid waiting on lots of empty ticks.
 		// We need to close the old one before creating a new one.
