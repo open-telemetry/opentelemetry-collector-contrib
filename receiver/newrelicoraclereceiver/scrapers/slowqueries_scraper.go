@@ -17,15 +17,17 @@ import (
 
 // SlowQueriesScraper contains the scraper for slow queries metrics
 type SlowQueriesScraper struct {
-	db                   *sql.DB
-	mb                   *metadata.MetricsBuilder
-	logger               *zap.Logger
-	instanceName         string
-	metricsBuilderConfig metadata.MetricsBuilderConfig
+	db                                   *sql.DB
+	mb                                   *metadata.MetricsBuilder
+	logger                               *zap.Logger
+	instanceName                         string
+	metricsBuilderConfig                 metadata.MetricsBuilderConfig
+	queryMonitoringResponseTimeThreshold int
+	queryMonitoringCountThreshold        int
 }
 
 // NewSlowQueriesScraper creates a new Slow Queries Scraper instance
-func NewSlowQueriesScraper(db *sql.DB, mb *metadata.MetricsBuilder, logger *zap.Logger, instanceName string, metricsBuilderConfig metadata.MetricsBuilderConfig) (*SlowQueriesScraper, error) {
+func NewSlowQueriesScraper(db *sql.DB, mb *metadata.MetricsBuilder, logger *zap.Logger, instanceName string, metricsBuilderConfig metadata.MetricsBuilderConfig, responseTimeThreshold, countThreshold int) (*SlowQueriesScraper, error) {
 	if db == nil {
 		return nil, fmt.Errorf("database connection cannot be nil")
 	}
@@ -40,11 +42,13 @@ func NewSlowQueriesScraper(db *sql.DB, mb *metadata.MetricsBuilder, logger *zap.
 	}
 
 	return &SlowQueriesScraper{
-		db:                   db,
-		mb:                   mb,
-		logger:               logger,
-		instanceName:         instanceName,
-		metricsBuilderConfig: metricsBuilderConfig,
+		db:                                   db,
+		mb:                                   mb,
+		logger:                               logger,
+		instanceName:                         instanceName,
+		metricsBuilderConfig:                 metricsBuilderConfig,
+		queryMonitoringResponseTimeThreshold: responseTimeThreshold,
+		queryMonitoringCountThreshold:        countThreshold,
 	}, nil
 }
 
@@ -55,8 +59,9 @@ func (s *SlowQueriesScraper) ScrapeSlowQueries(ctx context.Context) ([]string, [
 	var scrapeErrors []error
 	var queryIDs []string
 
-	// Execute the slow queries SQL
-	rows, err := s.db.QueryContext(ctx, queries.SlowQueriesSQL)
+	// Execute the slow queries SQL with configured thresholds using parameterized query
+	slowQueriesSQL, params := queries.GetSlowQueriesSQL(s.queryMonitoringResponseTimeThreshold, s.queryMonitoringCountThreshold)
+	rows, err := s.db.QueryContext(ctx, slowQueriesSQL, params...)
 	if err != nil {
 		s.logger.Error("Failed to execute slow queries query", zap.Error(err))
 		return nil, []error{err}

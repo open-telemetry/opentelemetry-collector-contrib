@@ -50,6 +50,7 @@ type newRelicOracleScraper struct {
 	db                   *sql.DB
 	mb                   *metadata.MetricsBuilder
 	dbProviderFunc       dbProviderFunc
+	config               *Config
 	logger               *zap.Logger
 	instanceName         string
 	hostName             string
@@ -58,10 +59,11 @@ type newRelicOracleScraper struct {
 	metricsBuilderConfig metadata.MetricsBuilderConfig
 }
 
-func newScraper(metricsBuilder *metadata.MetricsBuilder, metricsBuilderConfig metadata.MetricsBuilderConfig, scrapeCfg scraperhelper.ControllerConfig, logger *zap.Logger, providerFunc dbProviderFunc, instanceName, hostName string) (scraper.Metrics, error) {
+func newScraper(metricsBuilder *metadata.MetricsBuilder, metricsBuilderConfig metadata.MetricsBuilderConfig, scrapeCfg scraperhelper.ControllerConfig, config *Config, logger *zap.Logger, providerFunc dbProviderFunc, instanceName, hostName string) (scraper.Metrics, error) {
 	s := &newRelicOracleScraper{
 		mb:                   metricsBuilder,
 		dbProviderFunc:       providerFunc,
+		config:               config,
 		logger:               logger,
 		scrapeCfg:            scrapeCfg,
 		metricsBuilderConfig: metricsBuilderConfig,
@@ -94,20 +96,20 @@ func (s *newRelicOracleScraper) start(context.Context, component.Host) error {
 	// Initialize system scraper with direct DB connection
 	s.systemScraper = scrapers.NewSystemScraper(s.db, s.mb, s.logger, s.instanceName, s.metricsBuilderConfig)
 
-	// Initialize slow queries scraper with direct DB connection
-	s.slowQueriesScraper, err = scrapers.NewSlowQueriesScraper(s.db, s.mb, s.logger, s.instanceName, s.metricsBuilderConfig)
+	// Initialize slow queries scraper with direct DB connection and QPM config
+	s.slowQueriesScraper, err = scrapers.NewSlowQueriesScraper(s.db, s.mb, s.logger, s.instanceName, s.metricsBuilderConfig, s.config.QueryMonitoringResponseTimeThreshold, s.config.QueryMonitoringCountThreshold)
 	if err != nil {
 		return fmt.Errorf("failed to create slow queries scraper: %w", err)
 	}
 
-	// Initialize blocking scraper with direct DB connection
-	s.blockingScraper, err = scrapers.NewBlockingScraper(s.db, s.mb, s.logger, s.instanceName, s.metricsBuilderConfig)
+	// Initialize blocking scraper with direct DB connection and QPM config
+	s.blockingScraper, err = scrapers.NewBlockingScraper(s.db, s.mb, s.logger, s.instanceName, s.metricsBuilderConfig, s.config.QueryMonitoringCountThreshold)
 	if err != nil {
 		return fmt.Errorf("failed to create blocking scraper: %w", err)
 	}
 
-	// Initialize wait events scraper with direct DB connection
-	s.waitEventsScraper, err = scrapers.NewWaitEventsScraper(s.db, s.mb, s.logger, s.instanceName, s.metricsBuilderConfig)
+	// Initialize wait events scraper with direct DB connection and QPM config
+	s.waitEventsScraper, err = scrapers.NewWaitEventsScraper(s.db, s.mb, s.logger, s.instanceName, s.metricsBuilderConfig, s.config.QueryMonitoringCountThreshold)
 	if err != nil {
 		return fmt.Errorf("failed to create wait events scraper: %w", err)
 	}
@@ -142,36 +144,47 @@ func (s *newRelicOracleScraper) scrape(ctx context.Context) (pmetric.Metrics, er
 	// WaitGroup to coordinate concurrent scrapers
 	var wg sync.WaitGroup
 
-	// First execute slow queries scraper to get query IDs
-	s.logger.Debug("Starting slow queries scraper to get query IDs")
-	queryIDs, slowQueryErrs := s.slowQueriesScraper.ScrapeSlowQueries(scrapeCtx)
+	// Execute QPM scrapers only if Query Performance Monitoring is enabled
+	if s.config.EnableQueryMonitoring {
+		// First execute slow queries scraper to get query IDs
+		s.logger.Debug("Starting slow queries scraper to get query IDs (QPM enabled)")
+		queryIDs, slowQueryErrs := s.slowQueriesScraper.ScrapeSlowQueries(scrapeCtx)
 
-	s.logger.Info("Slow queries scraper completed",
-		zap.Int("query_ids_found", len(queryIDs)),
-		zap.Strings("query_ids", queryIDs),
-		zap.Int("slow_query_errors", len(slowQueryErrs)))
+		s.logger.Info("Slow queries scraper completed",
+			zap.Int("query_ids_found", len(queryIDs)),
+			zap.Strings("query_ids", queryIDs),
+			zap.Int("slow_query_errors", len(slowQueryErrs)))
 
-	// Add slow query errors to our error collection
-	for _, err := range slowQueryErrs {
-		select {
-		case errChan <- err:
-		default:
-			s.logger.Warn("Error channel full, dropping slow query error", zap.Error(err))
+		// Add slow query errors to our error collection
+		for _, err := range slowQueryErrs {
+			select {
+			case errChan <- err:
+			default:
+				s.logger.Warn("Error channel full, dropping slow query error", zap.Error(err))
+			}
 		}
+	} else {
+		s.logger.Debug("Query Performance Monitoring disabled, skipping QPM scrapers")
 	}
 
-	// Define scraper functions that don't depend on slow queries
+	// Define non-QPM scraper functions that don't depend on slow queries
 	independentScraperFuncs := []ScraperFunc{
 		s.sessionScraper.ScrapeSessionCount,
 		s.tablespaceScraper.ScrapeTablespaceMetrics,
 		s.coreScraper.ScrapeCoreMetrics,
 		s.pdbScraper.ScrapePdbMetrics,
 		s.systemScraper.ScrapeSystemMetrics,
-		s.blockingScraper.ScrapeBlockingQueries,
-		s.waitEventsScraper.ScrapeWaitEvents,
 		s.connectionScraper.ScrapeConnectionMetrics,
 		s.containerScraper.ScrapeContainerMetrics,
 		s.racScraper.ScrapeRacMetrics,
+	}
+
+	// Add QPM scrapers only if QPM is enabled
+	if s.config.EnableQueryMonitoring {
+		independentScraperFuncs = append(independentScraperFuncs,
+			s.blockingScraper.ScrapeBlockingQueries,
+			s.waitEventsScraper.ScrapeWaitEvents,
+		)
 	}
 
 	// Launch concurrent scrapers for independent scrapers

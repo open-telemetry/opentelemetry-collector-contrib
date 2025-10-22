@@ -17,15 +17,16 @@ import (
 
 // BlockingScraper contains the scraper for blocking queries metrics
 type BlockingScraper struct {
-	db                   *sql.DB
-	mb                   *metadata.MetricsBuilder
-	logger               *zap.Logger
-	instanceName         string
-	metricsBuilderConfig metadata.MetricsBuilderConfig
+	db                            *sql.DB
+	mb                            *metadata.MetricsBuilder
+	logger                        *zap.Logger
+	instanceName                  string
+	metricsBuilderConfig          metadata.MetricsBuilderConfig
+	queryMonitoringCountThreshold int
 }
 
 // NewBlockingScraper creates a new Blocking Queries Scraper instance
-func NewBlockingScraper(db *sql.DB, mb *metadata.MetricsBuilder, logger *zap.Logger, instanceName string, metricsBuilderConfig metadata.MetricsBuilderConfig) (*BlockingScraper, error) {
+func NewBlockingScraper(db *sql.DB, mb *metadata.MetricsBuilder, logger *zap.Logger, instanceName string, metricsBuilderConfig metadata.MetricsBuilderConfig, countThreshold int) (*BlockingScraper, error) {
 	if db == nil {
 		return nil, fmt.Errorf("database connection cannot be nil")
 	}
@@ -40,11 +41,12 @@ func NewBlockingScraper(db *sql.DB, mb *metadata.MetricsBuilder, logger *zap.Log
 	}
 
 	return &BlockingScraper{
-		db:                   db,
-		mb:                   mb,
-		logger:               logger,
-		instanceName:         instanceName,
-		metricsBuilderConfig: metricsBuilderConfig,
+		db:                            db,
+		mb:                            mb,
+		logger:                        logger,
+		instanceName:                  instanceName,
+		metricsBuilderConfig:          metricsBuilderConfig,
+		queryMonitoringCountThreshold: countThreshold,
 	}, nil
 }
 
@@ -54,8 +56,9 @@ func (s *BlockingScraper) ScrapeBlockingQueries(ctx context.Context) []error {
 
 	var scrapeErrors []error
 
-	// Execute the blocking queries SQL
-	rows, err := s.db.QueryContext(ctx, queries.BlockingQueriesSQL)
+	// Execute the blocking queries SQL with configured threshold using parameterized query
+	blockingQueriesSQL, params := queries.GetBlockingQueriesSQL(s.queryMonitoringCountThreshold)
+	rows, err := s.db.QueryContext(ctx, blockingQueriesSQL, params...)
 	if err != nil {
 		s.logger.Error("Failed to execute blocking queries query", zap.Error(err))
 		return []error{err}

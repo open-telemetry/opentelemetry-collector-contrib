@@ -16,15 +16,16 @@ import (
 
 // WaitEventsScraper contains the scraper for wait events metrics
 type WaitEventsScraper struct {
-	db                   *sql.DB
-	mb                   *metadata.MetricsBuilder
-	logger               *zap.Logger
-	instanceName         string
-	metricsBuilderConfig metadata.MetricsBuilderConfig
+	db                            *sql.DB
+	mb                            *metadata.MetricsBuilder
+	logger                        *zap.Logger
+	instanceName                  string
+	metricsBuilderConfig          metadata.MetricsBuilderConfig
+	queryMonitoringCountThreshold int
 }
 
 // NewWaitEventsScraper creates a new Wait Events Scraper instance
-func NewWaitEventsScraper(db *sql.DB, mb *metadata.MetricsBuilder, logger *zap.Logger, instanceName string, metricsBuilderConfig metadata.MetricsBuilderConfig) (*WaitEventsScraper, error) {
+func NewWaitEventsScraper(db *sql.DB, mb *metadata.MetricsBuilder, logger *zap.Logger, instanceName string, metricsBuilderConfig metadata.MetricsBuilderConfig, countThreshold int) (*WaitEventsScraper, error) {
 	if db == nil {
 		return nil, fmt.Errorf("database connection cannot be nil")
 	}
@@ -39,11 +40,12 @@ func NewWaitEventsScraper(db *sql.DB, mb *metadata.MetricsBuilder, logger *zap.L
 	}
 
 	return &WaitEventsScraper{
-		db:                   db,
-		mb:                   mb,
-		logger:               logger,
-		instanceName:         instanceName,
-		metricsBuilderConfig: metricsBuilderConfig,
+		db:                            db,
+		mb:                            mb,
+		logger:                        logger,
+		instanceName:                  instanceName,
+		metricsBuilderConfig:          metricsBuilderConfig,
+		queryMonitoringCountThreshold: countThreshold,
 	}, nil
 }
 
@@ -53,8 +55,9 @@ func (s *WaitEventsScraper) ScrapeWaitEvents(ctx context.Context) []error {
 
 	var scrapeErrors []error
 
-	// Execute the wait events SQL
-	rows, err := s.db.QueryContext(ctx, queries.WaitEventQueriesSQL)
+	// Execute the wait events SQL with configured threshold using parameterized query
+	waitEventQueriesSQL, params := queries.GetWaitEventQueriesSQL(s.queryMonitoringCountThreshold)
+	rows, err := s.db.QueryContext(ctx, waitEventQueriesSQL, params...)
 	if err != nil {
 		s.logger.Error("Failed to execute wait events query", zap.Error(err))
 		return []error{err}
