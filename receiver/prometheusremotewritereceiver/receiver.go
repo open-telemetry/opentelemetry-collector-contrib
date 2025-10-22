@@ -232,9 +232,23 @@ func (*prometheusRemoteWriteReceiver) parseProto(contentType string) (promconfig
 	return promconfig.RemoteWriteProtoMsgV1, nil
 }
 
-// getOrCreateRM is a helper to fetch or create the in-batch ResourceMetrics for the given labels.
-// It prefers the per-request map, and seeds attributes from the global cache
-// when available, but never returns a detached ResourceMetrics.
+// getOrCreateRM returns the per-request ResourceMetrics for the given labels'
+// job/instance pair, creating and appending a new one to otelMetrics if needed.
+//
+// It looks up an existing entry in reqRM using a hash of "job\instance". If
+// found, that already-appended instance is returned. Otherwise, a new
+// ResourceMetrics is appended to otelMetrics and its resource attributes are
+// seeded as follows:
+//   - If an attribute snapshot exists in the LRU cache, copy only resource
+//     attributes into the new ResourceMetrics (scopes/metrics are never reused).
+//   - Otherwise, derive attributes from job/instance and store an attribute-only
+//     snapshot in the cache for future requests.
+//
+// This function never returns a cached object; it only copies attributes from
+// the cache into a per-request instance to avoid cross-request mutation.
+//
+// Note: Attribute enrichment from target_info should update the cache snapshot
+// separately so subsequent HTTP requests start with enriched attributes.
 func (prw *prometheusRemoteWriteReceiver) getOrCreateRM(ls labels.Labels, otelMetrics pmetric.Metrics, reqRM map[uint64]pmetric.ResourceMetrics) (pmetric.ResourceMetrics, uint64) {
 	hashedLabels := xxhash.Sum64String(ls.Get("job") + string([]byte{'\xff'}) + ls.Get("instance"))
 
@@ -273,10 +287,10 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		}
 		// The key is composed by: resource_hash:scope_name:scope_version:metric_name:unit:type
 		metricCache = make(map[uint64]pmetric.Metric)
-		// Request-local map to ensure all timeseries for the same resource append to the
-		// same in-batch ResourceMetrics, avoiding detached copies and concurrency issues
-		// with the global cache.
-		reqRM = make(map[uint64]pmetric.ResourceMetrics)
+		// modifiedResourceMetric keeps track, for each request, of which resources (identified by the job/instance hash) had their resource attributes modified — for example, through target_info.
+		// Once the request is fully processed, only the resource attributes contained in the request’s ResourceMetrics are snapshotted back into the LRU cache.
+		// This ensures that future requests start with the enriched resource attributes already applied.
+		modifiedResourceMetric = make(map[uint64]pmetric.ResourceMetrics)
 	)
 
 	for i := range req.Timeseries {
@@ -294,7 +308,7 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		// If the metric name is equal to target_info, we use its labels as attributes of the resource
 		// Ref: https://opentelemetry.io/docs/specs/otel/compatibility/prometheus_and_openmetrics/#resource-attributes-1
 		if metadata.Name == "target_info" {
-			rm, _ := prw.getOrCreateRM(ls, otelMetrics, reqRM)
+			rm, hashed := prw.getOrCreateRM(ls, otelMetrics, modifiedResourceMetric)
 			attrs := rm.Resource().Attributes()
 
 			// Add the remaining labels as resource attributes
@@ -303,6 +317,10 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 					attrs.PutStr(labelName, labelValue)
 				}
 			}
+
+			snapshot := pmetric.NewResourceMetrics()
+			attrs.CopyTo(snapshot.Resource().Attributes())
+			prw.rmCache.Add(hashed, snapshot)
 			continue
 		}
 
@@ -323,12 +341,12 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 
 		// Handle histograms separately due to their complex mixed-schema processing
 		if ts.Metadata.Type == writev2.Metadata_METRIC_TYPE_HISTOGRAM {
-			prw.processHistogramTimeSeries(otelMetrics, ls, ts, scopeName, scopeVersion, metricName, unit, description, metricCache, &stats, reqRM)
+			prw.processHistogramTimeSeries(otelMetrics, ls, ts, scopeName, scopeVersion, metricName, unit, description, metricCache, &stats, modifiedResourceMetric)
 			continue
 		}
 
 		// Handle regular metrics (gauge, counter, summary)
-		rm, _ := prw.getOrCreateRM(ls, otelMetrics, reqRM)
+		rm, _ := prw.getOrCreateRM(ls, otelMetrics, modifiedResourceMetric)
 
 		resourceID := identity.OfResource(rm.Resource())
 		metricIdentity := createMetricIdentity(

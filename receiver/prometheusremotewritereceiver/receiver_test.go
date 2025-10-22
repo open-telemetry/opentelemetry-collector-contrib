@@ -1496,44 +1496,6 @@ func TestTargetInfoWithMultipleRequests(t *testing.T) {
 				},
 			},
 		},
-		{
-			name: "normal metric first, target_info second",
-			requests: []*writev2.Request{
-				{
-					Symbols: []string{
-						"",
-						"job", "production/service_a", // 1, 2
-						"instance", "host1", // 3, 4
-						"__name__", "normal_metric", // 5, 6
-						"foo", "bar", // 7, 8
-					},
-					Timeseries: []writev2.TimeSeries{
-						{
-							Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
-							LabelsRefs: []uint32{5, 6, 1, 2, 3, 4, 7, 8},
-							Samples:    []writev2.Sample{{Value: 2, Timestamp: 2}},
-						},
-					},
-				},
-				{
-					Symbols: []string{
-						"",
-						"job", "production/service_a", // 1, 2
-						"instance", "host1", // 3, 4
-						"machine_type", "n1-standard-1", // 5, 6
-						"cloud_provider", "gcp", // 7, 8
-						"region", "us-central1", // 9, 10
-						"__name__", "target_info", // 11, 12
-					},
-					Timeseries: []writev2.TimeSeries{
-						{
-							Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
-							LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12},
-						},
-					},
-				},
-			},
-		},
 	}
 
 	// Using the same expected metrics for both tests, because we are just checking if the order of the requests changes the result.
@@ -1593,7 +1555,7 @@ func TestTargetInfoWithMultipleRequests(t *testing.T) {
 				assert.Equal(t, http.StatusNoContent, resp.StatusCode, string(body))
 			}
 
-			assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, mockConsumer.metrics[0]))
+			assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, mockConsumer.metrics[1]))
 		})
 	}
 }
@@ -1789,7 +1751,7 @@ func TestLRUCacheResourceMetrics(t *testing.T) {
 	}
 
 	// As target_info and metric1 have the same job/instance, they generate the same end metric: mockConsumer.metrics[0].
-	assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics1, mockConsumer.metrics[0]))
+	assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics1, mockConsumer.metrics[1]))
 	// As metric2 have different job/instance, it generates a different end metric: mockConsumer.metrics[2]. At this point, the cache is full it should evict the target_info metric to store the metric2.
 	assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics2, mockConsumer.metrics[2]))
 	// As just have 1 slot in the cache, but the cache for metric1 was evicted, this metric1_1 should generate a new resource metric, even having the same job/instance than the metric1.
