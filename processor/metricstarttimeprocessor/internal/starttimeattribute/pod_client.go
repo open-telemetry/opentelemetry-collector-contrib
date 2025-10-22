@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package starttimeattribute
 
 import (
@@ -6,7 +9,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -14,6 +16,8 @@ import (
 	"k8s.io/client-go/informers"
 	k8s "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
 
 type k8sPodClient struct {
@@ -36,7 +40,7 @@ func newK8sPodClient(_ context.Context, apiConfig k8sconfig.APIConfig, filter in
 	labelSelector := labels.Everything()
 	if len(filter.labelFilters) > 0 {
 		for _, lf := range filter.labelFilters {
-			requirement, err := labels.NewRequirement(lf.Key, lf.Op, []string{lf.Value})
+			requirement, err := labels.NewRequirement(lf.Key, lf.Op, []string{lf.Value}) //nolint: govet
 			if err != nil {
 				return nil, fmt.Errorf("failed to create label requirement: %w", err)
 			}
@@ -73,7 +77,7 @@ func newK8sPodClient(_ context.Context, apiConfig k8sconfig.APIConfig, filter in
 	}
 
 	_, err = podInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj interface{}) {
+		AddFunc: func(obj interface{}) { //nolint: revive
 			pod, ok := obj.(*corev1.Pod)
 			if !ok {
 				return
@@ -81,9 +85,8 @@ func newK8sPodClient(_ context.Context, apiConfig k8sconfig.APIConfig, filter in
 			client.mu.Lock()
 			defer client.mu.Unlock()
 			client.addPod(pod)
-
 		},
-		UpdateFunc: func(oldObj, newObj interface{}) {
+		UpdateFunc: func(oldObj, newObj interface{}) { //nolint: revive
 			oldPod, ok := oldObj.(*corev1.Pod)
 			if !ok {
 				return
@@ -98,7 +101,7 @@ func newK8sPodClient(_ context.Context, apiConfig k8sconfig.APIConfig, filter in
 			client.deletePod(oldPod)
 			client.addPod(newPod)
 		},
-		DeleteFunc: func(obj interface{}) {
+		DeleteFunc: func(obj interface{}) { //nolint: revive
 			pod, ok := obj.(*corev1.Pod)
 			if !ok {
 				return
@@ -122,15 +125,14 @@ func (c *k8sPodClient) addPod(pod *corev1.Pod) {
 	podStatus := pod.Status
 	var startTime time.Time
 	if c.useContainerReadiness {
-		ready, readyTime := c.containerReadinessTime(pod)
+		ready, readyTime := containerReadinessTime(pod)
 		if ready {
 			startTime = readyTime
 		}
-	} else {
-		if podStatus.StartTime != nil {
-			startTime = podStatus.StartTime.Time
-		}
+	} else if podStatus.StartTime != nil {
+		startTime = podStatus.StartTime.Time
 	}
+
 	if startTime.IsZero() {
 		return
 	}
@@ -141,24 +143,22 @@ func (c *k8sPodClient) addPod(pod *corev1.Pod) {
 	c.startTimeCache[fmt.Sprintf("uid:%s", pod.UID)] = startTime
 }
 
-func (c *k8sPodClient) containerReadinessTime(pod *corev1.Pod) (bool, time.Time) {
+func containerReadinessTime(pod *corev1.Pod) (bool, time.Time) {
 	var containerReadyTime time.Time
 	var podReady, containersReady bool
 	for _, condition := range pod.Status.Conditions {
 		if condition.Type == corev1.PodReady {
-			if condition.Status == corev1.ConditionTrue {
-				podReady = true
-			} else {
+			if condition.Status != corev1.ConditionTrue {
 				return false, containerReadyTime
 			}
+			podReady = true
 		}
 		if condition.Type == corev1.ContainersReady {
-			if condition.Status == corev1.ConditionTrue {
-				containersReady = true
-				containerReadyTime = condition.LastTransitionTime.Time
-			} else {
+			if condition.Status != corev1.ConditionTrue {
 				return false, containerReadyTime
 			}
+			containersReady = true
+			containerReadyTime = condition.LastTransitionTime.Time
 		}
 	}
 	return podReady && containersReady, containerReadyTime

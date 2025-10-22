@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package starttimeattribute
 
 import (
@@ -5,14 +8,15 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstarttimeprocessor/internal/common"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstarttimeprocessor/internal/datapointstorage"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstarttimeprocessor/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstarttimeprocessor/internal/datapointstorage"
 )
 
 const (
@@ -65,7 +69,7 @@ func (a *Adjuster) AdjustMetrics(ctx context.Context, metrics pmetric.Metrics) (
 		rm := resourceMetrics.At(i)
 		resource := rm.Resource()
 		// Try to extract pod identifier from resource attributes
-		podID := a.extractPodIdentifier(resource.Attributes())
+		podID := extractPodIdentifier(resource.Attributes())
 		if podID == nil {
 			continue
 		}
@@ -82,7 +86,7 @@ func (a *Adjuster) AdjustMetrics(ctx context.Context, metrics pmetric.Metrics) (
 
 				metricName := metric.Name()
 				// Only process cumulative metrics
-				if !a.isCumulativeMetric(metric) {
+				if !isCumulativeMetric(metric) {
 					a.set.Logger.Debug("metric is not cumulative, skipping",
 						zap.String("metricName", metricName))
 					continue
@@ -104,7 +108,7 @@ func (a *Adjuster) AdjustMetrics(ctx context.Context, metrics pmetric.Metrics) (
 					)
 					continue
 				}
-				a.setStartTimeForMetric(tsm, metric, startTime)
+				setStartTimeForMetric(tsm, metric, startTime)
 			}
 		}
 		tsm.Unlock()
@@ -113,7 +117,7 @@ func (a *Adjuster) AdjustMetrics(ctx context.Context, metrics pmetric.Metrics) (
 	return metrics, nil
 }
 
-func (a *Adjuster) extractPodIdentifier(attrs pcommon.Map) *podIdentifier {
+func extractPodIdentifier(attrs pcommon.Map) *podIdentifier {
 	podNameVal, nameOk := attrs.Get("k8s.pod.name")
 	namespaceVal, nsOk := attrs.Get("k8s.namespace.name")
 	if nameOk && nsOk {
@@ -138,7 +142,7 @@ func (a *Adjuster) extractPodIdentifier(attrs pcommon.Map) *podIdentifier {
 	return nil
 }
 
-func (a *Adjuster) isCumulativeMetric(metric pmetric.Metric) bool {
+func isCumulativeMetric(metric pmetric.Metric) bool {
 	switch metric.Type() {
 	case pmetric.MetricTypeSummary:
 		return true
@@ -153,7 +157,7 @@ func (a *Adjuster) isCumulativeMetric(metric pmetric.Metric) bool {
 	}
 }
 
-func (a *Adjuster) setStartTimeForMetric(tsm *datapointstorage.TimeseriesMap, metric pmetric.Metric, startTime time.Time) {
+func setStartTimeForMetric(tsm *datapointstorage.TimeseriesMap, metric pmetric.Metric, startTime time.Time) {
 	startTimeNanos := pcommon.NewTimestampFromTime(startTime)
 	switch metric.Type() {
 	case pmetric.MetricTypeSummary:
