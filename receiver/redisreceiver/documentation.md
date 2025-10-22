@@ -427,9 +427,9 @@ The value of the maxmemory configuration directive
 
 Redis server mode
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {mode} | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {mode} | Gauge | Int | development |
 
 #### Attributes
 
@@ -463,49 +463,49 @@ Redis node's role
 
 Number of masters monitored by Sentinel.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {master} | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {master} | Gauge | Int | development |
 
 ### redis.sentinel.running_scripts
 
 Number of running Sentinel scripts.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {script} | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {script} | Gauge | Int | development |
 
 ### redis.sentinel.scripts_queue_length
 
 Length of Sentinel scripts queue.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {script} | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {script} | Gauge | Int | development |
 
 ### redis.sentinel.simulate_failure_flags
 
 Simulated failure flags bitmask.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {flag} | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {flag} | Gauge | Int | development |
 
 ### redis.sentinel.tilt_since_seconds
 
 Duration in seconds of current TILT, or -1 if not in TILT mode.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| s | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Gauge | Int | development |
 
 ### redis.sentinel.total_tilt
 
 Total TILT occurrences since start.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {event} | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {event} | Sum | Int | Cumulative | true | development |
 
 ### redis.slaves.connected
 

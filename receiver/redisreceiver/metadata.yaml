@@ -460,6 +460,8 @@ metrics:
   redis.mode:
     enabled: false
     description: Redis server mode
+    stability:
+      level: development
     unit: "{mode}"
     gauge:
       value_type: int
@@ -541,6 +543,8 @@ metrics:
   redis.sentinel.masters:
     enabled: false
     description: Number of masters monitored by Sentinel.
+    stability:
+      level: development
     unit: "{master}"
     gauge:
       value_type: int
@@ -548,6 +552,8 @@ metrics:
   redis.sentinel.running_scripts:
     enabled: false
     description: Number of running Sentinel scripts.
+    stability:
+      level: development
     unit: "{script}"
     gauge:
       value_type: int
@@ -555,6 +561,8 @@ metrics:
   redis.sentinel.scripts_queue_length:
     enabled: false
     description: Length of Sentinel scripts queue.
+    stability:
+      level: development
     unit: "{script}"
     gauge:
       value_type: int
@@ -562,6 +570,8 @@ metrics:
   redis.sentinel.simulate_failure_flags:
     enabled: false
     description: Simulated failure flags bitmask.
+    stability:
+      level: development
     unit: "{flag}"
     gauge:
       value_type: int
@@ -569,6 +579,8 @@ metrics:
   redis.sentinel.tilt_since_seconds:
     enabled: false
     description: Duration in seconds of current TILT, or -1 if not in TILT mode.
+    stability:
+      level: development
     unit: "s"
     gauge:
       value_type: int
@@ -576,6 +588,8 @@ metrics:
   redis.sentinel.total_tilt:
     enabled: false
     description: Total TILT occurrences since start.
+    stability:
+      level: development
     unit: "{event}"
     sum:
       value_type: int
