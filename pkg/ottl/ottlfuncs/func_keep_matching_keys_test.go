@@ -58,14 +58,6 @@ func Test_keepMatchingKeys(t *testing.T) {
 				return &m
 			},
 		},
-		{
-			name:    "invalid pattern",
-			pattern: "*",
-			want: func() *pcommon.Map {
-				return nil
-			},
-			wantError: true,
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -87,7 +79,12 @@ func Test_keepMatchingKeys(t *testing.T) {
 				},
 			}
 
-			exprFunc, err := keepMatchingKeys(target, tt.pattern)
+			pattern := &ottl.StandardStringGetter[pcommon.Map]{
+				Getter: func(_ context.Context, _ pcommon.Map) (any, error) {
+					return tt.pattern, nil
+				},
+			}
+			exprFunc, err := keepMatchingKeys(target, pattern)
 
 			if tt.wantError {
 				assert.Error(t, err)
@@ -115,7 +112,37 @@ func Test_keepMatchingKeys_bad_input(t *testing.T) {
 		},
 	}
 
-	exprFunc, err := keepMatchingKeys[any](target, "anything")
+	pattern := &ottl.StandardStringGetter[any]{
+		Getter: func(_ context.Context, _ any) (any, error) {
+			return "anything", nil
+		},
+	}
+
+	exprFunc, err := keepMatchingKeys[any](target, pattern)
+	assert.NoError(t, err)
+
+	_, err = exprFunc(nil, input)
+	assert.Error(t, err)
+}
+
+func Test_keepMatchingKeys_invalid_pattern(t *testing.T) {
+	input := pcommon.NewValueInt(1)
+	target := &ottl.StandardPMapGetSetter[any]{
+		Getter: func(_ context.Context, tCtx any) (pcommon.Map, error) {
+			if v, ok := tCtx.(pcommon.Map); ok {
+				return v, nil
+			}
+			return pcommon.Map{}, errors.New("expected pcommon.Map")
+		},
+	}
+
+	pattern := &ottl.StandardStringGetter[any]{
+		Getter: func(_ context.Context, _ any) (any, error) {
+			return "*", nil
+		},
+	}
+
+	exprFunc, err := keepMatchingKeys[any](target, pattern)
 	assert.NoError(t, err)
 
 	_, err = exprFunc(nil, input)
@@ -132,7 +159,13 @@ func Test_keepMatchingKeys_get_nil(t *testing.T) {
 		},
 	}
 
-	exprFunc, err := keepMatchingKeys[any](target, "anything")
+	pattern := &ottl.StandardStringGetter[any]{
+		Getter: func(_ context.Context, _ any) (any, error) {
+			return "anything", nil
+		},
+	}
+
+	exprFunc, err := keepMatchingKeys[any](target, pattern)
 	assert.NoError(t, err)
 	_, err = exprFunc(nil, nil)
 	assert.Error(t, err)

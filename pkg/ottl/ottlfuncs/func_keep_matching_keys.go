@@ -15,7 +15,7 @@ import (
 
 type KeepMatchingKeysArguments[K any] struct {
 	Target  ottl.PMapGetSetter[K]
-	Pattern string
+	Pattern ottl.StringGetter[K]
 }
 
 func NewKeepMatchingKeysFactory[K any]() ottl.Factory[K] {
@@ -32,20 +32,37 @@ func createKeepMatchingKeysFunction[K any](_ ottl.FunctionContext, oArgs ottl.Ar
 	return keepMatchingKeys(args.Target, args.Pattern)
 }
 
-func keepMatchingKeys[K any](target ottl.PMapGetSetter[K], pattern string) (ottl.ExprFunc[K], error) {
-	compiledPattern, err := regexp.Compile(pattern)
-	if err != nil {
-		return nil, fmt.Errorf("the regex pattern provided to keep_matching_keys is not a valid pattern: %w", err)
+func keepMatchingKeys[K any](target ottl.PMapGetSetter[K], pattern ottl.StringGetter[K]) (ottl.ExprFunc[K], error) {
+	literalPattern, ok := ottl.GetLiteralValue(pattern)
+	var compiledPattern *regexp.Regexp
+	var err error
+	if ok {
+		compiledPattern, err = regexp.Compile(literalPattern)
+		if err != nil {
+			return nil, fmt.Errorf(ottl.InvalidRegexErrMsg, "KeepMatchingKeys", literalPattern, err)
+		}
 	}
 
 	return func(ctx context.Context, tCtx K) (any, error) {
+		cp := compiledPattern
+		if cp == nil {
+			patternVal, err := pattern.Get(ctx, tCtx)
+			if err != nil {
+				return nil, err
+			}
+			cp, err = regexp.Compile(patternVal)
+			if err != nil {
+				return nil, fmt.Errorf(ottl.InvalidRegexErrMsg, "KeepMatchingKeys", patternVal, err)
+			}
+		}
+
 		val, err := target.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
 
 		val.RemoveIf(func(key string, _ pcommon.Value) bool {
-			return !compiledPattern.MatchString(key)
+			return !cp.MatchString(key)
 		})
 		return nil, target.Set(ctx, tCtx, val)
 	}, nil
