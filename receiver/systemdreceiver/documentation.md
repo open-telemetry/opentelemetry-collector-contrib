@@ -22,9 +22,9 @@ metrics:
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| systemd.unit.active_state | The active state of the unit (https://www.freedesktop.org/software/systemd/man/latest/systemd.html#Units) | Str: ``active``, ``reloading``, ``inactive``, ``failed``, ``activating``, ``deactivating``, ``maintenance``, ``refreshing`` | false |
+| systemd.unit.active_state | The active state of the unit (https://www.freedesktop.org/software/systemd/man/latest/systemd.html#Units) | Str: ``active``, ``reloading``, ``inactive``, ``failed``, ``activating``, ``deactivating``, ``maintenance``, ``refreshing`` | Recommended |
 
 ## Resource Attributes
 
