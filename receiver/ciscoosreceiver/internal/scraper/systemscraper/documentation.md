@@ -22,9 +22,9 @@ Device availability (1 = up, 0 = down)
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| target | The target network device hostname/IP (used for K8s node correlation) | Any Str | false |
+| target | The target network device hostname/IP (used for K8s node correlation) | Any Str | Recommended |
 
 ### system.cpu.utilization
 
@@ -36,9 +36,9 @@ Percentage of CPU time in use.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| target | The target network device hostname/IP (used for K8s node correlation) | Any Str | false |
+| target | The target network device hostname/IP (used for K8s node correlation) | Any Str | Recommended |
 
 ### system.memory.utilization
 
@@ -50,6 +50,6 @@ Percentage of memory bytes in use.
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| target | The target network device hostname/IP (used for K8s node correlation) | Any Str | false |
+| target | The target network device hostname/IP (used for K8s node correlation) | Any Str | Recommended |
