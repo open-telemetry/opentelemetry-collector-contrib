@@ -454,6 +454,10 @@ func (lts *lookupTables) dumpLookupTables(dic pprofile.ProfilesDictionary) error
 		}
 	}
 
+	// The concept of profiles.Link does not exist in pprof.
+	// Therefore LinkTable only holds an empty value to be compliant.
+	dic.LinkTable().AppendEmpty()
+
 	return nil
 }
 
