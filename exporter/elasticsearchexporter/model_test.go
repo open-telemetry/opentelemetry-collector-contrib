@@ -458,7 +458,18 @@ func TestEncodeSpanECSMode(t *testing.T) {
 		string(semconv.ServiceInstanceIDKey):     "23",
 		string(semconv.ServiceNameKey):           "some-service",
 		string(semconv.ServiceVersionKey):        "env-version-1234",
+		string(semconv.ProcessParentPIDKey):      "42",
+		string(semconv.ProcessExecutableNameKey): "node",
+		string(semconv.ClientAddressKey):         "12.53.12.1",
+		string(semconv.SourceAddressKey):         "12.53.12.1",
+		string(semconv.FaaSInstanceKey):          "arn:aws:lambda:us-east-2:123456789012:function:custom-runtime",
+		string(semconv.FaaSTriggerKey):           "api-gateway",
 	})
+	require.NoError(t, err)
+
+	// add slice attributes
+	processCommandLineSlice := resource.Attributes().PutEmptySlice(string(semconv.ProcessCommandLineKey))
+	err = processCommandLineSlice.FromRaw([]any{"node", "app.js"})
 	require.NoError(t, err)
 
 	scope := pcommon.NewInstrumentationScope()
@@ -539,6 +550,21 @@ func TestEncodeSpanECSMode(t *testing.T) {
 		  "name": "23"
 		},
 		"version": "env-version-1234"
+	  },
+	  "process": {
+		"parent": { "pid": "42" },
+		"title": "node",
+		"args" : ["node", "app.js"]
+	  },
+	  "client": {
+		"ip": "12.53.12.1"
+      },
+	  "source": {
+		"ip": "12.53.12.1"
+      },
+	  "faas": {
+		"id" : "arn:aws:lambda:us-east-2:123456789012:function:custom-runtime",
+		"trigger": { "type": "api-gateway" }
 	  }
 	}`, buf.String())
 }
@@ -591,6 +617,12 @@ func TestEncodeLogECSMode(t *testing.T) {
 		string(semconv.K8SDaemonSetNameKey):      "daemonset.name",
 		string(semconv.K8SContainerNameKey):      "container.name",
 		string(semconv.K8SClusterNameKey):        "cluster.name",
+		string(semconv.ProcessParentPIDKey):      "42",
+		string(semconv.ProcessExecutableNameKey): "node",
+		string(semconv.ClientAddressKey):         "12.53.12.1",
+		string(semconv.SourceAddressKey):         "12.53.12.1",
+		string(semconv.FaaSInstanceKey):          "arn:aws:lambda:us-east-2:123456789012:function:custom-runtime",
+		string(semconv.FaaSTriggerKey):           "api-gateway",
 	})
 	require.NoError(t, err)
 
@@ -655,8 +687,10 @@ func TestEncodeLogECSMode(t *testing.T) {
 		},
 		"process": {
 		  "pid": 9833,
-		  "command_line": "/usr/bin/ssh -l user 10.0.0.16",
-		  "executable": "/usr/bin/ssh"
+		  "args": "/usr/bin/ssh -l user 10.0.0.16",
+		  "executable": "/usr/bin/ssh",
+          "parent": { "pid": "42" },
+		   "title": "node"
 		},
 		"service": {
 		  "name": "foo.bar",
@@ -691,7 +725,17 @@ func TestEncodeLogECSMode(t *testing.T) {
 		  "daemonset": {"name": "daemonset.name"},
 		  "container": {"name": "container.name"}
 		},
-		"orchestrator": {"cluster": {"name": "cluster.name"}}
+		"orchestrator": {"cluster": {"name": "cluster.name"}},
+        "client": {
+			"ip": "12.53.12.1"
+		},
+        "source": {
+			"ip": "12.53.12.1"
+		},
+        "faas": {
+		    "id" : "arn:aws:lambda:us-east-2:123456789012:function:custom-runtime",
+		     "trigger": { "type": "api-gateway" }
+	  }
 	}`, buf.String())
 }
 

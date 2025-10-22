@@ -42,13 +42,18 @@ var resourceAttrsConversionMap = map[string]string{
 	string(semconv.ContainerImageTagsKey):     "container.image.tag",
 	string(semconv.HostNameKey):               "host.hostname",
 	string(semconv.HostArchKey):               "host.architecture",
+	string(semconv.ProcessParentPIDKey):       "process.parent.pid",
+	string(semconv.ProcessExecutableNameKey):  "process.title",
 	string(semconv.ProcessExecutablePathKey):  "process.executable",
+	string(semconv.ProcessCommandLineKey):     "process.args",
 	string(semconv.ProcessRuntimeNameKey):     "service.runtime.name",
 	string(semconv.ProcessRuntimeVersionKey):  "service.runtime.version",
 	string(semconv.OSNameKey):                 "host.os.name",
 	string(semconv.OSTypeKey):                 "host.os.platform",
 	string(semconv.OSDescriptionKey):          "host.os.full",
 	string(semconv.OSVersionKey):              "host.os.version",
+	string(semconv.ClientAddressKey):          "client.ip",
+	string(semconv.SourceAddressKey):          "source.ip",
 	string(semconv.K8SDeploymentNameKey):      "kubernetes.deployment.name",
 	string(semconv.K8SNamespaceNameKey):       "kubernetes.namespace",
 	string(semconv.K8SNodeNameKey):            "kubernetes.node.name",
@@ -61,6 +66,8 @@ var resourceAttrsConversionMap = map[string]string{
 	string(semconv.K8SDaemonSetNameKey):       "kubernetes.daemonset.name",
 	string(semconv.K8SContainerNameKey):       "kubernetes.container.name",
 	string(semconv.K8SClusterNameKey):         "orchestrator.cluster.name",
+	string(semconv.FaaSInstanceKey):           "faas.id",
+	string(semconv.FaaSTriggerKey):            "faas.trigger.type",
 }
 
 // resourceAttrsToPreserve contains conventions that should be preserved in ECS mode.
