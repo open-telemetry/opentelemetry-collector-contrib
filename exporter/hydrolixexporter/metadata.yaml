@@ -1,0 +1,12 @@
+type: hydrolix
+
+status:
+  class: exporter
+  stability:
+    beta: [traces, metrics]
+  distributions: []
+  codeowners:
+    active: []
+
+tests:
+  skip_lifecycle: true
